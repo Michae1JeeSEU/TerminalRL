@@ -52,12 +52,12 @@ class Phase3aWrapper(gym.Wrapper):
         for u in self.unwrapped.uav_manager.uavs:
             u.is_controlled = False
 
-        # Spawn the controlled entry UAV with full battery
-        entry_uav = self.unwrapped.uav_manager._spawn_one(
-            ring_id=1, battery=self.unwrapped.config.uav.max_battery
-        )
+        # Spawn the controlled entry UAV at a random entry point
+        entry_idx = self.unwrapped.uav_manager.spawn_entry_uav()
+        entry_uav = self.unwrapped.uav_manager.uavs[entry_idx]
         entry_uav.is_controlled = True
-        self.controlled_idx = len(self.unwrapped.uav_manager.uavs) - 1
+        entry_uav.battery = self.unwrapped.config.uav.max_battery
+        self.controlled_idx = entry_idx
         self._entry_spawned = True
 
         return self.env._get_obs(), self.env._get_info()

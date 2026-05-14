@@ -40,18 +40,19 @@ class UAVManager:
                 self._spawn_one(ring_id=int(ring_id))
 
     def _spawn_one(self, ring_id: int = 1, battery: float | None = None,
-                   wait_time: float | None = None, base_priority: int | None = None) -> UAV:
-        """Spawn a UAV. Entry spawn (ring_id=1): random entry point. Ring 2/3: random orbit angle.
+                   wait_time: float | None = None, base_priority: int | None = None,
+                   is_entry: bool = False) -> UAV:
+        """Spawn a UAV.
 
-        For replacement/inflow spawns (default args), uses random entry point on ring 1.
+        Entry spawn (is_entry=True): uses a fixed entry point on ring 1.
+        Orbit spawn (is_entry=False): random angle on the ring orbit.
         """
         if base_priority is None:
             base_priority = int(self.rng.choice([1, 3, 5], p=[0.5, 0.35, 0.15]))
         uav = UAV(self._next_id, self.config, base_priority)
         self._next_id += 1
 
-        if ring_id == 1 and battery is None:
-            # New entry: pick a random entry point
+        if ring_id == 1 and is_entry:
             entry_points = self.airspace.get_entry_points()
             position = entry_points[self.rng.integers(0, 4)].copy()
         else:
@@ -81,7 +82,7 @@ class UAVManager:
 
     def spawn_entry_uav(self) -> int:
         """Spawn a single UAV at a random entry point. Returns its list index."""
-        uav = self._spawn_one()
+        uav = self._spawn_one(ring_id=1, is_entry=True)
         return len(self.uavs) - 1  # index of the new UAV
 
     def try_spawn_inflow(self, dt: float) -> None:
@@ -95,22 +96,63 @@ class UAVManager:
             self._time_since_last_spawn -= self.inflow_interval
 
     def step_all(self, actions: dict[int, LowLevelAction], dt: float) -> None:
-        """Apply per-UAV actions and advance all UAVs."""
+        """Apply per-UAV actions and advance all UAVs.
+
+        Includes basic angular separation for circling UAVs on the same ring:
+        UAVs that are too close adjust speed slightly to spread out over time.
+        """
+        # Pre-compute ring assignments and identify circling UAVs per ring
+        ring_circlers: dict[int, list[UAV]] = {1: [], 2: [], 3: []}
         for uav in self.uavs:
-            # Determine current ring from position
             ring_id = self.airspace.get_ring(uav.position)
             if ring_id == 0:
-                ring_id = uav.ring_id  # keep previous if outside (shouldn't happen)
+                ring_id = uav.ring_id
             uav.ring_id = ring_id
+            action = actions.get(uav.id, LowLevelAction(control=0))
+            if action.control == 0 and uav.status == UAVStatus.CRUISING:
+                if ring_id > 0:
+                    ring_circlers[ring_id].append(uav)
 
+        # Compute speed adjustments for circling UAVs on each ring
+        safe_dist = self.config.safe_separation
+        speed_adjustments: dict[int, float] = {}  # uav.id -> speed multiplier
+        for ring_id, circlers in ring_circlers.items():
+            if len(circlers) < 2:
+                continue
+            # Sort by angle
+            circlers.sort(key=lambda u: u.angle)
+            n = len(circlers)
+            r_i = self.airspace.radii[ring_id - 1]
+            # Angular separation needed for safe distance
+            safe_angle = safe_dist / max(r_i, 1e-6)
+            for i, uav in enumerate(circlers):
+                prev_uav = circlers[(i - 1) % n]
+                next_uav = circlers[(i + 1) % n]
+                # Angular gap to neighbors
+                gap_prev = (uav.angle - prev_uav.angle) % (2 * np.pi)
+                gap_next = (next_uav.angle - uav.angle) % (2 * np.pi)
+                min_gap = min(gap_prev, gap_next)
+                if min_gap < safe_angle:
+                    # Too close: slow down to let neighbor pull ahead
+                    speed_adjustments[uav.id] = 0.95
+                elif min_gap < 2 * safe_angle:
+                    # Catching up: slight slowdown
+                    speed_adjustments[uav.id] = 0.98
+                # else: normal speed (1.0)
+
+        for uav in self.uavs:
             action = actions.get(uav.id, LowLevelAction(control=0))
 
-            # Get orbit parameters for CIRCLE motion
+            ring_id = uav.ring_id
             if ring_id > 0:
                 r_i, h_i = self.airspace.get_ring_orbit(ring_id)
                 speed_i = self.airspace.speeds[ring_id - 1]
             else:
                 r_i, h_i, speed_i = self.airspace.radii[0], self.airspace.heights[0], self.airspace.speeds[0]
+
+            # Apply separation speed adjustment for circling UAVs
+            if uav.id in speed_adjustments:
+                speed_i *= speed_adjustments[uav.id]
 
             uav.step(action, speed_i, r_i, h_i, dt)
 
