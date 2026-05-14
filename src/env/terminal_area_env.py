@@ -46,7 +46,7 @@ class TerminalAreaEnv(gym.Env):
         # Per-UAV local observation dimension
         self.k = self.config.k_nearest
         self.max_n = self.config.max_uavs
-        self._local_obs_dim = 9 + 8 + self.k * 6 + 3  # airspace + self + neighbors + ring_counts
+        self._local_obs_dim = 9 + 9 + self.k * 6 + 3  # airspace + self(8+can_descend) + neighbors + ring_counts
 
         self._define_spaces()
 
@@ -174,6 +174,9 @@ class TerminalAreaEnv(gym.Env):
         for i, uav in enumerate(self.uav_manager.uavs):
             if uav.is_controlled:
                 control = int(ll["control"][i]) if "control" in ll else 0
+                # Enforce ring-wait constraint: force CIRCLE if not allowed to descend
+                if control == 1 and not uav.can_descend():
+                    control = 0
                 psi = float(ll["psi"][i]) if "psi" in ll else 0.0
                 gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
                 speed = float(ll["speed"][i]) if "speed" in ll else self.config.uav.descent_speed
@@ -274,7 +277,7 @@ class TerminalAreaEnv(gym.Env):
             r = feat["r"]
             z = feat["z"]
 
-            # Self features: [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600]
+            # Self features: [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend]
             theta = u.angle
             self_feat = np.array([
                 np.sin(theta), np.cos(theta),
@@ -284,6 +287,7 @@ class TerminalAreaEnv(gym.Env):
                 u.battery / u.config.max_battery,
                 u.base_priority / 5.0,
                 min(u.wait_time / 3600.0, 1.0),
+                float(u.can_descend()),
             ])
 
             # Find k nearest neighbors (by 3D distance)
@@ -325,9 +329,9 @@ class TerminalAreaEnv(gym.Env):
 
             # Assemble row
             obs[i, :9] = asv_norm
-            obs[i, 9:17] = self_feat
-            obs[i, 17:17 + self.k * 6] = neigh_feats
-            obs[i, 17 + self.k * 6:] = ring_feat
+            obs[i, 9:18] = self_feat
+            obs[i, 18:18 + self.k * 6] = neigh_feats
+            obs[i, 18 + self.k * 6:] = ring_feat
 
         return obs
 

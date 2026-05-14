@@ -25,11 +25,14 @@ class UAVConfig:
     # Energy consumption rates (per second)
     power_cruise: float = 1.0
     power_descend: float = 0.7
+    # Ring-wait constraint
+    min_ring_wait: float = 30.0   # minimum seconds to circle on a ring before descending
     # Priority parameters
     priority_alpha: float = 0.5   # wait time scaling
     priority_beta: float = 1.5    # wait time exponent
     priority_gamma: float = 1.0   # battery scaling
     priority_delta: float = 2.0   # battery exponent
+    priority_emergency: int = 5   # base_priority >= this gets full ring-wait exemption
 
 
 @dataclass

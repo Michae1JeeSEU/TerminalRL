@@ -32,12 +32,13 @@ class HeuristicPolicy:
 
         for i in range(max_n):
             row = obs[i]
-            # Check if UAV is active (self features at columns 9-17)
+            # Check if UAV is active (self features at columns 9-18)
             sin_t, cos_t = row[9], row[10]
             ring_norm = row[11]  # ring_id / 3
             r_norm = row[12]     # r / R1
             z_norm = row[13]     # z / H1
             batt_norm = row[14]  # battery / max
+            can_descend = row[17]  # whether ring-wait satisfied
 
             # Inactive slot: sin_t=cos_t=0 and ring_norm=0
             if abs(sin_t) < 1e-9 and abs(cos_t) < 1e-9 and abs(ring_norm) < 1e-9:
@@ -46,6 +47,10 @@ class HeuristicPolicy:
             ring_id = int(round(ring_norm * 3))
             if ring_id < 1 or ring_id > 3:
                 continue
+
+            # Only descend if ring-wait constraint is satisfied
+            if can_descend < 0.5:
+                continue  # stay CIRCLE (control=0)
 
             # Compute actual position
             r = r_norm * R1

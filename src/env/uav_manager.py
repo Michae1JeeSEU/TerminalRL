@@ -160,7 +160,9 @@ class UAVManager:
             if uav.status != UAVStatus.LANDED:
                 new_ring = self.airspace.get_ring(uav.position)
                 if new_ring > 0 and new_ring != ring_id:
+                    uav._prev_ring_id = ring_id
                     uav.ring_id = new_ring
+                    uav.ring_entry_time = uav.wait_time  # reset residency timer
 
     @property
     def active_uavs(self) -> list[UAV]:

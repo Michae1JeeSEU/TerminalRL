@@ -42,6 +42,8 @@ class UAV:
         self.landing_zone: int = -1
         self.is_controlled: bool = True   # False = background (auto-CIRCLE only)
         self._angle: float = 0.0
+        self.ring_entry_time: float = 0.0  # wait_time when entered current ring
+        self._prev_ring_id: int = 1
 
     def reset(self, position: np.ndarray, ring_id: int = 1,
               battery: float | None = None, wait_time: float = 0.0,
@@ -55,10 +57,25 @@ class UAV:
         self.energy_consumed = 0.0
         self.landing_zone = -1
         self._angle = np.arctan2(position[1], position[0])
+        self.ring_entry_time = wait_time
+        self._prev_ring_id = ring_id
 
     @property
     def angle(self) -> float:
         return self._angle
+
+    def can_descend(self) -> bool:
+        """Whether this UAV is allowed to DESCEND based on ring residency and priority."""
+        if self.is_critical_battery:
+            return True  # Full exemption: must land ASAP
+        if self.base_priority >= self.config.priority_emergency:
+            return True  # Full exemption: emergency/medical mission
+
+        ring_residency = self.wait_time - self.ring_entry_time
+        # Linear priority factor: p1=1.0(full wait), p5=0(no wait)
+        priority_factor = max(0.0, 1.0 - (self.base_priority - 1) / 4.0)
+        required_wait = self.config.min_ring_wait * priority_factor if hasattr(self.config, 'min_ring_wait') else 30.0
+        return ring_residency >= required_wait
 
     def step(self, action: LowLevelAction, ring_speed: float, ring_radius: float,
              ring_height: float, dt: float) -> None:
