@@ -83,16 +83,19 @@ class UAV:
 
     def _step_circle(self, ring_speed: float, ring_radius: float, ring_height: float,
                      dt: float) -> None:
-        """Circle on the ring orbit at fixed radius and height."""
+        """Circle at current radial distance and altitude, maintaining orbit angular velocity."""
         self.status = UAVStatus.CRUISING
+        r_current = np.linalg.norm(self.position[:2])
+        z_current = self.position[2]
         omega = ring_speed / max(ring_radius, 1e-6)
         self._angle += omega * dt
-        self.position[0] = ring_radius * np.cos(self._angle)
-        self.position[1] = ring_radius * np.sin(self._angle)
-        self.position[2] = ring_height
+        self.position[0] = r_current * np.cos(self._angle)
+        self.position[1] = r_current * np.sin(self._angle)
+        self.position[2] = z_current
+        tangential_speed = omega * r_current
         self.velocity = np.array([
-            -ring_speed * np.sin(self._angle),
-            ring_speed * np.cos(self._angle),
+            -tangential_speed * np.sin(self._angle),
+            tangential_speed * np.cos(self._angle),
             0.0,
         ])
 

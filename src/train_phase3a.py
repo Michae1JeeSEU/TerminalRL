@@ -56,7 +56,7 @@ class Phase3aWrapper(gym.Wrapper):
         entry_idx = self.unwrapped.uav_manager.spawn_entry_uav()
         entry_uav = self.unwrapped.uav_manager.uavs[entry_idx]
         entry_uav.is_controlled = True
-        entry_uav.battery = self.unwrapped.config.uav.max_battery
+        entry_uav.battery = self.unwrapped.config.uav.max_battery * 5.0  # 500
         self.controlled_idx = entry_idx
         self._entry_spawned = True
 
@@ -64,9 +64,12 @@ class Phase3aWrapper(gym.Wrapper):
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
-        # Terminate when the controlled entry UAV lands
+        # Terminate when the controlled entry UAV lands or dies
         if info.get("landed", 0) > 0:
             terminated = True
+        if info.get("failed", 0) > 0:
+            terminated = True
+            reward -= 50.0  # failure penalty
         return obs, reward, terminated, truncated, info
 
 
