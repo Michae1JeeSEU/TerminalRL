@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import gymnasium as gym
+from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
@@ -16,7 +17,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from src.config import EnvConfig
 from src.env.terminal_area_env import TerminalAreaEnv
 from src.env.wrappers import DiscreteActionWrapper
-from src.train_ppo import PerUAVFeatureExtractor
 
 
 class Phase3aWrapper(gym.Wrapper):
@@ -73,17 +73,47 @@ class Phase3aWrapper(gym.Wrapper):
         return obs, reward, terminated, truncated, info
 
 
+class FlatObsWrapper(gym.ObservationWrapper):
+    """Extracts the controlled UAV's local observation as a flat vector.
+
+    Converts (max_n, local_obs_dim) matrix → (local_obs_dim,) vector
+    for the single controlled UAV, enabling standard MlpPolicy training.
+    """
+
+    def __init__(self, env: Phase3aWrapper):
+        super().__init__(env)
+        self._local_obs_dim = env.unwrapped._local_obs_dim
+        self.observation_space = spaces.Box(
+            -1.0, 1.0, shape=(self._local_obs_dim,), dtype=np.float64
+        )
+
+    @property
+    def max_n(self) -> int:
+        return self.env.max_n
+
+    @property
+    def config(self):
+        return self.env.config
+
+    def observation(self, obs: np.ndarray) -> np.ndarray:
+        idx = self.env.controlled_idx
+        if idx < len(obs):
+            return obs[idx].astype(np.float64)
+        return np.zeros(self._local_obs_dim, dtype=np.float64)
+
+
 def make_env_phase3a(config: EnvConfig, n_background: int = 10):
     def _init():
         env = TerminalAreaEnv(config)
         env = Phase3aWrapper(env, n_background=n_background)
+        env = FlatObsWrapper(env)
         env = DiscreteActionWrapper(env)
         return Monitor(env)
     return _init
 
 
-def evaluate_phase3a(env: TerminalAreaEnv, policy, num_episodes: int = 20,
-                     seed: int = 42) -> dict:
+def evaluate_phase3a(policy, config: EnvConfig, n_background: int = 10,
+                     num_episodes: int = 20, seed: int = 42) -> dict:
     """Evaluate a single-UAV policy in the Phase 3a scenario."""
     all_landed = []
     all_steps = []
@@ -91,15 +121,16 @@ def evaluate_phase3a(env: TerminalAreaEnv, policy, num_episodes: int = 20,
     all_energy = []
 
     for ep in range(num_episodes):
-        test_env = TerminalAreaEnv(env.config)
+        test_env = TerminalAreaEnv(config)
         wrapper = Phase3aWrapper(test_env, n_background=n_background)
-        obs, _ = wrapper.reset(seed=seed + ep)
+        flat = FlatObsWrapper(wrapper)
+        obs, _ = flat.reset(seed=seed + ep)
         step = 0
         ep_conflicts = 0
 
         while True:
             action = policy.predict(obs)
-            obs, reward, terminated, truncated, info = wrapper.step(action)
+            obs, reward, terminated, truncated, info = flat.step(action)
             ep_conflicts += info.get("conflicts", 0)
             step += 1
             if terminated or truncated:
@@ -139,19 +170,14 @@ def train_phase3a(config: EnvConfig | None = None, n_background: int = 10,
         deterministic=True,
     )
 
-    policy_kwargs = dict(
-        features_extractor_class=PerUAVFeatureExtractor,
-        features_extractor_kwargs=dict(features_dim=256),
-    )
     model = PPO(
         "MlpPolicy", env,
-        policy_kwargs=policy_kwargs,
-        learning_rate=1e-3,
-        n_steps=512,
-        batch_size=64,
-        n_epochs=10,
+        learning_rate=3e-4,
+        n_steps=1024,
+        batch_size=128,
+        n_epochs=5,
         gamma=0.99,
-        ent_coef=0.05,
+        ent_coef=0.1,
         verbose=1,
     )
 
@@ -177,7 +203,8 @@ def evaluate_ppo_phase3a(model, config: EnvConfig, n_background: int = 10,
     for ep in range(num_episodes):
         env = TerminalAreaEnv(config)
         wrapper = Phase3aWrapper(env, n_background=n_background)
-        disc = DiscreteActionWrapper(wrapper)
+        flat = FlatObsWrapper(wrapper)
+        disc = DiscreteActionWrapper(flat)
         obs, _ = disc.reset(seed=42 + ep)
         step, conflicts = 0, 0
         while True:

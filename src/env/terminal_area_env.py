@@ -192,17 +192,19 @@ class TerminalAreaEnv(gym.Env):
     def _compute_reward(self) -> float:
         cfg = self.config
         uavs = self.uav_manager.uavs
+        controlled = [u for u in uavs if u.is_controlled]
+        n_ctrl = max(len(controlled), 1)
         dt = cfg.sim.dt_low
-        n = max(len(uavs), 1)
 
         power_map = {
             UAVStatus.CRUISING: cfg.uav.power_cruise,
             UAVStatus.DESCENDING: cfg.uav.power_descend,
         }
-        step_power = sum(power_map.get(u.status, cfg.uav.power_cruise) * dt for u in uavs)
-        R_energy = -cfg.w_energy * step_power / n
+        step_power = sum(power_map.get(u.status, cfg.uav.power_cruise) * dt for u in controlled)
+        R_energy = -cfg.w_energy * step_power / n_ctrl
 
-        R_wait = -cfg.w_wait * self.uav_manager.avg_wait_time / 3600.0
+        wait_ctrl = sum(u.wait_time for u in controlled) / n_ctrl
+        R_wait = -cfg.w_wait * wait_ctrl / 3600.0
 
         new_landings = self.uav_manager.landed_count - self._prev_landed
         self._prev_landed = self.uav_manager.landed_count
@@ -217,18 +219,17 @@ class TerminalAreaEnv(gym.Env):
         dead = sum(1 for u in uavs if u.is_dead)
         R_battery = -cfg.w_battery * dead
 
-        # Progress reward: only for DESCENDING UAVs
         R_progress = 0.0
         R1 = cfg.ring.default_radii[0]
         H1 = cfg.ring.default_heights[0]
-        for u in uavs:
+        for u in controlled:
             if u.status == UAVStatus.DESCENDING:
                 r = np.linalg.norm(u.position[:2])
                 z = u.position[2]
                 radial_progress = 1.0 - min(r / R1, 1.0)
                 vertical_progress = 1.0 - min(z / H1, 1.0)
                 R_progress += 2.0 * (radial_progress + vertical_progress)
-        R_progress /= n
+        R_progress /= n_ctrl
 
         return (R_energy + R_wait + R_throughput + R_safety
                 + R_priority + R_battery + R_progress)
