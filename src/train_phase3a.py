@@ -63,7 +63,11 @@ class Phase3aWrapper(gym.Wrapper):
         return self.env._get_obs(), self.env._get_info()
 
     def step(self, action):
-        return self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        # Terminate when the controlled entry UAV lands
+        if info.get("landed", 0) > 0:
+            terminated = True
+        return obs, reward, terminated, truncated, info
 
 
 def make_env_phase3a(config: EnvConfig, n_background: int = 10):
