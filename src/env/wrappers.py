@@ -53,11 +53,21 @@ class DiscreteActionWrapper(gym.Wrapper):
         ctrl = int(action[0])
         controls = np.full(self.max_n, ctrl, dtype=np.int32)
 
-        # Auto descent parameters
+        # Auto descent parameters — compute psi toward center from UAV positions
         psi = np.zeros(self.max_n, dtype=np.float64)
-        gamma = np.full(self.max_n, -np.deg2rad(15.0), dtype=np.float64)  # -15 deg
-        speed = np.full(self.max_n, 25.0, dtype=np.float64)
-        zones = np.zeros(self.max_n, dtype=np.int32)
+        gamma = np.full(self.max_n, -np.deg2rad(15.0), dtype=np.float64)
+        speed = np.full(self.max_n, self.unwrapped.config.uav.max_speed, dtype=np.float64)
+        m = self.unwrapped.config.sim.num_landing_zones
+        zones = np.full(self.max_n, m, dtype=np.int32)  # m = no-op
+
+        for i, u in enumerate(self.unwrapped.uav_manager.uavs):
+            if i >= self.max_n:
+                break
+            if u.is_controlled:
+                theta = np.arctan2(u.position[1], u.position[0])
+                psi[i] = theta + np.pi  # toward center
+                if u.ring_id == 3:
+                    zones[i] = 0  # nearest landing zone
 
         ll = {
             "control": controls,

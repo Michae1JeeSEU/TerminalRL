@@ -16,6 +16,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from src.config import EnvConfig
 from src.env.terminal_area_env import TerminalAreaEnv
 from src.env.wrappers import DiscreteActionWrapper
+from src.train_ppo import PerUAVFeatureExtractor
 
 
 class Phase3aWrapper(gym.Wrapper):
@@ -110,7 +111,7 @@ def train_phase3a(config: EnvConfig | None = None, n_background: int = 10,
     if config is None:
         config = EnvConfig()
         config.num_uavs = 0   # no initial UAVs, Phase3aWrapper handles spawning
-        config.max_uavs = 20
+        config.max_uavs = 25  # > n_background + 1 entry UAV
         config.sim.max_steps = 400
         config.uav_inflow_rate = 0.0
 
@@ -123,8 +124,13 @@ def train_phase3a(config: EnvConfig | None = None, n_background: int = 10,
         deterministic=True,
     )
 
+    policy_kwargs = dict(
+        features_extractor_class=PerUAVFeatureExtractor,
+        features_extractor_kwargs=dict(features_dim=256),
+    )
     model = PPO(
         "MlpPolicy", env,
+        policy_kwargs=policy_kwargs,
         learning_rate=1e-3,
         n_steps=512,
         batch_size=64,
