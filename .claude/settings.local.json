@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p docs dev_logs)",
+      "Bash(/d/ProgramData/anaconda3/python.exe -m pip install gymnasium)",
+      "Bash(/d/ProgramData/anaconda3/python.exe -m pytest tests/test_env.py -v)",
+      "Bash(/d/ProgramData/anaconda3/python.exe -m pip install stable-baselines3)",
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(./venv/Scripts/python.exe -m src.train_ppo)",
+      "Bash(./venv/Scripts/python.exe -m pytest tests/ -v)"
+    ],
+    "additionalDirectories": [
+      "d:\\7_codespace\\VScode"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "ppo": {
+    "avg_landed": 4.0,
+    "avg_failed": 0.0,
+    "avg_wait_time": 59.44000000000001,
+    "avg_energy": 12482.399999999996,
+    "avg_episode_length": 300.0,
+    "eval_time_s": 2.603595495223999
+  },
+  "heuristic": {
+    "avg_landed": 8.0,
+    "avg_failed": 0.0,
+    "avg_wait_time": 60.95000000000001,
+    "avg_energy": 12799.5,
+    "avg_conflicts_per_ep": 0.0,
+    "avg_episode_length": 300.0,
+    "std_landed": 0.0,
+    "std_wait": 0.05000000000000142,
+    "eval_time_s": 0.5114777088165283
+  }
+}
