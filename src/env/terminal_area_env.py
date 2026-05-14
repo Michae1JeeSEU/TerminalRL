@@ -14,10 +14,10 @@ from src.env.metrics_collector import MetricsCollector, EpisodeMetrics
 
 
 class TerminalAreaEnv(gym.Env):
-    """Terminal area landing environment with hierarchical actions.
+    """Terminal area landing environment with per-UAV local observations.
 
     High-level action (every N steps): airspace config [R1,R2,R3, H1,H2,H3, V1,V2,V3]
-    Low-level action (every step): per-UAV control + waypoints + landing zone.
+    Low-level action (every step): per-UAV control (CIRCLE/DESCEND) + (psi, gamma, V) + landing_zone.
     """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
@@ -38,10 +38,15 @@ class TerminalAreaEnv(gym.Env):
         self._prev_landed = 0
         self.high_level_interval = int(
             self.config.sim.dt_high / self.config.sim.dt_low
-        )  # 900 low-level steps per high-level step
+        )
 
         # Landing zones: fixed positions on ground within inner ring
         self.landing_zones = self._init_landing_zones()
+
+        # Per-UAV local observation dimension
+        self.k = self.config.k_nearest
+        self.max_n = self.config.max_uavs
+        self._local_obs_dim = 9 + 8 + self.k * 6 + 3  # airspace + self + neighbors + ring_counts
 
         self._define_spaces()
 
@@ -57,8 +62,7 @@ class TerminalAreaEnv(gym.Env):
 
     def _define_spaces(self) -> None:
         m = self.config.sim.num_landing_zones
-        k = self.config.sim.num_waypoints
-        n = self.config.num_uavs
+        n = self.max_n
 
         self.high_level_action_space = spaces.Box(
             low=np.array([
@@ -74,21 +78,21 @@ class TerminalAreaEnv(gym.Env):
         )
 
         self.low_level_action_space = spaces.Dict({
-            "control": spaces.MultiDiscrete([3] * n),       # per-UAV: 0=CIRCLE, 1=HOVER, 2=DESCEND
-            "waypoints": spaces.Box(-1.0, 1.0, shape=(n, k, 3), dtype=np.float64),
-            "landing_zone": spaces.MultiDiscrete([m] * n),  # per-UAV landing zone index
+            "control": spaces.MultiDiscrete([2] * n),         # 0=CIRCLE, 1=DESCEND
+            "psi": spaces.Box(0.0, 2 * np.pi, shape=(n,), dtype=np.float64),
+            "gamma": spaces.Box(-np.pi / 2, np.pi / 2, shape=(n,), dtype=np.float64),
+            "speed": spaces.Box(5.0, 40.0, shape=(n,), dtype=np.float64),
+            "landing_zone": spaces.MultiDiscrete([m + 1] * n),  # 0..m-1 for zone, m = no-op
         })
 
-        # Unified action space for step()
         self.action_space = spaces.Dict({
             "high_level": self.high_level_action_space,
             "low_level": self.low_level_action_space,
         })
 
-        # Observation: [airspace(9) + ring_counts(3) + per-UAV(5×N) + landing_zones(M×3)]
-        obs_dim = 9 + 3 + n * 5 + m * 3
+        # Per-UAV local observation matrix
         self.observation_space = spaces.Box(
-            -np.inf, np.inf, shape=(obs_dim,), dtype=np.float64
+            -1.0, 1.0, shape=(n, self._local_obs_dim), dtype=np.float64
         )
 
     def reset(self, *, seed: int | None = None, options: dict | None = None
@@ -98,8 +102,18 @@ class TerminalAreaEnv(gym.Env):
             self.rng = np.random.default_rng(seed)
 
         self.airspace = RingAirspace(self.config.ring)
+        initial_uavs = self.config.num_uavs
+        if options and "initial_uavs" in options:
+            initial_uavs = options["initial_uavs"]
+
         self.uav_manager = UAVManager(
-            self.config.uav, self.config.num_uavs, self.airspace, self.rng
+            self.config.uav,
+            self.config.num_uavs,
+            self.airspace,
+            max_uavs=self.config.max_uavs,
+            uav_inflow_rate=self.config.uav_inflow_rate,
+            rng=self.rng,
+            initial_uavs=initial_uavs,
         )
         self.metrics = MetricsCollector()
         self.step_count = 0
@@ -125,8 +139,11 @@ class TerminalAreaEnv(gym.Env):
         uav_actions = self._parse_low_level_actions(ll)
         self.uav_manager.step_all(uav_actions, dt)
 
-        # Remove landed/failed UAVs and spawn replacements
+        # Remove landed/failed UAVs
         self.uav_manager.remove_landed()
+
+        # Inflow: spawn new UAVs according to rate
+        self.uav_manager.try_spawn_inflow(dt)
 
         # Compute reward and metrics
         reward = self._compute_reward()
@@ -150,20 +167,17 @@ class TerminalAreaEnv(gym.Env):
     def _parse_low_level_actions(self, ll: dict) -> dict[int, LowLevelAction]:
         """Convert batched low-level action arrays to per-UAV LowLevelAction dict."""
         actions: dict[int, LowLevelAction] = {}
-        n_uavs = len(self.uav_manager.uavs)
+        m = self.config.sim.num_landing_zones
         for i, uav in enumerate(self.uav_manager.uavs):
-            if i >= n_uavs:
-                break
             control = int(ll["control"][i]) if "control" in ll else 0
-            waypoints = None
-            landing_zone = -1
-            if control == 2 and "waypoints" in ll:
-                wp = ll["waypoints"][i]
-                waypoints = uav.position + wp * self.airspace.radii[0]
-            if uav.ring_id == 3 and control == 2 and "landing_zone" in ll:
-                landing_zone = int(ll["landing_zone"][i])
+            psi = float(ll["psi"][i]) if "psi" in ll else 0.0
+            gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
+            speed = float(ll["speed"][i]) if "speed" in ll else self.config.uav.descent_speed
+            lz_raw = int(ll["landing_zone"][i]) if "landing_zone" in ll else m
+            landing_zone = lz_raw if lz_raw < m else -1
             actions[uav.id] = LowLevelAction(
-                control=control, waypoints=waypoints, landing_zone=landing_zone
+                control=control, psi=psi, gamma=gamma, speed=speed,
+                landing_zone=landing_zone,
             )
         return actions
 
@@ -173,18 +187,15 @@ class TerminalAreaEnv(gym.Env):
         dt = cfg.sim.dt_low
         n = max(len(uavs), 1)
 
-        # Per-step power (incremental, not cumulative)
         power_map = {
             UAVStatus.CRUISING: cfg.uav.power_cruise,
-            UAVStatus.HOLDING: cfg.uav.power_hover,
             UAVStatus.DESCENDING: cfg.uav.power_descend,
         }
-        step_power = sum(power_map.get(u.status, 0) * dt for u in uavs)
+        step_power = sum(power_map.get(u.status, cfg.uav.power_cruise) * dt for u in uavs)
         R_energy = -cfg.w_energy * step_power / n
 
         R_wait = -cfg.w_wait * self.uav_manager.avg_wait_time / 3600.0
 
-        # Landing bonus: spike reward for each new landing this step
         new_landings = self.uav_manager.landed_count - self._prev_landed
         self._prev_landed = self.uav_manager.landed_count
         R_throughput = cfg.w_throughput * 20.0 * new_landings / max(cfg.num_uavs, 1)
@@ -198,7 +209,7 @@ class TerminalAreaEnv(gym.Env):
         dead = sum(1 for u in uavs if u.is_dead)
         R_battery = -cfg.w_battery * dead
 
-        # Reward shaping: reward DESCENDING UAVs for their progress position
+        # Progress reward: only for DESCENDING UAVs
         R_progress = 0.0
         R1 = cfg.ring.default_radii[0]
         H1 = cfg.ring.default_heights[0]
@@ -211,32 +222,105 @@ class TerminalAreaEnv(gym.Env):
                 R_progress += 2.0 * (radial_progress + vertical_progress)
         R_progress /= n
 
-        return R_energy + R_wait + R_throughput + R_safety + R_priority + R_battery + R_progress
+        return (R_energy + R_wait + R_throughput + R_safety
+                + R_priority + R_battery + R_progress)
 
     def _get_obs(self) -> np.ndarray:
-        """Build flat observation vector."""
-        n = self.config.num_uavs
-        m = self.config.sim.num_landing_zones
+        """Build per-UAV local observation matrix of shape (max_n, local_obs_dim)."""
+        obs = np.zeros((self.max_n, self._local_obs_dim), dtype=np.float64)
+        active = self.uav_manager.active_uavs
+        if not active:
+            return obs
 
-        airspace_state = self.airspace.state_vector  # 9
-        ring_counts = np.array(self.uav_manager.ring_counts, dtype=np.float64)  # 3
-
-        # Per-UAV state: pad/truncate to config.num_uavs
-        uav_states = np.zeros((n, 5), dtype=np.float64)
-        state_matrix = self.uav_manager.get_state_matrix()  # active UAVs only
-        active = min(len(self.uav_manager.active_uavs), n)
-        if active > 0:
-            uav_states[:active] = state_matrix[:active]
-
-        # Landing zones
-        zones = self.landing_zones.reshape(-1)  # M*3
-
-        return np.concatenate([
-            airspace_state,
-            ring_counts,
-            uav_states.reshape(-1),  # N*5
-            zones,                    # M*3
+        # Global airspace state (normalized)
+        asv = self.airspace.state_vector  # [R1,R2,R3, H1,H2,H3, V1,V2,V3]
+        asv_norm = np.array([
+            asv[0] / 5000.0, asv[1] / 5000.0, asv[2] / 5000.0,
+            asv[3] / 1000.0, asv[4] / 1000.0, asv[5] / 1000.0,
+            asv[6] / 30.0, asv[7] / 30.0, asv[8] / 30.0,
         ])
+
+        R1 = self.airspace.radii[0]
+        H1 = self.airspace.heights[0]
+        c1, c2, c3 = self.uav_manager.ring_counts
+        total_active = len(active)
+
+        # Pre-compute per-UAV features for neighbor distance calculation
+        all_features = []
+        for u in active:
+            r = np.linalg.norm(u.position[:2])
+            z = u.position[2]
+            all_features.append({
+                "uav": u,
+                "pos": u.position.copy(),
+                "r": r,
+                "z": z,
+            })
+
+        for i, feat in enumerate(all_features):
+            if i >= self.max_n:
+                break
+            u = feat["uav"]
+            pos = feat["pos"]
+            r = feat["r"]
+            z = feat["z"]
+
+            # Self features: [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600]
+            theta = u.angle
+            self_feat = np.array([
+                np.sin(theta), np.cos(theta),
+                u.ring_id / 3.0,
+                min(r / R1, 1.0),
+                min(z / H1, 1.0),
+                u.battery / u.config.max_battery,
+                u.base_priority / 5.0,
+                min(u.wait_time / 3600.0, 1.0),
+            ])
+
+            # Find k nearest neighbors (by 3D distance)
+            distances = []
+            for j, other_feat in enumerate(all_features):
+                if j == i or j >= self.max_n:
+                    continue
+                other_u = other_feat["uav"]
+                if other_u.status == UAVStatus.LANDED:
+                    continue
+                dist = np.linalg.norm(pos - other_feat["pos"])
+                distances.append((dist, other_feat))
+
+            distances.sort(key=lambda x: x[0])
+            neighbors = distances[:self.k]
+
+            # Neighbor features: [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max] each
+            neigh_feats = np.zeros(self.k * 6, dtype=np.float64)
+            for j, (_, nf) in enumerate(neighbors):
+                nu = nf["uav"]
+                nr = nf["r"]
+                nz = nf["z"]
+                ntheta = nu.angle
+                offset = j * 6
+                neigh_feats[offset:offset + 6] = [
+                    np.sin(ntheta), np.cos(ntheta),
+                    nu.ring_id / 3.0,
+                    min(nr / R1, 1.0),
+                    min(nz / H1, 1.0),
+                    nu.battery / nu.config.max_battery,
+                ]
+
+            # Ring counts (normalized)
+            ring_feat = np.array([
+                c1 / max(total_active, 1),
+                c2 / max(total_active, 1),
+                c3 / max(total_active, 1),
+            ])
+
+            # Assemble row
+            obs[i, :9] = asv_norm
+            obs[i, 9:17] = self_feat
+            obs[i, 17:17 + self.k * 6] = neigh_feats
+            obs[i, 17 + self.k * 6:] = ring_feat
+
+        return obs
 
     def _get_info(self) -> dict:
         return {
@@ -244,12 +328,12 @@ class TerminalAreaEnv(gym.Env):
             "landed": self.uav_manager.landed_count,
             "failed": self.uav_manager.failed_count,
             "active": len(self.uav_manager.active_uavs),
+            "total_active": len(self.uav_manager.uavs),
             "conflicts": len(self.conflict_detector.check_all(self.uav_manager.uavs)),
             "avg_wait": self.uav_manager.avg_wait_time,
         }
 
     def render(self) -> np.ndarray | None:
-        """Return a simple text representation (can be extended for matplotlib)."""
         return None
 
     def get_episode_metrics(self) -> EpisodeMetrics:

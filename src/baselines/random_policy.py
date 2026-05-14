@@ -9,8 +9,7 @@ class RandomPolicy:
     def __init__(self, config: EnvConfig, rng: np.random.Generator | None = None):
         self.config = config
         self.rng = rng or np.random.default_rng()
-        self.n_uavs = config.num_uavs
-        self.k = config.sim.num_waypoints
+        self.max_n = config.max_uavs
         self.m = config.sim.num_landing_zones
 
     def predict(self, obs: np.ndarray) -> dict:
@@ -20,15 +19,19 @@ class RandomPolicy:
             high=[self.config.ring.r_max] * 3 + [self.config.ring.h_max] * 3 + [self.config.ring.v_max] * 3,
         ).astype(np.float64)
 
-        ll_control = self.rng.integers(0, 3, size=self.n_uavs)
-        ll_waypoints = self.rng.uniform(-1, 1, size=(self.n_uavs, self.k, 3)).astype(np.float64)
-        ll_zones = self.rng.integers(0, self.m, size=self.n_uavs)
+        ll_control = self.rng.integers(0, 2, size=self.max_n).astype(np.int32)
+        ll_psi = self.rng.uniform(0, 2 * np.pi, size=self.max_n).astype(np.float64)
+        ll_gamma = self.rng.uniform(-np.pi / 2, np.pi / 2, size=self.max_n).astype(np.float64)
+        ll_speed = self.rng.uniform(5, 40, size=self.max_n).astype(np.float64)
+        ll_zones = self.rng.integers(0, self.m + 1, size=self.max_n).astype(np.int32)
 
         return {
             "high_level": hl,
             "low_level": {
                 "control": ll_control,
-                "waypoints": ll_waypoints,
+                "psi": ll_psi,
+                "gamma": ll_gamma,
+                "speed": ll_speed,
                 "landing_zone": ll_zones,
             },
         }

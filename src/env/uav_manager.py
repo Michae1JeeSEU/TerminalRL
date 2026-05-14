@@ -6,20 +6,15 @@ from src.env.uav import UAV, UAVStatus, LowLevelAction
 
 
 class UAVManager:
-    """Manages a fleet of UAVs: creation, batch stepping, state aggregation."""
+    """Manages a fleet of UAVs: creation, batch stepping, inflow scheduling."""
 
-    # Initial ring distribution proportions
-    _INIT_RING_PROBS = (0.5, 0.3, 0.2)  # ring 1, 2, 3
-
-    # Status distribution per ring for initial UAVs
-    _INIT_STATUS_MAP = {
-        1: {UAVStatus.CRUISING: 0.8, UAVStatus.HOLDING: 0.2},
-        2: {UAVStatus.CRUISING: 0.4, UAVStatus.HOLDING: 0.3, UAVStatus.DESCENDING: 0.3},
-        3: {UAVStatus.HOLDING: 0.4, UAVStatus.DESCENDING: 0.6},
-    }
+    # Initial ring distribution proportions for orbit-based UAVs
+    _INIT_RING_PROBS = (0.60, 0.25, 0.15)  # ring 1, 2, 3
 
     def __init__(self, config: UAVConfig, num_uavs: int, airspace: RingAirspace,
-                 rng: np.random.Generator | None = None):
+                 max_uavs: int = 100, uav_inflow_rate: float = 0.0,
+                 rng: np.random.Generator | None = None,
+                 initial_uavs: int | None = None):
         self.config = config
         self.airspace = airspace
         self.rng = rng or np.random.default_rng()
@@ -27,86 +22,112 @@ class UAVManager:
         self.landed_count = 0
         self.failed_count = 0
         self._next_id = 0
+        self.max_uavs = max_uavs
 
-        # Distribute initial UAVs across rings with random states
-        ring_ids = self.rng.choice([1, 2, 3], size=num_uavs, p=self._INIT_RING_PROBS)
-        for ring_id in ring_ids:
-            self._spawn_one(ring_id=int(ring_id))
+        # Inflow scheduling
+        self.uav_inflow_rate = uav_inflow_rate
+        if uav_inflow_rate > 0:
+            self.inflow_interval = 3600.0 / uav_inflow_rate  # seconds per UAV
+        else:
+            self.inflow_interval = float('inf')
+        self._time_since_last_spawn = 0.0
+
+        # Distribute initial UAVs across ring orbits
+        n_initial = initial_uavs if initial_uavs is not None else num_uavs
+        if n_initial > 0:
+            ring_ids = self.rng.choice([1, 2, 3], size=n_initial, p=self._INIT_RING_PROBS)
+            for ring_id in ring_ids:
+                self._spawn_one(ring_id=int(ring_id))
 
     def _spawn_one(self, ring_id: int = 1, battery: float | None = None,
-                   wait_time: float | None = None, status: UAVStatus | None = None) -> UAV:
-        """Spawn a UAV. For initial distribution, pass ring_id and random state.
-        For replacement spawns (default args), spawns on ring 1 boundary with random state."""
-        base_priority = self.rng.choice([1, 3, 5], p=[0.5, 0.35, 0.15])
+                   wait_time: float | None = None, base_priority: int | None = None) -> UAV:
+        """Spawn a UAV. Entry spawn (ring_id=1): random entry point. Ring 2/3: random orbit angle.
+
+        For replacement/inflow spawns (default args), uses random entry point on ring 1.
+        """
+        if base_priority is None:
+            base_priority = int(self.rng.choice([1, 3, 5], p=[0.5, 0.35, 0.15]))
         uav = UAV(self._next_id, self.config, base_priority)
         self._next_id += 1
 
-        if ring_id == 1 or battery is None:
-            position = self.airspace.random_position_on_ring(ring_id, self.rng)
+        if ring_id == 1 and battery is None:
+            # New entry: pick a random entry point
+            entry_points = self.airspace.get_entry_points()
+            position = entry_points[self.rng.integers(0, 4)].copy()
         else:
-            position = self.airspace.random_position_in_ring(ring_id, self.rng)
+            position = self.airspace.random_position_on_ring(ring_id, self.rng)
 
         if battery is None:
-            battery = self.rng.uniform(
+            battery = float(self.rng.uniform(
                 self.config.battery_critical * self.config.max_battery,
                 self.config.max_battery,
-            )
+            ))
         if wait_time is None:
-            wait_time = self.rng.uniform(0, 600)
-        if status is None:
-            statuses, probs = zip(*self._INIT_STATUS_MAP.get(ring_id, {UAVStatus.CRUISING: 1.0}).items())
-            status = self.rng.choice(list(statuses), p=list(probs))
+            wait_time = float(self.rng.uniform(0, 600))
 
         uav.reset(position, ring_id=ring_id, battery=battery,
-                  wait_time=wait_time, status=status)
+                  wait_time=wait_time, status=UAVStatus.CRUISING)
         self.uavs.append(uav)
         return uav
 
     def remove_landed(self) -> None:
-        """Remove landed UAVs and spawn replacements."""
+        """Remove landed UAVs. Failed UAVs are also removed."""
         landed = [u for u in self.uavs if u.status == UAVStatus.LANDED]
         self.landed_count += len(landed)
         failed = [u for u in self.uavs if u.is_dead]
         self.failed_count += len(failed)
         remove_ids = {u.id for u in landed + failed}
         self.uavs = [u for u in self.uavs if u.id not in remove_ids]
-        for _ in landed:
+
+    def try_spawn_inflow(self, dt: float) -> None:
+        """Accumulate time and spawn UAVs according to inflow rate."""
+        if self.uav_inflow_rate <= 0:
+            return
+        self._time_since_last_spawn += dt
+        while (self._time_since_last_spawn >= self.inflow_interval
+               and len(self.uavs) < self.max_uavs):
             self._spawn_one()
+            self._time_since_last_spawn -= self.inflow_interval
 
     def step_all(self, actions: dict[int, LowLevelAction], dt: float) -> None:
         """Apply per-UAV actions and advance all UAVs."""
         for uav in self.uavs:
+            # Determine current ring from position
             ring_id = self.airspace.get_ring(uav.position)
             if ring_id == 0:
-                ring_id = uav.ring_id
+                ring_id = uav.ring_id  # keep previous if outside (shouldn't happen)
             uav.ring_id = ring_id
-            boundary = self.airspace.get_boundary(ring_id)
+
             action = actions.get(uav.id, LowLevelAction(control=0))
-            if action.control == 2:  # DESCEND
-                target_ring = min(ring_id + 1, 3)
-                if (action.waypoints is not None and uav._waypoints is None
-                        and not np.allclose(action.waypoints, uav.position, atol=1.0)):
-                    uav.set_descent_path(action.waypoints, target_ring)
-            uav.step(action, boundary["speed"], boundary["radius"], dt)
-            new_ring = self.airspace.get_ring(uav.position)
-            if new_ring != ring_id and new_ring > 0:
-                uav.ring_id = new_ring
-                uav._waypoints = None  # ring changed, allow new waypoints next step
-                uav._waypoint_idx = 0
+
+            # Get orbit parameters for CIRCLE motion
+            if ring_id > 0:
+                r_i, h_i = self.airspace.get_ring_orbit(ring_id)
+                speed_i = self.airspace.speeds[ring_id - 1]
+            else:
+                r_i, h_i, speed_i = self.airspace.radii[0], self.airspace.heights[0], self.airspace.speeds[0]
+
+            uav.step(action, speed_i, r_i, h_i, dt)
+
+            # Update ring after step (may have crossed boundary during descent)
+            if uav.status != UAVStatus.LANDED:
+                new_ring = self.airspace.get_ring(uav.position)
+                if new_ring > 0 and new_ring != ring_id:
+                    uav.ring_id = new_ring
 
     @property
     def active_uavs(self) -> list[UAV]:
         return [u for u in self.uavs if u.status != UAVStatus.LANDED]
 
     def get_state_matrix(self) -> np.ndarray:
-        """Return (N, 5) matrix: [x, y, z, battery, base_priority] for all active UAVs."""
+        """Return (N, 6) matrix: [x, y, z, battery, base_priority, angle] for all active UAVs."""
         active = self.active_uavs
         if not active:
-            return np.empty((0, 5))
+            return np.empty((0, 6))
         data = []
         for u in active:
             data.append([u.position[0], u.position[1], u.position[2],
-                         u.battery, u.base_priority])
+                         u.battery, u.base_priority, u.angle])
         return np.array(data, dtype=np.float64)
 
     def uavs_by_ring(self, ring_id: int) -> list[UAV]:

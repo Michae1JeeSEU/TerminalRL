@@ -7,7 +7,9 @@
       "Bash(/d/ProgramData/anaconda3/python.exe -m pip install stable-baselines3)",
       "Bash(./venv/Scripts/python.exe -c ' *)",
       "Bash(./venv/Scripts/python.exe -m src.train_ppo)",
-      "Bash(./venv/Scripts/python.exe -m pytest tests/ -v)"
+      "Bash(./venv/Scripts/python.exe -m pytest tests/ -v)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "d:\\7_codespace\\VScode"

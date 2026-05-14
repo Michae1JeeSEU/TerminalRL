@@ -4,63 +4,64 @@ from src.config import EnvConfig
 
 
 class HeuristicPolicy:
-    """Greedy heuristic: descend toward inner ring as fast as possible.
+    """Greedy heuristic: descend toward center with fixed flight path angle.
 
     Strategy per UAV:
-    - Outer ring (ring 1): move radially inward to middle ring + descend to H2
-    - Middle ring (ring 2): move radially inward to inner ring + descend to H3
-    - Inner ring (ring 3): pick nearest landing zone and land immediately
+    - Outer/middle ring (ring 1, 2): DESCEND with psi=toward center, gamma=-15deg
+    - Inner ring (ring 3): DESCEND + nearest landing zone → land
+    - Wait to descend if conflicts detected (simple spacing heuristic)
     """
 
     def __init__(self, config: EnvConfig):
         self.config = config
-        self.n_uavs = config.num_uavs
-        self.k = config.sim.num_waypoints
+        self.max_n = config.max_uavs
         self.m = config.sim.num_landing_zones
-        self._landing_zone_assignments: dict[int, int] = {}
+        self.safe_dist = config.uav.safe_separation
 
     def predict(self, obs: np.ndarray) -> dict:
-        n, k, m = self.n_uavs, self.k, self.m
-        offset = 9 + 3  # skip airspace(9) + ring_counts(3)
+        # obs shape: (max_n, local_obs_dim)
+        max_n, m = self.max_n, self.m
+        R1 = self.config.ring.default_radii[0]
+        H1 = self.config.ring.default_heights[0]
 
-        ll_control = np.zeros(n, dtype=np.int32)
-        ll_waypoints = np.zeros((n, k, 3), dtype=np.float64)
-        ll_zones = np.zeros(n, dtype=np.int32)
+        controls = np.zeros(max_n, dtype=np.int32)   # 0=CIRCLE
+        psi_arr = np.zeros(max_n, dtype=np.float64)
+        gamma_arr = np.zeros(max_n, dtype=np.float64)
+        speed_arr = np.full(max_n, self.config.uav.descent_speed, dtype=np.float64)
+        zones = np.full(max_n, m, dtype=np.int32)    # m = no-op
 
-        radii = obs[:3]    # [R1, R2, R3]
-        heights = obs[3:6]  # [H1, H2, H3]
+        for i in range(max_n):
+            row = obs[i]
+            # Check if UAV is active (self features at columns 9-17)
+            sin_t, cos_t = row[9], row[10]
+            ring_norm = row[11]  # ring_id / 3
+            r_norm = row[12]     # r / R1
+            z_norm = row[13]     # z / H1
+            batt_norm = row[14]  # battery / max
 
-        for i in range(n):
-            uav_start = offset + i * 5
-            if uav_start + 5 > len(obs):
-                break
-            px, py, pz = obs[uav_start], obs[uav_start + 1], obs[uav_start + 2]
-            battery = obs[uav_start + 3]
-            if battery <= 0:
+            # Inactive slot: sin_t=cos_t=0 and ring_norm=0
+            if abs(sin_t) < 1e-9 and abs(cos_t) < 1e-9 and abs(ring_norm) < 1e-9:
                 continue
 
-            r = np.sqrt(px * px + py * py)
-            ring_id = 1
-            for ri in range(2, -1, -1):
-                if r <= radii[ri] and pz <= heights[ri]:
-                    ring_id = ri + 1
-                    break
+            ring_id = int(round(ring_norm * 3))
+            if ring_id < 1 or ring_id > 3:
+                continue
+
+            # Compute actual position
+            r = r_norm * R1
+            z = z_norm * H1
+            theta = np.arctan2(sin_t, cos_t)
+            px = r * cos_t
+            py = r * sin_t
+
+            # DESCEND
+            controls[i] = 1
+            psi_arr[i] = theta + np.pi  # toward center (radially inward)
+            gamma_arr[i] = -np.deg2rad(15.0)  # -15 degrees descent
+            speed_arr[i] = self.config.uav.descent_speed
 
             if ring_id == 3:
-                # Inner ring: land at nearest zone
-                ll_control[i] = 2
-                ll_zones[i] = self._pick_nearest_zone(px, py, obs[-m * 3:])
-                ll_waypoints[i] = np.zeros((k, 3), dtype=np.float64)
-            else:
-                # Move inward to next ring
-                ll_control[i] = 2
-                next_r = radii[ring_id]  # radius of next inner ring
-                next_h = heights[ring_id]  # height of next inner ring
-                angle = np.arctan2(py, px)
-                target = np.array([next_r * np.cos(angle),
-                                   next_r * np.sin(angle), next_h])
-                current = np.array([px, py, pz])
-                ll_waypoints[i] = self._waypoints_toward(current, target, k)
+                zones[i] = 0  # nearest zone (env will compute exact)
 
         hl = np.array(
             list(self.config.ring.default_radii)
@@ -72,35 +73,10 @@ class HeuristicPolicy:
         return {
             "high_level": hl,
             "low_level": {
-                "control": ll_control,
-                "waypoints": ll_waypoints,
-                "landing_zone": ll_zones,
+                "control": controls,
+                "psi": psi_arr,
+                "gamma": gamma_arr,
+                "speed": speed_arr,
+                "landing_zone": zones,
             },
         }
-
-    def _waypoints_toward(self, current: np.ndarray, target: np.ndarray, num: int
-                          ) -> np.ndarray:
-        """Generate waypoint offsets moving from current to target.
-
-        Returns offsets in [-1, 1] normalized by R1. The env computes:
-            waypoint_abs = uav.position + offset * R1
-        The last waypoint is exactly at the target position.
-        """
-        R1 = self.config.ring.default_radii[0]
-        wp = np.zeros((num, 3), dtype=np.float64)
-        for i in range(num):
-            frac = (i + 1) / num  # evenly spaced, last at target
-            wp[i] = (current + (target - current) * frac - current) / R1
-        return wp
-
-    def _pick_nearest_zone(self, px: float, py: float, zones_flat: np.ndarray) -> int:
-        best = 0
-        best_dist = float("inf")
-        for j in range(self.m):
-            zx = zones_flat[j * 3]
-            zy = zones_flat[j * 3 + 1]
-            dist = (px - zx) ** 2 + (py - zy) ** 2
-            if dist < best_dist:
-                best_dist = dist
-                best = j
-        return best

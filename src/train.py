@@ -69,6 +69,7 @@ def run_baseline_comparison(config: EnvConfig | None = None,
         config = EnvConfig()
         config.num_uavs = 10
         config.sim.max_steps = 800
+        config.max_uavs = 20
 
     rng = np.random.default_rng(42)
     random_policy = RandomPolicy(config, rng)

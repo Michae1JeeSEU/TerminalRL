@@ -23,7 +23,6 @@ class UAVConfig:
     battery_critical: float = 0.15
     safe_separation: float = 50.0
     # Energy consumption rates (per second)
-    power_hover: float = 0.5
     power_cruise: float = 1.0
     power_descend: float = 0.7
     # Priority parameters
@@ -35,11 +34,11 @@ class UAVConfig:
 
 @dataclass
 class SimConfig:
-    dt_high: float = 1800.0   # high-level interval (s)
-    dt_low: float = 2.0       # low-level step (s)
-    max_steps: int = 3600     # max env steps per episode
+    dt_high: float = 1800.0       # high-level interval (s)
+    dt_low: float = 2.0           # low-level step (s)
+    max_steps: int = 7200         # max env steps per episode (4h @ dt=2s)
     num_landing_zones: int = 6
-    num_waypoints: int = 4    # waypoints per descent path
+    entry_angles: tuple[float, float, float, float] = (0.0, 90.0, 180.0, 270.0)
 
 
 @dataclass
@@ -48,6 +47,11 @@ class EnvConfig:
     uav: UAVConfig = field(default_factory=UAVConfig)
     sim: SimConfig = field(default_factory=SimConfig)
     num_uavs: int = 50
+    # Inflow model
+    uav_inflow_rate: float = 0.0      # UAVs/hour, 0=no inflow
+    max_uavs: int = 100               # max concurrent active UAVs
+    # Per-UAV observation
+    k_nearest: int = 8                # number of nearest neighbors in local obs
     # Reward weights
     w_energy: float = 0.3
     w_wait: float = 1.0
@@ -55,4 +59,5 @@ class EnvConfig:
     w_safety: float = 5.0
     w_priority: float = 2.0
     w_battery: float = 10.0
+    w_smooth: float = 0.1             # action smoothness penalty
     penalty_conflict: float = 10.0

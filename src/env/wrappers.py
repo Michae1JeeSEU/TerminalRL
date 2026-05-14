@@ -6,91 +6,94 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-from src.env.terminal_area_env import TerminalAreaEnv
-
 
 class FixedAirspaceWrapper(gym.Wrapper):
-    """Fixes the high-level airspace action and exposes only low-level control.
+    """Fixes the high-level airspace action and exposes only low-level control."""
 
-    For single-UAV or fixed-configuration training scenarios.
-    """
-
-    def __init__(self, env: TerminalAreaEnv):
+    def __init__(self, env):
         super().__init__(env)
-        self.n_uavs = env.config.num_uavs
-        self.k = env.config.sim.num_waypoints
+        self.max_n = env.max_n
         self.m = env.config.sim.num_landing_zones
-
         self._fixed_hl = np.array(
             list(env.config.ring.default_radii)
             + list(env.config.ring.default_heights)
             + list(env.config.ring.default_speeds),
             dtype=np.float64,
         )
-
-        # Flattened low-level action: control(3) + waypoints(K*3) + landing_zone(M)
-        flat_dim = 3 * self.n_uavs + self.k * 3 * self.n_uavs + self.m * self.n_uavs
-        self.action_space = spaces.Box(-1.0, 1.0, shape=(flat_dim,), dtype=np.float64)
+        self.action_space = env.low_level_action_space
         self.observation_space = env.observation_space
 
-    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
-        ll = unflatten_action(action, self.n_uavs, self.k, self.m)
-        full_action = {"high_level": self._fixed_hl, "low_level": ll}
-        return self.env.step(full_action)
+    def step(self, action):
+        return self.env.step({"high_level": self._fixed_hl, "low_level": action})
 
 
 class DiscreteActionWrapper(gym.Wrapper):
-    """Shared discrete control: one action applied to all UAVs.
+    """Shared discrete control: one action (CIRCLE=0/DESCEND=1) applied to all UAVs.
 
-    Action space: MultiDiscrete([3]) — CIRCLE/HOVER/DESCEND for all UAVs.
-    Landing zone auto-set to nearest zone (0). Waypoints are zero-offset.
+    DESCEND uses auto-computed continuous params:
+    - psi: toward center (radially inward)
+    - gamma: -15 degrees
+    - speed: config.descent_speed
+    - landing_zone: nearest zone (auto-selected by env or fixed to 0)
     """
 
-    def __init__(self, env: TerminalAreaEnv):
+    def __init__(self, env):
         super().__init__(env)
-        self.n_uavs = env.config.num_uavs
-        self.k = env.config.sim.num_waypoints
+        self.max_n = env.max_n
         self._fixed_hl = np.array(
             list(env.config.ring.default_radii)
             + list(env.config.ring.default_heights)
             + list(env.config.ring.default_speeds),
             dtype=np.float64,
         )
-        self.action_space = spaces.MultiDiscrete([3])
+        self.action_space = spaces.MultiDiscrete([2])  # 0=CIRCLE, 1=DESCEND
         self.observation_space = env.observation_space
 
-    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
+    def step(self, action):
         ctrl = int(action[0])
-        controls = np.full(self.n_uavs, ctrl, dtype=np.int32)
-        zones = np.zeros(self.n_uavs, dtype=np.int32)
+        controls = np.full(self.max_n, ctrl, dtype=np.int32)
+
+        # Auto descent parameters
+        psi = np.zeros(self.max_n, dtype=np.float64)
+        gamma = np.full(self.max_n, -np.deg2rad(15.0), dtype=np.float64)  # -15 deg
+        speed = np.full(self.max_n, 25.0, dtype=np.float64)
+        zones = np.zeros(self.max_n, dtype=np.int32)
+
         ll = {
             "control": controls,
-            "waypoints": self._auto_waypoints(),
+            "psi": psi,
+            "gamma": gamma,
+            "speed": speed,
             "landing_zone": zones,
         }
-        full_action = {"high_level": self._fixed_hl, "low_level": ll}
-        return self.env.step(full_action)
-
-    def _auto_waypoints(self) -> np.ndarray:
-        return np.zeros((self.n_uavs, self.k, 3), dtype=np.float64)
+        return self.env.step({"high_level": self._fixed_hl, "low_level": ll})
 
 
-def unflatten_action(flat: np.ndarray, n_uavs: int, k: int, m: int) -> dict:
+def unflatten_action(flat: np.ndarray, max_n: int, m: int) -> dict:
     """Convert a flat continuous action vector to the low-level dict format.
 
-    Layout: control(3*N) + waypoints(N*K*3) + landing_zone(N*M)
-    Discrete parts use argmax to select from the flat representation.
+    Layout: control(2*N) + psi(N) + gamma(N) + speed(N) + landing_zone(N*(m+1))
+    Discrete parts use argmax.
     """
     idx = 0
-
-    control_raw = flat[idx:idx + 3 * n_uavs].reshape(n_uavs, 3)
-    idx += 3 * n_uavs
+    control_raw = flat[idx:idx + 2 * max_n].reshape(max_n, 2)
+    idx += 2 * max_n
     control = np.argmax(control_raw, axis=1).astype(np.int32)
 
-    wp = flat[idx:idx + n_uavs * k * 3].reshape(n_uavs, k, 3)
-    idx += n_uavs * k * 3
+    psi = flat[idx:idx + max_n] * np.pi  # scale from [-1,1] to [0, 2π]
+    idx += max_n
+    gamma = flat[idx:idx + max_n] * (np.pi / 2)  # scale from [-1,1] to [-π/2, π/2]
+    idx += max_n
+    speed = 5.0 + (flat[idx:idx + max_n] + 1.0) / 2.0 * 35.0  # scale to [5, 40]
+    idx += max_n
 
-    zone_raw = flat[idx:idx + n_uavs * m].reshape(n_uavs, m)
+    zone_raw = flat[idx:idx + max_n * (m + 1)].reshape(max_n, m + 1)
     landing_zone = np.argmax(zone_raw, axis=1).astype(np.int32)
 
-    return {"control": control, "waypoints": wp, "landing_zone": landing_zone}
+    return {
+        "control": control,
+        "psi": psi,
+        "gamma": gamma,
+        "speed": speed,
+        "landing_zone": landing_zone,
+    }

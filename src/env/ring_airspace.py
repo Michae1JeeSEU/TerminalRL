@@ -7,6 +7,7 @@ class RingAirspace:
     """Three-ring terminal area airspace model with hard constraints.
 
     Hard constraints: R1 > R2 > R3, H1 > H2 > H3.
+    UAVs circle on fixed ring orbits at (radius_i, height_i).
     """
 
     def __init__(self, config: RingConfig):
@@ -25,7 +26,7 @@ class RingAirspace:
         return True
 
     def _check_constraints(self, radii: np.ndarray, heights: np.ndarray) -> bool:
-        """Verify: R1 > R2 > R3, H1 > H2 > H3, all positive."""
+        """Verify: R1 > R2 > R3, H1 > H2 > H3, all positive and within bounds."""
         if not (radii[0] > radii[1] > radii[2]):
             return False
         if not (heights[0] > heights[1] > heights[2]):
@@ -51,7 +52,7 @@ class RingAirspace:
         return self.get_ring(position) == 3
 
     def random_position_on_ring(self, ring_id: int, rng: np.random.Generator | None = None) -> np.ndarray:
-        """Generate a random position on the circumference of a specific ring."""
+        """Generate a random position on the orbit of a specific ring."""
         if rng is None:
             rng = np.random.default_rng()
         idx = ring_id - 1
@@ -62,30 +63,20 @@ class RingAirspace:
         y = r * np.sin(angle)
         return np.array([x, y, h], dtype=np.float64)
 
-    def random_position_in_ring(self, ring_id: int, rng: np.random.Generator | None = None) -> np.ndarray:
-        """Generate a random position *inside* a ring's volume.
-
-        Ring 1: r in (R2, R1], z in (H2, H1]  (outer band)
-        Ring 2: r in (R3, R2], z in (H3, H2]  (middle band)
-        Ring 3: r in (0, R3],   z in (0, H3]  (inner disc)
-        """
-        if rng is None:
-            rng = np.random.default_rng()
+    def get_ring_orbit(self, ring_id: int) -> tuple[float, float]:
+        """Return the orbit parameters (radius, height) for a ring."""
         idx = ring_id - 1
-        r_outer = self.radii[idx]
-        h_upper = self.heights[idx]
-        if ring_id == 3:
-            r_inner = 0.0
-            h_lower = 0.0
-        else:
-            r_inner = self.radii[idx + 1]
-            h_lower = self.heights[idx + 1]
-        r = rng.uniform(r_inner, r_outer)
-        h = rng.uniform(h_lower, h_upper)
-        angle = rng.uniform(0, 2 * np.pi)
-        x = r * np.cos(angle)
-        y = r * np.sin(angle)
-        return np.array([x, y, h], dtype=np.float64)
+        return self.radii[idx], self.heights[idx]
+
+    def get_entry_points(self) -> np.ndarray:
+        """Return 4 fixed entry points on ring 1 boundary (0deg, 90deg, 180deg, 270deg)."""
+        r1 = self.radii[0]
+        h1 = self.heights[0]
+        points = np.zeros((4, 3), dtype=np.float64)
+        for i, angle_deg in enumerate([0.0, 90.0, 180.0, 270.0]):
+            angle = np.deg2rad(angle_deg)
+            points[i] = [r1 * np.cos(angle), r1 * np.sin(angle), h1]
+        return points
 
     def get_boundary(self, ring_id: int) -> dict:
         """Return the geometric boundary of a ring."""

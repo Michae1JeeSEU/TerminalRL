@@ -1,24 +1,24 @@
 {
   "random": {
-    "avg_landed": 0.0,
-    "avg_failed": 10.0,
-    "avg_wait_time": 6.4915,
-    "avg_energy": 33819.740000000005,
-    "avg_conflicts_per_ep": 0.65,
+    "avg_landed": 1.4,
+    "avg_failed": 8.6,
+    "avg_wait_time": 26.068467193364363,
+    "avg_energy": 8939.14,
+    "avg_conflicts_per_ep": 14.1,
     "avg_episode_length": 800.0,
-    "std_landed": 0.0,
-    "std_wait": 0.2702769413028053,
-    "eval_time_s": 1.1790721416473389
+    "std_landed": 1.0198039027185568,
+    "std_wait": 6.110569049523778,
+    "eval_time_s": 0.9316856861114502
   },
   "heuristic": {
-    "avg_landed": 188.4,
-    "avg_failed": 3.15,
-    "avg_wait_time": 63.35816180555554,
-    "avg_energy": 287623.13999999996,
-    "avg_conflicts_per_ep": 141.25,
+    "avg_landed": 3.85,
+    "avg_failed": 6.15,
+    "avg_wait_time": 27.674244778616725,
+    "avg_energy": 7913.009999999999,
+    "avg_conflicts_per_ep": 84.25,
     "avg_episode_length": 800.0,
-    "std_landed": 29.736173257499022,
-    "std_wait": 0.283080786421662,
-    "eval_time_s": 7.724875211715698
+    "std_landed": 1.4585952145814822,
+    "std_wait": 7.505084658624813,
+    "eval_time_s": 0.7798326015472412
   }
 }
