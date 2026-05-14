@@ -34,6 +34,14 @@ class Phase3aWrapper(gym.Wrapper):
         self.controlled_idx: int = n_background  # the entry UAV's list index
         self._entry_spawned = False
 
+    @property
+    def max_n(self) -> int:
+        return self.env.max_n
+
+    @property
+    def config(self):
+        return self.env.config
+
     def reset(self, *, seed=None, options=None):
         # Spawn background UAVs only, then add 1 entry UAV
         opts = options or {}
