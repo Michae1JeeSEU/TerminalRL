@@ -27,7 +27,7 @@ class HeuristicPolicy:
         controls = np.zeros(max_n, dtype=np.int32)   # 0=CIRCLE
         psi_arr = np.zeros(max_n, dtype=np.float64)
         gamma_arr = np.zeros(max_n, dtype=np.float64)
-        speed_arr = np.full(max_n, self.config.uav.descent_speed, dtype=np.float64)
+        speed_arr = np.full(max_n, self.config.uav.max_speed, dtype=np.float64)
         zones = np.full(max_n, m, dtype=np.int32)    # m = no-op
 
         for i in range(max_n):
@@ -58,7 +58,7 @@ class HeuristicPolicy:
             controls[i] = 1
             psi_arr[i] = theta + np.pi  # toward center (radially inward)
             gamma_arr[i] = -np.deg2rad(15.0)  # -15 degrees descent
-            speed_arr[i] = self.config.uav.descent_speed
+            speed_arr[i] = self.config.uav.max_speed
 
             if ring_id == 3:
                 zones[i] = 0  # nearest zone (env will compute exact)

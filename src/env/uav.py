@@ -40,6 +40,7 @@ class UAV:
         self.wait_time = 0.0
         self.energy_consumed = 0.0
         self.landing_zone: int = -1
+        self.is_controlled: bool = True   # False = background (auto-CIRCLE only)
         self._angle: float = 0.0
 
     def reset(self, position: np.ndarray, ring_id: int = 1,
@@ -116,6 +117,8 @@ class UAV:
     def _update_battery(self, dt: float) -> None:
         if self.status == UAVStatus.LANDED:
             return
+        if not self.is_controlled:
+            return  # Background UAVs don't consume battery
         power_map = {
             UAVStatus.CRUISING: self.config.power_cruise,
             UAVStatus.DESCENDING: self.config.power_descend,

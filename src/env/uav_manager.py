@@ -79,6 +79,11 @@ class UAVManager:
         remove_ids = {u.id for u in landed + failed}
         self.uavs = [u for u in self.uavs if u.id not in remove_ids]
 
+    def spawn_entry_uav(self) -> int:
+        """Spawn a single UAV at a random entry point. Returns its list index."""
+        uav = self._spawn_one()
+        return len(self.uavs) - 1  # index of the new UAV
+
     def try_spawn_inflow(self, dt: float) -> None:
         """Accumulate time and spawn UAVs according to inflow rate."""
         if self.uav_inflow_rate <= 0:

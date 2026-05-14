@@ -165,16 +165,24 @@ class TerminalAreaEnv(gym.Env):
         return self._get_obs(), reward, terminated, truncated, self._get_info()
 
     def _parse_low_level_actions(self, ll: dict) -> dict[int, LowLevelAction]:
-        """Convert batched low-level action arrays to per-UAV LowLevelAction dict."""
+        """Convert batched low-level action arrays to per-UAV LowLevelAction dict.
+
+        Non-controlled UAVs always get CIRCLE (control=0).
+        """
         actions: dict[int, LowLevelAction] = {}
         m = self.config.sim.num_landing_zones
         for i, uav in enumerate(self.uav_manager.uavs):
-            control = int(ll["control"][i]) if "control" in ll else 0
-            psi = float(ll["psi"][i]) if "psi" in ll else 0.0
-            gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
-            speed = float(ll["speed"][i]) if "speed" in ll else self.config.uav.descent_speed
-            lz_raw = int(ll["landing_zone"][i]) if "landing_zone" in ll else m
-            landing_zone = lz_raw if lz_raw < m else -1
+            if uav.is_controlled:
+                control = int(ll["control"][i]) if "control" in ll else 0
+                psi = float(ll["psi"][i]) if "psi" in ll else 0.0
+                gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
+                speed = float(ll["speed"][i]) if "speed" in ll else self.config.uav.descent_speed
+                lz_raw = int(ll["landing_zone"][i]) if "landing_zone" in ll else m
+                landing_zone = lz_raw if lz_raw < m else -1
+            else:
+                # Background UAV: always CIRCLE
+                control = 0
+                psi, gamma, speed, landing_zone = 0.0, 0.0, 0.0, -1
             actions[uav.id] = LowLevelAction(
                 control=control, psi=psi, gamma=gamma, speed=speed,
                 landing_zone=landing_zone,
