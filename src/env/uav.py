@@ -92,14 +92,16 @@ class UAV:
             self._step_circle(ring_speed, ring_radius, ring_height, dt, speed_factor)
         elif action.control == 1:  # DESCEND
             self._step_descend(action, dt)
+            # Ground contact: land immediately regardless of ring
+            if self.position[2] <= 1.0:
+                self.status = UAVStatus.LANDED
+                self.velocity = np.zeros(3)
+                self.position[2] = 0.0
+                if action.landing_zone >= 0:
+                    self.landing_zone = action.landing_zone
             # Ring 3 + DESCEND + landing_zone specified → continuous landing approach
-            if self.ring_id == 3 and action.landing_zone >= 0:
+            elif self.ring_id == 3 and action.landing_zone >= 0:
                 self.landing_zone = action.landing_zone
-                # Land when altitude reaches ground level
-                if self.position[2] <= 1.0:
-                    self.status = UAVStatus.LANDED
-                    self.velocity = np.zeros(3)
-                    self.position[2] = 0.0
 
         self._update_battery(dt)
         if self.status != UAVStatus.LANDED:

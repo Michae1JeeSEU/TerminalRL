@@ -73,7 +73,6 @@ class HeuristicPolicy:
 
             # DESCEND
             controls[i] = 1
-            gamma_arr[i] = -np.deg2rad(15.0)  # -15 degrees descent
 
             if ring_id == 3:
                 # Steer toward nearest landing zone
@@ -87,9 +86,11 @@ class HeuristicPolicy:
                 psi_arr[i] = np.arctan2(self._lz_positions[best_lz][1] - py,
                                         self._lz_positions[best_lz][0] - px)
                 zones[i] = best_lz
+                gamma_arr[i] = -np.deg2rad(25.0)  # steep toward landing zone
                 speed_arr[i] = self.config.uav.descent_speed
             else:
                 psi_arr[i] = theta + np.pi  # toward center (radially inward)
+                gamma_arr[i] = -np.deg2rad(12.0)  # matches ring geometry slope (atan(300/1500)≈11.3°)
                 speed_arr[i] = self.config.uav.max_speed
 
         hl = np.array(

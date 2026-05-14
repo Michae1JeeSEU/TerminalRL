@@ -178,6 +178,12 @@ class TerminalAreaEnv(gym.Env):
                 # Enforce ring-wait constraint: force CIRCLE if not allowed to descend
                 if control == 1 and not uav.can_descend():
                     control = 0
+
+                # Snap circling UAV to ring altitude if it drifted below (e.g. overshot during descent)
+                if control == 0 and uav.status == UAVStatus.CRUISING:
+                    ring_h = self.airspace.heights[uav.ring_id - 1]
+                    if uav.position[2] < ring_h:
+                        uav.position[2] = ring_h
                 psi = float(ll["psi"][i]) if "psi" in ll else 0.0
                 gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
                 speed = float(ll["speed"][i]) if "speed" in ll else (1.0 if control == 0 else self.config.uav.descent_speed)

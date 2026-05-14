@@ -55,14 +55,15 @@ class DiscreteActionWrapper(gym.Wrapper):
 
         # Auto descent parameters
         psi = np.zeros(self.max_n, dtype=np.float64)
-        gamma = np.full(self.max_n, -np.deg2rad(15.0), dtype=np.float64)
         m = self.unwrapped.config.sim.num_landing_zones
         zones = np.full(self.max_n, m, dtype=np.int32)  # m = no-op
 
+        gamma = np.zeros(self.max_n, dtype=np.float64)
         if ctrl == 0:  # CIRCLE
             speed = np.ones(self.max_n, dtype=np.float64)  # neutral multiplier
         else:  # DESCEND
             speed = np.full(self.max_n, self.unwrapped.config.uav.max_speed, dtype=np.float64)
+            gamma = np.full(self.max_n, -np.deg2rad(12.0), dtype=np.float64)  # ring geometry slope
 
         env = self.unwrapped
         lz_positions = env.landing_zones
@@ -78,6 +79,7 @@ class DiscreteActionWrapper(gym.Wrapper):
                     psi[i] = np.arctan2(lz[1] - u.position[1], lz[0] - u.position[0])
                     zones[i] = u.landing_zone if u.landing_zone >= 0 else 0
                     speed[i] = self.unwrapped.config.uav.descent_speed
+                    gamma[i] = -np.deg2rad(25.0)  # steep toward landing zone
                 elif u.ring_id == 3 and ctrl == 1:
                     # Initiate landing: point toward nearest landing zone
                     nearest_lz = 0
@@ -91,6 +93,7 @@ class DiscreteActionWrapper(gym.Wrapper):
                                         lz_positions[nearest_lz][0] - u.position[0])
                     zones[i] = nearest_lz
                     speed[i] = self.unwrapped.config.uav.descent_speed
+                    gamma[i] = -np.deg2rad(25.0)  # steep toward landing zone
                 else:
                     psi[i] = theta + np.pi  # toward center (radially inward)
 
