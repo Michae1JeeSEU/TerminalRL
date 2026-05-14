@@ -145,10 +145,15 @@ class TestUAV:
         assert self.uav.is_critical_battery
 
     def test_ring3_landing(self):
-        """On ring 3, DESCEND + landing_zone >= 0 should trigger LANDED."""
+        """On ring 3, DESCEND + landing_zone >= 0 triggers continuous landing approach.
+        UAV descends toward ground and lands when z <= 1.0m."""
         self.uav.reset(np.array([500., 0., 200.]), ring_id=3)
-        action = LowLevelAction(control=1, psi=0.0, gamma=-0.3, speed=25.0, landing_zone=0)
-        self.uav.step(action, ring_speed=15.0, ring_radius=1000.0, ring_height=200.0, dt=2.0)
+        action = LowLevelAction(control=1, psi=0.0, gamma=-0.5, speed=25.0, landing_zone=0)
+        # Step until landed (continuous approach)
+        for _ in range(20):
+            self.uav.step(action, ring_speed=15.0, ring_radius=1000.0, ring_height=200.0, dt=2.0)
+            if self.uav.status == UAVStatus.LANDED:
+                break
         assert self.uav.status == UAVStatus.LANDED
         assert self.uav.landing_zone == 0
         assert self.uav.position[2] == 0.0

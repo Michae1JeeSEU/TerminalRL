@@ -53,21 +53,46 @@ class DiscreteActionWrapper(gym.Wrapper):
         ctrl = int(action[0])
         controls = np.full(self.max_n, ctrl, dtype=np.int32)
 
-        # Auto descent parameters — compute psi toward center from UAV positions
+        # Auto descent parameters
         psi = np.zeros(self.max_n, dtype=np.float64)
         gamma = np.full(self.max_n, -np.deg2rad(15.0), dtype=np.float64)
-        speed = np.full(self.max_n, self.unwrapped.config.uav.max_speed, dtype=np.float64)
         m = self.unwrapped.config.sim.num_landing_zones
         zones = np.full(self.max_n, m, dtype=np.int32)  # m = no-op
 
-        for i, u in enumerate(self.unwrapped.uav_manager.uavs):
+        if ctrl == 0:  # CIRCLE
+            speed = np.ones(self.max_n, dtype=np.float64)  # neutral multiplier
+        else:  # DESCEND
+            speed = np.full(self.max_n, self.unwrapped.config.uav.max_speed, dtype=np.float64)
+
+        env = self.unwrapped
+        lz_positions = env.landing_zones
+
+        for i, u in enumerate(env.uav_manager.uavs):
             if i >= self.max_n:
                 break
             if u.is_controlled:
                 theta = np.arctan2(u.position[1], u.position[0])
-                psi[i] = theta + np.pi  # toward center
-                if u.ring_id == 3:
-                    zones[i] = 0  # nearest landing zone
+                if u.ring_id == 3 and u._landing_target is not None:
+                    # Landing approach: steer toward landing zone
+                    lz = u._landing_target
+                    psi[i] = np.arctan2(lz[1] - u.position[1], lz[0] - u.position[0])
+                    zones[i] = u.landing_zone if u.landing_zone >= 0 else 0
+                    speed[i] = self.unwrapped.config.uav.descent_speed
+                elif u.ring_id == 3 and ctrl == 1:
+                    # Initiate landing: point toward nearest landing zone
+                    nearest_lz = 0
+                    nearest_dist = float('inf')
+                    for j, lz in enumerate(lz_positions):
+                        d = np.linalg.norm(u.position[:2] - lz[:2])
+                        if d < nearest_dist:
+                            nearest_dist = d
+                            nearest_lz = j
+                    psi[i] = np.arctan2(lz_positions[nearest_lz][1] - u.position[1],
+                                        lz_positions[nearest_lz][0] - u.position[0])
+                    zones[i] = nearest_lz
+                    speed[i] = self.unwrapped.config.uav.descent_speed
+                else:
+                    psi[i] = theta + np.pi  # toward center (radially inward)
 
         ll = {
             "control": controls,

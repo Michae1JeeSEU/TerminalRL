@@ -168,6 +168,7 @@ class TerminalAreaEnv(gym.Env):
         """Convert batched low-level action arrays to per-UAV LowLevelAction dict.
 
         Non-controlled UAVs always get CIRCLE (control=0).
+        Sets landing target on UAV when ring3 landing approach begins.
         """
         actions: dict[int, LowLevelAction] = {}
         m = self.config.sim.num_landing_zones
@@ -179,13 +180,17 @@ class TerminalAreaEnv(gym.Env):
                     control = 0
                 psi = float(ll["psi"][i]) if "psi" in ll else 0.0
                 gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
-                speed = float(ll["speed"][i]) if "speed" in ll else self.config.uav.descent_speed
+                speed = float(ll["speed"][i]) if "speed" in ll else (1.0 if control == 0 else self.config.uav.descent_speed)
                 lz_raw = int(ll["landing_zone"][i]) if "landing_zone" in ll else m
                 landing_zone = lz_raw if lz_raw < m else -1
+
+                # Set landing target when ring3 landing approach begins
+                if control == 1 and uav.ring_id == 3 and landing_zone >= 0 and uav._landing_target is None:
+                    uav._landing_target = self.landing_zones[landing_zone].copy()
             else:
-                # Background UAV: always CIRCLE
+                # Background UAV: always CIRCLE at neutral speed
                 control = 0
-                psi, gamma, speed, landing_zone = 0.0, 0.0, 0.0, -1
+                psi, gamma, speed, landing_zone = 0.0, 0.0, 1.0, -1
             actions[uav.id] = LowLevelAction(
                 control=control, psi=psi, gamma=gamma, speed=speed,
                 landing_zone=landing_zone,

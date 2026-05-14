@@ -22,50 +22,71 @@ def record_keyframes(n_background: int = 10, seed: int = 42):
     policy = HeuristicPolicy(config)
     obs, _ = wrapper.reset(seed=seed)
 
-    # Key frames: step 0 (entry), step 10, step 20, step 30, step 40 (landed)
-    key_steps = [0, 10, 20, 30, 40]
-    keyframes = {}
+    # Record all frames first, then pick 5 evenly spaced key frames
+    all_frames = []
     step = 0
 
     while True:
-        if step in key_steps:
-            uavs = wrapper.unwrapped.uav_manager.uavs
-            keyframes[step] = {
-                "positions": np.array([u.position.copy() for u in uavs]),
-                "ring_ids": np.array([u.ring_id for u in uavs]),
-                "statuses": np.array([u.status.value for u in uavs]),
-                "controlled": np.array([u.is_controlled for u in uavs]),
-            }
+        uavs = wrapper.unwrapped.uav_manager.uavs
+        all_frames.append({
+            "step": step,
+            "positions": np.array([u.position.copy() for u in uavs]),
+            "ring_ids": np.array([u.ring_id for u in uavs]),
+            "statuses": np.array([u.status.value for u in uavs]),
+            "controlled": np.array([u.is_controlled for u in uavs]),
+        })
 
         action = policy.predict(obs)
         obs, reward, terminated, truncated, info = wrapper.step(action)
         step += 1
         if terminated or truncated:
-            if step not in keyframes:
-                uavs = wrapper.unwrapped.uav_manager.uavs
-                keyframes[step] = {
-                    "positions": np.array([u.position.copy() for u in uavs]),
-                    "ring_ids": np.array([u.ring_id for u in uavs]),
-                    "statuses": np.array([u.status.value for u in uavs]),
-                    "controlled": np.array([u.is_controlled for u in uavs]),
-                }
+            uavs = wrapper.unwrapped.uav_manager.uavs
+            all_frames.append({
+                "step": step,
+                "positions": np.array([u.position.copy() for u in uavs]),
+                "ring_ids": np.array([u.ring_id for u in uavs]),
+                "statuses": np.array([u.status.value for u in uavs]),
+                "controlled": np.array([u.is_controlled for u in uavs]),
+            })
             break
 
-    return keyframes, env.airspace
+    total_steps = step
+    # Pick 5 evenly spaced frames
+    indices = np.linspace(0, total_steps, 5, dtype=int)
+    keyframes = {all_frames[i]["step"]: {k: v for k, v in all_frames[i].items() if k != "step"} for i in indices}
+
+    return keyframes, env.airspace, all_frames
 
 
 def main():
-    keyframes, airspace = record_keyframes(n_background=10, seed=42)
+    keyframes, airspace, all_frames = record_keyframes(n_background=10, seed=42)
     radii = airspace.radii
     heights = airspace.heights
+    total_steps = len(all_frames) - 1
 
-    titles = {
-        0: "Step 0: Entry UAV spawns at Ring 1 entry point",
-        10: "Step 10: Descending through Ring 1 → Ring 2",
-        20: "Step 20: Approaching Ring 3",
-        30: "Step 30: On Ring 3, initiating landing",
-        40: "Step 40: Landed at landing zone!",
-    }
+    # Generate titles based on actual step context
+    sorted_steps = sorted(keyframes.keys())
+    titles = {}
+    for s in sorted_steps:
+        if s == 0:
+            titles[s] = f"Step 0: Entry UAV spawns at Ring 1 entry point"
+        elif s == sorted_steps[-1]:
+            titles[s] = f"Step {s}: Landed at landing zone! ({total_steps} total steps)"
+        else:
+            frame = keyframes[s]
+            for i, ctrl in enumerate(frame["controlled"]):
+                if ctrl:
+                    rid = frame["ring_ids"][i]
+                    st = frame["statuses"][i]
+                    if st == 0:
+                        titles[s] = f"Step {s}: Circling on Ring {rid} (waiting to descend)"
+                    elif st == 1:
+                        titles[s] = f"Step {s}: Descending through Ring {rid}"
+                    elif st == 2:
+                        titles[s] = f"Step {s}: Landed!"
+                    break
+            if s not in titles:
+                titles[s] = f"Step {s}"
 
     colors = ['#3498db', '#f39c12', '#2ecc71']
     ring_labels = ['Ring 1\n(R=4000, H=800m)', 'Ring 2\n(R=2500, H=500m)', 'Ring 3\n(R=1000, H=200m)']
@@ -75,10 +96,12 @@ def main():
     if n_frames == 1:
         axes = [axes]
 
-    for ax, (s, title) in zip(axes, titles.items()):
+    sorted_steps = sorted(keyframes.keys())
+    for ax, s in zip(axes, sorted_steps):
         if s not in keyframes:
             continue
         frame = keyframes[s]
+        title = titles[s]
         positions = frame["positions"]
         ring_ids = frame["ring_ids"]
         statuses = frame["statuses"]

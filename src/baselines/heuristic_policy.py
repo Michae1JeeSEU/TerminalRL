@@ -18,6 +18,18 @@ class HeuristicPolicy:
         self.m = config.sim.num_landing_zones
         self.safe_dist = config.uav.safe_separation
 
+    def __init__(self, config: EnvConfig):
+        self.config = config
+        self.max_n = config.max_uavs
+        self.m = config.sim.num_landing_zones
+        self.safe_dist = config.uav.safe_separation
+        # Landing zone positions (approximate, inner ring 60% radius)
+        inner_r = config.ring.default_radii[2] * 0.6
+        angles = np.linspace(0, 2 * np.pi, self.m, endpoint=False)
+        self._lz_positions = np.zeros((self.m, 2), dtype=np.float64)
+        self._lz_positions[:, 0] = inner_r * np.cos(angles)
+        self._lz_positions[:, 1] = inner_r * np.sin(angles)
+
     def predict(self, obs: np.ndarray) -> dict:
         # obs shape: (max_n, local_obs_dim)
         max_n, m = self.max_n, self.m
@@ -27,7 +39,7 @@ class HeuristicPolicy:
         controls = np.zeros(max_n, dtype=np.int32)   # 0=CIRCLE
         psi_arr = np.zeros(max_n, dtype=np.float64)
         gamma_arr = np.zeros(max_n, dtype=np.float64)
-        speed_arr = np.full(max_n, self.config.uav.max_speed, dtype=np.float64)
+        speed_arr = np.ones(max_n, dtype=np.float64)  # neutral for CIRCLE
         zones = np.full(max_n, m, dtype=np.int32)    # m = no-op
 
         for i in range(max_n):
@@ -61,12 +73,24 @@ class HeuristicPolicy:
 
             # DESCEND
             controls[i] = 1
-            psi_arr[i] = theta + np.pi  # toward center (radially inward)
             gamma_arr[i] = -np.deg2rad(15.0)  # -15 degrees descent
-            speed_arr[i] = self.config.uav.max_speed
 
             if ring_id == 3:
-                zones[i] = 0  # nearest zone (env will compute exact)
+                # Steer toward nearest landing zone
+                best_lz = 0
+                best_dist = float('inf')
+                for j, lz in enumerate(self._lz_positions):
+                    d = (px - lz[0])**2 + (py - lz[1])**2
+                    if d < best_dist:
+                        best_dist = d
+                        best_lz = j
+                psi_arr[i] = np.arctan2(self._lz_positions[best_lz][1] - py,
+                                        self._lz_positions[best_lz][0] - px)
+                zones[i] = best_lz
+                speed_arr[i] = self.config.uav.descent_speed
+            else:
+                psi_arr[i] = theta + np.pi  # toward center (radially inward)
+                speed_arr[i] = self.config.uav.max_speed
 
         hl = np.array(
             list(self.config.ring.default_radii)

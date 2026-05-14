@@ -44,6 +44,7 @@ class UAV:
         self._angle: float = 0.0
         self.ring_entry_time: float = 0.0  # wait_time when entered current ring
         self._prev_ring_id: int = 1
+        self._landing_target: np.ndarray | None = None  # set when landing approach begins
 
     def reset(self, position: np.ndarray, ring_id: int = 1,
               battery: float | None = None, wait_time: float = 0.0,
@@ -59,6 +60,7 @@ class UAV:
         self._angle = np.arctan2(position[1], position[0])
         self.ring_entry_time = wait_time
         self._prev_ring_id = ring_id
+        self._landing_target = None
 
     @property
     def angle(self) -> float:
@@ -84,27 +86,36 @@ class UAV:
             return
 
         if action.control == 0:  # CIRCLE
-            self._step_circle(ring_speed, ring_radius, ring_height, dt)
+            speed_factor = 1.0
+            if action.speed > 0.01:
+                speed_factor = float(np.clip(action.speed, 0.7, 1.3))
+            self._step_circle(ring_speed, ring_radius, ring_height, dt, speed_factor)
         elif action.control == 1:  # DESCEND
             self._step_descend(action, dt)
-            # Ring 3 + DESCEND + landing_zone specified → land
+            # Ring 3 + DESCEND + landing_zone specified → continuous landing approach
             if self.ring_id == 3 and action.landing_zone >= 0:
                 self.landing_zone = action.landing_zone
-                self.status = UAVStatus.LANDED
-                self.velocity = np.zeros(3)
-                self.position[2] = 0.0
+                # Land when altitude reaches ground level
+                if self.position[2] <= 1.0:
+                    self.status = UAVStatus.LANDED
+                    self.velocity = np.zeros(3)
+                    self.position[2] = 0.0
 
         self._update_battery(dt)
         if self.status != UAVStatus.LANDED:
             self.wait_time += dt
 
     def _step_circle(self, ring_speed: float, ring_radius: float, ring_height: float,
-                     dt: float) -> None:
-        """Circle at current radial distance and altitude, maintaining orbit angular velocity."""
+                     dt: float, speed_factor: float = 1.0) -> None:
+        """Circle at current radial distance and altitude, maintaining orbit angular velocity.
+
+        speed_factor: multiplier on ring_speed for separation control [0.7, 1.3].
+        """
         self.status = UAVStatus.CRUISING
         r_current = np.linalg.norm(self.position[:2])
         z_current = self.position[2]
-        omega = ring_speed / max(ring_radius, 1e-6)
+        effective_speed = ring_speed * speed_factor
+        omega = effective_speed / max(ring_radius, 1e-6)
         self._angle += omega * dt
         self.position[0] = r_current * np.cos(self._angle)
         self.position[1] = r_current * np.sin(self._angle)
