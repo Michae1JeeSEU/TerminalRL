@@ -39,9 +39,13 @@ RingAirspace
 │   └── speeds: tuple[float, float, float]    # V1, V2, V3
 ├── 方法
 │   ├── update(r, h, v) -> bool              # 更新参数，返回是否合法
-│   ├── get_ring(position) -> int            # 根据位置判断所在环
-│   ├── is_valid() -> bool                   # 检查硬约束
-│   └── get_boundary(ring_id) -> tuple       # 获取环的几何边界
+│   ├── get_ring(position) -> int            # 根据位置判断所在环 (1/2/3, 0=外)
+│   ├── get_ring_orbit(ring_id) -> (r, h)    # 返回环的轨道参数
+│   ├── get_entry_points() -> np.ndarray     # 4 个固定进入点 (4,3)
+│   ├── random_position_on_ring(ring_id)     # 环轨道上随机角度位置
+│   ├── is_valid() -> bool                   # 检查硬约束 R1>R2>R3, H1>H2>H3
+│   ├── get_boundary(ring_id) -> tuple       # 获取环的几何边界
+│   └── state_vector -> np.ndarray (9,)      # [R1,R2,R3,H1,H2,H3,V1,V2,V3]
 ```
 
 **硬约束校验**：
@@ -64,46 +68,61 @@ UAV
 │   ├── position: np.ndarray (3,)      # x, y, z
 │   ├── velocity: np.ndarray (3,)      # vx, vy, vz
 │   ├── ring_id: int                   # 当前所在环 (1/2/3)
-│   ├── battery: float                 # 剩余电量 [0, 1]
-│   ├── base_priority: int            # 基础优先级
+│   ├── battery: float                 # 剩余电量
+│   ├── base_priority: int            # 基础优先级 (1/3/5)
+│   ├── mission_type: int             # 任务类型 (1-4)，影响 LZ 占用
 │   ├── wait_time: float              # 累计等待时间
-│   ├── status: Enum[CRUISING, HOLDING, DESCENDING, LANDED]
-│   └── target: np.ndarray | None     # 降落目标区域
+│   ├── ring_entry_time: float        # 进入当前环时的 wait_time
+│   ├── status: Enum[CRUISING, DESCENDING, LANDED]  # 无 HOVER
+│   ├── landing_zone: int             # 选定的着陆区 (-1=无)
+│   ├── is_controlled: bool           # 是否受策略控制
+│   └── _landing_target: np.ndarray | None  # 降落点坐标 (x,y,0)
 ├── 方法
 │   ├── step(action, dt) -> None       # 按动作推进一步
-│   ├── compute_energy(dt) -> float   # 计算该步能耗
-│   ├── get_priority() -> float       # 计算当前优先级
+│   ├── can_descend() -> bool         # 环驻留 + 电量检查
+│   ├── compute_priority() -> float   # 计算当前动态优先级
 │   └── reset() -> None
 ```
 
-**运动学模型（简化）**：
-- 盘旋：沿当前环做圆周运动，v = ring_speed
-- 悬停：位置不变，v = 0
-- 下降：沿路径点序列插值，速度 = descent_speed
+**运动学模型**：
+- **盘旋 (CIRCLE)**：锁定在环轨道 (R_i, H_i) 上做圆周运动，角速度 ω = V_i / R_i。每步强制吸附到轨道（用 ring_radius/ring_height 覆盖位置），消除漂移
+- **下降 (DESCEND)**：速度向量 v = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]。γ 为负 = 下降。到达地面 (z ≤ 1.0) 自动着陆
 
-**能耗模型（简化）**：
+**能耗模型**：
 ```
-E_hover = P_hover × dt              # 悬停功率 × 时间
-E_cruise = P_cruise × dt            # 巡航功率 × 时间
-E_descend = P_descend × dt          # 下降功率 × 时间
+E_cruise = P_cruise × dt      # 巡航功率 × 时间
+E_descend = P_descend × dt    # 下降功率 × 时间
 ```
+背景 UAV（is_controlled=False）不消耗电量。
 
 ### 2.3 UAVManager（无人机管理器）
 
-**职责**：管理全部 UAV 实例的创建、销毁与批量操作。初始 UAV 按比例分布到三个环中（~50%/30%/20%），每架 UAV 的初始位置（环内体积均匀随机）、电量（critical~max 均匀随机）、等待时间（0~600s 均匀随机）、状态（按环的概率分布分配）均为随机。替换生成在环1边界，状态同样随机化。
+**职责**：管理全部 UAV 实例的创建、销毁与批量操作。
+
+**初始化分布（无流入，Phase 3b）**：
+- UAV 分布在三个环的轨道上：环1 60%、环2 25%、环3 15%
+- 每架 UAV 随机角度、随机电量（critical~max）、随机等待时间（0~600s）、随机优先级（1/3/5）和随机任务类型（1-4，按权重）
+
+**流入调度（Phase 4+，uav_inflow_rate > 0）**：
+- 按时钟累积 dt，到达 inflow_interval = 3600/uav_inflow_rate 时生成一架
+- 新 UAV 从 4 个 entry_point（环1 0°/90°/180°/270°）随机选一进入
+- 超过 max_uavs 时暂停生成
+
+**环间分离控制**：同环盘旋 UAV 按角度排序，间距不足 near_miss_threshold 时自动减速（0.95x）。
 
 ```
 UAVManager
 ├── uavs: list[UAV]
-├── landed_count: int
-├── failed_count: int
-├── _INIT_RING_PROBS: (0.5, 0.3, 0.2)   # 初始环分布比例
-├── _INIT_STATUS_MAP: dict               # 各环状态概率分布
-├── _spawn_one(ring_id, battery, wait_time, status) -> UAV
-├── remove_landed() -> None              # 移除已着陆/失败 UAV + 替换生成
-├── get_uavs_by_ring(ring_id) -> list[UAV]
-├── get_state_matrix() -> np.ndarray     # 所有 UAV 状态矩阵 (N,5)
-└── step_all(actions, dt) -> None
+├── landed_count: int              # 累计着陆数
+├── failed_count: int              # 累计失败数（电量耗尽）
+├── _INIT_RING_PROBS: (0.60, 0.25, 0.15)
+├── _spawn_one(ring_id, mission_type, ...) -> UAV
+├── remove_landed() -> None        # 移除 LANDED + is_dead
+├── try_spawn_inflow(dt) -> None   # 按时钟调度流入
+├── step_all(actions, dt) -> None  # 含环间分离速度调整
+├── get_state_matrix() -> np.ndarray  # (N, 6) [x,y,z,battery,priority,angle]
+├── ring_counts -> (c1, c2, c3)
+└── avg_wait_time -> float
 ```
 
 ### 2.4 ConflictDetector（冲突检测器）
@@ -151,23 +170,39 @@ MetricsCollector
 
 ```
 TerminalAreaEnv
-├── ring_airspace: RingAirspace
+├── airspace: RingAirspace
 ├── uav_manager: UAVManager
 ├── conflict_detector: ConflictDetector
 ├── priority_engine: PriorityEngine
 ├── metrics: MetricsCollector
-├── step_count: int
-├── high_level_interval: int           # 高层调用间隔（以 step 计）
+├── landing_zones: np.ndarray (M, 3)      # LZ 坐标
+├── lz_occupied_until: np.ndarray (M,)    # 各 LZ 剩余占用时间
+├── _lz_reserved_by: dict[lz_idx→uav_id] # LZ 预留状态
+├── _local_obs_dim: int = 75              # per-UAV 观测维度
 │
 ├── reset() -> obs, info
+│   └── 重置所有模块 + LZ 状态清零
 ├── step(action) -> obs, reward, terminated, truncated, info
-│   ├── 每 high_level_interval 步：应用高层 action → 更新空域
-│   └── 每步：应用低层 action → 推进 UAV 状态
-├── _compute_reward() -> float
-│   # R = w1×R_energy + w2×R_wait + w3×R_throughput
-│   #   + w4×R_safety + w5×R_priority + w6×R_battery
-└── render() -> None
+│   ├── 每 high_level_interval 步：应用高层 action → airspace.update()
+│   ├── _parse_low_level_actions()：约束强制执行（LZ 占用/环驻留/轨道吸附）
+│   ├── uav_manager.step_all()：推进所有 UAV + 环间分离
+│   ├── 更新 LZ 占用计时器 + 清理失效预留
+│   ├── remove_landed() → remove_failed()
+│   ├── try_spawn_inflow()（Phase 4+）
+│   ├── _compute_reward() → 碰撞终止 -500
+│   └── _get_obs()：per-UAV 局部观测矩阵
+└── _get_info() -> dict
 ```
+
+**关键机制**：
+
+1. **轨道吸附**：`_parse_low_level_actions` 中 control=0 (CIRCLE) 时，检查 UAV 是否偏离当前环轨道 (R_i, H_i)。若偏差 > 1m（径向）或低于环高度，立即将 position 吸附回轨道
+2. **LZ 预留与占用**：
+   - UAV 环3+DESCEND+LZ 选择 → 检查 LZ 是否被占用/预留 → 阻塞则强制 CIRCLE
+   - 通过检查 → 预留 LZ（_lz_reserved_by）+ 设置 _landing_target
+   - 着陆后 → 预留转占用计时器（lz_occupied_until = mission_type 对应时长）
+   - UAV 死亡/移除/中止下降 → 自动释放预留
+3. **环驻留约束**：`can_descend()` 检查 ring_residency ≥ min_ring_wait × priority_factor。base_priority=5（紧急）或电量 < 15% 时完全豁免
 
 ## 3. 奖励函数设计（实际实现）
 

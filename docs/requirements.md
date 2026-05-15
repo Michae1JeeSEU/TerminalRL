@@ -78,9 +78,12 @@
 
 | 约束 | 类型 | 说明 |
 |------|------|------|
-| 安全间隔 | 硬约束 | UAV 之间间距 ≥ d_safe，环与环之间无冲突 |
+| 安全间隔 | 硬约束 | UAV 之间间距 ≥ d_safe（10m 碰撞区），环与环之间无冲突 |
+| 近距预警 | 软约束 | 间距 < near_miss_threshold（50m），产生惩罚但不终止 |
 | 任务优先级 | 混合（软约束） | 基础优先级预设 + 动态调整因子（等待时间/电量） |
-| 剩余电量 | 硬约束 | 电量低于阈值时强制优先降落，电量为零视为任务失败 |
+| 剩余电量 | 硬约束 | 电量低于阈值（15%）时强制优先降落，电量为零视为任务失败 |
+| 环驻留时间 | 硬约束 | 每环最少盘旋 min_ring_wait=30s（按优先级打折）后才能下降 |
+| 着陆点占用 | 硬约束 | 单 LZ 同时只能服务一架 UAV；着陆后按任务类型占用一定时间 |
 
 ### 4.1 优先级计算
 
@@ -88,9 +91,22 @@
 Priority = base_priority × f(wait_time) × g(battery_ratio)
 ```
 
-- base_priority：任务类型预设值（医疗急救=5, 物流=3, 巡检=1）
+- base_priority：任务类型预设值（1/3/5，权重 50%/35%/15%）
 - f(wait_time)：等待超时升级因子
 - g(battery_ratio)：电量衰减升级因子
+
+### 4.2 任务类型与 LZ 占用
+
+每架 UAV 生成时随机分配任务类型（mission_type），影响着陆后的 LZ 占用时间：
+
+| 类型 | 名称 | 权重 | LZ 占用时间 | 说明 |
+|------|------|------|-------------|------|
+| 1 | standard | 45% | 30s | 标准物流配送 |
+| 2 | cargo | 25% | 120s | 重型货物，需要卸载设备 |
+| 3 | emergency | 10% | 10s | 医疗急救，优先清空 |
+| 4 | surveillance | 20% | 60s | 巡检/数据采集，需要上传时间 |
+
+**LZ 预留机制**：UAV 在环3开始下降着陆时立即预留目标 LZ（防止多 UAV 同时飞向同一 LZ）；着陆后预留转为占用计时器；计时结束自动释放。UAV 中止下降或死亡时自动释放预留。
 
 ---
 
@@ -142,5 +158,12 @@ Priority = base_priority × f(wait_time) × g(battery_ratio)
 
 - 架构：Options 框架（Call-and-Return）
 - 高层 policy：选 option（空域参数），每 ~30min 调用一次
-- 低层 policy：在 option 约束下执行 UAV 控制动作，秒级调用
+- 低层 policy：**Per-UAV 共享策略**——同一策略网络处理每架 UAV 的局部观测，输出该 UAV 的独立动作。天然支持变长 UAV 数量（max_n=100，inactive 行 mask 忽略）
 - 扩展方向：大规模时低层可分布式执行
+
+### 8.1 Per-UAV 共享策略细节
+
+- **观测**：(max_n, 75) 矩阵，每行 = `[空域状态(9) + 自身(9) + k 近邻(k×6) + 环计数(3) + LZ占用(6)]`
+- **动作**：(max_n,) MultiDiscrete，每 UAV 独立 CIRCLE(0)/DESCEND(1)
+- **自动连续参数**：DESCEND 时 ψ/γ/V 由 PerUAVDiscreteWrapper 自动计算（环1/2 指向圆心下降，环3 指向 LZ 着陆）
+- **训练**：PPO + PerUAVFeatureExtractor（共享 UAV encoder 9→128→64 + 全局聚合 640→256→256，分叉 pi/vf head）

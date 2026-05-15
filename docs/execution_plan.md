@@ -1,8 +1,12 @@
 # 执行计划
 
-> **2026-05-14 修订**：前期工作（Phase 2-4 初版）与真实场景偏差较大，执行了修订版计划。详见 [修订版计划](C:\Users\user\.claude\plans\bubbly-percolating-graham.md)。
+> **2026-05-15 状态**：Phase 1-4（初版）→ Phase 2(R)/3a(R)/3b(R)（修订版）全部完成。
+> 详见修订版计划：`C:\Users\user\.claude\plans\bubbly-percolating-graham.md`。
 >
-> **Phase 2(R) 已完成**：轨道盘旋 + (ψ,γ,V) 连续下降 + per-UAV 局部观测 + 4进入点 + 流入模型。35 测试通过。
+> **已完成**：
+> - Phase 2(R)：轨道盘旋 + (ψ,γ,V) 连续下降 + per-UAV 局部观测 + 4进入点 + 流入模型（39 测试通过）
+> - Phase 3a(R)：单 UAV + 干扰机 PPO（100% 着陆率 vs 10 背景干扰）
+> - Phase 3b(R)：全 UAV 受控清空空域 PPO（86% vs 启发式 87%）+ LZ 占用机制
 
 ## 总体原则
 
@@ -64,35 +68,88 @@
 
 ---
 
-## Phase 4: 多 UAV 多智能体扩展 ✅ 已完成
+## Phase 4 (初版): 多 UAV Shared-Action — 已弃用，由 Phase 2(R)+3b(R) 替代
 
-| # | 任务 | 说明 | 依赖 | 状态 |
-|---|------|------|------|------|
-| 4.1 | 冲突检测集成验证 | 多 UAV 安全间隔测试 | Phase 2 + 3 | ✅ |
-| 4.2 | 优先级系统集成验证 | 混合优先级调度测试 | Phase 2 + 3 | ✅ |
-| 4.3 | 多智能体 PPO 实现 | shared-action + DiscreteActionWrapper | 3.4 | ✅ |
-| 4.4 | 多 UAV 场景训练（5架） | 小规模多机训练（500k步） | 4.1-4.3 | ✅ |
-| 4.5 | 性能评估 | PPO vs Heuristic 对比 | 4.4 | ✅ |
-
-**5-UAV 结果 (400步, 20 episodes)**：
-
-| 指标 | PPO (shared-action) | Heuristic |
-|------|---------------------|-----------|
-| Landed | 23.8 | 30.0 |
-| Failed | 1.5 | 0.0 |
-| Wait | 52.5s | 62.8s |
-| Energy | 70991 | 87869 |
-| Conflicts | 24.4 | 0.0 |
-
-**实际偏离**：
-- 采用 shared-action（所有 UAV 同一控制）而非 per-UAV 独立动作，作为集中式基线
-- 5 轮迭代修复了多 UAV 0 landing 问题（稀疏奖励、progress 奖励位置依赖）
-- PPO 达到启发式 79% 着陆率，能耗降低 19%，但冲突偏多（shared-action 导致所有 UAV 同时向内收敛）
-- per-UAV 独立动作留待后续实现以减少冲突
+> 此阶段采用 shared-action（所有 UAV 同一控制），已被 per-UAV 共享策略替代。
+> PPO 79% 着陆率，冲突率偏高（shared-action 导致同时向内收敛）。
 
 ---
 
-## Phase 5: HRL 算法实现（计划）
+## Phase 2(R): 核心环境重构 ✅ 已完成
+
+> 修订版计划，替代初版 Phase 2-4。
+
+| # | 任务 | 说明 | 状态 |
+|---|------|------|------|
+| 2.1 | config.py 更新 | 删 HOVER/waypoints，增 inflow/k_nearest/max_uavs/mission_types | ✅ |
+| 2.2 | UAV 模型重写 | 删 HOVER+waypoints，轨道锁定盘旋 + (ψ,γ,V) 连续下降 | ✅ |
+| 2.3 | UAVManager 重写 | 轨道环分布 + 流入调度 + mission_type 随机分配 | ✅ |
+| 2.4 | TerminalAreaEnv 重写 | per-UAV 局部观测矩阵 (max_n,75) + per-UAV 动作空间 | ✅ |
+| 2.5 | PerUAVDiscreteWrapper | MultiDiscrete → 连续参数自动计算 | ✅ |
+| 2.6 | 测试更新 | 39 测试全部通过 | ✅ |
+
+**核心设计变更**：
+- **轨道模型**：UAV 严格锁定在环轨道 (R_i, H_i) 上，角速度 ω=V_i/R_i
+- **连续下降**：DESCEND 用 (ψ, γ, V) 三个连续量定义 3D 速度矢量
+- **Per-UAV 策略**：共享 MLP 逐 UAV 独立决策，天然支持变长 UAV
+
+---
+
+## Phase 3a(R): 单 UAV + 干扰机 ✅ 已完成
+
+| # | 任务 | 说明 | 状态 |
+|---|------|------|------|
+| 3a.1 | 干扰机环境 | N_bg 架背景 UAV 只盘旋，1 架受控降落 | ✅ |
+| 3a.2 | Heuristic 基线 | 单机在干扰中降落 | ✅ |
+| 3a.3 | PPO 训练 | DiscreteActionWrapper, 2 actions | ✅ |
+| 3a.4 | 不同密度对比 | 5/10/20 背景 UAV | ✅ |
+
+**结果**：单 UAV PPO 在有 10+ 背景干扰下达到 100% 着陆率。
+
+---
+
+## Phase 3b(R): 全 UAV 受控清空空域 ✅ 已完成
+
+| # | 任务 | 说明 | 状态 |
+|---|------|------|------|
+| 3b.1 | Phase3bWrapper | 全部 UAV is_controlled=True，全部着陆/失败终止 | ✅ |
+| 3b.2 | PerUAVDiscreteWrapper | MultiDiscrete([2]*max_n)，自动计算连续参数 | ✅ |
+| 3b.3 | PerUAVFeatureExtractor | 共享 UAV encoder (75→128→64) + 全局聚合 + pi/vf 分叉 | ✅ |
+| 3b.4 | PPO 训练 | N=10, 500k steps, ent_coef=0.1 | ✅ |
+| 3b.5 | Heuristic 基线 | 87% 着陆率（LZ 占用约束下 90% 实际） | ✅ |
+| 3b.6 | 评估对比 | Best PPO 86% vs Heuristic 87% | ✅ |
+
+**核心发现**：
+- Best PPO (EvalCallback @270k) 达到 **86%**，与启发式 **87%** 基本持平
+- Final PPO (500k) 过拟合退化至 66%（multi-UAV PPO 训练不稳定）
+- 未着陆主因是 **LZ 占用瓶颈**（6 LZ × 10 UAV，cargo 占 120s）而非碰撞
+- PPO 策略比启发式更谨慎（+53% 步数，近距预警少 11%）
+
+**模型文件**：
+- `logs/best_model_phase3b/best_model.zip`（推荐使用，86%）
+- `logs/ppo_phase3b.zip`（最终模型，已退化）
+
+**2026-05-15 新增特性**：
+- **LZ 占用机制**：4 种任务类型 × 不同占用时间 + 预留机制防竞争
+- **轨道吸附修正**：CIRCLE 时自动修正偏离轨道的 UAV（根因：_step_circle 使用了当前坐标而非环轨道参数）
+- **观测扩展**：69→75 维（+6 维 LZ 占用状态）
+
+---
+
+## Phase 4(R): 持续流入场景（计划）
+
+| # | 任务 | 说明 |
+|---|------|------|
+| 4.1 | 流入调度集成 | uav_inflow_rate > 0，从 4 进入点持续流入 |
+| 4.2 | 不同流量负载 | 10/30/60 UAVs/hour 测试 |
+| 4.3 | PPO 训练 | 持续流入 + per-UAV 共享策略 |
+| 4.4 | 稳态指标 | 吞吐量、平均等待时间、冲突率 vs 流量曲线 |
+
+**验收标准**：30 UAVs/hour 下稳态吞吐量 >25 landings/hour，冲突率 <5%
+
+---
+
+## Phase 5: HRL Options 框架（计划）
 
 | # | 任务 | 说明 | 依赖 |
 |---|------|------|------|
@@ -132,11 +189,13 @@
 
 ## 里程碑
 
-| 里程碑 | 预计 Phase | 验收标准 |
-|--------|-----------|----------|
-| M1: 环境可用 | Phase 2 | ✅ 环境可 reset/step，单 UAV 可完成降落 |
-| M2: 基线建立 | Phase 3 | ✅ 单 UAV PPO 100% 着陆率，Heuristic 基线就绪 |
-| M3: 多机协同 | Phase 4 | ✅ 5 UAV 训练完成，PPO 79% 着陆率（shared-action） |
-| M4: HRL 收敛 | Phase 5 | HRL 优于单层基线 |
-| M5: 规模验证 | Phase 6 | 200 架稳定运行，指标合理 |
-| M6: 论文就绪 | Phase 7 | 完整实验数据与图表 |
+| 里程碑 | Phase | 验收标准 | 状态 |
+|--------|-------|----------|------|
+| M1: 环境可用 | Phase 2 | 环境可 reset/step，单 UAV 可完成降落 | ✅ |
+| M2: 基线建立 | Phase 3 | 单 UAV PPO 100% 着陆率，Heuristic 基线就绪 | ✅ |
+| M3: 环境重构 | Phase 2(R) | 轨道盘旋 + 连续下降 + per-UAV 观测，39 测试通过 | ✅ |
+| M4: 多机协同 | Phase 3b(R) | 全 UAV PPO 86% vs Heuristic 87%，LZ 占用机制 | ✅ |
+| M5: 持续流入 | Phase 4(R) | 稳态吞吐量 >25/hr，冲突率 <5% | ⬜ |
+| M6: HRL 收敛 | Phase 5 | HRL 优于单层基线 | ⬜ |
+| M7: 规模验证 | Phase 6 | 200 架稳定运行，指标合理 | ⬜ |
+| M8: 论文就绪 | Phase 7 | 完整实验数据与图表 | ⬜ |

@@ -66,55 +66,58 @@ class TerminalAreaEnv(gym.Env):
     def action_space(self) -> gym.Space: ...
 ```
 
-### 4.1 观察空间设计（初稿）
+### 4.1 观察空间设计（当前实现）
 
 ```
-高层观察 (per option):
-  - 当前各环参数 (R, H, V) × 3 = 9维
-  - 各环 UAV 数量 × 3 = 3维
-  - 平均等待时间 × 3 = 3维
-  - 吞吐量滑动平均 × 3 = 3维
-  合计: ~18维
-
-低层观察 (per UAV):
-  - UAV 自身状态: 位置(x,y,z), 速度, 当前所在环, 剩余电量 = 7维
-  - 目标环信息: 半径, 高度, 速度 = 3维
-  - 邻近 UAV 相对位置: K × 3维 (最近K架)
-  - 当前空域构型参数: 9维
-  合计: ~19 + 3K 维
+Per-UAV 局部观测矩阵 (max_n, 75):
+  - 空域状态 (9): R1,R2,R3,H1,H2,H3,V1,V2,V3 归一化
+  - 自身状态 (9): sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend
+  - k 近邻 (k×6): 每邻居 [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max]，k=8 默认
+  - 环计数 (3): 各环 UAV 数 / 活跃总数
+  - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化
+  合计: 9 + 9 + 48 + 3 + 6 = 75 维
 ```
 
-### 4.2 动作空间设计（初稿）
+- max_n = 100（最大并发 UAV），inactive UAV 行全零
+- 邻居按 3D 距离取最近 k 个，不足补零
+
+### 4.2 动作空间设计（当前实现）
 
 ```python
-# 高层动作
-high_level_space = gym.spaces.Dict({
-    "radii": gym.spaces.Box(low=[R_min, R_min, R_min],
-                            high=[R_max, R_max, R_max], shape=(3,)),
-    "heights": gym.spaces.Box(low=[H_min, H_min, H_min],
-                              high=[H_max, H_max, H_max], shape=(3,)),
-    "speeds": gym.spaces.Box(low=[V_min, V_min, V_min],
-                             high=[V_max, V_max, V_max], shape=(3,)),
-})
+# 高层动作（9维连续，每 high_level_interval 步应用一次）
+high_level_action_space = spaces.Box(
+    low=[R_min*3, H_min*3, V_min*3],
+    high=[R_max*3, H_max*3, V_max*3],
+)
 
-# 低层动作
-low_level_space = gym.spaces.Dict({
-    "control": gym.spaces.Discrete(3),       # 盘旋/悬停/下降
-    "waypoints": gym.spaces.Box(             # 下降路径点（仅下降时有效）
-        low=-1, high=1, shape=(K, 3)         # K个路径点 × (dx, dy, dz)
-    ),
-    "landing_zone": gym.spaces.Discrete(M),  # 降落区域（仅内环+降落时有效）
+# 低层动作（per-UAV）
+low_level_action_space = spaces.Dict({
+    "control": spaces.MultiDiscrete([2] * max_n),        # 0=CIRCLE, 1=DESCEND
+    "psi": spaces.Box(0, 2π, shape=(max_n,)),            # 航向角
+    "gamma": spaces.Box(-π/2, π/2, shape=(max_n,)),      # 航迹角（负=下降）
+    "speed": spaces.Box(5, 40, shape=(max_n,)),          # 飞行速度 m/s
+    "landing_zone": spaces.MultiDiscrete([m+1] * max_n), # 0..m-1 选 LZ，m=no-op
 })
 ```
+
+**训练离散化（Phase 3b）**：PerUAVDiscreteWrapper 将动作空间简化为 `MultiDiscrete([2]*max_n)`，DESCEND 时的连续参数自动计算：
+- 环1/2：ψ=指向圆心 (θ+π)，γ=-12°，V=max_speed
+- 环3 有 landing_target：ψ=指向目标 LZ，γ=-25°，V=descent_speed
+- 环3 无 landing_target：ψ=指向最近 LZ，γ=-25°，V=descent_speed
+
+**动作约束（环境层强制）**：
+- 环驻留不足 → CIRCLE 强制覆盖 DESCEND
+- LZ 被占用/预留 → CIRCLE 强制覆盖 DESCEND
+- CIRCLE 动作 → UAV 吸附到当前环轨道 (R_i, H_i) 锁定
 
 ## 5. 仿真步长
 
-| 层级 | 决策间隔 | 仿真步长 |
-|------|----------|----------|
-| 高层 (option) | ~30 min（仿真时间） | 1800 秒 = 1 step |
-| 低层 (control) | ~1-5 s（仿真时间） | 1-5 秒 = 1 step |
+| 层级 | 决策间隔 | 仿真步长 | 说明 |
+|------|----------|----------|------|
+| 高层 (option) | ~30 min（仿真时间） | 1800 秒 | 每 900 low-level steps 调用一次 |
+| 低层 (control) | 2 s（仿真时间） | 2 秒 | 每步推进所有 UAV 2s |
 
-一个高层 step 包含约 360-1800 个低层 step。
+默认 max_steps=7200（4 小时仿真），Phase 3b 训练用 max_steps=800。
 
 ## 6. 平台
 
@@ -126,29 +129,45 @@ low_level_space = gym.spaces.Dict({
 
 ## 7. 配置文件格式
 
-环境配置使用 YAML 或 Python dict，示例：
+环境配置使用 Python dataclass（`src/config.py`），实际默认值：
 
 ```python
-DEFAULT_CONFIG = {
-    "num_uavs": 50,
-    "num_landing_zones": 6,
-    "ring": {
-        "r_min": 500.0,   # 内环最小半径 (m)
-        "r_max": 5000.0,  # 外环最大半径 (m)
-        "h_min": 50.0,    # 内环最低高度 (m)
-        "h_max": 1000.0,  # 外环最高高度 (m)
-        "v_min": 5.0,     # 最低巡航速度 (m/s)
-        "v_max": 30.0,    # 最高巡航速度 (m/s)
-    },
-    "uav": {
-        "max_speed": 40.0,
-        "max_battery": 100.0,     # 最大电量 (归一化)
-        "safe_separation": 50.0,  # 安全间隔 (m)
-        "battery_critical": 0.15, # 临界电量阈值
-    },
-    "simulation": {
-        "dt_high": 1800.0,  # 高层决策间隔 (s)
-        "dt_low": 2.0,      # 低层决策间隔 (s)
-    },
-}
+# 环配置
+RingConfig:
+  r_min=500.0, r_max=5000.0          # 半径范围 (m)
+  h_min=50.0, h_max=1000.0           # 高度范围 (m)
+  v_min=5.0, v_max=30.0              # 速度范围 (m/s)
+  default_radii=(4000, 2500, 1000)   # 默认外→内环半径
+  default_heights=(800, 500, 200)    # 默认外→内环高度
+  default_speeds=(25, 20, 15)        # 默认外→内环速度
+
+# UAV 配置
+UAVConfig:
+  max_speed=40.0, max_battery=100.0
+  battery_critical=0.15               # 临界电量 (15%)
+  safe_separation=10.0                # 碰撞危险区 (m)
+  near_miss_threshold=50.0            # 近距预警区 (m)
+  min_ring_wait=30.0                  # 每环最少盘旋时间 (s)
+  power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
+  priority_emergency=5                # 满豁免阈值
+
+# 仿真配置
+SimConfig:
+  dt_high=1800.0, dt_low=2.0          # 高低层步长 (s)
+  max_steps=7200                       # 默认最大步数
+  num_landing_zones=6                  # 着陆区数量
+
+# 环境总配置
+EnvConfig:
+  num_uavs=50                          # 默认 UAV 数量
+  uav_inflow_rate=0.0                  # 流入率 (UAVs/h)，0=无流入
+  max_uavs=100                         # 最大并发 UAV 数
+  k_nearest=8                          # 局部观测邻居数
+  w_energy=0.3, w_wait=1.0, ...       # 奖励权重
+```
+
+**任务类型与 LZ 占用**：
+```python
+MISSION_TYPE_LZ_OCCUPANCY = {1:30.0, 2:120.0, 3:10.0, 4:60.0}  # 秒
+MISSION_TYPE_WEIGHTS = [0.45, 0.25, 0.10, 0.20]                  # 生成概率
 ```
