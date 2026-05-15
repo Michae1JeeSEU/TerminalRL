@@ -107,6 +107,81 @@ class DiscreteActionWrapper(gym.Wrapper):
         return self.env.step({"high_level": self._fixed_hl, "low_level": ll})
 
 
+class PerUAVDiscreteWrapper(gym.Wrapper):
+    """Per-UAV discrete control: each UAV independently chooses CIRCLE(0) or DESCEND(1).
+
+    Action space: MultiDiscrete([2] * max_n) — one binary decision per UAV slot.
+    Auto-computes continuous params (psi, gamma, speed, landing_zone) per UAV:
+    - CIRCLE: psi=0, gamma=0, speed=1.0, lz=m (no-op)
+    - DESCEND ring 1/2: psi toward center, gamma=-12°, speed=max_speed
+    - DESCEND ring 3: psi toward nearest LZ, gamma=-25°, speed=descent_speed
+    - DESCEND ring 3 with ongoing approach: psi toward existing landing_target
+
+    Ring-wait constraint is enforced by env._parse_low_level_actions (DESCEND
+    from policy gets overridden to CIRCLE when can_descend() is False).
+    """
+
+    def __init__(self, env):
+        super().__init__(env)
+        self.max_n = env.max_n
+        self.m = self.unwrapped.config.sim.num_landing_zones
+        self._fixed_hl = np.array(
+            list(env.config.ring.default_radii)
+            + list(env.config.ring.default_heights)
+            + list(env.config.ring.default_speeds),
+            dtype=np.float64,
+        )
+        self.action_space = spaces.MultiDiscrete([2] * self.max_n)
+        self.observation_space = env.observation_space
+
+    def step(self, action):
+        controls = np.asarray(action, dtype=np.int32)
+        max_n = self.max_n
+        m = self.m
+        psi = np.zeros(max_n, dtype=np.float64)
+        gamma = np.zeros(max_n, dtype=np.float64)
+        speed = np.ones(max_n, dtype=np.float64)
+        zones = np.full(max_n, m, dtype=np.int32)
+
+        env = self.unwrapped
+        lz_positions = env.landing_zones
+
+        for i, u in enumerate(env.uav_manager.uavs):
+            if i >= max_n:
+                break
+            if controls[i] == 1 and u.is_controlled:
+                theta = np.arctan2(u.position[1], u.position[0])
+                if u.ring_id == 3:
+                    if u._landing_target is not None:
+                        lz = u._landing_target
+                        psi[i] = np.arctan2(lz[1] - u.position[1], lz[0] - u.position[0])
+                        zones[i] = u.landing_zone if u.landing_zone >= 0 else 0
+                    else:
+                        nearest = int(np.argmin(
+                            [np.linalg.norm(u.position[:2] - lz[:2]) for lz in lz_positions]
+                        ))
+                        psi[i] = np.arctan2(
+                            lz_positions[nearest][1] - u.position[1],
+                            lz_positions[nearest][0] - u.position[0],
+                        )
+                        zones[i] = nearest
+                    gamma[i] = -np.deg2rad(25.0)
+                    speed[i] = self.unwrapped.config.uav.descent_speed
+                else:
+                    psi[i] = theta + np.pi
+                    gamma[i] = -np.deg2rad(12.0)
+                    speed[i] = self.unwrapped.config.uav.max_speed
+
+        ll = {
+            "control": controls,
+            "psi": psi,
+            "gamma": gamma,
+            "speed": speed,
+            "landing_zone": zones,
+        }
+        return self.env.step({"high_level": self._fixed_hl, "low_level": ll})
+
+
 def unflatten_action(flat: np.ndarray, max_n: int, m: int) -> dict:
     """Convert a flat continuous action vector to the low-level dict format.
 
