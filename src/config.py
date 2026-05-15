@@ -45,6 +45,22 @@ class SimConfig:
     entry_angles: tuple[float, float, float, float] = (0.0, 90.0, 180.0, 270.0)
 
 
+# Mission types → landing zone occupation time after landing
+MISSION_TYPE_LZ_OCCUPANCY: dict[int, float] = {
+    1: 30.0,    # standard delivery: quick drop-off
+    2: 120.0,   # cargo / heavy: needs unloading equipment
+    3: 10.0,    # emergency / medical: priority, cleared immediately
+    4: 60.0,    # surveillance / data collection: data upload time
+}
+MISSION_TYPE_NAMES: dict[int, str] = {
+    1: "standard",
+    2: "cargo",
+    3: "emergency",
+    4: "surveillance",
+}
+MISSION_TYPE_WEIGHTS = [0.45, 0.25, 0.10, 0.20]  # spawn probability weights
+
+
 @dataclass
 class EnvConfig:
     ring: RingConfig = field(default_factory=RingConfig)

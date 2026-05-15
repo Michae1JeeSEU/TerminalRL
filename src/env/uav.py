@@ -27,10 +27,12 @@ class LowLevelAction:
 class UAV:
     """Single UAV with kinematic model, energy consumption, and priority."""
 
-    def __init__(self, uav_id: int, config: UAVConfig, base_priority: int = 1):
+    def __init__(self, uav_id: int, config: UAVConfig, base_priority: int = 1,
+                 mission_type: int = 1):
         self.id = uav_id
         self.config = config
         self.base_priority = base_priority
+        self.mission_type = mission_type
 
         self.position = np.zeros(3, dtype=np.float64)      # (x, y, z)
         self.velocity = np.zeros(3, dtype=np.float64)       # (vx, vy, vz)
@@ -48,7 +50,8 @@ class UAV:
 
     def reset(self, position: np.ndarray, ring_id: int = 1,
               battery: float | None = None, wait_time: float = 0.0,
-              status: UAVStatus = UAVStatus.CRUISING) -> None:
+              status: UAVStatus = UAVStatus.CRUISING,
+              mission_type: int | None = None) -> None:
         self.position = position.copy()
         self.velocity = np.zeros(3, dtype=np.float64)
         self.ring_id = ring_id
@@ -61,6 +64,8 @@ class UAV:
         self.ring_entry_time = wait_time
         self._prev_ring_id = ring_id
         self._landing_target = None
+        if mission_type is not None:
+            self.mission_type = mission_type
 
     @property
     def angle(self) -> float:
@@ -109,20 +114,19 @@ class UAV:
 
     def _step_circle(self, ring_speed: float, ring_radius: float, ring_height: float,
                      dt: float, speed_factor: float = 1.0) -> None:
-        """Circle at current radial distance and altitude, maintaining orbit angular velocity.
+        """Circle on the ring's prescribed orbit (R_i, H_i).
 
+        Locks UAV to the ring orbit, correcting any drift from descent.
         speed_factor: multiplier on ring_speed for separation control [0.7, 1.3].
         """
         self.status = UAVStatus.CRUISING
-        r_current = np.linalg.norm(self.position[:2])
-        z_current = self.position[2]
         effective_speed = ring_speed * speed_factor
         omega = effective_speed / max(ring_radius, 1e-6)
         self._angle += omega * dt
-        self.position[0] = r_current * np.cos(self._angle)
-        self.position[1] = r_current * np.sin(self._angle)
-        self.position[2] = z_current
-        tangential_speed = omega * r_current
+        self.position[0] = ring_radius * np.cos(self._angle)
+        self.position[1] = ring_radius * np.sin(self._angle)
+        self.position[2] = ring_height
+        tangential_speed = omega * ring_radius
         self.velocity = np.array([
             -tangential_speed * np.sin(self._angle),
             tangential_speed * np.cos(self._angle),

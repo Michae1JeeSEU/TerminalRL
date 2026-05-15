@@ -4,7 +4,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-from src.config import EnvConfig
+from src.config import EnvConfig, MISSION_TYPE_LZ_OCCUPANCY
 from src.env.ring_airspace import RingAirspace
 from src.env.uav import UAV, UAVStatus, LowLevelAction
 from src.env.uav_manager import UAVManager
@@ -45,11 +45,14 @@ class TerminalAreaEnv(gym.Env):
 
         # Landing zones: fixed positions on ground within inner ring
         self.landing_zones = self._init_landing_zones()
+        self.lz_occupied_until = np.zeros(self.config.sim.num_landing_zones, dtype=np.float64)
+        self._lz_reserved_by: dict[int, int] = {}  # lz_idx -> uav_id (active landing approach)
+        self._max_lz_occ = max(MISSION_TYPE_LZ_OCCUPANCY.values()) if MISSION_TYPE_LZ_OCCUPANCY else 120.0
 
         # Per-UAV local observation dimension
         self.k = self.config.k_nearest
         self.max_n = self.config.max_uavs
-        self._local_obs_dim = 9 + 9 + self.k * 6 + 3  # airspace + self(8+can_descend) + neighbors + ring_counts
+        self._local_obs_dim = 9 + 9 + self.k * 6 + 3 + self.config.sim.num_landing_zones  # airspace + self + neighbors + ring_counts + lz_occupancy
 
         self._define_spaces()
 
@@ -121,6 +124,8 @@ class TerminalAreaEnv(gym.Env):
         self.metrics = MetricsCollector()
         self.step_count = 0
         self._prev_landed = 0
+        self.lz_occupied_until = np.zeros(self.config.sim.num_landing_zones, dtype=np.float64)
+        self._lz_reserved_by = {}
 
         return self._get_obs(), self._get_info()
 
@@ -141,6 +146,27 @@ class TerminalAreaEnv(gym.Env):
         ll = action.get("low_level", {})
         uav_actions = self._parse_low_level_actions(ll)
         self.uav_manager.step_all(uav_actions, dt)
+
+        # Update LZ occupancy timers
+        self.lz_occupied_until = np.maximum(0.0, self.lz_occupied_until - dt)
+
+        # Clean up reservations for UAVs that are no longer actively descending to LZ
+        active_uav_ids = {u.id for u in self.uav_manager.uavs}
+        freed_lzs = [lz for lz, uid in self._lz_reserved_by.items() if uid not in active_uav_ids]
+        for lz in freed_lzs:
+            del self._lz_reserved_by[lz]
+        # Also free reservations for UAVs that stopped descending toward their target
+        for uav in self.uav_manager.uavs:
+            if uav._landing_target is None and uav.landing_zone >= 0:
+                if uav.landing_zone in self._lz_reserved_by:
+                    if self._lz_reserved_by[uav.landing_zone] == uav.id:
+                        del self._lz_reserved_by[uav.landing_zone]
+            # Free reservation for landed UAVs (occupancy timer replaces reservation)
+            if uav.status == UAVStatus.LANDED and uav.landing_zone >= 0:
+                if uav.landing_zone in self._lz_reserved_by:
+                    del self._lz_reserved_by[uav.landing_zone]
+                occ_time = MISSION_TYPE_LZ_OCCUPANCY.get(uav.mission_type, 30.0)
+                self.lz_occupied_until[uav.landing_zone] = occ_time
 
         # Remove landed/failed UAVs
         self.uav_manager.remove_landed()
@@ -187,11 +213,14 @@ class TerminalAreaEnv(gym.Env):
                 if control == 1 and not uav.can_descend():
                     control = 0
 
-                # Snap circling UAV to ring altitude if it drifted below (e.g. overshot during descent)
-                if control == 0 and uav.status == UAVStatus.CRUISING:
-                    ring_h = self.airspace.heights[uav.ring_id - 1]
-                    if uav.position[2] < ring_h:
+                # Snap circling UAV to ring orbit if it drifted (e.g. mid-descent abort)
+                if control == 0:
+                    ring_r, ring_h = self.airspace.get_ring_orbit(uav.ring_id)
+                    if uav.position[2] < ring_h or abs(np.linalg.norm(uav.position[:2]) - ring_r) > 1.0:
                         uav.position[2] = ring_h
+                        angle = uav.angle
+                        uav.position[0] = ring_r * np.cos(angle)
+                        uav.position[1] = ring_r * np.sin(angle)
                 psi = float(ll["psi"][i]) if "psi" in ll else 0.0
                 gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
                 speed = float(ll["speed"][i]) if "speed" in ll else (1.0 if control == 0 else self.config.uav.descent_speed)
@@ -200,7 +229,17 @@ class TerminalAreaEnv(gym.Env):
 
                 # Set landing target when ring3 landing approach begins
                 if control == 1 and uav.ring_id == 3 and landing_zone >= 0 and uav._landing_target is None:
-                    uav._landing_target = self.landing_zones[landing_zone].copy()
+                    # Block if LZ is currently occupied or reserved by another UAV
+                    lz_blocked = (
+                        self.lz_occupied_until[landing_zone] > 0 or
+                        (landing_zone in self._lz_reserved_by and
+                         self._lz_reserved_by[landing_zone] != uav.id)
+                    )
+                    if lz_blocked:
+                        control = 0
+                    else:
+                        uav._landing_target = self.landing_zones[landing_zone].copy()
+                        self._lz_reserved_by[landing_zone] = uav.id
             else:
                 # Background UAV: always CIRCLE at neutral speed
                 control = 0
@@ -349,11 +388,15 @@ class TerminalAreaEnv(gym.Env):
                 c3 / max(total_active, 1),
             ])
 
+            # LZ occupancy (normalized remaining time, 1.0 = occupied)
+            lz_feat = np.minimum(self.lz_occupied_until / max(self._max_lz_occ, 1.0), 1.0)
+
             # Assemble row
             obs[i, :9] = asv_norm
             obs[i, 9:18] = self_feat
             obs[i, 18:18 + self.k * 6] = neigh_feats
-            obs[i, 18 + self.k * 6:] = ring_feat
+            obs[i, 18 + self.k * 6:18 + self.k * 6 + 3] = ring_feat
+            obs[i, 18 + self.k * 6 + 3:] = lz_feat
 
         return obs
 

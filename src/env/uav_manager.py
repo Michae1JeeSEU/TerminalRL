@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.config import UAVConfig
+from src.config import UAVConfig, MISSION_TYPE_WEIGHTS
 from src.env.ring_airspace import RingAirspace
 from src.env.uav import UAV, UAVStatus, LowLevelAction
 
@@ -41,7 +41,7 @@ class UAVManager:
 
     def _spawn_one(self, ring_id: int = 1, battery: float | None = None,
                    wait_time: float | None = None, base_priority: int | None = None,
-                   is_entry: bool = False) -> UAV:
+                   is_entry: bool = False, mission_type: int | None = None) -> UAV:
         """Spawn a UAV.
 
         Entry spawn (is_entry=True): uses a fixed entry point on ring 1.
@@ -49,7 +49,9 @@ class UAVManager:
         """
         if base_priority is None:
             base_priority = int(self.rng.choice([1, 3, 5], p=[0.5, 0.35, 0.15]))
-        uav = UAV(self._next_id, self.config, base_priority)
+        if mission_type is None:
+            mission_type = int(self.rng.choice([1, 2, 3, 4], p=MISSION_TYPE_WEIGHTS))
+        uav = UAV(self._next_id, self.config, base_priority, mission_type)
         self._next_id += 1
 
         if ring_id == 1 and is_entry:
