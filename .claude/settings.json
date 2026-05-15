@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(./venv/Scripts/python.exe -m src.train_phase3b --heuristic 2>&1)"
+    ]
+  }
+}

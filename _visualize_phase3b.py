@@ -14,19 +14,19 @@ from src.env.wrappers import PerUAVDiscreteWrapper
 from stable_baselines3 import PPO
 
 
-def record_episode(n_uavs: int = 8, seed: int = 42):
+def record_episode(n_uavs: int = 10, seed: int = 42):
     """Record an episode with PPO policy, tracking all positions."""
     config = EnvConfig()
     config.num_uavs = n_uavs
-    config.max_uavs = 15  # must match model's observation space (from training)
-    config.sim.max_steps = 800
+    config.max_uavs = 100  # must match model's observation space (from training)
+    config.sim.max_steps = 1200
     config.uav_inflow_rate = 0.0
 
     env = TerminalAreaEnv(config)
     wrapper = Phase3bWrapper(env, n_uavs=n_uavs)
     disc = PerUAVDiscreteWrapper(wrapper)  # auto-computes continuous params
 
-    model = PPO.load("logs/ppo_phase3b.zip")
+    model = PPO.load("logs/best_model_phase3b/best_model.zip")
 
     obs, _ = disc.reset(seed=seed)
 
@@ -189,8 +189,8 @@ def create_animation(frames, airspace, landing_zones, n_uavs: int, output_path: 
 
 
 if __name__ == "__main__":
-    n = 8
+    n = 20
     print(f"Recording Phase 3b episode ({n} UAVs, all controlled)...")
     frames, airspace, landing_zones = record_episode(n_uavs=n, seed=42)
-    create_animation(frames, airspace, landing_zones, n, "results/phase3b_demo.gif")
+    create_animation(frames, airspace, landing_zones, n, "results/phase3b_demo_v2.gif")
     print("Done!")

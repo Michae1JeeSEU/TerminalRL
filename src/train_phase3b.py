@@ -65,11 +65,16 @@ class Phase3bWrapper(gym.Wrapper):
 # ---- Per-UAV Shared Feature Extractor ----
 
 class PerUAVFeatureExtractor(BaseFeaturesExtractor):
-    """Shared per-UAV encoder + global aggregator → flat feature vector.
+    """Shared per-UAV encoder + mean-pooled aggregator → per-UAV feature vector.
 
     Input: (max_n, local_obs_dim) matrix.
-    Each UAV row is independently encoded with a shared MLP, then all UAV
-    embeddings are concatenated and aggregated into a global feature vector.
+    Each UAV row is independently encoded with a shared MLP, then all active UAV
+    embeddings are mean-pooled into a global context. Each UAV's final feature
+    combines [global_context | local_embedding] through a shared combiner.
+
+    The encoder and combiner weights are independent of max_n — only the final
+    flatten dimension (max_n * per_uav_dim) scales with max_n, which is inherent
+    to SB3's fixed output requirement.
     """
 
     def __init__(self, observation_space: gym.Space, features_dim: int = 256):
@@ -77,6 +82,7 @@ class PerUAVFeatureExtractor(BaseFeaturesExtractor):
         n_uavs, obs_dim = observation_space.shape
         self.n_uavs = n_uavs
         self.obs_dim = obs_dim
+        self.per_uav_dim = 8
 
         self.uav_encoder = nn.Sequential(
             nn.Linear(obs_dim, 128),
@@ -85,19 +91,37 @@ class PerUAVFeatureExtractor(BaseFeaturesExtractor):
             nn.ReLU(),
         )
 
-        self.global_net = nn.Sequential(
-            nn.Linear(64 * n_uavs, 256),
+        self.per_uav_combiner = nn.Sequential(
+            nn.Linear(128, 32),
             nn.ReLU(),
-            nn.Linear(256, features_dim),
+            nn.Linear(32, self.per_uav_dim),
             nn.ReLU(),
         )
 
+        self._features_dim = n_uavs * self.per_uav_dim
+
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        batch_size = observations.shape[0]
-        flat = observations.view(batch_size * self.n_uavs, self.obs_dim)
-        uav_features = self.uav_encoder(flat)
-        uav_features = uav_features.view(batch_size, self.n_uavs * 64)
-        return self.global_net(uav_features)
+        B, N, D = observations.shape
+
+        flat = observations.view(B * N, D)
+        uav_embeds = self.uav_encoder(flat).view(B, N, 64)
+
+        # Active mask: rows with non-zero observation are active UAVs
+        active_mask = (observations.abs().sum(dim=-1) > 1e-6).float()  # (B, N)
+        n_active = active_mask.sum(dim=1, keepdim=True).clamp(min=1)   # (B, 1)
+
+        # Mean pool active UAV embeddings → global context
+        masked = uav_embeds * active_mask.unsqueeze(-1)               # (B, N, 64)
+        global_ctx = masked.sum(dim=1) / n_active                      # (B, 64)
+
+        # Combine global context with each UAV's local embedding
+        global_exp = global_ctx.unsqueeze(1).expand(-1, N, -1)        # (B, N, 64)
+        combined = torch.cat([global_exp, uav_embeds], dim=-1)        # (B, N, 128)
+
+        # Shared per-UAV combiner
+        combined_flat = combined.view(B * N, 128)
+        per_uav = self.per_uav_combiner(combined_flat)                 # (B*N, per_uav_dim)
+        return per_uav.view(B, N * self.per_uav_dim)                   # (B, features_dim)
 
 
 # ---- Environment Factory ----
@@ -161,14 +185,14 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
 
 # ---- PPO Training ----
 
-def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 10,
+def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
                   total_timesteps: int = 500_000):
     """Train PPO with per-UAV shared policy for Phase 3b."""
     if config is None:
         config = EnvConfig()
         config.num_uavs = n_uavs
-        config.max_uavs = n_uavs + 5
-        config.sim.max_steps = 800
+        config.max_uavs = 100
+        config.sim.max_steps = 1200
         config.uav_inflow_rate = 0.0
 
     env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
@@ -296,14 +320,14 @@ def run_heuristic_baseline(n_uavs_list: list[int] | None = None,
                            num_episodes: int = 10):
     """Quick heuristic baseline for Phase 3b across different UAV counts."""
     if n_uavs_list is None:
-        n_uavs_list = [5, 10, 15]
+        n_uavs_list = [5, 10, 15, 20, 25, 30]
 
     print("=== Phase 3b Heuristic Baseline ===\n")
     for n in n_uavs_list:
         config = EnvConfig()
         config.num_uavs = n
-        config.max_uavs = n + 5
-        config.sim.max_steps = 800
+        config.max_uavs = 100
+        config.sim.max_steps = 1200
         config.uav_inflow_rate = 0.0
         heuristic = HeuristicPolicy(config)
         all_landed = []
@@ -337,31 +361,84 @@ def run_heuristic_baseline(n_uavs_list: list[int] | None = None,
     return True
 
 
+def eval_scale(model, base_config: EnvConfig, n_list: list[int] | None = None,
+               num_episodes: int = 10):
+    """Evaluate PPO vs Heuristic across multiple UAV counts to test generalization."""
+    if n_list is None:
+        n_list = [5, 10, 15, 20, 25, 30]
+
+    print(f"\n{'='*60}")
+    print(f"Multi-Scale Evaluation: PPO vs Heuristic")
+    print(f"{'='*60}\n")
+
+    results = {}
+    for n in n_list:
+        config = EnvConfig()
+        config.num_uavs = n
+        config.max_uavs = base_config.max_uavs
+        config.sim.max_steps = base_config.sim.max_steps
+        config.uav_inflow_rate = 0.0
+
+        result = compare_ppo_vs_heuristic_phase3b(model, config, n_uavs=n, num_episodes=num_episodes)
+        results[str(n)] = result
+
+        ppo_l = result["ppo"]["avg_landed"]
+        heur_l = result["heuristic"]["avg_landed"]
+        print(f"  N={n:2d}: PPO {ppo_l:.1f}/{n} ({ppo_l/n*100:.0f}%) | "
+              f"Heuristic {heur_l:.1f}/{n} ({heur_l/n*100:.0f}%) | "
+              f"PPO collisions={result['ppo']['avg_collisions']:.2f}")
+
+    Path("results").mkdir(exist_ok=True)
+    json.dump(results, open("results/phase3b_scale_comparison.json", "w"), indent=2)
+    print(f"\nResults saved to results/phase3b_scale_comparison.json")
+
+    # Summary table
+    print(f"\n{'N':<6} {'PPO Landed':<12} {'PPO Rate':<10} {'Heur Landed':<12} {'Heur Rate':<10}")
+    print("-" * 50)
+    for n in n_list:
+        r = results[str(n)]
+        print(f"{n:<6} {r['ppo']['avg_landed']:<12.1f} {r['ppo']['avg_landed']/n*100:<10.0f}% "
+              f"{r['heuristic']['avg_landed']:<12.1f} {r['heuristic']['avg_landed']/n*100:<10.0f}%")
+
+    return results
+
+
 if __name__ == "__main__":
     import sys
 
+    base_config = EnvConfig()
+    base_config.max_uavs = 100
+    base_config.sim.max_steps = 1200
+    base_config.uav_inflow_rate = 0.0
+
     if "--heuristic" in sys.argv:
         run_heuristic_baseline()
-    elif "--evaluate" in sys.argv:
-        config = EnvConfig()
-        config.num_uavs = 10
-        config.max_uavs = 15
-        config.sim.max_steps = 800
-        config.uav_inflow_rate = 0.0
-
+    elif "--eval-scale" in sys.argv:
         import os
-        model_path = "logs/ppo_phase3b.zip"
+        model_path = "logs/best_model_phase3b/best_model.zip"
+        if not os.path.exists(model_path):
+            model_path = "logs/ppo_phase3b.zip"
         if os.path.exists(model_path):
             model = PPO.load(model_path)
-            result = compare_ppo_vs_heuristic_phase3b(model, config, n_uavs=10)
+            eval_scale(model, base_config)
+        else:
+            print(f"No model found. Train first with: python -m src.train_phase3b")
+    elif "--evaluate" in sys.argv:
+        import os
+        model_path = "logs/best_model_phase3b/best_model.zip"
+        if not os.path.exists(model_path):
+            model_path = "logs/ppo_phase3b.zip"
+        if os.path.exists(model_path):
+            model = PPO.load(model_path)
+            result = compare_ppo_vs_heuristic_phase3b(model, base_config, n_uavs=20)
             Path("results").mkdir(exist_ok=True)
             json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
             print("Results saved to results/phase3b_comparison.json")
         else:
-            print(f"Model not found at {model_path}. Train first with: python -m src.train_phase3b")
+            print(f"No model found. Train first with: python -m src.train_phase3b")
     else:
-        model, config = train_phase3b(n_uavs=10, total_timesteps=500_000)
-        result = compare_ppo_vs_heuristic_phase3b(model, config, n_uavs=10)
+        model, config = train_phase3b(n_uavs=20, total_timesteps=500_000)
+        result = compare_ppo_vs_heuristic_phase3b(model, config, n_uavs=20)
         Path("results").mkdir(exist_ok=True)
         json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
         print("Results saved to results/phase3b_comparison.json")

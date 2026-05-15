@@ -1,36 +1,17 @@
 {
-  "best_model": {
-    "n_uavs": 10,
-    "safe_separation_m": 10.0,
-    "near_miss_threshold_m": 50.0,
-    "ppo": {
-      "avg_landed": 8.55,
-      "avg_steps": 162.25,
-      "avg_collisions": 0.2,
-      "avg_near_misses": 4.85
-    },
-    "heuristic": {
-      "avg_landed": 8.7,
-      "avg_steps": 106.15,
-      "avg_collisions": 0.15,
-      "avg_near_misses": 5.4
-    }
+  "n_uavs": 10,
+  "safe_separation_m": 10.0,
+  "near_miss_threshold_m": 50.0,
+  "ppo": {
+    "avg_landed": 6.6,
+    "avg_steps": 231.2,
+    "avg_collisions": 0.2,
+    "avg_near_misses": 2.05
   },
-  "final_model": {
-    "n_uavs": 10,
-    "safe_separation_m": 10.0,
-    "near_miss_threshold_m": 50.0,
-    "ppo": {
-      "avg_landed": 6.6,
-      "avg_steps": 231.2,
-      "avg_collisions": 0.2,
-      "avg_near_misses": 2.05
-    },
-    "heuristic": {
-      "avg_landed": 8.7,
-      "avg_steps": 106.15,
-      "avg_collisions": 0.15,
-      "avg_near_misses": 5.4
-    }
+  "heuristic": {
+    "avg_landed": 8.7,
+    "avg_steps": 106.15,
+    "avg_collisions": 0.15,
+    "avg_near_misses": 5.4
   }
 }
