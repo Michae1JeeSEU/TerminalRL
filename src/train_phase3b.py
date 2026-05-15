@@ -120,6 +120,7 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
     all_failed = []
     all_steps = []
     all_conflicts = []
+    all_near_misses = []
     all_energy = []
 
     for ep in range(num_episodes):
@@ -129,11 +130,13 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
         obs, _ = disc.reset(seed=seed + ep)
         step = 0
         ep_conflicts = 0
+        ep_near_misses = 0
 
         while True:
             action = policy.predict(obs)
             obs, _, terminated, truncated, info = disc.step(action)
             ep_conflicts += info.get("conflicts", 0)
+            ep_near_misses += info.get("near_misses", 0)
             step += 1
             if terminated or truncated:
                 break
@@ -142,6 +145,7 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
         all_failed.append(info.get("failed", 0))
         all_steps.append(step)
         all_conflicts.append(ep_conflicts)
+        all_near_misses.append(ep_near_misses)
         all_energy.append(env.get_episode_metrics().total_energy)
 
     return {
@@ -150,6 +154,7 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
         "landing_rate": float(np.mean([l / max(l + f, 1) for l, f in zip(all_landed, all_failed)])),
         "avg_steps": float(np.mean(all_steps)),
         "avg_conflicts": float(np.mean(all_conflicts)),
+        "avg_near_misses": float(np.mean(all_near_misses)),
         "avg_energy": float(np.mean(all_energy)),
     }
 
@@ -217,59 +222,71 @@ def compare_ppo_vs_heuristic_phase3b(model, config: EnvConfig, n_uavs: int = 10,
     print("--- PPO (per-UAV shared policy) ---")
     ppo_landed = []
     ppo_steps = []
-    ppo_conflicts = []
+    ppo_collisions = []
+    ppo_near = []
     for ep in range(num_episodes):
         env = TerminalAreaEnv(config)
         wrapper = Phase3bWrapper(env, n_uavs=n_uavs)
         disc = PerUAVDiscreteWrapper(wrapper)
         obs, _ = disc.reset(seed=42 + ep)
-        step, conflicts = 0, 0
+        step, collisions, nears = 0, 0, 0
         while True:
             action, _ = model.predict(obs, deterministic=True)
             obs, _, terminated, truncated, info = disc.step(action)
-            conflicts += info.get("conflicts", 0)
+            collisions += info.get("conflicts", 0)
+            nears += info.get("near_misses", 0)
             step += 1
             if terminated or truncated:
                 break
         ppo_landed.append(info.get("landed", 0))
         ppo_steps.append(step)
-        ppo_conflicts.append(conflicts)
+        ppo_collisions.append(collisions)
+        ppo_near.append(nears)
 
     ppo_l = np.mean(ppo_landed)
     ppo_s = np.mean(ppo_steps)
-    ppo_c = np.mean(ppo_conflicts)
-    print(f"  Landed: {ppo_l:.1f}, Steps: {ppo_s:.0f}, Conflicts: {ppo_c:.1f}")
+    ppo_c = np.mean(ppo_collisions)
+    ppo_n = np.mean(ppo_near)
+    print(f"  Landed: {ppo_l:.1f}, Steps: {ppo_s:.0f}, Collisions: {ppo_c:.2f}, Near-misses: {ppo_n:.1f}")
 
-    # --- Heuristic (with PerUAVDiscreteWrapper for per-UAV heuristics) ---
+    # --- Heuristic ---
     print("--- Heuristic (per-UAV greedy) ---")
     heur_landed = []
     heur_steps = []
-    heur_conflicts = []
+    heur_collisions = []
+    heur_near = []
     for ep in range(num_episodes):
         env = TerminalAreaEnv(config)
         wrapper = Phase3bWrapper(env, n_uavs=n_uavs)
         obs, _ = wrapper.reset(seed=42 + ep)
-        step, conflicts = 0, 0
+        step, collisions, nears = 0, 0, 0
         while True:
             action = heuristic.predict(obs)
             obs, _, terminated, truncated, info = wrapper.step(action)
-            conflicts += info.get("conflicts", 0)
+            collisions += info.get("conflicts", 0)
+            nears += info.get("near_misses", 0)
             step += 1
             if terminated or truncated:
                 break
         heur_landed.append(info.get("landed", 0))
         heur_steps.append(step)
-        heur_conflicts.append(conflicts)
+        heur_collisions.append(collisions)
+        heur_near.append(nears)
 
     heur_l = np.mean(heur_landed)
     heur_s = np.mean(heur_steps)
-    heur_c = np.mean(heur_conflicts)
-    print(f"  Landed: {heur_l:.1f}, Steps: {heur_s:.0f}, Conflicts: {heur_c:.1f}")
+    heur_c = np.mean(heur_collisions)
+    heur_n = np.mean(heur_near)
+    print(f"  Landed: {heur_l:.1f}, Steps: {heur_s:.0f}, Collisions: {heur_c:.2f}, Near-misses: {heur_n:.1f}")
 
     return {
         "n_uavs": n_uavs,
-        "ppo": {"avg_landed": float(ppo_l), "avg_steps": float(ppo_s), "avg_conflicts": float(ppo_c)},
-        "heuristic": {"avg_landed": float(heur_l), "avg_steps": float(heur_s), "avg_conflicts": float(heur_c)},
+        "safe_separation_m": config.uav.safe_separation,
+        "near_miss_threshold_m": config.uav.near_miss_threshold,
+        "ppo": {"avg_landed": float(ppo_l), "avg_steps": float(ppo_s),
+                "avg_collisions": float(ppo_c), "avg_near_misses": float(ppo_n)},
+        "heuristic": {"avg_landed": float(heur_l), "avg_steps": float(heur_s),
+                      "avg_collisions": float(heur_c), "avg_near_misses": float(heur_n)},
     }
 
 
@@ -291,26 +308,31 @@ def run_heuristic_baseline(n_uavs_list: list[int] | None = None,
         heuristic = HeuristicPolicy(config)
         all_landed = []
         all_steps = []
-        all_conflicts = []
+        all_collisions = []
+        all_near = []
 
         for ep in range(num_episodes):
             env = TerminalAreaEnv(config)
             wrapper = Phase3bWrapper(env, n_uavs=n)
             obs, _ = wrapper.reset(seed=ep)
-            step, conflicts = 0, 0
+            step, collisions, nears = 0, 0, 0
             while True:
                 action = heuristic.predict(obs)
                 obs, _, terminated, truncated, info = wrapper.step(action)
-                conflicts += info.get("conflicts", 0)
+                collisions += info.get("conflicts", 0)
+                nears += info.get("near_misses", 0)
                 step += 1
                 if terminated or truncated:
                     break
             all_landed.append(info.get("landed", 0))
             all_steps.append(step)
-            all_conflicts.append(conflicts)
+            all_collisions.append(collisions)
+            all_near.append(nears)
 
+        collision_eps = sum(1 for c in all_collisions if c > 0)
         print(f"  N={n}: landed={np.mean(all_landed):.1f}/{n}, "
-              f"steps={np.mean(all_steps):.0f}, conflicts={np.mean(all_conflicts):.1f}")
+              f"steps={np.mean(all_steps):.0f}, collisions={np.mean(all_collisions):.3f}, "
+              f"near_misses={np.mean(all_near):.1f} ({collision_eps}/{num_episodes} eps with collision)")
 
     return True
 

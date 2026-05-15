@@ -215,6 +215,39 @@ class TestConflictDetector:
         u2.reset(np.array([0., 0., 100.]))
         assert not d.check_pairwise(u1, u2)
 
+    def test_near_miss_detected(self):
+        """Distance in [safe_dist, near_miss_threshold) should be near-miss, not collision."""
+        d = ConflictDetector(10.0, near_miss_threshold=50.0)
+        u1 = UAV(0, UAVConfig(), 1)
+        u2 = UAV(1, UAVConfig(), 1)
+        u1.reset(np.array([0., 0., 100.]))
+        u2.reset(np.array([30., 0., 100.]))  # dist=30: between 10 and 50
+        assert not d.check_pairwise(u1, u2)  # not a collision
+        nm = d.check_near_misses([u1, u2])
+        assert len(nm) == 1  # but is a near-miss
+
+    def test_no_near_miss_beyond_threshold(self):
+        """Distance >= near_miss_threshold should be neither collision nor near-miss."""
+        d = ConflictDetector(10.0, near_miss_threshold=50.0)
+        u1 = UAV(0, UAVConfig(), 1)
+        u2 = UAV(1, UAVConfig(), 1)
+        u1.reset(np.array([0., 0., 100.]))
+        u2.reset(np.array([60., 0., 100.]))  # dist=60: beyond both thresholds
+        assert not d.check_pairwise(u1, u2)
+        nm = d.check_near_misses([u1, u2])
+        assert len(nm) == 0
+
+    def test_near_miss_excludes_collision(self):
+        """Collision pairs should not also appear in near-misses."""
+        d = ConflictDetector(10.0, near_miss_threshold=50.0)
+        u1 = UAV(0, UAVConfig(), 1)
+        u2 = UAV(1, UAVConfig(), 1)
+        u1.reset(np.array([0., 0., 100.]))
+        u2.reset(np.array([5., 0., 100.]))  # dist=5: collision
+        assert d.check_pairwise(u1, u2)
+        nm = d.check_near_misses([u1, u2])
+        assert len(nm) == 0  # collision excluded from near-misses
+
 
 class TestPriorityEngine:
     def test_sorting_descending(self):
@@ -322,6 +355,40 @@ class TestTerminalAreaEnv:
         # Active UAV rows should have non-zero self features
         # Row 0: sin(θ) or cos(θ) should be non-zero for active UAV
         assert not (abs(obs[0, 9]) < 1e-9 and abs(obs[0, 10]) < 1e-9)
+
+    def test_collision_terminates_episode(self):
+        """A collision (dist < safe_separation) must trigger immediate termination."""
+        config = EnvConfig()
+        config.num_uavs = 2
+        config.uav.safe_separation = 10.0
+        config.sim.max_steps = 100
+        env = TerminalAreaEnv(config)
+        env.reset(seed=42)
+
+        # Force two UAVs to collide by setting positions, ring_ids, and angles consistently
+        uavs = env.uav_manager.uavs
+        for u in uavs:
+            u.ring_id = 1  # both on ring 1 (H=800)
+        uavs[0].position = np.array([4000., 0., 800.])  # on ring 1 orbit, angle=0
+        uavs[0]._angle = 0.0
+        uavs[1].position = np.array([4005., 0., 800.])  # 5m apart, angle=0
+        uavs[1]._angle = 0.0
+
+        n = env.max_n
+        m = config.sim.num_landing_zones
+        action = {
+            "high_level": np.array([4000., 2500., 1000., 800., 500., 200., 25., 20., 15.]),
+            "low_level": {
+                "control": np.zeros(n, dtype=np.int32),
+                "psi": np.zeros(n, dtype=np.float64),
+                "gamma": np.zeros(n, dtype=np.float64),
+                "speed": np.full(n, 25.0, dtype=np.float64),
+                "landing_zone": np.full(n, m, dtype=np.int32),
+            },
+        }
+        obs, reward, terminated, truncated, info = env.step(action)
+        assert terminated, "Episode must terminate on collision"
+        assert reward < -100, f"Collision reward should be heavily negative, got {reward}"
 
     def test_inflow_disabled_by_default(self):
         config = EnvConfig()

@@ -21,7 +21,8 @@ class UAVConfig:
     descent_speed: float = 25.0
     max_battery: float = 100.0
     battery_critical: float = 0.15
-    safe_separation: float = 50.0
+    safe_separation: float = 10.0          # collision danger zone (m)
+    near_miss_threshold: float = 50.0      # proximity warning zone (m)
     # Energy consumption rates (per second)
     power_cruise: float = 1.0
     power_descend: float = 0.7
@@ -63,4 +64,5 @@ class EnvConfig:
     w_priority: float = 2.0
     w_battery: float = 10.0
     w_smooth: float = 0.1             # action smoothness penalty
-    penalty_conflict: float = 10.0
+    penalty_conflict: float = 500.0        # collision instant penalty (with termination)
+    penalty_near_miss: float = 2.0         # proximity warning penalty

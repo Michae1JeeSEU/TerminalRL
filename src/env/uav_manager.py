@@ -114,7 +114,9 @@ class UAVManager:
                     ring_circlers[ring_id].append(uav)
 
         # Compute speed adjustments for circling UAVs on each ring
-        safe_dist = self.config.safe_separation
+        # Use near_miss_threshold for proactive separation (maintain 50m buffer),
+        # not safe_separation (10m collision zone).
+        safe_dist = self.config.near_miss_threshold
         speed_adjustments: dict[int, float] = {}  # uav.id -> speed multiplier
         for ring_id, circlers in ring_circlers.items():
             if len(circlers) < 2:

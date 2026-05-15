@@ -30,7 +30,10 @@ class TerminalAreaEnv(gym.Env):
         self.rng = np.random.default_rng()
 
         self.uav_manager: UAVManager = None  # type: ignore[assignment]
-        self.conflict_detector = ConflictDetector(self.config.uav.safe_separation)
+        self.conflict_detector = ConflictDetector(
+            self.config.uav.safe_separation,
+            self.config.uav.near_miss_threshold,
+        )
         self.priority_engine = PriorityEngine()
         self.metrics = MetricsCollector()
 
@@ -148,7 +151,12 @@ class TerminalAreaEnv(gym.Env):
         # Compute reward and metrics
         reward = self._compute_reward()
 
+        # Collision: immediate termination
+        collisions = self.conflict_detector.check_all(self.uav_manager.uavs)
         terminated = self.step_count >= self.config.sim.max_steps
+        if len(collisions) > 0:
+            terminated = True
+            reward -= 500.0  # massive one-time collision penalty
         truncated = False
 
         self.metrics.step(
@@ -227,6 +235,9 @@ class TerminalAreaEnv(gym.Env):
         conflicts = self.conflict_detector.check_all(uavs)
         R_safety = -cfg.w_safety * len(conflicts) * cfg.penalty_conflict
 
+        near_misses = self.conflict_detector.check_near_misses(uavs)
+        R_near_miss = -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss
+
         violations = self.priority_engine.get_priority_violations(uavs)
         R_priority = -cfg.w_priority * violations
 
@@ -246,7 +257,7 @@ class TerminalAreaEnv(gym.Env):
         R_progress /= n_ctrl
 
         return (R_energy + R_wait + R_throughput + R_safety
-                + R_priority + R_battery + R_progress)
+                + R_near_miss + R_priority + R_battery + R_progress)
 
     def _get_obs(self) -> np.ndarray:
         """Build per-UAV local observation matrix of shape (max_n, local_obs_dim)."""
@@ -354,6 +365,7 @@ class TerminalAreaEnv(gym.Env):
             "active": len(self.uav_manager.active_uavs),
             "total_active": len(self.uav_manager.uavs),
             "conflicts": len(self.conflict_detector.check_all(self.uav_manager.uavs)),
+            "near_misses": len(self.conflict_detector.check_near_misses(self.uav_manager.uavs)),
             "avg_wait": self.uav_manager.avg_wait_time,
         }
 
