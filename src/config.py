@@ -37,6 +37,26 @@ class UAVConfig:
 
 
 @dataclass
+class SafetyConfig:
+    """Reflexive collision avoidance parameters for SafetyController."""
+    # Rule 1: Same-ring angular separation
+    angular_separation_threshold: float = 50.0
+    # Rule 2: Circling yields to descending
+    descend_crossing_lookahead: float = 10.0
+    descend_crossing_slowdown: float = 0.85
+    # Rule 3: Dual descent divergence
+    dual_descend_threshold: float = 50.0
+    dual_descend_psi_offset: float = 15.0  # degrees, converted to rad internally
+    # Rule 4: Universal proximity brake
+    universal_brake_threshold: float = 30.0
+    universal_brake_low: float = 0.70
+    universal_brake_high: float = 0.85
+    # Rule 5: Emergency override
+    emergency_yield_slowdown: float = 0.60
+    emergency_yield_psi: float = 25.0  # degrees, converted to rad internally
+
+
+@dataclass
 class SimConfig:
     dt_high: float = 1800.0       # high-level interval (s)
     dt_low: float = 2.0           # low-level step (s)
@@ -65,6 +85,7 @@ MISSION_TYPE_WEIGHTS = [0.45, 0.25, 0.10, 0.20]  # spawn probability weights
 class EnvConfig:
     ring: RingConfig = field(default_factory=RingConfig)
     uav: UAVConfig = field(default_factory=UAVConfig)
+    safety: SafetyConfig = field(default_factory=SafetyConfig)
     sim: SimConfig = field(default_factory=SimConfig)
     num_uavs: int = 50
     # Inflow model
@@ -82,3 +103,5 @@ class EnvConfig:
     w_smooth: float = 0.1             # action smoothness penalty
     penalty_conflict: float = 500.0        # collision instant penalty (with termination)
     penalty_near_miss: float = 2.0         # proximity warning penalty
+    # Safety controller
+    safety_enabled: bool = True            # True = SafetyController active during env.step

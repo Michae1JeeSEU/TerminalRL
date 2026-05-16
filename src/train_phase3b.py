@@ -187,13 +187,19 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
 
 def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
                   total_timesteps: int = 500_000):
-    """Train PPO with per-UAV shared policy for Phase 3b."""
+    """Train PPO with per-UAV shared policy for Phase 3b.
+
+    SafetyController is enabled during training. Safety adjustments
+    (speed_mult, psi_offset, gamma_offset, blocked) are included in
+    the observation space so PPO learns to anticipate safety interventions.
+    """
     if config is None:
         config = EnvConfig()
         config.num_uavs = n_uavs
         config.max_uavs = 100
         config.sim.max_steps = 1200
         config.uav_inflow_rate = 0.0
+        config.safety_enabled = True
 
     env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
     eval_env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
@@ -430,15 +436,21 @@ if __name__ == "__main__":
             model_path = "logs/ppo_phase3b.zip"
         if os.path.exists(model_path):
             model = PPO.load(model_path)
-            result = compare_ppo_vs_heuristic_phase3b(model, base_config, n_uavs=20)
+            result = compare_ppo_vs_heuristic_phase3b(model, base_config, n_uavs=10)
             Path("results").mkdir(exist_ok=True)
             json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
             print("Results saved to results/phase3b_comparison.json")
         else:
             print(f"No model found. Train first with: python -m src.train_phase3b")
     else:
-        model, config = train_phase3b(n_uavs=20, total_timesteps=500_000)
-        result = compare_ppo_vs_heuristic_phase3b(model, config, n_uavs=20)
+        model, train_cfg = train_phase3b(n_uavs=10, total_timesteps=500_000)
+        eval_cfg = EnvConfig()
+        eval_cfg.num_uavs = 10
+        eval_cfg.max_uavs = train_cfg.max_uavs
+        eval_cfg.sim.max_steps = train_cfg.sim.max_steps
+        eval_cfg.uav_inflow_rate = 0.0
+        eval_cfg.safety_enabled = True
+        result = compare_ppo_vs_heuristic_phase3b(model, eval_cfg, n_uavs=10)
         Path("results").mkdir(exist_ok=True)
         json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
         print("Results saved to results/phase3b_comparison.json")

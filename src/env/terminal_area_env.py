@@ -11,6 +11,7 @@ from src.env.uav_manager import UAVManager
 from src.env.conflict_detector import ConflictDetector
 from src.env.priority_engine import PriorityEngine
 from src.env.metrics_collector import MetricsCollector, EpisodeMetrics
+from src.env.safety_controller import SafetyController
 
 
 class TerminalAreaEnv(gym.Env):
@@ -36,6 +37,9 @@ class TerminalAreaEnv(gym.Env):
         )
         self.priority_engine = PriorityEngine()
         self.metrics = MetricsCollector()
+        self.safety_controller = SafetyController(
+            self.config.safety, self.airspace, self.conflict_detector
+        )
 
         self.step_count = 0
         self._prev_landed = 0
@@ -52,7 +56,8 @@ class TerminalAreaEnv(gym.Env):
         # Per-UAV local observation dimension
         self.k = self.config.k_nearest
         self.max_n = self.config.max_uavs
-        self._local_obs_dim = 9 + 9 + self.k * 6 + 3 + self.config.sim.num_landing_zones  # airspace + self + neighbors + ring_counts + lz_occupancy
+        self._local_obs_dim = (9 + 9 + self.k * 6 + 3 + self.config.sim.num_landing_zones
+                                + 4)  # +4 safety: speed_mult, psi_offset, gamma_offset, blocked
 
         self._define_spaces()
 
@@ -108,6 +113,9 @@ class TerminalAreaEnv(gym.Env):
             self.rng = np.random.default_rng(seed)
 
         self.airspace = RingAirspace(self.config.ring)
+        self.safety_controller = SafetyController(
+            self.config.safety, self.airspace, self.conflict_detector
+        )
         initial_uavs = self.config.num_uavs
         if options and "initial_uavs" in options:
             initial_uavs = options["initial_uavs"]
@@ -145,7 +153,8 @@ class TerminalAreaEnv(gym.Env):
         # Apply low-level actions
         ll = action.get("low_level", {})
         uav_actions = self._parse_low_level_actions(ll)
-        self.uav_manager.step_all(uav_actions, dt)
+        sc = self.safety_controller if self.config.safety_enabled else None
+        self.uav_manager.step_all(uav_actions, dt, sc)
 
         # Update LZ occupancy timers
         self.lz_occupied_until = np.maximum(0.0, self.lz_occupied_until - dt)
@@ -390,13 +399,23 @@ class TerminalAreaEnv(gym.Env):
 
             # LZ occupancy (normalized remaining time, 1.0 = occupied)
             lz_feat = np.minimum(self.lz_occupied_until / max(self._max_lz_occ, 1.0), 1.0)
+            lz_start = 18 + self.k * 6 + 3
+            lz_end = lz_start + self.config.sim.num_landing_zones
 
             # Assemble row
             obs[i, :9] = asv_norm
             obs[i, 9:18] = self_feat
             obs[i, 18:18 + self.k * 6] = neigh_feats
             obs[i, 18 + self.k * 6:18 + self.k * 6 + 3] = ring_feat
-            obs[i, 18 + self.k * 6 + 3:] = lz_feat
+            obs[i, lz_start:lz_end] = lz_feat
+
+            # Safety adjustment features (last 4 dims): applied TO this UAV
+            adj = self.uav_manager.last_safety_adjustments.get(u.id)
+            if adj is not None:
+                obs[i, lz_end] = adj.speed_mult
+                obs[i, lz_end + 1] = adj.psi_offset / np.pi
+                obs[i, lz_end + 2] = adj.gamma_offset / (np.pi / 2)
+                obs[i, lz_end + 3] = float(adj.blocked)
 
         return obs
 

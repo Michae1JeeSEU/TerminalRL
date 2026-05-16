@@ -1,0 +1,104 @@
+{
+  "5": {
+    "n_uavs": 5,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 5.0,
+      "avg_steps": 120.9,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 0.0
+    },
+    "heuristic": {
+      "avg_landed": 5.0,
+      "avg_steps": 95.7,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 0.0
+    }
+  },
+  "10": {
+    "n_uavs": 10,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 8.6,
+      "avg_steps": 120.1,
+      "avg_collisions": 0.2,
+      "avg_near_misses": 2.1
+    },
+    "heuristic": {
+      "avg_landed": 10.0,
+      "avg_steps": 120.5,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 9.6
+    }
+  },
+  "15": {
+    "n_uavs": 15,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 9.3,
+      "avg_steps": 103.6,
+      "avg_collisions": 0.5,
+      "avg_near_misses": 2.2
+    },
+    "heuristic": {
+      "avg_landed": 8.6,
+      "avg_steps": 98.0,
+      "avg_collisions": 0.5,
+      "avg_near_misses": 2.1
+    }
+  },
+  "20": {
+    "n_uavs": 20,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 10.6,
+      "avg_steps": 108.0,
+      "avg_collisions": 0.8,
+      "avg_near_misses": 19.4
+    },
+    "heuristic": {
+      "avg_landed": 8.9,
+      "avg_steps": 85.2,
+      "avg_collisions": 0.7,
+      "avg_near_misses": 4.5
+    }
+  },
+  "25": {
+    "n_uavs": 25,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 7.2,
+      "avg_steps": 74.3,
+      "avg_collisions": 0.9,
+      "avg_near_misses": 18.2
+    },
+    "heuristic": {
+      "avg_landed": 9.1,
+      "avg_steps": 67.6,
+      "avg_collisions": 0.9,
+      "avg_near_misses": 14.3
+    }
+  },
+  "30": {
+    "n_uavs": 30,
+    "safe_separation_m": 10.0,
+    "near_miss_threshold_m": 50.0,
+    "ppo": {
+      "avg_landed": 6.2,
+      "avg_steps": 58.0,
+      "avg_collisions": 0.9,
+      "avg_near_misses": 19.6
+    },
+    "heuristic": {
+      "avg_landed": 3.2,
+      "avg_steps": 26.1,
+      "avg_collisions": 1.1,
+      "avg_near_misses": 7.7
+    }
+  }
+}

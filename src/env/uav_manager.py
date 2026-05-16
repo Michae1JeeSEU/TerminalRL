@@ -31,6 +31,7 @@ class UAVManager:
         else:
             self.inflow_interval = float('inf')
         self._time_since_last_spawn = 0.0
+        self.last_safety_adjustments: dict[int, object] = {}
 
         # Distribute initial UAVs across ring orbits
         n_initial = initial_uavs if initial_uavs is not None else num_uavs
@@ -97,52 +98,26 @@ class UAVManager:
             self._spawn_one()
             self._time_since_last_spawn -= self.inflow_interval
 
-    def step_all(self, actions: dict[int, LowLevelAction], dt: float) -> None:
+    def step_all(self, actions: dict[int, LowLevelAction], dt: float,
+                 safety_controller=None) -> None:
         """Apply per-UAV actions and advance all UAVs.
 
-        Includes basic angular separation for circling UAVs on the same ring:
-        UAVs that are too close adjust speed slightly to spread out over time.
+        When safety_controller is provided, it evaluates and adjusts actions
+        before each UAV step for reflexive collision avoidance.
         """
-        # Pre-compute ring assignments and identify circling UAVs per ring
-        ring_circlers: dict[int, list[UAV]] = {1: [], 2: [], 3: []}
+        # Update ring assignments
         for uav in self.uavs:
             ring_id = self.airspace.get_ring(uav.position)
             if ring_id == 0:
                 ring_id = uav.ring_id
             uav.ring_id = ring_id
-            action = actions.get(uav.id, LowLevelAction(control=0))
-            if action.control == 0 and uav.status == UAVStatus.CRUISING:
-                if ring_id > 0:
-                    ring_circlers[ring_id].append(uav)
 
-        # Compute speed adjustments for circling UAVs on each ring
-        # Use near_miss_threshold for proactive separation (maintain 50m buffer),
-        # not safe_separation (10m collision zone).
-        safe_dist = self.config.near_miss_threshold
-        speed_adjustments: dict[int, float] = {}  # uav.id -> speed multiplier
-        for ring_id, circlers in ring_circlers.items():
-            if len(circlers) < 2:
-                continue
-            # Sort by angle
-            circlers.sort(key=lambda u: u.angle)
-            n = len(circlers)
-            r_i = self.airspace.radii[ring_id - 1]
-            # Angular separation needed for safe distance
-            safe_angle = safe_dist / max(r_i, 1e-6)
-            for i, uav in enumerate(circlers):
-                prev_uav = circlers[(i - 1) % n]
-                next_uav = circlers[(i + 1) % n]
-                # Angular gap to neighbors
-                gap_prev = (uav.angle - prev_uav.angle) % (2 * np.pi)
-                gap_next = (next_uav.angle - uav.angle) % (2 * np.pi)
-                min_gap = min(gap_prev, gap_next)
-                if min_gap < safe_angle:
-                    # Too close: slow down to let neighbor pull ahead
-                    speed_adjustments[uav.id] = 0.95
-                elif min_gap < 2 * safe_angle:
-                    # Catching up: slight slowdown
-                    speed_adjustments[uav.id] = 0.98
-                # else: normal speed (1.0)
+        # Reflexive safety: evaluate and adjust actions
+        self.last_safety_adjustments: dict[int, object] = {}
+        if safety_controller is not None:
+            adjustments = safety_controller.evaluate(self.uavs, actions)
+            actions = safety_controller.apply(actions, adjustments)
+            self.last_safety_adjustments = adjustments
 
         for uav in self.uavs:
             action = actions.get(uav.id, LowLevelAction(control=0))
@@ -153,10 +128,6 @@ class UAVManager:
                 speed_i = self.airspace.speeds[ring_id - 1]
             else:
                 r_i, h_i, speed_i = self.airspace.radii[0], self.airspace.heights[0], self.airspace.speeds[0]
-
-            # Apply separation speed adjustment for circling UAVs
-            if uav.id in speed_adjustments:
-                speed_i *= speed_adjustments[uav.id]
 
             uav.step(action, speed_i, r_i, h_i, dt)
 
