@@ -5,7 +5,7 @@
     "near_miss_threshold_m": 50.0,
     "ppo": {
       "avg_landed": 5.0,
-      "avg_steps": 120.9,
+      "avg_steps": 112.6,
       "avg_collisions": 0.0,
       "avg_near_misses": 0.0
     },
@@ -21,10 +21,10 @@
     "safe_separation_m": 10.0,
     "near_miss_threshold_m": 50.0,
     "ppo": {
-      "avg_landed": 8.6,
-      "avg_steps": 120.1,
-      "avg_collisions": 0.2,
-      "avg_near_misses": 2.1
+      "avg_landed": 9.8,
+      "avg_steps": 146.0,
+      "avg_collisions": 0.1,
+      "avg_near_misses": 2.2
     },
     "heuristic": {
       "avg_landed": 10.0,
@@ -38,16 +38,16 @@
     "safe_separation_m": 10.0,
     "near_miss_threshold_m": 50.0,
     "ppo": {
-      "avg_landed": 9.3,
-      "avg_steps": 103.6,
-      "avg_collisions": 0.5,
-      "avg_near_misses": 2.2
+      "avg_landed": 14.6,
+      "avg_steps": 198.3,
+      "avg_collisions": 0.2,
+      "avg_near_misses": 3.0
     },
     "heuristic": {
-      "avg_landed": 8.6,
-      "avg_steps": 98.0,
-      "avg_collisions": 0.5,
-      "avg_near_misses": 2.1
+      "avg_landed": 13.8,
+      "avg_steps": 138.7,
+      "avg_collisions": 0.6,
+      "avg_near_misses": 2.4
     }
   },
   "20": {
@@ -55,16 +55,16 @@
     "safe_separation_m": 10.0,
     "near_miss_threshold_m": 50.0,
     "ppo": {
-      "avg_landed": 10.6,
-      "avg_steps": 108.0,
-      "avg_collisions": 0.8,
-      "avg_near_misses": 19.4
+      "avg_landed": 18.9,
+      "avg_steps": 220.8,
+      "avg_collisions": 0.5,
+      "avg_near_misses": 11.3
     },
     "heuristic": {
-      "avg_landed": 8.9,
-      "avg_steps": 85.2,
-      "avg_collisions": 0.7,
-      "avg_near_misses": 4.5
+      "avg_landed": 18.4,
+      "avg_steps": 177.0,
+      "avg_collisions": 0.8,
+      "avg_near_misses": 6.6
     }
   },
   "25": {
@@ -72,16 +72,16 @@
     "safe_separation_m": 10.0,
     "near_miss_threshold_m": 50.0,
     "ppo": {
-      "avg_landed": 7.2,
-      "avg_steps": 74.3,
-      "avg_collisions": 0.9,
-      "avg_near_misses": 18.2
+      "avg_landed": 21.2,
+      "avg_steps": 223.3,
+      "avg_collisions": 1.9,
+      "avg_near_misses": 24.4
     },
     "heuristic": {
-      "avg_landed": 9.1,
-      "avg_steps": 67.6,
-      "avg_collisions": 0.9,
-      "avg_near_misses": 14.3
+      "avg_landed": 22.0,
+      "avg_steps": 185.2,
+      "avg_collisions": 1.5,
+      "avg_near_misses": 42.2
     }
   },
   "30": {
@@ -89,16 +89,16 @@
     "safe_separation_m": 10.0,
     "near_miss_threshold_m": 50.0,
     "ppo": {
-      "avg_landed": 6.2,
-      "avg_steps": 58.0,
-      "avg_collisions": 0.9,
-      "avg_near_misses": 19.6
+      "avg_landed": 23.8,
+      "avg_steps": 235.6,
+      "avg_collisions": 3.1,
+      "avg_near_misses": 30.2
     },
     "heuristic": {
-      "avg_landed": 3.2,
-      "avg_steps": 26.1,
-      "avg_collisions": 1.1,
-      "avg_near_misses": 7.7
+      "avg_landed": 24.2,
+      "avg_steps": 202.5,
+      "avg_collisions": 2.9,
+      "avg_near_misses": 28.3
     }
   }
 }

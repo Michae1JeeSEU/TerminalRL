@@ -3,14 +3,14 @@
   "safe_separation_m": 10.0,
   "near_miss_threshold_m": 50.0,
   "ppo": {
-    "avg_landed": 8.8,
-    "avg_steps": 115.9,
-    "avg_collisions": 0.15,
-    "avg_near_misses": 1.55
+    "avg_landed": 9.8,
+    "avg_steps": 117.7,
+    "avg_collisions": 0.1,
+    "avg_near_misses": 5.1
   },
   "heuristic": {
-    "avg_landed": 8.85,
-    "avg_steps": 105.2,
+    "avg_landed": 9.7,
+    "avg_steps": 116.9,
     "avg_collisions": 0.15,
     "avg_near_misses": 5.0
   }
