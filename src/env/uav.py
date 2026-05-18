@@ -87,8 +87,8 @@ class UAV:
     def step(self, action: LowLevelAction, ring_speed: float, ring_radius: float,
              ring_height: float, dt: float) -> None:
         """Advance UAV state by dt seconds given the current ring's orbit parameters."""
-        if self.status == UAVStatus.LANDED:
-            return
+        if self.status == UAVStatus.LANDED or self.is_dead:
+            return  # landed or dead UAVs don't move
 
         if action.control == 0:  # CIRCLE
             speed_factor = 1.0

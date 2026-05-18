@@ -186,12 +186,26 @@ class TerminalAreaEnv(gym.Env):
         # Compute reward and metrics
         reward = self._compute_reward()
 
-        # Collision: immediate termination
+        # Collision: kill colliding UAVs, penalize, but DON'T terminate
         collisions = self.conflict_detector.check_all(self.uav_manager.uavs)
         terminated = self.step_count >= self.config.sim.max_steps
+        collision_penalty = 0.0
         if len(collisions) > 0:
-            terminated = True
-            reward -= 500.0  # massive one-time collision penalty
+            collision_ids = set()
+            for id1, id2 in collisions:
+                collision_ids.add(id1)
+                collision_ids.add(id2)
+            for u in self.uav_manager.uavs:
+                if u.id in collision_ids:
+                    u.battery = 0  # mark as dead (removed next remove_landed)
+                    # Release LZ reservation held by colliding UAV
+                    if u.landing_zone >= 0 and u.landing_zone in self._lz_reserved_by:
+                        if self._lz_reserved_by[u.landing_zone] == u.id:
+                            del self._lz_reserved_by[u.landing_zone]
+            # Immediate penalty: event + per-UAV
+            collision_penalty = -(self.config.penalty_conflict + self.config.penalty_conflict * 0.5 * len(collision_ids))
+            self.uav_manager.failed_count += len(collision_ids)
+        reward += collision_penalty
         truncated = False
 
         self.metrics.step(

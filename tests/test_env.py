@@ -356,8 +356,9 @@ class TestTerminalAreaEnv:
         # Row 0: sin(θ) or cos(θ) should be non-zero for active UAV
         assert not (abs(obs[0, 9]) < 1e-9 and abs(obs[0, 10]) < 1e-9)
 
-    def test_collision_terminates_episode(self):
-        """A collision (dist < safe_separation) must trigger immediate termination."""
+    def test_collision_kills_uavs(self):
+        """Collision must kill colliding UAVs (heavy penalty, mark dead)
+        but NOT terminate the episode."""
         config = EnvConfig()
         config.num_uavs = 2
         config.uav.safe_separation = 10.0
@@ -393,8 +394,55 @@ class TestTerminalAreaEnv:
             },
         }
         obs, reward, terminated, truncated, info = env.step(action)
-        assert terminated, "Episode must terminate on collision"
+        # Collision does NOT terminate the episode
+        assert not terminated, "Collision should NOT terminate episode"
         assert reward < -100, f"Collision reward should be heavily negative, got {reward}"
+        # Both UAVs should be marked as failed (collision-killed)
+        assert info["failed"] >= 2, f"Both colliding UAVs should count as failed, got failed={info['failed']}"
+        # Colliding UAVs should be dead (battery=0)
+        assert uavs[0].is_dead or uavs[1].is_dead, "At least one colliding UAV should be marked dead"
+
+    def test_collision_does_not_terminate_episode(self):
+        """After collision kills UAVs, episode continues with remaining UAVs."""
+        config = EnvConfig()
+        config.num_uavs = 3
+        config.uav.safe_separation = 10.0
+        config.sim.max_steps = 100
+        config.safety_enabled = False
+        env = TerminalAreaEnv(config)
+        env.reset(seed=42)
+
+        # Place 2 UAVs in collision, 1 UAV safe (far away on different ring)
+        uavs = env.uav_manager.uavs
+        for u in uavs:
+            u.ring_id = 1
+        uavs[0].position = np.array([4000., 0., 800.])
+        uavs[0]._angle = 0.0
+        angle_close = np.deg2rad(0.07)
+        uavs[1].position = np.array([4000. * np.cos(angle_close),
+                                      4000. * np.sin(angle_close), 800.])
+        uavs[1]._angle = float(angle_close)
+        # UAV2 at safe distance (opposite side of ring)
+        uavs[2].position = np.array([-4000., 0., 800.])
+        uavs[2]._angle = np.pi
+
+        n = env.max_n
+        m = config.sim.num_landing_zones
+        action = {
+            "high_level": np.array([4000., 2500., 1000., 800., 500., 200., 25., 20., 15.]),
+            "low_level": {
+                "control": np.zeros(n, dtype=np.int32),
+                "psi": np.zeros(n, dtype=np.float64),
+                "gamma": np.zeros(n, dtype=np.float64),
+                "speed": np.full(n, 25.0, dtype=np.float64),
+                "landing_zone": np.full(n, m, dtype=np.int32),
+            },
+        }
+        obs, reward, terminated, truncated, info = env.step(action)
+        assert not terminated, "Episode should NOT terminate on collision"
+        assert info["failed"] >= 2, f"Colliding UAVs should be counted as failed, got {info['failed']}"
+        # Safe UAV should still be alive
+        assert not uavs[2].is_dead, "Safe UAV should remain alive after collision"
 
     def test_inflow_disabled_by_default(self):
         config = EnvConfig()
