@@ -1,12 +1,15 @@
 # 执行计划
 
-> **2026-05-15 状态**：Phase 1-4（初版）→ Phase 2(R)/3a(R)/3b(R)（修订版）全部完成。
+> **2026-05-18 状态**：Phase 1-4（初版）→ Phase 2(R)/3a(R)/3b(R)/3b.5(R)（修订版）全部完成。
 > 详见修订版计划：`C:\Users\user\.claude\plans\bubbly-percolating-graham.md`。
 >
 > **已完成**：
 > - Phase 2(R)：轨道盘旋 + (ψ,γ,V) 连续下降 + per-UAV 局部观测 + 4进入点 + 流入模型（39 测试通过）
 > - Phase 3a(R)：单 UAV + 干扰机 PPO（100% 着陆率 vs 10 背景干扰）
-> - Phase 3b(R)：全 UAV 受控清空空域 PPO（86% vs 启发式 87%）+ LZ 占用机制
+> - Phase 3b(R)：全 UAV 受控清空空域 PPO + LZ 占用机制
+> - Phase 3b.5(R)：SafetyController 反射式碰撞避免（5 规则）+ 5 项安全修复
+>   - 碰撞移除（不终止 episode）+ 轨道 Snap 安全检查 + 环容量限制 + 距离接近惩罚 + SubprocVecEnv
+>   - N=30 着陆率：PPO 79% / Heuristic 81%（从 17%/20% 提升）
 
 ## 总体原则
 
@@ -114,25 +117,44 @@
 |---|------|------|------|
 | 3b.1 | Phase3bWrapper | 全部 UAV is_controlled=True，全部着陆/失败终止 | ✅ |
 | 3b.2 | PerUAVDiscreteWrapper | MultiDiscrete([2]*max_n)，自动计算连续参数 | ✅ |
-| 3b.3 | PerUAVFeatureExtractor | 共享 UAV encoder (75→128→64) + 全局聚合 + pi/vf 分叉 | ✅ |
-| 3b.4 | PPO 训练 | N=10, 500k steps, ent_coef=0.1 | ✅ |
-| 3b.5 | Heuristic 基线 | 87% 着陆率（LZ 占用约束下 90% 实际） | ✅ |
-| 3b.6 | 评估对比 | Best PPO 86% vs Heuristic 87% | ✅ |
+| 3b.3 | PerUAVFeatureExtractor | 共享 UAV encoder (75→128→64) + mean-pooling 全局聚合 | ✅ |
+| 3b.4 | SubprocVecEnv 并行训练 | N=10 训练, 500k steps, 4 envs, 125 FPS | ✅ |
+| 3b.5 | Heuristic 基线 | 多规模评估基准 | ✅ |
+| 3b.6 | 评估对比 | 多规模 PPO vs Heuristic @ N=5/10/15/20/25/30 | ✅ |
 
-**核心发现**：
-- Best PPO (EvalCallback @270k) 达到 **86%**，与启发式 **87%** 基本持平
-- Final PPO (500k) 过拟合退化至 66%（multi-UAV PPO 训练不稳定）
-- 未着陆主因是 **LZ 占用瓶颈**（6 LZ × 10 UAV，cargo 占 120s）而非碰撞
-- PPO 策略比启发式更谨慎（+53% 步数，近距预警少 11%）
+**2026-05-18 最新多规模结果**（5 项安全修复后重训练）：
+
+| N | PPO 着陆率 | Heuristic 着陆率 |
+|---|-----------|-----------------|
+| 5 | 100% | 100% |
+| 10 | 98% | 100% |
+| 15 | 97% | 92% |
+| 20 | 94% | 92% |
+| 25 | 85% | 88% |
+| 30 | 79% | 81% |
 
 **模型文件**：
-- `logs/best_model_phase3b/best_model.zip`（推荐使用，86%）
-- `logs/ppo_phase3b.zip`（最终模型，已退化）
+- `logs/best_model_phase3b/best_model.zip`（EvalCallback 最优模型）
+- `logs/ppo_phase3b.zip`（500k 最终模型）
 
-**2026-05-15 新增特性**：
-- **LZ 占用机制**：4 种任务类型 × 不同占用时间 + 预留机制防竞争
-- **轨道吸附修正**：CIRCLE 时自动修正偏离轨道的 UAV（根因：_step_circle 使用了当前坐标而非环轨道参数）
-- **观测扩展**：69→75 维（+6 维 LZ 占用状态）
+---
+
+## Phase 3b.5(R): SafetyController + 安全修复 ✅ 已完成
+
+| # | 任务 | 说明 | 状态 |
+|---|------|------|------|
+| 3b5.1 | SafetyController 5 规则 | 同环角间距/盘旋让下降/双下降发散/通用刹车/紧急覆盖 | ✅ |
+| 3b5.2 | Plan B 观测集成 | Safety 信号（speed_mult, psi_offset, gamma_offset, blocked）作为 +4 观测维 | ✅ |
+| 3b5.3 | 轨道 Snap 安全检查 | 下降中止回环时搜索 ±30° 安全槽位 | ✅ |
+| 3b5.4 | 环容量限制 | 环上 UAV ≥ 90% 2πR/min_spacing 时阻止非紧急下降 | ✅ |
+| 3b5.5 | 距离接近惩罚 | 间距 < 30m 触发梯度惩罚 -5/(dist+0.1) | ✅ |
+| 3b5.6 | 碰撞移除机制 | 碰撞 UAV 标记死亡并移除，不终止 episode | ✅ |
+| 3b5.7 | SafetyController 测试 | 36 专项测试 + 4 现有更新 = 76 测试全部通过 | ✅ |
+
+**核心设计**：
+- SafetyController 是 RL 动作与 UAV 运动学之间的**反射层**，做减速/微调航向，不做路径规划
+- Plan B：safety 调整量编码为观测维度，让 PPO 学会**预见**安全干预
+- 碰撞不再终止 episode，而是移除碰撞 UAV 并施加重惩罚
 
 ---
 
@@ -194,7 +216,8 @@
 | M1: 环境可用 | Phase 2 | 环境可 reset/step，单 UAV 可完成降落 | ✅ |
 | M2: 基线建立 | Phase 3 | 单 UAV PPO 100% 着陆率，Heuristic 基线就绪 | ✅ |
 | M3: 环境重构 | Phase 2(R) | 轨道盘旋 + 连续下降 + per-UAV 观测，39 测试通过 | ✅ |
-| M4: 多机协同 | Phase 3b(R) | 全 UAV PPO 86% vs Heuristic 87%，LZ 占用机制 | ✅ |
+| M4: 多机协同 | Phase 3b(R) | 全 UAV PPO 98%@N=10, 79%@N=30，LZ 占用机制 | ✅ |
+| M4.5: 安全层 | Phase 3b.5(R) | SafetyController 5 规则 + 5 安全修复，76 测试通过 | ✅ |
 | M5: 持续流入 | Phase 4(R) | 稳态吞吐量 >25/hr，冲突率 <5% | ⬜ |
 | M6: HRL 收敛 | Phase 5 | HRL 优于单层基线 | ⬜ |
 | M7: 规模验证 | Phase 6 | 200 架稳定运行，指标合理 | ⬜ |
