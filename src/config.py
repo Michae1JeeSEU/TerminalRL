@@ -28,6 +28,11 @@ class UAVConfig:
     power_descend: float = 0.7
     # Ring-wait constraint
     min_ring_wait: float = 30.0   # minimum seconds to circle on a ring before descending
+    # Ring capacity: max UAVs per ring based on ideal spacing
+    min_ring_spacing: float = 100.0  # minimum angular arc distance between UAVs on same ring (m)
+    # Proximity penalty (soft separation shaping)
+    proximity_penalty_threshold: float = 30.0  # distance below which penalty activates (m)
+    proximity_penalty_scale: float = 5.0      # penalty = scale / (distance + epsilon)
     # Priority parameters
     priority_alpha: float = 0.5   # wait time scaling
     priority_beta: float = 1.5    # wait time exponent

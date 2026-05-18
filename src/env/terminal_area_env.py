@@ -222,14 +222,19 @@ class TerminalAreaEnv(gym.Env):
                 if control == 1 and not uav.can_descend():
                     control = 0
 
+                # Ring capacity check: block descent if target ring is over capacity
+                # Emergency/critical UAVs exempt
+                if (control == 1 and uav.ring_id < 3
+                        and not uav.is_critical_battery
+                        and uav.base_priority < self.config.uav.priority_emergency):
+                    if not self._ring_has_capacity(uav.ring_id + 1, exempt_uav_id=uav.id):
+                        control = 0
+
                 # Snap circling UAV to ring orbit if it drifted (e.g. mid-descent abort)
                 if control == 0:
                     ring_r, ring_h = self.airspace.get_ring_orbit(uav.ring_id)
                     if uav.position[2] < ring_h or abs(np.linalg.norm(uav.position[:2]) - ring_r) > 1.0:
-                        uav.position[2] = ring_h
-                        angle = uav.angle
-                        uav.position[0] = ring_r * np.cos(angle)
-                        uav.position[1] = ring_r * np.sin(angle)
+                        self._safe_orbit_snap(uav, ring_r, ring_h)
                 psi = float(ll["psi"][i]) if "psi" in ll else 0.0
                 gamma = float(ll["gamma"][i]) if "gamma" in ll else 0.0
                 speed = float(ll["speed"][i]) if "speed" in ll else (1.0 if control == 0 else self.config.uav.descent_speed)
@@ -259,6 +264,83 @@ class TerminalAreaEnv(gym.Env):
             )
         return actions
 
+    def _ring_capacity(self, ring_id: int) -> int:
+        """Maximum UAVs allowed on a ring based on ideal spacing."""
+        ring_r = self.airspace.radii[ring_id - 1]
+        circumference = 2 * np.pi * ring_r
+        return max(1, int(circumference / self.config.uav.min_ring_spacing))
+
+    def _ring_has_capacity(self, ring_id: int, exempt_uav_id: int = -1) -> bool:
+        """Check if ring has capacity for one more UAV.
+
+        Emergency UAVs always pass. Non-emergency UAVs blocked when ring
+        is at >= 90% capacity.
+        """
+        # Count UAVs currently on the target ring (or descending toward it)
+        count = 0
+        for u in self.uav_manager.uavs:
+            if u.id == exempt_uav_id:
+                continue
+            if u.status == UAVStatus.LANDED:
+                continue
+            if u.ring_id == ring_id:
+                count += 1
+            # Also count UAVs descending from the ring above that will arrive
+            elif u.ring_id == ring_id - 1 and u.status == UAVStatus.DESCENDING:
+                count += 1
+
+        capacity = self._ring_capacity(ring_id)
+        # Allow up to 90% capacity, above that only emergency
+        return count < int(capacity * 0.9)
+
+    def _safe_orbit_snap(self, uav: UAV, ring_r: float, ring_h: float) -> None:
+        """Snap UAV to ring orbit, avoiding collisions with other UAVs on the same ring.
+
+        Searches for a safe angular slot within ±30° of the UAV's current angle.
+        If no safe slot exists, keeps the UAV at its current position.
+        """
+        safe_dist = self.config.uav.safe_separation * 3.0  # generous buffer
+        angle = uav.angle
+
+        # Get positions of other UAVs on the same ring
+        same_ring_uavs = [
+            other for other in self.uav_manager.uavs
+            if other.id != uav.id
+            and other.status != UAVStatus.LANDED
+            and other.ring_id == uav.ring_id
+        ]
+
+        if not same_ring_uavs:
+            # No conflicts — snap directly
+            uav.position[2] = ring_h
+            uav.position[0] = ring_r * np.cos(angle)
+            uav.position[1] = ring_r * np.sin(angle)
+            return
+
+        # Check if current angle is safe
+        test_pos = np.array([ring_r * np.cos(angle), ring_r * np.sin(angle), ring_h])
+        if all(np.linalg.norm(test_pos - other.position) >= safe_dist
+               for other in same_ring_uavs):
+            uav.position[:] = test_pos
+            return
+
+        # Search for a safe offset angle
+        for offset_deg in range(5, 35, 5):
+            offset = np.deg2rad(offset_deg)
+            for sign in [1.0, -1.0]:
+                test_angle = angle + sign * offset
+                test_pos = np.array([ring_r * np.cos(test_angle),
+                                    ring_r * np.sin(test_angle), ring_h])
+                if all(np.linalg.norm(test_pos - other.position) >= safe_dist
+                       for other in same_ring_uavs):
+                    uav.position[:] = test_pos
+                    uav._angle = test_angle
+                    return
+
+        # No safe slot — keep at current position, snap only z to ring height
+        # (prevents collision from sudden horizontal jump)
+        uav.position[2] = ring_h
+
     def _compute_reward(self) -> float:
         cfg = self.config
         uavs = self.uav_manager.uavs
@@ -286,6 +368,17 @@ class TerminalAreaEnv(gym.Env):
         near_misses = self.conflict_detector.check_near_misses(uavs)
         R_near_miss = -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss
 
+        # Proximity penalty: continuous penalty for UAVs getting too close
+        R_proximity = 0.0
+        active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED]
+        proximity_threshold = cfg.uav.proximity_penalty_threshold
+        for i in range(len(active_uavs)):
+            for j in range(i + 1, len(active_uavs)):
+                dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
+                if dist < proximity_threshold:
+                    # Penalty scales as 1/distance — closer = worse
+                    R_proximity -= cfg.uav.proximity_penalty_scale / max(dist, 0.1)
+
         violations = self.priority_engine.get_priority_violations(uavs)
         R_priority = -cfg.w_priority * violations
 
@@ -305,7 +398,7 @@ class TerminalAreaEnv(gym.Env):
         R_progress /= n_ctrl
 
         return (R_energy + R_wait + R_throughput + R_safety
-                + R_near_miss + R_priority + R_battery + R_progress)
+                + R_near_miss + R_proximity + R_priority + R_battery + R_progress)
 
     def _get_obs(self) -> np.ndarray:
         """Build per-UAV local observation matrix of shape (max_n, local_obs_dim)."""

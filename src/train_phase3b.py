@@ -17,7 +17,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import torch.nn as nn
 import torch
 
@@ -186,12 +186,14 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
 # ---- PPO Training ----
 
 def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
-                  total_timesteps: int = 500_000):
+                  total_timesteps: int = 500_000, n_envs: int = 4):
     """Train PPO with per-UAV shared policy for Phase 3b.
 
     SafetyController is enabled during training. Safety adjustments
     (speed_mult, psi_offset, gamma_offset, blocked) are included in
     the observation space so PPO learns to anticipate safety interventions.
+
+    Uses SubprocVecEnv for parallel training across multiple env instances.
     """
     if config is None:
         config = EnvConfig()
@@ -201,12 +203,18 @@ def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
         config.uav_inflow_rate = 0.0
         config.safety_enabled = True
 
-    env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
+    # Parallel envs for training
+    env_factories = [make_env_phase3b(config, n_uavs) for _ in range(n_envs)]
+    if n_envs > 1:
+        env = SubprocVecEnv(env_factories)
+    else:
+        env = DummyVecEnv(env_factories)
+
     eval_env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
 
     eval_callback = EvalCallback(
         eval_env, best_model_save_path="logs/best_model_phase3b",
-        log_path="logs/", eval_freq=10000,
+        log_path="logs/", eval_freq=max(10000 // n_envs, 2000),
         deterministic=True,
     )
 
@@ -216,19 +224,24 @@ def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
         net_arch=dict(pi=[256, 128], vf=[256, 128]),
     )
 
+    # Scale batch_size and n_steps with n_envs
+    n_steps = 2048 // n_envs  # keep total steps per rollout similar
+    batch_size = max(64, 256 // n_envs)
+
     model = PPO(
         "MlpPolicy", env,
         policy_kwargs=policy_kwargs,
         learning_rate=3e-4,
-        n_steps=2048,
-        batch_size=256,
+        n_steps=n_steps,
+        batch_size=batch_size,
         n_epochs=5,
         gamma=0.99,
         ent_coef=0.1,
         verbose=1,
     )
 
-    print(f"Training Phase 3b PPO: {n_uavs} UAVs, {total_timesteps} steps...")
+    print(f"Training Phase 3b PPO: {n_uavs} UAVs, {total_timesteps} steps, "
+          f"{n_envs} parallel envs...")
     t0 = time.time()
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
     print(f"Training completed in {time.time() - t0:.1f}s")
@@ -443,7 +456,8 @@ if __name__ == "__main__":
         else:
             print(f"No model found. Train first with: python -m src.train_phase3b")
     else:
-        model, train_cfg = train_phase3b(n_uavs=10, total_timesteps=500_000)
+        n_envs = 4  # parallel environments for faster training
+        model, train_cfg = train_phase3b(n_uavs=10, total_timesteps=500_000, n_envs=n_envs)
         eval_cfg = EnvConfig()
         eval_cfg.num_uavs = 10
         eval_cfg.max_uavs = train_cfg.max_uavs

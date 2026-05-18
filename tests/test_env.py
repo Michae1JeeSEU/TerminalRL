@@ -362,17 +362,23 @@ class TestTerminalAreaEnv:
         config.num_uavs = 2
         config.uav.safe_separation = 10.0
         config.sim.max_steps = 100
+        config.safety_enabled = False  # disable SafetyController for raw collision test
         env = TerminalAreaEnv(config)
         env.reset(seed=42)
 
-        # Force two UAVs to collide by setting positions, ring_ids, and angles consistently
+        # Force two UAVs to collide by placing both ON the ring orbit
+        # (so _safe_orbit_snap doesn't trigger) but at very close angles (~5m apart)
         uavs = env.uav_manager.uavs
         for u in uavs:
-            u.ring_id = 1  # both on ring 1 (H=800)
-        uavs[0].position = np.array([4000., 0., 800.])  # on ring 1 orbit, angle=0
+            u.ring_id = 1  # both on ring 1 (H=800, R=4000)
+        # UAV0 at angle=0, exactly on orbit
+        uavs[0].position = np.array([4000., 0., 800.])
         uavs[0]._angle = 0.0
-        uavs[1].position = np.array([4005., 0., 800.])  # 5m apart, angle=0
-        uavs[1]._angle = 0.0
+        # UAV1 at angle=0.07deg (~5m arc distance), also exactly on orbit → collision
+        angle_close = np.deg2rad(0.07)
+        uavs[1].position = np.array([4000. * np.cos(angle_close),
+                                      4000. * np.sin(angle_close), 800.])
+        uavs[1]._angle = float(angle_close)
 
         n = env.max_n
         m = config.sim.num_landing_zones
