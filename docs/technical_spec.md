@@ -102,7 +102,11 @@ low_level_action_space = spaces.Dict({
 })
 ```
 
-**训练离散化（Phase 3b）**：PerUAVDiscreteWrapper 将动作空间简化为 `MultiDiscrete([2]*max_n)`，DESCEND 时的连续参数自动计算：
+**训练动作空间（Phase 3b）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 2))`：
+- **dim 0 (control_raw)**：> 0 → DESCEND, ≤ 0 → CIRCLE
+- **dim 1 (speed_raw)**：缩放 [-1,1] → [0.3, 1.3] 环速系数（仅 CIRCLE 时生效）
+
+DESCEND 时的连续参数自动计算：
 - 环1/2：ψ=指向圆心 (θ+π)，γ=-12°，V=max_speed
 - 环3 有 landing_target：ψ=指向目标 LZ，γ=-25°，V=descent_speed
 - 环3 无 landing_target：ψ=指向最近 LZ，γ=-25°，V=descent_speed

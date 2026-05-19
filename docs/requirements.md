@@ -51,8 +51,10 @@
 
 | 动作 | 类型 | 参数 |
 |------|------|------|
-| 盘旋 (Circle) | 离散 | 无额外参数：UAV 在当前环轨道 (R_i, H_i) 上以环速 V_i 做圆周运动 |
+| 盘旋 (Circle) | 离散 + 1 连续参数 | speed_factor ∈ [0.3, 1.3] — 环速 V_i 的乘系数，控制 UAV 在环上的角速度以拉开间距 |
 | 下降 (Descend) | 离散 + 3 连续参数 | (ψ 航向角, γ 航迹角, V 速度) 定义三维飞行方向 |
+
+**盘旋速度控制**：UAV 可以加速（最大 1.3x）或减速（最小 0.3x）绕环飞行的速度，获得拉开或缩小与相邻 UAV 间距的自由度。结合距离惩罚机制，RL 策略可以学会通过调速主动避免拥挤。
 
 **下降运动学**：速度向量 = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]；γ 为负值表示下降，达到内侧环范围时自动切换为盘旋。
 
@@ -167,7 +169,7 @@ Priority = base_priority × f(wait_time) × g(battery_ratio)
 ### 8.1 Per-UAV 共享策略细节
 
 - **观测**：(max_n, 79) 矩阵，每行 = `[空域状态(9) + 自身(9) + k 近邻(k×6) + 环计数(3) + LZ占用(6) + Safety信号(4)]`
-- **动作**：(max_n,) MultiDiscrete，每 UAV 独立 CIRCLE(0)/DESCEND(1)
+- **动作**：`Box(low=-1, high=1, shape=(max_n, 2))`，每 UAV 独立输出 (control_raw, speed_raw)：control_raw > 0 → DESCEND, ≤ 0 → CIRCLE；speed_raw 缩放至 [0.3, 1.3] 作为 CIRCLE 环速系数
 - **自动连续参数**：DESCEND 时 ψ/γ/V 由 PerUAVDiscreteWrapper 自动计算（环1/2 指向圆心下降，环3 指向 LZ 着陆）
 - **Safety 信号**：speed_mult / psi_offset / gamma_offset / blocked 来自 SafetyController 的 Plan B 方案
 - **训练**：PPO + PerUAVFeatureExtractor（shared UAV encoder 79→128→64 + mean-pooling global + per-UAV combiner 128→32→8）

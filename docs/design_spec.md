@@ -102,8 +102,7 @@ E_descend = P_descend × dt    # 下降功率 × 时间
 **初始化分布（无流入，Phase 3b）**：
 - UAV 分布在三个环的轨道上：环1 60%、环2 25%、环3 15%
 - 每架 UAV 随机角度、随机电量（critical~max）、随机等待时间（0~600s）、随机优先级（1/3/5）和随机任务类型（1-4，按权重）
-
-> **已知问题**：`random_position_on_ring()` 对每个 UAV 独立随机角度，30 架时约 10-15% 概率产生同环初始间距 < 10m 的 UAV 对，导致早期碰撞。计划修复为分层抽样或拒绝采样。
+- **初始间距保证**：`_find_safe_angle()` 通过拒绝采样（200 次尝试）+ 最大间隙回退策略，确保新生成 UAV 与同环已有 UAV 的弧间距 ≥ `safe_separation`
 
 **流入调度（Phase 4+，uav_inflow_rate > 0）**：
 - 按时钟累积 dt，到达 inflow_interval = 3600/uav_inflow_rate 时生成一架
@@ -120,7 +119,8 @@ UAVManager
 ├── landed_count: int              # 累计着陆数
 ├── failed_count: int              # 累计失败数（含碰撞死亡）
 ├── _INIT_RING_PROBS: (0.60, 0.25, 0.15)
-├── _spawn_one(ring_id, mission_type, ...) -> UAV
+├── _find_safe_angle(ring_id) -> float  # 拒绝采样确保初始间距 ≥ safe_separation
+├── _spawn_one(ring_id, mission_type, ensure_separation, ...) -> UAV
 ├── remove_landed() -> None        # 移除 LANDED + is_dead (battery=0)
 ├── try_spawn_inflow(dt) -> None   # 按时钟调度流入
 ├── step_all(actions, dt, safety_controller) -> None

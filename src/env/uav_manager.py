@@ -33,20 +33,66 @@ class UAVManager:
         self._time_since_last_spawn = 0.0
         self.last_safety_adjustments: dict[int, object] = {}
 
-        # Distribute initial UAVs across ring orbits
+        # Distribute initial UAVs across ring orbits with minimum separation
         n_initial = initial_uavs if initial_uavs is not None else num_uavs
         if n_initial > 0:
             ring_ids = self.rng.choice([1, 2, 3], size=n_initial, p=self._INIT_RING_PROBS)
             for ring_id in ring_ids:
-                self._spawn_one(ring_id=int(ring_id))
+                self._spawn_one(ring_id=int(ring_id), ensure_separation=True)
+
+    def _find_safe_angle(self, ring_id: int, max_attempts: int = 200) -> float:
+        """Find an angle on the ring with minimum safe_separation from existing UAVs."""
+        ring_r = self.airspace.radii[ring_id - 1]
+        min_angular_sep = self.config.safe_separation / ring_r  # radians of arc
+
+        same_ring_uavs = [u for u in self.uavs
+                          if u.ring_id == ring_id and u.status != UAVStatus.LANDED]
+        existing_angles = [u.angle for u in same_ring_uavs]
+
+        if not existing_angles:
+            return self.rng.uniform(0, 2 * np.pi)
+
+        # Rejection sampling
+        for _ in range(max_attempts):
+            angle = self.rng.uniform(0, 2 * np.pi)
+            ok = True
+            for a in existing_angles:
+                diff = abs(angle - a)
+                if diff > np.pi:
+                    diff = 2 * np.pi - diff
+                if diff < min_angular_sep:
+                    ok = False
+                    break
+            if ok:
+                return angle
+
+        # Fallback: pick middle of the largest angular gap
+        sorted_angles = sorted(existing_angles)
+        max_gap = 0.0
+        best_mid = 0.0
+        for i in range(len(sorted_angles)):
+            a1 = sorted_angles[i]
+            a2 = sorted_angles[(i + 1) % len(sorted_angles)]
+            gap = a2 - a1
+            if i == len(sorted_angles) - 1:
+                gap += 2 * np.pi  # wrap-around gap
+            if gap > max_gap:
+                max_gap = gap
+                best_mid = a1 + gap / 2.0
+                if best_mid >= 2 * np.pi:
+                    best_mid -= 2 * np.pi
+        return best_mid
 
     def _spawn_one(self, ring_id: int = 1, battery: float | None = None,
                    wait_time: float | None = None, base_priority: int | None = None,
-                   is_entry: bool = False, mission_type: int | None = None) -> UAV:
+                   is_entry: bool = False, mission_type: int | None = None,
+                   ensure_separation: bool = False) -> UAV:
         """Spawn a UAV.
 
         Entry spawn (is_entry=True): uses a fixed entry point on ring 1.
         Orbit spawn (is_entry=False): random angle on the ring orbit.
+        If ensure_separation=True, the angle is chosen to maintain safe_separation
+        from existing UAVs on the same ring.
         """
         if base_priority is None:
             base_priority = int(self.rng.choice([1, 3, 5], p=[0.5, 0.35, 0.15]))
@@ -59,7 +105,14 @@ class UAVManager:
             entry_points = self.airspace.get_entry_points()
             position = entry_points[self.rng.integers(0, 4)].copy()
         else:
-            position = self.airspace.random_position_on_ring(ring_id, self.rng)
+            if ensure_separation:
+                angle = self._find_safe_angle(ring_id)
+                r = self.airspace.radii[ring_id - 1]
+                h = self.airspace.heights[ring_id - 1]
+                position = np.array([r * np.cos(angle), r * np.sin(angle), h],
+                                    dtype=np.float64)
+            else:
+                position = self.airspace.random_position_on_ring(ring_id, self.rng)
 
         if battery is None:
             battery = float(self.rng.uniform(

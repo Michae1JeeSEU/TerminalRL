@@ -108,11 +108,14 @@ class DiscreteActionWrapper(gym.Wrapper):
 
 
 class PerUAVDiscreteWrapper(gym.Wrapper):
-    """Per-UAV discrete control: each UAV independently chooses CIRCLE(0) or DESCEND(1).
+    """Per-UAV control: each UAV independently chooses CIRCLE or DESCEND.
 
-    Action space: MultiDiscrete([2] * max_n) — one binary decision per UAV slot.
-    Auto-computes continuous params (psi, gamma, speed, landing_zone) per UAV:
-    - CIRCLE: psi=0, gamma=0, speed=1.0, lz=m (no-op)
+    Action space: Box(max_n, 2) — per UAV:
+      dim 0 (control_raw): > 0 → DESCEND, ≤ 0 → CIRCLE
+      dim 1 (speed_raw):   scaled [-1,1] → [0.3, 1.3] ring speed multiplier (CIRCLE only)
+
+    Continuous params (psi, gamma, speed, landing_zone) are auto-computed:
+    - CIRCLE: speed set from dim 1 → ring_speed * speed_factor in UAV.step()
     - DESCEND ring 1/2: psi toward center, gamma=-12°, speed=max_speed
     - DESCEND ring 3: psi toward nearest LZ, gamma=-25°, speed=descent_speed
     - DESCEND ring 3 with ongoing approach: psi toward existing landing_target
@@ -131,16 +134,28 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
             + list(env.config.ring.default_speeds),
             dtype=np.float64,
         )
-        self.action_space = spaces.MultiDiscrete([2] * self.max_n)
+        self.action_space = spaces.Box(
+            low=-1.0, high=1.0, shape=(self.max_n, 2), dtype=np.float64,
+        )
         self.observation_space = env.observation_space
 
     def step(self, action):
-        controls = np.asarray(action, dtype=np.int32)
+        raw = np.asarray(action, dtype=np.float64)
+        if raw.ndim == 3:  # vec env wrapper may add batch dim
+            raw = raw.squeeze(0)
         max_n = self.max_n
         m = self.m
+
+        # Column 0: control_raw > 0 → DESCEND, ≤ 0 → CIRCLE
+        controls = np.where(raw[:, 0] > 0, 1, 0).astype(np.int32)
+        # Column 1: scale [-1, 1] → [0.3, 1.3] for CIRCLE speed
+        speed_raw = raw[:, 1]
+        circle_speed = 0.3 + (speed_raw + 1.0) / 2.0 * 1.0
+        circle_speed = np.clip(circle_speed, 0.3, 1.3)
+
         psi = np.zeros(max_n, dtype=np.float64)
         gamma = np.zeros(max_n, dtype=np.float64)
-        speed = np.ones(max_n, dtype=np.float64)
+        speed = circle_speed.copy()  # default: use CIRCLE speed from action
         zones = np.full(max_n, m, dtype=np.int32)
 
         env = self.unwrapped
@@ -150,6 +165,7 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
             if i >= max_n:
                 break
             if controls[i] == 1 and u.is_controlled:
+                # DESCEND — auto-compute continuous parameters
                 theta = np.arctan2(u.position[1], u.position[0])
                 if u.ring_id == 3:
                     if u._landing_target is not None:

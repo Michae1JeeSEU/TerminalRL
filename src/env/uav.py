@@ -93,7 +93,7 @@ class UAV:
         if action.control == 0:  # CIRCLE
             speed_factor = 1.0
             if action.speed > 0.01:
-                speed_factor = float(np.clip(action.speed, 0.7, 1.3))
+                speed_factor = float(np.clip(action.speed, 0.3, 1.3))
             self._step_circle(ring_speed, ring_radius, ring_height, dt, speed_factor)
         elif action.control == 1:  # DESCEND
             self._step_descend(action, dt)
