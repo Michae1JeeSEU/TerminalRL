@@ -102,14 +102,18 @@ low_level_action_space = spaces.Dict({
 })
 ```
 
-**训练动作空间（Phase 3b）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 2))`：
-- **dim 0 (control_raw)**：> 0 → DESCEND, ≤ 0 → CIRCLE
-- **dim 1 (speed_raw)**：缩放 [-1,1] → [0.3, 1.3] 环速系数（仅 CIRCLE 时生效）
+**训练动作空间（Phase 3b）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 5))`，每 UAV 独立输出：
 
-DESCEND 时的连续参数自动计算：
-- 环1/2：ψ=指向圆心 (θ+π)，γ=-12°，V=max_speed
-- 环3 有 landing_target：ψ=指向目标 LZ，γ=-25°，V=descent_speed
-- 环3 无 landing_target：ψ=指向最近 LZ，γ=-25°，V=descent_speed
+| dim | 名称 | 缩放目标 | 生效 |
+|-----|------|---------|------|
+| 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
+| 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
+| 2 | psi_raw | [-1,1] → [0, 2π] 航向角 | DESCEND |
+| 3 | gamma_raw | [-1,1] → [-π/2, π/2] 航迹角 | DESCEND |
+| 4 | dsc_speed_raw | [-1,1] → [5, 40] m/s | DESCEND |
+
+DESCEND 时 RL 直接控制全部三个飞行参数 (ψ, γ, V)，速度向量 = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]。
+着陆区 (landing_zone) 在环3下降时自动选择最近可用 LZ。
 
 **动作约束（环境层强制）**：
 - 环驻留不足 → CIRCLE 强制覆盖 DESCEND

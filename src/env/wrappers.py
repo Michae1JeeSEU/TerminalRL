@@ -108,17 +108,20 @@ class DiscreteActionWrapper(gym.Wrapper):
 
 
 class PerUAVDiscreteWrapper(gym.Wrapper):
-    """Per-UAV control: each UAV independently chooses CIRCLE or DESCEND.
+    """Per-UAV control: each UAV independently chooses CIRCLE or DESCEND with
+    continuous flight parameters.
 
-    Action space: Box(max_n, 2) — per UAV:
-      dim 0 (control_raw): > 0 → DESCEND, ≤ 0 → CIRCLE
-      dim 1 (speed_raw):   scaled [-1,1] → [0.3, 1.3] ring speed multiplier (CIRCLE only)
+    Action space: Box(max_n, 5) — per UAV row:
+      dim 0 (control_raw):      > 0 → DESCEND, ≤ 0 → CIRCLE
+      dim 1 (circle_speed_raw): [-1,1] → [0.3, 1.3] ring speed multiplier (CIRCLE)
+      dim 2 (psi_raw):          [-1,1] → [0, 2π] heading angle (DESCEND)
+      dim 3 (gamma_raw):        [-1,1] → [-π/2, π/2] flight path angle (DESCEND)
+      dim 4 (dsc_speed_raw):    [-1,1] → [5, 40] m/s flight speed (DESCEND)
 
-    Continuous params (psi, gamma, speed, landing_zone) are auto-computed:
-    - CIRCLE: speed set from dim 1 → ring_speed * speed_factor in UAV.step()
-    - DESCEND ring 1/2: psi toward center, gamma=-12°, speed=max_speed
-    - DESCEND ring 3: psi toward nearest LZ, gamma=-25°, speed=descent_speed
-    - DESCEND ring 3 with ongoing approach: psi toward existing landing_target
+    For CIRCLE, only dims 0-1 matter; dims 2-4 are ignored.
+    For DESCEND, the RL controls all three flight parameters directly:
+      velocity = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]
+    Landing zone is auto-selected (nearest) when descending on ring 3.
 
     Ring-wait constraint is enforced by env._parse_low_level_actions (DESCEND
     from policy gets overridden to CIRCLE when can_descend() is False).
@@ -135,7 +138,7 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
             dtype=np.float64,
         )
         self.action_space = spaces.Box(
-            low=-1.0, high=1.0, shape=(self.max_n, 2), dtype=np.float64,
+            low=-1.0, high=1.0, shape=(self.max_n, 5), dtype=np.float64,
         )
         self.observation_space = env.observation_space
 
@@ -146,16 +149,24 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
         max_n = self.max_n
         m = self.m
 
-        # Column 0: control_raw > 0 → DESCEND, ≤ 0 → CIRCLE
+        # dim 0: control_raw > 0 → DESCEND, ≤ 0 → CIRCLE
         controls = np.where(raw[:, 0] > 0, 1, 0).astype(np.int32)
-        # Column 1: scale [-1, 1] → [0.3, 1.3] for CIRCLE speed
-        speed_raw = raw[:, 1]
-        circle_speed = 0.3 + (speed_raw + 1.0) / 2.0 * 1.0
+
+        # dim 1: circle speed factor [-1,1] → [0.3, 1.3]
+        circle_speed = 0.3 + (raw[:, 1] + 1.0) / 2.0 * 1.0
         circle_speed = np.clip(circle_speed, 0.3, 1.3)
 
-        psi = np.zeros(max_n, dtype=np.float64)
-        gamma = np.zeros(max_n, dtype=np.float64)
-        speed = circle_speed.copy()  # default: use CIRCLE speed from action
+        # dim 2: heading angle [-1,1] → [0, 2π]
+        psi = (raw[:, 2] + 1.0) / 2.0 * (2 * np.pi)
+
+        # dim 3: flight path angle [-1,1] → [-π/2, π/2]
+        gamma = raw[:, 3] * (np.pi / 2)
+
+        # dim 4: descent flight speed [-1,1] → [5, 40] m/s
+        dsc_speed = 5.0 + (raw[:, 4] + 1.0) / 2.0 * 35.0
+        dsc_speed = np.clip(dsc_speed, 5.0, 40.0)
+
+        speed = circle_speed.copy()  # default for CIRCLE
         zones = np.full(max_n, m, dtype=np.int32)
 
         env = self.unwrapped
@@ -165,28 +176,16 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
             if i >= max_n:
                 break
             if controls[i] == 1 and u.is_controlled:
-                # DESCEND — auto-compute continuous parameters
-                theta = np.arctan2(u.position[1], u.position[0])
+                # DESCEND — use RL-controlled flight parameters
+                speed[i] = dsc_speed[i]
                 if u.ring_id == 3:
                     if u._landing_target is not None:
-                        lz = u._landing_target
-                        psi[i] = np.arctan2(lz[1] - u.position[1], lz[0] - u.position[0])
                         zones[i] = u.landing_zone if u.landing_zone >= 0 else 0
                     else:
                         nearest = int(np.argmin(
                             [np.linalg.norm(u.position[:2] - lz[:2]) for lz in lz_positions]
                         ))
-                        psi[i] = np.arctan2(
-                            lz_positions[nearest][1] - u.position[1],
-                            lz_positions[nearest][0] - u.position[0],
-                        )
                         zones[i] = nearest
-                    gamma[i] = -np.deg2rad(25.0)
-                    speed[i] = self.unwrapped.config.uav.descent_speed
-                else:
-                    psi[i] = theta + np.pi
-                    gamma[i] = -np.deg2rad(12.0)
-                    speed[i] = self.unwrapped.config.uav.max_speed
 
         ll = {
             "control": controls,

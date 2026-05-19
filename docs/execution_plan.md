@@ -116,7 +116,7 @@
 | # | 任务 | 说明 | 状态 |
 |---|------|------|------|
 | 3b.1 | Phase3bWrapper | 全部 UAV is_controlled=True，全部着陆/失败终止 | ✅ |
-| 3b.2 | PerUAVDiscreteWrapper | Box(max_n,2) action：CIRCLE/DESCEND + 连续速度系数 [0.3,1.3] | ✅ |
+| 3b.2 | PerUAVDiscreteWrapper | Box(max_n,5)：混合离散/连续，CIRCLE调速 + DESCEND全飞行参数 RL 控制 | ✅ |
 | 3b.3 | PerUAVFeatureExtractor | 共享 UAV encoder (75→128→64) + mean-pooling 全局聚合 | ✅ |
 | 3b.4 | SubprocVecEnv 并行训练 | N=10 训练, 500k steps, 4 envs, 125 FPS | ✅ |
 | 3b.5 | Heuristic 基线 | 多规模评估基准 | ✅ |
@@ -152,6 +152,7 @@
 | 3b5.7 | SafetyController 测试 | 36 专项测试 + 4 现有更新 = 76 测试全部通过 | ✅ |
 | 3b5.8 | 初始间距保证 | `_find_safe_angle()` 拒绝采样确保初始 UAV 间距 ≥ safe_separation | ✅ |
 | 3b5.9 | CIRCLE 调速动作 | 动作空间改为 `Box(max_n,2)`：dim0=control_raw, dim1=speed_factor [0.3,1.3] | ✅ |
+| 3b5.10 | DESCEND RL 控制 | 动作空间扩展到 `Box(max_n,5)`：RL 直接输出 ψ/γ/V，不再由 wrapper 自动计算 | ✅ |
 
 **核心设计**：
 - SafetyController 是 RL 动作与 UAV 运动学之间的**反射层**，做减速/微调航向，不做路径规划

@@ -303,6 +303,18 @@ TerminalAreaEnv
 
 6. **环驻留约束**：`can_descend()` 检查 ring_residency ≥ min_ring_wait × priority_factor。base_priority=5（紧急）或电量 < 15% 时完全豁免
 
+7. **低层动作空间**：`Box(low=-1, high=1, shape=(max_n, 5))` — 混合离散/连续控制：
+
+| dim | 名称 | 缩放目标 | 生效条件 |
+|-----|------|---------|---------|
+| 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
+| 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
+| 2 | psi_raw | [-1,1] → [0, 2π] 航向角 | DESCEND |
+| 3 | gamma_raw | [-1,1] → [-π/2, π/2] 航迹角 | DESCEND |
+| 4 | dsc_speed_raw | [-1,1] → [5, 40] m/s | DESCEND |
+
+DESCEND 时 RL 直接控制全部三个飞行参数 (ψ, γ, V)，着陆区自动选择最近可用 LZ。
+
 ## 3. 奖励函数设计（实际实现）
 
 ```python
