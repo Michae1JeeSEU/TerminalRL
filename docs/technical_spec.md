@@ -69,17 +69,19 @@ class TerminalAreaEnv(gym.Env):
 ### 4.1 观察空间设计（当前实现）
 
 ```
-Per-UAV 局部观测矩阵 (max_n, 75):
+Per-UAV 局部观测矩阵 (max_n, 79):
   - 空域状态 (9): R1,R2,R3,H1,H2,H3,V1,V2,V3 归一化
   - 自身状态 (9): sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend
   - k 近邻 (k×6): 每邻居 [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max]，k=8 默认
   - 环计数 (3): 各环 UAV 数 / 活跃总数
-  - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化
-  合计: 9 + 9 + 48 + 3 + 6 = 75 维
+  - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化，6 LZ
+  - Safety 信号 (4): speed_mult, psi_offset, gamma_offset, blocked  ★ 新增
+  合计: 9 + 9 + 48 + 3 + 6 + 4 = 79 维
 ```
 
 - max_n = 100（最大并发 UAV），inactive UAV 行全零
 - 邻居按 3D 距离取最近 k 个，不足补零
+- Safety 信号来自 SafetyController 的 Plan B 方案，让 RL 学会预见安全干预
 
 ### 4.2 动作空间设计（当前实现）
 
@@ -115,9 +117,9 @@ low_level_action_space = spaces.Dict({
 | 层级 | 决策间隔 | 仿真步长 | 说明 |
 |------|----------|----------|------|
 | 高层 (option) | ~30 min（仿真时间） | 1800 秒 | 每 900 low-level steps 调用一次 |
-| 低层 (control) | 2 s（仿真时间） | 2 秒 | 每步推进所有 UAV 2s |
+| 低层 (control) | 1 s（仿真时间） | 1 秒 | 每步推进所有 UAV 1s |
 
-默认 max_steps=7200（4 小时仿真），Phase 3b 训练用 max_steps=800。
+Phase 3b 训练用 max_steps=1200（20 分钟仿真），dt=1.0s。
 
 ## 6. 平台
 
@@ -148,8 +150,26 @@ UAVConfig:
   safe_separation=10.0                # 碰撞危险区 (m)
   near_miss_threshold=50.0            # 近距预警区 (m)
   min_ring_wait=30.0                  # 每环最少盘旋时间 (s)
+  min_ring_spacing=100.0              # 同环 UAV 最小角间距 (m 弧长)
+  proximity_penalty_threshold=30.0    # 接近惩罚触发距离 (m)
+  proximity_penalty_scale=5.0         # 接近惩罚缩放系数
   power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
   priority_emergency=5                # 满豁免阈值
+  priority_alpha=0.5, priority_beta=1.5   # 等待时间优先级参数
+  priority_gamma=1.0, priority_delta=2.0  # 电量优先级参数
+
+# Safety 配置（SafetyController 参数）★ 新增
+SafetyConfig:
+  angular_separation_threshold=50.0   # Rule 1: 触发距离 (m)
+  descend_crossing_lookahead=10.0     # Rule 2: 预测窗口 (s)
+  descend_crossing_slowdown=0.85      # Rule 2: 盘旋者减速系数
+  dual_descend_threshold=50.0         # Rule 3: 触发距离 (m)
+  dual_descend_psi_offset=15.0        # Rule 3: 偏转角 (deg)
+  universal_brake_threshold=30.0      # Rule 4: 触发距离 (m)
+  universal_brake_low=0.70            # Rule 4: 低优先减速
+  universal_brake_high=0.85           # Rule 4: 高优先减速
+  emergency_yield_slowdown=0.60       # Rule 5: 让路减速
+  emergency_yield_psi=25.0            # Rule 5: 让路偏转 (deg)
 
 # 仿真配置
 SimConfig:
@@ -163,6 +183,9 @@ EnvConfig:
   uav_inflow_rate=0.0                  # 流入率 (UAVs/h)，0=无流入
   max_uavs=100                         # 最大并发 UAV 数
   k_nearest=8                          # 局部观测邻居数
+  safety_enabled=True                   # 启用 SafetyController ★ 新增
+  penalty_conflict=500.0               # 碰撞基础惩罚
+  penalty_near_miss=2.0                # 近距预警惩罚
   w_energy=0.3, w_wait=1.0, ...       # 奖励权重
 ```
 

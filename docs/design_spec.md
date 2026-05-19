@@ -16,10 +16,10 @@
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │    │
 │  │  │RingAir-  │ │UAV       │ │ConflictDetector  │ │    │
 │  │  │space     │ │Manager   │ │                  │ │    │
-│  │  └──────────┘ └──────────┘ └──────────────────┘ │    │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │    │
-│  │  │Priority  │ │Metrics   │ │Renderer          │ │    │
-│  │  │Engine    │ │Collector │ │(optional)        │ │    │
+│  │  └──────────┘ └────┬─────┘ └──────────────────┘ │    │
+│  │  ┌──────────┐ ┌────┴─────┐ ┌──────────────────┐ │    │
+│  │  │Priority  │ │Safety    │ │Metrics           │ │    │
+│  │  │Engine    │ │Controller│ │Collector         │ │    │
 │  │  └──────────┘ └──────────┘ └──────────────────┘ │    │
 │  └──────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────┘
@@ -103,29 +103,117 @@ E_descend = P_descend × dt    # 下降功率 × 时间
 - UAV 分布在三个环的轨道上：环1 60%、环2 25%、环3 15%
 - 每架 UAV 随机角度、随机电量（critical~max）、随机等待时间（0~600s）、随机优先级（1/3/5）和随机任务类型（1-4，按权重）
 
+> **已知问题**：`random_position_on_ring()` 对每个 UAV 独立随机角度，30 架时约 10-15% 概率产生同环初始间距 < 10m 的 UAV 对，导致早期碰撞。计划修复为分层抽样或拒绝采样。
+
 **流入调度（Phase 4+，uav_inflow_rate > 0）**：
 - 按时钟累积 dt，到达 inflow_interval = 3600/uav_inflow_rate 时生成一架
 - 新 UAV 从 4 个 entry_point（环1 0°/90°/180°/270°）随机选一进入
 - 超过 max_uavs 时暂停生成
 
-**环间分离控制**：同环盘旋 UAV 按角度排序，间距不足 near_miss_threshold 时自动减速（0.95x）。
+**碰撞处理**：碰撞 UAV 被标记为 `battery=0`（`is_dead=True`），释放 LZ 预留，下一 `remove_landed()` 移除。**不再终止 episode**。
+
+**环间分离控制**：原 `speed_adjustments` 逻辑已提取到 SafetyController Rule 1。
 
 ```
 UAVManager
 ├── uavs: list[UAV]
 ├── landed_count: int              # 累计着陆数
-├── failed_count: int              # 累计失败数（电量耗尽）
+├── failed_count: int              # 累计失败数（含碰撞死亡）
 ├── _INIT_RING_PROBS: (0.60, 0.25, 0.15)
 ├── _spawn_one(ring_id, mission_type, ...) -> UAV
-├── remove_landed() -> None        # 移除 LANDED + is_dead
+├── remove_landed() -> None        # 移除 LANDED + is_dead (battery=0)
 ├── try_spawn_inflow(dt) -> None   # 按时钟调度流入
-├── step_all(actions, dt) -> None  # 含环间分离速度调整
+├── step_all(actions, dt, safety_controller) -> None
 ├── get_state_matrix() -> np.ndarray  # (N, 6) [x,y,z,battery,priority,angle]
 ├── ring_counts -> (c1, c2, c3)
 └── avg_wait_time -> float
 ```
 
-### 2.4 ConflictDetector（冲突检测器）
+### 2.4 SafetyController（安全控制器）★ 新增 Phase 3b.5
+
+**职责**：反射式碰撞避免层，在 RL 动作与 UAV 运动学之间介入。只做减速/微调航向，不做路径规划。
+
+**设计原则**：
+- 反射层介入在 RL 动作执行前：`RL action → SafetyController → UAV.step()`
+- 紧急 UAV（priority≥5 或 battery<critical×max_battery）**永不减速**
+- 低优先级给高优先级让路；同等优先级双方各让半步
+
+**Plan B 架构**：Safety 调整量编码为 +4 维观测输入（speed_mult, psi_offset, gamma_offset, blocked），RL 策略学会**预见**安全干预，而非被动接受。
+
+```
+SafetyController
+├── config: SafetyConfig
+├── evaluate(uavs, actions) → dict[uav_id, SafetyAdjustment]
+│   ├── _classify_priority(u1, u2) → (higher, lower)
+│   ├── _rule1_angular_separation(uavs)         # 同环角间距减速
+│   ├── _rule2_circling_yields_descending(uavs)  # 盘旋让下降
+│   ├── _rule3_dual_descent_divergence(uavs)     # 双下降航向偏转
+│   ├── _rule4_universal_brake(uavs)            # 通用近距刹车
+│   ├── _rule5_emergency_override(uavs)          # 紧急 UAV 豁免
+│   └── _compose_adjustments(per_rule_results)   # 取最保守值
+├── apply(actions, adjustments) → dict[uav_id, LowLevelAction]
+└── compose(adjustments) → SafetyAdjustment      # 组合多规则
+```
+
+**5 条安全规则**：
+
+| 规则 | 触发条件 | 动作 | 优先权 |
+|------|---------|------|--------|
+| R1: 同环角间距 | 同环两架 UAV 角间距 < 50m | 跟随者减速至 0.85-0.98x | 后方减速 |
+| R2: 盘旋让下降 | 下降 UAV 穿越环的高度层 | 盘旋者减速至 0.85x | 下降者优先 |
+| R3: 双下降发散 | 两架下降中，3D 距离 < 50m 且接近中 | 各偏转 psi ±15° | 双方各半 |
+| R4: 通用刹车 | 任意两架 3D 距离 < 30m | closing speed > 0 方减速至 0.7x | 低优先更激进 |
+| R5: 紧急覆盖 | priority ≥ 5 或 battery < 15% | 紧急 UAV 不受影响，非紧急让其路 | 紧急绝对优先 |
+
+**SafetyAdjustment 数据结构**：
+```python
+@dataclass
+class SafetyAdjustment:
+    speed_mult: float = 1.0      # 速度系数 [0.6, 1.3]
+    psi_offset: float = 0.0      # 航向偏转 (rad)
+    gamma_offset: float = 0.0    # 航迹角偏转 (rad)
+    blocked: bool = False        # 是否强制 CIRCLE
+    active_rules: list[str] = [] # 触发的规则名列表
+```
+
+**组合逻辑**：多个规则同时触发时，取最小 `speed_mult`、最大 `|psi_offset|`、OR 的 `blocked`。
+
+**集成方式**（[terminal_area_env.py](src/env/terminal_area_env.py) `step()`）：
+```python
+sc = self.safety_controller if self.config.safety_enabled else None
+self.uav_manager.step_all(uav_actions, dt, sc)
+```
+
+```python
+# UAVManager.step_all 内部：
+safety_adjustments = safety_controller.evaluate(uavs, actions)
+adjusted_actions = safety_controller.apply(actions, safety_adjustments)
+# 再用 adjusted_actions 调用 uav.step()
+```
+
+### 2.5 SafetyConfig（安全配置）★ 新增
+
+```python
+@dataclass
+class SafetyConfig:
+    # Rule 1: Same-ring angular separation
+    angular_separation_threshold: float = 50.0     # 触发距离 (m)
+    # Rule 2: Circling yields to descending
+    descend_crossing_lookahead: float = 10.0       # 预测窗口 (s)
+    descend_crossing_slowdown: float = 0.85        # 盘旋者减速系数
+    # Rule 3: Dual descent divergence
+    dual_descend_threshold: float = 50.0           # 触发距离 (m)
+    dual_descend_psi_offset: float = 15.0          # 偏转角 (deg)
+    # Rule 4: Universal brake
+    universal_brake_threshold: float = 30.0        # 触发距离 (m)
+    universal_brake_low: float = 0.70              # 低优先减速系数
+    universal_brake_high: float = 0.85             # 高优先减速系数
+    # Rule 5: Emergency override
+    emergency_yield_slowdown: float = 0.60         # 对紧急 UAV 让路减速
+    emergency_yield_psi: float = 25.0              # 对紧急 UAV 让路偏转 (deg)
+```
+
+### 2.6 ConflictDetector（冲突检测器）
 
 **职责**：检测 UAV 间安全冲突，提供惩罚信号。
 
@@ -137,7 +225,7 @@ ConflictDetector
 └── compute_penalty(conflicts) -> float # 冲突惩罚项
 ```
 
-### 2.5 PriorityEngine（优先级引擎）
+### 2.7 PriorityEngine（优先级引擎）
 
 **职责**：计算每架 UAV 的动态优先级。
 
@@ -150,7 +238,7 @@ PriorityEngine
 └── get_sorting_key(uavs) -> list[UAV]  # 按优先级排序
 ```
 
-### 2.6 MetricsCollector（指标收集器）
+### 2.8 MetricsCollector（指标收集器）
 
 **职责**：收集并汇总每一步的性能指标。
 
@@ -164,7 +252,7 @@ MetricsCollector
 └── reset() -> None
 ```
 
-### 2.7 TerminalAreaEnv（Gym 环境）
+### 2.9 TerminalAreaEnv（Gym 环境）
 
 **职责**：环境主循环，组合上述模块。
 
@@ -174,35 +262,46 @@ TerminalAreaEnv
 ├── uav_manager: UAVManager
 ├── conflict_detector: ConflictDetector
 ├── priority_engine: PriorityEngine
+├── safety_controller: SafetyController  ★ 新增
 ├── metrics: MetricsCollector
 ├── landing_zones: np.ndarray (M, 3)      # LZ 坐标
 ├── lz_occupied_until: np.ndarray (M,)    # 各 LZ 剩余占用时间
 ├── _lz_reserved_by: dict[lz_idx→uav_id] # LZ 预留状态
-├── _local_obs_dim: int = 75              # per-UAV 观测维度
+├── _local_obs_dim: int = 75 (+4 safety)  # per-UAV 观测维度 (79 with safety)
 │
 ├── reset() -> obs, info
 │   └── 重置所有模块 + LZ 状态清零
 ├── step(action) -> obs, reward, terminated, truncated, info
 │   ├── 每 high_level_interval 步：应用高层 action → airspace.update()
 │   ├── _parse_low_level_actions()：约束强制执行（LZ 占用/环驻留/轨道吸附）
-│   ├── uav_manager.step_all()：推进所有 UAV + 环间分离
+│   ├── SafetyController.evaluate() → 安全调整量  ★ 新增
+│   ├── SafetyController.apply() → 修正后的动作       ★ 新增
+│   ├── uav_manager.step_all()：推进所有 UAV
 │   ├── 更新 LZ 占用计时器 + 清理失效预留
-│   ├── remove_landed() → remove_failed()
+│   ├── remove_landed() → 移除 LANDED + is_dead
 │   ├── try_spawn_inflow()（Phase 4+）
-│   ├── _compute_reward() → 碰撞终止 -500
-│   └── _get_obs()：per-UAV 局部观测矩阵
+│   ├── _compute_reward() → 碰撞惩罚（不终止）        ★ 修改
+│   └── _get_obs()：per-UAV 局部观测矩阵（含 safety 信号）
 └── _get_info() -> dict
 ```
 
 **关键机制**：
 
-1. **轨道吸附**：`_parse_low_level_actions` 中 control=0 (CIRCLE) 时，检查 UAV 是否偏离当前环轨道 (R_i, H_i)。若偏差 > 1m（径向）或低于环高度，立即将 position 吸附回轨道
-2. **LZ 预留与占用**：
+1. **SafetyController 集成**（★ 新增）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入，根据 5 条规则调整速度/航向/航迹角。调整后的观测包含 4 维 safety 信号（speed_mult / psi_offset / gamma_offset / blocked）
+
+2. **安全轨道吸附**（★ 修改）：`_safe_orbit_snap()` 在将 UAV 吸附回环轨道前，搜索 ±30°（步长 5°）找安全槽位。找到空位后仅修正 z 高度，避免 snap 与其他 UAV 碰撞
+
+3. **环容量限制**（★ 新增）：`_ring_has_capacity()` 计算环容量 = 2πR / min_ring_spacing（默认 100m）。当环上 UAV 数 ≥ 90% 容量时，阻止非紧急 UAV 下降进入该环。紧急（priority≥5）或临界电量（<15%）豁免
+
+4. **LZ 预留与占用**：
    - UAV 环3+DESCEND+LZ 选择 → 检查 LZ 是否被占用/预留 → 阻塞则强制 CIRCLE
    - 通过检查 → 预留 LZ（_lz_reserved_by）+ 设置 _landing_target
    - 着陆后 → 预留转占用计时器（lz_occupied_until = mission_type 对应时长）
-   - UAV 死亡/移除/中止下降 → 自动释放预留
-3. **环驻留约束**：`can_descend()` 检查 ring_residency ≥ min_ring_wait × priority_factor。base_priority=5（紧急）或电量 < 15% 时完全豁免
+   - UAV 碰撞死亡/移除/中止下降 → 自动释放预留
+
+5. **碰撞处理**（★ 修改）：碰撞 UAV 被标记 `battery=0`（`is_dead=True`），LZ 预留自动释放，`failed_count` 计入，下一 `remove_landed()` 移除。Episode **不终止**，其他 UAV 继续飞行
+
+6. **环驻留约束**：`can_descend()` 检查 ring_residency ≥ min_ring_wait × priority_factor。base_priority=5（紧急）或电量 < 15% 时完全豁免
 
 ## 3. 奖励函数设计（实际实现）
 
@@ -219,9 +318,25 @@ def _compute_reward(self) -> float:
     new_landings = landed_count - prev_landed
     R_throughput = w_throughput * 20.0 * new_landings / n  # w_throughput=2.0
 
-    # 安全冲突惩罚
-    conflicts = conflict_detector.check_all(uavs)
+    # 安全冲突惩罚（两层级：碰撞 + 接近）
+    conflicts = conflict_detector.check_all(uavs)  # 碰撞 (<10m)
+    near_misses = conflict_detector.check_near_misses(uavs)  # 近距预警 (<50m)
     R_safety = -w_safety * len(conflicts) * penalty_conflict  # w_safety=5.0
+    R_safety -= w_near * len(near_misses) * penalty_near_miss  # w_near=0.5
+
+    # ★ 距离接近惩罚（连续梯度，替代二元碰撞惩罚）
+    R_proximity = 0.0
+    active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED]
+    for i in range(len(active_uavs)):
+        for j in range(i + 1, len(active_uavs)):
+            dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
+            if dist < proximity_penalty_threshold:  # 30m
+                R_proximity -= proximity_penalty_scale / max(dist, 0.1)  # 5.0/dist
+
+    # ★ 碰撞惩罚（碰撞后移除 UAV，不终止 episode）
+    if len(collisions) > 0:
+        collision_penalty = -(penalty_conflict + penalty_conflict * 0.5 * len(collision_ids))
+        # penalty_conflict = 500, 一对碰撞 = -750, 两对 = -1000
 
     # 优先级违反惩罚
     R_priority = -w_priority * violations  # w_priority=2.0
@@ -231,7 +346,6 @@ def _compute_reward(self) -> float:
     R_battery = -w_battery * dead  # w_battery=10.0
 
     # 密集进度奖励：仅对 DESCENDING 状态的 UAV 给予位置进度奖励
-    # 关键设计：进度奖励与动作状态绑定，防止 agent 学会"下降一段后悬停"
     R_progress = 0.0
     for u in uavs:
         if u.status == UAVStatus.DESCENDING:
@@ -240,13 +354,16 @@ def _compute_reward(self) -> float:
             R_progress += 2.0 * (radial_progress + vertical_progress)
     R_progress /= n
 
-    return R_energy + R_wait + R_throughput + R_safety + R_priority + R_battery + R_progress
+    return R_energy + R_wait + R_throughput + R_safety + R_proximity
+           + R_priority + R_battery + R_progress
 ```
 
 **设计要点**：
 - 能耗使用每步增量功率而非累计值，避免奖励随 step 线性增长
 - 着陆奖励为 spike 奖励（仅新增着陆时给），避免重复计数
 - 进度奖励仅 DESCENDING 时生效：强制 agent 持续下降而非找到好位置后悬停
+- ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供平滑的分离信号，RL 可以从密度中直接学习避让
+- ★ **碰撞惩罚**：碰撞 UAV 被移除并施加 `-(500 + 250×N_colliding)` 惩罚，episode 继续
 
 ## 4. Options 框架实现设计
 
