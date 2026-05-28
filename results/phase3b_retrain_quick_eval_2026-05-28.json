@@ -1,0 +1,71 @@
+{
+  "10": {
+    "avg_landed": 10.0,
+    "avg_failed": 0.0,
+    "avg_steps": 299.5,
+    "avg_conflicts": 0.0,
+    "avg_near_misses": 0.0,
+    "episodes": [
+      {
+        "landed": 10,
+        "failed": 0,
+        "steps": 339,
+        "conflicts": 0,
+        "near": 0
+      },
+      {
+        "landed": 10,
+        "failed": 0,
+        "steps": 260,
+        "conflicts": 0,
+        "near": 0
+      }
+    ]
+  },
+  "20": {
+    "avg_landed": 20.0,
+    "avg_failed": 0.0,
+    "avg_steps": 654.5,
+    "avg_conflicts": 0.0,
+    "avg_near_misses": 316.0,
+    "episodes": [
+      {
+        "landed": 20,
+        "failed": 0,
+        "steps": 665,
+        "conflicts": 0,
+        "near": 245
+      },
+      {
+        "landed": 20,
+        "failed": 0,
+        "steps": 644,
+        "conflicts": 0,
+        "near": 387
+      }
+    ]
+  },
+  "30": {
+    "avg_landed": 22.0,
+    "avg_failed": 0.0,
+    "avg_steps": 1073.5,
+    "avg_conflicts": 0.0,
+    "avg_near_misses": 3059.5,
+    "episodes": [
+      {
+        "landed": 30,
+        "failed": 0,
+        "steps": 947,
+        "conflicts": 0,
+        "near": 1199
+      },
+      {
+        "landed": 14,
+        "failed": 0,
+        "steps": 1200,
+        "conflicts": 0,
+        "near": 4920
+      }
+    ]
+  }
+}
