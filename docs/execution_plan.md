@@ -10,6 +10,8 @@
 > - Phase 3b.5(R)：SafetyController 反射式碰撞避免（5 规则）+ 5 项安全修复
 >   - 碰撞移除（不终止 episode）+ 轨道 Snap 安全检查 + 环容量限制 + 距离接近惩罚 + SubprocVecEnv
 >   - N=30 着陆率：PPO 79% / Heuristic 81%（从 17%/20% 提升）
+>
+> **2026-05-28 安全修订**：针对无持续流入阶段仍发生碰撞的问题，低层动作空间由 `Box(max_n,5)` 收缩为 `Box(max_n,2)`，RL 只请求 DESCEND/CIRCLE 与盘旋速度；环境规则层负责下降航迹、放行计时、预测安全过滤、同环纵向间隔和目标环捕获。N=30 无流入诊断中 Heuristic 与旧 PPO 兼容各 5 个 seed 均达到 30/30 着陆、0 failed、0 conflicts。
 
 ## 总体原则
 

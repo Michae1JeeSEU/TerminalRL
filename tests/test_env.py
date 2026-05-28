@@ -11,6 +11,7 @@ from src.env.conflict_detector import ConflictDetector
 from src.env.priority_engine import PriorityEngine
 from src.env.metrics_collector import MetricsCollector
 from src.env.terminal_area_env import TerminalAreaEnv
+from src.env.wrappers import FixedAirspaceWrapper, PerUAVDiscreteWrapper
 
 
 class TestRingAirspace:
@@ -443,6 +444,52 @@ class TestTerminalAreaEnv:
         assert info["failed"] >= 2, f"Colliding UAVs should be counted as failed, got {info['failed']}"
         # Safe UAV should still be alive
         assert not uavs[2].is_dead, "Safe UAV should remain alive after collision"
+
+    def test_failed_count_not_double_counted_after_collision_removal(self):
+        """Collision-killed UAVs should not be counted again when removed next step."""
+        config = EnvConfig()
+        config.num_uavs = 2
+        config.uav.safe_separation = 10.0
+        config.sim.max_steps = 100
+        config.safety_enabled = False
+        env = TerminalAreaEnv(config)
+        env.reset(seed=42)
+
+        uavs = env.uav_manager.uavs
+        for u in uavs:
+            u.ring_id = 1
+        uavs[0].position = np.array([4000., 0., 800.])
+        uavs[0]._angle = 0.0
+        angle_close = np.deg2rad(0.07)
+        uavs[1].position = np.array([4000. * np.cos(angle_close),
+                                      4000. * np.sin(angle_close), 800.])
+        uavs[1]._angle = float(angle_close)
+
+        n = env.max_n
+        m = config.sim.num_landing_zones
+        action = {
+            "high_level": np.array([4000., 2500., 1000., 800., 500., 200., 25., 20., 15.]),
+            "low_level": {
+                "control": np.zeros(n, dtype=np.int32),
+                "psi": np.zeros(n, dtype=np.float64),
+                "gamma": np.zeros(n, dtype=np.float64),
+                "speed": np.ones(n, dtype=np.float64),
+                "landing_zone": np.full(n, m, dtype=np.int32),
+            },
+        }
+        _obs, _reward, _terminated, _truncated, info = env.step(action)
+        assert info["failed"] == 2
+
+        env.step(action)
+        assert env.uav_manager.failed_count == 2
+
+    def test_per_uav_wrapper_uses_metered_two_dim_action(self):
+        config = EnvConfig()
+        config.num_uavs = 3
+        env = PerUAVDiscreteWrapper(FixedAirspaceWrapper(TerminalAreaEnv(config)))
+        obs, _info = env.reset(seed=1)
+        assert obs.shape == env.observation_space.shape
+        assert env.action_space.shape == (config.max_uavs, 2)
 
     def test_inflow_disabled_by_default(self):
         config = EnvConfig()

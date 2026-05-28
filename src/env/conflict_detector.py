@@ -16,14 +16,15 @@ class ConflictDetector:
 
     def check_pairwise(self, uav1: UAV, uav2: UAV) -> bool:
         """Return True if uav1 and uav2 are in collision (< safe_distance)."""
-        if uav1.status == UAVStatus.LANDED or uav2.status == UAVStatus.LANDED:
+        if (uav1.status == UAVStatus.LANDED or uav2.status == UAVStatus.LANDED
+                or uav1.is_dead or uav2.is_dead):
             return False
         dist = np.linalg.norm(uav1.position - uav2.position)
         return dist < self.safe_distance
 
     def check_all(self, uavs: list[UAV]) -> list[tuple[int, int]]:
         """Return list of colliding (id1, id2) pairs (dist < safe_distance)."""
-        active = [u for u in uavs if u.status != UAVStatus.LANDED]
+        active = [u for u in uavs if u.status != UAVStatus.LANDED and not u.is_dead]
         conflicts = []
         for i in range(len(active)):
             for j in range(i + 1, len(active)):
@@ -37,7 +38,7 @@ class ConflictDetector:
         Near-miss: safe_distance ≤ distance < near_miss_threshold.
         Excludes pairs already in collision.
         """
-        active = [u for u in uavs if u.status != UAVStatus.LANDED]
+        active = [u for u in uavs if u.status != UAVStatus.LANDED and not u.is_dead]
         pairs = []
         for i in range(len(active)):
             for j in range(i + 1, len(active)):

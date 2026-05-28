@@ -43,6 +43,7 @@ class UAV:
         self.energy_consumed = 0.0
         self.landing_zone: int = -1
         self.is_controlled: bool = True   # False = background (auto-CIRCLE only)
+        self.failure_counted: bool = False
         self._angle: float = 0.0
         self.ring_entry_time: float = 0.0  # wait_time when entered current ring
         self._prev_ring_id: int = 1
@@ -64,6 +65,7 @@ class UAV:
         self.ring_entry_time = wait_time
         self._prev_ring_id = ring_id
         self._landing_target = None
+        self.failure_counted = False
         if mission_type is not None:
             self.mission_type = mission_type
 

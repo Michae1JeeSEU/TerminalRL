@@ -100,22 +100,25 @@ class SafetyController:
 
         ring_circlers: dict[int, list[UAV]] = {1: [], 2: [], 3: []}
         for uav in uavs:
-            if uav.status != UAVStatus.CRUISING or uav.ring_id == 0:
+            if uav.status != UAVStatus.CRUISING or uav.ring_id == 0 or uav.is_dead:
                 continue
             ring_circlers[uav.ring_id].append(uav)
 
         for ring_id, circlers in ring_circlers.items():
             if len(circlers) < 2:
                 continue
-            circlers.sort(key=lambda u: u.angle)
+            circlers.sort(key=lambda u: u.angle % (2 * np.pi))
             n = len(circlers)
             r_i = self.airspace.radii[ring_id - 1]
             safe_angle = safe_dist / max(r_i, 1e-6)
             for i, uav in enumerate(circlers):
                 prev_uav = circlers[(i - 1) % n]
                 next_uav = circlers[(i + 1) % n]
-                gap_prev = (uav.angle - prev_uav.angle) % (2 * np.pi)
-                gap_next = (next_uav.angle - uav.angle) % (2 * np.pi)
+                u_angle = uav.angle % (2 * np.pi)
+                prev_angle = prev_uav.angle % (2 * np.pi)
+                next_angle = next_uav.angle % (2 * np.pi)
+                gap_prev = (u_angle - prev_angle) % (2 * np.pi)
+                gap_next = (next_angle - u_angle) % (2 * np.pi)
                 min_gap = min(gap_prev, gap_next)
                 if min_gap < safe_angle:
                     result[uav.id] = SafetyAdjustment(
@@ -137,8 +140,8 @@ class SafetyController:
         lookahead = self.config.descend_crossing_lookahead
         slowdown = self.config.descend_crossing_slowdown
 
-        descenders = [u for u in uavs if u.status == UAVStatus.DESCENDING]
-        circlers = [u for u in uavs if u.status == UAVStatus.CRUISING]
+        descenders = [u for u in uavs if u.status == UAVStatus.DESCENDING and not u.is_dead]
+        circlers = [u for u in uavs if u.status == UAVStatus.CRUISING and not u.is_dead]
 
         for duav in descenders:
             d_action = actions.get(duav.id)
@@ -201,7 +204,7 @@ class SafetyController:
         psi_offset = np.deg2rad(self.config.dual_descend_psi_offset)
 
         descenders = [(u, actions.get(u.id)) for u in uavs
-                      if u.status == UAVStatus.DESCENDING]
+                      if u.status == UAVStatus.DESCENDING and not u.is_dead]
         n = len(descenders)
         for i in range(n):
             for j in range(i + 1, n):
@@ -252,7 +255,7 @@ class SafetyController:
         """When any two UAVs are within 30m, brake the closing one(s)."""
         result: dict[int, SafetyAdjustment] = {}
         threshold = self.config.universal_brake_threshold
-        active = [u for u in uavs if u.status != UAVStatus.LANDED]
+        active = [u for u in uavs if u.status != UAVStatus.LANDED and not u.is_dead]
 
         for i in range(len(active)):
             for j in range(i + 1, len(active)):
@@ -298,8 +301,8 @@ class SafetyController:
     def _rule5_emergency_override(self, uavs: list[UAV]) -> dict[int, SafetyAdjustment]:
         """Emergency UAVs are never slowed. Non-emergency yield aggressively."""
         result: dict[int, SafetyAdjustment] = {}
-        emergencies = [u for u in uavs if self._is_emergency(u) and u.status != UAVStatus.LANDED]
-        non_emergencies = [u for u in uavs if not self._is_emergency(u) and u.status != UAVStatus.LANDED]
+        emergencies = [u for u in uavs if self._is_emergency(u) and u.status != UAVStatus.LANDED and not u.is_dead]
+        non_emergencies = [u for u in uavs if not self._is_emergency(u) and u.status != UAVStatus.LANDED and not u.is_dead]
 
         for euav in emergencies:
             # Cancel any existing slowdown for emergency UAVs

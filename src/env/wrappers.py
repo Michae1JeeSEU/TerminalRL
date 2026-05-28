@@ -108,23 +108,14 @@ class DiscreteActionWrapper(gym.Wrapper):
 
 
 class PerUAVDiscreteWrapper(gym.Wrapper):
-    """Per-UAV control: each UAV independently chooses CIRCLE or DESCEND with
-    continuous flight parameters.
+    """Per-UAV metered control: each UAV requests CIRCLE or DESCEND.
 
-    Action space: Box(max_n, 5) — per UAV row:
+    Action space: Box(max_n, 2) — per UAV row:
       dim 0 (control_raw):      > 0 → DESCEND, ≤ 0 → CIRCLE
       dim 1 (circle_speed_raw): [-1,1] → [0.3, 1.3] ring speed multiplier (CIRCLE)
-      dim 2 (psi_raw):          [-1,1] → [0, 2π] heading angle (DESCEND)
-      dim 3 (gamma_raw):        [-1,1] → [-π/2, π/2] flight path angle (DESCEND)
-      dim 4 (dsc_speed_raw):    [-1,1] → [5, 40] m/s flight speed (DESCEND)
 
-    For CIRCLE, only dims 0-1 matter; dims 2-4 are ignored.
-    For DESCEND, the RL controls all three flight parameters directly:
-      velocity = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]
-    Landing zone is auto-selected (nearest) when descending on ring 3.
-
-    Ring-wait constraint is enforced by env._parse_low_level_actions (DESCEND
-    from policy gets overridden to CIRCLE when can_descend() is False).
+    DESCEND is only a request. The environment owns the trajectory,
+    landing-zone assignment, release metering, and predictive safety filter.
     """
 
     def __init__(self, env):
@@ -132,13 +123,13 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
         self.max_n = env.max_n
         self.m = self.unwrapped.config.sim.num_landing_zones
         self._fixed_hl = np.array(
-            list(env.config.ring.default_radii)
-            + list(env.config.ring.default_heights)
-            + list(env.config.ring.default_speeds),
+            list(self.unwrapped.config.ring.default_radii)
+            + list(self.unwrapped.config.ring.default_heights)
+            + list(self.unwrapped.config.ring.default_speeds),
             dtype=np.float64,
         )
         self.action_space = spaces.Box(
-            low=-1.0, high=1.0, shape=(self.max_n, 5), dtype=np.float64,
+            low=-1.0, high=1.0, shape=(self.max_n, 2), dtype=np.float64,
         )
         self.observation_space = env.observation_space
 
@@ -146,6 +137,10 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
         raw = np.asarray(action, dtype=np.float64)
         if raw.ndim == 3:  # vec env wrapper may add batch dim
             raw = raw.squeeze(0)
+        if raw.shape[1] < 2:
+            padded = np.zeros((self.max_n, 2), dtype=np.float64)
+            padded[:, :raw.shape[1]] = raw
+            raw = padded
         max_n = self.max_n
         m = self.m
 
@@ -156,17 +151,9 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
         circle_speed = 0.3 + (raw[:, 1] + 1.0) / 2.0 * 1.0
         circle_speed = np.clip(circle_speed, 0.3, 1.3)
 
-        # dim 2: heading angle [-1,1] → [0, 2π]
-        psi = (raw[:, 2] + 1.0) / 2.0 * (2 * np.pi)
-
-        # dim 3: flight path angle [-1,1] → [-π/2, π/2]
-        gamma = raw[:, 3] * (np.pi / 2)
-
-        # dim 4: descent flight speed [-1,1] → [5, 40] m/s
-        dsc_speed = 5.0 + (raw[:, 4] + 1.0) / 2.0 * 35.0
-        dsc_speed = np.clip(dsc_speed, 5.0, 40.0)
-
         speed = circle_speed.copy()  # default for CIRCLE
+        psi = np.zeros(max_n, dtype=np.float64)
+        gamma = np.zeros(max_n, dtype=np.float64)
         zones = np.full(max_n, m, dtype=np.int32)
 
         env = self.unwrapped
@@ -176,8 +163,7 @@ class PerUAVDiscreteWrapper(gym.Wrapper):
             if i >= max_n:
                 break
             if controls[i] == 1 and u.is_controlled:
-                # DESCEND — use RL-controlled flight parameters
-                speed[i] = dsc_speed[i]
+                speed[i] = env.config.uav.descent_speed
                 if u.ring_id == 3:
                     if u._landing_target is not None:
                         zones[i] = u.landing_zone if u.landing_zone >= 0 else 0

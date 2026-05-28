@@ -132,7 +132,10 @@ class UAVManager:
         landed = [u for u in self.uavs if u.status == UAVStatus.LANDED]
         self.landed_count += len(landed)
         failed = [u for u in self.uavs if u.is_dead]
-        self.failed_count += len(failed)
+        new_failed = [u for u in failed if not u.failure_counted]
+        self.failed_count += len(new_failed)
+        for u in failed:
+            u.failure_counted = True
         remove_ids = {u.id for u in landed + failed}
         self.uavs = [u for u in self.uavs if u.id not in remove_ids]
 
@@ -194,7 +197,7 @@ class UAVManager:
 
     @property
     def active_uavs(self) -> list[UAV]:
-        return [u for u in self.uavs if u.status != UAVStatus.LANDED]
+        return [u for u in self.uavs if u.status != UAVStatus.LANDED and not u.is_dead]
 
     def get_state_matrix(self) -> np.ndarray:
         """Return (N, 6) matrix: [x, y, z, battery, base_priority, angle] for all active UAVs."""
@@ -224,4 +227,4 @@ class UAVManager:
         if not active:
             return 0.0
         return float(np.mean([u.wait_time for u in self.uavs
-                              if u.status != UAVStatus.LANDED]))
+                              if u.status != UAVStatus.LANDED and not u.is_dead]))

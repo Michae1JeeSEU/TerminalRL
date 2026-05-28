@@ -52,7 +52,7 @@ class Phase3bWrapper(gym.Wrapper):
         obs, info = self.env.reset(seed=seed, options=options)
         for u in self.unwrapped.uav_manager.uavs:
             u.is_controlled = True
-            u.battery = self.unwrapped.config.uav.max_battery * 5.0
+            u.battery = self.unwrapped.config.uav.max_battery * 100.0
         return obs, info
 
     def step(self, action):
@@ -189,9 +189,9 @@ def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
                   total_timesteps: int = 500_000, n_envs: int = 4):
     """Train PPO with per-UAV shared policy for Phase 3b.
 
-    SafetyController is enabled during training. Safety adjustments
-    (speed_mult, psi_offset, gamma_offset, blocked) are included in
-    the observation space so PPO learns to anticipate safety interventions.
+    SafetyController is enabled during training. The low-level policy only
+    requests CIRCLE/DESCEND and circling speed; the environment meters descent
+    releases and generates rule-based descent trajectories.
 
     Uses SubprocVecEnv for parallel training across multiple env instances.
     """

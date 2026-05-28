@@ -102,23 +102,21 @@ low_level_action_space = spaces.Dict({
 })
 ```
 
-**训练动作空间（Phase 3b）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 5))`，每 UAV 独立输出：
+**训练动作空间（Phase 3b 安全修订）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 2))`，每 UAV 独立输出：
 
 | dim | 名称 | 缩放目标 | 生效 |
 |-----|------|---------|------|
 | 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
 | 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
-| 2 | psi_raw | [-1,1] → [0, 2π] 航向角 | DESCEND |
-| 3 | gamma_raw | [-1,1] → [-π/2, π/2] 航迹角 | DESCEND |
-| 4 | dsc_speed_raw | [-1,1] → [5, 40] m/s | DESCEND |
 
-DESCEND 时 RL 直接控制全部三个飞行参数 (ψ, γ, V)，速度向量 = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]。
-着陆区 (landing_zone) 在环3下降时自动选择最近可用 LZ。
+DESCEND 现在只表示“下降请求”。环境规则层负责生成 (ψ, γ, V)、选择可用 LZ、执行下降放行计时、预测冲突过滤和目标环捕获；RL 不再直接控制自由下降航迹。
 
 **动作约束（环境层强制）**：
 - 环驻留不足 → CIRCLE 强制覆盖 DESCEND
 - LZ 被占用/预留 → CIRCLE 强制覆盖 DESCEND
 - CIRCLE 动作 → UAV 吸附到当前环轨道 (R_i, H_i) 锁定
+- 同环最小纵向间隔不足 → 后机强制减速
+- 下降请求不满足放行间隔或预测安全距离 → CIRCLE 强制覆盖 DESCEND
 
 ## 5. 仿真步长
 
