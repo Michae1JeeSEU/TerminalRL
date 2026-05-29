@@ -33,6 +33,8 @@ class UAVConfig:
     # Proximity penalty (soft separation shaping)
     proximity_penalty_threshold: float = 30.0  # distance below which penalty activates (m)
     proximity_penalty_scale: float = 5.0      # penalty = scale / (distance + epsilon)
+    safety_margin_threshold: float = 100.0    # start shaping before near-miss range (m)
+    safety_margin_penalty_scale: float = 1.5  # quadratic spacing penalty scale
     # Priority parameters
     priority_alpha: float = 0.5   # wait time scaling
     priority_beta: float = 1.5    # wait time exponent
@@ -108,5 +110,9 @@ class EnvConfig:
     w_smooth: float = 0.1             # action smoothness penalty
     penalty_conflict: float = 500.0        # collision instant penalty (with termination)
     penalty_near_miss: float = 2.0         # proximity warning penalty
+    penalty_safety_rule: float = 0.25      # per active SafetyController rule
+    penalty_safety_speed: float = 1.0      # per unit of safety-induced speed reduction
+    penalty_safety_block: float = 2.0      # per SafetyController block
+    penalty_descent_block: float = 0.5     # per hard-filtered DESCEND request
     # Safety controller
     safety_enabled: bool = True            # True = SafetyController active during env.step

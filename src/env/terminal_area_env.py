@@ -44,6 +44,7 @@ class TerminalAreaEnv(gym.Env):
         self.step_count = 0
         self._prev_landed = 0
         self._last_collision_events = 0
+        self._last_descent_blocked_ids: set[int] = set()
         self.high_level_interval = int(
             self.config.sim.dt_high / self.config.sim.dt_low
         )
@@ -59,7 +60,7 @@ class TerminalAreaEnv(gym.Env):
         self.k = self.config.k_nearest
         self.max_n = self.config.max_uavs
         self._local_obs_dim = (9 + 9 + self.k * 6 + 3 + self.config.sim.num_landing_zones
-                                + 4)  # +4 safety: speed_mult, psi_offset, gamma_offset, blocked
+                                + 10)  # +10 safety context/intervention features
 
         self._define_spaces()
         self._reset_descent_release_state()
@@ -140,6 +141,7 @@ class TerminalAreaEnv(gym.Env):
         self.step_count = 0
         self._prev_landed = 0
         self._last_collision_events = 0
+        self._last_descent_blocked_ids = set()
         self._reset_descent_release_state()
         self.lz_occupied_until = np.zeros(self.config.sim.num_landing_zones, dtype=np.float64)
         self._lz_reserved_by = {}
@@ -150,6 +152,7 @@ class TerminalAreaEnv(gym.Env):
         self.step_count += 1
         dt = self.config.sim.dt_low
         self._last_collision_events = 0
+        self._last_descent_blocked_ids = set()
 
         # Apply high-level action at the start of each option interval
         if self.step_count % self.high_level_interval == 1:
@@ -437,6 +440,7 @@ class TerminalAreaEnv(gym.Env):
 
     def _block_descent(self, uav: UAV, actions: dict[int, LowLevelAction]) -> None:
         """Convert a rejected descent request back to a safe CIRCLE action."""
+        self._last_descent_blocked_ids.add(uav.id)
         for lz, uid in list(self._lz_reserved_by.items()):
             if uid == uav.id:
                 del self._lz_reserved_by[lz]
@@ -609,9 +613,14 @@ class TerminalAreaEnv(gym.Env):
         near_misses = self.conflict_detector.check_near_misses(uavs)
         R_near_miss = -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss
 
-        # Proximity penalty: continuous penalty for UAVs getting too close
-        R_proximity = 0.0
+        # Continuous spacing penalty starts before near-miss range, giving PPO
+        # gradient before the reflexive safety layer needs to intervene.
         active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED and not u.is_dead]
+        margin_cost = self._safety_margin_cost(active_uavs)
+        R_margin = -cfg.w_safety * cfg.uav.safety_margin_penalty_scale * margin_cost / n_ctrl
+
+        # Legacy very-close proximity term remains as an extra sharp penalty.
+        R_proximity = 0.0
         proximity_threshold = cfg.uav.proximity_penalty_threshold
         for i in range(len(active_uavs)):
             for j in range(i + 1, len(active_uavs)):
@@ -619,6 +628,15 @@ class TerminalAreaEnv(gym.Env):
                 if dist < proximity_threshold:
                     # Penalty scales as 1/distance — closer = worse
                     R_proximity -= cfg.uav.proximity_penalty_scale / max(dist, 0.1)
+
+        safety_counts = self._safety_intervention_counts()
+        intervention_cost = (
+            cfg.penalty_safety_rule * safety_counts["active_rules"]
+            + cfg.penalty_safety_speed * safety_counts["speed_reduction"]
+            + cfg.penalty_safety_block * safety_counts["blocked"]
+            + cfg.penalty_descent_block * len(self._last_descent_blocked_ids)
+        )
+        R_intervention = -cfg.w_safety * intervention_cost / n_ctrl
 
         violations = self.priority_engine.get_priority_violations(uavs)
         R_priority = -cfg.w_priority * violations
@@ -639,7 +657,35 @@ class TerminalAreaEnv(gym.Env):
         R_progress /= n_ctrl
 
         return (R_energy + R_wait + R_throughput + R_safety
-                + R_near_miss + R_proximity + R_priority + R_battery + R_progress)
+                + R_near_miss + R_margin + R_proximity + R_intervention
+                + R_priority + R_battery + R_progress)
+
+    def _safety_margin_cost(self, active_uavs: list[UAV]) -> float:
+        """Quadratic pairwise spacing cost for distances below safety margin."""
+        threshold = self.config.uav.safety_margin_threshold
+        cost = 0.0
+        for i in range(len(active_uavs)):
+            for j in range(i + 1, len(active_uavs)):
+                dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
+                if dist < threshold:
+                    slack = (threshold - dist) / max(threshold, 1e-6)
+                    cost += slack * slack
+        return cost
+
+    def _safety_intervention_counts(self) -> dict[str, float]:
+        """Summarize latest safety-layer interventions for reward/info."""
+        active_rules = 0
+        speed_reduction = 0.0
+        blocked = 0
+        for adj in self.uav_manager.last_safety_adjustments.values():
+            active_rules += len(getattr(adj, "active_rules", []))
+            speed_reduction += max(0.0, 1.0 - float(getattr(adj, "speed_mult", 1.0)))
+            blocked += int(bool(getattr(adj, "blocked", False)))
+        return {
+            "active_rules": float(active_rules),
+            "speed_reduction": float(speed_reduction),
+            "blocked": float(blocked),
+        }
 
     def _get_obs(self) -> np.ndarray:
         """Build per-UAV local observation matrix of shape (max_n, local_obs_dim)."""
@@ -735,6 +781,7 @@ class TerminalAreaEnv(gym.Env):
             lz_feat = np.minimum(self.lz_occupied_until / max(self._max_lz_occ, 1.0), 1.0)
             lz_start = 18 + self.k * 6 + 3
             lz_end = lz_start + self.config.sim.num_landing_zones
+            safety_context = self._safety_context_features(u, pos, all_features)
 
             # Assemble row
             obs[i, :9] = asv_norm
@@ -742,16 +789,99 @@ class TerminalAreaEnv(gym.Env):
             obs[i, 18:18 + self.k * 6] = neigh_feats
             obs[i, 18 + self.k * 6:18 + self.k * 6 + 3] = ring_feat
             obs[i, lz_start:lz_end] = lz_feat
+            obs[i, lz_end:lz_end + 6] = safety_context
 
             # Safety adjustment features (last 4 dims): applied TO this UAV
+            safety_start = lz_end + 6
+            obs[i, safety_start] = 1.0
             adj = self.uav_manager.last_safety_adjustments.get(u.id)
             if adj is not None:
-                obs[i, lz_end] = adj.speed_mult
-                obs[i, lz_end + 1] = adj.psi_offset / np.pi
-                obs[i, lz_end + 2] = adj.gamma_offset / (np.pi / 2)
-                obs[i, lz_end + 3] = float(adj.blocked)
+                obs[i, safety_start] = adj.speed_mult
+                obs[i, safety_start + 1] = adj.psi_offset / np.pi
+                obs[i, safety_start + 2] = adj.gamma_offset / (np.pi / 2)
+                obs[i, safety_start + 3] = float(adj.blocked)
 
         return obs
+
+    def _safety_context_features(
+        self,
+        uav: UAV,
+        pos: np.ndarray,
+        all_features: list[dict],
+    ) -> np.ndarray:
+        """Direct spacing and intervention features for active safety learning.
+
+        Layout:
+        [nearest_3d, front_arc_gap, back_arc_gap, predicted_min_dist,
+         last_safety_active, descent_blocked]
+        """
+        norm = max(self.config.uav.safety_margin_threshold, 1.0)
+        nearest = norm
+        for feat in all_features:
+            other = feat["uav"]
+            if other.id == uav.id or other.status == UAVStatus.LANDED or other.is_dead:
+                continue
+            nearest = min(nearest, float(np.linalg.norm(pos - feat["pos"])))
+
+        front_gap, back_gap = self._same_ring_arc_gaps(uav)
+        predicted = self._min_predicted_distance(uav, horizon=12.0)
+        adj = self.uav_manager.last_safety_adjustments.get(uav.id)
+        safety_active = 0.0
+        if adj is not None:
+            safety_active = float(
+                bool(getattr(adj, "active_rules", []))
+                or abs(float(getattr(adj, "speed_mult", 1.0)) - 1.0) > 1e-6
+                or bool(getattr(adj, "blocked", False))
+            )
+
+        return np.array([
+            min(nearest / norm, 1.0),
+            min(front_gap / norm, 1.0),
+            min(back_gap / norm, 1.0),
+            min(predicted / norm, 1.0),
+            safety_active,
+            float(uav.id in self._last_descent_blocked_ids),
+        ], dtype=np.float64)
+
+    def _same_ring_arc_gaps(self, uav: UAV) -> tuple[float, float]:
+        """Return forward/backward same-ring arc gaps in meters."""
+        if uav.ring_id <= 0:
+            inf_gap = self.config.uav.safety_margin_threshold
+            return inf_gap, inf_gap
+        same_ring = [
+            other for other in self.uav_manager.active_uavs
+            if other.id != uav.id
+            and other.ring_id == uav.ring_id
+            and other.status == UAVStatus.CRUISING
+        ]
+        if not same_ring:
+            inf_gap = self.config.uav.safety_margin_threshold
+            return inf_gap, inf_gap
+
+        theta = uav.angle % (2 * np.pi)
+        ring_r = self.airspace.radii[uav.ring_id - 1]
+        forward = []
+        backward = []
+        for other in same_ring:
+            other_theta = other.angle % (2 * np.pi)
+            fwd = (other_theta - theta) % (2 * np.pi)
+            back = (theta - other_theta) % (2 * np.pi)
+            forward.append(fwd * ring_r)
+            backward.append(back * ring_r)
+        return min(forward), min(backward)
+
+    def _min_predicted_distance(self, uav: UAV, horizon: float) -> float:
+        """Minimum predicted distance to any other active UAV over a short horizon."""
+        dt = self.config.sim.dt_low
+        best = self.config.uav.safety_margin_threshold
+        for t in np.arange(0.0, horizon + 1e-6, dt):
+            own_pos = self._predict_position(uav, t)
+            for other in self.uav_manager.active_uavs:
+                if other.id == uav.id:
+                    continue
+                other_pos = self._predict_position(other, t)
+                best = min(best, float(np.linalg.norm(own_pos - other_pos)))
+        return best
 
     def _get_info(self) -> dict:
         return {

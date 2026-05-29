@@ -12,6 +12,8 @@
 >   - N=30 着陆率：PPO 79% / Heuristic 81%（从 17%/20% 提升）
 >
 > **2026-05-28 安全修订**：针对无持续流入阶段仍发生碰撞的问题，低层动作空间由 `Box(max_n,5)` 收缩为 `Box(max_n,2)`，RL 只请求 DESCEND/CIRCLE 与盘旋速度；环境规则层负责下降航迹、放行计时、预测安全过滤、同环纵向间隔和目标环捕获。N=30 无流入诊断中 Heuristic 与旧 PPO 兼容各 5 个 seed 均达到 30/30 着陆、0 failed、0 conflicts。
+>
+> **2026-05-29 安全学习修订**：针对多规模诊断中 PPO 近距预警显著高于 Heuristic 的问题，引入 SafetyController 介入惩罚、显式间距观测和 100m 连续安全裕度塑形。观测维度由 79/旧 checkpoint 输入升级为 85，Phase 3b PPO 需要重新训练后再评估。
 
 ## 总体原则
 
@@ -146,19 +148,22 @@
 | # | 任务 | 说明 | 状态 |
 |---|------|------|------|
 | 3b5.1 | SafetyController 5 规则 | 同环角间距/盘旋让下降/双下降发散/通用刹车/紧急覆盖 | ✅ |
-| 3b5.2 | Plan B 观测集成 | Safety 信号（speed_mult, psi_offset, gamma_offset, blocked）作为 +4 观测维 | ✅ |
+| 3b5.2 | Plan B 观测集成 | Safety 介入信号（speed_mult, psi_offset, gamma_offset, blocked）作为 +4 观测维 | ✅ |
 | 3b5.3 | 轨道 Snap 安全检查 | 下降中止回环时搜索 ±30° 安全槽位 | ✅ |
 | 3b5.4 | 环容量限制 | 环上 UAV ≥ 90% 2πR/min_spacing 时阻止非紧急下降 | ✅ |
 | 3b5.5 | 距离接近惩罚 | 间距 < 30m 触发梯度惩罚 -5/(dist+0.1) | ✅ |
 | 3b5.6 | 碰撞移除机制 | 碰撞 UAV 标记死亡并移除，不终止 episode | ✅ |
-| 3b5.7 | SafetyController 测试 | 36 专项测试 + 4 现有更新 = 76 测试全部通过 | ✅ |
+| 3b5.7 | SafetyController 测试 | 36 专项测试 + 环境回归测试持续维护；当前 80 测试全部通过 | ✅ |
 | 3b5.8 | 初始间距保证 | `_find_safe_angle()` 拒绝采样确保初始 UAV 间距 ≥ safe_separation | ✅ |
 | 3b5.9 | CIRCLE 调速动作 | 动作空间改为 `Box(max_n,2)`：dim0=control_raw, dim1=speed_factor [0.3,1.3] | ✅ |
-| 3b5.10 | DESCEND RL 控制 | 动作空间扩展到 `Box(max_n,5)`：RL 直接输出 ψ/γ/V，不再由 wrapper 自动计算 | ✅ |
+| 3b5.10 | DESCEND RL 控制（历史方案） | 曾扩展到 `Box(max_n,5)` 让 RL 直接输出 ψ/γ/V；2026-05-28 已回退为规则下降 + `Box(max_n,2)` | 已回退 |
+| 3b5.11 | Safety 介入惩罚 | SafetyController 规则触发、减速、阻塞及 DESCEND 硬过滤进入 reward 扣分 | ✅ |
+| 3b5.12 | 显式间距观测 | 增加最近 3D 间距、同环前后弧距、短时预测最近距离、上步介入状态等 +6 维 | ✅ |
+| 3b5.13 | 安全裕度塑形 | 100m 内二次间距惩罚，提前于 50m 近距预警提供分离梯度 | ✅ |
 
 **核心设计**：
 - SafetyController 是 RL 动作与 UAV 运动学之间的**反射层**，做减速/微调航向，不做路径规划
-- Plan B：safety 调整量编码为观测维度，让 PPO 学会**预见**安全干预
+- Safety 学习：显式间距 + safety 调整量编码为观测维度，并通过介入惩罚让 PPO 学会**减少**安全干预触发
 - 碰撞不再终止 episode，而是移除碰撞 UAV 并施加重惩罚
 
 ---

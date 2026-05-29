@@ -69,19 +69,20 @@ class TerminalAreaEnv(gym.Env):
 ### 4.1 观察空间设计（当前实现）
 
 ```
-Per-UAV 局部观测矩阵 (max_n, 79):
+Per-UAV 局部观测矩阵 (max_n, 85):
   - 空域状态 (9): R1,R2,R3,H1,H2,H3,V1,V2,V3 归一化
   - 自身状态 (9): sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend
   - k 近邻 (k×6): 每邻居 [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max]，k=8 默认
   - 环计数 (3): 各环 UAV 数 / 活跃总数
   - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化，6 LZ
-  - Safety 信号 (4): speed_mult, psi_offset, gamma_offset, blocked  ★ 新增
-  合计: 9 + 9 + 48 + 3 + 6 + 4 = 79 维
+  - Safety 上下文 (6): nearest_3d, front_arc_gap, back_arc_gap, predicted_min_dist, last_safety_active, descent_blocked
+  - Safety 介入信号 (4): speed_mult, psi_offset, gamma_offset, blocked
+  合计: 9 + 9 + 48 + 3 + 6 + 6 + 4 = 85 维
 ```
 
 - max_n = 100（最大并发 UAV），inactive UAV 行全零
 - 邻居按 3D 距离取最近 k 个，不足补零
-- Safety 信号来自 SafetyController 的 Plan B 方案，让 RL 学会预见安全干预
+- Safety 上下文提供显式间距信息；介入信号来自 SafetyController，让 RL 学会主动避开干预
 
 ### 4.2 动作空间设计（当前实现）
 
@@ -159,6 +160,8 @@ UAVConfig:
   min_ring_spacing=100.0              # 同环 UAV 最小角间距 (m 弧长)
   proximity_penalty_threshold=30.0    # 接近惩罚触发距离 (m)
   proximity_penalty_scale=5.0         # 接近惩罚缩放系数
+  safety_margin_threshold=100.0       # 连续安全裕度塑形距离 (m)
+  safety_margin_penalty_scale=1.5     # 安全裕度二次惩罚缩放系数
   power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
   priority_emergency=5                # 满豁免阈值
   priority_alpha=0.5, priority_beta=1.5   # 等待时间优先级参数
@@ -192,6 +195,10 @@ EnvConfig:
   safety_enabled=True                   # 启用 SafetyController ★ 新增
   penalty_conflict=500.0               # 碰撞基础惩罚
   penalty_near_miss=2.0                # 近距预警惩罚
+  penalty_safety_rule=0.25             # 每条 SafetyController 规则介入惩罚
+  penalty_safety_speed=1.0             # 安全层减速幅度惩罚
+  penalty_safety_block=2.0             # SafetyController 阻塞惩罚
+  penalty_descent_block=0.5            # 硬过滤 DESCEND 请求惩罚
   w_energy=0.3, w_wait=1.0, ...       # 奖励权重
 ```
 

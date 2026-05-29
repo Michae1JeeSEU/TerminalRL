@@ -138,7 +138,7 @@ UAVManager
 - 紧急 UAV（priority≥5 或 battery<critical×max_battery）**永不减速**
 - 低优先级给高优先级让路；同等优先级双方各让半步
 
-**Plan B 架构**：Safety 调整量编码为 +4 维观测输入（speed_mult, psi_offset, gamma_offset, blocked），RL 策略学会**预见**安全干预，而非被动接受。
+**Safety 学习架构**：观测中加入 +6 维显式间距上下文和 +4 维 Safety 调整量（speed_mult, psi_offset, gamma_offset, blocked），reward 中额外惩罚安全层介入，让 RL 策略学会主动保持间距，而非依赖反射层兜底。
 
 ```
 SafetyController
@@ -267,7 +267,7 @@ TerminalAreaEnv
 ├── landing_zones: np.ndarray (M, 3)      # LZ 坐标
 ├── lz_occupied_until: np.ndarray (M,)    # 各 LZ 剩余占用时间
 ├── _lz_reserved_by: dict[lz_idx→uav_id] # LZ 预留状态
-├── _local_obs_dim: int = 75 (+4 safety)  # per-UAV 观测维度 (79 with safety)
+├── _local_obs_dim: int = 75 (+10 safety) # per-UAV 观测维度 (85 with safety)
 │
 ├── reset() -> obs, info
 │   └── 重置所有模块 + LZ 状态清零
@@ -281,13 +281,13 @@ TerminalAreaEnv
 │   ├── remove_landed() → 移除 LANDED + is_dead
 │   ├── try_spawn_inflow()（Phase 4+）
 │   ├── _compute_reward() → 碰撞惩罚（不终止）        ★ 修改
-│   └── _get_obs()：per-UAV 局部观测矩阵（含 safety 信号）
+│   └── _get_obs()：per-UAV 局部观测矩阵（含 safety 上下文/介入信号）
 └── _get_info() -> dict
 ```
 
 **关键机制**：
 
-1. **SafetyController 集成**（★ 新增）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入，根据 5 条规则调整速度/航向/航迹角。调整后的观测包含 4 维 safety 信号（speed_mult / psi_offset / gamma_offset / blocked）
+1. **SafetyController 集成**（★ 新增）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入，根据 5 条规则调整速度/航向/航迹角。调整后的观测包含 6 维 safety 上下文（最近 3D 间距、同环前后弧距、短时预测最近距离、上步安全介入、下降硬过滤）和 4 维介入信号（speed_mult / psi_offset / gamma_offset / blocked）
 
 2. **安全轨道吸附**（★ 修改）：`_safe_orbit_snap()` 在将 UAV 吸附回环轨道前，搜索 ±30°（步长 5°）找安全槽位。找到空位后仅修正 z 高度，避免 snap 与其他 UAV 碰撞
 
@@ -334,20 +334,37 @@ def _compute_reward(self) -> float:
     new_landings = landed_count - prev_landed
     R_throughput = w_throughput * 20.0 * new_landings / n  # w_throughput=2.0
 
-    # 安全冲突惩罚（两层级：碰撞 + 接近）
+    # 安全冲突惩罚（三层级：碰撞 + 近距预警 + 连续安全裕度）
     conflicts = conflict_detector.check_all(uavs)  # 碰撞 (<10m)
     near_misses = conflict_detector.check_near_misses(uavs)  # 近距预警 (<50m)
     R_safety = -w_safety * len(conflicts) * penalty_conflict  # w_safety=5.0
     R_safety -= w_near * len(near_misses) * penalty_near_miss  # w_near=0.5
 
-    # ★ 距离接近惩罚（连续梯度，替代二元碰撞惩罚）
-    R_proximity = 0.0
+    # ★ 安全裕度惩罚：100m 内二次惩罚，提前给 PPO 主动拉开距离的梯度
+    R_margin = 0.0
     active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED]
+    for i in range(len(active_uavs)):
+        for j in range(i + 1, len(active_uavs)):
+            dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
+            if dist < safety_margin_threshold:  # 100m
+                slack = (safety_margin_threshold - dist) / safety_margin_threshold
+                R_margin -= w_safety * safety_margin_penalty_scale * slack * slack / n
+
+    # ★ 距离接近惩罚：30m 内保留额外尖锐惩罚
+    R_proximity = 0.0
     for i in range(len(active_uavs)):
         for j in range(i + 1, len(active_uavs)):
             dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
             if dist < proximity_penalty_threshold:  # 30m
                 R_proximity -= proximity_penalty_scale / max(dist, 0.1)  # 5.0/dist
+
+    # ★ 安全层介入惩罚：让 PPO 学会少触发 SafetyController，而不是依赖兜底
+    R_intervention = -w_safety * (
+        0.25 * active_safety_rules
+        + 1.0 * safety_speed_reduction
+        + 2.0 * safety_blocks
+        + 0.5 * hard_filtered_descents
+    ) / n
 
     # ★ 碰撞惩罚（碰撞后移除 UAV，不终止 episode）
     if len(collisions) > 0:
@@ -370,7 +387,8 @@ def _compute_reward(self) -> float:
             R_progress += 2.0 * (radial_progress + vertical_progress)
     R_progress /= n
 
-    return R_energy + R_wait + R_throughput + R_safety + R_proximity
+    return R_energy + R_wait + R_throughput + R_safety
+           + R_margin + R_proximity + R_intervention
            + R_priority + R_battery + R_progress
 ```
 
@@ -378,7 +396,9 @@ def _compute_reward(self) -> float:
 - 能耗使用每步增量功率而非累计值，避免奖励随 step 线性增长
 - 着陆奖励为 spike 奖励（仅新增着陆时给），避免重复计数
 - 进度奖励仅 DESCENDING 时生效：强制 agent 持续下降而非找到好位置后悬停
-- ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供平滑的分离信号，RL 可以从密度中直接学习避让
+- ★ **安全裕度塑形**：在 100m 内施加二次间距惩罚，比 50m 近距预警更早提供训练信号
+- ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供额外尖锐分离信号
+- ★ **介入惩罚**：SafetyController 规则触发、减速、阻塞和硬过滤下降请求都会被扣分，目标是让 PPO 主动保持间距
 - ★ **碰撞惩罚**：碰撞 UAV 被移除并施加 `-(500 + 250×N_colliding)` 惩罚，episode 继续
 
 ## 4. Options 框架实现设计
