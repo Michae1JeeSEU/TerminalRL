@@ -7,6 +7,7 @@ Episode ends when all UAVs have landed or failed. No inflow.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 import time
 from pathlib import Path
@@ -30,8 +31,71 @@ from src.baselines.heuristic_policy import HeuristicPolicy
 
 # ---- Phase 3b Scenario Wrapper ----
 
+class MultiScalePhase3bWrapper(gym.Wrapper):
+    """All UAVs controlled with randomized initial UAV count per episode.
+
+    Each reset draws a random n from the current curriculum range, giving the
+    policy exposure to varied traffic densities without starting at max load.
+    Gives all UAVs ample battery so the focus is on navigation strategy.
+    """
+
+    def __init__(
+        self,
+        env: TerminalAreaEnv,
+        n_min: int = 10,
+        n_max: int = 40,
+        curriculum: bool = True,
+        stage_episodes: tuple[int, int] = (80, 160),
+    ):
+        super().__init__(env)
+        self.n_min = n_min
+        self.n_max = n_max
+        self.current_n = n_min
+        self.curriculum = curriculum
+        self.stage_episodes = stage_episodes
+        self.episode_count = 0
+        self._rng = np.random.default_rng()
+
+    @property
+    def max_n(self) -> int:
+        return self.env.max_n
+
+    @property
+    def config(self):
+        return self.env.config
+
+    def _current_n_max(self) -> int:
+        if not self.curriculum:
+            return self.n_max
+        if self.episode_count < self.stage_episodes[0]:
+            return min(self.n_max, max(self.n_min, 20))
+        if self.episode_count < self.stage_episodes[1]:
+            return min(self.n_max, max(self.n_min, 30))
+        return self.n_max
+
+    def reset(self, *, seed=None, options=None):
+        if seed is not None:
+            self._rng = np.random.default_rng(seed)
+        n_high = self._current_n_max()
+        n = int(self._rng.integers(self.n_min, n_high + 1))
+        self.current_n = n
+        self.unwrapped.config.num_uavs = n
+        self.episode_count += 1
+        obs, info = self.env.reset(seed=seed, options=options)
+        for u in self.unwrapped.uav_manager.uavs:
+            u.is_controlled = True
+            u.battery = self.unwrapped.config.uav.max_battery * 100.0
+        return obs, info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        if len(self.unwrapped.uav_manager.uavs) == 0:
+            terminated = True
+        return obs, reward, terminated, truncated, info
+
+
 class Phase3bWrapper(gym.Wrapper):
-    """All UAVs controlled, terminate when all land or fail.
+    """All UAVs controlled, terminate when all land or fail. (fixed n, for eval)
 
     Gives all UAVs ample battery so the focus is on navigation strategy.
     """
@@ -49,6 +113,7 @@ class Phase3bWrapper(gym.Wrapper):
         return self.env.config
 
     def reset(self, *, seed=None, options=None):
+        self.unwrapped.config.num_uavs = self.n_uavs
         obs, info = self.env.reset(seed=seed, options=options)
         for u in self.unwrapped.uav_manager.uavs:
             u.is_controlled = True
@@ -126,10 +191,18 @@ class PerUAVFeatureExtractor(BaseFeaturesExtractor):
 
 # ---- Environment Factory ----
 
-def make_env_phase3b(config: EnvConfig, n_uavs: int = 10):
+def make_env_phase3b(config: EnvConfig, n_uavs: int = 10, multi_scale: bool = False,
+                     n_range: tuple = (10, 40), curriculum: bool = True):
     def _init():
-        env = TerminalAreaEnv(config)
-        env = Phase3bWrapper(env, n_uavs=n_uavs)
+        env_config = deepcopy(config)
+        env = TerminalAreaEnv(env_config)
+        if multi_scale:
+            env = MultiScalePhase3bWrapper(
+                env, n_min=n_range[0], n_max=n_range[1],
+                curriculum=curriculum,
+            )
+        else:
+            env = Phase3bWrapper(env, n_uavs=n_uavs)
         env = PerUAVDiscreteWrapper(env)
         return Monitor(env)
     return _init
@@ -175,7 +248,7 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
     return {
         "avg_landed": float(np.mean(all_landed)),
         "avg_failed": float(np.mean(all_failed)),
-        "landing_rate": float(np.mean([l / max(l + f, 1) for l, f in zip(all_landed, all_failed)])),
+        "landing_rate": float(np.mean([l / max(n_uavs, 1) for l in all_landed])),
         "avg_steps": float(np.mean(all_steps)),
         "avg_conflicts": float(np.mean(all_conflicts)),
         "avg_near_misses": float(np.mean(all_near_misses)),
@@ -185,13 +258,16 @@ def evaluate_phase3b(policy, config: EnvConfig, n_uavs: int = 10,
 
 # ---- PPO Training ----
 
-def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
-                  total_timesteps: int = 500_000, n_envs: int = 4):
+def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 10,
+                  total_timesteps: int = 1_000_000, n_envs: int = 4,
+                  multi_scale: bool = True, n_range: tuple = (10, 40),
+                  curriculum: bool = True):
     """Train PPO with per-UAV shared policy for Phase 3b.
 
-    SafetyController is enabled during training. The low-level policy only
-    requests CIRCLE/DESCEND and circling speed; the environment meters descent
-    releases and generates rule-based descent trajectories.
+    If multi_scale=True, each episode draws a random n_uavs from [n_range[0], n_range[1]],
+    giving the policy exposure to varied traffic densities. SafetyController is enabled
+    during training. The low-level policy only requests CIRCLE/DESCEND and circling speed;
+    the environment meters descent releases and generates rule-based descent trajectories.
 
     Uses SubprocVecEnv for parallel training across multiple env instances.
     """
@@ -203,14 +279,20 @@ def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
         config.uav_inflow_rate = 0.0
         config.safety_enabled = True
 
+    n_eval = (n_range[0] + n_range[1]) // 2 if multi_scale else n_uavs
+
     # Parallel envs for training
-    env_factories = [make_env_phase3b(config, n_uavs) for _ in range(n_envs)]
+    env_factories = [make_env_phase3b(config, n_uavs=n_uavs, multi_scale=multi_scale,
+                                      n_range=n_range, curriculum=curriculum)
+                     for _ in range(n_envs)]
     if n_envs > 1:
         env = SubprocVecEnv(env_factories)
     else:
         env = DummyVecEnv(env_factories)
 
-    eval_env = DummyVecEnv([make_env_phase3b(config, n_uavs)])
+    eval_env = DummyVecEnv([
+        make_env_phase3b(config, n_uavs=n_eval, multi_scale=False)
+    ])
 
     eval_callback = EvalCallback(
         eval_env, best_model_save_path="logs/best_model_phase3b",
@@ -240,7 +322,8 @@ def train_phase3b(config: EnvConfig | None = None, n_uavs: int = 20,
         verbose=1,
     )
 
-    print(f"Training Phase 3b PPO: {n_uavs} UAVs, {total_timesteps} steps, "
+    mode_str = f"multi-scale {n_range[0]}-{n_range[1]}" if multi_scale else str(n_uavs)
+    print(f"Training Phase 3b PPO: {mode_str} UAVs, {total_timesteps} steps, "
           f"{n_envs} parallel envs...")
     t0 = time.time()
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
@@ -444,12 +527,13 @@ if __name__ == "__main__":
             print(f"No model found. Train first with: python -m src.train_phase3b")
     elif "--evaluate" in sys.argv:
         import os
+        n_eval = int(sys.argv[sys.argv.index("--evaluate") + 1]) if len(sys.argv) > sys.argv.index("--evaluate") + 1 and sys.argv[sys.argv.index("--evaluate") + 1].isdigit() else 25
         model_path = "logs/best_model_phase3b/best_model.zip"
         if not os.path.exists(model_path):
             model_path = "logs/ppo_phase3b.zip"
         if os.path.exists(model_path):
             model = PPO.load(model_path)
-            result = compare_ppo_vs_heuristic_phase3b(model, base_config, n_uavs=10)
+            result = compare_ppo_vs_heuristic_phase3b(model, base_config, n_uavs=n_eval)
             Path("results").mkdir(exist_ok=True)
             json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
             print("Results saved to results/phase3b_comparison.json")
@@ -457,14 +541,18 @@ if __name__ == "__main__":
             print(f"No model found. Train first with: python -m src.train_phase3b")
     else:
         n_envs = 4  # parallel environments for faster training
-        model, train_cfg = train_phase3b(n_uavs=10, total_timesteps=500_000, n_envs=n_envs)
+        model, train_cfg = train_phase3b(
+            n_uavs=10, total_timesteps=1_000_000, n_envs=n_envs,
+            multi_scale=True, n_range=(10, 40),
+        )
         eval_cfg = EnvConfig()
-        eval_cfg.num_uavs = 10
         eval_cfg.max_uavs = train_cfg.max_uavs
         eval_cfg.sim.max_steps = train_cfg.sim.max_steps
         eval_cfg.uav_inflow_rate = 0.0
         eval_cfg.safety_enabled = True
-        result = compare_ppo_vs_heuristic_phase3b(model, eval_cfg, n_uavs=10)
+        # Evaluate at mid-scale
+        eval_cfg.num_uavs = 25
+        result = compare_ppo_vs_heuristic_phase3b(model, eval_cfg, n_uavs=25)
         Path("results").mkdir(exist_ok=True)
         json.dump(result, open("results/phase3b_comparison.json", "w"), indent=2)
         print("Results saved to results/phase3b_comparison.json")

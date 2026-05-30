@@ -332,13 +332,13 @@ def _compute_reward(self) -> float:
 
     # 吞吐量奖励（每新增着陆 +20/n 的立即奖励）
     new_landings = landed_count - prev_landed
-    R_throughput = w_throughput * 20.0 * new_landings / n  # w_throughput=2.0
+    R_throughput = w_throughput * reward_landing * new_landings  # reward_landing=2.0
 
     # 安全冲突惩罚（三层级：碰撞 + 近距预警 + 连续安全裕度）
     conflicts = conflict_detector.check_all(uavs)  # 碰撞 (<10m)
     near_misses = conflict_detector.check_near_misses(uavs)  # 近距预警 (<50m)
     R_safety = -w_safety * len(conflicts) * penalty_conflict  # w_safety=5.0
-    R_safety -= w_near * len(near_misses) * penalty_near_miss  # w_near=0.5
+    R_safety -= w_safety * len(near_misses) * penalty_near_miss / n
 
     # ★ 安全裕度惩罚：100m 内二次惩罚，提前给 PPO 主动拉开距离的梯度
     R_margin = 0.0
@@ -363,7 +363,7 @@ def _compute_reward(self) -> float:
         0.25 * active_safety_rules
         + 1.0 * safety_speed_reduction
         + 2.0 * safety_blocks
-        + 0.5 * hard_filtered_descents
+        + 0.0 * hard_filtered_descents
     ) / n
 
     # ★ 碰撞惩罚（碰撞后移除 UAV，不终止 episode）
@@ -394,11 +394,12 @@ def _compute_reward(self) -> float:
 
 **设计要点**：
 - 能耗使用每步增量功率而非累计值，避免奖励随 step 线性增长
-- 着陆奖励为 spike 奖励（仅新增着陆时给），避免重复计数
+- 着陆奖励为跨 N 稳定的 spike 奖励（仅新增着陆时给），避免大规模训练时单机着陆收益被稀释
 - 进度奖励仅 DESCENDING 时生效：强制 agent 持续下降而非找到好位置后悬停
+- 近距预警惩罚按受控 UAV 数归一化，避免随机大 N 训练时 O(N²) pair penalty 压倒吞吐目标
 - ★ **安全裕度塑形**：在 100m 内施加二次间距惩罚，比 50m 近距预警更早提供训练信号
 - ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供额外尖锐分离信号
-- ★ **介入惩罚**：SafetyController 规则触发、减速、阻塞和硬过滤下降请求都会被扣分，目标是让 PPO 主动保持间距
+- ★ **介入惩罚**：SafetyController 规则触发、减速和阻塞会被扣分；普通 DESCEND 放行阻塞保留为观测信号，避免惩罚正常排队
 - ★ **碰撞惩罚**：碰撞 UAV 被移除并施加 `-(500 + 250×N_colliding)` 惩罚，episode 继续
 
 ## 4. Options 框架实现设计

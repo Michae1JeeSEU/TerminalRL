@@ -161,7 +161,7 @@ UAVConfig:
   proximity_penalty_threshold=30.0    # 接近惩罚触发距离 (m)
   proximity_penalty_scale=5.0         # 接近惩罚缩放系数
   safety_margin_threshold=100.0       # 连续安全裕度塑形距离 (m)
-  safety_margin_penalty_scale=1.5     # 安全裕度二次惩罚缩放系数
+  safety_margin_penalty_scale=0.75    # 安全裕度二次惩罚缩放系数
   power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
   priority_emergency=5                # 满豁免阈值
   priority_alpha=0.5, priority_beta=1.5   # 等待时间优先级参数
@@ -193,12 +193,13 @@ EnvConfig:
   max_uavs=100                         # 最大并发 UAV 数
   k_nearest=8                          # 局部观测邻居数
   safety_enabled=True                   # 启用 SafetyController ★ 新增
+  reward_landing=2.0                  # 每架新着陆奖励，乘 w_throughput
   penalty_conflict=500.0               # 碰撞基础惩罚
-  penalty_near_miss=2.0                # 近距预警惩罚
+  penalty_near_miss=2.0                # 近距预警惩罚（按受控 UAV 数归一化）
   penalty_safety_rule=0.25             # 每条 SafetyController 规则介入惩罚
   penalty_safety_speed=1.0             # 安全层减速幅度惩罚
   penalty_safety_block=2.0             # SafetyController 阻塞惩罚
-  penalty_descent_block=0.5            # 硬过滤 DESCEND 请求惩罚
+  penalty_descent_block=0.0            # DESCEND 放行阻塞仅作观测信号，不默认惩罚
   w_energy=0.3, w_wait=1.0, ...       # 奖励权重
 ```
 

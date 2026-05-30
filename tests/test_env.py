@@ -13,6 +13,7 @@ from src.env.safety_controller import SafetyAdjustment
 from src.env.metrics_collector import MetricsCollector
 from src.env.terminal_area_env import TerminalAreaEnv
 from src.env.wrappers import FixedAirspaceWrapper, PerUAVDiscreteWrapper
+from src.train_phase3b import MultiScalePhase3bWrapper, Phase3bWrapper
 
 
 class TestRingAirspace:
@@ -321,6 +322,32 @@ class TestTerminalAreaEnv:
             assert not terminated
             assert not truncated
 
+    def test_max_steps_truncates_episode(self):
+        config = EnvConfig()
+        config.num_uavs = 2
+        config.sim.max_steps = 1
+        env = TerminalAreaEnv(config)
+        env.reset(seed=42)
+
+        n = env.max_n
+        m = config.sim.num_landing_zones
+        action = {
+            "high_level": np.array(
+                [4000., 2500., 1000., 800., 500., 200., 25., 20., 15.]
+            ),
+            "low_level": {
+                "control": np.zeros(n, dtype=np.int32),
+                "psi": np.zeros(n, dtype=np.float64),
+                "gamma": np.zeros(n, dtype=np.float64),
+                "speed": np.full(n, 25.0, dtype=np.float64),
+                "landing_zone": np.full(n, m, dtype=np.int32),
+            },
+        }
+
+        _obs, _reward, terminated, truncated, _info = env.step(action)
+        assert not terminated
+        assert truncated
+
     def test_high_level_action_applied(self):
         config = EnvConfig()
         config.num_uavs = 5
@@ -536,6 +563,35 @@ class TestTerminalAreaEnv:
         obs, _info = env.reset(seed=1)
         assert obs.shape == env.observation_space.shape
         assert env.action_space.shape == (config.max_uavs, 2)
+
+    def test_phase3b_wrapper_respects_fixed_eval_n(self):
+        config = EnvConfig()
+        config.num_uavs = 3
+        env = Phase3bWrapper(TerminalAreaEnv(config), n_uavs=7)
+        env.reset(seed=1)
+
+        assert env.unwrapped.config.num_uavs == 7
+        assert len(env.unwrapped.uav_manager.uavs) == 7
+
+    def test_multiscale_wrapper_uses_curriculum_range(self):
+        config = EnvConfig()
+        config.num_uavs = 10
+        env = MultiScalePhase3bWrapper(
+            TerminalAreaEnv(config),
+            n_min=10,
+            n_max=40,
+            curriculum=True,
+            stage_episodes=(2, 4),
+        )
+
+        sampled = []
+        for seed in [1, None, None, None, None]:
+            env.reset(seed=seed)
+            sampled.append(env.current_n)
+
+        assert all(10 <= n <= 20 for n in sampled[:2])
+        assert all(10 <= n <= 30 for n in sampled[2:4])
+        assert 10 <= sampled[4] <= 40
 
     def test_inflow_disabled_by_default(self):
         config = EnvConfig()

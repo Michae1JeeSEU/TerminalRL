@@ -202,10 +202,10 @@ class TerminalAreaEnv(gym.Env):
         reward = self._compute_reward()
 
         # Collision: kill colliding UAVs, penalize, but DON'T terminate
-        terminated = self.step_count >= self.config.sim.max_steps
+        terminated = False
         collision_penalty = pre_collision_penalty + self._mark_collisions_failed()
         reward += collision_penalty
-        truncated = False
+        truncated = self.step_count >= self.config.sim.max_steps
 
         self.metrics.step(
             total_energy=sum(u.energy_consumed for u in self.uav_manager.uavs),
@@ -605,13 +605,15 @@ class TerminalAreaEnv(gym.Env):
 
         new_landings = self.uav_manager.landed_count - self._prev_landed
         self._prev_landed = self.uav_manager.landed_count
-        R_throughput = cfg.w_throughput * 20.0 * new_landings / max(cfg.num_uavs, 1)
+        R_throughput = cfg.w_throughput * cfg.reward_landing * new_landings
 
         conflicts = self.conflict_detector.check_all(uavs)
         R_safety = -cfg.w_safety * len(conflicts) * cfg.penalty_conflict
 
         near_misses = self.conflict_detector.check_near_misses(uavs)
-        R_near_miss = -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss
+        R_near_miss = (
+            -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss / n_ctrl
+        )
 
         # Continuous spacing penalty starts before near-miss range, giving PPO
         # gradient before the reflexive safety layer needs to intervene.
