@@ -170,6 +170,12 @@ class UAVManager:
 
         # Reflexive safety: evaluate and adjust actions
         self.last_safety_adjustments: dict[int, object] = {}
+        for uav in self.uavs:
+            action = actions.get(uav.id)
+            if action is None or action.control != 0:
+                continue
+            uav.prev_requested_circle_speed_factor = uav.last_requested_circle_speed_factor
+            uav.last_requested_circle_speed_factor = float(np.clip(action.speed, 0.3, 1.3))
         if safety_controller is not None:
             adjustments = safety_controller.evaluate(self.uavs, actions)
             actions = safety_controller.apply(actions, adjustments)

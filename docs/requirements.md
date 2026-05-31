@@ -84,7 +84,7 @@
 |------|------|------|
 | 安全间隔 | 硬约束 | UAV 之间间距 ≥ d_safe（10m 碰撞区），碰撞 UAV 被移除，其他继续 |
 | 近距预警 | 软约束 | 间距 < near_miss_threshold（50m），产生惩罚但不终止 |
-| 安全裕度塑形 | 连续软约束 | 间距 < 100m 触发二次间距惩罚，提前于 50m 近距预警提供分离梯度 |
+| 同环间距塑形 | 连续软约束 | 每架盘旋 UAV 根据前车弧距和 TTC 接收局部 softplus 惩罚，通过自主调速拉开间距 |
 | 接近惩罚 | 连续软约束 | 间距 < 30m 触发 -5/dist 的额外尖锐惩罚 |
 | 环容量 | 软约束 | 环上 UAV 数 ≥ 90% 2πR/min_ring_spacing 时阻止非紧急下降 |
 | 反射式避障 | 环境层 | SafetyController 5 规则在 RL 动作执行前介入减速/偏转；安全层介入进入 reward 惩罚，普通下降放行阻塞仅进入观测 |
@@ -171,10 +171,10 @@ Priority = base_priority × f(wait_time) × g(battery_ratio)
 
 ### 8.1 Per-UAV 共享策略细节
 
-- **观测**：(max_n, 85) 矩阵，每行 = `[空域状态(9) + 自身(9) + k 近邻(k×6) + 环计数(3) + LZ占用(6) + Safety上下文(6) + Safety介入信号(4)]`
+- **观测**：(max_n, 91) 矩阵，每行 = `[空域状态(9) + 自身(9) + k 近邻(k×6) + 环计数(3) + LZ占用(6) + 车流上下文(12) + Safety介入信号(4)]`
 - **动作**：`Box(low=-1, high=1, shape=(max_n, 2))`，每 UAV 独立输出 2 维连续值：
   - dim 0 (control_raw)：> 0 → DESCEND，≤ 0 → CIRCLE
   - dim 1 (circle_speed_raw)：缩放 [-1,1] → [0.3, 1.3] CIRCLE 环速系数
 - **着陆区选择与下降轨迹**：环3下降时自动选择最近可用 LZ；下降航向/航迹角/速度由规则层生成，PPO 只决定何时释放下降
-- **Safety 信号**：nearest_3d / 同环前后弧距 / 预测最近距离 / 上步安全介入 / 硬过滤阻塞 / speed_mult / psi_offset / gamma_offset / blocked
-- **训练**：PPO + PerUAVFeatureExtractor（shared UAV encoder 85→128→64 + mean-pooling global + per-UAV combiner 128→32→8）
+- **车流与 Safety 信号**：最近距离 / 预测最近距离 / 同环前后弧距 / 前后闭合速度 / 前向 TTC / 环平均间距 / 请求与执行环速 / 上步 safety 介入 / 硬过滤阻塞 / speed_mult / psi_offset / gamma_offset / blocked
+- **训练**：PPO + PerUAVFeatureExtractor（shared UAV encoder 91→128→64 + mean-pooling global + per-UAV combiner 128→32→8）

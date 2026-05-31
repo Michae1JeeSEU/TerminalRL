@@ -381,31 +381,16 @@ class TestTerminalAreaEnv:
         obs, _ = env.reset(seed=42)
         assert obs.shape == (config.max_uavs, env._local_obs_dim)
         safety_start = 9 + 9 + config.k_nearest * 6 + 3 + config.sim.num_landing_zones
-        assert env._local_obs_dim == safety_start + 10
+        assert env._local_obs_dim == safety_start + 16
 
-        safety_context = obs[0, safety_start:safety_start + 6]
-        safety_adjustment = obs[0, safety_start + 6:safety_start + 10]
-        assert np.all((0.0 <= safety_context) & (safety_context <= 1.0))
+        safety_context = obs[0, safety_start:safety_start + 12]
+        safety_adjustment = obs[0, safety_start + 12:safety_start + 16]
+        assert np.all((-1.0 <= safety_context) & (safety_context <= 1.0))
         assert np.allclose(safety_adjustment, [1.0, 0.0, 0.0, 0.0])
 
         # Active UAV rows should have non-zero self features
         # Row 0: sin(θ) or cos(θ) should be non-zero for active UAV
         assert not (abs(obs[0, 9]) < 1e-9 and abs(obs[0, 10]) < 1e-9)
-
-    def test_safety_margin_cost_increases_when_uavs_are_close(self):
-        config = EnvConfig()
-        config.num_uavs = 2
-        config.uav.safety_margin_threshold = 100.0
-        env = TerminalAreaEnv(config)
-        env.reset(seed=42)
-
-        u0, u1 = env.uav_manager.uavs[:2]
-        u0.position = np.array([0.0, 0.0, 100.0])
-        u1.position = np.array([50.0, 0.0, 100.0])
-        assert np.isclose(env._safety_margin_cost([u0, u1]), 0.25)
-
-        u1.position = np.array([150.0, 0.0, 100.0])
-        assert env._safety_margin_cost([u0, u1]) == 0.0
 
     def test_safety_interventions_are_penalized(self):
         config = EnvConfig()
@@ -429,6 +414,24 @@ class TestTerminalAreaEnv:
 
         penalized_reward = env._compute_reward()
         assert penalized_reward < baseline_reward
+
+    def test_local_spacing_cost_increases_for_short_front_gap(self):
+        config = EnvConfig()
+        config.num_uavs = 2
+        env = TerminalAreaEnv(config)
+        env.reset(seed=42)
+
+        u0, u1 = env.uav_manager.uavs[:2]
+        for u in (u0, u1):
+            u.ring_id = 1
+            u.status = UAVStatus.CRUISING
+        u0._angle = 0.0
+        u1._angle = 20.0 / env.airspace.radii[0]
+        close_cost, _ = env._local_ring_spacing_cost()
+
+        u1._angle = 200.0 / env.airspace.radii[0]
+        far_cost, _ = env._local_ring_spacing_cost()
+        assert close_cost > far_cost
 
     def test_collision_kills_uavs(self):
         """Collision must kill colliding UAVs (heavy penalty, mark dead)
@@ -592,6 +595,10 @@ class TestTerminalAreaEnv:
         assert all(10 <= n <= 20 for n in sampled[:2])
         assert all(10 <= n <= 30 for n in sampled[2:4])
         assert 10 <= sampled[4] <= 40
+        assert (
+            env.unwrapped.config.safety.angular_separation_threshold
+            < config.safety.initial_intervention_threshold
+        )
 
     def test_inflow_disabled_by_default(self):
         config = EnvConfig()

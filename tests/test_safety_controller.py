@@ -117,20 +117,32 @@ class TestRule1AngularSeparation:
         assert 0 not in result
         assert 1 not in result
 
-    def test_two_uavs_close_together_slow_down(self, sc):
-        """Two UAVs very close angularly should trigger slowdown.
-        Ring 1 R=4000, 50m threshold: safe_angle = 50/4000 = 0.0125 rad.
-        Gap of 0.005 rad = 20m arc → slowdown.
-        """
+    def test_close_faster_follower_is_braked(self, sc):
+        """Only a faster follower inside the emergency buffer is braked."""
         u1 = make_uav(0, 4000, 0, 800, ring_id=1)
         u2 = make_uav(1, 4000, 0, 800, ring_id=1)
         u1._angle = 0.0
         u2._angle = 0.005  # very close
-        actions = {0: LowLevelAction(control=0), 1: LowLevelAction(control=0)}
-        result = sc._rule1_angular_separation([u1, u2])
-        # Both should be slowed since each sees the other as close neighbor
+        actions = {
+            0: LowLevelAction(control=0, speed=1.3),
+            1: LowLevelAction(control=0, speed=0.7),
+        }
+        result = sc._rule1_angular_separation([u1, u2], actions)
         assert 0 in result
-        assert result[0].speed_mult <= 0.95
+        assert result[0].speed_mult <= 0.70
+        assert 1 not in result
+
+    def test_close_equal_speed_pair_is_not_overridden(self, sc):
+        """A stable close pair is shaped by reward, not routine rule takeover."""
+        u1 = make_uav(0, 4000, 0, 800, ring_id=1)
+        u2 = make_uav(1, 4000, 0, 800, ring_id=1)
+        u1._angle = 0.0
+        u2._angle = 0.005
+        actions = {
+            0: LowLevelAction(control=0, speed=1.0),
+            1: LowLevelAction(control=0, speed=1.0),
+        }
+        assert sc._rule1_angular_separation([u1, u2], actions) == {}
 
     def test_descending_uav_ignored(self, sc):
         """Only CRUISING UAVs are considered for angular separation."""

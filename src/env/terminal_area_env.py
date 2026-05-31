@@ -60,7 +60,7 @@ class TerminalAreaEnv(gym.Env):
         self.k = self.config.k_nearest
         self.max_n = self.config.max_uavs
         self._local_obs_dim = (9 + 9 + self.k * 6 + 3 + self.config.sim.num_landing_zones
-                                + 10)  # +10 safety context/intervention features
+                                + 16)  # +12 traffic context +4 shield intervention features
 
         self._define_spaces()
         self._reset_descent_release_state()
@@ -322,7 +322,6 @@ class TerminalAreaEnv(gym.Env):
                 actions[uav.id] = LowLevelAction(control=control, speed=1.0)
 
         self._apply_descent_clearances(actions)
-        self._apply_same_ring_spacing(actions)
         return actions
 
     def _reached_transition_ring(self, uav: UAV) -> int | None:
@@ -450,31 +449,6 @@ class TerminalAreaEnv(gym.Env):
         if abs(np.linalg.norm(uav.position[:2]) - ring_r) > 1.0 or uav.position[2] < ring_h:
             self._safe_orbit_snap(uav, ring_r, ring_h)
         actions[uav.id] = LowLevelAction(control=0, speed=1.0)
-
-    def _apply_same_ring_spacing(self, actions: dict[int, LowLevelAction]) -> None:
-        """Hard longitudinal control on each ring before movement is applied."""
-        for ring_id in (1, 2, 3):
-            ring_uavs = [
-                u for u in self.uav_manager.uavs
-                if u.ring_id == ring_id and u.status == UAVStatus.CRUISING and not u.is_dead
-            ]
-            if len(ring_uavs) < 2:
-                continue
-            ring_uavs.sort(key=lambda u: u.angle % (2 * np.pi))
-            ring_r = self.airspace.radii[ring_id - 1]
-            target_gap = self.config.uav.min_ring_spacing / max(ring_r, 1e-6)
-            hard_gap = self.config.uav.near_miss_threshold / max(ring_r, 1e-6)
-            for idx, uav in enumerate(ring_uavs):
-                action = actions.get(uav.id)
-                if action is None or action.control != 0:
-                    continue
-                ahead = ring_uavs[(idx + 1) % len(ring_uavs)]
-                gap = ((ahead.angle % (2 * np.pi)) - (uav.angle % (2 * np.pi))) % (2 * np.pi)
-                if gap < hard_gap:
-                    action.speed = min(max(action.speed, 0.3), 0.3)
-                elif gap < target_gap:
-                    ratio = gap / max(target_gap, 1e-6)
-                    action.speed = min(max(action.speed, 0.3), max(0.3, 0.35 + 0.55 * ratio))
 
     def _descent_is_predictively_safe(self, uav: UAV, action: LowLevelAction) -> bool:
         """Reject a descent if straight-line prediction enters protected spacing."""
@@ -615,11 +589,21 @@ class TerminalAreaEnv(gym.Env):
             -cfg.w_safety * len(near_misses) * cfg.penalty_near_miss / n_ctrl
         )
 
-        # Continuous spacing penalty starts before near-miss range, giving PPO
-        # gradient before the reflexive safety layer needs to intervene.
+        # Local traffic-flow shaping teaches the policy to regulate its own
+        # circle speed before the minimal-intervention shield is needed.
         active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED and not u.is_dead]
-        margin_cost = self._safety_margin_cost(active_uavs)
-        R_margin = -cfg.w_safety * cfg.uav.safety_margin_penalty_scale * margin_cost / n_ctrl
+        spacing_cost, ttc_cost = self._local_ring_spacing_cost()
+        R_spacing = -cfg.w_safety * (
+            cfg.penalty_ring_spacing * spacing_cost
+            + cfg.penalty_ring_ttc * ttc_cost
+        ) / n_ctrl
+
+        smooth_cost = sum(
+            abs(u.last_requested_circle_speed_factor - u.prev_requested_circle_speed_factor)
+            for u in controlled
+            if u.status == UAVStatus.CRUISING
+        )
+        R_smooth = -cfg.penalty_speed_smooth * smooth_cost / n_ctrl
 
         # Legacy very-close proximity term remains as an extra sharp penalty.
         R_proximity = 0.0
@@ -634,7 +618,7 @@ class TerminalAreaEnv(gym.Env):
         safety_counts = self._safety_intervention_counts()
         intervention_cost = (
             cfg.penalty_safety_rule * safety_counts["active_rules"]
-            + cfg.penalty_safety_speed * safety_counts["speed_reduction"]
+            + cfg.penalty_safety_speed * safety_counts["speed_deviation"]
             + cfg.penalty_safety_block * safety_counts["blocked"]
             + cfg.penalty_descent_block * len(self._last_descent_blocked_ids)
         )
@@ -659,33 +643,52 @@ class TerminalAreaEnv(gym.Env):
         R_progress /= n_ctrl
 
         return (R_energy + R_wait + R_throughput + R_safety
-                + R_near_miss + R_margin + R_proximity + R_intervention
-                + R_priority + R_battery + R_progress)
+                + R_near_miss + R_spacing + R_proximity + R_intervention
+                + R_smooth + R_priority + R_battery + R_progress)
 
-    def _safety_margin_cost(self, active_uavs: list[UAV]) -> float:
-        """Quadratic pairwise spacing cost for distances below safety margin."""
-        threshold = self.config.uav.safety_margin_threshold
-        cost = 0.0
-        for i in range(len(active_uavs)):
-            for j in range(i + 1, len(active_uavs)):
-                dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
-                if dist < threshold:
-                    slack = (threshold - dist) / max(threshold, 1e-6)
-                    cost += slack * slack
-        return cost
+    def _local_ring_spacing_cost(self) -> tuple[float, float]:
+        """Decomposable short-gap and TTC costs for circling UAVs."""
+        preferred_gap = self.config.uav.min_ring_spacing
+        gap_softness = max(self.config.ring_spacing_softness, 1e-6)
+        ttc_threshold = self.config.ring_ttc_threshold
+        ttc_softness = max(self.config.ring_ttc_softness, 1e-6)
+        spacing_cost = 0.0
+        ttc_cost = 0.0
+        for uav in self.uav_manager.active_uavs:
+            if uav.status != UAVStatus.CRUISING:
+                continue
+            traffic = self._same_ring_traffic(uav)
+            if traffic is None:
+                continue
+            gap_term = np.logaddexp(0.0, (preferred_gap - traffic["front_gap"]) / gap_softness)
+            spacing_cost += float(gap_term * gap_term)
+            if traffic["front_closing_speed"] > 1e-6:
+                ttc_term = np.logaddexp(
+                    0.0, (ttc_threshold - traffic["front_ttc"]) / ttc_softness
+                )
+                ttc_cost += float(ttc_term * ttc_term)
+        return spacing_cost, ttc_cost
 
     def _safety_intervention_counts(self) -> dict[str, float]:
         """Summarize latest safety-layer interventions for reward/info."""
         active_rules = 0
         speed_reduction = 0.0
+        speed_deviation = 0.0
         blocked = 0
         for adj in self.uav_manager.last_safety_adjustments.values():
             active_rules += len(getattr(adj, "active_rules", []))
             speed_reduction += max(0.0, 1.0 - float(getattr(adj, "speed_mult", 1.0)))
             blocked += int(bool(getattr(adj, "blocked", False)))
+        for uav in self.uav_manager.active_uavs:
+            if uav.status == UAVStatus.CRUISING:
+                speed_deviation += abs(
+                    uav.last_executed_circle_speed_factor
+                    - uav.last_requested_circle_speed_factor
+                )
         return {
             "active_rules": float(active_rules),
             "speed_reduction": float(speed_reduction),
+            "speed_deviation": float(speed_deviation),
             "blocked": float(blocked),
         }
 
@@ -791,10 +794,10 @@ class TerminalAreaEnv(gym.Env):
             obs[i, 18:18 + self.k * 6] = neigh_feats
             obs[i, 18 + self.k * 6:18 + self.k * 6 + 3] = ring_feat
             obs[i, lz_start:lz_end] = lz_feat
-            obs[i, lz_end:lz_end + 6] = safety_context
+            obs[i, lz_end:lz_end + 12] = safety_context
 
             # Safety adjustment features (last 4 dims): applied TO this UAV
-            safety_start = lz_end + 6
+            safety_start = lz_end + 12
             obs[i, safety_start] = 1.0
             adj = self.uav_manager.last_safety_adjustments.get(u.id)
             if adj is not None:
@@ -814,7 +817,9 @@ class TerminalAreaEnv(gym.Env):
         """Direct spacing and intervention features for active safety learning.
 
         Layout:
-        [nearest_3d, front_arc_gap, back_arc_gap, predicted_min_dist,
+        [nearest_3d, predicted_min_dist, front_arc_gap, back_arc_gap,
+         front_closing_speed, back_closing_speed, front_ttc, ring_mean_gap,
+         executed_circle_speed, requested_circle_speed,
          last_safety_active, descent_blocked]
         """
         norm = max(self.config.uav.safety_margin_threshold, 1.0)
@@ -825,7 +830,20 @@ class TerminalAreaEnv(gym.Env):
                 continue
             nearest = min(nearest, float(np.linalg.norm(pos - feat["pos"])))
 
-        front_gap, back_gap = self._same_ring_arc_gaps(uav)
+        traffic = self._same_ring_traffic(uav)
+        gap_scale = max(self.config.uav.ring_gap_observation_scale, 1.0)
+        ttc_horizon = max(self.config.uav.ttc_observation_horizon, 1.0)
+        if traffic is None:
+            front_gap = back_gap = ring_mean_gap = gap_scale
+            front_closing = back_closing = 0.0
+            front_ttc = ttc_horizon
+        else:
+            front_gap = traffic["front_gap"]
+            back_gap = traffic["back_gap"]
+            front_closing = traffic["front_closing_speed"]
+            back_closing = traffic["back_closing_speed"]
+            front_ttc = traffic["front_ttc"]
+            ring_mean_gap = traffic["ring_mean_gap"]
         predicted = self._min_predicted_distance(uav, horizon=12.0)
         adj = self.uav_manager.last_safety_adjustments.get(uav.id)
         safety_active = 0.0
@@ -838,39 +856,71 @@ class TerminalAreaEnv(gym.Env):
 
         return np.array([
             min(nearest / norm, 1.0),
-            min(front_gap / norm, 1.0),
-            min(back_gap / norm, 1.0),
             min(predicted / norm, 1.0),
+            min(front_gap / gap_scale, 1.0),
+            min(back_gap / gap_scale, 1.0),
+            np.clip(front_closing / self.config.ring.v_max, -1.0, 1.0),
+            np.clip(back_closing / self.config.ring.v_max, -1.0, 1.0),
+            min(front_ttc / ttc_horizon, 1.0),
+            min(ring_mean_gap / gap_scale, 1.0),
+            self._normalize_circle_speed_factor(uav.last_executed_circle_speed_factor),
+            self._normalize_circle_speed_factor(uav.last_requested_circle_speed_factor),
             safety_active,
             float(uav.id in self._last_descent_blocked_ids),
         ], dtype=np.float64)
 
     def _same_ring_arc_gaps(self, uav: UAV) -> tuple[float, float]:
         """Return forward/backward same-ring arc gaps in meters."""
-        if uav.ring_id <= 0:
-            inf_gap = self.config.uav.safety_margin_threshold
-            return inf_gap, inf_gap
+        traffic = self._same_ring_traffic(uav)
+        if traffic is None:
+            default_gap = self.config.uav.ring_gap_observation_scale
+            return default_gap, default_gap
+        return traffic["front_gap"], traffic["back_gap"]
+
+    def _same_ring_traffic(self, uav: UAV) -> dict[str, float] | None:
+        """Return nearest front/back circling traffic state on the same ring."""
+        if uav.ring_id <= 0 or uav.status != UAVStatus.CRUISING:
+            return None
         same_ring = [
             other for other in self.uav_manager.active_uavs
-            if other.id != uav.id
-            and other.ring_id == uav.ring_id
-            and other.status == UAVStatus.CRUISING
+            if other.ring_id == uav.ring_id and other.status == UAVStatus.CRUISING
         ]
-        if not same_ring:
-            inf_gap = self.config.uav.safety_margin_threshold
-            return inf_gap, inf_gap
+        if len(same_ring) < 2:
+            return None
 
+        same_ring.sort(key=lambda other: other.angle % (2 * np.pi))
+        own_idx = next(idx for idx, other in enumerate(same_ring) if other.id == uav.id)
+        ahead = same_ring[(own_idx + 1) % len(same_ring)]
+        behind = same_ring[(own_idx - 1) % len(same_ring)]
         theta = uav.angle % (2 * np.pi)
         ring_r = self.airspace.radii[uav.ring_id - 1]
-        forward = []
-        backward = []
-        for other in same_ring:
-            other_theta = other.angle % (2 * np.pi)
-            fwd = (other_theta - theta) % (2 * np.pi)
-            back = (theta - other_theta) % (2 * np.pi)
-            forward.append(fwd * ring_r)
-            backward.append(back * ring_r)
-        return min(forward), min(backward)
+        circumference = 2 * np.pi * ring_r
+        front_gap = ((ahead.angle % (2 * np.pi)) - theta) % (2 * np.pi) * ring_r
+        back_gap = (theta - (behind.angle % (2 * np.pi))) % (2 * np.pi) * ring_r
+        ring_speed = self.airspace.speeds[uav.ring_id - 1]
+        own_speed = ring_speed * uav.last_executed_circle_speed_factor
+        ahead_speed = ring_speed * ahead.last_executed_circle_speed_factor
+        behind_speed = ring_speed * behind.last_executed_circle_speed_factor
+        front_closing = own_speed - ahead_speed
+        back_closing = behind_speed - own_speed
+        front_ttc = (
+            front_gap / front_closing
+            if front_closing > 1e-6
+            else self.config.uav.ttc_observation_horizon
+        )
+        return {
+            "front_gap": float(front_gap),
+            "back_gap": float(back_gap),
+            "front_closing_speed": float(front_closing),
+            "back_closing_speed": float(back_closing),
+            "front_ttc": float(front_ttc),
+            "ring_mean_gap": float(circumference / len(same_ring)),
+        }
+
+    @staticmethod
+    def _normalize_circle_speed_factor(speed_factor: float) -> float:
+        """Map the [0.3, 1.3] circle-speed action range to [-1, 1]."""
+        return float(np.clip((speed_factor - 0.8) / 0.5, -1.0, 1.0))
 
     def _min_predicted_distance(self, uav: UAV, horizon: float) -> float:
         """Minimum predicted distance to any other active UAV over a short horizon."""
@@ -886,6 +936,7 @@ class TerminalAreaEnv(gym.Env):
         return best
 
     def _get_info(self) -> dict:
+        safety_counts = self._safety_intervention_counts()
         return {
             "step": self.step_count,
             "landed": self.uav_manager.landed_count,
@@ -895,8 +946,20 @@ class TerminalAreaEnv(gym.Env):
             "conflicts": self._last_collision_events
             + len(self.conflict_detector.check_all(self.uav_manager.uavs)),
             "near_misses": len(self.conflict_detector.check_near_misses(self.uav_manager.uavs)),
+            "shield_interventions": int(safety_counts["active_rules"]),
+            "shield_speed_deviation": safety_counts["speed_deviation"],
+            "min_ring_gap": self._minimum_same_ring_gap(),
             "avg_wait": self.uav_manager.avg_wait_time,
         }
+
+    def _minimum_same_ring_gap(self) -> float:
+        """Smallest forward arc gap among circling UAVs, or infinity if none."""
+        min_gap = float("inf")
+        for uav in self.uav_manager.active_uavs:
+            traffic = self._same_ring_traffic(uav)
+            if traffic is not None:
+                min_gap = min(min_gap, traffic["front_gap"])
+        return min_gap
 
     def render(self) -> np.ndarray | None:
         return None

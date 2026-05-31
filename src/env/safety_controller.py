@@ -40,7 +40,7 @@ class SafetyController:
                  actions: dict[int, LowLevelAction]) -> dict[int, SafetyAdjustment]:
         """Run all safety rules and return per-UAV adjustments."""
         per_rule: list[dict[int, SafetyAdjustment]] = [
-            self._rule1_angular_separation(uavs),
+            self._rule1_angular_separation(uavs, actions),
             self._rule2_circling_yields_descending(uavs, actions),
             self._rule3_dual_descent_divergence(uavs, actions),
             self._rule4_universal_brake(uavs),
@@ -93,8 +93,16 @@ class SafetyController:
 
     # ---- Rule 1: Same-ring angular separation ----
 
-    def _rule1_angular_separation(self, uavs: list[UAV]) -> dict[int, SafetyAdjustment]:
-        """Existing logic: slow circling UAVs that are too close on the same ring."""
+    def _rule1_angular_separation(
+        self,
+        uavs: list[UAV],
+        actions: dict[int, LowLevelAction] | None = None,
+    ) -> dict[int, SafetyAdjustment]:
+        """Brake only a closing follower inside the emergency same-ring buffer.
+
+        Routine spacing is left to the policy's circle-speed action. This rule
+        is a minimal-intervention shield, not a longitudinal controller.
+        """
         result: dict[int, SafetyAdjustment] = {}
         safe_dist = self.config.angular_separation_threshold
 
@@ -111,24 +119,33 @@ class SafetyController:
             n = len(circlers)
             r_i = self.airspace.radii[ring_id - 1]
             safe_angle = safe_dist / max(r_i, 1e-6)
-            for i, uav in enumerate(circlers):
-                prev_uav = circlers[(i - 1) % n]
-                next_uav = circlers[(i + 1) % n]
-                u_angle = uav.angle % (2 * np.pi)
-                prev_angle = prev_uav.angle % (2 * np.pi)
-                next_angle = next_uav.angle % (2 * np.pi)
-                gap_prev = (u_angle - prev_angle) % (2 * np.pi)
-                gap_next = (next_angle - u_angle) % (2 * np.pi)
-                min_gap = min(gap_prev, gap_next)
-                if min_gap < safe_angle:
-                    result[uav.id] = SafetyAdjustment(
-                        speed_mult=0.95, active_rules=["R1_angular"]
-                    )
-                elif min_gap < 2 * safe_angle:
-                    result[uav.id] = SafetyAdjustment(
-                        speed_mult=0.98, active_rules=["R1_angular"]
+            for i, follower in enumerate(circlers):
+                ahead = circlers[(i + 1) % n]
+                follower_angle = follower.angle % (2 * np.pi)
+                ahead_angle = ahead.angle % (2 * np.pi)
+                gap = (ahead_angle - follower_angle) % (2 * np.pi)
+                follower_speed = self._circle_speed(follower, actions)
+                ahead_speed = self._circle_speed(ahead, actions)
+                closing_speed = follower_speed - ahead_speed
+                if gap < safe_angle and closing_speed > 1e-6:
+                    result[follower.id] = SafetyAdjustment(
+                        speed_mult=0.70, active_rules=["R1_closing_follower"]
                     )
         return result
+
+    def _circle_speed(
+        self,
+        uav: UAV,
+        actions: dict[int, LowLevelAction] | None,
+    ) -> float:
+        """Proposed tangential circle speed, falling back to current motion."""
+        ring_speed = self.airspace.speeds[uav.ring_id - 1]
+        action = actions.get(uav.id) if actions is not None else None
+        if action is not None and action.control == 0:
+            factor = action.speed if action.speed > 0.01 else 1.0
+            return ring_speed * float(np.clip(factor, 0.3, 1.3))
+        current_speed = float(np.linalg.norm(uav.velocity[:2]))
+        return current_speed if current_speed > 0.01 else ring_speed
 
     # ---- Rule 2: Circling yields to descending ----
 

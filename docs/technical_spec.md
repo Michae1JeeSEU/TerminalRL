@@ -69,20 +69,20 @@ class TerminalAreaEnv(gym.Env):
 ### 4.1 观察空间设计（当前实现）
 
 ```
-Per-UAV 局部观测矩阵 (max_n, 85):
+Per-UAV 局部观测矩阵 (max_n, 91):
   - 空域状态 (9): R1,R2,R3,H1,H2,H3,V1,V2,V3 归一化
   - 自身状态 (9): sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend
   - k 近邻 (k×6): 每邻居 [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max]，k=8 默认
   - 环计数 (3): 各环 UAV 数 / 活跃总数
   - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化，6 LZ
-  - Safety 上下文 (6): nearest_3d, front_arc_gap, back_arc_gap, predicted_min_dist, last_safety_active, descent_blocked
+  - 车流上下文 (12): nearest_3d, predicted_min_dist, front_arc_gap, back_arc_gap, front_closing_speed, back_closing_speed, front_ttc, ring_mean_gap, executed_circle_speed, requested_circle_speed, last_safety_active, descent_blocked
   - Safety 介入信号 (4): speed_mult, psi_offset, gamma_offset, blocked
-  合计: 9 + 9 + 48 + 3 + 6 + 6 + 4 = 85 维
+  合计: 9 + 9 + 48 + 3 + 6 + 12 + 4 = 91 维
 ```
 
 - max_n = 100（最大并发 UAV），inactive UAV 行全零
 - 邻居按 3D 距离取最近 k 个，不足补零
-- Safety 上下文提供显式间距信息；介入信号来自 SafetyController，让 RL 学会主动避开干预
+- 车流上下文提供显式弧距、闭合速度、TTC 与请求/执行速度；介入信号来自 SafetyController，让 RL 学会通过自主调速避开干预
 
 ### 4.2 动作空间设计（当前实现）
 
@@ -116,7 +116,7 @@ DESCEND 现在只表示“下降请求”。环境规则层负责生成 (ψ, γ,
 - 环驻留不足 → CIRCLE 强制覆盖 DESCEND
 - LZ 被占用/预留 → CIRCLE 强制覆盖 DESCEND
 - CIRCLE 动作 → UAV 吸附到当前环轨道 (R_i, H_i) 锁定
-- 同环最小纵向间隔不足 → 后机强制减速
+- 同环日常间距由 PPO 自主调速；仅进入 shield 紧急缓冲区且后机仍在追近时触发最小干预刹车
 - 下降请求不满足放行间隔或预测安全距离 → CIRCLE 强制覆盖 DESCEND
 
 ## 5. 仿真步长
@@ -160,8 +160,9 @@ UAVConfig:
   min_ring_spacing=100.0              # 同环 UAV 最小角间距 (m 弧长)
   proximity_penalty_threshold=30.0    # 接近惩罚触发距离 (m)
   proximity_penalty_scale=5.0         # 接近惩罚缩放系数
-  safety_margin_threshold=100.0       # 连续安全裕度塑形距离 (m)
-  safety_margin_penalty_scale=0.75    # 安全裕度二次惩罚缩放系数
+  safety_margin_threshold=100.0       # 最近距离观测归一化范围 (m)
+  ring_gap_observation_scale=1000.0   # 同环弧距观测归一化范围 (m)
+  ttc_observation_horizon=60.0        # TTC 观测归一化范围 (s)
   power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
   priority_emergency=5                # 满豁免阈值
   priority_alpha=0.5, priority_beta=1.5   # 等待时间优先级参数
@@ -169,12 +170,15 @@ UAVConfig:
 
 # Safety 配置（SafetyController 参数）★ 新增
 SafetyConfig:
-  angular_separation_threshold=50.0   # Rule 1: 触发距离 (m)
+  angular_separation_threshold=25.0   # Rule 1: 最终紧急介入距离 (m)
+  initial_intervention_threshold=40.0 # 训练初期 shield 介入距离 (m)
+  final_intervention_threshold=25.0   # 训练后期 shield 介入距离 (m)
+  intervention_curriculum_episodes=160
   descend_crossing_lookahead=10.0     # Rule 2: 预测窗口 (s)
   descend_crossing_slowdown=0.85      # Rule 2: 盘旋者减速系数
   dual_descend_threshold=50.0         # Rule 3: 触发距离 (m)
   dual_descend_psi_offset=15.0        # Rule 3: 偏转角 (deg)
-  universal_brake_threshold=30.0      # Rule 4: 触发距离 (m)
+  universal_brake_threshold=25.0      # Rule 4: 最终触发距离 (m)
   universal_brake_low=0.70            # Rule 4: 低优先减速
   universal_brake_high=0.85           # Rule 4: 高优先减速
   emergency_yield_slowdown=0.60       # Rule 5: 让路减速
@@ -200,6 +204,12 @@ EnvConfig:
   penalty_safety_speed=1.0             # 安全层减速幅度惩罚
   penalty_safety_block=2.0             # SafetyController 阻塞惩罚
   penalty_descent_block=0.0            # DESCEND 放行阻塞仅作观测信号，不默认惩罚
+  penalty_ring_spacing=0.20            # 同环短前向弧距 softplus 惩罚
+  penalty_ring_ttc=0.10                # 同环短 TTC softplus 惩罚
+  penalty_speed_smooth=0.10            # 盘旋速度请求振荡惩罚
+  ring_spacing_softness=20.0           # 弧距 softplus 过渡宽度 (m)
+  ring_ttc_threshold=12.0              # TTC 开始惩罚阈值 (s)
+  ring_ttc_softness=3.0                # TTC softplus 过渡宽度 (s)
   w_energy=0.3, w_wait=1.0, ...       # 奖励权重
 ```
 

@@ -48,6 +48,9 @@ class UAV:
         self.ring_entry_time: float = 0.0  # wait_time when entered current ring
         self._prev_ring_id: int = 1
         self._landing_target: np.ndarray | None = None  # set when landing approach begins
+        self.prev_requested_circle_speed_factor: float = 1.0
+        self.last_requested_circle_speed_factor: float = 1.0
+        self.last_executed_circle_speed_factor: float = 1.0
 
     def reset(self, position: np.ndarray, ring_id: int = 1,
               battery: float | None = None, wait_time: float = 0.0,
@@ -66,6 +69,9 @@ class UAV:
         self._prev_ring_id = ring_id
         self._landing_target = None
         self.failure_counted = False
+        self.prev_requested_circle_speed_factor = 1.0
+        self.last_requested_circle_speed_factor = 1.0
+        self.last_executed_circle_speed_factor = 1.0
         if mission_type is not None:
             self.mission_type = mission_type
 
@@ -123,6 +129,7 @@ class UAV:
         """
         self.status = UAVStatus.CRUISING
         effective_speed = ring_speed * speed_factor
+        self.last_executed_circle_speed_factor = speed_factor
         omega = effective_speed / max(ring_radius, 1e-6)
         self._angle += omega * dt
         self.position[0] = ring_radius * np.cos(self._angle)

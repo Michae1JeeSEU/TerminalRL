@@ -30,6 +30,9 @@ def run_diagnostic_episode(policy, config, n_uavs, seed, policy_name="PPO",
     step = 0
     collisions = 0
     near_misses = 0
+    shield_interventions = 0
+    shield_speed_deviation = 0.0
+    min_ring_gap = float("inf")
     collision_details = []  # list of (step, uav1_id, uav2_id, dist, pos1, pos2, status1, status2)
 
     while True:
@@ -45,6 +48,9 @@ def run_diagnostic_episode(policy, config, n_uavs, seed, policy_name="PPO",
         step_near = info.get("near_misses", 0)
         collisions += step_conflicts
         near_misses += step_near
+        shield_interventions += info.get("shield_interventions", 0)
+        shield_speed_deviation += info.get("shield_speed_deviation", 0.0)
+        min_ring_gap = min(min_ring_gap, info.get("min_ring_gap", float("inf")))
 
         if record_collision_detail and step_conflicts > 0:
             uavs = env.uav_manager.uavs
@@ -87,6 +93,9 @@ def run_diagnostic_episode(policy, config, n_uavs, seed, policy_name="PPO",
         "steps": step,
         "collisions": collisions,
         "near_misses": near_misses,
+        "shield_interventions": shield_interventions,
+        "shield_speed_deviation": shield_speed_deviation,
+        "min_ring_gap": None if not np.isfinite(min_ring_gap) else min_ring_gap,
         "collision_details": collision_details,
     }
 
@@ -110,6 +119,11 @@ def evaluate_multi_seed(policy, config, n_uavs, num_seeds, policy_name="PPO",
     collision_list = [r["collisions"] for r in results]
     near_list = [r["near_misses"] for r in results]
     steps_list = [r["steps"] for r in results]
+    shield_intervention_list = [r["shield_interventions"] for r in results]
+    shield_deviation_list = [r["shield_speed_deviation"] for r in results]
+    min_ring_gap_list = [
+        r["min_ring_gap"] for r in results if r["min_ring_gap"] is not None
+    ]
 
     landing_rates = [l / max(n_uavs, 1) for l in landed_list]
 
@@ -126,6 +140,12 @@ def evaluate_multi_seed(policy, config, n_uavs, num_seeds, policy_name="PPO",
         "avg_collisions": round(float(np.mean(collision_list)), 2),
         "avg_near_misses": round(float(np.mean(near_list)), 1),
         "avg_steps": round(float(np.mean(steps_list)), 0),
+        "avg_shield_interventions": round(float(np.mean(shield_intervention_list)), 1),
+        "avg_shield_speed_deviation": round(float(np.mean(shield_deviation_list)), 2),
+        "avg_min_ring_gap": (
+            round(float(np.mean(min_ring_gap_list)), 1)
+            if min_ring_gap_list else None
+        ),
         "eps_with_collisions": eps_with_collisions,
         "eps_with_failures": eps_with_failures,
         "eps_with_timeout": sum(1 for r in results if r["timed_out"]),
@@ -172,6 +192,9 @@ def main():
               f"+- {ppo_res['std_landed']:.1f}")
         print(f"  Failed: {ppo_res['avg_failed']:.1f}, Collisions: {ppo_res['avg_collisions']:.2f}")
         print(f"  Near-misses: {ppo_res['avg_near_misses']:.1f}, Steps: {ppo_res['avg_steps']:.0f}")
+        print(f"  Shield interventions: {ppo_res['avg_shield_interventions']:.1f}, "
+              f"Speed deviation: {ppo_res['avg_shield_speed_deviation']:.2f}, "
+              f"Min ring gap: {ppo_res['avg_min_ring_gap']}")
         print(f"  Eps with collisions: {ppo_res['eps_with_collisions']}/{num_seeds}")
         print(f"  Eps with failures: {ppo_res['eps_with_failures']}/{num_seeds}")
         print(f"  Eps with timeout: {ppo_res['eps_with_timeout']}/{num_seeds}")
@@ -194,6 +217,9 @@ def main():
               f"+- {heur_res['std_landed']:.1f}")
         print(f"  Failed: {heur_res['avg_failed']:.1f}, Collisions: {heur_res['avg_collisions']:.2f}")
         print(f"  Near-misses: {heur_res['avg_near_misses']:.1f}, Steps: {heur_res['avg_steps']:.0f}")
+        print(f"  Shield interventions: {heur_res['avg_shield_interventions']:.1f}, "
+              f"Speed deviation: {heur_res['avg_shield_speed_deviation']:.2f}, "
+              f"Min ring gap: {heur_res['avg_min_ring_gap']}")
         print(f"  Eps with collisions: {heur_res['eps_with_collisions']}/{num_seeds}")
         print(f"  Eps with failures: {heur_res['eps_with_failures']}/{num_seeds}")
         print(f"  Total collisions across all episodes: {heur_res['total_collisions_all_eps']}")

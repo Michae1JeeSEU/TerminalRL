@@ -33,8 +33,9 @@ class UAVConfig:
     # Proximity penalty (soft separation shaping)
     proximity_penalty_threshold: float = 30.0  # distance below which penalty activates (m)
     proximity_penalty_scale: float = 5.0      # penalty = scale / (distance + epsilon)
-    safety_margin_threshold: float = 100.0    # start shaping before near-miss range (m)
-    safety_margin_penalty_scale: float = 0.75  # quadratic spacing penalty scale
+    safety_margin_threshold: float = 100.0    # normalize nearest-distance observations (m)
+    ring_gap_observation_scale: float = 1000.0  # preserve useful resolution beyond 100m
+    ttc_observation_horizon: float = 60.0       # normalize front time-to-collision (s)
     # Priority parameters
     priority_alpha: float = 0.5   # wait time scaling
     priority_beta: float = 1.5    # wait time exponent
@@ -47,7 +48,10 @@ class UAVConfig:
 class SafetyConfig:
     """Reflexive collision avoidance parameters for SafetyController."""
     # Rule 1: Same-ring angular separation
-    angular_separation_threshold: float = 50.0
+    angular_separation_threshold: float = 25.0
+    initial_intervention_threshold: float = 40.0
+    final_intervention_threshold: float = 25.0
+    intervention_curriculum_episodes: int = 160
     # Rule 2: Circling yields to descending
     descend_crossing_lookahead: float = 10.0
     descend_crossing_slowdown: float = 0.85
@@ -55,7 +59,7 @@ class SafetyConfig:
     dual_descend_threshold: float = 50.0
     dual_descend_psi_offset: float = 15.0  # degrees, converted to rad internally
     # Rule 4: Universal proximity brake
-    universal_brake_threshold: float = 30.0
+    universal_brake_threshold: float = 25.0
     universal_brake_low: float = 0.70
     universal_brake_high: float = 0.85
     # Rule 5: Emergency override
@@ -115,5 +119,11 @@ class EnvConfig:
     penalty_safety_speed: float = 1.0      # per unit of safety-induced speed reduction
     penalty_safety_block: float = 2.0      # per SafetyController block
     penalty_descent_block: float = 0.0     # DESCEND metering is informative, not a failure
+    penalty_ring_spacing: float = 0.20     # softplus penalty for short front arc gaps
+    penalty_ring_ttc: float = 0.10         # softplus penalty for short front TTC
+    penalty_speed_smooth: float = 0.10     # discourage oscillating circle-speed requests
+    ring_spacing_softness: float = 20.0    # softplus transition width (m)
+    ring_ttc_threshold: float = 12.0       # begin penalizing imminent closure (s)
+    ring_ttc_softness: float = 3.0         # softplus transition width (s)
     # Safety controller
     safety_enabled: bool = True            # True = SafetyController active during env.step

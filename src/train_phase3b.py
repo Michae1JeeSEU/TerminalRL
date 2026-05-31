@@ -73,15 +73,32 @@ class MultiScalePhase3bWrapper(gym.Wrapper):
             return min(self.n_max, max(self.n_min, 30))
         return self.n_max
 
+    def _current_shield_threshold(self) -> float:
+        """Linearly shrink reflex intervention range as the policy improves."""
+        cfg = self.unwrapped.config.safety
+        if not self.curriculum or cfg.intervention_curriculum_episodes <= 0:
+            return cfg.final_intervention_threshold
+        progress = min(self.episode_count / cfg.intervention_curriculum_episodes, 1.0)
+        return (
+            cfg.initial_intervention_threshold
+            + progress * (
+                cfg.final_intervention_threshold - cfg.initial_intervention_threshold
+            )
+        )
+
     def reset(self, *, seed=None, options=None):
         if seed is not None:
             self._rng = np.random.default_rng(seed)
         n_high = self._current_n_max()
         n = int(self._rng.integers(self.n_min, n_high + 1))
+        shield_threshold = self._current_shield_threshold()
         self.current_n = n
         self.unwrapped.config.num_uavs = n
+        self.unwrapped.config.safety.angular_separation_threshold = shield_threshold
+        self.unwrapped.config.safety.universal_brake_threshold = shield_threshold
         self.episode_count += 1
         obs, info = self.env.reset(seed=seed, options=options)
+        info["shield_threshold"] = shield_threshold
         for u in self.unwrapped.uav_manager.uavs:
             u.is_controlled = True
             u.battery = self.unwrapped.config.uav.max_battery * 100.0

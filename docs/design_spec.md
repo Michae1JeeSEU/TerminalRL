@@ -138,14 +138,14 @@ UAVManager
 - 紧急 UAV（priority≥5 或 battery<critical×max_battery）**永不减速**
 - 低优先级给高优先级让路；同等优先级双方各让半步
 
-**Safety 学习架构**：观测中加入 +6 维显式间距上下文和 +4 维 Safety 调整量（speed_mult, psi_offset, gamma_offset, blocked），reward 中额外惩罚安全层介入，让 RL 策略学会主动保持间距，而非依赖反射层兜底。
+**Safety 学习架构**：观测中加入 +12 维车流上下文和 +4 维 Safety 调整量（speed_mult, psi_offset, gamma_offset, blocked），reward 中加入局部弧距/TTC、调速平滑和 shield 修正幅度惩罚，让 RL 策略通过自主调速保持间距。规则层只在紧急缓冲区做最小干预。
 
 ```
 SafetyController
 ├── config: SafetyConfig
 ├── evaluate(uavs, actions) → dict[uav_id, SafetyAdjustment]
 │   ├── _classify_priority(u1, u2) → (higher, lower)
-│   ├── _rule1_angular_separation(uavs)         # 同环角间距减速
+│   ├── _rule1_angular_separation(uavs, actions) # 同环追近后机紧急刹车
 │   ├── _rule2_circling_yields_descending(uavs)  # 盘旋让下降
 │   ├── _rule3_dual_descent_divergence(uavs)     # 双下降航向偏转
 │   ├── _rule4_universal_brake(uavs)            # 通用近距刹车
@@ -159,10 +159,10 @@ SafetyController
 
 | 规则 | 触发条件 | 动作 | 优先权 |
 |------|---------|------|--------|
-| R1: 同环角间距 | 同环两架 UAV 角间距 < 50m | 跟随者减速至 0.85-0.98x | 后方减速 |
+| R1: 同环追近刹车 | 同环前向间距进入 shield 缓冲区且后机仍在追近 | 仅跟随者减速至 0.7x | 后方减速 |
 | R2: 盘旋让下降 | 下降 UAV 穿越环的高度层 | 盘旋者减速至 0.85x | 下降者优先 |
 | R3: 双下降发散 | 两架下降中，3D 距离 < 50m 且接近中 | 各偏转 psi ±15° | 双方各半 |
-| R4: 通用刹车 | 任意两架 3D 距离 < 30m | closing speed > 0 方减速至 0.7x | 低优先更激进 |
+| R4: 通用刹车 | 任意两架 3D 距离进入 shield 缓冲区 | closing speed > 0 方减速至 0.7x | 低优先更激进 |
 | R5: 紧急覆盖 | priority ≥ 5 或 battery < 15% | 紧急 UAV 不受影响，非紧急让其路 | 紧急绝对优先 |
 
 **SafetyAdjustment 数据结构**：
@@ -197,7 +197,10 @@ adjusted_actions = safety_controller.apply(actions, safety_adjustments)
 @dataclass
 class SafetyConfig:
     # Rule 1: Same-ring angular separation
-    angular_separation_threshold: float = 50.0     # 触发距离 (m)
+    angular_separation_threshold: float = 25.0     # 最终紧急介入距离 (m)
+    initial_intervention_threshold: float = 40.0   # 训练初期介入距离 (m)
+    final_intervention_threshold: float = 25.0     # 训练后期介入距离 (m)
+    intervention_curriculum_episodes: int = 160
     # Rule 2: Circling yields to descending
     descend_crossing_lookahead: float = 10.0       # 预测窗口 (s)
     descend_crossing_slowdown: float = 0.85        # 盘旋者减速系数
@@ -205,7 +208,7 @@ class SafetyConfig:
     dual_descend_threshold: float = 50.0           # 触发距离 (m)
     dual_descend_psi_offset: float = 15.0          # 偏转角 (deg)
     # Rule 4: Universal brake
-    universal_brake_threshold: float = 30.0        # 触发距离 (m)
+    universal_brake_threshold: float = 25.0        # 最终触发距离 (m)
     universal_brake_low: float = 0.70              # 低优先减速系数
     universal_brake_high: float = 0.85             # 高优先减速系数
     # Rule 5: Emergency override
@@ -267,7 +270,7 @@ TerminalAreaEnv
 ├── landing_zones: np.ndarray (M, 3)      # LZ 坐标
 ├── lz_occupied_until: np.ndarray (M,)    # 各 LZ 剩余占用时间
 ├── _lz_reserved_by: dict[lz_idx→uav_id] # LZ 预留状态
-├── _local_obs_dim: int = 75 (+10 safety) # per-UAV 观测维度 (85 with safety)
+├── _local_obs_dim: int = 75 (+16 traffic/safety) # per-UAV 观测维度 (91)
 │
 ├── reset() -> obs, info
 │   └── 重置所有模块 + LZ 状态清零
@@ -287,7 +290,7 @@ TerminalAreaEnv
 
 **关键机制**：
 
-1. **SafetyController 集成**（★ 新增）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入，根据 5 条规则调整速度/航向/航迹角。调整后的观测包含 6 维 safety 上下文（最近 3D 间距、同环前后弧距、短时预测最近距离、上步安全介入、下降硬过滤）和 4 维介入信号（speed_mult / psi_offset / gamma_offset / blocked）
+1. **SafetyController 集成**（★ 修改）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入。日常同环间距控制交给 PPO；R1 只在紧急缓冲区对仍在追近前机的后机刹车。训练中 shield 阈值从 40m 线性收缩至 25m。观测包含 12 维车流上下文和 4 维介入信号（speed_mult / psi_offset / gamma_offset / blocked）
 
 2. **安全轨道吸附**（★ 修改）：`_safe_orbit_snap()` 在将 UAV 吸附回环轨道前，搜索 ±30°（步长 5°）找安全槽位。找到空位后仅修正 z 高度，避免 snap 与其他 UAV 碰撞
 
@@ -310,13 +313,14 @@ TerminalAreaEnv
 | 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
 | 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
 
-DESCEND 不再允许 RL 直接控制 (ψ, γ, V)。环境根据当前环、目标环或 LZ 生成规则下降指令，并通过下降放行计时、预测冲突检查、同环纵向间隔控制和目标环捕获保证无流入清空阶段的安全可行性。
+DESCEND 不再允许 RL 直接控制 (ψ, γ, V)。环境根据当前环、目标环或 LZ 生成规则下降指令，并通过下降放行计时、预测冲突检查和目标环捕获保证无流入清空阶段的安全可行性。同环巡航间距由 PPO 通过连续调速主动学习。
 
 8. **下降许可与硬安全过滤（新增）**：
 - 每个下降走廊维护最小放行间隔，避免多机同时合流；
 - 新下降请求必须通过未来短时窗距离预测，否则强制改回 CIRCLE；
 - 非着陆下降到达下一环保护带后立即安全吸附到目标环，避免继续穿越巡航流；
-- 同环 UAV 按角度排序并归一化到 `2π`，后机根据前机弧长间隔减速；
+- 同环 UAV 的前后弧距、相对速度与 TTC 编码进观测；PPO 自主输出 `[0.3, 1.3]` 环速系数；
+- SafetyController 只对进入紧急缓冲区且仍在追近的后机执行最小干预刹车；
 - 碰撞 UAV 只计一次失败，dead UAV 从冲突检测、观测和安全规则中排除。
 
 ## 3. 奖励函数设计（实际实现）
@@ -330,25 +334,26 @@ def _compute_reward(self) -> float:
     # 等待时间惩罚（归一化到小时）
     R_wait = -w_wait * avg_wait_time / 3600.0  # w_wait=1.0
 
-    # 吞吐量奖励（每新增着陆 +20/n 的立即奖励）
+    # 吞吐量奖励（每新增着陆给跨 N 稳定的立即奖励）
     new_landings = landed_count - prev_landed
     R_throughput = w_throughput * reward_landing * new_landings  # reward_landing=2.0
 
-    # 安全冲突惩罚（三层级：碰撞 + 近距预警 + 连续安全裕度）
+    # 安全冲突惩罚：碰撞 + 近距预警；局部车流塑形见下
     conflicts = conflict_detector.check_all(uavs)  # 碰撞 (<10m)
     near_misses = conflict_detector.check_near_misses(uavs)  # 近距预警 (<50m)
     R_safety = -w_safety * len(conflicts) * penalty_conflict  # w_safety=5.0
     R_safety -= w_safety * len(near_misses) * penalty_near_miss / n
 
-    # ★ 安全裕度惩罚：100m 内二次惩罚，提前给 PPO 主动拉开距离的梯度
-    R_margin = 0.0
-    active_uavs = [u for u in uavs if u.status != UAVStatus.LANDED]
-    for i in range(len(active_uavs)):
-        for j in range(i + 1, len(active_uavs)):
-            dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
-            if dist < safety_margin_threshold:  # 100m
-                slack = (safety_margin_threshold - dist) / safety_margin_threshold
-                R_margin -= w_safety * safety_margin_penalty_scale * slack * slack / n
+    # ★ 同环局部车流塑形：每架巡航 UAV 只根据自己的前车弧距与 TTC 接收惩罚
+    R_spacing = 0.0
+    for u in circling_uavs:
+        traffic = same_ring_traffic(u)
+        gap_cost = softplus((min_ring_spacing - traffic.front_gap) / ring_spacing_softness) ** 2
+        ttc_cost = softplus((ring_ttc_threshold - traffic.front_ttc) / ring_ttc_softness) ** 2
+        R_spacing -= w_safety * (penalty_ring_spacing * gap_cost + penalty_ring_ttc * ttc_cost) / n
+
+    # ★ 调速平滑：抑制盘旋速度请求振荡
+    R_smooth = -penalty_speed_smooth * sum(abs(requested_speed_t - requested_speed_t_1)) / n
 
     # ★ 距离接近惩罚：30m 内保留额外尖锐惩罚
     R_proximity = 0.0
@@ -361,7 +366,7 @@ def _compute_reward(self) -> float:
     # ★ 安全层介入惩罚：让 PPO 学会少触发 SafetyController，而不是依赖兜底
     R_intervention = -w_safety * (
         0.25 * active_safety_rules
-        + 1.0 * safety_speed_reduction
+        + 1.0 * abs(executed_speed - requested_speed)
         + 2.0 * safety_blocks
         + 0.0 * hard_filtered_descents
     ) / n
@@ -388,7 +393,7 @@ def _compute_reward(self) -> float:
     R_progress /= n
 
     return R_energy + R_wait + R_throughput + R_safety
-           + R_margin + R_proximity + R_intervention
+           + R_spacing + R_proximity + R_intervention + R_smooth
            + R_priority + R_battery + R_progress
 ```
 
@@ -397,9 +402,10 @@ def _compute_reward(self) -> float:
 - 着陆奖励为跨 N 稳定的 spike 奖励（仅新增着陆时给），避免大规模训练时单机着陆收益被稀释
 - 进度奖励仅 DESCENDING 时生效：强制 agent 持续下降而非找到好位置后悬停
 - 近距预警惩罚按受控 UAV 数归一化，避免随机大 N 训练时 O(N²) pair penalty 压倒吞吐目标
-- ★ **安全裕度塑形**：在 100m 内施加二次间距惩罚，比 50m 近距预警更早提供训练信号
+- ★ **同环局部塑形**：每架盘旋 UAV 根据前车弧距和 TTC 接收 softplus 惩罚，学习通过连续调速主动拉开间距
+- ★ **调速平滑**：惩罚相邻步骤环速请求振荡，避免频繁加减速
 - ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供额外尖锐分离信号
-- ★ **介入惩罚**：SafetyController 规则触发、减速和阻塞会被扣分；普通 DESCEND 放行阻塞保留为观测信号，避免惩罚正常排队
+- ★ **介入惩罚**：SafetyController 规则触发、执行速度与请求速度偏差、阻塞都会被扣分；普通 DESCEND 放行阻塞保留为观测信号
 - ★ **碰撞惩罚**：碰撞 UAV 被移除并施加 `-(500 + 250×N_colliding)` 惩罚，episode 继续
 
 ## 4. Options 框架实现设计

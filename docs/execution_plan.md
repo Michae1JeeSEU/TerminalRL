@@ -16,6 +16,8 @@
 > **2026-05-29 安全学习修订**：针对多规模诊断中 PPO 近距预警显著高于 Heuristic 的问题，引入 SafetyController 介入惩罚、显式间距观测和 100m 连续安全裕度塑形。观测维度由 79/旧 checkpoint 输入升级为 85，Phase 3b PPO 需要重新训练后再评估。
 >
 > **2026-05-30 多规模训练修订**：随机 N=10-40 直接训练出现 timeout 和近距预警爆炸。原因包括固定 N eval wrapper 未写回 `config.num_uavs`、多环境共享 config 的潜在污染、大 N 下近距/安全惩罚按 pair 数放大而着陆奖励被 N 稀释，以及 max_steps 被误报为 terminated 而非 truncated。已改为课程式多规模采样、固定 N reset 修复、config 深拷贝、近距惩罚按 N 归一化、跨 N 稳定着陆奖励，并取消普通 DESCEND 放行阻塞惩罚。
+>
+> **2026-05-31 自主调速修订**：多规模 PPO 已恢复接近满着陆，但仍形成约 40m 的紧凑同环车队并频繁依赖 SafetyController。移除环境层 100m 同环强制调速，R1 改为仅在紧急缓冲区对追近后机刹车；新增前后弧距、闭合速度、TTC、请求/执行环速等观测，以及局部弧距/TTC、调速平滑和 shield 修正幅度奖励。训练中 shield 介入距离从 40m 线性收缩至 25m。
 
 ## 总体原则
 
@@ -155,15 +157,16 @@
 | 3b5.4 | 环容量限制 | 环上 UAV ≥ 90% 2πR/min_spacing 时阻止非紧急下降 | ✅ |
 | 3b5.5 | 距离接近惩罚 | 间距 < 30m 触发梯度惩罚 -5/(dist+0.1) | ✅ |
 | 3b5.6 | 碰撞移除机制 | 碰撞 UAV 标记死亡并移除，不终止 episode | ✅ |
-| 3b5.7 | SafetyController 测试 | 36 专项测试 + 环境回归测试持续维护；当前 83 测试全部通过 | ✅ |
+| 3b5.7 | SafetyController 测试 | 专项测试 + 环境回归测试持续维护；当前 84 测试全部通过 | ✅ |
 | 3b5.8 | 初始间距保证 | `_find_safe_angle()` 拒绝采样确保初始 UAV 间距 ≥ safe_separation | ✅ |
 | 3b5.9 | CIRCLE 调速动作 | 动作空间改为 `Box(max_n,2)`：dim0=control_raw, dim1=speed_factor [0.3,1.3] | ✅ |
 | 3b5.10 | DESCEND RL 控制（历史方案） | 曾扩展到 `Box(max_n,5)` 让 RL 直接输出 ψ/γ/V；2026-05-28 已回退为规则下降 + `Box(max_n,2)` | 已回退 |
 | 3b5.11 | Safety 介入惩罚 | SafetyController 规则触发、减速、阻塞进入 reward 扣分；DESCEND 放行阻塞仅进入观测 | ✅ |
-| 3b5.12 | 显式间距观测 | 增加最近 3D 间距、同环前后弧距、短时预测最近距离、上步介入状态等 +6 维 | ✅ |
-| 3b5.13 | 安全裕度塑形 | 100m 内二次间距惩罚，提前于 50m 近距预警提供分离梯度 | ✅ |
+| 3b5.12 | 显式间距观测 | 初版 +6 维；3b5.16 已扩展为 +12 维车流上下文 | ✅ |
+| 3b5.13 | 安全裕度塑形（历史方案） | 曾使用 100m pairwise 二次惩罚；3b5.16 已替换为局部 spacing/TTC reward | 已替换 |
 | 3b5.14 | 多规模训练修复 | 课程式随机 N、固定 N wrapper 修复、config 深拷贝、reward 跨规模归一化 | ✅ |
 | 3b5.15 | Time-limit 语义修复 | max_steps 改为 truncated，避免诊断中 timeout 被统计为普通 terminated | ✅ |
+| 3b5.16 | 自主同环调速 | 移除 100m 规则接管，增加车流观测、局部 spacing/TTC reward、速度平滑与 shield 阈值课程 | ✅ |
 
 **核心设计**：
 - SafetyController 是 RL 动作与 UAV 运动学之间的**反射层**，做减速/微调航向，不做路径规划
