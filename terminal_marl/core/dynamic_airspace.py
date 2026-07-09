@@ -178,6 +178,40 @@ class DynamicAirspace:
             dtype=np.float64,
         )
 
+    def normalized_state_vector(self) -> np.ndarray:
+        """Return the airspace state normalized to ``[-1, 1]``."""
+
+        b = self.bounds
+        lower = np.asarray(
+            [
+                b.radius_min,
+                b.radius_min,
+                b.height_min,
+                b.height_min,
+                b.speed_min,
+                b.speed_min,
+                b.headway_min,
+                b.headway_min,
+            ],
+            dtype=np.float64,
+        )
+        upper = np.asarray(
+            [
+                b.radius_max,
+                b.radius_max,
+                b.height_max,
+                b.height_max,
+                b.speed_max,
+                b.speed_max,
+                b.headway_max,
+                b.headway_max,
+            ],
+            dtype=np.float64,
+        )
+        return (2.0 * (self.state_vector() - lower) / (upper - lower) - 1.0).astype(
+            np.float32
+        )
+
     def apply_high_level_action(self, action: np.ndarray) -> dict:
         """Apply a normalized eight-dimensional incremental action.
 

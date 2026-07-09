@@ -1,0 +1,37 @@
+name: crazyflie_lab
+experiment_mode: crazyflie_lab
+simulation_only: true
+
+center: [0.0, 0.0, 0.0]
+dt: 0.2
+control_interval: 0.2
+high_level_interval: 5.0
+
+rings:
+  outer:
+    index: 2
+    radius: 1.2
+    height: 1.2
+    nominal_speed: 0.35
+    capacity: 3
+  inner:
+    index: 1
+    radius: 0.7
+    height: 0.8
+    nominal_speed: 0.25
+    capacity: 2
+
+landing_height: 0.15
+release_headway_ring: 2.0
+release_headway_final: 3.0
+
+limits:
+  speed_min: 0.15
+  speed_max: 0.6
+  max_acceleration: 0.8
+  max_climb_rate: 0.3
+  max_descent_rate: 0.3
+  safe_distance: 0.5
+  nmac_distance: 0.35
+  collision_distance: 0.2
+  boundary: [-1.8, 1.8, -1.8, 1.8, 0.1, 1.6]
