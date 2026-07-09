@@ -69,6 +69,12 @@ class TerminalParallelEnv:
     reward_tracker: RewardTracker = field(init=False)
     last_high_level_info: dict = field(default_factory=dict)
     last_intention_info: Dict[int, dict] = field(default_factory=dict)
+    last_release_approval: Dict[int, dict] = field(default_factory=dict)
+    last_landing_approval: Dict[int, dict] = field(default_factory=dict)
+    pending_high_level_action: Optional[np.ndarray] = None
+    safety_override_count: int = 0
+    final_queue_time: float = 0.0
+    min_pairwise_distance: float = math.inf
     _initial_rings: list = field(init=False, repr=False)
     _initial_headways: tuple[float, float] = field(init=False, repr=False)
     _airspace_bounds: AirspaceBounds = field(init=False, repr=False)
@@ -99,7 +105,7 @@ class TerminalParallelEnv:
         self.airspace = self._make_airspace()
         self._sync_airspace_to_config()
 
-        boundary = (
+        boundary = self.config.world_boundary or (
             -self.config.world_xy_limit,
             self.config.world_xy_limit,
             -self.config.world_xy_limit,
@@ -111,13 +117,14 @@ class TerminalParallelEnv:
             safe_distance=self.config.safe_distance,
             boundary=boundary,
             speed_max=self.config.speed_max,
-            acceleration_max=2.0,
+            acceleration_max=self.config.max_acceleration,
+            min_segment_duration=max(1e-3, 0.25 * self.config.dt),
         )
         self.trajectory_generator = TrajectoryGenerator(
             center=self.config.center,
             ring_direction=self.config.ring_direction,
             max_speed=self.config.speed_max,
-            max_acceleration=2.0,
+            max_acceleration=self.config.max_acceleration,
             height_min=0.0,
             height_max=self.config.world_z_limit,
         )
@@ -171,6 +178,12 @@ class TerminalParallelEnv:
         self.collision_count = 0
         self.last_high_level_info = {}
         self.last_intention_info = {}
+        self.last_release_approval = {}
+        self.last_landing_approval = {}
+        self.pending_high_level_action = None
+        self.safety_override_count = 0
+        self.final_queue_time = 0.0
+        self.min_pairwise_distance = math.inf
         self.vtac.reset()
         self.aircraft = build_initial_2x4_queue(self.config)
         self.agents = self.possible_agents.copy()
@@ -262,11 +275,84 @@ class TerminalParallelEnv:
             }
         return filtered_actions, release_requests
 
-    def apply_high_level_action(self, action: np.ndarray) -> dict:
-        """Filter and apply one high-level airspace reconfiguration action."""
+    def should_update_high_level(self) -> bool:
+        """Return whether the current low-level step is a high-level boundary."""
+
+        return bool(
+            self.experiment_mode.dynamic_airspace
+            and self.step_count % self.config.high_level_interval_steps == 0
+        )
+
+    def get_high_level_observation(self) -> np.ndarray:
+        """Return system-level traffic and airspace features for a future policy."""
+
+        ring_occupancy = []
+        for ring in sorted(self.config.rings, key=lambda item: item.index, reverse=True):
+            ring_occupancy.append(
+                len(self.vtac.queues[ring.index]) / max(1, ring.capacity)
+            )
+        final_occupancy = len(self.vtac.queues[0]) / max(
+            1,
+            self.config.final_queue_capacity,
+        )
+        active_fraction = sum(not aircraft.finished for aircraft in self.aircraft) / max(
+            1,
+            len(self.aircraft),
+        )
+        pair_count = max(1, len(self.aircraft) * (len(self.aircraft) - 1) // 2)
+        conflict_risk = len(
+            self.safety_filter.check_pairwise_distance(
+                [aircraft for aircraft in self.aircraft if not aircraft.finished]
+            )
+        ) / pair_count
+        interval_phase = (
+            self.step_count % self.config.high_level_interval_steps
+        ) / self.config.high_level_interval_steps
+        return np.asarray(
+            [
+                *self.airspace.normalized_state_vector(),
+                *ring_occupancy,
+                final_occupancy,
+                active_fraction,
+                conflict_risk,
+                interval_phase,
+            ],
+            dtype=np.float32,
+        )
+
+    def apply_high_level_action(
+        self,
+        action: np.ndarray,
+        *,
+        force: bool = False,
+    ) -> dict:
+        """Apply at a high-level boundary, otherwise cache the latest action."""
+
+        raw = np.asarray(action, dtype=np.float64)
+        if raw.shape != (DynamicAirspace.ACTION_SIZE,):
+            raise ValueError(
+                f"airspace action must have shape ({DynamicAirspace.ACTION_SIZE},)"
+            )
+        if (
+            self.experiment_mode.dynamic_airspace
+            and not force
+            and not self.should_update_high_level()
+        ):
+            self.pending_high_level_action = raw.copy()
+            info = {
+                "applied": False,
+                "cached": True,
+                "clipped": False,
+                "violations": ["high_level_interval"],
+                "old_state": self.airspace.state_vector(),
+                "new_state": self.airspace.state_vector(),
+                "step": self.step_count,
+            }
+            self.last_high_level_info = info
+            return info
 
         filtered, safety_info = self.safety_filter.filter_airspace_action(
-            action,
+            raw,
             self.airspace,
         )
         info = self.airspace.apply_high_level_action(filtered)
@@ -282,8 +368,161 @@ class TerminalParallelEnv:
         info["violations"] = combined_violations
         info["clipped"] = bool(info["clipped"] or safety_info["modified"])
         info["safety_filter"] = safety_info
+        info["applied"] = True
+        info["cached"] = False
+        info["step"] = self.step_count
+        self.pending_high_level_action = None
         self.last_high_level_info = info
         return info
+
+    def _candidate_transition_plan(
+        self,
+        aircraft: UAVState,
+        target_stage: str,
+    ) -> TrajectoryPlan:
+        rings = {ring.index: ring for ring in self.airspace.to_ring_specs()}
+        if target_stage == "outer_to_inner":
+            source = rings[aircraft.assigned_ring]
+            target = rings[self.vtac.inner_ring_index]
+            distance_scale = abs(source.radius - target.radius) + abs(
+                source.height - target.height
+            )
+            duration = max(
+                5.0 * self.config.dt,
+                2.0 * distance_scale / max(self.config.speed_min, target.speed),
+            )
+            return self.trajectory_generator.ring_transfer(
+                aircraft,
+                source,
+                target,
+                duration,
+                self.config.dt,
+            )
+        if target_stage == "inner_to_final":
+            target = self.vtac.final_entry_hold_point(aircraft)
+            distance = distance_3d(aircraft.position, target)
+            duration = max(
+                5.0 * self.config.dt,
+                2.0 * distance / max(self.config.speed_min, self.config.final_entry_speed),
+            )
+            return self.trajectory_generator.final_approach(
+                aircraft,
+                {"position": target},
+                duration,
+                self.config.dt,
+            )
+        if target_stage == "final_to_land":
+            target = np.asarray(self.config.center, dtype=float).copy()
+            target[2] = max(float(target[2]), float(self.config.touchdown_max_height))
+            distance = distance_3d(aircraft.position, target)
+            duration = max(
+                5.0 * self.config.dt,
+                2.0 * distance / max(self.config.final_approach_speed, 1e-6),
+            )
+            return self.trajectory_generator.landing(
+                aircraft,
+                {"position": target},
+                duration,
+                self.config.dt,
+            )
+        raise ValueError(f"unsupported target_stage: {target_stage}")
+
+    def _transition_stage(self, aircraft: UAVState) -> Optional[str]:
+        if aircraft.phase != FlightPhase.RING or aircraft.assigned_ring in (None, 0):
+            return None
+        if aircraft.assigned_ring == self.vtac.inner_ring_index:
+            return "inner_to_final"
+        return "outer_to_inner"
+
+    def _final_occupied_by_other(self, aircraft: UAVState) -> bool:
+        return any(uid != aircraft.uid for uid in self.vtac.queues[0])
+
+    def _landing_pad_occupied_by_other(self, aircraft: UAVState) -> bool:
+        center = np.asarray(self.config.center, dtype=float)
+        return any(
+            other.uid != aircraft.uid
+            and not other.finished
+            and other.phase == FlightPhase.FINAL
+            and other.final_entry_fix_reached
+            and norm_xy(other.position - center)
+            <= 2.0 * self.config.touchdown_accept_radius
+            for other in self.aircraft
+        )
+
+    def _prepare_release_approvals(
+        self,
+        requested: Mapping[int, bool],
+    ) -> Dict[int, bool]:
+        """Run SafetyFilter approval before VTAC or landing progression."""
+
+        approved_requests: Dict[int, bool] = {}
+        self.last_release_approval = {}
+        self.last_landing_approval = {}
+        active = [aircraft for aircraft in self.aircraft if not aircraft.finished]
+        for aircraft in active:
+            policy_requested = bool(requested.get(aircraft.uid, True))
+            stage = self._transition_stage(aircraft)
+            if stage is not None:
+                if not policy_requested:
+                    approval = {
+                        "approved": False,
+                        "is_safe": True,
+                        "decision": "HOLD",
+                        "target_stage": stage,
+                        "violations": ["policy_deferred"],
+                        "reason": "policy_deferred",
+                        "filtered_plan": None,
+                        "diagnostics": {},
+                    }
+                else:
+                    candidate = self._candidate_transition_plan(aircraft, stage)
+                    approval = self.safety_filter.approve_release(
+                        aircraft,
+                        stage,
+                        active,
+                        candidate_plan=candidate,
+                        final_occupied=(
+                            stage == "inner_to_final"
+                            and self._final_occupied_by_other(aircraft)
+                        ),
+                    )
+                    if not approval["approved"]:
+                        self.safety_override_count += 1
+                approved_requests[aircraft.uid] = bool(approval["approved"])
+                self.last_release_approval[aircraft.uid] = approval
+            else:
+                approved_requests[aircraft.uid] = policy_requested
+
+            if aircraft.phase == FlightPhase.FINAL and aircraft.final_entry_fix_reached:
+                if not policy_requested:
+                    landing_approval = {
+                        "approved": False,
+                        "is_safe": True,
+                        "decision": "HOLD",
+                        "target_stage": "final_to_land",
+                        "violations": ["policy_deferred"],
+                        "reason": "policy_deferred",
+                        "filtered_plan": None,
+                        "diagnostics": {},
+                    }
+                else:
+                    candidate = self._candidate_transition_plan(
+                        aircraft,
+                        "final_to_land",
+                    )
+                    landing_approval = self.safety_filter.approve_release(
+                        aircraft,
+                        "final_to_land",
+                        active,
+                        candidate_plan=candidate,
+                        landing_pad_occupied=self._landing_pad_occupied_by_other(
+                            aircraft
+                        ),
+                    )
+                    if not landing_approval["approved"]:
+                        self.safety_override_count += 1
+                self.last_landing_approval[aircraft.uid] = landing_approval
+        return approved_requests
 
     def trajectory_plan_for(
         self,
@@ -327,19 +566,21 @@ class TerminalParallelEnv:
                 plan_dt,
             )
         filtered_plan, filter_info = self.safety_filter.filter_trajectory_plan(plan)
+        if filter_info["modified"]:
+            self.safety_override_count += 1
         filtered_plan.metadata["safety_filter"] = filter_info
         return filtered_plan
 
     def _make_airspace_bounds(self) -> AirspaceBounds:
         return AirspaceBounds(
-            radius_min=max(1.0, 2.0 * self.config.vertiport_radius),
+            radius_min=max(1e-3, 2.0 * self.config.vertiport_radius),
             radius_max=self.config.approach_threshold_radius,
             height_min=0.0,
             height_max=self.config.world_z_limit,
             speed_min=self.config.speed_min,
             speed_max=self.config.speed_max,
-            min_ring_gap=max(1.0, self.config.ring_capture_radius_tolerance),
-            min_height_gap=max(1.0, self.config.ring_capture_height_tolerance),
+            min_ring_gap=max(1e-3, self.config.ring_capture_radius_tolerance),
+            min_height_gap=max(1e-3, self.config.ring_capture_height_tolerance),
             max_radius_change_per_update=self.config.ring_capture_radius_tolerance,
             max_height_change_per_update=self.config.ring_capture_height_tolerance,
             max_speed_change_per_update=self.config.max_action_speed_delta,
@@ -400,6 +641,9 @@ class TerminalParallelEnv:
             "action_mode": self.action_mode,
             "airspace_state": self.airspace.state_vector().copy(),
             "intention_action": self.last_intention_info.get(ac.uid),
+            "release_approval": self.last_release_approval.get(ac.uid),
+            "landing_approval": self.last_landing_approval.get(ac.uid),
+            "safety_override_count": self.safety_override_count,
         }
 
     #着陆判定
@@ -417,9 +661,13 @@ class TerminalParallelEnv:
 
         # 你这个 UAVState 没有 velocity 向量，用 speed 和 pitch 计算水平速度
             horizontal_speed = float(ac.speed * math.cos(ac.pitch))
+            landing_approved = bool(
+                self.last_landing_approval.get(ac.uid, {}).get("approved", False)
+            )
 
             in_touchdown_zone = (
                 ac.phase == FlightPhase.FINAL
+                and landing_approved
                 and dist_xy <= self.config.touchdown_accept_radius
                 and ac.position[2] <= self.config.touchdown_max_height
                 and horizontal_speed <= self.config.touchdown_max_speed
@@ -451,6 +699,7 @@ class TerminalParallelEnv:
                 if a.finished or b.finished:
                     continue
                 d = distance_3d(a.position, b.position)
+                self.min_pairwise_distance = min(self.min_pairwise_distance, d)
                 if d < self.config.collision_distance:
                     self.collision_count += 1
                     collision_pairs[a.uid] = collision_pairs.get(a.uid, 0) + 1
@@ -476,6 +725,11 @@ class TerminalParallelEnv:
             actions = {}
         if high_level_action is not None:
             self.apply_high_level_action(high_level_action)
+        elif self.pending_high_level_action is not None and self.should_update_high_level():
+            self.apply_high_level_action(
+                self.pending_high_level_action.copy(),
+                force=True,
+            )
 
         prepared_intentions: Dict[int, np.ndarray] = {}
         release_requests: Optional[Dict[int, bool]] = None
@@ -483,6 +737,12 @@ class TerminalParallelEnv:
             prepared_intentions, release_requests = self._prepare_intention_actions(actions)
         else:
             self.last_intention_info = {}
+            release_requests = {
+                aircraft.uid: True
+                for aircraft in self.aircraft
+                if not aircraft.finished
+            }
+        release_requests = self._prepare_release_approvals(release_requests)
 
         self.vtac.update(
             self.aircraft,
@@ -514,6 +774,19 @@ class TerminalParallelEnv:
                 rule_action = np.zeros(4, dtype=np.float32)
                 applied_actions[ac.uid] = rule_action
                 commands[ac.uid] = base_cmd
+            if (
+                ac.phase == FlightPhase.FINAL
+                and ac.final_entry_fix_reached
+                and not self.last_landing_approval.get(ac.uid, {}).get(
+                    "approved",
+                    False,
+                )
+            ):
+                commands[ac.uid] = (
+                    ac.heading,
+                    max(self.config.final_speed_min, self.config.speed_min),
+                    float(ac.position[2]),
+                )
 
         for ac in self.aircraft:
             if ac.finished:
@@ -544,6 +817,7 @@ class TerminalParallelEnv:
 
         self.step_count += 1
         self.time += self.config.dt
+        self.final_queue_time += len(self.vtac.queues[0]) * self.config.dt
         self._update_finish_states()
         nmac_pairs, collision_pairs = self._track_conflicts()
 
@@ -621,6 +895,13 @@ class TerminalParallelEnv:
             "airspace_inner_height": float(self.airspace.inner_ring.height),
             "airspace_ring_headway": float(self.airspace.ring_headway),
             "airspace_final_headway": float(self.airspace.final_headway),
+            "safety_override_count": float(self.safety_override_count),
+            "final_queue_time": float(self.final_queue_time),
+            "min_pairwise_distance": (
+                0.0
+                if math.isinf(self.min_pairwise_distance)
+                else float(self.min_pairwise_distance)
+            ),
             **ring_counts,
         }
 

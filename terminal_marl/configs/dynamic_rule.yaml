@@ -1,0 +1,42 @@
+name: dynamic_rule
+experiment_mode: dynamic_rule
+simulation_only: true
+dt: 1.0
+control_interval: 1.0
+high_level_interval: 20.0
+
+rings:
+  outer:
+    index: 2
+    radius: 400.0
+    height: 400.0
+    speed: 28.0
+    capacity: 6
+  inner:
+    index: 1
+    radius: 200.0
+    height: 200.0
+    speed: 20.0
+    capacity: 2
+
+vehicle_limits:
+  speed_min: 8.0
+  speed_max: 36.0
+  max_acceleration: 2.0
+
+safety:
+  safe_distance: 80.0
+  nmac_distance: 40.0
+  collision_distance: 20.0
+
+timing:
+  ring_to_ring_min_time_gap_s: 7.0
+  final_min_time_gap_s: 12.0
+
+arrival_flow:
+  initial_aircraft_count: 6
+  arrival_rate: 0.0
+
+reward_weights:
+  step_penalty: -0.035
+  progress_weight: 0.05

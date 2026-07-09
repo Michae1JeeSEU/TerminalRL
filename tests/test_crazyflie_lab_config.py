@@ -69,12 +69,13 @@ def test_lab_ring_geometry_is_ordered_and_room_scale() -> None:
 
 def test_lab_limits_and_intervals_are_complete() -> None:
     text = config_text()
-    limits = nested_block(text, "limits", 0)
+    limits = nested_block(text, "vehicle_limits", 0)
+    safety = nested_block(text, "safety", 0)
 
     assert 0.0 < limits["speed_min"] < limits["speed_max"]
     assert limits["max_acceleration"] > 0.0
-    assert limits["safe_distance"] > limits["nmac_distance"] > limits["collision_distance"]
+    assert safety["safe_distance"] > safety["nmac_distance"] > safety["collision_distance"]
     assert scalar(text, "dt") > 0.0
     assert scalar(text, "control_interval") >= scalar(text, "dt")
     assert scalar(text, "high_level_interval") > scalar(text, "control_interval")
-    assert len(limits["boundary"]) == 6
+    assert len(safety["boundary"]) == 6

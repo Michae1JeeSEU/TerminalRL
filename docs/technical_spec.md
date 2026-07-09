@@ -1,220 +1,438 @@
-# 技术规范
+# 技术规范（Q1 创新主线重构版）
 
-## 1. 开发语言与运行环境
+> 本文档定义下一阶段实现规范。目标是在不破坏当前 `terminal_marl/` 可运行性的基础上，逐步加入动态空域、高低层策略、轨迹生成器、安全过滤、实验模式和 Crazyflie 缩尺验证接口。
+
+## 1. 开发环境
 
 | 项目 | 选型 | 说明 |
-|------|------|------|
-| 语言 | Python 3.10+ | 主流 RL 生态支持 |
-| 包管理 | pip / conda | requirements.txt 管理依赖 |
-| 虚拟环境 | venv 或 conda env | 隔离项目依赖 |
+|---|---|---|
+| 语言 | Python 3.10+ | 兼容当前项目和 ROS2 常见环境 |
+| 强化学习 | PyTorch + 自定义 PPO / SB3 可选 | 当前 `terminal_marl` 已有 shared PPO |
+| 多智能体接口 | PettingZoo-style parallel env | 保留 `TerminalParallelEnv` 风格 |
+| 配置 | dataclass + YAML preset | 逐步增加 `simulation_large` 和 `crazyflie_lab` |
+| 测试 | pytest | 核心模块必须配套测试 |
+| 实物平台 | ROS2 + Crazyswarm2 | 仅在 hardware adapter 中懒加载 |
 
-## 2. 核心依赖
+## 2. 依赖规范
 
-### 2.1 强化学习
+基础依赖：
 
-| 包 | 版本 | 用途 |
-|----|------|------|
-| gymnasium | >= 0.29 | 环境接口标准 |
-| stable-baselines3 | >= 2.0 | RL 算法实现（PPO, SAC 等） |
-| ray[rllib] | >= 2.0（Phase 7 引入） | 大规模分布式 RL |
+```text
+numpy
+scipy
+matplotlib
+pytest
+pyyaml
+```
 
-### 2.2 数值与科学计算
+强化学习依赖：
 
-| 包 | 版本 | 用途 |
-|----|------|------|
-| numpy | >= 1.24 | 数组运算 |
-| scipy | >= 1.10 | 优化与统计工具 |
+```text
+torch
+stable-baselines3    # optional
+gymnasium            # optional
+```
 
-### 2.3 可视化与日志
+硬件依赖不得进入 core 强依赖：
 
-| 包 | 版本 | 用途 |
-|----|------|------|
-| matplotlib | >= 3.7 | 基础绑图 |
-| tensorboard | 随 SB3 安装 | 训练曲线 |
-| wandb | >= 0.15（可选） | 实验管理 |
+```text
+ros2
+crazyswarm2
+crazyflie_py
+```
 
-### 2.4 代码质量
-
-| 工具 | 用途 |
-|------|------|
-| black | 代码格式化 |
-| isort | import 排序 |
-| mypy | 静态类型检查（可选） |
+要求：没有 ROS2/Crazyswarm2 时，仿真、测试和 dry-run 仍能正常运行。
 
 ## 3. 代码规范
 
-- 所有公开函数/类必须有类型注解
-- 模块命名：snake_case，类命名：PascalCase
-- 每个模块文件顶部包含一行 docstring 说明用途
-- 环境接口严格遵循 Gymnasium Env 规范
+- 新增公开类和函数必须有类型注解；
+- 新模块顶部必须有 docstring；
+- `terminal_marl/core/` 不得 import ROS2、Crazyswarm2 或 crazyflie_py；
+- `terminal_marl/hardware/` 负责硬件适配；
+- safety 相关逻辑必须返回可解释的 violation info；
+- 每个核心模块必须有 pytest 测试；
+- 新增 action mode 不应破坏旧脚本。
 
-## 4. 环境接口规范
+## 4. 配置规范
+
+### 4.1 配置分层
+
+建议拆分：
+
+```text
+SimConfig：通用仿真和环境参数
+AirspaceConfig：ring/headway/capacity/bounds 参数
+TrainingConfig：PPO/HRL 训练参数
+HardwareConfig：Crazyflie/Lighthouse/Crazyswarm2 参数
+```
+
+### 4.2 simulation_large preset
+
+用于论文主仿真：
+
+```yaml
+name: simulation_large
+center: [0.0, 0.0, 0.0]
+dt: 1.0
+outer_ring_radius: 400.0
+inner_ring_radius: 200.0
+outer_ring_height: 400.0
+inner_ring_height: 200.0
+nominal_speed_outer: 28.0
+nominal_speed_inner: 20.0
+speed_min: 8.0
+speed_max: 35.0
+safe_distance: 50.0
+nmac_distance: 25.0
+arrival_rate: variable
+```
+
+### 4.3 crazyflie_lab preset
+
+用于室内缩尺验证：
+
+```yaml
+name: crazyflie_lab
+center: [0.0, 0.0, 0.0]
+dt: 0.2
+outer_ring_radius: 1.2
+inner_ring_radius: 0.7
+outer_ring_height: 1.2
+inner_ring_height: 0.8
+landing_height: 0.15
+nominal_speed_outer: 0.35
+nominal_speed_inner: 0.25
+speed_min: 0.15
+speed_max: 0.6
+safe_distance: 0.5
+nmac_distance: 0.35
+collision_distance: 0.2
+max_acceleration: 0.8
+max_climb_rate: 0.3
+max_descent_rate: 0.3
+lighthouse_boundary: [-1.8, 1.8, -1.8, 1.8, 0.1, 1.6]
+```
+
+## 5. DynamicAirspace 接口规范
+
+建议文件：
+
+```text
+terminal_marl/core/dynamic_airspace.py
+```
+
+核心接口：
 
 ```python
-class TerminalAreaEnv(gym.Env):
-    """终端区降落环境，遵循 Gymnasium 接口"""
-
-    def __init__(self, config: dict): ...
-    def reset(self, *, seed=None, options=None) -> tuple[ObsType, dict]: ...
-    def step(self, action: ActionType) -> tuple[ObsType, float, bool, bool, dict]: ...
-    def render(self) -> None | np.ndarray: ...
-    def close(self): ...
-
-    @property
-    def observation_space(self) -> gym.Space: ...
-    @property
-    def action_space(self) -> gym.Space: ...
+class DynamicAirspace:
+    def state_vector(self) -> np.ndarray: ...
+    def apply_high_level_action(self, action: np.ndarray) -> dict: ...
+    def validate(self) -> bool: ...
+    def to_ring_specs(self) -> list: ...
+    def get_headways(self) -> dict: ...
 ```
 
-### 4.1 观察空间设计（当前实现）
+要求：
 
+- action shape 初期为 `(8,)`；
+- action 从 `[-1, 1]` 映射到小幅增量；
+- 所有更新必须 clip 到边界；
+- 违反约束必须返回 `violations`；
+- 支持固定空域模式，即不启用高层时行为不变。
+
+## 6. 动作空间规范
+
+### 6.1 高层动作
+
+```text
+a_high = [dR_outer, dR_inner, dH_outer, dH_inner, dV_outer, dV_inner, dHeadway_ring, dHeadway_final]
 ```
-Per-UAV 局部观测矩阵 (max_n, 91):
-  - 空域状态 (9): R1,R2,R3,H1,H2,H3,V1,V2,V3 归一化
-  - 自身状态 (9): sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max, priority/5, wait/3600, can_descend
-  - k 近邻 (k×6): 每邻居 [sin(θ), cos(θ), ring_id/3, r/R1, z/H1, battery/max]，k=8 默认
-  - 环计数 (3): 各环 UAV 数 / 活跃总数
-  - LZ 占用 (num_landing_zones): 各 LZ 剩余占用时间归一化，6 LZ
-  - 车流上下文 (12): nearest_3d, predicted_min_dist, front_arc_gap, back_arc_gap, front_closing_speed, back_closing_speed, front_ttc, ring_mean_gap, executed_circle_speed, requested_circle_speed, last_safety_active, descent_blocked
-  - Safety 介入信号 (4): speed_mult, psi_offset, gamma_offset, blocked
-  合计: 9 + 9 + 48 + 3 + 6 + 12 + 4 = 91 维
+
+### 6.2 低层动作
+
+推荐：
+
+```text
+a_low = [release_request, speed_residual, timing_residual, slot_residual]
 ```
 
-- max_n = 100（最大并发 UAV），inactive UAV 行全零
-- 邻居按 3D 距离取最近 k 个，不足补零
-- 车流上下文提供显式弧距、闭合速度、TTC 与请求/执行速度；介入信号来自 SafetyController，让 RL 学会通过自主调速避开干预
+可先实现前三维，保留 `slot_residual` 为扩展项。
 
-### 4.2 动作空间设计（当前实现）
+动作解释：
+
+- `release_request > threshold`：请求阶段转移；
+- `speed_residual`：映射到 `[-Δv_max, Δv_max]`；
+- `timing_residual`：映射到 `[-Δt_max, Δt_max]`；
+- `slot_residual`：映射到目标相位偏移。
+
+禁止把最终路线继续扩展为自由：
+
+```text
+ψ heading angle
+γ flight path angle
+arbitrary altitude command
+motor / attitude command
+```
+
+除非作为对照实验中的 `direct_action_rl_baseline`。
+
+## 7. SafetyFilter 接口规范
+
+建议接口：
 
 ```python
-# 高层动作（9维连续，每 high_level_interval 步应用一次）
-high_level_action_space = spaces.Box(
-    low=[R_min*3, H_min*3, V_min*3],
-    high=[R_max*3, H_max*3, V_max*3],
-)
-
-# 低层动作（per-UAV）
-low_level_action_space = spaces.Dict({
-    "control": spaces.MultiDiscrete([2] * max_n),        # 0=CIRCLE, 1=DESCEND
-    "psi": spaces.Box(0, 2π, shape=(max_n,)),            # 航向角
-    "gamma": spaces.Box(-π/2, π/2, shape=(max_n,)),      # 航迹角（负=下降）
-    "speed": spaces.Box(5, 40, shape=(max_n,)),          # 飞行速度 m/s
-    "landing_zone": spaces.MultiDiscrete([m+1] * max_n), # 0..m-1 选 LZ，m=no-op
-})
+class SafetyFilter:
+    def filter_intentions(self, states, intentions, airspace) -> tuple[dict, dict]: ...
+    def filter_trajectories(self, trajectories, states, airspace) -> tuple[list, dict]: ...
+    def check_pairwise_separation(self, trajectories) -> list[str]: ...
+    def check_executability(self, trajectory) -> list[str]: ...
 ```
 
-**训练动作空间（Phase 3b 安全修订）**：PerUAVDiscreteWrapper 使用 `Box(low=-1, high=1, shape=(max_n, 2))`，每 UAV 独立输出：
-
-| dim | 名称 | 缩放目标 | 生效 |
-|-----|------|---------|------|
-| 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
-| 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
-
-DESCEND 现在只表示“下降请求”。环境规则层负责生成 (ψ, γ, V)、选择可用 LZ、执行下降放行计时、预测冲突过滤和目标环捕获；RL 不再直接控制自由下降航迹。
-
-**动作约束（环境层强制）**：
-- 环驻留不足 → CIRCLE 强制覆盖 DESCEND
-- LZ 被占用/预留 → CIRCLE 强制覆盖 DESCEND
-- CIRCLE 动作 → UAV 吸附到当前环轨道 (R_i, H_i) 锁定
-- 同环日常间距由 PPO 自主调速；仅进入 shield 紧急缓冲区且后机仍在追近时触发最小干预刹车
-- 下降请求不满足放行间隔或预测安全距离 → CIRCLE 强制覆盖 DESCEND
-
-## 5. 仿真步长
-
-| 层级 | 决策间隔 | 仿真步长 | 说明 |
-|------|----------|----------|------|
-| 高层 (option) | ~30 min（仿真时间） | 1800 秒 | 每 900 low-level steps 调用一次 |
-| 低层 (control) | 1 s（仿真时间） | 1 秒 | 每步推进所有 UAV 1s |
-
-Phase 3b 训练用 max_steps=1200（20 分钟仿真），dt=1.0s。
-
-## 6. 平台
-
-| 项目 | 说明 |
-|------|------|
-| OS | Windows 11 (开发环境) |
-| GPU | 不需要（初期纯数值仿真） |
-| CI/CD | 暂不配置 |
-
-## 7. 配置文件格式
-
-环境配置使用 Python dataclass（`src/config.py`），实际默认值：
+返回 info：
 
 ```python
-# 环配置
-RingConfig:
-  r_min=500.0, r_max=5000.0          # 半径范围 (m)
-  h_min=50.0, h_max=1000.0           # 高度范围 (m)
-  v_min=5.0, v_max=30.0              # 速度范围 (m/s)
-  default_radii=(4000, 2500, 1000)   # 默认外→内环半径
-  default_heights=(800, 500, 200)    # 默认外→内环高度
-  default_speeds=(25, 20, 15)        # 默认外→内环速度
-
-# UAV 配置
-UAVConfig:
-  max_speed=40.0, max_battery=100.0
-  battery_critical=0.15               # 临界电量 (15%)
-  safe_separation=10.0                # 碰撞危险区 (m)
-  near_miss_threshold=50.0            # 近距预警区 (m)
-  min_ring_wait=30.0                  # 每环最少盘旋时间 (s)
-  min_ring_spacing=100.0              # 同环 UAV 最小角间距 (m 弧长)
-  proximity_penalty_threshold=30.0    # 接近惩罚触发距离 (m)
-  proximity_penalty_scale=5.0         # 接近惩罚缩放系数
-  safety_margin_threshold=100.0       # 最近距离观测归一化范围 (m)
-  ring_gap_observation_scale=1000.0   # 同环弧距观测归一化范围 (m)
-  ttc_observation_horizon=60.0        # TTC 观测归一化范围 (s)
-  power_cruise=1.0, power_descend=0.7 # 功耗 (单位/s)
-  priority_emergency=5                # 满豁免阈值
-  priority_alpha=0.5, priority_beta=1.5   # 等待时间优先级参数
-  priority_gamma=1.0, priority_delta=2.0  # 电量优先级参数
-
-# Safety 配置（SafetyController 参数）★ 新增
-SafetyConfig:
-  angular_separation_threshold=25.0   # Rule 1: 最终紧急介入距离 (m)
-  initial_intervention_threshold=40.0 # 训练初期 shield 介入距离 (m)
-  final_intervention_threshold=25.0   # 训练后期 shield 介入距离 (m)
-  intervention_curriculum_episodes=160
-  descend_crossing_lookahead=10.0     # Rule 2: 预测窗口 (s)
-  descend_crossing_slowdown=0.85      # Rule 2: 盘旋者减速系数
-  dual_descend_threshold=50.0         # Rule 3: 触发距离 (m)
-  dual_descend_psi_offset=15.0        # Rule 3: 偏转角 (deg)
-  universal_brake_threshold=25.0      # Rule 4: 最终触发距离 (m)
-  universal_brake_low=0.70            # Rule 4: 低优先减速
-  universal_brake_high=0.85           # Rule 4: 高优先减速
-  emergency_yield_slowdown=0.60       # Rule 5: 让路减速
-  emergency_yield_psi=25.0            # Rule 5: 让路偏转 (deg)
-
-# 仿真配置
-SimConfig:
-  dt_high=1800.0, dt_low=2.0          # 高低层步长 (s)
-  max_steps=7200                       # 默认最大步数
-  num_landing_zones=6                  # 着陆区数量
-
-# 环境总配置
-EnvConfig:
-  num_uavs=50                          # 默认 UAV 数量
-  uav_inflow_rate=0.0                  # 流入率 (UAVs/h)，0=无流入
-  max_uavs=100                         # 最大并发 UAV 数
-  k_nearest=8                          # 局部观测邻居数
-  safety_enabled=True                   # 启用 SafetyController ★ 新增
-  reward_landing=2.0                  # 每架新着陆奖励，乘 w_throughput
-  penalty_conflict=500.0               # 碰撞基础惩罚
-  penalty_near_miss=2.0                # 近距预警惩罚（按受控 UAV 数归一化）
-  penalty_safety_rule=0.25             # 每条 SafetyController 规则介入惩罚
-  penalty_safety_speed=1.0             # 安全层减速幅度惩罚
-  penalty_safety_block=2.0             # SafetyController 阻塞惩罚
-  penalty_descent_block=0.0            # DESCEND 放行阻塞仅作观测信号，不默认惩罚
-  penalty_ring_spacing=0.20            # 同环短前向弧距 softplus 惩罚
-  penalty_ring_ttc=0.10                # 同环短 TTC softplus 惩罚
-  penalty_speed_smooth=0.10            # 盘旋速度请求振荡惩罚
-  ring_spacing_softness=20.0           # 弧距 softplus 过渡宽度 (m)
-  ring_ttc_threshold=12.0              # TTC 开始惩罚阈值 (s)
-  ring_ttc_softness=3.0                # TTC softplus 过渡宽度 (s)
-  w_energy=0.3, w_wait=1.0, ...       # 奖励权重
+{
+    "approved": bool,
+    "modified": bool,
+    "rejected_uavs": [...],
+    "violations": [...],
+    "min_distance": float,
+}
 ```
 
-**任务类型与 LZ 占用**：
+## 8. TrajectoryGenerator 接口规范
+
+建议文件：
+
+```text
+terminal_marl/core/trajectory_generator.py
+```
+
+数据结构：
+
 ```python
-MISSION_TYPE_LZ_OCCUPANCY = {1:30.0, 2:120.0, 3:10.0, 4:60.0}  # 秒
-MISSION_TYPE_WEIGHTS = [0.45, 0.25, 0.10, 0.20]                  # 生成概率
+@dataclass
+class TrajectoryPoint:
+    x: float
+    y: float
+    z: float
+    yaw: float
+    t: float
+
+@dataclass
+class TrajectoryPlan:
+    uav_id: str
+    mode: str
+    points: list[TrajectoryPoint]
+    metadata: dict
 ```
+
+核心函数：
+
+```python
+class TrajectoryGenerator:
+    def ring_hold(self, uav_state, ring, duration, dt) -> TrajectoryPlan: ...
+    def ring_transfer(self, uav_state, from_ring, to_ring, duration, dt) -> TrajectoryPlan: ...
+    def final_approach(self, uav_state, landing_pad, duration, dt) -> TrajectoryPlan: ...
+    def landing(self, uav_state, landing_pad, duration, dt) -> TrajectoryPlan: ...
+    def emergency_hover(self, uav_state, duration, dt) -> TrajectoryPlan: ...
+```
+
+轨迹必须检查：
+
+- waypoint 数量；
+- 时间单调；
+- 速度上界；
+- 加速度上界；
+- 高度边界；
+- ring 几何一致性。
+
+## 9. 实验模式枚举
+
+建议统一使用：
+
+```python
+ExperimentMode = Literal[
+    "fixed_airspace_rule",
+    "fixed_airspace_low_rl",
+    "dynamic_airspace_rule",
+    "full_hrl",
+    "full_hrl_no_safety",
+    "direct_action_rl_baseline",
+]
+```
+
+每个模式都应有明确开关：
+
+```text
+dynamic_airspace: on/off
+low_level_policy: rule/rl/direct_action
+safety_filter: on/off
+trajectory_generator: on/off
+hardware_backend: simulation/dry_run/crazyswarm2
+```
+
+## 10. 日志与指标规范
+
+必须记录：
+
+```text
+airspace radius/height/speed/headway over time
+UAV stage transitions
+release decisions
+safety filter modifications/rejections
+trajectory plans
+pairwise minimum distances
+landing delay
+throughput
+final queue length
+holding time
+speed/acceleration violations
+tracking error in lab mode
+```
+
+建议输出：
+
+```text
+results/<run_id>/metrics.json
+results/<run_id>/airspace_history.csv
+results/<run_id>/uav_history.csv
+results/<run_id>/trajectory_history.csv
+results/<run_id>/safety_events.csv
+results/<run_id>/config.yaml
+```
+
+## 11. 测试规范
+
+第一轮必须新增：
+
+```text
+tests/test_dynamic_airspace.py
+tests/test_trajectory_generator.py
+```
+
+后续新增：
+
+```text
+tests/test_safety_filter.py
+tests/test_action_modes.py
+tests/test_experiment_modes.py
+tests/test_lab_config_bounds.py
+```
+
+每次开发后至少运行：
+
+```bash
+python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.py -v
+```
+
+## 12. 硬件适配规范
+
+`Crazyswarm2Adapter` 只接收 `TrajectoryPlan`，不接收裸 RL action。
+
+硬件执行流程：
+
+```text
+TrajectoryPlan
+  -> preflight dry-run check
+  -> boundary and speed check
+  -> Crazyswarm2 command conversion
+  -> live state monitoring
+  -> emergency hover/land if violation
+```
+
+真实飞行前必须先完成：
+
+- dry-run trajectory export；
+- visualization；
+- single UAV rule-only；
+- 2 UAV rule-only；
+- 2–3 UAV residual policy；
+- low-frequency dynamic airspace update。
+
+## 13. YAML 配置加载规范
+
+正式入口：
+
+```python
+from terminal_marl.config import load_experiment_config, load_sim_config
+
+config = load_experiment_config("dynamic_hrl")
+```
+
+preset 支持以下分层：
+
+```text
+experiment_mode
+rings
+geometry
+vehicle_limits
+safety
+timing
+arrival_flow
+reward_weights
+```
+
+加载器在 Python 默认 `SimConfig` 上覆盖 YAML 字段，因此旧脚本直接使用
+`SimConfig()` 的行为保持兼容。当前所有 preset 必须设置
+`simulation_only: true`；配置加载不得触发任何硬件逻辑。
+
+## 14. 高层 HRL 时间尺度接口
+
+`TerminalParallelEnv` 提供：
+
+```python
+should_update_high_level() -> bool
+apply_high_level_action(action) -> dict
+get_high_level_observation() -> np.ndarray
+```
+
+高层动作只在 `step_count % high_level_interval_steps == 0` 时应用。其他
+低层 step 收到的高层动作只缓存最新值，并在下一个高层边界应用。高层观测
+包括动态空域状态、ring/final 占用、active traffic、conflict risk 和时间相位。
+
+## 15. 安全放行与轨迹级检查
+
+所有 outer→inner、inner→final 和 final→land 请求必须先经过
+`SafetyFilter.approve_release()`。审批至少检查：
+
+```text
+current pairwise separation
+final approach occupancy
+landing pad occupancy
+candidate trajectory separation
+boundary and height range
+monotonic waypoint time
+minimum segment duration
+speed and acceleration limits
+```
+
+拒绝结果为可解释的 `HOLD`，不删除 UAV。不可执行的候选轨迹替换为边界内
+stationary hover plan。当前 `FlightPhase.FINAL` 内的下降由 final→land
+审批门控，尚未引入独立底层飞控或硬件急停。
+
+## 16. 消融实验 runner
+
+入口：
+
+```bash
+python -m terminal_marl.experiments.run_ablation \
+  --configs fixed_rule fixed_residual dynamic_rule dynamic_hrl \
+  --policy rule-only
+```
+
+当前支持 `rule-only`、`random-policy` 和 `dry-run`，统一输出：
+
+```text
+landed_count
+average_delay
+total_completion_time
+conflict_count
+min_pairwise_distance
+safety_override_count
+final_queue_time
+throughput
+```
+
+该 runner 用于 dynamic terminal airspace reconfiguration 与 multi-UAV
+landing-flow coordination 的实验工程化，不用于姿态、电机或自由飞行动作控制。

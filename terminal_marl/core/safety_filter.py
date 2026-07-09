@@ -25,11 +25,14 @@ class SafetyFilter:
         boundary: tuple[float, float, float, float, float, float],
         speed_max: float,
         acceleration_max: float = math.inf,
+        min_segment_duration: float = 1e-3,
     ) -> None:
         if safe_distance <= 0.0:
             raise ValueError("safe_distance must be positive")
         if speed_max <= 0.0 or acceleration_max <= 0.0:
             raise ValueError("kinematic limits must be positive")
+        if min_segment_duration <= 0.0:
+            raise ValueError("min_segment_duration must be positive")
         if len(boundary) != 6:
             raise ValueError("boundary must be (xmin, xmax, ymin, ymax, zmin, zmax)")
         xmin, xmax, ymin, ymax, zmin, zmax = (float(value) for value in boundary)
@@ -40,6 +43,7 @@ class SafetyFilter:
         self.boundary = (xmin, xmax, ymin, ymax, zmin, zmax)
         self.speed_max = float(speed_max)
         self.acceleration_max = float(acceleration_max)
+        self.min_segment_duration = float(min_segment_duration)
 
     def filter_airspace_action(
         self,
@@ -106,38 +110,49 @@ class SafetyFilter:
     ) -> tuple[TrajectoryPlan, dict]:
         """Approve a valid plan or replace it with a bounded stationary hover."""
 
-        violations = [
-            *self.check_boundary(plan),
-            *self.check_speed_acceleration(plan),
-        ]
+        checks = {
+            "boundary": self.check_boundary(plan),
+            "height": self.check_height_range(plan),
+            "kinematics": self.check_speed_acceleration(plan),
+        }
+        violations = [violation for result in checks.values() for violation in result]
         violations = list(dict.fromkeys(violations))
         if not violations:
             return plan, {
                 "approved": True,
+                "is_safe": True,
                 "modified": False,
                 "violations": [],
+                "reason": None,
+                "diagnostics": checks,
                 "override": None,
             }
 
         if not plan.points:
             return plan, {
                 "approved": False,
+                "is_safe": False,
                 "modified": False,
                 "violations": violations,
+                "reason": violations[0],
+                "diagnostics": checks,
                 "override": None,
             }
 
         first = plan.points[0]
         safe_position = self._clip_position(np.array([first.x, first.y, first.z], dtype=float))
+        start_time = float(first.t) if math.isfinite(first.t) else 0.0
+        point_count = max(2, len(plan.points))
+        hover_dt = max(self.min_segment_duration, 0.2)
         safe_points = [
             TrajectoryPoint(
                 x=float(safe_position[0]),
                 y=float(safe_position[1]),
                 z=float(safe_position[2]),
                 yaw=float(first.yaw) if math.isfinite(first.yaw) else 0.0,
-                t=float(point.t),
+                t=start_time + index * hover_dt,
             )
-            for point in plan.points
+            for index in range(point_count)
         ]
         metadata = dict(plan.metadata)
         metadata.update(
@@ -155,9 +170,82 @@ class SafetyFilter:
         )
         return override, {
             "approved": False,
+            "is_safe": False,
             "modified": True,
             "violations": violations,
+            "reason": violations[0],
+            "diagnostics": checks,
             "override": "emergency_hover",
+        }
+
+    def approve_release(
+        self,
+        state: object,
+        target_stage: str,
+        states: Sequence[object],
+        *,
+        candidate_plan: TrajectoryPlan | None = None,
+        final_occupied: bool = False,
+        landing_pad_occupied: bool = False,
+    ) -> dict:
+        """Approve a stage transition or override it to HOLD.
+
+        ``target_stage`` is one of ``outer_to_inner``, ``inner_to_final``, or
+        ``final_to_land``.  Approval never mutates an aircraft state.
+        """
+
+        supported = {"outer_to_inner", "inner_to_final", "final_to_land"}
+        if target_stage not in supported:
+            raise ValueError(f"unsupported target_stage: {target_stage}")
+
+        state_id = self._state_id(state)
+        pairwise = [
+            violation
+            for violation in self.check_pairwise_distance(states)
+            if state_id in {violation["first"], violation["second"]}
+        ]
+        violations: list[str] = []
+        if pairwise:
+            violations.append("minimum_separation")
+        if target_stage == "inner_to_final" and final_occupied:
+            violations.append("final_approach_occupied")
+        if target_stage == "final_to_land" and landing_pad_occupied:
+            violations.append("landing_pad_occupied")
+
+        filtered_plan = candidate_plan
+        trajectory_info: dict | None = None
+        trajectory_separation: list[dict] = []
+        if candidate_plan is not None:
+            filtered_plan, trajectory_info = self.filter_trajectory_plan(candidate_plan)
+            if not trajectory_info["is_safe"]:
+                violations.extend(
+                    f"trajectory_{reason}" for reason in trajectory_info["violations"]
+                )
+            trajectory_separation = self.check_trajectory_separation(
+                candidate_plan,
+                states,
+                ignore_uav_id=state_id,
+            )
+            if trajectory_separation:
+                violations.append("trajectory_minimum_separation")
+
+        violations = list(dict.fromkeys(violations))
+        approved = not violations
+        return {
+            "approved": approved,
+            "is_safe": approved,
+            "decision": "RELEASE" if approved else "HOLD",
+            "target_stage": target_stage,
+            "violations": violations,
+            "reason": None if approved else violations[0],
+            "filtered_plan": filtered_plan,
+            "diagnostics": {
+                "pairwise": pairwise,
+                "trajectory": trajectory_info,
+                "trajectory_separation": trajectory_separation,
+                "final_occupied": bool(final_occupied),
+                "landing_pad_occupied": bool(landing_pad_occupied),
+            },
         }
 
     def check_pairwise_distance(self, states: Sequence[object]) -> list[dict]:
@@ -198,6 +286,19 @@ class SafetyFilter:
                 return ["boundary_violation"]
         return []
 
+    def check_height_range(self, plan: TrajectoryPlan) -> list[str]:
+        """Check waypoint altitude against the configured vertical range."""
+
+        if not plan.points:
+            return ["empty_trajectory"]
+        zmin, zmax = self.boundary[4], self.boundary[5]
+        if any(
+            not math.isfinite(point.z) or point.z < zmin or point.z > zmax
+            for point in plan.points
+        ):
+            return ["height_range"]
+        return []
+
     def check_speed_acceleration(self, plan: TrajectoryPlan) -> list[str]:
         """Check strict time ordering, segment speed, and acceleration."""
 
@@ -216,6 +317,8 @@ class SafetyFilter:
 
         velocities = np.diff(positions, axis=0) / intervals[:, None]
         violations: list[str] = []
+        if np.any(intervals < self.min_segment_duration - 1e-12):
+            violations.append("minimum_segment_duration")
         if np.any(np.linalg.norm(velocities, axis=1) > self.speed_max + 1e-9):
             violations.append("speed_limit")
         if len(velocities) > 1:
@@ -225,6 +328,40 @@ class SafetyFilter:
                 np.linalg.norm(accelerations, axis=1) > self.acceleration_max + 1e-9
             ):
                 violations.append("acceleration_limit")
+        return violations
+
+    def check_trajectory_separation(
+        self,
+        plan: TrajectoryPlan,
+        states: Sequence[object],
+        *,
+        ignore_uav_id: str | None = None,
+    ) -> list[dict]:
+        """Check a candidate path against other aircraft held at current state."""
+
+        violations: list[dict] = []
+        for state in states:
+            state_id = self._state_id(state)
+            if ignore_uav_id is not None and state_id == str(ignore_uav_id):
+                continue
+            position = self._state_position(state)
+            distances = [
+                float(
+                    np.linalg.norm(
+                        np.array([point.x, point.y, point.z], dtype=float) - position
+                    )
+                )
+                for point in plan.points
+            ]
+            minimum = min(distances, default=math.inf)
+            if minimum < self.safe_distance:
+                violations.append(
+                    {
+                        "uav_id": state_id,
+                        "distance": minimum,
+                        "minimum": self.safe_distance,
+                    }
+                )
         return violations
 
     def _clip_position(self, position: np.ndarray) -> np.ndarray:

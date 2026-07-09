@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 import math
 
 
@@ -20,9 +20,13 @@ class RingSpec:
 @dataclass
 class SimConfig:
     # Experiment routing.  The legacy default preserves existing checkpoints.
+    config_name: str = "python_default"
     experiment_mode: str = "legacy_residual"
     action_mode: str | None = None
+    simulation_only: bool = True
     high_level_interval_steps: int = 10
+    world_boundary: Optional[Tuple[float, float, float, float, float, float]] = None
+    arrival_rate: float = 0.0
 
     center: Tuple[float, float, float] = (0.0, 0.0, 0.0)#终端区中心坐标
     dt: float = 1#仿真每一步时间间隔
@@ -110,6 +114,7 @@ class SimConfig:
     speed_min: float = 8.0#最小速度
     speed_max: float = 36.0#最大速度
     nominal_speed: float = 28.0#标称速度
+    max_acceleration: float = 2.0
     max_turn_rate_deg: float = 12.0#最大转弯率
     max_climb_rate: float = 5.0#最大爬升率
     max_descent_rate: float = 7.0#最大下降率
