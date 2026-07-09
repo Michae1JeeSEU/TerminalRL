@@ -436,3 +436,67 @@ throughput
 
 该 runner 用于 dynamic terminal airspace reconfiguration 与 multi-UAV
 landing-flow coordination 的实验工程化，不用于姿态、电机或自由飞行动作控制。
+
+## 17. High-level HRL wrapper
+
+`HighLevelHRLWrapper` 提供 Gym/Gymnasium 风格的 `reset()`、`step()`、
+`observation_space` 和 `action_space`。每个 8 维高层动作先更新动态空域，然后
+环境内部执行 `high_level_interval_steps` 个低层 step。低层当前支持
+rule-only、intention-residual 占位和 random-policy，不包含 PPO 训练。
+
+## 18. High-level interval reward
+
+高层奖励只在完整高层区间结束后计算，包含：
+
+```text
++ landed count / throughput
+- final queue waiting
+- conflict / safety override
+- excessive airspace change
+- ring imbalance / congestion
+- non-smooth consecutive airspace changes
+```
+
+返回值包含每个加权 component、原始增量和 total reward diagnostics。
+
+## 19. Delay 与日志规范
+
+每架 UAV 记录：
+
+```text
+spawn_time
+entry_time
+planned_nominal_landing_time
+actual_landing_time
+landing_delay = actual - planned
+```
+
+每次 rollout 输出 `episode_summary.json`、`step_metrics.csv`、
+`airspace_trace.csv`、`safety_events.csv` 和 `agent_events.csv`。summary
+记录本地 git commit（若可用），不依赖远程仓库。
+
+## 20. Multi-seed demand sweep
+
+消融 CLI 支持 `--seeds`、`--demand-levels low medium high bursty`、
+`--episodes` 和 `--output-dir`。demand profile 通过复制并覆盖
+`SimConfig.arrival_flow` 字段实现，不在环境动力学中硬编码。每个组合拥有独立
+日志目录，并生成 `aggregate_results.csv`。
+
+## 21. No-safety 消融与 baseline
+
+`full_hrl_no_safety` 只能在 `simulation_only` 下运行，Crazyflie lab 禁止关闭
+安全。该模式绕过 release/transition 审批，但仍保留 NaN、动作范围、动态空域
+边界和轨迹数值保护。
+
+当前 runner 支持：
+
+```text
+rule-only
+random-policy
+dry-run
+high-level-random
+high-level-static
+```
+
+这些 policy 都是交通意图/空域构型 baseline，不输出自由 heading、altitude
+或 velocity vector。

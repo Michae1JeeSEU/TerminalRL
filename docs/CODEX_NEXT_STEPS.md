@@ -4,7 +4,7 @@
 
 ## 当前开发状态
 
-前三轮基础工程已经完成：
+前四轮基础工程已经完成：
 
 1. **第一轮**：实现 `DynamicAirspace`、`TrajectoryGenerator` 及其测试；
 2. **第二轮**：实现 `ExperimentMode`、fixed/dynamic 环境接入、`crazyflie_lab` preset、`SafetyFilter` 骨架和 `intention_residual` 最小闭环；
@@ -14,6 +14,14 @@
    - 将 SafetyFilter 接入 outer→inner、inner→final、final→land 审批；
    - 完善 trajectory boundary/time/speed/acceleration/height/min-segment 检查；
    - 建立 rule-only/random-policy/dry-run 消融 runner 和统一指标。
+4. **第四轮**：
+   - 新增 Gym-style `HighLevelHRLWrapper`，一个高层动作执行完整低层时间区间；
+   - 新增 interval-level high-level reward 与可解释 diagnostics；
+   - 增加 nominal landing schedule、严格 landing delay 及分位数指标；
+   - 建立 episode summary、step、airspace、safety、agent 五类日志；
+   - 支持 multi-seed、low/medium/high/bursty demand 和多 episode sweep；
+   - 增加 simulation-only `full_hrl_no_safety` 消融；
+   - 增加 high-level-random 与 high-level-static baseline。
 
 以上实现仍然全部属于 simulation/dry-run，不包含 ROS2、Crazyswarm2 或真实 Crazyflie 控制。
 
@@ -218,14 +226,14 @@ python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.
 6. 下一轮建议
 ```
 
-## 十、第四轮建议
+## 十、第五轮建议
 
-下一轮应继续围绕 HRL 训练闭环和可复现实验，而不是底层飞控：
+下一轮继续围绕 HRL 训练证据链，而不是底层飞控：
 
-1. 新增独立 high-level environment/wrapper 和 high-level reward；
-2. 建立 dynamic-rule 高层启发式与 high-level random baseline；
-3. 将 safety approval event、airspace history 和 trajectory diagnostics 输出为标准日志；
-4. 扩展 ablation runner，支持多 seed、traffic demand sweep 和 JSON/CSV 汇总；
-5. 增加 `full_hrl_no_safety` 消融开关，但默认始终启用 SafetyFilter；
-6. 为 `crazyflie_lab` 增加轨迹 CSV/3D dry-run 导出，不连接真实硬件；
-7. 在证据充分后再训练 high-level policy，不提前接入 ROS2/Crazyswarm2。
+1. 为 `HighLevelHRLWrapper` 接入独立 high-level PPO trainer；
+2. 固化 low-level rule/intention policy checkpoint 接口，避免高低层同时从零训练；
+3. 增加 dynamic-rule 的可解释高层启发式 baseline；
+4. 执行多 seed × demand × mode 小规模实验，验证日志和 reward 尺度；
+5. 增加 aggregate mean/std/CI 与论文表格导出；
+6. 校准 nominal landing schedule，使 delay 与 FCFS/uncongested baseline 对齐；
+7. 增加 `crazyflie_lab` 轨迹 CSV/3D dry-run 导出，仍不连接真实硬件。

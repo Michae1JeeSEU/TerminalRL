@@ -30,6 +30,26 @@ def build_initial_2x4_queue(config: SimConfig) -> List[UAVState]:
             pos_xy = anchor_xy + lateral * lateral_offset - forward * longitudinal_offset
             pos = np.array([pos_xy[0], pos_xy[1], config.spawn_altitude], dtype=float)
             heading = angle_to_point(pos, np.array(config.center))
-            aircraft.append(UAVState(uid=uid, position=pos, speed=config.nominal_speed, heading=heading))
+            horizontal_distance = float(np.linalg.norm(pos[:2] - np.asarray(config.center[:2])))
+            horizontal_time = horizontal_distance / max(config.nominal_speed, 1e-6)
+            descent_time = max(0.0, pos[2] - config.center[2]) / max(
+                config.max_descent_rate,
+                1e-6,
+            )
+            nominal_landing_time = (
+                horizontal_time
+                + descent_time
+                + (uid - 1) * config.final_min_time_gap_s
+            )
+            aircraft.append(
+                UAVState(
+                    uid=uid,
+                    position=pos,
+                    speed=config.nominal_speed,
+                    heading=heading,
+                    spawn_time=0.0,
+                    planned_nominal_landing_time=nominal_landing_time,
+                )
+            )
             uid += 1
     return aircraft

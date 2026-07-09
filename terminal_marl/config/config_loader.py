@@ -169,6 +169,8 @@ def load_sim_config(
     _set_known_fields(config, _mapping(data, "geometry"), "geometry")
     _set_known_fields(config, _mapping(data, "vehicle_limits"), "vehicle_limits")
     safety = dict(_mapping(data, "safety"))
+    if "enabled" in safety:
+        config.safety_enabled = bool(safety.pop("enabled"))
     if "boundary" in safety:
         boundary = tuple(float(item) for item in safety.pop("boundary"))
         if len(boundary) != 6:
@@ -198,6 +200,13 @@ def load_sim_config(
         raise ValueError("dt must be positive")
     if not config.simulation_only:
         raise ValueError("third-round presets must remain simulation_only")
+    if (
+        config.experiment_mode == ExperimentMode.CRAZYFLIE_LAB.value
+        and not config.safety_enabled
+    ):
+        raise ValueError("crazyflie_lab cannot disable safety")
+    if not config.safety_enabled and not config.simulation_only:
+        raise ValueError("safety may only be disabled in simulation_only mode")
     return config
 
 

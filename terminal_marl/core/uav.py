@@ -54,6 +54,11 @@ class UAVState:
     cumulative_altitude_change: float = 0.0
     residual_action_l1_total: float = 0.0
     touchdown_hold_steps: int = 0
+    spawn_time: float = 0.0
+    entry_time: Optional[float] = None
+    planned_nominal_landing_time: Optional[float] = None
+    actual_landing_time: Optional[float] = None
+    landing_delay: Optional[float] = None
 
     history: list = field(default_factory=list)
 
@@ -95,6 +100,15 @@ class UAVState:
             self.completion_step = int(step)
         if self.completion_time is None:
             self.completion_time = float(time)
+        if self.actual_landing_time is None:
+            self.actual_landing_time = float(time)
+        if (
+            self.landing_delay is None
+            and self.planned_nominal_landing_time is not None
+        ):
+            self.landing_delay = (
+                self.actual_landing_time - self.planned_nominal_landing_time
+            )
 
     def direct_distance_to_goal(self, center: tuple[float, float, float]) -> float:
         c = np.asarray(center, dtype=float)
@@ -111,6 +125,21 @@ class UAVState:
             "finished": bool(self.finished),
             "completion_step": None if self.completion_step is None else int(self.completion_step),
             "completion_time": None if self.completion_time is None else float(self.completion_time),
+            "spawn_time": float(self.spawn_time),
+            "entry_time": None if self.entry_time is None else float(self.entry_time),
+            "planned_nominal_landing_time": (
+                None
+                if self.planned_nominal_landing_time is None
+                else float(self.planned_nominal_landing_time)
+            ),
+            "actual_landing_time": (
+                None
+                if self.actual_landing_time is None
+                else float(self.actual_landing_time)
+            ),
+            "landing_delay": (
+                None if self.landing_delay is None else float(self.landing_delay)
+            ),
             "path_length": float(self.path_length_total),
             "path_detour_rate": float(self.path_detour_rate(center)),
             "waiting_ring_distance": float(self.waiting_ring_distance),

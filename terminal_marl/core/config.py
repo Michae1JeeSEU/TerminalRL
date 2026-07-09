@@ -24,9 +24,11 @@ class SimConfig:
     experiment_mode: str = "legacy_residual"
     action_mode: str | None = None
     simulation_only: bool = True
+    safety_enabled: bool = True
     high_level_interval_steps: int = 10
     world_boundary: Optional[Tuple[float, float, float, float, float, float]] = None
     arrival_rate: float = 0.0
+    traffic_demand_level: str = "medium"
 
     center: Tuple[float, float, float] = (0.0, 0.0, 0.0)#终端区中心坐标
     dt: float = 1#仿真每一步时间间隔

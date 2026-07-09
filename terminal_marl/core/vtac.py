@@ -318,6 +318,8 @@ class VTAC:
             if dist_xy <= self.config.approach_threshold_radius and self.queue_has_space(self.outermost_ring_index):
                 self.sequence_counter += 1
                 a.sequence_number = self.sequence_counter
+                if a.entry_time is None:
+                    a.entry_time = self.current_time_s
                 a.assigned_ring = self.outermost_ring_index
                 a.assigned_ring_step = current_step
                 a.last_transfer_step = current_step

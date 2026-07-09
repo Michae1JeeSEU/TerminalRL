@@ -54,6 +54,7 @@ class TerminalParallelEnv:
     config: SimConfig = field(default_factory=SimConfig)
     experiment_mode: ExperimentMode | str | None = None
     action_mode: Optional[str] = None
+    safety_enabled: bool = field(init=False)
     vtac: VTAC = field(init=False)
     airspace: DynamicAirspace = field(init=False)
     safety_filter: SafetyFilter = field(init=False)
@@ -95,6 +96,17 @@ class TerminalParallelEnv:
             raise ValueError(f"unsupported action_mode: {self.action_mode}")
         self.config.experiment_mode = self.experiment_mode.value
         self.config.action_mode = self.action_mode
+        self.safety_enabled = bool(
+            self.config.safety_enabled and self.experiment_mode.safety_enabled
+        )
+        if not self.safety_enabled and not self.config.simulation_only:
+            raise ValueError("safety may only be disabled in simulation_only mode")
+        if (
+            self.experiment_mode is ExperimentMode.CRAZYFLIE_LAB
+            and not self.safety_enabled
+        ):
+            raise ValueError("crazyflie_lab cannot disable safety")
+        self.config.safety_enabled = self.safety_enabled
 
         self._initial_rings = copy.deepcopy(self.config.rings)
         self._initial_headways = (
@@ -463,7 +475,18 @@ class TerminalParallelEnv:
             policy_requested = bool(requested.get(aircraft.uid, True))
             stage = self._transition_stage(aircraft)
             if stage is not None:
-                if not policy_requested:
+                if not self.safety_enabled:
+                    approval = {
+                        "approved": policy_requested,
+                        "is_safe": None,
+                        "decision": "RELEASE" if policy_requested else "HOLD",
+                        "target_stage": stage,
+                        "violations": ["safety_disabled"],
+                        "reason": "safety_disabled",
+                        "filtered_plan": None,
+                        "diagnostics": {},
+                    }
+                elif not policy_requested:
                     approval = {
                         "approved": False,
                         "is_safe": True,
@@ -494,7 +517,18 @@ class TerminalParallelEnv:
                 approved_requests[aircraft.uid] = policy_requested
 
             if aircraft.phase == FlightPhase.FINAL and aircraft.final_entry_fix_reached:
-                if not policy_requested:
+                if not self.safety_enabled:
+                    landing_approval = {
+                        "approved": policy_requested,
+                        "is_safe": None,
+                        "decision": "RELEASE" if policy_requested else "HOLD",
+                        "target_stage": "final_to_land",
+                        "violations": ["safety_disabled"],
+                        "reason": "safety_disabled",
+                        "filtered_plan": None,
+                        "diagnostics": {},
+                    }
+                elif not policy_requested:
                     landing_approval = {
                         "approved": False,
                         "is_safe": True,
@@ -644,6 +678,12 @@ class TerminalParallelEnv:
             "release_approval": self.last_release_approval.get(ac.uid),
             "landing_approval": self.last_landing_approval.get(ac.uid),
             "safety_override_count": self.safety_override_count,
+            "safety_enabled": self.safety_enabled,
+            "spawn_time": float(ac.spawn_time),
+            "entry_time": ac.entry_time,
+            "planned_nominal_landing_time": ac.planned_nominal_landing_time,
+            "actual_landing_time": ac.actual_landing_time,
+            "landing_delay": ac.landing_delay,
         }
 
     #着陆判定
@@ -902,6 +942,7 @@ class TerminalParallelEnv:
                 if math.isinf(self.min_pairwise_distance)
                 else float(self.min_pairwise_distance)
             ),
+            "safety_enabled": float(self.safety_enabled),
             **ring_counts,
         }
 

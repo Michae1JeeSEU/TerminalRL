@@ -13,6 +13,7 @@ class ExperimentMode(str, Enum):
     FIXED_RESIDUAL = "fixed_residual"
     DYNAMIC_RULE = "dynamic_rule"
     DYNAMIC_HRL = "dynamic_hrl"
+    FULL_HRL_NO_SAFETY = "full_hrl_no_safety"
     CRAZYFLIE_LAB = "crazyflie_lab"
 
     @classmethod
@@ -32,6 +33,7 @@ class ExperimentMode(str, Enum):
         return self in {
             ExperimentMode.DYNAMIC_RULE,
             ExperimentMode.DYNAMIC_HRL,
+            ExperimentMode.FULL_HRL_NO_SAFETY,
             ExperimentMode.CRAZYFLIE_LAB,
         }
 
@@ -42,6 +44,10 @@ class ExperimentMode(str, Enum):
         if self in {ExperimentMode.FIXED_RULE, ExperimentMode.DYNAMIC_RULE}:
             return "rule"
         return "intention_residual"
+
+    @property
+    def safety_enabled(self) -> bool:
+        return self is not ExperimentMode.FULL_HRL_NO_SAFETY
 
     @property
     def includes_airspace_observation(self) -> bool:
