@@ -12,8 +12,10 @@ from ..rewards.high_level_reward import HighLevelReward, high_level_snapshot
 from .parallel_env import TerminalParallelEnv
 
 try:
+    import gymnasium as gym
     from gymnasium.spaces import Box
 except ImportError:  # pragma: no cover - exercised only in minimal deployments.
+    gym = None
     Box = None
 
 
@@ -23,7 +25,7 @@ LowLevelPolicy = Callable[
 ]
 
 
-class HighLevelHRLWrapper:
+class HighLevelHRLWrapper(gym.Env if gym is not None else object):
     """Expose one high-level action per block of low-level simulation steps."""
 
     def __init__(
@@ -42,6 +44,7 @@ class HighLevelHRLWrapper:
         if isinstance(low_level_policy, str) and low_level_policy not in {
             "rule-only",
             "intention-residual",
+            "intention-residual-placeholder",
             "random-policy",
         }:
             raise ValueError("unsupported low_level_policy")

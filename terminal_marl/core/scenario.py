@@ -8,6 +8,7 @@ import numpy as np
 from .config import SimConfig
 from .geometry import unit_xy_from_angle, rotate90, angle_to_point
 from .uav import UAVState
+from ..metrics.nominal_schedule import NominalScheduleEstimator
 
 
 def build_initial_2x4_queue(config: SimConfig) -> List[UAVState]:
@@ -22,6 +23,7 @@ def build_initial_2x4_queue(config: SimConfig) -> List[UAVState]:
     lateral = rotate90(forward)
 
     aircraft: List[UAVState] = []
+    estimator = NominalScheduleEstimator(config)
     uid = 1
     for row in range(config.formation_rows):
         for col in range(config.formation_cols):
@@ -30,16 +32,8 @@ def build_initial_2x4_queue(config: SimConfig) -> List[UAVState]:
             pos_xy = anchor_xy + lateral * lateral_offset - forward * longitudinal_offset
             pos = np.array([pos_xy[0], pos_xy[1], config.spawn_altitude], dtype=float)
             heading = angle_to_point(pos, np.array(config.center))
-            horizontal_distance = float(np.linalg.norm(pos[:2] - np.asarray(config.center[:2])))
-            horizontal_time = horizontal_distance / max(config.nominal_speed, 1e-6)
-            descent_time = max(0.0, pos[2] - config.center[2]) / max(
-                config.max_descent_rate,
-                1e-6,
-            )
-            nominal_landing_time = (
-                horizontal_time
-                + descent_time
-                + (uid - 1) * config.final_min_time_gap_s
+            nominal_landing_time = estimator.estimate(
+                pos, spawn_time=0.0, sequence_index=uid
             )
             aircraft.append(
                 UAVState(

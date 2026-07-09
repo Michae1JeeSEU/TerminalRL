@@ -9,6 +9,7 @@ import numpy as np
 from ..config import ExperimentMode
 from ..core.config import SimConfig
 from ..core.baseline import command_for_aircraft
+from ..core.arrival_process import ArrivalProcess
 from ..core.dynamic_airspace import AirspaceBounds, DynamicAirspace, DynamicRingSpec
 from ..core.geometry import distance_3d, norm_xy, wrap_angle, clamp
 from ..core.observations import AgentObservationBuilder
@@ -20,6 +21,7 @@ from ..core.trajectory_generator import TrajectoryGenerator, TrajectoryPlan
 from ..core.uav import UAVState, FlightPhase
 from ..core.vtac import VTAC
 from ..core.rendering import plot_snapshot
+from ..metrics.nominal_schedule import NominalScheduleEstimator
 
 
 DEFAULT_EPISODE_METRIC_KEYS = [
@@ -59,6 +61,7 @@ class TerminalParallelEnv:
     airspace: DynamicAirspace = field(init=False)
     safety_filter: SafetyFilter = field(init=False)
     trajectory_generator: TrajectoryGenerator = field(init=False)
+    arrival_process: ArrivalProcess = field(init=False)
     aircraft: List[UAVState] = field(default_factory=list)
     time: float = 0.0
     step_count: int = 0
@@ -140,6 +143,12 @@ class TerminalParallelEnv:
             height_min=0.0,
             height_max=self.config.world_z_limit,
         )
+        self.arrival_process = ArrivalProcess(
+            demand_level=self.config.traffic_demand_level,
+            model=self.config.arrival_model,
+            arrival_rate=self.config.arrival_rate,
+            max_active_uavs=self.config.max_active_uavs,
+        )
         self.vtac = VTAC(self.config)
         observed_airspace = (
             self.airspace
@@ -197,6 +206,7 @@ class TerminalParallelEnv:
         self.final_queue_time = 0.0
         self.min_pairwise_distance = math.inf
         self.vtac.reset()
+        self.arrival_process.reset(seed)
         self.aircraft = build_initial_2x4_queue(self.config)
         self.agents = self.possible_agents.copy()
         for ac in self.aircraft:
@@ -205,6 +215,56 @@ class TerminalParallelEnv:
         obs = {self._agent_name(ac.uid): self._build_obs(ac) for ac in self.aircraft}
         infos = {self._agent_name(ac.uid): self._build_info(ac) for ac in self.aircraft}
         return obs, infos
+
+    def _spawn_runtime_arrivals(self) -> None:
+        active_count = sum(not aircraft.finished for aircraft in self.aircraft)
+        due = self.arrival_process.arrivals_due(self.time, active_count)
+        if due <= 0:
+            return
+        inbound = math.radians(self.config.inbound_bearing_deg)
+        base_radius = self.config.approach_threshold_radius + self.config.spawn_margin
+        estimator = NominalScheduleEstimator(self.config)
+        for offset in range(due):
+            if sum(not aircraft.finished for aircraft in self.aircraft) >= self.config.max_active_uavs:
+                break
+            uid = max((aircraft.uid for aircraft in self.aircraft), default=0) + 1
+            lateral = (offset - (due - 1) / 2.0) * self.config.col_spacing
+            position = np.array(
+                [
+                    base_radius * math.cos(inbound) - lateral * math.sin(inbound),
+                    base_radius * math.sin(inbound) + lateral * math.cos(inbound),
+                    self.config.spawn_altitude,
+                ],
+                dtype=float,
+            )
+            if any(
+                not other.finished
+                and distance_3d(position, other.position) < self.config.safe_distance
+                for other in self.aircraft
+            ):
+                continue
+            heading = math.atan2(
+                self.config.center[1] - position[1],
+                self.config.center[0] - position[0],
+            )
+            aircraft = UAVState(
+                uid=uid,
+                position=position,
+                speed=self.config.nominal_speed,
+                heading=heading,
+                spawn_time=self.time,
+                planned_nominal_landing_time=estimator.estimate(
+                    position,
+                    spawn_time=self.time,
+                    sequence_index=uid,
+                ),
+            )
+            aircraft.snapshot()
+            self.aircraft.append(aircraft)
+            agent = self._agent_name(uid)
+            if agent not in self.possible_agents:
+                self.possible_agents.append(agent)
+            self.agents.append(agent)
 
     def _agent_name(self, uid: int) -> str:
         return f"uav_{uid}"
@@ -857,6 +917,7 @@ class TerminalParallelEnv:
 
         self.step_count += 1
         self.time += self.config.dt
+        self._spawn_runtime_arrivals()
         self.final_queue_time += len(self.vtac.queues[0]) * self.config.dt
         self._update_finish_states()
         nmac_pairs, collision_pairs = self._track_conflicts()

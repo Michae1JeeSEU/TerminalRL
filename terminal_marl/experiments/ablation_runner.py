@@ -16,7 +16,10 @@ from ..config import load_experiment_config, load_sim_config
 from ..core.config import SimConfig
 from ..core.geometry import distance_3d
 from ..envs.parallel_env import TerminalParallelEnv
+from ..metrics.nominal_schedule import NominalScheduleEstimator
+from ..policies import DynamicRuleHighLevelPolicy
 from .logger import ExperimentLogger
+from .aggregate import aggregate_statistics
 
 
 ABLATION_METRIC_KEYS = (
@@ -41,6 +44,8 @@ POLICIES = (
     "dry-run",
     "high-level-random",
     "high-level-static",
+    "dynamic-rule",
+    "high-level-ppo",
 )
 
 DEMAND_PROFILES = {
@@ -90,6 +95,8 @@ def run_rollout(
     traffic_demand_level: str = "medium",
     output_dir: str | Path | None = None,
     episode: int = 0,
+    model_path: str | Path | None = None,
+    nominal_delay_mode: str = "analytic",
 ) -> dict[str, float | str]:
     """Run one simulation-only rollout and return publication-facing metrics."""
 
@@ -104,8 +111,36 @@ def run_rollout(
     if max_steps is not None:
         sim_config.max_steps = min(sim_config.max_steps, int(max_steps))
     env = TerminalParallelEnv(sim_config)
+    ppo_model = None
+    if policy == "high-level-ppo":
+        if model_path is None:
+            raise ValueError("high-level-ppo requires model_path")
+        from ..training.train_high_level_ppo import require_sb3
+
+        PPO, _ = require_sb3()
+        ppo_model = PPO.load(model_path)
+    dynamic_rule_policy = DynamicRuleHighLevelPolicy()
     rng = np.random.default_rng(seed)
     observations, _ = env.reset(seed=seed)
+    if nominal_delay_mode == "rule-only-reference":
+        reference = {
+            aircraft.uid: float(aircraft.planned_nominal_landing_time)
+            for aircraft in env.aircraft
+            if aircraft.planned_nominal_landing_time is not None
+        }
+        estimator = NominalScheduleEstimator(
+            sim_config,
+            mode="rule-only-reference",
+            rule_only_reference=reference,
+        )
+        for aircraft in env.aircraft:
+            aircraft.planned_nominal_landing_time = estimator.estimate(
+                aircraft.position,
+                spawn_time=aircraft.spawn_time,
+                sequence_index=aircraft.uid,
+            )
+    elif nominal_delay_mode != "analytic":
+        raise ValueError("unknown nominal_delay_mode")
     observed_minimum = _current_minimum_distance(env)
     logger = (
         ExperimentLogger(
@@ -135,11 +170,16 @@ def run_rollout(
                 for agent in env.agents
             }
         if env.should_update_high_level():
-            high_level_action = (
-                rng.uniform(-1.0, 1.0, size=8).astype(np.float32)
-                if policy == "high-level-random"
-                else np.zeros(8, dtype=np.float32)
-            )
+            if policy == "high-level-random":
+                high_level_action = rng.uniform(-1.0, 1.0, size=8).astype(np.float32)
+            elif policy == "dynamic-rule":
+                high_level_action = dynamic_rule_policy.act(env)
+            elif policy == "high-level-ppo":
+                high_level_action, _ = ppo_model.predict(
+                    env.get_high_level_observation(), deterministic=True
+                )
+            else:
+                high_level_action = np.zeros(8, dtype=np.float32)
         else:
             high_level_action = None
 
@@ -171,6 +211,7 @@ def run_rollout(
         "seed": float(seed),
         "episode": float(episode),
         "traffic_demand_level": traffic_demand_level,
+        "nominal_delay_mode": nominal_delay_mode,
         "landed_count": float(landed_count),
         "average_delay": float(np.mean(delays)) if delays else 0.0,
         "average_completion_time": (
@@ -206,6 +247,8 @@ def run_ablation(
     seed: int = 0,
     max_steps: int | None = None,
     traffic_demand_level: str = "medium",
+    model_path: str | Path | None = None,
+    nominal_delay_mode: str = "analytic",
 ) -> dict[str, dict[str, float | str]]:
     """Run a common policy over multiple YAML experiment presets."""
 
@@ -216,6 +259,8 @@ def run_ablation(
             seed=seed,
             max_steps=max_steps,
             traffic_demand_level=traffic_demand_level,
+            model_path=model_path,
+            nominal_delay_mode=nominal_delay_mode,
         )
         for name in configs
     }
@@ -230,6 +275,8 @@ def run_sweep(
     episodes: int,
     output_dir: str | Path,
     max_steps: int | None = None,
+    model_path: str | Path | None = None,
+    nominal_delay_mode: str = "analytic",
 ) -> list[dict[str, float | str]]:
     """Run every config/policy/seed/demand/episode combination with logs."""
 
@@ -257,6 +304,8 @@ def run_sweep(
                                 traffic_demand_level=demand,
                                 output_dir=run_dir,
                                 episode=episode,
+                                model_path=model_path,
+                                nominal_delay_mode=nominal_delay_mode,
                             )
                         )
     aggregate_path = root / "aggregate_results.csv"
@@ -266,6 +315,7 @@ def run_sweep(
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(results)
+    aggregate_statistics(aggregate_path, root)
     return results
 
 
@@ -292,6 +342,12 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--output-dir", type=Path, default=Path("runs/ablation"))
+    parser.add_argument("--model-path", type=Path)
+    parser.add_argument(
+        "--nominal-delay-mode",
+        choices=["analytic", "rule-only-reference"],
+        default="analytic",
+    )
     args = parser.parse_args()
 
     results = run_sweep(
@@ -302,6 +358,8 @@ def main() -> None:
         episodes=args.episodes,
         output_dir=args.output_dir,
         max_steps=args.max_steps,
+        model_path=args.model_path,
+        nominal_delay_mode=args.nominal_delay_mode,
     )
     serialized = json.dumps(results, ensure_ascii=False, indent=2)
     print(serialized)

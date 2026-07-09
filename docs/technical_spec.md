@@ -500,3 +500,36 @@ high-level-static
 
 这些 policy 都是交通意图/空域构型 baseline，不输出自由 heading、altitude
 或 velocity vector。
+
+## 22. High-level PPO
+
+`terminal_marl.training.train_high_level_ppo` 使用 SB3 PPO 和
+`HighLevelHRLWrapper`。SB3 采用延迟导入；缺失时训练/加载入口返回明确错误，
+不会破坏普通仿真 import。训练保存 model、配置、progress CSV 和 eval summary。
+
+## 23. Dynamic-rule baseline
+
+启发式高层策略根据 outer/inner occupancy、final queue、active ratio 和 conflict
+risk 生成 8 维空域增量。拥堵时扩环/调速，final 压力时增大 headway，冲突时
+降速并增加间隔，空闲时恢复 nominal airspace。动作仍经过 SafetyFilter 和
+DynamicAirspace 限幅。
+
+## 24. Runtime arrival process
+
+`ArrivalProcess` 支持 deterministic interval、Poisson 和 bursty wave。新 UAV
+受最大活动数和入口安全间隔约束，并记录 spawn、entry 和 nominal landing time。
+
+## 25. Nominal schedule
+
+`NominalScheduleEstimator` 支持 analytic 与 rule-only-reference。所有 delay
+结果必须同时记录 `nominal_delay_mode`，避免将 completion time 当作 delay。
+
+## 26. 聚合统计
+
+按 config、policy、demand 分组输出 mean、sample std、min、max、median 和
+normal-approximation 95% CI（`mean ± 1.96*std/sqrt(n)`），并记录 seed 数。
+
+## 27. 图表流水线
+
+matplotlib 单图输出 throughput/delay/conflict/safety vs demand，以及 airspace
+trace 和 landed count time series；不使用 seaborn 或复杂 subplot。

@@ -134,6 +134,8 @@ Simulation-to-Real Hierarchical Reinforcement Learning for Dynamic Vertiport Ter
 | `full_hrl_no_safety` | 动态 | intention residual | off, simulation only | 安全层消融 |
 | `high-level-random` | 随机动态 | rule-only | on | 随机高层基准 |
 | `high-level-static` | 不更新 | rule-only | on | 高层静态基准 |
+| `dynamic-rule` | 启发式动态 | rule-only | on | 规则动态构型基准 |
+| `high-level-ppo` | 学习动态 | rule/intention placeholder | on | 学习型高层策略 |
 
 所有模式仍研究动态终端区构型与多 UAV 降落流协同；random policy 也不获得自由
 航向、高度或速度向量控制权。

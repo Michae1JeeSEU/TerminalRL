@@ -5,7 +5,7 @@ import pytest
 from terminal_marl.experiments import POLICIES, run_rollout
 
 
-@pytest.mark.parametrize("policy", POLICIES)
+@pytest.mark.parametrize("policy", [item for item in POLICIES if item != "high-level-ppo"])
 def test_every_ablation_policy_runs_one_episode_step(policy: str) -> None:
     metrics = run_rollout(
         "dynamic_hrl",
