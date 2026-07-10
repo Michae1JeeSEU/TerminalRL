@@ -278,3 +278,15 @@ nominal delay、统计聚合与图表骨架。第六轮进入小规模训练、�
 安全过滤和轨迹生成使策略具备真实平台可执行性；
 Crazyflie 实验验证了仿真策略的缩尺落地能力。
 ```
+
+## 12. Phase G-Server：服务器训练准备
+
+第六轮将 high-level PPO 从本地 smoke 入口扩展为服务器训练入口，但仍不在本地进行正式训练：
+
+- 并行环境：`n_envs` + `dummy/subproc` vector env；
+- CPU 默认：`device=cpu`，脚本设置 `OMP_NUM_THREADS=1`、`MKL_NUM_THREADS=1`、`OPENBLAS_NUM_THREADS=1`；
+- 训练阶段：Stage 0 smoke、Stage 1 pilot、Stage 2 三 seed 小规模、Stage 3 五 seed 主实验、Stage 4 reward/LR sweep、Stage 5 统一评估聚合绘图；
+- 输出：checkpoint、training progress、eval summary、config snapshot、episode logs、aggregate CSV 和 figures；
+- 打包：`scripts/server/pack_for_server.py` 生成服务器上传包和 manifest。
+
+该阶段仍然只训练 high-level dynamic airspace reconfiguration policy，不接入真实硬件，不改变底层飞控边界。

@@ -117,7 +117,7 @@ def run_rollout(
             raise ValueError("high-level-ppo requires model_path")
         from ..training.train_high_level_ppo import require_sb3
 
-        PPO, _ = require_sb3()
+        PPO = require_sb3()[0]
         ppo_model = PPO.load(model_path)
     dynamic_rule_policy = DynamicRuleHighLevelPolicy()
     rng = np.random.default_rng(seed)

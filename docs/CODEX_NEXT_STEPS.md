@@ -243,3 +243,33 @@ python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.
 4. 生成论文主表、置信区间和初版性能图；
 5. 增加训练稳定性、泛化和 safety ablation 分析；
 6. 增加 Crazyflie lab 轨迹 CSV/3D dry-run 导出，仍不连接真实硬件。
+
+## 第六轮完成记录：服务器训练准备
+
+第六轮不在本地正式训练，只完成 simulation-only 的服务器训练准备：
+
+1. 扩展 `terminal_marl/training/train_high_level_ppo.py`：
+   - 支持 `--n-envs`、`--vec-env dummy/subproc`、`--device cpu/cuda/auto`、`--num-threads`；
+   - 支持 `--checkpoint-freq`、`--eval-freq`、`--save-replay-traces`；
+   - 支持 `--resume-from`；
+   - 输出 `training_progress.csv`、`eval_summary.json`、`config_snapshot.json`。
+2. 新增 `terminal_marl/training/training_config.py` 与 `terminal_marl/configs/training/*.yaml`，用于服务器训练 YAML 参数加载；显式 CLI 参数覆盖 YAML。
+3. 新增 `terminal_marl/training/evaluate_high_level_policy.py`，用于加载训练后的 high-level PPO policy 并进行多 seed、多 demand、多 episode 评估。
+4. 新增 `scripts/server/`：
+   - 环境检查、smoke、pilot、main、sweep、评估、聚合绘图脚本；
+   - `pack_for_server.py` 可生成 `terminal_server_training_package.zip` 与 `SERVER_UPLOAD_MANIFEST.txt`；
+   - `README_SERVER_TRAINING.md` 记录无 sudo Linux/SLURM 使用流程。
+5. 新增 `terminal_marl/experiments/reward_diagnostics.py`，用于在正式训练前检查 high-level reward component 是否被单项支配。
+6. 新增 `terminal_marl/experiments/experiment_matrix.py`，导出论文主实验矩阵。
+
+约束保持不变：不接入 ROS2/Crazyswarm2/真实 Crazyflie；PPO 只训练 high-level dynamic airspace policy；不扩展自由 heading/altitude/velocity-vector 控制。
+
+## 第七轮建议
+
+下一轮建议从“服务器产物回收与论文证据链”推进：
+
+1. 在服务器执行 Stage 0/1 smoke 与 pilot 后，回收 `episode_summary.json`、`aggregate_results.csv`、`aggregate_summary.csv` 和 figures；
+2. 根据 `reward_diagnostics.csv` 调整 high-level reward 权重，避免 safety 或 airspace-change 单项支配；
+3. 固化 high-level PPO checkpoint 命名、评估目录规范和论文表格生成脚本；
+4. 增加 `dynamic_hrl + high-level-ppo` 与 `dynamic_rule`、`high-level-static`、`full_hrl_no_safety` 的统一显著性/置信区间表；
+5. 继续保持 simulation-only，除非后续明确进入 Crazyflie lab dry-run trajectory export。

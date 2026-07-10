@@ -172,3 +172,20 @@ Simulation-to-Real Hierarchical Reinforcement Learning for Dynamic Vertiport Ter
 5. 必须实现 safety filter，并在实验中做消融。
 6. 必须新增 `crazyflie_lab` 缩尺配置，不能用大尺度仿真参数直接宣称实物可验证。
 7. 论文实验脚本必须支持固定空域、动态空域、规则、低层 RL、完整 HRL 等模式切换。
+
+## 9. Server training preparation and paper experiment support
+
+第六轮新增服务器训练准备后，论文实验矩阵可以按如下路径形成证据链：
+
+1. 使用 `terminal_marl/configs/training/ppo_smoke.yaml` 和 `ppo_pilot_medium.yaml` 验证 high-level PPO 训练入口、日志、checkpoint 与评估流水线；
+2. 使用 `ppo_main_medium.yaml`、`ppo_main_high.yaml`、`ppo_main_bursty.yaml` 对 medium/high/bursty traffic demand 做 multi-seed 训练；
+3. 使用 `ppo_reward_sweep.yaml` 与 `reward_diagnostics.py` 校准 reward component，避免某个惩罚项支配学习；
+4. 使用 `experiment_matrix.py` 固化论文对照组：
+   - fixed airspace + rule-only；
+   - fixed airspace + residual placeholder；
+   - dynamic airspace + rule heuristic；
+   - dynamic HRL + high-level PPO；
+   - high-level random/static；
+   - full HRL without safety filter。
+
+这些配置服务于 dynamic terminal airspace reconfiguration + multi-UAV landing-flow coordination 的论文主线。PPO checkpoint 表示高层空域/流量管理策略，不表示真实 Crazyflie 底层飞控策略。

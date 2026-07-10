@@ -1,0 +1,29 @@
+# Server upload manifest
+
+Upload the simulation-only training package for server-side high-level PPO.
+
+Required project content:
+
+- terminal_marl/
+- docs/
+- scripts/server/
+- selected tests related to training configuration, PPO smoke/evaluation,
+  server packing, reward diagnostics, and experiment matrix
+- requirements.txt, pyproject.toml, README.md, and AGENTS.md when present
+
+Do not upload:
+
+- .git/
+- runs/
+- __pycache__/
+- *.pyc
+- .pytest_cache/
+- local model checkpoints or zip outputs
+- large local logs
+
+Generate the detailed file-by-file manifest and zip package with:
+
+```bash
+python scripts/server/pack_for_server.py
+```
+

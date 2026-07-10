@@ -6,6 +6,7 @@ import csv
 import json
 import math
 from pathlib import Path
+import argparse
 
 import numpy as np
 
@@ -63,3 +64,15 @@ def aggregate_statistics(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
     return summary
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("results_csv", type=Path)
+    parser.add_argument("output_dir", type=Path)
+    args = parser.parse_args()
+    aggregate_statistics(args.results_csv, args.output_dir)
+
+
+if __name__ == "__main__":
+    main()

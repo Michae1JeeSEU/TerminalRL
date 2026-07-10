@@ -533,3 +533,79 @@ normal-approximation 95% CI（`mean ± 1.96*std/sqrt(n)`），并记录 seed 数
 
 matplotlib 单图输出 throughput/delay/conflict/safety vs demand，以及 airspace
 trace 和 landed count time series；不使用 seaborn 或复杂 subplot。
+
+## 28. Server-side high-level PPO training
+
+服务器训练入口为：
+
+```bash
+python -m terminal_marl.training.train_high_level_ppo \
+  --training-config terminal_marl/configs/training/ppo_main_medium.yaml
+```
+
+新增训练参数包括：
+
+```text
+--n-envs
+--vec-env dummy/subproc
+--device cpu/cuda/auto
+--num-threads
+--checkpoint-freq
+--eval-freq
+--save-replay-traces
+--resume-from
+--training-config
+```
+
+默认 `device=cpu`，因为当前 high-level PPO 与仿真环境主要是 CPU 密集型。Stable-Baselines3 保持延迟导入；缺少 SB3 时 PPO 入口给出清晰错误，普通仿真和非 PPO 测试不受影响。
+
+训练只作用于 high-level dynamic airspace policy，不输出自由 heading、altitude 或 velocity-vector 控制命令。
+
+## 29. Training YAML presets
+
+`terminal_marl/configs/training/` 包含：
+
+```text
+ppo_smoke.yaml
+ppo_pilot_medium.yaml
+ppo_main_medium.yaml
+ppo_main_high.yaml
+ppo_main_bursty.yaml
+ppo_reward_sweep.yaml
+```
+
+每个 preset 包含 simulation-only 的 config、demand、timesteps、parallel env、PPO hyperparameters、seed list、low-level placeholder policy、nominal delay mode 和 output directory。命令行显式传入参数覆盖 YAML。
+
+## 30. Server scripts and upload manifest
+
+`scripts/server/` 提供：
+
+```text
+00_check_env.sh
+01_train_smoke_cpu.sh
+02_train_pilot_medium_cpu.sh
+03_train_main_cpu.slurm
+04_train_sweep_array.slurm
+05_eval_ablation_cpu.slurm
+06_aggregate_and_plot.sh
+pack_for_server.py
+README_SERVER_TRAINING.md
+```
+
+脚本默认 CPU、无 sudo、可选 module 环境。SLURM 分区通过 `PARTITION` 变量设置，默认建议为 `6240-36C-192G`，可改为 `normal` 或其他 CPU 队列。打包脚本生成 `terminal_server_training_package.zip` 与 `SERVER_UPLOAD_MANIFEST.txt`，排除 `.git/`、`runs/`、缓存、bytecode、本地模型和大型日志。
+
+## 31. Reward diagnostics and experiment matrix
+
+`terminal_marl/experiments/reward_diagnostics.py` 对 `rule-only`、`dynamic-rule`、`high-level-random` 和 `untrained-ppo` 做短 dry-run，输出 reward component 的 mean、variance 和 magnitude，帮助正式训练前判断 reward 是否失衡。
+
+`terminal_marl/experiments/experiment_matrix.py` 定义论文推荐组合并可导出 `matrix.csv`：
+
+```text
+fixed_rule + rule-only
+fixed_residual + random-policy
+dynamic_rule + dynamic-rule
+dynamic_hrl + high-level-ppo
+dynamic_hrl + high-level-random
+dynamic_hrl + high-level-static
+full_hrl_no_safety + high-level-ppo
+```

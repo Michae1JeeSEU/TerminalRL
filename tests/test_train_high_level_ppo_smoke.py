@@ -15,5 +15,11 @@ def test_tiny_high_level_ppo_training_writes_artifacts(tmp_path) -> None:
         demand_level="low",
         low_level_policy="rule-only",
     )
-    for name in ["model.zip", "training_config.json", "training_progress.csv", "eval_summary.json"]:
+    for name in [
+        "model.zip",
+        "training_config.json",
+        "training_progress.csv",
+        "eval_summary.json",
+        "config_snapshot.json",
+    ]:
         assert (tmp_path / name).is_file()

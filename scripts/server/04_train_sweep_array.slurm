@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=terminal-ppo-sweep
+#SBATCH --cpus-per-task=20
+#SBATCH --mem=64G
+#SBATCH --time=48:00:00
+#SBATCH --array=0-8
+#SBATCH --output=runs/slurm/%x-%A_%a.out
+#SBATCH --error=runs/slurm/%x-%A_%a.err
+
+set -euo pipefail
+
+PARTITION="${PARTITION:-6240-36C-192G}"
+echo "Partition variable can be passed to sbatch as needed: ${PARTITION}"
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+
+# Each row: seed demand learning_rate training_config
+MATRIX=(
+  "0 medium 0.00030 terminal_marl/configs/training/ppo_main_medium.yaml"
+  "1 medium 0.00030 terminal_marl/configs/training/ppo_main_medium.yaml"
+  "2 medium 0.00030 terminal_marl/configs/training/ppo_main_medium.yaml"
+  "0 high 0.00025 terminal_marl/configs/training/ppo_main_high.yaml"
+  "1 high 0.00025 terminal_marl/configs/training/ppo_main_high.yaml"
+  "2 high 0.00025 terminal_marl/configs/training/ppo_main_high.yaml"
+  "0 bursty 0.00020 terminal_marl/configs/training/ppo_main_bursty.yaml"
+  "1 bursty 0.00020 terminal_marl/configs/training/ppo_main_bursty.yaml"
+  "2 bursty 0.00020 terminal_marl/configs/training/ppo_main_bursty.yaml"
+)
+
+ROW="${MATRIX[${SLURM_ARRAY_TASK_ID:-0}]}"
+read -r SEED DEMAND LR CONFIG_PATH <<< "${ROW}"
+
+python -m terminal_marl.training.train_high_level_ppo \
+  --training-config "${CONFIG_PATH}" \
+  --seed "${SEED}" \
+  --demand-level "${DEMAND}" \
+  --learning-rate "${LR}" \
+  --device cpu \
+  --n-envs 16 \
+  --vec-env subproc
+

@@ -1,0 +1,24 @@
+config: dynamic_hrl
+demand_level: medium
+total_timesteps: 100000
+n_envs: 8
+vec_env: subproc
+seed_list: [0, 1, 2]
+learning_rate: 0.0003
+n_steps: 128
+batch_size: 256
+gamma: 0.99
+gae_lambda: 0.95
+clip_range: 0.2
+ent_coef: 0.005
+vf_coef: 0.5
+high_level_interval: 10
+low_level_policy: rule-only
+nominal_delay_mode: analytic
+output_dir: runs/high_level_ppo/ppo_reward_sweep
+device: cpu
+num_threads: 1
+checkpoint_freq: 25000
+eval_freq: 10000
+save_replay_traces: true
+simulation_only: true
