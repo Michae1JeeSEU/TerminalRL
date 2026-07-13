@@ -35,12 +35,19 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If your cluster uses modules, uncomment an appropriate line in the scripts, for
-example:
+The scripts follow the previously used SLURM style:
 
-```bash
-# module load anaconda3-2024.10-1
+```text
+#SBATCH --partition=6240-36C-192G
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 ```
+
+They also try `module load anaconda3-2024.10-1` and then
+`source activate "${CONDA_ENV:-terminal-marl}"`.  Set `CONDA_ENV` before
+`sbatch` if your server environment name differs.
 
 All scripts default to CPU execution and set:
 
@@ -67,45 +74,55 @@ supplement.  Initial seeds `0,1,2` are enough for pilot evidence; expand to
 
 ## Commands
 
+Create the SLURM log directory once before submitting jobs:
+
+```bash
+mkdir -p logs
+```
+
 Smoke:
 
 ```bash
-bash scripts/server/00_check_env.sh
-bash scripts/server/01_train_smoke_cpu.sh
+sbatch scripts/server/00_check_env.sh
+sbatch scripts/server/01_train_smoke_cpu.sh
 ```
 
 Pilot:
 
 ```bash
-SEED=0 bash scripts/server/02_train_pilot_medium_cpu.sh
+sbatch --export=ALL,SEED=0 scripts/server/02_train_pilot_medium_cpu.sh
 ```
 
 Main SLURM job:
 
 ```bash
-PARTITION=normal sbatch --partition="${PARTITION}" scripts/server/03_train_main_cpu.slurm
+sbatch scripts/server/03_train_main_cpu.slurm
 ```
 
-The default `PARTITION` variable is `6240-36C-192G`; change it to `normal` or
-another CPU queue on your server.
+The default partition in the scripts is `6240-36C-192G`.  Override it at submit
+time if your server uses another queue:
+
+```bash
+sbatch --partition=normal scripts/server/03_train_main_cpu.slurm
+```
 
 Sweep array:
 
 ```bash
-PARTITION=normal sbatch --partition="${PARTITION}" scripts/server/04_train_sweep_array.slurm
+sbatch scripts/server/04_train_sweep_array.slurm
 ```
 
 Evaluation:
 
 ```bash
-MODEL_PATH=runs/high_level_ppo/ppo_main_medium/model.zip \
-sbatch --partition="${PARTITION:-normal}" scripts/server/05_eval_ablation_cpu.slurm
+sbatch --export=ALL,MODEL_PATH=runs/high_level_ppo/ppo_main_medium/model.zip \
+  scripts/server/05_eval_ablation_cpu.slurm
 ```
 
 Aggregate and plot:
 
 ```bash
-bash scripts/server/06_aggregate_and_plot.sh
+sbatch scripts/server/06_aggregate_and_plot.sh
 ```
 
 ## Interpretation
@@ -114,4 +131,3 @@ The trained artifact is a high-level dynamic airspace policy.  It adjusts
 airspace/flow intent through `HighLevelHRLWrapper`; it is not a low-level flight
 controller and does not output free heading, altitude, or velocity-vector
 commands.
-
