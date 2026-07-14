@@ -952,6 +952,7 @@ class TerminalParallelEnv:
 
     def metrics(self) -> Dict[str, float]:
         finished = sum(1 for a in self.aircraft if a.finished)
+        active = sum(1 for a in self.aircraft if not a.finished)
         sequenced = sum(1 for a in self.aircraft if a.sequence_number is not None)
         ring_counts = {f"queue_{idx}": len(queue) for idx, queue in sorted(self.vtac.queues.items())}
 
@@ -972,6 +973,10 @@ class TerminalParallelEnv:
             "step": int(self.step_count),
             "completion_step": int(self.step_count),
             "finished": finished,
+            "landed_count": float(finished),
+            "active_count": float(active),
+            "total_spawned_count": float(len(self.aircraft)),
+            "total_landed_count": float(finished),
             "sequenced": sequenced,
             "nmac_count": self.nmac_count,
             "collision_count": self.collision_count,
@@ -997,6 +1002,7 @@ class TerminalParallelEnv:
             "airspace_ring_headway": float(self.airspace.ring_headway),
             "airspace_final_headway": float(self.airspace.final_headway),
             "safety_override_count": float(self.safety_override_count),
+            "total_safety_override_count": float(self.safety_override_count),
             "final_queue_time": float(self.final_queue_time),
             "min_pairwise_distance": (
                 0.0

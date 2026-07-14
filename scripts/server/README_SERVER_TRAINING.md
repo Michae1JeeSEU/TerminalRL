@@ -125,6 +125,55 @@ Aggregate and plot:
 sbatch scripts/server/06_aggregate_and_plot.sh
 ```
 
+## Troubleshooting zero-traffic pilot runs
+
+If a pilot run reports `landed_count=0` together with `active_count=0`, do not
+continue a longer PPO run.  First verify that the simulation actually contains
+traffic:
+
+```bash
+python -m terminal_marl.experiments.debug_arrivals \
+  --config dynamic_hrl \
+  --demand-level medium \
+  --policy rule-only \
+  --high-level-steps 8 \
+  --output-dir runs/debug_arrivals_local
+```
+
+Then inspect reward component magnitudes:
+
+```bash
+python -m terminal_marl.experiments.reward_diagnostics \
+  --config dynamic_hrl \
+  --demand-level medium \
+  --policies rule-only dynamic-rule high-level-random \
+  --episodes 1 \
+  --high-level-steps 8 \
+  --output-dir runs/reward_diagnostics_local
+```
+
+Before uploading a new server package, run a local tiny PPO path check:
+
+```bash
+python -m terminal_marl.training.train_high_level_ppo \
+  --training-config terminal_marl/configs/training/ppo_debug_local.yaml \
+  --total-timesteps 256 \
+  --n-envs 1 \
+  --vec-env dummy \
+  --fail-if-no-traffic \
+  --sanity-check-baseline \
+  --output-dir runs/high_level_ppo/ppo_debug_local
+```
+
+`final_eval.csv` now records `active_count_start`, `active_count_mean`,
+`active_count_max`, `active_count_end`, `spawned_count_delta`,
+`landed_count_delta`, `total_spawned_count`, `total_landed_count`, and
+`safety_override_delta`.  `active_count` is retained as `active_count_end`.
+
+For server jobs, keep `--fail-if-no-traffic` and `--sanity-check-baseline`
+enabled for smoke/pilot configurations so that a broken arrival process fails
+fast before expensive training begins.
+
 ## Interpretation
 
 The trained artifact is a high-level dynamic airspace policy.  It adjusts

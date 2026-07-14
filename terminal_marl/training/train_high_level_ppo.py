@@ -13,10 +13,13 @@ import csv
 import importlib.util
 import json
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Callable
 
-from ..config import load_experiment_config
+import numpy as np
+
+from ..config import load_experiment_config, load_sim_config
 from ..envs.high_level_wrapper import HighLevelHRLWrapper
 from ..envs.parallel_env import TerminalParallelEnv
 from ..experiments import apply_demand_profile
@@ -49,7 +52,13 @@ def _make_high_level_env(
     high_level_interval: int | None = None,
     max_steps: int | None = None,
 ) -> HighLevelHRLWrapper:
-    config = apply_demand_profile(load_experiment_config(config_name), demand_level)
+    config_path = Path(config_name)
+    base_config = (
+        load_sim_config(config_path)
+        if config_path.suffix == ".yaml" or config_path.is_file()
+        else load_experiment_config(config_name)
+    )
+    config = apply_demand_profile(base_config, demand_level)
     if high_level_interval is not None:
         config.high_level_interval_steps = int(high_level_interval)
     if max_steps is not None:
@@ -94,6 +103,88 @@ def _write_csv(path: Path, rows: list[dict[str, Any]], fields: tuple[str, ...]) 
         writer.writerows(rows)
 
 
+def _count_fields_from_info(info: dict[str, Any]) -> dict[str, float]:
+    metrics = info.get("metrics", {})
+    diagnostics = info.get("reward_diagnostics", {})
+    return {
+        "active_count_start": float(diagnostics.get("active_count_start", 0.0)),
+        "active_count_mean": float(diagnostics.get("active_count_mean", 0.0)),
+        "active_count_max": float(diagnostics.get("active_count_max", 0.0)),
+        "active_count_end": float(diagnostics.get("active_count_end", metrics.get("active_count", 0.0))),
+        "active_count": float(diagnostics.get("active_count", metrics.get("active_count", 0.0))),
+        "spawned_count_delta": float(diagnostics.get("spawned_count_delta", 0.0)),
+        "landed_count_delta": float(diagnostics.get("landed_count_delta", 0.0)),
+        "total_spawned_count": float(
+            diagnostics.get("total_spawned_count", metrics.get("total_spawned_count", 0.0))
+        ),
+        "total_landed_count": float(
+            diagnostics.get("total_landed_count", metrics.get("total_landed_count", 0.0))
+        ),
+        "safety_override_delta": float(diagnostics.get("safety_override_delta", 0.0)),
+        "total_safety_override_count": float(
+            diagnostics.get(
+                "total_safety_override_count",
+                metrics.get("total_safety_override_count", metrics.get("safety_override_count", 0.0)),
+            )
+        ),
+    }
+
+
+def run_pretraining_traffic_check(
+    *,
+    config_name: str,
+    demand_level: str,
+    low_level_policy: str,
+    seed: int,
+    high_level_interval: int | None,
+    max_steps: int | None,
+    traffic_check_steps: int,
+) -> dict[str, Any]:
+    """Run a short high-level rollout before PPO to verify traffic is present."""
+
+    env = _make_high_level_env(
+        config_name=config_name,
+        demand_level=demand_level,
+        low_level_policy=low_level_policy,
+        seed=seed,
+        high_level_interval=high_level_interval,
+        max_steps=max_steps,
+    )
+    observation, _ = env.reset(seed=seed)
+    active_count_max = float(sum(not aircraft.finished for aircraft in env.env.aircraft))
+    total_spawned_count = float(len(env.env.aircraft))
+    total_landed_count = float(sum(aircraft.finished for aircraft in env.env.aircraft))
+    total_safety_override_count = float(env.env.safety_override_count)
+    rewards: list[float] = []
+    for _ in range(max(0, int(traffic_check_steps))):
+        observation, reward, terminated, truncated, info = env.step(
+            np.zeros(8, dtype=np.float32)
+        )
+        rewards.append(float(reward))
+        counts = _count_fields_from_info(info)
+        active_count_max = max(active_count_max, counts["active_count_max"])
+        total_spawned_count = max(total_spawned_count, counts["total_spawned_count"])
+        total_landed_count = max(total_landed_count, counts["total_landed_count"])
+        total_safety_override_count = max(
+            total_safety_override_count,
+            counts["total_safety_override_count"],
+        )
+        if terminated or truncated:
+            break
+    return {
+        "config": config_name,
+        "demand_level": demand_level,
+        "low_level_policy": low_level_policy,
+        "seed": int(seed),
+        "traffic_check_steps": int(traffic_check_steps),
+        "active_count_max": active_count_max,
+        "total_spawned_count": total_spawned_count,
+        "total_landed_count": total_landed_count,
+        "total_safety_override_count": total_safety_override_count,
+        "mean_reward": float(sum(rewards) / max(1, len(rewards))),
+    }
+
+
 def _evaluate_model(
     model: Any,
     *,
@@ -109,6 +200,10 @@ def _evaluate_model(
     rewards: list[float] = []
     lengths: list[int] = []
     trace_rows: list[dict[str, Any]] = []
+    max_active_count = 0.0
+    total_spawned_count = 0.0
+    total_landed_count = 0.0
+    total_safety_override_count = 0.0
     for episode in range(episodes):
         env = _make_high_level_env(
             config_name=config_name,
@@ -127,17 +222,21 @@ def _evaluate_model(
             observation, reward, terminated, truncated, info = env.step(action)
             total_reward += float(reward)
             steps += 1
+            counts = _count_fields_from_info(info)
+            max_active_count = max(max_active_count, counts["active_count_max"])
+            total_spawned_count = max(total_spawned_count, counts["total_spawned_count"])
+            total_landed_count = max(total_landed_count, counts["total_landed_count"])
+            total_safety_override_count = max(
+                total_safety_override_count,
+                counts["total_safety_override_count"],
+            )
             if save_trace_path is not None:
                 trace_rows.append(
                     {
                         "episode": episode,
                         "high_level_step": steps,
                         "reward": float(reward),
-                        "landed_count": info["metrics"].get("landed_count", 0),
-                        "active_count": info["metrics"].get("active_count", 0),
-                        "safety_override_count": info["metrics"].get(
-                            "safety_override_count", 0
-                        ),
+                        **counts,
                     }
                 )
         rewards.append(total_reward)
@@ -150,9 +249,17 @@ def _evaluate_model(
                 "episode",
                 "high_level_step",
                 "reward",
-                "landed_count",
+                "active_count_start",
+                "active_count_mean",
+                "active_count_max",
+                "active_count_end",
                 "active_count",
-                "safety_override_count",
+                "spawned_count_delta",
+                "landed_count_delta",
+                "total_spawned_count",
+                "total_landed_count",
+                "safety_override_delta",
+                "total_safety_override_count",
             ),
         )
     return {
@@ -160,6 +267,10 @@ def _evaluate_model(
         "eval_mean_reward": float(sum(rewards) / max(1, len(rewards))),
         "eval_rewards": rewards,
         "eval_lengths": lengths,
+        "max_active_count": max_active_count,
+        "total_spawned_count": total_spawned_count,
+        "total_landed_count": total_landed_count,
+        "total_safety_override_count": total_safety_override_count,
     }
 
 
@@ -190,6 +301,10 @@ def train_high_level_ppo(
     resume_from: str | Path | None = None,
     nominal_delay_mode: str = "analytic",
     max_steps: int | None = None,
+    fail_if_no_traffic: bool = False,
+    min_spawned_before_training_check: int = 1,
+    traffic_check_steps: int = 8,
+    sanity_check_baseline: bool = False,
 ) -> dict:
     PPO, BaseCallback, CallbackList, CheckpointCallback, DummyVecEnv, SubprocVecEnv = require_sb3()
     output = Path(output_dir)
@@ -206,6 +321,55 @@ def train_high_level_ppo(
             torch.set_num_threads(num_threads)
     if vec_env not in {"dummy", "subproc"}:
         raise ValueError("vec_env must be 'dummy' or 'subproc'")
+    traffic_check_summary = None
+    if fail_if_no_traffic:
+        traffic_check_summary = run_pretraining_traffic_check(
+            config_name=config_name,
+            demand_level=demand_level,
+            low_level_policy=low_level_policy,
+            seed=seed,
+            high_level_interval=high_level_interval,
+            max_steps=max_steps,
+            traffic_check_steps=traffic_check_steps,
+        )
+        (output / "traffic_check_summary.json").write_text(
+            json.dumps(traffic_check_summary, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        if (
+            traffic_check_summary["total_spawned_count"]
+            < float(min_spawned_before_training_check)
+            or traffic_check_summary["active_count_max"] <= 0.0
+        ):
+            raise RuntimeError(
+                "Insufficient traffic detected before PPO training. "
+                "Check arrival_process/config/demand overrides."
+            )
+    sanity_summary = None
+    if sanity_check_baseline:
+        sanity_summary = run_pretraining_traffic_check(
+            config_name=config_name,
+            demand_level=demand_level,
+            low_level_policy="rule-only",
+            seed=seed + 123,
+            high_level_interval=high_level_interval,
+            max_steps=max_steps,
+            traffic_check_steps=traffic_check_steps,
+        )
+        (output / "sanity_check_summary.json").write_text(
+            json.dumps(sanity_summary, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        if sanity_summary["total_spawned_count"] <= 0.0 and sanity_summary["active_count_max"] <= 0.0:
+            raise RuntimeError(
+                "Rule-only sanity check found no traffic. Arrival process/config is not active."
+            )
+        if sanity_summary["total_landed_count"] <= 0.0:
+            warnings.warn(
+                "Rule-only sanity check observed traffic but no landings in the short rollout.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
     env_factories = [
         _make_env_factory(
             config_name=config_name,
@@ -321,6 +485,10 @@ def train_high_level_ppo(
         "checkpoint_freq": checkpoint_freq,
         "eval_freq": eval_freq,
         "save_replay_traces": save_replay_traces,
+        "fail_if_no_traffic": fail_if_no_traffic,
+        "min_spawned_before_training_check": min_spawned_before_training_check,
+        "traffic_check_steps": traffic_check_steps,
+        "sanity_check_baseline": sanity_check_baseline,
         "resume_from": None if resume_from is None else str(resume_from),
         "nominal_delay_mode": nominal_delay_mode,
         "simulation_only": True,
@@ -345,11 +513,11 @@ def train_high_level_ppo(
         high_level_interval=high_level_interval,
         max_steps=max_steps,
         episodes=1,
-        save_trace_path=output / "replay_traces" / "final_eval.csv"
-        if save_replay_traces
-        else None,
+        save_trace_path=output / "final_eval.csv",
     )
     summary["periodic_evaluations"] = eval_rows
+    summary["traffic_check_summary"] = traffic_check_summary
+    summary["sanity_check_summary"] = sanity_summary
     (output / "eval_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
@@ -393,6 +561,10 @@ def train_from_config(
         resume_from=resume_from,
         nominal_delay_mode=training_config.nominal_delay_mode,
         max_steps=training_config.max_steps,
+        fail_if_no_traffic=training_config.fail_if_no_traffic,
+        min_spawned_before_training_check=training_config.min_spawned_before_training_check,
+        traffic_check_steps=training_config.traffic_check_steps,
+        sanity_check_baseline=training_config.sanity_check_baseline,
     )
 
 
@@ -430,6 +602,10 @@ def main() -> None:
         choices=["analytic", "rule-only-reference"],
     )
     parser.add_argument("--max-steps", type=int)
+    parser.add_argument("--fail-if-no-traffic", action="store_true", default=None)
+    parser.add_argument("--min-spawned-before-training-check", type=int)
+    parser.add_argument("--traffic-check-steps", type=int)
+    parser.add_argument("--sanity-check-baseline", action="store_true", default=None)
     args = parser.parse_args()
     base = (
         load_training_config(args.training_config)
@@ -461,6 +637,10 @@ def main() -> None:
             "checkpoint_freq": args.checkpoint_freq,
             "eval_freq": args.eval_freq,
             "save_replay_traces": args.save_replay_traces,
+            "fail_if_no_traffic": args.fail_if_no_traffic,
+            "min_spawned_before_training_check": args.min_spawned_before_training_check,
+            "traffic_check_steps": args.traffic_check_steps,
+            "sanity_check_baseline": args.sanity_check_baseline,
             "max_steps": args.max_steps,
         },
     )

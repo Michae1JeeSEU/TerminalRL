@@ -273,3 +273,42 @@ python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.
 3. 固化 high-level PPO checkpoint 命名、评估目录规范和论文表格生成脚本；
 4. 增加 `dynamic_hrl + high-level-ppo` 与 `dynamic_rule`、`high-level-static`、`full_hrl_no_safety` 的统一显著性/置信区间表；
 5. 继续保持 simulation-only，除非后续明确进入 Crazyflie lab dry-run trajectory export。
+
+## 服务器 pilot 问题修复记录：traffic / logging / reward sanity
+
+服务器 pilot 暴露的问题：
+
+- `dynamic_hrl` high-level PPO 从 10k 到 100k steps `landed_count=0`；
+- `final_eval.csv` 中 `active_count=0`，但 `safety_override_count` 持续增长；
+- `reward_diagnostics.py` CLI 与文档不一致，缺少 `--config` 与 `--demand-level`。
+
+本轮修复：
+
+1. `reward_diagnostics.py` 支持 `--config`、`--demand-level` 与 `--demand-levels`，其中 `--demand-level medium` 等价于单元素 demand list。
+2. `HighLevelHRLWrapper` 不再在 `env.agents` 为空时直接停止低层推进，因此纯 runtime-arrival 场景仍可随时间生成 UAV。
+3. `TerminalParallelEnv.metrics()` 增加 `active_count`、`landed_count`、`total_spawned_count`、`total_landed_count`、`total_safety_override_count`，避免 eval trace 静默写 0。
+4. `final_eval.csv` 增加区间计数字段：
+   - `active_count_start`
+   - `active_count_mean`
+   - `active_count_max`
+   - `active_count_end`
+   - `spawned_count_delta`
+   - `landed_count_delta`
+   - `total_spawned_count`
+   - `total_landed_count`
+   - `safety_override_delta`
+   - `total_safety_override_count`
+5. high-level reward 继续使用 interval delta/average 口径，并在 diagnostics 中同时输出 cumulative count，避免把累计 safety override 直接作为区间惩罚。
+6. 新增 `--fail-if-no-traffic`、`--min-spawned-before-training-check`、`--traffic-check-steps`、`--sanity-check-baseline`，在 PPO learn 前做 no-traffic fail-fast 与 rule-only baseline sanity check。
+7. 新增 `terminal_marl/experiments/debug_arrivals.py` 与 `terminal_marl/training/check_parallel.py`，用于低耗时本地排查 arrivals 与并行 step 性能。
+8. 新增 `ppo_debug_local.yaml`，用于 256/512 timesteps 的本地 tiny PPO 通路验证。
+
+重新上服务器前建议检查：
+
+```bash
+python -m terminal_marl.experiments.debug_arrivals --config dynamic_hrl --demand-level medium --policy rule-only --high-level-steps 8 --output-dir runs/debug_arrivals_local
+python -m terminal_marl.experiments.reward_diagnostics --config dynamic_hrl --demand-level medium --policies rule-only dynamic-rule high-level-random --episodes 1 --high-level-steps 8 --output-dir runs/reward_diagnostics_local
+python -m terminal_marl.training.train_high_level_ppo --training-config terminal_marl/configs/training/ppo_debug_local.yaml --total-timesteps 256 --n-envs 1 --vec-env dummy --fail-if-no-traffic --sanity-check-baseline --output-dir runs/high_level_ppo/ppo_debug_local
+```
+
+若 `debug_arrivals.csv` 中 `total_spawned_count=0` 且 `active_count_max=0`，不要提交服务器 pilot；先检查 `arrival_flow`、`demand_level` override 和 `HighLevelHRLWrapper` reset/step 路径。

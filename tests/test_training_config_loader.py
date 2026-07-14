@@ -17,6 +17,7 @@ def test_load_all_server_training_presets() -> None:
         "ppo_main_high",
         "ppo_main_bursty",
         "ppo_reward_sweep",
+        "ppo_debug_local",
     ]:
         config = load_training_config(name)
         assert config.config == "dynamic_hrl"
@@ -50,4 +51,3 @@ def test_training_config_rejects_hardware_mode(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="crazyflie_lab"):
         load_training_config(path)
-

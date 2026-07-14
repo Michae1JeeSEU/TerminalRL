@@ -29,6 +29,7 @@ DIAGNOSTIC_POLICIES = (
 def _component_rows(
     values: dict[str, list[float]],
     *,
+    config_name: str,
     policy: str,
     demand_level: str,
 ) -> list[dict[str, float | str]]:
@@ -37,6 +38,7 @@ def _component_rows(
         array = np.asarray(component_values, dtype=float)
         rows.append(
             {
+                "config_name": config_name,
                 "policy": policy,
                 "traffic_demand_level": demand_level,
                 "component": component,
@@ -52,6 +54,7 @@ def _component_rows(
 
 def run_reward_diagnostics(
     *,
+    config_name: str = "dynamic_hrl",
     policies: Iterable[str] = DIAGNOSTIC_POLICIES,
     demand_levels: Iterable[str] = ("medium",),
     seeds: Iterable[int] = (0,),
@@ -73,7 +76,7 @@ def run_reward_diagnostics(
             for seed in seeds:
                 for episode in range(episodes):
                     config = apply_demand_profile(
-                        load_experiment_config("dynamic_hrl"),
+                        load_experiment_config(config_name),
                         demand,
                     )
                     env = HighLevelHRLWrapper(
@@ -113,11 +116,19 @@ def run_reward_diagnostics(
                                 component_values.setdefault(key, []).append(float(value))
                         if terminated or truncated:
                             break
-            rows.extend(_component_rows(component_values, policy=policy, demand_level=demand))
+            rows.extend(
+                _component_rows(
+                    component_values,
+                    config_name=config_name,
+                    policy=policy,
+                    demand_level=demand,
+                )
+            )
     if output_dir is not None:
         output = Path(output_dir)
         output.mkdir(parents=True, exist_ok=True)
         fields = [
+            "config_name",
             "policy",
             "traffic_demand_level",
             "component",
@@ -141,16 +152,20 @@ def run_reward_diagnostics(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default="dynamic_hrl")
     parser.add_argument("--policies", nargs="+", default=list(DIAGNOSTIC_POLICIES))
+    parser.add_argument("--demand-level")
     parser.add_argument("--demand-levels", nargs="+", default=["medium"])
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--high-level-steps", type=int, default=3)
     parser.add_argument("--output-dir", type=Path, default=Path("runs/reward_diagnostics"))
     args = parser.parse_args()
+    demand_levels = [args.demand_level] if args.demand_level else args.demand_levels
     rows = run_reward_diagnostics(
+        config_name=args.config,
         policies=args.policies,
-        demand_levels=args.demand_levels,
+        demand_levels=demand_levels,
         seeds=args.seeds,
         episodes=args.episodes,
         high_level_steps=args.high_level_steps,
@@ -161,4 +176,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

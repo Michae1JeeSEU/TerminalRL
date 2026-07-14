@@ -45,6 +45,10 @@ class PPOTrainingConfig:
     checkpoint_freq: int = 0
     eval_freq: int = 0
     save_replay_traces: bool = False
+    fail_if_no_traffic: bool = False
+    min_spawned_before_training_check: int = 1
+    traffic_check_steps: int = 8
+    sanity_check_baseline: bool = False
     max_steps: int | None = None
     simulation_only: bool = True
 
@@ -166,4 +170,3 @@ def merge_training_overrides(
         if value is not None:
             data[key] = value
     return _coerce_config(data)
-

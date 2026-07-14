@@ -1,29 +1,98 @@
 # Server upload manifest
+# Upload these project-relative files/directories for simulation-only high-level PPO training.
 
-Upload the simulation-only training package for server-side high-level PPO.
-
-Required project content:
-
+Required top-level content:
 - terminal_marl/
 - docs/
 - scripts/server/
-- selected tests related to training configuration, PPO smoke/evaluation,
-  server packing, reward diagnostics, and experiment matrix
-- requirements.txt, pyproject.toml, README.md, and AGENTS.md when present
+- selected tests/
+- requirements.txt or pyproject.toml/README if present
 
-Do not upload:
-
-- .git/
-- runs/
-- __pycache__/
-- *.pyc
-- .pytest_cache/
-- local model checkpoints or zip outputs
-- large local logs
-
-Generate the detailed file-by-file manifest and zip package with:
-
-```bash
-python scripts/server/pack_for_server.py
-```
-
+Files:
+AGENTS.md
+docs/CODEX_NEXT_STEPS.md
+docs/design_spec.md
+docs/execution_plan.md
+docs/requirements.md
+docs/research_positioning.md
+docs/technical_spec.md
+requirements.txt
+scripts/server/00_check_env.sh
+scripts/server/01_train_smoke_cpu.sh
+scripts/server/02_train_pilot_medium_cpu.sh
+scripts/server/03_train_main_cpu.slurm
+scripts/server/04_train_sweep_array.slurm
+scripts/server/05_eval_ablation_cpu.slurm
+scripts/server/06_aggregate_and_plot.sh
+scripts/server/README_SERVER_TRAINING.md
+scripts/server/pack_for_server.py
+terminal_marl/__init__.py
+terminal_marl/config/__init__.py
+terminal_marl/config/config_loader.py
+terminal_marl/config/experiment_mode.py
+terminal_marl/configs/crazyflie_lab.yaml
+terminal_marl/configs/dynamic_hrl.yaml
+terminal_marl/configs/dynamic_rule.yaml
+terminal_marl/configs/fixed_residual.yaml
+terminal_marl/configs/fixed_rule.yaml
+terminal_marl/configs/full_hrl_no_safety.yaml
+terminal_marl/configs/training/ppo_debug_local.yaml
+terminal_marl/configs/training/ppo_main_bursty.yaml
+terminal_marl/configs/training/ppo_main_high.yaml
+terminal_marl/configs/training/ppo_main_medium.yaml
+terminal_marl/configs/training/ppo_pilot_medium.yaml
+terminal_marl/configs/training/ppo_reward_sweep.yaml
+terminal_marl/configs/training/ppo_smoke.yaml
+terminal_marl/core/__init__.py
+terminal_marl/core/arrival_process.py
+terminal_marl/core/baseline.py
+terminal_marl/core/config.py
+terminal_marl/core/dynamic_airspace.py
+terminal_marl/core/geometry.py
+terminal_marl/core/observations.py
+terminal_marl/core/rendering.py
+terminal_marl/core/rewards.py
+terminal_marl/core/safety_filter.py
+terminal_marl/core/scenario.py
+terminal_marl/core/specs.py
+terminal_marl/core/trajectory_generator.py
+terminal_marl/core/uav.py
+terminal_marl/core/vtac.py
+terminal_marl/envs/__init__.py
+terminal_marl/envs/high_level_wrapper.py
+terminal_marl/envs/parallel_env.py
+terminal_marl/experiments/__init__.py
+terminal_marl/experiments/ablation_runner.py
+terminal_marl/experiments/aggregate.py
+terminal_marl/experiments/debug_arrivals.py
+terminal_marl/experiments/experiment_matrix.py
+terminal_marl/experiments/logger.py
+terminal_marl/experiments/plot_results.py
+terminal_marl/experiments/reward_diagnostics.py
+terminal_marl/experiments/run_ablation.py
+terminal_marl/metrics/__init__.py
+terminal_marl/metrics/nominal_schedule.py
+terminal_marl/policies/__init__.py
+terminal_marl/policies/dynamic_rule.py
+terminal_marl/rewards/__init__.py
+terminal_marl/rewards/high_level_reward.py
+terminal_marl/training/__init__.py
+terminal_marl/training/check_parallel.py
+terminal_marl/training/evaluate_high_level_policy.py
+terminal_marl/training/train_high_level_ppo.py
+terminal_marl/training/training_config.py
+tests/test_debug_arrivals.py
+tests/test_eval_logging_counts.py
+tests/test_evaluate_high_level_policy_smoke.py
+tests/test_experiment_matrix.py
+tests/test_high_level_ppo_policy_eval.py
+tests/test_high_level_reward_delta_counts.py
+tests/test_high_level_wrapper_arrivals.py
+tests/test_pack_for_server.py
+tests/test_parallel_check_tool.py
+tests/test_reward_diagnostics.py
+tests/test_safety_filter_empty_scene.py
+tests/test_train_fail_if_no_traffic.py
+tests/test_train_high_level_ppo_smoke.py
+tests/test_training_config_loader.py
+tests/test_training_sanity_check.py

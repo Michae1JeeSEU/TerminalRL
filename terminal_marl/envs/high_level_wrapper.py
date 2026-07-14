@@ -98,6 +98,8 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
     def _actions(self) -> Mapping[str, np.ndarray]:
         if callable(self.low_level_policy):
             return self.low_level_policy(self.env, self._low_observations)
+        if not self.env.agents:
+            return {}
         size = self.env.action_spec(self.env.possible_agents[0]).shape[0]
         if self.low_level_policy == "random-policy":
             return {
@@ -117,8 +119,13 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
         old_airspace = self.env.airspace.state_vector()
         action_info = self.env.apply_high_level_action(action)
         low_steps = 0
+        active_count_start = sum(not aircraft.finished for aircraft in self.env.aircraft)
+        landed_count_start = sum(aircraft.finished for aircraft in self.env.aircraft)
+        spawned_count_start = len(self.env.aircraft)
+        safety_override_start = self.env.safety_override_count
+        active_counts = [active_count_start]
         for _ in range(self.env.config.high_level_interval_steps):
-            if not self.env.agents:
+            if self.env.step_count >= self.env.config.max_steps:
                 break
             (
                 self._low_observations,
@@ -128,10 +135,11 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
                 _infos,
             ) = self.env.step(self._actions())
             low_steps += 1
+            active_counts.append(sum(not aircraft.finished for aircraft in self.env.aircraft))
             if all(
                 terminations.get(agent, False) or truncations.get(agent, False)
                 for agent in self.env.possible_agents
-            ):
+            ) and self.env.agents:
                 break
         after = high_level_snapshot(self.env)
         reward, diagnostics = self.reward_model.compute(
@@ -140,6 +148,25 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
             old_airspace,
             self.env.airspace.state_vector(),
         )
+        active_count_end = sum(not aircraft.finished for aircraft in self.env.aircraft)
+        landed_count_end = sum(aircraft.finished for aircraft in self.env.aircraft)
+        spawned_count_end = len(self.env.aircraft)
+        count_diagnostics = {
+            "active_count_start": float(active_count_start),
+            "active_count_mean": float(np.mean(active_counts)) if active_counts else 0.0,
+            "active_count_max": float(max(active_counts)) if active_counts else 0.0,
+            "active_count_end": float(active_count_end),
+            "active_count": float(active_count_end),
+            "spawned_count_delta": float(spawned_count_end - spawned_count_start),
+            "landed_count_delta": float(landed_count_end - landed_count_start),
+            "safety_override_delta": float(
+                self.env.safety_override_count - safety_override_start
+            ),
+            "total_spawned_count": float(spawned_count_end),
+            "total_landed_count": float(landed_count_end),
+            "total_safety_override_count": float(self.env.safety_override_count),
+        }
+        diagnostics = {**diagnostics, **count_diagnostics}
         terminated = bool(self.env.aircraft) and all(
             aircraft.finished for aircraft in self.env.aircraft
         )
@@ -153,6 +180,6 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
                 "high_level_action": action_info,
                 "reward_diagnostics": diagnostics,
                 "low_level_steps": low_steps,
-                "metrics": self.env.metrics(),
+                "metrics": {**self.env.metrics(), **count_diagnostics},
             },
         )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -21,6 +22,14 @@ TRAINING_TESTS = (
     "tests/test_experiment_matrix.py",
     "tests/test_train_high_level_ppo_smoke.py",
     "tests/test_high_level_ppo_policy_eval.py",
+    "tests/test_high_level_wrapper_arrivals.py",
+    "tests/test_eval_logging_counts.py",
+    "tests/test_high_level_reward_delta_counts.py",
+    "tests/test_safety_filter_empty_scene.py",
+    "tests/test_train_fail_if_no_traffic.py",
+    "tests/test_training_sanity_check.py",
+    "tests/test_debug_arrivals.py",
+    "tests/test_parallel_check_tool.py",
 )
 EXCLUDE_PATTERNS = (
     ".git/*",
@@ -49,17 +58,37 @@ def collect_server_files(project_root: str | Path = ".") -> list[Path]:
     """Return relative paths that should be uploaded to a Linux server."""
 
     root = Path(project_root)
+    tracked: set[str] | None = None
+    try:
+        result = subprocess.run(
+            ["git", "ls-files"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        tracked = None
+    else:
+        tracked = {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
     files: list[Path] = []
     for include_root in INCLUDE_ROOTS:
         base = root / include_root
         if base.is_file() and not _is_excluded(include_root):
             files.append(Path(include_root))
         elif base.is_dir():
-            for path in base.rglob("*"):
-                if path.is_file():
-                    relative = path.relative_to(root)
-                    if not _is_excluded(str(relative)):
-                        files.append(relative)
+            if tracked is not None:
+                for relative_text in tracked:
+                    if relative_text == include_root or relative_text.startswith(f"{include_root}/"):
+                        if not _is_excluded(relative_text) and (root / relative_text).is_file():
+                            files.append(Path(relative_text))
+            else:
+                for path in base.rglob("*"):
+                    if path.is_file():
+                        relative = path.relative_to(root)
+                        if not _is_excluded(str(relative)):
+                            files.append(relative)
     for test in TRAINING_TESTS:
         if (root / test).is_file() and not _is_excluded(test):
             files.append(Path(test))
@@ -130,4 +159,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
