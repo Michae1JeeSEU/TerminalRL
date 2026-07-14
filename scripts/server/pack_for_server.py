@@ -30,6 +30,13 @@ TRAINING_TESTS = (
     "tests/test_training_sanity_check.py",
     "tests/test_debug_arrivals.py",
     "tests/test_parallel_check_tool.py",
+    "tests/test_vehicle_limits_by_config.py",
+    "tests/test_outer_to_inner_trajectory_feasibility.py",
+    "tests/test_rule_only_single_uav_landing.py",
+    "tests/test_rule_only_ring_progression.py",
+    "tests/test_release_approval_diagnostics.py",
+    "tests/test_safety_override_dedup_or_cooldown.py",
+    "tests/test_debug_phase_transitions.py",
 )
 EXCLUDE_PATTERNS = (
     ".git/*",

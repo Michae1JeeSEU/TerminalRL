@@ -110,12 +110,19 @@ class SafetyFilter:
     ) -> tuple[TrajectoryPlan, dict]:
         """Approve a valid plan or replace it with a bounded stationary hover."""
 
+        kinematic_detail = self.trajectory_kinematics_diagnostics(plan)
         checks = {
             "boundary": self.check_boundary(plan),
             "height": self.check_height_range(plan),
             "kinematics": self.check_speed_acceleration(plan),
+            "kinematic_detail": kinematic_detail,
         }
-        violations = [violation for result in checks.values() for violation in result]
+        violations = [
+            violation
+            for name, result in checks.items()
+            if name != "kinematic_detail"
+            for violation in result
+        ]
         violations = list(dict.fromkeys(violations))
         if not violations:
             return plan, {
@@ -185,6 +192,7 @@ class SafetyFilter:
         states: Sequence[object],
         *,
         candidate_plan: TrajectoryPlan | None = None,
+        trajectory_states: Sequence[object] | None = None,
         final_occupied: bool = False,
         landing_pad_occupied: bool = False,
     ) -> dict:
@@ -204,6 +212,7 @@ class SafetyFilter:
             for violation in self.check_pairwise_distance(states)
             if state_id in {violation["first"], violation["second"]}
         ]
+        current_min_distance = self._minimum_distance_to_others(state, states)
         violations: list[str] = []
         if pairwise:
             violations.append("minimum_separation")
@@ -216,6 +225,7 @@ class SafetyFilter:
         trajectory_info: dict | None = None
         trajectory_separation: list[dict] = []
         if candidate_plan is not None:
+            separation_states = states if trajectory_states is None else trajectory_states
             filtered_plan, trajectory_info = self.filter_trajectory_plan(candidate_plan)
             if not trajectory_info["is_safe"]:
                 violations.extend(
@@ -223,7 +233,7 @@ class SafetyFilter:
                 )
             trajectory_separation = self.check_trajectory_separation(
                 candidate_plan,
-                states,
+                separation_states,
                 ignore_uav_id=state_id,
             )
             if trajectory_separation:
@@ -241,8 +251,24 @@ class SafetyFilter:
             "filtered_plan": filtered_plan,
             "diagnostics": {
                 "pairwise": pairwise,
+                "current_min_distance": current_min_distance,
+                "safe_distance": self.safe_distance,
                 "trajectory": trajectory_info,
                 "trajectory_separation": trajectory_separation,
+                "trajectory_min_distance": (
+                    None
+                    if candidate_plan is None
+                    else self._trajectory_minimum_distance(
+                        candidate_plan,
+                        states if trajectory_states is None else trajectory_states,
+                        ignore_uav_id=state_id,
+                    )
+                ),
+                "trajectory_state_count": (
+                    None
+                    if candidate_plan is None
+                    else len(states if trajectory_states is None else trajectory_states)
+                ),
                 "final_occupied": bool(final_occupied),
                 "landing_pad_occupied": bool(landing_pad_occupied),
             },
@@ -330,6 +356,63 @@ class SafetyFilter:
                 violations.append("acceleration_limit")
         return violations
 
+    def trajectory_kinematics_diagnostics(self, plan: TrajectoryPlan) -> dict:
+        """Return numeric speed/acceleration diagnostics for explainable rejects."""
+
+        diagnostics = {
+            "point_count": len(plan.points),
+            "speed_max_allowed": self.speed_max,
+            "acceleration_max_allowed": self.acceleration_max,
+            "min_segment_duration_allowed": self.min_segment_duration,
+            "min_segment_duration_observed": None,
+            "max_speed_observed": 0.0,
+            "max_acceleration_observed": 0.0,
+            "non_monotonic_time_indices": [],
+            "minimum_segment_duration_segments": [],
+            "speed_violation_segments": [],
+            "acceleration_violation_segments": [],
+        }
+        if len(plan.points) <= 1:
+            return diagnostics
+
+        positions = np.asarray(
+            [[point.x, point.y, point.z] for point in plan.points],
+            dtype=np.float64,
+        )
+        times = np.asarray([point.t for point in plan.points], dtype=np.float64)
+        intervals = np.diff(times)
+        invalid = np.where(~np.isfinite(intervals) | (intervals <= 0.0))[0]
+        diagnostics["non_monotonic_time_indices"] = [int(index) for index in invalid]
+        if invalid.size:
+            return diagnostics
+
+        diagnostics["min_segment_duration_observed"] = float(np.min(intervals))
+        short_segments = np.where(intervals < self.min_segment_duration - 1e-12)[0]
+        diagnostics["minimum_segment_duration_segments"] = [
+            int(index) for index in short_segments
+        ]
+
+        velocities = np.diff(positions, axis=0) / intervals[:, None]
+        speeds = np.linalg.norm(velocities, axis=1)
+        diagnostics["max_speed_observed"] = float(np.max(speeds)) if speeds.size else 0.0
+        speed_segments = np.where(speeds > self.speed_max + 1e-9)[0]
+        diagnostics["speed_violation_segments"] = [int(index) for index in speed_segments]
+
+        if len(velocities) > 1:
+            acceleration_dt = 0.5 * (intervals[:-1] + intervals[1:])
+            accelerations = np.diff(velocities, axis=0) / acceleration_dt[:, None]
+            acceleration_norms = np.linalg.norm(accelerations, axis=1)
+            diagnostics["max_acceleration_observed"] = (
+                float(np.max(acceleration_norms)) if acceleration_norms.size else 0.0
+            )
+            acceleration_segments = np.where(
+                acceleration_norms > self.acceleration_max + 1e-9
+            )[0]
+            diagnostics["acceleration_violation_segments"] = [
+                int(index) for index in acceleration_segments
+            ]
+        return diagnostics
+
     def check_trajectory_separation(
         self,
         plan: TrajectoryPlan,
@@ -371,6 +454,44 @@ class SafetyFilter:
             np.array([xmin, ymin, zmin], dtype=float),
             np.array([xmax, ymax, zmax], dtype=float),
         )
+
+    def _minimum_distance_to_others(
+        self,
+        state: object,
+        states: Sequence[object],
+    ) -> float | None:
+        state_id = self._state_id(state)
+        position = self._state_position(state)
+        distances = [
+            float(np.linalg.norm(position - self._state_position(other)))
+            for other in states
+            if self._state_id(other) != state_id
+        ]
+        return float(min(distances)) if distances else None
+
+    def _trajectory_minimum_distance(
+        self,
+        plan: TrajectoryPlan,
+        states: Sequence[object],
+        *,
+        ignore_uav_id: str | None = None,
+    ) -> float | None:
+        distances: list[float] = []
+        for state in states:
+            state_id = self._state_id(state)
+            if ignore_uav_id is not None and state_id == str(ignore_uav_id):
+                continue
+            position = self._state_position(state)
+            for point in plan.points:
+                distances.append(
+                    float(
+                        np.linalg.norm(
+                            np.array([point.x, point.y, point.z], dtype=float)
+                            - position
+                        )
+                    )
+                )
+        return float(min(distances)) if distances else None
 
     @staticmethod
     def _state_position(state: object) -> np.ndarray:

@@ -140,6 +140,31 @@ python -m terminal_marl.experiments.debug_arrivals \
   --output-dir runs/debug_arrivals_local
 ```
 
+If traffic exists (`total_spawned_count>0` and `active_count_max>0`) but
+`inner_occupancy`, `final_occupancy`, and `total_landed_count` remain zero,
+debug the phase pipeline before launching PPO:
+
+```bash
+python -m terminal_marl.experiments.debug_phase_transitions \
+  --config dynamic_hrl \
+  --demand-level medium \
+  --policy rule-only \
+  --initial-uavs 1 \
+  --disable-runtime-arrivals \
+  --high-level-steps 15 \
+  --output-dir runs/debug_phase_transitions_local
+```
+
+Expected sanity signals:
+
+- the single-UAV phase debug reaches `total_landed_count=1`;
+- `debug_arrivals.csv` eventually shows non-zero `inner_occupancy`,
+  `final_occupancy`, and `total_landed_count`;
+- `vtac_not_eligible` is a normal HOLD reason and should not inflate
+  `safety_override_count`;
+- `raw_safety_override_count` is available when you need the raw low-level
+  rejection count.
+
 Then inspect reward component magnitudes:
 
 ```bash

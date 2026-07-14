@@ -12,6 +12,7 @@ import numpy as np
 from ..config import load_experiment_config
 from ..envs.high_level_wrapper import HighLevelHRLWrapper
 from ..envs.parallel_env import TerminalParallelEnv
+from ..core.uav import FlightPhase
 from ..policies import DynamicRuleHighLevelPolicy
 from .ablation_runner import apply_demand_profile
 
@@ -27,6 +28,48 @@ def _occupancy(env: TerminalParallelEnv) -> dict[str, float]:
         "outer_occupancy": float(len(env.vtac.queues[outer.index])),
         "inner_occupancy": float(len(env.vtac.queues[inner.index])),
         "final_occupancy": float(len(env.vtac.queues[0])),
+    }
+
+
+def _phase_counts(env: TerminalParallelEnv) -> dict[str, float]:
+    return {
+        "approach_phase_count": float(
+            sum(
+                not aircraft.finished and aircraft.phase == FlightPhase.APPROACH
+                for aircraft in env.aircraft
+            )
+        ),
+        "ring_phase_count": float(
+            sum(
+                not aircraft.finished and aircraft.phase == FlightPhase.RING
+                for aircraft in env.aircraft
+            )
+        ),
+        "final_phase_count": float(
+            sum(
+                not aircraft.finished and aircraft.phase == FlightPhase.FINAL
+                for aircraft in env.aircraft
+            )
+        ),
+        "finished_phase_count": float(sum(aircraft.finished for aircraft in env.aircraft)),
+    }
+
+
+def _approval_summary(env: TerminalParallelEnv) -> dict[str, float | str]:
+    approvals = [
+        *env.last_release_approval.values(),
+        *env.last_landing_approval.values(),
+    ]
+    rejected = [item for item in approvals if not item.get("approved", False)]
+    reasons: dict[str, int] = {}
+    for item in rejected:
+        reason = str(item.get("reason") or "none")
+        reasons[reason] = reasons.get(reason, 0) + 1
+    top_reason = max(reasons.items(), key=lambda item: item[1])[0] if reasons else ""
+    return {
+        "release_attempt_count": float(len(approvals)),
+        "release_reject_count": float(len(rejected)),
+        "top_rejection_reason": top_reason,
     }
 
 
@@ -75,9 +118,20 @@ def run_debug_arrivals(
             "active_count_end": float(diagnostics["active_count_end"]),
             "landed_count_delta": float(diagnostics["landed_count_delta"]),
             "safety_override_delta": float(diagnostics["safety_override_delta"]),
+            "raw_safety_override_delta": float(
+                diagnostics.get("raw_safety_override_delta", 0.0)
+            ),
             "total_spawned_count": float(diagnostics["total_spawned_count"]),
             "total_landed_count": float(diagnostics["total_landed_count"]),
+            "total_safety_override_count": float(
+                diagnostics["total_safety_override_count"]
+            ),
+            "total_raw_safety_override_count": float(
+                diagnostics.get("total_raw_safety_override_count", 0.0)
+            ),
             **_occupancy(wrapper.env),
+            **_phase_counts(wrapper.env),
+            **_approval_summary(wrapper.env),
         }
         rows.append(row)
         if terminated or truncated:
@@ -98,11 +152,21 @@ def run_debug_arrivals(
         "active_count_end",
         "landed_count_delta",
         "safety_override_delta",
+        "raw_safety_override_delta",
         "total_spawned_count",
         "total_landed_count",
+        "total_safety_override_count",
+        "total_raw_safety_override_count",
         "outer_occupancy",
         "inner_occupancy",
         "final_occupancy",
+        "approach_phase_count",
+        "ring_phase_count",
+        "final_phase_count",
+        "finished_phase_count",
+        "release_attempt_count",
+        "release_reject_count",
+        "top_rejection_reason",
     ]
     with (output / "debug_arrivals.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -137,4 +201,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

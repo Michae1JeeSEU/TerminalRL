@@ -123,6 +123,7 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
         landed_count_start = sum(aircraft.finished for aircraft in self.env.aircraft)
         spawned_count_start = len(self.env.aircraft)
         safety_override_start = self.env.safety_override_count
+        raw_safety_override_start = self.env.raw_safety_override_count
         active_counts = [active_count_start]
         for _ in range(self.env.config.high_level_interval_steps):
             if self.env.step_count >= self.env.config.max_steps:
@@ -162,9 +163,13 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
             "safety_override_delta": float(
                 self.env.safety_override_count - safety_override_start
             ),
+            "raw_safety_override_delta": float(
+                self.env.raw_safety_override_count - raw_safety_override_start
+            ),
             "total_spawned_count": float(spawned_count_end),
             "total_landed_count": float(landed_count_end),
             "total_safety_override_count": float(self.env.safety_override_count),
+            "total_raw_safety_override_count": float(self.env.raw_safety_override_count),
         }
         diagnostics = {**diagnostics, **count_diagnostics}
         terminated = bool(self.env.aircraft) and all(

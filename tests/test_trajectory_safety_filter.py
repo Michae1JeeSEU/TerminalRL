@@ -33,7 +33,9 @@ def test_safe_plan_returns_diagnostics_without_modification() -> None:
     assert filtered is original
     assert info["is_safe"]
     assert info["reason"] is None
-    assert set(info["diagnostics"]) == {"boundary", "height", "kinematics"}
+    assert {"boundary", "height", "kinematics", "kinematic_detail"} <= set(
+        info["diagnostics"]
+    )
 
 
 def test_time_and_minimum_segment_duration_are_checked() -> None:

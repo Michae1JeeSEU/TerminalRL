@@ -312,3 +312,85 @@ python -m terminal_marl.training.train_high_level_ppo --training-config terminal
 ```
 
 若 `debug_arrivals.csv` 中 `total_spawned_count=0` 且 `active_count_max=0`，不要提交服务器 pilot；先检查 `arrival_flow`、`demand_level` override 和 `HighLevelHRLWrapper` reset/step 路径。
+
+## 服务器 pilot 问题修复记录：landing pipeline / phase transition
+
+服务器验证进一步确认：traffic 与 logging 已恢复，但 landing pipeline 卡在
+`outer_to_inner` 安全审批；典型现象是 `total_spawned_count>0`、
+`active_count_max>0`，但 `inner_occupancy=0`、`final_occupancy=0`、
+`total_landed_count=0`。本轮只修复 rule-only / dynamic-rule 仿真主线，
+不运行 PPO，不接入 ROS2/Crazyswarm2/真实 Crazyflie。
+
+已完成：
+
+1. 区分 full-scale 与 Crazyflie 尺度车辆限制：
+   - full-scale presets (`fixed_rule`、`fixed_residual`、`dynamic_rule`、
+     `dynamic_hrl`、`full_hrl_no_safety`) 的 `max_acceleration` 调整为 `4.0`；
+   - `crazyflie_lab.yaml` 继续保持 `simulation_only: true` 与
+     `max_acceleration: 0.8`。
+2. 修正 release 审批顺序：
+   - `TerminalParallelEnv` 先检查 VTAC eligibility；
+   - 未到 release horizon、非队首、ring 未稳定、目标队列无空间等情况返回
+     `vtac_not_eligible`，不进入 trajectory SafetyFilter，也不计作 safety
+     override；
+   - 真正具备 VTAC 放行资格后才生成 candidate trajectory 并执行
+     `SafetyFilter.approve_release()`。
+3. 降低静态 trajectory separation 的过保守性：
+   - 对 `outer_to_inner`，源环同队交通仍由当前 pairwise distance 与 VTAC
+     merge/spacing/headway 管理；
+   - trajectory-level separation 重点检查非源环/目标相关状态，避免把沿环运动
+     UAV 错当成静止障碍导致永久 HOLD。
+4. 改进 trajectory diagnostics：
+   - `SafetyFilter.filter_trajectory_plan()` 现在输出
+     `kinematic_detail`，包括最大观测速度、最大观测加速度、允许阈值、最小段时长
+     和违规 segment index；
+   - release diagnostics 增加 `current_min_distance`、
+     `trajectory_min_distance`、`trajectory_state_count`。
+5. 修正 safety override 计数：
+   - `raw_safety_override_count` 记录每次低层拒绝；
+   - `safety_override_count` 按 high-level interval / UAV / stage / reason 去重，
+     避免同一个 HOLD 在一个 interval 内重复放大奖惩。
+6. 修正 runtime arrivals 语义：
+   - `arrival_rate=0.0` 明确表示禁用 runtime arrivals；
+   - demand sweep 仍由 `apply_demand_profile()` 显式写入 medium/high/bursty
+     非零 arrival rate。
+7. 新增调试工具：
+   - `terminal_marl/experiments/debug_phase_transitions.py` 输出
+     `phase_trace.csv`、`release_attempts.csv`、`trajectory_diagnostics.csv`、
+     `summary.json`；
+   - `debug_arrivals.py` 增加 phase counts、release attempt/reject counts、
+     top rejection reason、raw safety override delta。
+
+重新上服务器前建议先运行：
+
+```bash
+python -m terminal_marl.experiments.debug_phase_transitions \
+  --config dynamic_hrl \
+  --demand-level medium \
+  --policy rule-only \
+  --initial-uavs 1 \
+  --disable-runtime-arrivals \
+  --high-level-steps 15 \
+  --output-dir runs/debug_phase_transitions_local
+
+python -m terminal_marl.experiments.debug_arrivals \
+  --config dynamic_hrl \
+  --demand-level medium \
+  --policy rule-only \
+  --high-level-steps 50 \
+  --output-dir runs/debug_arrivals_local
+```
+
+期望现象：
+
+- 单 UAV debug 中应出现 `total_landed_count=1`；
+- medium rule-only debug 中 `inner_occupancy`、`final_occupancy`、`total_landed_count`
+  不应长期为 0；
+- `vtac_not_eligible` 可以作为正常等待原因出现，但不应计入
+  `safety_override_count`；
+- 若仍出现 `trajectory_acceleration_limit`，优先检查 full-scale preset 是否仍使用
+  旧的 `max_acceleration: 2.0`。
+
+下一轮建议：在服务器重新跑 Stage 0/1 之前，先把上述两个 debug 输出与
+`reward_diagnostics.csv` 一起归档；确认 rule-only landing pipeline 正常后，再启动
+短步数 high-level PPO pilot。

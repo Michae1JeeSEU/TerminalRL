@@ -22,7 +22,7 @@ rings:
 vehicle_limits:
   speed_min: 8.0
   speed_max: 36.0
-  max_acceleration: 2.0
+  max_acceleration: 4.0
 
 safety:
   safe_distance: 80.0

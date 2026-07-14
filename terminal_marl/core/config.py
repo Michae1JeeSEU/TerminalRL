@@ -118,7 +118,7 @@ class SimConfig:
     speed_min: float = 8.0#最小速度
     speed_max: float = 36.0#最大速度
     nominal_speed: float = 28.0#标称速度
-    max_acceleration: float = 2.0
+    max_acceleration: float = 4.0
     max_turn_rate_deg: float = 12.0#最大转弯率
     max_climb_rate: float = 5.0#最大爬升率
     max_descent_rate: float = 7.0#最大下降率

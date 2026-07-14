@@ -609,3 +609,47 @@ dynamic_hrl + high-level-random
 dynamic_hrl + high-level-static
 full_hrl_no_safety + high-level-ppo
 ```
+
+## 32. Landing pipeline / phase-transition safety regression rules
+
+Server pilot debugging showed that a healthy arrival process can still produce
+`landed_count=0` if the landing pipeline is blocked at `outer_to_inner`.
+The environment therefore follows these engineering rules:
+
+1. VTAC eligibility is checked before trajectory SafetyFilter approval.  A UAV
+   that is not queue head, not ring-established, outside release horizon, or
+   blocked by merge/headway constraints receives `vtac_not_eligible`.  This is
+   a normal HOLD reason and is not counted as a safety override.
+2. Full-scale configs use `max_acceleration: 4.0`, giving enough margin over
+   inner-ring centripetal acceleration and ring-transfer transients.
+   `crazyflie_lab.yaml` remains scaled and simulation-only with
+   `max_acceleration: 0.8`.
+3. `SafetyFilter.filter_trajectory_plan()` returns both symbolic violations
+   and numeric `kinematic_detail`: max observed speed, max observed
+   acceleration, allowed limits, minimum segment duration, and violating segment
+   indices.
+4. `approve_release()` diagnostics include current and trajectory minimum
+   distances.  For `outer_to_inner`, source-ring moving traffic is governed by
+   current pairwise checks and VTAC merge/spacing rules; trajectory separation
+   focuses on non-source-ring/target-relevant states to avoid treating all
+   source-ring aircraft as static obstacles.
+5. `safety_override_count` is de-duplicated per high-level interval, UAV,
+   target stage, and reason.  `raw_safety_override_count` preserves the raw
+   low-level rejection count for debugging.
+6. `arrival_rate=0.0` disables runtime arrivals.  Demand sweeps should set
+   non-zero rates through `apply_demand_profile()`.
+
+Debug commands:
+
+```bash
+python -m terminal_marl.experiments.debug_phase_transitions --config dynamic_hrl --demand-level medium --policy rule-only --initial-uavs 1 --disable-runtime-arrivals --high-level-steps 15 --output-dir runs/debug_phase_transitions_local
+python -m terminal_marl.experiments.debug_arrivals --config dynamic_hrl --demand-level medium --policy rule-only --high-level-steps 50 --output-dir runs/debug_arrivals_local
+```
+
+Expected local sanity signals:
+
+- single-UAV rule-only reaches `FINISHED`;
+- six-UAV rule-only with runtime arrivals disabled reaches inner ring, final,
+  and landing completion;
+- medium demand debug shows non-zero `inner_occupancy`/`final_occupancy` and
+  positive `total_landed_count` over a sufficiently long run.

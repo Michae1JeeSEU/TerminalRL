@@ -40,7 +40,7 @@ class ArrivalProcess:
         self.next_arrival_time = self._next_time(0.0)
 
     def _rate(self) -> float:
-        return self.arrival_rate or DEMAND_RATES[self.demand_level]
+        return self.arrival_rate
 
     def _next_time(self, current_time: float) -> float:
         rate = self._rate()

@@ -77,8 +77,14 @@ class TerminalParallelEnv:
     last_landing_approval: Dict[int, dict] = field(default_factory=dict)
     pending_high_level_action: Optional[np.ndarray] = None
     safety_override_count: int = 0
+    raw_safety_override_count: int = 0
     final_queue_time: float = 0.0
     min_pairwise_distance: float = math.inf
+    _safety_override_keys: set[tuple[int, int, str, str]] = field(
+        default_factory=set,
+        init=False,
+        repr=False,
+    )
     _initial_rings: list = field(init=False, repr=False)
     _initial_headways: tuple[float, float] = field(init=False, repr=False)
     _airspace_bounds: AirspaceBounds = field(init=False, repr=False)
@@ -203,6 +209,8 @@ class TerminalParallelEnv:
         self.last_landing_approval = {}
         self.pending_high_level_action = None
         self.safety_override_count = 0
+        self.raw_safety_override_count = 0
+        self._safety_override_keys.clear()
         self.final_queue_time = 0.0
         self.min_pairwise_distance = math.inf
         self.vtac.reset()
@@ -506,6 +514,40 @@ class TerminalParallelEnv:
             return "inner_to_final"
         return "outer_to_inner"
 
+    def _stage_target_ring_index(self, aircraft: UAVState, stage: str) -> int:
+        if stage == "inner_to_final":
+            return 0
+        if stage == "outer_to_inner":
+            if aircraft.assigned_ring is None:
+                raise ValueError("outer_to_inner requires an assigned source ring")
+            return int(aircraft.assigned_ring) - 1
+        raise ValueError(f"unsupported transition stage: {stage}")
+
+    def _vtac_transition_ready(
+        self,
+        aircraft: UAVState,
+        stage: str,
+        active: List[UAVState],
+    ) -> bool:
+        """Return whether VTAC could consume a safety-approved release now."""
+
+        if aircraft.assigned_ring in (None, 0):
+            return False
+        source_ring_idx = int(aircraft.assigned_ring)
+        target_ring_idx = self._stage_target_ring_index(aircraft, stage)
+        if not self.vtac.queue_has_space(target_ring_idx):
+            return False
+        if not self.vtac.is_head_of_queue(source_ring_idx, aircraft.uid):
+            return False
+        aircraft_map = {item.uid: item for item in active}
+        return self.vtac._eligible_for_inward_transfer(
+            aircraft,
+            source_ring_idx,
+            target_ring_idx,
+            aircraft_map,
+            self.step_count,
+        )
+
     def _final_occupied_by_other(self, aircraft: UAVState) -> bool:
         return any(uid != aircraft.uid for uid in self.vtac.queues[0])
 
@@ -517,9 +559,32 @@ class TerminalParallelEnv:
             and other.phase == FlightPhase.FINAL
             and other.final_entry_fix_reached
             and norm_xy(other.position - center)
-            <= 2.0 * self.config.touchdown_accept_radius
+            <= max(
+                self.config.touchdown_accept_radius,
+                self.config.vertiport_physical_radius,
+            )
+            and other.position[2]
+            <= max(
+                self.config.touchdown_max_height,
+                2.0 * self.config.touchdown_accept_radius,
+            )
             for other in self.aircraft
         )
+
+    def _record_safety_override(
+        self,
+        uid: int,
+        target_stage: str,
+        reason: str | None,
+    ) -> None:
+        """Count raw rejects while de-duplicating repeated HOLDs per HRL interval."""
+
+        self.raw_safety_override_count += 1
+        interval = self.step_count // max(1, self.config.high_level_interval_steps)
+        key = (interval, int(uid), str(target_stage), str(reason or "unknown"))
+        if key not in self._safety_override_keys:
+            self._safety_override_keys.add(key)
+            self.safety_override_count += 1
 
     def _prepare_release_approvals(
         self,
@@ -557,20 +622,48 @@ class TerminalParallelEnv:
                         "filtered_plan": None,
                         "diagnostics": {},
                     }
+                elif not self._vtac_transition_ready(aircraft, stage, active):
+                    approval = {
+                        "approved": False,
+                        "is_safe": True,
+                        "decision": "HOLD",
+                        "target_stage": stage,
+                        "violations": ["vtac_not_eligible"],
+                        "reason": "vtac_not_eligible",
+                        "filtered_plan": None,
+                        "diagnostics": {
+                            "ring_slot_active": bool(aircraft.ring_slot_active),
+                            "ring_established_step": aircraft.ring_established_step,
+                            "assigned_ring": aircraft.assigned_ring,
+                        },
+                    }
                 else:
                     candidate = self._candidate_transition_plan(aircraft, stage)
+                    trajectory_states = active
+                    if stage == "outer_to_inner":
+                        trajectory_states = [
+                            other
+                            for other in active
+                            if other.uid == aircraft.uid
+                            or other.assigned_ring != aircraft.assigned_ring
+                        ]
                     approval = self.safety_filter.approve_release(
                         aircraft,
                         stage,
                         active,
                         candidate_plan=candidate,
+                        trajectory_states=trajectory_states,
                         final_occupied=(
                             stage == "inner_to_final"
                             and self._final_occupied_by_other(aircraft)
                         ),
                     )
                     if not approval["approved"]:
-                        self.safety_override_count += 1
+                        self._record_safety_override(
+                            aircraft.uid,
+                            stage,
+                            approval.get("reason"),
+                        )
                 approved_requests[aircraft.uid] = bool(approval["approved"])
                 self.last_release_approval[aircraft.uid] = approval
             else:
@@ -614,7 +707,11 @@ class TerminalParallelEnv:
                         ),
                     )
                     if not landing_approval["approved"]:
-                        self.safety_override_count += 1
+                        self._record_safety_override(
+                            aircraft.uid,
+                            "final_to_land",
+                            landing_approval.get("reason"),
+                        )
                 self.last_landing_approval[aircraft.uid] = landing_approval
         return approved_requests
 
@@ -661,7 +758,11 @@ class TerminalParallelEnv:
             )
         filtered_plan, filter_info = self.safety_filter.filter_trajectory_plan(plan)
         if filter_info["modified"]:
-            self.safety_override_count += 1
+            self._record_safety_override(
+                aircraft.uid,
+                f"trajectory_plan_for_{plan.mode}",
+                filter_info.get("reason"),
+            )
         filtered_plan.metadata["safety_filter"] = filter_info
         return filtered_plan
 
@@ -738,6 +839,7 @@ class TerminalParallelEnv:
             "release_approval": self.last_release_approval.get(ac.uid),
             "landing_approval": self.last_landing_approval.get(ac.uid),
             "safety_override_count": self.safety_override_count,
+            "raw_safety_override_count": self.raw_safety_override_count,
             "safety_enabled": self.safety_enabled,
             "spawn_time": float(ac.spawn_time),
             "entry_time": ac.entry_time,
@@ -1003,6 +1105,8 @@ class TerminalParallelEnv:
             "airspace_final_headway": float(self.airspace.final_headway),
             "safety_override_count": float(self.safety_override_count),
             "total_safety_override_count": float(self.safety_override_count),
+            "raw_safety_override_count": float(self.raw_safety_override_count),
+            "total_raw_safety_override_count": float(self.raw_safety_override_count),
             "final_queue_time": float(self.final_queue_time),
             "min_pairwise_distance": (
                 0.0

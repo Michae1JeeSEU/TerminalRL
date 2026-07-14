@@ -132,9 +132,12 @@ class TrajectoryGenerator:
         relative = position[:2] - self.center[:2]
         angle0 = math.atan2(float(relative[1]), float(relative[0]))
 
-        radius0 = float(self._value(from_ring, "radius"))
+        nominal_radius0 = float(self._value(from_ring, "radius"))
         radius1 = float(self._value(to_ring, "radius"))
-        height0 = float(self._value(from_ring, "height"))
+        actual_radius0 = float(np.linalg.norm(relative))
+        radius0 = actual_radius0 if actual_radius0 > 1e-9 else nominal_radius0
+        height0 = float(position[2])
+        nominal_height0 = float(self._value(from_ring, "height"))
         height1 = float(self._value(to_ring, "height"))
         speed0 = float(self._value(from_ring, "speed", default=self._value(uav_state, "speed", default=0.0)))
         speed1 = float(self._value(to_ring, "speed", default=speed0))
@@ -169,6 +172,12 @@ class TrajectoryGenerator:
                 "dt": float(dt),
                 "from_ring": self._value(from_ring, "index", default=None),
                 "to_ring": self._value(to_ring, "index", default=None),
+                "start_radius": radius0,
+                "target_radius": radius1,
+                "nominal_source_radius": nominal_radius0,
+                "start_height": height0,
+                "target_height": height1,
+                "nominal_source_height": nominal_height0,
             },
         )
         return self._finalize(plan)
