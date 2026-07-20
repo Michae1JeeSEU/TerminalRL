@@ -19,4 +19,6 @@ def test_debug_phase_transitions_writes_expected_files(tmp_path) -> None:
     assert (tmp_path / "phase_trace.csv").is_file()
     assert (tmp_path / "release_attempts.csv").is_file()
     assert (tmp_path / "trajectory_diagnostics.csv").is_file()
+    assert (tmp_path / "dynamic_rule_trace.csv").is_file()
+    assert (tmp_path / "phase_release_summary.csv").is_file()
     assert (tmp_path / "summary.json").is_file()

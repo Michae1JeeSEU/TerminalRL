@@ -17,13 +17,24 @@ import numpy as np
 
 from ..config import load_experiment_config
 from ..core.uav import FlightPhase, UAVState
-from ..envs.high_level_wrapper import HighLevelHRLWrapper
 from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import DynamicRuleHighLevelPolicy
 from .ablation_runner import apply_demand_profile
 
 
-DEBUG_POLICIES = ("rule-only", "dynamic-rule", "high-level-random")
+DEBUG_POLICIES = (
+    "rule-only",
+    "dynamic-rule",
+    "high-level-random",
+    "dynamic-radius-only",
+    "dynamic-height-only",
+    "dynamic-speed-only",
+    "dynamic-headway-only",
+    "dynamic-geometry-only",
+    "dynamic-no-headway",
+    "dynamic-no-speed",
+    "dynamic-nominal-recovery-only",
+)
 
 
 def _jsonable(value: Any) -> Any:
@@ -107,11 +118,13 @@ def _phase_rows(env: TerminalParallelEnv, high_level_step: int) -> list[dict[str
 
 def _approval_rows(env: TerminalParallelEnv, high_level_step: int) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    aircraft_by_uid = {aircraft.uid: aircraft for aircraft in env.aircraft}
     approvals = {
         **{(uid, "release"): approval for uid, approval in env.last_release_approval.items()},
         **{(uid, "landing"): approval for uid, approval in env.last_landing_approval.items()},
     }
     for (uid, approval_type), approval in approvals.items():
+        aircraft = aircraft_by_uid.get(uid)
         diagnostics = approval.get("diagnostics") or {}
         trajectory = diagnostics.get("trajectory") or {}
         trajectory_diagnostics = trajectory.get("diagnostics") or {}
@@ -123,6 +136,12 @@ def _approval_rows(env: TerminalParallelEnv, high_level_step: int) -> list[dict[
                 "time": env.time,
                 "uid": uid,
                 "approval_type": approval_type,
+                "phase": "" if aircraft is None else FlightPhase(aircraft.phase).name,
+                "assigned_ring": (
+                    ""
+                    if aircraft is None or aircraft.assigned_ring is None
+                    else aircraft.assigned_ring
+                ),
                 "target_stage": approval.get("target_stage", ""),
                 "approved": bool(approval.get("approved", False)),
                 "decision": approval.get("decision", ""),
@@ -145,6 +164,128 @@ def _approval_rows(env: TerminalParallelEnv, high_level_step: int) -> list[dict[
             }
         )
     return rows
+
+
+def _summarize_release_attempts(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: dict[tuple[str, str, bool, str], int] = {}
+    for row in rows:
+        key = (
+            str(row.get("phase", "")),
+            str(row.get("target_stage", "")),
+            bool(row.get("approved", False)),
+            str(row.get("reason", "")),
+        )
+        counts[key] = counts.get(key, 0) + 1
+    return [
+        {
+            "phase": phase,
+            "target_stage": target_stage,
+            "approved": approved,
+            "reason": reason,
+            "count": count,
+        }
+        for (phase, target_stage, approved, reason), count in sorted(
+            counts.items(), key=lambda item: (-item[1], item[0])
+        )
+    ]
+
+
+def _isolated_action(
+    policy: str,
+    env: TerminalParallelEnv,
+    action: np.ndarray,
+) -> np.ndarray:
+    if policy in {"rule-only", "dynamic-rule", "high-level-random"}:
+        return action
+    if policy == "dynamic-nominal-recovery-only":
+        current = env.airspace.state_vector()
+        nominal = env._make_airspace().state_vector()
+        return np.clip(0.12 * np.sign(nominal - current), -0.35, 0.35).astype(
+            np.float32
+        )
+
+    filtered = np.zeros_like(action)
+    if policy == "dynamic-radius-only":
+        filtered[[0, 1]] = action[[0, 1]]
+    elif policy == "dynamic-height-only":
+        filtered[[2, 3]] = action[[2, 3]]
+    elif policy == "dynamic-speed-only":
+        filtered[[4, 5]] = action[[4, 5]]
+    elif policy == "dynamic-headway-only":
+        filtered[[6, 7]] = action[[6, 7]]
+    elif policy == "dynamic-geometry-only":
+        filtered[:4] = action[:4]
+    elif policy == "dynamic-no-headway":
+        filtered[:6] = action[:6]
+    elif policy == "dynamic-no-speed":
+        filtered[:4] = action[:4]
+        filtered[6:] = action[6:]
+    else:
+        raise ValueError(f"unsupported debug action isolation policy: {policy}")
+    return filtered.astype(np.float32)
+
+
+def _dynamic_trace_row(
+    env: TerminalParallelEnv,
+    high_level_step: int,
+    policy: str,
+    action: np.ndarray,
+    before_airspace: np.ndarray,
+    after_airspace: np.ndarray,
+    action_info: dict[str, Any],
+    policy_info: dict[str, Any],
+) -> dict[str, Any]:
+    metrics = env.metrics()
+    row: dict[str, Any] = {
+        "high_level_step": high_level_step,
+        "low_level_step": env.step_count,
+        "time": env.time,
+        "policy": policy,
+        "outer_radius_before": float(before_airspace[0]),
+        "inner_radius_before": float(before_airspace[1]),
+        "outer_height_before": float(before_airspace[2]),
+        "inner_height_before": float(before_airspace[3]),
+        "outer_speed_before": float(before_airspace[4]),
+        "inner_speed_before": float(before_airspace[5]),
+        "ring_headway_before": float(before_airspace[6]),
+        "final_headway_before": float(before_airspace[7]),
+        "outer_radius_after": float(after_airspace[0]),
+        "inner_radius_after": float(after_airspace[1]),
+        "outer_height_after": float(after_airspace[2]),
+        "inner_height_after": float(after_airspace[3]),
+        "outer_speed_after": float(after_airspace[4]),
+        "inner_speed_after": float(after_airspace[5]),
+        "ring_headway_after": float(after_airspace[6]),
+        "final_headway_after": float(after_airspace[7]),
+        "action_outer_radius": float(action[0]),
+        "action_inner_radius": float(action[1]),
+        "action_outer_height": float(action[2]),
+        "action_inner_height": float(action[3]),
+        "action_outer_speed": float(action[4]),
+        "action_inner_speed": float(action[5]),
+        "action_ring_headway": float(action[6]),
+        "action_final_headway": float(action[7]),
+        "action_is_safe": bool(action_info.get("is_safe", True)),
+        "action_reason": action_info.get("reason", ""),
+        "landed_count": metrics["landed_count"],
+        "active_count": metrics["active_count"],
+        "queue_2": metrics.get("queue_2", 0),
+        "queue_1": metrics.get("queue_1", 0),
+        "queue_0": metrics.get("queue_0", 0),
+        "raw_pair_conflict_samples": metrics["raw_pair_conflict_samples"],
+        "pair_opportunities": metrics["pair_opportunities"],
+        "normalized_conflict_rate": metrics["normalized_conflict_rate"],
+        "safety_override_count": metrics["safety_override_count"],
+        "raw_safety_override_count": metrics["raw_safety_override_count"],
+        "total_waiting_time": metrics["total_waiting_time"],
+        "normalized_waiting": metrics["normalized_waiting"],
+        "normalized_congestion": metrics["normalized_congestion"],
+        "min_pairwise_distance": metrics["min_pairwise_distance"],
+    }
+    for key, value in policy_info.items():
+        if isinstance(value, (bool, int, float, str, np.generic)):
+            row[f"policy_{key}"] = _jsonable(value)
+    return row
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -182,23 +323,58 @@ def run_debug_phase_transitions(
         config.max_active_uavs = max(config.initial_aircraft_count, 1)
 
     env = TerminalParallelEnv(config)
-    wrapper = HighLevelHRLWrapper(env, low_level_policy="rule-only", seed=seed)
     rng = np.random.default_rng(seed)
     dynamic_rule = DynamicRuleHighLevelPolicy()
-    wrapper.reset(seed=seed)
+    env.reset(seed=seed)
 
     phase_trace: list[dict[str, Any]] = []
     release_attempts: list[dict[str, Any]] = []
+    dynamic_rule_trace: list[dict[str, Any]] = []
     for high_level_step in range(1, high_level_steps + 1):
+        before_airspace = env.airspace.state_vector()
         if policy == "high-level-random":
             action = rng.uniform(-1.0, 1.0, size=8).astype(np.float32)
-        elif policy == "dynamic-rule":
+            policy_info: dict[str, Any] = {}
+        elif policy.startswith("dynamic"):
             action = dynamic_rule.act(env)
+            policy_info = dict(dynamic_rule.last_info)
         else:
             action = np.zeros(8, dtype=np.float32)
-        _observation, _reward, terminated, truncated, _info = wrapper.step(action)
-        phase_trace.extend(_phase_rows(env, high_level_step))
-        release_attempts.extend(_approval_rows(env, high_level_step))
+            policy_info = {}
+        action = _isolated_action(policy, env, action)
+        action_info = (
+            env.apply_high_level_action(action)
+            if env.should_update_high_level()
+            else {"is_safe": True, "reason": "not_high_level_boundary"}
+        )
+        low_level_actions = {
+            agent: np.zeros(4, dtype=np.float32) for agent in env.agents
+        }
+        terminated = False
+        truncated = False
+        for _ in range(config.high_level_interval_steps):
+            _obs, _rewards, terms, truncs, _infos = env.step(low_level_actions)
+            low_level_actions = {
+                agent: np.zeros(4, dtype=np.float32) for agent in env.agents
+            }
+            phase_trace.extend(_phase_rows(env, high_level_step))
+            release_attempts.extend(_approval_rows(env, high_level_step))
+            terminated = bool(terms.get("__all__", False))
+            truncated = bool(truncs.get("__all__", False))
+            if terminated or truncated:
+                break
+        dynamic_rule_trace.append(
+            _dynamic_trace_row(
+                env,
+                high_level_step,
+                policy,
+                action,
+                before_airspace,
+                env.airspace.state_vector(),
+                action_info,
+                policy_info,
+            )
+        )
         if terminated or truncated:
             break
 
@@ -231,6 +407,8 @@ def run_debug_phase_transitions(
     _write_csv(output / "phase_trace.csv", phase_trace)
     _write_csv(output / "release_attempts.csv", release_attempts)
     _write_csv(output / "trajectory_diagnostics.csv", trajectory_diagnostics)
+    _write_csv(output / "dynamic_rule_trace.csv", dynamic_rule_trace)
+    _write_csv(output / "phase_release_summary.csv", _summarize_release_attempts(release_attempts))
     (output / "summary.json").write_text(
         json.dumps(_jsonable(summary), indent=2) + "\n",
         encoding="utf-8",

@@ -31,8 +31,14 @@ ABLATION_METRIC_KEYS = (
     "max_delay",
     "total_completion_time",
     "conflict_count",
+    "raw_pair_conflict_samples",
+    "pair_opportunities",
+    "normalized_conflict_rate",
     "min_pairwise_distance",
     "safety_override_count",
+    "total_waiting_time",
+    "normalized_waiting",
+    "normalized_congestion",
     "final_queue_time",
     "throughput",
     "safety_enabled",
@@ -204,6 +210,7 @@ def run_rollout(
     ]
     landed_count = len(completion_times)
     elapsed = float(env.time)
+    env_metrics = env.metrics()
     metrics: dict[str, float | str] = {
         "config_name": sim_config.config_name,
         "experiment_mode": env.experiment_mode.value,
@@ -222,10 +229,14 @@ def run_rollout(
         "max_delay": max(delays) if delays else 0.0,
         "total_completion_time": max(completion_times) if completion_times else elapsed,
         "conflict_count": float(env.nmac_count + env.collision_count),
-        "min_pairwise_distance": (
-            0.0 if math.isinf(observed_minimum) else float(observed_minimum)
-        ),
+        "raw_pair_conflict_samples": env_metrics["raw_pair_conflict_samples"],
+        "pair_opportunities": env_metrics["pair_opportunities"],
+        "normalized_conflict_rate": env_metrics["normalized_conflict_rate"],
+        "min_pairwise_distance": float(observed_minimum),
         "safety_override_count": float(env.safety_override_count),
+        "total_waiting_time": env_metrics["total_waiting_time"],
+        "normalized_waiting": env_metrics["normalized_waiting"],
+        "normalized_congestion": env_metrics["normalized_congestion"],
         "final_queue_time": float(env.final_queue_time),
         "throughput": float(landed_count / elapsed) if elapsed > 0.0 else 0.0,
         "safety_enabled": float(env.safety_enabled),

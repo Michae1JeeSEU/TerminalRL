@@ -34,19 +34,61 @@ def _component_rows(
     demand_level: str,
 ) -> list[dict[str, float | str]]:
     rows: list[dict[str, float | str]] = []
+    stats: dict[str, dict[str, float]] = {}
     for component, component_values in sorted(values.items()):
         array = np.asarray(component_values, dtype=float)
+        abs_array = np.abs(array)
+        stats[component] = {
+            "mean": float(np.mean(array)) if array.size else 0.0,
+            "std": float(np.std(array)) if array.size else 0.0,
+            "variance": float(np.var(array)) if array.size else 0.0,
+            "mean_abs": float(np.mean(abs_array)) if array.size else 0.0,
+            "p50": float(np.percentile(array, 50)) if array.size else 0.0,
+            "p90": float(np.percentile(array, 90)) if array.size else 0.0,
+            "p99": float(np.percentile(array, 99)) if array.size else 0.0,
+            "max_abs": float(np.max(abs_array)) if array.size else 0.0,
+            "n": float(array.size),
+        }
+
+    component_mean_abs = {
+        key: value["mean_abs"]
+        for key, value in stats.items()
+        if key.startswith("component_")
+    }
+    total_mean_abs = sum(component_mean_abs.values())
+    ranked = sorted(component_mean_abs.items(), key=lambda item: item[1], reverse=True)
+    warning = ""
+    if len(ranked) >= 2 and ranked[1][1] > 0 and ranked[0][1] > 20.0 * ranked[1][1]:
+        warning = (
+            f"{ranked[0][0]} mean_abs is more than 20x "
+            f"{ranked[1][0]}"
+        )
+
+    for component, component_stats in sorted(stats.items()):
+        mean_abs = component_stats["mean_abs"]
         rows.append(
             {
                 "config_name": config_name,
                 "policy": policy,
                 "traffic_demand_level": demand_level,
                 "component": component,
-                "mean": float(np.mean(array)) if array.size else 0.0,
-                "variance": float(np.var(array)) if array.size else 0.0,
-                "mean_abs_magnitude": float(np.mean(np.abs(array))) if array.size else 0.0,
-                "max_abs_magnitude": float(np.max(np.abs(array))) if array.size else 0.0,
-                "n": int(array.size),
+                "mean": component_stats["mean"],
+                "std": component_stats["std"],
+                "variance": component_stats["variance"],
+                "mean_abs": mean_abs,
+                "mean_abs_magnitude": mean_abs,
+                "p50": component_stats["p50"],
+                "p90": component_stats["p90"],
+                "p99": component_stats["p99"],
+                "max_abs": component_stats["max_abs"],
+                "max_abs_magnitude": component_stats["max_abs"],
+                "component_share": (
+                    mean_abs / total_mean_abs
+                    if component.startswith("component_") and total_mean_abs > 0.0
+                    else 0.0
+                ),
+                "scaling_warning": warning,
+                "n": int(component_stats["n"]),
             }
         )
     return rows
@@ -133,9 +175,17 @@ def run_reward_diagnostics(
             "traffic_demand_level",
             "component",
             "mean",
+            "std",
             "variance",
+            "mean_abs",
             "mean_abs_magnitude",
+            "p50",
+            "p90",
+            "p99",
+            "max_abs",
             "max_abs_magnitude",
+            "component_share",
+            "scaling_warning",
             "n",
         ]
         with (output / "reward_diagnostics.csv").open(

@@ -22,6 +22,9 @@ htmlcov/
 # Logs & results
 logs/
 *.log
+runs/
+.codex_sync_token
+terminal_server_training_package.zip
 
 # OS
 .DS_Store

@@ -653,3 +653,59 @@ Expected local sanity signals:
   and landing completion;
 - medium demand debug shows non-zero `inner_occupancy`/`final_occupancy` and
   positive `total_landed_count` over a sufficiently long run.
+
+## 33. Dynamic-rule reward/pipeline repair and readiness metrics
+
+The server pilot exposed a failure mode where `dynamic_rule` could have active
+traffic but zero landings.  The repaired baseline keeps the paper scope focused
+on dynamic terminal airspace reconfiguration and landing-flow coordination:
+high-level actions remain ring radius/height/speed/headway adjustments and
+low-level actions remain rule/intention residuals, not free flight control.
+
+Technical updates:
+
+1. `DynamicRuleHighLevelPolicy`
+   - consumes normalized pairwise conflict rate from `env.metrics()`;
+   - favors bounded speed/headway changes under backlog;
+   - uses small nominal recovery toward the configured airspace;
+   - avoids default continuous geometry expansion and avoids increasing final
+     headway under backlog when final is empty;
+   - exposes `last_info` for diagnostics.
+2. Pairwise metrics now distinguish raw samples from normalized reward-facing
+   risk:
+   - `pair_opportunities`
+   - `raw_pair_conflict_samples`
+   - `unique_conflict_events`
+   - `conflict_vehicle_seconds`
+   - `normalized_conflict_rate = raw_pair_conflict_samples / pair_opportunities`
+   - `has_pair=false` and `min_pairwise_distance=inf` when fewer than two active
+     aircraft exist.
+3. Waiting/congestion metrics include approach backlog, outer/inner/final
+   queues, active/max pressure, and normalized congestion pressure.  If
+   approach backlog exists or active count reaches capacity, waiting and
+   congestion diagnostics should be non-zero.
+4. High-level reward uses interval deltas and normalized rates:
+   - landed/throughput positive terms;
+   - phase-progress dense reward;
+   - normalized waiting, conflict, safety override, airspace change, imbalance,
+     congestion, and smoothness penalties.
+5. `reward_diagnostics.py` reports mean, std, mean_abs, p50, p90, p99, max_abs,
+   component share, and a scaling warning if the largest component mean_abs is
+   more than 20x the second largest.
+6. `debug_phase_transitions.py` records low-level release/landing approvals and
+   writes `dynamic_rule_trace.csv`, `phase_release_summary.csv`,
+   `phase_trace.csv`, `release_attempts.csv`, `trajectory_diagnostics.csv`, and
+   `summary.json`.
+7. `capacity_calibration.py` runs rule-only deterministic-arrival interval
+   sweeps and writes `capacity_calibration.csv/json`; it is simulation-only and
+   does not start training.
+
+Regression expectations before PPO pilot:
+
+```text
+single rule-only no arrivals: landed_count = 1/1
+six fixed-rule no arrivals: landed_count >= 5/6
+six dynamic-rule no arrivals: landed_count > 0 and >= 80% fixed-rule
+medium 50 high-level intervals: dynamic-rule landed_count > 0
+no-pair metric: has_pair=false, pair_opportunities=0, normalized_conflict_rate=0
+```

@@ -20,6 +20,7 @@ def test_reward_diagnostics_outputs_component_statistics(tmp_path) -> None:
         "untrained-ppo",
     }
     assert any(row["component"] == "total_reward" for row in rows)
+    assert {"std", "mean_abs", "p50", "p90", "p99", "max_abs", "component_share", "scaling_warning"} <= set(rows[0])
     assert (tmp_path / "reward_diagnostics.csv").is_file()
     assert (tmp_path / "reward_diagnostics.json").is_file()
 

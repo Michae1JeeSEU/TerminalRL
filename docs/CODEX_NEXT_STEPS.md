@@ -394,3 +394,63 @@ python -m terminal_marl.experiments.debug_arrivals \
 下一轮建议：在服务器重新跑 Stage 0/1 之前，先把上述两个 debug 输出与
 `reward_diagnostics.csv` 一起归档；确认 rule-only landing pipeline 正常后，再启动
 短步数 high-level PPO pilot。
+
+## Server pilot dynamic-rule / reward sanity fix
+
+Current server validation confirmed that traffic generation and logging were no
+longer the blocker; the remaining failure was landing-pipeline starvation in the
+dynamic-rule high-level policy.  This round fixed the problem without starting
+PPO training and without bypassing VTAC/SafetyFilter.
+
+Completed:
+
+1. Reworked `DynamicRuleHighLevelPolicy` so congestion is handled primarily by
+   bounded speed/headway adjustments and nominal recovery, not continuous ring
+   expansion.  The policy now uses normalized conflict rate and records
+   `last_info` diagnostics.
+2. Added pairwise metric normalization: `has_pair`, `current_pair_count`,
+   `pair_opportunities`, `raw_pair_conflict_samples`,
+   `unique_conflict_events`, `conflict_vehicle_seconds`, and
+   `normalized_conflict_rate`.  No-pair scenes keep
+   `min_pairwise_distance=inf` instead of reporting a false zero.
+3. Added waiting/congestion accounting for approach backlog, ring queues, final
+   queue, active/max pressure, and normalized reward-facing pressure.
+4. Rebalanced high-level reward diagnostics with phase-progress dense reward
+   and normalized conflict/waiting/congestion terms.
+5. Upgraded debug and calibration tooling:
+   - `debug_phase_transitions.py` writes `dynamic_rule_trace.csv` and
+     `phase_release_summary.csv`;
+   - action isolation modes cover radius-only, height-only, speed-only,
+     headway-only, geometry-only, no-headway, no-speed, and
+     nominal-recovery-only;
+   - `reward_diagnostics.py` writes mean/std/mean_abs/p50/p90/p99/max_abs,
+     component share, and scaling warnings;
+   - `capacity_calibration.py` performs rule-only arrival-interval calibration.
+6. Added `docs/dynamic_rule_reward_fix_report.md` with root cause, fixes, and
+   server evidence.
+
+Server readiness evidence:
+
+```text
+single_rule:         spawned=1,  landed=1
+six_rule:            spawned=6,  landed=6
+six_dynamic:         spawned=6,  landed=6
+medium_rule_50hl:    spawned=52, landed=12
+medium_dynamic_50hl: spawned=51, landed=11
+```
+
+Tests:
+
+```text
+local:  python -m pytest -v  -> 237 passed
+server targeted: 15 passed
+```
+
+Next recommended step:
+
+1. Run only Stage-0/Stage-1 short PPO smoke/pilot first, using the generated
+   `recommended_pilot_config.yaml`.
+2. Inspect `reward_component_summary.csv`, `training_progress.csv`,
+   `eval_summary.json`, and early `episode_summary.json` before any long sweep.
+3. If medium demand still saturates `max_active_uavs`, use the calibrated
+   arrival-interval recommendation before increasing PPO timesteps.

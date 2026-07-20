@@ -67,6 +67,14 @@ class TerminalParallelEnv:
     step_count: int = 0
     nmac_count: int = 0
     collision_count: int = 0
+    pair_opportunities: int = 0
+    raw_pair_conflict_samples: int = 0
+    conflict_vehicle_seconds: float = 0.0
+    total_waiting_time: float = 0.0
+    approach_waiting_time: float = 0.0
+    outer_waiting_time: float = 0.0
+    inner_waiting_time: float = 0.0
+    congestion_pressure_time: float = 0.0
     agents: List[str] = field(default_factory=list)
     possible_agents: List[str] = field(default_factory=list)
     observation_builder: AgentObservationBuilder = field(init=False)
@@ -81,6 +89,11 @@ class TerminalParallelEnv:
     final_queue_time: float = 0.0
     min_pairwise_distance: float = math.inf
     _safety_override_keys: set[tuple[int, int, str, str]] = field(
+        default_factory=set,
+        init=False,
+        repr=False,
+    )
+    _unique_conflict_pairs: set[tuple[int, int]] = field(
         default_factory=set,
         init=False,
         repr=False,
@@ -203,6 +216,15 @@ class TerminalParallelEnv:
         self.step_count = 0
         self.nmac_count = 0
         self.collision_count = 0
+        self.pair_opportunities = 0
+        self.raw_pair_conflict_samples = 0
+        self.conflict_vehicle_seconds = 0.0
+        self.total_waiting_time = 0.0
+        self.approach_waiting_time = 0.0
+        self.outer_waiting_time = 0.0
+        self.inner_waiting_time = 0.0
+        self.congestion_pressure_time = 0.0
+        self._unique_conflict_pairs.clear()
         self.last_high_level_info = {}
         self.last_intention_info = {}
         self.last_release_approval = {}
@@ -379,12 +401,14 @@ class TerminalParallelEnv:
             1,
             len(self.aircraft),
         )
-        pair_count = max(1, len(self.aircraft) * (len(self.aircraft) - 1) // 2)
-        conflict_risk = len(
-            self.safety_filter.check_pairwise_distance(
-                [aircraft for aircraft in self.aircraft if not aircraft.finished]
-            )
-        ) / pair_count
+        active_aircraft = [aircraft for aircraft in self.aircraft if not aircraft.finished]
+        pair_count = len(active_aircraft) * (len(active_aircraft) - 1) // 2
+        conflict_risk = (
+            0.0
+            if pair_count <= 0
+            else len(self.safety_filter.check_pairwise_distance(active_aircraft))
+            / pair_count
+        )
         interval_phase = (
             self.step_count % self.config.high_level_interval_steps
         ) / self.config.high_level_interval_steps
@@ -894,14 +918,18 @@ class TerminalParallelEnv:
     def _track_conflicts(self) -> Tuple[Dict[int, int], Dict[int, int]]:
         nmac_pairs: Dict[int, int] = {}
         collision_pairs: Dict[int, int] = {}
-        n = len(self.aircraft)
-        for i in range(n):
-            for j in range(i + 1, n):
-                a, b = self.aircraft[i], self.aircraft[j]
-                if a.finished or b.finished:
-                    continue
+        active = [aircraft for aircraft in self.aircraft if not aircraft.finished]
+        conflict_vehicle_ids: set[int] = set()
+        for i, a in enumerate(active):
+            for b in active[i + 1 :]:
+                self.pair_opportunities += 1
                 d = distance_3d(a.position, b.position)
                 self.min_pairwise_distance = min(self.min_pairwise_distance, d)
+                if d < self.config.safe_distance:
+                    self.raw_pair_conflict_samples += 1
+                    pair = tuple(sorted((a.uid, b.uid)))
+                    self._unique_conflict_pairs.add(pair)
+                    conflict_vehicle_ids.update(pair)
                 if d < self.config.collision_distance:
                     self.collision_count += 1
                     collision_pairs[a.uid] = collision_pairs.get(a.uid, 0) + 1
@@ -910,7 +938,40 @@ class TerminalParallelEnv:
                     self.nmac_count += 1
                     nmac_pairs[a.uid] = nmac_pairs.get(a.uid, 0) + 1
                     nmac_pairs[b.uid] = nmac_pairs.get(b.uid, 0) + 1
+        self.conflict_vehicle_seconds += len(conflict_vehicle_ids) * self.config.dt
         return nmac_pairs, collision_pairs
+
+    def _track_waiting_and_congestion(self) -> None:
+        active = [aircraft for aircraft in self.aircraft if not aircraft.finished]
+        approach_count = sum(
+            aircraft.phase == FlightPhase.APPROACH or aircraft.sequence_number is None
+            for aircraft in active
+        )
+        ring_indices = {ring.index for ring in self.config.rings}
+        outer_index = max(ring_indices)
+        inner_index = min(ring_indices)
+        outer_count = len(self.vtac.queues[outer_index])
+        inner_count = len(self.vtac.queues[inner_index])
+        final_count = len(self.vtac.queues[0])
+        self.approach_waiting_time += approach_count * self.config.dt
+        self.outer_waiting_time += outer_count * self.config.dt
+        self.inner_waiting_time += inner_count * self.config.dt
+        self.total_waiting_time += (
+            approach_count + outer_count + inner_count + final_count
+        ) * self.config.dt
+
+        outer_capacity = max(1, self.vtac.queue_capacity(outer_index))
+        inner_capacity = max(1, self.vtac.queue_capacity(inner_index))
+        final_capacity = max(1, self.config.final_queue_capacity)
+        active_ratio = len(active) / max(1, self.config.max_active_uavs)
+        pressure = max(
+            active_ratio,
+            approach_count / max(1, self.config.max_active_uavs),
+            outer_count / outer_capacity,
+            inner_count / inner_capacity,
+            final_count / final_capacity,
+        )
+        self.congestion_pressure_time += pressure * self.config.dt
 
     def step(
         self,
@@ -1021,6 +1082,7 @@ class TerminalParallelEnv:
         self.time += self.config.dt
         self._spawn_runtime_arrivals()
         self.final_queue_time += len(self.vtac.queues[0]) * self.config.dt
+        self._track_waiting_and_congestion()
         self._update_finish_states()
         nmac_pairs, collision_pairs = self._track_conflicts()
 
@@ -1057,6 +1119,19 @@ class TerminalParallelEnv:
         active = sum(1 for a in self.aircraft if not a.finished)
         sequenced = sum(1 for a in self.aircraft if a.sequence_number is not None)
         ring_counts = {f"queue_{idx}": len(queue) for idx, queue in sorted(self.vtac.queues.items())}
+        current_pair_count = active * (active - 1) // 2
+        has_pair = current_pair_count > 0
+        normalized_conflict_rate = (
+            self.raw_pair_conflict_samples / max(1, self.pair_opportunities)
+        )
+        normalized_waiting = self.total_waiting_time / max(
+            self.config.dt,
+            self.time * max(1, self.config.max_active_uavs),
+        )
+        normalized_congestion = self.congestion_pressure_time / max(
+            self.config.dt,
+            self.time,
+        )
 
         per_ac = [ac.metrics_dict(self.config.center) for ac in self.aircraft]
         path_lengths = [m["path_length"] for m in per_ac]
@@ -1082,6 +1157,15 @@ class TerminalParallelEnv:
             "sequenced": sequenced,
             "nmac_count": self.nmac_count,
             "collision_count": self.collision_count,
+            "raw_pair_conflict_samples": float(self.raw_pair_conflict_samples),
+            "unique_conflict_events": float(len(self._unique_conflict_pairs)),
+            "nmac_events": float(self.nmac_count),
+            "collision_events": float(self.collision_count),
+            "conflict_vehicle_seconds": float(self.conflict_vehicle_seconds),
+            "pair_opportunities": float(self.pair_opportunities),
+            "has_pair": float(has_pair),
+            "current_pair_count": float(current_pair_count),
+            "normalized_conflict_rate": float(normalized_conflict_rate),
             "mean_completion_step_finished": float(np.mean(completion_steps)) if completion_steps else 0.0,
             "mean_completion_time_finished": float(np.mean(completion_times)) if completion_times else 0.0,
             "max_completion_step_finished": float(np.max(completion_steps)) if completion_steps else 0.0,
@@ -1108,11 +1192,14 @@ class TerminalParallelEnv:
             "raw_safety_override_count": float(self.raw_safety_override_count),
             "total_raw_safety_override_count": float(self.raw_safety_override_count),
             "final_queue_time": float(self.final_queue_time),
-            "min_pairwise_distance": (
-                0.0
-                if math.isinf(self.min_pairwise_distance)
-                else float(self.min_pairwise_distance)
-            ),
+            "approach_waiting_time": float(self.approach_waiting_time),
+            "outer_waiting_time": float(self.outer_waiting_time),
+            "inner_waiting_time": float(self.inner_waiting_time),
+            "total_waiting_time": float(self.total_waiting_time),
+            "normalized_waiting": float(normalized_waiting),
+            "congestion_pressure_time": float(self.congestion_pressure_time),
+            "normalized_congestion": float(normalized_congestion),
+            "min_pairwise_distance": float(self.min_pairwise_distance),
             "safety_enabled": float(self.safety_enabled),
             **ring_counts,
         }

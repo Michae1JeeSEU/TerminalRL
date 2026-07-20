@@ -290,3 +290,44 @@ Crazyflie 实验验证了仿真策略的缩尺落地能力。
 - 打包：`scripts/server/pack_for_server.py` 生成服务器上传包和 manifest。
 
 该阶段仍然只训练 high-level dynamic airspace reconfiguration policy，不接入真实硬件，不改变底层飞控边界。
+
+## Phase G-Readiness hotfix: dynamic-rule pipeline and reward sanity
+
+This hotfix sits before any new PPO pilot.  It is a simulation-only readiness
+gate for the server training workflow.
+
+Completed tasks:
+
+1. Diagnose fixed-rule versus dynamic-rule landing-pipeline behavior on the
+   server mirror.
+2. Repair the dynamic-rule high-level heuristic so it no longer starves
+   `inner -> final -> land` transitions through excessive geometry/headway
+   changes.
+3. Normalize pairwise conflict, waiting, and congestion metrics for reward and
+   logging.
+4. Add phase-progress reward and detailed reward component statistics.
+5. Add low-level-step phase transition diagnostics, high-level action isolation
+   modes, and rule-only capacity calibration.
+6. Verify locally with the full test suite and remotely with targeted tests and
+   server dry-runs.
+
+Gate to proceed:
+
+```text
+local pytest: all pass
+server targeted pytest: pass
+single_rule: 1/1 landed
+six_rule: >=5/6 landed
+six_dynamic: >0 landed and >=80% of six_rule
+reward diagnostics: no 20x component dominance warning
+capacity calibration: recommended demand intervals generated
+```
+
+Next execution step:
+
+Run Stage-0/Stage-1 high-level PPO smoke/pilot only after reviewing
+`training_readiness.json`, `reward_component_summary.csv`,
+`capacity_calibration.csv`, and `recommended_pilot_config.yaml` under the server
+output root.  Do not launch a long multi-seed sweep until the smoke/pilot logs
+show non-zero traffic, non-zero phase progress, and plausible reward component
+scales.

@@ -39,7 +39,13 @@ class ExperimentLogger:
         "inner_occupancy",
         "final_occupancy",
         "conflict_count",
+        "raw_pair_conflict_samples",
+        "pair_opportunities",
+        "normalized_conflict_rate",
         "safety_override_count",
+        "total_waiting_time",
+        "normalized_waiting",
+        "normalized_congestion",
     )
     AIRSPACE_FIELDS = (
         "step",
@@ -84,6 +90,7 @@ class ExperimentLogger:
     def record_step(self, env: Any) -> None:
         rings = sorted(env.config.rings, key=lambda ring: ring.radius, reverse=True)
         outer, inner = rings[0], rings[-1]
+        metrics = env.metrics()
         self.step_metrics.append(
             {
                 "step": env.step_count,
@@ -94,7 +101,13 @@ class ExperimentLogger:
                 "inner_occupancy": len(env.vtac.queues[inner.index]),
                 "final_occupancy": len(env.vtac.queues[0]),
                 "conflict_count": env.nmac_count + env.collision_count,
+                "raw_pair_conflict_samples": metrics["raw_pair_conflict_samples"],
+                "pair_opportunities": metrics["pair_opportunities"],
+                "normalized_conflict_rate": metrics["normalized_conflict_rate"],
                 "safety_override_count": env.safety_override_count,
+                "total_waiting_time": metrics["total_waiting_time"],
+                "normalized_waiting": metrics["normalized_waiting"],
+                "normalized_congestion": metrics["normalized_congestion"],
             }
         )
         state = env.airspace.state_vector()
