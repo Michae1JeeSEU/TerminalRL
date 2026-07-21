@@ -47,9 +47,10 @@ class PPOTrainingConfig:
     save_replay_traces: bool = False
     fail_if_no_traffic: bool = False
     min_spawned_before_training_check: int = 1
-    traffic_check_steps: int = 8
+    traffic_check_steps: int = 20
     sanity_check_baseline: bool = False
     max_steps: int | None = None
+    eval_high_level_steps: int = 20
     simulation_only: bool = True
 
     def to_dict(self) -> dict[str, Any]:
@@ -136,6 +137,10 @@ def _coerce_config(data: Mapping[str, Any]) -> PPOTrainingConfig:
         raise ValueError("total_timesteps must be positive")
     if config.n_steps <= 0 or config.batch_size <= 0:
         raise ValueError("n_steps and batch_size must be positive")
+    if config.traffic_check_steps < 20:
+        raise ValueError("traffic_check_steps must be at least 20 high-level steps")
+    if config.eval_high_level_steps < 20:
+        raise ValueError("eval_high_level_steps must be at least 20 high-level steps")
     if not config.seed_list:
         raise ValueError("seed_list must contain at least one seed")
     return config

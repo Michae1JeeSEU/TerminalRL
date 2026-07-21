@@ -56,7 +56,10 @@ POLICIES = (
 
 DEMAND_PROFILES = {
     "low": {"initial_aircraft_count": 4, "formation_rows": 2, "formation_cols": 2, "arrival_rate": 0.0},
-    "medium": {"initial_aircraft_count": 6, "formation_rows": 3, "formation_cols": 2, "arrival_rate": 0.05},
+    # Recalibrated after server capacity checks: interval=8 high-level steps
+    # (10 low-level steps each) gives 0.00625 arrivals/s and avoids treating
+    # the old overload flow as "medium" during PPO pilot training.
+    "medium": {"initial_aircraft_count": 6, "formation_rows": 3, "formation_cols": 2, "arrival_rate": 0.00625},
     "high": {"initial_aircraft_count": 8, "formation_rows": 4, "formation_cols": 2, "arrival_rate": 0.10},
     "bursty": {"initial_aircraft_count": 10, "formation_rows": 5, "formation_cols": 2, "arrival_rate": 0.25},
 }

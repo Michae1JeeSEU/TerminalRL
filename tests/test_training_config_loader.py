@@ -51,3 +51,21 @@ def test_training_config_rejects_hardware_mode(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="crazyflie_lab"):
         load_training_config(path)
+
+
+def test_training_config_rejects_short_high_level_horizons(tmp_path: Path) -> None:
+    path = tmp_path / "short_eval.yaml"
+    path.write_text(
+        "config: dynamic_hrl\n"
+        "demand_level: medium\n"
+        "total_timesteps: 8\n"
+        "n_envs: 1\n"
+        "vec_env: dummy\n"
+        "seed_list: [0]\n"
+        "traffic_check_steps: 8\n"
+        "eval_high_level_steps: 8\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="traffic_check_steps"):
+        load_training_config(path)

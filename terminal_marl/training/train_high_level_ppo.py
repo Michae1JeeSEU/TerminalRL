@@ -195,6 +195,7 @@ def _evaluate_model(
     high_level_interval: int | None,
     max_steps: int | None,
     episodes: int = 1,
+    eval_high_level_steps: int = 20,
     save_trace_path: Path | None = None,
 ) -> dict[str, Any]:
     rewards: list[float] = []
@@ -217,7 +218,8 @@ def _evaluate_model(
         total_reward = 0.0
         steps = 0
         terminated = truncated = False
-        while not (terminated or truncated) and steps < 8:
+        horizon = max(20, int(eval_high_level_steps))
+        while not (terminated or truncated) and steps < horizon:
             action, _ = model.predict(observation, deterministic=True)
             observation, reward, terminated, truncated, info = env.step(action)
             total_reward += float(reward)
@@ -264,6 +266,7 @@ def _evaluate_model(
         )
     return {
         "eval_episodes": episodes,
+        "eval_high_level_steps": max(20, int(eval_high_level_steps)),
         "eval_mean_reward": float(sum(rewards) / max(1, len(rewards))),
         "eval_rewards": rewards,
         "eval_lengths": lengths,
@@ -303,8 +306,9 @@ def train_high_level_ppo(
     max_steps: int | None = None,
     fail_if_no_traffic: bool = False,
     min_spawned_before_training_check: int = 1,
-    traffic_check_steps: int = 8,
+    traffic_check_steps: int = 20,
     sanity_check_baseline: bool = False,
+    eval_high_level_steps: int = 20,
 ) -> dict:
     PPO, BaseCallback, CallbackList, CheckpointCallback, DummyVecEnv, SubprocVecEnv = require_sb3()
     output = Path(output_dir)
@@ -407,6 +411,7 @@ def train_high_level_ppo(
                     high_level_interval=high_level_interval,
                     max_steps=max_steps,
                     episodes=1,
+                    eval_high_level_steps=eval_high_level_steps,
                     save_trace_path=(
                         output / "replay_traces" / f"eval_{self.num_timesteps}.csv"
                         if save_replay_traces
@@ -489,6 +494,7 @@ def train_high_level_ppo(
         "min_spawned_before_training_check": min_spawned_before_training_check,
         "traffic_check_steps": traffic_check_steps,
         "sanity_check_baseline": sanity_check_baseline,
+        "eval_high_level_steps": max(20, int(eval_high_level_steps)),
         "resume_from": None if resume_from is None else str(resume_from),
         "nominal_delay_mode": nominal_delay_mode,
         "simulation_only": True,
@@ -513,6 +519,7 @@ def train_high_level_ppo(
         high_level_interval=high_level_interval,
         max_steps=max_steps,
         episodes=1,
+        eval_high_level_steps=eval_high_level_steps,
         save_trace_path=output / "final_eval.csv",
     )
     summary["periodic_evaluations"] = eval_rows
@@ -565,6 +572,7 @@ def train_from_config(
         min_spawned_before_training_check=training_config.min_spawned_before_training_check,
         traffic_check_steps=training_config.traffic_check_steps,
         sanity_check_baseline=training_config.sanity_check_baseline,
+        eval_high_level_steps=training_config.eval_high_level_steps,
     )
 
 
@@ -606,6 +614,7 @@ def main() -> None:
     parser.add_argument("--min-spawned-before-training-check", type=int)
     parser.add_argument("--traffic-check-steps", type=int)
     parser.add_argument("--sanity-check-baseline", action="store_true", default=None)
+    parser.add_argument("--eval-high-level-steps", type=int)
     args = parser.parse_args()
     base = (
         load_training_config(args.training_config)
@@ -642,6 +651,7 @@ def main() -> None:
             "traffic_check_steps": args.traffic_check_steps,
             "sanity_check_baseline": args.sanity_check_baseline,
             "max_steps": args.max_steps,
+            "eval_high_level_steps": args.eval_high_level_steps,
         },
     )
     train_from_config(

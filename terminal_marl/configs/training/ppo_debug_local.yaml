@@ -23,6 +23,7 @@ eval_freq: 0
 save_replay_traces: false
 fail_if_no_traffic: true
 min_spawned_before_training_check: 1
-traffic_check_steps: 8
+traffic_check_steps: 20
 sanity_check_baseline: true
+eval_high_level_steps: 20
 simulation_only: true

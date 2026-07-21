@@ -21,4 +21,6 @@ num_threads: 1
 checkpoint_freq: 25000
 eval_freq: 10000
 save_replay_traces: true
+traffic_check_steps: 20
+eval_high_level_steps: 20
 simulation_only: true

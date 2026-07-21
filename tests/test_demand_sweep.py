@@ -29,6 +29,12 @@ def test_rollout_records_demand_level() -> None:
     assert metrics["traffic_demand_level"] == "high"
 
 
+def test_medium_demand_uses_recalibrated_capacity_rate() -> None:
+    updated = apply_demand_profile(load_experiment_config("dynamic_hrl"), "medium")
+    assert updated.initial_aircraft_count == 6
+    assert updated.arrival_rate == pytest.approx(0.00625)
+
+
 def test_unknown_demand_is_rejected() -> None:
     with pytest.raises(ValueError, match="demand"):
         apply_demand_profile(load_experiment_config("fixed_rule"), "extreme")

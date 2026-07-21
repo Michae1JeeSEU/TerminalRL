@@ -1,4 +1,5 @@
 import importlib.util
+import json
 
 import pytest
 
@@ -23,3 +24,6 @@ def test_tiny_high_level_ppo_training_writes_artifacts(tmp_path) -> None:
         "config_snapshot.json",
     ]:
         assert (tmp_path / name).is_file()
+    summary = json.loads((tmp_path / "eval_summary.json").read_text(encoding="utf-8"))
+    assert summary["eval_high_level_steps"] >= 20
+    assert max(summary["eval_lengths"]) >= 20
