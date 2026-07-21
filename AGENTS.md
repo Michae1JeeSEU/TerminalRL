@@ -70,6 +70,21 @@ Dynamic terminal airspace reconfiguration
 8. intention_residual action_mode
 ```
 
+## 本地-服务器同步准则
+
+1. 本地工作目录 `D:\7_codespace\terminal` 已通过 Syncthing 与服务器
+   `~/projects/terminal` 实时同步。代码、脚本和文档修改只应在本地完成。
+2. 不需要、也不应手动把本地文件打包上传到服务器再解压；除非用户明确要求，
+   不使用 `scp`、`rsync`、手工 zip/tar 传输源码来更新服务器项目目录。
+3. Git 操作只在本地仓库执行：检查、暂存、提交和推送均以本地
+   `D:\7_codespace\terminal` 为准。服务器侧仅作为运行环境，不承担源码提交职责。
+4. 服务器只通过 `ssh lab-server` 执行运行、测试、评估、查看日志和读取结果等命令。
+5. 服务器输出统一写入 `$HOME/training_outputs/terminal`；该目录会通过 Syncthing
+   同步到本地 `D:\7_codespace\training_outputs\terminal`。不要把 runs、训练输出或评估
+   产物写入 `~/projects/terminal`。
+6. 若发现服务器代码尚未同步到本地提交，应先等待或提示用户检查 Syncthing 状态，
+   不要自行采用手动打包覆盖服务器代码的方式绕过同步链路。
+
 ## 常用命令
 
 ```bash
