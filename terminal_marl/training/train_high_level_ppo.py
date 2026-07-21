@@ -103,6 +103,29 @@ def _write_csv(path: Path, rows: list[dict[str, Any]], fields: tuple[str, ...]) 
         writer.writerows(rows)
 
 
+def _select_exact_rollout_n_steps(
+    *,
+    requested_n_steps: int,
+    total_timesteps: int,
+    n_envs: int,
+) -> int:
+    """Choose the largest n_steps not exceeding the request that avoids SB3 overshoot."""
+
+    if total_timesteps % n_envs != 0:
+        raise ValueError(
+            "total_timesteps must be divisible by n_envs to avoid PPO rollout "
+            "overshooting the requested budget"
+        )
+    per_env_budget = total_timesteps // n_envs
+    upper = max(1, min(int(requested_n_steps), int(per_env_budget)))
+    for candidate in range(upper, 0, -1):
+        if per_env_budget % candidate == 0:
+            if candidate * n_envs <= 1:
+                raise ValueError("PPO rollout size must be greater than one")
+            return candidate
+    raise ValueError("could not find an exact PPO rollout length")
+
+
 def _count_fields_from_info(info: dict[str, Any]) -> dict[str, float]:
     metrics = info.get("metrics", {})
     diagnostics = info.get("reward_diagnostics", {})
@@ -431,7 +454,11 @@ def train_high_level_ppo(
             )
         )
     callback = CallbackList(callbacks)
-    effective_n_steps = max(8, min(int(n_steps), max(8, int(total_timesteps))))
+    effective_n_steps = _select_exact_rollout_n_steps(
+        requested_n_steps=max(1, int(n_steps)),
+        total_timesteps=int(total_timesteps),
+        n_envs=max(1, int(n_envs)),
+    )
     effective_batch_size = max(1, min(int(batch_size), effective_n_steps * max(1, n_envs)))
     if resume_from is not None:
         model = PPO.load(
@@ -481,6 +508,8 @@ def train_high_level_ppo(
         "batch_size": batch_size,
         "effective_n_steps": effective_n_steps,
         "effective_batch_size": effective_batch_size,
+        "rollout_size": effective_n_steps * max(1, n_envs),
+        "exact_timestep_budget": True,
         "gamma": gamma,
         "gae_lambda": gae_lambda,
         "clip_range": clip_range,
