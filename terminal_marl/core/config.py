@@ -26,6 +26,10 @@ class SimConfig:
     simulation_only: bool = True
     safety_enabled: bool = True
     high_level_interval_steps: int = 10
+    metrics_sampling_interval_seconds: float = 20.0
+    decision_interval_seconds: float = 10.0
+    reconfiguration_dwell_seconds: float = 10.0
+    geometry_transition_seconds: float = 0.0
     world_boundary: Optional[Tuple[float, float, float, float, float, float]] = None
     arrival_rate: float = 0.0
     traffic_demand_level: str = "medium"

@@ -454,3 +454,46 @@ Next recommended step:
    `eval_summary.json`, and early `episode_summary.json` before any long sweep.
 3. If medium demand still saturates `max_active_uavs`, use the calibrated
    arrival-interval recommendation before increasing PPO timesteps.
+
+## High-level interval study / evaluation protocol correction
+
+The 20k PPO pilot is treated as an engineering validation checkpoint only until
+the high-level time scale and formal evaluation protocol are decided. Do not
+continue to 50k, 100k, main training, or demand sweeps before running the
+simulation-only interval study.
+
+Completed in this round:
+
+1. Added explicit high-level timing fields to `SimConfig` and YAML presets:
+   `metrics_sampling_interval_seconds`, `decision_interval_seconds`,
+   `reconfiguration_dwell_seconds`, and `geometry_transition_seconds`.
+2. Kept legacy `high_level_interval` compatibility while allowing the YAML
+   loader to map `high_level.decision_interval_seconds` to
+   `high_level_interval_steps`.
+3. Added `terminal_marl.experiments.evaluation_protocol` for
+   warm-up/measurement/drain evaluation with fixed physical durations and drain
+   arrivals disabled.
+4. Added `terminal_marl.experiments.airspace_response_diagnostics` for one-shot
+   radius/speed/headway response probes against a no-change control.
+5. Added `terminal_marl.experiments.high_level_interval_study` to generate:
+   timing audit, response summaries, interval sweep, horizon censoring
+   diagnosis, demand separability, action effectiveness, evaluation protocol,
+   and retraining decision artifacts.
+6. Added tests for high-level timing protocol parsing, windowed evaluation,
+   response diagnostics, and recommendation helpers.
+
+Next step:
+
+Run the study on the server under
+`$HOME/training_outputs/terminal/high_level_interval_study`, then decide one of:
+
+```text
+KEEP_20S_AND_CONTINUE_50K
+CHANGE_INTERVAL_AND_RETRAIN_FROM_SCRATCH
+NOT_READY_FOR_RETRAINING
+```
+
+If the recommended decision interval changes from the native 20 s protocol,
+do not resume the existing 20k PPO checkpoint. Update smoke/pilot configs and
+start a fresh 512-step smoke followed by a new 20k pilot only after the user
+explicitly authorizes new training.

@@ -101,6 +101,13 @@ def _set_known_fields(config: SimConfig, values: Mapping[str, Any], section: str
         setattr(config, key, value)
 
 
+def _positive_seconds(value: Any, field_name: str) -> float:
+    seconds = float(value)
+    if seconds <= 0.0:
+        raise ValueError(f"{field_name} must be positive")
+    return seconds
+
+
 def _load_rings(data: Mapping[str, Any], config: SimConfig) -> None:
     raw_rings = data.get("rings")
     if raw_rings is None:
@@ -189,15 +196,49 @@ def load_sim_config(
             raise ValueError("control_interval must be positive")
         config.dt = control_interval
     if "high_level_interval" in data:
-        interval_seconds = float(data["high_level_interval"])
-        if interval_seconds <= 0.0:
-            raise ValueError("high_level_interval must be positive")
+        interval_seconds = _positive_seconds(data["high_level_interval"], "high_level_interval")
         config.high_level_interval_steps = max(1, int(round(interval_seconds / config.dt)))
+        config.decision_interval_seconds = interval_seconds
+        config.reconfiguration_dwell_seconds = interval_seconds
+
+    high_level = dict(_mapping(data, "high_level"))
+    if "metrics_sampling_interval_seconds" in high_level:
+        config.metrics_sampling_interval_seconds = _positive_seconds(
+            high_level.pop("metrics_sampling_interval_seconds"),
+            "high_level.metrics_sampling_interval_seconds",
+        )
+    if "decision_interval_seconds" in high_level:
+        config.decision_interval_seconds = _positive_seconds(
+            high_level.pop("decision_interval_seconds"),
+            "high_level.decision_interval_seconds",
+        )
+        config.high_level_interval_steps = max(
+            1,
+            int(round(config.decision_interval_seconds / config.dt)),
+        )
+    if "reconfiguration_dwell_seconds" in high_level:
+        config.reconfiguration_dwell_seconds = _positive_seconds(
+            high_level.pop("reconfiguration_dwell_seconds"),
+            "high_level.reconfiguration_dwell_seconds",
+        )
+    if "geometry_transition_seconds" in high_level:
+        config.geometry_transition_seconds = float(
+            high_level.pop("geometry_transition_seconds")
+        )
+        if config.geometry_transition_seconds < 0.0:
+            raise ValueError("high_level.geometry_transition_seconds must be non-negative")
+    if high_level:
+        unknown = ", ".join(sorted(high_level))
+        raise ValueError(f"unknown high_level field(s): {unknown}")
 
     if config.high_level_interval_steps <= 0:
         raise ValueError("high_level_interval_steps must be positive")
     if config.dt <= 0.0:
         raise ValueError("dt must be positive")
+    if config.decision_interval_seconds <= 0.0:
+        config.decision_interval_seconds = config.high_level_interval_steps * config.dt
+    if config.reconfiguration_dwell_seconds <= 0.0:
+        config.reconfiguration_dwell_seconds = config.decision_interval_seconds
     if not config.simulation_only:
         raise ValueError("third-round presets must remain simulation_only")
     if (

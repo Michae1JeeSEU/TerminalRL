@@ -4,6 +4,11 @@ simulation_only: true
 dt: 1.0
 control_interval: 1.0
 high_level_interval: 20.0
+high_level:
+  metrics_sampling_interval_seconds: 20.0
+  decision_interval_seconds: 20.0
+  reconfiguration_dwell_seconds: 20.0
+  geometry_transition_seconds: 20.0
 
 rings:
   outer:

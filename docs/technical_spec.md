@@ -709,3 +709,53 @@ six dynamic-rule no arrivals: landed_count > 0 and >= 80% fixed-rule
 medium 50 high-level intervals: dynamic-rule landed_count > 0
 no-pair metric: has_pair=false, pair_opportunities=0, normalized_conflict_rate=0
 ```
+
+## 34. High-level timing study and evaluation protocol
+
+The project now separates four physical-time concepts that were previously
+coupled through `high_level_interval_steps`:
+
+```yaml
+high_level:
+  metrics_sampling_interval_seconds: 20
+  decision_interval_seconds: 60
+  reconfiguration_dwell_seconds: 60
+  geometry_transition_seconds: 20
+```
+
+Backward compatibility is preserved: legacy YAML files may still define
+`high_level_interval`, and `load_sim_config()` converts it to
+`SimConfig.high_level_interval_steps`. If a `high_level:` mapping is present,
+`decision_interval_seconds` defines one complete high-level MDP step; the
+high-level PPO wrapper therefore receives one observation, emits one action,
+and the environment internally advances for the full decision interval. Metrics
+sampling can remain at 20 s and does not change the MDP action frequency.
+
+The windowed evaluation protocol uses three phases:
+
+1. Warm-up: arrivals are enabled, but metrics are not counted in the measurement
+   window.
+2. Measurement: arrivals remain enabled and throughput, delay, waiting,
+   backlog, conflict, safety override, and action diagnostics are counted.
+3. Drain: arrivals are disabled by setting the runtime arrival process to zero;
+   the simulation continues until all active UAVs land or the drain limit is
+   reached.
+
+This makes interval ablations comparable by physical duration rather than by
+high-level step count. Arrival rates remain in physical seconds and are not
+rescaled by the decision interval.
+
+New evaluation-only tools:
+
+- `terminal_marl.experiments.evaluation_protocol`: reusable
+  warm-up/measurement/drain runner and timing helpers.
+- `terminal_marl.experiments.airspace_response_diagnostics`: one-shot response
+  probes for radius, speed, ring headway, final headway, and safe combination
+  changes.
+- `terminal_marl.experiments.high_level_interval_study`: complete dry-run study
+  that writes timing audit, response diagnostics, interval sweep, horizon
+  censoring diagnosis, demand separability, action effectiveness, and final
+  retraining recommendation artifacts.
+
+These tools are simulation-only. They do not connect to ROS2, Crazyswarm2, or
+Crazyflie hardware, and they do not start PPO training.
