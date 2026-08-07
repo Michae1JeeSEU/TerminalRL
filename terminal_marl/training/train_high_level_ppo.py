@@ -660,15 +660,29 @@ def train_high_level_ppo(
         "traffic_check_steps": traffic_check_steps,
         "sanity_check_baseline": sanity_check_baseline,
         "eval_high_level_steps": max(20, int(eval_high_level_steps)),
+        "max_steps": None if max_steps is None else int(max_steps),
         "resume_from": None if resume_from is None else str(resume_from),
         "nominal_delay_mode": nominal_delay_mode,
         "simulation_only": True,
+    }
+    resolved_sim_config = _resolved_sim_training_snapshot(
+        config_name=config_name,
+        demand_level=demand_level,
+        high_level_interval=high_level_interval,
+        max_steps=max_steps,
+    )
+    resolved_training_config = {
+        **training_config,
+        "resolved_sim_config": resolved_sim_config,
     }
     (output / "training_config.json").write_text(
         json.dumps(training_config, indent=2) + "\n", encoding="utf-8"
     )
     (output / "config_snapshot.json").write_text(
         json.dumps(training_config, indent=2) + "\n", encoding="utf-8"
+    )
+    (output / "resolved_training_config.json").write_text(
+        json.dumps(resolved_training_config, indent=2) + "\n", encoding="utf-8"
     )
     _write_csv(
         output / "training_progress.csv",
@@ -696,6 +710,36 @@ def train_high_level_ppo(
     )
     env.close()
     return summary
+
+
+def _resolved_sim_training_snapshot(
+    *,
+    config_name: str,
+    demand_level: str,
+    high_level_interval: int | None,
+    max_steps: int | None,
+) -> dict[str, Any]:
+    config = apply_demand_profile(_load_base_sim_config(config_name), demand_level)
+    if high_level_interval is not None:
+        config.high_level_interval_steps = int(high_level_interval)
+    if max_steps is not None:
+        config.max_steps = min(config.max_steps, int(max_steps))
+    return {
+        "simulation_only": bool(config.simulation_only),
+        "dt": float(config.dt),
+        "control_interval": float(getattr(config, "control_interval", config.dt)),
+        "max_steps": int(config.max_steps),
+        "episode_duration_seconds": float(config.max_steps * config.dt),
+        "high_level_interval_steps": int(config.high_level_interval_steps),
+        "metrics_sampling_interval_seconds": float(config.metrics_sampling_interval_seconds),
+        "high_level_decision_interval_seconds": float(config.decision_interval_seconds),
+        "geometry_min_dwell_seconds": float(config.reconfiguration_dwell_seconds),
+        "geometry_gate_mode": str(config.geometry_gate_mode),
+        "traffic_demand_level": str(config.traffic_demand_level),
+        "arrival_rate": float(config.arrival_rate),
+        "arrival_model": str(config.arrival_model),
+        "reward_scaling_warning": False,
+    }
 
 
 def train_from_config(

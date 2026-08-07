@@ -69,6 +69,7 @@ def test_tiny_high_level_ppo_training_writes_artifacts(tmp_path) -> None:
     for name in [
         "model.zip",
         "training_config.json",
+        "resolved_training_config.json",
         "training_progress.csv",
         "eval_summary.json",
         "config_snapshot.json",
@@ -80,3 +81,6 @@ def test_tiny_high_level_ppo_training_writes_artifacts(tmp_path) -> None:
     config = json.loads((tmp_path / "training_config.json").read_text(encoding="utf-8"))
     assert config["exact_timestep_budget"] is True
     assert 8 % config["rollout_size"] == 0
+    resolved = json.loads((tmp_path / "resolved_training_config.json").read_text(encoding="utf-8"))
+    assert resolved["resolved_sim_config"]["simulation_only"] is True
+    assert resolved["resolved_sim_config"]["high_level_interval_steps"] >= 1
