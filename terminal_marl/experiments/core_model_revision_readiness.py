@@ -269,7 +269,15 @@ def _finite_job(args: tuple[int, int, float, int]) -> dict[str, Any]:
     env.reset(seed=seed)
     _run_env_until(env, max_steps=cfg.max_steps)
     summary = env.simulation_outcome_summary()
-    summary.update({"N": total, "seed": seed, "evidence_type": "newly_run"})
+    summary.update(
+        {
+            "N": total,
+            "seed": seed,
+            "outer_capacity": env.airspace.outer_ring.capacity,
+            "inner_capacity": env.airspace.inner_ring.capacity,
+            "evidence_type": "newly_run",
+        }
+    )
     return {"summary": summary, "rows": env.uav_outcome_rows()}
 
 
@@ -646,8 +654,8 @@ def service_capacity_audit(final_dir: Path, max_workers: int) -> dict[str, Any]:
                 "inter_landing_p50": _percentile(gaps, 50),
                 "inter_landing_p90": _percentile(gaps, 90),
                 "inter_landing_p95": _percentile(gaps, 95),
-                "outer_capacity": load_experiment_config("dynamic_hrl").rings[-1].capacity,
-                "inner_capacity": load_experiment_config("dynamic_hrl").rings[0].capacity,
+                "outer_capacity": summary["outer_capacity"],
+                "inner_capacity": summary["inner_capacity"],
                 "entry_admission_rate_per_hour": 3600.0 * summary["total_admitted"] / max(1e-9, summary["final_simulation_time"]),
                 "final_queue_behavior": "single-server-headway",
             }
