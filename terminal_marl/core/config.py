@@ -44,6 +44,7 @@ class SimConfig:
     traffic_demand_level: str = "medium"
     arrival_model: str = "deterministic_interval"
     max_active_uavs: int = 40
+    fixed_arrival_schedule: Optional[Tuple[float, ...]] = None
 
     center: Tuple[float, float, float] = (0.0, 0.0, 0.0)#终端区中心坐标
     dt: float = 1#仿真每一步时间间隔

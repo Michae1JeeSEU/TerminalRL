@@ -64,6 +64,19 @@ class TerminalParallelEnv:
     geometry_gate: GeometryEventGate = field(init=False)
     trajectory_generator: TrajectoryGenerator = field(init=False)
     arrival_process: ArrivalProcess = field(init=False)
+    external_arrival_queue: List[dict] = field(default_factory=list)
+    arrival_request_count: int = 0
+    admitted_arrival_count: int = 0
+    blocked_arrival_count: int = 0
+    deferred_arrival_count: int = 0
+    dropped_arrival_count: int = 0
+    external_queue_waiting_time: float = 0.0
+    active_cap_hit: bool = False
+    time_at_active_cap_seconds: float = 0.0
+    longest_continuous_cap_seconds: float = 0.0
+    time_to_first_cap: Optional[float] = None
+    _current_cap_streak_seconds: float = 0.0
+    _next_arrival_request_id: int = 0
     aircraft: List[UAVState] = field(default_factory=list)
     time: float = 0.0
     step_count: int = 0
@@ -173,6 +186,7 @@ class TerminalParallelEnv:
             model=self.config.arrival_model,
             arrival_rate=self.config.arrival_rate,
             max_active_uavs=self.config.max_active_uavs,
+            fixed_schedule=self.config.fixed_arrival_schedule,
         )
         self.vtac = VTAC(self.config)
         observed_airspace = (
@@ -241,6 +255,19 @@ class TerminalParallelEnv:
         self.pending_high_level_action = None
         self.safety_override_count = 0
         self.raw_safety_override_count = 0
+        self.external_arrival_queue = []
+        self.arrival_request_count = 0
+        self.admitted_arrival_count = 0
+        self.blocked_arrival_count = 0
+        self.deferred_arrival_count = 0
+        self.dropped_arrival_count = 0
+        self.external_queue_waiting_time = 0.0
+        self.active_cap_hit = False
+        self.time_at_active_cap_seconds = 0.0
+        self.longest_continuous_cap_seconds = 0.0
+        self.time_to_first_cap = None
+        self._current_cap_streak_seconds = 0.0
+        self._next_arrival_request_id = 0
         self._safety_override_keys.clear()
         self.final_queue_time = 0.0
         self.min_pairwise_distance = math.inf
@@ -256,55 +283,109 @@ class TerminalParallelEnv:
         infos = {self._agent_name(ac.uid): self._build_info(ac) for ac in self.aircraft}
         return obs, infos
 
-    def _spawn_runtime_arrivals(self) -> None:
-        active_count = sum(not aircraft.finished for aircraft in self.aircraft)
-        due = self.arrival_process.arrivals_due(self.time, active_count)
-        if due <= 0:
-            return
+    def _runtime_request_due(self, due: int) -> None:
+        for offset in range(max(0, int(due))):
+            request = {
+                "arrival_id": int(self._next_arrival_request_id),
+                "request_time": float(self.time),
+                "scenario": self.config.traffic_demand_level,
+                "seed": None,
+                "burst_index": int(offset),
+                "burst_size": int(due),
+                "first_blocked_time": None,
+            }
+            self._next_arrival_request_id += 1
+            self.arrival_request_count += 1
+            self.external_arrival_queue.append(request)
+
+    def _admit_one_external_arrival(self, request: dict, offset: int, due: int) -> bool:
         inbound = math.radians(self.config.inbound_bearing_deg)
         base_radius = self.config.approach_threshold_radius + self.config.spawn_margin
         estimator = NominalScheduleEstimator(self.config)
-        for offset in range(due):
-            if sum(not aircraft.finished for aircraft in self.aircraft) >= self.config.max_active_uavs:
-                break
-            uid = max((aircraft.uid for aircraft in self.aircraft), default=0) + 1
-            lateral = (offset - (due - 1) / 2.0) * self.config.col_spacing
-            position = np.array(
-                [
-                    base_radius * math.cos(inbound) - lateral * math.sin(inbound),
-                    base_radius * math.sin(inbound) + lateral * math.cos(inbound),
-                    self.config.spawn_altitude,
-                ],
-                dtype=float,
-            )
-            if any(
-                not other.finished
-                and distance_3d(position, other.position) < self.config.safe_distance
-                for other in self.aircraft
-            ):
-                continue
-            heading = math.atan2(
-                self.config.center[1] - position[1],
-                self.config.center[0] - position[0],
-            )
-            aircraft = UAVState(
-                uid=uid,
-                position=position,
-                speed=self.config.nominal_speed,
-                heading=heading,
+        uid = max((aircraft.uid for aircraft in self.aircraft), default=0) + 1
+        lateral = (offset - (due - 1) / 2.0) * self.config.col_spacing
+        position = np.array(
+            [
+                base_radius * math.cos(inbound) - lateral * math.sin(inbound),
+                base_radius * math.sin(inbound) + lateral * math.cos(inbound),
+                self.config.spawn_altitude,
+            ],
+            dtype=float,
+        )
+        if any(
+            not other.finished
+            and distance_3d(position, other.position) < self.config.safe_distance
+            for other in self.aircraft
+        ):
+            self.deferred_arrival_count += 1
+            return False
+        heading = math.atan2(
+            self.config.center[1] - position[1],
+            self.config.center[0] - position[0],
+        )
+        aircraft = UAVState(
+            uid=uid,
+            position=position,
+            speed=self.config.nominal_speed,
+            heading=heading,
+            spawn_time=self.time,
+            entry_time=self.time,
+            planned_nominal_landing_time=estimator.estimate(
+                position,
                 spawn_time=self.time,
-                planned_nominal_landing_time=estimator.estimate(
-                    position,
-                    spawn_time=self.time,
-                    sequence_index=uid,
-                ),
+                sequence_index=uid,
+            ),
+        )
+        aircraft.snapshot()
+        self.aircraft.append(aircraft)
+        agent = self._agent_name(uid)
+        if agent not in self.possible_agents:
+            self.possible_agents.append(agent)
+        self.agents.append(agent)
+        self.admitted_arrival_count += 1
+        return True
+
+    def _spawn_runtime_arrivals(self) -> None:
+        due = self.arrival_process.arrivals_due(self.time)
+        if due > 0:
+            self._runtime_request_due(due)
+        if not self.external_arrival_queue:
+            return
+        admitted_this_step = 0
+        while self.external_arrival_queue:
+            active_count = sum(not aircraft.finished for aircraft in self.aircraft)
+            if active_count >= self.config.max_active_uavs:
+                for request in self.external_arrival_queue:
+                    if request.get("first_blocked_time") is None:
+                        request["first_blocked_time"] = float(self.time)
+                        self.blocked_arrival_count += 1
+                break
+            request = self.external_arrival_queue[0]
+            if not self._admit_one_external_arrival(
+                request,
+                admitted_this_step,
+                max(1, len(self.external_arrival_queue)),
+            ):
+                break
+            self.external_arrival_queue.pop(0)
+            admitted_this_step += 1
+
+    def _track_active_cap_and_external_queue(self) -> None:
+        active_count = sum(not aircraft.finished for aircraft in self.aircraft)
+        at_cap = active_count >= self.config.max_active_uavs
+        if at_cap:
+            if not self.active_cap_hit:
+                self.time_to_first_cap = float(self.time)
+            self.active_cap_hit = True
+            self.time_at_active_cap_seconds += self.config.dt
+            self._current_cap_streak_seconds += self.config.dt
+            self.longest_continuous_cap_seconds = max(
+                self.longest_continuous_cap_seconds,
+                self._current_cap_streak_seconds,
             )
-            aircraft.snapshot()
-            self.aircraft.append(aircraft)
-            agent = self._agent_name(uid)
-            if agent not in self.possible_agents:
-                self.possible_agents.append(agent)
-            self.agents.append(agent)
+        else:
+            self._current_cap_streak_seconds = 0.0
+        self.external_queue_waiting_time += len(self.external_arrival_queue) * self.config.dt
 
     def _agent_name(self, uid: int) -> str:
         return f"uav_{uid}"
@@ -416,12 +497,21 @@ class TerminalParallelEnv:
             not aircraft.finished and aircraft.sequence_number is None
             for aircraft in self.aircraft
         )
+        external_backlog = len(self.external_arrival_queue)
         outer_pressure = len(self.vtac.queues[outer_index]) / max(1, self.vtac.queue_capacity(outer_index))
         inner_pressure = len(self.vtac.queues[inner_index]) / max(1, self.vtac.queue_capacity(inner_index))
         final_pressure = len(self.vtac.queues[0]) / max(1, self.config.final_queue_capacity)
-        recent_arrivals = float(len(self.aircraft) - float(self.last_gate_metrics.get("spawned_count", len(self.aircraft))))
+        recent_arrivals = float(
+            self.arrival_request_count
+            - float(
+                self.last_gate_metrics.get(
+                    "arrival_request_count",
+                    self.arrival_request_count,
+                )
+            )
+        )
         recent_landings = float(metrics["landed_count"] - float(self.last_gate_metrics.get("landed_count", metrics["landed_count"])))
-        backlog_ratio = approach_backlog / max(1, self.config.max_active_uavs)
+        backlog_ratio = (approach_backlog + external_backlog) / max(1, self.config.max_active_uavs)
         previous_backlog = float(self.last_gate_metrics.get("approach_backlog_ratio", backlog_ratio))
         backlog_growth = backlog_ratio - previous_backlog
         active_ratio = len(active) / max(1, self.config.max_active_uavs)
@@ -439,6 +529,7 @@ class TerminalParallelEnv:
         )
         self.last_gate_metrics = {
             "spawned_count": float(len(self.aircraft)),
+            "arrival_request_count": float(self.arrival_request_count),
             "landed_count": float(metrics["landed_count"]),
             "approach_backlog_ratio": float(backlog_ratio),
             "backlog_growth": float(backlog_growth),
@@ -1092,6 +1183,7 @@ class TerminalParallelEnv:
             aircraft.phase == FlightPhase.APPROACH or aircraft.sequence_number is None
             for aircraft in active
         )
+        external_count = len(self.external_arrival_queue)
         ring_indices = {ring.index for ring in self.config.rings}
         outer_index = max(ring_indices)
         inner_index = min(ring_indices)
@@ -1102,7 +1194,7 @@ class TerminalParallelEnv:
         self.outer_waiting_time += outer_count * self.config.dt
         self.inner_waiting_time += inner_count * self.config.dt
         self.total_waiting_time += (
-            approach_count + outer_count + inner_count + final_count
+            external_count + approach_count + outer_count + inner_count + final_count
         ) * self.config.dt
 
         outer_capacity = max(1, self.vtac.queue_capacity(outer_index))
@@ -1111,6 +1203,7 @@ class TerminalParallelEnv:
         active_ratio = len(active) / max(1, self.config.max_active_uavs)
         pressure = max(
             active_ratio,
+            external_count / max(1, self.config.max_active_uavs),
             approach_count / max(1, self.config.max_active_uavs),
             outer_count / outer_capacity,
             inner_count / inner_capacity,
@@ -1226,6 +1319,7 @@ class TerminalParallelEnv:
         self.step_count += 1
         self.time += self.config.dt
         self._spawn_runtime_arrivals()
+        self._track_active_cap_and_external_queue()
         self.final_queue_time += len(self.vtac.queues[0]) * self.config.dt
         self._track_waiting_and_congestion()
         self._update_finish_states()
@@ -1279,6 +1373,10 @@ class TerminalParallelEnv:
             self.config.dt,
             self.time,
         )
+        fraction_time_at_active_cap = self.time_at_active_cap_seconds / max(
+            self.config.dt,
+            self.time,
+        )
 
         per_ac = [ac.metrics_dict(self.config.center) for ac in self.aircraft]
         path_lengths = [m["path_length"] for m in per_ac]
@@ -1301,6 +1399,31 @@ class TerminalParallelEnv:
             "active_count": float(active),
             "total_spawned_count": float(len(self.aircraft)),
             "total_landed_count": float(finished),
+            "arrival_request_count": float(self.arrival_request_count),
+            "admitted_arrival_count": float(self.admitted_arrival_count),
+            "blocked_arrival_count": float(self.blocked_arrival_count),
+            "deferred_arrival_count": float(self.deferred_arrival_count),
+            "dropped_arrival_count": float(self.dropped_arrival_count),
+            "external_queue_count": float(len(self.external_arrival_queue)),
+            "external_queue_waiting_time": float(self.external_queue_waiting_time),
+            "internal_active_count": float(active),
+            "internal_capacity_ratio": float(active / max(1, self.config.max_active_uavs)),
+            "external_backlog": float(len(self.external_arrival_queue)),
+            "total_system_backlog": float(
+                len(self.external_arrival_queue)
+                + sum(
+                    not aircraft.finished and aircraft.sequence_number is None
+                    for aircraft in self.aircraft
+                )
+                + len(self.vtac.queues.get(0, []))
+            ),
+            "active_cap_hit": float(self.active_cap_hit),
+            "time_at_active_cap_seconds": float(self.time_at_active_cap_seconds),
+            "fraction_time_at_active_cap": float(fraction_time_at_active_cap),
+            "longest_continuous_cap_seconds": float(self.longest_continuous_cap_seconds),
+            "time_to_first_cap": float(
+                -1.0 if self.time_to_first_cap is None else self.time_to_first_cap
+            ),
             "sequenced": sequenced,
             "nmac_count": self.nmac_count,
             "collision_count": self.collision_count,
@@ -1343,8 +1466,17 @@ class TerminalParallelEnv:
             "outer_waiting_time": float(self.outer_waiting_time),
             "inner_waiting_time": float(self.inner_waiting_time),
             "total_waiting_time": float(self.total_waiting_time),
+            "raw_waiting": float(self.total_waiting_time),
+            "raw_backlog": float(
+                len(self.external_arrival_queue)
+                + sum(
+                    not aircraft.finished and aircraft.sequence_number is None
+                    for aircraft in self.aircraft
+                )
+            ),
             "normalized_waiting": float(normalized_waiting),
             "congestion_pressure_time": float(self.congestion_pressure_time),
+            "raw_congestion": float(self.congestion_pressure_time),
             "normalized_congestion": float(normalized_congestion),
             "min_pairwise_distance": float(self.min_pairwise_distance),
             "safety_enabled": float(self.safety_enabled),
