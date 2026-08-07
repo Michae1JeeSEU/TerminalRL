@@ -593,43 +593,82 @@ class TerminalParallelEnv:
         outer_pressure = len(self.vtac.queues[outer_index]) / max(1, self.vtac.queue_capacity(outer_index))
         inner_pressure = len(self.vtac.queues[inner_index]) / max(1, self.vtac.queue_capacity(inner_index))
         final_pressure = len(self.vtac.queues[0]) / max(1, self.config.final_queue_capacity)
-        recent_arrivals = float(
+        previous_time = float(self.last_gate_metrics.get("time", self.time))
+        window_seconds = max(self.config.dt, self.time - previous_time)
+        recent_arrival_count = float(
             self.arrival_request_count
-            - float(
-                self.last_gate_metrics.get(
-                    "arrival_request_count",
-                    self.arrival_request_count,
-                )
-            )
+            - float(self.last_gate_metrics.get("arrival_request_count", self.arrival_request_count))
         )
-        recent_landings = float(metrics["landed_count"] - float(self.last_gate_metrics.get("landed_count", metrics["landed_count"])))
+        recent_landing_count = float(
+            metrics["landed_count"]
+            - float(self.last_gate_metrics.get("landed_count", metrics["landed_count"]))
+        )
+        recent_conflict_samples = float(
+            self.raw_pair_conflict_samples
+            - float(self.last_gate_metrics.get("raw_pair_conflict_samples", self.raw_pair_conflict_samples))
+        )
+        recent_pair_opportunities = float(
+            self.pair_opportunities
+            - float(self.last_gate_metrics.get("pair_opportunities", self.pair_opportunities))
+        )
+        arrival_rate = max(0.0, recent_arrival_count) / window_seconds
+        landing_rate = max(0.0, recent_landing_count) / window_seconds
+        nominal_rate_scale = max(
+            1e-9,
+            max(1.0, float(self.config.max_active_uavs))
+            / max(self.config.dt, float(self.config.metrics_sampling_interval_seconds)),
+        )
+        recent_arrivals = float(np.clip(arrival_rate / nominal_rate_scale, 0.0, 1.0))
+        recent_landings = float(np.clip(landing_rate / nominal_rate_scale, 0.0, 1.0))
+        recent_conflict_rate = float(
+            np.clip(recent_conflict_samples / max(1.0, recent_pair_opportunities), 0.0, 1.0)
+        )
         backlog_ratio = (approach_backlog + external_backlog) / max(1, self.config.max_active_uavs)
         previous_backlog = float(self.last_gate_metrics.get("approach_backlog_ratio", backlog_ratio))
-        backlog_growth = backlog_ratio - previous_backlog
+        backlog_growth = float(np.clip(backlog_ratio - previous_backlog, -1.0, 1.0))
         active_ratio = len(active) / max(1, self.config.max_active_uavs)
-        imbalance = max(0.0, recent_arrivals - recent_landings) / max(1.0, recent_arrivals + recent_landings, 1.0)
+        imbalance = float(
+            np.clip(
+                (arrival_rate - landing_rate) / max(arrival_rate + landing_rate, 1.0 / window_seconds),
+                -1.0,
+                1.0,
+            )
+        )
+        pressure = float(max(outer_pressure, inner_pressure, final_pressure, active_ratio, backlog_ratio))
         gate_metrics = GateMetrics(
-            normalized_congestion=float(metrics.get("normalized_congestion", 0.0)),
+            normalized_congestion=float(np.clip(pressure, 0.0, 1.0)),
             approach_backlog_ratio=float(backlog_ratio),
             occupancy_pressure=float(max(outer_pressure, inner_pressure, final_pressure)),
             backlog_growth=float(backlog_growth),
-            normalized_conflict_rate=float(metrics.get("normalized_conflict_rate", 0.0)),
+            normalized_conflict_rate=float(recent_conflict_rate),
             recent_arrivals=float(max(0.0, recent_arrivals)),
             recent_landings=float(max(0.0, recent_landings)),
             arrival_service_imbalance=float(imbalance),
             active_capacity_ratio=float(active_ratio),
         )
         self.last_gate_metrics = {
+            "time": float(self.time),
             "spawned_count": float(len(self.aircraft)),
             "arrival_request_count": float(self.arrival_request_count),
             "landed_count": float(metrics["landed_count"]),
+            "raw_pair_conflict_samples": float(self.raw_pair_conflict_samples),
+            "pair_opportunities": float(self.pair_opportunities),
             "approach_backlog_ratio": float(backlog_ratio),
             "backlog_growth": float(backlog_growth),
             "arrival_service_imbalance": float(imbalance),
+            "recent_arrivals": float(recent_arrivals),
+            "recent_landings": float(recent_landings),
+            "recent_conflict_rate": float(recent_conflict_rate),
+            "external_queue_pressure": float(external_backlog / max(1, self.config.max_active_uavs)),
         }
         return gate_metrics
 
     def _update_geometry_gate(self, *, force_sample: bool = False) -> dict:
+        if not (force_sample or self.geometry_gate.should_sample(self.time)):
+            return self.geometry_gate.info(
+                self.time,
+                geometry_deviation_l1=self._geometry_deviation_l1(),
+            )
         metrics = self._gate_metrics()
         return self.geometry_gate.update(
             metrics,
@@ -685,6 +724,13 @@ class TerminalParallelEnv:
         remaining_fraction = (
             total_requested - self.terminal_outcome_count()
         ) / max(1, total_requested)
+        not_yet_due_fraction = (
+            max(0.0, float(total_requested) - float(self.arrival_request_count))
+            / max(1.0, float(total_requested))
+            if self.config.total_requested_uavs is not None
+            else 0.0
+        )
+        terminal_fraction = self.terminal_outcome_count() / max(1, total_requested)
         battery_values = [
             ac.remaining_endurance_seconds
             for ac in active_aircraft
@@ -696,6 +742,12 @@ class TerminalParallelEnv:
         outer_capacity = self.airspace.outer_ring.capacity / max(1, self.config.max_active_uavs)
         inner_capacity = self.airspace.inner_ring.capacity / max(1, self.config.max_active_uavs)
         external_queue_pressure = len(self.external_arrival_queue) / max(1, self.config.max_active_uavs)
+        recent_arrivals = float(self.last_gate_metrics.get("recent_arrivals", 0.0))
+        recent_landings = float(self.last_gate_metrics.get("recent_landings", 0.0))
+        recent_imbalance = float(self.last_gate_metrics.get("arrival_service_imbalance", 0.0))
+        recent_conflict = float(self.last_gate_metrics.get("recent_conflict_rate", 0.0))
+        trigger_persistence = self.geometry_gate.trigger_persistence_count / max(1, self.geometry_gate.config.k_on)
+        recovery_persistence = self.geometry_gate.recovery_persistence_count / max(1, self.geometry_gate.config.k_off)
         return np.asarray(
             [
                 *self.airspace.normalized_state_vector(),
@@ -710,7 +762,15 @@ class TerminalParallelEnv:
                 inner_capacity,
                 external_queue_pressure,
                 remaining_fraction,
+                not_yet_due_fraction,
+                terminal_fraction,
+                recent_arrivals,
+                recent_landings,
+                recent_imbalance,
+                recent_conflict,
                 battery_risk,
+                float(np.clip(trigger_persistence, 0.0, 1.0)),
+                float(np.clip(recovery_persistence, 0.0, 1.0)),
             ],
             dtype=np.float32,
         )

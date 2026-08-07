@@ -648,3 +648,33 @@ Next recommended step:
 Only if `pretrain_readiness.status == READY_FOR_512_SMOKE` should Stage 0
 512-step smoke be started from scratch. Old PPO checkpoints remain invalid for
 resume/training evidence after this core model revision.
+
+## PRETRAIN READINESS phase completed
+
+This phase generated the readiness artifact bundle under:
+
+```text
+$HOME/training_outputs/terminal/core_model_revision/pretrain_readiness/final
+```
+
+The final decision file is:
+
+```text
+pretrain_readiness.json
+```
+
+Current status:
+
+```text
+READY_FOR_512_SMOKE
+```
+
+No PPO training was run in this phase. The next turn may start Stage 0
+512-step smoke from scratch, but it must still not resume old PPO checkpoints.
+
+Important evidence caveat: the finite-cohort diagnostics conserve outcomes and
+have `unresolved=0`, but some normal finite diagnostic runs end with
+`CRASHED_COLLISION` outcomes. This is acceptable for readiness to smoke because
+terminal cleanup and conservation are correct, but Stage 0/Stage 0.5 should
+watch collision-crash rate closely and treat persistent crash-heavy behavior as
+reward/safety tuning evidence rather than as successful policy evidence.

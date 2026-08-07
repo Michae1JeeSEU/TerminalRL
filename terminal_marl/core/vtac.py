@@ -100,6 +100,19 @@ class VTAC:
             tangent = -tangent
         return tangent
 
+    def _minimum_ring_spacing_angle(self, ring_idx: int) -> float:
+        ring = self.ring_spec(ring_idx)
+        required = float(self.config.safe_distance) + float(
+            getattr(self.config, "ring_separation_margin_m", 0.0)
+        )
+        if required >= 2.0 * ring.radius:
+            return math.pi
+        geometric = 2.0 * math.asin(
+            min(1.0, max(0.0, required / (2.0 * max(1e-9, ring.radius))))
+        )
+        configured = math.radians(self.config.ring_merge_spacing_deg)
+        return max(configured, geometric)
+
     def _refresh_ring_capture(self, aircraft: List[UAVState], current_step: int) -> None:
         for ac in aircraft:
             if ac.finished or ac.assigned_ring in (None, 0) or ac.transition_active:
@@ -126,7 +139,7 @@ class VTAC:
         if target_ring_idx == 0:
             return True
         candidate_theta = math.atan2(candidate.position[1], candidate.position[0])
-        min_sep = math.radians(self.config.ring_merge_spacing_deg)
+        min_sep = self._minimum_ring_spacing_angle(target_ring_idx)
         for uid in self.queues[target_ring_idx]:
             other = aircraft_map[uid]
             if other.uid == candidate.uid or other.finished:
@@ -316,6 +329,8 @@ class VTAC:
                 continue
             dist_xy = norm_xy(a.position)
             if dist_xy <= self.config.approach_threshold_radius and self.queue_has_space(self.outermost_ring_index):
+                if not self._angular_spacing_ok(a, self.outermost_ring_index, aircraft_map):
+                    continue
                 self.sequence_counter += 1
                 a.sequence_number = self.sequence_counter
                 if a.entry_time is None:

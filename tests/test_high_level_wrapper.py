@@ -20,7 +20,7 @@ def test_wrapper_exposes_gym_style_spaces_and_reset() -> None:
     observation, info = wrapper.reset(seed=2)
     assert wrapper.action_space.shape == (8,)
     assert wrapper.observation_space.shape == observation.shape
-    assert observation.shape == (36,)
+    assert observation.shape == (44,)
     assert info["experiment_mode"] == "dynamic_hrl"
 
 

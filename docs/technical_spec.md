@@ -930,3 +930,24 @@ partners `CRASHED_COLLISION` and counts the unordered pair once.
 This revision remains simulation-only: no ROS2, Crazyswarm2, or real Crazyflie
 hardware is connected, and low-level policy is not expanded into free
 heading/altitude/velocity control.
+
+### Rolling event-gate inputs and revised high-level observation
+
+The geometry event gate now uses recent physical-time deltas rather than
+episode-cumulative conflict/congestion values.  Recent arrivals, service
+landings, conflict rate, backlog growth, occupancy pressure, external queue
+pressure, and arrival-service imbalance are normalized before entering the gate
+score.
+
+The high-level observation for the revised MDP has length 44 and includes:
+
+- normalized 8D actual airspace state;
+- outer/inner/final occupancy ratios using current geometric capacity;
+- internal active ratio and external queue pressure;
+- remaining cohort fraction, not-yet-due request fraction, and terminal outcome
+  fraction;
+- recent arrival rate, recent service rate, signed imbalance, and recent
+  conflict;
+- battery-risk summary;
+- gate state, trigger/recovery persistence, dwell/deviation features;
+- previous applied high-level action.

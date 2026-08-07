@@ -355,7 +355,7 @@ def _evaluate_model(
                 low_level_policy=low_level_policy,
                 seed=seed + 10_000 + episode,
                 high_level_interval=high_level_interval,
-                max_steps=max_steps,
+                max_steps=None,
             )
             if demand_mixture is not None
             else _make_high_level_env(
@@ -364,7 +364,7 @@ def _evaluate_model(
                 low_level_policy=low_level_policy,
                 seed=seed + 10_000 + episode,
                 high_level_interval=high_level_interval,
-                max_steps=max_steps,
+                max_steps=None,
             )
         )
         observation, _ = env.reset(seed=seed + 10_000 + episode)
@@ -372,7 +372,7 @@ def _evaluate_model(
         steps = 0
         terminated = truncated = False
         horizon = max(20, int(eval_high_level_steps))
-        while not (terminated or truncated) and steps < horizon:
+        while not truncated and steps < horizon:
             action, _ = model.predict(observation, deterministic=True)
             observation, reward, terminated, truncated, info = env.step(action)
             total_reward += float(reward)
