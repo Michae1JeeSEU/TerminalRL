@@ -17,6 +17,7 @@ clip_range: 0.2
 ent_coef: 0.01
 vf_coef: 0.5
 high_level_interval: 180
+max_steps: 3600
 low_level_policy: rule-only
 nominal_delay_mode: analytic
 output_dir: /home/user/training_outputs/terminal/event_gated_hrl/stage05_periodic_5k_seed0

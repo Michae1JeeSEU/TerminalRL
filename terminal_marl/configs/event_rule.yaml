@@ -42,6 +42,7 @@ safety:
   collision_distance: 20.0
 
 timing:
+  max_steps: 3600
   ring_to_ring_min_time_gap_s: 7.0
   final_min_time_gap_s: 12.0
 

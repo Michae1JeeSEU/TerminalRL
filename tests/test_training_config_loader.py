@@ -44,6 +44,7 @@ def test_load_event_gated_training_presets_with_demand_mixture() -> None:
             "bursty": pytest.approx(0.3),
         }
         assert config.high_level_interval == 180
+        assert config.max_steps == 3600
         assert config.traffic_check_steps >= 20
         assert config.eval_high_level_steps >= 20
 
