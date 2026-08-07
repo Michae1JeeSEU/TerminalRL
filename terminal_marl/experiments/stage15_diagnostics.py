@@ -358,7 +358,8 @@ def summarize_airspace_boundary(samples: list[dict[str, Any]]) -> list[dict[str,
         nom = nominal.get(field, values[0] if values else 0.0)
         lower = min(values) if values else 0.0
         upper = max(values) if values else 0.0
-        span = max(1e-9, upper - lower)
+        span = upper - lower
+        degenerate = span <= 1e-9
         rows.append(
             {
                 "policy_label": policy,
@@ -366,14 +367,27 @@ def summarize_airspace_boundary(samples: list[dict[str, Any]]) -> list[dict[str,
                 "parameter": field,
                 "min": lower,
                 "max": upper,
-                "boundary_fraction": _fraction(
-                    values,
-                    lambda v: abs(v - lower) <= 0.02 * span or abs(v - upper) <= 0.02 * span,
+                "boundary_fraction": (
+                    0.0
+                    if degenerate
+                    else _fraction(
+                        values,
+                        lambda v: abs(v - lower) <= 0.02 * span or abs(v - upper) <= 0.02 * span,
+                    )
                 ),
+                "observed_range_degenerate": float(degenerate),
                 "nominal_deviation_mean": float(np.mean([abs(v - nom) for v in values])) if values else 0.0,
                 "nominal_deviation_p95": float(np.percentile([abs(v - nom) for v in values], 95)) if values else 0.0,
-                "time_at_lower_bound": 20.0 * _fraction(values, lambda v: abs(v - lower) <= 1e-9) * len(values),
-                "time_at_upper_bound": 20.0 * _fraction(values, lambda v: abs(v - upper) <= 1e-9) * len(values),
+                "time_at_lower_bound": (
+                    0.0
+                    if degenerate
+                    else 20.0 * _fraction(values, lambda v: abs(v - lower) <= 1e-9) * len(values)
+                ),
+                "time_at_upper_bound": (
+                    0.0
+                    if degenerate
+                    else 20.0 * _fraction(values, lambda v: abs(v - upper) <= 1e-9) * len(values)
+                ),
                 "changes_per_hour": 3600.0 * float(np.count_nonzero(diffs > 1e-9)) / max(1.0, 20.0 * len(values)),
                 "total_variation": float(np.sum(diffs)) if diffs.size else 0.0,
                 "oscillation_count": float(_sign_change_count(list(np.diff(np.asarray(values, dtype=float))))),

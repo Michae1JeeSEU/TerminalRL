@@ -6,6 +6,7 @@ from terminal_marl.experiments.evaluation_protocol import (
 )
 from terminal_marl.experiments.stage15_diagnostics import (
     generate_common_schedules,
+    summarize_airspace_boundary,
     summarize_action_saturation,
     summarize_normalized_metric_saturation,
 )
@@ -68,3 +69,25 @@ def test_stage15_summary_helpers_report_saturation_fields() -> None:
     assert any(row["dim"] == 0 and row["action_kind"] == "applied" for row in action_rows)
     congestion = next(row for row in metric_rows if row["metric"] == "normalized_congestion")
     assert congestion["reward_state_saturation"] == 1.0
+
+
+def test_airspace_boundary_summary_does_not_mark_constant_trace_as_boundary() -> None:
+    samples = [
+        {
+            "policy_label": "event-gated PPO20k",
+            "traffic_demand_level": "medium",
+            "window": "measurement",
+            "airspace_outer_radius": 400.0,
+            "airspace_inner_radius": 200.0,
+            "airspace_outer_height": 400.0,
+            "airspace_inner_height": 200.0,
+            "airspace_outer_speed": 28.0,
+            "airspace_inner_speed": 20.0,
+            "airspace_ring_headway": 7.0,
+            "airspace_final_headway": 12.0,
+        }
+        for _ in range(3)
+    ]
+    rows = summarize_airspace_boundary(samples)
+    assert all(row["boundary_fraction"] == 0.0 for row in rows)
+    assert all(row["observed_range_degenerate"] == 1.0 for row in rows)
