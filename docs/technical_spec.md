@@ -798,3 +798,94 @@ New simulation-only modes:
 Training presets for the new PPO pilots use an episode-level medium/high/bursty
 mixture (0.40/0.30/0.30). These runs must start from scratch; never resume an
 old 20 s PPO checkpoint after changing the high-level MDP interval.
+
+## 36. Stage-1.5 evaluation integrity diagnostics
+
+Stage-1.5 is a diagnostics-only phase after the event-gated/periodic 20k pilot.
+It may load existing 20k checkpoints for evaluation, but it must not start PPO
+learning or resume training.
+
+### Arrival request and admission semantics
+
+`ArrivalProcess` generates policy-independent external request demand.  It no
+longer censors requests when the terminal reaches `max_active_uavs`.
+`TerminalParallelEnv` interprets `max_active_uavs` as an internal active-aircraft
+cap.  When the cap is full, requests enter a FIFO external/pre-entry queue.
+
+Metrics exposed by `env.metrics()` include:
+
+- `arrival_request_count`;
+- `admitted_arrival_count`;
+- `blocked_arrival_count`;
+- `deferred_arrival_count`;
+- `dropped_arrival_count`;
+- `external_queue_count`;
+- `external_queue_waiting_time`;
+- `active_cap_hit`;
+- `time_at_active_cap_seconds`;
+- `fraction_time_at_active_cap`;
+- `longest_continuous_cap_seconds`;
+- `time_to_first_cap`;
+- `internal_active_count`;
+- `internal_capacity_ratio`;
+- `external_backlog`;
+- `total_system_backlog`.
+
+`total_spawned_count` remains the number of actual UAV instances in the
+terminal, including the initial queue and admitted runtime arrivals.  It is not
+the same as external request demand.
+
+### Common random numbers
+
+`terminal_marl.core.arrival_process.generate_arrival_schedule()` creates a
+deterministic `scenario + seed + physical duration` request schedule.
+`run_windowed_evaluation(..., fixed_arrival_schedule=...)` replays that exact
+schedule so rule-only, event-rule, periodic PPO, event-gated PPO, and random
+baselines see identical request counts.  Policies can affect admission time,
+external backlog, and completion, but not external request count.
+
+### Windowed throughput
+
+The formal steady-state throughput metric is
+`measurement_throughput_per_second` / `measurement_throughput_per_hour`, computed
+only over the measurement window.  Warm-up landings and drain landings are
+reported separately:
+
+- `warmup_landed`;
+- `measurement_landed`;
+- `measurement_duration_seconds`;
+- `measurement_throughput_per_second`;
+- `measurement_throughput_per_hour`;
+- `drain_landed`;
+- `drain_duration_seconds`;
+- `total_landed`;
+- `overall_throughput_per_hour`.
+
+### Action, gate, and airspace diagnostics
+
+Every sampled evaluation row contains requested/applied 8D action fields,
+geometry gate active/allowed/dwell/mask diagnostics, configured/effective dwell,
+airspace parameters, raw/normalized congestion/waiting/backlog, and cap/external
+queue metrics.  With 180 s high-level decisions and 600 s configured dwell, the
+effective geometry dwell on the decision grid is 720 s.
+
+### Stage-1.5 runner
+
+`terminal_marl.experiments.stage15_diagnostics` writes the final diagnostic
+bundle under:
+
+```text
+$HOME/training_outputs/terminal/event_gated_stage15_diagnostics/final
+```
+
+The only valid final decision values are:
+
+```text
+READY_FOR_50K_WITH_CURRENT_MDP
+RETRAIN_REQUIRED_AFTER_MDP_FIX
+ENVIRONMENT_NOT_READY
+```
+
+Because the external-queue fix changes MDP/reward semantics, existing pilots are
+diagnostic evidence only unless a future run explicitly retrains under the fixed
+semantics.

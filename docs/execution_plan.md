@@ -339,3 +339,34 @@ calibrate geometry-gate thresholds from fixed-geometry traces; validate
 scratch; run exact 5k `event_gated_hrl` and `periodic_hrl` pilots from scratch;
 only if ready, run exact 20k event-gated and periodic pilots from scratch;
 evaluate and stop. Do not continue to 50k/main/sweep or hardware experiments.
+
+# Stage-1.5 diagnostics-only gate
+
+After the 20k event-gated/periodic pilot, do not continue training until
+evaluation integrity and bottleneck semantics are audited.
+
+Execution order:
+
+1. Audit `max_active_uavs=40` semantics and confirm whether arrival demand is
+   censored by the internal active cap.
+2. If demand is censored, fix the MDP semantics by adding an external/pre-entry
+   FIFO queue while preserving the internal active cap.
+3. Generate fixed arrival schedules for common-random-number evaluation.
+4. Re-evaluate existing 20k event-gated and periodic checkpoints against
+   rule-only, event-rule, and high-level-random baselines without training.
+5. Separate warm-up, measurement, and drain metrics.  Use measurement
+   throughput for steady-state efficiency claims.
+6. Produce service-capacity, demand-utilization, cap-saturation,
+   normalized-metric-saturation, action/gate/boundary, and dwell 540/720
+   diagnostics.
+7. Write `next_training_decision.json` with exactly one of:
+
+```text
+READY_FOR_50K_WITH_CURRENT_MDP
+RETRAIN_REQUIRED_AFTER_MDP_FIX
+ENVIRONMENT_NOT_READY
+```
+
+If arrival/admission, reward normalization, dwell, observation, or action
+semantics change, mark `RETRAIN_REQUIRED_AFTER_MDP_FIX` and stop.  Do not keep
+using old PPO checkpoints as a continuation point for the fixed MDP.

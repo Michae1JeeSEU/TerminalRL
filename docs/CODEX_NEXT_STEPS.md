@@ -534,3 +534,58 @@ The intended order is:
    periodic pilots from scratch;
 7. evaluate and stop. Do not continue to 50k, 100k, main, sweep, ROS2,
    Crazyswarm2, or hardware experiments.
+
+## Stage-1.5: evaluation integrity and bottleneck diagnosis
+
+Current status after the 20k event-gated/periodic pilot:
+
+```text
+readiness = NOT_READY_FOR_50K
+```
+
+Before any further PPO learning, run the diagnostics-only Stage-1.5 protocol.
+This phase is allowed to load existing 20k models for evaluation, but it must
+not call PPO `learn`, resume, 5k/20k/50k, main, sweep, ROS2, Crazyswarm2, or
+hardware.
+
+Implemented tasks:
+
+1. `ArrivalProcess` now represents policy-independent external request demand.
+   It no longer uses `active_count >= max_active_uavs` to return zero due
+   arrivals.
+2. `TerminalParallelEnv` now keeps an external FIFO queue when the internal
+   active cap is full. New metrics include request/admit/blocked/deferred/drop
+   counts, external queue count/waiting time, active-cap hit time, longest cap
+   streak, and time-to-first-cap.
+3. `run_windowed_evaluation()` accepts a fixed arrival schedule so all policies
+   can replay exactly the same scenario+seed request demand.
+4. Requested/applied 8D high-level action, gate mask/dwell state, airspace
+   state, raw/normalized congestion/waiting/backlog, and effective dwell are
+   recorded in evaluation samples.
+5. Added `terminal_marl.experiments.stage15_diagnostics` to write:
+   `arrival_semantics_audit.json`, `throughput_semantics_audit.json`,
+   `service_capacity_summary.csv`, `demand_utilization_summary.csv`,
+   `cap_saturation_summary.csv`, `normalized_metric_saturation.csv`,
+   `action_saturation_summary.csv`, `airspace_boundary_summary.csv`,
+   `gate_effectiveness_summary.csv`, `dwell_540_vs_720.csv`,
+   `common_schedule_policy_comparison.csv`, `event_vs_periodic_effect.csv`,
+   `diagnostics_summary.*`, and `next_training_decision.json`.
+
+Important interpretation:
+
+The old active-cap behavior censored external demand and could make different
+policies see different request counts. The external-queue fix changes
+MDP/reward semantics, so old 20k checkpoints are diagnostic artifacts only. If
+Stage-1.5 confirms the fix, the expected decision is:
+
+```text
+RETRAIN_REQUIRED_AFTER_MDP_FIX
+```
+
+unless additional diagnostics reveal that the environment is still not ready.
+
+Server output root:
+
+```text
+$HOME/training_outputs/terminal/event_gated_stage15_diagnostics
+```

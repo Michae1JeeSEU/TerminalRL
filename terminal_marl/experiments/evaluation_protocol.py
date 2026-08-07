@@ -161,6 +161,20 @@ def occupancy_snapshot(env: TerminalParallelEnv) -> dict[str, float]:
         "outer_occupancy": float(len(env.vtac.queues[outer_index])),
         "inner_occupancy": float(len(env.vtac.queues[inner_index])),
         "final_occupancy": float(len(env.vtac.queues[0])),
+        "external_queue_count": float(len(env.external_arrival_queue)),
+        "arrival_request_count": float(env.arrival_request_count),
+        "admitted_arrival_count": float(env.admitted_arrival_count),
+        "blocked_arrival_count": float(env.blocked_arrival_count),
+        "deferred_arrival_count": float(env.deferred_arrival_count),
+        "dropped_arrival_count": float(env.dropped_arrival_count),
+        "external_queue_waiting_time": float(env.external_queue_waiting_time),
+        "active_cap_hit": float(env.active_cap_hit),
+        "time_at_active_cap_seconds": float(env.time_at_active_cap_seconds),
+        "fraction_time_at_active_cap": float(
+            env.time_at_active_cap_seconds / max(env.config.dt, env.time)
+        ),
+        "longest_continuous_cap_seconds": float(env.longest_continuous_cap_seconds),
+        "time_to_first_cap": float(-1.0 if env.time_to_first_cap is None else env.time_to_first_cap),
     }
 
 
@@ -200,6 +214,39 @@ def collect_sample(
         env.time,
         geometry_deviation_l1=float(np.abs(airspace_state[:4] - nominal[:4]).sum()),
     )
+    high_level_info = env.last_high_level_info or {}
+    requested_action = np.asarray(
+        high_level_info.get(
+            "requested_action",
+            np.zeros(DynamicAirspace.ACTION_SIZE, dtype=np.float32),
+        ),
+        dtype=float,
+    ).reshape(DynamicAirspace.ACTION_SIZE)
+    applied_action = np.asarray(
+        high_level_info.get(
+            "applied_action",
+            np.zeros(DynamicAirspace.ACTION_SIZE, dtype=np.float32),
+        ),
+        dtype=float,
+    ).reshape(DynamicAirspace.ACTION_SIZE)
+    step_metrics = env.metrics()
+    configured_dwell = float(env.config.geometry_min_dwell_seconds)
+    decision_interval = float(decision_interval_seconds)
+    effective_dwell = (
+        math.ceil(configured_dwell / decision_interval) * decision_interval
+        if decision_interval > 0.0
+        else configured_dwell
+    )
+    action_fields = {
+        f"requested_action_dim_{idx}": float(requested_action[idx])
+        for idx in range(DynamicAirspace.ACTION_SIZE)
+    }
+    action_fields.update(
+        {
+            f"applied_action_dim_{idx}": float(applied_action[idx])
+            for idx in range(DynamicAirspace.ACTION_SIZE)
+        }
+    )
     return {
         "time": float(env.time),
         "step": float(env.step_count),
@@ -225,6 +272,12 @@ def collect_sample(
         "normalized_conflict_rate": float(metrics["normalized_conflict_rate"]),
         "normalized_waiting": float(metrics["normalized_waiting"]),
         "normalized_congestion": float(metrics["normalized_congestion"]),
+        "raw_congestion": float(step_metrics["raw_congestion"]),
+        "raw_waiting": float(step_metrics["raw_waiting"]),
+        "raw_backlog": float(step_metrics["raw_backlog"]),
+        "normalized_backlog": float(
+            step_metrics["raw_backlog"] / max(1.0, env.config.max_active_uavs)
+        ),
         "nmac_count": float(metrics["nmac_count"]),
         "collision_count": float(metrics["collision_count"]),
         "safety_override_count": float(metrics["safety_override_count"]),
@@ -243,6 +296,17 @@ def collect_sample(
         "geometry_gate_active": float(gate_info["geometry_gate_active"]),
         "geometry_action_allowed": float(gate_info["geometry_action_allowed"]),
         "geometry_dwell_satisfied": float(gate_info["geometry_dwell_satisfied"]),
+        "configured_geometry_dwell_seconds": configured_dwell,
+        "effective_geometry_dwell_seconds": float(effective_dwell),
+        "masked_by_gate": float(
+            bool(high_level_info.get("geometry_gate", {}).get("geometry_masked", False))
+        ),
+        "masked_by_dwell": float(
+            high_level_info.get("geometry_gate", {}).get("geometry_gate_reason", "")
+            == "dwell_locked"
+        ),
+        "actual_geometry_change": float(bool(high_level_info.get("geometry_changed", False))),
+        "seconds_since_geometry_change": float(gate_info["seconds_since_geometry_change"]),
         "geometry_gate_state": gate_info["gate_state"],
         "geometry_gate_reason": gate_info["geometry_gate_reason"],
         "geometry_opportunity_count": float(gate_info["geometry_opportunity_count"]),
@@ -252,6 +316,7 @@ def collect_sample(
         "outer_to_inner": float(transition_counts.get("outer_to_inner", 0)),
         "inner_to_final": float(transition_counts.get("inner_to_final", 0)),
         "final_to_land": float(transition_counts.get("final_to_land", 0)),
+        **action_fields,
         **occupancy,
     }
 
@@ -300,6 +365,7 @@ def run_windowed_evaluation(
     demand_level: str = "medium",
     seed: int = 0,
     model_path: str | Path | None = None,
+    fixed_arrival_schedule: tuple[float, ...] | None = None,
 ) -> dict[str, Any]:
     """Run one warm-up/measurement/drain rollout at a fixed physical duration."""
 
@@ -313,6 +379,8 @@ def run_windowed_evaluation(
         + protocol.max_drain_seconds
     )
     sim_config.max_steps = max(sim_config.max_steps, int(math.ceil(total_seconds / sim_config.dt)) + 2)
+    if fixed_arrival_schedule is not None:
+        sim_config.fixed_arrival_schedule = tuple(float(t) for t in fixed_arrival_schedule)
     env = TerminalParallelEnv(sim_config)
     env.reset(seed=seed)
     rng = np.random.default_rng(seed)
@@ -353,6 +421,7 @@ def run_windowed_evaluation(
                     "time": float(env.time),
                     "landed_count": float(metrics["landed_count"]),
                     "spawned_count": float(metrics["total_spawned_count"]),
+                    "arrival_request_count": float(metrics["arrival_request_count"]),
                     "waiting": float(metrics["total_waiting_time"]),
                     "conflict": float(metrics["raw_pair_conflict_samples"]),
                 }
@@ -421,6 +490,11 @@ def run_windowed_evaluation(
         0.0,
         float(metrics["total_spawned_count"]) - measurement_start.get("spawned_count", 0.0),
     )
+    measurement_requests = max(
+        0.0,
+        float(metrics["arrival_request_count"])
+        - measurement_start.get("arrival_request_count", 0.0),
+    )
     landed_after_measurement_start = max(
         0.0,
         float(metrics["landed_count"]) - measurement_start.get("landed_count", 0.0),
@@ -455,11 +529,24 @@ def run_windowed_evaluation(
         "geometry_transition_seconds": float(protocol.geometry_transition_seconds),
         "elapsed_seconds": float(env.time),
         "measurement_start_time": float(measurement_start.get("time", 0.0)),
+        "arrival_request_count": float(metrics["arrival_request_count"]),
+        "admitted_arrival_count": float(metrics["admitted_arrival_count"]),
+        "blocked_arrival_count": float(metrics["blocked_arrival_count"]),
+        "deferred_arrival_count": float(metrics["deferred_arrival_count"]),
+        "dropped_arrival_count": float(metrics["dropped_arrival_count"]),
+        "external_queue_count": float(metrics["external_queue_count"]),
+        "external_queue_waiting_time": float(metrics["external_queue_waiting_time"]),
+        "active_cap_hit": float(metrics["active_cap_hit"]),
+        "time_at_active_cap_seconds": float(metrics["time_at_active_cap_seconds"]),
+        "fraction_time_at_active_cap": float(metrics["fraction_time_at_active_cap"]),
+        "longest_continuous_cap_seconds": float(metrics["longest_continuous_cap_seconds"]),
+        "time_to_first_cap": float(metrics["time_to_first_cap"]),
         "spawned_total": float(metrics["total_spawned_count"]),
         "landed_total": float(metrics["landed_count"]),
         "landed_by_measurement_end": float(landed_measurement_end),
         "total_landed_after_drain": float(metrics["landed_count"]),
         "measurement_spawned": float(measurement_spawned),
+        "measurement_arrival_request_count": float(measurement_requests),
         "landed_after_measurement_start": float(landed_after_measurement_start),
         "final_completion_ratio": (
             float(metrics["landed_count"]) / max(1.0, float(metrics["total_spawned_count"]))
@@ -467,6 +554,19 @@ def run_windowed_evaluation(
         "landed_by_horizon_ratio": (
             float(landed_measurement_end) / max(1.0, float(metrics["total_spawned_count"]))
         ),
+        "warmup_landed": float(measurement_start.get("landed_count", 0.0)),
+        "measurement_landed": float(landed_after_measurement_start),
+        "measurement_duration_seconds": float(protocol.measurement_seconds),
+        "measurement_throughput_per_second": landed_after_measurement_start / max(1e-9, protocol.measurement_seconds),
+        "measurement_throughput_per_hour": 3600.0 * landed_after_measurement_start / max(1e-9, protocol.measurement_seconds),
+        "drain_landed": max(
+            0.0,
+            float(metrics["landed_count"]) - float(landed_measurement_end),
+        ),
+        "drain_duration_seconds": max(0.0, float(env.time) - measurement_end),
+        "total_landed": float(metrics["landed_count"]),
+        "total_elapsed_seconds": float(env.time),
+        "overall_throughput_per_hour": 3600.0 * float(metrics["landed_count"]) / max(1e-9, env.time),
         "throughput": landed_after_measurement_start / max(1e-9, protocol.measurement_seconds),
         "mean_delay": float(np.mean(delays)) if delays else 0.0,
         "p95_delay": float(np.percentile(delays, 95)) if delays else 0.0,
