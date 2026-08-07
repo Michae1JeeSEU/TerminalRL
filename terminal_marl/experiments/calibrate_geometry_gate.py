@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import csv
 import json
 from pathlib import Path
@@ -73,6 +74,10 @@ def collect_pressure_trace(
         if env.time >= measurement_end and not any(not aircraft.finished for aircraft in env.aircraft):
             break
     return rows
+
+
+def _collect_pressure_trace_job(job: dict) -> list[dict]:
+    return collect_pressure_trace(**job)
 
 
 def evaluate_candidate(rows: list[dict], *, theta_on: float, theta_off: float, k_on: int, k_off: int) -> dict:
@@ -152,20 +157,28 @@ def calibrate(
     max_drain_seconds: float = 1800.0,
     seeds: tuple[int, ...] = (0, 1, 2),
     demands: tuple[str, ...] = ("low", "medium", "high", "bursty"),
+    max_workers: int = 1,
 ) -> dict:
     root = Path(output_dir)
+    jobs = [
+        {
+            "demand": demand,
+            "seed": seed,
+            "warm_up_seconds": warm_up_seconds,
+            "measurement_seconds": measurement_seconds,
+            "max_drain_seconds": max_drain_seconds,
+        }
+        for demand in demands
+        for seed in seeds
+    ]
     rows: list[dict] = []
-    for demand in demands:
-        for seed in seeds:
-            rows.extend(
-                collect_pressure_trace(
-                    demand=demand,
-                    seed=seed,
-                    warm_up_seconds=warm_up_seconds,
-                    measurement_seconds=measurement_seconds,
-                    max_drain_seconds=max_drain_seconds,
-                )
-            )
+    if max_workers > 1 and len(jobs) > 1:
+        with ProcessPoolExecutor(max_workers=min(int(max_workers), len(jobs))) as pool:
+            for trace in pool.map(_collect_pressure_trace_job, jobs):
+                rows.extend(trace)
+    else:
+        for job in jobs:
+            rows.extend(_collect_pressure_trace_job(job))
     _write_csv(root / "gate_calibration_raw.csv", rows)
     scores = np.asarray([float(row["trigger_score"]) for row in rows if row["window"] == "measurement"], dtype=float)
     if scores.size == 0:
@@ -199,6 +212,7 @@ def calibrate(
             "p90": float(np.quantile(scores, 0.90)) if scores.size else 0.0,
         },
         "best_candidate": best,
+        "max_workers": int(max_workers),
     }
     (root / "gate_threshold_recommendation.json").write_text(
         json.dumps(recommendation, indent=2) + "\n",
@@ -229,6 +243,7 @@ def main() -> None:
     parser.add_argument("--measurement-seconds", type=float, default=1800.0)
     parser.add_argument("--max-drain-seconds", type=float, default=1800.0)
     parser.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
+    parser.add_argument("--max-workers", type=int, default=1)
     args = parser.parse_args()
     print(
         json.dumps(
@@ -238,6 +253,7 @@ def main() -> None:
                 measurement_seconds=args.measurement_seconds,
                 max_drain_seconds=args.max_drain_seconds,
                 seeds=tuple(args.seeds),
+                max_workers=args.max_workers,
             ),
             indent=2,
         )

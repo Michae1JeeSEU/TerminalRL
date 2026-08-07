@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import csv
 import json
 from pathlib import Path
@@ -39,6 +40,7 @@ def run_validation(
     warm_up_seconds: float = 600.0,
     measurement_seconds: float = 1800.0,
     max_drain_seconds: float = 1800.0,
+    max_workers: int = 1,
 ) -> dict:
     root = Path(output_dir)
     protocol = WindowedEvaluationProtocol(
@@ -52,23 +54,31 @@ def run_validation(
     )
     summaries: list[dict] = []
     trace_rows: list[dict] = []
-    for policy in policies:
-        for demand in demands:
-            for seed in seeds:
-                result = run_windowed_evaluation(
-                    config_for_policy(policy),
-                    protocol=protocol,
-                    policy="event-rule" if policy == "event-rule" else "rule-only",
-                    demand_level=demand,
-                    seed=seed,
-                )
-                row = dict(result["summary"])
-                row["policy"] = policy
-                summaries.append(row)
-                for sample in result["samples"]:
-                    trace = dict(sample)
-                    trace["policy"] = policy
-                    trace_rows.append(trace)
+    jobs = [
+        {
+            "policy": policy,
+            "demand": demand,
+            "seed": seed,
+            "protocol": protocol,
+        }
+        for policy in policies
+        for demand in demands
+        for seed in seeds
+    ]
+    results: list[dict]
+    if max_workers > 1 and len(jobs) > 1:
+        with ProcessPoolExecutor(max_workers=min(int(max_workers), len(jobs))) as pool:
+            results = list(pool.map(_run_validation_job, jobs))
+    else:
+        results = [_run_validation_job(job) for job in jobs]
+    for result in results:
+        row = dict(result["summary"])
+        row["policy"] = result["policy"]
+        summaries.append(row)
+        for sample in result["samples"]:
+            trace = dict(sample)
+            trace["policy"] = result["policy"]
+            trace_rows.append(trace)
     _write_csv(root / "baseline_validation.csv", summaries)
     _write_csv(root / "gate_event_trace.csv", trace_rows)
     behavior_rows = summarize_gate_behavior(trace_rows, summaries)
@@ -83,6 +93,18 @@ def run_validation(
         encoding="utf-8",
     )
     return behavior
+
+
+def _run_validation_job(job: dict) -> dict:
+    policy = job["policy"]
+    result = run_windowed_evaluation(
+        config_for_policy(policy),
+        protocol=job["protocol"],
+        policy="event-rule" if policy == "event-rule" else "rule-only",
+        demand_level=job["demand"],
+        seed=job["seed"],
+    )
+    return {"policy": policy, **result}
 
 
 def summarize_gate_behavior(trace_rows: list[dict], summaries: list[dict]) -> list[dict]:
@@ -161,6 +183,7 @@ def main() -> None:
     parser.add_argument("--warm-up-seconds", type=float, default=600.0)
     parser.add_argument("--measurement-seconds", type=float, default=1800.0)
     parser.add_argument("--max-drain-seconds", type=float, default=1800.0)
+    parser.add_argument("--max-workers", type=int, default=1)
     args = parser.parse_args()
     print(
         json.dumps(
@@ -170,6 +193,7 @@ def main() -> None:
                 warm_up_seconds=args.warm_up_seconds,
                 measurement_seconds=args.measurement_seconds,
                 max_drain_seconds=args.max_drain_seconds,
+                max_workers=args.max_workers,
             ),
             indent=2,
         )
