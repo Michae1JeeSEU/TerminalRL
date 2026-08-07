@@ -15,7 +15,7 @@ from typing import Iterable
 import numpy as np
 
 
-DEMAND_RATES = {"low": 0.01, "medium": 0.03, "high": 0.06, "bursty": 0.10}
+DEMAND_RATES = {"low": 0.01, "medium": 0.03, "high": 0.06, "bursty": 0.10, "overload": 0.12}
 
 
 @dataclass

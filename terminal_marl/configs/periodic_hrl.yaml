@@ -7,7 +7,7 @@ high_level_interval: 180.0
 high_level:
   metrics_sampling_interval_seconds: 20.0
   high_level_decision_interval_seconds: 180.0
-  geometry_min_dwell_seconds: 600.0
+  geometry_min_dwell_seconds: 540.0
   geometry_transition_seconds: 20.0
 geometry_gate:
   mode: periodic

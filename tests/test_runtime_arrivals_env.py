@@ -5,6 +5,9 @@ from terminal_marl import ExperimentMode, SimConfig, TerminalParallelEnv
 
 def test_environment_spawns_runtime_uav_with_schedule_fields() -> None:
     config = SimConfig(
+        initial_aircraft_count=0,
+        formation_rows=0,
+        formation_cols=0,
         arrival_rate=1.0,
         arrival_model="deterministic_interval",
         max_active_uavs=8,

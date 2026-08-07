@@ -53,7 +53,7 @@ def test_event_gated_protocol_uses_180s_decision_and_20s_sampling() -> None:
     assert config.metrics_sampling_interval_seconds == pytest.approx(20.0)
     assert config.high_level_decision_interval_seconds == pytest.approx(180.0)
     assert config.decision_interval_seconds == pytest.approx(180.0)
-    assert config.geometry_min_dwell_seconds == pytest.approx(600.0)
+    assert config.geometry_min_dwell_seconds == pytest.approx(540.0)
     assert config.high_level_interval_steps == 180
     assert config.high_level_interval_steps // int(config.metrics_sampling_interval_seconds) == 9
     assert config.max_steps >= 3600

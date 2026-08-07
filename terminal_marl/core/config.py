@@ -60,6 +60,8 @@ class SimConfig:
     approach_threshold_radius: float = 1000.0#进近阈值半径
     gate_count: int = 4#进近门数量
     gate_height: float = 500.0#进近门高度
+    max_unsequenced_approach_per_gate: int = 1
+    approach_gate_min_time_gap_s: float = 20.0
     ring_direction: int = 1#环飞方向（逆时针）
     vertiport_radius: float = 50.0#垂直起降场半径
     final_queue_capacity: int = 1#最终进近段容纳飞机数

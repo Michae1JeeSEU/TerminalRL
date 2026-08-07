@@ -8,7 +8,7 @@ import numpy as np
 
 from ..config import ExperimentMode
 from ..core.config import SimConfig
-from ..core.baseline import command_for_aircraft
+from ..core.baseline import choose_nearest_gate, command_for_aircraft, gate_positions
 from ..core.arrival_process import ArrivalProcess
 from ..control.geometry_event_gate import GateConfig, GateMetrics, GateMode, GeometryEventGate
 from ..core.dynamic_airspace import AirspaceBounds, DynamicAirspace, DynamicRingSpec
@@ -367,6 +367,56 @@ class TerminalParallelEnv:
             )
             self.external_arrival_queue.append(request)
 
+    def _approach_gate_admission_clear(
+        self,
+        position: np.ndarray,
+        gate_idx: int,
+    ) -> bool:
+        """Keep excess unsequenced arrivals in the virtual external queue.
+
+        Runtime arrivals share physical approach gates before VTAC can sequence
+        them into the outer holding ring.  Spawning too many unsequenced UAVs
+        for the same gate creates a real merge queue in the air and can use
+        collisions as a hidden capacity-relief mechanism.  The external queue is
+        the safe place to hold those requests.
+        """
+
+        gates = gate_positions(self.config)
+        gate = gates[gate_idx % max(1, self.config.gate_count)]
+        candidate_eta = distance_3d(position, gate) / max(
+            self.config.speed_min,
+            self.config.nominal_speed,
+        )
+        active_same_gate = 0
+        max_same_gate = max(
+            1,
+            int(getattr(self.config, "max_unsequenced_approach_per_gate", 1)),
+        )
+        min_gap = max(
+            0.0,
+            float(getattr(self.config, "approach_gate_min_time_gap_s", 0.0)),
+        )
+        for other in self.aircraft:
+            if other.finished or other.sequence_number is not None:
+                continue
+            other_gate = (
+                int(other.assigned_gate)
+                if other.assigned_gate is not None
+                else choose_nearest_gate(other, self.config)
+            )
+            if other_gate != gate_idx:
+                continue
+            active_same_gate += 1
+            if active_same_gate >= max_same_gate:
+                return False
+            other_eta = distance_3d(other.position, gate) / max(
+                self.config.speed_min,
+                other.speed,
+            )
+            if abs(candidate_eta - other_eta) < min_gap:
+                return False
+        return True
+
     def _admit_one_external_arrival(self, request: dict, offset: int, due: int) -> bool:
         inbound = math.radians(self.config.inbound_bearing_deg)
         base_radius = self.config.approach_threshold_radius + self.config.spawn_margin
@@ -392,6 +442,16 @@ class TerminalParallelEnv:
             and distance_3d(position, other.position) < self.config.safe_distance
             for other in self.aircraft
         ):
+            self.deferred_arrival_count += 1
+            return False
+        probe = UAVState(
+            uid=uid,
+            position=position.copy(),
+            speed=self.config.nominal_speed,
+            heading=0.0,
+        )
+        gate_idx = choose_nearest_gate(probe, self.config)
+        if not self._approach_gate_admission_clear(position, gate_idx):
             self.deferred_arrival_count += 1
             return False
         heading = math.atan2(
@@ -420,6 +480,7 @@ class TerminalParallelEnv:
                 sequence_index=uid,
             ),
         )
+        aircraft.assigned_gate = gate_idx
         aircraft.snapshot()
         self.aircraft.append(aircraft)
         agent = self._agent_name(uid)

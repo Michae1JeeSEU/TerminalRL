@@ -7,6 +7,7 @@ import copy
 import csv
 import json
 import math
+import os
 from pathlib import Path
 from typing import Iterable
 
@@ -87,10 +88,26 @@ def _current_minimum_distance(env: TerminalParallelEnv) -> float:
 def apply_demand_profile(config: SimConfig, level: str) -> SimConfig:
     """Apply an arrival-flow profile to a copied experiment configuration."""
 
-    if level not in DEMAND_PROFILES:
+    profiles = copy.deepcopy(DEMAND_PROFILES)
+    override_path = os.environ.get("TERMINAL_MARL_DEMAND_PROFILE_CSV")
+    if override_path:
+        path = Path(override_path)
+        if path.is_file():
+            with path.open(newline="", encoding="utf-8") as handle:
+                for row in csv.DictReader(handle):
+                    demand = str(row.get("demand", ""))
+                    if not demand:
+                        continue
+                    profiles[demand] = {
+                        "initial_aircraft_count": int(float(row.get("initial_aircraft_count", 0) or 0)),
+                        "formation_rows": int(float(row.get("formation_rows", 0) or 0)),
+                        "formation_cols": int(float(row.get("formation_cols", 0) or 0)),
+                        "arrival_rate": float(row["arrival_rate_per_second"]),
+                    }
+    if level not in profiles:
         raise ValueError(f"unknown demand level: {level}")
     updated = copy.deepcopy(config)
-    for key, value in DEMAND_PROFILES[level].items():
+    for key, value in profiles[level].items():
         setattr(updated, key, value)
     updated.traffic_demand_level = level
     return updated

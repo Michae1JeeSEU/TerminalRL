@@ -7,15 +7,15 @@ high_level_interval: 180.0
 high_level:
   metrics_sampling_interval_seconds: 20.0
   high_level_decision_interval_seconds: 180.0
-  geometry_min_dwell_seconds: 600.0
+  geometry_min_dwell_seconds: 540.0
   geometry_transition_seconds: 20.0
 geometry_gate:
   mode: event
-  theta_on: 0.55
+  theta_on: 0.58
   theta_off: 0.35
-  k_on: 3
-  k_off: 9
-  recovery_k: 9
+  k_on: 1
+  k_off: 3
+  recovery_k: 3
 
 rings:
   outer:
