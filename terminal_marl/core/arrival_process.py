@@ -26,6 +26,7 @@ class ArrivalProcess:
     max_active_uavs: int
     seed: int | None = None
     fixed_schedule: tuple[float, ...] | None = None
+    total_requested_uavs: int | None = None
 
     def __post_init__(self) -> None:
         if self.demand_level not in DEMAND_RATES:
@@ -36,10 +37,13 @@ class ArrivalProcess:
             raise ValueError("max_active_uavs must be positive")
         if self.arrival_rate < 0.0:
             raise ValueError("arrival_rate must be non-negative")
+        if self.total_requested_uavs is not None and self.total_requested_uavs < 0:
+            raise ValueError("total_requested_uavs must be non-negative")
         self.rng = np.random.default_rng(self.seed)
         self.next_arrival_time = math.inf
         self.wave_index = 0
         self.schedule_index = 0
+        self.generated_count = 0
         if self.fixed_schedule is not None:
             self.fixed_schedule = tuple(sorted(float(t) for t in self.fixed_schedule))
         self.reset(self.seed)
@@ -49,6 +53,7 @@ class ArrivalProcess:
             self.rng = np.random.default_rng(seed)
         self.wave_index = 0
         self.schedule_index = 0
+        self.generated_count = 0
         if self.fixed_schedule is not None:
             self.next_arrival_time = (
                 self.fixed_schedule[0] if self.fixed_schedule else math.inf
@@ -66,7 +71,12 @@ class ArrivalProcess:
         if self.model == "poisson":
             return current_time + float(self.rng.exponential(1.0 / rate))
         if self.model == "bursty_wave":
-            gap = (0.35 / rate) if self.wave_index % 4 < 3 else (2.5 / rate)
+            # Piecewise burst/off intervals with unit requests.  The four-gap
+            # cycle is scaled so its long-run mean rate equals ``arrival_rate``:
+            # three short burst gaps plus one longer recovery gap average 1/rate.
+            short_gap = 0.25 / rate
+            long_gap = 3.25 / rate
+            gap = short_gap if self.wave_index % 4 < 3 else long_gap
             self.wave_index += 1
             return current_time + gap
         return current_time + 1.0 / rate
@@ -80,6 +90,9 @@ class ArrivalProcess:
         censoring.
         """
 
+        if self.total_requested_uavs is not None and self.generated_count >= self.total_requested_uavs:
+            self.next_arrival_time = math.inf
+            return 0
         if current_time < self.next_arrival_time:
             return 0
         if self.fixed_schedule is not None:
@@ -90,16 +103,31 @@ class ArrivalProcess:
             ):
                 count += 1
                 self.schedule_index += 1
+                if (
+                    self.total_requested_uavs is not None
+                    and self.generated_count + count >= self.total_requested_uavs
+                ):
+                    break
+            if self.total_requested_uavs is not None:
+                count = min(count, self.total_requested_uavs - self.generated_count)
+            self.generated_count += count
             self.next_arrival_time = (
                 self.fixed_schedule[self.schedule_index]
                 if self.schedule_index < len(self.fixed_schedule)
+                and (
+                    self.total_requested_uavs is None
+                    or self.generated_count < self.total_requested_uavs
+                )
                 else math.inf
             )
             return count
         count = 1
-        if self.model == "bursty_wave":
-            count = 3
+        if self.total_requested_uavs is not None:
+            count = min(count, self.total_requested_uavs - self.generated_count)
+        self.generated_count += count
         self.next_arrival_time = self._next_time(current_time)
+        if self.total_requested_uavs is not None and self.generated_count >= self.total_requested_uavs:
+            self.next_arrival_time = math.inf
         return count
 
 
@@ -110,6 +138,7 @@ def generate_arrival_schedule(
     arrival_rate: float,
     seed: int,
     duration_seconds: float,
+    total_requested_uavs: int | None = None,
 ) -> list[dict[str, float | int | str]]:
     """Generate a deterministic external-demand request schedule.
 
@@ -123,6 +152,7 @@ def generate_arrival_schedule(
         arrival_rate=arrival_rate,
         max_active_uavs=1,
         seed=seed,
+        total_requested_uavs=total_requested_uavs,
     )
     rows: list[dict[str, float | int | str]] = []
     arrival_id = 0
@@ -144,6 +174,8 @@ def generate_arrival_schedule(
             )
             arrival_id += 1
         if not math.isfinite(process.next_arrival_time):
+            break
+        if total_requested_uavs is not None and arrival_id >= total_requested_uavs:
             break
     return rows
 

@@ -59,6 +59,15 @@ class UAVState:
     planned_nominal_landing_time: Optional[float] = None
     actual_landing_time: Optional[float] = None
     landing_delay: Optional[float] = None
+    arrival_id: Optional[int] = None
+    request_time: float = 0.0
+    admission_time: Optional[float] = None
+    terminal_time: Optional[float] = None
+    terminal_outcome: Optional[str] = None
+    terminal_reason: Optional[str] = None
+    battery_endurance_seconds: Optional[float] = None
+    remaining_endurance_seconds: Optional[float] = None
+    collision_partner_ids: list[int] = field(default_factory=list)
 
     history: list = field(default_factory=list)
 
@@ -110,6 +119,28 @@ class UAVState:
                 self.actual_landing_time - self.planned_nominal_landing_time
             )
 
+    def mark_terminal(
+        self,
+        *,
+        step: int,
+        time: float,
+        outcome: str,
+        reason: str,
+        collision_partner_ids: Optional[list[int]] = None,
+    ) -> None:
+        """Set one primary terminal outcome for the UAV."""
+
+        if self.terminal_outcome is not None:
+            return
+        self.finished = True
+        self.phase = FlightPhase.FINISHED
+        self.terminal_time = float(time)
+        self.terminal_outcome = str(outcome)
+        self.terminal_reason = str(reason)
+        if collision_partner_ids is not None:
+            self.collision_partner_ids = [int(uid) for uid in collision_partner_ids]
+        self.mark_finished(step=step, time=time)
+
     def direct_distance_to_goal(self, center: tuple[float, float, float]) -> float:
         c = np.asarray(center, dtype=float)
         return float(np.linalg.norm(np.asarray(self.initial_position, dtype=float) - c))
@@ -159,6 +190,7 @@ class UAVState:
         max_descent_rate: float,
         speed_min: float,
         speed_max: float,
+        max_acceleration: float = 2.0,
     ) -> dict:
         old_position = self.position.copy()
         max_turn = math.radians(max_turn_rate_deg) * dt
@@ -167,7 +199,7 @@ class UAVState:
         self.heading = wrap_angle(self.heading + heading_step)
 
         speed_error = desired_speed - self.speed
-        max_accel_step = 2.0 * dt
+        max_accel_step = max(0.0, float(max_acceleration)) * dt
         self.speed += clamp(speed_error, -max_accel_step, max_accel_step)
         self.speed = clamp(self.speed, speed_min, speed_max)
 

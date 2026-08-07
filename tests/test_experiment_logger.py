@@ -27,6 +27,7 @@ def test_logger_writes_complete_artifact_set(tmp_path) -> None:
         "airspace_trace.csv",
         "safety_events.csv",
         "agent_events.csv",
+        "uav_outcomes.csv",
     }
     assert expected == {path.name for path in tmp_path.iterdir()}
     loaded = json.loads((tmp_path / "episode_summary.json").read_text(encoding="utf-8"))

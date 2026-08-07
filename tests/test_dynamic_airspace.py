@@ -10,6 +10,7 @@ from terminal_marl.core.dynamic_airspace import (
     DynamicAirspace,
     DynamicRingSpec,
 )
+from terminal_marl.core.ring_capacity import adjacent_chord_spacing, geometric_ring_capacity
 
 
 @dataclass
@@ -56,6 +57,8 @@ def airspace(bounds: AirspaceBounds) -> DynamicAirspace:
 def test_initial_state_is_valid(airspace: DynamicAirspace) -> None:
     assert airspace.validate()
     assert airspace.get_headways() == {"ring": 7.0, "final": 12.0}
+    assert airspace.outer_ring.capacity == geometric_ring_capacity(400.0, 80.000001)
+    assert airspace.inner_ring.capacity == geometric_ring_capacity(220.0, 80.000001)
 
 
 def test_random_actions_always_leave_valid_state(airspace: DynamicAirspace) -> None:
@@ -138,10 +141,58 @@ def test_existing_ring_specs_can_be_adapted(bounds: AirspaceBounds) -> None:
 
     converted = airspace.to_ring_specs()
     assert [ring.index for ring in converted] == [1, 2]
-    assert [ring.capacity for ring in converted] == [2, 6]
+    assert [ring.capacity for ring in converted] == [
+        geometric_ring_capacity(200.0, 80.000001),
+        geometric_ring_capacity(400.0, 80.000001),
+    ]
     assert all(hasattr(ring, name) for ring in converted for name in ("radius", "height", "speed"))
 
 
 def test_invalid_action_shape_is_rejected(airspace: DynamicAirspace) -> None:
     with pytest.raises(ValueError, match="shape"):
         airspace.apply_high_level_action(np.zeros(7))
+
+
+def test_geometric_capacity_formula_matches_adjacent_chord_constraint() -> None:
+    radius = 400.0
+    required = 80.0
+    capacity = geometric_ring_capacity(radius, required)
+
+    assert capacity >= 1
+    assert adjacent_chord_spacing(radius, capacity) + 1e-9 >= required
+    assert adjacent_chord_spacing(radius, capacity + 1) < required
+
+
+def test_capacity_expands_with_radius_and_is_ring_specific(bounds: AirspaceBounds) -> None:
+    airspace = DynamicAirspace(
+        outer_ring=DynamicRingSpec(2, 360.0, 350.0, 28.0, 1),
+        inner_ring=DynamicRingSpec(1, 160.0, 180.0, 20.0, 1),
+        bounds=bounds,
+        required_separation=80.0,
+    )
+    old = airspace.capacity_state()
+
+    airspace.apply_high_level_action(np.array([1.0, 1.0, 0, 0, 0, 0, 0, 0], dtype=float))
+    new = airspace.capacity_state()
+
+    assert new["outer_capacity"] >= old["outer_capacity"]
+    assert new["inner_capacity"] >= old["inner_capacity"]
+    assert new["outer_capacity"] != new["inner_capacity"]
+
+
+def test_contraction_is_limited_by_current_occupancy(bounds: AirspaceBounds) -> None:
+    airspace = DynamicAirspace(
+        outer_ring=DynamicRingSpec(2, 180.0, 350.0, 28.0, 1),
+        inner_ring=DynamicRingSpec(1, 120.0, 180.0, 20.0, 1),
+        bounds=bounds,
+        required_separation=80.0,
+    )
+
+    info = airspace.apply_high_level_action(
+        np.array([-1.0, 0.0, 0, 0, 0, 0, 0, 0], dtype=float),
+        occupancy_by_ring={2: 14},
+    )
+
+    assert "outer_radius_occupancy_constraint" in info["violations"]
+    assert info["occupancy_constraints"]["outer"]["radius_contraction_limited"]
+    assert airspace.outer_ring.capacity >= 14

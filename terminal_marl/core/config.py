@@ -45,6 +45,12 @@ class SimConfig:
     arrival_model: str = "deterministic_interval"
     max_active_uavs: int = 40
     fixed_arrival_schedule: Optional[Tuple[float, ...]] = None
+    total_requested_uavs: Optional[int] = None
+    max_simulation_seconds: Optional[float] = None
+    use_dynamic_ring_capacity: bool = True
+    ring_separation_margin_m: float = 1e-6
+    battery_endurance_seconds: float = 3600.0
+    engineering_validation_battery_endurance_seconds: float = 3600.0
 
     center: Tuple[float, float, float] = (0.0, 0.0, 0.0)#终端区中心坐标
     dt: float = 1#仿真每一步时间间隔

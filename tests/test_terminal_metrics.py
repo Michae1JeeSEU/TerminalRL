@@ -27,13 +27,14 @@ def test_pairwise_conflict_metrics_are_normalized_by_pair_opportunities() -> Non
             initial_aircraft_count=2,
             formation_rows=1,
             formation_cols=2,
+            col_spacing=100.0,
             safe_distance=80.0,
         ),
         experiment_mode=ExperimentMode.FIXED_RULE,
     )
     env.reset(seed=4)
     env.aircraft[0].position = np.array([0.0, 0.0, 100.0])
-    env.aircraft[1].position = np.array([10.0, 0.0, 100.0])
+    env.aircraft[1].position = np.array([50.0, 0.0, 100.0])
 
     env._track_conflicts()
     metrics = env.metrics()
@@ -43,7 +44,7 @@ def test_pairwise_conflict_metrics_are_normalized_by_pair_opportunities() -> Non
     assert metrics["raw_pair_conflict_samples"] == 1.0
     assert metrics["unique_conflict_events"] == 1.0
     assert metrics["normalized_conflict_rate"] == 1.0
-    assert metrics["min_pairwise_distance"] == 10.0
+    assert metrics["min_pairwise_distance"] == 50.0
 
 
 def test_waiting_and_congestion_include_approach_backlog_and_active_limit() -> None:

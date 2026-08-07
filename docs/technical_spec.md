@@ -889,3 +889,44 @@ ENVIRONMENT_NOT_READY
 Because the external-queue fix changes MDP/reward semantics, existing pilots are
 diagnostic evidence only unless a future run explicitly retrains under the fixed
 semantics.
+
+## PRE-RETRAIN core model revision: dynamic capacity and finite cohorts
+
+Before retraining high-level PPO, the terminal model uses geometry-derived ring
+capacity rather than fixed ring occupancy constants. For each ring with actual
+radius `R` and required separation `d`, capacity is:
+
+```text
+d_adj(N) = 2 R sin(pi / N)
+capacity(R, d) = 1, if d > 2R
+capacity(R, d) = floor(pi / asin(d / (2R))), otherwise
+```
+
+The implementation lives in `terminal_marl/core/ring_capacity.py` and is used by
+`DynamicAirspace`. Capacity is recomputed from the actual current radius, so a
+geometry transition exposes intermediate capacity rather than the final target
+capacity. Radius contraction is projected against current VTAC ring occupancy;
+unsafe shrink requests are clipped and reported with
+`radius_contraction_limited` diagnostics.
+
+Finite-cohort evaluation is configured through `SimConfig.total_requested_uavs`.
+When it is set, runtime arrival generation creates exactly `N` external
+requests. Every requested UAV must end in one primary terminal outcome:
+
+```text
+LANDED | CRASHED_COLLISION | CRASHED_BATTERY | UNRESOLVED | INVALID
+```
+
+`UNRESOLVED` and `INVALID` are diagnostics, not successful formal outcomes. The
+environment exposes `simulation_outcome_summary()` and `uav_outcome_rows()` for
+conservation checks and `uav_outcomes.csv` logging.
+
+Battery endurance is currently a transparent time-based model:
+`battery_endurance_seconds` is decremented from `request_time`, including time
+in the external queue. A depleted UAV is removed from queues/control/conflict
+accounting and marked `CRASHED_BATTERY`. A collision-distance breach marks both
+partners `CRASHED_COLLISION` and counts the unordered pair once.
+
+This revision remains simulation-only: no ROS2, Crazyswarm2, or real Crazyflie
+hardware is connected, and low-level policy is not expanded into free
+heading/altitude/velocity control.

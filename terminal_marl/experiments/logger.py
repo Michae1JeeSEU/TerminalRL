@@ -85,6 +85,7 @@ class ExperimentLogger:
         self.airspace_trace: list[dict[str, Any]] = []
         self.safety_events: list[dict[str, Any]] = []
         self.agent_events: list[dict[str, Any]] = []
+        self.uav_outcomes: list[dict[str, Any]] = []
         self._last_phase: dict[int, int] = {}
 
     def record_step(self, env: Any) -> None:
@@ -95,7 +96,7 @@ class ExperimentLogger:
             {
                 "step": env.step_count,
                 "time": env.time,
-                "landed_count": sum(aircraft.finished for aircraft in env.aircraft),
+                "landed_count": metrics.get("landed_count", 0.0),
                 "active_count": sum(not aircraft.finished for aircraft in env.aircraft),
                 "outer_occupancy": len(env.vtac.queues[outer.index]),
                 "inner_occupancy": len(env.vtac.queues[inner.index]),
@@ -155,6 +156,8 @@ class ExperimentLogger:
                     }
                 )
             self._last_phase[aircraft.uid] = phase
+        if hasattr(env, "uav_outcome_rows"):
+            self.uav_outcomes = env.uav_outcome_rows()
 
     @staticmethod
     def _write_csv(
@@ -198,5 +201,21 @@ class ExperimentLogger:
             self.output_dir / "agent_events.csv",
             self.agent_events,
             ("step", "time", "uav_id", "event", "from_phase", "to_phase", "landing_delay"),
+        )
+        self._write_csv(
+            self.output_dir / "uav_outcomes.csv",
+            self.uav_outcomes,
+            (
+                "arrival_id",
+                "uid",
+                "scenario",
+                "seed",
+                "request_time",
+                "admission_time",
+                "terminal_time",
+                "lifecycle_state",
+                "terminal_outcome",
+                "reason",
+            ),
         )
         return summary

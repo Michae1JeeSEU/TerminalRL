@@ -13,6 +13,8 @@ from typing import Sequence
 
 import numpy as np
 
+from .ring_capacity import geometric_ring_capacity, minimum_radius_for_occupancy
+
 
 @dataclass
 class DynamicRingSpec:
@@ -91,6 +93,8 @@ class DynamicAirspace:
         ring_headway: float = 7.0,
         final_headway: float = 12.0,
         dynamic_enabled: bool = True,
+        required_separation: float = 80.0,
+        ring_separation_margin: float = 1e-6,
     ) -> None:
         self.bounds = bounds or AirspaceBounds()
         self.outer_ring = replace(
@@ -104,6 +108,10 @@ class DynamicAirspace:
         self.ring_headway = float(ring_headway)
         self.final_headway = float(final_headway)
         self.dynamic_enabled = bool(dynamic_enabled)
+        self.required_separation = float(required_separation) + float(ring_separation_margin)
+        if not math.isfinite(self.required_separation) or self.required_separation <= 0.0:
+            raise ValueError("required_separation must be positive and finite")
+        self.update_capacities()
 
         violations = self._validation_violations()
         if violations:
@@ -119,6 +127,8 @@ class DynamicAirspace:
         ring_headway: float = 7.0,
         final_headway: float = 12.0,
         dynamic_enabled: bool = True,
+        required_separation: float = 80.0,
+        ring_separation_margin: float = 1e-6,
     ) -> "DynamicAirspace":
         """Build from existing ``RingSpec``-like objects.
 
@@ -159,6 +169,8 @@ class DynamicAirspace:
             ring_headway=ring_headway,
             final_headway=final_headway,
             dynamic_enabled=dynamic_enabled,
+            required_separation=required_separation,
+            ring_separation_margin=ring_separation_margin,
         )
 
     def state_vector(self) -> np.ndarray:
@@ -212,7 +224,56 @@ class DynamicAirspace:
             np.float32
         )
 
-    def apply_high_level_action(self, action: np.ndarray) -> dict:
+    def set_state_vector(self, state: np.ndarray) -> None:
+        """Replace the actual airspace state and recompute geometric capacity."""
+
+        values = np.asarray(state, dtype=np.float64)
+        if values.shape != (self.ACTION_SIZE,):
+            raise ValueError(f"state must have shape ({self.ACTION_SIZE},)")
+        if not np.all(np.isfinite(values)):
+            raise ValueError("state must contain only finite values")
+        (
+            self.outer_ring.radius,
+            self.inner_ring.radius,
+            self.outer_ring.height,
+            self.inner_ring.height,
+            self.outer_ring.speed,
+            self.inner_ring.speed,
+            self.ring_headway,
+            self.final_headway,
+        ) = (float(value) for value in values)
+        self.update_capacities()
+        violations = self._validation_violations()
+        if violations:
+            raise ValueError(f"invalid airspace state: {', '.join(violations)}")
+
+    def update_capacities(self) -> None:
+        """Synchronize ring capacities from the current actual radii."""
+
+        self.outer_ring.capacity = geometric_ring_capacity(
+            self.outer_ring.radius,
+            self.required_separation,
+        )
+        self.inner_ring.capacity = geometric_ring_capacity(
+            self.inner_ring.radius,
+            self.required_separation,
+        )
+
+    def capacity_state(self) -> dict[str, int]:
+        """Return current geometric capacities keyed by ring role."""
+
+        self.update_capacities()
+        return {
+            "outer_capacity": int(self.outer_ring.capacity),
+            "inner_capacity": int(self.inner_ring.capacity),
+        }
+
+    def apply_high_level_action(
+        self,
+        action: np.ndarray,
+        *,
+        occupancy_by_ring: dict[int, int] | None = None,
+    ) -> dict:
         """Apply a normalized eight-dimensional incremental action.
 
         Values outside ``[-1, 1]`` are clipped and reported.  Geometry is then
@@ -307,6 +368,45 @@ class DynamicAirspace:
         if height_clipped:
             violations.append("min_height_gap")
 
+        occupancy_constraints: dict[str, dict] = {}
+        if occupancy_by_ring:
+            ring_roles = (
+                ("outer", int(self.outer_ring.index), 0),
+                ("inner", int(self.inner_ring.index), 1),
+            )
+            for role, index, state_idx in ring_roles:
+                occupancy = int(occupancy_by_ring.get(index, 0))
+                if occupancy <= 1:
+                    continue
+                min_radius = minimum_radius_for_occupancy(
+                    occupancy,
+                    self.required_separation,
+                )
+                requested_radius = float(candidate[state_idx])
+                if requested_radius + 1e-9 < min_radius:
+                    candidate[state_idx] = min(
+                        effective_bounds[state_idx][1],
+                        max(effective_bounds[state_idx][0], min_radius),
+                    )
+                    violations.append(f"{role}_radius_occupancy_constraint")
+                    occupancy_constraints[role] = {
+                        "occupancy": occupancy,
+                        "requested_radius": requested_radius,
+                        "applied_radius": float(candidate[state_idx]),
+                        "minimum_feasible_radius": float(min_radius),
+                        "radius_contraction_limited": True,
+                    }
+
+        candidate[1], candidate[0], second_gap_clipped = self._project_ordered_pair(
+            lower_value=float(candidate[1]),
+            upper_value=float(candidate[0]),
+            lower_bounds=effective_bounds[1],
+            upper_bounds=effective_bounds[0],
+            minimum_gap=b.min_ring_gap,
+        )
+        if second_gap_clipped:
+            violations.append("min_ring_gap_after_occupancy_projection")
+
         (
             self.outer_ring.radius,
             self.inner_ring.radius,
@@ -317,6 +417,7 @@ class DynamicAirspace:
             self.ring_headway,
             self.final_headway,
         ) = (float(value) for value in candidate)
+        self.update_capacities()
 
         validation_violations = self._validation_violations()
         if validation_violations:
@@ -330,6 +431,8 @@ class DynamicAirspace:
             "violations": list(dict.fromkeys(violations)),
             "old_state": old_state,
             "new_state": self.state_vector(),
+            "capacity_state": self.capacity_state(),
+            "occupancy_constraints": occupancy_constraints,
             "dynamic_enabled": True,
         }
 
@@ -341,6 +444,7 @@ class DynamicAirspace:
     def to_ring_specs(self) -> list[DynamicRingSpec]:
         """Return defensive ring copies ordered by their existing indices."""
 
+        self.update_capacities()
         return [
             replace(ring)
             for ring in sorted(

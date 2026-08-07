@@ -207,3 +207,34 @@ All PPO runs in this matrix use a 20 s metrics sampler, 600 s geometry dwell,
 3600 s episodes, and a medium/high/bursty training demand mixture
 (0.40/0.30/0.30). Because the MDP interval changed from the old 20 s pilot, new
 PPO evidence must be trained from scratch.
+
+## 11. Formal evaluation semantics after PRE-RETRAIN revision
+
+Formal experiments should now report capacity and outcomes using the revised
+terminal-management semantics:
+
+- Ring capacity is not a hand-tuned constant. It is derived from the current
+  actual ring radius and the true safety separation using the adjacent-chord
+  formula. Dynamic airspace reconfiguration therefore changes usable holding
+  capacity through geometry, not through an arbitrary reward bonus.
+- During geometry transitions, the experiment uses the intermediate actual
+  radius and height. Reported capacity and occupancy pressure must not jump to
+  the target geometry before the transition has executed.
+- Finite-cohort evaluation is preferred for paper evidence. A scenario requests
+  exactly N UAVs; each request must end as `LANDED`, `CRASHED_COLLISION`,
+  `CRASHED_BATTERY`, or a diagnostic `UNRESOLVED/INVALID` outcome.
+- A valid formal episode has unresolved count equal to zero and satisfies:
+
+```text
+total_requested = landed + crashed_collision + crashed_battery + unresolved
+```
+
+- Landing success rate, collision crash rate, battery crash rate, mission
+  failure rate, total resolution rate, request-to-terminal time, external
+  waiting, and internal system time should be computed from the outcome ledger.
+- Old PPO checkpoints trained before this revision are diagnostic only and must
+  not be resumed as evidence for the revised model.
+
+These semantics keep the paper focused on dynamic terminal airspace
+reconfiguration and multi-UAV landing-flow coordination, rather than low-level
+free-flight control.

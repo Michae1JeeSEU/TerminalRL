@@ -40,7 +40,8 @@ def test_drain_disables_new_arrivals() -> None:
     assert drain_samples
     spawned = [row["spawned_count"] for row in drain_samples]
     assert spawned == sorted(spawned)
-    assert spawned[-1] == pytest.approx(spawned[0])
+    requests = [row["arrival_request_count"] for row in drain_samples]
+    assert requests[-1] == pytest.approx(requests[0])
 
 
 def test_arrival_rate_is_not_changed_by_decision_interval() -> None:

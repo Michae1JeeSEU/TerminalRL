@@ -589,3 +589,62 @@ Server output root:
 ```text
 $HOME/training_outputs/terminal/event_gated_stage15_diagnostics
 ```
+
+## PRE-RETRAIN CORE MODEL REVISION status
+
+This revision is the required environment/model cleanup before any fresh PPO
+pilot. It remains simulation-only and does not connect ROS2, Crazyswarm2, or
+real Crazyflie hardware.
+
+Completed core changes:
+
+1. Added `terminal_marl/core/ring_capacity.py` with the chord-spacing capacity
+   formula based on actual ring radius and required separation.
+2. Updated `DynamicAirspace` so ring capacities are derived from actual radius,
+   not fixed `outer=6 / inner=2` constants.
+3. Added occupancy-aware radius contraction projection. Unsafe shrink requests
+   are clipped and reported with `radius_contraction_limited` diagnostics.
+4. Added actual-geometry transition behavior for radius/height; capacity during
+   transition uses the intermediate actual radius rather than the target radius.
+5. Added UAV lifecycle/outcome ledger support for finite-cohort accounting:
+   `LANDED`, `CRASHED_COLLISION`, `CRASHED_BATTERY`, `UNRESOLVED`, `INVALID`.
+6. Added `SimConfig.total_requested_uavs`; when set, runtime arrival generation
+   creates exactly N external requests.
+7. Added time-based battery endurance from `request_time`, including external
+   queue waiting.
+8. Converted collision-distance breach into terminal crash outcomes and deduped
+   repeated low-level collision counting for the same unordered pair.
+9. Added safe initial/admission semantics: unsafe initial candidates remain in
+   the external queue instead of being physically spawned into an invalid scene.
+10. Updated `UAVState.update_dynamics()` to use `config.max_acceleration`.
+11. Extended experiment logging with `uav_outcomes.csv`.
+12. Added/updated tests for dynamic geometric capacity, finite-cohort
+    conservation, battery/collision terminal outcomes, actual-radius transition
+    capacity, safe ingress, and logger outputs.
+
+Verified on the server with:
+
+```bash
+cd ~/projects/terminal
+source ~/envs/terminal_env/bin/activate
+python -m pytest -q
+```
+
+Result: `295 passed, 29 warnings`.
+
+Next recommended step:
+
+1. Generate the PRETRAIN readiness artifact bundle under
+   `$HOME/training_outputs/terminal/core_model_revision/final/`.
+2. Remeasure saturated finite-cohort service capacity and rebuild
+   low/medium/high/bursty/overload demand profiles.
+3. Recalibrate event-gate rolling metrics without score double-counting.
+4. Run interval/dwell screening for 60/120/180/240 s and geometry
+   controllability/bottleneck diagnostics.
+5. Write `pretrain_readiness.json` with only one of:
+   `READY_FOR_512_SMOKE`, `RESEARCH_MODEL_DECISION_REQUIRED`, or
+   `ENVIRONMENT_NOT_READY`.
+
+Only if `pretrain_readiness.status == READY_FOR_512_SMOKE` should Stage 0
+512-step smoke be started from scratch. Old PPO checkpoints remain invalid for
+resume/training evidence after this core model revision.

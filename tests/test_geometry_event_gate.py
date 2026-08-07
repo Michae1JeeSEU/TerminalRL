@@ -172,7 +172,10 @@ def test_periodic_env_allows_geometry_initially() -> None:
     new = env.airspace.state_vector()
 
     assert info["geometry_gate"]["geometry_action_allowed"]
-    assert np.any(np.abs(new[:4] - old[:4]) > 0.0)
+    assert np.allclose(new[:4], old[:4])
+    assert np.any(np.abs(info["target_state"][:4] - old[:4]) > 0.0)
+    env.step({})
+    assert np.any(np.abs(env.airspace.state_vector()[:4] - old[:4]) > 0.0)
 
 
 def test_gate_state_enters_high_level_observation_and_resets() -> None:

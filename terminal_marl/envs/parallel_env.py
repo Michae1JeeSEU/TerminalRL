@@ -13,7 +13,9 @@ from ..core.arrival_process import ArrivalProcess
 from ..control.geometry_event_gate import GateConfig, GateMetrics, GateMode, GeometryEventGate
 from ..core.dynamic_airspace import AirspaceBounds, DynamicAirspace, DynamicRingSpec
 from ..core.geometry import distance_3d, norm_xy, wrap_angle, clamp
+from ..core.lifecycle import UAVLifecycleState, UAVOutcomeRecord
 from ..core.observations import AgentObservationBuilder
+from ..core.ring_capacity import geometric_ring_capacity
 from ..core.rewards import RewardTracker
 from ..core.safety_filter import SafetyFilter
 from ..core.scenario import build_initial_2x4_queue
@@ -70,7 +72,9 @@ class TerminalParallelEnv:
     blocked_arrival_count: int = 0
     deferred_arrival_count: int = 0
     dropped_arrival_count: int = 0
+    battery_crash_count: int = 0
     external_queue_waiting_time: float = 0.0
+    outcome_ledger: dict[int, UAVOutcomeRecord] = field(default_factory=dict)
     active_cap_hit: bool = False
     time_at_active_cap_seconds: float = 0.0
     longest_continuous_cap_seconds: float = 0.0
@@ -102,6 +106,7 @@ class TerminalParallelEnv:
     last_release_approval: Dict[int, dict] = field(default_factory=dict)
     last_landing_approval: Dict[int, dict] = field(default_factory=dict)
     pending_high_level_action: Optional[np.ndarray] = None
+    _airspace_transition: Optional[dict] = field(default=None, init=False, repr=False)
     safety_override_count: int = 0
     raw_safety_override_count: int = 0
     final_queue_time: float = 0.0
@@ -112,6 +117,11 @@ class TerminalParallelEnv:
         repr=False,
     )
     _unique_conflict_pairs: set[tuple[int, int]] = field(
+        default_factory=set,
+        init=False,
+        repr=False,
+    )
+    _terminal_collision_pairs: set[tuple[int, int]] = field(
         default_factory=set,
         init=False,
         repr=False,
@@ -187,6 +197,7 @@ class TerminalParallelEnv:
             arrival_rate=self.config.arrival_rate,
             max_active_uavs=self.config.max_active_uavs,
             fixed_schedule=self.config.fixed_arrival_schedule,
+            total_requested_uavs=self.config.total_requested_uavs,
         )
         self.vtac = VTAC(self.config)
         observed_airspace = (
@@ -245,6 +256,8 @@ class TerminalParallelEnv:
         self.inner_waiting_time = 0.0
         self.congestion_pressure_time = 0.0
         self._unique_conflict_pairs.clear()
+        if hasattr(self, "_terminal_collision_pairs"):
+            self._terminal_collision_pairs.clear()
         self.last_high_level_info = {}
         self.last_gate_metrics = {}
         self.last_high_level_requested_action = None
@@ -253,6 +266,7 @@ class TerminalParallelEnv:
         self.last_release_approval = {}
         self.last_landing_approval = {}
         self.pending_high_level_action = None
+        self._airspace_transition = None
         self.safety_override_count = 0
         self.raw_safety_override_count = 0
         self.external_arrival_queue = []
@@ -261,6 +275,8 @@ class TerminalParallelEnv:
         self.blocked_arrival_count = 0
         self.deferred_arrival_count = 0
         self.dropped_arrival_count = 0
+        self.battery_crash_count = 0
+        self.outcome_ledger = {}
         self.external_queue_waiting_time = 0.0
         self.active_cap_hit = False
         self.time_at_active_cap_seconds = 0.0
@@ -274,8 +290,48 @@ class TerminalParallelEnv:
         self.vtac.reset()
         self.geometry_gate.reset()
         self.arrival_process.reset(seed)
-        self.aircraft = build_initial_2x4_queue(self.config)
-        self.agents = self.possible_agents.copy()
+        if self.config.total_requested_uavs is None:
+            candidates = build_initial_2x4_queue(self.config)
+            self.aircraft = []
+            for ac in candidates:
+                arrival_id = int(ac.uid - 1)
+                self.outcome_ledger[arrival_id] = UAVOutcomeRecord(
+                    arrival_id=arrival_id,
+                    request_time=0.0,
+                    scenario=self.config.traffic_demand_level,
+                    seed=seed,
+                    lifecycle_state=UAVLifecycleState.EXTERNAL_QUEUE.value,
+                    battery_remaining_seconds=float(self.config.battery_endurance_seconds),
+                )
+                request = {
+                    "arrival_id": arrival_id,
+                    "request_time": 0.0,
+                    "scenario": self.config.traffic_demand_level,
+                    "seed": seed,
+                    "burst_index": 0,
+                    "burst_size": len(candidates),
+                    "first_blocked_time": None,
+                }
+                if any(
+                    distance_3d(ac.position, other.position) < self.config.safe_distance
+                    for other in self.aircraft
+                ):
+                    self.external_arrival_queue.append(request)
+                    continue
+                ac.arrival_id = arrival_id
+                ac.request_time = 0.0
+                ac.admission_time = 0.0
+                ac.battery_endurance_seconds = float(self.config.battery_endurance_seconds)
+                ac.remaining_endurance_seconds = float(self.config.battery_endurance_seconds)
+                self.outcome_ledger[arrival_id].lifecycle_state = UAVLifecycleState.ACTIVE_APPROACH.value
+                self.outcome_ledger[arrival_id].admission_time = 0.0
+                self.outcome_ledger[arrival_id].uid = ac.uid
+                self.aircraft.append(ac)
+            self._next_arrival_request_id = len(candidates)
+        else:
+            self.aircraft = []
+        self.agents = [self._agent_name(ac.uid) for ac in self.aircraft]
+        self.possible_agents = list(self.agents)
         for ac in self.aircraft:
             ac.snapshot()
         self.reward_tracker.reset(self.aircraft)
@@ -285,8 +341,14 @@ class TerminalParallelEnv:
 
     def _runtime_request_due(self, due: int) -> None:
         for offset in range(max(0, int(due))):
+            if (
+                self.config.total_requested_uavs is not None
+                and self.arrival_request_count >= self.config.total_requested_uavs
+            ):
+                break
+            arrival_id = int(self._next_arrival_request_id)
             request = {
-                "arrival_id": int(self._next_arrival_request_id),
+                "arrival_id": arrival_id,
                 "request_time": float(self.time),
                 "scenario": self.config.traffic_demand_level,
                 "seed": None,
@@ -296,6 +358,13 @@ class TerminalParallelEnv:
             }
             self._next_arrival_request_id += 1
             self.arrival_request_count += 1
+            self.outcome_ledger[arrival_id] = UAVOutcomeRecord(
+                arrival_id=arrival_id,
+                request_time=float(request["request_time"]),
+                scenario=str(request["scenario"]),
+                seed=request["seed"],
+                lifecycle_state=UAVLifecycleState.EXTERNAL_QUEUE.value,
+            )
             self.external_arrival_queue.append(request)
 
     def _admit_one_external_arrival(self, request: dict, offset: int, due: int) -> bool:
@@ -303,7 +372,9 @@ class TerminalParallelEnv:
         base_radius = self.config.approach_threshold_radius + self.config.spawn_margin
         estimator = NominalScheduleEstimator(self.config)
         uid = max((aircraft.uid for aircraft in self.aircraft), default=0) + 1
-        lateral = (offset - (due - 1) / 2.0) * self.config.col_spacing
+        lane_count = max(1, int(self.config.gate_count))
+        lane_index = int(request.get("arrival_id", uid)) % lane_count
+        lateral = (lane_index - (lane_count - 1) / 2.0) * self.config.col_spacing
         position = np.array(
             [
                 base_radius * math.cos(inbound) - lateral * math.sin(inbound),
@@ -312,6 +383,10 @@ class TerminalParallelEnv:
             ],
             dtype=float,
         )
+        xy_limit = float(self.config.world_xy_limit)
+        position[0] = clamp(position[0], -xy_limit, xy_limit)
+        position[1] = clamp(position[1], -xy_limit, xy_limit)
+        position[2] = clamp(position[2], 0.0, self.config.world_z_limit)
         if any(
             not other.finished
             and distance_3d(position, other.position) < self.config.safe_distance
@@ -328,11 +403,20 @@ class TerminalParallelEnv:
             position=position,
             speed=self.config.nominal_speed,
             heading=heading,
-            spawn_time=self.time,
-            entry_time=self.time,
+            spawn_time=float(request.get("request_time", self.time)),
+            entry_time=float(self.time),
+            request_time=float(request.get("request_time", self.time)),
+            admission_time=float(self.time),
+            arrival_id=int(request.get("arrival_id", uid)),
+            battery_endurance_seconds=float(self.config.battery_endurance_seconds),
+            remaining_endurance_seconds=max(
+                0.0,
+                float(self.config.battery_endurance_seconds)
+                - (float(self.time) - float(request.get("request_time", self.time))),
+            ),
             planned_nominal_landing_time=estimator.estimate(
                 position,
-                spawn_time=self.time,
+                spawn_time=float(request.get("request_time", self.time)),
                 sequence_index=uid,
             ),
         )
@@ -342,6 +426,11 @@ class TerminalParallelEnv:
         if agent not in self.possible_agents:
             self.possible_agents.append(agent)
         self.agents.append(agent)
+        record = self.outcome_ledger.get(aircraft.arrival_id)
+        if record is not None:
+            record.uid = uid
+            record.admission_time = float(self.time)
+            record.lifecycle_state = UAVLifecycleState.ACTIVE_APPROACH.value
         self.admitted_arrival_count += 1
         return True
 
@@ -395,6 +484,9 @@ class TerminalParallelEnv:
 
     def _ac_map(self) -> Dict[int, UAVState]:
         return {a.uid: a for a in self.aircraft}
+
+    def _ring_occupancy_by_index(self) -> dict[int, int]:
+        return {int(index): len(queue) for index, queue in self.vtac.queues.items() if index != 0}
 
     def _apply_residual_action(
         self,
@@ -558,10 +650,8 @@ class TerminalParallelEnv:
             1,
             self.config.final_queue_capacity,
         )
-        active_fraction = sum(not aircraft.finished for aircraft in self.aircraft) / max(
-            1,
-            len(self.aircraft),
-        )
+        active_count = sum(not aircraft.finished for aircraft in self.aircraft)
+        active_fraction = active_count / max(1, self.config.max_active_uavs)
         active_aircraft = [aircraft for aircraft in self.aircraft if not aircraft.finished]
         pair_count = len(active_aircraft) * (len(active_aircraft) - 1) // 2
         conflict_risk = (
@@ -587,6 +677,25 @@ class TerminalParallelEnv:
             if self.last_high_level_applied_action is None
             else self.last_high_level_applied_action.astype(np.float32)
         )
+        total_requested = (
+            self.config.total_requested_uavs
+            if self.config.total_requested_uavs is not None
+            else max(1, len(self.outcome_ledger), self.arrival_request_count)
+        )
+        remaining_fraction = (
+            total_requested - self.terminal_outcome_count()
+        ) / max(1, total_requested)
+        battery_values = [
+            ac.remaining_endurance_seconds
+            for ac in active_aircraft
+            if ac.remaining_endurance_seconds is not None
+        ]
+        battery_risk = 0.0
+        if battery_values:
+            battery_risk = 1.0 - min(battery_values) / max(1e-9, self.config.battery_endurance_seconds)
+        outer_capacity = self.airspace.outer_ring.capacity / max(1, self.config.max_active_uavs)
+        inner_capacity = self.airspace.inner_ring.capacity / max(1, self.config.max_active_uavs)
+        external_queue_pressure = len(self.external_arrival_queue) / max(1, self.config.max_active_uavs)
         return np.asarray(
             [
                 *self.airspace.normalized_state_vector(),
@@ -597,6 +706,11 @@ class TerminalParallelEnv:
                 interval_phase,
                 *gate_vector,
                 *previous_action,
+                outer_capacity,
+                inner_capacity,
+                external_queue_pressure,
+                remaining_fraction,
+                battery_risk,
             ],
             dtype=np.float32,
         )
@@ -642,13 +756,17 @@ class TerminalParallelEnv:
             gate_action,
             self.airspace,
         )
-        info = self.airspace.apply_high_level_action(filtered)
+        info = self.airspace.apply_high_level_action(
+            filtered,
+            occupancy_by_ring=self._ring_occupancy_by_index(),
+        )
         self._sync_airspace_to_config()
         geometry_changed = self.geometry_gate.mark_geometry_applied(
             self.time,
             info["old_state"],
             info["new_state"],
         )
+        self._start_airspace_transition_if_needed(info)
         combined_violations = list(
             dict.fromkeys(
                 [
@@ -678,6 +796,53 @@ class TerminalParallelEnv:
         self.last_high_level_requested_action = raw.copy()
         self.last_high_level_applied_action = filtered.copy()
         return info
+
+    def _start_airspace_transition_if_needed(self, info: dict) -> None:
+        duration = float(self.config.geometry_transition_seconds)
+        if duration <= 0.0 or not info.get("dynamic_enabled", True):
+            self._airspace_transition = None
+            return
+        old_state = np.asarray(info["old_state"], dtype=np.float64)
+        target_state = np.asarray(info["new_state"], dtype=np.float64)
+        if np.allclose(old_state, target_state, rtol=0.0, atol=1e-12):
+            self._airspace_transition = None
+            return
+        actual_state = old_state.copy()
+        actual_state[4:] = target_state[4:]
+        transition_start_state = actual_state.copy()
+        transition_target_state = target_state.copy()
+        transition_target_state[4:] = actual_state[4:]
+        self.airspace.set_state_vector(actual_state)
+        self._sync_airspace_to_config()
+        self._airspace_transition = {
+            "start_time": float(self.time),
+            "duration": duration,
+            "start_state": transition_start_state,
+            "target_state": transition_target_state,
+        }
+        info["transition_active"] = True
+        info["transition_seconds"] = duration
+        info["target_state"] = target_state.copy()
+        info["actual_state"] = self.airspace.state_vector()
+
+    def _advance_airspace_transition(self) -> None:
+        transition = self._airspace_transition
+        if transition is None:
+            return
+        elapsed = max(0.0, float(self.time) - float(transition["start_time"]))
+        ratio = min(1.0, elapsed / max(1e-9, float(transition["duration"])))
+        state = (
+            np.asarray(transition["start_state"], dtype=np.float64)
+            + ratio
+            * (
+                np.asarray(transition["target_state"], dtype=np.float64)
+                - np.asarray(transition["start_state"], dtype=np.float64)
+            )
+        )
+        self.airspace.set_state_vector(state)
+        self._sync_airspace_to_config()
+        if ratio >= 1.0:
+            self._airspace_transition = None
 
     def _candidate_transition_plan(
         self,
@@ -1024,6 +1189,8 @@ class TerminalParallelEnv:
             ring_headway=self._initial_headways[0],
             final_headway=self._initial_headways[1],
             dynamic_enabled=self.experiment_mode.dynamic_airspace,
+            required_separation=self.config.safe_distance,
+            ring_separation_margin=self.config.ring_separation_margin_m,
         )
 
     def _make_geometry_gate(self) -> GeometryEventGate:
@@ -1106,9 +1273,207 @@ class TerminalParallelEnv:
             "planned_nominal_landing_time": ac.planned_nominal_landing_time,
             "actual_landing_time": ac.actual_landing_time,
             "landing_delay": ac.landing_delay,
+            "arrival_id": ac.arrival_id,
+            "request_time": float(ac.request_time),
+            "admission_time": ac.admission_time,
+            "terminal_outcome": ac.terminal_outcome,
+            "terminal_reason": ac.terminal_reason,
+            "remaining_endurance_seconds": ac.remaining_endurance_seconds,
         }
 
     #着陆判定
+    def _phase_lifecycle_state(self, ac: UAVState) -> str:
+        if ac.finished:
+            return ac.terminal_outcome or UAVLifecycleState.UNRESOLVED.value
+        if ac.phase == FlightPhase.FINAL:
+            return UAVLifecycleState.ACTIVE_FINAL.value
+        if ac.phase == FlightPhase.RING:
+            if ac.assigned_ring == self.vtac.inner_ring_index:
+                return UAVLifecycleState.ACTIVE_RING_INNER.value
+            return UAVLifecycleState.ACTIVE_RING_OUTER.value
+        return UAVLifecycleState.ACTIVE_APPROACH.value
+
+    def _last_position_tuple(self, ac: UAVState) -> tuple[float, float, float]:
+        return (float(ac.position[0]), float(ac.position[1]), float(ac.position[2]))
+
+    def _mark_terminal_outcome(
+        self,
+        ac: UAVState,
+        *,
+        outcome: str,
+        reason: str,
+        collision_partner_ids: list[int] | None = None,
+    ) -> None:
+        if ac.terminal_outcome is not None:
+            return
+        ac.mark_terminal(
+            step=self.step_count,
+            time=self.time,
+            outcome=outcome,
+            reason=reason,
+            collision_partner_ids=collision_partner_ids,
+        )
+        ac.remaining_endurance_seconds = (
+            None
+            if ac.battery_endurance_seconds is None
+            else max(0.0, float(ac.battery_endurance_seconds) - (self.time - ac.request_time))
+        )
+        self.vtac.release_finished(ac)
+        if outcome == UAVLifecycleState.CRASHED_BATTERY.value:
+            self.battery_crash_count += 1
+        record = self.outcome_ledger.get(ac.arrival_id) if ac.arrival_id is not None else None
+        if record is not None:
+            record.uid = ac.uid
+            record.set_terminal(
+                outcome=outcome,
+                time=self.time,
+                reason=reason,
+                last_phase=self._phase_lifecycle_state(ac),
+                last_position=self._last_position_tuple(ac),
+                last_speed=float(ac.speed),
+                battery_remaining_seconds=ac.remaining_endurance_seconds,
+                collision_partners=collision_partner_ids,
+            )
+
+    def _update_battery_endurance(self) -> None:
+        endurance = float(self.config.battery_endurance_seconds)
+        retained_queue: list[dict] = []
+        for request in self.external_arrival_queue:
+            arrival_id = int(request["arrival_id"])
+            remaining = endurance - (self.time - float(request["request_time"]))
+            record = self.outcome_ledger.get(arrival_id)
+            if remaining <= 0.0:
+                if record is not None:
+                    record.set_terminal(
+                        outcome=UAVLifecycleState.CRASHED_BATTERY.value,
+                        time=self.time,
+                        reason="battery_depleted_in_external_queue",
+                        last_phase=UAVLifecycleState.EXTERNAL_QUEUE.value,
+                        battery_remaining_seconds=0.0,
+                    )
+                self.battery_crash_count += 1
+            else:
+                if record is not None:
+                    record.battery_remaining_seconds = float(remaining)
+                retained_queue.append(request)
+        self.external_arrival_queue = retained_queue
+
+        for ac in self.aircraft:
+            if ac.finished:
+                continue
+            ac.battery_endurance_seconds = endurance
+            ac.remaining_endurance_seconds = max(0.0, endurance - (self.time - ac.request_time))
+            record = self.outcome_ledger.get(ac.arrival_id) if ac.arrival_id is not None else None
+            if record is not None:
+                record.lifecycle_state = self._phase_lifecycle_state(ac)
+                record.battery_remaining_seconds = ac.remaining_endurance_seconds
+                record.last_phase = self._phase_lifecycle_state(ac)
+                record.last_position = self._last_position_tuple(ac)
+                record.last_speed = float(ac.speed)
+            if ac.remaining_endurance_seconds <= 0.0:
+                self._mark_terminal_outcome(
+                    ac,
+                    outcome=UAVLifecycleState.CRASHED_BATTERY.value,
+                    reason=f"battery_depleted_in_{self._phase_lifecycle_state(ac).lower()}",
+                )
+
+    def _hard_time_guard_reached(self) -> bool:
+        max_seconds = self.config.max_simulation_seconds
+        if max_seconds is not None and self.time >= float(max_seconds) - 1e-9:
+            return True
+        return self.step_count >= self.config.max_steps
+
+    def finite_cohort_complete(self) -> bool:
+        total = self.config.total_requested_uavs
+        if total is None:
+            return False
+        return bool(
+            self.arrival_request_count >= total
+            and len(self.external_arrival_queue) == 0
+            and sum(not aircraft.finished for aircraft in self.aircraft) == 0
+            and self.terminal_outcome_count() >= total
+        )
+
+    def terminal_outcome_count(self) -> int:
+        return sum(1 for record in self.outcome_ledger.values() if record.is_terminal)
+
+    def _mark_unresolved_at_guard(self) -> None:
+        if self.config.total_requested_uavs is None:
+            return
+        for request in self.external_arrival_queue:
+            record = self.outcome_ledger.get(int(request["arrival_id"]))
+            if record is not None and not record.is_terminal:
+                record.set_terminal(
+                    outcome=UAVLifecycleState.UNRESOLVED.value,
+                    time=self.time,
+                    reason="HARD_TIME_GUARD_WITH_UNRESOLVED_UAVS",
+                    last_phase=UAVLifecycleState.EXTERNAL_QUEUE.value,
+                    battery_remaining_seconds=record.battery_remaining_seconds,
+                )
+        self.external_arrival_queue = []
+        for ac in self.aircraft:
+            if not ac.finished:
+                self._mark_terminal_outcome(
+                    ac,
+                    outcome=UAVLifecycleState.UNRESOLVED.value,
+                    reason="HARD_TIME_GUARD_WITH_UNRESOLVED_UAVS",
+                )
+
+    def simulation_outcome_summary(self) -> dict:
+        total_requested = (
+            int(self.config.total_requested_uavs)
+            if self.config.total_requested_uavs is not None
+            else int(max(len(self.outcome_ledger), self.arrival_request_count))
+        )
+        landed = sum(
+            record.terminal_outcome == UAVLifecycleState.LANDED.value
+            for record in self.outcome_ledger.values()
+        )
+        crashed_collision = sum(
+            record.terminal_outcome == UAVLifecycleState.CRASHED_COLLISION.value
+            for record in self.outcome_ledger.values()
+        )
+        crashed_battery = sum(
+            record.terminal_outcome == UAVLifecycleState.CRASHED_BATTERY.value
+            for record in self.outcome_ledger.values()
+        )
+        unresolved = sum(
+            record.terminal_outcome == UAVLifecycleState.UNRESOLVED.value
+            for record in self.outcome_ledger.values()
+        )
+        terminal_count = int(landed + crashed_collision + crashed_battery + unresolved)
+        active_final = int(sum(not aircraft.finished for aircraft in self.aircraft))
+        external_final = int(len(self.external_arrival_queue))
+        conservation_ok = bool(
+            total_requested
+            == int(landed + crashed_collision + crashed_battery + unresolved)
+        )
+        simulation_valid = bool(conservation_ok and unresolved == 0 and external_final == 0 and active_final == 0)
+        return {
+            "total_requested": int(total_requested),
+            "total_admitted": int(self.admitted_arrival_count),
+            "landed": int(landed),
+            "crashed_collision": int(crashed_collision),
+            "crashed_battery": int(crashed_battery),
+            "unresolved": int(unresolved),
+            "external_queue_final": external_final,
+            "internal_active_final": active_final,
+            "terminal_outcome_count": terminal_count,
+            "last_request_time": float(
+                max((record.request_time for record in self.outcome_ledger.values()), default=0.0)
+            ),
+            "final_simulation_time": float(self.time),
+            "simulation_valid": simulation_valid,
+            "conservation_ok": conservation_ok,
+            "reason": (
+                "OK"
+                if simulation_valid
+                else "HARD_TIME_GUARD_WITH_UNRESOLVED_UAVS"
+                if unresolved > 0 or external_final > 0 or active_final > 0
+                else "OUTCOME_CONSERVATION_FAILED"
+            ),
+        }
+
     def _update_finish_states(self) -> List[int]:
         newly_finished: List[int] = []
         cx, cy, _ = self.config.center
@@ -1141,10 +1506,11 @@ class TerminalParallelEnv:
                 ac.touchdown_hold_steps = 0
 
             if ac.touchdown_hold_steps >= self.config.touchdown_hold_steps_required:
-                ac.finished = True
-                ac.phase = FlightPhase.FINISHED
-                ac.mark_finished(step=self.step_count, time=self.time)
-                self.vtac.release_finished(ac)
+                self._mark_terminal_outcome(
+                    ac,
+                    outcome=UAVLifecycleState.LANDED.value,
+                    reason="touchdown_accepted",
+                )
                 newly_finished.append(ac.uid)
 
 
@@ -1157,7 +1523,11 @@ class TerminalParallelEnv:
         active = [aircraft for aircraft in self.aircraft if not aircraft.finished]
         conflict_vehicle_ids: set[int] = set()
         for i, a in enumerate(active):
+            if a.finished:
+                continue
             for b in active[i + 1 :]:
+                if b.finished:
+                    continue
                 self.pair_opportunities += 1
                 d = distance_3d(a.position, b.position)
                 self.min_pairwise_distance = min(self.min_pairwise_distance, d)
@@ -1167,7 +1537,22 @@ class TerminalParallelEnv:
                     self._unique_conflict_pairs.add(pair)
                     conflict_vehicle_ids.update(pair)
                 if d < self.config.collision_distance:
-                    self.collision_count += 1
+                    pair = tuple(sorted((a.uid, b.uid)))
+                    if pair not in self._terminal_collision_pairs:
+                        self._terminal_collision_pairs.add(pair)
+                        self.collision_count += 1
+                        self._mark_terminal_outcome(
+                            a,
+                            outcome=UAVLifecycleState.CRASHED_COLLISION.value,
+                            reason="collision_distance_breach",
+                            collision_partner_ids=[b.uid],
+                        )
+                        self._mark_terminal_outcome(
+                            b,
+                            outcome=UAVLifecycleState.CRASHED_COLLISION.value,
+                            reason="collision_distance_breach",
+                            collision_partner_ids=[a.uid],
+                        )
                     collision_pairs[a.uid] = collision_pairs.get(a.uid, 0) + 1
                     collision_pairs[b.uid] = collision_pairs.get(b.uid, 0) + 1
                 elif d < self.config.nmac_distance:
@@ -1306,6 +1691,7 @@ class TerminalParallelEnv:
                 max_descent_rate=self.config.max_descent_rate,
                 speed_min=phase_speed_min,
                 speed_max=self.config.speed_max,
+                max_acceleration=self.config.max_acceleration,
             )
             ac.record_step_metrics(
                 heading_step_rad=telemetry["heading_step_rad"],
@@ -1318,12 +1704,16 @@ class TerminalParallelEnv:
 
         self.step_count += 1
         self.time += self.config.dt
+        self._advance_airspace_transition()
         self._spawn_runtime_arrivals()
+        self._update_battery_endurance()
         self._track_active_cap_and_external_queue()
         self.final_queue_time += len(self.vtac.queues[0]) * self.config.dt
         self._track_waiting_and_congestion()
         self._update_finish_states()
         nmac_pairs, collision_pairs = self._track_conflicts()
+        if self._hard_time_guard_reached() and not self.finite_cohort_complete():
+            self._mark_unresolved_at_guard()
         if self.should_sample_metrics():
             self._update_geometry_gate(force_sample=True)
 
@@ -1336,12 +1726,12 @@ class TerminalParallelEnv:
         infos: Dict[str, dict] = {}
         active_agents: List[str] = []
 
-        timed_out = self.step_count >= self.config.max_steps
+        timed_out = self._hard_time_guard_reached()
         for ac in self.aircraft:
             agent = self._agent_name(ac.uid)
             observations[agent] = self._build_obs(ac)
             rewards[agent] = float(rewards_uid.get(ac.uid, 0.0))
-            terminations[agent] = bool(ac.finished)
+            terminations[agent] = bool(ac.finished or self.finite_cohort_complete())
             truncations[agent] = bool(timed_out and not ac.finished)
             infos[agent] = self._build_info(ac)
             infos[agent]["nmac_count_total"] = self.nmac_count
@@ -1355,8 +1745,35 @@ class TerminalParallelEnv:
     def per_aircraft_metrics(self) -> Dict[str, dict]:
         return {self._agent_name(ac.uid): ac.metrics_dict(self.config.center) for ac in self.aircraft}
 
+    def uav_outcome_rows(self) -> list[dict]:
+        return [
+            record.to_row()
+            for record in sorted(self.outcome_ledger.values(), key=lambda item: item.arrival_id)
+        ]
+
     def metrics(self) -> Dict[str, float]:
         finished = sum(1 for a in self.aircraft if a.finished)
+        landed = sum(
+            record.terminal_outcome == UAVLifecycleState.LANDED.value
+            for record in self.outcome_ledger.values()
+        )
+        collision_crashes = sum(
+            record.terminal_outcome == UAVLifecycleState.CRASHED_COLLISION.value
+            for record in self.outcome_ledger.values()
+        )
+        battery_crashes = sum(
+            record.terminal_outcome == UAVLifecycleState.CRASHED_BATTERY.value
+            for record in self.outcome_ledger.values()
+        )
+        unresolved = sum(
+            record.terminal_outcome == UAVLifecycleState.UNRESOLVED.value
+            for record in self.outcome_ledger.values()
+        )
+        total_requested = (
+            self.config.total_requested_uavs
+            if self.config.total_requested_uavs is not None
+            else max(1, len(self.outcome_ledger), self.arrival_request_count)
+        )
         active = sum(1 for a in self.aircraft if not a.finished)
         sequenced = sum(1 for a in self.aircraft if a.sequence_number is not None)
         ring_counts = {f"queue_{idx}": len(queue) for idx, queue in sorted(self.vtac.queues.items())}
@@ -1395,10 +1812,22 @@ class TerminalParallelEnv:
             "step": int(self.step_count),
             "completion_step": int(self.step_count),
             "finished": finished,
-            "landed_count": float(finished),
+            "landed_count": float(landed),
             "active_count": float(active),
             "total_spawned_count": float(len(self.aircraft)),
-            "total_landed_count": float(finished),
+            "total_requested_uavs": float(total_requested),
+            "total_landed_count": float(landed),
+            "collision_crash_count": float(collision_crashes),
+            "battery_crash_count": float(battery_crashes),
+            "unresolved_count": float(unresolved),
+            "terminal_outcome_count": float(self.terminal_outcome_count()),
+            "landing_success_rate": float(landed / max(1, total_requested)),
+            "collision_crash_rate": float(collision_crashes / max(1, total_requested)),
+            "battery_crash_rate": float(battery_crashes / max(1, total_requested)),
+            "mission_failure_rate": float(
+                (collision_crashes + battery_crashes + unresolved) / max(1, total_requested)
+            ),
+            "total_resolution_rate": float(self.terminal_outcome_count() / max(1, total_requested)),
             "arrival_request_count": float(self.arrival_request_count),
             "admitted_arrival_count": float(self.admitted_arrival_count),
             "blocked_arrival_count": float(self.blocked_arrival_count),
@@ -1453,6 +1882,30 @@ class TerminalParallelEnv:
             "mean_residual_action_l1": float(np.mean(residual_l1)) if residual_l1 else 0.0,
             "airspace_outer_radius": float(self.airspace.outer_ring.radius),
             "airspace_inner_radius": float(self.airspace.inner_ring.radius),
+            "airspace_outer_capacity": float(self.airspace.outer_ring.capacity),
+            "airspace_inner_capacity": float(self.airspace.inner_ring.capacity),
+            "outer_occupancy_ratio": float(
+                len(self.vtac.queues.get(self.airspace.outer_ring.index, []))
+                / max(1, self.airspace.outer_ring.capacity)
+            ),
+            "inner_occupancy_ratio": float(
+                len(self.vtac.queues.get(self.airspace.inner_ring.index, []))
+                / max(1, self.airspace.inner_ring.capacity)
+            ),
+            "outer_capacity_delta_from_nominal": float(
+                self.airspace.outer_ring.capacity
+                - geometric_ring_capacity(
+                    self._initial_rings[-1].radius,
+                    self.config.safe_distance + self.config.ring_separation_margin_m,
+                )
+            ),
+            "inner_capacity_delta_from_nominal": float(
+                self.airspace.inner_ring.capacity
+                - geometric_ring_capacity(
+                    self._initial_rings[0].radius,
+                    self.config.safe_distance + self.config.ring_separation_margin_m,
+                )
+            ),
             "airspace_outer_height": float(self.airspace.outer_ring.height),
             "airspace_inner_height": float(self.airspace.inner_ring.height),
             "airspace_ring_headway": float(self.airspace.ring_headway),
