@@ -51,6 +51,7 @@ POLICIES = (
     "high-level-random",
     "high-level-static",
     "dynamic-rule",
+    "event-rule",
     "high-level-ppo",
 )
 
@@ -181,7 +182,7 @@ def run_rollout(
         if env.should_update_high_level():
             if policy == "high-level-random":
                 high_level_action = rng.uniform(-1.0, 1.0, size=8).astype(np.float32)
-            elif policy == "dynamic-rule":
+            elif policy in {"dynamic-rule", "event-rule"}:
                 high_level_action = dynamic_rule_policy.act(env)
             elif policy == "high-level-ppo":
                 high_level_action, _ = ppo_model.predict(

@@ -13,6 +13,9 @@ class ExperimentMode(str, Enum):
     FIXED_RESIDUAL = "fixed_residual"
     DYNAMIC_RULE = "dynamic_rule"
     DYNAMIC_HRL = "dynamic_hrl"
+    EVENT_RULE = "event_rule"
+    PERIODIC_HRL = "periodic_hrl"
+    EVENT_GATED_HRL = "event_gated_hrl"
     FULL_HRL_NO_SAFETY = "full_hrl_no_safety"
     CRAZYFLIE_LAB = "crazyflie_lab"
 
@@ -33,6 +36,9 @@ class ExperimentMode(str, Enum):
         return self in {
             ExperimentMode.DYNAMIC_RULE,
             ExperimentMode.DYNAMIC_HRL,
+            ExperimentMode.EVENT_RULE,
+            ExperimentMode.PERIODIC_HRL,
+            ExperimentMode.EVENT_GATED_HRL,
             ExperimentMode.FULL_HRL_NO_SAFETY,
             ExperimentMode.CRAZYFLIE_LAB,
         }
@@ -41,7 +47,7 @@ class ExperimentMode(str, Enum):
     def action_mode(self) -> str:
         if self is ExperimentMode.LEGACY_RESIDUAL:
             return "legacy_residual"
-        if self in {ExperimentMode.FIXED_RULE, ExperimentMode.DYNAMIC_RULE}:
+        if self in {ExperimentMode.FIXED_RULE, ExperimentMode.DYNAMIC_RULE, ExperimentMode.EVENT_RULE}:
             return "rule"
         return "intention_residual"
 

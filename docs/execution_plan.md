@@ -331,3 +331,11 @@ Run Stage-0/Stage-1 high-level PPO smoke/pilot only after reviewing
 output root.  Do not launch a long multi-seed sweep until the smoke/pilot logs
 show non-zero traffic, non-zero phase progress, and plausible reward component
 scales.
+# Event-gated 180s HRL execution addendum
+
+For the current phase, execute in this order: audit 8D action/timing semantics;
+calibrate geometry-gate thresholds from fixed-geometry traces; validate
+`fixed_rule` and `event_rule` regressions; run 512-step event-gated smoke from
+scratch; run exact 5k `event_gated_hrl` and `periodic_hrl` pilots from scratch;
+only if ready, run exact 20k event-gated and periodic pilots from scratch;
+evaluate and stop. Do not continue to 50k/main/sweep or hardware experiments.

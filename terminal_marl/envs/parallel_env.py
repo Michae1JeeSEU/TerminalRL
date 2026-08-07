@@ -10,6 +10,7 @@ from ..config import ExperimentMode
 from ..core.config import SimConfig
 from ..core.baseline import command_for_aircraft
 from ..core.arrival_process import ArrivalProcess
+from ..control.geometry_event_gate import GateConfig, GateMetrics, GateMode, GeometryEventGate
 from ..core.dynamic_airspace import AirspaceBounds, DynamicAirspace, DynamicRingSpec
 from ..core.geometry import distance_3d, norm_xy, wrap_angle, clamp
 from ..core.observations import AgentObservationBuilder
@@ -60,6 +61,7 @@ class TerminalParallelEnv:
     vtac: VTAC = field(init=False)
     airspace: DynamicAirspace = field(init=False)
     safety_filter: SafetyFilter = field(init=False)
+    geometry_gate: GeometryEventGate = field(init=False)
     trajectory_generator: TrajectoryGenerator = field(init=False)
     arrival_process: ArrivalProcess = field(init=False)
     aircraft: List[UAVState] = field(default_factory=list)
@@ -80,6 +82,9 @@ class TerminalParallelEnv:
     observation_builder: AgentObservationBuilder = field(init=False)
     reward_tracker: RewardTracker = field(init=False)
     last_high_level_info: dict = field(default_factory=dict)
+    last_gate_metrics: dict = field(default_factory=dict)
+    last_high_level_requested_action: Optional[np.ndarray] = None
+    last_high_level_applied_action: Optional[np.ndarray] = None
     last_intention_info: Dict[int, dict] = field(default_factory=dict)
     last_release_approval: Dict[int, dict] = field(default_factory=dict)
     last_landing_approval: Dict[int, dict] = field(default_factory=dict)
@@ -162,6 +167,7 @@ class TerminalParallelEnv:
             height_min=0.0,
             height_max=self.config.world_z_limit,
         )
+        self.geometry_gate = self._make_geometry_gate()
         self.arrival_process = ArrivalProcess(
             demand_level=self.config.traffic_demand_level,
             model=self.config.arrival_model,
@@ -226,6 +232,9 @@ class TerminalParallelEnv:
         self.congestion_pressure_time = 0.0
         self._unique_conflict_pairs.clear()
         self.last_high_level_info = {}
+        self.last_gate_metrics = {}
+        self.last_high_level_requested_action = None
+        self.last_high_level_applied_action = None
         self.last_intention_info = {}
         self.last_release_approval = {}
         self.last_landing_approval = {}
@@ -236,6 +245,7 @@ class TerminalParallelEnv:
         self.final_queue_time = 0.0
         self.min_pairwise_distance = math.inf
         self.vtac.reset()
+        self.geometry_gate.reset()
         self.arrival_process.reset(seed)
         self.aircraft = build_initial_2x4_queue(self.config)
         self.agents = self.possible_agents.copy()
@@ -385,6 +395,66 @@ class TerminalParallelEnv:
             and self.step_count % self.config.high_level_interval_steps == 0
         )
 
+    def should_sample_metrics(self) -> bool:
+        """Return whether the 20 s sensing/metrics window should update gate state."""
+
+        steps = max(1, int(round(self.config.metrics_sampling_interval_seconds / self.config.dt)))
+        return bool(self.step_count % steps == 0)
+
+    def _geometry_deviation_l1(self) -> float:
+        current = self.airspace.state_vector()
+        nominal = self._make_airspace().state_vector()
+        return float(np.abs(current[:4] - nominal[:4]).sum())
+
+    def _gate_metrics(self) -> GateMetrics:
+        metrics = self.metrics()
+        active = [aircraft for aircraft in self.aircraft if not aircraft.finished]
+        ring_indices = {ring.index for ring in self.config.rings}
+        outer_index = max(ring_indices) if ring_indices else 2
+        inner_index = min(ring_indices) if ring_indices else 1
+        approach_backlog = sum(
+            not aircraft.finished and aircraft.sequence_number is None
+            for aircraft in self.aircraft
+        )
+        outer_pressure = len(self.vtac.queues[outer_index]) / max(1, self.vtac.queue_capacity(outer_index))
+        inner_pressure = len(self.vtac.queues[inner_index]) / max(1, self.vtac.queue_capacity(inner_index))
+        final_pressure = len(self.vtac.queues[0]) / max(1, self.config.final_queue_capacity)
+        recent_arrivals = float(len(self.aircraft) - float(self.last_gate_metrics.get("spawned_count", len(self.aircraft))))
+        recent_landings = float(metrics["landed_count"] - float(self.last_gate_metrics.get("landed_count", metrics["landed_count"])))
+        backlog_ratio = approach_backlog / max(1, self.config.max_active_uavs)
+        previous_backlog = float(self.last_gate_metrics.get("approach_backlog_ratio", backlog_ratio))
+        backlog_growth = backlog_ratio - previous_backlog
+        active_ratio = len(active) / max(1, self.config.max_active_uavs)
+        imbalance = max(0.0, recent_arrivals - recent_landings) / max(1.0, recent_arrivals + recent_landings, 1.0)
+        gate_metrics = GateMetrics(
+            normalized_congestion=float(metrics.get("normalized_congestion", 0.0)),
+            approach_backlog_ratio=float(backlog_ratio),
+            occupancy_pressure=float(max(outer_pressure, inner_pressure, final_pressure)),
+            backlog_growth=float(backlog_growth),
+            normalized_conflict_rate=float(metrics.get("normalized_conflict_rate", 0.0)),
+            recent_arrivals=float(max(0.0, recent_arrivals)),
+            recent_landings=float(max(0.0, recent_landings)),
+            arrival_service_imbalance=float(imbalance),
+            active_capacity_ratio=float(active_ratio),
+        )
+        self.last_gate_metrics = {
+            "spawned_count": float(len(self.aircraft)),
+            "landed_count": float(metrics["landed_count"]),
+            "approach_backlog_ratio": float(backlog_ratio),
+            "backlog_growth": float(backlog_growth),
+            "arrival_service_imbalance": float(imbalance),
+        }
+        return gate_metrics
+
+    def _update_geometry_gate(self, *, force_sample: bool = False) -> dict:
+        metrics = self._gate_metrics()
+        return self.geometry_gate.update(
+            metrics,
+            time_seconds=self.time,
+            geometry_deviation_l1=self._geometry_deviation_l1(),
+            force_sample=force_sample,
+        )
+
     def get_high_level_observation(self) -> np.ndarray:
         """Return system-level traffic and airspace features for a future policy."""
 
@@ -412,6 +482,20 @@ class TerminalParallelEnv:
         interval_phase = (
             self.step_count % self.config.high_level_interval_steps
         ) / self.config.high_level_interval_steps
+        gate_info = self._update_geometry_gate(force_sample=False)
+        gate_vector = self.geometry_gate.observation_vector(
+            time_seconds=self.time,
+            geometry_deviation_l1=self._geometry_deviation_l1(),
+            backlog_trend=float(self.last_gate_metrics.get("backlog_growth", 0.0)),
+            arrival_service_imbalance=float(
+                self.last_gate_metrics.get("arrival_service_imbalance", 0.0)
+            ),
+        )
+        previous_action = (
+            np.zeros(8, dtype=np.float32)
+            if self.last_high_level_applied_action is None
+            else self.last_high_level_applied_action.astype(np.float32)
+        )
         return np.asarray(
             [
                 *self.airspace.normalized_state_vector(),
@@ -420,6 +504,8 @@ class TerminalParallelEnv:
                 active_fraction,
                 conflict_risk,
                 interval_phase,
+                *gate_vector,
+                *previous_action,
             ],
             dtype=np.float32,
         )
@@ -455,12 +541,23 @@ class TerminalParallelEnv:
             self.last_high_level_info = info
             return info
 
-        filtered, safety_info = self.safety_filter.filter_airspace_action(
+        self._update_geometry_gate(force_sample=False)
+        gate_action, gate_info = self.geometry_gate.transform_action(
             raw,
+            time_seconds=self.time,
+            geometry_deviation_l1=self._geometry_deviation_l1(),
+        )
+        filtered, safety_info = self.safety_filter.filter_airspace_action(
+            gate_action,
             self.airspace,
         )
         info = self.airspace.apply_high_level_action(filtered)
         self._sync_airspace_to_config()
+        geometry_changed = self.geometry_gate.mark_geometry_applied(
+            self.time,
+            info["old_state"],
+            info["new_state"],
+        )
         combined_violations = list(
             dict.fromkeys(
                 [
@@ -472,11 +569,23 @@ class TerminalParallelEnv:
         info["violations"] = combined_violations
         info["clipped"] = bool(info["clipped"] or safety_info["modified"])
         info["safety_filter"] = safety_info
+        info["geometry_gate"] = self.geometry_gate.info(
+            self.time,
+            geometry_deviation_l1=self._geometry_deviation_l1(),
+        )
+        info["geometry_gate"].update(gate_info)
+        info["requested_action"] = raw.copy()
+        info["applied_action"] = filtered.copy()
+        info["requested_geometry_action"] = gate_info["requested_geometry_action"]
+        info["applied_geometry_action"] = filtered[:4].copy()
+        info["geometry_changed"] = bool(geometry_changed)
         info["applied"] = True
         info["cached"] = False
         info["step"] = self.step_count
         self.pending_high_level_action = None
         self.last_high_level_info = info
+        self.last_high_level_requested_action = raw.copy()
+        self.last_high_level_applied_action = filtered.copy()
         return info
 
     def _candidate_transition_plan(
@@ -826,6 +935,36 @@ class TerminalParallelEnv:
             dynamic_enabled=self.experiment_mode.dynamic_airspace,
         )
 
+    def _make_geometry_gate(self) -> GeometryEventGate:
+        mode = str(self.config.geometry_gate_mode or "none").lower()
+        if mode == "auto":
+            if self.experiment_mode.value in {"event_gated_hrl", "event_rule"}:
+                mode = GateMode.EVENT.value
+            elif self.experiment_mode.value == "periodic_hrl":
+                mode = GateMode.PERIODIC.value
+            else:
+                mode = GateMode.NONE.value
+        return GeometryEventGate(
+            config=GateConfig(
+                metrics_sampling_interval_seconds=float(
+                    self.config.metrics_sampling_interval_seconds
+                ),
+                geometry_min_dwell_seconds=float(
+                    self.config.geometry_min_dwell_seconds
+                ),
+                theta_on=float(self.config.geometry_gate_theta_on),
+                theta_off=float(self.config.geometry_gate_theta_off),
+                k_on=int(self.config.geometry_gate_k_on),
+                k_off=int(self.config.geometry_gate_k_off),
+                recovery_k=int(self.config.geometry_gate_recovery_k),
+                nominal_recovery_tolerance=float(
+                    self.config.geometry_gate_nominal_recovery_tolerance
+                ),
+                max_active_uavs=int(self.config.max_active_uavs),
+            ),
+            mode=GateMode.parse(mode),
+        )
+
     def _sync_airspace_to_config(self) -> None:
         by_index = {ring.index: ring for ring in self.airspace.to_ring_specs()}
         for ring in self.config.rings:
@@ -859,6 +998,12 @@ class TerminalParallelEnv:
             "experiment_mode": self.experiment_mode.value,
             "action_mode": self.action_mode,
             "airspace_state": self.airspace.state_vector().copy(),
+            "geometry_gate": self.geometry_gate.info(
+                self.time,
+                geometry_deviation_l1=self._geometry_deviation_l1(),
+            ),
+            "requested_high_level_action": self.last_high_level_requested_action,
+            "applied_high_level_action": self.last_high_level_applied_action,
             "intention_action": self.last_intention_info.get(ac.uid),
             "release_approval": self.last_release_approval.get(ac.uid),
             "landing_approval": self.last_landing_approval.get(ac.uid),
@@ -1085,6 +1230,8 @@ class TerminalParallelEnv:
         self._track_waiting_and_congestion()
         self._update_finish_states()
         nmac_pairs, collision_pairs = self._track_conflicts()
+        if self.should_sample_metrics():
+            self._update_geometry_gate(force_sample=True)
 
         rewards_uid = self.reward_tracker.compute(self.aircraft, applied_actions, nmac_pairs, collision_pairs)
 

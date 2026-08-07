@@ -12,6 +12,9 @@ def test_required_experiment_modes_are_available() -> None:
         "fixed_residual",
         "dynamic_rule",
         "dynamic_hrl",
+        "event_rule",
+        "periodic_hrl",
+        "event_gated_hrl",
         "crazyflie_lab",
     } <= values
 
@@ -23,6 +26,9 @@ def test_required_experiment_modes_are_available() -> None:
         (ExperimentMode.FIXED_RESIDUAL, False, "intention_residual"),
         (ExperimentMode.DYNAMIC_RULE, True, "rule"),
         (ExperimentMode.DYNAMIC_HRL, True, "intention_residual"),
+        (ExperimentMode.EVENT_RULE, True, "rule"),
+        (ExperimentMode.PERIODIC_HRL, True, "intention_residual"),
+        (ExperimentMode.EVENT_GATED_HRL, True, "intention_residual"),
         (ExperimentMode.CRAZYFLIE_LAB, True, "intention_residual"),
     ],
 )

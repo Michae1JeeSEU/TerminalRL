@@ -759,3 +759,42 @@ New evaluation-only tools:
 
 These tools are simulation-only. They do not connect to ROS2, Crazyswarm2, or
 Crazyflie hardware, and they do not start PPO training.
+
+## 35. Event-gated 180s high-level protocol
+
+The active training protocol is now a fixed 180 s high-level MDP with 20 s
+metric sampling and a 600 s minimum dwell for structural geometry changes.
+`decision_interval_seconds` must be divisible by
+`metrics_sampling_interval_seconds`; the YAML loader fails fast if the timing
+cannot be represented by `dt`.
+
+`GeometryEventGate` is implemented in
+`terminal_marl/control/geometry_event_gate.py`. The gate owns persistence,
+hysteresis, dwell, nominal-recovery eligibility, action masking, and diagnostic
+state. `TerminalParallelEnv` samples pressure metrics every 20 s and exposes
+gate state in high-level observation/info/logs.
+
+Action semantics remain the stable eight-dimensional incremental
+`DynamicAirspace` action:
+
+- indices 0--3: structural geometry (`outer_radius`, `inner_radius`,
+  `outer_height`, `inner_height`);
+- indices 4--7: operational flow parameters (`outer_speed`, `inner_speed`,
+  `ring_headway`, `final_headway`).
+
+When the gate is closed, only indices 0--3 become explicit no-ops. Operational
+indices continue through the existing SafetyFilter/DynamicAirspace limits.
+Reward diagnostics separate requested/applied action and include an applied
+geometry-change cost, so masked geometry requests do not create geometry-change
+penalty.
+
+New simulation-only modes:
+
+- `event_rule`: rule-only low-level flow with event-gated structural geometry;
+- `periodic_hrl`: fixed 180 s high-level decisions, geometry allowed by dwell;
+- `event_gated_hrl`: fixed 180 s high-level decisions, geometry allowed only by
+  event gate and dwell.
+
+Training presets for the new PPO pilots use an episode-level medium/high/bursty
+mixture (0.40/0.30/0.30). These runs must start from scratch; never resume an
+old 20 s PPO checkpoint after changing the high-level MDP interval.

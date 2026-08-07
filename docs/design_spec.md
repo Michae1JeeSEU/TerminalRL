@@ -452,3 +452,13 @@ class LowLevelPolicy:
     "avg_priority_score": float,
 }
 ```
+# Event-gated 180s high-level design addendum
+
+`GeometryEventGate` is the single owner of structural geometry gate logic. It
+uses 20 s pressure samples, persistence, hysteresis, and 600 s dwell to decide
+whether an applied radius/height reconfiguration is allowed at a fixed 180 s
+high-level decision boundary. The gate does not choose geometry direction or
+magnitude; PPO or `event_rule` decides that. When closed, the gate masks only
+the first four `DynamicAirspace` action dimensions to no-op and leaves
+operational speed/headway dimensions to the existing rate limits and safety
+filter.

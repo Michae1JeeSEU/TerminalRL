@@ -27,6 +27,27 @@ def test_load_all_server_training_presets() -> None:
         assert config.seed_list
 
 
+def test_load_event_gated_training_presets_with_demand_mixture() -> None:
+    for name, expected_config in [
+        ("event_gated_smoke", "event_gated_hrl"),
+        ("event_gated_stage05_5k", "event_gated_hrl"),
+        ("periodic_stage05_5k", "periodic_hrl"),
+        ("event_gated_stage1_20k", "event_gated_hrl"),
+        ("periodic_stage1_20k", "periodic_hrl"),
+    ]:
+        config = load_training_config(name)
+        assert config.config == expected_config
+        assert config.demand_level == "medium"
+        assert config.demand_mixture == {
+            "medium": pytest.approx(0.4),
+            "high": pytest.approx(0.3),
+            "bursty": pytest.approx(0.3),
+        }
+        assert config.high_level_interval == 180
+        assert config.traffic_check_steps >= 20
+        assert config.eval_high_level_steps >= 20
+
+
 def test_cli_overrides_yaml_values() -> None:
     base = PPOTrainingConfig(total_timesteps=100, n_envs=2, demand_level="medium")
     merged = merge_training_overrides(

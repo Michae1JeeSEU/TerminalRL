@@ -15,7 +15,7 @@ import json
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import numpy as np
 
@@ -52,12 +52,7 @@ def _make_high_level_env(
     high_level_interval: int | None = None,
     max_steps: int | None = None,
 ) -> HighLevelHRLWrapper:
-    config_path = Path(config_name)
-    base_config = (
-        load_sim_config(config_path)
-        if config_path.suffix == ".yaml" or config_path.is_file()
-        else load_experiment_config(config_name)
-    )
+    base_config = _load_base_sim_config(config_name)
     config = apply_demand_profile(base_config, demand_level)
     if high_level_interval is not None:
         config.high_level_interval_steps = int(high_level_interval)
@@ -72,10 +67,110 @@ def _make_high_level_env(
     )
 
 
+def _load_base_sim_config(config_name: str):
+    config_path = Path(config_name)
+    return (
+        load_sim_config(config_path)
+        if config_path.suffix == ".yaml" or config_path.is_file()
+        else load_experiment_config(config_name)
+    )
+
+
+class ScenarioMixtureHighLevelWrapper(HighLevelHRLWrapper):
+    """High-level wrapper that samples a demand scenario at every reset.
+
+    The PPO observation/action spaces remain identical across demand levels; only
+    the arrival-flow parameters of the internal simulator are rebuilt.  This
+    gives the new event-gated MDP a training distribution of medium/high/bursty
+    traffic without turning the high-level problem into a different API.
+    """
+
+    def __init__(
+        self,
+        *,
+        config_name: str,
+        demand_mixture: Mapping[str, float],
+        low_level_policy: str,
+        seed: int,
+        high_level_interval: int | None = None,
+        max_steps: int | None = None,
+    ) -> None:
+        self.config_name = config_name
+        self.demand_mixture = _normalise_demand_mixture(demand_mixture)
+        self._mixture_names = tuple(self.demand_mixture)
+        self._mixture_probabilities = np.asarray(
+            [self.demand_mixture[name] for name in self._mixture_names],
+            dtype=np.float64,
+        )
+        self.high_level_interval = high_level_interval
+        self.max_steps = max_steps
+        self.current_demand_level = self._mixture_names[0]
+        self.scenario_counts = {name: 0 for name in self._mixture_names}
+        super().__init__(
+            self._build_env(self.current_demand_level),
+            low_level_policy=low_level_policy,
+            seed=seed,
+        )
+
+    def _sample_demand(self) -> str:
+        index = int(
+            self.rng.choice(
+                len(self._mixture_names),
+                p=self._mixture_probabilities,
+            )
+        )
+        return self._mixture_names[index]
+
+    def _build_env(self, demand_level: str) -> TerminalParallelEnv:
+        base_config = _load_base_sim_config(self.config_name)
+        config = apply_demand_profile(base_config, demand_level)
+        if self.high_level_interval is not None:
+            config.high_level_interval_steps = int(self.high_level_interval)
+        if self.max_steps is not None:
+            config.max_steps = min(config.max_steps, int(self.max_steps))
+        if not config.simulation_only:
+            raise ValueError("scenario-mixture PPO accepts simulation_only configs only")
+        return TerminalParallelEnv(config)
+
+    def reset(
+        self,
+        *,
+        seed: int | None = None,
+        options: dict | None = None,
+    ) -> tuple[np.ndarray, dict]:
+        if seed is not None:
+            self.rng = np.random.default_rng(seed)
+        self.current_demand_level = self._sample_demand()
+        self.scenario_counts[self.current_demand_level] += 1
+        self.env = self._build_env(self.current_demand_level)
+        observation, info = super().reset(seed=seed, options=options)
+        info["demand_level"] = self.current_demand_level
+        info["demand_mixture"] = dict(self.demand_mixture)
+        return observation, info
+
+
+def _normalise_demand_mixture(mixture: Mapping[str, float]) -> dict[str, float]:
+    allowed = {"low", "medium", "high", "bursty"}
+    clean: dict[str, float] = {}
+    for name, raw_weight in mixture.items():
+        if name not in allowed:
+            raise ValueError(f"unknown demand mixture level: {name}")
+        weight = float(raw_weight)
+        if weight < 0.0:
+            raise ValueError("demand mixture weights must be non-negative")
+        if weight > 0.0:
+            clean[name] = weight
+    if not clean:
+        raise ValueError("demand mixture must include at least one positive weight")
+    total = sum(clean.values())
+    return {name: weight / total for name, weight in clean.items()}
+
+
 def _make_env_factory(
     *,
     config_name: str,
     demand_level: str,
+    demand_mixture: Mapping[str, float] | None = None,
     low_level_policy: str,
     seed: int,
     rank: int,
@@ -83,6 +178,15 @@ def _make_env_factory(
     max_steps: int | None,
 ) -> Callable[[], HighLevelHRLWrapper]:
     def _factory() -> HighLevelHRLWrapper:
+        if demand_mixture is not None:
+            return ScenarioMixtureHighLevelWrapper(
+                config_name=config_name,
+                demand_mixture=demand_mixture,
+                low_level_policy=low_level_policy,
+                seed=seed + rank,
+                high_level_interval=high_level_interval,
+                max_steps=max_steps,
+            )
         return _make_high_level_env(
             config_name=config_name,
             demand_level=demand_level,
@@ -157,6 +261,7 @@ def run_pretraining_traffic_check(
     *,
     config_name: str,
     demand_level: str,
+    demand_mixture: Mapping[str, float] | None = None,
     low_level_policy: str,
     seed: int,
     high_level_interval: int | None,
@@ -165,13 +270,24 @@ def run_pretraining_traffic_check(
 ) -> dict[str, Any]:
     """Run a short high-level rollout before PPO to verify traffic is present."""
 
-    env = _make_high_level_env(
-        config_name=config_name,
-        demand_level=demand_level,
-        low_level_policy=low_level_policy,
-        seed=seed,
-        high_level_interval=high_level_interval,
-        max_steps=max_steps,
+    env = (
+        ScenarioMixtureHighLevelWrapper(
+            config_name=config_name,
+            demand_mixture=demand_mixture,
+            low_level_policy=low_level_policy,
+            seed=seed,
+            high_level_interval=high_level_interval,
+            max_steps=max_steps,
+        )
+        if demand_mixture is not None
+        else _make_high_level_env(
+            config_name=config_name,
+            demand_level=demand_level,
+            low_level_policy=low_level_policy,
+            seed=seed,
+            high_level_interval=high_level_interval,
+            max_steps=max_steps,
+        )
     )
     observation, _ = env.reset(seed=seed)
     active_count_max = float(sum(not aircraft.finished for aircraft in env.env.aircraft))
@@ -197,6 +313,8 @@ def run_pretraining_traffic_check(
     return {
         "config": config_name,
         "demand_level": demand_level,
+        "demand_mixture": None if demand_mixture is None else dict(demand_mixture),
+        "sampled_demand_level": getattr(env, "current_demand_level", demand_level),
         "low_level_policy": low_level_policy,
         "seed": int(seed),
         "traffic_check_steps": int(traffic_check_steps),
@@ -213,6 +331,7 @@ def _evaluate_model(
     *,
     config_name: str,
     demand_level: str,
+    demand_mixture: Mapping[str, float] | None = None,
     low_level_policy: str,
     seed: int,
     high_level_interval: int | None,
@@ -229,13 +348,24 @@ def _evaluate_model(
     total_landed_count = 0.0
     total_safety_override_count = 0.0
     for episode in range(episodes):
-        env = _make_high_level_env(
-            config_name=config_name,
-            demand_level=demand_level,
-            low_level_policy=low_level_policy,
-            seed=seed + 10_000 + episode,
-            high_level_interval=high_level_interval,
-            max_steps=max_steps,
+        env = (
+            ScenarioMixtureHighLevelWrapper(
+                config_name=config_name,
+                demand_mixture=demand_mixture,
+                low_level_policy=low_level_policy,
+                seed=seed + 10_000 + episode,
+                high_level_interval=high_level_interval,
+                max_steps=max_steps,
+            )
+            if demand_mixture is not None
+            else _make_high_level_env(
+                config_name=config_name,
+                demand_level=demand_level,
+                low_level_policy=low_level_policy,
+                seed=seed + 10_000 + episode,
+                high_level_interval=high_level_interval,
+                max_steps=max_steps,
+            )
         )
         observation, _ = env.reset(seed=seed + 10_000 + episode)
         total_reward = 0.0
@@ -307,6 +437,7 @@ def train_high_level_ppo(
     total_timesteps: int,
     output_dir: str | Path,
     demand_level: str,
+    demand_mixture: Mapping[str, float] | None = None,
     low_level_policy: str,
     n_envs: int = 1,
     vec_env: str = "dummy",
@@ -353,6 +484,7 @@ def train_high_level_ppo(
         traffic_check_summary = run_pretraining_traffic_check(
             config_name=config_name,
             demand_level=demand_level,
+            demand_mixture=demand_mixture,
             low_level_policy=low_level_policy,
             seed=seed,
             high_level_interval=high_level_interval,
@@ -377,6 +509,7 @@ def train_high_level_ppo(
         sanity_summary = run_pretraining_traffic_check(
             config_name=config_name,
             demand_level=demand_level,
+            demand_mixture=demand_mixture,
             low_level_policy="rule-only",
             seed=seed + 123,
             high_level_interval=high_level_interval,
@@ -401,6 +534,7 @@ def train_high_level_ppo(
         _make_env_factory(
             config_name=config_name,
             demand_level=demand_level,
+            demand_mixture=demand_mixture,
             low_level_policy=low_level_policy,
             seed=seed,
             rank=rank,
@@ -429,6 +563,7 @@ def train_high_level_ppo(
                     self.model,
                     config_name=config_name,
                     demand_level=demand_level,
+                    demand_mixture=demand_mixture,
                     low_level_policy=low_level_policy,
                     seed=seed,
                     high_level_interval=high_level_interval,
@@ -498,6 +633,7 @@ def train_high_level_ppo(
         "seed": seed,
         "total_timesteps": total_timesteps,
         "demand_level": demand_level,
+        "demand_mixture": None if demand_mixture is None else dict(demand_mixture),
         "low_level_policy": low_level_policy,
         "n_envs": n_envs,
         "vec_env": vec_env,
@@ -543,6 +679,7 @@ def train_high_level_ppo(
         model,
         config_name=config_name,
         demand_level=demand_level,
+        demand_mixture=demand_mixture,
         low_level_policy=low_level_policy,
         seed=seed + 1,
         high_level_interval=high_level_interval,
@@ -577,6 +714,7 @@ def train_from_config(
         total_timesteps=training_config.total_timesteps,
         output_dir=output_dir or training_config.output_dir,
         demand_level=training_config.demand_level,
+        demand_mixture=training_config.demand_mixture,
         low_level_policy=training_config.low_level_policy,
         n_envs=training_config.n_envs,
         vec_env=training_config.vec_env,

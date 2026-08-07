@@ -189,3 +189,21 @@ Simulation-to-Real Hierarchical Reinforcement Learning for Dynamic Vertiport Ter
    - full HRL without safety filter。
 
 这些配置服务于 dynamic terminal airspace reconfiguration + multi-UAV landing-flow coordination 的论文主线。PPO checkpoint 表示高层空域/流量管理策略，不表示真实 Crazyflie 底层飞控策略。
+## 10. Event-gated HRL experiment matrix
+
+The next formal study uses periodic high-level decisions with event-gated
+structural airspace reconfiguration. This keeps the paper focused on dynamic
+terminal airspace reconfiguration and multi-UAV landing-flow coordination,
+rather than low-level free-flight control.
+
+| Condition | High-level interval | Geometry permission | Low-level behavior | Purpose |
+|---|---:|---|---|---|
+| `fixed_rule` | n/a | fixed nominal | rule-only | fixed-airspace baseline |
+| `event_rule` | 180 s | event gate + dwell | rule-only | rule-based gated geometry baseline |
+| `periodic_hrl` | 180 s | dwell only | rule-only/placeholder | isolates periodic reconfiguration without event trigger |
+| `event_gated_hrl` | 180 s | event gate + dwell | rule-only/placeholder | proposed learning condition |
+
+All PPO runs in this matrix use a 20 s metrics sampler, 600 s geometry dwell,
+3600 s episodes, and a medium/high/bursty training demand mixture
+(0.40/0.30/0.30). Because the MDP interval changed from the old 20 s pilot, new
+PPO evidence must be trained from scratch.

@@ -20,6 +20,7 @@ class HighLevelRewardWeights:
     conflict: float = 5.0
     safety_override: float = 1.0
     airspace_change: float = 0.25
+    geometry_change: float = 0.05
     ring_imbalance: float = 0.5
     congestion: float = 1.0
     smoothness: float = 0.25
@@ -134,6 +135,8 @@ class HighLevelReward:
         scale = np.maximum(np.abs(np.asarray(old_airspace, dtype=np.float64)), 1.0)
         normalized_change = change / scale
         airspace_change = float(np.linalg.norm(normalized_change))
+        geometry_change = float(np.linalg.norm(normalized_change[:4]))
+        operational_change = float(np.linalg.norm(normalized_change[4:]))
         smoothness = float(
             np.linalg.norm(normalized_change - self.previous_airspace_change)
         )
@@ -147,6 +150,7 @@ class HighLevelReward:
             "conflict": -self.weights.conflict * conflict_delta,
             "safety_override": -self.weights.safety_override * override_delta,
             "airspace_change": -self.weights.airspace_change * airspace_change,
+            "geometry_change": -self.weights.geometry_change * geometry_change,
             "ring_imbalance": -self.weights.ring_imbalance * ring_imbalance,
             "congestion": -self.weights.congestion * congestion,
             "smoothness": -self.weights.smoothness * smoothness,
@@ -170,6 +174,8 @@ class HighLevelReward:
             "safety_override_delta": override_delta,
             "safety_override_count_cumulative": float(after["safety_override_count"]),
             "airspace_change_norm": airspace_change,
+            "geometry_change_norm": geometry_change,
+            "operational_change_norm": operational_change,
             "ring_imbalance": ring_imbalance,
             "congestion": congestion,
             "smoothness_norm": smoothness,

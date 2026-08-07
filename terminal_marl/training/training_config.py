@@ -24,6 +24,7 @@ class PPOTrainingConfig:
 
     config: str = "dynamic_hrl"
     demand_level: str = "medium"
+    demand_mixture: dict[str, float] | None = None
     total_timesteps: int = 2048
     n_envs: int = 1
     vec_env: str = "dummy"
@@ -76,16 +77,32 @@ def _fallback_yaml_mapping(text: str) -> dict[str, Any]:
     """Parse the simple mapping YAML subset used by training presets."""
 
     data: dict[str, Any] = {}
+    current_nested_key: str | None = None
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         if not raw_line.strip() or raw_line.lstrip().startswith("#"):
             continue
-        content = raw_line.split("#", 1)[0].strip()
+        content_without_comment = raw_line.split("#", 1)[0].rstrip()
+        content = content_without_comment.strip()
         if not content:
             continue
         if ":" not in content:
             raise ValueError(f"expected key: value at line {line_number}")
         key, raw_value = content.split(":", 1)
-        data[key.strip()] = _parse_scalar(raw_value)
+        indent = len(content_without_comment) - len(content_without_comment.lstrip())
+        if indent > 0:
+            if current_nested_key is None:
+                raise ValueError(f"nested key without parent at line {line_number}")
+            nested = data.setdefault(current_nested_key, {})
+            if not isinstance(nested, dict):
+                raise ValueError(f"parent key {current_nested_key!r} is not a mapping")
+            nested[key.strip()] = _parse_scalar(raw_value)
+            continue
+        current_nested_key = None
+        if raw_value.strip():
+            data[key.strip()] = _parse_scalar(raw_value)
+        else:
+            current_nested_key = key.strip()
+            data[current_nested_key] = {}
     return data
 
 
@@ -114,6 +131,30 @@ def _coerce_seed_list(value: Any) -> tuple[int, ...]:
     raise ValueError("seed_list must be an int, comma string, or list of ints")
 
 
+def _coerce_demand_mixture(value: Any) -> dict[str, float] | None:
+    """Validate optional episode-level demand mixture weights."""
+
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ValueError("demand_mixture must be a mapping of demand level to weight")
+    allowed = {"low", "medium", "high", "bursty"}
+    mixture: dict[str, float] = {}
+    for key, raw_weight in value.items():
+        name = str(key)
+        if name not in allowed:
+            raise ValueError(f"unknown demand_mixture level: {name}")
+        weight = float(raw_weight)
+        if weight < 0.0:
+            raise ValueError("demand_mixture weights must be non-negative")
+        if weight > 0.0:
+            mixture[name] = weight
+    if not mixture:
+        raise ValueError("demand_mixture must contain at least one positive weight")
+    total = sum(mixture.values())
+    return {name: weight / total for name, weight in mixture.items()}
+
+
 def _coerce_config(data: Mapping[str, Any]) -> PPOTrainingConfig:
     valid_fields = {field.name for field in fields(PPOTrainingConfig)}
     unknown = set(data) - valid_fields
@@ -122,6 +163,8 @@ def _coerce_config(data: Mapping[str, Any]) -> PPOTrainingConfig:
     values = dict(data)
     if "seed_list" in values:
         values["seed_list"] = _coerce_seed_list(values["seed_list"])
+    if "demand_mixture" in values:
+        values["demand_mixture"] = _coerce_demand_mixture(values["demand_mixture"])
     config = PPOTrainingConfig(**values)
     if config.config == "crazyflie_lab":
         raise ValueError("training presets must not target crazyflie_lab hardware mode")

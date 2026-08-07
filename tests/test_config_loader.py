@@ -26,7 +26,15 @@ def test_crazyflie_yaml_generates_scaled_sim_config() -> None:
 
 @pytest.mark.parametrize(
     "name",
-    ["fixed_rule", "fixed_residual", "dynamic_rule", "dynamic_hrl"],
+    [
+        "fixed_rule",
+        "fixed_residual",
+        "dynamic_rule",
+        "dynamic_hrl",
+        "event_rule",
+        "periodic_hrl",
+        "event_gated_hrl",
+    ],
 )
 def test_ablation_presets_load_and_construct_environment(name: str) -> None:
     config = load_experiment_config(name)
@@ -37,6 +45,17 @@ def test_ablation_presets_load_and_construct_environment(name: str) -> None:
     assert config.experiment_mode == name
     assert observations
     assert env.airspace.validate()
+
+
+def test_event_gated_protocol_uses_180s_decision_and_20s_sampling() -> None:
+    config = load_experiment_config("event_gated_hrl")
+
+    assert config.metrics_sampling_interval_seconds == pytest.approx(20.0)
+    assert config.high_level_decision_interval_seconds == pytest.approx(180.0)
+    assert config.decision_interval_seconds == pytest.approx(180.0)
+    assert config.geometry_min_dwell_seconds == pytest.approx(600.0)
+    assert config.high_level_interval_steps == 180
+    assert config.high_level_interval_steps // int(config.metrics_sampling_interval_seconds) == 9
 
 
 def test_loader_supports_all_requested_sections(tmp_path: Path) -> None:

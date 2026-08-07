@@ -38,6 +38,8 @@ class HighLevelHRLWrapper(gym.Env if gym is not None else object):
     ) -> None:
         if env.experiment_mode not in {
             ExperimentMode.DYNAMIC_HRL,
+            ExperimentMode.PERIODIC_HRL,
+            ExperimentMode.EVENT_GATED_HRL,
             ExperimentMode.FULL_HRL_NO_SAFETY,
         }:
             raise ValueError("HighLevelHRLWrapper requires a dynamic HRL mode")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -199,7 +200,10 @@ def load_sim_config(
         interval_seconds = _positive_seconds(data["high_level_interval"], "high_level_interval")
         config.high_level_interval_steps = max(1, int(round(interval_seconds / config.dt)))
         config.decision_interval_seconds = interval_seconds
+        config.high_level_decision_interval_seconds = interval_seconds
         config.reconfiguration_dwell_seconds = interval_seconds
+        if "high_level" not in data:
+            config.metrics_sampling_interval_seconds = interval_seconds
 
     high_level = dict(_mapping(data, "high_level"))
     if "metrics_sampling_interval_seconds" in high_level:
@@ -207,20 +211,30 @@ def load_sim_config(
             high_level.pop("metrics_sampling_interval_seconds"),
             "high_level.metrics_sampling_interval_seconds",
         )
+    if "high_level_decision_interval_seconds" in high_level:
+        high_level["decision_interval_seconds"] = high_level.pop(
+            "high_level_decision_interval_seconds"
+        )
     if "decision_interval_seconds" in high_level:
         config.decision_interval_seconds = _positive_seconds(
             high_level.pop("decision_interval_seconds"),
             "high_level.decision_interval_seconds",
         )
+        config.high_level_decision_interval_seconds = config.decision_interval_seconds
         config.high_level_interval_steps = max(
             1,
             int(round(config.decision_interval_seconds / config.dt)),
+        )
+    if "geometry_min_dwell_seconds" in high_level:
+        high_level["reconfiguration_dwell_seconds"] = high_level.pop(
+            "geometry_min_dwell_seconds"
         )
     if "reconfiguration_dwell_seconds" in high_level:
         config.reconfiguration_dwell_seconds = _positive_seconds(
             high_level.pop("reconfiguration_dwell_seconds"),
             "high_level.reconfiguration_dwell_seconds",
         )
+        config.geometry_min_dwell_seconds = config.reconfiguration_dwell_seconds
     if "geometry_transition_seconds" in high_level:
         config.geometry_transition_seconds = float(
             high_level.pop("geometry_transition_seconds")
@@ -237,8 +251,36 @@ def load_sim_config(
         raise ValueError("dt must be positive")
     if config.decision_interval_seconds <= 0.0:
         config.decision_interval_seconds = config.high_level_interval_steps * config.dt
+    config.high_level_decision_interval_seconds = config.decision_interval_seconds
     if config.reconfiguration_dwell_seconds <= 0.0:
         config.reconfiguration_dwell_seconds = config.decision_interval_seconds
+    config.geometry_min_dwell_seconds = config.reconfiguration_dwell_seconds
+    gate = dict(_mapping(data, "geometry_gate"))
+    gate_fields = {
+        "mode": "geometry_gate_mode",
+        "theta_on": "geometry_gate_theta_on",
+        "theta_off": "geometry_gate_theta_off",
+        "k_on": "geometry_gate_k_on",
+        "k_off": "geometry_gate_k_off",
+        "recovery_k": "geometry_gate_recovery_k",
+        "nominal_recovery_tolerance": "geometry_gate_nominal_recovery_tolerance",
+    }
+    for source, target in gate_fields.items():
+        if source in gate:
+            setattr(config, target, gate.pop(source))
+    if gate:
+        unknown = ", ".join(sorted(gate))
+        raise ValueError(f"unknown geometry_gate field(s): {unknown}")
+    if "high_level" in data or "high_level_interval" in data:
+        sampling_steps = config.metrics_sampling_interval_seconds / config.dt
+        decision_steps = config.decision_interval_seconds / config.dt
+        if not math.isclose(sampling_steps, round(sampling_steps), rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("metrics_sampling_interval_seconds must be exactly representable by dt")
+        if not math.isclose(decision_steps, round(decision_steps), rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("decision_interval_seconds must be exactly representable by dt")
+        windows = config.decision_interval_seconds / config.metrics_sampling_interval_seconds
+        if not math.isclose(windows, round(windows), rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("decision interval must be divisible by metrics sampling interval")
     if not config.simulation_only:
         raise ValueError("third-round presets must remain simulation_only")
     if (

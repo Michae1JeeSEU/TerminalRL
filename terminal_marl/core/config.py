@@ -30,6 +30,15 @@ class SimConfig:
     decision_interval_seconds: float = 10.0
     reconfiguration_dwell_seconds: float = 10.0
     geometry_transition_seconds: float = 0.0
+    high_level_decision_interval_seconds: float = 10.0
+    geometry_min_dwell_seconds: float = 10.0
+    geometry_gate_mode: str = "none"
+    geometry_gate_theta_on: float = 0.7
+    geometry_gate_theta_off: float = 0.4
+    geometry_gate_k_on: int = 3
+    geometry_gate_k_off: int = 6
+    geometry_gate_recovery_k: int = 6
+    geometry_gate_nominal_recovery_tolerance: float = 1e-3
     world_boundary: Optional[Tuple[float, float, float, float, float, float]] = None
     arrival_rate: float = 0.0
     traffic_demand_level: str = "medium"

@@ -71,3 +71,21 @@ def test_airspace_change_and_change_smoothness_are_reported() -> None:
     assert first["smoothness_norm"] > 0.0
     assert second["smoothness_norm"] < first["smoothness_norm"]
     assert "total_reward" in second
+
+
+def test_geometry_change_cost_uses_applied_airspace_change_only() -> None:
+    model = HighLevelReward()
+    old_state = np.ones(8)
+    new_state = np.ones(8)
+    new_state[4:] = 1.1
+
+    _, diagnostics = model.compute(
+        snapshot(),
+        snapshot(time=5.0),
+        old_state,
+        new_state,
+    )
+
+    assert diagnostics["geometry_change_norm"] == 0.0
+    assert diagnostics["operational_change_norm"] > 0.0
+    assert diagnostics["component_geometry_change"] == 0.0

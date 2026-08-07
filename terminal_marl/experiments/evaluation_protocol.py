@@ -196,6 +196,10 @@ def collect_sample(
     nominal = env._make_airspace().state_vector()
     action_l1 = float(np.abs(action).sum()) if action is not None else 0.0
     measurement_start = measurement_start or {}
+    gate_info = env.geometry_gate.info(
+        env.time,
+        geometry_deviation_l1=float(np.abs(airspace_state[:4] - nominal[:4]).sum()),
+    )
     return {
         "time": float(env.time),
         "step": float(env.step_count),
@@ -235,6 +239,15 @@ def collect_sample(
         "airspace_ring_headway": float(airspace_state[6]),
         "airspace_final_headway": float(airspace_state[7]),
         "airspace_deviation_l1": float(np.abs(airspace_state - nominal).sum()),
+        "trigger_score": float(gate_info["trigger_score"]),
+        "geometry_gate_active": float(gate_info["geometry_gate_active"]),
+        "geometry_action_allowed": float(gate_info["geometry_action_allowed"]),
+        "geometry_dwell_satisfied": float(gate_info["geometry_dwell_satisfied"]),
+        "geometry_gate_state": gate_info["gate_state"],
+        "geometry_gate_reason": gate_info["geometry_gate_reason"],
+        "geometry_opportunity_count": float(gate_info["geometry_opportunity_count"]),
+        "applied_geometry_change_count": float(gate_info["applied_geometry_change_count"]),
+        "nominal_recovery_count": float(gate_info["nominal_recovery_count"]),
         "approach_to_outer": float(transition_counts.get("approach_to_outer", 0)),
         "outer_to_inner": float(transition_counts.get("outer_to_inner", 0)),
         "inner_to_final": float(transition_counts.get("inner_to_final", 0)),
@@ -260,7 +273,7 @@ def select_high_level_action(
 ) -> np.ndarray:
     if policy == "high-level-random":
         return rng.uniform(-1.0, 1.0, size=DynamicAirspace.ACTION_SIZE).astype(np.float32)
-    if policy == "dynamic-rule":
+    if policy in {"dynamic-rule", "event-rule"}:
         return dynamic_rule_policy.act(env)
     if policy == "high-level-ppo":
         if ppo_model is None:

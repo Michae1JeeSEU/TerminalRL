@@ -54,7 +54,7 @@ def test_high_level_observation_is_finite_and_stable() -> None:
     env = make_env(interval=4)
     observation = env.get_high_level_observation()
 
-    assert observation.shape == (14,)
+    assert observation.shape == (31,)
     assert np.all(np.isfinite(observation))
     assert np.all((-1.0 <= observation[:8]) & (observation[:8] <= 1.0))
 

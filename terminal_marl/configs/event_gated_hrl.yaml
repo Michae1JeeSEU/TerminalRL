@@ -1,0 +1,55 @@
+name: event_gated_hrl
+experiment_mode: event_gated_hrl
+simulation_only: true
+dt: 1.0
+control_interval: 1.0
+high_level_interval: 180.0
+high_level:
+  metrics_sampling_interval_seconds: 20.0
+  high_level_decision_interval_seconds: 180.0
+  geometry_min_dwell_seconds: 600.0
+  geometry_transition_seconds: 20.0
+geometry_gate:
+  mode: event
+  theta_on: 0.55
+  theta_off: 0.35
+  k_on: 3
+  k_off: 9
+  recovery_k: 9
+
+rings:
+  outer:
+    index: 2
+    radius: 400.0
+    height: 400.0
+    speed: 28.0
+    capacity: 6
+  inner:
+    index: 1
+    radius: 200.0
+    height: 200.0
+    speed: 20.0
+    capacity: 2
+
+vehicle_limits:
+  speed_min: 8.0
+  speed_max: 36.0
+  max_acceleration: 4.0
+
+safety:
+  safe_distance: 80.0
+  nmac_distance: 40.0
+  collision_distance: 20.0
+
+timing:
+  ring_to_ring_min_time_gap_s: 7.0
+  final_min_time_gap_s: 12.0
+
+arrival_flow:
+  initial_aircraft_count: 6
+  arrival_rate: 0.0
+
+reward_weights:
+  step_penalty: -0.035
+  progress_weight: 0.05
+  residual_action_penalty_weight: 0.004

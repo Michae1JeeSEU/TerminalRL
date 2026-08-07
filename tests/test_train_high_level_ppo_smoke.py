@@ -4,6 +4,7 @@ import json
 import pytest
 
 from terminal_marl.training.train_high_level_ppo import (
+    ScenarioMixtureHighLevelWrapper,
     _select_exact_rollout_n_steps,
     train_high_level_ppo,
 )
@@ -27,6 +28,32 @@ def test_select_exact_rollout_steps_rejects_non_divisible_budget() -> None:
             total_timesteps=20_001,
             n_envs=10,
         )
+
+
+def test_scenario_mixture_wrapper_samples_episode_demand_levels() -> None:
+    wrapper = ScenarioMixtureHighLevelWrapper(
+        config_name="event_gated_hrl",
+        demand_mixture={"medium": 0.4, "high": 0.3, "bursty": 0.3},
+        low_level_policy="rule-only",
+        seed=2,
+        high_level_interval=180,
+        max_steps=3600,
+    )
+
+    seen = set()
+    for episode_seed in range(12):
+        observation, info = wrapper.reset(seed=episode_seed)
+        seen.add(info["demand_level"])
+        assert observation.shape == wrapper.observation_space.shape
+        assert info["demand_mixture"] == {
+            "medium": pytest.approx(0.4),
+            "high": pytest.approx(0.3),
+            "bursty": pytest.approx(0.3),
+        }
+
+    assert seen <= {"medium", "high", "bursty"}
+    assert len(seen) >= 2
+    assert sum(wrapper.scenario_counts.values()) == 12
 
 
 @pytest.mark.skipif(importlib.util.find_spec("stable_baselines3") is None, reason="SB3 unavailable")

@@ -497,3 +497,40 @@ If the recommended decision interval changes from the native 20 s protocol,
 do not resume the existing 20k PPO checkpoint. Update smoke/pilot configs and
 start a fresh 512-step smoke followed by a new 20k pilot only after the user
 explicitly authorizes new training.
+
+## Event-gated 180s HRL protocol
+
+The next development and experiment round has switched to **periodic
+high-level decision-making with event-gated structural airspace
+reconfiguration**. Use `docs/event_gated_high_level_control.md` as the
+canonical protocol for this round.
+
+Required fixed timing:
+
+- metrics sampling = 20 s;
+- high-level decision interval = 180 s;
+- geometry minimum dwell = 600 s;
+- PPO pilot episode duration = 3600 s, at least 20 high-level decisions.
+
+The high-level policy must still run every 180 s. Do not convert the method
+into an asynchronous event-triggered SMDP. The event gate may only mask or allow
+structural geometry dimensions; operational speed/headway dimensions keep
+running through their own rate limits and safety checks.
+
+Artifacts for this round live under:
+
+```text
+$HOME/training_outputs/terminal/event_gated_hrl
+```
+
+The intended order is:
+
+1. audit current 8D action/timing semantics;
+2. calibrate geometry-gate thresholds from fixed-geometry rule-only traces;
+3. run regression baselines (`fixed_rule`, `event_rule`);
+4. run 512-step event-gated smoke from scratch;
+5. run exact 5k `event_gated_hrl` and `periodic_hrl` pilots from scratch;
+6. only if gate/regression/smoke are ready, run exact 20k event-gated and
+   periodic pilots from scratch;
+7. evaluate and stop. Do not continue to 50k, 100k, main, sweep, ROS2,
+   Crazyswarm2, or hardware experiments.

@@ -178,3 +178,12 @@ Priority = base_priority × f(wait_time) × g(battery_ratio)
 - **着陆区选择与下降轨迹**：环3下降时自动选择最近可用 LZ；下降航向/航迹角/速度由规则层生成，PPO 只决定何时释放下降
 - **车流与 Safety 信号**：最近距离 / 预测最近距离 / 同环前后弧距 / 前后闭合速度 / 前向 TTC / 环平均间距 / 请求与执行环速 / 上步 safety 介入 / 硬过滤阻塞 / speed_mult / psi_offset / gamma_offset / blocked
 - **训练**：PPO + PerUAVFeatureExtractor（shared UAV encoder 91→128→64 + mean-pooling global + per-UAV combiner 128→32→8）
+# Event-gated 180s HRL requirements
+
+Current development uses a fixed 180 s high-level MDP with 20 s metrics sampling
+and 600 s structural-geometry dwell. The policy is still evaluated every 180 s;
+the event gate only masks/allows radius/height geometry dimensions. Operational
+speed/headway dimensions must not be frozen by the geometry gate. All new PPO
+pilots for `periodic_hrl` and `event_gated_hrl` must train from scratch under
+simulation-only medium/high/bursty demand mixture; do not resume old 20 s PPO
+checkpoints.
