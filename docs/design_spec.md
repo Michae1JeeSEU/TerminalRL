@@ -1,464 +1,854 @@
 # 设计规范
 
-## 1. 系统架构
+> **当前架构**：Phase A — Landing-only  
+> **核心原则**：三环终端区 + 连续到达流 + 地面服务资源 + 两层策略 + 确定性调度/轨迹/安全层。  
+> 本文档描述目标系统结构，不承担历史兼容说明；迁移工作见 `revision.md`。
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                      Trainer                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐ │
-│  │ High-Level  │  │ Low-Level   │  │  Experience      │ │
-│  │ Policy π_H  │  │ Policy π_L  │  │  Replay Buffer   │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────────────────┘ │
-│         │                │                                │
-│         ▼                ▼                                │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │              TerminalAreaEnv (Gym)               │    │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │    │
-│  │  │RingAir-  │ │UAV       │ │ConflictDetector  │ │    │
-│  │  │space     │ │Manager   │ │                  │ │    │
-│  │  └──────────┘ └────┬─────┘ └──────────────────┘ │    │
-│  │  ┌──────────┐ ┌────┴─────┐ ┌──────────────────┐ │    │
-│  │  │Priority  │ │Safety    │ │Metrics           │ │    │
-│  │  │Engine    │ │Controller│ │Collector         │ │    │
-│  │  └──────────┘ └──────────┘ └──────────────────┘ │    │
-│  └──────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────┘
-```
+---
 
-## 2. 模块职责
+## 1. 总体架构
 
-### 2.1 RingAirspace（空域模型）
-
-**职责**：管理三层环结构的状态与合法性。
-
-```
-RingAirspace
-├── 属性
-│   ├── radii: tuple[float, float, float]    # R1, R2, R3
-│   ├── heights: tuple[float, float, float]   # H1, H2, H3
-│   └── speeds: tuple[float, float, float]    # V1, V2, V3
-├── 方法
-│   ├── update(r, h, v) -> bool              # 更新参数，返回是否合法
-│   ├── get_ring(position) -> int            # 根据位置判断所在环 (1/2/3, 0=外)
-│   ├── get_ring_orbit(ring_id) -> (r, h)    # 返回环的轨道参数
-│   ├── get_entry_points() -> np.ndarray     # 4 个固定进入点 (4,3)
-│   ├── random_position_on_ring(ring_id)     # 环轨道上随机角度位置
-│   ├── is_valid() -> bool                   # 检查硬约束 R1>R2>R3, H1>H2>H3
-│   ├── get_boundary(ring_id) -> tuple       # 获取环的几何边界
-│   └── state_vector -> np.ndarray (9,)      # [R1,R2,R3,H1,H2,H3,V1,V2,V3]
-```
-
-**硬约束校验**：
-```python
-def _validate(self) -> bool:
-    return (self.r1 > self.r2 > self.r3 and
-            self.h1 > self.h2 > self.h3 and
-            all(r > 0 for r in self.radii) and
-            all(h > 0 for h in self.heights))
+```text
+┌───────────────────────────────────────────────────────────────────────┐
+│ Experiment / Training                                                │
+│                                                                       │
+│  High-Level Policy πH                 Shared Low-Level Policy πL       │
+│  global / 180 s                       per-UAV / 1 s                    │
+│         │                                     │                       │
+└─────────┼─────────────────────────────────────┼───────────────────────┘
+          │                                     │
+          ▼                                     ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│ TerminalParallelEnv                                                  │
+│                                                                       │
+│  ArrivalProcess → AdmissionManager                                   │
+│                     │                                                 │
+│                     ▼                                                 │
+│  DynamicAirspace ─ UAVLifecycle/TrafficState                         │
+│          │          │                                                 │
+│          │          ├─ PriorityEngine                                 │
+│          │          ├─ EnergyModel                                    │
+│          │          └─ LandingZoneManager                             │
+│          │                                                            │
+│          └──────────────┐                                             │
+│                         ▼                                             │
+│             Intent & Resource Scheduler                               │
+│                         │                                             │
+│                         ▼                                             │
+│                  MergeScheduler                                       │
+│                         │                                             │
+│                         ▼                                             │
+│               CanonicalTrajectoryGenerator                           │
+│                         │                                             │
+│                         ▼                                             │
+│                    SafetyFilter                                       │
+│                         │                                             │
+│                         ▼                                             │
+│                   TrajectoryExecutor                                  │
+│                         │                                             │
+│                         ▼                                             │
+│          ConflictMonitor / Metrics / OutcomeLedger                    │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 UAV（无人机模型）
+---
 
-**职责**：单个 UAV 的状态、动力学与能耗模型。
+## 2. 模块边界
 
-```
-UAV
-├── 属性
-│   ├── id: int
-│   ├── position: np.ndarray (3,)      # x, y, z
-│   ├── velocity: np.ndarray (3,)      # vx, vy, vz
-│   ├── ring_id: int                   # 当前所在环 (1/2/3)
-│   ├── battery: float                 # 剩余电量
-│   ├── base_priority: int            # 基础优先级 (1/3/5)
-│   ├── mission_type: int             # 任务类型 (1-4)，影响 LZ 占用
-│   ├── wait_time: float              # 累计等待时间
-│   ├── ring_entry_time: float        # 进入当前环时的 wait_time
-│   ├── status: Enum[CRUISING, DESCENDING, LANDED]  # 无 HOVER
-│   ├── landing_zone: int             # 选定的着陆区 (-1=无)
-│   ├── is_controlled: bool           # 是否受策略控制
-│   └── _landing_target: np.ndarray | None  # 降落点坐标 (x,y,0)
-├── 方法
-│   ├── step(action, dt) -> None       # 按动作推进一步
-│   ├── can_descend() -> bool         # 环驻留 + 电量检查
-│   ├── compute_priority() -> float   # 计算当前动态优先级
-│   └── reset() -> None
-```
+建议目标目录：
 
-**运动学模型**：
-- **盘旋 (CIRCLE)**：锁定在环轨道 (R_i, H_i) 上做圆周运动，角速度 ω = V_i / R_i。每步强制吸附到轨道（用 ring_radius/ring_height 覆盖位置），消除漂移
-- **下降 (DESCEND)**：速度向量 v = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]。γ 为负 = 下降。到达地面 (z ≤ 1.0) 自动着陆
-
-**能耗模型**：
-```
-E_cruise = P_cruise × dt      # 巡航功率 × 时间
-E_descend = P_descend × dt    # 下降功率 × 时间
-```
-背景 UAV（is_controlled=False）不消耗电量。
-
-### 2.3 UAVManager（无人机管理器）
-
-**职责**：管理全部 UAV 实例的创建、销毁与批量操作。
-
-**初始化分布（无流入，Phase 3b）**：
-- UAV 分布在三个环的轨道上：环1 60%、环2 25%、环3 15%
-- 每架 UAV 随机角度、随机电量（critical~max）、随机等待时间（0~600s）、随机优先级（1/3/5）和随机任务类型（1-4，按权重）
-- **初始间距保证**：`_find_safe_angle()` 通过拒绝采样（200 次尝试）+ 最大间隙回退策略，确保新生成 UAV 与同环已有 UAV 的弧间距 ≥ `safe_separation`
-
-**流入调度（Phase 4+，uav_inflow_rate > 0）**：
-- 按时钟累积 dt，到达 inflow_interval = 3600/uav_inflow_rate 时生成一架
-- 新 UAV 从 4 个 entry_point（环1 0°/90°/180°/270°）随机选一进入
-- 超过 max_uavs 时暂停生成
-
-**碰撞处理**：碰撞 UAV 被标记为 `battery=0`（`is_dead=True`），释放 LZ 预留，下一 `remove_landed()` 移除。**不再终止 episode**。
-
-**环间分离控制**：原 `speed_adjustments` 逻辑已提取到 SafetyController Rule 1。
-
-```
-UAVManager
-├── uavs: list[UAV]
-├── landed_count: int              # 累计着陆数
-├── failed_count: int              # 累计失败数（含碰撞死亡）
-├── _INIT_RING_PROBS: (0.60, 0.25, 0.15)
-├── _find_safe_angle(ring_id) -> float  # 拒绝采样确保初始间距 ≥ safe_separation
-├── _spawn_one(ring_id, mission_type, ensure_separation, ...) -> UAV
-├── remove_landed() -> None        # 移除 LANDED + is_dead (battery=0)
-├── try_spawn_inflow(dt) -> None   # 按时钟调度流入
-├── step_all(actions, dt, safety_controller) -> None
-├── get_state_matrix() -> np.ndarray  # (N, 6) [x,y,z,battery,priority,angle]
-├── ring_counts -> (c1, c2, c3)
-└── avg_wait_time -> float
+```text
+terminal_marl/
+├── core/
+│   ├── config.py
+│   ├── enums.py
+│   ├── dynamic_airspace.py
+│   ├── ring_capacity.py
+│   ├── uav.py
+│   ├── lifecycle.py
+│   ├── energy.py
+│   ├── priority.py
+│   ├── landing_zone.py
+│   ├── arrival_process.py
+│   ├── admission.py
+│   ├── merge_scheduler.py
+│   ├── trajectory_generator.py
+│   ├── safety_filter.py
+│   ├── observations.py
+│   └── rewards.py
+├── envs/
+│   ├── parallel_env.py
+│   └── high_level_wrapper.py
+├── algo/
+│   ├── shared_low_level_ppo.py
+│   └── high_level_ppo.py
+├── policies/
+│   ├── rule_low_level.py
+│   └── dynamic_rule.py
+├── experiments/
+├── configs/
+└── tests/
 ```
 
-### 2.4 SafetyController（安全控制器）★ 新增 Phase 3b.5
+允许迁移期复用已有文件名，但最终职责必须符合本规范。
 
-**职责**：反射式碰撞避免层，在 RL 动作与 UAV 运动学之间介入。只做减速/微调航向，不做路径规划。
+---
 
-**设计原则**：
-- 反射层介入在 RL 动作执行前：`RL action → SafetyController → UAV.step()`
-- 紧急 UAV（priority≥5 或 battery<critical×max_battery）**永不减速**
-- 低优先级给高优先级让路；同等优先级双方各让半步
+## 3. Domain model
 
-**Safety 学习架构**：观测中加入 +12 维车流上下文和 +4 维 Safety 调整量（speed_mult, psi_offset, gamma_offset, blocked），reward 中加入局部弧距/TTC、调速平滑和 shield 修正幅度惩罚，让 RL 策略通过自主调速保持间距。规则层只在紧急缓冲区做最小干预。
-
-```
-SafetyController
-├── config: SafetyConfig
-├── evaluate(uavs, actions) → dict[uav_id, SafetyAdjustment]
-│   ├── _classify_priority(u1, u2) → (higher, lower)
-│   ├── _rule1_angular_separation(uavs, actions) # 同环追近后机紧急刹车
-│   ├── _rule2_circling_yields_descending(uavs)  # 盘旋让下降
-│   ├── _rule3_dual_descent_divergence(uavs)     # 双下降航向偏转
-│   ├── _rule4_universal_brake(uavs)            # 通用近距刹车
-│   ├── _rule5_emergency_override(uavs)          # 紧急 UAV 豁免
-│   └── _compose_adjustments(per_rule_results)   # 取最保守值
-├── apply(actions, adjustments) → dict[uav_id, LowLevelAction]
-└── compose(adjustments) → SafetyAdjustment      # 组合多规则
-```
-
-**5 条安全规则**：
-
-| 规则 | 触发条件 | 动作 | 优先权 |
-|------|---------|------|--------|
-| R1: 同环追近刹车 | 同环前向间距进入 shield 缓冲区且后机仍在追近 | 仅跟随者减速至 0.7x | 后方减速 |
-| R2: 盘旋让下降 | 下降 UAV 穿越环的高度层 | 盘旋者减速至 0.85x | 下降者优先 |
-| R3: 双下降发散 | 两架下降中，3D 距离 < 50m 且接近中 | 各偏转 psi ±15° | 双方各半 |
-| R4: 通用刹车 | 任意两架 3D 距离进入 shield 缓冲区 | closing speed > 0 方减速至 0.7x | 低优先更激进 |
-| R5: 紧急覆盖 | priority ≥ 5 或 battery < 15% | 紧急 UAV 不受影响，非紧急让其路 | 紧急绝对优先 |
-
-**SafetyAdjustment 数据结构**：
-```python
-@dataclass
-class SafetyAdjustment:
-    speed_mult: float = 1.0      # 速度系数 [0.6, 1.3]
-    psi_offset: float = 0.0      # 航向偏转 (rad)
-    gamma_offset: float = 0.0    # 航迹角偏转 (rad)
-    blocked: bool = False        # 是否强制 CIRCLE
-    active_rules: list[str] = [] # 触发的规则名列表
-```
-
-**组合逻辑**：多个规则同时触发时，取最小 `speed_mult`、最大 `|psi_offset|`、OR 的 `blocked`。
-
-**集成方式**（[terminal_area_env.py](src/env/terminal_area_env.py) `step()`）：
-```python
-sc = self.safety_controller if self.config.safety_enabled else None
-self.uav_manager.step_all(uav_actions, dt, sc)
-```
+### 3.1 RingRole
 
 ```python
-# UAVManager.step_all 内部：
-safety_adjustments = safety_controller.evaluate(uavs, actions)
-adjusted_actions = safety_controller.apply(actions, safety_adjustments)
-# 再用 adjusted_actions 调用 uav.step()
+class RingRole(str, Enum):
+    OUTER = "outer"
+    MIDDLE = "middle"
+    INNER = "inner"
 ```
 
-### 2.5 SafetyConfig（安全配置）★ 新增
+### 3.2 FlightPhase
+
+```python
+class FlightPhase(str, Enum):
+    EXTERNAL_QUEUE = "external_queue"
+    INBOUND = "inbound"
+    RING_OUTER = "ring_outer"
+    TRANSFER_O2M = "transfer_o2m"
+    RING_MIDDLE = "ring_middle"
+    TRANSFER_M2I = "transfer_m2i"
+    RING_INNER = "ring_inner"
+    FINAL = "final"
+    LANDING = "landing"
+    SERVICE = "service"
+    COMPLETED = "completed"
+    DIVERTED = "diverted"
+    FAILED = "failed"
+```
+
+Phase 是唯一生命周期真值。辅助字段可以存在，但必须由 phase 状态机约束，不能通过多个 boolean 组合推断真实阶段。
+
+### 3.3 UAVState
+
+目标结构至少包含：
 
 ```python
 @dataclass
-class SafetyConfig:
-    # Rule 1: Same-ring angular separation
-    angular_separation_threshold: float = 25.0     # 最终紧急介入距离 (m)
-    initial_intervention_threshold: float = 40.0   # 训练初期介入距离 (m)
-    final_intervention_threshold: float = 25.0     # 训练后期介入距离 (m)
-    intervention_curriculum_episodes: int = 160
-    # Rule 2: Circling yields to descending
-    descend_crossing_lookahead: float = 10.0       # 预测窗口 (s)
-    descend_crossing_slowdown: float = 0.85        # 盘旋者减速系数
-    # Rule 3: Dual descent divergence
-    dual_descend_threshold: float = 50.0           # 触发距离 (m)
-    dual_descend_psi_offset: float = 15.0          # 偏转角 (deg)
-    # Rule 4: Universal brake
-    universal_brake_threshold: float = 25.0        # 最终触发距离 (m)
-    universal_brake_low: float = 0.70              # 低优先减速系数
-    universal_brake_high: float = 0.85             # 高优先减速系数
-    # Rule 5: Emergency override
-    emergency_yield_slowdown: float = 0.60         # 对紧急 UAV 让路减速
-    emergency_yield_psi: float = 25.0              # 对紧急 UAV 让路偏转 (deg)
+class UAVState:
+    uid: int
+    arrival_id: int
+
+    # immutable request attributes
+    request_time: float
+    mission_type: MissionType
+    base_priority: int
+    assigned_gate: int
+    energy_capacity: float
+
+    # dynamic flight state
+    phase: FlightPhase
+    position: np.ndarray
+    velocity: np.ndarray
+    speed: float
+    heading: float
+    ring_role: RingRole | None
+    ring_progress: float | None
+    phase_entry_time: float
+
+    # energy / urgency
+    energy_remaining: float
+    energy_consumed: float
+    dynamic_priority: float
+
+    # resources
+    assigned_lz: int | None
+    merge_reservation_id: str | None
+    trajectory_plan_id: str | None
+
+    # timestamps
+    admission_time: float | None
+    outer_entry_time: float | None
+    final_entry_time: float | None
+    touchdown_time: float | None
+    completion_time: float | None
+
+    # accounting
+    external_wait_time: float
+    internal_wait_time: float
+    holding_time_by_ring: dict[RingRole, float]
+    path_length: float
+    terminal_outcome: TerminalOutcome | None
+    terminal_reason: str | None
 ```
 
-### 2.6 ConflictDetector（冲突检测器）
+`SOC` 建议作为派生 property：`energy_remaining / energy_capacity`。
 
-**职责**：检测 UAV 间安全冲突，提供惩罚信号。
+---
 
-```
-ConflictDetector
-├── safe_distance: float
-├── check_pairwise(uav1, uav2) -> bool  # 检测两架 UAV 冲突
-├── check_all(uavs) -> list[tuple]      # 返回所有冲突对
-└── compute_penalty(conflicts) -> float # 冲突惩罚项
-```
+## 4. DynamicAirspace
 
-### 2.7 PriorityEngine（优先级引擎）
-
-**职责**：计算每架 UAV 的动态优先级。
-
-```
-PriorityEngine
-├── compute(uav, current_time) -> float
-│   # priority = base × f(wait) × g(battery)
-│   # f(wait) = 1 + α × (wait / max_wait)^β
-│   # g(battery) = 1 + γ × (1 - battery / critical)^δ
-└── get_sorting_key(uavs) -> list[UAV]  # 按优先级排序
-```
-
-### 2.8 MetricsCollector（指标收集器）
-
-**职责**：收集并汇总每一步的性能指标。
-
-```
-MetricsCollector
-├── episode_energy: float
-├── episode_wait_times: list[float]
-├── episode_throughput: float
-├── step(env) -> None
-├── get_episode_summary() -> dict
-└── reset() -> None
-```
-
-### 2.9 TerminalAreaEnv（Gym 环境）
-
-**职责**：环境主循环，组合上述模块。
-
-```
-TerminalAreaEnv
-├── airspace: RingAirspace
-├── uav_manager: UAVManager
-├── conflict_detector: ConflictDetector
-├── priority_engine: PriorityEngine
-├── safety_controller: SafetyController  ★ 新增
-├── metrics: MetricsCollector
-├── landing_zones: np.ndarray (M, 3)      # LZ 坐标
-├── lz_occupied_until: np.ndarray (M,)    # 各 LZ 剩余占用时间
-├── _lz_reserved_by: dict[lz_idx→uav_id] # LZ 预留状态
-├── _local_obs_dim: int = 75 (+16 traffic/safety) # per-UAV 观测维度 (91)
-│
-├── reset() -> obs, info
-│   └── 重置所有模块 + LZ 状态清零
-├── step(action) -> obs, reward, terminated, truncated, info
-│   ├── 每 high_level_interval 步：应用高层 action → airspace.update()
-│   ├── _parse_low_level_actions()：约束强制执行（LZ 占用/环驻留/轨道吸附）
-│   ├── SafetyController.evaluate() → 安全调整量  ★ 新增
-│   ├── SafetyController.apply() → 修正后的动作       ★ 新增
-│   ├── uav_manager.step_all()：推进所有 UAV
-│   ├── 更新 LZ 占用计时器 + 清理失效预留
-│   ├── remove_landed() → 移除 LANDED + is_dead
-│   ├── try_spawn_inflow()（Phase 4+）
-│   ├── _compute_reward() → 碰撞惩罚（不终止）        ★ 修改
-│   └── _get_obs()：per-UAV 局部观测矩阵（含 safety 上下文/介入信号）
-└── _get_info() -> dict
-```
-
-**关键机制**：
-
-1. **SafetyController 集成**（★ 修改）：`safety_controller.evaluate()` 在 RL 动作后、UAV 执行前介入。日常同环间距控制交给 PPO；R1 只在紧急缓冲区对仍在追近前机的后机刹车。训练中 shield 阈值从 40m 线性收缩至 25m。观测包含 12 维车流上下文和 4 维介入信号（speed_mult / psi_offset / gamma_offset / blocked）
-
-2. **安全轨道吸附**（★ 修改）：`_safe_orbit_snap()` 在将 UAV 吸附回环轨道前，搜索 ±30°（步长 5°）找安全槽位。找到空位后仅修正 z 高度，避免 snap 与其他 UAV 碰撞
-
-3. **环容量限制**（★ 新增）：`_ring_has_capacity()` 计算环容量 = 2πR / min_ring_spacing（默认 100m）。当环上 UAV 数 ≥ 90% 容量时，阻止非紧急 UAV 下降进入该环。紧急（priority≥5）或临界电量（<15%）豁免
-
-4. **LZ 预留与占用**：
-   - UAV 环3+DESCEND+LZ 选择 → 检查 LZ 是否被占用/预留 → 阻塞则强制 CIRCLE
-   - 通过检查 → 预留 LZ（_lz_reserved_by）+ 设置 _landing_target
-   - 着陆后 → 预留转占用计时器（lz_occupied_until = mission_type 对应时长）
-   - UAV 碰撞死亡/移除/中止下降 → 自动释放预留
-
-5. **碰撞处理**（★ 修改）：碰撞 UAV 被标记 `battery=0`（`is_dead=True`），LZ 预留自动释放，`failed_count` 计入，下一 `remove_landed()` 移除。Episode **不终止**，其他 UAV 继续飞行
-
-6. **环驻留约束**：`can_descend()` 检查 ring_residency ≥ min_ring_wait × priority_factor。base_priority=5（紧急）或电量 < 15% 时完全豁免
-
-7. **低层动作空间（安全修订）**：`Box(low=-1, high=1, shape=(max_n, 2))` — RL 只提出下降请求和盘旋速度调节：
-
-| dim | 名称 | 缩放目标 | 生效条件 |
-|-----|------|---------|---------|
-| 0 | control_raw | > 0 → DESCEND, ≤ 0 → CIRCLE | 始终 |
-| 1 | circle_speed_raw | [-1,1] → [0.3, 1.3] 环速系数 | CIRCLE |
-
-DESCEND 不再允许 RL 直接控制 (ψ, γ, V)。环境根据当前环、目标环或 LZ 生成规则下降指令，并通过下降放行计时、预测冲突检查和目标环捕获保证无流入清空阶段的安全可行性。同环巡航间距由 PPO 通过连续调速主动学习。
-
-8. **下降许可与硬安全过滤（新增）**：
-- 每个下降走廊维护最小放行间隔，避免多机同时合流；
-- 新下降请求必须通过未来短时窗距离预测，否则强制改回 CIRCLE；
-- 非着陆下降到达下一环保护带后立即安全吸附到目标环，避免继续穿越巡航流；
-- 同环 UAV 的前后弧距、相对速度与 TTC 编码进观测；PPO 自主输出 `[0.3, 1.3]` 环速系数；
-- SafetyController 只对进入紧急缓冲区且仍在追近的后机执行最小干预刹车；
-- 碰撞 UAV 只计一次失败，dead UAV 从冲突检测、观测和安全规则中排除。
-
-## 3. 奖励函数设计（实际实现）
+### 4.1 Airspace state
 
 ```python
-def _compute_reward(self) -> float:
-    # 能耗惩罚（每步增量功率，非累计能量）
-    step_power = sum(power_map[u.status] * dt for u in uavs)
-    R_energy = -w_energy * step_power / n  # w_energy=0.3
+@dataclass
+class RingState:
+    role: RingRole
+    radius: float
+    height: float
+    nominal_speed: float
+    derived_capacity: int
 
-    # 等待时间惩罚（归一化到小时）
-    R_wait = -w_wait * avg_wait_time / 3600.0  # w_wait=1.0
-
-    # 吞吐量奖励（每新增着陆给跨 N 稳定的立即奖励）
-    new_landings = landed_count - prev_landed
-    R_throughput = w_throughput * reward_landing * new_landings  # reward_landing=2.0
-
-    # 安全冲突惩罚：碰撞 + 近距预警；局部车流塑形见下
-    conflicts = conflict_detector.check_all(uavs)  # 碰撞 (<10m)
-    near_misses = conflict_detector.check_near_misses(uavs)  # 近距预警 (<50m)
-    R_safety = -w_safety * len(conflicts) * penalty_conflict  # w_safety=5.0
-    R_safety -= w_safety * len(near_misses) * penalty_near_miss / n
-
-    # ★ 同环局部车流塑形：每架巡航 UAV 只根据自己的前车弧距与 TTC 接收惩罚
-    R_spacing = 0.0
-    for u in circling_uavs:
-        traffic = same_ring_traffic(u)
-        gap_cost = softplus((min_ring_spacing - traffic.front_gap) / ring_spacing_softness) ** 2
-        ttc_cost = softplus((ring_ttc_threshold - traffic.front_ttc) / ring_ttc_softness) ** 2
-        R_spacing -= w_safety * (penalty_ring_spacing * gap_cost + penalty_ring_ttc * ttc_cost) / n
-
-    # ★ 调速平滑：抑制盘旋速度请求振荡
-    R_smooth = -penalty_speed_smooth * sum(abs(requested_speed_t - requested_speed_t_1)) / n
-
-    # ★ 距离接近惩罚：30m 内保留额外尖锐惩罚
-    R_proximity = 0.0
-    for i in range(len(active_uavs)):
-        for j in range(i + 1, len(active_uavs)):
-            dist = float(np.linalg.norm(active_uavs[i].position - active_uavs[j].position))
-            if dist < proximity_penalty_threshold:  # 30m
-                R_proximity -= proximity_penalty_scale / max(dist, 0.1)  # 5.0/dist
-
-    # ★ 安全层介入惩罚：让 PPO 学会少触发 SafetyController，而不是依赖兜底
-    R_intervention = -w_safety * (
-        0.25 * active_safety_rules
-        + 1.0 * abs(executed_speed - requested_speed)
-        + 2.0 * safety_blocks
-        + 0.0 * hard_filtered_descents
-    ) / n
-
-    # ★ 碰撞惩罚（碰撞后移除 UAV，不终止 episode）
-    if len(collisions) > 0:
-        collision_penalty = -(penalty_conflict + penalty_conflict * 0.5 * len(collision_ids))
-        # penalty_conflict = 500, 一对碰撞 = -750, 两对 = -1000
-
-    # 优先级违反惩罚
-    R_priority = -w_priority * violations  # w_priority=2.0
-
-    # 电量耗尽惩罚（仅未着陆的死 UAV）
-    dead = sum(1 for u in uavs if u.is_dead)
-    R_battery = -w_battery * dead  # w_battery=10.0
-
-    # 密集进度奖励：仅对 DESCENDING 状态的 UAV 给予位置进度奖励
-    R_progress = 0.0
-    for u in uavs:
-        if u.status == UAVStatus.DESCENDING:
-            radial_progress = 1.0 - min(r / R1, 1.0)
-            vertical_progress = 1.0 - min(z / H1, 1.0)
-            R_progress += 2.0 * (radial_progress + vertical_progress)
-    R_progress /= n
-
-    return R_energy + R_wait + R_throughput + R_safety
-           + R_spacing + R_proximity + R_intervention + R_smooth
-           + R_priority + R_battery + R_progress
+@dataclass
+class DynamicAirspaceState:
+    outer: RingState
+    middle: RingState
+    inner: RingState
+    headway_o2m: float
+    headway_m2i: float
+    headway_i2f: float
+    transition_active: bool
 ```
 
-**设计要点**：
-- 能耗使用每步增量功率而非累计值，避免奖励随 step 线性增长
-- 着陆奖励为跨 N 稳定的 spike 奖励（仅新增着陆时给），避免大规模训练时单机着陆收益被稀释
-- 进度奖励仅 DESCENDING 时生效：强制 agent 持续下降而非找到好位置后悬停
-- 近距预警惩罚按受控 UAV 数归一化，避免随机大 N 训练时 O(N²) pair penalty 压倒吞吐目标
-- ★ **同环局部塑形**：每架盘旋 UAV 根据前车弧距和 TTC 接收 softplus 惩罚，学习通过连续调速主动拉开间距
-- ★ **调速平滑**：惩罚相邻步骤环速请求振荡，避免频繁加减速
-- ★ **接近惩罚**：连续梯度 `-scale/distance`，在 30m 阈值内提供额外尖锐分离信号
-- ★ **介入惩罚**：SafetyController 规则触发、执行速度与请求速度偏差、阻塞都会被扣分；普通 DESCEND 放行阻塞保留为观测信号
-- ★ **碰撞惩罚**：碰撞 UAV 被移除并施加 `-(500 + 250×N_colliding)` 惩罚，episode 继续
+必须同时维护 `actual_geometry` 与 `target_geometry`。
 
-## 4. Options 框架实现设计
+### 4.2 High-level action
+
+`ACTION_SIZE = 10`：
+
+```text
+0 dR_outer
+1 dR_middle
+2 dR_inner
+3 dH_outer
+4 dH_middle
+5 dH_inner
+6 dV_profile
+7 dHeadway_O2M
+8 dHeadway_M2I
+9 dHeadway_I2F
+```
+
+### 4.3 Projection order
+
+`apply/request_high_level_action()` 必须按以下顺序处理：
+
+1. finite check；
+2. clip raw action 到 `[-1,1]`；
+3. action scale；
+4. per-update bounds；
+5. absolute bounds；
+6. ordered radius projection；
+7. ordered height projection；
+8. occupancy-aware minimum radius；
+9. event-gate structural mask；
+10. set target；
+11. start/interpolate geometry transition；
+12. recompute capacity from **actual** geometry。
+
+### 4.4 Speed profile
+
+基础 profile：
+
+```text
+outer  = 28 m/s
+middle = 24 m/s
+inner  = 20 m/s
+```
+
+高层只调整 shared bias：
+
+```text
+V_role = clip(V_role_base + speed_profile_bias, speed_min, speed_max)
+```
+
+避免把高层机械扩成 3 个独立 speed dimension。
+
+---
+
+## 5. ArrivalProcess 与 AdmissionManager
+
+### 5.1 ArrivalRequest
 
 ```python
-class Option:
-    """高层 option = 一组空域构型参数"""
-    def __init__(self, radii, heights, speeds):
-        self.radii = radii
-        self.heights = heights
-        self.speeds = speeds
-        self.duration = 1800  # 30 min
-
-class HighLevelPolicy:
-    """选 option → 应用到空域"""
-    def select_option(self, obs) -> Option: ...
-
-class LowLevelPolicy:
-    """在 option 约束下控制各 UAV"""
-    def select_action(self, obs, option) -> dict[int, LowLevelAction]: ...
+@dataclass(frozen=True)
+class ArrivalRequest:
+    arrival_id: int
+    request_time: float
+    gate_id: int
+    mission_type: MissionType
+    base_priority: int
+    energy_capacity: float
+    initial_soc: float
 ```
 
-## 5. 接口约定
+随机属性在 request 创建时一次性生成。不同 policy 在同 seed 下使用同一 request stream。
 
-### 5.1 高低层通信
+### 5.2 ExternalQueue
 
+队列保存 `ArrivalRequest`，不是已经进入物理终端区的 UAV。
+
+排序 baseline：
+
+```text
+SOC emergency
+→ dynamic priority
+→ request_time
 ```
-高层 → 低层: Option(radii, heights, speeds)
-低层 → 高层: 累计统计数据 (avg_wait, throughput, conflicts, landings)
+
+必须记录 FCFS 被 priority 跳过的情况，供 fairness 分析。
+
+### 5.3 EntryGate
+
+```python
+@dataclass
+class EntryGate:
+    gate_id: int
+    angle: float
+    spawn_point: np.ndarray
+    gate_point: np.ndarray
+    active_inbound: list[int]
+    last_admission_time: float
 ```
 
-### 5.2 环境 → 外部
+四个 gate 使用不同 radial corridor。
 
-```
-每个 episode 结束时产出:
-{
-    "episode": int,
-    "total_landed": int,
-    "total_failed": int,
-    "avg_wait_time": float,
-    "avg_energy": float,
-    "throughput": float,
-    "safety_violations": int,
-    "avg_priority_score": float,
-}
-```
-# Event-gated 180s high-level design addendum
+---
 
-`GeometryEventGate` is the single owner of structural geometry gate logic. It
-uses 20 s pressure samples, persistence, hysteresis, and 600 s dwell to decide
-whether an applied radius/height reconfiguration is allowed at a fixed 180 s
-high-level decision boundary. The gate does not choose geometry direction or
-magnitude; PPO or `event_rule` decides that. When closed, the gate masks only
-the first four `DynamicAirspace` action dimensions to no-op and leaves
-operational speed/headway dimensions to the existing rate limits and safety
-filter.
+## 6. LandingZoneManager
+
+### 6.1 LandingZone
+
+```python
+class LZStatus(str, Enum):
+    FREE = "free"
+    RESERVED = "reserved"
+    OCCUPIED = "occupied"
+
+@dataclass
+class LandingZone:
+    lz_id: int
+    position: np.ndarray
+    status: LZStatus
+    reserved_by: int | None
+    reservation_start: float | None
+    service_remaining: float
+    compatible_missions: frozenset[MissionType]
+```
+
+### 6.2 Core operations
+
+```python
+reserve(lz_id, uav_id, now) -> ReservationResult
+release_reservation(lz_id, uav_id, reason) -> None
+touchdown(lz_id, uav_id, service_time) -> None
+step(dt) -> list[ServiceCompletion]
+available_for(uav) -> list[int]
+earliest_release_time(lz_id) -> float
+```
+
+### 6.3 Assignment strategy
+
+Rule baseline：
+
+```text
+feasible LZ
+→ earliest service availability
+→ shortest final path
+→ lz_id tie-break
+```
+
+低层 RL **不直接输出 `lz_id`**。LZ assignment 属于 resource scheduler，避免 action space 随 LZ 数量变化。
+
+---
+
+## 7. EnergyModel
+
+```python
+class EnergyModel:
+    def power(self, uav, phase, trajectory_state=None) -> float: ...
+    def consume(self, uav, dt, phase) -> None: ...
+    def estimate_energy_to_complete(self, uav, env_state) -> float: ...
+```
+
+初期使用 phase nominal coefficients；以后可替换为 calibrated model，但接口保持不变。
+
+AdmissionManager 应通过：
+
+```text
+energy_remaining >= estimated_energy_to_complete + reserve_margin
+```
+
+决定低 SOC request 是否可以进入 terminal。
+
+---
+
+## 8. PriorityEngine
+
+```python
+class PriorityEngine:
+    def compute(self, uav, now) -> float: ...
+    def rank_key(self, uav, now) -> tuple: ...
+```
+
+`compute()` 必须与 `requirements.md` 公式一致。PriorityEngine 不拥有动作，也不绕过 safety constraints。
+
+---
+
+## 9. Low-level intention interface
+
+### 9.1 Action dataclass
+
+```python
+@dataclass(frozen=True)
+class LowLevelIntent:
+    release_request: float
+    speed_residual: float
+    merge_time_residual: float
+```
+
+三个 raw 分量均在 `[-1,1]`，实际物理量由 mapper 转换。
+
+### 9.2 Phase-specific interpretation
+
+| Current phase | release target |
+|---|---|
+| INBOUND | OUTER |
+| RING_OUTER | MIDDLE |
+| RING_MIDDLE | INNER |
+| RING_INNER | FINAL |
+| FINAL/LANDING | 无新的 stage-release |
+
+在 FINAL/LANDING 时，动作应根据 committed trajectory 做 mask，不产生新的自由飞行动作。
+
+### 9.3 ActionMask
+
+```python
+ActionMask(
+    can_request_release: bool,
+    speed_residual_enabled: bool,
+    timing_residual_enabled: bool,
+    reason_codes: list[str],
+)
+```
+
+policy 输出不可用维度时，环境必须 mask 并记录统计。
+
+---
+
+## 10. MergeScheduler
+
+### 10.1 MergeReservation
+
+```python
+@dataclass
+class MergeReservation:
+    reservation_id: str
+    uav_id: int
+    source_stage: str
+    target_stage: str
+    merge_time: float
+    merge_angle: float | None
+    predecessor_id: int | None
+    successor_id: int | None
+    status: str
+    expires_at: float
+```
+
+### 10.2 Scheduling flow
+
+```text
+baseline target time
+      ↓
+apply Δt residual
+      ↓
+headway check
+      ↓
+predict target traffic
+      ↓
+find target gap
+      ↓
+resource reservation
+      ↓
+trajectory generation
+      ↓
+trajectory safety
+      ↓
+commit
+```
+
+Rule baseline 的 `t_base` 根据 earliest headway-safe time、queue order、priority adjustment 得到。RL 的 `Δt` 只能在有限窗口内修正 baseline，不能绕过 headway。
+
+---
+
+## 11. CanonicalTrajectoryGenerator
+
+### 11.1 TrajectoryPlan
+
+```python
+@dataclass
+class TrajectoryPoint:
+    t: float
+    position: np.ndarray
+    velocity: np.ndarray | None
+    yaw: float | None
+
+@dataclass
+class TrajectoryPlan:
+    plan_id: str
+    uav_id: int
+    mode: str
+    points: list[TrajectoryPoint]
+    start_time: float
+    end_time: float
+    reservation_ids: list[str]
+    metadata: dict
+```
+
+### 11.2 ring_hold
+
+根据 current `actual_geometry(t)` 生成 moving-reference orbit。
+
+### 11.3 ring_transfer
+
+水平 cubic Bézier：
+
+\[
+B(s)=(1-s)^3P_0+3(1-s)^2sP_1+3(1-s)s^2P_2+s^3P_3
+\]
+
+其中：
+
+```text
+P0 = current position
+P1 = P0 + L0 * source tangent
+P3 = target merge point
+P2 = P3 - L1 * target tangent
+```
+
+`L0/L1` 由几何距离和 curvature/turn-rate limit 限定。
+
+垂直方向使用 quintic smoothstep：
+
+\[
+q(s)=10s^3-15s^4+6s^5
+\]
+
+\[
+z(s)=z_0+[z_1-z_0]q(s)
+\]
+
+### 11.4 final_approach
+
+推荐语义：
+
+```text
+inner release
+→ final entry waypoint
+→ stabilized approach waypoint
+→ LZ touchdown
+```
+
+可以用 composite spline 实现，但日志中保留分段语义。
+
+### 11.5 Execution
+
+环境每步从当前 committed plan 采样下一状态。不得让 VTAC 再独立计算另一套 transfer curve。
+
+---
+
+## 12. SafetyFilter
+
+### 12.1 API
+
+```python
+class SafetyFilter:
+    def check_intent(...) -> IntentSafetyResult: ...
+    def check_trajectory(...) -> TrajectorySafetyResult: ...
+    def check_pairwise_plans(...) -> list[ConflictPrediction]: ...
+```
+
+### 12.2 Safety hierarchy
+
+```text
+hard collision/separation
+> trajectory executability
+> resource reservation
+> SOC urgency / priority
+> efficiency
+```
+
+高 priority 只影响“两个均安全候选谁先走”，不能降低 hard safety threshold。
+
+### 12.3 Safety responses
+
+允许：approve、delay release、replace merge time、reduce residual、hold、reject。  
+不允许把任意 heading/pitch offset 当作主安全机制。
+
+---
+
+## 13. Dynamic geometry execution protocol
+
+### 13.1 GeometryTransition
+
+```python
+@dataclass
+class GeometryTransition:
+    start_time: float
+    end_time: float
+    start_state: GeometryState
+    target_state: GeometryState
+    affected_interfaces: set[str]
+```
+
+### 13.2 Ring holder
+
+每步跟踪 interpolated actual radius/height，低层 `speed_residual` 继续生效。
+
+### 13.3 Already committed transfer
+
+已产生 committed `TrajectoryPlan` 的 UAV 继续执行。DynamicAirspace 在 shrink feasibility 中把 committed arrival 纳入 occupancy。
+
+### 13.4 New transfer
+
+对应接口在 `affected_interfaces` 时：
+
+```text
+release_request → masked/rejected: GEOMETRY_RECONFIGURING
+```
+
+---
+
+## 14. ObservationBuilder
+
+### 14.1 Schema 化
+
+```python
+ObservationSchema(
+    names=[...],
+    slices={...},
+    dimension=...,
+)
+```
+
+禁止依赖匿名“第 37 维”约定。
+
+### 14.2 Topological context
+
+优先提取：
+
+```text
+same_ring_leader
+same_ring_follower
+target_ring_predecessor
+target_ring_successor
+nearest_conflict_aircraft
+```
+
+不足时用 zero + presence mask。
+
+### 14.3 LZ summary
+
+actor 至少使用：
+
+```text
+assigned_lz_state
+assigned_lz_service_remaining
+free_lz_fraction
+earliest_lz_release
+top-K candidate LZ availability
+```
+
+默认 M=6 时可附加 6 个 LZ occupancy feature，但核心网络不得假设 M 永远等于 6。
+
+---
+
+## 15. Low-level network
+
+Actor：
+
+```text
+per-UAV feature vector
+→ shared encoder
+→ actor head
+→ 3D intent
+```
+
+Centralized critic：
+
+```text
+all active UAV embeddings
+→ attention / DeepSets-style pooling
+→ global traffic embedding
+→ concat airspace/resource state
+→ value head
+```
+
+支持 N 动态变化。
+
+---
+
+## 16. High-level observation
+
+建议包含：
+
+- **Geometry**：actual/target R/H、speed-profile bias、headways、transition progress；
+- **Traffic**：ring occupancy/capacity/ratio、queue age、mean/max holding、transfer queues；
+- **Demand**：recent request/admission rate、burst indicator、external queue；
+- **Resource**：free/reserved/occupied LZ、service remaining、final utilization；
+- **Energy/Priority**：SOC quantiles、warning/reserve counts、priority quantiles、oldest wait；
+- **Event gate**：pressure score、gate state、dwell remaining。
+
+统计应基于 rolling window，而不只看单步瞬时值。
+
+---
+
+## 17. Reward design
+
+### 17.1 High-level reward
+
+\[
+R_H = w_c\Delta N_{completed}-w_dD-w_qQ-w_sS-w_eE-w_fF-w_rC_{reconfig}
+\]
+
+其中 `D` 是 priority-weighted delay，`Q` 是 queue/occupancy pressure，`S` 是 safety cost，`E` 是 energy，`F` 是 diversion/failure，`C_reconfig` 是无效或过度 reconfiguration cost。
+
+reward 不得直接奖励“半径更大”或“capacity 数字更大”。
+
+### 17.2 Low-level reward
+
+语义：
+
+```text
++ stage progression
++ safe merge completion
++ touchdown/service-completion credit
+- elapsed time
+- energy use
+- excessive residual magnitude
+- safety rejection
+- separation risk
+- starvation/fairness cost
+- failure
+```
+
+权重全部由 YAML 管理并通过 reward diagnostics 校准。
+
+---
+
+## 18. RuleLowLevelPolicy
+
+Rule policy 必须与 RL 使用完全相同的 3D intention interface 和后端 pipeline。
+
+### 18.1 Inbound→Outer
+检查 gate corridor、outer capacity、headway、merge gap。
+
+### 18.2 Outer→Middle / Middle→Inner
+检查最低驻留、priority、headway、target gap、interface availability。
+
+### 18.3 Inner→Final
+额外检查 LZ assignment/reservation、final resource、final headway。
+
+### 18.4 Speed guidance
+采用 leader/follower gap-based bounded residual，不直接改任意 heading。
+
+---
+
+## 19. Landing service state
+
+touchdown 后：
+
+```text
+phase = SERVICE
+lz = OCCUPIED
+service_remaining -= dt
+```
+
+服务结束：
+
+```text
+phase = COMPLETED
+outcome = COMPLETED
+completion_time = now
+LZ = FREE
+```
+
+---
+
+## 20. MetricsCollector / OutcomeLedger
+
+### 20.1 OutcomeLedger
+
+每个 `arrival_id` 唯一一行：
+
+```text
+request_time
+admission_time
+outer_entry_time
+final_entry_time
+touchdown_time
+completion_time
+outcome
+reason
+mission_type
+base_priority
+initial_soc
+landing_soc
+assigned_lz
+external_wait
+internal_time
+service_time
+```
+
+### 20.2 Event logs
+
+至少记录：high-level requested/applied action、geometry gate/transition、low-level action/mask、release approve/reject、merge reservation、LZ reservation、trajectory approve/reject、safety event、touchdown、service complete、diversion/failure。
+
+---
+
+## 21. Formal reset modes
+
+### `flow_from_empty` — 论文主模式
+
+`t=0` terminal 空，arrival requests 随时间进入。
+
+### `warm_start_rings` — 调试/curriculum
+
+可在三个环预置 UAV，默认：
+
+```text
+outer  = 0.60
+middle = 0.25
+inner  = 0.15
+```
+
+仅用于 transition unit tests、reward sanity、low-level curriculum、stress diagnostics。正式主结果不得只使用 warm-start。
+
+---
+
+## 22. Experiment modes
+
+正式模式统一为：
+
+```text
+fixed_rule
+fixed_low_rl
+dynamic_rule
+dynamic_hrl
+```
+
+主要变体：
+
+```text
+two_ring_dynamic_hrl
+periodic_geometry_hrl
+homogeneous_service
+no_dynamic_priority
+no_safety_filter
+fixed_headway
+```
+
+旧的同义 mode 名称不得继续作为正式实验接口并存。
+
+---
+
+## 23. Phase B/C 接口边界
+
+当前代码可预留 `OperationDirection.ARRIVAL`，但不实现 departure state/action。Phase B 后再增加 `DEPARTURE`，不得为了未来 departure 让当前 observation/action 膨胀。

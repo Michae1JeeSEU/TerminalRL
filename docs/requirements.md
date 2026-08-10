@@ -1,189 +1,876 @@
 # 项目需求文档
 
-## 项目概述
-
-低空交通领域终端区降落动态空域构型与无人机控制协同的层次强化学习决策方法研究。
-
-**核心思想**：将终端区降落问题建模为两层决策——高层负责空域构型（慢决策，~30min），低层负责无人机飞行控制（快决策，秒级），通过层次强化学习实现协同优化。
+> **版本范围**：Phase A — Landing-only  
+> **文档职责**：定义系统必须具备的能力与正式场景不可变语义。  
+> 实现细节见 `technical_spec.md`，模块组织见 `design_spec.md`，开发顺序见 `execution_plan.md`。
 
 ---
 
-## 1. 空域结构
+## 1. 总体需求
 
-### 1.1 三层环形终端区
+系统必须能够模拟并训练一个 landing-only 低空终端区，使随机到达的多架 UAV 经由：
 
-```
-         ┌──────────────────────┐
-         │    外环 (Ring 1)      │  ← 进入终端区
-         │  ┌────────────────┐  │
-         │  │ 中环 (Ring 2)   │  │  ← 过渡层
-         │  │  ┌──────────┐  │  │
-         │  │  │内环(Ring3)│  │  │  ← 降落层
-         │  │  │  [降落区]  │  │  │
-         │  │  └──────────┘  │  │
-         │  └────────────────┘  │
-         └──────────────────────┘
+```text
+external queue
+→ inbound corridor
+→ outer ring
+→ middle ring
+→ inner ring
+→ final
+→ discrete landing zone
+→ service completion
 ```
 
-### 1.2 环间硬约束
+完成任务。
 
-| 约束 | 条件 |
-|------|------|
-| 半径 | R1 > R2 > R3（外环 > 中环 > 内环） |
-| 高度 | H1 > H2 > H3（外环 > 中环 > 内环） |
+环境必须显式建模：
 
-硬约束在动作空间层面即施加，不允许违反。
-
----
-
-## 2. 决策层级
-
-### 2.1 高层决策（空域构型，~30分钟/次）
-
-| 决策变量 | 类型 | 取值范围 | 维度 |
-|----------|------|----------|------|
-| 环半径 (R1,R2,R3) | 连续 | 受硬约束限制 | 3 |
-| 环高度 (H1,H2,H3) | 连续 | 受硬约束限制 | 3 |
-| 环速度 (V1,V2,V3) | 连续 | V_min ~ V_max | 3 |
-| **合计** | | | **9维连续** |
-
-### 2.2 低层决策（UAV 控制，秒级）
-
-| 动作 | 类型 | 参数 |
-|------|------|------|
-| 盘旋 (Circle) | 离散 + 1 连续参数 | speed_factor ∈ [0.3, 1.3] — 环速 V_i 的乘系数，控制 UAV 在环上的角速度以拉开间距 |
-| 下降 (Descend) | 离散 + 3 连续参数（RL 直接控制） | (ψ 航向角 ∈ [0, 2π], γ 航迹角 ∈ [-π/2, π/2], V 速度 ∈ [5, 40] m/s) — RL 策略直接输出飞行参数 |
-
-**盘旋速度控制**：UAV 可以加速（最大 1.3x）或减速（最小 0.3x）绕环飞行的速度，获得拉开或缩小与相邻 UAV 间距的自由度。
-
-**下降三参数 RL 控制**：RL 策略直接输出航向角 ψ、航迹角 γ、飞行速度 V，不再由 wrapper 自动计算。策略可以独立控制下降方向、角度和速度，实现主动避障和灵活着陆。
-
-**下降运动学**：速度向量 = [V·cosγ·cosψ, V·cosγ·sinψ, V·sinγ]；γ 为负值表示下降，达到内侧环范围时自动切换为盘旋。
-
-### 2.3 着陆动作（环3内触发）
-
-环3上选择 DESCEND + 指定 landing_zone → 触发着陆。UAV 状态变为 LANDED，位置移至着陆区坐标 (x, y, 0)，从活跃列表中移除。
+1. 三层环形空域；
+2. 4 个真实入场方向；
+3. 动态 arrival demand 和 external queue；
+4. 多架 UAV；
+5. phase-dependent energy / SOC；
+6. base priority 与 dynamic priority；
+7. mission type；
+8. M 个离散 LZ；
+9. reservation 与 task-dependent service time；
+10. ring/headway/capacity constraints；
+11. canonical trajectory generation；
+12. safety filtering；
+13. 高层动态空域与低层共享意图策略；
+14. 可审计的 outcome ledger 和实验日志。
 
 ---
 
-## 3. 优化目标（多目标协同）
+## 2. 统一术语和编号
 
-| 目标 | 方向 | 含义 |
-|------|------|------|
-| 能耗 | 最小化 | 所有 UAV 飞行 + 等待的总能耗 |
-| 等待时间 | 最小化 | UAV 进入终端区到完成降落的总耗时 |
-| 系统吞吐量 | 最大化 | 单位时间内成功降落的 UAV 架次 |
+### 2.1 Ring naming
 
-多目标处理方式：加权求和或 Pareto 优化（具体方案在设计阶段确定）。
+统一使用：
 
----
-
-## 4. 约束条件
-
-| 约束 | 类型 | 说明 |
-|------|------|------|
-| 安全间隔 | 硬约束 | UAV 之间间距 ≥ d_safe（10m 碰撞区），碰撞 UAV 被移除，其他继续 |
-| 近距预警 | 软约束 | 间距 < near_miss_threshold（50m），产生惩罚但不终止 |
-| 同环间距塑形 | 连续软约束 | 每架盘旋 UAV 根据前车弧距和 TTC 接收局部 softplus 惩罚，通过自主调速拉开间距 |
-| 接近惩罚 | 连续软约束 | 间距 < 30m 触发 -5/dist 的额外尖锐惩罚 |
-| 环容量 | 软约束 | 环上 UAV 数 ≥ 90% 2πR/min_ring_spacing 时阻止非紧急下降 |
-| 反射式避障 | 环境层 | SafetyController 5 规则在 RL 动作执行前介入减速/偏转；安全层介入进入 reward 惩罚，普通下降放行阻塞仅进入观测 |
-| 任务优先级 | 混合（软约束） | 基础优先级预设 + 动态调整因子（等待时间/电量） |
-| 剩余电量 | 硬约束 | 电量低于阈值（15%）时强制优先降落，电量为零视为任务失败 |
-| 环驻留时间 | 硬约束 | 每环最少盘旋 min_ring_wait=30s（按优先级打折）后才能下降 |
-| 着陆点占用 | 硬约束 | 单 LZ 同时只能服务一架 UAV；着陆后按任务类型占用一定时间 |
-
-### 4.1 优先级计算
-
-```
-Priority = base_priority × f(wait_time) × g(battery_ratio)
+```text
+OUTER
+MIDDLE
+INNER
 ```
 
-- base_priority：任务类型预设值（1/3/5，权重 50%/35%/15%）
-- f(wait_time)：等待超时升级因子
-- g(battery_ratio)：电量衰减升级因子
+数学符号：
 
-### 4.2 任务类型与 LZ 占用
+\[
+R_O>R_M>R_I,\qquad H_O>H_M>H_I
+\]
 
-每架 UAV 生成时随机分配任务类型（mission_type），影响着陆后的 LZ 占用时间：
+代码建议：
 
-| 类型 | 名称 | 权重 | LZ 占用时间 | 说明 |
-|------|------|------|-------------|------|
-| 1 | standard | 45% | 30s | 标准物流配送 |
-| 2 | cargo | 25% | 120s | 重型货物，需要卸载设备 |
-| 3 | emergency | 10% | 10s | 医疗急救，优先清空 |
-| 4 | surveillance | 20% | 60s | 巡检/数据采集，需要上传时间 |
+```python
+class RingRole(Enum):
+    OUTER = "outer"
+    MIDDLE = "middle"
+    INNER = "inner"
+```
 
-**LZ 预留机制**：UAV 在环3开始下降着陆时立即预留目标 LZ（防止多 UAV 同时飞向同一 LZ）；着陆后预留转为占用计时器；计时结束自动释放。UAV 中止下降或死亡时自动释放预留。
+可以存在内部整数 `index`，但任何接口不得依赖“index 越大越外/越内”的隐含约定。
 
----
+### 2.2 Phase naming
 
-## 5. UAV 规模路线
+统一生命周期：
 
-| 阶段 | 规模 | 任务 |
-|------|------|------|
-| Phase 3-5 | 5-20 架 | 单/少 UAV 开发调试 |
-| Phase 6 | 50-200 架 | 中等规模实验验证 |
-| Phase 7 | >200 架 | 大规模扩展，分布式决策 |
-
----
-
-## 6. UAV 初始状态与进入流
-
-### 6.1 初始分布（无流入，Phase 3）
-
-仿真开始时，UAV 分布在三个环的轨道上（按固定 R_i, H_i + 随机角度）：
-- 环1 (外环): ~60% 的 UAV
-- 环2 (中环): ~25% 的 UAV
-- 环3 (内环): ~15% 的 UAV
-
-每架 UAV 初始状态随机化：
-- **位置**：在环轨道上 (R_i, H_i)，随机角度 θ ∈ [0, 2π)
-- **电量**：在 battery_critical × max_battery ~ max_battery 之间均匀随机
-- **等待时间**：在 0 ~ 600 秒之间均匀随机
-- **状态**：全部为 CRUISING（盘旋中）
-- **基础优先级**：按 {1:50%, 3:35%, 5:15%} 概率随机分配
-
-### 6.2 进入流（持续流入，Phase 4+）
-
-新 UAV 从 4 个固定进入点（环1边界 0°/90°/180°/270°）按流入速率（UAVs/hour）持续进入。进入后自动加入环1盘旋。状态随机化（电量、等待时间、优先级）。
-
-### 6.3 着陆后移除
-
-着陆的 UAV 从系统中移除。持续流入模式下按速率补充新 UAV。
-
-## 7. 仿真环境
-
-- 基于 OpenAI Gymnasium 接口的自定义环境
-- 纯数值仿真（无物理引擎）
-- 支持：reset / step / render 标准接口
-- 可配置：UAV 数量、环初始参数、降落区域数量、流入速率
-- 观测：per-UAV 局部观测矩阵（自身 + k 近邻 + 全局空域），天然支持变长 UAV 数
+```text
+EXTERNAL_QUEUE
+INBOUND
+RING_OUTER
+TRANSFER_O2M
+RING_MIDDLE
+TRANSFER_M2I
+RING_INNER
+FINAL
+LANDING
+SERVICE
+COMPLETED
+DIVERTED
+FAILED
+```
 
 ---
 
-## 8. 层次强化学习框架
+## 3. 空域结构需求
 
-- 架构：Options 框架（Call-and-Return）
-- 高层 policy：选 option（空域参数），每 ~30min 调用一次
-- 低层 policy：**Per-UAV 共享策略**——同一策略网络处理每架 UAV 的局部观测，输出该 UAV 的独立动作。天然支持变长 UAV 数量（max_n=100，inactive 行 mask 忽略）
-- 扩展方向：大规模时低层可分布式执行
+### 3.1 默认三环 nominal geometry
 
-### 8.1 Per-UAV 共享策略细节
+| Parameter | Outer | Middle | Inner |
+|---|---:|---:|---:|
+| Radius | 600 m | 400 m | 200 m |
+| Height | 500 m | 350 m | 200 m |
+| Nominal speed | 28 m/s | 24 m/s | 20 m/s |
 
-- **观测**：(max_n, 91) 矩阵，每行 = `[空域状态(9) + 自身(9) + k 近邻(k×6) + 环计数(3) + LZ占用(6) + 车流上下文(12) + Safety介入信号(4)]`
-- **动作**：`Box(low=-1, high=1, shape=(max_n, 2))`，每 UAV 独立输出 2 维连续值：
-  - dim 0 (control_raw)：> 0 → DESCEND，≤ 0 → CIRCLE
-  - dim 1 (circle_speed_raw)：缩放 [-1,1] → [0.3, 1.3] CIRCLE 环速系数
-- **着陆区选择与下降轨迹**：环3下降时自动选择最近可用 LZ；下降航向/航迹角/速度由规则层生成，PPO 只决定何时释放下降
-- **车流与 Safety 信号**：最近距离 / 预测最近距离 / 同环前后弧距 / 前后闭合速度 / 前向 TTC / 环平均间距 / 请求与执行环速 / 上步 safety 介入 / 硬过滤阻塞 / speed_mult / psi_offset / gamma_offset / blocked
-- **训练**：PPO + PerUAVFeatureExtractor（shared UAV encoder 91→128→64 + mean-pooling global + per-UAV combiner 128→32→8）
-# Event-gated 180s HRL requirements
+这些数值是可配置的**工程仿真默认值**，不是对真实 vertiport 的法规性声明。
 
-Current development uses a fixed 180 s high-level MDP with 20 s metrics sampling
-and 600 s structural-geometry dwell. The policy is still evaluated every 180 s;
-the event gate only masks/allows radius/height geometry dimensions. Operational
-speed/headway dimensions must not be frozen by the geometry gate. All new PPO
-pilots for `periodic_hrl` and `event_gated_hrl` must train from scratch under
-simulation-only medium/high/bursty demand mixture; do not resume old 20 s PPO
-checkpoints.
+### 3.2 Geometry bounds
+
+初始统一边界：
+
+```text
+radius_min = 120 m
+radius_max = 900 m
+height_min = 120 m
+height_max = 650 m
+
+min_ring_gap = 120 m
+min_height_gap = 80 m
+
+max_radius_change_per_high_level_update = 20 m
+max_height_change_per_high_level_update = 20 m
+```
+
+目标几何必须满足：
+
+\[
+R_O-R_M\ge G_R,\quad R_M-R_I\ge G_R
+\]
+
+\[
+H_O-H_M\ge G_H,\quad H_M-H_I\ge G_H
+\]
+
+### 3.3 Derived capacity
+
+ring capacity 不允许作为独立 RL action。对半径 `R` 与安全弦长 `d_sep`：
+
+\[
+\Delta\theta_{min}=2\arcsin\left(\frac{d_{sep}}{2R}\right)
+\]
+
+\[
+C(R)=\left\lfloor\frac{2\pi}{\Delta\theta_{min}}\right\rfloor
+\]
+
+实际实现需处理 `d_sep >= 2R` 等边界情况。
+
+环缩小时还必须满足：
+
+```text
+target_capacity
+>= current_ring_occupancy
+ + committed_incoming_transfers
+ + reservation_margin
+```
+
+若不满足，structural action 必须被 projection/clipping 拒绝或修正。
+
+### 3.4 High-level timing
+
+默认：
+
+```text
+metrics_sampling_interval_seconds = 20
+high_level_decision_interval_seconds = 180
+geometry_min_dwell_seconds = 600
+geometry_transition_seconds = 20
+```
+
+高层每 180 s 产生一次 action；geometry event gate 决定 structural dimensions 是否执行。
+
+---
+
+## 4. 入口和 arrival demand
+
+### 4.1 四入口
+
+系统必须有 4 个独立入场方向：
+
+```text
+0°
+90°
+180°
+270°
+```
+
+每个 gate 都有自己的 upstream corridor。
+
+默认：
+
+```text
+approach_threshold_radius = 1000 m
+spawn_radius = 1300 m
+gate_height = 600 m
+gate_count = 4
+```
+
+新 UAV 不允许都从同一个 bearing 生成后再分配 gate。
+
+### 4.2 Arrival request 与 admission 分离
+
+`ArrivalProcess` 产生的是**外部需求 request**，不能因为 terminal 当前满载而丢弃 request。
+
+每个 request 先进入 `EXTERNAL_QUEUE`，只有满足 admission 条件后才生成/激活物理 inbound UAV。
+
+### 4.3 Demand model
+
+必须支持：
+
+```text
+deterministic_interval
+poisson
+bursty_wave
+fixed_schedule
+finite_cohort
+```
+
+`low/medium/high/bursty/overload` 的实际 rate 由 YAML 明确配置，不允许把 demand level 名称变成不可追踪的隐藏常数。
+
+### 4.4 Admission constraints
+
+至少检查：
+
+- `max_active_uavs`；
+- assigned gate corridor 是否可用；
+- outer-ring admission capacity；
+- SOC 是否高于进入终端区所需 reserve；
+- safety spacing。
+
+无法 admission 的 request 留在 external queue，并累计：
+
+```text
+external_wait_time
+energy consumption
+dynamic priority
+```
+
+### 4.5 Overflow / diversion
+
+不得通过“超过 max_active_uavs 就停止生成 request”掩盖过载。
+
+出现长时间拥堵时：
+
+- request 保留在 external queue；
+- 若预测剩余能量不足以安全完成 terminal operation，则标记 `DIVERTED_LOW_SOC`；
+- 可设置 `max_external_wait` 作为 stress-test 规则，超限标记 `DIVERTED_CAPACITY`。
+
+---
+
+## 5. UAV 任务属性
+
+每个 request 在产生时固定以下属性，之后不得因 policy 改变：
+
+```text
+arrival_id
+request_time
+entry_gate
+mission_type
+base_priority
+energy_capacity
+initial_SOC
+random-seed-derived identity
+```
+
+### 5.1 Mission type
+
+| ID | Name | Probability | LZ service time |
+|---:|---|---:|---:|
+| 1 | standard | 0.45 | 30 s |
+| 2 | cargo | 0.25 | 120 s |
+| 3 | emergency | 0.10 | 10 s |
+| 4 | surveillance | 0.20 | 60 s |
+
+mission type 的主要作用是 LZ service time、可选的 LZ compatibility，以及 emergency mission 对 base priority 的最低要求。
+
+### 5.2 Base priority
+
+| Priority | Probability |
+|---:|---:|
+| 1 | 0.50 |
+| 3 | 0.35 |
+| 5 | 0.15 |
+
+若 `mission_type == emergency`：
+
+```text
+base_priority = max(sampled_base_priority, 5)
+```
+
+mission type 与 priority 不完全等价。
+
+---
+
+## 6. 电量与能耗
+
+### 6.1 状态量
+
+统一使用：
+
+```text
+energy_capacity
+energy_remaining
+SOC = energy_remaining / energy_capacity
+energy_consumed
+```
+
+`battery_endurance_seconds` 不再作为主模型状态。
+
+### 6.2 Phase-dependent energy
+
+通用模型：
+
+\[
+E_{t+\Delta t}=E_t-P_{phase}(v,\dot z)\Delta t
+\]
+
+没有机型标定数据前，使用 nominal power model：
+
+\[
+P_{phase}=k_{phase}P_{ref}
+\]
+
+建议初始倍率：
+
+| Phase | k_phase |
+|---|---:|
+| external airborne wait | 1.00 |
+| inbound | 1.00 |
+| ring hold | 1.00 |
+| ring transfer | 1.10 |
+| final approach | 0.90 |
+| landing | 1.05 |
+
+这些倍率必须可配置，并在论文中称为 normalized/nominal energy model，除非后续得到实际功耗标定。
+
+### 6.3 SOC thresholds
+
+默认：
+
+```text
+SOC_warning = 0.30
+SOC_reserve = 0.15
+SOC_emergency = 0.08
+```
+
+语义：
+
+- `< warning`：进入 observation 与指标；
+- `< reserve`：若尚未 admission，优先 diversion，不再正常放入 terminal；
+- `< reserve` 且已在 terminal：显著增加 dynamic priority；
+- `< emergency`：申请最早可行 final/LZ clearance；
+- `SOC <= 0` 且未完成：`FAILED_ENERGY`。
+
+---
+
+## 7. Dynamic priority
+
+动态优先级统一为：
+
+\[
+P_i(t)=P_i^{base}
+\left[1+\alpha\left(\frac{W_i(t)}{T_W}\right)^\beta\right]
+\left[1+\gamma U_i(t)^\delta\right]
+\]
+
+其中：
+
+\[
+U_i(t)=\max\left(0,\frac{SOC_{reserve}-SOC_i(t)}{SOC_{reserve}}\right)
+\]
+
+默认：
+
+```text
+alpha = 0.5
+beta = 1.5
+gamma = 1.0
+delta = 2.0
+T_W = 3600 s
+```
+
+Priority 用于 rule scheduler tie-breaking、LZ/merge conflict resolution、low-level observation、priority-weighted delay metric 与 urgency handling。高优先级永远不能绕过 hard separation。
+
+---
+
+## 8. Landing Zone 资源
+
+### 8.1 数量与布局
+
+默认：
+
+```text
+num_landing_zones = 6
+```
+
+固定地面坐标：
+
+```text
+LZ0 = (-80, -40, 0)
+LZ1 = (  0, -40, 0)
+LZ2 = ( 80, -40, 0)
+LZ3 = (-80,  40, 0)
+LZ4 = (  0,  40, 0)
+LZ5 = ( 80,  40, 0)
+```
+
+LZ 是 ground infrastructure，**不能随着 inner-ring radius 改变而移动**。
+
+### 8.2 LZ state
+
+每个 LZ 至少包含：
+
+```text
+FREE
+RESERVED
+OCCUPIED
+```
+
+字段：
+
+```text
+lz_id
+position
+status
+reserved_by
+reservation_start_time
+occupied_by / last_uav
+service_remaining
+compatible_missions
+```
+
+### 8.3 Reservation semantics
+
+`Inner→Final` 前必须先完成 LZ reservation。
+
+```text
+FREE → RESERVED → OCCUPIED → FREE
+```
+
+以下情况必须释放 reservation：final clearance 永久取消、UAV diverted/failed、reservation timeout、trajectory planning 失败且不再 retry。
+
+### 8.4 Service completion
+
+touchdown 时：
+
+```text
+UAV leaves airborne traffic
+LZ: RESERVED → OCCUPIED
+service_remaining = service_time[mission_type]
+```
+
+`service_remaining == 0` 时：
+
+```text
+LZ → FREE
+mission outcome → COMPLETED
+```
+
+论文中的“任务完成时间”默认取 service completion；同时单独记录 touchdown time。
+
+---
+
+## 9. Final resource 与 corridor
+
+Final 不是无限容量区域。
+
+默认：
+
+```text
+final_queue_capacity = 1
+inner_to_final_min_headway = 12 s
+```
+
+必须显式记录：
+
+```text
+final_reserved_by
+last_final_release_time
+final_trajectory_occupancy
+```
+
+Inner→Final clearance 至少需要：
+
+1. LZ reservation 成功；
+2. final resource 可用；
+3. headway 满足；
+4. candidate trajectory 通过 safety filter；
+5. aircraft state 可执行；
+6. geometry interface 未被冻结。
+
+---
+
+## 10. 低层动作需求
+
+### 10.1 Action
+
+每个 active UAV 的唯一低层动作：
+
+\[
+a_i^L=[r_i,\Delta v_i,\Delta t_i]\in[-1,1]^3
+\]
+
+#### `release_request`
+连续值映射为阶段转移请求强度。是否批准由 scheduler/safety layer 决定。
+
+#### `speed_residual`
+
+\[
+\Delta v_i\in[-\Delta v_{max},+\Delta v_{max}]
+\]
+
+默认：
+
+```text
+max_speed_residual = 2.0 m/s
+```
+
+#### `merge_time_residual`
+
+\[
+\Delta t_i\in[-\Delta t_{max},+\Delta t_{max}]
+\]
+
+默认：
+
+```text
+max_merge_time_residual = 6.0 s
+```
+
+### 10.2 禁止项
+
+最终主线低层 action 不得包含：
+
+```text
+free heading command
+free flight-path-angle command
+free altitude command
+motor command
+attitude command
+independent slot_residual
+```
+
+merge slot/angle 由 scheduler 根据 merge time 和目标环 gap 派生。
+
+---
+
+## 11. 高层动作需求
+
+### 11.1 Action shape
+
+统一为 10 维：
+
+```text
+[
+ dR_outer,
+ dR_middle,
+ dR_inner,
+ dH_outer,
+ dH_middle,
+ dH_inner,
+ dV_profile,
+ dHeadway_O2M,
+ dHeadway_M2I,
+ dHeadway_I2F
+]
+```
+
+所有输入先 clip 到 `[-1,1]`，再映射到 bounded increment。
+
+### 11.2 Speed profile bias
+
+基础：
+
+```text
+V0 = [28, 24, 20] m/s
+```
+
+高层 `dV_profile` 对三环 nominal speed 同方向施加有限偏置：
+
+```text
+max_speed_profile_change_per_update = 2 m/s
+speed_min = 8 m/s
+speed_max = 36 m/s
+```
+
+低层仍可在其上叠加 per-UAV speed residual。
+
+### 11.3 Headways
+
+默认：
+
+```text
+headway_O2M = 9 s
+headway_M2I = 9 s
+headway_I2F = 12 s
+
+headway_min = 3 s
+headway_max = 30 s
+max_headway_change_per_update = 1 s
+```
+
+---
+
+## 12. Geometry reconfiguration 需求
+
+### 12.1 Moving reference
+
+geometry update 必须经过连续 transition：
+
+```text
+actual_geometry(t)
+→ interpolate
+→ target_geometry
+```
+
+环上 UAV 跟踪 actual geometry，而不是 target geometry。
+
+### 12.2 Interface freezing
+
+若 reconfiguration 改变某一 ring pair：
+
+```text
+OUTER/MIDDLE affected → freeze new O2M transfers
+MIDDLE/INNER affected → freeze new M2I transfers
+INNER affected         → freeze new I2F if final-entry geometry is affected
+```
+
+但 ring hold、speed residual 和已 committed transfer 继续。
+
+---
+
+## 13. Merge scheduler 需求
+
+每次阶段转移需要建立 reservation：
+
+```text
+source_uav
+target_stage
+candidate_merge_time
+candidate_merge_angle
+predecessor
+successor
+reservation_expiry
+```
+
+算法至少：
+
+1. 根据 nominal schedule 产生 `t_base`；
+2. 应用 `merge_time_residual`；
+3. 预测目标环 UAV 到 `t_target` 的相位；
+4. 寻找满足前后 separation 的 gap；
+5. 如不可行，在允许窗口内向后搜索；
+6. 建立 reservation；
+7. 用 reservation 生成 canonical trajectory；
+8. safety filter 检查；
+9. approve / modify / reject。
+
+不得继续用固定 `release_offset_deg` 作为正式 merge point。
+
+---
+
+## 14. Trajectory requirements
+
+### 14.1 Canonical generator
+
+系统只能有一个 authoritative trajectory generator。同一份 plan 用于：
+
+```text
+safety check
+simulation execution
+logging
+visualization
+future hardware adapter
+```
+
+### 14.2 Ring hold
+
+支持 dynamic `R(t),H(t)`。
+
+### 14.3 Ring transfer
+
+要求：起终点 C0 continuous、水平切向至少 C1 continuous、垂直 profile 平滑、不超过速度/加速度/爬升下降/转弯约束，并到达 target merge reservation。
+
+### 14.4 Final/landing
+
+Final trajectory 至少包含：
+
+```text
+inner release state
+→ final entry
+→ stabilized approach
+→ assigned LZ
+```
+
+不得在 touchdown 时把位置瞬移到 LZ。
+
+---
+
+## 15. Safety requirements
+
+### 15.1 两级 safety
+
+**Intent/resource-level** 拒绝：phase 非法、headway 不满足、capacity 不足、LZ 不可用、interface frozen、SOC/admission 不可行、reservation 冲突。
+
+**Trajectory-level** 检查：pairwise predicted separation、NMAC/collision threshold、speed、acceleration、climb/descent rate、turn rate、world/airspace bounds、LZ/final occupancy。
+
+### 15.2 Safety override
+
+安全层可以：
+
+```text
+delay release
+replace merge time
+reduce residual
+reject trajectory
+issue hold instruction
+```
+
+不得通过任意 heading/pitch 偏转把 UAV 临时“推开”后继续执行未验证路径。
+
+---
+
+## 16. Observation requirements
+
+### 16.1 Per-UAV actor observation
+
+每架 UAV observation 必须固定维度，并包括：
+
+**Self**：phase、ring role、ring progress (`sinθ,cosθ`)、radial/height tracking error、speed/nominal、SOC、wait、dynamic priority、mission type、assigned gate、assigned LZ、time in phase、transition/reconfiguration flags。
+
+**Same-ring topology**：leader/follower arc gap、relative speed、TTC。
+
+**Target-ring merge context**：predicted predecessor/successor gap、available merge gap、baseline merge wait、reservation state。
+
+**Resource context**：final availability、assigned LZ state/service remaining、free LZ count、earliest LZ release、external/final queue summary。
+
+**Global compact summary**：ring occupancy/capacity ratios、headways、normalized geometry、demand estimate、geometry gate/reconfiguration state。
+
+### 16.2 Neighbor selection
+
+不得以“欧氏距离最近 k 架”作为唯一交通邻居定义。优先：
+
+```text
+same-ring leader/follower
+target-ring predecessor/successor
+conflict-nearest fallback
+```
+
+### 16.3 Variable number of UAVs
+
+Actor：
+
+```text
+shared network: R^d_obs → R^3
+```
+
+对 N 架 active UAV batch 执行。
+
+Critic：
+
+```text
+per-agent encoder
+→ permutation-invariant pooling / attention
+→ centralized value
+```
+
+Padding/mask 仅作为 batch implementation，不改变模型定义。
+
+---
+
+## 17. Rule baseline requirements
+
+任何 RL 训练之前，必须有完整 rule controller 能够完成：
+
+- 4 gate admission；
+- outer entry；
+- O2M；
+- M2I；
+- I2F；
+- LZ reservation；
+- final；
+- touchdown；
+- service complete；
+- nominal non-overload scene 下无 collision、无 deadlock。
+
+Rule baseline 排序原则：
+
+```text
+hard safety
+> SOC emergency
+> dynamic priority
+> FCFS/request time
+```
+
+---
+
+## 18. 训练需求
+
+### Stage 0 — Environment validation
+无 RL。
+
+### Stage 1 — Low-level learning
+固定三环、高层禁用，训练 shared low-level policy。
+
+### Stage 2 — High-level learning
+低层冻结为稳定 rule policy 或已训练 low-level policy；训练 high-level。
+
+### Stage 3 — Full HRL
+组合已训练策略做正式评估。
+
+### Stage 4 — Optional alternating fine-tuning
+只在 Stage 3 已稳定后执行。
+
+禁止两个随机网络从零同时训练作为主路线。
+
+---
+
+## 19. Episode 与正式评估
+
+### 19.1 Formal finite cohort
+
+必须满足：
+
+```text
+total_requested
+=
+completed
++ diverted
++ failed_collision
++ failed_energy
++ invalid_or_unresolved
+```
+
+正式有效 run：
+
+```text
+invalid_or_unresolved = 0
+```
+
+### 19.2 Continuous flow
+
+记录：
+
+```text
+requested
+admitted
+completed
+queue_remaining
+diverted
+failures
+```
+
+不能只报告 active UAV 中 landed 的比例。
+
+---
+
+## 20. 非功能需求
+
+- 所有随机过程必须 seedable；
+- 所有重要配置进入 YAML；
+- core 不依赖 ROS2；
+- pytest 覆盖核心状态机和资源守恒；
+- checkpoint 必须携带 schema/version hash；
+- observation/action schema 变化后旧 checkpoint 自动拒绝加载；
+- 实验日志记录 config snapshot 和 git commit；
+- 正式训练不得静默 fallback 到 rule-only；
+- 文档、代码、YAML、tests 对 action shape 和 ring count 必须一致。
+
+---
+
+## 21. 当前范围明确排除
+
+Phase A 当前不实现：departure traffic、shared arrival/departure corridor、network-level route assignment、weather avoidance、wind field、communications outage、arbitrary free-flight RL control、full rotor/aerodynamic dynamics。
+
+风、噪声、通信延迟等只在核心 Phase A 稳定后作为 robustness 扩展。

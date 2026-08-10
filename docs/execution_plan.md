@@ -1,372 +1,708 @@
-# 执行计划（Q1 创新主线重构版）
+# 执行计划
 
-> 本计划替代旧版 Phase 1–7 路线。后续开发以“动态终端区空域构型 + 多 UAV 降落流协同 + 安全可执行轨迹 + Crazyflie 缩尺验证”为核心推进。
+> **当前工程目标**：只完成 Phase A — Landing-only。  
+> Phase B（departure-only）和 Phase C（arrival + departure）只保留在研究路线中，不进入本轮 Codex 修改。  
+> 本执行计划按“先修正环境语义，再训练低层，再训练高层”的依赖顺序推进。
 
-## 0. 当前状态判断
+---
 
-当前项目已有两条历史路线：
+## 1. 总原则
 
-1. `src/`：早期三环 Gym/HRL 原型，文档完整但动作空间曾直接控制 `ψ, γ, V`，不适合作为最终落地路线；
-2. `terminal_marl/`：后期多智能体终端区环境，包含规则基线、VTAC、残差 PPO，更适合继续扩展。
+本轮不是对当前两环代码继续局部调参，而是进行一次 **core model alignment**。
 
-后续原则：
+开发顺序必须遵守：
 
 ```text
-保留 src/ 作为 legacy prototype；
-以 terminal_marl/ 为唯一主开发线；
-先实现动态空域和轨迹生成器；
-再重构低层交通意图动作；
-再做完整 HRL 和消融实验；
-最后接入 Crazyflie/Crazyswarm2 缩尺验证。
+domain semantics
+→ deterministic rule pipeline
+→ trajectory/safety correctness
+→ low-level learning
+→ high-level dynamic airspace
+→ hierarchical evaluation
 ```
 
-## 1. 阶段总览
+禁止倒序：
 
-| 阶段 | 目标 | 关键输出 | 对论文的作用 |
-|---|---|---|---|
-| Phase A | 研究定位与文档重构 | Q1 主线 docs | 明确 gap 与贡献 |
-| Phase B | 动态空域模块 | `DynamicAirspace` + tests | 支撑核心创新 1 |
-| Phase C | 轨迹生成器 | `TrajectoryGenerator` + tests | 支撑可执行性创新 |
-| Phase D | 低层交通意图动作 | release/speed/timing residual | 避免自由飞行动作 |
-| Phase E | SafetyFilter 统一化 | safety events + tests | 支撑实机部署 |
-| Phase F | 实验模式与消融 | fixed/dynamic/full/no-safety/direct-action | 支撑 Q1 实验体系 |
-| Phase G | HRL 训练闭环 | high-level + low-level policy | 支撑核心创新 2 |
-| Phase H | Crazyflie lab 配置与 dry-run | `crazyflie_lab.yaml` + trajectory export | 支撑 sim-to-lab |
-| Phase I | Crazyswarm2 adapter | real flight interface | 支撑实物验证 |
-| Phase J | 论文实验整理 | metrics/figures/tables | 支撑投稿 |
+```text
+继续训练旧 PPO
+→ 发现场景缺机制
+→ 再改 observation/action/reward
+```
 
-## 2. Phase A：研究定位与文档重构
+旧 checkpoint 不作为新模型训练起点。
+
+---
+
+## 2. Phase A 内部里程碑
+
+为避免与未来 Research Phase B/C 混淆，当前 landing-only 使用 `A0–A8` 标号。
+
+| Stage | 目标 | 是否训练 RL |
+|---|---|---|
+| A0 | 文档与 schema 锁定 | 否 |
+| A1 | 三环、生命周期、任务、电量、LZ 恢复 | 否 |
+| A2 | 真实四入口、external queue、admission | 否 |
+| A3 | merge scheduler + canonical trajectories + safety | 否 |
+| A4 | rule-only 全链路稳定 | 否 |
+| A5 | 固定三环低层共享策略 | 低层 |
+| A6 | 三环动态高层 | 高层 |
+| A7 | 完整 HRL 与消融 | 两个已训练策略 |
+| A8 | 可选缩尺/硬件接口 | 不作为本轮前置 |
+
+---
+
+## 3. A0 — 文档与 schema 锁定
 
 ### 目标
 
-把项目从“RL 控制无人机降落”重新定位为：
-
-```text
-Dynamic vertiport terminal airspace management
-+ Multi-UAV landing-flow coordination
-+ Safety-filtered executable trajectory generation
-```
-
-### 完成标准
-
-- `docs/research_positioning.md` 明确 gap、贡献和实验矩阵；
-- `requirements/design/technical/execution` 文档均围绕动态空域主线；
-- `AGENTS.md` 和 `CLAUDE.md` 明确后续唯一主线为 `terminal_marl/`。
-
-## 3. Phase B：DynamicAirspace 模块
-
-### 目标
-
-实现高层动态终端区空域构型调节，使 ring 半径、高度、速度和 headway 成为运行期变量。
+让代码修改前只有一个目标版本。
 
 ### 任务
 
-1. 新增 `terminal_marl/core/dynamic_airspace.py`；
-2. 定义 `DynamicRingSpec`、`AirspaceBounds`、`DynamicAirspace`；
-3. 实现 `apply_high_level_action(action)`；
-4. 实现 ring gap、height gap、速度、边界和变化率约束；
-5. 支持固定空域模式和动态空域模式；
-6. 新增 `tests/test_dynamic_airspace.py`。
+1. 用本次六份文档覆盖/替代旧主文档；
+2. 删除或移出工作文档目录的旧阶段性说明；
+3. 配置 schema 改为 `phaseA_landing_v1`；
+4. 定义：
+   - `airspace_schema_version = three_ring_v1`
+   - `action_schema_version = low_intent_v1_3d`
+   - `high_action_schema_version = high_airspace_v1_10d`
+   - `observation_schema_version = phaseA_obs_v1`
+5. 禁止加载旧 checkpoint。
 
 ### 完成标准
 
-- 输入随机高层动作，ring 参数始终合法；
-- 非法动作会被 clip 并返回 violation info；
-- 当前 `TerminalParallelEnv` 不启用高层时行为不变；
-- 测试通过：
-
-```bash
-python -m pytest tests/test_dynamic_airspace.py -v
-```
-
-## 4. Phase C：TrajectoryGenerator 模块
-
-### 目标
-
-把低层交通意图转化为仿真和 Crazyflie 都可执行的轨迹。
-
-### 任务
-
-1. 新增 `terminal_marl/core/trajectory_generator.py`；
-2. 定义 `TrajectoryPoint` 和 `TrajectoryPlan`；
-3. 实现 `ring_hold`、`ring_transfer`、`final_approach`、`landing`、`emergency_hover`；
-4. 加入速度、高度、时间单调性检查；
-5. 新增 `tests/test_trajectory_generator.py`。
-
-### 完成标准
-
-- ring_hold 轨迹点近似位于指定半径和高度；
-- transfer 轨迹连续，半径和高度平滑变化；
-- final/landing 轨迹满足速度和高度约束；
-- 测试通过：
-
-```bash
-python -m pytest tests/test_trajectory_generator.py -v
-```
-
-## 5. Phase D：低层交通意图动作重构
-
-### 目标
-
-把当前低层 `[heading_residual, speed_residual, altitude_residual]` 逐步改成：
+主路径中不存在：
 
 ```text
-[release_request, speed_residual, timing_residual, slot_residual]
+"exactly two rings"
+slot_residual
+battery_endurance_seconds  # 作为主能量状态
+direct free-flight low-level action
 ```
 
-### 任务
+历史 git commit 中可以存在，但当前 working tree 的 canonical code/doc 不依赖它们。
 
-1. 新增 action mode：`intention_residual`；
-2. 保留旧 action mode 作为 legacy 或 direct-action baseline；
-3. 将 release_request 接入 VTAC 阶段转移；
-4. 将 speed/timing residual 接入规则基线；
-5. 所有阶段转移必须经过 SafetyFilter。
+---
 
-### 完成标准
+## 4. A1 — Domain model rebuild
 
-- rule-only 模式仍可运行；
-- intention residual 模式可训练或随机 rollout；
-- direct action 模式仅作为对照实验，不作为推荐路线。
+### 4.1 三环 DynamicAirspace
 
-## 6. Phase E：SafetyFilter 统一化
-
-### 目标
-
-将 VTAC、规则基线和新增轨迹检查统一为可解释的安全过滤层。
-
-### 任务
-
-1. 新增或重构 `terminal_marl/core/safety_filter.py`；
-2. 实现 intention-level filter；
-3. 实现 trajectory-level filter；
-4. 记录 safety events；
-5. 新增 `tests/test_safety_filter.py`。
-
-### 完成标准
-
-- 所有 release/transfer/final/landing 动作可被批准、修改或拒绝；
-- 所有拒绝都有 violation reason；
-- 后续可做 `full_hrl_no_safety` 消融。
-
-## 7. Phase F：实验模式与消融框架
-
-### 目标
-
-为 Q1 论文实验提前准备可切换模式。
-
-### 必须支持模式
+修改：
 
 ```text
-fixed_airspace_rule
-fixed_airspace_low_rl
-dynamic_airspace_rule
-full_hrl
-full_hrl_no_safety
-direct_action_rl_baseline
+terminal_marl/core/config.py
+terminal_marl/core/dynamic_airspace.py
+terminal_marl/core/ring_capacity.py
 ```
 
-### 任务
+任务：
 
-1. 新增统一实验配置字段 `experiment_mode`；
-2. 新增 `scripts/evaluate_ablation.py`；
-3. 输出统一 metrics；
-4. 支持多流率、多 seed、多配置评估。
+- 2 ring → 3 ring；
+- 8D → 10D high-level action；
+- `R_O/R_M/R_I`、`H_O/H_M/H_I`；
+- shared speed-profile bias；
+- three headways；
+- capacity from actual radius；
+- occupancy-aware shrink projection；
+- geometry transition 支持三环；
+- affected-interface calculation。
 
-### 完成标准
+### 4.2 UAVState / lifecycle
 
-- 同一脚本可运行不同模式；
-- 结果保存到标准目录；
-- metrics 支持论文表格和图形生成。
-
-## 8. Phase G：完整 HRL 训练
-
-### 目标
-
-建立高层动态空域策略与低层交通意图策略的训练流程。
-
-第五轮已完成 high-level PPO 训练/评估入口、dynamic-rule baseline、运行期到达、
-nominal delay、统计聚合与图表骨架。第六轮进入小规模训练、参数扫描和论文结果
-生成，优先形成多 seed × demand 的均值、标准差和置信区间，不接入真实硬件。
-
-### 推荐训练顺序
+修改：
 
 ```text
-1. rule-only baseline
-2. fixed airspace + low-level residual policy
-3. dynamic airspace + rule low-level
-4. full HRL
-5. ablation and robustness evaluation
+terminal_marl/core/uav.py
+terminal_marl/core/lifecycle.py
 ```
 
-### 高层训练要点
+任务：新 FlightPhase、request/mission/priority/energy/LZ fields、lifecycle timestamps、outcome fields，移除通过多个 bool 推断 phase 的逻辑。
 
-- 低频更新；
-- 奖励关注 throughput、delay、conflict risk、airspace change penalty；
-- 限制半径/高度/速度变化率。
+### 4.3 Energy
 
-### 低层训练要点
-
-- 高频更新；
-- 奖励关注阶段推进、等待时间、动作被拒绝次数、安全约束和轨迹平滑性；
-- 不奖励激进切环或贴近冲突边界的行为。
-
-## 9. Phase H：Crazyflie lab 缩尺配置与 dry-run
-
-### 目标
-
-先不真实飞行，完成实验尺度配置和轨迹导出检查。
-
-### 任务
-
-1. 新增 `terminal_marl/configs/crazyflie_lab.yaml`；
-2. 新增 `scripts/export_lab_trajectories.py`；
-3. 输出 3D 轨迹图和 CSV；
-4. 检查边界、速度、加速度和最小间距。
-
-### 完成标准
-
-- 可导出 1–3 架 Crazyflie 的完整降落流程轨迹；
-- 所有轨迹在 lab boundary 内；
-- 可视化无明显交叉冲突。
-
-## 10. Phase I：Crazyswarm2 adapter 与实机验证
-
-### 目标
-
-把 `TrajectoryPlan` 接入 Crazyswarm2，而不是把 RL action 直接发给 Crazyflie。
-
-### 任务
-
-1. 新增 `terminal_marl/hardware/crazyflie_adapter.py`；
-2. 新增 `terminal_marl/hardware/trajectory_executor.py`；
-3. 新增 `terminal_marl/hardware/safety_monitor.py`；
-4. 先完成单机 rule-only；
-5. 再完成 2–3 架 rule-only；
-6. 再测试 residual policy；
-7. 最后测试低频 dynamic airspace。
-
-### 完成标准
-
-- 真实平台只执行轨迹，不直接执行裸 action；
-- 有 emergency land/hover 接口；
-- 记录 tracking error、safety event 和 command log。
-
-## 11. Phase J：论文实验整理
-
-### 目标
-
-形成支撑 Q1 投稿的实验证据链。
-
-### 必须输出
-
-1. 方法总体示意图；
-2. DynamicAirspace 更新过程图；
-3. trajectory intention → executable trajectory 图；
-4. 主要性能对比表；
-5. 消融实验表；
-6. 不同 traffic demand 下鲁棒性曲线；
-7. safety violation / near miss 对比；
-8. Crazyflie 缩尺验证照片、轨迹图、误差统计。
-
-### 最终判断标准
-
-论文不能只证明“RL 能飞”，而要证明：
+新增/重写：
 
 ```text
-动态空域构型确实优于固定结构；
-高层空域调节与低层降落协同具有互补性；
-安全过滤和轨迹生成使策略具备真实平台可执行性；
-Crazyflie 实验验证了仿真策略的缩尺落地能力。
+terminal_marl/core/energy.py
 ```
 
-## 12. Phase G-Server：服务器训练准备
+实现 phase-based energy、SOC thresholds、energy-to-complete estimator。
 
-第六轮将 high-level PPO 从本地 smoke 入口扩展为服务器训练入口，但仍不在本地进行正式训练：
+### 4.4 Priority
 
-- 并行环境：`n_envs` + `dummy/subproc` vector env；
-- CPU 默认：`device=cpu`，脚本设置 `OMP_NUM_THREADS=1`、`MKL_NUM_THREADS=1`、`OPENBLAS_NUM_THREADS=1`；
-- 训练阶段：Stage 0 smoke、Stage 1 pilot、Stage 2 三 seed 小规模、Stage 3 五 seed 主实验、Stage 4 reward/LR sweep、Stage 5 统一评估聚合绘图；
-- 输出：checkpoint、training progress、eval summary、config snapshot、episode logs、aggregate CSV 和 figures；
-- 打包：`scripts/server/pack_for_server.py` 生成服务器上传包和 manifest。
-
-该阶段仍然只训练 high-level dynamic airspace reconfiguration policy，不接入真实硬件，不改变底层飞控边界。
-
-## Phase G-Readiness hotfix: dynamic-rule pipeline and reward sanity
-
-This hotfix sits before any new PPO pilot.  It is a simulation-only readiness
-gate for the server training workflow.
-
-Completed tasks:
-
-1. Diagnose fixed-rule versus dynamic-rule landing-pipeline behavior on the
-   server mirror.
-2. Repair the dynamic-rule high-level heuristic so it no longer starves
-   `inner -> final -> land` transitions through excessive geometry/headway
-   changes.
-3. Normalize pairwise conflict, waiting, and congestion metrics for reward and
-   logging.
-4. Add phase-progress reward and detailed reward component statistics.
-5. Add low-level-step phase transition diagnostics, high-level action isolation
-   modes, and rule-only capacity calibration.
-6. Verify locally with the full test suite and remotely with targeted tests and
-   server dry-runs.
-
-Gate to proceed:
+新增：
 
 ```text
-local pytest: all pass
-server targeted pytest: pass
-single_rule: 1/1 landed
-six_rule: >=5/6 landed
-six_dynamic: >0 landed and >=80% of six_rule
-reward diagnostics: no 20x component dominance warning
-capacity calibration: recommended demand intervals generated
+terminal_marl/core/priority.py
 ```
 
-Next execution step:
+实现 `requirements.md` 统一公式。
 
-Run Stage-0/Stage-1 high-level PPO smoke/pilot only after reviewing
-`training_readiness.json`, `reward_component_summary.csv`,
-`capacity_calibration.csv`, and `recommended_pilot_config.yaml` under the server
-output root.  Do not launch a long multi-seed sweep until the smoke/pilot logs
-show non-zero traffic, non-zero phase progress, and plausible reward component
-scales.
-# Event-gated 180s HRL execution addendum
+### 4.5 LandingZoneManager
 
-For the current phase, execute in this order: audit 8D action/timing semantics;
-calibrate geometry-gate thresholds from fixed-geometry traces; validate
-`fixed_rule` and `event_rule` regressions; run 512-step event-gated smoke from
-scratch; run exact 5k `event_gated_hrl` and `periodic_hrl` pilots from scratch;
-only if ready, run exact 20k event-gated and periodic pilots from scratch;
-evaluate and stop. Do not continue to 50k/main/sweep or hardware experiments.
-
-# Stage-1.5 diagnostics-only gate
-
-After the 20k event-gated/periodic pilot, do not continue training until
-evaluation integrity and bottleneck semantics are audited.
-
-Execution order:
-
-1. Audit `max_active_uavs=40` semantics and confirm whether arrival demand is
-   censored by the internal active cap.
-2. If demand is censored, fix the MDP semantics by adding an external/pre-entry
-   FIFO queue while preserving the internal active cap.
-3. Generate fixed arrival schedules for common-random-number evaluation.
-4. Re-evaluate existing 20k event-gated and periodic checkpoints against
-   rule-only, event-rule, and high-level-random baselines without training.
-5. Separate warm-up, measurement, and drain metrics.  Use measurement
-   throughput for steady-state efficiency claims.
-6. Produce service-capacity, demand-utilization, cap-saturation,
-   normalized-metric-saturation, action/gate/boundary, and dwell 540/720
-   diagnostics.
-7. Write `next_training_decision.json` with exactly one of:
+新增：
 
 ```text
-READY_FOR_50K_WITH_CURRENT_MDP
-RETRAIN_REQUIRED_AFTER_MDP_FIX
-ENVIRONMENT_NOT_READY
+terminal_marl/core/landing_zone.py
 ```
 
-If arrival/admission, reward normalization, dwell, observation, or action
-semantics change, mark `RETRAIN_REQUIRED_AFTER_MDP_FIX` and stop.  Do not keep
-using old PPO checkpoints as a continuation point for the fixed MDP.
+实现 6 个固定地面服务点：
+
+```text
+FREE → RESERVED → OCCUPIED → FREE
+```
+
+四类任务服务时间：30/120/10/60 s。
+
+### A1 验收
+
+必须通过：
+
+```text
+three-ring ordering
+capacity monotonic
+mission/service sampling
+priority monotonic with wait
+priority increases when SOC low
+LZ mutual exclusion
+energy decreases by phase
+lifecycle legal transitions
+```
+
+此阶段不训练。
+
+---
+
+## 5. A2 — Arrival, gate and admission semantics
+
+### 5.1 ArrivalProcess
+
+保留已有 request-generation 思路，但改成 canonical API。
+
+必须：
+
+- demand request 不被 active cap censor；
+- deterministic/poisson/bursty/fixed schedule/finite cohort；
+- request 创建时固定 mission/base priority/energy/gate。
+
+### 5.2 Four real entry corridors
+
+修改当前“同一 bearing + lateral offset”方式。4 个 gate 需要：
+
+```text
+独立 angle
+独立 spawn waypoint
+独立 gate waypoint
+独立 admission spacing
+```
+
+### 5.3 ExternalQueue
+
+新增：
+
+```text
+terminal_marl/core/admission.py
+```
+
+request 无法 admission 时继续等待。
+
+### 5.4 Overflow
+
+实现：
+
+```text
+WAIT
+DIVERTED_LOW_SOC
+DIVERTED_CAPACITY
+```
+
+不能停止产生 demand。
+
+### A2 验收
+
+- 同 seed request stream 完全复现；
+- 不同 policy 得到相同 request stream；
+- 4 gate 物理位置不同；
+- overload 时 queue 增长；
+- max_active_uavs 不改变 requested count；
+- external waiting 消耗能量；
+- 低 SOC 可 diversion。
+
+---
+
+## 6. A3 — Merge, trajectory and safety unification
+
+这是本轮最重要的工程阶段之一。
+
+### 6.1 MergeScheduler
+
+新增：
+
+```text
+terminal_marl/core/merge_scheduler.py
+```
+
+替代：
+
+```text
+fixed release angle offset
+slot_residual
+timing-as-threshold-bias
+```
+
+实现：
+
+```text
+baseline merge time
++ bounded Δt
+→ predicted target-ring gap
+→ merge reservation
+→ merge angle
+```
+
+### 6.2 Canonical trajectory
+
+重写/统一：
+
+```text
+terminal_marl/core/trajectory_generator.py
+terminal_marl/core/vtac.py
+```
+
+最终只保留一套 trajectory plan。
+
+优先方案：
+
+```text
+ring hold: moving circular reference
+ring transfer: tangent cubic Bézier + quintic z
+final: spline / waypoint composite to assigned LZ
+landing: continuous touchdown
+```
+
+`vtac.py` 若保留，应降级为 executor/guidance adapter，不再独立生成另一条 path。
+
+### 6.3 SafetyFilter
+
+重写：
+
+```text
+terminal_marl/core/safety_filter.py
+```
+
+两级检查：
+
+```text
+intent/resource feasibility
+trajectory feasibility/separation
+```
+
+移除以 arbitrary heading/pitch offset 为核心的安全规则。
+
+### 6.4 Reconfiguration protocol
+
+实现：
+
+- ring holders follow moving reference；
+- committed transfer continues；
+- affected interface freezes new release；
+- target geometry projection considers committed traffic。
+
+### A3 验收
+
+必须有 trajectory unit tests：
+
+```text
+source tangency
+target tangency
+continuous altitude
+kinematic limits
+same trajectory checked/executed
+merge gap safe
+reservation conflict prevented
+reconfiguration interface freeze
+```
+
+---
+
+## 7. A4 — Rule-only full landing pipeline
+
+在任何 RL 前完成。
+
+### 7.1 RuleLowLevelPolicy
+
+输出 canonical 3D action：
+
+```text
+release
+speed residual
+merge-time residual
+```
+
+所有后端与 RL 共用。
+
+### 7.2 单机 gate
+
+场景：
+
+```text
+1 request
+→ gate
+→ outer
+→ middle
+→ inner
+→ final
+→ LZ
+→ service complete
+```
+
+要求：
+
+```text
+outcome = COMPLETED
+zero unresolved
+no teleport
+correct energy
+correct LZ occupation duration
+```
+
+### 7.3 多机 nominal gate
+
+建议 `N=10,20`、medium demand、fixed airspace。
+
+要求：
+
+```text
+0 collision
+0 LZ double booking
+0 illegal phase transition
+0 unresolved in finite cohort
+```
+
+### 7.4 High/bursty stress
+
+不要求全部立即 landing，但要求：
+
+```text
+queue grows instead of demand disappearing
+system remains numerically stable
+eventual resolution in finite-cohort cooldown
+```
+
+### A4 完成定义
+
+如果 rule-only 还不能稳定完成全部可行 landing：**不进入 PPO**。
+
+---
+
+## 8. A5 — Fixed-airspace low-level learning
+
+### 8.1 环境
+
+```text
+airspace geometry fixed
+headways fixed
+high-level policy disabled
+```
+
+### 8.2 Actor
+
+所有 UAV shared actor：
+
+```text
+o_i → π_L → [release, Δv, Δt]
+```
+
+### 8.3 Critic
+
+第一版可先采用：
+
+```text
+agent encoder + masked mean/max pooling
+```
+
+稳定后升级 attention。
+
+### 8.4 Curriculum
+
+- **A5.1**：warm-start ring scenes，小规模 5–10 UAV，学习 release/speed；
+- **A5.2**：flow-from-empty，10–20 UAV；
+- **A5.3**：variable N + medium/high/bursty。
+
+训练期间逐步减少 curriculum shortcut，正式 eval 只用真实 arrival flow。
+
+### 8.5 Baseline comparison
+
+对比：
+
+```text
+fixed_rule
+fixed_low_rl
+```
+
+如果 learned low-level 在安全前提下不能优于或至少不劣于 rule baseline，不进入完整 HRL。
+
+### A5 gate
+
+至少验证：
+
+- action 3D 全部真正影响语义；
+- policy 可处理不同 N；
+- no NaN；
+- no hidden direct flight action；
+- safety intervention 频率不会随训练恶化；
+- delay/throughput 至少一个主要指标有稳定改善。
+
+---
+
+## 9. A6 — Dynamic three-ring high-level learning
+
+### 9.1 先用 rule low-level
+
+第一轮高层训练：
+
+```text
+π_H + stable RuleLowLevelPolicy
+```
+
+目的：单独验证 dynamic airspace 是否有价值。
+
+### 9.2 Dynamic-rule baseline
+
+实现 `dynamic_rule`，根据 external queue、three-ring occupancy、LZ utilization、final queue 启发式调整 geometry/headway。
+
+### 9.3 High-level PPO
+
+- action = 10D；
+- decision interval = 180 s；
+- structural action = event-gated；
+- geometry minimum dwell = 600 s。
+
+### 9.4 再换训练好的 low-level
+
+高层 PPO 第二轮：
+
+```text
+π_H + frozen trained π_L
+```
+
+禁止直接让两个策略同步漂移。
+
+### A6 gate
+
+必须比较：
+
+```text
+fixed_rule
+dynamic_rule
+learned high-level + rule
+learned high-level + frozen low-level
+```
+
+并证明高层 action 确实改变 actual geometry、derived capacity、headway 和 terminal performance。
+
+---
+
+## 10. A7 — Full hierarchical method and paper experiments
+
+### 10.1 Proposed
+
+```text
+dynamic_hrl
+```
+
+= trained high-level + trained shared low-level + scheduler + trajectory + safety。
+
+### 10.2 不默认 joint training
+
+首先直接组合已训练策略做 evaluation。只有组合性能显著下降时，进入 alternating fine-tuning：
+
+```text
+freeze L → update H
+freeze H → update L
+```
+
+不使用 simultaneous from-scratch PPO。
+
+### 10.3 Formal baselines
+
+```text
+fixed_rule
+fixed_low_rl
+dynamic_rule
+dynamic_hrl
+```
+
+### 10.4 Ablations
+
+优先级：
+
+1. two-ring；
+2. event gate vs periodic geometry；
+3. homogeneous service；
+4. no dynamic priority；
+5. fixed headway；
+6. no safety filter。
+
+### 10.5 Formal protocols
+
+- Finite cohort：N=20/40/60 起步，multi-seed；
+- Continuous flow：low/medium/high/bursty/overload；
+- 所有 policy 使用 common random numbers。
+
+---
+
+## 11. A8 — 可选 scaled/hardware validation
+
+A8 不是本轮算法修改前置。当 simulation core 稳定后再做：
+
+```text
+simulation geometry scaling
+→ same TrajectoryPlan abstraction
+→ hardware adapter
+→ Crazyflie/Crazyswarm2
+```
+
+硬件只验证 trajectory execution、safety-filter compatibility、small-N coordination，不通过 2–3 架小型无人机实验直接证明高密度 capacity。
+
+---
+
+## 12. 文件级修改顺序
+
+### 第一批：core semantics
+
+```text
+terminal_marl/core/config.py
+terminal_marl/core/uav.py
+terminal_marl/core/lifecycle.py
+terminal_marl/core/dynamic_airspace.py
+terminal_marl/core/ring_capacity.py
+terminal_marl/core/energy.py
+terminal_marl/core/priority.py
+terminal_marl/core/landing_zone.py
+```
+
+### 第二批：traffic flow
+
+```text
+terminal_marl/core/arrival_process.py
+terminal_marl/core/admission.py
+terminal_marl/core/scenario.py
+terminal_marl/envs/parallel_env.py
+```
+
+### 第三批：intent/trajectory/safety
+
+```text
+terminal_marl/core/merge_scheduler.py
+terminal_marl/core/trajectory_generator.py
+terminal_marl/core/vtac.py
+terminal_marl/core/safety_filter.py
+terminal_marl/core/observations.py
+```
+
+### 第四批：policy/training
+
+```text
+terminal_marl/policies/rule_low_level.py
+terminal_marl/policies/dynamic_rule.py
+terminal_marl/algo/*
+terminal_marl/envs/high_level_wrapper.py
+terminal_marl/training/*
+terminal_marl/configs/*
+```
+
+### 第五批：experiments
+
+```text
+terminal_marl/experiments/*
+terminal_marl/metrics/*
+tests/*
+```
+
+---
+
+## 13. 需要删除或重写的测试思想
+
+不能为了让旧测试继续通过而保留旧模型。以下测试应替换：
+
+```text
+assert exactly 2 rings
+assert high-level action shape == 8
+assert low-level intention shape == 4
+assert slot residual modifies speed
+assert endurance seconds linearly decreases
+assert all arrivals share one inbound bearing
+```
+
+测试应服务于新规范，而不是锁死历史行为。
+
+---
+
+## 14. 训练前 readiness checklist
+
+```text
+[ ] 3 rings end-to-end
+[ ] 4 physical gates
+[ ] request != admission
+[ ] external queue exists
+[ ] mission type restored
+[ ] base/dynamic priority restored
+[ ] phase-dependent SOC restored
+[ ] 6 LZ reservation/service restored
+[ ] rule pipeline completes finite cohort
+[ ] one canonical transfer trajectory
+[ ] same trajectory checked and executed
+[ ] low-level action exactly 3D
+[ ] high-level action exactly 10D
+[ ] variable-N observation/policy works
+[ ] geometry transition safe
+[ ] outcome accounting closes
+[ ] old checkpoints rejected
+```
+
+任何一项未完成，都不开始正式 PPO。
+
+---
+
+## 15. Codex 提交节奏建议
+
+```text
+Commit 1: schema/enums/config
+Commit 2: 3-ring dynamic airspace
+Commit 3: UAV energy/priority/lifecycle
+Commit 4: LZ manager
+Commit 5: arrival/admission/four gates
+Commit 6: merge scheduler
+Commit 7: canonical trajectory + safety
+Commit 8: rule full pipeline
+Commit 9: observation/action v1
+Commit 10: low-level training
+Commit 11: high-level wrapper/training
+Commit 12: experiment matrix
+```
+
+每个 commit 必须带对应 pytest。
+
+---
+
+## 16. Phase B / C 后续路线
+
+### Research Phase B
+
+在 Phase A 核心完成后单独设计 departure：
+
+```text
+LZ
+→ departure reservation
+→ climb-out corridor
+→ departure fix
+→ exit
+```
+
+### Research Phase C
+
+再做 arrival/departure integrated resource management。
+
+**当前任何 A0–A8 任务都不要求实现 departure。**

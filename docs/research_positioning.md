@@ -1,240 +1,457 @@
-# 研究定位与创新主线（Q1 投稿导向版）
+# 研究定位与创新主线
 
-> 本文档用于约束后续代码开发、论文写作和实验设计。核心判断：本项目不能被写成“环形空域 + 强化学习 + 无人机降落 + Crazyflie 验证”的普通组合，而应被定位为“动态终端区空域构型调节与多 UAV 降落流协同管理”。
+> **文档地位**：本文档是当前论文项目的研究定位总纲。  
+> **当前唯一研究范围**：**Phase A — Landing-only terminal-area operations**。  
+> Phase B（departure-only）与 Phase C（arrival + departure integrated operations）仅作为后续研究路线，不进入当前代码实现、训练或正式实验。  
+> 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md`、`revision.md` 共同构成当前唯一有效的设计说明。历史“两环版本”“直接输出自由飞行动作版本”以及旧的阶段性 addendum 不再作为实现依据。
 
-## 1. 推荐论文主线
+---
 
-推荐主线：
+## 1. 论文要解决的核心问题
 
-> 面向城市低空起降场终端区，研究如何根据动态入场交通流实时调节环形终端区空域构型，并协同决策多架 UAV 的等待、切环、最终进近和降落意图，从而在安全间隔和轨迹可执行性约束下提升降落吞吐量、降低等待延误和冲突风险。
+本文研究面向城市低空垂直起降场/低空终端区的**多无人机到达与降落管理**。核心问题不是底层姿态控制，也不是任意三维路径规划，而是：
 
-因此，本项目不是底层飞控论文，也不是普通多 UAV 路径规划论文，而是一个低空交通终端区运行管理问题：
+> 在随机、突发且可能超出瞬时服务能力的到达需求下，如何通过**动态终端区空域构型调节**与**多 UAV 降落流协同决策**，在安全间隔、有限着陆服务资源、电量约束、任务优先级和轨迹可执行性约束下，提高终端区吞吐量、降低外部排队和内部等待延误，并保持公平、稳定和可解释的运行秩序。
 
-```text
-Dynamic terminal airspace reconfiguration
-+ Multi-UAV landing-flow coordination
-+ Safety-filtered executable trajectory generation
-+ Simulation-to-Crazyflie scaled validation
-```
-
-## 2. 需要避免的低创新表述
-
-以下表述不应作为论文核心创新：
-
-- 使用环形空域组织 UAV 降落；
-- 使用强化学习控制无人机进近/降落；
-- 使用多智能体强化学习处理多 UAV；
-- 使用 Crazyflie 做实机验证；
-- 让 RL 直接输出航向角、下降角和速度。
-
-原因：已有 UAM/vertiport arrival 研究已经覆盖了 circular airspace、DRL arrival policy、small UAV demonstration 等相近组合。如果只强调这些元素，论文容易被认为是已有思想的工程复现或场景替换。
-
-## 3. 应当突出的创新差异
-
-后续代码和论文必须围绕以下差异展开：
-
-1. **从固定终端区结构到动态终端区构型**
-   不再假设 ring 半径、高度、速度和放行间隔固定，而是把它们作为运行期可调节决策变量。
-
-2. **从单机 arrival action 到跨层空域—降落流协同**
-   高层策略调节空域容量和流组织方式，低层策略决策 UAV 的等待、切环、进近和降落意图。
-
-3. **从自由飞行动作到轨迹意图与安全可执行轨迹**
-   RL 不直接输出任意 `heading/altitude/speed` 动作，而是输出 release、speed residual、timing residual、slot residual 等交通意图；轨迹生成器负责转换为可执行轨迹。
-
-4. **从纯仿真到仿真—实物缩尺一致性验证**
-   大尺度仿真证明交通运行性能，Crazyflie 缩尺实验验证轨迹执行、安全过滤和动态空域策略的可落地性。
-
-## 4. 推荐 research gaps
-
-### Gap 1：固定终端区空域结构难以适应动态入场交通流
-
-现有 vertiport / UAV terminal-area 研究通常在预先给定的 arrival routes、metering fixes、holding rings、approach points 或 funnel-shaped layers 内优化排序、速度、等待或降落许可。它们主要回答“UAV 如何通过既定结构”，而较少回答“终端区结构是否应随交通流状态在线调整”。
-
-对应本文切入点：
-
-> 将环半径、高度、速度、容量阈值和放行间隔建模为高层动态决策变量。
-
-### Gap 2：空域构型设计与单机降落动作缺少跨层协同
-
-空域结构决定终端区容量、等待空间和流线组织方式；单机等待、切环、进近和降落决策决定实际运行效率。但现有研究往往把空域结构设计与 aircraft-level arrival/landing control 分开处理。
-
-对应本文切入点：
-
-> 构建高层动态空域调节与低层多 UAV 降落意图协同的 HRL 框架。
-
-### Gap 3：学习型终端区控制缺少面向真实无人机平台的轨迹可执行约束
-
-已有学习方法常在仿真中直接输出 abstract action 或 free-flight action，但真实 Crazyflie/Crazyswarm2 平台更适合执行 waypoint、trajectory 或 setpoint。直接输出自由航向角、下降角和速度会带来轨迹不连续、安全边界难控制和实物平台部署困难。
-
-对应本文切入点：
-
-> 使用规则基线、residual policy、safety filter 和 trajectory generator，把学习策略限制在安全可执行的轨迹意图空间内。
-
-## 5. 推荐贡献点
-
-论文贡献建议凝练为四点：
-
-1. **Dynamic ring-based terminal airspace model**
-   提出动态环形终端区模型，将 ring radius、height、nominal speed、capacity threshold 和 release headway 作为在线调节变量。
-
-2. **Hierarchical reinforcement learning for airspace-flow coordination**
-   提出跨时间尺度 HRL 框架，高层低频调整终端区结构与容量，低层高频协同 UAV 等待、切环、进近和降落意图。
-
-3. **Safety-filtered residual policy with executable trajectory generation**
-   提出规则基线 + residual RL + safety filter + trajectory generator 机制，避免 RL 直接输出不可部署的自由飞行动作。
-
-4. **Simulation-to-Crazyflie scaled validation**
-   建立大尺度仿真与 Crazyflie/Lighthouse/Crazyswarm2 缩尺实验验证流程，证明所提方法在交通运行性能和实物可执行性上的有效性。
-
-## 6. 推荐标题方向
-
-优先标题：
+当前方法由四个层次组成：
 
 ```text
-Hierarchical Reinforcement Learning for Dynamic Vertiport Terminal Airspace Management and Multi-UAV Landing Coordination
+External arrival demand and admission control
+                  ↓
+Dynamic three-ring terminal airspace
+                  ↓
+Shared per-UAV landing-intention policy
+                  ↓
+Merge/resource scheduler → trajectory generator → safety filter
+                  ↓
+Executable landing trajectories and LZ service
 ```
 
-备选标题：
+本文的“强化学习控制”限定在**交通管理与飞行意图层**。无人机的具体连续轨迹由确定性的轨迹生成器产生，并由 safety filter 进行安全与可执行性检查。
+
+---
+
+## 2. 当前唯一场景：Phase A Landing-only
+
+### 2.1 运行链路
+
+正式场景采用以下状态链路：
 
 ```text
-Dynamic Terminal Airspace Reconfiguration and Multi-UAV Landing Coordination Using Hierarchical Reinforcement Learning
+ARRIVAL_REQUESTED
+      ↓
+EXTERNAL_QUEUE
+      ↓ admission
+INBOUND_CORRIDOR
+      ↓
+OUTER_RING      — buffer / arrival absorption
+      ↓
+MIDDLE_RING     — metering / sequencing
+      ↓
+INNER_RING      — landing staging
+      ↓
+FINAL_APPROACH
+      ↓
+LANDING
+      ↓
+LZ_OCCUPIED / SERVICE
+      ↓
+COMPLETED
 ```
 
-强调实物验证时可用：
+异常终态包括：
 
 ```text
-Simulation-to-Real Hierarchical Reinforcement Learning for Dynamic Vertiport Terminal Airspace Management with Multi-UAV Flight Experiments
+DIVERTED
+FAILED_COLLISION
+FAILED_ENERGY
+INVALID / UNRESOLVED   # 仅诊断，正式实验不得出现
 ```
 
-## 7. 实验体系要求
+### 2.2 三环功能分工
 
-为了支撑 Q1 论文，实验不能只展示一组训练曲线或一段 Crazyflie 飞行动画。至少需要以下实验矩阵。
+| 环 | 角色 | 主要作用 |
+|---|---|---|
+| Outer ring | Buffer | 吸收突发到达、避免需求直接压到内层 |
+| Middle ring | Metering | 排序、速度微调、控制向内层的放行节奏 |
+| Inner ring | Landing staging | 等待最终进近和 LZ 资源，形成最后一级安全放行队列 |
 
-### 7.1 主要基线
+数学记号统一为：
 
-| Baseline | 作用 |
+\[
+R_O > R_M > R_I,\qquad H_O > H_M > H_I
+\]
+
+其中 `O/M/I` 分别表示 outer / middle / inner。代码、日志和论文均禁止继续使用含义不明确的“Ring 1/2/3”来推断内外顺序；如需整数索引，必须同时携带明确的 `RingRole`。
+
+### 2.3 后续扩展但当前不实现
+
+- **Phase B — departure-only**：`LZ → departure corridor → terminal exit`。
+- **Phase C — integrated arrival/departure**：到达与离场共享 pad/LZ/time resource，并研究 final 与 climb-out corridor 的冲突协调。
+
+当前 Phase A 不为 departure 预留额外动作维度，也不让起飞交通进入 arrival holding rings。
+
+---
+
+## 3. 研究定位：什么是贡献，什么不是
+
+### 3.1 不作为主要创新的内容
+
+以下元素可以作为系统组成部分，但不能单独写成核心创新：
+
+- 使用环形等待空域；
+- 使用 PPO/MARL；
+- 使用多架 UAV；
+- 使用规则避碰；
+- 使用 Crazyflie 或其他小型无人机验证；
+- 通过增加状态变量获得更高性能。
+
+### 3.2 当前主创新主线
+
+#### 创新 1：动态三环终端区构型与流量调节
+
+高层策略根据当前与近期交通压力，调整：
+
+- 三个环的半径；
+- 三个环的高度；
+- 整体 nominal-speed profile bias；
+- `Outer→Middle`、`Middle→Inner`、`Inner→Final` 三个放行 headway。
+
+环容量不是独立动作，而是由**当前实际半径与安全间隔**派生，避免“扩大半径”和“人为增加容量阈值”重复表达同一个物理效应。
+
+#### 创新 2：空域构型与多 UAV 降落流的层次协同
+
+高层回答：当前终端区应该提供怎样的空间结构和流量节奏？
+
+低层共享策略回答：对于某一架 UAV，现在是否应该请求进入下一阶段、应该如何微调速度、希望把 merge 时间向前或向后调整多少？
+
+两层之间通过 occupancy、queue、LZ availability、SOC、priority、headway、merge reservation 等信息耦合，而不是让两个策略分别解决互不相关的问题。
+
+#### 创新 3：从学习意图到安全可执行轨迹
+
+低层策略不直接生成任意航向、航迹角、高度或姿态命令，而输出：
+
+\[
+a_i^L = [r_i,\;\Delta v_i,\;\Delta t_i]
+\]
+
+分别表示：
+
+1. `release_request`：请求进入下一运行阶段；
+2. `speed_residual`：相对 nominal/rule speed 的有限速度修正；
+3. `merge_time_residual`：相对基准 merge schedule 的时间修正。
+
+随后由：
+
+```text
+intent
+→ resource/merge scheduler
+→ canonical trajectory generator
+→ safety filter
+→ execution
+```
+
+统一生成和检查轨迹。
+
+#### 创新 4：终端空域—地面服务资源耦合
+
+论文不把“成功进入 final”当成服务完成，而显式建模：
+
+- 多个离散 Landing Zone；
+- reservation；
+- touchdown 后的 occupied/service；
+- 任务类型相关的服务时间；
+- 服务能力对 inner-ring 放行、等待、电量和动态空域构型的反作用。
+
+这使研究对象真正成为 terminal operation，而不是单纯的空中队列。
+
+---
+
+## 4. 关键研究假设
+
+### H1：动态构型在非平稳需求下优于固定构型
+
+在 low demand 下，动态构型不应明显恶化效率；在 high/bursty demand 下，它应通过扩大有效 holding capacity、改变层间流量节奏和释放瓶颈，提高成功服务率并降低高分位延误。
+
+### H2：三级功能分层优于简单两环队列
+
+三环结构通过 `buffer → metering → staging` 将到达吸收、排序和最终资源等待分离。其价值必须通过 `2-ring` ablation 验证，而不是仅凭设计直觉主张。
+
+### H3：低层意图学习优于纯规则，但不需要自由飞行动作
+
+在固定空域下，低层共享策略应能通过 release、speed residual 和 merge-time residual 改善排序与等待，同时保持轨迹连续和安全过滤可解释。
+
+### H4：跨层组合优于单独优化任一层
+
+完整 `dynamic_hrl` 应优于 `fixed_rule`、`fixed_low_rl`、`dynamic_rule`。否则不能声称高低层协同本身带来了额外收益。
+
+### H5：资源、电量和优先级机制会改变最优流量管理策略
+
+任务服务时间、剩余 SOC、等待时间与优先级会改变“谁应该先进入 final”和“什么时候应该扩/缩环”，因此不能从主模型中删去。
+
+---
+
+## 5. 研究问题（Research Questions）
+
+- **RQ1**：动态三环构型是否能在随机和突发 arrival demand 下，提高 landing throughput 并降低 delay？
+- **RQ2**：三环功能分层是否比两环结构更能缓冲突发流量并降低 inner/final 拥堵传播？
+- **RQ3**：共享的 per-UAV intention policy 是否能够在未知数量 UAV 下实现可扩展的 sequencing 和 merge decision？
+- **RQ4**：任务类型、LZ service time、动态 priority 和 SOC 约束是否会显著改变终端区运行结果与 learned policy？
+- **RQ5**：event-gated structural reconfiguration 是否比固定周期无条件重构更稳定、更少产生无效结构变化？
+- **RQ6**：完整 HRL 是否优于“仅低层学习”和“仅高层动态”的方法？
+
+---
+
+## 6. 研究对象中的核心状态与约束
+
+每架 UAV 至少具有：
+
+```text
+uid
+phase
+position / ring progress
+current ring role
+speed
+SOC
+energy consumed
+request/admission/entry times
+wait time
+base priority
+dynamic priority
+mission type
+assigned entry gate
+assigned LZ
+LZ reservation state
+merge reservation
+transition state
+terminal outcome
+```
+
+系统至少具有：
+
+```text
+three-ring geometry
+current/target geometry during reconfiguration
+ring occupancies and derived capacities
+three release headways
+external queue
+four entry-corridor queues
+final queue
+M discrete LZ states
+arrival demand state
+safety/trajectory reservation state
+```
+
+硬约束包括：三环半径/高度严格有序、geometry change rate limit、geometry minimum dwell、occupancy-aware shrink、最小 separation、headway/merge reservation、飞行可执行性、LZ mutual exclusion、SOC reserve/diversion，以及 structural reconfiguration 时受影响接口暂停新 transfer。
+
+---
+
+## 7. 高低层策略与训练原则
+
+### 7.1 两个策略网络
+
+\[
+\pi_H(a_H|s_H),\qquad \pi_L(a_i|o_i)
+\]
+
+- `π_H`：全局、高层、低频；
+- `π_L`：per-UAV、共享参数、高频。
+
+低层不是“一架 UAV 一个网络”，而是所有 active UAV 共享一个 actor；每一步把 active UAV observation 组成 batch 并行前向。
+
+### 7.2 低层 CTDE
+
+低层推荐采用 centralized training, decentralized execution：actor 只看本机和有限局部/系统摘要；critic 通过 permutation-invariant set/attention encoder 聚合可变数量 UAV。
+
+不得用固定 `max_n × full_state` 作为最终理论依赖；实现层可以保留 padding/mask 作为 batching 手段，但策略语义必须与实际 active UAV 数解耦。
+
+### 7.3 训练不能从两个随机策略联合开始
+
+```text
+Stage 0: rule-only environment validation
+Stage 1: fixed airspace + train low-level policy
+Stage 2: freeze low-level + train high-level policy
+Stage 3: full hierarchical evaluation
+Stage 4: optional alternating fine-tuning
+```
+
+不接受“两个策略从随机初始化同时 PPO、效果不好再调 reward”的主开发路线。
+
+---
+
+## 8. 动态空域控制的研究语义
+
+### 8.1 高层动作
+
+当前目标高层动作统一为 10 维：
+
+\[
+a^H = [
+\Delta R_O,\Delta R_M,\Delta R_I,
+\Delta H_O,\Delta H_M,\Delta H_I,
+\Delta V_{profile},
+\Delta h_{OM},\Delta h_{MI},\Delta h_{IF}
+]
+\]
+
+其中前 6 维为 structural action，第 7 维整体偏置三环 nominal-speed profile，后 3 维为 operational flow-control action。三环物理 capacity 由 geometry 自动计算，不额外输出 capacity action。
+
+### 8.2 Event-gated geometry
+
+默认：
+
+```text
+metrics sampling interval = 20 s
+high-level decision interval = 180 s
+geometry minimum dwell = 600 s
+geometry transition duration = 20 s
+```
+
+当 structural action 被 gate mask 时，speed-profile bias 和 headway action 仍可执行，radius/height 保持当前 target。
+
+### 8.3 在途 UAV 对动态环的响应
+
+- 正在 ring hold 的 UAV 跟随连续变化的 `R(t), H(t)` moving reference；
+- 已经进入 ring-transfer trajectory 的 UAV 完成原已承诺轨迹；
+- reconfiguration 涉及的接口暂停接受新的 transfer；
+- geometry settled 后恢复该接口；
+- 不允许 teleport 到新的 ring 几何。
+
+---
+
+## 9. 轨迹与 merge 的研究语义
+
+### 9.1 Ring hold
+
+\[
+x=R(t)\cos\theta,\quad y=R(t)\sin\theta,\quad z=H(t)
+\]
+
+### 9.2 Ring transfer
+
+采用切向连续的平滑曲线，不采用径向直线直接切入下一环。推荐：水平面 cubic Bézier / 等价 C1 连续样条；垂直方向 quintic smoothstep；起点切线与 source ring 一致，终点切线与 target ring 一致。
+
+### 9.3 Merge point
+
+目标环进入点不是固定角度 offset，而由 merge scheduler 根据预测交通 gap 决定：
+
+```text
+candidate target time
+→ predict target-ring aircraft phases
+→ find feasible predecessor/successor gap
+→ reserve (merge_time, merge_angle)
+→ generate exact transition trajectory
+```
+
+同一条 trajectory 必须同时用于 safety checking 和实际执行。
+
+### 9.4 Final 与 Landing
+
+Inner→Final 的放行必须同时满足 assigned LZ reservation、final corridor 可用、headway、candidate trajectory safety、SOC/priority/queue rules。touchdown 后 UAV 从空中交通集合退出，但对应 LZ 保持 `OCCUPIED`，直到 mission-specific service time 到期。
+
+---
+
+## 10. 任务、服务资源、电量和优先级
+
+这些不是“额外 realism option”，而是主场景必要机制。
+
+### 10.1 Mission type
+
+| Mission | Probability | LZ service time |
+|---|---:|---:|
+| standard | 0.45 | 30 s |
+| cargo | 0.25 | 120 s |
+| emergency | 0.10 | 10 s |
+| surveillance | 0.20 | 60 s |
+
+任务类型主要决定服务时间与可能的资源兼容性，不直接代替 dynamic priority。
+
+### 10.2 Priority
+
+保留 `base_priority ∈ {1,3,5}`，默认概率 `0.50/0.35/0.15`；`emergency` mission 的 base priority 至少为 5。动态优先级由 base priority、等待时间和 SOC urgency 共同决定。
+
+### 10.3 Energy / SOC
+
+使用 SOC 与 phase-dependent energy consumption，而不是所有状态统一按 elapsed time 减少 endurance。低 SOC 可提升动态优先级、触发最早可行 landing，或在尚未 admission 时触发 diversion。
+
+---
+
+## 11. 正式实验矩阵
+
+### 11.1 核心 baseline
+
+| Mode | Airspace | Low level | Purpose |
+|---|---|---|---|
+| `fixed_rule` | 固定三环 | rule | 基础规则基准 |
+| `fixed_low_rl` | 固定三环 | learned intention | 只验证低层学习 |
+| `dynamic_rule` | 动态三环 | rule | 只验证动态构型 |
+| `dynamic_hrl` | 动态三环 | learned intention | proposed method |
+
+### 11.2 关键 ablation
+
+| Ablation | 目的 |
 |---|---|
-| FCFS / rule-only | 传统排序和规则放行基准 |
-| Fixed airspace + rule | 证明固定结构下规则方法的上限 |
-| Fixed airspace + low-level RL | 证明只有低层学习不够 |
-| Dynamic airspace + rule | 证明只有动态结构、无学习协同也不够 |
-| Full HRL | 完整方法 |
-| Full HRL without safety filter | 证明安全过滤必要性 |
-| Direct action RL | 证明直接自由动作不适合部署 |
+| `two_ring_dynamic_hrl` | 验证三环功能分层价值 |
+| `periodic_geometry_hrl` | 对比 event-gated geometry |
+| `homogeneous_service` | 去除任务服务时间异质性 |
+| `no_dynamic_priority` | 验证 wait/SOC priority |
+| `no_safety_filter` | simulation-only，验证安全层作用 |
+| `fixed_headway` | 验证 flow-control action |
 
-第四轮工程化后的正式实验矩阵：
+### 11.3 Demand scenarios
 
-| 配置 / Policy | 空域 | 低层 | 安全 | 实验作用 |
-|---|---|---|---|---|
-| `fixed_rule` | 固定 | rule-only | on | 固定结构规则基准 |
-| `fixed_residual` | 固定 | intention residual | on | 仅低层学习基准 |
-| `dynamic_rule` | 动态 | rule-only | on | 仅动态结构基准 |
-| `dynamic_hrl` | 动态 | intention residual | on | 完整跨层方法 |
-| `full_hrl_no_safety` | 动态 | intention residual | off, simulation only | 安全层消融 |
-| `high-level-random` | 随机动态 | rule-only | on | 随机高层基准 |
-| `high-level-static` | 不更新 | rule-only | on | 高层静态基准 |
-| `dynamic-rule` | 启发式动态 | rule-only | on | 规则动态构型基准 |
-| `high-level-ppo` | 学习动态 | rule/intention placeholder | on | 学习型高层策略 |
+至少包含 low、medium、high、bursty、overload stress test。正式比较采用 common random numbers：同 seed 下，不同 policy 接收相同 arrival request times、mission types、priority classes、gate assignments 和 initial energy draws。
 
-所有模式仍研究动态终端区构型与多 UAV 降落流协同；random policy 也不获得自由
-航向、高度或速度向量控制权。
+### 11.4 两类正式评估
 
-### 7.2 场景维度
+**Protocol A — Finite-cohort resolution**：固定请求数量 N，所有 request 必须进入终态。  
+**Protocol B — Continuous-flow capacity**：固定仿真时长，在 warm-up 后统计稳定区间 throughput、queue、utilization 与 delay。
 
-- 不同入场流率：low / medium / high / burst demand；
-- 不同降落点服务率或占用时间；
-- 不同环容量约束；
-- 定位噪声、通信延迟、setpoint dropout；
-- Crazyflie lab 缩尺场景：2–3 架起步，逐步扩展。
+---
 
-### 7.3 指标体系
+## 12. 论文指标
 
-| 指标 | 含义 |
-|---|---|
-| Average landing delay | 平均降落延误 |
-| Throughput | 单位时间成功降落数量 |
-| Makespan | 完成全部降落所需时间 |
-| Holding time | 环上等待时间 |
-| Final queue length | 最终进近排队长度 |
-| Conflict / near miss count | 冲突或近距事件数量 |
-| Separation violation | 最小间隔违规次数 |
-| Trajectory smoothness | 轨迹平滑性 |
-| Speed/acceleration violation | 可执行性约束违规 |
-| Crazyflie tracking error | 实物轨迹跟踪误差 |
+必须至少报告：
 
-## 8. 对代码开发的直接约束
+- **Safety**：collision、NMAC/separation violation、minimum separation、trajectory reject/modify；
+- **Efficiency**：throughput、request-to-completion delay、external waiting、internal terminal time、holding、makespan、final queue；
+- **Resource**：LZ utilization、reservation wait、service bottleneck、ring occupancy/capacity；
+- **Energy**：energy consumed、SOC at landing、low-SOC diversion、reserve violation；
+- **Fairness**：priority/mission 分组 delay、starvation、分位差；
+- **Dynamic airspace**：geometry change count、transition time、gate mask ratio、headway/capacity changes。
 
-1. `terminal_marl/` 是唯一主线；`src/` 为 legacy。
-2. 必须实现 `DynamicAirspace`，否则论文主线无法体现动态空域创新。
-3. 低层动作必须转为交通意图或 residual，不再扩展自由 `heading/altitude/speed` 控制。
-4. 必须实现 `TrajectoryGenerator`，作为从算法到 Crazyflie 的桥梁。
-5. 必须实现 safety filter，并在实验中做消融。
-6. 必须新增 `crazyflie_lab` 缩尺配置，不能用大尺度仿真参数直接宣称实物可验证。
-7. 论文实验脚本必须支持固定空域、动态空域、规则、低层 RL、完整 HRL 等模式切换。
+---
 
-## 9. Server training preparation and paper experiment support
+## 13. 论文叙事边界
 
-第六轮新增服务器训练准备后，论文实验矩阵可以按如下路径形成证据链：
+当前论文可以主张：Landing-only dynamic terminal management、three-ring functional architecture、HRL airspace-flow coordination、variable-size shared low-level policy、LZ service coupling、safety-filtered executable trajectory generation。
 
-1. 使用 `terminal_marl/configs/training/ppo_smoke.yaml` 和 `ppo_pilot_medium.yaml` 验证 high-level PPO 训练入口、日志、checkpoint 与评估流水线；
-2. 使用 `ppo_main_medium.yaml`、`ppo_main_high.yaml`、`ppo_main_bursty.yaml` 对 medium/high/bursty traffic demand 做 multi-seed 训练；
-3. 使用 `ppo_reward_sweep.yaml` 与 `reward_diagnostics.py` 校准 reward component，避免某个惩罚项支配学习；
-4. 使用 `experiment_matrix.py` 固化论文对照组：
-   - fixed airspace + rule-only；
-   - fixed airspace + residual placeholder；
-   - dynamic airspace + rule heuristic；
-   - dynamic HRL + high-level PPO；
-   - high-level random/static；
-   - full HRL without safety filter。
+当前论文不应主张：已解决 arrival+departure integrated operations、城市级 network routing、真实动力学级飞控、任意机型直接部署，或把仿真参数当作真实法规 capacity。
 
-这些配置服务于 dynamic terminal airspace reconfiguration + multi-UAV landing-flow coordination 的论文主线。PPO checkpoint 表示高层空域/流量管理策略，不表示真实 Crazyflie 底层飞控策略。
-## 10. Event-gated HRL experiment matrix
+---
 
-The next formal study uses periodic high-level decisions with event-gated
-structural airspace reconfiguration. This keeps the paper focused on dynamic
-terminal airspace reconfiguration and multi-UAV landing-flow coordination,
-rather than low-level free-flight control.
+## 14. 后续研究路线
 
-| Condition | High-level interval | Geometry permission | Low-level behavior | Purpose |
-|---|---:|---|---|---|
-| `fixed_rule` | n/a | fixed nominal | rule-only | fixed-airspace baseline |
-| `event_rule` | 180 s | event gate + dwell | rule-only | rule-based gated geometry baseline |
-| `periodic_hrl` | 180 s | dwell only | rule-only/placeholder | isolates periodic reconfiguration without event trigger |
-| `event_gated_hrl` | 180 s | event gate + dwell | rule-only/placeholder | proposed learning condition |
-
-All PPO runs in this matrix use a 20 s metrics sampler, 600 s geometry dwell,
-3600 s episodes, and a medium/high/bursty training demand mixture
-(0.40/0.30/0.30). Because the MDP interval changed from the old 20 s pilot, new
-PPO evidence must be trained from scratch.
-
-## 11. Formal evaluation semantics after PRE-RETRAIN revision
-
-Formal experiments should now report capacity and outcomes using the revised
-terminal-management semantics:
-
-- Ring capacity is not a hand-tuned constant. It is derived from the current
-  actual ring radius and the true safety separation using the adjacent-chord
-  formula. Dynamic airspace reconfiguration therefore changes usable holding
-  capacity through geometry, not through an arbitrary reward bonus.
-- During geometry transitions, the experiment uses the intermediate actual
-  radius and height. Reported capacity and occupancy pressure must not jump to
-  the target geometry before the transition has executed.
-- Finite-cohort evaluation is preferred for paper evidence. A scenario requests
-  exactly N UAVs; each request must end as `LANDED`, `CRASHED_COLLISION`,
-  `CRASHED_BATTERY`, or a diagnostic `UNRESOLVED/INVALID` outcome.
-- A valid formal episode has unresolved count equal to zero and satisfies:
+### Phase B — Departure-only
 
 ```text
-total_requested = landed + crashed_collision + crashed_battery + unresolved
+LZ release
+→ departure scheduling
+→ departure corridor
+→ departure fix
+→ terminal exit
 ```
 
-- Landing success rate, collision crash rate, battery crash rate, mission
-  failure rate, total resolution rate, request-to-terminal time, external
-  waiting, and internal system time should be computed from the outcome ledger.
-- Old PPO checkpoints trained before this revision are diagnostic only and must
-  not be resumed as evidence for the revised model.
+arrival holding ring 不直接复用于 departure。
 
-These semantics keep the paper focused on dynamic terminal airspace
-reconfiguration and multi-UAV landing-flow coordination, rather than low-level
-free-flight control.
+### Phase C — Integrated arrival + departure
+
+研究 pad time-slot sharing、final/climb-out corridor conflict、arrival/departure priority、bidirectional terminal capacity、integrated high-level airspace allocation。
+
+Phase B/C 的动作、状态和 reward 均不得提前混入当前 Phase A 模型。
+
+---
+
+## 15. 一句话研究定位
+
+> 本项目研究的是：**在有限着陆服务能力、能量与安全约束下，利用层次强化学习在线调节三环终端区的空间构型和放行节奏，并通过共享的多 UAV 降落意图策略、安全调度与可执行轨迹生成，实现动态到达流的高效、安全和可扩展管理。**

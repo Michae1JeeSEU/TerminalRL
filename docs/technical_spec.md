@@ -1,953 +1,863 @@
-# 技术规范（Q1 创新主线重构版）
+# 技术规范
 
-> 本文档定义下一阶段实现规范。目标是在不破坏当前 `terminal_marl/` 可运行性的基础上，逐步加入动态空域、高低层策略、轨迹生成器、安全过滤、实验模式和 Crazyflie 缩尺验证接口。
+> **目标版本**：Phase A — Landing-only canonical implementation  
+> **用途**：用于 Codex 直接修改 `terminal_marl/`。不要求兼容旧训练 checkpoint、旧两环 schema 或旧 4 维 intention schema。
 
-## 1. 开发环境
+---
 
-| 项目 | 选型 | 说明 |
-|---|---|---|
-| 语言 | Python 3.10+ | 兼容当前项目和 ROS2 常见环境 |
-| 强化学习 | PyTorch + 自定义 PPO / SB3 可选 | 当前 `terminal_marl` 已有 shared PPO |
-| 多智能体接口 | PettingZoo-style parallel env | 保留 `TerminalParallelEnv` 风格 |
-| 配置 | dataclass + YAML preset | 逐步增加 `simulation_large` 和 `crazyflie_lab` |
-| 测试 | pytest | 核心模块必须配套测试 |
-| 实物平台 | ROS2 + Crazyswarm2 | 仅在 hardware adapter 中懒加载 |
-
-## 2. 依赖规范
-
-基础依赖：
+## 1. 开发栈与依赖
 
 ```text
+Python >= 3.10
 numpy
 scipy
-matplotlib
+PyTorch
+Gymnasium / PettingZoo-style parallel API
+PyYAML
 pytest
-pyyaml
+matplotlib
 ```
 
-强化学习依赖：
+core 仿真不得强依赖 ROS2、Crazyswarm2、crazyflie_py。硬件适配以后放在独立 adapter。
 
-```text
-torch
-stable-baselines3    # optional
-gymnasium            # optional
+---
+
+## 2. 配置分层
+
+建议：
+
+```python
+SimConfig
+AirspaceConfig
+ArrivalConfig
+VehicleConfig
+EnergyConfig
+PriorityConfig
+LandingZoneConfig
+SafetyConfig
+LowLevelConfig
+HighLevelConfig
+TrainingConfig
+EvaluationConfig
 ```
 
-硬件依赖不得进入 core 强依赖：
+配置必须可序列化为 YAML snapshot，并带 `schema_version`。
 
-```text
-ros2
-crazyswarm2
-crazyflie_py
-```
+---
 
-要求：没有 ROS2/Crazyswarm2 时，仿真、测试和 dry-run 仍能正常运行。
-
-## 3. 代码规范
-
-- 新增公开类和函数必须有类型注解；
-- 新模块顶部必须有 docstring；
-- `terminal_marl/core/` 不得 import ROS2、Crazyswarm2 或 crazyflie_py；
-- `terminal_marl/hardware/` 负责硬件适配；
-- safety 相关逻辑必须返回可解释的 violation info；
-- 每个核心模块必须有 pytest 测试；
-- 新增 action mode 不应破坏旧脚本。
-
-## 4. 配置规范
-
-### 4.1 配置分层
-
-建议拆分：
-
-```text
-SimConfig：通用仿真和环境参数
-AirspaceConfig：ring/headway/capacity/bounds 参数
-TrainingConfig：PPO/HRL 训练参数
-HardwareConfig：Crazyflie/Lighthouse/Crazyswarm2 参数
-```
-
-### 4.2 simulation_large preset
-
-用于论文主仿真：
+## 3. Canonical YAML 示例
 
 ```yaml
-name: simulation_large
-center: [0.0, 0.0, 0.0]
-dt: 1.0
-outer_ring_radius: 400.0
-inner_ring_radius: 200.0
-outer_ring_height: 400.0
-inner_ring_height: 200.0
-nominal_speed_outer: 28.0
-nominal_speed_inner: 20.0
-speed_min: 8.0
-speed_max: 35.0
-safe_distance: 50.0
-nmac_distance: 25.0
-arrival_rate: variable
+schema_version: phaseA_landing_v1
+
+simulation:
+  dt: 1.0
+  max_simulation_seconds: 3600
+  max_active_uavs: 60
+  reset_mode: flow_from_empty
+
+airspace:
+  rings:
+    outer:  {radius: 600.0, height: 500.0, speed: 28.0}
+    middle: {radius: 400.0, height: 350.0, speed: 24.0}
+    inner:  {radius: 200.0, height: 200.0, speed: 20.0}
+  radius_min: 120.0
+  radius_max: 900.0
+  height_min: 120.0
+  height_max: 650.0
+  min_ring_gap: 120.0
+  min_height_gap: 80.0
+  speed_min: 8.0
+  speed_max: 36.0
+  max_radius_change_per_update: 20.0
+  max_height_change_per_update: 20.0
+  max_speed_profile_change_per_update: 2.0
+  headway_o2m: 9.0
+  headway_m2i: 9.0
+  headway_i2f: 12.0
+  headway_min: 3.0
+  headway_max: 30.0
+  max_headway_change_per_update: 1.0
+  metrics_sampling_interval_seconds: 20.0
+  high_level_decision_interval_seconds: 180.0
+  geometry_min_dwell_seconds: 600.0
+  geometry_transition_seconds: 20.0
+  geometry_gate_mode: event
+
+arrival:
+  gate_count: 4
+  gate_angles_deg: [0.0, 90.0, 180.0, 270.0]
+  approach_threshold_radius: 1000.0
+  spawn_radius: 1300.0
+  gate_height: 600.0
+  model: poisson
+  demand_level: medium
+  arrival_rate_per_second: 0.03
+  gate_min_time_gap_seconds: 20.0
+
+vehicle:
+  safe_distance: 80.0
+  nmac_distance: 40.0
+  collision_distance: 20.0
+  max_speed: 36.0
+  max_acceleration: 4.0
+  max_turn_rate_deg_s: 12.0
+  max_climb_rate: 5.0
+  max_descent_rate: 7.0
+
+energy:
+  model: phase_nominal
+  power_reference: 1.0
+  phase_multipliers:
+    external_wait: 1.00
+    inbound: 1.00
+    ring_hold: 1.00
+    ring_transfer: 1.10
+    final: 0.90
+    landing: 1.05
+  soc_warning: 0.30
+  soc_reserve: 0.15
+  soc_emergency: 0.08
+
+priority:
+  base_values: [1, 3, 5]
+  base_probabilities: [0.50, 0.35, 0.15]
+  alpha: 0.5
+  beta: 1.5
+  gamma: 1.0
+  delta: 2.0
+  wait_reference_seconds: 3600.0
+
+landing_zones:
+  count: 6
+  positions:
+    - [-80.0, -40.0, 0.0]
+    - [  0.0, -40.0, 0.0]
+    - [ 80.0, -40.0, 0.0]
+    - [-80.0,  40.0, 0.0]
+    - [  0.0,  40.0, 0.0]
+    - [ 80.0,  40.0, 0.0]
+  mission_service_seconds:
+    standard: 30.0
+    cargo: 120.0
+    emergency: 10.0
+    surveillance: 60.0
+  mission_probabilities:
+    standard: 0.45
+    cargo: 0.25
+    emergency: 0.10
+    surveillance: 0.20
+
+low_level:
+  action_dim: 3
+  max_speed_residual_mps: 2.0
+  max_merge_time_residual_seconds: 6.0
+  release_threshold: 0.0
+
+high_level:
+  action_dim: 10
+
+safety:
+  trajectory_horizon_seconds: 30.0
+  reservation_timeout_seconds: 60.0
 ```
 
-### 4.3 crazyflie_lab preset
+training/evaluation preset 必须引用相同 schema，不得复制出不同模型语义。
 
-用于室内缩尺验证：
+---
 
-```yaml
-name: crazyflie_lab
-center: [0.0, 0.0, 0.0]
-dt: 0.2
-outer_ring_radius: 1.2
-inner_ring_radius: 0.7
-outer_ring_height: 1.2
-inner_ring_height: 0.8
-landing_height: 0.15
-nominal_speed_outer: 0.35
-nominal_speed_inner: 0.25
-speed_min: 0.15
-speed_max: 0.6
-safe_distance: 0.5
-nmac_distance: 0.35
-collision_distance: 0.2
-max_acceleration: 0.8
-max_climb_rate: 0.3
-max_descent_rate: 0.3
-lighthouse_boundary: [-1.8, 1.8, -1.8, 1.8, 0.1, 1.6]
-```
-
-## 5. DynamicAirspace 接口规范
-
-建议文件：
-
-```text
-terminal_marl/core/dynamic_airspace.py
-```
-
-核心接口：
+## 4. `DynamicAirspace` API
 
 ```python
 class DynamicAirspace:
+    ACTION_SIZE = 10
+
     def state_vector(self) -> np.ndarray: ...
-    def apply_high_level_action(self, action: np.ndarray) -> dict: ...
-    def validate(self) -> bool: ...
-    def to_ring_specs(self) -> list: ...
-    def get_headways(self) -> dict: ...
+    def normalized_state_vector(self) -> np.ndarray: ...
+
+    def request_update(
+        self,
+        action: np.ndarray,
+        *,
+        now: float,
+        occupancies: dict[RingRole, int],
+        committed_incoming: dict[RingRole, int],
+        geometry_gate: GeometryGateState,
+    ) -> AirspaceUpdateResult: ...
+
+    def step_transition(self, now: float) -> None: ...
+    def actual_ring(self, role: RingRole) -> RingState: ...
+    def target_ring(self, role: RingRole) -> RingState: ...
+    def capacity(self, role: RingRole) -> int: ...
+    def affected_interfaces(self) -> set[str]: ...
 ```
 
-要求：
-
-- action shape 初期为 `(8,)`；
-- action 从 `[-1, 1]` 映射到小幅增量；
-- 所有更新必须 clip 到边界；
-- 违反约束必须返回 `violations`；
-- 支持固定空域模式，即不启用高层时行为不变。
-
-## 6. 动作空间规范
-
-### 6.1 高层动作
+`state_vector()` canonical ordering：
 
 ```text
-a_high = [dR_outer, dR_inner, dH_outer, dH_inner, dV_outer, dV_inner, dHeadway_ring, dHeadway_final]
+R_O,R_M,R_I,
+H_O,H_M,H_I,
+V_profile_bias,
+headway_O2M,headway_M2I,headway_I2F
 ```
 
-### 6.2 低层动作
+实际三环速度由 base profile + bias 派生。
 
-推荐：
+---
 
-```text
-a_low = [release_request, speed_residual, timing_residual, slot_residual]
-```
+## 5. Capacity implementation
 
-可先实现前三维，保留 `slot_residual` 为扩展项。
-
-动作解释：
-
-- `release_request > threshold`：请求阶段转移；
-- `speed_residual`：映射到 `[-Δv_max, Δv_max]`；
-- `timing_residual`：映射到 `[-Δt_max, Δt_max]`；
-- `slot_residual`：映射到目标相位偏移。
-
-禁止把最终路线继续扩展为自由：
-
-```text
-ψ heading angle
-γ flight path angle
-arbitrary altitude command
-motor / attitude command
-```
-
-除非作为对照实验中的 `direct_action_rl_baseline`。
-
-## 7. SafetyFilter 接口规范
-
-建议接口：
+复用独立函数：
 
 ```python
-class SafetyFilter:
-    def filter_intentions(self, states, intentions, airspace) -> tuple[dict, dict]: ...
-    def filter_trajectories(self, trajectories, states, airspace) -> tuple[list, dict]: ...
-    def check_pairwise_separation(self, trajectories) -> list[str]: ...
-    def check_executability(self, trajectory) -> list[str]: ...
+def geometric_ring_capacity(radius: float, required_separation: float) -> int: ...
+
+def minimum_radius_for_occupancy(
+    occupancy: int,
+    required_separation: float,
+) -> float: ...
 ```
 
-返回 info：
+必须测试：capacity 随 radius 单调；inverse consistency；transition 中使用 actual geometry；shrink 不违反 occupancy/committed incoming。
+
+---
+
+## 6. UAV lifecycle implementation
+
+`lifecycle.py` 统一管理合法 transition：
 
 ```python
-{
-    "approved": bool,
-    "modified": bool,
-    "rejected_uavs": [...],
-    "violations": [...],
-    "min_distance": float,
+ALLOWED_TRANSITIONS = {
+    EXTERNAL_QUEUE: {INBOUND, DIVERTED},
+    INBOUND: {RING_OUTER, DIVERTED, FAILED},
+    RING_OUTER: {TRANSFER_O2M, DIVERTED, FAILED},
+    TRANSFER_O2M: {RING_MIDDLE, FAILED},
+    RING_MIDDLE: {TRANSFER_M2I, DIVERTED, FAILED},
+    TRANSFER_M2I: {RING_INNER, FAILED},
+    RING_INNER: {FINAL, DIVERTED, FAILED},
+    FINAL: {LANDING, FAILED},
+    LANDING: {SERVICE, FAILED},
+    SERVICE: {COMPLETED},
 }
 ```
 
-## 8. TrajectoryGenerator 接口规范
+第一版不实现 go-around；如果未来加入，必须作为单独 revision，不留半实现 transition。
 
-建议文件：
+---
 
-```text
-terminal_marl/core/trajectory_generator.py
+## 7. ArrivalProcess API
+
+```python
+class ArrivalProcess:
+    def reset(self, seed: int) -> None: ...
+    def requests_until(self, now: float) -> list[ArrivalRequest]: ...
+    def exhausted(self) -> bool: ...
 ```
 
-数据结构：
+禁止 ArrivalProcess 根据 `max_active_uavs` censor demand。active capacity 属于 AdmissionManager。
+
+---
+
+## 8. AdmissionManager API
+
+```python
+class AdmissionManager:
+    def enqueue(self, request: ArrivalRequest) -> None: ...
+
+    def step(
+        self,
+        *,
+        now: float,
+        airspace: DynamicAirspace,
+        gates: list[EntryGate],
+        active_uavs: Mapping[int, UAVState],
+        energy_model: EnergyModel,
+        priority_engine: PriorityEngine,
+    ) -> AdmissionDecisionBatch: ...
+```
+
+每个 request 返回：
+
+```text
+ADMIT
+WAIT
+DIVERT
+```
+
+并带 `reason_code`。
+
+---
+
+## 9. Mission / priority sampling
+
+request 创建时执行：
+
+```python
+mission = rng.choice(
+    ["standard", "cargo", "emergency", "surveillance"],
+    p=[0.45, 0.25, 0.10, 0.20],
+)
+
+base_priority = rng.choice([1, 3, 5], p=[0.50, 0.35, 0.15])
+if mission == "emergency":
+    base_priority = max(base_priority, 5)
+```
+
+不得在 admission 时重新抽样。
+
+---
+
+## 10. Energy API
 
 ```python
 @dataclass
-class TrajectoryPoint:
-    x: float
-    y: float
-    z: float
-    yaw: float
-    t: float
+class EnergyState:
+    capacity: float
+    remaining: float
+    consumed: float
 
-@dataclass
-class TrajectoryPlan:
-    uav_id: str
-    mode: str
-    points: list[TrajectoryPoint]
-    metadata: dict
+    @property
+    def soc(self) -> float: ...
+
+class EnergyModel:
+    def phase_power(self, phase, speed, vertical_rate) -> float: ...
+    def consume(self, state, phase, dt, ...) -> None: ...
+    def estimate_to_complete(self, ...) -> float: ...
 ```
 
-核心函数：
+当前 canonical Phase A 规定 external queue 表示 UAV 已在上游空中等待，因此按 `external_wait` power 消耗能量。未来如需地面 dispatch queue，另设状态，不复用 external queue。
+
+---
+
+## 11. LandingZoneManager API
+
+```python
+class LandingZoneManager:
+    def available_zones(self, uav: UAVState, now: float) -> list[int]: ...
+    def choose_rule_zone(self, uav: UAVState, now: float) -> int | None: ...
+    def reserve(self, lz_id: int, uav_id: int, now: float) -> ReservationResult: ...
+    def release(self, lz_id: int, uav_id: int, reason: str) -> None: ...
+    def touchdown(self, lz_id: int, uav_id: int, mission: MissionType) -> None: ...
+    def step(self, dt: float) -> list[int]: ...
+```
+
+`step()` 返回 service completed 的 UAV ids。
+
+---
+
+## 12. Low-level action mapping
+
+输入 shape：`(3,)`。canonical order：
+
+```text
+[release_request, speed_residual, merge_time_residual]
+```
+
+mapper：
+
+```python
+release_requested = raw[0] > release_threshold
+delta_v = raw[1] * max_speed_residual_mps
+delta_t = raw[2] * max_merge_time_residual_seconds
+```
+
+任何 code/doc/test 都不得出现不同顺序。
+
+---
+
+## 13. Per-agent action spec
+
+```python
+Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+```
+
+环境按 agent 返回 action spec：
+
+```python
+actions: dict[str, np.ndarray]
+```
+
+训练时可 stack：
+
+```text
+batch_obs    = (N_active, d_obs)
+batch_action = (N_active, 3)
+```
+
+不是一个 `Box(max_n,3)` 的全局策略动作。
+
+---
+
+## 14. Observation schema API
+
+```python
+@dataclass(frozen=True)
+class FeatureSpec:
+    name: str
+    size: int
+
+class ObservationSchema:
+    features: tuple[FeatureSpec, ...]
+    slices: dict[str, slice]
+    dimension: int
+
+class ObservationBuilder:
+    schema: ObservationSchema
+    def build_agent(self, uav, world) -> np.ndarray: ...
+```
+
+每个 feature normalized 到稳定范围；presence mask 与 zero padding 成对出现。最终 `d_obs` 由 schema 计算，变更时 bump `observation_schema_version`。
+
+---
+
+## 15. Topological neighbor utilities
+
+实现：
+
+```python
+same_ring_leader(uav, ring_uavs)
+same_ring_follower(uav, ring_uavs)
+predict_target_ring_neighbors(uav, target_ring, target_time)
+nearest_predicted_conflict(...)
+```
+
+环上距离使用 arc/chord 语义，不用 3D Euclidean nearest 代替交通拓扑。
+
+---
+
+## 16. MergeScheduler API
+
+```python
+class MergeScheduler:
+    def baseline_time(self, uav, target_stage, snapshot) -> float: ...
+    def propose(self, uav, intent, snapshot) -> MergeProposal: ...
+    def reserve(self, proposal) -> MergeReservation: ...
+    def cancel(self, reservation_id: str, reason: str) -> None: ...
+```
+
+对 ring target：
+
+```text
+merge_angle = predicted feasible gap center at merge_time
+```
+
+对 final target：
+
+```text
+merge geometry = final entry + assigned LZ reservation
+```
+
+---
+
+## 17. TrajectoryGenerator API
 
 ```python
 class TrajectoryGenerator:
-    def ring_hold(self, uav_state, ring, duration, dt) -> TrajectoryPlan: ...
-    def ring_transfer(self, uav_state, from_ring, to_ring, duration, dt) -> TrajectoryPlan: ...
-    def final_approach(self, uav_state, landing_pad, duration, dt) -> TrajectoryPlan: ...
-    def landing(self, uav_state, landing_pad, duration, dt) -> TrajectoryPlan: ...
-    def emergency_hover(self, uav_state, duration, dt) -> TrajectoryPlan: ...
+    def ring_hold(
+        self, uav, airspace, start_time, duration, dt
+    ) -> TrajectoryPlan: ...
+
+    def ring_transfer(
+        self, uav, source, target, reservation, airspace, dt
+    ) -> TrajectoryPlan: ...
+
+    def final_approach(
+        self, uav, lz, final_reservation, dt
+    ) -> TrajectoryPlan: ...
+
+    def validate_kinematics(self, plan) -> list[str]: ...
 ```
 
-轨迹必须检查：
+删除/废弃任何第二套独立 transfer path generator。
 
-- waypoint 数量；
-- 时间单调；
-- 速度上界；
-- 加速度上界；
-- 高度边界；
-- ring 几何一致性。
+---
 
-## 9. 实验模式枚举
-
-建议统一使用：
+## 18. SafetyFilter API
 
 ```python
-ExperimentMode = Literal[
-    "fixed_airspace_rule",
-    "fixed_airspace_low_rl",
-    "dynamic_airspace_rule",
-    "full_hrl",
-    "full_hrl_no_safety",
-    "direct_action_rl_baseline",
-]
+class SafetyFilter:
+    def filter_intent(self, uav, intent, snapshot) -> IntentSafetyResult: ...
+
+    def filter_plan(
+        self,
+        plan: TrajectoryPlan,
+        committed_plans: Mapping[int, TrajectoryPlan],
+        snapshot: WorldSnapshot,
+    ) -> TrajectorySafetyResult: ...
 ```
 
-每个模式都应有明确开关：
+`filter_plan` 至少在未来 horizon 内离散采样 pairwise distance。reject 后保持 holding 或继续当前 committed plan，不临时注入未计划的 heading offset。
+
+---
+
+## 19. Geometry reconfiguration 与 plan consistency
+
+Geometry transition 中：
+
+- ring hold 使用实时 actual ring reference；
+- affected interface 的 new transfer action mask = false；
+- committed transfer 继续原 plan；
+- target planning 使用相应时间点预测 geometry；
+- 若 high-level target 会导致 committed plan endpoint 不再可安全 capture，则 action 在 commit 前被拒绝或推迟。
+
+因此 `DynamicAirspace.request_update()` 必须接收 committed reservations/plans 的约束摘要。
+
+---
+
+## 20. `TerminalParallelEnv.step()` 推荐顺序
 
 ```text
-dynamic_airspace: on/off
-low_level_policy: rule/rl/direct_action
-safety_filter: on/off
-trajectory_generator: on/off
-hardware_backend: simulation/dry_run/crazyswarm2
+1. advance arrival requests
+2. update external-queue energy / priority
+3. admission decisions
+4. update geometry transition actual state
+5. update LZ service timers
+6. build pre-action world snapshot
+7. map per-agent raw actions → intents
+8. apply action masks / intent safety
+9. schedule resources and merge reservations
+10. generate candidate trajectories
+11. trajectory safety check
+12. commit approved plans
+13. execute one dt along committed plans / ring hold
+14. consume energy
+15. detect actual separation/collision
+16. lifecycle transitions
+17. touchdown → LZ occupied
+18. service completions
+19. reward computation
+20. metrics / ledger / observations
 ```
 
-## 10. 日志与指标规范
+顺序必须有 integration test，防止 reservation 与 movement 同步错误。
 
-必须记录：
+---
 
-```text
-airspace radius/height/speed/headway over time
-UAV stage transitions
-release decisions
-safety filter modifications/rejections
-trajectory plans
-pairwise minimum distances
-landing delay
-throughput
-final queue length
-holding time
-speed/acceleration violations
-tracking error in lab mode
-```
-
-建议输出：
-
-```text
-results/<run_id>/metrics.json
-results/<run_id>/airspace_history.csv
-results/<run_id>/uav_history.csv
-results/<run_id>/trajectory_history.csv
-results/<run_id>/safety_events.csv
-results/<run_id>/config.yaml
-```
-
-## 11. 测试规范
-
-第一轮必须新增：
-
-```text
-tests/test_dynamic_airspace.py
-tests/test_trajectory_generator.py
-```
-
-后续新增：
-
-```text
-tests/test_safety_filter.py
-tests/test_action_modes.py
-tests/test_experiment_modes.py
-tests/test_lab_config_bounds.py
-```
-
-每次开发后至少运行：
-
-```bash
-python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.py -v
-```
-
-## 12. 硬件适配规范
-
-`Crazyswarm2Adapter` 只接收 `TrajectoryPlan`，不接收裸 RL action。
-
-硬件执行流程：
-
-```text
-TrajectoryPlan
-  -> preflight dry-run check
-  -> boundary and speed check
-  -> Crazyswarm2 command conversion
-  -> live state monitoring
-  -> emergency hover/land if violation
-```
-
-真实飞行前必须先完成：
-
-- dry-run trajectory export；
-- visualization；
-- single UAV rule-only；
-- 2 UAV rule-only；
-- 2–3 UAV residual policy；
-- low-frequency dynamic airspace update。
-
-## 13. YAML 配置加载规范
-
-正式入口：
+## 21. Rule policy
 
 ```python
-from terminal_marl.config import load_experiment_config, load_sim_config
-
-config = load_experiment_config("dynamic_hrl")
+class RuleLowLevelPolicy:
+    def act(self, observations, snapshot) -> dict[str, np.ndarray]: ...
 ```
 
-preset 支持以下分层：
+输出仍是 3D intention，与 RL 使用完全相同的 scheduler/trajectory/safety pipeline。规则策略不能绕过 pipeline 直接改 UAV state。
+
+---
+
+## 22. Shared low-level PPO
+
+推荐起始网络：
 
 ```text
+AgentEncoder(d_obs → 128 → 128)
+ActorHead(128 → 64 → 3)
+```
+
+Centralized critic：
+
+```text
+all agent embeddings
+→ masked mean/max pooling or attention
+→ concat(global state)
+→ MLP
+→ V
+```
+
+第一版可先 mean/max pooling，接口允许以后换 attention。必须用 mask 排除 inactive padding。
+
+---
+
+## 23. High-level wrapper
+
+每 `180 s` 形成一个高层 transition：
+
+```text
+s_H(t)
+a_H(t)
+run low-level for interval
+aggregate interval metrics
+r_H
+s_H(t+1)
+```
+
+low-level policy 必须是显式对象：`rule` 或 trained checkpoint。禁止字符串 placeholder 静默映射为 zero actions。
+
+训练日志记录：
+
+```text
+low_level_policy_type
+low_level_checkpoint_hash
+```
+
+---
+
+## 24. Event gate
+
+事件 gate 只控制前 6 个 structural dimensions。
+
+```text
+structural mask: radius/height dimensions
+action always enabled: speed-profile + 3 headways
+```
+
+gate 输入来自 rolling traffic pressure：occupancy ratios、external queue、inner/final pressure、LZ availability、recent arrival rate。
+
+---
+
+## 25. Reward API
+
+```python
+class LowLevelReward:
+    def compute_agent(...) -> RewardBreakdown: ...
+
+class HighLevelReward:
+    def compute_interval(...) -> RewardBreakdown: ...
+```
+
+`RewardBreakdown` 至少有：
+
+```text
+total
+components: dict[str, float]
+```
+
+训练日志保留 component mean/std/max。
+
+### 25.1 Low-level 初始尺度
+
+仅作为训练初始化，后续通过 diagnostics 调整：
+
+| Component | Initial scale |
+|---|---:|
+| elapsed second | -0.01 |
+| approved stage transfer | +0.25 |
+| completed ring transfer | +0.50 |
+| final entry | +1.00 |
+| touchdown | +2.00 |
+| service completion | +3.00 |
+| safety rejection | -0.10 |
+| NMAC event | -5.00 |
+| collision failure | -50.00 |
+| energy failure | -20.00 |
+| normalized speed residual magnitude | -0.01 |
+| normalized timing residual magnitude | -0.01 |
+
+重复持续事件必须去重/cooldown。
+
+### 25.2 High-level reward
+
+按 interval 归一化：
+
+```text
++ completed missions
+- priority-weighted request delay increment
+- external queue area
+- final/ring overpressure
+- NMAC/collision/failure
+- normalized energy consumed
+- unnecessary reconfiguration magnitude
+```
+
+不要为“动作非零”或“半径增大”给正奖励。
+
+---
+
+## 26. Metrics and outcome schema
+
+每 run 生成：
+
+```text
+config.yaml
+run_metadata.json
+outcomes.csv
+interval_metrics.csv
+events.jsonl
+training_metrics.*   # if training
+```
+
+`run_metadata.json`：
+
+```text
+schema_version
+git_commit
+seed
 experiment_mode
-rings
-geometry
-vehicle_limits
-safety
-timing
-arrival_flow
-reward_weights
+low_level_checkpoint
+high_level_checkpoint
+observation_schema_version
+action_schema_version
 ```
 
-加载器在 Python 默认 `SimConfig` 上覆盖 YAML 字段，因此旧脚本直接使用
-`SimConfig()` 的行为保持兼容。当前所有 preset 必须设置
-`simulation_only: true`；配置加载不得触发任何硬件逻辑。
+---
 
-## 14. 高层 HRL 时间尺度接口
+## 27. Training / experiment modes
 
-`TerminalParallelEnv` 提供：
-
-```python
-should_update_high_level() -> bool
-apply_high_level_action(action) -> dict
-get_high_level_observation() -> np.ndarray
-```
-
-高层动作只在 `step_count % high_level_interval_steps == 0` 时应用。其他
-低层 step 收到的高层动作只缓存最新值，并在下一个高层边界应用。高层观测
-包括动态空域状态、ring/final 占用、active traffic、conflict risk 和时间相位。
-
-## 15. 安全放行与轨迹级检查
-
-所有 outer→inner、inner→final 和 final→land 请求必须先经过
-`SafetyFilter.approve_release()`。审批至少检查：
+正式统一：
 
 ```text
-current pairwise separation
-final approach occupancy
-landing pad occupancy
-candidate trajectory separation
-boundary and height range
-monotonic waypoint time
-minimum segment duration
-speed and acceleration limits
+fixed_rule
+fixed_low_rl
+dynamic_rule
+dynamic_hrl
 ```
 
-拒绝结果为可解释的 `HOLD`，不删除 UAV。不可执行的候选轨迹替换为边界内
-stationary hover plan。当前 `FlightPhase.FINAL` 内的下降由 final→land
-审批门控，尚未引入独立底层飞控或硬件急停。
-
-## 16. 消融实验 runner
-
-入口：
-
-```bash
-python -m terminal_marl.experiments.run_ablation \
-  --configs fixed_rule fixed_residual dynamic_rule dynamic_hrl \
-  --policy rule-only
-```
-
-当前支持 `rule-only`、`random-policy` 和 `dry-run`，统一输出：
+变体：
 
 ```text
-landed_count
-average_delay
-total_completion_time
-conflict_count
-min_pairwise_distance
-safety_override_count
-final_queue_time
-throughput
+two_ring_dynamic_hrl
+periodic_geometry_hrl
+homogeneous_service
+no_dynamic_priority
+no_safety_filter
+fixed_headway
 ```
 
-该 runner 用于 dynamic terminal airspace reconfiguration 与 multi-UAV
-landing-flow coordination 的实验工程化，不用于姿态、电机或自由飞行动作控制。
+配置 loader 遇到旧 mode 名应报错并指向 migration 文档，不静默兼容。
 
-## 17. High-level HRL wrapper
+---
 
-`HighLevelHRLWrapper` 提供 Gym/Gymnasium 风格的 `reset()`、`step()`、
-`observation_space` 和 `action_space`。每个 8 维高层动作先更新动态空域，然后
-环境内部执行 `high_level_interval_steps` 个低层 step。低层当前支持
-rule-only、intention-residual 占位和 random-policy，不包含 PPO 训练。
+## 28. Formal evaluation protocols
 
-## 18. High-level interval reward
+### Finite cohort
 
-高层奖励只在完整高层区间结束后计算，包含：
+建议起始：
 
 ```text
-+ landed count / throughput
-- final queue waiting
-- conflict / safety override
-- excessive airspace change
-- ring imbalance / congestion
-- non-smooth consecutive airspace changes
+N = [20, 40, 60]
+multi-seed >= 10
 ```
 
-返回值包含每个加权 component、原始增量和 total reward diagnostics。
+正式论文可根据算力扩大。
 
-## 19. Delay 与日志规范
+### Continuous flow
 
-每架 UAV 记录：
+建议：
 
 ```text
-spawn_time
-entry_time
-planned_nominal_landing_time
-actual_landing_time
-landing_delay = actual - planned
+episode = 3600 s
+warmup = 600 s
+measurement = 2400 s
+resolution/cooldown = explicit
 ```
 
-每次 rollout 输出 `episode_summary.json`、`step_metrics.csv`、
-`airspace_trace.csv`、`safety_events.csv` 和 `agent_events.csv`。summary
-记录本地 git commit（若可用），不依赖远程仓库。
+终止时仍未完成的 request 必须在 ledger 明确标记，不得丢弃。
 
-## 20. Multi-seed demand sweep
+---
 
-消融 CLI 支持 `--seeds`、`--demand-levels low medium high bursty`、
-`--episodes` 和 `--output-dir`。demand profile 通过复制并覆盖
-`SimConfig.arrival_flow` 字段实现，不在环境动力学中硬编码。每个组合拥有独立
-日志目录，并生成 `aggregate_results.csv`。
+## 29. Test requirements
 
-## 21. No-safety 消融与 baseline
-
-`full_hrl_no_safety` 只能在 `simulation_only` 下运行，Crazyflie lab 禁止关闭
-安全。该模式绕过 release/transition 审批，但仍保留 NaN、动作范围、动态空域
-边界和轨迹数值保护。
-
-当前 runner 支持：
+至少新增/重写：
 
 ```text
-rule-only
-random-policy
-dry-run
-high-level-random
-high-level-static
+test_three_ring_airspace.py
+test_ring_capacity_three_ring.py
+test_geometry_transition_three_ring.py
+test_geometry_shrink_with_occupancy.py
+
+test_arrival_request_not_censored.py
+test_four_real_entry_corridors.py
+test_external_queue_energy.py
+
+test_mission_sampling.py
+test_dynamic_priority.py
+test_energy_model.py
+
+test_lz_reservation.py
+test_lz_service_time.py
+test_lz_release_on_failure.py
+
+test_lifecycle_state_machine.py
+test_rule_pipeline_full_landing.py
+
+test_low_level_action_schema.py
+test_variable_agent_batching.py
+test_topological_observation.py
+
+test_merge_gap_selection.py
+test_merge_reservation_conflict.py
+test_transfer_bezier_tangency.py
+test_same_plan_checked_and_executed.py
+
+test_reconfiguration_interface_freeze.py
+test_committed_transfer_survives_reconfiguration.py
+
+test_outcome_accounting.py
+test_checkpoint_schema_rejection.py
 ```
 
-这些 policy 都是交通意图/空域构型 baseline，不输出自由 heading、altitude
-或 velocity vector。
+---
 
-## 22. High-level PPO
+## 30. Mandatory integration gates
 
-`terminal_marl.training.train_high_level_ppo` 使用 SB3 PPO 和
-`HighLevelHRLWrapper`。SB3 采用延迟导入；缺失时训练/加载入口返回明确错误，
-不会破坏普通仿真 import。训练保存 model、配置、progress CSV 和 eval summary。
+### Gate A
+1 UAV 从 request 到 service completion。
 
-## 23. Dynamic-rule baseline
-
-启发式高层策略根据 outer/inner occupancy、final queue、active ratio 和 conflict
-risk 生成 8 维空域增量。拥堵时扩环/调速，final 压力时增大 headway，冲突时
-降速并增加间隔，空闲时恢复 nominal airspace。动作仍经过 SafetyFilter 和
-DynamicAirspace 限幅。
-
-## 24. Runtime arrival process
-
-`ArrivalProcess` 支持 deterministic interval、Poisson 和 bursty wave。新 UAV
-受最大活动数和入口安全间隔约束，并记录 spawn、entry 和 nominal landing time。
-
-## 25. Nominal schedule
-
-`NominalScheduleEstimator` 支持 analytic 与 rule-only-reference。所有 delay
-结果必须同时记录 `nominal_delay_mode`，避免将 completion time 当作 delay。
-
-## 26. 聚合统计
-
-按 config、policy、demand 分组输出 mean、sample std、min、max、median 和
-normal-approximation 95% CI（`mean ± 1.96*std/sqrt(n)`），并记录 seed 数。
-
-## 27. 图表流水线
-
-matplotlib 单图输出 throughput/delay/conflict/safety vs demand，以及 airspace
-trace 和 landed count time series；不使用 seaborn 或复杂 subplot。
-
-## 28. Server-side high-level PPO training
-
-服务器训练入口为：
-
-```bash
-python -m terminal_marl.training.train_high_level_ppo \
-  --training-config terminal_marl/configs/training/ppo_main_medium.yaml
-```
-
-新增训练参数包括：
+### Gate B
+多 UAV、固定三环、rule-only：
 
 ```text
---n-envs
---vec-env dummy/subproc
---device cpu/cuda/auto
---num-threads
---checkpoint-freq
---eval-freq
---save-replay-traces
---resume-from
---training-config
+zero collision
+zero unresolved
+all feasible requests resolve
+LZ reservation correct
 ```
 
-默认 `device=cpu`，因为当前 high-level PPO 与仿真环境主要是 CPU 密集型。Stable-Baselines3 保持延迟导入；缺少 SB3 时 PPO 入口给出清晰错误，普通仿真和非 PPO 测试不受影响。
-
-训练只作用于 high-level dynamic airspace policy，不输出自由 heading、altitude 或 velocity-vector 控制命令。
-
-## 29. Training YAML presets
-
-`terminal_marl/configs/training/` 包含：
+### Gate C
+高/突发需求：
 
 ```text
-ppo_smoke.yaml
-ppo_pilot_medium.yaml
-ppo_main_medium.yaml
-ppo_main_high.yaml
-ppo_main_bursty.yaml
-ppo_reward_sweep.yaml
+external queue grows
+no demand censoring
+no resource double booking
+no deadlock
 ```
 
-每个 preset 包含 simulation-only 的 config、demand、timesteps、parallel env、PPO hyperparameters、seed list、low-level placeholder policy、nominal delay mode 和 output directory。命令行显式传入参数覆盖 YAML。
+### Gate D
+固定三环 + low-level PPO 可训练，N 可变化。
 
-## 30. Server scripts and upload manifest
+### Gate E
+三环动态 geometry 可运行且 reconfiguration 不破坏 committed traffic。
 
-`scripts/server/` 提供：
+### Gate F
+通过以上 gate 后才允许正式 high-level PPO。
+
+---
+
+## 31. Checkpoint compatibility
+
+定义：
 
 ```text
-00_check_env.sh
-01_train_smoke_cpu.sh
-02_train_pilot_medium_cpu.sh
-03_train_main_cpu.slurm
-04_train_sweep_array.slurm
-05_eval_ablation_cpu.slurm
-06_aggregate_and_plot.sh
-pack_for_server.py
-README_SERVER_TRAINING.md
+action_schema_version = low_intent_v1_3d
+high_action_schema_version = high_airspace_v1_10d
+observation_schema_version = phaseA_obs_v1
+airspace_schema_version = three_ring_v1
 ```
 
-脚本默认 CPU、无 sudo、可选 module 环境。SLURM 分区通过 `PARTITION` 变量设置，默认建议为 `6240-36C-192G`，可改为 `normal` 或其他 CPU 队列。打包脚本生成 `terminal_server_training_package.zip` 与 `SERVER_UPLOAD_MANIFEST.txt`，排除 `.git/`、`runs/`、缓存、bytecode、本地模型和大型日志。
-
-## 31. Reward diagnostics and experiment matrix
-
-`terminal_marl/experiments/reward_diagnostics.py` 对 `rule-only`、`dynamic-rule`、`high-level-random` 和 `untrained-ppo` 做短 dry-run，输出 reward component 的 mean、variance 和 magnitude，帮助正式训练前判断 reward 是否失衡。
-
-`terminal_marl/experiments/experiment_matrix.py` 定义论文推荐组合并可导出 `matrix.csv`：
+checkpoint metadata 不匹配：
 
 ```text
-fixed_rule + rule-only
-fixed_residual + random-policy
-dynamic_rule + dynamic-rule
-dynamic_hrl + high-level-ppo
-dynamic_hrl + high-level-random
-dynamic_hrl + high-level-static
-full_hrl_no_safety + high-level-ppo
+raise IncompatibleCheckpointError
 ```
 
-## 32. Landing pipeline / phase-transition safety regression rules
+旧 checkpoint 只可历史诊断，不得 resume。
 
-Server pilot debugging showed that a healthy arrival process can still produce
-`landed_count=0` if the landing pipeline is blocked at `outer_to_inner`.
-The environment therefore follows these engineering rules:
+---
 
-1. VTAC eligibility is checked before trajectory SafetyFilter approval.  A UAV
-   that is not queue head, not ring-established, outside release horizon, or
-   blocked by merge/headway constraints receives `vtac_not_eligible`.  This is
-   a normal HOLD reason and is not counted as a safety override.
-2. Full-scale configs use `max_acceleration: 4.0`, giving enough margin over
-   inner-ring centripetal acceleration and ring-transfer transients.
-   `crazyflie_lab.yaml` remains scaled and simulation-only with
-   `max_acceleration: 0.8`.
-3. `SafetyFilter.filter_trajectory_plan()` returns both symbolic violations
-   and numeric `kinematic_detail`: max observed speed, max observed
-   acceleration, allowed limits, minimum segment duration, and violating segment
-   indices.
-4. `approve_release()` diagnostics include current and trajectory minimum
-   distances.  For `outer_to_inner`, source-ring moving traffic is governed by
-   current pairwise checks and VTAC merge/spacing rules; trajectory separation
-   focuses on non-source-ring/target-relevant states to avoid treating all
-   source-ring aircraft as static obstacles.
-5. `safety_override_count` is de-duplicated per high-level interval, UAV,
-   target stage, and reason.  `raw_safety_override_count` preserves the raw
-   low-level rejection count for debugging.
-6. `arrival_rate=0.0` disables runtime arrivals.  Demand sweeps should set
-   non-zero rates through `apply_demand_profile()`.
-
-Debug commands:
-
-```bash
-python -m terminal_marl.experiments.debug_phase_transitions --config dynamic_hrl --demand-level medium --policy rule-only --initial-uavs 1 --disable-runtime-arrivals --high-level-steps 15 --output-dir runs/debug_phase_transitions_local
-python -m terminal_marl.experiments.debug_arrivals --config dynamic_hrl --demand-level medium --policy rule-only --high-level-steps 50 --output-dir runs/debug_arrivals_local
-```
-
-Expected local sanity signals:
-
-- single-UAV rule-only reaches `FINISHED`;
-- six-UAV rule-only with runtime arrivals disabled reaches inner ring, final,
-  and landing completion;
-- medium demand debug shows non-zero `inner_occupancy`/`final_occupancy` and
-  positive `total_landed_count` over a sufficiently long run.
-
-## 33. Dynamic-rule reward/pipeline repair and readiness metrics
-
-The server pilot exposed a failure mode where `dynamic_rule` could have active
-traffic but zero landings.  The repaired baseline keeps the paper scope focused
-on dynamic terminal airspace reconfiguration and landing-flow coordination:
-high-level actions remain ring radius/height/speed/headway adjustments and
-low-level actions remain rule/intention residuals, not free flight control.
-
-Technical updates:
-
-1. `DynamicRuleHighLevelPolicy`
-   - consumes normalized pairwise conflict rate from `env.metrics()`;
-   - favors bounded speed/headway changes under backlog;
-   - uses small nominal recovery toward the configured airspace;
-   - avoids default continuous geometry expansion and avoids increasing final
-     headway under backlog when final is empty;
-   - exposes `last_info` for diagnostics.
-2. Pairwise metrics now distinguish raw samples from normalized reward-facing
-   risk:
-   - `pair_opportunities`
-   - `raw_pair_conflict_samples`
-   - `unique_conflict_events`
-   - `conflict_vehicle_seconds`
-   - `normalized_conflict_rate = raw_pair_conflict_samples / pair_opportunities`
-   - `has_pair=false` and `min_pairwise_distance=inf` when fewer than two active
-     aircraft exist.
-3. Waiting/congestion metrics include approach backlog, outer/inner/final
-   queues, active/max pressure, and normalized congestion pressure.  If
-   approach backlog exists or active count reaches capacity, waiting and
-   congestion diagnostics should be non-zero.
-4. High-level reward uses interval deltas and normalized rates:
-   - landed/throughput positive terms;
-   - phase-progress dense reward;
-   - normalized waiting, conflict, safety override, airspace change, imbalance,
-     congestion, and smoothness penalties.
-5. `reward_diagnostics.py` reports mean, std, mean_abs, p50, p90, p99, max_abs,
-   component share, and a scaling warning if the largest component mean_abs is
-   more than 20x the second largest.
-6. `debug_phase_transitions.py` records low-level release/landing approvals and
-   writes `dynamic_rule_trace.csv`, `phase_release_summary.csv`,
-   `phase_trace.csv`, `release_attempts.csv`, `trajectory_diagnostics.csv`, and
-   `summary.json`.
-7. `capacity_calibration.py` runs rule-only deterministic-arrival interval
-   sweeps and writes `capacity_calibration.csv/json`; it is simulation-only and
-   does not start training.
-
-Regression expectations before PPO pilot:
+## 32. 主路径必须删除/替换的逻辑
 
 ```text
-single rule-only no arrivals: landed_count = 1/1
-six fixed-rule no arrivals: landed_count >= 5/6
-six dynamic-rule no arrivals: landed_count > 0 and >= 80% fixed-rule
-medium 50 high-level intervals: dynamic-rule landed_count > 0
-no-pair metric: has_pair=false, pair_opportunities=0, normalized_conflict_rate=0
+exactly two rings assertion
+8D high-level action
+4D [release,speed,slot,timing] intention
+slot_residual as second speed tweak
+timing_residual as release-threshold bias
+uniform endurance-seconds battery
+single-bearing fake four-gate inflow
+LZ = "FINAL 里是否有飞机"
+fixed-angle ring transfer release point
+two different transfer trajectory implementations
+safety heading/pitch nudge as primary protection
 ```
 
-## 34. High-level timing study and evaluation protocol
-
-The project now separates four physical-time concepts that were previously
-coupled through `high_level_interval_steps`:
-
-```yaml
-high_level:
-  metrics_sampling_interval_seconds: 20
-  decision_interval_seconds: 60
-  reconfiguration_dwell_seconds: 60
-  geometry_transition_seconds: 20
-```
-
-Backward compatibility is preserved: legacy YAML files may still define
-`high_level_interval`, and `load_sim_config()` converts it to
-`SimConfig.high_level_interval_steps`. If a `high_level:` mapping is present,
-`decision_interval_seconds` defines one complete high-level MDP step; the
-high-level PPO wrapper therefore receives one observation, emits one action,
-and the environment internally advances for the full decision interval. Metrics
-sampling can remain at 20 s and does not change the MDP action frequency.
-
-The windowed evaluation protocol uses three phases:
-
-1. Warm-up: arrivals are enabled, but metrics are not counted in the measurement
-   window.
-2. Measurement: arrivals remain enabled and throughput, delay, waiting,
-   backlog, conflict, safety override, and action diagnostics are counted.
-3. Drain: arrivals are disabled by setting the runtime arrival process to zero;
-   the simulation continues until all active UAVs land or the drain limit is
-   reached.
-
-This makes interval ablations comparable by physical duration rather than by
-high-level step count. Arrival rates remain in physical seconds and are not
-rescaled by the decision interval.
-
-New evaluation-only tools:
-
-- `terminal_marl.experiments.evaluation_protocol`: reusable
-  warm-up/measurement/drain runner and timing helpers.
-- `terminal_marl.experiments.airspace_response_diagnostics`: one-shot response
-  probes for radius, speed, ring headway, final headway, and safe combination
-  changes.
-- `terminal_marl.experiments.high_level_interval_study`: complete dry-run study
-  that writes timing audit, response diagnostics, interval sweep, horizon
-  censoring diagnosis, demand separability, action effectiveness, and final
-  retraining recommendation artifacts.
-
-These tools are simulation-only. They do not connect to ROS2, Crazyswarm2, or
-Crazyflie hardware, and they do not start PPO training.
-
-## 35. Event-gated 180s high-level protocol
-
-The active training protocol is now a fixed 180 s high-level MDP with 20 s
-metric sampling and a 600 s minimum dwell for structural geometry changes.
-`decision_interval_seconds` must be divisible by
-`metrics_sampling_interval_seconds`; the YAML loader fails fast if the timing
-cannot be represented by `dt`.
-
-`GeometryEventGate` is implemented in
-`terminal_marl/control/geometry_event_gate.py`. The gate owns persistence,
-hysteresis, dwell, nominal-recovery eligibility, action masking, and diagnostic
-state. `TerminalParallelEnv` samples pressure metrics every 20 s and exposes
-gate state in high-level observation/info/logs.
-
-Action semantics remain the stable eight-dimensional incremental
-`DynamicAirspace` action:
-
-- indices 0--3: structural geometry (`outer_radius`, `inner_radius`,
-  `outer_height`, `inner_height`);
-- indices 4--7: operational flow parameters (`outer_speed`, `inner_speed`,
-  `ring_headway`, `final_headway`).
-
-When the gate is closed, only indices 0--3 become explicit no-ops. Operational
-indices continue through the existing SafetyFilter/DynamicAirspace limits.
-Reward diagnostics separate requested/applied action and include an applied
-geometry-change cost, so masked geometry requests do not create geometry-change
-penalty.
-
-New simulation-only modes:
-
-- `event_rule`: rule-only low-level flow with event-gated structural geometry;
-- `periodic_hrl`: fixed 180 s high-level decisions, geometry allowed by dwell;
-- `event_gated_hrl`: fixed 180 s high-level decisions, geometry allowed only by
-  event gate and dwell.
-
-Training presets for the new PPO pilots use an episode-level medium/high/bursty
-mixture (0.40/0.30/0.30). These runs must start from scratch; never resume an
-old 20 s PPO checkpoint after changing the high-level MDP interval.
-
-## 36. Stage-1.5 evaluation integrity diagnostics
-
-Stage-1.5 is a diagnostics-only phase after the event-gated/periodic 20k pilot.
-It may load existing 20k checkpoints for evaluation, but it must not start PPO
-learning or resume training.
-
-### Arrival request and admission semantics
-
-`ArrivalProcess` generates policy-independent external request demand.  It no
-longer censors requests when the terminal reaches `max_active_uavs`.
-`TerminalParallelEnv` interprets `max_active_uavs` as an internal active-aircraft
-cap.  When the cap is full, requests enter a FIFO external/pre-entry queue.
-
-Metrics exposed by `env.metrics()` include:
-
-- `arrival_request_count`;
-- `admitted_arrival_count`;
-- `blocked_arrival_count`;
-- `deferred_arrival_count`;
-- `dropped_arrival_count`;
-- `external_queue_count`;
-- `external_queue_waiting_time`;
-- `active_cap_hit`;
-- `time_at_active_cap_seconds`;
-- `fraction_time_at_active_cap`;
-- `longest_continuous_cap_seconds`;
-- `time_to_first_cap`;
-- `internal_active_count`;
-- `internal_capacity_ratio`;
-- `external_backlog`;
-- `total_system_backlog`.
-
-`total_spawned_count` remains the number of actual UAV instances in the
-terminal, including the initial queue and admitted runtime arrivals.  It is not
-the same as external request demand.
-
-### Common random numbers
-
-`terminal_marl.core.arrival_process.generate_arrival_schedule()` creates a
-deterministic `scenario + seed + physical duration` request schedule.
-`run_windowed_evaluation(..., fixed_arrival_schedule=...)` replays that exact
-schedule so rule-only, event-rule, periodic PPO, event-gated PPO, and random
-baselines see identical request counts.  Policies can affect admission time,
-external backlog, and completion, but not external request count.
-
-### Windowed throughput
-
-The formal steady-state throughput metric is
-`measurement_throughput_per_second` / `measurement_throughput_per_hour`, computed
-only over the measurement window.  Warm-up landings and drain landings are
-reported separately:
-
-- `warmup_landed`;
-- `measurement_landed`;
-- `measurement_duration_seconds`;
-- `measurement_throughput_per_second`;
-- `measurement_throughput_per_hour`;
-- `drain_landed`;
-- `drain_duration_seconds`;
-- `total_landed`;
-- `overall_throughput_per_hour`.
-
-### Action, gate, and airspace diagnostics
-
-Every sampled evaluation row contains requested/applied 8D action fields,
-geometry gate active/allowed/dwell/mask diagnostics, configured/effective dwell,
-airspace parameters, raw/normalized congestion/waiting/backlog, and cap/external
-queue metrics.  With 180 s high-level decisions and 600 s configured dwell, the
-effective geometry dwell on the decision grid is 720 s.
-
-### Stage-1.5 runner
-
-`terminal_marl.experiments.stage15_diagnostics` writes the final diagnostic
-bundle under:
-
-```text
-$HOME/training_outputs/terminal/event_gated_stage15_diagnostics/final
-```
-
-The only valid final decision values are:
-
-```text
-READY_FOR_50K_WITH_CURRENT_MDP
-RETRAIN_REQUIRED_AFTER_MDP_FIX
-ENVIRONMENT_NOT_READY
-```
-
-Because the external-queue fix changes MDP/reward semantics, existing pilots are
-diagnostic evidence only unless a future run explicitly retrains under the fixed
-semantics.
-
-## PRE-RETRAIN core model revision: dynamic capacity and finite cohorts
-
-Before retraining high-level PPO, the terminal model uses geometry-derived ring
-capacity rather than fixed ring occupancy constants. For each ring with actual
-radius `R` and required separation `d`, capacity is:
-
-```text
-d_adj(N) = 2 R sin(pi / N)
-capacity(R, d) = 1, if d > 2R
-capacity(R, d) = floor(pi / asin(d / (2R))), otherwise
-```
-
-The implementation lives in `terminal_marl/core/ring_capacity.py` and is used by
-`DynamicAirspace`. Capacity is recomputed from the actual current radius, so a
-geometry transition exposes intermediate capacity rather than the final target
-capacity. Radius contraction is projected against current VTAC ring occupancy;
-unsafe shrink requests are clipped and reported with
-`radius_contraction_limited` diagnostics.
-
-Finite-cohort evaluation is configured through `SimConfig.total_requested_uavs`.
-When it is set, runtime arrival generation creates exactly `N` external
-requests. Every requested UAV must end in one primary terminal outcome:
-
-```text
-LANDED | CRASHED_COLLISION | CRASHED_BATTERY | UNRESOLVED | INVALID
-```
-
-`UNRESOLVED` and `INVALID` are diagnostics, not successful formal outcomes. The
-environment exposes `simulation_outcome_summary()` and `uav_outcome_rows()` for
-conservation checks and `uav_outcomes.csv` logging.
-
-Battery endurance is currently a transparent time-based model:
-`battery_endurance_seconds` is decremented from `request_time`, including time
-in the external queue. A depleted UAV is removed from queues/control/conflict
-accounting and marked `CRASHED_BATTERY`. A collision-distance breach marks both
-partners `CRASHED_COLLISION` and counts the unordered pair once.
-
-This revision remains simulation-only: no ROS2, Crazyswarm2, or real Crazyflie
-hardware is connected, and low-level policy is not expanded into free
-heading/altitude/velocity control.
-
-### Rolling event-gate inputs and revised high-level observation
-
-The geometry event gate now uses recent physical-time deltas rather than
-episode-cumulative conflict/congestion values.  Recent arrivals, service
-landings, conflict rate, backlog growth, occupancy pressure, external queue
-pressure, and arrival-service imbalance are normalized before entering the gate
-score.
-
-The high-level observation for the revised MDP has length 44 and includes:
-
-- normalized 8D actual airspace state;
-- outer/inner/final occupancy ratios using current geometric capacity;
-- internal active ratio and external queue pressure;
-- remaining cohort fraction, not-yet-due request fraction, and terminal outcome
-  fraction;
-- recent arrival rate, recent service rate, signed imbalance, and recent
-  conflict;
-- battery-risk summary;
-- gate state, trigger/recovery persistence, dwell/deviation features;
-- previous applied high-level action.
+迁移清单见 `revision.md`。
