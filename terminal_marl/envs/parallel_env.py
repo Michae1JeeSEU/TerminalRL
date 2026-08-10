@@ -1,114 +1,285 @@
-"""Phase-A landing-only rule/intent environment.
+"""Fixed-airspace Phase-A A5 parallel environment.
 
-Active agents are airborne UAVs only. SERVICE is owned by the LZ manager after
-touchdown, so low-level termination and completion accounting differ.
+Only airborne UAVs are active agents.  A low-level terminal reward is emitted
+at touchdown; the independent LZ service lifecycle never rewards a terminated
+low-level agent.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
-import math,numpy as np
-from ..core.config import SimConfig,RingRole
-from ..core.uav import FlightPhase,UAVState,TerminalOutcome
-from ..core.arrival_process import ArrivalProcess
+import math
+import numpy as np
+
 from ..core.admission import AdmissionManager
+from ..core.arrival_process import ArrivalProcess
+from ..core.config import RingRole, SimConfig
 from ..core.dynamic_airspace import DynamicAirspace
 from ..core.energy import EnergyModel
-from ..core.priority import PriorityEngine
+from ..core.lifecycle import OutcomeLedger, transition
 from ..core.landing_zone import LandingZoneManager
-from ..core.lifecycle import OutcomeLedger,transition
-from ..core.merge_scheduler import LowLevelIntent,MergeScheduler
-from ..core.trajectory_generator import TrajectoryGenerator
+from ..core.merge_scheduler import LowLevelIntent, MergeScheduler
+from ..core.observations import build_a5_observation
+from ..core.priority import PriorityEngine
+from ..core.rewards import LowLevelReward
 from ..core.safety_filter import SafetyFilter
+from ..core.trajectory_generator import TrajectoryGenerator
+from ..core.uav import FlightPhase, TerminalOutcome, UAVState
+from ..core.uav import QueuedArrivalState
+
 
 @dataclass
-class WorldSnapshot: now:float; active:dict[int,UAVState]; airspace:DynamicAirspace
+class WorldSnapshot:
+    now: float
+    active: dict[int, UAVState]
+    airspace: DynamicAirspace
+
+
 class TerminalParallelEnv:
-    def __init__(self,config:SimConfig|None=None,policy=None):
-        self.config=config or SimConfig();self.policy=policy;self.energy=EnergyModel(self.config);self.priority=PriorityEngine(self.config);self.generator=TrajectoryGenerator(self.config);self.reset()
+    def __init__(self, config: SimConfig | None = None) -> None:
+        self.config = config or SimConfig()
+        self.energy = EnergyModel(self.config)
+        self.priority = PriorityEngine(self.config)
+        self.generator = TrajectoryGenerator(self.config)
+        self.reset()
+
     @property
-    def agents(self):return [str(uid) for uid in self.active]
-    def action_spec(self,agent=None):return (3,)
-    def reset(self,seed=None):
-        self.now=0.;self.step_count=0;self.active={};self.service_uavs={};self.uid=0;self.ledger=OutcomeLedger();self.arrivals=ArrivalProcess(self.config,seed);self.admission=AdmissionManager(self.config);self.airspace=DynamicAirspace(self.config);self.lz_manager=LandingZoneManager();self.scheduler=MergeScheduler(self.config);self.safety=SafetyFilter(self.config);self.events=[]
-        return self._observations(),{}
-    def _observations(self):
-        result={}
-        for uid,u in self.active.items():
-            role=[float(u.ring_role is r) for r in RingRole] if u.ring_role else [0.,0.,0.]
-            result[str(uid)]=np.asarray([u.soc,u.dynamic_priority/5.,*role,*[self.airspace.occupancy(r)/max(1,self.airspace.capacity(r)) for r in RingRole],len(self.admission.queue.items)/max(1,self.config.max_active_uavs),sum(z.status.value=='free' for z in self.lz_manager.zones)/6.],dtype=np.float32)
-        return result
-    def _refresh_airspace_occupancy(self):
-        values={r:0 for r in RingRole}
-        for u in self.active.values():
-            if u.ring_role is not None:values[u.ring_role]+=1
+    def agents(self) -> list[str]:
+        return [str(uid) for uid in self.active]
+
+    def action_spec(self, _agent: str | None = None) -> tuple[int]:
+        return (3,)
+
+    def reset(self, seed: int | None = None):
+        self.now = 0.0
+        self.step_count = 0
+        self.active: dict[int, UAVState] = {}
+        self.service_uavs: dict[int, UAVState] = {}
+        self.uid = 0
+        self.ledger = OutcomeLedger()
+        self.arrivals = ArrivalProcess(self.config, seed)
+        self.admission = AdmissionManager(self.config)
+        self.airspace = DynamicAirspace(self.config)
+        self.lz_manager = LandingZoneManager()
+        self.scheduler = MergeScheduler(self.config)
+        self.safety = SafetyFilter(self.config)
+        self.events: list[tuple[str, int, float]] = []
+        self.telemetry = {"release_approved": 0, "release_rejected": 0, "safety_interventions": 0, "merge_time_modified": 0, "collisions": 0, "nmac": 0}
+        self.completed_uavs: list[UAVState] = []
+        if self.config.reset_mode == "warm_start_rings" and self.config.warm_start_uavs:
+            self._warm_start()
+        return self._observations(), {}
+
+    def _warm_start(self) -> None:
+        """Curriculum-only seeded ring state; formal evaluation stays flow-from-empty."""
+        requests = self.arrivals.requests_until(0.0)
+        for index, request in enumerate(requests[:self.config.warm_start_uavs]):
+            self.ledger.request(request.arrival_id)
+            gate = self.admission.gates[request.gate_id]
+            queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
+            uav = UAVState.from_request(self.uid, request, queued, gate.spawn_point, self.now)
+            self.uid += 1
+            role = (RingRole.OUTER, RingRole.MIDDLE, RingRole.INNER)[index % 3]
+            ring = self.airspace.actual_ring(role)
+            theta = 2 * math.pi * index / max(1, self.config.warm_start_uavs)
+            uav.phase = {RingRole.OUTER: FlightPhase.RING_OUTER, RingRole.MIDDLE: FlightPhase.RING_MIDDLE, RingRole.INNER: FlightPhase.RING_INNER}[role]
+            uav.ring_role = role; uav.ring_progress = theta
+            uav.position = np.array((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height))
+            self.active[uav.uid] = uav
+        self._refresh_airspace_occupancy()
+
+    def _observations(self) -> dict[str, np.ndarray]:
+        return {str(uid): build_a5_observation(uav, self) for uid, uav in self.active.items()}
+
+    def _refresh_airspace_occupancy(self) -> None:
+        values = {role: 0 for role in RingRole}
+        for uav in self.active.values():
+            if uav.ring_role is not None:
+                values[uav.ring_role] += 1
         self.airspace.set_occupancy(values)
-    def _resolve(self,uav,outcome,reason):
-        if uav.assigned_lz is not None:self.lz_manager.release(uav.assigned_lz,uav.uid,reason)
-        uav.terminal_outcome=outcome;uav.terminal_reason=reason;self.ledger.resolve(uav.arrival_id,outcome);self.active.pop(uav.uid,None)
-    def _advance_plan(self,u):
-        plan=u.committed_plan
-        if plan is None:return
-        before=u.position.copy();point=plan.sample(min(self.now+self.config.dt,plan.end_time));u.position=point.position;u.velocity=point.velocity if point.velocity is not None else np.zeros(3);u.speed=float(np.linalg.norm(u.velocity));u.path_length+=float(np.linalg.norm(u.position-before))
-        if self.now+self.config.dt+1e-9<plan.end_time:return
-        u.committed_plan=None;u.trajectory_plan_id=None;target=plan.metadata.get("target_phase")
-        if target=="ring_outer":transition(u,FlightPhase.RING_OUTER,self.now+self.config.dt);u.ring_role=RingRole.OUTER;u.ring_progress=math.atan2(u.position[1],u.position[0])
-        elif target=="ring_middle":transition(u,FlightPhase.RING_MIDDLE,self.now+self.config.dt);u.ring_role=RingRole.MIDDLE;u.ring_progress=math.atan2(u.position[1],u.position[0])
-        elif target=="ring_inner":transition(u,FlightPhase.RING_INNER,self.now+self.config.dt);u.ring_role=RingRole.INNER;u.ring_progress=math.atan2(u.position[1],u.position[0])
-        elif target=="landing":
-            transition(u,FlightPhase.LANDING,self.now+self.config.dt);transition(u,FlightPhase.SERVICE,self.now+self.config.dt);self.lz_manager.touchdown(u.assigned_lz,u.uid,u.mission_type);self.service_uavs[u.uid]=u;self.active.pop(u.uid,None);self.events.append(("touchdown",u.uid,self.now+self.config.dt))
-    def _commit(self,u,plan):
-        plans={uid: x.committed_plan for uid,x in self.active.items() if x.committed_plan is not None};result=self.safety.filter_plan(plan,plans,WorldSnapshot(self.now,self.active,self.airspace))
-        if result.approved:u.committed_plan=plan;u.trajectory_plan_id=plan.plan_id;return True
-        return False
-    def _request_release(self,u,intent):
-        if intent.release_request<=self.config.release_threshold or u.committed_plan is not None:return
-        snapshot=WorldSnapshot(self.now,self.active,self.airspace)
-        if u.phase is FlightPhase.RING_OUTER:
-            if "o2m" in self.airspace.affected_interfaces():return
-            r=self.scheduler.reserve(u,self.scheduler.propose(u,intent,snapshot,RingRole.MIDDLE));plan=self.generator.ring_transfer(u,RingRole.OUTER,RingRole.MIDDLE,r,self.airspace,self.now)
-            if self._commit(u,plan):transition(u,FlightPhase.TRANSFER_O2M,self.now);u.ring_role=None;u.merge_reservation_id=r.reservation_id
-            else:self.scheduler.cancel(r.reservation_id,"safety_reject")
-        elif u.phase is FlightPhase.RING_MIDDLE:
-            if "m2i" in self.airspace.affected_interfaces():return
-            r=self.scheduler.reserve(u,self.scheduler.propose(u,intent,snapshot,RingRole.INNER));plan=self.generator.ring_transfer(u,RingRole.MIDDLE,RingRole.INNER,r,self.airspace,self.now)
-            if self._commit(u,plan):transition(u,FlightPhase.TRANSFER_M2I,self.now);u.ring_role=None;u.merge_reservation_id=r.reservation_id
-            else:self.scheduler.cancel(r.reservation_id,"safety_reject")
-        elif u.phase is FlightPhase.RING_INNER:
-            if "i2f" in self.airspace.affected_interfaces():return
-            lz_id=self.lz_manager.choose_rule_zone(u,self.now)
-            if lz_id is None:return
-            if not self.lz_manager.reserve(lz_id,u.uid,self.now).approved:return
-            r=self.scheduler.reserve(u,self.scheduler.propose(u,intent,snapshot,"final"));plan=self.generator.final_approach(u,self.lz_manager.zones[lz_id],r,self.now)
-            if self._commit(u,plan):u.assigned_lz=lz_id;transition(u,FlightPhase.FINAL,self.now);u.ring_role=None;u.merge_reservation_id=r.reservation_id
-            else:self.lz_manager.release(lz_id,u.uid,"safety_reject");self.scheduler.cancel(r.reservation_id,"safety_reject")
-    def step(self,actions=None):
-        for request in self.arrivals.requests_until(self.now):self.ledger.request(request.arrival_id);self.admission.enqueue(request)
-        self.admission.queue.step(self.config.dt,self.energy,self.priority,self.now)
-        self._refresh_airspace_occupancy();admitted,records=self.admission.step(self.now,self.active,self.airspace,self.energy,self.priority)
+
+    def _resolve(self, uav: UAVState, outcome: TerminalOutcome, reason: str) -> None:
+        if uav.assigned_lz is not None:
+            self.lz_manager.release(uav.assigned_lz, uav.uid, reason)
+        uav.terminal_outcome = outcome
+        uav.terminal_reason = reason
+        self.ledger.resolve(uav.arrival_id, outcome)
+        self.active.pop(uav.uid, None)
+
+    def _commit(self, uav: UAVState, plan) -> bool:
+        committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
+        result = self.safety.filter_plan(plan, committed, WorldSnapshot(self.now, self.active, self.airspace))
+        if not result.approved:
+            self.telemetry["safety_interventions"] += 1
+            return False
+        uav.committed_plan = plan
+        uav.trajectory_plan_id = plan.plan_id
+        return True
+
+    def _advance_plan(self, uav: UAVState) -> tuple[float, bool]:
+        plan = uav.committed_plan
+        if plan is None:
+            return 0.0, False
+        before = uav.position.copy()
+        point = plan.sample(min(self.now + self.config.dt, plan.end_time))
+        uav.position = point.position
+        uav.velocity = point.velocity if point.velocity is not None else np.zeros(3)
+        uav.speed = float(np.linalg.norm(uav.velocity))
+        distance = float(np.linalg.norm(uav.position - before))
+        uav.path_length += distance
+        if self.now + self.config.dt + 1e-9 < plan.end_time:
+            return distance, False
+        uav.committed_plan = None
+        uav.trajectory_plan_id = None
+        target = plan.metadata["target_phase"]
+        if target == "ring_outer":
+            transition(uav, FlightPhase.RING_OUTER, self.now + self.config.dt)
+            uav.ring_role = RingRole.OUTER
+        elif target == "ring_middle":
+            transition(uav, FlightPhase.RING_MIDDLE, self.now + self.config.dt)
+            uav.ring_role = RingRole.MIDDLE
+        elif target == "ring_inner":
+            transition(uav, FlightPhase.RING_INNER, self.now + self.config.dt)
+            uav.ring_role = RingRole.INNER
+        elif target == "landing":
+            transition(uav, FlightPhase.LANDING, self.now + self.config.dt)
+            transition(uav, FlightPhase.SERVICE, self.now + self.config.dt)
+            self.lz_manager.touchdown(uav.assigned_lz, uav.uid, uav.mission_type)
+            self.service_uavs[uav.uid] = uav
+            self.active.pop(uav.uid, None)
+            self.events.append(("touchdown", uav.uid, self.now + self.config.dt))
+            return distance, True
+        uav.ring_progress = math.atan2(uav.position[1], uav.position[0])
+        return distance, False
+
+    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent) -> float:
+        if uav.ring_role is None or uav.committed_plan is not None:
+            return 0.0
+        ring = self.airspace.actual_ring(uav.ring_role)
+        # The nominal guidance reference remains fixed between scheduling events;
+        # only the policy's residual advances the sampled hold reference here.
+        # This keeps the simple A5 simulator conservative while preserving a
+        # real, bounded speed-residual effect.
+        if abs(intent.speed_residual) <= 1e-8:
+            uav.speed = ring.nominal_speed
+            return 0.0
+        before = uav.position.copy()
+        speed = float(np.clip(ring.nominal_speed + intent.speed_residual * self.config.max_speed_residual_mps, self.config.speed_min, self.config.max_speed))
+        theta = (uav.ring_progress or math.atan2(uav.position[1], uav.position[0])) + speed * self.config.dt / ring.radius
+        uav.ring_progress = theta % (2 * math.pi)
+        uav.position = np.array((ring.radius * math.cos(uav.ring_progress), ring.radius * math.sin(uav.ring_progress), ring.height))
+        uav.velocity = (uav.position - before) / self.config.dt
+        uav.speed = speed
+        distance = float(np.linalg.norm(uav.position - before))
+        uav.path_length += distance
+        uav.internal_wait_time += self.config.dt
+        uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + self.config.dt
+        return distance
+
+    def _release(self, uav: UAVState, intent: LowLevelIntent) -> str:
+        if intent.release_request <= self.config.release_threshold:
+            return "not_requested"
+        if uav.committed_plan is not None:
+            return "plan_active"
+        snapshot = WorldSnapshot(self.now, self.active, self.airspace)
+        residual = intent.speed_residual * self.config.max_speed_residual_mps
+        if uav.phase is FlightPhase.RING_OUTER:
+            if "o2m" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            target, phase = RingRole.MIDDLE, FlightPhase.TRANSFER_O2M
+        elif uav.phase is FlightPhase.RING_MIDDLE:
+            if "m2i" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            target, phase = RingRole.INNER, FlightPhase.TRANSFER_M2I
+        elif uav.phase is FlightPhase.RING_INNER:
+            if "i2f" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+            if lz_id is None: return "lz_unavailable"
+            if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved: return "lz_reservation_reject"
+            reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, "final"))
+            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now)
+            if self._commit(uav, plan):
+                uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
+                return "approved"
+            self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+            return "safety_reject"
+        else:
+            return "phase_masked"
+        reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, target))
+        plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now, residual)
+        if self._commit(uav, plan):
+            uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
+            return "approved"
+        self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+        return "safety_reject"
+
+    def step(self, actions: dict[str, np.ndarray] | None = None):
+        previous = dict(self.active)
+        rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}
+        actions = actions or {}
+        intents: dict[int, LowLevelIntent] = {}
+        decisions: dict[int, str] = {}
+        action_rows = []
+        for request in self.arrivals.requests_until(self.now):
+            self.ledger.request(request.arrival_id); self.admission.enqueue(request)
+        self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
+        self._refresh_airspace_occupancy()
+        admitted, records = self.admission.step(self.now, self.active, self.airspace, self.energy, self.priority)
         for record in records:
-            if record.decision.value=="divert":self.ledger.resolve(record.request.arrival_id,TerminalOutcome.DIVERTED_LOW_SOC if record.reason_code=="low_soc" else TerminalOutcome.DIVERTED_CAPACITY)
-        for queued,gate in admitted:
-            u=UAVState.from_request(self.uid,queued.request,queued,gate.spawn_point,self.now);self.uid+=1;self.active[u.uid]=u;self._commit(u,self.generator.inbound(u,gate,self.airspace,self.now))
-        self.airspace.step_transition(self.now)
+            if record.decision.value == "divert":
+                outcome = TerminalOutcome.DIVERTED_LOW_SOC if record.reason_code == "low_soc" else TerminalOutcome.DIVERTED_CAPACITY
+                self.ledger.resolve(record.request.arrival_id, outcome)
+        for queued, gate in admitted:
+            uav = UAVState.from_request(self.uid, queued.request, queued, gate.spawn_point, self.now)
+            self.uid += 1; self.active[uav.uid] = uav
+            self._commit(uav, self.generator.inbound(uav, gate, self.airspace, self.now))
+        # Service is global only; it does not resurrect terminated low-level agents.
         for uid in self.lz_manager.step(self.config.dt):
-            u=self.service_uavs.pop(uid);transition(u,FlightPhase.COMPLETED,self.now+self.config.dt);u.completion_time=self.now+self.config.dt;u.terminal_outcome=TerminalOutcome.COMPLETED;self.ledger.resolve(u.arrival_id,TerminalOutcome.COMPLETED);self.events.append(("completed",uid,self.now+self.config.dt))
-        actions=actions or {}
-        for uid,u in list(self.active.items()):
-            intent=LowLevelIntent.from_array(actions.get(str(uid),np.array([1.,0.,0.])));self.priority.update(u,self.now);self._request_release(u,intent)
-        for u in list(self.active.values()):
-            phase=u.phase;self._advance_plan(u);self.energy.consume(u,phase,self.config.dt)
-            if u.energy_remaining<=0 and u.uid in self.active:self._resolve(u,TerminalOutcome.FAILED_ENERGY,"energy_depleted")
-        # The trajectory-level filter prevents expected conflicts; this detects any
-        # realised collision as a terminal safety failure instead of hiding it.
-        for uid,u in list(self.active.items()):
-            for other_uid,other in list(self.active.items()):
+            uav = self.service_uavs.pop(uid)
+            transition(uav, FlightPhase.COMPLETED, self.now + self.config.dt)
+            uav.completion_time = self.now + self.config.dt; uav.terminal_outcome = TerminalOutcome.COMPLETED
+            self.ledger.resolve(uav.arrival_id, TerminalOutcome.COMPLETED)
+            self.completed_uavs.append(uav)
+            self.events.append(("completed", uid, self.now + self.config.dt))
+        pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
+        for uid, uav in list(self.active.items()):
+            intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
+            intents[uid] = intent; self.priority.update(uav, self.now)
+            decision = self._release(uav, intent); decisions[uid] = decision
+            if intent.release_request > self.config.release_threshold:
+                rewards.setdefault(uid, LowLevelReward()).release += self.config.low_level_release_approved_reward if decision == "approved" else -self.config.low_level_release_rejected_penalty
+                if decision == "approved": self.telemetry["release_approved"] += 1
+                else: self.telemetry["release_rejected"] += 1
+            if abs(intent.merge_time_residual) > 1e-8: self.telemetry["merge_time_modified"] += 1
+            action_rows.append((intent.release_request, intent.speed_residual, intent.merge_time_residual, decision))
+        for uid, uav in list(self.active.items()):
+            phase = uav.phase
+            distance, touchdown = self._advance_plan(uav)
+            if uid in intents: distance += self._advance_ring_hold(uav, intents[uid])
+            self.energy.consume(uav, phase, self.config.dt)
+            if uid in rewards: rewards[uid].progress += distance * self.config.low_level_progress_reward_per_meter
+            if touchdown and uid in rewards: rewards[uid].touchdown += self.config.low_level_touchdown_reward
+            if uav.energy_remaining <= 0 and uid in self.active:
+                self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
+        for uid, uav in list(self.active.items()):
+            for other_uid, other in list(self.active.items()):
                 if uid >= other_uid: continue
-                if np.linalg.norm(u.position-other.position) < self.config.collision_distance:
-                    self._resolve(u,TerminalOutcome.FAILED_COLLISION,"collision")
-                    if other_uid in self.active:self._resolve(other,TerminalOutcome.FAILED_COLLISION,"collision")
-        self.now+=self.config.dt;self.step_count+=1;self._refresh_airspace_occupancy();obs=self._observations();rewards={a:-self.config.dt*.01 for a in obs};terminated={a:False for a in obs};truncated={a:self.now>=self.config.max_simulation_seconds for a in obs};infos={"time":self.now,"queue_size":len(self.admission.queue.items),"outcomes":dict(self.ledger.outcomes),"touchdowns":sum(x[0]=='touchdown' for x in self.events)}
-        return obs,rewards,terminated,truncated,infos
-    def run_rule_only(self,max_steps=None):
-        for _ in range(max_steps or int(self.config.max_simulation_seconds/self.config.dt)):
+                distance = np.linalg.norm(uav.position - other.position)
+                if distance < self.config.nmac_distance: self.telemetry["nmac"] += 1
+                if distance < self.config.collision_distance:
+                    self.telemetry["collisions"] += 1
+                    self._resolve(uav, TerminalOutcome.FAILED_COLLISION, "collision")
+                    if other_uid in self.active: self._resolve(other, TerminalOutcome.FAILED_COLLISION, "collision")
+        for uid, uav in previous.items():
+            if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
+            if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
+        self.now += self.config.dt; self.step_count += 1; self._refresh_airspace_occupancy()
+        observation = self._observations()
+        return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
+            "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
+            "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
+            "actions": action_rows, "telemetry": dict(self.telemetry),
+        }
+
+    def run_rule_only(self, max_steps: int | None = None) -> OutcomeLedger:
+        for _ in range(max_steps or int(self.config.max_simulation_seconds / self.config.dt)):
             self.step()
-            if self.arrivals.exhausted() and not self.active and not self.admission.queue.items and not self.service_uavs:break
+            if self.arrivals.exhausted() and not self.active and not self.admission.queue.items and not self.service_uavs: break
         return self.ledger

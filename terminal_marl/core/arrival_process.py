@@ -10,7 +10,12 @@ class ArrivalProcess:
     def reset(self, seed: int | None = None) -> None:
         self.rng=np.random.default_rng(seed); self.generated=0; self.index=0; self.wave=0
         self._schedule=tuple(sorted(self.config.fixed_arrival_schedule))
-        self.next_time=self._schedule[0] if self._schedule else (0.0 if self.config.arrival_model=="finite_cohort" and self.config.total_requested_uavs else math.inf)
+        if self._schedule:
+            self.next_time = self._schedule[0]
+        elif self.config.arrival_model == "finite_cohort" and self.config.total_requested_uavs:
+            self.next_time = 0.0
+        else:
+            self.next_time = self._next(0.0)
     def exhausted(self)->bool:
         return math.isinf(self.next_time)
     def _next(self,now:float)->float:

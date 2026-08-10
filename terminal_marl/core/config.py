@@ -31,6 +31,9 @@ class SimConfig:
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_obs_v1"
     experiment_mode: str = "fixed_rule"
+    high_level_enabled: bool = False
+    reset_mode: str = "flow_from_empty"
+    warm_start_uavs: int = 0
     dt: float = 1.0
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
@@ -102,6 +105,13 @@ class SimConfig:
     max_speed_residual_mps: float = 2.0
     max_merge_time_residual_seconds: float = 6.0
     release_threshold: float = 0.0
+    low_level_touchdown_reward: float = 25.0
+    low_level_time_penalty_per_second: float = 0.01
+    low_level_progress_reward_per_meter: float = 0.001
+    low_level_release_approved_reward: float = 0.10
+    low_level_release_rejected_penalty: float = 0.05
+    low_level_collision_penalty: float = 25.0
+    low_level_energy_failure_penalty: float = 20.0
 
     def __post_init__(self) -> None:
         if self.schema_version != "phaseA_landing_v1":
@@ -118,3 +128,9 @@ class SimConfig:
             raise ValueError("initial_soc_mode must be uniform or fixed")
         if self.initial_soc_mode == "fixed" and self.initial_soc is None:
             raise ValueError("fixed initial SOC requires initial_soc")
+        if self.experiment_mode not in {"fixed_rule", "fixed_low_rl"}:
+            raise ValueError("A5 only supports fixed_rule or fixed_low_rl")
+        if self.high_level_enabled:
+            raise ValueError("A5 keeps the high-level policy disabled")
+        if self.reset_mode not in {"flow_from_empty", "warm_start_rings"}:
+            raise ValueError("unsupported reset_mode")

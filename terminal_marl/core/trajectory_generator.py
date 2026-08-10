@@ -25,7 +25,7 @@ class TrajectoryGenerator:
         r=airspace.actual_ring(RingRole.OUTER); a=gate.angle;target=np.array((r.radius*math.cos(a),r.radius*math.sin(a),r.height));dist=np.linalg.norm(target-uav.position)
         duration=max(1.,dist/28,abs(target[2]-uav.position[2])/self.config.max_descent_rate)
         return self._plan(uav,"inbound",[uav.position,target],now,now+duration,metadata={"target_phase":"ring_outer"})
-    def ring_transfer(self,uav,source,target,reservation,airspace,now):
+    def ring_transfer(self,uav,source,target,reservation,airspace,now, speed_residual_mps=0.0):
         p0=np.asarray(uav.position,dtype=float); a=reservation.merge_angle or 0.; ring=airspace.actual_ring(target);p3=np.array((ring.radius*math.cos(a),ring.radius*math.sin(a),ring.height));
         src_angle=math.atan2(p0[1],p0[0]);t0=np.array((-math.sin(src_angle),math.cos(src_angle),0.));t1=np.array((-math.sin(a),math.cos(a),0.));d=np.linalg.norm(p3-p0);L=min(0.45*d,180.);p1=p0+L*t0;p2=p3-L*t1
         ss=np.linspace(0,1,41);curve=[]
@@ -34,8 +34,9 @@ class TrajectoryGenerator:
         length=sum(np.linalg.norm(b-a) for a,b in zip(curve,curve[1:]))
         # quintic smoothstep peaks at 1.875 times its average vertical rate.
         vertical_duration=abs(p3[2]-p0[2]) / max(1e-6, self.config.max_climb_rate) * 1.90
-        end=max(now+length/max(1.,ring.nominal_speed), now+vertical_duration, reservation.merge_time)
-        return self._plan(uav,"ring_transfer",curve,now,end,reservation,{"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner","source_tangent":t0,"target_tangent":t1})
+        commanded_speed=np.clip(ring.nominal_speed + speed_residual_mps, self.config.speed_min, self.config.max_speed)
+        end=max(now+length/max(1.,commanded_speed), now+vertical_duration, reservation.merge_time)
+        return self._plan(uav,"ring_transfer",curve,now,end,reservation,{"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner","source_tangent":t0,"target_tangent":t1,"speed_residual_mps":float(speed_residual_mps)})
     def final_approach(self,uav,lz,reservation,now):
         p0=np.asarray(uav.position); entry=np.array((0.,-150.,120.));stabilized=np.array((lz.position[0],lz.position[1]-80.,35.));p3=np.asarray(lz.position);length=np.linalg.norm(entry-p0)+np.linalg.norm(stabilized-entry)+np.linalg.norm(p3-stabilized);return self._plan(uav,"final_approach",[p0,entry,stabilized,p3],now,max(now+length/10.,reservation.merge_time),reservation,{"target_phase":"landing"})
     def validate_kinematics(self,plan):

@@ -1,0 +1,8 @@
+schema_version: phaseA_landing_v1
+experiment_mode: fixed_low_rl
+high_level_enabled: false
+airspace: fixed_three_ring
+headways: fixed
+low_level_action: [release_request, speed_residual, merge_time_residual]
+critic: masked_mean_max_pooling
+curriculum: [sanity_1, sanity_3, warm_start_10, flow_20, variable_bursty]

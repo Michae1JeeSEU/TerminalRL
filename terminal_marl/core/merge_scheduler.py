@@ -22,10 +22,14 @@ class MergeProposal: target:RingRole|str; merge_time:float; merge_angle:float|No
 class MergeScheduler:
     def __init__(self,config):self.config=config;self.reservations={};self.last_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
     def _key(self,target):return {RingRole.MIDDLE:"o2m",RingRole.INNER:"m2i","final":"i2f"}[target]
-    def baseline_time(self,uav,target,snapshot):return max(snapshot.now,snapshot.airspace.headways[self._key(target)]+self.last_release[self._key(target)])
+    def baseline_time(self,uav,target,snapshot):
+        # Nominal merge preparation time.  A bounded residual modifies the
+        # scheduler's reservation subject to the hard earliest headway.
+        earliest=max(snapshot.now,snapshot.airspace.headways[self._key(target)]+self.last_release[self._key(target)])
+        return earliest + 6.0
     def propose(self,uav,intent,snapshot,target):
-        base=self.baseline_time(uav,target,snapshot); t=base+intent.merge_time_residual*self.config.max_merge_time_residual_seconds
-        t=max(base,t); angle=None
+        base=self.baseline_time(uav,target,snapshot); hard_earliest=max(snapshot.now,snapshot.airspace.headways[self._key(target)]+self.last_release[self._key(target)])
+        t=max(hard_earliest, base+intent.merge_time_residual*self.config.max_merge_time_residual_seconds); angle=None
         if isinstance(target,RingRole):
             ring=snapshot.airspace.actual_ring(target); angle=self._gap_center(target,t,snapshot,ring.nominal_speed)
         return MergeProposal(target,t,angle)
