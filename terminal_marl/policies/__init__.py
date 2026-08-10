@@ -1,5 +1,2 @@
-"""Non-learning high-level policy baselines."""
-
-from .dynamic_rule import DynamicRuleHighLevelPolicy
-
-__all__ = ["DynamicRuleHighLevelPolicy"]
+from .rule_low_level import RuleLowLevelPolicy
+__all__=["RuleLowLevelPolicy"]

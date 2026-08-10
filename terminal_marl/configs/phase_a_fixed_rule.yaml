@@ -1,0 +1,20 @@
+schema_version: phaseA_landing_v1
+airspace_schema_version: three_ring_v1
+action_schema_version: low_intent_v1_3d
+high_action_schema_version: high_airspace_v1_10d
+observation_schema_version: phaseA_obs_v1
+experiment_mode: fixed_rule
+simulation:
+  dt: 1.0
+  max_active_uavs: 60
+  max_simulation_seconds: 3600
+airspace:
+  outer: {radius: 600.0, height: 500.0, speed: 28.0}
+  middle: {radius: 400.0, height: 350.0, speed: 24.0}
+  inner: {radius: 200.0, height: 200.0, speed: 20.0}
+arrival:
+  gate_angles_deg: [0.0, 90.0, 180.0, 270.0]
+  initial_soc: uniform_reserve_to_one
+landing_zones:
+  count: 6
+  compatible_missions: [standard, cargo, emergency, surveillance]
