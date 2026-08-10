@@ -128,9 +128,14 @@ class SimConfig:
             raise ValueError("initial_soc_mode must be uniform or fixed")
         if self.initial_soc_mode == "fixed" and self.initial_soc is None:
             raise ValueError("fixed initial SOC requires initial_soc")
-        if self.experiment_mode not in {"fixed_rule", "fixed_low_rl"}:
-            raise ValueError("A5 only supports fixed_rule or fixed_low_rl")
-        if self.high_level_enabled:
-            raise ValueError("A5 keeps the high-level policy disabled")
+        supported_modes = {
+            "fixed_rule", "fixed_low_rl", "dynamic_rule",
+            "learned_high_rule_low", "learned_high_frozen_low",
+        }
+        if self.experiment_mode not in supported_modes:
+            raise ValueError(f"unsupported canonical Phase-A experiment mode: {self.experiment_mode}")
+        dynamic_modes = {"dynamic_rule", "learned_high_rule_low", "learned_high_frozen_low"}
+        if self.high_level_enabled != (self.experiment_mode in dynamic_modes):
+            raise ValueError("high_level_enabled must agree with the selected canonical experiment mode")
         if self.reset_mode not in {"flow_from_empty", "warm_start_rings"}:
             raise ValueError("unsupported reset_mode")

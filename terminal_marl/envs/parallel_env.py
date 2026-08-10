@@ -63,7 +63,13 @@ class TerminalParallelEnv:
         self.scheduler = MergeScheduler(self.config)
         self.safety = SafetyFilter(self.config)
         self.events: list[tuple[str, int, float]] = []
-        self.telemetry = {"release_approved": 0, "release_rejected": 0, "safety_interventions": 0, "merge_time_modified": 0, "collisions": 0, "nmac": 0}
+        self.conflict_events: list[dict] = []
+        self._nmac_active_pairs: set[tuple[int, int]] = set()
+        self.telemetry = {
+            "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
+            "merge_time_modified": 0, "collisions": 0, "nmac": 0,
+            "nmac_exposure_steps": 0, "geometry_updates": 0,
+        }
         self.completed_uavs: list[UAVState] = []
         if self.config.reset_mode == "warm_start_rings" and self.config.warm_start_uavs:
             self._warm_start()
@@ -92,10 +98,28 @@ class TerminalParallelEnv:
 
     def _refresh_airspace_occupancy(self) -> None:
         values = {role: 0 for role in RingRole}
+        committed = {role: 0 for role in RingRole}
         for uav in self.active.values():
             if uav.ring_role is not None:
                 values[uav.ring_role] += 1
-        self.airspace.set_occupancy(values)
+            if uav.committed_plan is not None:
+                target = uav.committed_plan.metadata.get("target_phase")
+                role = {"ring_outer": RingRole.OUTER, "ring_middle": RingRole.MIDDLE, "ring_inner": RingRole.INNER}.get(target)
+                if role is not None:
+                    committed[role] += 1
+        self.airspace.set_occupancy(values, committed)
+
+    def apply_high_level_action(self, action: np.ndarray, *, geometry_gate: bool):
+        """Apply a canonical 10-D action without changing any committed plan."""
+        self._refresh_airspace_occupancy()
+        result = self.airspace.request_update(
+            action, now=self.now, occupancies=self.airspace._occupancy,
+            committed_incoming=self.airspace._committed, geometry_gate=geometry_gate,
+        )
+        if result.structural_applied:
+            self.telemetry["geometry_updates"] += 1
+        self.events.append(("high_action", -1, self.now))
+        return result
 
     def _resolve(self, uav: UAVState, outcome: TerminalOutcome, reason: str) -> None:
         if uav.assigned_lz is not None:
@@ -155,16 +179,16 @@ class TerminalParallelEnv:
         if uav.ring_role is None or uav.committed_plan is not None:
             return 0.0
         ring = self.airspace.actual_ring(uav.ring_role)
-        # The nominal guidance reference remains fixed between scheduling events;
-        # only the policy's residual advances the sampled hold reference here.
-        # This keeps the simple A5 simulator conservative while preserving a
-        # real, bounded speed-residual effect.
-        if abs(intent.speed_residual) <= 1e-8:
-            uav.speed = ring.nominal_speed
-            return 0.0
+        # A ring holder follows the moving *actual* reference during geometry
+        # interpolation.  Its committed transfer (if any) is never rewritten.
         before = uav.position.copy()
-        speed = float(np.clip(ring.nominal_speed + intent.speed_residual * self.config.max_speed_residual_mps, self.config.speed_min, self.config.max_speed))
-        theta = (uav.ring_progress or math.atan2(uav.position[1], uav.position[0])) + speed * self.config.dt / ring.radius
+        theta0 = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
+        uav.position = np.array((ring.radius * math.cos(theta0), ring.radius * math.sin(theta0), ring.height))
+        speed = float(np.clip(
+            ring.nominal_speed + self.airspace.speed_profile_bias + intent.speed_residual * self.config.max_speed_residual_mps,
+            self.config.speed_min, self.config.max_speed,
+        ))
+        theta = theta0 + speed * self.config.dt / ring.radius
         uav.ring_progress = theta % (2 * math.pi)
         uav.position = np.array((ring.radius * math.cos(uav.ring_progress), ring.radius * math.sin(uav.ring_progress), ring.height))
         uav.velocity = (uav.position - before) / self.config.dt
@@ -180,6 +204,8 @@ class TerminalParallelEnv:
             return "not_requested"
         if uav.committed_plan is not None:
             return "plan_active"
+        if self.now < uav.safety_retry_after:
+            return "safety_wait"
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
         residual = intent.speed_residual * self.config.max_speed_residual_mps
         if uav.phase is FlightPhase.RING_OUTER:
@@ -199,6 +225,7 @@ class TerminalParallelEnv:
                 uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
                 return "approved"
             self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+            uav.safety_retry_after = self.now + 5.0
             return "safety_reject"
         else:
             return "phase_masked"
@@ -208,6 +235,7 @@ class TerminalParallelEnv:
             uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
             return "approved"
         self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+        uav.safety_retry_after = self.now + 5.0
         return "safety_reject"
 
     def step(self, actions: dict[str, np.ndarray] | None = None):
@@ -221,6 +249,7 @@ class TerminalParallelEnv:
             self.ledger.request(request.arrival_id); self.admission.enqueue(request)
         self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
         self._refresh_airspace_occupancy()
+        self.airspace.step_transition(self.now)
         admitted, records = self.admission.step(self.now, self.active, self.airspace, self.energy, self.priority)
         for record in records:
             if record.decision.value == "divert":
@@ -258,15 +287,24 @@ class TerminalParallelEnv:
             if touchdown and uid in rewards: rewards[uid].touchdown += self.config.low_level_touchdown_reward
             if uav.energy_remaining <= 0 and uid in self.active:
                 self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
+        current_nmac_pairs: set[tuple[int, int]] = set()
         for uid, uav in list(self.active.items()):
             for other_uid, other in list(self.active.items()):
                 if uid >= other_uid: continue
                 distance = np.linalg.norm(uav.position - other.position)
-                if distance < self.config.nmac_distance: self.telemetry["nmac"] += 1
+                pair = (uid, other_uid)
+                if distance < self.config.nmac_distance:
+                    current_nmac_pairs.add(pair)
+                    self.telemetry["nmac_exposure_steps"] += 1
+                    if pair not in self._nmac_active_pairs:
+                        self.telemetry["nmac"] += 1
+                        self.conflict_events.append({"kind": "nmac_entry", "time": self.now + self.config.dt, "uids": pair, "arrival_ids": (uav.arrival_id, other.arrival_id), "distance": float(distance), "phases": (uav.phase.value, other.phase.value), "plan_ids": (uav.trajectory_plan_id, other.trajectory_plan_id)})
                 if distance < self.config.collision_distance:
                     self.telemetry["collisions"] += 1
+                    self.conflict_events.append({"kind": "collision", "time": self.now + self.config.dt, "uids": pair, "arrival_ids": (uav.arrival_id, other.arrival_id), "distance": float(distance), "phases": (uav.phase.value, other.phase.value), "plan_ids": (uav.trajectory_plan_id, other.trajectory_plan_id)})
                     self._resolve(uav, TerminalOutcome.FAILED_COLLISION, "collision")
                     if other_uid in self.active: self._resolve(other, TerminalOutcome.FAILED_COLLISION, "collision")
+        self._nmac_active_pairs = current_nmac_pairs
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
             if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
@@ -275,7 +313,7 @@ class TerminalParallelEnv:
         return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
-            "actions": action_rows, "telemetry": dict(self.telemetry),
+            "actions": action_rows, "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
         }
 
     def run_rule_only(self, max_steps: int | None = None) -> OutcomeLedger:

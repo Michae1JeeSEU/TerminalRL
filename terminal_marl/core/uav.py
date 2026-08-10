@@ -114,6 +114,7 @@ class UAVState:
     terminal_outcome: TerminalOutcome | None = None
     terminal_reason: str | None = None
     committed_plan: Any | None = None
+    safety_retry_after: float = 0.0
 
     @property
     def soc(self) -> float:
