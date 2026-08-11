@@ -32,6 +32,11 @@ class FrozenLowLevelPolicy:
         if not path.is_file(): raise FileNotFoundError(f"frozen low-level checkpoint does not exist: {path}")
         self.checkpoint_hash = hashlib.sha256(path.read_bytes()).hexdigest().upper()
         if expected_hash is not None and self.checkpoint_hash != expected_hash.upper(): raise ValueError("frozen low-level checkpoint SHA256 mismatch")
+        import torch
+        # Evaluation invokes a tiny variable-N forward pass every simulator
+        # step; one CPU thread avoids OpenMP launch overhead without changing
+        # the frozen weights or the policy computation.
+        torch.set_num_threads(1)
         from ..core.observations import A5_OBSERVATION_SCHEMA
         from ..algo.shared_ppo import SharedPPO
         from ..core.checkpoints import load_checkpoint
