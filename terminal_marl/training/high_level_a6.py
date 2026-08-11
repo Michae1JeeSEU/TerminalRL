@@ -85,6 +85,21 @@ def _fixed_rule(config: SimConfig, seed: int) -> dict:
     env=TerminalParallelEnv(replace(config,experiment_mode="fixed_rule",high_level_enabled=False));env.reset(seed);env.run_rule_only();result=_metrics(env);result["geometry_action_count"]=0.;return result
 
 
+def evaluate_a61_dynamic_rule_safety(base: SimConfig, seeds: list[int]) -> dict:
+    """Pre-training A6.1 safety gate using only the protected rule baseline."""
+    rows=[]
+    for seed in seeds:
+        config=replace(base,experiment_mode="dynamic_rule",high_level_enabled=True)
+        wrapper=DynamicHighLevelWrapper(config,RuleLowLevelAdapter()); observation,_=wrapper.reset(seed); policy=DynamicRulePolicy()
+        while True:
+            observation,_,terminated,truncated,info=wrapper.step(policy.act(observation,wrapper._context()))
+            if terminated or truncated: break
+        row=_metrics(wrapper.base); row.update({"geometry_action_count":float(wrapper.base.telemetry["geometry_updates"]),"hard_separation_violations":wrapper.coordinator.telemetry["hard_separation_violations"],"shield":wrapper.coordinator.history}); rows.append(row)
+    summary={key:float(np.mean([row[key] for row in rows])) for key in rows[0] if isinstance(rows[0][key],(int,float))}
+    checks={"zero_collision":summary["collisions"]==0.,"zero_unique_nmac":summary["nmac"]==0.,"zero_hard_separation":summary["hard_separation_violations"]==0.,"nonzero_geometry":summary["geometry_action_count"]>0.}
+    return {"passed":all(checks.values()),"checks":checks,"summary":summary,"per_seed":rows}
+
+
 def evaluate_a6_gate(high_rule: HighLevelPPO, high_frozen: HighLevelPPO, base: SimConfig, *, frozen_checkpoint: str | Path, frozen_hash: str, seeds: list[int]) -> dict:
     configurations={"fixed_rule":replace(base,experiment_mode="fixed_rule",high_level_enabled=False),"dynamic_rule":replace(base,experiment_mode="dynamic_rule",high_level_enabled=True),"learned_high_rule_low":replace(base,experiment_mode="learned_high_rule_low",high_level_enabled=True),"learned_high_frozen_low":replace(base,experiment_mode="learned_high_frozen_low",high_level_enabled=True)}
     output={}; per_seed={}
@@ -100,7 +115,7 @@ def evaluate_a6_gate(high_rule: HighLevelPPO, high_frozen: HighLevelPPO, base: S
                     else: action=(high_rule if name=="learned_high_rule_low" else high_frozen).act(observation,deterministic=True)[0]
                     observation,_,terminated,truncated,_=wrapper.step(action)
                     if terminated or truncated: break
-                row=_metrics(wrapper.base);row["geometry_action_count"]=float(sum(any(item["structural_mask"]) for item in wrapper.action_history));row["action_telemetry"]=wrapper.action_history;row["low_level_checkpoint_hash"]=getattr(low,"checkpoint_hash",None)
+                row=_metrics(wrapper.base);row["geometry_action_count"]=float(wrapper.base.telemetry["geometry_updates"]);row["action_telemetry"]=wrapper.action_history;row["low_level_checkpoint_hash"]=getattr(low,"checkpoint_hash",None)
             rows.append(row)
         per_seed[name]=rows
         numeric={key:[row[key] for row in rows] for key in rows[0] if isinstance(rows[0][key],(int,float))}

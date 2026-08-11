@@ -77,3 +77,24 @@ class SafetyFilter:
                 if np.linalg.norm(candidate_position - other_position) < self.config.safe_distance:
                     return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
         self.checked_plan_ids.append(plan.plan_id);return TrajectorySafetyResult(True,checked_plan_id=plan.plan_id)
+
+    def verify_predicted_tracks(self, tracks, *, start: float, end: float):
+        """Final arbiter for geometry repairs using canonical predicted plans."""
+        ordered = list(tracks.items())
+        # Committed trajectories have already passed ``filter_plan``.  New
+        # holder repair tracks are sampled from bounded ring-speed guidance;
+        # validate only those kinematics here rather than reinterpreting a
+        # previously checked transfer through a one-second approximation.
+        for _, plan in ordered:
+            if plan.metadata.get("committed", False):
+                continue
+            for a, b in zip(plan.points, plan.points[1:]):
+                dt = b.t - a.t
+                if dt <= 0 or np.linalg.norm((b.position-a.position) / dt) > self.config.max_speed + 1e-9:
+                    return TrajectorySafetyResult(False, "repair_kinematics", plan.plan_id)
+        for time in np.arange(start, end + 1e-9, 1.0):
+            for index, (uid, plan) in enumerate(ordered):
+                for other_uid, other in ordered[index+1:]:
+                    if np.linalg.norm(plan.sample(float(time)).position-other.sample(float(time)).position) < self.config.safe_distance:
+                        return TrajectorySafetyResult(False, f"repair_separation:{uid}:{other_uid}", plan.plan_id)
+        return TrajectorySafetyResult(True, checked_plan_id="reconfiguration_tracks")

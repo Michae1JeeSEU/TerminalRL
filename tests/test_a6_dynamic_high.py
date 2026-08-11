@@ -2,6 +2,7 @@ import numpy as np
 
 from terminal_marl.core.config import RingRole, SimConfig
 from terminal_marl.core.dynamic_airspace import DynamicAirspace
+from terminal_marl.core.reconfiguration_safety import ReconfigurationSafetyCoordinator
 from terminal_marl.envs.high_level_wrapper import DynamicHighLevelWrapper
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.policies import DynamicRulePolicy
@@ -35,9 +36,9 @@ def test_a6_wrapper_records_requested_applied_geometry_capacity_and_headways():
     assert first_action["applied_action"][6:] == list(action[6:])
     _, _, _, _, second = wrapper.step(action)
     second_action = second["high_action"]
-    assert any(second_action["structural_mask"])
-    assert second_action["actual_geometry"] == second_action["target_geometry"]
-    assert second_action["capacity"] != [47, 31, 15]
+    assert second_action["shield_outcome"] in {"delayed", "approved_repaired", "approved", "projected"}
+    # A committed inner/final corridor is protected rather than being moved
+    # optimistically; flow controls remain applied in either case.
     assert second_action["headways"]["o2m"] < 9.0
 
 
@@ -65,7 +66,7 @@ def test_a6_dynamic_rule_is_canonical_10d_and_pressure_responsive():
     quiet = policy.act(np.zeros(29, np.float32), {"external_queue": 0, "occupancy_ratio": [0., 0., 0.], "final_pressure": 0., "lz_utilization": 0.})
     busy = policy.act(np.zeros(29, np.float32), {"external_queue": 8, "occupancy_ratio": [.8, .2, .1], "final_pressure": 0., "lz_utilization": .2})
     assert quiet.shape == busy.shape == (10,)
-    assert busy[0] > 0 and busy[7] < 0
+    assert busy[0] > 0 and busy[7] > 0
 
 
 def test_a60_safety_handoff_prevents_historical_fixed_rule_conflicts():
@@ -75,3 +76,74 @@ def test_a60_safety_handoff_prevents_historical_fixed_rule_conflicts():
     assert env.ledger.closes()
     assert env.telemetry["collisions"] == env.telemetry["nmac"] == 0
     assert env.telemetry["nmac_exposure_steps"] == 0
+
+
+def test_a61_tiny_structural_noise_is_deadbanded_but_headway_remains_effective():
+    wrapper = DynamicHighLevelWrapper(dynamic_config(max_simulation_seconds=200.0))
+    wrapper.reset(seed=0)
+    _, _, _, _, info = wrapper.step(np.asarray((.01, -.01, .02, 0, 0, 0, 0, -.2, 0, 0), np.float32))
+    event = info["high_action"]
+    assert event["shield_outcome"] == "no_op"
+    assert event["structural_mask"] == [False] * 6
+    assert event["headways"]["o2m"] < 9.0
+
+
+def test_a61_unsafe_transition_is_delayed_not_immediately_cancelled():
+    wrapper = DynamicHighLevelWrapper(dynamic_config(max_simulation_seconds=400.0))
+    wrapper.reset(seed=0)
+    # Establish an active committed trajectory before requesting an inner
+    # update; the shield must preserve the request as a pending structure.
+    for _ in range(90):
+        wrapper.base.step()
+        if any(u.committed_plan is not None for u in wrapper.base.active.values()):
+            break
+    coordinator = wrapper.coordinator
+    decision = coordinator.coordinate(np.asarray((0, 0, 1, 0, 0, .5, 0, 0, 0, 0), np.float32), geometry_gate=True)
+    assert decision.outcome in {"approved", "approved_repaired", "delayed"}
+    if decision.outcome == "delayed":
+        assert coordinator.pending_action is not None and decision.deferred_until is not None
+
+
+def test_a61_projection_and_reject_have_explicit_reason_codes(monkeypatch):
+    env = TerminalParallelEnv(dynamic_config())
+    env.reset(seed=0)
+    coordinator = ReconfigurationSafetyCoordinator(env)
+    class Verdict:
+        def __init__(self, approved): self.approved=approved; self.reason="forced_conflict"
+    calls=[]
+    def candidate(action, repairs):
+        calls.append((action.copy(), repairs.copy()))
+        return None, Verdict(len(calls) == 2)
+    monkeypatch.setattr(coordinator, "_candidate_safety", candidate)
+    monkeypatch.setattr(coordinator, "_repair_options", lambda: iter(()))
+    decision = coordinator.coordinate(np.ones(10, np.float32), geometry_gate=True, allow_delay=False)
+    assert decision.outcome == "projected" and decision.reason_code == "minimal_structural_projection"
+    assert decision.projection_magnitude > 0
+    monkeypatch.setattr(coordinator, "_candidate_safety", lambda action, repairs: (None, Verdict(False)))
+    decision = coordinator.coordinate(np.ones(10, np.float32), geometry_gate=True, allow_delay=False)
+    assert decision.outcome == "rejected" and decision.reason_code == "no_safe_reconfiguration"
+
+
+def test_a61_dynamic_rule_random_actions_have_no_hard_conflict_smoke():
+    rng = np.random.default_rng(7)
+    for seed in (0, 1, 2):
+        wrapper = DynamicHighLevelWrapper(dynamic_config(max_simulation_seconds=700.0))
+        observation, _ = wrapper.reset(seed)
+        while True:
+            action = rng.uniform(-1, 1, 10).astype(np.float32)
+            observation, _, terminated, truncated, info = wrapper.step(action)
+            if terminated or truncated:
+                break
+        assert info["telemetry"]["collisions"] == info["telemetry"]["nmac"] == 0
+        assert info["telemetry"]["hard_separation_violations"] == 0
+
+
+def test_a61_dynamic_rule_executes_nonzero_protected_geometry_change():
+    wrapper = DynamicHighLevelWrapper(dynamic_config(max_simulation_seconds=700.0))
+    policy = DynamicRulePolicy(); observation, _ = wrapper.reset(seed=0)
+    while True:
+        observation, _, terminated, truncated, info = wrapper.step(policy.act(observation, wrapper._context()))
+        if terminated or truncated:
+            break
+    assert info["telemetry"]["geometry_updates"] > 0
+    assert info["telemetry"]["geometry_updates"] > 0

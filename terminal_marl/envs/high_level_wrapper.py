@@ -9,6 +9,7 @@ from typing import Protocol
 import numpy as np
 
 from ..core.config import RingRole, SimConfig
+from ..core.reconfiguration_safety import ReconfigurationSafetyCoordinator
 from ..core.uav import TerminalOutcome
 from ..policies import RuleLowLevelPolicy
 from .parallel_env import TerminalParallelEnv
@@ -57,7 +58,7 @@ class DynamicHighLevelWrapper:
     action_dim = 10; observation_dim = HIGH_LEVEL_OBSERVATION_DIM
     def __init__(self, config: SimConfig, low_level: LowLevelPolicy | None = None) -> None:
         if not config.high_level_enabled: raise ValueError("DynamicHighLevelWrapper requires high_level_enabled=True")
-        self.config=config; self.low_level=low_level or RuleLowLevelAdapter(); self.base=TerminalParallelEnv(config)
+        self.config=config; self.low_level=low_level or RuleLowLevelAdapter(); self.base=TerminalParallelEnv(config); self.coordinator=ReconfigurationSafetyCoordinator(self.base)
         self.action_history: list[dict] = []; self._previous_completed=0; self._previous_energy=0.0
     def _energy_total(self) -> float:
         states=list(self.base.active.values())+list(self.base.service_uavs.values())+list(self.base.completed_uavs)
@@ -78,21 +79,24 @@ class DynamicHighLevelWrapper:
         if vector.shape!=(self.observation_dim,): raise AssertionError(f"high-level observation must be ({self.observation_dim},), got {vector.shape}")
         return vector
     def reset(self, seed: int | None = None) -> tuple[np.ndarray, dict]:
-        self.base.reset(seed); self.action_history=[]; self._previous_completed=0; self._previous_energy=self._energy_total()
+        self.base.reset(seed); self.coordinator=ReconfigurationSafetyCoordinator(self.base); self.action_history=[]; self._previous_completed=0; self._previous_energy=self._energy_total()
         return self.observation(),{"low_level_checkpoint_hash":getattr(self.low_level,"checkpoint_hash",None)}
     def _done(self) -> bool:
         return bool(self.base.arrivals.exhausted() and not self.base.active and not self.base.admission.queue.items and not self.base.service_uavs)
     def step(self, action: np.ndarray) -> tuple[np.ndarray,float,bool,bool,dict]:
         requested=np.asarray(action,np.float32)
         if requested.shape!=(self.action_dim,) or not np.all(np.isfinite(requested)): raise ValueError("high-level action must be finite shape (10,)")
-        gate=self.geometry_event_gate(); update=self.base.apply_high_level_action(requested,geometry_gate=gate); before=dict(self.base.telemetry); before_completed=self._previous_completed; before_energy=self._previous_energy; start_time=self.base.now; low_reward=0.; latest_info={}
+        gate=self.geometry_event_gate(); shield=self.coordinator.coordinate(requested,geometry_gate=gate); update=shield.update; before=dict(self.base.telemetry); before_completed=self._previous_completed; before_energy=self._previous_energy; start_time=self.base.now; low_reward=0.; latest_info={}
         for _ in range(max(1,round(self.config.high_level_decision_interval_seconds/self.config.dt))):
-            _,rewards,_,_,latest_info=self.base.step(self.low_level.act(self.base._observations())); low_reward+=float(sum(rewards.values()))
+            deferred = self.coordinator.advance()
+            low_actions=self.coordinator.apply_speed_repairs(self.low_level.act(self.base._observations()))
+            _,rewards,_,_,latest_info=self.base.step(low_actions); low_reward+=float(sum(rewards.values()))
             if self._done() or self.base.now>=self.config.max_simulation_seconds: break
         completed=sum(outcome is TerminalOutcome.COMPLETED for outcome in self.base.ledger.outcomes.values()); energy=self._energy_total(); delays=[u.completion_time-u.request_time for u in self.base.completed_uavs if u.completion_time is not None]
-        reward=HighLevelReward(service_completion=8.*(completed-before_completed),external_queue=-.05*len(self.base.admission.queue.items),delay=-.002*(float(np.mean(delays)) if delays else 0.),safety=-2.*(self.base.telemetry["safety_interventions"]-before["safety_interventions"])-25.*(self.base.telemetry["collisions"]-before["collisions"]),energy=-.0005*max(0.,energy-before_energy),reconfiguration=-.05*float(update.structural_applied))
+        shield_cost=shield.repair_magnitude+.1*shield.projection_magnitude+(.5 if shield.outcome in {"delayed","rejected"} else 0.)
+        reward=HighLevelReward(service_completion=8.*(completed-before_completed),external_queue=-.05*len(self.base.admission.queue.items),delay=-.002*(float(np.mean(delays)) if delays else 0.),safety=-2.*(self.base.telemetry["safety_interventions"]-before["safety_interventions"])-25.*(self.base.telemetry["collisions"]-before["collisions"])-shield_cost,energy=-.0005*max(0.,energy-before_energy),reconfiguration=-.05*float(update.structural_applied))
         self._previous_completed,self._previous_energy=completed,energy
-        record={"time":start_time,"requested_action":list(update.requested_action),"applied_action":list(update.applied_action),"structural_mask":list(update.structural_mask),"geometry_gate":gate,"actual_geometry":self.base.airspace.state_vector()[:6].tolist(),"target_geometry":[self.base.airspace.target_ring(role).radius for role in RingRole]+[self.base.airspace.target_ring(role).height for role in RingRole],"capacity":self._context()["capacity"],"headways":dict(self.base.airspace.headways),"transition_active":self.base.airspace.transition is not None}
+        record={"time":start_time,"requested_action":list(shield.requested_action),"applied_action":list(shield.applied_action),"structural_mask":list(update.structural_mask),"geometry_gate":gate,"actual_geometry":self.base.airspace.state_vector()[:6].tolist(),"target_geometry":[self.base.airspace.target_ring(role).radius for role in RingRole]+[self.base.airspace.target_ring(role).height for role in RingRole],"capacity":self._context()["capacity"],"headways":dict(self.base.airspace.headways),"transition_active":self.base.airspace.transition is not None,"shield_outcome":shield.outcome,"shield_reason_code":shield.reason_code,"traffic_repair":shield.repair_speed_residuals,"traffic_repair_magnitude":shield.repair_magnitude,"geometry_projection_magnitude":shield.projection_magnitude,"deferred_until":shield.deferred_until,"safety_reason":shield.safety_reason}
         self.action_history.append(record); terminated=self._done(); truncated=self.base.now>=self.config.max_simulation_seconds and not terminated
-        info={"reward_components":reward.as_dict(),"low_level_reward":low_reward,"high_action":record,"context":self._context(),"telemetry":dict(self.base.telemetry),"outcomes":dict(self.base.ledger.outcomes),"conflict_events":list(self.base.conflict_events),"low_level_checkpoint_hash":getattr(self.low_level,"checkpoint_hash",None),"latest_low_info":latest_info}
+        info={"reward_components":reward.as_dict(),"low_level_reward":low_reward,"high_action":record,"context":self._context(),"telemetry":dict(self.base.telemetry)|dict(self.coordinator.telemetry),"outcomes":dict(self.base.ledger.outcomes),"conflict_events":list(self.base.conflict_events),"low_level_checkpoint_hash":getattr(self.low_level,"checkpoint_hash",None),"latest_low_info":latest_info}
         return self.observation(),reward.total,terminated,truncated,info

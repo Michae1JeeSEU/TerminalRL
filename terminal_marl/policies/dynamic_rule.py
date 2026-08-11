@@ -17,10 +17,15 @@ class DynamicRulePolicy:
         # More radial room helps only while an event gate says restructuring is
         # meaningful; the wrapper retains the authoritative mask.
         if pressure >= 0.55:
-            action[:3] = (0.8, 0.55, 0.30)
-            action[3:6] = (0.20, 0.15, 0.10)
-            action[6] = 0.35
-            action[7:10] = (-0.55, -0.45, -0.25)
+            # Expand the upstream buffer first; inner/final geometry is only
+            # touched after the coordinator has created an explicit window.
+            action[:3] = (0.10, 0.0, 0.0)
+            action[3:6] = (0.0, 0.0, 0.0)
+            action[6] = 0.0
+            # During an active protected reconfiguration window, retain a
+            # conservative release buffer; throughput is not traded for a
+            # hard-separation risk.
+            action[7:10] = (0.25, 0.20, 0.15)
         elif pressure <= 0.20 and external == 0:
             action[:3] = (-0.25, -0.15, -0.10)
             action[7:10] = (0.15, 0.10, 0.10)
