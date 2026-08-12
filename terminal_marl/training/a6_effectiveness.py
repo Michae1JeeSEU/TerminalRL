@@ -71,6 +71,7 @@ def _collect(base: TerminalParallelEnv, samples: dict[str, list[float]], coordin
                        "traffic_repair_magnitude":coordinator.telemetry["traffic_repair_magnitude"],"transition_delay_count":coordinator.telemetry["geometry_delays"],
                        "transition_delay_seconds":float(sum(delays)),"projection_magnitude":coordinator.telemetry["geometry_projection_magnitude"],
                        "projection_count":sum(row["outcome"]=="projected" for row in history),"defer_count":sum(row["outcome"]=="delayed" for row in history),"reject_count":coordinator.telemetry["geometry_rejects"],
+                       "coordinator_attempts":coordinator.telemetry["coordinator_attempts"],"pending_retries":coordinator.telemetry["pending_retries"],"effective_updates":coordinator.telemetry["effective_updates"],
                        "reconfiguration_execution_rate":base.telemetry["geometry_updates"]/max(1,structural_requests),"shield_cost":coordinator.telemetry["traffic_repair_magnitude"]+.1*coordinator.telemetry["geometry_projection_magnitude"]+.5*(coordinator.telemetry["geometry_delays"]+coordinator.telemetry["geometry_rejects"]),
                        "actual_radius_min":actual[:, :3].min(axis=0).tolist(),"actual_radius_max":actual[:, :3].max(axis=0).tolist(),
                        "actual_height_min":actual[:, 3:6].min(axis=0).tolist(),"actual_height_max":actual[:, 3:6].max(axis=0).tolist(),
@@ -173,7 +174,8 @@ def write_report(raw: dict, output: str | Path) -> dict:
                 if deltas:
                     mean=float(np.mean(deltas)); std=float(np.std(deltas,ddof=1)) if len(deltas)>1 else 0.; ci=1.96*std/max(1,len(deltas))**.5
                     paired[scenario][policy][key]={"per_seed":deltas,"mean":mean,"std":std,"ci95_low":mean-ci,"ci95_high":mean+ci}
-    safety=all(row["collisions"]==0 and row["nmac"]==0 and row.get("hard_separation_violations",0)==0 for policies in raw.values() for rows in policies.values() for row in rows)
+    required_safety = ("collisions", "nmac", "hard_separation_violations", "hard_separation_exposure_steps", "nmac_exposure_steps", "collision_exposure_steps")
+    safety=all(all(key in row for key in required_safety) and row["collisions"]==0 and row["nmac"]==0 and row["hard_separation_violations"]==0 for policies in raw.values() for rows in policies.values() for row in rows)
     report={"seeds":len(next(iter(next(iter(raw.values())).values()))),"safety_passed":safety,"aggregate":aggregate,"paired_vs_fixed_rule":paired,"raw":raw}
     (output/"a6_effectiveness_report.json").write_text(json.dumps(report,indent=2,default=str),encoding="utf-8")
     with (output/"a6_effectiveness_report.csv").open("w",newline="",encoding="utf-8") as handle:

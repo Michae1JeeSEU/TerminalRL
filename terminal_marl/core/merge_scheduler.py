@@ -45,4 +45,11 @@ class MergeScheduler:
         if proposal.merge_time<self.last_release[key]+proposal.headway-1e-9: raise ValueError("headway reservation conflict")
         rid=str(uuid.uuid4()); r=MergeReservation(rid,uav.uid,uav.phase.value,str(getattr(proposal.target,'value',proposal.target)),proposal.merge_time,proposal.merge_angle,None,None,expires_at=proposal.merge_time+60.)
         self.reservations[rid]=r;self.last_release[key]=proposal.merge_time;return r
-    def cancel(self,reservation_id,reason=""): self.reservations.pop(reservation_id,None)
+    def cancel(self,reservation_id,reason=""):
+        """Remove a rejected tentative reservation from future-release state."""
+        reservation = self.reservations.pop(reservation_id, None)
+        if reservation is None:
+            return
+        key = self._key(RingRole(reservation.target_stage) if reservation.target_stage in {role.value for role in RingRole} else "final")
+        committed = [item.merge_time for item in self.reservations.values() if self._key(RingRole(item.target_stage) if item.target_stage in {role.value for role in RingRole} else "final") == key]
+        self.last_release[key] = max(committed, default=-math.inf)

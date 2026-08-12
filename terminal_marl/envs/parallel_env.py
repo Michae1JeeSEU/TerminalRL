@@ -7,6 +7,7 @@ low-level agent.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import deque
 import math
 import numpy as np
 
@@ -22,6 +23,8 @@ from ..core.observations import build_a5_observation
 from ..core.priority import PriorityEngine
 from ..core.rewards import LowLevelReward
 from ..core.safety_filter import SafetyFilter
+from ..core.runtime_separation import RuntimeSeparationMonitor
+from ..core.runtime_traffic_safety import RuntimeTrafficSafetyController
 from ..core.trajectory_generator import TrajectoryGenerator
 from ..core.uav import FlightPhase, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
@@ -64,12 +67,17 @@ class TerminalParallelEnv:
         self.safety = SafetyFilter(self.config)
         self.events: list[tuple[str, int, float]] = []
         self.conflict_events: list[dict] = []
-        self._nmac_active_pairs: set[tuple[int, int]] = set()
+        self.separation_monitor = RuntimeSeparationMonitor(self.config)
+        self.runtime_traffic = RuntimeTrafficSafetyController(self.config)
+        self.runtime_trace: deque[dict] = deque(maxlen=60)
+        self.last_safety_decisions: dict[int, str] = {}
+        self.last_release_decisions: dict[int, str] = {}
         self.telemetry = {
             "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
-            "merge_time_modified": 0, "collisions": 0, "nmac": 0,
-            "nmac_exposure_steps": 0, "geometry_updates": 0,
+            "merge_time_modified": 0, "geometry_updates": 0,
         }
+        self.telemetry.update(self.separation_monitor.telemetry)
+        self.telemetry.update(self.runtime_traffic.telemetry)
         self.completed_uavs: list[UAVState] = []
         if self.config.reset_mode == "warm_start_rings" and self.config.warm_start_uavs:
             self._warm_start()
@@ -132,12 +140,45 @@ class TerminalParallelEnv:
     def _commit(self, uav: UAVState, plan) -> bool:
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         result = self.safety.filter_plan(plan, committed, WorldSnapshot(self.now, self.active, self.airspace))
+        self.last_safety_decisions[uav.uid] = result.reason or "approved"
         if not result.approved:
             self.telemetry["safety_interventions"] += 1
             return False
         uav.committed_plan = plan
         uav.trajectory_plan_id = plan.plan_id
         return True
+
+    @staticmethod
+    def _phase_pair(left: UAVState, right: UAVState) -> str:
+        def label(uav: UAVState) -> str:
+            if uav.phase is FlightPhase.INBOUND: return "INBOUND"
+            if uav.phase is FlightPhase.FINAL: return "FINAL"
+            if uav.committed_plan is not None: return "TRANSFER"
+            if uav.ring_role is not None: return "holder"
+            return uav.phase.value.upper()
+        a, b = label(left), label(right)
+        if a == b == "holder" and left.ring_role == right.ring_role: return "same-ring holder-holder"
+        return "-".join(sorted((a, b)))
+
+    def _uav_trace(self, uav: UAVState) -> dict:
+        return {"uid": uav.uid, "arrival_id": uav.arrival_id, "phase": uav.phase.value,
+                "ring_role": None if uav.ring_role is None else uav.ring_role.value,
+                "position": uav.position.tolist(), "velocity": uav.velocity.tolist(), "speed": uav.speed,
+                "ring_progress": uav.ring_progress, "entry_gate": uav.assigned_gate,
+                "trajectory_plan_id": uav.trajectory_plan_id, "merge_reservation_id": uav.merge_reservation_id,
+                "committed": uav.committed_plan is not None, "phase_entry_time": uav.phase_entry_time,
+                "last_safety_decision": self.last_safety_decisions.get(uav.uid),
+                "last_release_decision": self.last_release_decisions.get(uav.uid)}
+
+    def _first_conflict_trace(self, encounter) -> dict:
+        left, right = (self.active[uid] for uid in encounter.pair)
+        return {"kind": "first_hard_separation_trace", "time": self.now + self.config.dt,
+                "pair": encounter.pair, "phase_pair": self._phase_pair(left, right),
+                "actual_distance": encounter.actual_distance, "swept_min_distance": encounter.swept_min_distance,
+                "swept_fraction": encounter.swept_fraction, "uavs": [self._uav_trace(left), self._uav_trace(right)],
+                "recent_trace": list(self.runtime_trace), "lz_state": [{"id": zone.lz_id, "status": zone.status.value,
+                    "reserved_uid": zone.reserved_by, "service_remaining": zone.service_remaining} for zone in self.lz_manager.zones],
+                "reservations": {key: vars(value).copy() for key, value in self.scheduler.reservations.items()}}
 
     def _advance_plan(self, uav: UAVState) -> tuple[float, bool]:
         plan = uav.committed_plan
@@ -235,7 +276,11 @@ class TerminalParallelEnv:
             uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
             return "approved"
         self.scheduler.cancel(reservation.reservation_id, "safety_reject")
-        uav.safety_retry_after = self.now + 5.0
+        # A rejected canonical plan is a deterministic hold-future-release
+        # decision.  Back off by the affected interface headway rather than
+        # retrying the exact same unsafe merge on every low-level step.
+        key = {RingRole.MIDDLE: "o2m", RingRole.INNER: "m2i"}[target]
+        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[key])
         return "safety_reject"
 
     def step(self, actions: dict[str, np.ndarray] | None = None):
@@ -258,7 +303,13 @@ class TerminalParallelEnv:
         for queued, gate in admitted:
             uav = UAVState.from_request(self.uid, queued.request, queued, gate.spawn_point, self.now)
             self.uid += 1; self.active[uav.uid] = uav
-            self._commit(uav, self.generator.inbound(uav, gate, self.airspace, self.now))
+            if not self._commit(uav, self.generator.inbound(uav, gate, self.airspace, self.now)):
+                # Admission must never create a plan-less airborne agent.  Put
+                # this request back in the external queue for a deterministic
+                # retry rather than letting two inbound spawns overlap.
+                self.active.pop(uav.uid, None)
+                self.admission.queue.items.append(queued)
+                gate.last_admission_time = min(gate.last_admission_time, self.now - self.config.gate_min_time_gap_seconds)
         # Service is global only; it does not resurrect terminated low-level agents.
         for uid in self.lz_manager.step(self.config.dt):
             uav = self.service_uavs.pop(uid)
@@ -272,39 +323,49 @@ class TerminalParallelEnv:
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
             intents[uid] = intent; self.priority.update(uav, self.now)
             decision = self._release(uav, intent); decisions[uid] = decision
+            self.last_release_decisions[uid] = decision
             if intent.release_request > self.config.release_threshold:
                 rewards.setdefault(uid, LowLevelReward()).release += self.config.low_level_release_approved_reward if decision == "approved" else -self.config.low_level_release_rejected_penalty
                 if decision == "approved": self.telemetry["release_approved"] += 1
                 else: self.telemetry["release_rejected"] += 1
             if abs(intent.merge_time_residual) > 1e-8: self.telemetry["merge_time_modified"] += 1
             action_rows.append((intent.release_request, intent.speed_residual, intent.merge_time_residual, decision))
+        intents = self.runtime_traffic.protect(self, intents)
+        self.telemetry.update(self.runtime_traffic.telemetry)
         for uid, uav in list(self.active.items()):
             phase = uav.phase
+            had_committed_plan = uav.committed_plan is not None
             distance, touchdown = self._advance_plan(uav)
-            if uid in intents: distance += self._advance_ring_hold(uav, intents[uid])
+            # A canonical plan already advances to its endpoint for this
+            # simulation interval.  Do not append an additional full holder
+            # step on the transition tick; that would execute a state which
+            # was never safety-checked.
+            if uid in intents and not had_committed_plan:
+                distance += self._advance_ring_hold(uav, intents[uid])
             self.energy.consume(uav, phase, self.config.dt)
             if uid in rewards: rewards[uid].progress += distance * self.config.low_level_progress_reward_per_meter
             if touchdown and uid in rewards: rewards[uid].touchdown += self.config.low_level_touchdown_reward
             if uav.energy_remaining <= 0 and uid in self.active:
                 self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
-        current_nmac_pairs: set[tuple[int, int]] = set()
-        for uid, uav in list(self.active.items()):
-            for other_uid, other in list(self.active.items()):
-                if uid >= other_uid: continue
-                distance = np.linalg.norm(uav.position - other.position)
-                pair = (uid, other_uid)
-                if distance < self.config.nmac_distance:
-                    current_nmac_pairs.add(pair)
-                    self.telemetry["nmac_exposure_steps"] += 1
-                    if pair not in self._nmac_active_pairs:
-                        self.telemetry["nmac"] += 1
-                        self.conflict_events.append({"kind": "nmac_entry", "time": self.now + self.config.dt, "uids": pair, "arrival_ids": (uav.arrival_id, other.arrival_id), "distance": float(distance), "phases": (uav.phase.value, other.phase.value), "plan_ids": (uav.trajectory_plan_id, other.trajectory_plan_id)})
-                if distance < self.config.collision_distance:
-                    self.telemetry["collisions"] += 1
-                    self.conflict_events.append({"kind": "collision", "time": self.now + self.config.dt, "uids": pair, "arrival_ids": (uav.arrival_id, other.arrival_id), "distance": float(distance), "phases": (uav.phase.value, other.phase.value), "plan_ids": (uav.trajectory_plan_id, other.trajectory_plan_id)})
-                    self._resolve(uav, TerminalOutcome.FAILED_COLLISION, "collision")
-                    if other_uid in self.active: self._resolve(other, TerminalOutcome.FAILED_COLLISION, "collision")
-        self._nmac_active_pairs = current_nmac_pairs
+        encounters = self.separation_monitor.observe(self.active, pre_motion_positions)
+        self.telemetry.update(self.separation_monitor.telemetry)
+        for encounter in encounters:
+            if any(uid not in self.active for uid in encounter.pair):
+                continue
+            if encounter.hard_entry and not any(item.get("kind") == "first_hard_separation_trace" for item in self.conflict_events):
+                self.conflict_events.append(self._first_conflict_trace(encounter))
+            if encounter.nmac_entry or encounter.collision_entry:
+                left, right = (self.active[uid] for uid in encounter.pair)
+                kind = "collision" if encounter.collision_entry else "nmac_entry"
+                self.conflict_events.append({"kind": kind, "time": self.now + self.config.dt, "uids": encounter.pair,
+                    "arrival_ids": (left.arrival_id, right.arrival_id), "distance": encounter.actual_distance,
+                    "swept_min_distance": encounter.swept_min_distance, "phases": (left.phase.value, right.phase.value),
+                    "plan_ids": (left.trajectory_plan_id, right.trajectory_plan_id)})
+            if encounter.collision_entry:
+                for uid in encounter.pair:
+                    if uid in self.active: self._resolve(self.active[uid], TerminalOutcome.FAILED_COLLISION, "collision")
+        self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
+            "release_decisions": dict(decisions), "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
             if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
