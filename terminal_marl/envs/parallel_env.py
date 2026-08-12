@@ -59,6 +59,8 @@ class TerminalParallelEnv:
         self.service_uavs: dict[int, UAVState] = {}
         self.uid = 0
         self.ledger = OutcomeLedger()
+        self.request_times: dict[int, float] = {}
+        self.resolution_times: dict[int, float] = {}
         self.arrivals = ArrivalProcess(self.config, seed)
         self.admission = AdmissionManager(self.config)
         self.airspace = DynamicAirspace(self.config)
@@ -75,6 +77,7 @@ class TerminalParallelEnv:
         self.telemetry = {
             "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
             "merge_time_modified": 0, "geometry_updates": 0,
+            "max_concurrent_final": 0, "final_overcapacity_steps": 0, "final_busy_steps": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -135,7 +138,14 @@ class TerminalParallelEnv:
         uav.terminal_outcome = outcome
         uav.terminal_reason = reason
         self.ledger.resolve(uav.arrival_id, outcome)
+        self.resolution_times[uav.arrival_id] = self.now
         self.active.pop(uav.uid, None)
+
+    def _record_final_occupancy(self) -> None:
+        concurrent = sum(uav.phase is FlightPhase.FINAL for uav in self.active.values())
+        self.telemetry["max_concurrent_final"] = max(self.telemetry["max_concurrent_final"], concurrent)
+        self.telemetry["final_busy_steps"] += int(concurrent > 0)
+        self.telemetry["final_overcapacity_steps"] += int(concurrent > self.config.final_queue_capacity)
 
     def _commit(self, uav: UAVState, plan) -> bool:
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
@@ -257,6 +267,8 @@ class TerminalParallelEnv:
             target, phase = RingRole.INNER, FlightPhase.TRANSFER_M2I
         elif uav.phase is FlightPhase.RING_INNER:
             if "i2f" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
+                return "final_capacity"
             lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
             if lz_id is None: return "lz_unavailable"
             if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved: return "lz_reservation_reject"
@@ -291,7 +303,7 @@ class TerminalParallelEnv:
         decisions: dict[int, str] = {}
         action_rows = []
         for request in self.arrivals.requests_until(self.now):
-            self.ledger.request(request.arrival_id); self.admission.enqueue(request)
+            self.ledger.request(request.arrival_id); self.request_times[request.arrival_id] = request.request_time; self.admission.enqueue(request)
         self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
         self._refresh_airspace_occupancy()
         self.airspace.step_transition(self.now)
@@ -300,6 +312,7 @@ class TerminalParallelEnv:
             if record.decision.value == "divert":
                 outcome = TerminalOutcome.DIVERTED_LOW_SOC if record.reason_code == "low_soc" else TerminalOutcome.DIVERTED_CAPACITY
                 self.ledger.resolve(record.request.arrival_id, outcome)
+                self.resolution_times[record.request.arrival_id] = self.now
         for queued, gate in admitted:
             uav = UAVState.from_request(self.uid, queued.request, queued, gate.spawn_point, self.now)
             self.uid += 1; self.active[uav.uid] = uav
@@ -316,6 +329,7 @@ class TerminalParallelEnv:
             transition(uav, FlightPhase.COMPLETED, self.now + self.config.dt)
             uav.completion_time = self.now + self.config.dt; uav.terminal_outcome = TerminalOutcome.COMPLETED
             self.ledger.resolve(uav.arrival_id, TerminalOutcome.COMPLETED)
+            self.resolution_times[uav.arrival_id] = self.now + self.config.dt
             self.completed_uavs.append(uav)
             self.events.append(("completed", uid, self.now + self.config.dt))
         pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
@@ -364,6 +378,7 @@ class TerminalParallelEnv:
             if encounter.collision_entry:
                 for uid in encounter.pair:
                     if uid in self.active: self._resolve(self.active[uid], TerminalOutcome.FAILED_COLLISION, "collision")
+        self._record_final_occupancy()
         self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
             "release_decisions": dict(decisions), "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():

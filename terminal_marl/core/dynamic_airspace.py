@@ -37,6 +37,12 @@ class AirspaceUpdateResult:
     requested_action: tuple[float, ...]
     applied_action: tuple[float, ...]
     structural_mask: tuple[bool, ...]
+    requested_radius_delta: tuple[float, ...] = (0.0, 0.0, 0.0)
+    projected_radius_delta: tuple[float, ...] = (0.0, 0.0, 0.0)
+    applied_radius_delta: tuple[float, ...] = (0.0, 0.0, 0.0)
+    capacity_before: tuple[int, ...] = (0, 0, 0)
+    capacity_after: tuple[int, ...] = (0, 0, 0)
+    structural_reason_codes: tuple[str, ...] = ()
 
 
 class DynamicAirspace:
@@ -184,13 +190,34 @@ class DynamicAirspace:
         clipped = np.clip(raw, -1.0, 1.0)
         c = self.config
         violations: list[str] = []
+        structural_reasons: list[str] = []
         structural_mask = [False] * 6
         candidate = {role: replace(state) for role, state in self._target.items()}
+        previous_target = {role: replace(state) for role, state in self._target.items()}
+        capacity_before = tuple(geometric_ring_capacity(previous_target[role].radius, c.safe_distance) for role in RingRole)
         eligible = geometry_gate and self.transition is None and now - self.last_geometry_update >= c.geometry_min_dwell_seconds
         if eligible:
             for index, role in enumerate(RingRole):
                 candidate[role].radius += float(clipped[index] * c.max_radius_change_per_update)
                 candidate[role].height += float(clipped[index + 3] * c.max_height_change_per_update)
+            self._project_candidate(candidate, violations)
+            for index, role in enumerate(RingRole):
+                requested_delta = float(clipped[index] * c.max_radius_change_per_update)
+                prior_capacity = geometric_ring_capacity(previous_target[role].radius, c.safe_distance)
+                candidate_capacity = geometric_ring_capacity(candidate[role].radius, c.safe_distance)
+                if abs(requested_delta) <= 1e-9 or candidate_capacity != prior_capacity:
+                    continue
+                if requested_delta > 0.0:
+                    threshold = minimum_radius_for_occupancy(prior_capacity + 1, c.safe_distance)
+                    if threshold <= previous_target[role].radius + c.max_radius_change_per_update + 1e-9:
+                        candidate[role].radius = max(candidate[role].radius, threshold)
+                        structural_reasons.append(f"capacity_threshold_projection:{role.value}")
+                    else:
+                        candidate[role].radius = previous_target[role].radius
+                        structural_reasons.append(f"capacity_threshold_noop:{role.value}")
+                else:
+                    candidate[role].radius = previous_target[role].radius
+                    structural_reasons.append(f"capacity_threshold_noop:{role.value}")
             self._project_candidate(candidate, violations)
             changed = {
                 role for role in RingRole
@@ -212,6 +239,8 @@ class DynamicAirspace:
         else:
             violations.append("geometry_gate" if not geometry_gate else "geometry_dwell_or_transition")
             affected = self.affected_interfaces()
+        projected_radius_delta = tuple(candidate[role].radius - previous_target[role].radius for role in RingRole)
+        capacity_after = tuple(geometric_ring_capacity(candidate[role].radius, c.safe_distance) for role in RingRole)
 
         # The last four dimensions are deliberately never event-masked.
         self.speed_profile_bias = float(np.clip(
@@ -231,4 +260,10 @@ class DynamicAirspace:
             requested_action=tuple(float(x) for x in raw),
             applied_action=tuple(float(x) for x in applied),
             structural_mask=tuple(structural_mask),
+            requested_radius_delta=tuple(float(clipped[index] * c.max_radius_change_per_update) for index in range(3)),
+            projected_radius_delta=tuple(float(value) for value in projected_radius_delta),
+            applied_radius_delta=tuple(float(value) if structural_mask[index] else 0.0 for index, value in enumerate(projected_radius_delta)),
+            capacity_before=tuple(int(value) for value in capacity_before),
+            capacity_after=tuple(int(value) for value in capacity_after),
+            structural_reason_codes=tuple(structural_reasons),
         )

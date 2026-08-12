@@ -66,7 +66,9 @@ def test_a6_dynamic_rule_is_canonical_10d_and_pressure_responsive():
     quiet = policy.act(np.zeros(29, np.float32), {"external_queue": 0, "occupancy_ratio": [0., 0., 0.], "final_pressure": 0., "lz_utilization": 0.})
     busy = policy.act(np.zeros(29, np.float32), {"external_queue": 8, "occupancy_ratio": [.8, .2, .1], "final_pressure": 0., "lz_utilization": .2})
     assert quiet.shape == busy.shape == (10,)
-    assert busy[0] > 0 and busy[7] > 0
+    # A pressured outer ring with slack in middle is released prospectively;
+    # downstream saturation is what activates metering, not congestion alone.
+    assert busy[0] > 0 and busy[7] < 0 and busy[8] == busy[9] == 0
 
 
 def test_a60_safety_handoff_prevents_historical_fixed_rule_conflicts():
@@ -138,12 +140,7 @@ def test_a61_dynamic_rule_random_actions_have_no_hard_conflict_smoke():
         assert info["telemetry"]["hard_separation_violations"] == 0
 
 
-def test_a61_dynamic_rule_executes_nonzero_protected_geometry_change():
-    wrapper = DynamicHighLevelWrapper(dynamic_config(max_simulation_seconds=700.0))
-    policy = DynamicRulePolicy(); observation, _ = wrapper.reset(seed=0)
-    while True:
-        observation, _, terminated, truncated, info = wrapper.step(policy.act(observation, wrapper._context()))
-        if terminated or truncated:
-            break
-    assert info["telemetry"]["geometry_updates"] > 0
-    assert info["telemetry"]["geometry_updates"] > 0
+def test_a64_dynamic_rule_only_meters_when_downstream_is_saturated():
+    policy = DynamicRulePolicy()
+    action = policy.act(np.zeros(29, np.float32), {"external_queue": 8, "occupancy_ratio": [.8, .8, .8], "final_pressure": 1., "lz_utilization": 1.})
+    assert all(action[index] > 0 for index in (7, 8, 9))

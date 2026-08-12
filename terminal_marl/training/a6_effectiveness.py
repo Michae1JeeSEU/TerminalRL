@@ -53,12 +53,20 @@ def _collect(base: TerminalParallelEnv, samples: dict[str, list[float]], coordin
     service = [u.completion_time-u.request_time for u in completed]
     touchdown = [u.touchdown_time-u.request_time for u in completed if u.touchdown_time is not None]
     holding = {role.value: float(np.mean([u.holding_time_by_ring.get(role, 0.) for u in completed])) if completed else 0. for role in base.airspace._actual}
+    unresolved_ages = [max(0., base.now - base.request_times[arrival_id]) for arrival_id in base.ledger.unresolved if arrival_id in base.request_times]
+    arrival_delay_by_id = {str(arrival_id): float(base.resolution_times[arrival_id] - request_time)
+                           for arrival_id, request_time in base.request_times.items() if arrival_id in base.resolution_times}
     result = {"requested":len(base.ledger.requested), "completed":len(completed), "throughput":len(completed)/max(1.,base.now),
               "external_queue_area":float(np.sum(samples["queue"])*base.config.dt), "external_queue_max":max(samples["queue"],default=0.),
               "oldest_external_wait":max(samples["oldest_wait"],default=0.), "final_utilization":float(np.mean(samples["final_util"],dtype=float)) if samples["final_util"] else 0.,
+              "final_busy_fraction":float(base.telemetry["final_busy_steps"] / max(1, base.step_count)),
+              "max_concurrent_final":float(base.telemetry["max_concurrent_final"]), "final_overcapacity_steps":float(base.telemetry["final_overcapacity_steps"]),
               "lz_utilization":float(np.mean(samples["lz_util"],dtype=float)) if samples["lz_util"] else 0.,
               "energy_mean":float(np.mean([u.energy_consumed for u in completed])) if completed else 0.,
               "priority_fairness_std":float(np.std(service)) if service else float("inf"), **{f"holding_{key}":value for key,value in holding.items()},
+              "all_request_waiting_area":float(np.sum(samples["all_waiting"])*base.config.dt),
+              "unresolved_count":float(len(unresolved_ages)), "unresolved_age_mean":float(np.mean(unresolved_ages)) if unresolved_ages else 0.,
+              "unresolved_age_p95":float(np.percentile(unresolved_ages, 95)) if unresolved_ages else 0., "arrival_delay_by_id":arrival_delay_by_id,
               **_percentiles(service,"service_delay"), **_percentiles(touchdown,"touchdown_delay"), **{key:float(value) for key,value in base.telemetry.items()}}
     if coordinator is not None:
         history=coordinator.history; applied=[row["applied_action"] for row in history]; requested=[row["requested_action"] for row in history]
@@ -87,17 +95,18 @@ def _sample(base: TerminalParallelEnv, samples: dict) -> None:
     samples["final_util"].append(sum(u.phase.value=="final" for u in base.active.values())/max(1,base.config.final_queue_capacity))
     samples["lz_util"].append(sum(zone.status.value!="free" for zone in base.lz_manager.zones)/len(base.lz_manager.zones))
     samples["actual"].append(base.airspace.state_vector().copy()); samples["capacity"].append([base.airspace.capacity(role) for role in base.airspace._actual])
+    samples["all_waiting"].append(sum(max(0., base.now-request_time) for arrival_id, request_time in base.request_times.items() if arrival_id not in base.ledger.outcomes))
 
 
 def _run_dynamic(config: SimConfig, seed: int, high_action: Callable, low_level) -> dict:
-    wrapper=DynamicHighLevelWrapper(config,low_level); observation,_=wrapper.reset(seed); samples={key:[] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity")}; action_events=[]
+    wrapper=DynamicHighLevelWrapper(config,low_level); observation,_=wrapper.reset(seed); samples={key:[] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity","all_waiting")}; action_events=[]
     while True:
         action=high_action(observation,wrapper); decision=wrapper.coordinator.coordinate(action,geometry_gate=wrapper.geometry_event_gate())
-        action_events.append({"time":wrapper.base.now,"requested_action":list(decision.requested_action),"applied_action":list(decision.applied_action),"outcome":decision.outcome,"reason_code":decision.reason_code,"repair_count":decision.repair_count,"repair_magnitude":decision.repair_magnitude,"projection_magnitude":decision.projection_magnitude,"deferred_until":decision.deferred_until,"safety_reason":decision.safety_reason})
+        action_events.append({"time":wrapper.base.now,"requested_action":list(decision.requested_action),"applied_action":list(decision.applied_action),"outcome":decision.outcome,"reason_code":decision.reason_code,"repair_count":decision.repair_count,"repair_magnitude":decision.repair_magnitude,"projection_magnitude":decision.projection_magnitude,"deferred_until":decision.deferred_until,"safety_reason":decision.safety_reason,"requested_radius_delta":list(decision.update.requested_radius_delta),"projected_radius_delta":list(decision.update.projected_radius_delta),"applied_radius_delta":list(decision.update.applied_radius_delta),"capacity_before":list(decision.update.capacity_before),"capacity_after":list(decision.update.capacity_after),"structural_reason_codes":list(decision.update.structural_reason_codes)})
         for _ in range(round(config.high_level_decision_interval_seconds/config.dt)):
             advanced=wrapper.coordinator.advance()
             if advanced is not None:
-                action_events.append({"time":wrapper.base.now,"requested_action":list(advanced.requested_action),"applied_action":list(advanced.applied_action),"outcome":advanced.outcome,"reason_code":advanced.reason_code,"repair_count":advanced.repair_count,"repair_magnitude":advanced.repair_magnitude,"projection_magnitude":advanced.projection_magnitude,"deferred_until":advanced.deferred_until,"safety_reason":advanced.safety_reason})
+                action_events.append({"time":wrapper.base.now,"requested_action":list(advanced.requested_action),"applied_action":list(advanced.applied_action),"outcome":advanced.outcome,"reason_code":advanced.reason_code,"repair_count":advanced.repair_count,"repair_magnitude":advanced.repair_magnitude,"projection_magnitude":advanced.projection_magnitude,"deferred_until":advanced.deferred_until,"safety_reason":advanced.safety_reason,"requested_radius_delta":list(advanced.update.requested_radius_delta),"projected_radius_delta":list(advanced.update.projected_radius_delta),"applied_radius_delta":list(advanced.update.applied_radius_delta),"capacity_before":list(advanced.update.capacity_before),"capacity_after":list(advanced.update.capacity_after),"structural_reason_codes":list(advanced.update.structural_reason_codes)})
             low_actions=wrapper.coordinator.apply_speed_repairs(wrapper.low_level.act(wrapper.base._observations())); wrapper.base.step(low_actions); _sample(wrapper.base,samples)
             if wrapper._done() or wrapper.base.now>=config.max_simulation_seconds: break
         observation=wrapper.observation()
@@ -106,7 +115,7 @@ def _run_dynamic(config: SimConfig, seed: int, high_action: Callable, low_level)
 
 
 def _run_fixed(config: SimConfig, seed: int) -> dict:
-    env=TerminalParallelEnv(config);env.reset(seed);samples={key:[] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity")}
+    env=TerminalParallelEnv(config);env.reset(seed);samples={key:[] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity","all_waiting")}
     while True:
         env.step();_sample(env,samples)
         if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs: break
