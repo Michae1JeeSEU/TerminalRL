@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from collections import deque
+from copy import deepcopy
 import math
 import numpy as np
 
@@ -131,6 +132,20 @@ class TerminalParallelEnv:
             self.telemetry["geometry_updates"] += 1
         self.events.append(("high_action", -1, self.now))
         return result
+
+    def commit_high_level_candidate(self, candidate_airspace, checked_result):
+        """Atomically install the exact airspace timeline already checked.
+
+        ReconfigurationSafetyCoordinator stages ``candidate_airspace`` and
+        verifies its future actual geometry against protected traffic before
+        calling this method.  Reconstructing an update here would allow a
+        checked and executed timeline to diverge.
+        """
+        self.airspace = deepcopy(candidate_airspace)
+        if checked_result.structural_applied:
+            self.telemetry["geometry_updates"] += 1
+        self.events.append(("high_action", -1, self.now))
+        return checked_result
 
     def _resolve(self, uav: UAVState, outcome: TerminalOutcome, reason: str) -> None:
         if uav.assigned_lz is not None:

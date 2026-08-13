@@ -8,7 +8,12 @@ class IntentSafetyResult: approved:bool;reason:str=""
 @dataclass(frozen=True)
 class TrajectorySafetyResult: approved:bool;reason:str="";checked_plan_id:str|None=None
 class SafetyFilter:
-    def __init__(self,config):self.config=config;self.checked_plan_ids=[]
+    def __init__(self,config):
+        self.config=config;self.checked_plan_ids=[]
+        # Candidate verifications are auditable.  ``None`` is deliberately
+        # distinct from a safe infinite separation so callers cannot turn a
+        # missing prediction into a passing safety metric.
+        self.last_predicted_track_audit={"minimum_separation": None, "checked_pairs": 0, "reason": "not_run"}
     def filter_intent(self,uav,intent,*,interface_frozen=False,lz_available=True,final_available=True):
         if interface_frozen:return IntentSafetyResult(False,"geometry_reconfiguring")
         if not lz_available:return IntentSafetyResult(False,"lz_unavailable")
@@ -122,6 +127,11 @@ class SafetyFilter:
     def verify_predicted_tracks(self, tracks, *, start: float, end: float):
         """Final arbiter for geometry repairs using canonical predicted plans."""
         ordered = list(tracks.items())
+        minimum=float("inf"); checked_pairs=0
+        def finish(approved, reason, plan_id=None):
+            self.last_predicted_track_audit={"minimum_separation": None if not np.isfinite(minimum) else float(minimum),
+                                             "checked_pairs": checked_pairs, "reason": reason}
+            return TrajectorySafetyResult(approved, reason, plan_id)
         # Committed trajectories have already passed ``filter_plan``.  New
         # holder repair tracks are sampled from bounded ring-speed guidance;
         # validate only those kinematics here rather than reinterpreting a
@@ -132,22 +142,29 @@ class SafetyFilter:
             for a, b in zip(plan.points, plan.points[1:]):
                 dt = b.t - a.t
                 if dt <= 0 or np.linalg.norm((b.position-a.position) / dt) > self.config.max_speed + 1e-9:
-                    return TrajectorySafetyResult(False, "repair_kinematics", plan.plan_id)
+                    return finish(False, "repair_kinematics", plan.plan_id)
         samples = np.arange(start, end + 1e-9, 1.0)
         if samples[-1] < end:
             samples = np.append(samples, end)
         for time in samples:
             for index, (uid, plan) in enumerate(ordered):
                 for other_uid, other in ordered[index+1:]:
-                    if np.linalg.norm(plan.sample(float(time)).position-other.sample(float(time)).position) < self.config.safe_distance:
-                        return TrajectorySafetyResult(False, f"repair_separation:{uid}:{other_uid}", plan.plan_id)
+                    if time > plan.metadata.get("active_end", plan.end_time) or time > other.metadata.get("active_end", other.end_time):
+                        continue
+                    distance=float(np.linalg.norm(plan.sample(float(time)).position-other.sample(float(time)).position))
+                    minimum=min(minimum, distance); checked_pairs += 1
+                    if distance < self.config.safe_distance:
+                        return finish(False, f"repair_separation:{uid}:{other_uid}", plan.plan_id)
         for left, right in zip(samples, samples[1:]):
             for index, (uid, plan) in enumerate(ordered):
                 for other_uid, other in ordered[index+1:]:
+                    if left >= plan.metadata.get("active_end", plan.end_time) or left >= other.metadata.get("active_end", other.end_time):
+                        continue
                     distance, _ = swept_minimum_distance(
                         plan.sample(float(left)).position, plan.sample(float(right)).position,
                         other.sample(float(left)).position, other.sample(float(right)).position,
                     )
+                    minimum=min(minimum, float(distance)); checked_pairs += 1
                     if distance < self.config.safe_distance:
-                        return TrajectorySafetyResult(False, f"repair_swept_separation:{uid}:{other_uid}", plan.plan_id)
-        return TrajectorySafetyResult(True, checked_plan_id="reconfiguration_tracks")
+                        return finish(False, f"repair_swept_separation:{uid}:{other_uid}", plan.plan_id)
+        return finish(True, "approved", "reconfiguration_tracks")

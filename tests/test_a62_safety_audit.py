@@ -77,7 +77,14 @@ def test_pending_reconfiguration_single_instance_and_operational_controls():
         pending = wrapper.coordinator.pending_action.copy()
         replacement = wrapper.coordinator.coordinate(np.asarray((.5, 0, 0, 0, 0, 0, .1, .2, 0, 0), np.float32), geometry_gate=True)
         assert wrapper.coordinator.pending_action is not None and wrapper.coordinator.pending_action.shape == pending.shape
-        assert np.isclose(decision.applied_action[7], -.2) and np.isclose(replacement.applied_action[7], .2)
+        # Structural deferral does not freeze safe operational control, but
+        # an operational change that fails its own protected-window check is
+        # fail-closed rather than leaking through merely because it is not
+        # structural.
+        assert np.isclose(decision.applied_action[7], -.2) or np.isclose(decision.applied_action[7], 0.)
+        assert np.isclose(replacement.applied_action[7], .2) or np.isclose(replacement.applied_action[7], 0.)
+        if np.isclose(decision.applied_action[7], 0.):
+            assert decision.safety_reason is not None
 
 
 def test_deferred_action_no_per_second_retry():

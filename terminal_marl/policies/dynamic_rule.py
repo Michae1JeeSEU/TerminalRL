@@ -41,7 +41,14 @@ class DynamicRulePolicy:
         # Structural expansion is meaningful only for a real upstream queue.
         # DynamicAirspace projects it to the nearest legal capacity threshold
         # or records a structural no-op reason; capacity is never an action.
-        if external >= 4 and outer >= .45 and middle < self.downstream_saturated:
+        # At saturated demand the external queue is already the upstream
+        # pressure signal.  Waiting for 45% of a 47-slot outer ring left the
+        # calibrated geometry lever inactive for the entire short safety
+        # screen, even though arrivals were queued and the middle ring had
+        # ample slack.  A modest occupied-ring guard preserves a real flow
+        # gradient while allowing the coordinator to assess the legal
+        # capacity-threshold candidate under active traffic.
+        if external >= 4 and outer >= .20 and middle < self.downstream_saturated:
             action[0] = .60
         if middle >= .70 and inner < self.downstream_slack and not downstream_full:
             action[1] = .50
