@@ -50,16 +50,40 @@ class SafetyFilter:
             if vertical>self.config.max_climb_rate+1e-9 or -vertical>self.config.max_descent_rate+1e-9:return TrajectorySafetyResult(False,"vertical_rate_limit",plan.plan_id)
         for other_id,other in committed_plans.items():
             if other_id==plan.uav_id:continue
-            start=max(plan.start_time,other.start_time);end=min(plan.end_time,other.end_time)
-            if end<start:continue
+            # The other plan may finish before this candidate.  Use the same
+            # post-plan ring-holder prediction for the remaining candidate
+            # horizon rather than silently dropping it at ``other.end_time``.
+            start=plan.start_time; end=plan.end_time
             samples=np.arange(start,end+1e-9,1.)
             if samples[-1] < end: samples=np.append(samples,end)
+            def committed_position(time):
+                return other.sample(float(time)).position if time <= other.end_time else self._post_plan_prediction(other,snapshot,float(time))
             for time in samples:
-                if np.linalg.norm(plan.sample(float(time)).position-other.sample(float(time)).position) < self.config.safe_distance:
+                if np.linalg.norm(plan.sample(float(time)).position-committed_position(float(time))) < self.config.safe_distance:
                     return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
             for left,right in zip(samples,samples[1:]):
-                distance,_=swept_minimum_distance(plan.sample(left).position,plan.sample(right).position,other.sample(left).position,other.sample(right).position)
+                distance,_=swept_minimum_distance(plan.sample(left).position,plan.sample(right).position,committed_position(left),committed_position(right))
                 if distance<self.config.safe_distance:return TrajectorySafetyResult(False,"predicted_swept_separation",plan.plan_id)
+            # A candidate that hands off to a ring must remain safe as the
+            # canonical post-plan holder while an already committed transfer
+            # continues.  Checking only the overlap of the two plan objects
+            # misses this future encounter (e.g. INBOUND -> OUTER holder vs
+            # a previously committed O2M transfer).
+            if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"} and other.end_time > plan.end_time:
+                post_start=max(plan.end_time, other.start_time)
+                post_end=other.end_time
+                post_samples=np.arange(post_start,post_end+1e-9,1.)
+                if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
+                for time in post_samples:
+                    if np.linalg.norm(self._post_plan_prediction(plan,snapshot,float(time))-other.sample(float(time)).position) < self.config.safe_distance:
+                        return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)
+                for left,right in zip(post_samples,post_samples[1:]):
+                    distance,_=swept_minimum_distance(
+                        self._post_plan_prediction(plan,snapshot,float(left)), self._post_plan_prediction(plan,snapshot,float(right)),
+                        other.sample(float(left)).position, other.sample(float(right)).position,
+                    )
+                    if distance < self.config.safe_distance:
+                        return TrajectorySafetyResult(False,"predicted_post_plan_holder_swept_separation",plan.plan_id)
         # A holder has no committed transfer plan, but is nevertheless an
         # active aircraft.  Omitting it lets a new transfer cut through the
         # occupied target ring; this was the source of the historical A5

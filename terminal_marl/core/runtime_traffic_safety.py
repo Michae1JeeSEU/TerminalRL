@@ -58,9 +58,17 @@ class RuntimeTrafficSafetyController:
             plan.plan_id, plan.uav_id, plan.mode, plan.points, plan.start_time, plan.end_time,
             reservation_ids=list(plan.reservation_ids), metadata={**plan.metadata, "committed": True},
         )
-        return env.safety.verify_predicted_tracks(
-            {holder.uid: holder_plan, plan.uav_id: committed}, start=start, end=end,
-        ).approved
+        # A speed correction that clears a committed transfer but closes into
+        # a neighbouring holder is not a repair.  Include all relevant
+        # uncommitted ring holders in the same predictive, swept check.  This
+        # keeps the controller inside its canonical bounded-speed authority
+        # and makes SafetyFilter the single final arbiter.
+        tracks = {holder.uid: holder_plan, plan.uav_id: committed}
+        for other in env.active.values():
+            if other.uid in tracks or other.ring_role is None or other.committed_plan is not None:
+                continue
+            tracks[other.uid] = self._repair_plan(other, env.airspace, start, end, 0.0)
+        return env.safety.verify_predicted_tracks(tracks, start=start, end=end).approved
 
     def protect(self, env, intents: dict[int, object]) -> dict[int, object]:
         self.overrides = {uid: value for uid, value in self.overrides.items() if value[1] > env.now and uid in env.active}

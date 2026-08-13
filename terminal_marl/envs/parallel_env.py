@@ -203,6 +203,9 @@ class TerminalParallelEnv:
         uav.path_length += distance
         if self.now + self.config.dt + 1e-9 < plan.end_time:
             return distance, False
+        if uav.merge_reservation_id is not None:
+            self.scheduler.consume(uav.merge_reservation_id)
+            uav.merge_reservation_id = None
         uav.committed_plan = None
         uav.trajectory_plan_id = None
         target = plan.metadata["target_phase"]
@@ -305,6 +308,7 @@ class TerminalParallelEnv:
         for request in self.arrivals.requests_until(self.now):
             self.ledger.request(request.arrival_id); self.request_times[request.arrival_id] = request.request_time; self.admission.enqueue(request)
         self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
+        self.scheduler.expire(self.now, set(self.active))
         self._refresh_airspace_occupancy()
         self.airspace.step_transition(self.now)
         admitted, records = self.admission.step(self.now, self.active, self.airspace, self.energy, self.priority)

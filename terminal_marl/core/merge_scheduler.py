@@ -20,22 +20,67 @@ class MergeReservation:
 class MergeProposal: target:RingRole|str; merge_time:float; merge_angle:float|None; headway:float
 
 class MergeScheduler:
-    def __init__(self,config):self.config=config;self.reservations={};self.last_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
+    def __init__(self,config):
+        self.config=config; self.reservations={}
+        # ``last_release`` is the latest *active tentative* reservation.  It
+        # must not be confused with the last executed interface release.
+        self.last_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
+        self.last_executed_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
     def _key(self,target):return {RingRole.MIDDLE:"o2m",RingRole.INNER:"m2i","final":"i2f"}[target]
+    def transfer_duration_estimate(self,uav,target,snapshot):
+        """Conservative canonical ring-transfer duration before a merge slot.
+
+        A reservation is an arrival-at-merge-time slot, not permission to
+        depart immediately through a source-ring holder.  The estimate uses
+        the same vertical smoothstep bound as ``TrajectoryGenerator`` and a
+        conservative radial travel lower bound; it creates a bounded holding
+        window before a future slot without adding a free-flight control.
+        """
+        if not isinstance(target,RingRole) or uav.ring_role is None:
+            return 0.0
+        source=snapshot.airspace.actual_ring(uav.ring_role); destination=snapshot.airspace.actual_ring(target)
+        vertical=abs(destination.height-source.height)/max(1e-6,self.config.max_climb_rate)*1.90
+        radial=abs(destination.radius-source.radius)/max(1.,destination.nominal_speed)
+        return max(6.0,vertical,radial)
     def baseline_time(self,uav,target,snapshot):
         # Nominal merge preparation time.  A bounded residual modifies the
         # scheduler's reservation subject to the hard earliest headway.
-        earliest=max(snapshot.now,snapshot.airspace.headways[self._key(target)]+self.last_release[self._key(target)])
-        return earliest + 6.0
+        key=self._key(target); previous=max(self.last_release[key],self.last_executed_release[key])
+        earliest=max(snapshot.now,snapshot.airspace.headways[key]+previous)
+        return earliest + 6.0 + self.transfer_duration_estimate(uav,target,snapshot)
     def propose(self,uav,intent,snapshot,target):
-        base=self.baseline_time(uav,target,snapshot); hard_earliest=max(snapshot.now,snapshot.airspace.headways[self._key(target)]+self.last_release[self._key(target)])
+        base=self.baseline_time(uav,target,snapshot); key=self._key(target); previous=max(self.last_release[key],self.last_executed_release[key]); hard_earliest=max(snapshot.now,snapshot.airspace.headways[key]+previous)
         t=max(hard_earliest, base+intent.merge_time_residual*self.config.max_merge_time_residual_seconds); angle=None
         if isinstance(target,RingRole):
-            ring=snapshot.airspace.actual_ring(target); angle=self._gap_center(target,t,snapshot,ring.nominal_speed)
+            ring=snapshot.airspace.actual_ring(target); angle=self._gap_center(uav,target,t,snapshot,ring.nominal_speed)
         return MergeProposal(target,t,angle,snapshot.airspace.headways[self._key(target)])
-    def _gap_center(self,target,time,snapshot,speed):
+    def _gap_center(self,uav,target,time,snapshot,speed):
         states=[u for u in snapshot.active.values() if u.ring_role is target]
-        if not states:return 0.0
+        # An empty target ring has no target-holder gap to optimize.  A fixed
+        # zero-angle capture made every O2M request bend through the same
+        # arbitrary corridor; using the requester's own phase still threads a
+        # dense source ring at an arbitrary point.  Select the centre of a
+        # predicted *source-ring* gap instead.  This is a canonical merge
+        # capture phase, not a free-flight heading command.
+        if not states:
+            source = [item for item in snapshot.active.values() if item.ring_role is uav.ring_role and item.uid != uav.uid]
+            if not source:
+                return float(uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])) % (2*math.pi)
+            source_ring=snapshot.airspace.actual_ring(uav.ring_role)
+            # For a source-gap capture, the relevant occupancy is at planned
+            # departure rather than at the later target-ring merge slot.
+            # ``ring_transfer`` contains that source-ring hold explicitly.
+            departure=time-self.transfer_duration_estimate(uav,target,snapshot)
+            horizon=max(0.0,departure-snapshot.now)
+            angles=sorted(((item.ring_progress or 0.)+(source_ring.nominal_speed*horizon/source_ring.radius))%(2*math.pi) for item in source)
+            # A ring gap must accommodate an 80 m separation both before and
+            # after the departing holder.  The gap *centre* is the only
+            # phase that maximizes this minimum clearance; using the largest
+            # empty angular sector's midpoint would put the plan at the same
+            # phase as an unmodelled self motion when the slot is in future.
+            gaps=[((angles[(index+1)%len(angles)]-angle)%(2*math.pi),angle) for index,angle in enumerate(angles)]
+            gap,start=max(gaps)
+            return (start+gap/2)%(2*math.pi)
         horizon = max(0.0, time - snapshot.now)
         angles=sorted(((u.ring_progress or 0.)+speed*horizon/snapshot.airspace.actual_ring(target).radius)%(2*math.pi) for u in states)
         gaps=[((angles[(i+1)%len(angles)]-a)%(2*math.pi),a) for i,a in enumerate(angles)]
@@ -53,3 +98,18 @@ class MergeScheduler:
         key = self._key(RingRole(reservation.target_stage) if reservation.target_stage in {role.value for role in RingRole} else "final")
         committed = [item.merge_time for item in self.reservations.values() if self._key(RingRole(item.target_stage) if item.target_stage in {role.value for role in RingRole} else "final") == key]
         self.last_release[key] = max(committed, default=-math.inf)
+
+    def consume(self,reservation_id):
+        """Close an executed reservation while retaining its real headway."""
+        reservation=self.reservations.pop(reservation_id,None)
+        if reservation is None:return
+        key=self._key(RingRole(reservation.target_stage) if reservation.target_stage in {role.value for role in RingRole} else "final")
+        self.last_executed_release[key]=max(self.last_executed_release[key],reservation.merge_time)
+        committed=[item.merge_time for item in self.reservations.values() if self._key(RingRole(item.target_stage) if item.target_stage in {role.value for role in RingRole} else "final")==key]
+        self.last_release[key]=max(committed,default=-math.inf)
+
+    def expire(self,now,active_uav_ids):
+        """Cancel stale unexecuted reservations; return IDs for audit trace."""
+        stale=[rid for rid,item in self.reservations.items() if item.expires_at<=now or item.uav_id not in active_uav_ids]
+        for rid in stale:self.cancel(rid,"expired_or_orphaned")
+        return stale
