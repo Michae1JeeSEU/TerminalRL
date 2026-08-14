@@ -352,7 +352,15 @@ def write_report(matrix: dict, telemetry: dict, output: Path, *, horizon: dict |
     with (output / "a69_horizon_sensitivity.csv").open("w", newline="", encoding="utf-8") as handle:
         fields = ["snapshot_id", "scenario", "seed", "candidate", "horizon_seconds", "completed", "waiting_area", "unresolved_age_p95", "safe", "completion_delta_vs_noop", "waiting_area_delta_vs_noop", "meaningful_vs_noop"]
         writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows([] if horizon is None else horizon["rows"])
-    next_step = "STOP_BEFORE_PPO: action values remain insufficiently separated; do not enter A6.10 or PPO." if summary["action_value_separation"] == "ACTION_VALUE_TOO_FLAT" else "A6.10 observation sufficiency re-audit only; PPO remains STOP."
+    classification = summary["action_value_separation"]
+    if classification == "PROVEN":
+        next_step = "A6.10 observation sufficiency re-audit only; PPO remains STOP."
+    elif classification == "TRADEOFF_ONLY":
+        next_step = "STOP_BEFORE_PPO: OBJECTIVE_PRIORITY_UNRESOLVED; resolve the tradeoff before any observation audit or PPO."
+    elif classification == "EFFECT_LATENCY_MISMATCH":
+        next_step = "STOP_BEFORE_PPO: redesign the counterfactual horizon before further learning work."
+    else:
+        next_step = "STOP_BEFORE_PPO: action values remain insufficiently separated; do not enter A6.10 or PPO."
     lines = ["# A6.9 post-safety counterfactual action-value requalification", "", f"A6.9 safety: **{summary['safety']}**", f"Telemetry semantics: **{summary['telemetry_semantics']}**", f"CRN determinism: **{summary['crn_determinism']}**", f"Physical action leverage: **{summary['physical_action_leverage']}**", f"Operational execution: **{summary['operational_execution']}**", f"Geometry performance value: **{summary['geometry_performance_value']}**", f"Meaningful best-vs-second margin: **{'PASS' if summary['meaningful_best_second_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_second_ratio']:.3f}", f"Meaningful best-nonzero-vs-NOOP: **{'PASS' if summary['meaningful_best_nonzero_noop_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_nonzero_noop_ratio']:.3f}", f"Near-tie ratio: {summary['near_tie_ratio']:.3f}", f"Counter-metric stability: **{summary['counter_metric_stability']}**", f"540 s horizon: **{summary['horizon_status']}**", f"Action-value separation: **{summary['action_value_separation']}**", "Frozen 29D observation: **NOT_EVALUATED_IN_A69**", "PPO authorization: **STOP**", f"Next step: **{next_step}**", "", "Evidence type: newly_run. Protocol risks: internal simulator, finite action set, and shared simulator family; no external generalization claim."]
     (output / "a69_counterfactual_summary.md").write_text("\n".join(lines)+"\n", encoding="utf-8")
     return report
