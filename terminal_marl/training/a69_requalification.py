@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import pickle
+import shutil
 import time
 from typing import Iterable
 
@@ -182,6 +183,38 @@ def _delta(row: dict, baseline: dict) -> dict:
             "paired_arrival_delay_mean": float(np.mean(paired)) if paired else 0., "paired_arrival_delay_p95": float(np.percentile(paired, 95)) if paired else 0.}
 
 
+def _counter_category(row: dict, baseline: dict) -> str:
+    """Classify a safe candidate without collapsing its metrics into reward."""
+    if not row["safe"]:
+        return "INFEASIBLE"
+    delta = _delta(row, baseline)
+    degraded = any(delta[key] > 0 for key in ("unresolved_age_p95", "energy", "fairness", "diverted_low_soc", "failed_energy"))
+    if _meaningful(delta):
+        return "TRADEOFF_GAIN" if degraded else "DOMINANT_OR_NEAR_DOMINANT_GAIN"
+    if degraded and (delta["completed"] < 0 or delta["waiting_area"] > 0):
+        return "HARMFUL"
+    return "NO_MEANINGFUL_GAIN"
+
+
+def _pareto_set(rows: dict, ordered: list[str]) -> list[str]:
+    """Return safe non-dominated actions using the stated Tier 1/2/3 costs."""
+    def dominates(left: str, right: str) -> bool:
+        a, b = rows[left], rows[right]
+        am, bm = a["metrics"], b["metrics"]
+        ao, bo = a["outcomes"], b["outcomes"]
+        higher = (am["completed"],)
+        lower_a = (am["all_request_waiting_area"], am["unresolved_count"], am["unresolved_age_p95"],
+                   ao.get(TerminalOutcome.DIVERTED_LOW_SOC.value, 0), ao.get(TerminalOutcome.FAILED_ENERGY.value, 0),
+                   am["service_delay_p95"], am["service_delay_p99"], am["energy_mean"],
+                   am["priority_fairness_std"], a["shield_cost"])
+        lower_b = (bm["all_request_waiting_area"], bm["unresolved_count"], bm["unresolved_age_p95"],
+                   bo.get(TerminalOutcome.DIVERTED_LOW_SOC.value, 0), bo.get(TerminalOutcome.FAILED_ENERGY.value, 0),
+                   bm["service_delay_p95"], bm["service_delay_p99"], bm["energy_mean"],
+                   bm["priority_fairness_std"], b["shield_cost"])
+        return higher[0] >= bm["completed"] and all(x <= y for x, y in zip(lower_a, lower_b)) and (higher[0] > bm["completed"] or any(x < y for x, y in zip(lower_a, lower_b)))
+    return [name for name in ordered if not any(other != name and dominates(other, name) for other in ordered)]
+
+
 def _oracle(snapshot_id: str, rows: dict, candidates: dict[str, Candidate]) -> dict:
     if not rows["no_op"]["safe"]: raise RuntimeError(f"unsafe no-op continuation: {snapshot_id}")
     ordered = sorted((name for name, row in rows.items() if row["safe"]), key=lambda name: _rank_key(name, rows))
@@ -197,7 +230,9 @@ def _oracle(snapshot_id: str, rows: dict, candidates: dict[str, Candidate]) -> d
     return {"snapshot_id": snapshot_id, "best_action": best, "best_family": candidates[best].family, "second_action": second, "second_family": candidates[second].family,
             "best_vs_second": best_second, "best_vs_second_meaningful": meaningful, "best_nonzero": best_nonzero,
             "best_nonzero_vs_no_op": best_noop, "best_nonzero_meaningful": nonzero_meaningful, "near_tie": not meaningful,
-            "category": category, "ranked_actions": ordered, "pareto_set": ordered[:1]}
+            "category": category, "ranked_actions": ordered, "compatible_actions": ordered,
+            "pareto_set": _pareto_set(rows, ordered),
+            "candidate_categories": {name: _counter_category(row, rows["no_op"]) for name, row in rows.items()}}
 
 
 def run_matrix(snapshots: list[tuple[dict, bytes]], horizon: float = HORIZON_SECONDS) -> tuple[dict, dict]:
@@ -220,9 +255,62 @@ def run_matrix(snapshots: list[tuple[dict, bytes]], horizon: float = HORIZON_SEC
     return {"snapshots": {meta["snapshot_id"]: meta for meta, _ in snapshots}, "candidates": {item.name: {"family": item.family, "action": list(item.action)} for item in candidates}, "results": results, "oracle": oracle, "noop_replay": replay, "horizon_seconds": horizon}, telemetry
 
 
-def summarize(matrix: dict, telemetry: dict) -> dict:
+def _best_family_candidate(snapshot_id: str, matrix: dict, families: set[str]) -> str | None:
+    rows, oracle = matrix["results"][snapshot_id], matrix["oracle"][snapshot_id]
+    return next((name for name in oracle["ranked_actions"] if matrix["candidates"][name]["family"] in families and rows[name]["safe"]), None)
+
+
+def horizon_sensitivity(snapshots: list[tuple[dict, bytes]], matrix: dict) -> dict:
+    """Test only NO_OP plus the best executable geometry/operational levers.
+
+    This stays deliberately small: one high and one bursty representative
+    state, each branch restored from exactly the selected CRN snapshot.
+    """
+    chosen: list[tuple[dict, bytes]] = []
+    for scenario in ("high", "bursty"):
+        item = next(((meta, payload) for meta, payload in snapshots if meta["scenario"] == scenario), None)
+        if item is not None:
+            chosen.append(item)
+    candidates = {candidate.name: candidate for candidate in candidate_set()}
+    jobs: list[tuple[dict, bytes, str]] = []
+    for meta, payload in chosen:
+        sid = meta["snapshot_id"]
+        names = ["no_op"]
+        for families in ({"GEOMETRY"}, {"HEADWAY", "SPEED", "COMBINED"}):
+            name = _best_family_candidate(sid, matrix, families)
+            if name is not None and name not in names:
+                names.append(name)
+        jobs.extend((meta, payload, name) for name in names)
+    workers = min(len(jobs), max(1, available_cpus() - 2)); started = time.perf_counter(); long: dict[tuple[str, str], dict] = {}
+    with ProcessPoolExecutor(max_workers=workers, initializer=_worker_init) as pool:
+        futures = [pool.submit(evaluate_task, payload, meta["snapshot_id"], candidates[name], LONG_HORIZON_SECONDS) for meta, payload, name in jobs]
+        for future in as_completed(futures):
+            sid, name, _, row = future.result(); long[(sid, name)] = row
+    rows: list[dict] = []
+    latency_material = False
+    safe = True
+    for meta, _, name in jobs:
+        sid = meta["snapshot_id"]
+        for horizon, row in ((HORIZON_SECONDS, matrix["results"][sid][name]), (LONG_HORIZON_SECONDS, long[(sid, name)])):
+            baseline = matrix["results"][sid]["no_op"] if horizon == HORIZON_SECONDS else long[(sid, "no_op")]
+            delta = _delta(row, baseline)
+            rows.append({"snapshot_id": sid, "scenario": meta["scenario"], "seed": meta["seed"], "candidate": name,
+                         "horizon_seconds": horizon, "completed": row["metrics"]["completed"],
+                         "waiting_area": row["metrics"]["all_request_waiting_area"], "unresolved_age_p95": row["metrics"]["unresolved_age_p95"],
+                         "safe": row["safe"], "completion_delta_vs_noop": delta["completed"],
+                         "waiting_area_delta_vs_noop": delta["waiting_area"], "meaningful_vs_noop": _meaningful(delta)})
+            safe = safe and row["safe"]
+        if name != "no_op":
+            short_delta = _delta(matrix["results"][sid][name], matrix["results"][sid]["no_op"])
+            long_delta = _delta(long[(sid, name)], long[(sid, "no_op")])
+            latency_material = latency_material or (not _meaningful(short_delta) and _meaningful(long_delta))
+    return {"rows": rows, "safe": safe, "latency_material": latency_material,
+            "worker_count": workers, "task_count": len(jobs), "wall_clock_seconds": time.perf_counter() - started}
+
+
+def summarize(matrix: dict, telemetry: dict, horizon: dict | None = None) -> dict:
     oracle = list(matrix["oracle"].values()); rows = matrix["results"]
-    safety = all(row["safe"] for group in rows.values() for row in group.values())
+    safety = all(row["safe"] for group in rows.values() for row in group.values()) and (horizon is None or horizon["safe"])
     deterministic = all(matrix["noop_replay"].values())
     meaningful = [item for item in oracle if item["best_vs_second_meaningful"]]
     nonzero = [item for item in oracle if item["best_nonzero_meaningful"]]
@@ -230,6 +318,7 @@ def summarize(matrix: dict, telemetry: dict) -> dict:
     geometry_perf = any(item["best_nonzero"] and matrix["candidates"][item["best_nonzero"]]["family"] == "GEOMETRY" and rows[item["snapshot_id"]][item["best_nonzero"]]["candidate_execution"]["capacity_effective"] for item in oracle)
     counter_stable = all(item["category"] != "TRADEOFF_GAIN" for item in oracle if item["best_nonzero_meaningful"])
     if not safety: classification = "SAFETY_REGRESSION"
+    elif horizon is not None and horizon["latency_material"]: classification = "EFFECT_LATENCY_MISMATCH"
     elif not deterministic: classification = "ACTION_VALUE_TOO_FLAT"
     elif any(item["category"] == "TRADEOFF_GAIN" for item in oracle): classification = "TRADEOFF_ONLY"
     elif len(meaningful) >= max(2, len(oracle)//2) and len(nonzero) >= max(2, len(oracle)//2) and counter_stable: classification = "PROVEN"
@@ -239,30 +328,32 @@ def summarize(matrix: dict, telemetry: dict) -> dict:
             "operational_execution": "PROVEN" if any(row["candidate_execution"]["operational_effective"] for group in rows.values() for row in group.values()) else "NOT_PROVEN",
             "geometry_performance_value": "PROVEN" if geometry_perf else "NOT_PROVEN", "meaningful_best_second_ratio": len(meaningful)/max(1, len(oracle)),
             "meaningful_best_nonzero_noop_ratio": len(nonzero)/max(1, len(oracle)), "near_tie_ratio": len(near)/max(1, len(oracle)),
-            "counter_metric_stability": "PASS" if counter_stable else "TRADEOFF", "action_value_separation": classification,
-            "ppo_authorization": "STOP", "frozen_29d_observation": "NOT_EVALUATED_IN_A69", "telemetry": telemetry}
+            "counter_metric_stability": "PASS" if counter_stable else "TRADEOFF", "horizon_status": "QUESTIONABLE" if horizon and horizon["latency_material"] else "ADEQUATE",
+            "action_value_separation": classification, "ppo_authorization": "STOP", "frozen_29d_observation": "NOT_EVALUATED_IN_A69", "telemetry": telemetry}
 
 
-def write_report(matrix: dict, telemetry: dict, output: Path, *, horizon: list[dict] | None = None) -> dict:
-    output.mkdir(parents=True, exist_ok=True); summary = summarize(matrix, telemetry)
+def write_report(matrix: dict, telemetry: dict, output: Path, *, horizon: dict | None = None) -> dict:
+    output.mkdir(parents=True, exist_ok=True); summary = summarize(matrix, telemetry, horizon)
     report = {"stage": "A6.9 post-safety counterfactual action-value requalification", "evidence_type": "newly_run", "summary": summary,
-              "matrix": matrix, "horizon_sensitivity": horizon or [], "protocol_risks": ["Internal deterministic simulator evidence, not external generalization.", "Finite diagnostic candidate set does not prove continuous-action optimality.", "Snapshots share a simulator family; this is not a held-out real-world split."]}
+              "matrix": matrix, "horizon_sensitivity": {} if horizon is None else horizon, "protocol_risks": ["Internal deterministic simulator evidence, not external generalization.", "Finite diagnostic candidate set does not prove continuous-action optimality.", "Snapshots share a simulator family; this is not a held-out real-world split."]}
     (output / "a69_action_value_audit.json").write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     with (output / "a69_oracle_dataset.csv").open("w", newline="", encoding="utf-8") as handle:
-        fields = ["snapshot_id", "scenario", "seed", "time", "candidate", "family", "safe", "rank", "best_action", "second_action", "category", "completed", "waiting_area", "unresolved_age_p95", "energy", "fairness", "execution_outcomes", "structural_effective", "operational_effective", "capacity_effective"]
+        fields = ["snapshot_id", "scenario", "seed", "time", "candidate", "family", "safe", "rank", "best_action", "second_action", "category", "candidate_category", "completed", "waiting_area", "unresolved_age_p95", "energy", "fairness", "execution_outcomes", "structural_effective", "operational_effective", "capacity_effective"]
         writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader()
         for sid, group in matrix["results"].items():
             meta, oracle = matrix["snapshots"][sid], matrix["oracle"][sid]
             for name, row in group.items():
                 metric, execution = row["metrics"], row["candidate_execution"]
-                writer.writerow({"snapshot_id": sid, "scenario": meta["scenario"], "seed": meta["seed"], "time": meta["time"], "candidate": name, "family": matrix["candidates"][name]["family"], "safe": row["safe"], "rank": oracle["ranked_actions"].index(name)+1 if name in oracle["ranked_actions"] else "", "best_action": oracle["best_action"], "second_action": oracle["second_action"], "category": oracle["category"], "completed": metric["completed"], "waiting_area": metric["all_request_waiting_area"], "unresolved_age_p95": metric["unresolved_age_p95"], "energy": metric["energy_mean"], "fairness": metric["priority_fairness_std"], "execution_outcomes": "|".join(execution["execution_outcomes"]), "structural_effective": execution["structural_effective"], "operational_effective": execution["operational_effective"], "capacity_effective": execution["capacity_effective"]})
+                writer.writerow({"snapshot_id": sid, "scenario": meta["scenario"], "seed": meta["seed"], "time": meta["time"], "candidate": name, "family": matrix["candidates"][name]["family"], "safe": row["safe"], "rank": oracle["ranked_actions"].index(name)+1 if name in oracle["ranked_actions"] else "", "best_action": oracle["best_action"], "second_action": oracle["second_action"], "category": oracle["category"], "candidate_category": oracle["candidate_categories"][name], "completed": metric["completed"], "waiting_area": metric["all_request_waiting_area"], "unresolved_age_p95": metric["unresolved_age_p95"], "energy": metric["energy_mean"], "fairness": metric["priority_fairness_std"], "execution_outcomes": "|".join(execution["execution_outcomes"]), "structural_effective": execution["structural_effective"], "operational_effective": execution["operational_effective"], "capacity_effective": execution["capacity_effective"]})
     with (output / "a69_action_execution_trace.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=["snapshot_id", "candidate", "request_id", "original_request_time", "first_actual_application_time", "application_delay_seconds", "requested_action", "projected_action", "initial_applied_action", "execution_outcomes", "structural_effective", "operational_effective", "capacity_effective", "control_before", "control_after", "predicted_min_separation", "runtime_min_separation", "prediction_runtime_gap"], extrasaction="ignore"); writer.writeheader()
         for sid, group in matrix["results"].items():
             for name, row in group.items(): writer.writerow({"snapshot_id": sid, "candidate": name, **row["candidate_execution"]})
     with (output / "a69_horizon_sensitivity.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["snapshot_id", "candidate", "horizon_seconds", "completed", "waiting_area", "unresolved_age_p95", "safe"]); writer.writeheader(); writer.writerows(horizon or [])
-    lines = ["# A6.9 post-safety counterfactual action-value requalification", "", f"A6.9 safety: **{summary['safety']}**", f"Telemetry semantics: **{summary['telemetry_semantics']}**", f"CRN determinism: **{summary['crn_determinism']}**", f"Physical action leverage: **{summary['physical_action_leverage']}**", f"Operational execution: **{summary['operational_execution']}**", f"Geometry performance value: **{summary['geometry_performance_value']}**", f"Meaningful best-vs-second margin: **{'PASS' if summary['meaningful_best_second_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_second_ratio']:.3f}", f"Meaningful best-nonzero-vs-NOOP: **{'PASS' if summary['meaningful_best_nonzero_noop_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_nonzero_noop_ratio']:.3f}", f"Near-tie ratio: {summary['near_tie_ratio']:.3f}", f"Counter-metric stability: **{summary['counter_metric_stability']}**", f"540 s horizon: **{'ADEQUATE' if not horizon else 'CHECKED'}**", f"Action-value separation: **{summary['action_value_separation']}**", "Frozen 29D observation: **NOT_EVALUATED_IN_A69**", "PPO authorization: **STOP**", "", "Evidence type: newly_run. Protocol risks: internal simulator, finite action set, and shared simulator family; no external generalization claim."]
+        fields = ["snapshot_id", "scenario", "seed", "candidate", "horizon_seconds", "completed", "waiting_area", "unresolved_age_p95", "safe", "completion_delta_vs_noop", "waiting_area_delta_vs_noop", "meaningful_vs_noop"]
+        writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows([] if horizon is None else horizon["rows"])
+    next_step = "STOP_BEFORE_PPO: action values remain insufficiently separated; do not enter A6.10 or PPO." if summary["action_value_separation"] == "ACTION_VALUE_TOO_FLAT" else "A6.10 observation sufficiency re-audit only; PPO remains STOP."
+    lines = ["# A6.9 post-safety counterfactual action-value requalification", "", f"A6.9 safety: **{summary['safety']}**", f"Telemetry semantics: **{summary['telemetry_semantics']}**", f"CRN determinism: **{summary['crn_determinism']}**", f"Physical action leverage: **{summary['physical_action_leverage']}**", f"Operational execution: **{summary['operational_execution']}**", f"Geometry performance value: **{summary['geometry_performance_value']}**", f"Meaningful best-vs-second margin: **{'PASS' if summary['meaningful_best_second_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_second_ratio']:.3f}", f"Meaningful best-nonzero-vs-NOOP: **{'PASS' if summary['meaningful_best_nonzero_noop_ratio'] >= .5 else 'FAIL'}**; ratio = {summary['meaningful_best_nonzero_noop_ratio']:.3f}", f"Near-tie ratio: {summary['near_tie_ratio']:.3f}", f"Counter-metric stability: **{summary['counter_metric_stability']}**", f"540 s horizon: **{summary['horizon_status']}**", f"Action-value separation: **{summary['action_value_separation']}**", "Frozen 29D observation: **NOT_EVALUATED_IN_A69**", "PPO authorization: **STOP**", f"Next step: **{next_step}**", "", "Evidence type: newly_run. Protocol risks: internal simulator, finite action set, and shared simulator family; no external generalization claim."]
     (output / "a69_counterfactual_summary.md").write_text("\n".join(lines)+"\n", encoding="utf-8")
     return report
 
@@ -272,10 +363,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(); parser.add_argument("--stage", choices=("1", "2"), default="1"); parser.add_argument("--output", default=None)
     args = parser.parse_args(); output = Path(args.output) if args.output else Path.home()/"training_outputs"/"terminal"/"event_gated_stage15_diagnostics"/"a69"
     specs = [("high", 0, 3)] if args.stage == "1" else [("high", 0, 2), ("bursty", 0, 2), ("high", 1, 1), ("high", 2, 1), ("bursty", 1, 1), ("bursty", 2, 1)]
-    matrix, telemetry = run_matrix(select_snapshots(specs)); report = write_report(matrix, telemetry, output)
+    if args.stage == "2":
+        # Preserve the Stage 1 evidence before root-level final artifacts are
+        # replaced by the expanded qualification matrix.
+        stage1 = output / "stage1"; stage1.mkdir(parents=True, exist_ok=True)
+        for name in ("a69_action_value_audit.json", "a69_oracle_dataset.csv", "a69_action_execution_trace.csv", "a69_horizon_sensitivity.csv", "a69_counterfactual_summary.md"):
+            source = output / name
+            if source.exists(): shutil.copy2(source, stage1 / name)
+    snapshots = select_snapshots(specs)
+    matrix, telemetry = run_matrix(snapshots)
+    horizon = None if args.stage == "1" else horizon_sensitivity(snapshots, matrix)
+    report = write_report(matrix, telemetry, output, horizon=horizon)
     if not all(matrix["noop_replay"].values()): raise RuntimeError("A6.9 fail closed: CRN no-op replay is non-deterministic")
     if report["summary"]["safety"] != "PASS": raise RuntimeError("A6.9 fail closed: safety regression")
-    print(json.dumps({"stage": args.stage, "output": str(output), "summary": report["summary"]}, default=str))
+    print(json.dumps({"stage": args.stage, "output": str(output), "summary": report["summary"],
+                      "stage3_required": args.stage == "2" and report["summary"]["action_value_separation"] == "PROVEN"}, default=str))
 
 
 if __name__ == "__main__": main()

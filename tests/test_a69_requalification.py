@@ -1,6 +1,7 @@
 import pickle
 import ast
 import time
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -80,3 +81,58 @@ def test_a69_task_duration_wraps_the_branch(monkeypatch):
     _, _, duration, row = evaluate_task(b"snapshot", "snapshot", candidate_set()[0], 1.)
     assert row == {"ok": True}
     assert duration >= .01
+
+
+def test_a69_delayed_request_preserves_original_trace(monkeypatch):
+    config = SimConfig(experiment_mode="dynamic_rule", high_level_enabled=True, total_requested_uavs=3, max_simulation_seconds=20.)
+    wrapper = DynamicHighLevelWrapper(config); wrapper.reset(0)
+    for _ in range(2):
+        wrapper.base.step()
+    coordinator = wrapper.coordinator
+
+    class Verdict:
+        def __init__(self, approved): self.approved = approved; self.reason = "predicted_conflict"
+    rejected_update = wrapper.base.apply_high_level_action(np.zeros(10, np.float32), geometry_gate=False)
+    applied_update = SimpleNamespace(structural_applied=True, capacity_before=(1, 1, 1), capacity_after=(2, 1, 1))
+    allow = {"value": False}
+    monkeypatch.setattr(coordinator, "_candidate_safety", lambda *_args: (applied_update if allow["value"] else rejected_update, Verdict(allow["value"])))
+    monkeypatch.setattr(coordinator, "_repair_options", lambda: iter(()))
+    monkeypatch.setattr(coordinator, "_atomic_commit", lambda _action, update: update)
+    first = coordinator.coordinate(np.asarray((.6, 0, 0, 0, 0, 0, 0, 0, 0, 0), np.float32), geometry_gate=True)
+    assert first.execution_outcome == "STRUCTURAL_DELAYED"
+    allow["value"] = True
+    wrapper.base.now += config.dt
+    coordinator.pending_until = wrapper.base.now
+    coordinator._last_retry_signature = ()
+    later = coordinator.advance()
+    assert later.request_id == first.request_id
+    assert later.original_request_time == first.original_request_time
+    assert later.execution_outcome == "STRUCTURAL_DELAYED_THEN_APPLIED"
+    assert later.application_delay_seconds == config.dt
+
+
+def test_a69_unsafe_structural_action_fails_closed(monkeypatch):
+    config = SimConfig(experiment_mode="dynamic_rule", high_level_enabled=True, total_requested_uavs=3, max_simulation_seconds=20.)
+    wrapper = DynamicHighLevelWrapper(config); wrapper.reset(0)
+    coordinator = wrapper.coordinator; before = wrapper.base.airspace.state_vector().copy()
+
+    class Verdict:
+        approved = False
+        reason = "predicted_conflict"
+    update = wrapper.base.apply_high_level_action(np.zeros(10, np.float32), geometry_gate=False)
+    monkeypatch.setattr(coordinator, "_candidate_safety", lambda *_args: (update, Verdict()))
+    monkeypatch.setattr(coordinator, "_repair_options", lambda: iter(()))
+    decision = coordinator.coordinate(np.asarray((.6, 0, 0, 0, 0, 0, 0, 0, 0, 0), np.float32), geometry_gate=True, allow_delay=False)
+    assert decision.execution_outcome == "SAFETY_REJECTED"
+    assert np.allclose(decision.applied_action, 0.)
+    assert np.array_equal(before, wrapper.base.airspace.state_vector())
+
+
+def test_a69_noop_crn_replay_is_deterministic():
+    config = SimConfig(experiment_mode="dynamic_rule", high_level_enabled=True, total_requested_uavs=3, max_simulation_seconds=20.)
+    wrapper = DynamicHighLevelWrapper(config); wrapper.reset(0)
+    snapshot = pickle.dumps(wrapper, protocol=pickle.HIGHEST_PROTOCOL)
+    first = _branch(snapshot, candidate_set()[0], 1.)
+    second = _branch(snapshot, candidate_set()[0], 1.)
+    assert first["metrics"] == second["metrics"]
+    assert first["candidate_execution"] == second["candidate_execution"]
