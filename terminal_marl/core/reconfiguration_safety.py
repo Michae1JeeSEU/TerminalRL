@@ -25,6 +25,17 @@ class ReconfigurationDecision:
     deferred_until: float | None
     safety_reason: str | None
     update: object
+    # Telemetry semantics are deliberately separate from legacy coordinator
+    # control outcomes.  They describe what actually became effective and
+    # do not alter the safety or simulation path.
+    execution_outcome: str = "NO_OP"
+    request_id: str | None = None
+    original_request_time: float | None = None
+    actual_application_time: float | None = None
+    application_delay_seconds: float | None = None
+    operational_effective: bool = False
+    structural_effective: bool = False
+    capacity_effective: bool = False
 
 
 class PendingState(str, Enum):
@@ -46,6 +57,9 @@ class ReconfigurationSafetyCoordinator:
         self.env = env
         self.pending_action: np.ndarray | None = None
         self.pending_until: float | None = None
+        self.pending_request_id: str | None = None
+        self.pending_request_time: float | None = None
+        self._request_sequence = 0
         self.pending_state = PendingState.IDLE
         self._last_retry_signature: tuple | None = None
         self.speed_overrides: dict[int, tuple[float, float]] = {}
@@ -221,11 +235,20 @@ class ReconfigurationSafetyCoordinator:
     def _clear_pending(self, state: PendingState = PendingState.DONE) -> None:
         self.pending_action = None
         self.pending_until = None
+        self.pending_request_id = None
+        self.pending_request_time = None
         self._last_retry_signature = None
         self.pending_state = state
 
-    def coordinate(self, requested, *, geometry_gate: bool, allow_delay: bool = True) -> ReconfigurationDecision:
+    def coordinate(self, requested, *, geometry_gate: bool, allow_delay: bool = True,
+                   request_id: str | None = None, original_request_time: float | None = None) -> ReconfigurationDecision:
         self.telemetry["coordinator_attempts"] += 1
+        if request_id is None:
+            self._request_sequence += 1
+            request_id = f"high-{self._request_sequence}"
+        if original_request_time is None:
+            original_request_time = self.env.now
+        control_before = self.env.airspace.state_vector().copy()
         raw = np.asarray(requested, dtype=np.float32)
         if raw.shape != (10,) or not np.all(np.isfinite(raw)):
             raise ValueError("high-level action must be finite shape (10,)")
@@ -236,12 +259,14 @@ class ReconfigurationSafetyCoordinator:
                 proposed, reason="event_gate_or_deadband")
             outcome = "no_op" if unsafe is None else "operational_rejected"
             reason = "event_gate_or_deadband" if unsafe is None else "unsafe_operational_action"
-            return self._record(outcome, reason, raw, applied, repairs, magnitude, 0.0, None, unsafe, update)
+            return self._record(outcome, reason, raw, applied, repairs, magnitude, 0.0, None, unsafe, update,
+                                control_before, request_id, original_request_time)
         update, verdict = self._candidate_safety(proposed, {})
         if verdict.approved:
             committed = self._atomic_commit(proposed, update)
             self._clear_pending()
-            return self._record("approved", "safe_direct", raw, proposed, {}, 0.0, 0.0, None, None, committed)
+            return self._record("approved", "safe_direct", raw, proposed, {}, 0.0, 0.0, None, None, committed,
+                                control_before, request_id, original_request_time)
         self.pending_state = PendingState.REPAIRING
         repair_options = self._repair_options()
         for repair in repair_options:
@@ -251,16 +276,18 @@ class ReconfigurationSafetyCoordinator:
                 until = self.env.now + self.env.config.geometry_transition_seconds
                 for uid, residual in repair.items(): self.speed_overrides[uid] = (residual, until)
                 self._clear_pending()
-                return self._record("approved_repaired", "holder_speed_repair", raw, proposed, repair, sum(abs(v) for v in repair.values()), 0.0, None, None, committed)
+                return self._record("approved_repaired", "holder_speed_repair", raw, proposed, repair, sum(abs(v) for v in repair.values()), 0.0, None, None, committed,
+                                    control_before, request_id, original_request_time)
         if allow_delay and self.env.active:
             self.pending_action = proposed.copy(); self.pending_until = self._defer_until()
+            self.pending_request_id = request_id; self.pending_request_time = original_request_time
             self.pending_state = PendingState.WAITING_FOR_EVENT
             self._last_retry_signature = self._traffic_signature()
             # Structural and operational controls are decoupled, but the
             # latter never bypasses predictive verification.
             applied, update, unsafe, repairs, magnitude = self._apply_operational_if_safe(proposed, reason="structural_delayed", deferred=self.pending_until)
             return self._record("delayed", "wait_committed_traffic", raw, applied, repairs, magnitude, 0.0, self.pending_until,
-                                verdict.reason if unsafe is None else unsafe, update)
+                                verdict.reason if unsafe is None else unsafe, update, control_before, request_id, original_request_time)
         for factor in (.5, .25, .10):
             projected = proposed.copy(); projected[:6] *= factor
             projected_update, projected_verdict = self._candidate_safety(projected, {})
@@ -268,19 +295,38 @@ class ReconfigurationSafetyCoordinator:
                 committed = self._atomic_commit(projected, projected_update)
                 magnitude = float(np.abs(proposed[:6]-projected[:6]).sum())
                 self._clear_pending()
-                return self._record("projected", "minimal_structural_projection", raw, projected, {}, 0.0, magnitude, None, verdict.reason, committed)
+                return self._record("projected", "minimal_structural_projection", raw, projected, {}, 0.0, magnitude, None, verdict.reason, committed,
+                                    control_before, request_id, original_request_time)
         headway_only, update, unsafe, repairs, magnitude = self._apply_operational_if_safe(proposed, reason="structural_rejected")
         self._clear_pending()
         return self._record("rejected", "no_safe_reconfiguration", raw, headway_only, repairs, magnitude, float(np.abs(proposed[:6]).sum()), None,
-                            verdict.reason if unsafe is None else unsafe, update)
+                            verdict.reason if unsafe is None else unsafe, update, control_before, request_id, original_request_time)
 
-    def _record(self, outcome, reason, requested, applied, repairs, repair_magnitude, projection, deferred, safety_reason, update):
-        decision = ReconfigurationDecision(outcome, reason, tuple(float(x) for x in requested), tuple(float(x) for x in applied), dict(repairs), len(repairs), float(repair_magnitude), float(projection), deferred, safety_reason, update)
+    def _record(self, outcome, reason, requested, applied, repairs, repair_magnitude, projection, deferred, safety_reason, update,
+                control_before, request_id, original_request_time):
+        control_after = self.env.airspace.state_vector()
+        operational = bool(np.any(np.abs(control_after[6:] - control_before[6:]) > 1e-8))
+        structural = bool(update.structural_applied)
+        capacity = bool(tuple(update.capacity_before) != tuple(update.capacity_after) and structural)
+        if structural:
+            label = "PROJECTED_AND_APPLIED" if outcome == "projected" else ("STRUCTURAL_DELAYED_THEN_APPLIED" if self.env.now > original_request_time + 1e-9 else "STRUCTURAL_APPLIED")
+        elif operational:
+            label = "OPERATIONAL_APPLIED"
+        elif outcome in {"rejected", "operational_rejected"}:
+            label = "SAFETY_REJECTED"
+        elif outcome == "delayed":
+            label = "STRUCTURAL_DELAYED"
+        else:
+            label = "DEADBAND_NOOP" if reason == "event_gate_or_deadband" and np.any(np.abs(requested[:6]) > 1e-8) else "NO_OP"
+        actual_time = self.env.now if structural or operational else None
+        delay = None if actual_time is None else max(0., actual_time - original_request_time)
+        decision = ReconfigurationDecision(outcome, reason, tuple(float(x) for x in requested), tuple(float(x) for x in applied), dict(repairs), len(repairs), float(repair_magnitude), float(projection), deferred, safety_reason, update,
+                                           label, request_id, original_request_time, actual_time, delay, operational, structural, capacity)
         self.telemetry["traffic_repairs"] += len(repairs); self.telemetry["traffic_repair_magnitude"] += repair_magnitude; self.telemetry["geometry_projection_magnitude"] += projection
         if outcome == "delayed": self.telemetry["geometry_delays"] += 1
         if outcome == "rejected": self.telemetry["geometry_rejects"] += 1
         if update.structural_applied: self.telemetry["effective_updates"] += 1
-        self.history.append({"outcome": outcome, "reason_code": reason, "requested_action": list(decision.requested_action), "applied_action": list(decision.applied_action), "traffic_repair": repairs, "projection_magnitude": projection, "deferred_until": deferred, "safety_reason": safety_reason, "candidate_audit": deepcopy(self._candidate_audit)})
+        self.history.append({"outcome": outcome, "execution_outcome": label, "reason_code": reason, "requested_action": list(decision.requested_action), "applied_action": list(decision.applied_action), "traffic_repair": repairs, "projection_magnitude": projection, "deferred_until": deferred, "safety_reason": safety_reason, "request_id": request_id, "original_request_time": original_request_time, "actual_application_time": actual_time, "application_delay_seconds": delay, "operational_effective": operational, "structural_effective": structural, "capacity_effective": capacity, "candidate_audit": deepcopy(self._candidate_audit)})
         return decision
 
     def advance(self):
@@ -290,9 +336,11 @@ class ReconfigurationSafetyCoordinator:
             if signature == self._last_retry_signature:
                 self.pending_state = PendingState.WAITING_FOR_EVENT
                 return None
-            action = self.pending_action; self.pending_action = None; self.pending_until = None
+            action = self.pending_action; request_id = self.pending_request_id; request_time = self.pending_request_time
+            self.pending_action = None; self.pending_until = None
+            self.pending_request_id = None; self.pending_request_time = None
             self.pending_state = PendingState.READY; self.telemetry["pending_retries"] += 1
-            return self.coordinate(action, geometry_gate=True, allow_delay=True)
+            return self.coordinate(action, geometry_gate=True, allow_delay=True, request_id=request_id, original_request_time=request_time)
         return None
 
     def apply_speed_repairs(self, actions):
