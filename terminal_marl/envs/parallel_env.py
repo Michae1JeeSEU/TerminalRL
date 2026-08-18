@@ -19,7 +19,7 @@ from ..core.dynamic_airspace import DynamicAirspace
 from ..core.energy import EnergyModel
 from ..core.lifecycle import OutcomeLedger, transition
 from ..core.landing_zone import LandingZoneManager
-from ..core.merge_scheduler import LowLevelIntent, MergeScheduler
+from ..core.merge_scheduler import LowLevelIntent, MergeScheduler, MergeProposal, RepairCandidate
 from ..core.observations import build_a5_observation
 from ..core.priority import PriorityEngine
 from ..core.rewards import LowLevelReward
@@ -75,10 +75,17 @@ class TerminalParallelEnv:
         self.runtime_trace: deque[dict] = deque(maxlen=60)
         self.last_safety_decisions: dict[int, str] = {}
         self.last_release_decisions: dict[int, str] = {}
+        self.last_release_telemetry: dict[int, dict] = {}
+        self.release_intents: dict[int, dict] = {}
+        self._active_release_intents: dict[int, int] = {}
+        self._next_release_intent_id = 1
+        self.future_release_reservations: dict[int, dict] = {}
         self.telemetry = {
             "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
             "merge_time_modified": 0, "geometry_updates": 0,
             "max_concurrent_final": 0, "final_overcapacity_steps": 0, "final_busy_steps": 0,
+            "repair_candidates_checked": 0, "repair_used": 0, "future_release_reservations": 0,
+            "checked_executed_plan_matches": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -169,9 +176,171 @@ class TerminalParallelEnv:
         if not result.approved:
             self.telemetry["safety_interventions"] += 1
             return False
+        if result.checked_plan_id != plan.plan_id:
+            raise RuntimeError("A6.12 safety approval did not identify the executed canonical plan")
         uav.committed_plan = plan
         uav.trajectory_plan_id = plan.plan_id
+        self.telemetry["checked_executed_plan_matches"] += 1
         return True
+
+    @staticmethod
+    def _primary_blocker(decision: str, safety_reason: str | None = None) -> str:
+        """One and only one release blocker, independent of diagnostic details."""
+        if decision in {"final_capacity", "final_unavailable"}: return "FINAL_RESOURCE"
+        if decision in {"lz_unavailable", "lz_reservation_reject"}: return "LZ_RESOURCE"
+        if decision == "geometry_frozen": return "INTERFACE_FROZEN"
+        if decision in {"headway_conflict"}: return "HEADWAY"
+        if decision in {"capacity"}: return "CAPACITY"
+        if decision in {"soc"}: return "SOC"
+        if safety_reason and "holder" in safety_reason: return "NO_MERGE_GAP"
+        if decision in {"safety_wait", "safety_reject"}: return "PREDICTED_SEPARATION"
+        return "OTHER"
+
+    def _start_release_intent(self, uav: UAVState, intent: LowLevelIntent, interface: str) -> dict:
+        existing = self._active_release_intents.get(uav.uid)
+        if existing is None:
+            existing = self._next_release_intent_id; self._next_release_intent_id += 1
+            self._active_release_intents[uav.uid] = existing
+            self.release_intents[existing] = {
+                "release_intent_id": existing, "uav_id": uav.uid, "arrival_id": uav.arrival_id,
+                "interface": interface, "first_attempt_time": self.now, "approval_time": None,
+                "attempt_count": 0, "retry_count": 0, "scheduled_delay": None,
+                "repair_used": False, "requested_speed_residual": float(intent.speed_residual),
+                "requested_merge_time_residual": float(intent.merge_time_residual),
+                "applied_speed_residual": None, "applied_merge_time_residual": None,
+                "primary_blocker": None, "secondary_constraints": [], "trajectory_plan_id": None,
+                "decision_history": [], "forecast_attempted": False,
+            }
+        row = self.release_intents[existing]
+        row["attempt_count"] += 1
+        row["retry_count"] = max(0, row["attempt_count"] - 1)
+        return row
+
+    def _finish_release_intent(self, uav: UAVState, row: dict, decision: str, *, candidate: RepairCandidate | None = None,
+                               safety_reason: str | None = None, plan_id: str | None = None,
+                               secondary: list[str] | None = None) -> None:
+        row["decision_history"].append(decision)
+        if decision == "approved":
+            row.update({"approval_time": self.now, "scheduled_delay": 0.0 if candidate is None else candidate.delay_seconds,
+                        "repair_used": bool(candidate is not None and candidate.kind != "requested"),
+                        "applied_speed_residual": None if candidate is None else float(candidate.intent.speed_residual),
+                        "applied_merge_time_residual": None if candidate is None else float(candidate.intent.merge_time_residual),
+                        "primary_blocker": None, "trajectory_plan_id": plan_id})
+            self._active_release_intents.pop(uav.uid, None)
+            if row["repair_used"]: self.telemetry["repair_used"] += 1
+            if candidate is not None and candidate.delay_seconds > 0.0: self.telemetry["future_release_reservations"] += 1
+        else:
+            row["primary_blocker"] = self._primary_blocker(decision, safety_reason)
+            row["secondary_constraints"] = list(secondary or ([] if safety_reason is None else [safety_reason]))
+        self.last_release_telemetry[uav.uid] = dict(row)
+
+    def _candidate_plan(self, uav: UAVState, candidate: RepairCandidate, target: RingRole | str, snapshot: WorldSnapshot, lz_id: int | None):
+        proposal = self.scheduler.propose(uav, candidate.intent, snapshot, target, delay_seconds=candidate.delay_seconds)
+        if not self.scheduler.can_reserve(proposal):
+            return None, None, "headway_conflict"
+        # A lightweight temporary reservation gives the generator the exact
+        # slot it would receive on commit.  No scheduler or LZ state changes
+        # occur until the candidate has passed the authoritative filter.
+        from ..core.merge_scheduler import MergeReservation
+        temporary = MergeReservation("candidate", uav.uid, uav.phase.value, str(getattr(target, "value", target)),
+                                     proposal.merge_time, proposal.merge_angle, None, None,
+                                     status="future" if proposal.merge_time > self.now else "committed", expires_at=proposal.merge_time + 60.0)
+        residual = candidate.intent.speed_residual * self.config.max_speed_residual_mps
+        if target == "final":
+            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], temporary, self.now,
+                                                 scheduled_delay=candidate.delay_seconds, speed_residual_mps=residual,
+                                                 airspace=self.airspace)
+        else:
+            plan = self.generator.ring_transfer(uav, uav.ring_role, target, temporary, self.airspace, self.now, residual)
+        committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
+        self.telemetry["repair_candidates_checked"] += 1
+        verdict = self.safety.filter_plan(plan, committed, snapshot)
+        return proposal, plan, None if verdict.approved else verdict.reason
+
+    def _forecast_future_repair(self, uav: UAVState, target: RingRole | str, phase: FlightPhase,
+                                candidates: tuple[RepairCandidate, ...]) -> dict | None:
+        """Find a future slot by replaying deterministic current-rule traffic.
+
+        This is not an unverified speed tweak: the clone executes ordinary
+        canonical plans until the candidate's start, and the candidate itself
+        is SafetyFilter-approved there.  The live path still receives a fresh
+        atomic check at the reserved start before it can execute.
+        """
+        for candidate in candidates:
+            if candidate.delay_seconds <= 0.0:
+                continue
+            clone = deepcopy(self)
+            # Forecast traffic uses the fixed current scheduler for every
+            # other aircraft; the affected source holder receives the exact
+            # bounded residual intended for its reserved hold.
+            forecast_config = deepcopy(clone.config)
+            forecast_config.repair_aware_scheduler = False
+            clone.config = forecast_config
+            for item in (clone.energy, clone.priority, clone.generator, clone.admission, clone.airspace, clone.scheduler,
+                         clone.safety, clone.separation_monitor, clone.runtime_traffic):
+                if hasattr(item, "config"): object.__setattr__(item, "config", forecast_config)
+            for _ in range(int(round(candidate.delay_seconds / clone.config.dt))):
+                if uav.uid not in clone.active:
+                    break
+                clone.step({str(uav.uid): np.asarray((0.0, candidate.intent.speed_residual, 0.0), dtype=np.float32)})
+            probe = clone.active.get(uav.uid)
+            if probe is None or probe.committed_plan is not None:
+                continue
+            probe.safety_retry_after = min(probe.safety_retry_after, clone.now)
+            # The exact residual is tested directly; this avoids accidentally
+            # crediting a different later candidate as a forecast witness.
+            decision = clone._release_legacy(probe, candidate.intent)
+            if decision != "approved" or probe.committed_plan is None or probe.merge_reservation_id is None:
+                continue
+            forecast_reservation = clone.scheduler.reservations.get(probe.merge_reservation_id)
+            if forecast_reservation is None:
+                continue
+            proposal = MergeProposal(target, forecast_reservation.merge_time, forecast_reservation.merge_angle,
+                                     self.airspace.headways[{RingRole.MIDDLE: "o2m", RingRole.INNER: "m2i", "final": "i2f"}[target]])
+            if not self.scheduler.can_reserve(proposal):
+                continue
+            return {"candidate": candidate, "not_before": self.now + candidate.delay_seconds,
+                    "proposal": proposal, "forecast_plan_id": probe.committed_plan.plan_id, "phase": phase,
+                    "target": target, "forecast_safety": clone.last_safety_decisions.get(probe.uid, "")}
+        return None
+
+    def _commit_future_release(self, uav: UAVState, pending: dict) -> str:
+        """Atomically turn a future slot into the exact executed plan."""
+        row = self.release_intents[self._active_release_intents[uav.uid]]
+        reservation = self.scheduler.reservations.get(pending["reservation_id"])
+        candidate: RepairCandidate = pending["candidate"]
+        target = pending["target"]
+        if reservation is None:
+            self._finish_release_intent(uav, row, "safety_wait", safety_reason="future_reservation_missing")
+            return "safety_wait"
+        if target == "final":
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
+                self.scheduler.cancel(reservation.reservation_id, "final_capacity")
+                self._finish_release_intent(uav, row, "final_capacity")
+                return "final_capacity"
+            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+            if lz_id is None or not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved:
+                self.scheduler.cancel(reservation.reservation_id, "lz_unavailable")
+                self._finish_release_intent(uav, row, "lz_unavailable")
+                return "lz_unavailable"
+            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
+                                                 speed_residual_mps=candidate.intent.speed_residual * self.config.max_speed_residual_mps,
+                                                 airspace=self.airspace)
+        else:
+            lz_id = None
+            plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now,
+                                                candidate.intent.speed_residual * self.config.max_speed_residual_mps)
+        if self._commit(uav, plan):
+            uav.merge_reservation_id = reservation.reservation_id
+            if lz_id is not None: uav.assigned_lz = lz_id
+            transition(uav, pending["phase"], self.now); uav.ring_role = None
+            self._finish_release_intent(uav, row, "approved", candidate=candidate, plan_id=plan.plan_id)
+            return "approved"
+        if lz_id is not None: self.lz_manager.release(lz_id, uav.uid, "safety_reject")
+        self.scheduler.cancel(reservation.reservation_id, "forecast_recheck_failed")
+        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[row["interface"]])
+        self._finish_release_intent(uav, row, "safety_wait", safety_reason=self.last_safety_decisions.get(uav.uid))
+        return "safety_wait"
 
     @staticmethod
     def _phase_pair(left: UAVState, right: UAVState) -> str:
@@ -268,53 +437,150 @@ class TerminalParallelEnv:
         uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + self.config.dt
         return distance
 
-    def _release(self, uav: UAVState, intent: LowLevelIntent) -> str:
-        if intent.release_request <= self.config.release_threshold:
-            return "not_requested"
-        if uav.committed_plan is not None:
-            return "plan_active"
-        if self.now < uav.safety_retry_after:
-            return "safety_wait"
-        snapshot = WorldSnapshot(self.now, self.active, self.airspace)
-        residual = intent.speed_residual * self.config.max_speed_residual_mps
+    def _release_legacy(self, uav: UAVState, intent: LowLevelIntent) -> str:
+        """Unchanged single-candidate scheduler for the A6.12 CRN control."""
+        if intent.release_request <= self.config.release_threshold: return "not_requested"
+        if uav.committed_plan is not None: return "plan_active"
+        if uav.phase is FlightPhase.RING_OUTER: interface = "o2m"
+        elif uav.phase is FlightPhase.RING_MIDDLE: interface = "m2i"
+        elif uav.phase is FlightPhase.RING_INNER: interface = "i2f"
+        else: return "phase_masked"
+        row = self._start_release_intent(uav, intent, interface)
+        def finish(decision: str, reason: str | None = None) -> str:
+            self._finish_release_intent(uav, row, decision, candidate=RepairCandidate("requested", intent) if decision == "approved" else None,
+                                        safety_reason=reason, plan_id=uav.trajectory_plan_id if decision == "approved" else None)
+            return decision
+        if self.now < uav.safety_retry_after: return finish("safety_wait", self.last_safety_decisions.get(uav.uid))
+        snapshot = WorldSnapshot(self.now, self.active, self.airspace); residual = intent.speed_residual * self.config.max_speed_residual_mps
         if uav.phase is FlightPhase.RING_OUTER:
-            if "o2m" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            if "o2m" in self.airspace.affected_interfaces(): return finish("geometry_frozen")
             target, phase = RingRole.MIDDLE, FlightPhase.TRANSFER_O2M
         elif uav.phase is FlightPhase.RING_MIDDLE:
-            if "m2i" in self.airspace.affected_interfaces(): return "geometry_frozen"
+            if "m2i" in self.airspace.affected_interfaces(): return finish("geometry_frozen")
             target, phase = RingRole.INNER, FlightPhase.TRANSFER_M2I
-        elif uav.phase is FlightPhase.RING_INNER:
-            if "i2f" in self.airspace.affected_interfaces(): return "geometry_frozen"
-            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
-                return "final_capacity"
+        else:
+            if "i2f" in self.airspace.affected_interfaces(): return finish("geometry_frozen")
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity: return finish("final_capacity")
             lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
-            if lz_id is None: return "lz_unavailable"
-            if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved: return "lz_reservation_reject"
+            if lz_id is None: return finish("lz_unavailable")
+            if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved: return finish("lz_reservation_reject")
             reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, "final"))
             plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now)
             if self._commit(uav, plan):
                 uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
-                return "approved"
+                return finish("approved")
             self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.scheduler.cancel(reservation.reservation_id, "safety_reject")
             uav.safety_retry_after = self.now + 5.0
-            return "safety_reject"
-        else:
-            return "phase_masked"
+            return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
         reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, target))
         plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now, residual)
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
-            return "approved"
+            return finish("approved")
         self.scheduler.cancel(reservation.reservation_id, "safety_reject")
-        # A rejected canonical plan is a deterministic hold-future-release
-        # decision.  Back off by the affected interface headway rather than
-        # retrying the exact same unsafe merge on every low-level step.
-        key = {RingRole.MIDDLE: "o2m", RingRole.INNER: "m2i"}[target]
-        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[key])
-        return "safety_reject"
+        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
+        return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
+
+    def _release(self, uav: UAVState, intent: LowLevelIntent) -> str:
+        if not self.config.repair_aware_scheduler:
+            return self._release_legacy(uav, intent)
+        if intent.release_request <= self.config.release_threshold:
+            return "not_requested"
+        if uav.committed_plan is not None:
+            return "plan_active"
+        pending = self.future_release_reservations.get(uav.uid)
+        if pending is not None:
+            if self.now + 1e-9 < pending["not_before"]:
+                row = self.release_intents[self._active_release_intents[uav.uid]]
+                row["decision_history"].append("future_reservation_wait")
+                self.last_release_telemetry[uav.uid] = dict(row)
+                return "future_reservation_wait"
+            self.future_release_reservations.pop(uav.uid, None)
+            return self._commit_future_release(uav, pending)
+        if uav.phase is FlightPhase.RING_OUTER:
+            interface, target, phase = "o2m", RingRole.MIDDLE, FlightPhase.TRANSFER_O2M
+        elif uav.phase is FlightPhase.RING_MIDDLE:
+            interface, target, phase = "m2i", RingRole.INNER, FlightPhase.TRANSFER_M2I
+        elif uav.phase is FlightPhase.RING_INNER:
+            interface, target, phase = "i2f", "final", FlightPhase.FINAL
+        else:
+            return "phase_masked"
+        row = self._start_release_intent(uav, intent, interface)
+        if interface in self.airspace.affected_interfaces():
+            self._finish_release_intent(uav, row, "geometry_frozen")
+            return "geometry_frozen"
+        if uav.soc <= 0.0:
+            self._finish_release_intent(uav, row, "soc")
+            return "soc"
+        if self.now < uav.safety_retry_after:
+            self._finish_release_intent(uav, row, "safety_wait", safety_reason=self.last_safety_decisions.get(uav.uid))
+            return "safety_wait"
+        lz_id = None
+        if target == "final":
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
+                self._finish_release_intent(uav, row, "final_capacity")
+                return "final_capacity"
+            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+            if lz_id is None:
+                self._finish_release_intent(uav, row, "lz_unavailable")
+                return "lz_unavailable"
+        snapshot = WorldSnapshot(self.now, self.active, self.airspace)
+        candidates = self.scheduler.repair_candidates(intent) if self.config.repair_aware_scheduler else (RepairCandidate("requested", intent),)
+        last_reason = None
+        for candidate in candidates:
+            proposal, plan, reason = self._candidate_plan(uav, candidate, target, snapshot, lz_id)
+            if reason is not None:
+                last_reason = reason
+                continue
+            # This is the atomic commit point: resources are reserved only
+            # after the exact canonical plan passed candidate verification.
+            if target == "final":
+                if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved:
+                    last_reason = "lz_reservation_reject"; continue
+            try:
+                reservation = self.scheduler.reserve(uav, proposal, now=self.now)
+            except ValueError:
+                if target == "final": self.lz_manager.release(lz_id, uav.uid, "headway_conflict")
+                last_reason = "headway_conflict"; continue
+            # Re-run the same plan through SafetyFilter at the atomic state;
+            # _commit installs this very object, never a reconstructed path.
+            plan.reservation_ids = [reservation.reservation_id]
+            if self._commit(uav, plan):
+                uav.merge_reservation_id = reservation.reservation_id
+                if target == "final": uav.assigned_lz = lz_id
+                transition(uav, phase, self.now); uav.ring_role = None
+                self._finish_release_intent(uav, row, "approved", candidate=candidate, plan_id=plan.plan_id)
+                return "approved"
+            if target == "final": self.lz_manager.release(lz_id, uav.uid, "safety_reject")
+            self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+            last_reason = self.last_safety_decisions.get(uav.uid, "predicted_separation")
+        # A single bounded forecast belongs to one release intent.  Repeating
+        # the same expensive projection after every retry would recreate the
+        # old retry storm under a different name.
+        forecast = None if row["forecast_attempted"] else self._forecast_future_repair(uav, target, phase, candidates)
+        row["forecast_attempted"] = True
+        if forecast is not None:
+            reservation = self.scheduler.reserve(uav, forecast["proposal"], now=self.now)
+            forecast["reservation_id"] = reservation.reservation_id
+            self.future_release_reservations[uav.uid] = forecast
+            row.update({"scheduled_delay": forecast["candidate"].delay_seconds, "repair_used": True,
+                        "applied_speed_residual": forecast["candidate"].intent.speed_residual,
+                        "applied_merge_time_residual": forecast["candidate"].intent.merge_time_residual,
+                        "trajectory_plan_id": forecast["forecast_plan_id"]})
+            row["decision_history"].append("future_reserved")
+            self.last_release_telemetry[uav.uid] = dict(row)
+            self.telemetry["future_release_reservations"] += 1
+            return "future_reserved"
+        # A full bounded search failed.  This is a deterministic backoff for
+        # a truly currently infeasible intent, not the old one-second retry.
+        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
+        decision = "safety_wait" if self.config.repair_aware_scheduler else "safety_reject"
+        self._finish_release_intent(uav, row, decision, safety_reason=last_reason)
+        return decision
 
     def step(self, actions: dict[str, np.ndarray] | None = None):
         previous = dict(self.active)
+        self.last_release_telemetry = {}
         rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}
         actions = actions or {}
         intents: dict[int, LowLevelIntent] = {}
@@ -357,6 +623,12 @@ class TerminalParallelEnv:
             intents[uid] = intent; self.priority.update(uav, self.now)
             decision = self._release(uav, intent); decisions[uid] = decision
             self.last_release_decisions[uid] = decision
+            pending = self.future_release_reservations.get(uid)
+            if pending is not None and decision in {"future_reserved", "future_reservation_wait"}:
+                # This is the source-holder portion of the future canonical
+                # release, not an unmodelled temporary avoidance manoeuvre.
+                candidate = pending["candidate"]
+                intents[uid] = LowLevelIntent(0.0, candidate.intent.speed_residual, 0.0)
             if intent.release_request > self.config.release_threshold:
                 rewards.setdefault(uid, LowLevelReward()).release += self.config.low_level_release_approved_reward if decision == "approved" else -self.config.low_level_release_rejected_penalty
                 if decision == "approved": self.telemetry["release_approved"] += 1
@@ -399,7 +671,8 @@ class TerminalParallelEnv:
                     if uid in self.active: self._resolve(self.active[uid], TerminalOutcome.FAILED_COLLISION, "collision")
         self._record_final_occupancy()
         self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
-            "release_decisions": dict(decisions), "telemetry": dict(self.telemetry)})
+            "release_decisions": dict(decisions), "release_intents": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
+            "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
             if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
@@ -408,6 +681,7 @@ class TerminalParallelEnv:
         return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
+            "release_intent_telemetry": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
             "actions": action_rows, "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
         }
 

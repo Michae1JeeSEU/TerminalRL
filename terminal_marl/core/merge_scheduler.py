@@ -19,6 +19,13 @@ class MergeReservation:
 @dataclass(frozen=True)
 class MergeProposal: target:RingRole|str; merge_time:float; merge_angle:float|None; headway:float
 
+@dataclass(frozen=True)
+class RepairCandidate:
+    """A bounded, canonical-intention candidate for one release attempt."""
+    kind: str
+    intent: LowLevelIntent
+    delay_seconds: float = 0.0
+
 class MergeScheduler:
     def __init__(self,config):
         self.config=config; self.reservations={}
@@ -48,12 +55,50 @@ class MergeScheduler:
         key=self._key(target); previous=max(self.last_release[key],self.last_executed_release[key])
         earliest=max(snapshot.now,snapshot.airspace.headways[key]+previous)
         return earliest + 6.0 + self.transfer_duration_estimate(uav,target,snapshot)
-    def propose(self,uav,intent,snapshot,target):
+    def propose(self,uav,intent,snapshot,target, *, delay_seconds: float = 0.0):
+        if delay_seconds < 0.0:
+            raise ValueError("prospective release delay must be non-negative")
         base=self.baseline_time(uav,target,snapshot); key=self._key(target); previous=max(self.last_release[key],self.last_executed_release[key]); hard_earliest=max(snapshot.now,snapshot.airspace.headways[key]+previous)
-        t=max(hard_earliest, base+intent.merge_time_residual*self.config.max_merge_time_residual_seconds); angle=None
+        t=max(hard_earliest, base+intent.merge_time_residual*self.config.max_merge_time_residual_seconds+delay_seconds); angle=None
         if isinstance(target,RingRole):
             ring=snapshot.airspace.actual_ring(target); angle=self._gap_center(uav,target,t,snapshot,ring.nominal_speed)
         return MergeProposal(target,t,angle,snapshot.airspace.headways[self._key(target)])
+
+    def repair_candidates(self, requested: LowLevelIntent) -> tuple[RepairCandidate, ...]:
+        """Minimum-intervention ordering over the existing ±6 s / ±2 m/s authority.
+
+        The finite endpoints match the frozen-state audit witnesses.  A
+        candidate remains an ordinary three-dimensional low-level intention;
+        no geometric or free-flight command is introduced here.
+        """
+        values = (-1.0, 1.0)
+        rows: list[RepairCandidate] = [RepairCandidate("requested", requested)]
+        def add(kind: str, speed: float, merge: float, delay: float = 0.0) -> None:
+            candidate = LowLevelIntent(requested.release_request, speed, merge)
+            row = RepairCandidate(kind, candidate, delay)
+            if row not in rows:
+                rows.append(row)
+        # Requested -> one-axis timing -> one-axis speed -> both axes.
+        for merge in values:
+            add("merge_time_repair", requested.speed_residual, merge)
+        for speed in values:
+            add("speed_repair", speed, requested.merge_time_residual)
+        for speed in values:
+            for merge in values:
+                add("combined_repair", speed, merge)
+        # Only after all immediate legal repairs fail do we reserve a future
+        # slot.  Use the same finite residual options, now with a bounded
+        # prospective delay, so no one-second retry loop is needed.
+        immediate = tuple(rows)
+        for delay in self.config.prospective_repair_delays_seconds:
+            for row in immediate:
+                add("future_delay" if row.kind == "requested" else f"future_delay_{row.kind}",
+                    row.intent.speed_residual, row.intent.merge_time_residual, float(delay))
+        return tuple(rows)
+
+    def can_reserve(self, proposal: MergeProposal) -> bool:
+        key = self._key(proposal.target)
+        return proposal.merge_time >= self.last_release[key] + proposal.headway - 1e-9
     def _gap_center(self,uav,target,time,snapshot,speed):
         states=[u for u in snapshot.active.values() if u.ring_role is target]
         # An empty target ring has no target-holder gap to optimize.  A fixed
@@ -85,10 +130,10 @@ class MergeScheduler:
         angles=sorted(((u.ring_progress or 0.)+speed*horizon/snapshot.airspace.actual_ring(target).radius)%(2*math.pi) for u in states)
         gaps=[((angles[(i+1)%len(angles)]-a)%(2*math.pi),a) for i,a in enumerate(angles)]
         gap,start=max(gaps); return (start+gap/2)%(2*math.pi)
-    def reserve(self,uav,proposal):
+    def reserve(self,uav,proposal, *, now: float | None = None):
         key=self._key(proposal.target)
-        if proposal.merge_time<self.last_release[key]+proposal.headway-1e-9: raise ValueError("headway reservation conflict")
-        rid=str(uuid.uuid4()); r=MergeReservation(rid,uav.uid,uav.phase.value,str(getattr(proposal.target,'value',proposal.target)),proposal.merge_time,proposal.merge_angle,None,None,expires_at=proposal.merge_time+60.)
+        if not self.can_reserve(proposal): raise ValueError("headway reservation conflict")
+        rid=str(uuid.uuid4()); status="future" if now is not None and proposal.merge_time > now + 1e-9 else "committed"; r=MergeReservation(rid,uav.uid,uav.phase.value,str(getattr(proposal.target,'value',proposal.target)),proposal.merge_time,proposal.merge_angle,None,None,status=status,expires_at=proposal.merge_time+60.)
         self.reservations[rid]=r;self.last_release[key]=proposal.merge_time;return r
     def cancel(self,reservation_id,reason=""):
         """Remove a rejected tentative reservation from future-release state."""

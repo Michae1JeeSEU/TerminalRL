@@ -104,6 +104,10 @@ class SimConfig:
     final_queue_capacity: int = 1
     max_speed_residual_mps: float = 2.0
     max_merge_time_residual_seconds: float = 6.0
+    # A6.12 uses only the already-canonical low-level residual authority.  It
+    # changes how a rule intent is searched, not the learned action schema.
+    repair_aware_scheduler: bool = False
+    prospective_repair_delays_seconds: tuple[float, ...] = (5.0, 10.0, 20.0, 40.0)
     release_threshold: float = 0.0
     low_level_touchdown_reward: float = 25.0
     low_level_time_penalty_per_second: float = 0.01
