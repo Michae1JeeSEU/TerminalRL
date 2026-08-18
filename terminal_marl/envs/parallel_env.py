@@ -266,9 +266,17 @@ class TerminalParallelEnv:
         is SafetyFilter-approved there.  The live path still receives a fresh
         atomic check at the reserved start before it can execute.
         """
-        for candidate in candidates:
-            if candidate.delay_seconds <= 0.0:
-                continue
+        delayed = [(index, candidate) for index, candidate in enumerate(candidates) if candidate.delay_seconds > 0.0]
+        # Simulating the intervening hold is by far the expensive portion.  A
+        # common speed residual shares that canonical source-ring evolution,
+        # so project it once, then evaluate all merge-time variants from that
+        # frozen future state.  We retain the global candidate index and pick
+        # the least-intervention successful candidate afterwards.
+        groups: dict[tuple[float, float], list[tuple[int, RepairCandidate]]] = {}
+        for index, candidate in delayed:
+            groups.setdefault((candidate.delay_seconds, candidate.intent.speed_residual), []).append((index, candidate))
+        successes: list[tuple[int, dict]] = []
+        for (delay, speed), group in groups.items():
             clone = deepcopy(self)
             # Forecast traffic uses the fixed current scheduler for every
             # other aircraft; the affected source holder receives the exact
@@ -279,30 +287,31 @@ class TerminalParallelEnv:
             for item in (clone.energy, clone.priority, clone.generator, clone.admission, clone.airspace, clone.scheduler,
                          clone.safety, clone.separation_monitor, clone.runtime_traffic):
                 if hasattr(item, "config"): object.__setattr__(item, "config", forecast_config)
-            for _ in range(int(round(candidate.delay_seconds / clone.config.dt))):
+            for _ in range(int(round(delay / clone.config.dt))):
                 if uav.uid not in clone.active:
                     break
-                clone.step({str(uav.uid): np.asarray((0.0, candidate.intent.speed_residual, 0.0), dtype=np.float32)})
-            probe = clone.active.get(uav.uid)
-            if probe is None or probe.committed_plan is not None:
-                continue
-            probe.safety_retry_after = min(probe.safety_retry_after, clone.now)
-            # The exact residual is tested directly; this avoids accidentally
-            # crediting a different later candidate as a forecast witness.
-            decision = clone._release_legacy(probe, candidate.intent)
-            if decision != "approved" or probe.committed_plan is None or probe.merge_reservation_id is None:
-                continue
-            forecast_reservation = clone.scheduler.reservations.get(probe.merge_reservation_id)
-            if forecast_reservation is None:
-                continue
-            proposal = MergeProposal(target, forecast_reservation.merge_time, forecast_reservation.merge_angle,
-                                     self.airspace.headways[{RingRole.MIDDLE: "o2m", RingRole.INNER: "m2i", "final": "i2f"}[target]])
-            if not self.scheduler.can_reserve(proposal):
-                continue
-            return {"candidate": candidate, "not_before": self.now + candidate.delay_seconds,
-                    "proposal": proposal, "forecast_plan_id": probe.committed_plan.plan_id, "phase": phase,
-                    "target": target, "forecast_safety": clone.last_safety_decisions.get(probe.uid, "")}
-        return None
+                clone.step({str(uav.uid): np.asarray((0.0, speed, 0.0), dtype=np.float32)})
+            for index, candidate in group:
+                probe_env = deepcopy(clone); probe = probe_env.active.get(uav.uid)
+                if probe is None or probe.committed_plan is not None:
+                    continue
+                probe.safety_retry_after = min(probe.safety_retry_after, probe_env.now)
+                # The exact residual is tested directly; this avoids
+                # crediting a different later candidate as a forecast witness.
+                decision = probe_env._release_legacy(probe, candidate.intent)
+                if decision != "approved" or probe.committed_plan is None or probe.merge_reservation_id is None:
+                    continue
+                forecast_reservation = probe_env.scheduler.reservations.get(probe.merge_reservation_id)
+                if forecast_reservation is None:
+                    continue
+                proposal = MergeProposal(target, forecast_reservation.merge_time, forecast_reservation.merge_angle,
+                                         self.airspace.headways[{RingRole.MIDDLE: "o2m", RingRole.INNER: "m2i", "final": "i2f"}[target]])
+                if not self.scheduler.can_reserve(proposal):
+                    continue
+                successes.append((index, {"candidate": candidate, "not_before": self.now + delay,
+                                           "proposal": proposal, "forecast_plan_id": probe.committed_plan.plan_id, "phase": phase,
+                                           "target": target, "forecast_safety": probe_env.last_safety_decisions.get(probe.uid, "")}))
+        return min(successes, key=lambda item: item[0])[1] if successes else None
 
     def _commit_future_release(self, uav: UAVState, pending: dict) -> str:
         """Atomically turn a future slot into the exact executed plan."""

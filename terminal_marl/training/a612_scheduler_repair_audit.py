@@ -137,7 +137,19 @@ def _run_profile(config: SimConfig, seed: int) -> dict:
             "nominal_capacity": {role.value: env.airspace.capacity(role) for role in env.airspace._actual}}
 
 
-def run_audit(*, seed: int = 0, stage: str = "screen", profiles_to_run: tuple[str, ...] | None = None) -> dict:
+def _truncate_profile(profile: DemandProfile, horizon_seconds: float | None) -> DemandProfile:
+    if horizon_seconds is None:
+        return profile
+    horizon = float(horizon_seconds)
+    segments = tuple((start, min(end, horizon), rate) for start, end, rate in profile.segments if start < horizon)
+    # A short, explicit drain preserves touchdown/service measurements while
+    # keeping the first mechanism screen distinct from a full effectiveness
+    # matrix.
+    return DemandProfile(profile.name, segments, horizon, min(240.0, profile.drain_seconds))
+
+
+def run_audit(*, seed: int = 0, stage: str = "screen", profiles_to_run: tuple[str, ...] | None = None,
+              screen_horizon_seconds: float | None = None) -> dict:
     frozen = frozen_rejection_regression(seed)
     if stage == "frozen":
         return {"stage": "A6.12 frozen-state regression", "evidence_type": "newly_run", "frozen_regression": frozen,
@@ -150,7 +162,7 @@ def run_audit(*, seed: int = 0, stage: str = "screen", profiles_to_run: tuple[st
     unknown = set(selected_profiles) - set(PROFILE_NAMES)
     if unknown: raise ValueError(f"unsupported A6.12 profiles: {sorted(unknown)}")
     for name in selected_profiles:
-        profile = profiles[name]
+        profile = _truncate_profile(profiles[name], screen_horizon_seconds)
         current_config = _base_config(profile, dynamic=False)
         repaired_config = replace(current_config, repair_aware_scheduler=True)
         current = _run_profile(current_config, seed)
@@ -173,6 +185,7 @@ def run_audit(*, seed: int = 0, stage: str = "screen", profiles_to_run: tuple[st
             "nominal_geometry_capacity": {"outer": 47, "middle": 31, "inner": 15}, "frozen_regression": frozen,
             "comparison": rows, "interface_deltas": deltas,
             "summary": {"protected_safety": "PASS", "classification": classification, "ppo_authorization": "STOP", "profiles_run": list(selected_profiles),
+                        "screen_horizon_seconds": screen_horizon_seconds,
                         "recommend_a613_capacity_value_reaudit": classification == "SCHEDULER_CONSERVATISM_CONFIRMED"}}
 
 
@@ -182,7 +195,7 @@ def write_report(report: dict, output: str | Path) -> None:
     with (output / "a612_frozen_rejection_regression.csv").open("w", newline="", encoding="utf-8") as handle:
         rows = report["frozen_regression"]; writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else ["frozen_state"]); writer.writeheader(); writer.writerows(rows)
     with (output / "a612_interface_flow_comparison.csv").open("w", newline="", encoding="utf-8") as handle:
-        fields = ["profile", "scheduler", "interface", "unique_release_intents", "approval_rate", "safety_wait_rate", "safety_reject_rate", "retries_per_successful_transfer", "wait_to_approved_release_mean", "wait_to_approved_release_p95"]
+        fields = ["profile", "scheduler", "interface", "unique_release_intents", "approved", "approval_rate", "safety_wait_rate", "safety_reject_rate", "retries_per_successful_transfer", "wait_to_approved_release_mean", "wait_to_approved_release_p95"]
         writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader()
         for profile, conditions in report.get("comparison", {}).items():
             for scheduler, condition in conditions.items():
@@ -199,9 +212,9 @@ def write_report(report: dict, output: str | Path) -> None:
 
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--stage", choices=("frozen", "screen"), default="screen"); parser.add_argument("--profiles", nargs="*", choices=PROFILE_NAMES, default=None); parser.add_argument("--output", default=None)
+    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--stage", choices=("frozen", "screen"), default="screen"); parser.add_argument("--profiles", nargs="*", choices=PROFILE_NAMES, default=None); parser.add_argument("--screen-horizon-seconds", type=float, default=None); parser.add_argument("--output", default=None)
     args = parser.parse_args(); output = Path(args.output) if args.output else Path.home() / "training_outputs" / "terminal" / "event_gated_stage15_diagnostics" / "a612"
-    report = run_audit(seed=args.seed, stage=args.stage, profiles_to_run=None if args.profiles is None else tuple(args.profiles)); write_report(report, output); print(json.dumps(report["summary"]))
+    report = run_audit(seed=args.seed, stage=args.stage, profiles_to_run=None if args.profiles is None else tuple(args.profiles), screen_horizon_seconds=args.screen_horizon_seconds); write_report(report, output); print(json.dumps(report["summary"]))
 
 
 if __name__ == "__main__":
