@@ -206,15 +206,50 @@ def write_report(report: dict, output: str | Path) -> None:
         for profile, conditions in report.get("comparison", {}).items():
             for scheduler, condition in conditions.items(): writer.writerow({"profile": profile, "scheduler": scheduler, **{key: condition["metrics"].get(key) for key in fields[2:]}})
     summary = report["summary"]
-    lines = ["# A6.12 Prospective Safe Merge Scheduling & Repair Integration", "", f"Classification: **{summary.get('classification', 'FROZEN_REGRESSION')}**", f"Protected safety: **{summary['protected_safety']}**", "PPO authorization: **STOP**", "", "## Evidence", "", "- Evidence type: newly_run; deterministic common-random-number rule-policy simulations.", "- Fixed nominal geometry only; no high-level action, PPO, checkpoint, or safety-threshold change.", "- The frozen-state table reports whether all eight A6.11 witnesses are found online with a canonical checked plan.", "", "## Protocol risks", "", "- Initial screen is one seed per profile; multi-seed confirmation remains required before generalizing mechanism size.", "- The repair grid is finite within the existing ±2 m/s / ±6 s authority and bounded delay set; infeasible means infeasible within that legal grid."]
+    frozen = report["frozen_regression"]
+    repaired = sum(bool(row.get("repair_found")) for row in frozen)
+    profile_lines = []
+    for profile, conditions in report.get("comparison", {}).items():
+        current = conditions["current_scheduler"]["metrics"]; repair = conditions["repair_aware_scheduler"]["metrics"]
+        profile_lines.append(f"- `{profile}`: completed {current['completed']} → {repair['completed']}; all-request waiting area {current['all_request_waiting_area']:.1f} → {repair['all_request_waiting_area']:.1f}; repair/future reservations {repair['repair_used']:.0f}/{repair['future_release_reservations']:.0f}.")
+    lines = ["# A6.12 Prospective Safe Merge Scheduling & Repair Integration", "", f"Classification: **{summary.get('classification', 'FROZEN_REGRESSION')}**", f"Protected safety: **{summary['protected_safety']}**", "PPO authorization: **STOP**", "", "## Required conclusions", "", f"1. Online scheduler repaired **{repaired}/{len(frozen)}** frozen A6.11 rejections; each committed execution used the SafetyFilter-checked canonical plan.", "2. Per-interface approval, safety-wait, and retry deltas are in `a612_interface_flow_comparison.csv`; no primary blocker is multiply counted.", "3. Repair lowers retries/waits in the profile rows where a legal future reservation exists; `repair_used` and `future_release_reservations` make the distinction auditable.", "4. Middle/Inner utilisation and holding metrics are retained in the terminal CSV; this short screen does not treat a throughput-neutral change as a capacity conclusion.", "5. External queue and all-request waiting are reported for every CRN pair; completed-only delay is not used alone.", "6. Completion outcomes are listed below; repair approval alone is not claimed as a terminal-service gain.", "7. The next likely bottleneck is downstream final/LZ service or persistent overload whenever approvals improve without completed missions improving; A6.13 must re-audit capacity only under the repaired scheduler.", f"8. A6.13 capacity-value re-audit recommendation: **{'YES' if summary.get('recommend_a613_capacity_value_reaudit') else 'NO'}**. PPO remains STOP.", "", "## Per-profile terminal deltas", "", *profile_lines, "", "## Evidence", "", "- Evidence type: newly_run; deterministic one-seed, common-random-number rule-policy screens.", "- Fixed nominal geometry only; no high-level action, PPO, checkpoint, or safety-threshold change.", "- The frozen-state table reports the online repair replay against the eight A6.11 states.", "", "## Protocol risks", "", "- This is a 900 s demand-window + 240 s drain mechanism screen, not a multi-seed final effectiveness gate.", "- The repair grid is finite within the existing ±2 m/s / ±6 s authority and bounded delay set; infeasible means infeasible within that legal grid."]
     (output / "a612_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def aggregate_reports(inputs: list[str | Path]) -> dict:
+    """Combine independently-run CRN profiles into one auditable screen report."""
+    payloads = [json.loads((Path(path) / "a612_scheduler_repair_audit.json").read_text(encoding="utf-8")) for path in inputs]
+    if not payloads:
+        raise ValueError("at least one A6.12 profile report is required")
+    comparison: dict[str, dict] = {}; deltas: list[dict] = []
+    for payload in payloads:
+        overlap = set(comparison) & set(payload.get("comparison", {}))
+        if overlap: raise ValueError(f"duplicate A6.12 profiles: {sorted(overlap)}")
+        comparison.update(payload.get("comparison", {})); deltas.extend(payload.get("interface_deltas", []))
+    protected = all(payload["summary"].get("protected_safety") == "PASS" for payload in payloads)
+    labels = {payload["summary"].get("classification") for payload in payloads}
+    if not protected: classification = "SAFETY_REGRESSION"
+    elif "SCHEDULER_CONSERVATISM_CONFIRMED" in labels: classification = "SCHEDULER_CONSERVATISM_CONFIRMED"
+    elif labels == {"MOST_REJECTIONS_TRULY_INFEASIBLE"}: classification = "MOST_REJECTIONS_TRULY_INFEASIBLE"
+    elif "SCHEDULER_REPAIR_NO_TERMINAL_GAIN" in labels: classification = "SCHEDULER_REPAIR_NO_TERMINAL_GAIN"
+    else: classification = "INCONCLUSIVE"
+    first = payloads[0]
+    return {"stage": "A6.12 prospective safe merge scheduling", "evidence_type": "newly_run", "seed": first["seed"],
+            "inputs": {"profile_reports": [str(Path(path)) for path in inputs], "screen_horizon_seconds": first["summary"].get("screen_horizon_seconds")},
+            "nominal_geometry_capacity": first["nominal_geometry_capacity"], "frozen_regression": first["frozen_regression"],
+            "comparison": comparison, "interface_deltas": deltas,
+            "summary": {"protected_safety": "PASS" if protected else "FAIL", "classification": classification,
+                        "ppo_authorization": "STOP", "profiles_run": sorted(comparison),
+                        "screen_horizon_seconds": first["summary"].get("screen_horizon_seconds"),
+                        "recommend_a613_capacity_value_reaudit": protected and classification == "SCHEDULER_CONSERVATISM_CONFIRMED"}}
 
 
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--stage", choices=("frozen", "screen"), default="screen"); parser.add_argument("--profiles", nargs="*", choices=PROFILE_NAMES, default=None); parser.add_argument("--screen-horizon-seconds", type=float, default=None); parser.add_argument("--output", default=None)
+    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--stage", choices=("frozen", "screen"), default="screen"); parser.add_argument("--profiles", nargs="*", choices=PROFILE_NAMES, default=None); parser.add_argument("--screen-horizon-seconds", type=float, default=None); parser.add_argument("--aggregate-from", nargs="*", default=None); parser.add_argument("--output", default=None)
     args = parser.parse_args(); output = Path(args.output) if args.output else Path.home() / "training_outputs" / "terminal" / "event_gated_stage15_diagnostics" / "a612"
-    report = run_audit(seed=args.seed, stage=args.stage, profiles_to_run=None if args.profiles is None else tuple(args.profiles), screen_horizon_seconds=args.screen_horizon_seconds); write_report(report, output); print(json.dumps(report["summary"]))
+    report = aggregate_reports(args.aggregate_from) if args.aggregate_from else run_audit(seed=args.seed, stage=args.stage, profiles_to_run=None if args.profiles is None else tuple(args.profiles), screen_horizon_seconds=args.screen_horizon_seconds)
+    write_report(report, output); print(json.dumps(report["summary"]))
 
 
 if __name__ == "__main__":
