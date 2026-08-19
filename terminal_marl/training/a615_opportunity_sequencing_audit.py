@@ -138,17 +138,25 @@ class ShadowOpportunityAudit:
         return keys
 
     def _shadow(self, env, uid: int, policy_intent: LowLevelIntent, context, pre_blocker: str | None) -> dict:
-        clone = deepcopy(env); uav = clone.active[uid]
+        # ``env`` is already this timestep's isolated shadow copy.  Candidate
+        # evaluation only appends shadow telemetry, so sharing that copy among
+        # eligible UAVs cannot alter a reservation, trajectory, or runtime
+        # vehicle state and avoids a redundant deep copy per UAV.
+        clone = env; uav = clone.active[uid]
         interface, target, _, lz_id, _ = _target_context(clone, uav)
         # The shadow request intentionally differs only in release=1.  Its
         # residuals remain the policy's current bounded intention.
         requested = LowLevelIntent(1., policy_intent.speed_residual, policy_intent.merge_time_residual)
         blockers, candidates = [], []
+        legal_candidates = clone.scheduler.repair_candidates(requested) if pre_blocker is None else ()
         if pre_blocker is not None:
             blockers.append(pre_blocker)
         else:
             snapshot = WorldSnapshot(clone.now, clone.active, clone.airspace)
-            for index, candidate in enumerate(clone.scheduler.repair_candidates(requested)):
+            # Evaluate the finite A6.12 authority on the isolated state so
+            # the audit can distinguish an earlier feasible alternative from
+            # the scheduler's ranked choice; no result is committed.
+            for index, candidate in enumerate(legal_candidates):
                 proposal, plan, reason = clone._candidate_plan(uav, candidate, target, snapshot, lz_id)
                 if reason is not None:
                     blockers.append(reason); candidates.append({"rank": index, "kind": candidate.kind, "safe": False, "blocker": reason})
@@ -161,15 +169,18 @@ class ShadowOpportunityAudit:
                     "predecessor": predecessor, "successor": successor, "minimum_predicted_separation": minimum,
                     "minimum_swept_separation": swept, "plan_id": plan.plan_id})
         selected = next((item for item in candidates if item["safe"]), None)
+        earliest = min((item for item in candidates if item["safe"]), key=lambda item: item["merge_time"], default=None)
         primary = pre_blocker or (None if selected else (blockers[0] if blockers else "no_candidate"))
-        return {"safe_candidate_exists": selected is not None, "earliest_safe_candidate_time": None if selected is None else selected["merge_time"],
+        return {"safe_candidate_exists": selected is not None, "earliest_safe_candidate_time": None if earliest is None else earliest["merge_time"],
                 "selected_kind": None if selected is None else selected["kind"], "merge_time": None if selected is None else selected["merge_time"],
                 "merge_angle": None if selected is None else selected["merge_angle"], "speed_residual": None if selected is None else selected["speed_residual"],
                 "merge_time_residual": None if selected is None else selected["merge_time_residual"], "future_delay": None if selected is None else selected["future_delay"],
                 "predecessor": None if selected is None else selected["predecessor"], "successor": None if selected is None else selected["successor"],
                 "minimum_predicted_separation": None if selected is None else selected["minimum_predicted_separation"],
                 "minimum_swept_separation": None if selected is None else selected["minimum_swept_separation"],
-                "primary_blocker": primary, "secondary_blockers": "|".join(sorted(set(blockers))), "candidate_set": json.dumps(candidates, default=str, separators=(",", ":"))}
+                "primary_blocker": primary, "secondary_blockers": "|".join(sorted(set(blockers))),
+                "legal_candidate_kinds": "|".join(candidate.kind for candidate in legal_candidates),
+                "candidate_set": json.dumps(candidates, default=str, separators=(",", ":"))}
 
     def after_step(self, env, keys, info) -> None:
         for raw_uid, decision in info["release_decisions"].items():
