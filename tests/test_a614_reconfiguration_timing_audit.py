@@ -8,6 +8,7 @@ from terminal_marl.training.a614_reconfiguration_timing_audit import (
     TIMING_SWEEP_SECONDS,
     classify_audit,
     run_dynamic_at_time,
+    select_mu0,
 )
 
 
@@ -59,3 +60,7 @@ def test_a614_classification_is_deterministic_and_cannot_authorize_ppo():
     assert first == classify_audit(timing, burst, static_beneficial=True, materiality_fallback=False)
     assert first["classification"] == "DECISION_INTERVAL_TOO_SLOW"
     assert first["ppo_authorization"] == PPO_AUTHORIZATION == "STOP"
+
+
+def test_a614_explicit_mu0_reuses_the_calibration_without_changing_crn_seed():
+    assert select_mu0(1, 0.014583333333333334) == (0.014583333333333334, "explicit_preexisting_calibration")

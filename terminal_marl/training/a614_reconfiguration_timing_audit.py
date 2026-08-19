@@ -286,8 +286,23 @@ def _gain_recovery(dynamic: dict, nominal: dict, static: dict) -> float | None:
     return None if static_gain <= 0. else float(dynamic_gain / static_gain)
 
 
-def run_audit(*, seed: int = 0, workers: int = 6) -> dict:
-    mu, mu_evidence = _a611_mu0(seed)
+def select_mu0(seed: int, supplied_mu0: float | None = None) -> tuple[float, str]:
+    """Reuse an explicitly identified calibration for CRN replications.
+
+    Arrival seed changes the request realization, not the physical service-rate
+    calibration.  Supplying the already verified seed-0 A6.11 μ₀ prevents a
+    replication from silently spending its entire staged budget recalibrating
+    the same fixed simulator parameter.
+    """
+    if supplied_mu0 is None:
+        return _a611_mu0(seed)
+    if not np.isfinite(supplied_mu0) or supplied_mu0 <= 0.:
+        raise ValueError("supplied μ₀ must be finite and positive")
+    return float(supplied_mu0), "explicit_preexisting_calibration"
+
+
+def run_audit(*, seed: int = 0, workers: int = 6, mu0: float | None = None) -> dict:
+    mu, mu_evidence = select_mu0(seed, mu0)
     constant = DemandProfile("constant_high_repair_scheduler", ((0., 720., 1.55 * mu),), 720., 480.)
     # Same A6.11/A6.13 burst construction; onset is the 300 s demand increase.
     burst = DemandProfile("medium_burst_repair_scheduler", ((0., 900., .95 * mu), (300., 900., 1.55 * mu)), 900., 480.)
@@ -363,9 +378,9 @@ def write_report(report: dict, output: str | Path) -> None:
 
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--workers", type=int, default=6); parser.add_argument("--output", default=None)
+    parser = argparse.ArgumentParser(); parser.add_argument("--seed", type=int, default=0); parser.add_argument("--workers", type=int, default=6); parser.add_argument("--mu0", type=float, default=None); parser.add_argument("--output", default=None)
     args = parser.parse_args(); output = Path(args.output) if args.output else Path.home() / "training_outputs" / "terminal" / "event_gated_stage15_diagnostics" / "a614"
-    report = run_audit(seed=args.seed, workers=args.workers); write_report(report, output); print(json.dumps(report["summary"]))
+    report = run_audit(seed=args.seed, workers=args.workers, mu0=args.mu0); write_report(report, output); print(json.dumps(report["summary"]))
 
 
 if __name__ == "__main__":
