@@ -349,7 +349,30 @@ def write_report(report, output):
     _write_csv(output/"a615_safe_opportunity_events.csv",events);_write_csv(output/"a615_opportunity_loss_by_uav.csv",losses)
     _write_csv(output/"a615_first_divergence.csv",report["first_divergence"]);_write_csv(output/"a615_local_window_audit.csv",report["local_windows"]);_write_csv(output/"a615_radius_micro_sweep.csv",report["radius_micro_sweep"])
     (output/"a615_audit.json").write_text(json.dumps(report,indent=2,default=str),encoding="utf-8")
-    lines=["# A6.15 Safe Opportunity Window & Sequencing Attribution Audit","",f"Classification: **{', '.join(report['summary']['classification'])}**",f"Protected safety: **{report['summary']['protected_safety']}**","PPO authorization: **STOP**","", "All candidate checks were run in deep-copied shadow environments; no shadow reservation or plan is committed to runtime."]
+    branch_rows = []
+    for seed, group in report["branches"].items():
+        for name, result in group.items():
+            metrics = result["metrics"]
+            branch_rows.append((seed, name, metrics["completed"], metrics["all_request_waiting_area"],
+                                metrics["unresolved_count"], result["safe"], result.get("checked_executed_trajectory_invariant", False)))
+    safe_events = sum(bool(row["safe_candidate_exists"]) for row in events)
+    missed_policy = sum((row.get("policy_opportunity_loss") or 0) > 0 for row in losses)
+    missed_scheduler = sum((row.get("scheduler_opportunity_loss") or 0) > 0 for row in losses)
+    lines=["# A6.15 Safe Opportunity Window & Sequencing Attribution Audit", "",
+           f"Mechanism classification: **{', '.join(report['summary']['classification'])}**",
+           f"Protected safety: **{report['summary']['protected_safety']}**", "PPO authorization: **STOP**", "",
+           "All candidate checks were run in deep-copied shadow environments; no shadow reservation or plan is committed to runtime.",
+           f"Safe shadow-opportunity events: {safe_events}/{len(events)}. Policy opportunity-loss cases: {missed_policy}; scheduler opportunity-loss cases: {missed_scheduler}.", "",
+           "| Seed | Branch | Completed | Waiting area | Unresolved | Hard-safe | Checked == executed |",
+           "|---:|---|---:|---:|---:|---|---|"]
+    lines.extend(f"| {seed} | {name} | {completed} | {waiting:.1f} | {unresolved:.0f} | {safe} | {invariant} |"
+                 for seed, name, completed, waiting, unresolved, safe, invariant in branch_rows)
+    lines.extend(["", "| Paired comparison | First causal divergence |", "|---|---|"])
+    lines.extend(f"| seed {row['seed']}: nominal vs {row['compared_branch']} | {row['event_type']} at t={row['simulation_time']}, arrival={row['arrival_id']}, interface={row['interface']} |"
+                 for row in report["first_divergence"])
+    lines.extend(["", "| Outer radius | Derived capacity | Waiting area |", "|---:|---:|---:|"])
+    lines.extend(f"| {row['radius']:.1f} | {row['derived_capacity']} | {row['waiting_area']:.1f} |" for row in report["radius_micro_sweep"])
+    lines.extend(["", "Interpretation gate: labels attribute observed CRN diagnostics only. They do not authorize changes to the frozen scheduler, SafetyFilter, high-level timing, PPO, A7, or A8."])
     (output/"a615_summary.md").write_text("\n".join(lines)+"\n",encoding="utf-8")
 
 
