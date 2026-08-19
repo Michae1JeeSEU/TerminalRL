@@ -270,13 +270,29 @@ def first_divergence(left, right, *, seed, compared_branch):
 def local_window(divergence, left, right):
     if divergence["simulation_time"] is None: return []
     rows=[]; t0=divergence["simulation_time"]; aid=divergence["arrival_id"]; interface=divergence["interface"]
-    for label, branch in (("nominal", left), ("branch", right)):
-        selected=[row for row in branch["events"] if row["arrival_id"] == aid and row["interface"] == interface and abs(row["time"]-t0) <= 2.]
+    def normalized_candidate_set(row):
+        try:
+            values = json.loads(row.get("candidate_set") or "[]")
+        except json.JSONDecodeError:
+            return []
+        return [{key: value for key, value in item.items() if key != "plan_id"} for item in values]
+    selected_by_side = {
+        "nominal": [row for row in left["events"] if row["arrival_id"] == aid and row["interface"] == interface and abs(row["time"]-t0) <= 2.],
+        "branch": [row for row in right["events"] if row["arrival_id"] == aid and row["interface"] == interface and abs(row["time"]-t0) <= 2.],
+    }
+    by_time = {label: {row["time"]: row for row in selected} for label, selected in selected_by_side.items()}
+    for label, selected in selected_by_side.items():
+        peer = by_time["branch" if label == "nominal" else "nominal"]
         for row in selected:
+            other = peer.get(row["time"])
             rows.append({"branch_side": label, "time": row["time"], "arrival_id": aid, "interface": interface,
                          "safe_candidate_exists": row["safe_candidate_exists"], "selected_kind": row["selected_kind"],
                          "candidate_set": row["candidate_set"], "primary_blocker": row["primary_blocker"],
-                         "reservation_sequence_change": row.get("actual_decision") in {"approved", "future_reserved"}})
+                         "actual_decision": row.get("actual_decision"),
+                         "feasibility_flip_vs_pair": other is not None and row["safe_candidate_exists"] != other["safe_candidate_exists"],
+                         "candidate_set_change_vs_pair": other is not None and normalized_candidate_set(row) != normalized_candidate_set(other),
+                         "candidate_ranking_change_vs_pair": other is not None and row.get("selected_kind") != other.get("selected_kind"),
+                         "reservation_sequence_change": other is not None and row.get("actual_decision") != other.get("actual_decision")})
     return rows
 
 
@@ -316,14 +332,8 @@ def classify(branches, micro, divergences=(), local_windows=()):
         labels.add("SEQUENCING_BIFURCATION")
     if any(row.get("reservation_sequence_change") for row in local_windows):
         labels.add("RESERVATION_SEQUENCE_LOCK_IN")
-    for row in local_windows:
-        try:
-            candidates = json.loads(row.get("candidate_set") or "[]")
-        except json.JSONDecodeError:
-            candidates = []
-        if len(candidates) > 1 and row.get("safe_candidate_exists"):
-            labels.add("TIE_BREAK_SENSITIVITY")
-            break
+    if any(row.get("candidate_ranking_change_vs_pair") for row in local_windows):
+        labels.add("TIE_BREAK_SENSITIVITY")
     if not labels: labels.add("INCONCLUSIVE")
     if len(labels)>1: labels.add("MIXED")
     return sorted(labels)

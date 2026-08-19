@@ -4,6 +4,7 @@ from terminal_marl.training.a615_opportunity_sequencing_audit import (
     _radius_config,
     classify,
     first_divergence,
+    local_window,
 )
 from terminal_marl.training.a611_causal_audit import DemandProfile
 from terminal_marl.core.config import RingRole
@@ -41,3 +42,13 @@ def test_a615_classification_is_deterministic_for_same_evidence():
 def test_a615_shadow_audit_starts_without_live_state_references():
     audit = ShadowOpportunityAudit("nominal", 0)
     assert audit.events == [] and audit.losses() == []
+
+
+def test_a615_local_window_identifies_a_paired_feasibility_flip_without_mutation():
+    divergence = {"simulation_time": 10.0, "arrival_id": 1, "interface": "o2m"}
+    common = {"time": 10.0, "arrival_id": 1, "interface": "o2m", "selected_kind": "requested", "candidate_set": "[]", "primary_blocker": None}
+    left = {"events": [{**common, "safe_candidate_exists": True, "actual_decision": "approved"}]}
+    right = {"events": [{**common, "safe_candidate_exists": False, "actual_decision": "safety_wait"}]}
+    rows = local_window(divergence, left, right)
+    assert len(rows) == 2 and all(row["feasibility_flip_vs_pair"] for row in rows)
+    assert all(row["reservation_sequence_change"] for row in rows)
