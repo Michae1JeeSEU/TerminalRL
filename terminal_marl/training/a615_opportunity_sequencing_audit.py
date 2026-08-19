@@ -7,6 +7,7 @@ or changes a checked/executed plan.
 from __future__ import annotations
 
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
 from dataclasses import replace
 import csv
@@ -285,16 +286,18 @@ def _radius_config(profile, radius):
     return replace(base, rings=rings)
 
 
-def radius_micro_sweep(profile, seed):
-    rows=[]
-    for radius in RADIUS_SWEEP:
-        env=TerminalParallelEnv(_radius_config(profile, radius)); env.reset(seed); policy=RuleLowLevelPolicy(); samples={key: [] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity","all_waiting")}
-        while env.now < env.config.max_simulation_seconds and not (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
-            env.step(policy.act(env._observations())); _sample(env,samples)
-        metrics=_collect(env,samples); rows.append({"seed":seed,"radius":radius,"derived_capacity":env.airspace.capacity(RingRole.OUTER),"safe":_safe(metrics,env.config),
+def _radius_task(profile, seed, radius):
+    env=TerminalParallelEnv(_radius_config(profile, radius)); env.reset(seed); policy=RuleLowLevelPolicy(); samples={key: [] for key in ("queue","oldest_wait","final_util","lz_util","actual","capacity","all_waiting")}
+    while env.now < env.config.max_simulation_seconds and not (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
+        env.step(policy.act(env._observations())); _sample(env,samples)
+    metrics=_collect(env,samples)
+    return {"seed":seed,"radius":radius,"derived_capacity":env.airspace.capacity(RingRole.OUTER),"safe":_safe(metrics,env.config),
             "completed":metrics["completed"],"waiting_area":metrics["all_request_waiting_area"],"external_queue_area":metrics["external_queue_area"],"service_delay_p95":metrics["service_delay_p95"],
-            "energy_mean":metrics["energy_mean"],"fairness":metrics["priority_fairness_std"],"checked_executed_plan_matches":metrics.get("checked_executed_plan_matches",0)})
-    return rows
+            "energy_mean":metrics["energy_mean"],"fairness":metrics["priority_fairness_std"],"checked_executed_plan_matches":metrics.get("checked_executed_plan_matches",0)}
+
+
+def radius_micro_sweep(profile, seed):
+    return [_radius_task(profile, seed, radius) for radius in RADIUS_SWEEP]
 
 
 def classify(branches, micro, divergences=(), local_windows=()):
@@ -326,20 +329,29 @@ def classify(branches, micro, divergences=(), local_windows=()):
     return sorted(labels)
 
 
-def run_audit(*, seeds=SEEDS, mu0: float | None = None):
+def run_audit(*, seeds=SEEDS, mu0: float | None = None, workers: int = 6):
     mu = float(mu0) if mu0 is not None else _a611_mu0(0)[0]
     profile=DemandProfile("constant_high_repair_scheduler", ((0.,720.,1.55*mu),),720.,480.)
     results={}; divergences=[]; local=[]; micro=[]
     timing={"nominal":None,"static_outer_plus1":None,"dynamic_t180":180.,"dynamic_t240":240.,"dynamic_t300":300.}
     for seed in seeds:
-        rows={name:_run_branch(profile,seed,name,time) for name,time in timing.items()}
+        # These CRN rollouts share only their immutable profile and seed; their
+        # runtime state is intentionally independent.  Parallel execution is
+        # thus a wall-clock optimization, never an inter-branch mechanism.
+        rows = {}
+        with ProcessPoolExecutor(max_workers=min(max(1, workers), len(timing))) as pool:
+            futures = {pool.submit(_run_branch, profile, seed, name, time): name for name, time in timing.items()}
+            for future in as_completed(futures):
+                rows[futures[future]] = future.result()
         if not all(row["safe"] and row["checked_executed_trajectory_invariant"] for row in rows.values()):
             raise RuntimeError("A6.15 FAIL: safety or checked/executed invariant failure")
         results[str(seed)]=rows
         for name in tuple(timing)[1:]:
             divergence=first_divergence(rows["nominal"],rows[name],seed=seed,compared_branch=name); divergences.append(divergence)
             local.extend([dict(row,seed=seed,compared_branch=name,simulation_time=divergence["simulation_time"]) for row in local_window(divergence,rows["nominal"],rows[name])])
-        micro.extend(radius_micro_sweep(profile,seed))
+        with ProcessPoolExecutor(max_workers=min(max(1, workers), len(RADIUS_SWEEP))) as pool:
+            futures = [pool.submit(_radius_task, profile, seed, radius) for radius in RADIUS_SWEEP]
+            micro.extend(future.result() for future in futures)
     labels=classify({f"{seed}:{name}":row for seed,group in results.items() for name,row in group.items()},micro,divergences,local)
     return {"stage":"A6.15 Safe Opportunity Window & Sequencing Attribution Audit","evidence_type":"newly_run","seeds":list(seeds),
             "inputs":{"a611_mu0":mu,"safe_distance":80.,"repair_aware_scheduler":True,"high_level_decision_interval_seconds":180.,"geometry_min_dwell_seconds":600.,"ppo_authorization":PPO_AUTHORIZATION},
@@ -389,9 +401,9 @@ def write_report(report, output):
 
 def main():
     import argparse
-    parser=argparse.ArgumentParser();parser.add_argument("--seeds",default="0,1");parser.add_argument("--mu0",type=float,default=0.014583333333333334);parser.add_argument("--output",default=None)
+    parser=argparse.ArgumentParser();parser.add_argument("--seeds",default="0,1");parser.add_argument("--mu0",type=float,default=0.014583333333333334);parser.add_argument("--workers",type=int,default=6);parser.add_argument("--output",default=None)
     args=parser.parse_args();seeds=tuple(int(value) for value in args.seeds.split(",") if value.strip());output=Path(args.output) if args.output else Path.home()/"training_outputs"/"terminal"/"event_gated_stage15_diagnostics"/"a615"
-    report=run_audit(seeds=seeds,mu0=args.mu0);write_report(report,output);print(json.dumps(report["summary"]))
+    report=run_audit(seeds=seeds,mu0=args.mu0,workers=args.workers);write_report(report,output);print(json.dumps(report["summary"]))
 
 
 if __name__=="__main__": main()
