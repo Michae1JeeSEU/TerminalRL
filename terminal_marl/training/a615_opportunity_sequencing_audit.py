@@ -328,7 +328,7 @@ def classify(branches, micro, divergences=(), local_windows=()):
     # 47->48 crossing, not merely observing both derived integer capacities.
     # Compare nearest radii on either side within each identical CRN seed.
     by_seed = defaultdict(list)
-    for row in micro: by_seed[row["seed"]].append(row)
+    for row in micro: by_seed[row.get("seed", 0)].append(row)
     for rows in by_seed.values():
         rows = sorted(rows, key=lambda row: row["radius"])
         for left, right in zip(rows, rows[1:]):
