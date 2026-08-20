@@ -123,11 +123,15 @@ def run_audit(*, seeds=(0,1), mu0=None):
             candidates.append({k:row[k] for k in ("seed","branch","time","arrival_id","tag","rank","kind","merge_time","future_delay","speed_residual","merge_time_residual","safe")} | {"minimum_predicted_separation":item["minimum_predicted_separation"],"minimum_swept_separation":item["minimum_swept_separation"]}); rollouts.append(row)
             effects.append({"seed":seed,"branch":branch,"time":time,"arrival_id":arrival,"rank":item["rank"],"downstream_reservation_changes":sum(a!=b for a,b in zip(trace, baseline_trace))+abs(len(trace)-len(baseline_trace)),"waiting_area_delta":metrics.get("all_request_waiting_area",0)-baseline_metrics.get("all_request_waiting_area",0)})
             if tag == "long_safe_window": missed.append({**row,"first_shadow_safe":1140.,"actual_reservation":1146.,"delay_seconds":6.})
-    labels={"INCONCLUSIVE"}
     # Reservation differences alone are expected after any different commit.
-    # Attribute lock-in only when a safe alternative has a material terminal
-    # waiting-area change (A6.10-compatible conservative 50 ks fallback).
-    if any(abs(row.get("waiting_area_delta", 0.)) >= 50_000. for row in effects): labels={"RESERVATION_LOCK_IN_CAUSAL","SEQUENCE_AWARE_SELECTION_NEEDED","MIXED"}
+    # Causality requires a safe alternative that *improves* terminal waiting
+    # materiality, not one that merely creates a material regression.
+    material_better = any(row.get("waiting_area_delta", 0.) <= -50_000. for row in effects)
+    missed_better = any(row.get("waiting_area_delta", 0.) <= -50_000. and row["tag"] == "long_safe_window" for row in effects)
+    labels = ({"LOCAL_SELECTION_GLOBAL_MISMATCH", "RESERVATION_LOCK_IN_CAUSAL", "SEQUENCE_AWARE_SELECTION_NEEDED"}
+              if material_better else {"LOCAL_SELECTION_IS_SUFFICIENT"})
+    labels.add("MISSED_WINDOW_MATERIAL" if missed_better else "MISSED_WINDOW_NONMATERIAL")
+    if len(labels) > 1: labels.add("MIXED")
     return {"stage":"A6.16 O2M Safe-Candidate Selection & Reservation Sequencing Audit","evidence_type":"newly_run","inputs":{"safe_distance":80.,"ppo_authorization":PPO_AUTHORIZATION,"repair_scheduler_frozen":True},"snapshot_candidates":candidates,"candidate_rollouts":rollouts,"sequence_effects":effects,"missed_window_counterfactuals":missed,"summary":{"classification":sorted(labels),"ppo_authorization":PPO_AUTHORIZATION}}
 
 
@@ -139,7 +143,15 @@ def write_report(report, output):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     _csv(output/"a616_snapshot_candidates.csv",report["snapshot_candidates"]);_csv(output/"a616_candidate_rollouts.csv",report["candidate_rollouts"]);_csv(output/"a616_sequence_effects.csv",report["sequence_effects"]);_csv(output/"a616_missed_window_counterfactuals.csv",report["missed_window_counterfactuals"])
     (output/"a616_audit.json").write_text(json.dumps(report,indent=2,default=str),encoding="utf-8")
-    (output/"a616_summary.md").write_text(f"# A6.16 O2M candidate audit\n\nClassification: **{', '.join(report['summary']['classification'])}**\n\nPPO authorization: **STOP**\n",encoding="utf-8")
+    rollouts=report["candidate_rollouts"]; effects=report["sequence_effects"]
+    best=min((row["waiting_area_delta"] for row in effects),default=0.); worst=max((row["waiting_area_delta"] for row in effects),default=0.)
+    text=("# A6.16 O2M candidate audit\n\n"
+          f"Classification: **{', '.join(report['summary']['classification'])}**\n\n"
+          f"Hard-safe candidate rollouts: {sum(bool(row['hard_safe']) for row in rollouts)}/{len(rollouts)}.\n\n"
+          f"Best/worst candidate waiting-area delta vs frozen-scheduler replay: {best:.1f} / {worst:.1f}.\n\n"
+          "A reservation trace change alone is not causal; only a material improvement qualifies as a global-selection mismatch.\n\n"
+          "PPO authorization: **STOP**\n")
+    (output/"a616_summary.md").write_text(text,encoding="utf-8")
 
 def main():
     import argparse
