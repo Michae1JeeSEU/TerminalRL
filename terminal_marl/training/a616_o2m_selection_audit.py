@@ -71,7 +71,7 @@ def _advance(env, policy, coordinator, branch, target_time):
 def _safe_o2m(env, arrival_id, requested):
     uav = next((u for u in env.active.values() if u.arrival_id == arrival_id and u.phase is FlightPhase.RING_OUTER and u.committed_plan is None), None)
     if uav is None or "o2m" in env.airspace.affected_interfaces(): return None, []
-    snapshot = WorldSnapshot(env.now, env.active, env.airspace)
+    snapshot = WorldSnapshot(env.now, env.active, env.airspace); rows = []
     for rank, candidate in enumerate(env.scheduler.repair_candidates(requested)):
         proposal, plan, reason = env._candidate_plan(uav, candidate, RingRole.MIDDLE, snapshot, None)
         if reason is None:
