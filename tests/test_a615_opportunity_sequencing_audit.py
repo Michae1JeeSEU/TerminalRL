@@ -29,13 +29,13 @@ def test_a615_first_divergence_is_deterministic_and_reports_candidate_change():
 
 def test_a615_classification_never_authorizes_ppo():
     branches = {"x": {"events": [{"safe_candidate_exists": False}], "losses": []}}
-    labels = classify(branches, [{"derived_capacity": 47, "waiting_area": 1.}, {"derived_capacity": 48, "waiting_area": 2.}])
+    labels = classify(branches, [{"seed": 0, "radius": 611.5, "derived_capacity": 47, "waiting_area": 1.}, {"seed": 0, "radius": 611.6, "derived_capacity": 48, "waiting_area": 2.}])
     assert "NECESSARY_SAFETY_WAIT" in labels and "CAPACITY_THRESHOLD_EFFECT" in labels
 
 
 def test_a615_classification_is_deterministic_for_same_evidence():
     branches = {"x": {"events": [{"safe_candidate_exists": True}], "losses": []}}
-    micro = [{"derived_capacity": 47, "waiting_area": 1.}, {"derived_capacity": 47, "waiting_area": 1.}]
+    micro = [{"seed": 0, "radius": 600., "derived_capacity": 47, "waiting_area": 1.}, {"seed": 0, "radius": 606., "derived_capacity": 47, "waiting_area": 1.}]
     assert classify(branches, micro) == classify(branches, micro)
 
 
