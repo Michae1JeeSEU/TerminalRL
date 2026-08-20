@@ -324,8 +324,16 @@ def classify(branches, micro, divergences=(), local_windows=()):
     same_cap=defaultdict(list)
     for row in micro: same_cap[row["derived_capacity"]].append(row["waiting_area"])
     if any(max(values)-min(values)>1e-6 for values in same_cap.values() if len(values)>1): labels.add("CONTINUOUS_GEOMETRY_EFFECT")
-    caps=sorted({row["derived_capacity"] for row in micro})
-    if len(caps)>1: labels.add("CAPACITY_THRESHOLD_EFFECT")
+    # A capacity label requires an *additional* discontinuity at the actual
+    # 47->48 crossing, not merely observing both derived integer capacities.
+    # Compare nearest radii on either side within each identical CRN seed.
+    by_seed = defaultdict(list)
+    for row in micro: by_seed[row["seed"]].append(row)
+    for rows in by_seed.values():
+        rows = sorted(rows, key=lambda row: row["radius"])
+        for left, right in zip(rows, rows[1:]):
+            if left["derived_capacity"] != right["derived_capacity"] and abs(right["waiting_area"] - left["waiting_area"]) > 1e-6:
+                labels.add("CAPACITY_THRESHOLD_EFFECT")
     # These labels are attribution labels, not claims of a performance gain:
     # they mean a CRN-paired branch first differed in executable sequencing.
     if any(row.get("event_type") == "candidate_or_request_difference" for row in divergences):
