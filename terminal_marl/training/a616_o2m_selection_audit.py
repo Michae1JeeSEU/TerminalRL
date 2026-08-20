@@ -24,6 +24,7 @@ from .a611_causal_audit import DemandProfile, _safe
 from .a612_scheduler_repair_audit import _a611_mu0
 from .a613_capacity_reaudit import repair_config
 from .a614_reconfiguration_timing_audit import OUTER_PLUS_ONE
+from .a615_opportunity_sequencing_audit import _minimum_prediction
 from .a6_effectiveness import _collect, _sample
 
 
@@ -67,14 +68,15 @@ def _advance(env, policy, coordinator, branch, target_time):
     return requested, samples
 
 
-def _safe_o2m(env, arrival_id):
+def _safe_o2m(env, arrival_id, requested):
     uav = next((u for u in env.active.values() if u.arrival_id == arrival_id and u.phase is FlightPhase.RING_OUTER and u.committed_plan is None), None)
     if uav is None or "o2m" in env.airspace.affected_interfaces(): return None, []
-    snapshot = WorldSnapshot(env.now, env.active, env.airspace); requested = LowLevelIntent(1., 0., 0.); rows = []
+    snapshot = WorldSnapshot(env.now, env.active, env.airspace)
     for rank, candidate in enumerate(env.scheduler.repair_candidates(requested)):
         proposal, plan, reason = env._candidate_plan(uav, candidate, RingRole.MIDDLE, snapshot, None)
         if reason is None:
-            rows.append({"rank": rank, "candidate": candidate, "proposal": proposal, "plan": plan})
+            minimum, swept = _minimum_prediction(env, plan, snapshot)
+            rows.append({"rank": rank, "candidate": candidate, "proposal": proposal, "plan": plan, "minimum_predicted_separation": minimum, "minimum_swept_separation": swept})
     return uav.uid, rows
 
 
@@ -105,20 +107,27 @@ def run_audit(*, seeds=(0,1), mu0=None):
     for seed, branch, time, arrival, tag in SELECTED:
         if seed not in seeds: continue
         env, policy, coordinator, _ = _new(profile, seed, branch); _, samples = _advance(env, policy, coordinator, branch, time)
-        uid, safe_rows = _safe_o2m(env, arrival)
+        actions = _actions(env, policy, coordinator)
+        raw_uid = next((uid for uid, uav in env.active.items() if uav.arrival_id == arrival and uav.phase is FlightPhase.RING_OUTER and uav.committed_plan is None), None)
+        requested = LowLevelIntent.from_array(actions.get(str(raw_uid), np.zeros(3, np.float32))) if raw_uid is not None else LowLevelIntent(0., 0., 0.)
+        requested = LowLevelIntent(1., requested.speed_residual, requested.merge_time_residual)
+        uid, safe_rows = _safe_o2m(env, arrival, requested)
         if uid is None:
             candidates.append({"seed":seed,"branch":branch,"time":time,"arrival_id":arrival,"tag":tag,"status":"no_legal_o2m_candidate"}); continue
         baseline_env = deepcopy(env); baseline_metrics, baseline_trace = _rollout(baseline_env, policy, coordinator, deepcopy(samples))
         for item in safe_rows:
             clone = deepcopy(env); ok = _force(clone, uid, item)
             metrics, trace = _rollout(clone, policy, coordinator, deepcopy(samples)) if ok else ({}, [])
-            row={"seed":seed,"branch":branch,"time":time,"arrival_id":arrival,"tag":tag,"rank":item["rank"],"kind":item["candidate"].kind,"merge_time":item["proposal"].merge_time,"future_delay":item["candidate"].delay_seconds,"safe":ok,
+            row={"seed":seed,"branch":branch,"time":time,"arrival_id":arrival,"tag":tag,"rank":item["rank"],"kind":item["candidate"].kind,"merge_time":item["proposal"].merge_time,"future_delay":item["candidate"].delay_seconds,"speed_residual":item["candidate"].intent.speed_residual,"merge_time_residual":item["candidate"].intent.merge_time_residual,"safe":ok,
                  "completed":metrics.get("completed"),"waiting_area":metrics.get("all_request_waiting_area"),"external_queue_area":metrics.get("external_queue_area"),"service_delay_p95":metrics.get("service_delay_p95"),"unresolved":metrics.get("unresolved_count"),"energy":metrics.get("energy_mean"),"fairness":metrics.get("priority_fairness_std"),"hard_safe":bool(metrics) and _safe(metrics, clone.config),"checked_executed":bool(metrics)}
-            candidates.append({k:row[k] for k in ("seed","branch","time","arrival_id","tag","rank","kind","merge_time","future_delay","safe")}); rollouts.append(row)
+            candidates.append({k:row[k] for k in ("seed","branch","time","arrival_id","tag","rank","kind","merge_time","future_delay","speed_residual","merge_time_residual","safe")} | {"minimum_predicted_separation":item["minimum_predicted_separation"],"minimum_swept_separation":item["minimum_swept_separation"]}); rollouts.append(row)
             effects.append({"seed":seed,"branch":branch,"time":time,"arrival_id":arrival,"rank":item["rank"],"downstream_reservation_changes":sum(a!=b for a,b in zip(trace, baseline_trace))+abs(len(trace)-len(baseline_trace)),"waiting_area_delta":metrics.get("all_request_waiting_area",0)-baseline_metrics.get("all_request_waiting_area",0)})
             if tag == "long_safe_window": missed.append({**row,"first_shadow_safe":1140.,"actual_reservation":1146.,"delay_seconds":6.})
     labels={"INCONCLUSIVE"}
-    if any(row.get("downstream_reservation_changes",0)>0 for row in effects): labels={"RESERVATION_LOCK_IN_CAUSAL","SEQUENCE_AWARE_SELECTION_NEEDED","MIXED"}
+    # Reservation differences alone are expected after any different commit.
+    # Attribute lock-in only when a safe alternative has a material terminal
+    # waiting-area change (A6.10-compatible conservative 50 ks fallback).
+    if any(abs(row.get("waiting_area_delta", 0.)) >= 50_000. for row in effects): labels={"RESERVATION_LOCK_IN_CAUSAL","SEQUENCE_AWARE_SELECTION_NEEDED","MIXED"}
     return {"stage":"A6.16 O2M Safe-Candidate Selection & Reservation Sequencing Audit","evidence_type":"newly_run","inputs":{"safe_distance":80.,"ppo_authorization":PPO_AUTHORIZATION,"repair_scheduler_frozen":True},"snapshot_candidates":candidates,"candidate_rollouts":rollouts,"sequence_effects":effects,"missed_window_counterfactuals":missed,"summary":{"classification":sorted(labels),"ppo_authorization":PPO_AUTHORIZATION}}
 
 
