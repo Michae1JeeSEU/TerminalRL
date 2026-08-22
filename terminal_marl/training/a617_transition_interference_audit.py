@@ -66,7 +66,22 @@ def _o2m_context(env, uav: object) -> dict:
             "primary_blocker": blockers[0] if blockers else "no_candidate"}
 
 
-def _run(profile, seed: int, timing: float, mode: str, transition_window=None, observe_window=None) -> dict:
+def _set_freeze_only_overlay(env, enabled: bool) -> None:
+    """Apply the diagnostic-only O2M gate without touching canonical branches.
+
+    ``affected_interfaces`` is a class method in the production airspace
+    object.  An instance assignment therefore shadows transition semantics.
+    The overlay is consequently valid only for the synthetic freeze-only
+    control, and is removed rather than rebound when that control ends.
+    """
+    if enabled:
+        env.airspace.affected_interfaces = lambda: {"o2m"}
+    else:
+        env.airspace.__dict__.pop("affected_interfaces", None)
+
+
+def _run(profile, seed: int, timing: float, mode: str, transition_window=None, observe_window=None,
+         *, diagnostic_probes: bool = True) -> dict:
     dynamic = mode == "full_dynamic"
     # Match A6.14's CRN nominal exactly: every branch runs the dynamic no-op
     # stack.  Only full_dynamic submits the geometry action; freeze_only only
@@ -77,7 +92,6 @@ def _run(profile, seed: int, timing: float, mode: str, transition_window=None, o
 
     freeze_start = transition_window[0] if mode == "freeze_only" and transition_window else None
     freeze_end = transition_window[1] if mode == "freeze_only" and transition_window else None
-    original_affected = env.airspace.affected_interfaces
     interruptions, trace = [], []
     samples = {key: [] for key in ("queue", "oldest_wait", "final_util", "lz_util", "actual", "capacity", "all_waiting")}
     requested = False
@@ -86,7 +100,12 @@ def _run(profile, seed: int, timing: float, mode: str, transition_window=None, o
 
     while env.now < env.config.max_simulation_seconds and not _done(env):
         manual_freeze = freeze_start is not None and freeze_start <= env.now < freeze_end
-        env.airspace.affected_interfaces = (lambda: {"o2m"}) if manual_freeze else original_affected
+        # Never shadow ``affected_interfaces`` in nominal/full_dynamic.  Those
+        # branches must call the canonical geometry-event gate exactly as
+        # A6.14/A6.15 do.  Only the synthetic freeze-only control owns an
+        # instance-level diagnostic overlay.
+        if mode == "freeze_only":
+            _set_freeze_only_overlay(env, manual_freeze)
         if dynamic and not requested and env.now >= timing - 1e-9:
             # Existing A6.14 gate; this audit neither bypasses dwell nor adds actions.
             coordinator.coordinate(OUTER_PLUS_ONE, geometry_gate=wrapper.geometry_event_gate())
@@ -109,9 +128,10 @@ def _run(profile, seed: int, timing: float, mode: str, transition_window=None, o
         # _candidate_plan emits diagnostic telemetry.  Probe only the
         # non-frozen observed window, and do so on a deep copy.  A frozen
         # window has a conclusive ``geometry_frozen`` blocker without a probe.
-        shadow = deepcopy(env) if in_window and "o2m" not in env.airspace.affected_interfaces() else None
+        shadow = (deepcopy(env) if diagnostic_probes and in_window and "o2m" not in env.airspace.affected_interfaces()
+                  else None)
         probes = ({u.uid: _o2m_context(shadow, shadow.active[u.uid]) for u in eligible} if shadow is not None
-                  else ({u.uid: _o2m_context(env, u) for u in eligible} if in_window else {}))
+                  else ({u.uid: _o2m_context(env, u) for u in eligible} if diagnostic_probes and in_window else {}))
 
         _, _, _, _, info = env.step(actions)
         _sample(env, samples)
@@ -126,7 +146,7 @@ def _run(profile, seed: int, timing: float, mode: str, transition_window=None, o
         for uid, release in requests.items():
             decision = info["release_decisions"].get(str(uid))
             uav = next((item for item in env.active.values() if item.uid == uid), None)
-            if in_window and release > env.config.release_threshold:
+            if diagnostic_probes and in_window and release > env.config.release_threshold:
                 interruptions.append({
                     "seed": seed, "timing": timing, "mode": mode,
                     "transition_start": observed_window[0], "transition_effective": observed_window[1],
@@ -138,7 +158,8 @@ def _run(profile, seed: int, timing: float, mode: str, transition_window=None, o
                 })
             if decision in {"approved", "future_reserved", "geometry_frozen"}:
                 trace.append((now_before, uid, decision))
-    env.airspace.affected_interfaces = original_affected
+    if mode == "freeze_only":
+        _set_freeze_only_overlay(env, False)
     metrics = _collect(env, samples, coordinator)
     return {
         "metrics": metrics, "safe": _safe(metrics, env.config), "trace": trace,
