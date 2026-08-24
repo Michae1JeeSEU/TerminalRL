@@ -139,7 +139,8 @@ def _transition_summary(events: list[dict], capacity_history: list[tuple[float, 
             "events": events}
 
 
-def run_dynamic_at_time(config: SimConfig, seed: int, action_time: float, *, force_initial_gate: bool = True) -> dict:
+def run_dynamic_at_time(config: SimConfig, seed: int, action_time: float, *, force_initial_gate: bool = True,
+                        observation_capture_time: float | None = None) -> dict:
     """Run one exact-time A6.14 counterfactual through the frozen dynamic stack.
 
     ``force_initial_gate`` is limited to the no-traffic t=0 static-equivalence
@@ -150,11 +151,16 @@ def run_dynamic_at_time(config: SimConfig, seed: int, action_time: float, *, for
     samples = {key: [] for key in ("queue", "oldest_wait", "final_util", "lz_util", "actual", "capacity", "all_waiting")}
     events: list[dict] = []; admissions: dict[str, float] = {}; phases: dict[str, list[tuple[float, str]]] = {}
     pressure: list[tuple[float, bool]] = []; queue_growth: list[tuple[float, bool]] = []; capacity_history: list[tuple[float, int]] = []
-    extra_capacity_use: list[tuple[float, bool]] = []; requested = False
+    extra_capacity_use: list[tuple[float, bool]] = []; requested = False; captured_observation = None
     # Capacity is geometry-derived; compute it from the audit's actual fixed geometry rather than hard-code 47.
     from ..core.ring_capacity import geometric_ring_capacity
     nominal_outer = geometric_ring_capacity(config.rings[RingRole.OUTER].radius, config.safe_distance)
     while env.now < config.max_simulation_seconds and not wrapper._done():
+        # Optional A6.20 observer: read the existing public high-level vector
+        # before any action at this timestep.  It never touches runtime state.
+        if (captured_observation is None and observation_capture_time is not None
+                and env.now >= observation_capture_time - 1e-9):
+            captured_observation = {"time": float(env.now), "observation_29d": wrapper.observation().astype(float).tolist()}
         if not requested and env.now >= action_time - 1e-9:
             gate = wrapper.geometry_event_gate() or (force_initial_gate and action_time == 0.)
             decision = wrapper.coordinator.coordinate(OUTER_PLUS_ONE, geometry_gate=gate)
@@ -182,6 +188,10 @@ def run_dynamic_at_time(config: SimConfig, seed: int, action_time: float, *, for
                          "first_outer_pressure_time": _first_time(pressure),
                          "first_extra_capacity_used_time": _first_time(extra_capacity_use)},
               "causal_trace": {"admission_time_by_arrival": admissions, "phase_changes_by_arrival": phases}}
+    if observation_capture_time is not None and captured_observation is None:
+        raise RuntimeError("requested pre-action observation time was not reached")
+    if captured_observation is not None:
+        result["pre_action_observation"] = captured_observation
     return result
 
 

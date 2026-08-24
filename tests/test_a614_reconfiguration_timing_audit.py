@@ -44,6 +44,15 @@ def test_a614_effective_time_and_capacity_use_are_logged():
     assert timing["first_extra_capacity_used_time"] is None
 
 
+def test_a614_optional_pre_action_observer_is_29d_and_cannot_change_rollout():
+    profile = DemandProfile("observer", ((0., 5., .1),), 5., 20.)
+    config = repair_config(profile, dynamic=True)
+    canonical = run_dynamic_at_time(config, 0, 0.)
+    observed = run_dynamic_at_time(config, 0, 0., observation_capture_time=0.)
+    assert len(observed["pre_action_observation"]["observation_29d"]) == 29
+    assert observed["metrics"] == canonical["metrics"]
+
+
 def test_a614_hard_safety_is_unchanged_in_timing_counterfactual():
     profile = DemandProfile("safety", ((0., 5., .1),), 5., 20.)
     row = run_dynamic_at_time(repair_config(profile, dynamic=True), 0, 0.)
