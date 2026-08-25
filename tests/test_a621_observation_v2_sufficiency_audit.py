@@ -1,5 +1,5 @@
 from terminal_marl.training.a621_observation_v2_sufficiency_audit import (
-    BASE_NAMES, FLOW_INDEX, PPO_AUTHORIZATION, RESERVATION_INDEX, V2_NAMES, WINDOW_INDEX, classify,
+    BASE_NAMES, FLOW_INDEX, PPO_AUTHORIZATION, RESERVATION_INDEX, V2_NAMES, WINDOW_INDEX, _feature_key, classify,
 )
 from terminal_marl.envs.high_level_wrapper import DynamicHighLevelWrapper, RuleLowLevelAdapter
 from terminal_marl.training.a611_causal_audit import DemandProfile
@@ -26,6 +26,7 @@ def test_a621_v2_has_named_nonoverlapping_blocks_and_keeps_v1_external():
     assert len(V2_NAMES) == 46 and len(BASE_NAMES) == 24
     assert set(FLOW_INDEX).isdisjoint(RESERVATION_INDEX) and set(RESERVATION_INDEX).isdisjoint(WINDOW_INDEX)
     assert max(WINDOW_INDEX) == len(V2_NAMES) - 1
+    assert _feature_key("v2_full") == "v2" and _feature_key("v1_29d") == "v1_29d"
 
 
 def test_a621_v2_is_online_and_read_only_at_a_real_pre_action_state():

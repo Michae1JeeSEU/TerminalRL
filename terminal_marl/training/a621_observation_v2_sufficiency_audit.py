@@ -180,8 +180,13 @@ def _nearest(rows: list[dict], feature: str) -> tuple[list[dict], dict]:
     return result, {"feature_set": feature, "nearest_conflict_rate": float(np.mean([row["label_conflict"] for row in result])), "exact_conflict_count": exact_conflicts}
 
 
+def _feature_key(feature: str) -> str:
+    """Keep a human-facing feature-set name separate from stored columns."""
+    return "v2" if feature == "v2_full" else feature
+
+
 def _evaluate(rows: list[dict], feature: str, indices: tuple[int, ...] | None = None) -> list[dict]:
-    x = np.asarray([row[feature] for row in rows], float); x = x if indices is None else x[:, indices]
+    x = np.asarray([row[_feature_key(feature)] for row in rows], float); x = x if indices is None else x[:, indices]
     y = np.asarray([row["outcome_label"] for row in rows], object); seed = np.asarray([row["seed"] for row in rows]); rng = np.random.default_rng(62121 + len(x[0])); result = []
     for held in sorted(set(seed)):
         train, test = np.where(seed != held)[0], np.where(seed == held)[0]
