@@ -230,6 +230,11 @@ def run_audit(*, seeds=SEEDS, times=SNAPSHOT_TIMES, workers: int = 6) -> dict:
     if not all(row["safe"] and row["checked_executed"] and all(value == 0 for value in row["safety"].values()) for row in rows):
         raise RuntimeError("A6.21 hard safety failure")
     v1_conflict, v1_summary = _nearest(rows, "v1_29d"); v2_conflict, v2_summary = _nearest(rows, "v2")
+    # Store the public comparison name in every artifact; ``v2`` is only the
+    # internal snapshot column used to avoid duplicating the vector.
+    for row in v2_conflict:
+        row["feature_set"] = "v2_full"
+    v2_summary["feature_set"] = "v2_full"
     classifiers = _evaluate(rows, "v1_29d") + _evaluate(rows, "v2_full")
     ablations = []
     all_indices = tuple(range(len(V2_NAMES)))
