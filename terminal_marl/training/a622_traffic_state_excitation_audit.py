@@ -165,6 +165,12 @@ def _dynamic_task(regime: dict, seed: int, state: dict) -> tuple[str, dict]:
     return f"{regime['regime']}:seed{seed}:t{int(time)}", result
 
 
+def _nominal_task(regime: dict, seed: int) -> tuple[str, int, dict, list[dict]]:
+    """Process-safe CRN control/probe; no state is shared across seeds."""
+    baseline, states = _nominal_probe(regime, seed)
+    return regime["regime"], seed, baseline, states
+
+
 def _feature_excitation(rows: list[dict], scope: str) -> tuple[list[dict], dict]:
     matrix = np.asarray([row["v2"] for row in rows], dtype=float)
     spectrum = np.linalg.svd(matrix - matrix.mean(0), compute_uv=False) if len(matrix) > 1 else np.array([0.])
@@ -239,12 +245,16 @@ def run_audit(*, workers: int = 6, definitions: list[dict] | None = None) -> dic
     definitions, mu_source = regime_definitions() if definitions is None else (definitions, "custom")
     nominal: dict[tuple[str, int], dict] = {}; selected: list[dict] = []
     # Nominal first: it supplies event-conditioned, action-pre states and one CRN control per regime/seed.
-    for regime in definitions:
-        for seed in regime["seeds"]:
-            baseline, states = _nominal_probe(regime, seed); nominal[regime["regime"], seed] = baseline
+    nominal_jobs = [(regime, seed) for regime in definitions for seed in regime["seeds"]]
+    with ProcessPoolExecutor(max_workers=min(max(1, workers), len(nominal_jobs))) as pool:
+        futures = [pool.submit(_nominal_task, *job) for job in nominal_jobs]
+        for future in as_completed(futures):
+            regime_name, seed, baseline, states = future.result(); nominal[regime_name, seed] = baseline
+            regime = next(row for row in definitions if row["regime"] == regime_name)
             for index, state in enumerate(states):
-                selected.append({"snapshot_id": f"{regime['regime']}_seed{seed}_event{index}", "regime": regime["regime"], "regime_class": regime["class"],
+                selected.append({"snapshot_id": f"{regime_name}_seed{seed}_event{index}", "regime": regime_name, "regime_class": regime["class"],
                                  "formal_value_evidence": regime["formal_value_evidence"], "seed": seed, **state})
+    selected.sort(key=lambda row: (row["regime"], row["seed"], row["time"]))
     lookup = {row["regime"]: row for row in definitions}; dynamic: dict[str, dict] = {}
     with ProcessPoolExecutor(max_workers=min(max(1, workers), max(1, len(selected)))) as pool:
         futures = [pool.submit(_dynamic_task, lookup[row["regime"]], row["seed"], row) for row in selected]
