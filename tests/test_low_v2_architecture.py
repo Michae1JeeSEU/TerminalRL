@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+import json
 
 import numpy as np
 import pytest
@@ -16,6 +17,7 @@ from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
+from terminal_marl.training.build_low_teacher_dataset import build_low_teacher_dataset
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
@@ -126,3 +128,17 @@ def test_ppo_transition_keeps_requested_action_when_teacher_label_is_present():
     assert np.array_equal(buffer.by_agent["uav-1"][0].action, requested)
     metrics = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=0.1).update(buffer, epochs=1, minibatch_size=1)
     assert "teacher_bc_loss" in metrics and np.isfinite(metrics["teacher_bc_loss"])
+
+
+def test_teacher_dataset_records_requested_and_correction_fields_without_training(tmp_path):
+    class ZeroPolicy:
+        def act(self, observations):
+            return {key: np.zeros(3, np.float32) for key in observations}
+    config = SimConfig(reset_mode="warm_start_rings", warm_start_uavs=1, fixed_arrival_schedule=(0.0,),
+                       total_requested_uavs=1, max_simulation_seconds=10.0)
+    output = tmp_path / "teacher.jsonl"
+    summary = build_low_teacher_dataset(config, output_path=output, max_steps=1, policy=ZeroPolicy())
+    assert summary.rows == 1 and summary.corrected_rows == 0 and output.is_file()
+    row = json.loads(output.read_text(encoding="utf-8"))
+    assert len(row["observation"]) == 87
+    assert row["requested_action"] == [0.0, 0.0, 0.0] and row["teacher_action"] is None
