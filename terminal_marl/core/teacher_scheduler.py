@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from .merge_scheduler import LowLevelIntent, RepairCandidate, MergeScheduler
 
@@ -37,3 +38,19 @@ class TeacherScheduler:
                    witness_plan_id: str | None = None) -> TeacherCorrection:
         magnitude = abs(candidate.intent.speed_residual-requested.speed_residual) + abs(candidate.intent.merge_time_residual-requested.merge_time_residual) + candidate.delay_seconds/max(1.0, max(self.config.prospective_repair_delays_seconds, default=1.0))
         return TeacherCorrection(requested, candidate.intent, candidate.kind, candidate.delay_seconds, magnitude, verified, witness_plan_id)
+
+    def choose_verified(self, requested: LowLevelIntent, verify: Callable[[RepairCandidate], object]) -> TeacherCorrection | None:
+        """Return the first verifier-approved bounded teacher witness.
+
+        ``verify`` is supplied by the environment because it owns the
+        canonical trajectory generator and SafetyFilter snapshot.  This keeps
+        candidate search in the teacher while preserving SafetyFilter as the
+        sole safety authority.
+        """
+        for candidate in self.candidates(requested):
+            verdict = verify(candidate)
+            approved = bool(getattr(verdict, "approved", verdict))
+            if approved:
+                return self.correction(requested, candidate, verified=True,
+                                       witness_plan_id=getattr(verdict, "checked_plan_id", None))
+        return None

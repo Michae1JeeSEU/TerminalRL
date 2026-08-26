@@ -12,6 +12,10 @@ from terminal_marl.core.execution_scheduler import ExecutionScheduler
 from terminal_marl.core.merge_scheduler import LowLevelIntent, MergeScheduler
 from terminal_marl.core.observations import LOW_OBS_V2, build_low_observation_v2
 from terminal_marl.core.teacher_scheduler import TeacherScheduler
+from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
+from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
+from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
+from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
@@ -59,6 +63,8 @@ def test_teacher_is_rejected_for_formal_student_preset_and_available_for_trainin
     teacher_config = SimConfig(experiment_mode="fixed_teacher_heavy", scheduler_mode="teacher_full", teacher_enabled=True)
     teacher = TeacherScheduler(teacher_config, MergeScheduler(teacher_config))
     assert teacher.candidates(LowLevelIntent(1.0, 0.0, 0.0))[0].kind == "requested"
+    witness = teacher.choose_verified(LowLevelIntent(1.0, 0.0, 0.0), lambda candidate: candidate.kind == "speed_repair")
+    assert witness is not None and witness.verified and witness.candidate_kind == "speed_repair"
 
 
 def test_step_emits_requested_execution_shield_provenance():
@@ -69,3 +75,54 @@ def test_step_emits_requested_execution_shield_provenance():
         assert trace["requested_low_action"] == trace["execution_applied_action"]
         assert trace["teacher_corrected_action"] is None
         assert trace["teacher_used"] is False
+
+
+def test_predictive_shield_detects_future_conflict_without_rewriting_committed_plan():
+    env = _student_env(1)
+    holder = next(iter(env.active.values()))
+    # Keep an uncommitted holder on the outer ring and introduce a previously
+    # checked transfer that will sweep through its next ring-reference state.
+    ring = env.airspace.actual_ring(holder.ring_role)
+    holder.position = np.asarray((ring.radius, 0.0, ring.height))
+    holder.ring_progress = 0.0
+    plan = TrajectoryPlan("committed-plan", 999, "transfer", [
+        TrajectoryPoint(0.0, np.asarray((ring.radius * 2.0, 0.0, ring.height))),
+        # The holder reaches this point after 10 s at its nominal outer-ring
+        # speed.  The conflict is therefore predicted before motion begins.
+        TrajectoryPoint(10.0, np.asarray((ring.radius * np.cos(28.0 * 10.0 / ring.radius), ring.radius * np.sin(28.0 * 10.0 / ring.radius), ring.height))),
+    ], 0.0, 10.0, metadata={"committed": True})
+    committed_points = [point.position.copy() for point in plan.points]
+    blocker = type("CommittedTraffic", (), {"uid": 999, "ring_role": None, "committed_plan": plan})()
+    env.active[999] = blocker
+    shield = PredictiveSafetyShield(env.config)
+    risk = shield.assess(env)
+    shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
+    assert risk.trigger_reason == "predicted_swept_separation"
+    assert all(np.array_equal(before, after.position) for before, after in zip(committed_points, plan.points))
+
+
+def test_predictive_shield_is_a_safe_noop_without_committed_traffic():
+    env = _student_env(1)
+    risk = PredictiveSafetyShield(env.config).assess(env)
+    assert risk.trigger_reason is None
+    assert np.isinf(risk.predicted_min_swept_separation)
+
+
+def test_checkpoint_schema_rejects_legacy_actor_metadata():
+    legacy = SimConfig(experiment_mode="fixed_a5_legacy", observation_schema_version="phaseA_low_obs_v1_41d")
+    student = SimConfig(experiment_mode="fixed_low_student")
+    with pytest.raises(IncompatibleCheckpointError):
+        validate_checkpoint_metadata(checkpoint_metadata(legacy), student)
+
+
+def test_ppo_transition_keeps_requested_action_when_teacher_label_is_present():
+    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
+    teacher = np.asarray((1.0, 1.0, -1.0), np.float32)
+    world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
+    row = Transition("uav-1", world[0], world, requested, 0.0, 0.0, 1.0, True,
+                     teacher_action=teacher, applied_action=teacher, teacher_used=True)
+    buffer = RolloutBuffer()
+    buffer.add(row)
+    assert np.array_equal(buffer.by_agent["uav-1"][0].action, requested)
+    metrics = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=0.1).update(buffer, epochs=1, minibatch_size=1)
+    assert "teacher_bc_loss" in metrics and np.isfinite(metrics["teacher_bc_loss"])
