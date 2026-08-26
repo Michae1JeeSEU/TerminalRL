@@ -1,0 +1,13 @@
+schema_version: phaseA_landing_v1
+airspace_schema_version: three_ring_v1
+action_schema_version: low_intent_v1_3d
+high_action_schema_version: high_airspace_v1_10d
+observation_schema_version: phaseA_low_obs_v2_topology_87d
+experiment_mode: fixed_low_student
+high_level_enabled: false
+scheduler_mode: execution
+teacher_enabled: false
+shield_enabled: true
+shield_horizon_seconds: 30.0
+shield_id_interventions_per_100_intents: 10.0
+shield_ood_interventions_per_100_intents: 20.0

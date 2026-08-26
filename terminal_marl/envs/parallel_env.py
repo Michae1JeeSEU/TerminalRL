@@ -20,12 +20,15 @@ from ..core.energy import EnergyModel
 from ..core.lifecycle import OutcomeLedger, transition
 from ..core.landing_zone import LandingZoneManager
 from ..core.merge_scheduler import LowLevelIntent, MergeScheduler, MergeProposal, RepairCandidate
-from ..core.observations import build_a5_observation
+from ..core.execution_scheduler import ExecutionScheduler
+from ..core.teacher_scheduler import TeacherScheduler
+from ..core.action_trace import LowLevelActionTrace
+from ..core.observations import build_low_observation
 from ..core.priority import PriorityEngine
 from ..core.rewards import LowLevelReward
 from ..core.safety_filter import SafetyFilter
 from ..core.runtime_separation import RuntimeSeparationMonitor
-from ..core.runtime_traffic_safety import RuntimeTrafficSafetyController
+from ..core.runtime_traffic_safety import PredictiveSafetyShield
 from ..core.trajectory_generator import TrajectoryGenerator
 from ..core.uav import FlightPhase, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
@@ -67,15 +70,18 @@ class TerminalParallelEnv:
         self.airspace = DynamicAirspace(self.config)
         self.lz_manager = LandingZoneManager()
         self.scheduler = MergeScheduler(self.config)
+        self.execution_scheduler = ExecutionScheduler(self.config, self.scheduler)
+        self.teacher_scheduler = TeacherScheduler(self.config, self.scheduler) if self.config.teacher_enabled else None
         self.safety = SafetyFilter(self.config)
         self.events: list[tuple[str, int, float]] = []
         self.conflict_events: list[dict] = []
         self.separation_monitor = RuntimeSeparationMonitor(self.config)
-        self.runtime_traffic = RuntimeTrafficSafetyController(self.config)
+        self.runtime_traffic = PredictiveSafetyShield(self.config)
         self.runtime_trace: deque[dict] = deque(maxlen=60)
         self.last_safety_decisions: dict[int, str] = {}
         self.last_release_decisions: dict[int, str] = {}
         self.last_release_telemetry: dict[int, dict] = {}
+        self.last_action_traces: dict[int, LowLevelActionTrace] = {}
         self.release_intents: dict[int, dict] = {}
         self._active_release_intents: dict[int, int] = {}
         self._next_release_intent_id = 1
@@ -113,7 +119,7 @@ class TerminalParallelEnv:
         self._refresh_airspace_occupancy()
 
     def _observations(self) -> dict[str, np.ndarray]:
-        return {str(uid): build_a5_observation(uav, self) for uid, uav in self.active.items()}
+        return {str(uid): build_low_observation(uav, self) for uid, uav in self.active.items()}
 
     def _refresh_airspace_occupancy(self) -> None:
         values = {role: 0 for role in RingRole}
@@ -283,6 +289,8 @@ class TerminalParallelEnv:
             # bounded residual intended for its reserved hold.
             forecast_config = deepcopy(clone.config)
             forecast_config.repair_aware_scheduler = False
+            forecast_config.scheduler_mode = "execution"
+            forecast_config.teacher_enabled = False
             clone.config = forecast_config
             for item in (clone.energy, clone.priority, clone.generator, clone.admission, clone.airspace, clone.scheduler,
                          clone.safety, clone.separation_monitor, clone.runtime_traffic):
@@ -491,7 +499,10 @@ class TerminalParallelEnv:
         return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
 
     def _release(self, uav: UAVState, intent: LowLevelIntent) -> str:
-        if not self.config.repair_aware_scheduler:
+        # Label-only is intentionally execution-equivalent to student mode;
+        # training code may query TeacherScheduler separately for an auxiliary
+        # target, but it must not turn the label into an environment action.
+        if not self.config.teacher_enabled or self.config.teacher_mode == "teacher_label_only":
             return self._release_legacy(uav, intent)
         if intent.release_request <= self.config.release_threshold:
             return "not_requested"
@@ -534,7 +545,7 @@ class TerminalParallelEnv:
                 self._finish_release_intent(uav, row, "lz_unavailable")
                 return "lz_unavailable"
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
-        candidates = self.scheduler.repair_candidates(intent) if self.config.repair_aware_scheduler else (RepairCandidate("requested", intent),)
+        candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
         last_reason = None
         for candidate in candidates:
             proposal, plan, reason = self._candidate_plan(uav, candidate, target, snapshot, lz_id)
@@ -583,7 +594,7 @@ class TerminalParallelEnv:
         # A full bounded search failed.  This is a deterministic backoff for
         # a truly currently infeasible intent, not the old one-second retry.
         uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
-        decision = "safety_wait" if self.config.repair_aware_scheduler else "safety_reject"
+        decision = "safety_wait" if self.config.teacher_enabled else "safety_reject"
         self._finish_release_intent(uav, row, decision, safety_reason=last_reason)
         return decision
 
@@ -593,6 +604,7 @@ class TerminalParallelEnv:
         rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}
         actions = actions or {}
         intents: dict[int, LowLevelIntent] = {}
+        traces: dict[int, LowLevelActionTrace] = {}
         decisions: dict[int, str] = {}
         action_rows = []
         for request in self.arrivals.requests_until(self.now):
@@ -629,9 +641,18 @@ class TerminalParallelEnv:
         pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
         for uid, uav in list(self.active.items()):
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
-            intents[uid] = intent; self.priority.update(uav, self.now)
+            intents[uid] = intent; traces[uid] = LowLevelActionTrace(requested=intent); self.priority.update(uav, self.now)
             decision = self._release(uav, intent); decisions[uid] = decision
             self.last_release_decisions[uid] = decision
+            release_row = self.last_release_telemetry.get(uid)
+            if release_row and release_row.get("repair_used"):
+                corrected = LowLevelIntent(intent.release_request, float(release_row["applied_speed_residual"]), float(release_row["applied_merge_time_residual"]))
+                traces[uid].teacher_corrected = corrected
+                traces[uid].execution_applied = corrected
+                traces[uid].teacher_used = True
+                traces[uid].teacher_kind = "teacher_repair"
+                traces[uid].correction_magnitude = abs(corrected.speed_residual-intent.speed_residual) + abs(corrected.merge_time_residual-intent.merge_time_residual)
+                rewards.setdefault(uid, LowLevelReward()).teacher -= self.config.teacher_intervention_penalty + self.config.teacher_correction_magnitude_penalty * traces[uid].correction_magnitude
             pending = self.future_release_reservations.get(uid)
             if pending is not None and decision in {"future_reserved", "future_reservation_wait"}:
                 # This is the source-holder portion of the future canonical
@@ -644,8 +665,13 @@ class TerminalParallelEnv:
                 else: self.telemetry["release_rejected"] += 1
             if abs(intent.merge_time_residual) > 1e-8: self.telemetry["merge_time_modified"] += 1
             action_rows.append((intent.release_request, intent.speed_residual, intent.merge_time_residual, decision))
-        intents = self.runtime_traffic.protect(self, intents)
+        intents = self.runtime_traffic.protect(self, intents, traces)
         self.telemetry.update(self.runtime_traffic.telemetry)
+        for uid, trace in traces.items():
+            if trace.shield_used:
+                magnitude = abs(trace.shield_applied.speed_residual-trace.execution_applied.speed_residual)
+                rewards.setdefault(uid, LowLevelReward()).shield -= self.config.shield_intervention_penalty + self.config.shield_correction_magnitude_penalty*magnitude
+        self.last_action_traces = traces
         for uid, uav in list(self.active.items()):
             phase = uav.phase
             had_committed_plan = uav.committed_plan is not None
@@ -681,6 +707,7 @@ class TerminalParallelEnv:
         self._record_final_occupancy()
         self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
             "release_decisions": dict(decisions), "release_intents": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
+            "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
             "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
@@ -691,7 +718,8 @@ class TerminalParallelEnv:
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
             "release_intent_telemetry": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
-            "actions": action_rows, "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
+            "actions": action_rows, "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
+            "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
         }
 
     def run_rule_only(self, max_steps: int | None = None) -> OutcomeLedger:

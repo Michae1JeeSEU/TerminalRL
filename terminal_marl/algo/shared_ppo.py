@@ -46,6 +46,7 @@ class SharedActorCentralCritic(nn.Module):
 
 @dataclass
 class Transition:
+    """A rollout row whose ``action`` is always the policy-requested action."""
     agent_id: str
     observation: np.ndarray
     world: np.ndarray
@@ -54,6 +55,10 @@ class Transition:
     value: float
     reward: float
     done: bool
+    teacher_action: np.ndarray | None = None
+    applied_action: np.ndarray | None = None
+    teacher_used: bool = False
+    shield_used: bool = False
 
 
 class RolloutBuffer:
@@ -74,11 +79,11 @@ class RolloutBuffer:
 
 
 class SharedPPO:
-    def __init__(self, observation_dim: int, *, device: str = "cpu", learning_rate: float = 3e-4, clip_ratio: float = .2, value_coef: float = .5, entropy_coef: float = .01) -> None:
+    def __init__(self, observation_dim: int, *, device: str = "cpu", learning_rate: float = 3e-4, clip_ratio: float = .2, value_coef: float = .5, entropy_coef: float = .01, teacher_bc_weight: float = 0.0) -> None:
         self.device = torch.device(device)
         self.model = SharedActorCentralCritic(observation_dim).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.clip_ratio, self.value_coef, self.entropy_coef = clip_ratio, value_coef, entropy_coef
+        self.clip_ratio, self.value_coef, self.entropy_coef, self.teacher_bc_weight = clip_ratio, value_coef, entropy_coef, teacher_bc_weight
         self.observation_dim = observation_dim
 
     def act(self, observations: np.ndarray, world: np.ndarray, *, deterministic: bool = False):
@@ -95,7 +100,7 @@ class SharedPPO:
 
     def update(self, buffer: RolloutBuffer, *, epochs: int = 4, minibatch_size: int = 128, gamma: float = .99, gae_lambda: float = .95) -> dict[str, float]:
         rows = buffer.flattened(gamma, gae_lambda)
-        if not rows: return {"loss": 0.0, "actor_loss": 0.0, "value_loss": 0.0, "entropy": 0.0}
+        if not rows: return {"loss": 0.0, "actor_loss": 0.0, "value_loss": 0.0, "entropy": 0.0, "teacher_bc_loss": 0.0}
         advantages = np.asarray([x[1] for x in rows], np.float32); advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         totals = defaultdict(float); updates = 0
         for _ in range(epochs):
@@ -117,9 +122,17 @@ class SharedPPO:
                 values = self.model.critic(torch.as_tensor(padded, device=self.device), torch.as_tensor(mask, device=self.device))
                 value_loss = (values - returns).pow(2).mean()
                 entropy = distribution.entropy().sum(-1).mean()
-                loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+                teacher_rows = [row for row in selected if row[0].teacher_used and row[0].teacher_action is not None]
+                if teacher_rows:
+                    teacher_obs = torch.as_tensor(np.stack([row[0].observation for row in teacher_rows]), dtype=torch.float32, device=self.device)
+                    teacher_targets = torch.as_tensor(np.stack([row[0].teacher_action for row in teacher_rows]), dtype=torch.float32, device=self.device)
+                    # Smooth L1 prevents rare large repairs from dominating PPO.
+                    teacher_loss = nn.functional.smooth_l1_loss(torch.tanh(self.model.actor_mean(self.model.actor_body(teacher_obs))), teacher_targets)
+                else:
+                    teacher_loss = torch.zeros((), device=self.device)
+                loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy + self.teacher_bc_weight * teacher_loss
                 if not torch.isfinite(loss): raise FloatingPointError("non-finite PPO loss")
                 self.optimizer.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(self.model.parameters(), 1.0); self.optimizer.step()
-                totals["loss"] += float(loss.detach()); totals["actor_loss"] += float(actor_loss.detach()); totals["value_loss"] += float(value_loss.detach()); totals["entropy"] += float(entropy.detach()); updates += 1
+                totals["loss"] += float(loss.detach()); totals["actor_loss"] += float(actor_loss.detach()); totals["value_loss"] += float(value_loss.detach()); totals["entropy"] += float(entropy.detach()); totals["teacher_bc_loss"] += float(teacher_loss.detach()); updates += 1
         buffer.clear()
         return {key: value / max(1, updates) for key, value in totals.items()}

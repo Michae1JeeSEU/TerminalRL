@@ -3,19 +3,69 @@ from __future__ import annotations
 
 import math
 import uuid
+from dataclasses import dataclass
 import numpy as np
 
 from .runtime_separation import swept_minimum_distance
 from .trajectory_generator import TrajectoryPlan, TrajectoryPoint
+from .action_trace import LowLevelActionTrace
 
 
-class RuntimeTrafficSafetyController:
-    """Use only bounded holder-speed authority; never rewrite committed plans."""
+@dataclass(frozen=True)
+class RiskAssessment:
+    predicted_min_swept_separation: float
+    d_cpa: float
+    t_cpa: float
+    conflict_pair: tuple[int, int] | None
+    trigger_reason: str | None
+
+
+@dataclass(frozen=True)
+class ShieldResult:
+    intent: object
+    used: bool
+    reason: str | None = None
+    correction_magnitude: float = 0.0
+
+
+class PredictiveSafetyShield:
+    """Pre-breach minimum shield; committed plans are immutable.
+
+    The shield predicts a swept separation over a short horizon and changes
+    only an *uncommitted* ring holder.  It is intentionally not a scheduler:
+    it has no merge/release candidate grid and fails closed when a bounded,
+    verifier-approved correction does not exist.
+    """
 
     def __init__(self, config) -> None:
         self.config = config
         self.overrides: dict[int, tuple[float, float]] = {}
-        self.telemetry = {"runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0}
+        self.telemetry = {"shield_interventions": 0, "shield_correction_magnitude": 0.0,
+                          "runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0,
+                          "shield_fail_closed": 0}
+
+    def assess(self, env) -> RiskAssessment:
+        best: tuple[float, float, float, tuple[int, int]] | None = None
+        committed = [uav.committed_plan for uav in env.active.values() if uav.committed_plan is not None]
+        for holder in env.active.values():
+            if holder.ring_role is None or holder.committed_plan is not None:
+                continue
+            for plan in committed:
+                if plan.uav_id == holder.uid or plan.end_time <= env.now:
+                    continue
+                minimum = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0)
+                relative = plan.sample(max(env.now, plan.start_time)).position - holder.position
+                velocity = plan.sample(min(plan.end_time, env.now + env.config.dt)).position - plan.sample(max(env.now, plan.start_time)).position
+                relative_speed_sq = float(np.dot(velocity, velocity))
+                t_cpa = 0.0 if relative_speed_sq <= 1e-9 else float(np.clip(-np.dot(relative, velocity) / relative_speed_sq, 0.0, self.config.shield_horizon_seconds))
+                row = (minimum, minimum, t_cpa, (holder.uid, plan.uav_id))
+                if best is None or row < best:
+                    best = row
+        if best is None:
+            return RiskAssessment(float("inf"), float("inf"), 0.0, None, None)
+        minimum, d_cpa, t_cpa, pair = best
+        return RiskAssessment(minimum, d_cpa, t_cpa, pair,
+                              "predicted_swept_separation" if minimum < self.config.safe_distance else None)
 
     def _holder_position(self, uav, airspace, now: float, residual: float) -> np.ndarray:
         ring = airspace.actual_ring(uav.ring_role)
@@ -70,7 +120,7 @@ class RuntimeTrafficSafetyController:
             tracks[other.uid] = self._repair_plan(other, env.airspace, start, end, 0.0)
         return env.safety.verify_predicted_tracks(tracks, start=start, end=end).approved
 
-    def protect(self, env, intents: dict[int, object]) -> dict[int, object]:
+    def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
         self.overrides = {uid: value for uid, value in self.overrides.items() if value[1] > env.now and uid in env.active}
         committed = [uav.committed_plan for uav in env.active.values() if uav.committed_plan is not None]
         for holder in env.active.values():
@@ -88,11 +138,25 @@ class RuntimeTrafficSafetyController:
                 if (nominal < self.config.safe_distance and best_distance >= self.config.safe_distance
                         and self._passes_safety_filter(env, holder, plan, best)):
                     self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))
+                    self.telemetry["shield_interventions"] += 1
+                    self.telemetry["shield_correction_magnitude"] += abs(best)
                     self.telemetry["runtime_traffic_interventions"] += 1
                     self.telemetry["runtime_traffic_repair_magnitude"] += abs(best)
         repaired = dict(intents)
         for uid, (residual, _) in self.overrides.items():
             if uid in intents:
                 intent = intents[uid]
-                repaired[uid] = type(intent)(intent.release_request, float(np.clip(residual / self.config.max_speed_residual_mps, -1., 1.)), intent.merge_time_residual)
+                shield_intent = type(intent)(intent.release_request, float(np.clip(residual / self.config.max_speed_residual_mps, -1., 1.)), intent.merge_time_residual)
+                repaired[uid] = shield_intent
+                if traces is not None and uid in traces:
+                    trace = traces[uid]
+                    trace.shield_applied = shield_intent
+                    trace.shield_used = True
+                    trace.shield_reason = "predicted_swept_separation"
+                    trace.correction_magnitude += abs(shield_intent.speed_residual - trace.execution_applied.speed_residual)
         return repaired
+
+
+# Compatibility alias for archived A6 diagnostics.  New code should import
+# ``PredictiveSafetyShield`` so its deployment role is explicit.
+RuntimeTrafficSafetyController = PredictiveSafetyShield

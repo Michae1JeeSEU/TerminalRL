@@ -1,6 +1,9 @@
 schema_version: phaseA_landing_v1
 experiment_mode: fixed_low_rl
 high_level_enabled: false
+observation_schema_version: phaseA_low_obs_v1_41d
+scheduler_mode: execution
+teacher_enabled: false
 airspace: fixed_three_ring
 headways: fixed
 low_level_action: [release_request, speed_residual, merge_time_residual]

@@ -1,0 +1,12 @@
+schema_version: phaseA_landing_v1
+airspace_schema_version: three_ring_v1
+action_schema_version: low_intent_v1_3d
+high_action_schema_version: high_airspace_v1_10d
+observation_schema_version: phaseA_low_obs_v2_topology_87d
+experiment_mode: fixed_teacher_heavy
+high_level_enabled: false
+scheduler_mode: teacher_full
+teacher_enabled: true
+teacher_mode: teacher_full
+shield_enabled: true
+shield_horizon_seconds: 30.0

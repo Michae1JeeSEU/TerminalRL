@@ -7,7 +7,7 @@ import numpy as np
 from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import save_checkpoint
 from ..core.config import SimConfig
-from ..core.observations import A5_OBSERVATION_SCHEMA
+from ..core.observations import A5_OBSERVATION_SCHEMA, LOW_OBS_V2, observation_schema_for_version
 from ..envs.parallel_env import TerminalParallelEnv
 
 @dataclass(frozen=True)
@@ -40,7 +40,13 @@ def _episode(policy: SharedPPO, config: SimConfig, seed: int, buffer: RolloutBuf
         next_observations, rewards, terminated, truncated, info = env.step(action_map)
         for index, key in enumerate(ids):
             reward = float(rewards.get(key, 0.0)); done = bool(terminated.get(key, False) or truncated.get(key, False))
-            if buffer is not None: buffer.add(Transition(key, actor_obs[index], actor_obs, actions[index], float(log_probs[index]), value, reward, done))
+            trace = info.get("action_traces", {}).get(key, {})
+            teacher_action = trace.get("teacher_corrected_action")
+            applied_action = trace.get("shield_applied_action") or trace.get("execution_applied_action")
+            if buffer is not None: buffer.add(Transition(key, actor_obs[index], actor_obs, actions[index], float(log_probs[index]), value, reward, done,
+                                                          None if teacher_action is None else np.asarray(teacher_action, np.float32),
+                                                          None if applied_action is None else np.asarray(applied_action, np.float32),
+                                                          bool(trace.get("teacher_used", False)), bool(trace.get("shield_used", False))))
             episode_reward += reward
         action_values.extend(actions.tolist()); reward_components.extend(info["reward_components"].values())
         observations = next_observations
@@ -52,7 +58,11 @@ def _episode(policy: SharedPPO, config: SimConfig, seed: int, buffer: RolloutBuf
     return {"reward": episode_reward, "requested": len(env.ledger.requested), "completed": sum(x.value=="completed" for x in env.ledger.outcomes.values()), "throughput": sum(x.value=="completed" for x in env.ledger.outcomes.values())/max(env.now, 1.), "delay": float(np.mean(completion_delays)) if completion_delays else float("inf"), "energy": float(np.mean([u.energy_consumed for u in env.completed_uavs])) if env.completed_uavs else 0., "fairness": float(np.std(completion_delays)) if completion_delays else 0., "actions": action_values, "reward_components": components, **action_summary, **env.telemetry}
 
 def train_shared_low_level(base: SimConfig | None = None, *, curriculum=DEFAULT_CURRICULUM, output_dir: str | Path = "runs/a5", seed: int = 0, update_every: int = 4) -> tuple[SharedPPO, list[dict]]:
-    base = base or SimConfig(); policy = SharedPPO(A5_OBSERVATION_SCHEMA.dimension); output = Path(output_dir); output.mkdir(parents=True, exist_ok=True)
+    # Historical API intentionally remains a V1 baseline entry point.  A5-v2
+    # training will use a separate teacher-annealed driver after this
+    # architecture closure is verified.
+    base = replace(base or SimConfig(), observation_schema_version="phaseA_low_obs_v1_41d")
+    policy = SharedPPO(A5_OBSERVATION_SCHEMA.dimension); output = Path(output_dir); output.mkdir(parents=True, exist_ok=True)
     history=[]; buffer=RolloutBuffer(); episode_index=0
     for stage in curriculum:
         config=_stage_config(base, stage)

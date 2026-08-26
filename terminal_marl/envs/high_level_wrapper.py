@@ -37,10 +37,10 @@ class FrozenLowLevelPolicy:
         # step; one CPU thread avoids OpenMP launch overhead without changing
         # the frozen weights or the policy computation.
         torch.set_num_threads(1)
-        from ..core.observations import A5_OBSERVATION_SCHEMA
+        from ..core.observations import observation_schema_for_version
         from ..algo.shared_ppo import SharedPPO
         from ..core.checkpoints import load_checkpoint
-        self.policy = SharedPPO(A5_OBSERVATION_SCHEMA.dimension)
+        self.policy = SharedPPO(observation_schema_for_version(config.observation_schema_version).dimension)
         load_checkpoint(path, self.policy, config); self.policy.model.eval()
     def act(self, observations: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         if not observations: return {}
@@ -94,7 +94,10 @@ class DynamicHighLevelWrapper:
         gate=self.geometry_event_gate(); shield=self.coordinator.coordinate(requested,geometry_gate=gate); update=shield.update; before=dict(self.base.telemetry); before_completed=self._previous_completed; before_energy=self._previous_energy; start_time=self.base.now; low_reward=0.; latest_info={}
         for _ in range(max(1,round(self.config.high_level_decision_interval_seconds/self.config.dt))):
             deferred = self.coordinator.advance()
-            low_actions=self.coordinator.apply_speed_repairs(self.low_level.act(self.base._observations()))
+            requested_low_actions = self.low_level.act(self.base._observations())
+            # A proposed student deployment never routes routine low-level
+            # decisions through the legacy high-level repair helper.
+            low_actions = requested_low_actions if self.config.experiment_mode == "dynamic_hrl_student" else self.coordinator.apply_speed_repairs(requested_low_actions)
             _,rewards,_,_,latest_info=self.base.step(low_actions); low_reward+=float(sum(rewards.values()))
             if self._done() or self.base.now>=self.config.max_simulation_seconds: break
         completed=sum(outcome is TerminalOutcome.COMPLETED for outcome in self.base.ledger.outcomes.values()); energy=self._energy_total(); delays=[u.completion_time-u.request_time for u in self.base.completed_uavs if u.completion_time is not None]
