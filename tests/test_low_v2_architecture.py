@@ -19,7 +19,7 @@ from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpo
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
 from terminal_marl.training.build_low_teacher_dataset import build_low_teacher_dataset
 from terminal_marl.training.low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, phase_config, validate_low_v2_config
-from terminal_marl.training.train_low_v2_ppo import prepare_low_v2_training
+from terminal_marl.training.train_low_v2_ppo import authorize_low_v2_training, prepare_low_v2_training
 from terminal_marl.training.eval_low_v2_student import StudentQualificationRecord, qualify_student_records
 from terminal_marl.training.audit_low_teacher_dataset import audit_teacher_dataset
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
@@ -161,6 +161,20 @@ def test_preflight_freezes_documented_teacher_annealing_without_training(tmp_pat
     for phase in LOW_V2_TEACHER_CURRICULUM:
         config = phase_config(SimConfig(), phase)
         validate_low_v2_config(config, for_training=phase.name != "teacher_off")
+
+
+def test_low_v2_training_authorization_blocks_uncorrected_teacher_dataset(tmp_path):
+    dataset = tmp_path / "uncorrected.jsonl"
+    dataset.write_text(json.dumps({
+        "observation": [0.0] * 87, "requested_action": [0.0] * 3, "teacher_action": None,
+        "execution_action": [0.0] * 3, "shield_action": None, "teacher_used": False,
+        "teacher_kind": None, "teacher_delay_seconds": None, "teacher_witness_plan_id": None,
+        "teacher_verified": False, "correction_magnitude": 0.0, "predicted_min_sep_before": None,
+        "d_cpa_before": None, "t_cpa_before": 0.0, "predicted_min_sep_after": None,
+        "release_decision": "not_requested", "reward": 0.0, "terminated": False, "truncated": False,
+    }) + "\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="training is blocked"):
+        authorize_low_v2_training(dataset)
 
 
 def test_student_qualification_rejects_missing_n_teacher_and_shield_off_configs():

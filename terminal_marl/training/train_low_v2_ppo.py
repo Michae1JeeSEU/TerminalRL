@@ -12,6 +12,7 @@ import json
 
 from ..core.config import SimConfig
 from ..core.observations import LOW_OBS_V2
+from .audit_low_teacher_dataset import TeacherDatasetAudit, audit_teacher_dataset
 from .low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, phase_config, validate_low_v2_config
 
 
@@ -38,3 +39,16 @@ def prepare_low_v2_training(base: SimConfig | None = None, *, manifest_path: str
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(asdict(result), indent=2), encoding="utf-8")
     return result
+
+
+def authorize_low_v2_training(teacher_dataset_path: str | Path, *, min_corrected_fraction: float = 0.05) -> TeacherDatasetAudit:
+    """Gate a future optimizer launch on a provenance-complete dataset audit.
+
+    This is intentionally the last operation available before concrete PPO or
+    BC training.  A failed audit must be repaired by data collection, never by
+    silently lowering the safety/teacher coverage requirement.
+    """
+    audit = audit_teacher_dataset(teacher_dataset_path, min_corrected_fraction=min_corrected_fraction)
+    if not audit.passed:
+        raise RuntimeError("low-v2 training is blocked: " + "; ".join(audit.errors))
+    return audit
