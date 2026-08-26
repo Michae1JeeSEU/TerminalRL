@@ -46,6 +46,8 @@ def test_snapshot_is_read_only() -> None:
     assert _signature(env) == before
     assert snapshot.time == env.now
     assert isinstance(snapshot.uavs[0].position, tuple)
+    assert snapshot.uavs[0].energy_remaining == env.active[snapshot.uavs[0].uid].energy_remaining
+    assert snapshot.uavs[0].base_priority == env.active[snapshot.uavs[0].uid].base_priority
 
 
 def test_snapshot_uses_actual_dynamic_geometry() -> None:

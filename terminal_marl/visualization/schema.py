@@ -45,6 +45,10 @@ class UAVRenderState:
     velocity: Point3D
     speed: float
     soc: float
+    energy_remaining: float
+    energy_capacity: float
+    mission_type: str
+    base_priority: int
     assigned_gate: int
     assigned_lz: int | None
     trajectory_plan_id: str | None
