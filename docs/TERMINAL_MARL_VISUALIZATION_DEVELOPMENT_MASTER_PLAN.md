@@ -526,6 +526,8 @@ GUI 必须提供运行中可用的控制：
 - playback speed 控件：支持至少 `0.25x / 0.5x / 1x / 2x / 5x / 10x / max`，仅改变 renderer observer 的 wall-clock delay；
 - 鼠标选中 UAV：选中后在本地面板显示 `uid`、arrival ID、phase、ring、speed、剩余能量/SOC、mission、base/dynamic priority、gate、LZ、plan/reservation ID、最后的 release/safety decision。该面板只消费 immutable snapshot，不能直接读取或修改 env。
 
+控件和信息面板不得堆叠：Pause 与 playback-speed bar 固定在**左上角同一行**，速度条宽度和字号应与 Pause 标签匹配；HUD 固定右上角；selected-UAV panel 固定右侧（建议右下角），且每行只展示一个属性。UAV picker 必须只对当前 UAV point cloud 开启，ring、gate、LZ 和 trajectory 必须设为不可拾取，使用 point-ID 将点击结果映射到当帧 snapshot 中的 UAV，避免因视角、轨迹遮挡或场景 mesh 导致选中失败。
+
 ---
 
 # 7. 最小侵入式集成方案

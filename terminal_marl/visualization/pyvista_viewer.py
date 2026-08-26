@@ -39,6 +39,7 @@ class Terminal3DViewer:
         self._ring_meshes: dict[str, object] = {}
         self._target_ring_meshes: dict[str, object] = {}
         self._trajectory_names: set[str] = set()
+        self._uav_cloud = None
         self._latest_snapshot = initial
         self._selected_uid: int | None = None
         self._paused = False
@@ -61,21 +62,21 @@ class Terminal3DViewer:
         for ring in snapshot.rings:
             mesh = self._line_mesh(self._circle(ring.radius, ring.height), close=True)
             self._ring_meshes[ring.role] = mesh
-            self._plotter.add_mesh(mesh, color=_RING_COLORS[ring.role], line_width=4, name=f"ring-{ring.role}")
+            self._plotter.add_mesh(mesh, color=_RING_COLORS[ring.role], line_width=4, pickable=False, name=f"ring-{ring.role}")
             if self._config.show_target_geometry:
                 target = self._line_mesh(self._circle(ring.target_radius, ring.target_height), close=True)
                 self._target_ring_meshes[ring.role] = target
-                self._plotter.add_mesh(target, color="gray", opacity=0.34, line_width=1, name=f"target-ring-{ring.role}")
+                self._plotter.add_mesh(target, color="gray", opacity=0.34, line_width=1, pickable=False, name=f"target-ring-{ring.role}")
         for gate in snapshot.gates:
             points = (gate.spawn_position, gate.gate_position)
-            self._plotter.add_mesh(self._line_mesh(points), color="slategray", line_width=4, name=f"gate-{gate.gate_id}")
+            self._plotter.add_mesh(self._line_mesh(points), color="slategray", line_width=4, pickable=False, name=f"gate-{gate.gate_id}")
             self._plotter.add_point_labels(
                 np.asarray([gate.gate_position]), [f"Gate {gate.gate_id}"], point_size=0,
                 font_size=12, text_color="black", shape=None, always_visible=True, name=f"gate-label-{gate.gate_id}",
             )
         self._plotter.add_axes(color="black", x_color="firebrick", y_color="forestgreen", z_color="navy")
         self._plotter.add_text("", position="upper_right", font_size=11, color="black", name="hud")
-        self._plotter.add_text("Right-click a UAV point to inspect it", position=(10, 80), font_size=10, color="black", name="pick-help")
+        self._plotter.add_text("Right-click a UAV point to inspect", position=(10, 765), font_size=10, color="black", name="pick-help")
 
     @staticmethod
     def _speed_label(speed: float) -> str:
@@ -85,18 +86,19 @@ class Terminal3DViewer:
 
     def _add_interaction_controls(self) -> None:
         self._plotter.add_checkbox_button_widget(
-            self._set_paused, value=False, position=(10, 12), size=28, border_size=2,
+            self._set_paused, value=False, position=(10, 795), size=28, border_size=2,
             color_on="tomato", color_off="lightgray", background_color="white",
         )
-        self._plotter.add_text("Pause", position=(45, 16), font_size=11, color="black", name="pause-label")
+        self._plotter.add_text("Pause", position=(45, 800), font_size=11, color="black", name="pause-label")
+        self._plotter.add_text("Speed", position=(112, 800), font_size=11, color="black", name="speed-label")
         self._plotter.add_text_slider_widget(
             self._set_playback_speed, list(_PLAYBACK_OPTIONS),
             value=float(_PLAYBACK_OPTIONS.index(self._speed_label(self._playback_speed))),
-            pointa=(0.03, 0.12), pointb=(0.29, 0.12), color="black", style="modern",
+            pointa=(0.18, 0.93), pointb=(0.43, 0.93), color="black", style="modern",
         )
         self._plotter.enable_point_picking(
             self._select_uav, left_clicking=False, picker="point", show_message=False,
-            show_point=False, tolerance=0.025,
+            show_point=False, tolerance=0.025, use_picker=True,
         )
 
     def _set_paused(self, value: bool) -> None:
@@ -105,15 +107,17 @@ class Terminal3DViewer:
     def _set_playback_speed(self, value: str) -> None:
         self._playback_speed = _PLAYBACK_VALUES[str(value)]
 
-    def _select_uav(self, picked_point: np.ndarray) -> None:
-        if not self._latest_snapshot.uavs:
+    @staticmethod
+    def _uav_uid_from_point_id(snapshot: WorldRenderSnapshot, point_id: int) -> int | None:
+        """Map PyVista's current point-cloud index to snapshot identity."""
+        return snapshot.uavs[point_id].uid if 0 <= point_id < len(snapshot.uavs) else None
+
+    def _select_uav(self, picked_point: np.ndarray, picker) -> None:
+        """Select a point in the current UAV cloud, never an obscuring mesh."""
+        if not self._latest_snapshot.uavs or self._uav_cloud is None:
             return
-        point = np.asarray(picked_point, dtype=float)
-        nearest = min(self._latest_snapshot.uavs, key=lambda uav: np.linalg.norm(np.asarray(uav.position) - point))
-        if np.linalg.norm(np.asarray(nearest.position) - point) <= 60.0:
-            self._selected_uid = nearest.uid
-        else:
-            self._selected_uid = None
+        point_id = int(picker.GetPointId())
+        self._selected_uid = self._uav_uid_from_point_id(self._latest_snapshot, point_id)
         self._update_selected_uav_panel()
 
     def _selected_uav(self):
@@ -122,19 +126,28 @@ class Terminal3DViewer:
     def _update_selected_uav_panel(self) -> None:
         uav = self._selected_uav()
         if uav is None:
-            text = "Selected UAV\n—"
+            text = "Selected UAV: —"
         else:
             energy = f"{uav.energy_remaining:.0f}/{uav.energy_capacity:.0f} ({uav.soc:.0%})"
             text = (
-                f"Selected UAV {uav.uid}  (arrival {uav.arrival_id})\n"
-                f"phase={uav.phase}  ring={uav.ring_role or '—'}  speed={uav.speed:.1f} m/s\n"
-                f"energy={energy}\n"
-                f"mission={uav.mission_type}  base priority={uav.base_priority}  dynamic priority={uav.dynamic_priority:.2f}\n"
-                f"gate={uav.assigned_gate}  LZ={uav.assigned_lz if uav.assigned_lz is not None else '—'}\n"
-                f"plan={uav.trajectory_plan_id or '—'}  reservation={uav.merge_reservation_id or '—'}\n"
-                f"release={uav.last_release_decision or '—'}  safety={uav.last_safety_decision or '—'}"
+                f"Selected UAV\n"
+                f"UID: {uav.uid}\n"
+                f"Arrival ID: {uav.arrival_id}\n"
+                f"Phase: {uav.phase}\n"
+                f"Ring: {uav.ring_role or '—'}\n"
+                f"Speed: {uav.speed:.1f} m/s\n"
+                f"Energy: {energy}\n"
+                f"Mission: {uav.mission_type}\n"
+                f"Base priority: {uav.base_priority}\n"
+                f"Dynamic priority: {uav.dynamic_priority:.2f}\n"
+                f"Gate: {uav.assigned_gate}\n"
+                f"Landing zone: {uav.assigned_lz if uav.assigned_lz is not None else '—'}\n"
+                f"Trajectory plan: {uav.trajectory_plan_id or '—'}\n"
+                f"Merge reservation: {uav.merge_reservation_id or '—'}\n"
+                f"Last release: {uav.last_release_decision or '—'}\n"
+                f"Last safety: {uav.last_safety_decision or '—'}"
             )
-        self._plotter.add_text(text, position="lower_left", font_size=10, color="black", name="selected-uav")
+        self._plotter.add_text(text, position="lower_right", font_size=10, color="black", name="selected-uav")
 
     def _update_rings(self, snapshot: WorldRenderSnapshot) -> None:
         for ring in snapshot.rings:
@@ -148,7 +161,7 @@ class Terminal3DViewer:
             self._plotter.remove_actor(name, render=False)
             self._plotter.add_mesh(
                 self._pv.Cube(center=lz.position, x_length=45, y_length=45, z_length=6),
-                color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, name=name,
+                color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, pickable=False, name=name,
             )
 
     def _update_uavs(self, snapshot: WorldRenderSnapshot) -> None:
@@ -164,7 +177,8 @@ class Terminal3DViewer:
             color = "magenta" if uav.uid in snapshot.recent_conflict_uids else _UAV_COLORS[uav.uid % len(_UAV_COLORS)]
             colors[index] = self._pv.Color(color).int_rgb
         cloud["rgb"] = colors
-        self._plotter.add_mesh(cloud, scalars="rgb", rgb=True, point_size=15, render_points_as_spheres=True, name="uavs")
+        self._uav_cloud = cloud
+        self._plotter.add_mesh(cloud, scalars="rgb", rgb=True, point_size=15, render_points_as_spheres=True, pickable=True, name="uavs")
         self._plotter.remove_actor("uav-labels", render=False)
         if self._config.show_labels:
             self._plotter.add_point_labels(points, [str(uav.uid) for uav in snapshot.uavs], point_size=0,
@@ -181,7 +195,7 @@ class Terminal3DViewer:
                 continue
             name = f"trajectory-{uav.uid}"
             self._plotter.add_mesh(self._line_mesh(uav.trajectory_points), color="dimgray", line_width=2,
-                                   opacity=0.72, name=name)
+                                   opacity=0.72, pickable=False, name=name)
             self._trajectory_names.add(name)
 
     def _update_hud(self, snapshot: WorldRenderSnapshot) -> None:

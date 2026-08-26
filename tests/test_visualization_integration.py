@@ -5,6 +5,7 @@ import numpy as np
 from terminal_marl.core.config import SimConfig
 from terminal_marl.envs.high_level_wrapper import DynamicHighLevelWrapper, RuleLowLevelAdapter
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
+from terminal_marl.visualization.pyvista_viewer import Terminal3DViewer
 from terminal_marl.visualization.snapshot import build_world_render_snapshot
 
 
@@ -87,3 +88,13 @@ def test_high_level_wrapper_emits_low_step_frames() -> None:
     wrapper.base.set_step_observer(lambda world: frames.append(world.step_count))
     wrapper.step(np.zeros(10, dtype=np.float32))
     assert frames == [1, 2, 3]
+
+
+def test_uav_picker_uses_current_point_cloud_index() -> None:
+    env = TerminalParallelEnv(_config())
+    env.reset(0)
+    env.step()
+    snapshot = build_world_render_snapshot(env)
+    assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 0) == snapshot.uavs[0].uid
+    assert Terminal3DViewer._uav_uid_from_point_id(snapshot, -1) is None
+    assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 1) is None
