@@ -1,0 +1,2 @@
+# Optional live 3D diagnostic viewer.  Not required for training or headless evaluation.
+pyvista>=0.43

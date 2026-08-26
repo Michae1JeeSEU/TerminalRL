@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from collections import deque
 from copy import deepcopy
 import math
+from typing import Callable
 import numpy as np
 
 from ..core.admission import AdmissionManager
@@ -44,6 +45,9 @@ class WorldSnapshot:
 class TerminalParallelEnv:
     def __init__(self, config: SimConfig | None = None) -> None:
         self.config = config or SimConfig()
+        # Deliberately generic: the core environment must not know about any
+        # visualization backend or construct render data on the normal path.
+        self._step_observer: Callable[["TerminalParallelEnv"], None] | None = None
         self.energy = EnergyModel(self.config)
         self.priority = PriorityEngine(self.config)
         self.generator = TrajectoryGenerator(self.config)
@@ -55,6 +59,14 @@ class TerminalParallelEnv:
 
     def action_spec(self, _agent: str | None = None) -> tuple[int]:
         return (3,)
+
+    def set_step_observer(self, observer: Callable[["TerminalParallelEnv"], None] | None) -> None:
+        """Register an optional post-tick observer without changing step semantics."""
+        self._step_observer = observer
+
+    def clear_step_observer(self) -> None:
+        """Remove the optional post-tick observer."""
+        self._step_observer = None
 
     def reset(self, seed: int | None = None):
         self.now = 0.0
@@ -714,6 +726,11 @@ class TerminalParallelEnv:
             if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
         self.now += self.config.dt; self.step_count += 1; self._refresh_airspace_occupancy()
         observation = self._observations()
+        # This is intentionally after every canonical state update and before
+        # returning the existing API value.  Disabled runs only pay this null
+        # check; snapshot creation belongs exclusively to an attached observer.
+        if self._step_observer is not None:
+            self._step_observer(self)
         return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
