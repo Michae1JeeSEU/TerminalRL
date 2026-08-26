@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from terminal_marl.core.config import RingRole
 from terminal_marl.core.ring_capacity import geometric_ring_capacity
 from terminal_marl.training.a611_causal_audit import DemandProfile
@@ -60,6 +62,13 @@ def test_a614_hard_safety_is_unchanged_in_timing_counterfactual():
     assert row["safe"]
     assert metrics["collisions"] == metrics["nmac"] == metrics["hard_separation_violations"] == 0
     assert metrics["final_overcapacity_steps"] == 0
+
+
+def test_a614_warm_start_diagnostic_does_not_require_external_request_ledger_rows():
+    profile = DemandProfile("warm_start", ((-20., 0., .2), (0., 5., .1)), 5., 20.)
+    config = replace(repair_config(profile, dynamic=True), reset_mode="warm_start_rings", warm_start_uavs=3)
+    row = run_dynamic_at_time(config, 0, float("inf"), force_initial_gate=False)
+    assert row["safe"] and row["metrics"]["admission_delay_mean"] >= 0.
 
 
 def test_a614_classification_is_deterministic_and_cannot_authorize_ppo():

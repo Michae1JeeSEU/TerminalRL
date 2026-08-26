@@ -186,8 +186,14 @@ def run_dynamic_at_time(config: SimConfig, seed: int, action_time: float, *, for
         pressure.append((float(env.now), outer_occupancy >= nominal_outer))
         extra_capacity_use.append((float(env.now), outer_capacity > nominal_outer and outer_occupancy > nominal_outer))
     metrics = _collect(env, samples, wrapper.coordinator, events)
-    metrics["admission_delay_mean"] = float(np.mean([value - env.request_times[int(key)] for key, value in admissions.items()])) if admissions else 0.
-    metrics["admission_delay_p95"] = float(np.percentile([value - env.request_times[int(key)] for key, value in admissions.items()], 95)) if admissions else 0.
+    # A warm-start diagnostic deliberately places a small prehistory cohort
+    # inside rings before t=0.  Those UAVs did not pass the normal Admission
+    # Manager, hence have no external request-time ledger row.  Treat their
+    # diagnostic admission reference as t=0 rather than changing runtime
+    # admission state or failing a read-only observation experiment.
+    delays = [value - env.request_times.get(int(key), 0.) for key, value in admissions.items()]
+    metrics["admission_delay_mean"] = float(np.mean(delays)) if delays else 0.
+    metrics["admission_delay_p95"] = float(np.percentile(delays, 95)) if delays else 0.
     result = {"metrics": metrics, "safe": _safe(metrics, config), "outcomes": dict(Counter(item.value for item in env.ledger.outcomes.values())),
               "mode": "dynamic_exact_time", "action_time": float(action_time), "actual_capacity": {role.value: env.airspace.capacity(role) for role in RingRole},
               "timing": {"geometry_requested_time": float(action_time),
