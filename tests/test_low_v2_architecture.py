@@ -17,7 +17,7 @@ from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
-from terminal_marl.training.build_low_teacher_dataset import build_low_teacher_dataset
+from terminal_marl.training.build_low_teacher_dataset import TeacherDatasetCohort, build_low_teacher_dataset, build_low_teacher_dataset_matrix
 from terminal_marl.training.low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, phase_config, validate_low_v2_config
 from terminal_marl.training.train_low_v2_ppo import authorize_low_v2_training, prepare_low_v2_training
 from terminal_marl.training.eval_low_v2_student import StudentQualificationRecord, qualify_student_records
@@ -148,9 +148,22 @@ def test_teacher_dataset_records_requested_and_correction_fields_without_trainin
     assert len(row["observation"]) == 87
     assert row["requested_action"] == [0.0, 0.0, 0.0] and row["teacher_action"] is None
     assert row["teacher_verified"] is False and row["teacher_witness_plan_id"] is None
+    assert row["active_agent_count"] == 1 and row["seed"] == 0
     audit = audit_teacher_dataset(output, min_corrected_fraction=0.0)
     assert audit.passed and audit.rows == 1
     assert (tmp_path / "teacher.jsonl.summary.json").is_file()
+
+
+def test_teacher_dataset_matrix_records_named_cohorts_without_training(tmp_path):
+    class ZeroPolicy:
+        def act(self, observations):
+            return {key: np.zeros(3, np.float32) for key in observations}
+    cohort = TeacherDatasetCohort("n1", SimConfig(reset_mode="warm_start_rings", warm_start_uavs=1,
+                                  fixed_arrival_schedule=(0.0,), total_requested_uavs=1, max_simulation_seconds=10.0), 1, 1)
+    destination = tmp_path / "matrix.jsonl"
+    summary = build_low_teacher_dataset_matrix((cohort,), output_path=destination, policy=ZeroPolicy(), min_corrected_fraction=0.0)
+    assert summary.rows == 1 and summary.cohorts == ("n1",)
+    assert (tmp_path / "matrix.jsonl.manifest.json").is_file()
 
 
 def test_preflight_freezes_documented_teacher_annealing_without_training(tmp_path):
