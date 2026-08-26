@@ -83,6 +83,9 @@ def build_low_teacher_dataset(
                     "execution_action": trace["execution_applied_action"],
                     "shield_action": trace["shield_applied_action"],
                     "teacher_used": trace["teacher_used"], "teacher_kind": trace["teacher_kind"],
+                    "teacher_delay_seconds": trace["teacher_delay_seconds"],
+                    "teacher_witness_plan_id": trace["teacher_witness_plan_id"],
+                    "teacher_verified": trace["teacher_verified"],
                     "correction_magnitude": trace["correction_magnitude"],
                     "predicted_min_sep_before": _finite_or_none(risk_before.predicted_min_swept_separation),
                     "d_cpa_before": _finite_or_none(risk_before.d_cpa), "t_cpa_before": _finite_or_none(risk_before.t_cpa),
@@ -100,8 +103,10 @@ def build_low_teacher_dataset(
             handle.write(json.dumps(row, allow_nan=False) + "\n")
     corrected = sum(bool(row["teacher_used"]) for row in rows)
     shield = sum(row["shield_action"] is not None for row in rows)
-    return TeacherDatasetSummary(len(rows), corrected, len(rows) - corrected, shield, str(destination),
-                                 runtime_config.observation_schema_version, runtime_config.scheduler_mode, seed)
+    summary = TeacherDatasetSummary(len(rows), corrected, len(rows) - corrected, shield, str(destination),
+                                    runtime_config.observation_schema_version, runtime_config.scheduler_mode, seed)
+    destination.with_suffix(destination.suffix + ".summary.json").write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
+    return summary
 
 
 if __name__ == "__main__":

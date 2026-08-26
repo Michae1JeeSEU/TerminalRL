@@ -175,5 +175,7 @@ class SimConfig:
             self.teacher_enabled = True
         if self.experiment_mode in {"fixed_low_student", "dynamic_hrl_student"} and self.teacher_enabled:
             raise ValueError("formal student/deployment modes require teacher_enabled=False")
+        if self.experiment_mode in {"fixed_low_student", "dynamic_hrl_student"} and not self.shield_enabled:
+            raise ValueError("formal student/deployment modes require shield_enabled=True")
         if self.shield_horizon_seconds <= 0.0:
             raise ValueError("shield_horizon_seconds must be positive")

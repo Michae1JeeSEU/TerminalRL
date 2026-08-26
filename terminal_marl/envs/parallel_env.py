@@ -241,6 +241,7 @@ class TerminalParallelEnv:
         if decision == "approved":
             row.update({"approval_time": self.now, "scheduled_delay": 0.0 if candidate is None else candidate.delay_seconds,
                         "repair_used": bool(candidate is not None and candidate.kind != "requested"),
+                        "candidate_kind": None if candidate is None else candidate.kind,
                         "applied_speed_residual": None if candidate is None else float(candidate.intent.speed_residual),
                         "applied_merge_time_residual": None if candidate is None else float(candidate.intent.merge_time_residual),
                         "primary_blocker": None, "trajectory_plan_id": plan_id})
@@ -493,20 +494,27 @@ class TerminalParallelEnv:
             lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
             if lz_id is None: return finish("lz_unavailable")
             if not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved: return finish("lz_reservation_reject")
-            reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, "final"))
+            proposal = self.execution_scheduler.propose_requested(uav, intent, snapshot, "final")
+            if not self.execution_scheduler.check_requested(proposal).approved:
+                self.lz_manager.release(lz_id, uav.uid, "headway_conflict")
+                return finish("headway_conflict")
+            reservation = self.execution_scheduler.reserve_requested(uav, proposal, now=self.now)
             plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now)
             if self._commit(uav, plan):
                 uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
                 return finish("approved")
-            self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+            self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.execution_scheduler.cancel(reservation.reservation_id, "safety_reject")
             uav.safety_retry_after = self.now + 5.0
             return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
-        reservation = self.scheduler.reserve(uav, self.scheduler.propose(uav, intent, snapshot, target))
+        proposal = self.execution_scheduler.propose_requested(uav, intent, snapshot, target)
+        if not self.execution_scheduler.check_requested(proposal).approved:
+            return finish("headway_conflict")
+        reservation = self.execution_scheduler.reserve_requested(uav, proposal, now=self.now)
         plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now, residual)
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
             return finish("approved")
-        self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+        self.execution_scheduler.cancel(reservation.reservation_id, "safety_reject")
         uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
         return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
 
@@ -622,7 +630,7 @@ class TerminalParallelEnv:
         for request in self.arrivals.requests_until(self.now):
             self.ledger.request(request.arrival_id); self.request_times[request.arrival_id] = request.request_time; self.admission.enqueue(request)
         self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
-        self.scheduler.expire(self.now, set(self.active))
+        self.execution_scheduler.expire(self.now, set(self.active))
         self._refresh_airspace_occupancy()
         self.airspace.step_transition(self.now)
         admitted, records = self.admission.step(self.now, self.active, self.airspace, self.energy, self.priority)
@@ -662,7 +670,10 @@ class TerminalParallelEnv:
                 traces[uid].teacher_corrected = corrected
                 traces[uid].execution_applied = corrected
                 traces[uid].teacher_used = True
-                traces[uid].teacher_kind = "teacher_repair"
+                traces[uid].teacher_kind = str(release_row.get("candidate_kind", "teacher_repair"))
+                traces[uid].teacher_delay_seconds = float(release_row.get("scheduled_delay") or 0.0)
+                traces[uid].teacher_witness_plan_id = release_row.get("trajectory_plan_id")
+                traces[uid].teacher_verified = traces[uid].teacher_witness_plan_id is not None
                 traces[uid].correction_magnitude = abs(corrected.speed_residual-intent.speed_residual) + abs(corrected.merge_time_residual-intent.merge_time_residual)
                 rewards.setdefault(uid, LowLevelReward()).teacher -= self.config.teacher_intervention_penalty + self.config.teacher_correction_magnitude_penalty * traces[uid].correction_magnitude
             pending = self.future_release_reservations.get(uid)
@@ -677,8 +688,9 @@ class TerminalParallelEnv:
                 else: self.telemetry["release_rejected"] += 1
             if abs(intent.merge_time_residual) > 1e-8: self.telemetry["merge_time_modified"] += 1
             action_rows.append((intent.release_request, intent.speed_residual, intent.merge_time_residual, decision))
-        intents = self.runtime_traffic.protect(self, intents, traces)
-        self.telemetry.update(self.runtime_traffic.telemetry)
+        if self.config.shield_enabled:
+            intents = self.runtime_traffic.protect(self, intents, traces)
+            self.telemetry.update(self.runtime_traffic.telemetry)
         for uid, trace in traces.items():
             if trace.shield_used:
                 magnitude = abs(trace.shield_applied.speed_residual-trace.execution_applied.speed_residual)

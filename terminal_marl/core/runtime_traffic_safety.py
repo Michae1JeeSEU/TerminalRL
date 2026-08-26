@@ -53,12 +53,18 @@ class PredictiveSafetyShield:
             for plan in committed:
                 if plan.uav_id == holder.uid or plan.end_time <= env.now:
                     continue
+                start = max(env.now, plan.start_time)
                 minimum = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0)
-                relative = plan.sample(max(env.now, plan.start_time)).position - holder.position
-                velocity = plan.sample(min(plan.end_time, env.now + env.config.dt)).position - plan.sample(max(env.now, plan.start_time)).position
+                holder_start = self._holder_position(holder, env.airspace, start - env.now, 0.0)
+                relative = plan.sample(start).position - holder_start
+                next_time = min(plan.end_time, start + env.config.dt)
+                holder_next = self._holder_position(holder, env.airspace, next_time - env.now, 0.0)
+                velocity = (plan.sample(next_time).position - plan.sample(start).position) / max(next_time - start, 1e-9)
+                velocity -= (holder_next - holder_start) / max(next_time - start, 1e-9)
                 relative_speed_sq = float(np.dot(velocity, velocity))
                 t_cpa = 0.0 if relative_speed_sq <= 1e-9 else float(np.clip(-np.dot(relative, velocity) / relative_speed_sq, 0.0, self.config.shield_horizon_seconds))
-                row = (minimum, minimum, t_cpa, (holder.uid, plan.uav_id))
+                d_cpa = float(np.linalg.norm(relative + velocity * t_cpa))
+                row = (minimum, d_cpa, t_cpa, (holder.uid, plan.uav_id))
                 if best is None or row < best:
                     best = row
         if best is None:
@@ -135,13 +141,18 @@ class PredictiveSafetyShield:
                 scored = [(self._minimum_to_plan(holder, plan, env.airspace, env.now, option), option) for option in options]
                 best_distance, best = max(scored)
                 nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0)
-                if (nominal < self.config.safe_distance and best_distance >= self.config.safe_distance
-                        and self._passes_safety_filter(env, holder, plan, best)):
+                repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best)
+                if nominal < self.config.safe_distance and repaired:
                     self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))
                     self.telemetry["shield_interventions"] += 1
                     self.telemetry["shield_correction_magnitude"] += abs(best)
                     self.telemetry["runtime_traffic_interventions"] += 1
                     self.telemetry["runtime_traffic_repair_magnitude"] += abs(best)
+                elif nominal < self.config.safe_distance:
+                    # The shield does not rewrite a committed plan or invent
+                    # hover behaviour.  Record the fail-closed condition so a
+                    # protected run cannot mistake it for a safe no-op.
+                    self.telemetry["shield_fail_closed"] += 1
         repaired = dict(intents)
         for uid, (residual, _) in self.overrides.items():
             if uid in intents:

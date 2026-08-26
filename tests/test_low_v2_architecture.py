@@ -18,6 +18,10 @@ from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPo
 from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
 from terminal_marl.training.build_low_teacher_dataset import build_low_teacher_dataset
+from terminal_marl.training.low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, phase_config, validate_low_v2_config
+from terminal_marl.training.train_low_v2_ppo import prepare_low_v2_training
+from terminal_marl.training.eval_low_v2_student import StudentQualificationRecord, qualify_student_records
+from terminal_marl.training.audit_low_teacher_dataset import audit_teacher_dataset
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
@@ -77,6 +81,7 @@ def test_step_emits_requested_execution_shield_provenance():
         assert trace["requested_low_action"] == trace["execution_applied_action"]
         assert trace["teacher_corrected_action"] is None
         assert trace["teacher_used"] is False
+        assert trace["teacher_verified"] is False and trace["teacher_witness_plan_id"] is None
 
 
 def test_predictive_shield_detects_future_conflict_without_rewriting_committed_plan():
@@ -142,3 +147,29 @@ def test_teacher_dataset_records_requested_and_correction_fields_without_trainin
     row = json.loads(output.read_text(encoding="utf-8"))
     assert len(row["observation"]) == 87
     assert row["requested_action"] == [0.0, 0.0, 0.0] and row["teacher_action"] is None
+    assert row["teacher_verified"] is False and row["teacher_witness_plan_id"] is None
+    audit = audit_teacher_dataset(output, min_corrected_fraction=0.0)
+    assert audit.passed and audit.rows == 1
+    assert (tmp_path / "teacher.jsonl.summary.json").is_file()
+
+
+def test_preflight_freezes_documented_teacher_annealing_without_training(tmp_path):
+    preflight = prepare_low_v2_training(manifest_path=tmp_path / "preflight.json")
+    assert preflight.observation_dimension == 87 and preflight.action_dimension == 3
+    assert preflight.phases == ("teacher_full", "teacher_immediate", "teacher_label_only", "teacher_off")
+    assert preflight.configs[-1]["teacher_enabled"] is False
+    for phase in LOW_V2_TEACHER_CURRICULUM:
+        config = phase_config(SimConfig(), phase)
+        validate_low_v2_config(config, for_training=phase.name != "teacher_off")
+
+
+def test_student_qualification_rejects_missing_n_teacher_and_shield_off_configs():
+    config = SimConfig(experiment_mode="fixed_low_student")
+    records = [StudentQualificationRecord(n, "id" if n <= 20 else "ood", 0, 0, 0, 10, 0, 10, 0)
+               for n in (1, 5, 10, 20, 40, 60)]
+    report = qualify_student_records(config, records)
+    assert report.passed and report.id_interventions_per_100 == report.ood_interventions_per_100 == 0.0
+    incomplete = qualify_student_records(config, records[:-1])
+    assert not incomplete.passed and incomplete.missing_n == (60,)
+    with pytest.raises(ValueError, match="shield_enabled"):
+        SimConfig(experiment_mode="fixed_low_student", shield_enabled=False)
