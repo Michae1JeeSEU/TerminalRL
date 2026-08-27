@@ -224,28 +224,65 @@ class SafetyFilter:
                 continue
             if self.dynamics.validate_plan(plan.points):
                 return finish(False, "repair_dynamics", plan.plan_id)
+        if len(ordered) < 2:
+            return finish(True, "approved", "reconfiguration_tracks")
         samples = np.arange(start, end + 1e-9, self.config.safety_sampling_dt)
         if samples[-1] < end:
             samples = np.append(samples, end)
-        for time in samples:
-            for index, (uid, plan) in enumerate(ordered):
-                for other_uid, other in ordered[index+1:]:
-                    if time > plan.metadata.get("active_end", plan.end_time) or time > other.metadata.get("active_end", other.end_time):
-                        continue
-                    distance=float(np.linalg.norm(plan.sample(float(time)).position-other.sample(float(time)).position))
-                    minimum=min(minimum, distance); checked_pairs += 1
-                    if distance < self.config.safe_distance:
-                        return finish(False, f"repair_separation:{uid}:{other_uid}", plan.plan_id)
-        for left, right in zip(samples, samples[1:]):
-            for index, (uid, plan) in enumerate(ordered):
-                for other_uid, other in ordered[index+1:]:
-                    if left >= plan.metadata.get("active_end", plan.end_time) or left >= other.metadata.get("active_end", other.end_time):
-                        continue
-                    distance, _ = swept_minimum_distance(
-                        plan.sample(float(left)).position, plan.sample(float(right)).position,
-                        other.sample(float(left)).position, other.sample(float(right)).position,
-                    )
-                    minimum=min(minimum, float(distance)); checked_pairs += 1
-                    if distance < self.config.safe_distance:
-                        return finish(False, f"repair_swept_separation:{uid}:{other_uid}", plan.plan_id)
+        # Candidate reconfiguration checks can contain many holders over a
+        # long protected horizon.  Sample each canonical plan once, then
+        # retain the original (ordered) pairwise semantics in vector form.
+        # This is deliberately not an approximation: both the point and
+        # swept tests below use precisely the samples that the scalar loop
+        # used previously.
+        positions = np.asarray([
+            [plan.sample(float(time)).position for time in samples]
+            for _, plan in ordered
+        ], dtype=float)
+        active_ends = np.asarray([
+            plan.metadata.get("active_end", plan.end_time) for _, plan in ordered
+        ], dtype=float)
+        upper = np.triu_indices(len(ordered), k=1)
+
+        for sample_index, time in enumerate(samples):
+            active = time <= active_ends
+            eligible = active[upper[0]] & active[upper[1]]
+            if not np.any(eligible):
+                continue
+            deltas = positions[:, sample_index, None, :] - positions[None, :, sample_index, :]
+            distances = np.linalg.norm(deltas[upper], axis=1)
+            checked_pairs += int(np.count_nonzero(eligible))
+            current_minimum = float(np.min(distances[eligible]))
+            minimum = min(minimum, current_minimum)
+            bad = np.flatnonzero(eligible & (distances < self.config.safe_distance))
+            if len(bad):
+                index = int(bad[0]); left_index, right_index = int(upper[0][index]), int(upper[1][index])
+                uid, plan = ordered[left_index]; other_uid, _ = ordered[right_index]
+                return finish(False, f"repair_separation:{uid}:{other_uid}", plan.plan_id)
+
+        for sample_index, left in enumerate(samples[:-1]):
+            active = left < active_ends
+            eligible = active[upper[0]] & active[upper[1]]
+            if not np.any(eligible):
+                continue
+            start_positions = positions[:, sample_index]
+            velocities = positions[:, sample_index + 1] - start_positions
+            relative_start = start_positions[:, None, :] - start_positions[None, :, :]
+            relative_velocity = velocities[:, None, :] - velocities[None, :, :]
+            velocity_squared = np.einsum("ijk,ijk->ij", relative_velocity, relative_velocity)
+            projection = np.divide(
+                -np.einsum("ijk,ijk->ij", relative_start, relative_velocity), velocity_squared,
+                out=np.zeros_like(velocity_squared), where=velocity_squared > 1e-12,
+            )
+            projection = np.clip(projection, 0., 1.)
+            swept = relative_start + projection[..., None] * relative_velocity
+            distances = np.linalg.norm(swept[upper], axis=1)
+            checked_pairs += int(np.count_nonzero(eligible))
+            current_minimum = float(np.min(distances[eligible]))
+            minimum = min(minimum, current_minimum)
+            bad = np.flatnonzero(eligible & (distances < self.config.safe_distance))
+            if len(bad):
+                index = int(bad[0]); left_index, right_index = int(upper[0][index]), int(upper[1][index])
+                uid, plan = ordered[left_index]; other_uid, _ = ordered[right_index]
+                return finish(False, f"repair_swept_separation:{uid}:{other_uid}", plan.plan_id)
         return finish(True, "approved", "reconfiguration_tracks")
