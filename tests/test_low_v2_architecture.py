@@ -22,6 +22,8 @@ from terminal_marl.training.low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, ph
 from terminal_marl.training.train_low_v2_ppo import authorize_low_v2_training, prepare_low_v2_training
 from terminal_marl.training.eval_low_v2_student import StudentQualificationRecord, qualify_student_records
 from terminal_marl.training.audit_low_teacher_dataset import audit_teacher_dataset
+from terminal_marl.training.a5v2_capacity_calibration import CapacityCalibrationProtocol, CapacityTrial, c0_config, freeze_capacity, run_capacity_trial
+from terminal_marl.training.low_v2_seed_partitions import LowV2SeedPartition, freeze_seed_partitions
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
@@ -200,3 +202,59 @@ def test_student_qualification_rejects_missing_n_teacher_and_shield_off_configs(
     assert not incomplete.passed and incomplete.missing_n == (60,)
     with pytest.raises(ValueError, match="shield_enabled"):
         SimConfig(experiment_mode="fixed_low_student", shield_enabled=False)
+
+
+def test_safe_warm_start_enforces_the_documented_initial_separation_margin():
+    count = 40
+    config = SimConfig(experiment_mode="fixed_low_student", reset_mode="warm_start_rings", warm_start_uavs=count,
+                       fixed_arrival_schedule=tuple(0.0 for _ in range(count)), total_requested_uavs=count)
+    env = TerminalParallelEnv(config)
+    env.reset(19)
+    positions = [uav.position for uav in env.active.values()]
+    distances = [np.linalg.norm(left - right) for index, left in enumerate(positions) for right in positions[index + 1:]]
+    assert len(positions) == count
+    assert min(distances) >= 1.2 * config.safe_distance - 1e-6
+    assert all(uav.merge_reservation_id is None and uav.committed_plan is None for uav in env.active.values())
+
+
+def test_c0_config_locks_the_nominal_full_teacher_safety_stack():
+    config = c0_config(0.03, 3600.0)
+    assert config.experiment_mode == "fixed_teacher_heavy"
+    assert config.scheduler_mode == config.teacher_mode == "teacher_full"
+    assert config.teacher_enabled and config.shield_enabled and not config.high_level_enabled
+    assert config.arrival_model == "poisson" and config.initial_soc == pytest.approx(0.85)
+    assert config.mission_probabilities == (1.0, 0.0, 0.0, 0.0)
+
+
+def test_c0_trial_is_measurement_only_and_never_constructs_ppo():
+    protocol = CapacityCalibrationProtocol(rates=(1.0,), seeds=(101,), horizon_seconds=30.0, warmup_seconds=5.0)
+    trial = run_capacity_trial(1.0, 101, protocol)
+    assert trial.requested_measurement > 0
+    assert trial.requested_rate_actual > 0.0
+    assert trial.collisions == trial.nmac == trial.hard_separation_violations == 0
+
+
+def test_capacity_freeze_uses_predeclared_ratio_queue_and_safety_gates():
+    protocol = CapacityCalibrationProtocol(rates=(0.02, 0.04), seeds=(1,), horizon_seconds=100.0, warmup_seconds=10.0)
+    values = dict(seed=1, requested_measurement=100, admitted_measurement=100, completed_measurement=97,
+                  completion_to_request_ratio=.97, requested_rate_actual=.02, completed_rate=.02,
+                  external_queue_slope_per_second=.0001, external_queue_mean=1., external_queue_max=2,
+                  active_mean=2., active_peak=4, ring_occupancy_mean=(1., 1., 0.), lz_utilization_mean=.1,
+                  final_utilization_mean=.1, delay_mean=10., delay_p95=20., release_intents=10,
+                  teacher_interventions=1, shield_interventions=0, teacher_interventions_per_100_intents=10.,
+                  shield_interventions_per_100_intents=0., collisions=0, nmac=0, hard_separation_violations=0,
+                  final_overcapacity_steps=0)
+    passing = CapacityTrial(rate=.02, **values)
+    failing = CapacityTrial(rate=.04, **{**values, "completion_to_request_ratio": .90, "completed_measurement": 90})
+    frozen = freeze_capacity((passing, failing), protocol)
+    assert frozen["frozen"] and frozen["mu_hat"] == .02
+    assert frozen["traffic_levels"]["medium"] == [0.009, 0.012]
+
+
+def test_seed_partitions_are_disjoint_and_freeze_fail_closed(tmp_path):
+    partition = LowV2SeedPartition(train=(1,), validation=(2,), qualification=(3,), ood=(4,))
+    destination = tmp_path / "seeds.json"
+    assert freeze_seed_partitions(destination, partition) == partition
+    assert freeze_seed_partitions(destination, partition) == partition
+    with pytest.raises(RuntimeError, match="already frozen"):
+        freeze_seed_partitions(destination, LowV2SeedPartition(train=(10,), validation=(20,), qualification=(30,), ood=(40,)))

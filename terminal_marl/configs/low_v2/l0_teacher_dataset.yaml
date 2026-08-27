@@ -1,0 +1,19 @@
+# Inherits common.yaml. This stage is blocked until C0 freezes mu_hat.
+stage: L0
+experiment_mode: fixed_teacher_heavy
+scheduler_mode: teacher_full
+teacher_enabled: true
+teacher_mode: teacher_full
+geometry_mode: nominal_fixed
+arrival_model: finite_cohort
+traffic_cohort_range: [5, 15]
+warm_start_probability: 0.65
+demand: fixed_schedule_deterministic_interval
+initial_soc_mode: uniform
+initial_soc_min: 0.8
+initial_soc_max: 0.9
+gate_probabilities: [0.25, 0.25, 0.25, 0.25]
+mission_probabilities: [1.0, 0.0, 0.0, 0.0]
+burst: false
+overload: false
+noise_or_delay: false

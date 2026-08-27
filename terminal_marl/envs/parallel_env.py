@@ -99,7 +99,7 @@ class TerminalParallelEnv:
         self._next_release_intent_id = 1
         self.future_release_reservations: dict[int, dict] = {}
         self.telemetry = {
-            "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
+            "arrivals_admitted": 0, "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
             "merge_time_modified": 0, "geometry_updates": 0,
             "max_concurrent_final": 0, "final_overcapacity_steps": 0, "final_busy_steps": 0,
             "repair_candidates_checked": 0, "repair_used": 0, "future_release_reservations": 0,
@@ -113,22 +113,55 @@ class TerminalParallelEnv:
         return self._observations(), {}
 
     def _warm_start(self) -> None:
-        """Curriculum-only seeded ring state; formal evaluation stays flow-from-empty."""
+        """Create a deterministic, separation-safe curriculum state.
+
+        A warm start is a legal traffic snapshot, not a random scattering of
+        aircraft.  Per-ring slot limits enforce the v3 protocol's initial
+        ``1.2 * safe_distance`` margin while the deterministic allocation
+        preserves ring ordering and replayability.
+        """
         requests = self.arrivals.requests_until(0.0)
-        for index, request in enumerate(requests[:self.config.warm_start_uavs]):
+        if len(requests) < self.config.warm_start_uavs:
+            raise ValueError("safe warm-start schedule did not yield every requested initial UAV")
+        layout = self._safe_warm_start_layout(self.config.warm_start_uavs)
+        for request, (role, theta) in zip(requests[:self.config.warm_start_uavs], layout):
             self.ledger.request(request.arrival_id)
             gate = self.admission.gates[request.gate_id]
             queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
             uav = UAVState.from_request(self.uid, request, queued, gate.spawn_point, self.now)
             self.uid += 1
-            role = (RingRole.OUTER, RingRole.MIDDLE, RingRole.INNER)[index % 3]
             ring = self.airspace.actual_ring(role)
-            theta = 2 * math.pi * index / max(1, self.config.warm_start_uavs)
             uav.phase = {RingRole.OUTER: FlightPhase.RING_OUTER, RingRole.MIDDLE: FlightPhase.RING_MIDDLE, RingRole.INNER: FlightPhase.RING_INNER}[role]
             uav.ring_role = role; uav.ring_progress = theta
             uav.position = np.array((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height))
             self.active[uav.uid] = uav
         self._refresh_airspace_occupancy()
+
+    def _safe_warm_start_layout(self, count: int) -> list[tuple[RingRole, float]]:
+        margin = 1.2 * self.config.safe_distance
+        capacities: dict[RingRole, int] = {}
+        for role in RingRole:
+            radius = self.airspace.actual_ring(role).radius
+            # Chord distance 2r sin(pi/n) is the minimum separation of n
+            # evenly spaced points on one ring.  Search is clearer and less
+            # error-prone than inverting the trigonometric constraint.
+            maximum = 1
+            while 2.0 * radius * math.sin(math.pi / (maximum + 1)) >= margin:
+                maximum += 1
+            capacities[role] = maximum
+        if count > sum(capacities.values()):
+            raise ValueError(f"safe warm-start count {count} exceeds {sum(capacities.values())} separation-safe slots")
+        assigned = {role: 0 for role in RingRole}
+        for _ in range(count):
+            role = min(RingRole, key=lambda candidate: (assigned[candidate] / capacities[candidate], list(RingRole).index(candidate)))
+            if assigned[role] >= capacities[role]:
+                raise ValueError("no separation-safe warm-start ring slot remains")
+            assigned[role] += 1
+        result: list[tuple[RingRole, float]] = []
+        for role in RingRole:
+            for index in range(assigned[role]):
+                result.append((role, 2.0 * math.pi * index / assigned[role]))
+        return result
 
     def _observations(self) -> dict[str, np.ndarray]:
         return {str(uid): build_low_observation(uav, self) for uid, uav in self.active.items()}
@@ -649,6 +682,8 @@ class TerminalParallelEnv:
                 self.active.pop(uav.uid, None)
                 self.admission.queue.items.append(queued)
                 gate.last_admission_time = min(gate.last_admission_time, self.now - self.config.gate_min_time_gap_seconds)
+            else:
+                self.telemetry["arrivals_admitted"] += 1
         # Service is global only; it does not resurrect terminated low-level agents.
         for uid in self.lz_manager.step(self.config.dt):
             uav = self.service_uavs.pop(uid)

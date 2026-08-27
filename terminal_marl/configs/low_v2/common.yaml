@@ -1,0 +1,15 @@
+schema_version: phaseA_landing_v1
+airspace_schema_version: three_ring_v1
+action_schema_version: low_intent_v1_3d
+observation_schema_version: phaseA_low_obs_v2_topology_87d
+high_level_enabled: false
+shield_enabled: true
+shield_horizon_seconds: 30.0
+safe_distance: 80.0
+nmac_distance: 40.0
+collision_distance: 20.0
+headway_o2m: 9.0
+headway_m2i: 9.0
+headway_i2f: 12.0
+num_landing_zones: 6
+final_queue_capacity: 1

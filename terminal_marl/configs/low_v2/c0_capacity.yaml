@@ -1,0 +1,18 @@
+# Inherits common.yaml. C0 is a calibration; it must never instantiate PPO.
+stage: C0
+experiment_mode: fixed_teacher_heavy
+scheduler_mode: teacher_full
+teacher_enabled: true
+teacher_mode: teacher_full
+geometry_mode: nominal_fixed
+arrival_model: poisson
+rates_uav_per_second: [0.015, 0.020, 0.030, 0.040, 0.050, 0.060, 0.075, 0.090]
+seeds: [101, 102, 103]
+horizon_seconds: 3600.0
+warmup_seconds: 600.0
+completion_ratio_threshold: 0.95
+max_abs_queue_slope_per_second: 0.001
+initial_soc_mode: fixed
+initial_soc: 0.85
+gate_probabilities: [0.25, 0.25, 0.25, 0.25]
+mission_probabilities: [1.0, 0.0, 0.0, 0.0]

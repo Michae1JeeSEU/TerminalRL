@@ -81,10 +81,17 @@ class SimConfig:
     arrival_rate_per_second: float = 0.03
     fixed_arrival_schedule: tuple[float, ...] = ()
     total_requested_uavs: int | None = None
+    # Arrival attributes are part of the scenario protocol.  Keeping them in
+    # the immutable simulation config makes C0/L0 schedules replayable rather
+    # than relying on hidden random-generator defaults.
+    gate_probabilities: tuple[float, ...] = (0.25, 0.25, 0.25, 0.25)
+    mission_probabilities: tuple[float, ...] = (0.45, 0.25, 0.10, 0.20)
     max_external_wait_seconds: float | None = None
     energy_capacity: float = 10000.0
     initial_soc_mode: str = "uniform"
     initial_soc: float | None = None
+    initial_soc_min: float | None = None
+    initial_soc_max: float | None = None
     soc_warning: float = 0.30
     soc_reserve: float = 0.15
     soc_emergency: float = 0.08
@@ -138,6 +145,10 @@ class SimConfig:
             raise ValueError("rings must be OUTER, MIDDLE, INNER in canonical order")
         if self.gate_count != 4 or len(self.gate_angles_deg) != 4:
             raise ValueError("Phase A requires exactly four entry gates")
+        if len(self.gate_probabilities) != self.gate_count or any(value < 0.0 for value in self.gate_probabilities) or abs(sum(self.gate_probabilities) - 1.0) > 1e-8:
+            raise ValueError("gate_probabilities must be a non-negative distribution over the four gates")
+        if len(self.mission_probabilities) != 4 or any(value < 0.0 for value in self.mission_probabilities) or abs(sum(self.mission_probabilities) - 1.0) > 1e-8:
+            raise ValueError("mission_probabilities must be a non-negative distribution over the four mission types")
         if self.num_landing_zones != 6:
             raise ValueError("Phase A v1 requires six landing zones")
         if self.dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:
@@ -146,6 +157,12 @@ class SimConfig:
             raise ValueError("initial_soc_mode must be uniform or fixed")
         if self.initial_soc_mode == "fixed" and self.initial_soc is None:
             raise ValueError("fixed initial SOC requires initial_soc")
+        if self.initial_soc is not None and not 0.0 < self.initial_soc <= 1.0:
+            raise ValueError("initial_soc must be in (0, 1]")
+        if (self.initial_soc_min is None) != (self.initial_soc_max is None):
+            raise ValueError("initial_soc_min and initial_soc_max must be set together")
+        if self.initial_soc_min is not None and not (0.0 < self.initial_soc_min <= self.initial_soc_max <= 1.0):
+            raise ValueError("initial SOC bounds must satisfy 0 < min <= max <= 1")
         supported_modes = {
             "fixed_rule", "fixed_teacher_heavy", "fixed_a5_legacy", "fixed_low_student",
             "dynamic_rule", "dynamic_hrl_student",
@@ -160,6 +177,8 @@ class SimConfig:
             raise ValueError("high_level_enabled must agree with the selected canonical experiment mode")
         if self.reset_mode not in {"flow_from_empty", "warm_start_rings"}:
             raise ValueError("unsupported reset_mode")
+        if self.reset_mode == "warm_start_rings" and self.warm_start_uavs > 0 and len(self.fixed_arrival_schedule) < self.warm_start_uavs:
+            raise ValueError("safe warm-start requires an explicit fixed_arrival_schedule for every initial UAV")
         if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d"}:
             raise ValueError("unsupported low-level observation schema")
         if self.scheduler_mode not in {"execution", "teacher_full", "teacher_immediate", "teacher_label_only"}:

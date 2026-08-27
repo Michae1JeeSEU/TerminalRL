@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import numpy as np
 from .config import SimConfig
-from .uav import ArrivalRequest, MissionType, MISSION_PROBABILITIES
+from .uav import ArrivalRequest, MissionType
 
 class ArrivalProcess:
     def __init__(self, config: SimConfig, seed: int | None = None): self.config=config; self.reset(seed)
@@ -27,12 +27,15 @@ class ArrivalProcess:
             gap=(.25 if self.wave%4<3 else 3.25)/rate; self.wave+=1; return now+gap
         return now+1/rate
     def _request(self,time:float)->ArrivalRequest:
-        n=self.generated; mission=MissionType(self.rng.choice([m.value for m in MissionType],p=MISSION_PROBABILITIES)); base=int(self.rng.choice([1,3,5],p=[.50,.35,.15]))
+        n=self.generated; mission=MissionType(self.rng.choice([m.value for m in MissionType],p=self.config.mission_probabilities)); base=int(self.rng.choice([1,3,5],p=[.50,.35,.15]))
         if mission is MissionType.EMERGENCY: base=5
         if self.config.initial_soc_mode=="fixed": soc=float(self.config.initial_soc)
-        else: soc=float(self.rng.uniform(self.config.soc_reserve,1.0))
+        else:
+            lower = self.config.initial_soc_min if self.config.initial_soc_min is not None else self.config.soc_reserve
+            upper = self.config.initial_soc_max if self.config.initial_soc_max is not None else 1.0
+            soc=float(self.rng.uniform(lower, upper))
         self.generated+=1
-        return ArrivalRequest(n,time,int(self.rng.integers(0,4)),mission,base,self.config.energy_capacity,soc)
+        return ArrivalRequest(n,time,int(self.rng.choice(self.config.gate_count, p=self.config.gate_probabilities)),mission,base,self.config.energy_capacity,soc)
     def requests_until(self,now:float)->list[ArrivalRequest]:
         result=[]
         if self._schedule:
