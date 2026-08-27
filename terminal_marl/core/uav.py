@@ -115,6 +115,8 @@ class UAVState:
     terminal_reason: str | None = None
     committed_plan: Any | None = None
     safety_retry_after: float = 0.0
+    acceleration: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    yaw_rate: float = 0.0
 
     @property
     def soc(self) -> float:
@@ -128,5 +130,5 @@ class UAVState:
                    phase=FlightPhase.INBOUND, position=np.asarray(position, dtype=float),
                    velocity=np.zeros(3), speed=0.0, heading=0.0, phase_entry_time=now,
                    energy_remaining=queued.energy_remaining, energy_consumed=queued.energy_consumed,
-                   dynamic_priority=queued.dynamic_priority, admission_time=now,
+                   dynamic_priority=queued.dynamic_priority, admission_time=now, acceleration=np.zeros(3), yaw_rate=0.0,
                    external_wait_time=queued.external_wait_time)

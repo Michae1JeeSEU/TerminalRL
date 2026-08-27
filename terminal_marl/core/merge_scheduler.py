@@ -47,8 +47,14 @@ class MergeScheduler:
             return 0.0
         source=snapshot.airspace.actual_ring(uav.ring_role); destination=snapshot.airspace.actual_ring(target)
         vertical=abs(destination.height-source.height)/max(1e-6,self.config.max_climb_rate)*1.90
-        radial=abs(destination.radius-source.radius)/max(1.,destination.nominal_speed)
-        return max(6.0,vertical,radial)
+        radial=abs(destination.radius-source.radius)
+        # A curved merge must accelerate/decelerate and travel farther than a
+        # radial chord.  This lower-bound surrogate is deliberately shared
+        # with the EH216-S acceleration envelope, so reservations cannot ask
+        # the time parameterizer to catch an impossible slot.
+        target_speed=min(destination.nominal_speed,self.config.max_speed)
+        horizontal=3.5*radial/max(1.,target_speed)+source.nominal_speed/self.config.max_acceleration+target_speed/self.config.max_acceleration
+        return max(6.0,vertical,horizontal)
     def baseline_time(self,uav,target,snapshot):
         # Nominal merge preparation time.  A bounded residual modifies the
         # scheduler's reservation subject to the hard earliest headway.

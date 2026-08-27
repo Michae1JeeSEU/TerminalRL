@@ -1,5 +1,9 @@
 schema_version: phaseA_landing_v1
 airspace_schema_version: three_ring_v1
+vehicle_dynamics_schema_version: performance_constrained_v2
+trajectory_schema_version: executable_trajectory_v2
+vehicle_profile_id: research_evtol
+vehicle_execution_mode: performance_constrained
 action_schema_version: low_intent_v1_3d
 high_action_schema_version: high_airspace_v1_10d
 observation_schema_version: phaseA_low_obs_v2_topology_87d
@@ -8,12 +12,14 @@ scheduler_mode: execution
 teacher_enabled: false
 simulation:
   dt: 1.0
+  physics_dt: 0.2
+  safety_sampling_dt: 0.2
   max_active_uavs: 60
   max_simulation_seconds: 3600
 airspace:
-  outer: {radius: 600.0, height: 500.0, speed: 28.0}
-  middle: {radius: 400.0, height: 350.0, speed: 24.0}
-  inner: {radius: 200.0, height: 200.0, speed: 20.0}
+  outer: {radius: 600.0, height: 100.0, speed: 22.0}
+  middle: {radius: 400.0, height: 70.0, speed: 20.0}
+  inner: {radius: 200.0, height: 40.0, speed: 16.0}
 arrival:
   gate_angles_deg: [0.0, 90.0, 180.0, 270.0]
   initial_soc: uniform_reserve_to_one

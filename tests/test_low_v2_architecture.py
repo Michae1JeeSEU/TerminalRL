@@ -94,16 +94,16 @@ def test_predictive_shield_detects_future_conflict_without_rewriting_committed_p
     ring = env.airspace.actual_ring(holder.ring_role)
     holder.position = np.asarray((ring.radius, 0.0, ring.height))
     holder.ring_progress = 0.0
+    shield = PredictiveSafetyShield(env.config)
+    predicted_holder_endpoint = shield._holder_position(holder, env.airspace, 10.0, 0.0)
     plan = TrajectoryPlan("committed-plan", 999, "transfer", [
         TrajectoryPoint(0.0, np.asarray((ring.radius * 2.0, 0.0, ring.height))),
-        # The holder reaches this point after 10 s at its nominal outer-ring
-        # speed.  The conflict is therefore predicted before motion begins.
-        TrajectoryPoint(10.0, np.asarray((ring.radius * np.cos(28.0 * 10.0 / ring.radius), ring.radius * np.sin(28.0 * 10.0 / ring.radius), ring.height))),
+        # Use the same finite-acceleration holder prediction as runtime.
+        TrajectoryPoint(10.0, predicted_holder_endpoint),
     ], 0.0, 10.0, metadata={"committed": True})
     committed_points = [point.position.copy() for point in plan.points]
     blocker = type("CommittedTraffic", (), {"uid": 999, "ring_role": None, "committed_plan": plan})()
     env.active[999] = blocker
-    shield = PredictiveSafetyShield(env.config)
     risk = shield.assess(env)
     shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
     assert risk.trigger_reason == "predicted_swept_separation"

@@ -227,7 +227,7 @@ class TerminalParallelEnv:
         if not result.approved:
             self.telemetry["safety_interventions"] += 1
             return False
-        if result.checked_plan_id != plan.plan_id:
+        if result.checked_plan_id != plan.plan_id or result.checked_trajectory_hash != plan.trajectory_hash:
             raise RuntimeError("A6.12 safety approval did not identify the executed canonical plan")
         uav.committed_plan = plan
         uav.trajectory_plan_id = plan.plan_id
@@ -441,12 +441,23 @@ class TerminalParallelEnv:
         plan = uav.committed_plan
         if plan is None:
             return 0.0, False
-        before = uav.position.copy()
-        point = plan.sample(min(self.now + self.config.dt, plan.end_time))
-        uav.position = point.position
-        uav.velocity = point.velocity if point.velocity is not None else np.zeros(3)
-        uav.speed = float(np.linalg.norm(uav.velocity))
-        distance = float(np.linalg.norm(uav.position - before))
+        checked_hash = self.safety.checked_trajectory_hashes.get(plan.plan_id)
+        if checked_hash != plan.trajectory_hash:
+            raise RuntimeError("attempted to execute a trajectory that was not safety-checked by content hash")
+        distance = 0.0
+        target_time = min(self.now + self.config.dt, plan.end_time)
+        sample_times = np.arange(self.now + self.config.physics_dt, target_time + 1e-9, self.config.physics_dt)
+        if len(sample_times) == 0 or sample_times[-1] < target_time - 1e-9:
+            sample_times = np.append(sample_times, target_time)
+        for moment in sample_times:
+            before = uav.position.copy()
+            point = plan.sample(float(moment))
+            uav.position = point.position
+            uav.velocity = point.velocity
+            uav.acceleration = point.acceleration
+            uav.yaw_rate = 0.0 if point.yaw_rate is None else point.yaw_rate
+            uav.speed = float(np.linalg.norm(uav.velocity[:2]))
+            distance += float(np.linalg.norm(uav.position - before))
         uav.path_length += distance
         if self.now + self.config.dt + 1e-9 < plan.end_time:
             return distance, False
@@ -482,19 +493,23 @@ class TerminalParallelEnv:
         ring = self.airspace.actual_ring(uav.ring_role)
         # A ring holder follows the moving *actual* reference during geometry
         # interpolation.  Its committed transfer (if any) is never rewritten.
-        before = uav.position.copy()
         theta0 = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
-        uav.position = np.array((ring.radius * math.cos(theta0), ring.radius * math.sin(theta0), ring.height))
-        speed = float(np.clip(
+        target_speed = float(np.clip(
             ring.nominal_speed + self.airspace.speed_profile_bias + intent.speed_residual * self.config.max_speed_residual_mps,
             self.config.speed_min, self.config.max_speed,
         ))
-        theta = theta0 + speed * self.config.dt / ring.radius
+        theta, speed = theta0, max(0.0, uav.speed)
+        elapsed, distance = 0.0, 0.0
+        while elapsed < self.config.dt - 1e-9:
+            step = min(self.config.physics_dt, self.config.dt - elapsed)
+            before = uav.position.copy()
+            motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
+            theta, speed = motion.theta, motion.speed
+            uav.position, uav.velocity, uav.acceleration = motion.position, motion.velocity, motion.acceleration
+            uav.speed = speed
+            distance += float(np.linalg.norm(uav.position - before))
+            elapsed += step
         uav.ring_progress = theta % (2 * math.pi)
-        uav.position = np.array((ring.radius * math.cos(uav.ring_progress), ring.radius * math.sin(uav.ring_progress), ring.height))
-        uav.velocity = (uav.position - before) / self.config.dt
-        uav.speed = speed
-        distance = float(np.linalg.norm(uav.position - before))
         uav.path_length += distance
         uav.internal_wait_time += self.config.dt
         uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + self.config.dt
@@ -532,7 +547,8 @@ class TerminalParallelEnv:
                 self.lz_manager.release(lz_id, uav.uid, "headway_conflict")
                 return finish("headway_conflict")
             reservation = self.execution_scheduler.reserve_requested(uav, proposal, now=self.now)
-            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now)
+            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
+                                                 airspace=self.airspace)
             if self._commit(uav, plan):
                 uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
                 return finish("approved")

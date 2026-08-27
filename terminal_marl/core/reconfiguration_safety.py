@@ -10,6 +10,7 @@ import numpy as np
 
 from .config import RingRole
 from .trajectory_generator import TrajectoryPlan, TrajectoryPoint
+from .vehicle_dynamics import VehicleDynamics
 
 
 @dataclass(frozen=True)
@@ -122,39 +123,52 @@ class ReconfigurationSafetyCoordinator:
                 # airborne set on their executor handoff; it has no phantom
                 # static continuation after touchdown.
                 active_end = min(float(times[-1]), now + math.ceil((plan.end_time - now) / self.env.config.dt - 1e-9) * self.env.config.dt)
-        points = [TrajectoryPoint(float(times[0]), np.asarray(uav.position, dtype=float))]
+        dynamics = VehicleDynamics(self.env.config.vehicle_profile)
+        speed = max(0.0, uav.speed)
+        points = [TrajectoryPoint(float(times[0]), np.asarray(uav.position, dtype=float),
+                                  np.asarray(uav.velocity, dtype=float), np.asarray(uav.acceleration, dtype=float))]
         for index in range(1, len(times)):
             previous, moment = float(times[index - 1]), float(times[index])
             if plan is not None and handoff_index is not None and index <= handoff_index:
-                position = plan.sample(min(moment, plan.end_time)).position
+                sampled = plan.sample(min(moment, plan.end_time))
+                position, velocity, acceleration = sampled.position, sampled.velocity, sampled.acceleration
                 if index == handoff_index:
                     role = target_names[plan.metadata["target_phase"]]
                     theta = math.atan2(position[1], position[0])
+                    speed = float(np.linalg.norm(velocity[:2]))
             elif plan is not None and handoff_index is None:
-                position = plan.sample(min(moment, plan.end_time)).position
+                sampled = plan.sample(min(moment, plan.end_time))
+                position, velocity, acceleration = sampled.position, sampled.velocity, sampled.acceleration
             elif role is not None:
                 # Use the geometry that runtime has installed for this exact
                 # motion interval.  For the first step it is the transition
                 # start state; subsequent samples follow actual R/H updates.
-                geometry = geometries[index - 1]
+                # Airspace geometry is installed by the environment at each
+                # policy tick, then held fixed through its physics substeps.
+                # Predict that executor ordering exactly instead of advancing
+                # R(t) at every prediction sample.
+                policy_elapsed = math.floor((previous - now) / self.env.config.dt + 1e-9) * self.env.config.dt
+                geometry_index = int(round(policy_elapsed / self.env.config.physics_dt))
+                geometry = geometries[min(max(geometry_index, 0), len(geometries) - 1)]
                 ring = geometry.actual_ring(role)
                 residual = 0.0 if plan is not None else speed_repairs.get(uid, 0.0)
-                speed = float(np.clip(ring.nominal_speed + geometry.speed_profile_bias + residual,
-                                      self.env.config.speed_min, self.env.config.max_speed))
-                theta = (theta + speed * (moment - previous) / ring.radius) % (2.0 * math.pi)
-                position = np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height))
+                target_speed = float(np.clip(ring.nominal_speed + geometry.speed_profile_bias + residual,
+                                             self.env.config.speed_min, self.env.config.max_speed))
+                motion = dynamics.ring_motion_step(ring, theta, speed, target_speed, moment - previous)
+                theta, speed = motion.theta % (2.0 * math.pi), motion.speed
+                position, velocity, acceleration = motion.position, motion.velocity, motion.acceleration
             else:
                 # Every airborne state must have a canonical plan or ring
                 # semantics.  A missing protected trajectory is fail-closed.
                 raise RuntimeError(f"missing protected trajectory for active UAV {uid}")
-            points.append(TrajectoryPoint(moment, np.asarray(position, dtype=float)))
+            points.append(TrajectoryPoint(moment, np.asarray(position, dtype=float), velocity, acceleration))
         return TrajectoryPlan(f"reconfig-{uuid.uuid4()}", uid, "reconfiguration_prediction", points,
                               now, float(times[-1]), metadata={"target_phase": "prediction", "committed": plan is not None,
                                                                  "active_end": active_end, "source_plan_id": None if plan is None else plan.plan_id})
 
     def _tracks(self, airspace, speed_repairs: dict[int, float], end: float) -> dict[int, TrajectoryPlan]:
         now = self.env.now
-        times = np.arange(now, end + 1e-9, self.env.config.dt)
+        times = np.arange(now, end + 1e-9, self.env.config.physics_dt)
         if len(times) == 0 or times[-1] < end:
             times = np.append(times, end)
         geometries = self._geometry_timeline(airspace, times)

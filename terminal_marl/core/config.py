@@ -27,6 +27,10 @@ class SimConfig:
 
     schema_version: str = "phaseA_landing_v1"
     airspace_schema_version: str = "three_ring_v1"
+    vehicle_dynamics_schema_version: str = "performance_constrained_v2"
+    trajectory_schema_version: str = "executable_trajectory_v2"
+    vehicle_profile_id: str = "research_evtol"
+    vehicle_execution_mode: str = "performance_constrained"
     action_schema_version: str = "low_intent_v1_3d"
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_low_obs_v2_topology_87d"
@@ -34,28 +38,30 @@ class SimConfig:
     high_level_enabled: bool = False
     reset_mode: str = "flow_from_empty"
     warm_start_uavs: int = 0
+    # ``dt`` remains the policy/environment decision period for compatibility.
+    # The physics executor samples the same authoritative plan at a smaller,
+    # fixed substep in the performance-constrained mode.
     dt: float = 1.0
+    physics_dt: float = 0.2
+    safety_sampling_dt: float = 0.2
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
     safe_distance: float = 80.0
     nmac_distance: float = 40.0
     collision_distance: float = 20.0
-    max_speed: float = 36.0
-    max_acceleration: float = 4.0
-    max_turn_rate_deg_s: float = 12.0
-    max_climb_rate: float = 5.0
-    max_descent_rate: float = 7.0
     rings: Mapping[RingRole, RingSpec] = field(default_factory=lambda: {
-        RingRole.OUTER: RingSpec(RingRole.OUTER, 600.0, 500.0, 28.0),
-        RingRole.MIDDLE: RingSpec(RingRole.MIDDLE, 400.0, 350.0, 24.0),
-        RingRole.INNER: RingSpec(RingRole.INNER, 200.0, 200.0, 20.0),
+        RingRole.OUTER: RingSpec(RingRole.OUTER, 600.0, 100.0, 22.0),
+        RingRole.MIDDLE: RingSpec(RingRole.MIDDLE, 400.0, 70.0, 20.0),
+        RingRole.INNER: RingSpec(RingRole.INNER, 200.0, 40.0, 16.0),
     })
     radius_min: float = 120.0
     radius_max: float = 900.0
-    height_min: float = 120.0
-    height_max: float = 650.0
+    height_min: float = 0.0
+    height_max: float = 120.0
     min_ring_gap: float = 120.0
-    min_height_gap: float = 80.0
+    # The operational rings are 100/70/40 m AGL; their 30 m spacing is the
+    # canonical structural minimum for this terminal layout.
+    min_height_gap: float = 20.0
     max_radius_change_per_update: float = 20.0
     max_height_change_per_update: float = 20.0
     max_speed_profile_change_per_update: float = 2.0
@@ -75,7 +81,7 @@ class SimConfig:
     gate_angles_deg: tuple[float, ...] = (0.0, 90.0, 180.0, 270.0)
     approach_threshold_radius: float = 1000.0
     spawn_radius: float = 1300.0
-    gate_height: float = 600.0
+    gate_height: float = 110.0
     gate_min_time_gap_seconds: float = 20.0
     arrival_model: str = "finite_cohort"
     arrival_rate_per_second: float = 0.03
@@ -92,9 +98,9 @@ class SimConfig:
     initial_soc: float | None = None
     initial_soc_min: float | None = None
     initial_soc_max: float | None = None
-    soc_warning: float = 0.30
-    soc_reserve: float = 0.15
-    soc_emergency: float = 0.08
+    soc_warning: float = 0.35
+    soc_reserve: float = 0.25
+    soc_emergency: float = 0.20
     power_reference: float = 1.0
     power_external_wait: float = 1.0
     power_inbound: float = 1.0
@@ -138,9 +144,32 @@ class SimConfig:
     low_level_collision_penalty: float = 25.0
     low_level_energy_failure_penalty: float = 20.0
 
+    @property
+    def vehicle_profile(self):
+        """The sole source of vehicle performance limits in main simulation."""
+        from .vehicle_profiles import get_vehicle_profile
+        return get_vehicle_profile(self.vehicle_profile_id)
+
+    # Historical names are compatibility views, never independent fields.
+    @property
+    def max_speed(self) -> float: return self.vehicle_profile.max_horizontal_speed
+    @property
+    def max_acceleration(self) -> float: return self.vehicle_profile.max_horizontal_accel
+    @property
+    def max_turn_rate_deg_s(self) -> float: return self.vehicle_profile.max_yaw_rate_deg_s
+    @property
+    def max_climb_rate(self) -> float: return self.vehicle_profile.max_climb_rate
+    @property
+    def max_descent_rate(self) -> float: return self.vehicle_profile.max_descent_rate
+
     def __post_init__(self) -> None:
         if self.schema_version != "phaseA_landing_v1":
             raise ValueError("only phaseA_landing_v1 is supported")
+        if self.vehicle_dynamics_schema_version != "performance_constrained_v2" or self.trajectory_schema_version != "executable_trajectory_v2":
+            raise ValueError("only the performance-constrained dynamics-v2 schemas are supported")
+        if self.vehicle_execution_mode not in {"performance_constrained", "legacy_kinematic"}:
+            raise ValueError("unsupported vehicle_execution_mode")
+        profile = self.vehicle_profile
         if tuple(self.rings) != (RingRole.OUTER, RingRole.MIDDLE, RingRole.INNER):
             raise ValueError("rings must be OUTER, MIDDLE, INNER in canonical order")
         if self.gate_count != 4 or len(self.gate_angles_deg) != 4:
@@ -151,8 +180,19 @@ class SimConfig:
             raise ValueError("mission_probabilities must be a non-negative distribution over the four mission types")
         if self.num_landing_zones != 6:
             raise ValueError("Phase A v1 requires six landing zones")
-        if self.dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:
-            raise ValueError("dt, max_active_uavs and energy_capacity must be positive")
+        if self.dt <= 0 or self.physics_dt <= 0 or self.safety_sampling_dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:
+            raise ValueError("dt, physics_dt, safety_sampling_dt, max_active_uavs and energy_capacity must be positive")
+        if self.physics_dt > self.dt or self.safety_sampling_dt > self.dt:
+            raise ValueError("physics/safety sampling dt cannot exceed policy dt")
+        if self.max_speed != profile.max_horizontal_speed:
+            raise RuntimeError("vehicle performance must come from the selected profile")
+        if self.gate_height > profile.max_operating_altitude_agl_m:
+            raise ValueError("entry gate exceeds the selected vehicle AGL operating envelope")
+        for ring in self.rings.values():
+            if ring.height < self.height_min or ring.height > min(self.height_max, profile.max_operating_altitude_agl_m):
+                raise ValueError(f"ring {ring.role.value} height violates the vehicle AGL envelope")
+            if ring.nominal_speed > profile.max_horizontal_speed + 1e-9 or ring.nominal_speed ** 2 / ring.radius > profile.max_lateral_accel + 1e-9:
+                raise ValueError(f"ring {ring.role.value} nominal speed violates the research eVTOL dynamics envelope")
         if self.initial_soc_mode not in {"uniform", "fixed"}:
             raise ValueError("initial_soc_mode must be uniform or fixed")
         if self.initial_soc_mode == "fixed" and self.initial_soc is None:

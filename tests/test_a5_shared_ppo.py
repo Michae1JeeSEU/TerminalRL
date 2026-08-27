@@ -30,7 +30,13 @@ def test_a5_observation_schema_and_masked_set_critic_support_variable_n():
 
 def test_a5_all_three_action_dimensions_change_canonical_semantics():
     env=TerminalParallelEnv(warm_config(1)); observations,_=env.reset(4); uid=env.agents[0]
-    env.step({uid:np.array([0.,1.,0.])}); assert env.active[int(uid)].speed>20.0
+    env.step({uid:np.array([0.,1.,0.])})
+    # Residual intent is no longer an instantaneous speed command: the
+    # profile-limited holder accelerates at most 1.5 m/s².
+    assert 0.0 < env.active[int(uid)].speed <= 1.5 + 1e-6
+    for _ in range(20):
+        env.step({uid:np.array([0.,1.,0.])})
+    assert env.active[int(uid)].speed > 22.0
     uav=env.active[int(uid)]; snapshot=WorldSnapshot(env.now,env.active,env.airspace); scheduler=MergeScheduler(env.config)
     early=scheduler.propose(uav,LowLevelIntent(1.,0.,-1.),snapshot,RingRole.MIDDLE)
     late=scheduler.propose(uav,LowLevelIntent(1.,0.,1.),snapshot,RingRole.MIDDLE)

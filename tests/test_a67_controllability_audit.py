@@ -73,14 +73,14 @@ def test_a67_transfer_wait_is_explicit_source_ring_arc_in_canonical_plan():
 def test_a67_inbound_handoff_is_checked_against_continuing_transfer():
     env = TerminalParallelEnv(SimConfig()); env.reset(seed=0)
     candidate = TrajectoryPlan("candidate", 1, "inbound", [
-        TrajectoryPoint(0., np.asarray((600., 0., 500.))),
-        TrajectoryPoint(1., np.asarray((600., 0., 500.))),
+            TrajectoryPoint(0., np.asarray((600., 0., 100.))),
+        TrajectoryPoint(1., np.asarray((600., 0., 100.))),
     ], 0., 1., metadata={"target_phase": "ring_outer"})
     # The committed transfer is clear during [0, 1], but intersects the
     # holder that candidate becomes after t=1.
     other = TrajectoryPlan("other", 2, "ring_transfer", [
-        TrajectoryPoint(0., np.asarray((0., 300., 350.))),
-        TrajectoryPoint(2., np.asarray((600., 0., 500.))),
+        TrajectoryPoint(0., np.asarray((0., 300., 70.))),
+        TrajectoryPoint(2., np.asarray((600., 0., 100.))),
     ], 0., 2., metadata={"target_phase": "ring_middle"})
     snapshot = WorldSnapshot(0., {}, env.airspace)
     verdict = SafetyFilter(env.config).filter_plan(candidate, {2: other}, snapshot)

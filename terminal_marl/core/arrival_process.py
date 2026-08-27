@@ -31,7 +31,7 @@ class ArrivalProcess:
         if mission is MissionType.EMERGENCY: base=5
         if self.config.initial_soc_mode=="fixed": soc=float(self.config.initial_soc)
         else:
-            lower = self.config.initial_soc_min if self.config.initial_soc_min is not None else self.config.soc_reserve
+            lower = self.config.initial_soc_min if self.config.initial_soc_min is not None else max(self.config.soc_reserve, self.config.soc_warning)
             upper = self.config.initial_soc_max if self.config.initial_soc_max is not None else 1.0
             soc=float(self.rng.uniform(lower, upper))
         self.generated+=1

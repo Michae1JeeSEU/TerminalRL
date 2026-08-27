@@ -3,13 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 from .runtime_separation import swept_minimum_distance
+from .vehicle_dynamics import VehicleDynamics
 @dataclass(frozen=True)
 class IntentSafetyResult: approved:bool;reason:str=""
 @dataclass(frozen=True)
-class TrajectorySafetyResult: approved:bool;reason:str="";checked_plan_id:str|None=None
+class TrajectorySafetyResult:
+    approved:bool;reason:str="";checked_plan_id:str|None=None;checked_trajectory_hash:str|None=None
 class SafetyFilter:
     def __init__(self,config):
-        self.config=config;self.checked_plan_ids=[]
+        self.config=config;self.dynamics=VehicleDynamics(config.vehicle_profile);self.checked_plan_ids=[];self.checked_trajectory_hashes={}
         # Candidate verifications are auditable.  ``None`` is deliberately
         # distinct from a safe infinite separation so callers cannot turn a
         # missing prediction into a passing safety metric.
@@ -28,9 +30,8 @@ class SafetyFilter:
         theta = uav.ring_progress
         if theta is None:
             theta = float(np.arctan2(uav.position[1], uav.position[0]))
-        speed = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.speed_max))
-        angle = theta + speed * max(0.0, time - snapshot.now) / ring.radius
-        return np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height))
+        target = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
+        return self._ring_prediction(ring, theta, uav.speed, target, max(0.0, time - snapshot.now))
 
     def _post_plan_prediction(self, other_plan, snapshot, time: float) -> np.ndarray:
         endpoint = other_plan.sample(other_plan.end_time).position
@@ -41,25 +42,38 @@ class SafetyFilter:
         role = RingRole(target)
         ring = snapshot.airspace.actual_ring(role)
         theta = float(np.arctan2(endpoint[1], endpoint[0]))
-        speed = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.speed_max))
-        angle = theta + speed * max(0.0, time - other_plan.end_time) / ring.radius
-        return np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height))
+        end = other_plan.sample(other_plan.end_time)
+        target_speed = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
+        return self._ring_prediction(ring, theta, float(np.linalg.norm(end.velocity[:2])), target_speed,
+                                     max(0.0, time - other_plan.end_time))
+
+    def _ring_prediction(self, ring, theta: float, current_speed: float, target_speed: float, duration: float) -> np.ndarray:
+        """Use the authoritative finite-acceleration holder integrator."""
+        remaining = float(duration); angle = float(theta); speed = max(0.0, float(current_speed))
+        while remaining > 1e-9:
+            step = min(self.config.physics_dt, remaining)
+            motion = self.dynamics.ring_motion_step(ring, angle, speed, target_speed, step)
+            angle, speed, remaining = motion.theta, motion.speed, remaining - step
+        return np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height), dtype=float)
 
     def filter_plan(self,plan,committed_plans,snapshot):
         if plan.plan_id!=getattr(plan,"plan_id",None):return TrajectorySafetyResult(False,"invalid_plan")
-        for a,b in zip(plan.points,plan.points[1:]):
-            dt=b.t-a.t
-            velocity=(b.position-a.position)/dt
-            if np.linalg.norm(velocity)>self.config.max_speed+1e-9:return TrajectorySafetyResult(False,"speed_limit",plan.plan_id)
-            vertical=velocity[2]
-            if vertical>self.config.max_climb_rate+1e-9 or -vertical>self.config.max_descent_rate+1e-9:return TrajectorySafetyResult(False,"vertical_rate_limit",plan.plan_id)
+        if plan.metadata.get("trajectory_schema_version") != self.config.trajectory_schema_version:
+            return TrajectorySafetyResult(False,"trajectory_schema_mismatch",plan.plan_id)
+        if plan.metadata.get("vehicle_profile_id") != self.config.vehicle_profile_id:
+            return TrajectorySafetyResult(False,"vehicle_profile_mismatch",plan.plan_id)
+        dynamics_errors = self.dynamics.validate_plan(plan.points)
+        if dynamics_errors:
+            return TrajectorySafetyResult(False,f"dynamics_{dynamics_errors[0]}",plan.plan_id,plan.trajectory_hash)
+        if plan.metadata.get("dynamic_unreachable_merge_time"):
+            return TrajectorySafetyResult(False,"dynamics_unreachable_merge_time",plan.plan_id,plan.trajectory_hash)
         for other_id,other in committed_plans.items():
             if other_id==plan.uav_id:continue
             # The other plan may finish before this candidate.  Use the same
             # post-plan ring-holder prediction for the remaining candidate
             # horizon rather than silently dropping it at ``other.end_time``.
             start=plan.start_time; end=plan.end_time
-            samples=np.arange(start,end+1e-9,1.)
+            samples=np.arange(start,end+1e-9,self.config.safety_sampling_dt)
             if samples[-1] < end: samples=np.append(samples,end)
             def committed_position(time):
                 return other.sample(float(time)).position if time <= other.end_time else self._post_plan_prediction(other,snapshot,float(time))
@@ -77,7 +91,7 @@ class SafetyFilter:
             if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"} and other.end_time > plan.end_time:
                 post_start=max(plan.end_time, other.start_time)
                 post_end=other.end_time
-                post_samples=np.arange(post_start,post_end+1e-9,1.)
+                post_samples=np.arange(post_start,post_end+1e-9,self.config.safety_sampling_dt)
                 if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
                 for time in post_samples:
                     if np.linalg.norm(self._post_plan_prediction(plan,snapshot,float(time))-other.sample(float(time)).position) < self.config.safe_distance:
@@ -102,7 +116,7 @@ class SafetyFilter:
             # its endpoint.  The dense canonical plan samples provide a cheap
             # conservative hand-off check without multiplying every rejected
             # rule action by a one-second cross-product.
-            samples=np.arange(plan.start_time, plan.end_time + 1e-9, 1.0)
+            samples=np.arange(plan.start_time, plan.end_time + 1e-9, self.config.safety_sampling_dt)
             if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
             def position(time):
                 if other_plan is not None and time <= other_plan.end_time: return other_plan.sample(float(time)).position
@@ -122,7 +136,9 @@ class SafetyFilter:
                 distance,_=swept_minimum_distance(plan.sample(left).position,plan.sample(right).position,position(left),position(right))
                 if distance < self.config.safe_distance:
                     return TrajectorySafetyResult(False, "predicted_holder_swept_separation", plan.plan_id)
-        self.checked_plan_ids.append(plan.plan_id);return TrajectorySafetyResult(True,checked_plan_id=plan.plan_id)
+        trajectory_hash = plan.trajectory_hash
+        self.checked_plan_ids.append(plan.plan_id);self.checked_trajectory_hashes[plan.plan_id] = trajectory_hash
+        return TrajectorySafetyResult(True,checked_plan_id=plan.plan_id,checked_trajectory_hash=trajectory_hash)
 
     def verify_predicted_tracks(self, tracks, *, start: float, end: float):
         """Final arbiter for geometry repairs using canonical predicted plans."""
@@ -139,11 +155,9 @@ class SafetyFilter:
         for _, plan in ordered:
             if plan.metadata.get("committed", False):
                 continue
-            for a, b in zip(plan.points, plan.points[1:]):
-                dt = b.t - a.t
-                if dt <= 0 or np.linalg.norm((b.position-a.position) / dt) > self.config.max_speed + 1e-9:
-                    return finish(False, "repair_kinematics", plan.plan_id)
-        samples = np.arange(start, end + 1e-9, 1.0)
+            if self.dynamics.validate_plan(plan.points):
+                return finish(False, "repair_dynamics", plan.plan_id)
+        samples = np.arange(start, end + 1e-9, self.config.safety_sampling_dt)
         if samples[-1] < end:
             samples = np.append(samples, end)
         for time in samples:

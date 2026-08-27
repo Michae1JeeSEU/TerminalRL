@@ -9,6 +9,7 @@ import numpy as np
 from .runtime_separation import swept_minimum_distance
 from .trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from .action_trace import LowLevelActionTrace
+from .vehicle_dynamics import VehicleDynamics
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class PredictiveSafetyShield:
 
     def __init__(self, config) -> None:
         self.config = config
+        self.dynamics = VehicleDynamics(config.vehicle_profile)
         self.overrides: dict[int, tuple[float, float]] = {}
         self.telemetry = {"shield_interventions": 0, "shield_correction_magnitude": 0.0,
                           "runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0,
@@ -76,9 +78,13 @@ class PredictiveSafetyShield:
     def _holder_position(self, uav, airspace, now: float, residual: float) -> np.ndarray:
         ring = airspace.actual_ring(uav.ring_role)
         theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
-        speed = float(np.clip(ring.nominal_speed + airspace.speed_profile_bias + residual, self.config.speed_min, self.config.max_speed))
-        theta += speed * max(0., now) / ring.radius
-        return np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height))
+        target_speed = float(np.clip(ring.nominal_speed + airspace.speed_profile_bias + residual, self.config.speed_min, self.config.max_speed))
+        remaining, speed = max(0., now), max(0.0, uav.speed)
+        while remaining > 1e-9:
+            step = min(self.config.physics_dt, remaining)
+            motion = self.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
+            theta, speed, remaining = motion.theta, motion.speed, remaining - step
+        return np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float)
 
     def _minimum_to_plan(self, holder, plan, airspace, now: float, residual: float) -> float:
         start = max(now, plan.start_time); horizon = min(plan.end_time, now + 30.0)
@@ -94,10 +100,21 @@ class PredictiveSafetyShield:
 
     def _repair_plan(self, holder, airspace, now: float, end: float, residual: float) -> TrajectoryPlan:
         """Create the canonical bounded ring-speed prediction for a repair."""
-        times = np.arange(now, end + 1e-9, self.config.dt)
+        times = np.arange(now, end + 1e-9, self.config.physics_dt)
         if times[-1] < end:
             times = np.append(times, end)
-        points = [TrajectoryPoint(float(time), self._holder_position(holder, airspace, time - now, residual)) for time in times]
+        ring = airspace.actual_ring(holder.ring_role)
+        theta = holder.ring_progress if holder.ring_progress is not None else math.atan2(holder.position[1], holder.position[0])
+        speed = max(0.0, holder.speed)
+        tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0), dtype=float)
+        radial = np.asarray((-math.cos(theta), -math.sin(theta), 0.0), dtype=float)
+        points = [TrajectoryPoint(float(now), np.asarray(holder.position, dtype=float), tangent * speed,
+                                  radial * (speed * speed / ring.radius))]
+        target_speed = float(np.clip(ring.nominal_speed + airspace.speed_profile_bias + residual, self.config.speed_min, self.config.max_speed))
+        for left, right in zip(times, times[1:]):
+            motion = self.dynamics.ring_motion_step(ring, theta, speed, target_speed, float(right - left))
+            theta, speed = motion.theta, motion.speed
+            points.append(TrajectoryPoint(float(right), motion.position, motion.velocity, motion.acceleration))
         return TrajectoryPlan(
             f"runtime-holder-repair-{uuid.uuid4()}", holder.uid, "runtime_holder_repair", points,
             now, end, metadata={"target_phase": "ring_holder", "committed": False},

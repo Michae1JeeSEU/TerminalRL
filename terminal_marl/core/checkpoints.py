@@ -7,7 +7,14 @@ class IncompatibleCheckpointError(ValueError): pass
 def validate_checkpoint_metadata(metadata:dict, config:SimConfig|None=None)->None:
     c=config or SimConfig()
     schema=observation_schema_for_version(c.observation_schema_version)
-    expected={"schema_version":c.schema_version,"airspace_schema_version":c.airspace_schema_version,"action_schema_version":c.action_schema_version,"high_action_schema_version":c.high_action_schema_version,"observation_schema_version":c.observation_schema_version,"observation_dimension":schema.dimension,"observation_feature_hash":schema.feature_hash}
+    expected={"schema_version":c.schema_version,"airspace_schema_version":c.airspace_schema_version,
+              "vehicle_dynamics_schema_version":c.vehicle_dynamics_schema_version,
+              "trajectory_schema_version":c.trajectory_schema_version,
+              "vehicle_profile_id":c.vehicle_profile_id,
+              "vehicle_profile_version":c.vehicle_profile.profile_version,
+              "action_schema_version":c.action_schema_version,"high_action_schema_version":c.high_action_schema_version,
+              "observation_schema_version":c.observation_schema_version,"observation_dimension":schema.dimension,
+              "observation_feature_hash":schema.feature_hash}
     mismatch={k:(metadata.get(k),v) for k,v in expected.items() if metadata.get(k)!=v}
     if mismatch:raise IncompatibleCheckpointError(f"incompatible checkpoint schema: {mismatch}")
 
@@ -15,6 +22,10 @@ def checkpoint_metadata(config: SimConfig | None = None, *, policy_kind: str = "
     c = config or SimConfig()
     schema = observation_schema_for_version(c.observation_schema_version)
     return {"schema_version": c.schema_version, "airspace_schema_version": c.airspace_schema_version,
+            "vehicle_dynamics_schema_version": c.vehicle_dynamics_schema_version,
+            "trajectory_schema_version": c.trajectory_schema_version,
+            "vehicle_profile_id": c.vehicle_profile_id,
+            "vehicle_profile_version": c.vehicle_profile.profile_version,
             "action_schema_version": c.action_schema_version, "high_action_schema_version": c.high_action_schema_version,
             "observation_schema_version": c.observation_schema_version, "observation_dimension": schema.dimension,
             "observation_feature_hash": schema.feature_hash, "low_level_action_dim": 3,

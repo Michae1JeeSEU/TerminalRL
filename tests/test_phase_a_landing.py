@@ -36,7 +36,7 @@ def test_a0_schema_and_action_dimensions_are_locked():
 def test_a1_three_ring_order_capacity_and_occupancy_projection():
     c=SimConfig(); a=DynamicAirspace(c)
     assert [a.actual_ring(r).radius for r in RingRole] == [600,400,200]
-    assert [a.actual_ring(r).height for r in RingRole] == [500,350,200]
+    assert [a.actual_ring(r).height for r in RingRole] == [100,70,40]
     assert geometric_ring_capacity(600,80)>geometric_ring_capacity(400,80)>geometric_ring_capacity(200,80)
     n=4; assert geometric_ring_capacity(minimum_radius_for_occupancy(n,80),80)>=n
     result=a.request_update([-1,-1,-1,0,0,0,0,0,0,0],now=600,occupancies={RingRole.OUTER:0,RingRole.MIDDLE:0,RingRole.INNER:3},committed_incoming={RingRole.INNER:2})

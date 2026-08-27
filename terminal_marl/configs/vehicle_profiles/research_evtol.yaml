@@ -1,0 +1,29 @@
+profile_id: research_evtol
+vehicle_model_name: EHang EH216-S
+profile_version: eh216s_research_v1
+parameter_source: official_public_values_plus_frozen_engineering_execution_values
+metadata:
+  configuration: multirotor_lift_only
+  mtow_kg: 620.0
+  reference_range_m: 30000.0
+  reference_max_flight_time_s: 1500.0
+  max_operating_altitude_agl_m: 120.0
+  max_operating_altitude_msl_m: 1000.0
+speed:
+  max_level_mps: 25.0
+  never_exceed_mps: 29.17
+  design_mps: 36.11
+acceleration:
+  max_horizontal_accel_mps2: 1.5
+  max_horizontal_decel_mps2: 1.5
+  max_lateral_operational_mps2: 1.5
+  max_lateral_hard_mps2: 1.73
+  max_vertical_accel_up_mps2: 1.0
+  max_vertical_accel_down_mps2: 1.0
+vertical:
+  max_climb_mps: 4.0
+  max_descent_mps: 6.0
+orientation:
+  max_yaw_rate_deg_s: 12.0
+battery:
+  min_landing_soc: 0.25
