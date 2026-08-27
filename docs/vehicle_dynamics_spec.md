@@ -13,7 +13,7 @@ Implemented facts as of D6:
 - `SafetyFilter`, runtime shielding and dynamic-reconfiguration prediction all use `VehicleDynamics`; safety sampling is `0.2 s` and execution is rejected unless the checked content hash still matches.
 - Checkpoints now bind the vehicle-dynamics and trajectory schema versions plus profile identifier/version.
 
-Remaining D7 qualification: execute the non-training protocol in
-`docs/dynamics_qualification_protocol.md`, record N=10/30/60 performance and
-0.2/0.1 s convergence evidence, then complete the deterministic rule-only
-regressions.  These remain prerequisites for C0 and low-level PPO.
+D7 core dynamics qualification passed on 2026-08-28; see
+`docs/dynamics_qualification_report_2026-08-28.md`.  `physics_dt=0.2 s` is
+frozen for `performance_constrained_v2`.  The separate long-horizon A6.8
+dynamic-airspace replay remains required before C0 and low-level PPO.
