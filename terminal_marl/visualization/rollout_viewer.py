@@ -16,7 +16,35 @@ from .pyvista_viewer import Terminal3DViewer, ViewerStepObserver
 from .snapshot import build_world_render_snapshot
 
 
-def _config_for_mode(mode: str, max_simulation_seconds: float) -> SimConfig:
+def _fixed_rule_warm_flow_config(max_simulation_seconds: float) -> SimConfig:
+    """Deterministic visual stress scene: populated rings plus four-gate flow.
+
+    The initial 12 aircraft are allocated by ``TerminalParallelEnv`` in the
+    canonical capacity-proportional 6/4/2 outer/middle/inner layout.  The
+    remaining schedule is a reproducible 8-second stream; gate assignment is
+    still sampled uniformly over all four physical gates from the run seed.
+    This is a visualization scenario, not a training curriculum condition.
+    """
+    initial_count = 12
+    interval_seconds = 8.0
+    continuing = tuple(interval_seconds * index for index in range(1, int(max_simulation_seconds // interval_seconds) + 1))
+    schedule = (0.0,) * initial_count + continuing
+    return SimConfig(
+        experiment_mode="fixed_rule", high_level_enabled=False,
+        reset_mode="warm_start_rings", warm_start_uavs=initial_count,
+        fixed_arrival_schedule=schedule, total_requested_uavs=len(schedule),
+        gate_probabilities=(0.25, 0.25, 0.25, 0.25),
+        max_simulation_seconds=max_simulation_seconds,
+    )
+
+
+def _config_for_mode(mode: str, max_simulation_seconds: float, scenario: str = "default") -> SimConfig:
+    if scenario == "fixed_rule_warm_flow":
+        if mode != "fixed_rule":
+            raise ValueError("fixed_rule_warm_flow is available only with fixed_rule")
+        return _fixed_rule_warm_flow_config(max_simulation_seconds)
+    if scenario != "default":
+        raise ValueError(f"unsupported visualization scenario: {scenario}")
     dynamic = mode in {"dynamic_rule", "learned_high_rule_low", "learned_high_frozen_low"}
     return SimConfig(experiment_mode=mode, high_level_enabled=dynamic, max_simulation_seconds=max_simulation_seconds)
 
@@ -32,7 +60,7 @@ def run_rollout(
     *, mode: str, seed: int, gui: bool = False, frame_stride: int = 1,
     playback_speed: float = 0.0, show_trajectories: bool = True, show_labels: bool = False,
     low_checkpoint: str | None = None, high_checkpoint: str | None = None,
-    max_simulation_seconds: float = 3600.0, max_steps: int | None = None,
+    max_simulation_seconds: float = 3600.0, max_steps: int | None = None, scenario: str = "default",
 ) -> TerminalParallelEnv:
     """Run one deterministic policy rollout, optionally with an interactive viewer."""
     if mode == "fixed_low_rl" and low_checkpoint is None:
@@ -41,7 +69,7 @@ def run_rollout(
         raise ValueError("--high-checkpoint is required for learned_high_rule_low")
     if mode == "learned_high_frozen_low" and (low_checkpoint is None or high_checkpoint is None):
         raise ValueError("--low-checkpoint and --high-checkpoint are required for learned_high_frozen_low")
-    config = _config_for_mode(mode, max_simulation_seconds)
+    config = _config_for_mode(mode, max_simulation_seconds, scenario)
     render_config = VisualizationConfig(
         enabled=gui, frame_stride=frame_stride, playback_speed=playback_speed,
         show_trajectories=show_trajectories, show_labels=show_labels,
@@ -106,6 +134,7 @@ def run_rollout(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a deterministic terminal-MARL rollout with an optional PyVista viewer.")
     parser.add_argument("--mode", required=True, choices=("fixed_rule", "fixed_low_rl", "dynamic_rule", "learned_high_rule_low", "learned_high_frozen_low"))
+    parser.add_argument("--scenario", choices=("default", "fixed_rule_warm_flow"), default="default")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--frame-stride", type=int, default=1)
@@ -126,6 +155,7 @@ def main() -> None:
         playback_speed=args.playback_speed, show_trajectories=not args.no_trajectories,
         show_labels=args.labels, low_checkpoint=args.low_checkpoint, high_checkpoint=args.high_checkpoint,
         max_simulation_seconds=args.max_simulation_seconds, max_steps=args.max_steps,
+        scenario=args.scenario,
     )
     print({"time": env.now, "completed": len(env.completed_uavs), "outcomes": dict(env.ledger.outcomes), "telemetry": dict(env.telemetry)})
 
