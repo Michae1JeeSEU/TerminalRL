@@ -56,6 +56,70 @@ class SafetyFilter:
             angle, speed, remaining = motion.theta, motion.speed, remaining - step
         return np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height), dtype=float)
 
+    def _ring_prediction_positions(self, ring, theta: float, current_speed: float, target_speed: float,
+                                   origin: float, times: np.ndarray) -> list[np.ndarray]:
+        """Predict an ordered holder track once instead of reintegrating per query.
+
+        ``filter_plan`` and its swept checks request monotonically increasing
+        safety samples.  Replaying every query from the snapshot time made a
+        300-second, 0.2-second horizon quadratic in physics integrations.
+        This routine preserves the exact same ``ring_motion_step`` dynamics
+        while advancing each interval only once.
+        """
+        if len(times) == 0:
+            return []
+        if np.any(np.diff(times) < -1e-9):
+            raise ValueError("holder prediction times must be ordered")
+        angle, speed, previous = float(theta), max(0.0, float(current_speed)), float(origin)
+        positions: list[np.ndarray] = []
+        for value in times:
+            moment = float(value)
+            remaining = max(0.0, moment - previous)
+            while remaining > 1e-9:
+                step = min(self.config.physics_dt, remaining)
+                motion = self.dynamics.ring_motion_step(ring, angle, speed, target_speed, step)
+                angle, speed, remaining = motion.theta, motion.speed, remaining - step
+            positions.append(np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height), dtype=float))
+            previous = max(previous, moment)
+        return positions
+
+    def _post_plan_positions(self, plan, snapshot, times: np.ndarray) -> list[np.ndarray]:
+        endpoint = plan.sample(plan.end_time)
+        target = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(plan.metadata.get("target_phase"))
+        if target is None:
+            return [endpoint.position.copy() for _ in times]
+        from .config import RingRole
+        ring = snapshot.airspace.actual_ring(RingRole(target))
+        theta = float(np.arctan2(endpoint.position[1], endpoint.position[0]))
+        target_speed = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
+        return self._ring_prediction_positions(ring, theta, float(np.linalg.norm(endpoint.velocity[:2])),
+                                               target_speed, plan.end_time, times)
+
+    def _committed_positions(self, plan, snapshot, times: np.ndarray) -> list[np.ndarray]:
+        """Canonical committed-plan plus post-handoff samples for one horizon."""
+        positions: list[np.ndarray | None] = [None] * len(times)
+        post_indices = []
+        for index, value in enumerate(times):
+            if value <= plan.end_time + 1e-9:
+                positions[index] = plan.sample(float(value)).position
+            else:
+                post_indices.append(index)
+        if post_indices:
+            post_times = np.asarray([times[index] for index in post_indices], dtype=float)
+            for index, position in zip(post_indices, self._post_plan_positions(plan, snapshot, post_times)):
+                positions[index] = position
+        return [np.asarray(position, dtype=float) for position in positions]
+
+    def _holder_positions(self, uav, snapshot, times: np.ndarray) -> list[np.ndarray]:
+        if uav.ring_role is None:
+            return [np.asarray(uav.position, dtype=float) for _ in times]
+        ring = snapshot.airspace.actual_ring(uav.ring_role)
+        theta = uav.ring_progress
+        if theta is None:
+            theta = float(np.arctan2(uav.position[1], uav.position[0]))
+        target = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
+        return self._ring_prediction_positions(ring, theta, uav.speed, target, snapshot.now, times)
+
     def filter_plan(self,plan,committed_plans,snapshot):
         if plan.plan_id!=getattr(plan,"plan_id",None):return TrajectorySafetyResult(False,"invalid_plan")
         if plan.metadata.get("trajectory_schema_version") != self.config.trajectory_schema_version:
@@ -75,13 +139,14 @@ class SafetyFilter:
             start=plan.start_time; end=plan.end_time
             samples=np.arange(start,end+1e-9,self.config.safety_sampling_dt)
             if samples[-1] < end: samples=np.append(samples,end)
-            def committed_position(time):
-                return other.sample(float(time)).position if time <= other.end_time else self._post_plan_prediction(other,snapshot,float(time))
-            for time in samples:
-                if np.linalg.norm(plan.sample(float(time)).position-committed_position(float(time))) < self.config.safe_distance:
+            committed_positions = self._committed_positions(other, snapshot, samples)
+            candidate_positions = [plan.sample(float(time)).position for time in samples]
+            for candidate_position, committed_position in zip(candidate_positions, committed_positions):
+                if np.linalg.norm(candidate_position-committed_position) < self.config.safe_distance:
                     return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
-            for left,right in zip(samples,samples[1:]):
-                distance,_=swept_minimum_distance(plan.sample(left).position,plan.sample(right).position,committed_position(left),committed_position(right))
+            for index in range(len(samples) - 1):
+                distance,_=swept_minimum_distance(candidate_positions[index], candidate_positions[index + 1],
+                                                   committed_positions[index], committed_positions[index + 1])
                 if distance<self.config.safe_distance:return TrajectorySafetyResult(False,"predicted_swept_separation",plan.plan_id)
             # A candidate that hands off to a ring must remain safe as the
             # canonical post-plan holder while an already committed transfer
@@ -93,13 +158,15 @@ class SafetyFilter:
                 post_end=other.end_time
                 post_samples=np.arange(post_start,post_end+1e-9,self.config.safety_sampling_dt)
                 if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
-                for time in post_samples:
-                    if np.linalg.norm(self._post_plan_prediction(plan,snapshot,float(time))-other.sample(float(time)).position) < self.config.safe_distance:
+                candidate_post_positions = self._post_plan_positions(plan, snapshot, post_samples)
+                other_positions = [other.sample(float(time)).position for time in post_samples]
+                for candidate_position, other_position in zip(candidate_post_positions, other_positions):
+                    if np.linalg.norm(candidate_position-other_position) < self.config.safe_distance:
                         return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)
-                for left,right in zip(post_samples,post_samples[1:]):
+                for index in range(len(post_samples) - 1):
                     distance,_=swept_minimum_distance(
-                        self._post_plan_prediction(plan,snapshot,float(left)), self._post_plan_prediction(plan,snapshot,float(right)),
-                        other.sample(float(left)).position, other.sample(float(right)).position,
+                        candidate_post_positions[index], candidate_post_positions[index + 1],
+                        other_positions[index], other_positions[index + 1],
                     )
                     if distance < self.config.safe_distance:
                         return TrajectorySafetyResult(False,"predicted_post_plan_holder_swept_separation",plan.plan_id)
@@ -118,11 +185,10 @@ class SafetyFilter:
             # rule action by a one-second cross-product.
             samples=np.arange(plan.start_time, plan.end_time + 1e-9, self.config.safety_sampling_dt)
             if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
-            def position(time):
-                if other_plan is not None and time <= other_plan.end_time: return other_plan.sample(float(time)).position
-                if other_plan is not None: return self._post_plan_prediction(other_plan, snapshot, float(time))
-                return self._holding_prediction(other_uav, snapshot, float(time))
-            for time in samples:
+            other_positions = (self._committed_positions(other_plan, snapshot, samples)
+                               if other_plan is not None else self._holder_positions(other_uav, snapshot, samples))
+            candidate_positions = [plan.sample(float(time)).position for time in samples]
+            for index, (time, candidate_position, other_position) in enumerate(zip(samples, candidate_positions, other_positions)):
                 # A plan that ends on a ring crosses an executor hand-off on
                 # the next tick.  Reserve one bounded holder-motion step at
                 # that boundary so a checked endpoint cannot immediately
@@ -130,10 +196,11 @@ class SafetyFilter:
                 required = self.config.safe_distance
                 if time >= plan.end_time - 1e-9 and plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
                     required += self.config.max_speed * self.config.dt
-                if np.linalg.norm(plan.sample(float(time)).position-position(float(time))) < required:
+                if np.linalg.norm(candidate_position-other_position) < required:
                     return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
-            for left,right in zip(samples,samples[1:]):
-                distance,_=swept_minimum_distance(plan.sample(left).position,plan.sample(right).position,position(left),position(right))
+            for index in range(len(samples) - 1):
+                distance,_=swept_minimum_distance(candidate_positions[index], candidate_positions[index + 1],
+                                                   other_positions[index], other_positions[index + 1])
                 if distance < self.config.safe_distance:
                     return TrajectorySafetyResult(False, "predicted_holder_swept_separation", plan.plan_id)
         trajectory_hash = plan.trajectory_hash

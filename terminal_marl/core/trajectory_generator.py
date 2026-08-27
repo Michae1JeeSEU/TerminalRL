@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from bisect import bisect_right
 import hashlib
 import json
 import math
@@ -64,15 +65,14 @@ class TrajectoryPlan:
             return self.points[0]
         if now >= self.end_time:
             return self.points[-1]
-        for left, right in zip(self.points, self.points[1:]):
-            if left.t <= now <= right.t:
-                fraction = (now - left.t) / (right.t - left.t)
-                yaw = None if left.yaw is None or right.yaw is None else left.yaw + fraction * (right.yaw - left.yaw)
-                yaw_rate = None if left.yaw_rate is None or right.yaw_rate is None else left.yaw_rate + fraction * (right.yaw_rate - left.yaw_rate)
-                return TrajectoryPoint(now, left.position + fraction * (right.position - left.position),
-                                       left.velocity + fraction * (right.velocity - left.velocity),
-                                       left.acceleration + fraction * (right.acceleration - left.acceleration), yaw, yaw_rate)
-        return self.points[-1]
+        right_index = bisect_right(self.points, now, key=lambda point: point.t)
+        left, right = self.points[right_index - 1], self.points[right_index]
+        fraction = (now - left.t) / (right.t - left.t)
+        yaw = None if left.yaw is None or right.yaw is None else left.yaw + fraction * (right.yaw - left.yaw)
+        yaw_rate = None if left.yaw_rate is None or right.yaw_rate is None else left.yaw_rate + fraction * (right.yaw_rate - left.yaw_rate)
+        return TrajectoryPoint(now, left.position + fraction * (right.position - left.position),
+                               left.velocity + fraction * (right.velocity - left.velocity),
+                               left.acceleration + fraction * (right.acceleration - left.acceleration), yaw, yaw_rate)
 
 
 class TrajectoryGenerator:

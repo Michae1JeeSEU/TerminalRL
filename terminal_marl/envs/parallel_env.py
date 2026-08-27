@@ -103,7 +103,8 @@ class TerminalParallelEnv:
             "merge_time_modified": 0, "geometry_updates": 0,
             "max_concurrent_final": 0, "final_overcapacity_steps": 0, "final_busy_steps": 0,
             "repair_candidates_checked": 0, "repair_used": 0, "future_release_reservations": 0,
-            "checked_executed_plan_matches": 0,
+            "checked_executed_plan_matches": 0, "checked_executed_plan_samples": 0,
+            "checked_executed_plan_hash_mismatches": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -450,6 +451,9 @@ class TerminalParallelEnv:
         if len(sample_times) == 0 or sample_times[-1] < target_time - 1e-9:
             sample_times = np.append(sample_times, target_time)
         for moment in sample_times:
+            if self.safety.checked_trajectory_hashes.get(plan.plan_id) != plan.trajectory_hash:
+                self.telemetry["checked_executed_plan_hash_mismatches"] += 1
+                raise RuntimeError("trajectory content changed after its safety approval")
             before = uav.position.copy()
             point = plan.sample(float(moment))
             uav.position = point.position
@@ -458,6 +462,7 @@ class TerminalParallelEnv:
             uav.yaw_rate = 0.0 if point.yaw_rate is None else point.yaw_rate
             uav.speed = float(np.linalg.norm(uav.velocity[:2]))
             distance += float(np.linalg.norm(uav.position - before))
+            self.telemetry["checked_executed_plan_samples"] += 1
         uav.path_length += distance
         if self.now + self.config.dt + 1e-9 < plan.end_time:
             return distance, False
