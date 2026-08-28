@@ -131,16 +131,18 @@ class SafetyFilter:
             return TrajectorySafetyResult(False,f"dynamics_{dynamics_errors[0]}",plan.plan_id,plan.trajectory_hash)
         if plan.metadata.get("dynamic_unreachable_merge_time"):
             return TrajectorySafetyResult(False,"dynamics_unreachable_merge_time",plan.plan_id,plan.trajectory_hash)
+        # Both committed-trajectory and holder checks use this exact candidate
+        # horizon.  It is immutable, so sampling it once avoids repeating the
+        # same canonical interpolation for every protected aircraft.
+        samples=np.arange(plan.start_time,plan.end_time+1e-9,self.config.safety_sampling_dt)
+        if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
+        candidate_positions = [plan.sample(float(time)).position for time in samples]
         for other_id,other in committed_plans.items():
             if other_id==plan.uav_id:continue
             # The other plan may finish before this candidate.  Use the same
             # post-plan ring-holder prediction for the remaining candidate
             # horizon rather than silently dropping it at ``other.end_time``.
-            start=plan.start_time; end=plan.end_time
-            samples=np.arange(start,end+1e-9,self.config.safety_sampling_dt)
-            if samples[-1] < end: samples=np.append(samples,end)
             committed_positions = self._committed_positions(other, snapshot, samples)
-            candidate_positions = [plan.sample(float(time)).position for time in samples]
             for candidate_position, committed_position in zip(candidate_positions, committed_positions):
                 if np.linalg.norm(candidate_position-committed_position) < self.config.safe_distance:
                     return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
@@ -183,11 +185,8 @@ class SafetyFilter:
             # its endpoint.  The dense canonical plan samples provide a cheap
             # conservative hand-off check without multiplying every rejected
             # rule action by a one-second cross-product.
-            samples=np.arange(plan.start_time, plan.end_time + 1e-9, self.config.safety_sampling_dt)
-            if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
             other_positions = (self._committed_positions(other_plan, snapshot, samples)
                                if other_plan is not None else self._holder_positions(other_uav, snapshot, samples))
-            candidate_positions = [plan.sample(float(time)).position for time in samples]
             for index, (time, candidate_position, other_position) in enumerate(zip(samples, candidate_positions, other_positions)):
                 # A plan that ends on a ring crosses an executor hand-off on
                 # the next tick.  Reserve one bounded holder-motion step at
