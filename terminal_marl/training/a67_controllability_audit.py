@@ -189,6 +189,9 @@ def _run_branch(snapshot: bytes, action: Candidate, horizon: float) -> dict:
     wrapper = pickle.loads(snapshot); base = wrapper.base; start = base.now
     before = _state(base, {key: _interface_snapshot(base, key) for key in ("o2m", "m2i", "i2f")})
     safety_before = {key: base.telemetry.get(key, 0.) for key in ("collisions", "nmac", "hard_separation_violations", "final_overcapacity_steps")}
+    # Snapshots retain prefix diagnostics; branch evidence must be scoped to
+    # events created after this candidate action is applied.
+    conflict_start = len(base.conflict_events)
     decision = wrapper.coordinator.coordinate(np.asarray(action.action, np.float32), geometry_gate=wrapper.geometry_event_gate())
     samples = {key: [] for key in ("queue", "oldest_wait", "final_util", "lz_util", "actual", "capacity", "all_waiting")}
     effects = Counter(); first_divergence = None
@@ -213,7 +216,8 @@ def _run_branch(snapshot: bytes, action: Candidate, horizon: float) -> dict:
     after = _state(base, {key: _interface_snapshot(base, key) for key in ("o2m", "m2i", "i2f")})
     metrics = _collect(base, samples, wrapper.coordinator, [])
     safety_delta = {key: metrics.get(key, 0.) - safety_before[key] for key in safety_before}
-    return {"action": action.name, "family": action.family, "horizon": horizon, "decision": {"requested": list(decision.requested_action), "applied": list(decision.applied_action), "outcome": decision.outcome, "reason": decision.reason_code}, "before": before, "after": after, "metrics": metrics, "safety_delta": safety_delta, "effects": dict(effects), "first_conflict": next((row for row in base.conflict_events if row.get("kind") == "first_hard_separation_trace"), None), "safety_reason_histogram": {key: dict(value) for key, value in safety_reason_hist.items()}, "candidate_audit": list(wrapper.coordinator.history), "geometry_before": before["actual_state_10d"][:6], "geometry_after": after["actual_state_10d"][:6], "target_before": before["target_rh"], "target_after": after["target_rh"], "capacity_before": before["capacity"], "capacity_after": after["capacity"], "headways_before": before["headways"], "headways_after": dict(base.airspace.headways), "speed_profile_before": before["speed_profile_bias"], "speed_profile_after": base.airspace.speed_profile_bias}
+    branch_conflicts = base.conflict_events[conflict_start:]
+    return {"action": action.name, "family": action.family, "horizon": horizon, "decision": {"requested": list(decision.requested_action), "applied": list(decision.applied_action), "outcome": decision.outcome, "reason": decision.reason_code}, "before": before, "after": after, "metrics": metrics, "safety_delta": safety_delta, "effects": dict(effects), "first_conflict": next((row for row in branch_conflicts if row.get("kind") == "first_hard_separation_trace"), None), "preexisting_first_conflict": next((row for row in base.conflict_events[:conflict_start] if row.get("kind") == "first_hard_separation_trace"), None), "safety_reason_histogram": {key: dict(value) for key, value in safety_reason_hist.items()}, "candidate_audit": list(wrapper.coordinator.history), "geometry_before": before["actual_state_10d"][:6], "geometry_after": after["actual_state_10d"][:6], "target_before": before["target_rh"], "target_after": after["target_rh"], "capacity_before": before["capacity"], "capacity_after": after["capacity"], "headways_before": before["headways"], "headways_after": dict(base.airspace.headways), "speed_profile_before": before["speed_profile_bias"], "speed_profile_after": base.airspace.speed_profile_bias}
 
 
 def _task(snapshot_id: str, payload: bytes, action: Candidate, horizon: float):
