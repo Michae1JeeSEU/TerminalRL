@@ -17,3 +17,9 @@ D7 core dynamics qualification passed on 2026-08-28; see
 `docs/dynamics_qualification_report_2026-08-28.md`.  `physics_dt=0.2 s` is
 frozen for `performance_constrained_v2`.  The separate long-horizon A6.8
 dynamic-airspace replay remains required before C0 and low-level PPO.
+
+P0 performance refactor (2026-08-28) preserves these dynamics limits.  It
+adds explicit geometric-sampling configuration (`trajectory_bezier_samples`,
+`trajectory_final_samples`) for convergence qualification; neither value is a
+vehicle-performance parameter.  Safety-sampling convergence remains an open
+P0 gate, so the frozen production value is still `safety_sampling_dt=0.2 s`.
