@@ -42,9 +42,30 @@ gate and is faster at every measured scale.  The benchmark confirms that
 finite-acceleration execution is feasible for the planned static low-level
 curriculum; dynamic-airspace long-horizon compatibility is tracked separately.
 
-## Remaining boundary
+## Dynamic-airspace compatibility closure
 
-C0 capacity calibration and low-level PPO remain blocked until the separate
-historical A6.8 reconfiguration replay completes with observable output and
-the result is recorded.  The replay uses dynamic geometry and is not covered
-by the holder-only performance benchmark above.
+The separate historical A6.8 t=720 reconfiguration replay completed with
+observable, line-buffered output after the D7 performance fixes:
+
+| Check | Result |
+|---|---|
+| Fixture | `test_a68_historical_t720_486_735_geometry_fixture_is_hard_safe` |
+| Result | **1 passed** |
+| Wall time | 660.91 s (11 min) |
+| Peak RSS | 638,700 KB |
+| Exit code | 0 |
+
+The replay covers a 300-second branch from the deterministic t=720 high-demand
+snapshot, including the former TRANSFER-holder conflict window.  The branch
+recorded zero new hard-separation violations.  The audit now scopes
+`first_conflict` to events generated after the snapshot; prefix diagnostics
+remain separately exposed as `preexisting_first_conflict` and cannot be
+misreported as a branch failure.
+
+## D7 decision
+
+**PASS.** The D7 dynamics qualification is closed: the base gates, dt
+convergence, fixed-rule performance sweep and long-horizon dynamic-airspace
+compatibility regression all passed.  C0 capacity calibration is unblocked.
+This decision does **not** authorize low-level PPO; PPO remains gated by the
+subsequent C0 calibration and curriculum requirements.

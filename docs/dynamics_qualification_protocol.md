@@ -41,8 +41,8 @@ cd ~/projects/terminal
 The benchmark deliberately holds the warm-start traffic to isolate execution
 and separation-monitor cost; it does not train or evaluate a learned policy.
 Long-horizon rule-only traffic regressions are run separately with line-buffered
-logs and a timeout, so a failure is observable and cannot leave an orphaned
-server process.
+logs, `/usr/bin/time` outside the timeout wrapper, and a timeout, so a failure
+has an observable exit code and cannot leave an orphaned server process.
 
 ## Performance implementation note
 
@@ -50,3 +50,7 @@ server process.
 It must not reintegrate a holder from its origin for every query time.  This
 keeps the finite-acceleration semantics intact while changing prediction cost
 from quadratic to linear in the number of safety samples.
+
+`PredictiveSafetyShield` applies the same ordered-sample rule to its 30-second
+runtime holder forecast.  Its cached positions must match the scalar executor
+integrator exactly; only duplicate work is removed.
