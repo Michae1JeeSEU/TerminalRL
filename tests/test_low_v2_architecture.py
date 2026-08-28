@@ -117,6 +117,16 @@ def test_predictive_shield_is_a_safe_noop_without_committed_traffic():
     assert np.isinf(risk.predicted_min_swept_separation)
 
 
+def test_predictive_shield_cached_holder_samples_match_scalar_executor_prediction():
+    env = _student_env(1)
+    holder = next(iter(env.active.values()))
+    shield = PredictiveSafetyShield(env.config)
+    times = np.asarray((env.now, env.now + .2, env.now + 1.0, env.now + 7.0))
+    cached = shield._holder_positions(holder, env.airspace, env.now, times, .5)
+    scalar = [shield._holder_position(holder, env.airspace, float(time - env.now), .5) for time in times]
+    assert all(np.allclose(left, right, atol=1e-10) for left, right in zip(cached, scalar))
+
+
 def test_checkpoint_schema_rejects_legacy_actor_metadata():
     legacy = SimConfig(experiment_mode="fixed_a5_legacy", observation_schema_version="phaseA_low_obs_v1_41d")
     student = SimConfig(experiment_mode="fixed_low_student")

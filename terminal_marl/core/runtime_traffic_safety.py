@@ -86,15 +86,44 @@ class PredictiveSafetyShield:
             theta, speed, remaining = motion.theta, motion.speed, remaining - step
         return np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float)
 
+    def _holder_positions(self, uav, airspace, origin: float, times: np.ndarray, residual: float) -> list[np.ndarray]:
+        """Return ordered executor-equivalent holder positions without replays.
+
+        ``_minimum_to_plan`` evaluates adjacent swept intervals.  Replaying a
+        holder from the current state for both ends of every interval made its
+        30-second prediction quadratic in physics integrations, once for each
+        residual option and protected holder/plan pair.  This advances the
+        identical discrete integrator exactly once per ordered interval.
+        """
+        if len(times) == 0:
+            return []
+        if np.any(np.diff(times) < -1e-9):
+            raise ValueError("holder prediction times must be ordered")
+        ring = airspace.actual_ring(uav.ring_role)
+        theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
+        speed = max(0.0, uav.speed)
+        target_speed = float(np.clip(ring.nominal_speed + airspace.speed_profile_bias + residual, self.config.speed_min, self.config.max_speed))
+        previous = float(origin); positions = []
+        for value in times:
+            remaining = max(0.0, float(value) - previous)
+            while remaining > 1e-9:
+                step = min(self.config.physics_dt, remaining)
+                motion = self.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
+                theta, speed, remaining = motion.theta, motion.speed, remaining - step
+            positions.append(np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float))
+            previous = max(previous, float(value))
+        return positions
+
     def _minimum_to_plan(self, holder, plan, airspace, now: float, residual: float) -> float:
         start = max(now, plan.start_time); horizon = min(plan.end_time, now + 30.0)
         times = np.arange(start, horizon + 1e-9, self.config.dt)
         if len(times) < 2: return float("inf")
         minimum = float("inf")
-        for left, right in zip(times, times[1:]):
-            holder_left = self._holder_position(holder, airspace, left - now, residual)
-            holder_right = self._holder_position(holder, airspace, right - now, residual)
-            distance, _ = swept_minimum_distance(holder_left, holder_right, plan.sample(float(left)).position, plan.sample(float(right)).position)
+        holder_positions = self._holder_positions(holder, airspace, now, times, residual)
+        plan_positions = [plan.sample(float(time)).position for time in times]
+        for index in range(len(times) - 1):
+            distance, _ = swept_minimum_distance(holder_positions[index], holder_positions[index + 1],
+                                                  plan_positions[index], plan_positions[index + 1])
             minimum = min(minimum, distance)
         return minimum
 
