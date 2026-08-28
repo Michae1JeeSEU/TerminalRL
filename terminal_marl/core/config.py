@@ -44,8 +44,8 @@ class SimConfig:
     dt: float = 1.0
     physics_dt: float = 0.2
     safety_sampling_dt: float = 0.2
-    trajectory_bezier_samples: int = 81
-    trajectory_final_samples: int = 101
+    trajectory_bezier_samples: int = 41
+    trajectory_final_samples: int = 51
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
     safe_distance: float = 80.0

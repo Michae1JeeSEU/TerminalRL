@@ -84,6 +84,16 @@ def test_bezier_sampling_convergence_preserves_feasible_duration(samples: int):
     assert plan[-1].t > 0.0
 
 
+def test_bezier_41_sample_production_choice_matches_81_sample_reference():
+    parameterizer = TrajectoryTimeParameterizer(VehicleDynamics(RESEARCH_EVTOL))
+    durations = []
+    for samples in (81, 41):
+        path = GeometricPath.cubic_bezier(np.zeros(3), np.asarray((80., 0., 20.)),
+                                         np.asarray((160., 80., 50.)), np.asarray((220., 80., 60.)), samples=samples)
+        durations.append(parameterizer.parameterize(path, start_time=0., initial_velocity=np.zeros(3), target_horizontal_speed=18.)[-1].t)
+    assert abs(durations[1] - durations[0]) / durations[0] < .01
+
+
 @pytest.mark.parametrize("samples", (101, 51, 41))
 def test_final_sampling_convergence_preserves_feasible_duration(samples: int):
     parameterizer = TrajectoryTimeParameterizer(VehicleDynamics(RESEARCH_EVTOL))
@@ -93,3 +103,14 @@ def test_final_sampling_convergence_preserves_feasible_duration(samples: int):
                                       constraints=TrajectoryConstraints(end_horizontal_speed=0.0))
     assert not VehicleDynamics(RESEARCH_EVTOL).validate_plan(plan)
     assert plan[-1].t > 0.0
+
+
+def test_final_51_sample_production_choice_matches_101_sample_reference():
+    parameterizer = TrajectoryTimeParameterizer(VehicleDynamics(RESEARCH_EVTOL))
+    durations = []
+    for samples in (101, 51):
+        path = GeometricPath.cubic_bezier(np.asarray((200., 0., 40.)), np.asarray((170., 90., 35.)),
+                                         np.asarray((60., 70., 8.)), np.zeros(3), samples=samples)
+        durations.append(parameterizer.parameterize(path, start_time=0., initial_velocity=np.zeros(3), target_horizontal_speed=10.,
+                                                     constraints=TrajectoryConstraints(end_horizontal_speed=0.0))[-1].t)
+    assert abs(durations[1] - durations[0]) / durations[0] < .01

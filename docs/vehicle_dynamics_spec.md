@@ -19,7 +19,10 @@ frozen for `performance_constrained_v2`.  The separate long-horizon A6.8
 dynamic-airspace replay remains required before C0 and low-level PPO.
 
 P0 performance refactor (2026-08-28) preserves these dynamics limits.  It
-adds explicit geometric-sampling configuration (`trajectory_bezier_samples`,
-`trajectory_final_samples`) for convergence qualification; neither value is a
-vehicle-performance parameter.  Safety-sampling convergence remains an open
-P0 gate, so the frozen production value is still `safety_sampling_dt=0.2 s`.
+retains `safety_sampling_dt=0.2 s`: deterministic 0.2/0.5/1.0 s shield
+trigger witnesses retained their result, but 0.5 s requires three 0.2-s
+finite-response integrations per prediction interval and is slower in the
+current exact executor; swept-segment testing remains active.
+Production geometric sampling is 41 Bezier and 51 final points, selected
+against 81/101-point references with <1% duration deviation and unchanged
+dynamics validation.  None of these values changes the vehicle envelope.
