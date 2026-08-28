@@ -30,7 +30,19 @@ def _recent_conflict_uids(env: "TerminalParallelEnv") -> tuple[int, ...]:
     return tuple(int(uid) for uid in ids)
 
 
-def build_world_render_snapshot(env: "TerminalParallelEnv") -> WorldRenderSnapshot:
+def _trajectory_points(plan, maximum: int | None) -> tuple[tuple[float, float, float], ...]:
+    if plan is None:
+        return ()
+    points = plan.points
+    if maximum is None:
+        return tuple(_point(point.position) for point in points)
+    stride = max(1, (len(points) - 1) // max(1, maximum - 1))
+    sampled = tuple(_point(point.position) for point in points[::stride])
+    endpoint = _point(points[-1].position)
+    return sampled if sampled[-1] == endpoint else (*sampled, endpoint)
+
+
+def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_points: int | None = None) -> WorldRenderSnapshot:
     """Copy the current authoritative state without mutating the environment.
 
     No trajectory, conflict, or physics calculation is performed here.  In
@@ -82,9 +94,7 @@ def build_world_render_snapshot(env: "TerminalParallelEnv") -> WorldRenderSnapsh
             trajectory_plan_id=uav.trajectory_plan_id,
             merge_reservation_id=uav.merge_reservation_id,
             committed=uav.committed_plan is not None,
-            trajectory_points=() if uav.committed_plan is None else tuple(
-                _point(point.position) for point in uav.committed_plan.points
-            ),
+            trajectory_points=_trajectory_points(uav.committed_plan, trajectory_max_points),
             dynamic_priority=float(uav.dynamic_priority),
             last_release_decision=env.last_release_decisions.get(uav.uid),
             last_safety_decision=env.last_safety_decisions.get(uav.uid),

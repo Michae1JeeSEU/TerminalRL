@@ -142,7 +142,7 @@ class TrajectoryGenerator:
         distance = float(np.linalg.norm(target - uav.position))
         control = min(.35 * distance, 160.0)
         path = GeometricPath.cubic_bezier(uav.position, uav.position + control * self._unit_or(tangent, uav.velocity),
-                                          target - control * tangent, target)
+                                          target - control * tangent, target, samples=self.config.trajectory_bezier_samples)
         return self._plan(uav, "inbound", path, now, ring.nominal_speed,
                           metadata={"target_phase": "ring_outer"}, end_speed=ring.nominal_speed)
 
@@ -174,7 +174,8 @@ class TrajectoryGenerator:
             target_tangent = np.asarray((-math.sin(target_theta), math.cos(target_theta), 0.0))
             tangent_length = min(.42 * length, 160.0)
             transfer_path = GeometricPath.cubic_bezier(p0, p0 + tangent_length * source_tangent,
-                                                        p3 - tangent_length * target_tangent, p3)
+                                                        p3 - tangent_length * target_tangent, p3,
+                                                        samples=self.config.trajectory_bezier_samples)
             # The transfer curve begins only after the explicit source-ring
             # braking prefix, so its duration must be evaluated from that
             # zero-speed hand-off rather than the current holder velocity.
@@ -196,7 +197,8 @@ class TrajectoryGenerator:
             source_tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0))
             length = float(np.linalg.norm(p3 - p0)); tangent_length = min(.42 * length, 160.0)
             transfer_path = GeometricPath.cubic_bezier(p0, p0 + tangent_length * source_tangent,
-                                                        p3 - tangent_length * target_tangent, p3)
+                                                        p3 - tangent_length * target_tangent, p3,
+                                                        samples=self.config.trajectory_bezier_samples)
             transfer_uav = type("State", (), {"uid": uav.uid, "velocity": held[-1].velocity})()
         transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,
                                                            initial_velocity=transfer_uav.velocity,
@@ -240,7 +242,7 @@ class TrajectoryGenerator:
         distance = float(np.linalg.norm(endpoint - p0))
         p1 = p0 + min(.30 * distance, 120.0) * direction
         p2 = endpoint - min(.25 * distance, 80.0) * np.asarray((direction[0], direction[1], 0.0))
-        path = GeometricPath.cubic_bezier(p0, p1, p2, endpoint, samples=101)
+        path = GeometricPath.cubic_bezier(p0, p1, p2, endpoint, samples=self.config.trajectory_final_samples)
         proxy = type("State", (), {"uid": uav.uid, "velocity": initial_velocity})()
         final_points = self.parameterizer.parameterize(path, start_time=start, initial_velocity=proxy.velocity,
                                                        target_horizontal_speed=min(10.0, self.config.max_speed),

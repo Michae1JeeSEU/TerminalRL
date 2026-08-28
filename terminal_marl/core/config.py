@@ -44,6 +44,8 @@ class SimConfig:
     dt: float = 1.0
     physics_dt: float = 0.2
     safety_sampling_dt: float = 0.2
+    trajectory_bezier_samples: int = 81
+    trajectory_final_samples: int = 101
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
     safe_distance: float = 80.0
@@ -187,6 +189,8 @@ class SimConfig:
             raise ValueError("dt, physics_dt, safety_sampling_dt, max_active_uavs and energy_capacity must be positive")
         if self.physics_dt > self.dt or self.safety_sampling_dt > self.dt:
             raise ValueError("physics/safety sampling dt cannot exceed policy dt")
+        if self.trajectory_bezier_samples < 3 or self.trajectory_final_samples < 3:
+            raise ValueError("trajectory geometric sampling requires at least three points")
         if self.max_speed != profile.max_horizontal_speed:
             raise RuntimeError("vehicle performance must come from the selected profile")
         if self.gate_height > profile.max_operating_altitude_agl_m:

@@ -18,6 +18,7 @@ class PredictionCache:
     def __init__(self) -> None:
         self.holder_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
         self.plan_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
+        self.repair_plans: dict[tuple, TrajectoryPlan] = {}
 
     @staticmethod
     def _time_key(times: np.ndarray) -> tuple[float, ...]:
@@ -195,27 +196,41 @@ class PredictiveSafetyShield:
             now, end, metadata={"target_phase": "ring_holder", "committed": False},
         )
 
-    def _passes_safety_filter(self, env, holder, plan, residual: float) -> bool:
+    def _passes_safety_filter(self, env, holder, plan, residual: float, cache: PredictionCache) -> bool:
         """SafetyFilter remains the final arbiter for a speed repair."""
         start = max(env.now, plan.start_time)
         end = min(plan.end_time, env.now + 30.0)
         if end <= start:
             return False
-        holder_plan = self._repair_plan(holder, env.airspace, start, end, residual)
+        def holder_plan_for(other, speed_residual: float) -> TrajectoryPlan:
+            key = (other.uid, round(float(speed_residual), 8), round(start, 8), round(end, 8))
+            if key not in cache.repair_plans:
+                cache.repair_plans[key] = self._repair_plan(other, env.airspace, start, end, speed_residual)
+            return cache.repair_plans[key]
+
+        holder_plan = holder_plan_for(holder, residual)
         committed = TrajectoryPlan(
             plan.plan_id, plan.uav_id, plan.mode, plan.points, plan.start_time, plan.end_time,
             reservation_ids=list(plan.reservation_ids), metadata={**plan.metadata, "committed": True},
         )
-        # A speed correction that clears a committed transfer but closes into
-        # a neighbouring holder is not a repair.  Include all relevant
-        # uncommitted ring holders in the same predictive, swept check.  This
-        # keeps the controller inside its canonical bounded-speed authority
-        # and makes SafetyFilter the single final arbiter.
+        # Only pairs involving the changed holder require a new proof.  The
+        # committed plan and unrelated holders retain their already-approved
+        # canonical trajectories.  Same-ring relative motion is bounded by
+        # the 2 m/s residual authority, so an arc-distance envelope safely
+        # culls neighbours that cannot approach within the shield horizon.
         tracks = {holder.uid: holder_plan, plan.uav_id: committed}
+        ring = env.airspace.actual_ring(holder.ring_role)
+        holder_theta = holder.ring_progress if holder.ring_progress is not None else math.atan2(holder.position[1], holder.position[0])
+        reachable_gap = env.config.safe_distance + 2.0 * env.config.max_speed_residual_mps * (end - start) + env.config.shield_broad_phase_margin
         for other in env.active.values():
             if other.uid in tracks or other.ring_role is None or other.committed_plan is not None:
                 continue
-            tracks[other.uid] = self._repair_plan(other, env.airspace, start, end, 0.0)
+            if other.ring_role is not holder.ring_role:
+                continue
+            other_theta = other.ring_progress if other.ring_progress is not None else math.atan2(other.position[1], other.position[0])
+            gap = abs((other_theta - holder_theta + math.pi) % (2.0 * math.pi) - math.pi) * ring.radius
+            if gap <= reachable_gap:
+                tracks[other.uid] = holder_plan_for(other, 0.0)
         return env.safety.verify_predicted_tracks(tracks, start=start, end=end).approved
 
     def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
@@ -238,7 +253,7 @@ class PredictiveSafetyShield:
                 best_distance, best = max(scored)
                 nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0, cache)
                 self.telemetry["shield_narrow_phase_checked"] += 1
-                repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best)
+                repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best, cache)
                 if nominal < self.config.safe_distance and repaired:
                     self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))
                     self.telemetry["shield_interventions"] += 1

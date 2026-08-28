@@ -58,7 +58,7 @@ def _attach_viewer(env: TerminalParallelEnv, config: VisualizationConfig) -> tup
 
 def run_rollout(
     *, mode: str, seed: int, gui: bool = False, frame_stride: int = 1,
-    playback_speed: float = 0.0, show_trajectories: bool = True, show_labels: bool = False,
+    playback_speed: float = 0.0, show_trajectories: bool = False, show_labels: bool = False,
     low_checkpoint: str | None = None, high_checkpoint: str | None = None,
     max_simulation_seconds: float = 3600.0, max_steps: int | None = None, scenario: str = "default",
 ) -> TerminalParallelEnv:
@@ -127,6 +127,8 @@ def run_rollout(
                 break
         return wrapper.base
     finally:
+        if observer is not None:
+            observer.close()
         if viewer is not None:
             viewer.close()
 
@@ -137,7 +139,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--scenario", choices=("default", "fixed_rule_warm_flow"), default="default")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--frame-stride", type=int, default=1)
+    parser.add_argument("--frame-stride", type=int, default=5)
     parser.add_argument("--playback-speed", type=float, default=0.0, help="0 is unthrottled; positive values are simulated seconds per wall-clock second.")
     parser.add_argument("--no-trajectories", action="store_true")
     parser.add_argument("--labels", action="store_true")

@@ -39,7 +39,10 @@ class Terminal3DViewer:
         self._ring_meshes: dict[str, object] = {}
         self._target_ring_meshes: dict[str, object] = {}
         self._trajectory_names: set[str] = set()
-        self._uav_cloud = None
+        self._trajectory_meshes: dict[str, object] = {}
+        self._lz_actors: dict[int, object] = {}
+        self._uav_cloud = self._pv.PolyData(np.empty((0, 3)))
+        self._uav_cloud["rgb"] = np.empty((0, 3), dtype=np.uint8)
         self._latest_snapshot = initial
         self._selected_uid: int | None = None
         self._paused = False
@@ -77,6 +80,13 @@ class Terminal3DViewer:
         self._plotter.add_axes(color="black", x_color="firebrick", y_color="forestgreen", z_color="navy")
         self._plotter.add_text("", position="upper_right", font_size=11, color="black", name="hud")
         self._plotter.add_text("Right-click a UAV point to inspect", position=(10, 765), font_size=10, color="black", name="pick-help")
+        for lz in snapshot.landing_zones:
+            actor = self._plotter.add_mesh(self._pv.Cube(center=lz.position, x_length=45, y_length=45, z_length=6),
+                                           color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, pickable=False,
+                                           name=f"lz-{lz.lz_id}")
+            self._lz_actors[lz.lz_id] = actor
+        self._plotter.add_mesh(self._uav_cloud, scalars="rgb", rgb=True, point_size=15,
+                               render_points_as_spheres=True, pickable=True, name="uavs")
 
     @staticmethod
     def _speed_label(speed: float) -> str:
@@ -157,46 +167,44 @@ class Terminal3DViewer:
 
     def _update_landing_zones(self, snapshot: WorldRenderSnapshot) -> None:
         for lz in snapshot.landing_zones:
-            name = f"lz-{lz.lz_id}"
-            self._plotter.remove_actor(name, render=False)
-            self._plotter.add_mesh(
-                self._pv.Cube(center=lz.position, x_length=45, y_length=45, z_length=6),
-                color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, pickable=False, name=name,
-            )
+            actor = self._lz_actors[lz.lz_id]
+            actor.GetProperty().SetColor(self._pv.Color(_LZ_COLORS.get(lz.status, "white")).float_rgb)
 
     def _update_uavs(self, snapshot: WorldRenderSnapshot) -> None:
-        self._plotter.remove_actor("uavs", render=False)
-        if not snapshot.uavs:
-            return
         points = np.asarray([uav.position for uav in snapshot.uavs], dtype=float)
-        cloud = self._pv.PolyData(points)
         colors = np.empty((len(snapshot.uavs), 3), dtype=np.uint8)
         # An aircraft keeps this deterministic identity color throughout its
         # entire life cycle.  Phase is conveyed by the selected-state panel.
         for index, uav in enumerate(snapshot.uavs):
             color = "magenta" if uav.uid in snapshot.recent_conflict_uids else _UAV_COLORS[uav.uid % len(_UAV_COLORS)]
             colors[index] = self._pv.Color(color).int_rgb
-        cloud["rgb"] = colors
-        self._uav_cloud = cloud
-        self._plotter.add_mesh(cloud, scalars="rgb", rgb=True, point_size=15, render_points_as_spheres=True, pickable=True, name="uavs")
+        self._uav_cloud.points = points
+        self._uav_cloud["rgb"] = colors
         self._plotter.remove_actor("uav-labels", render=False)
         if self._config.show_labels:
             self._plotter.add_point_labels(points, [str(uav.uid) for uav in snapshot.uavs], point_size=0,
                                            font_size=10, text_color="black", shape=None, always_visible=True, name="uav-labels")
 
     def _update_trajectories(self, snapshot: WorldRenderSnapshot) -> None:
-        for name in self._trajectory_names:
-            self._plotter.remove_actor(name, render=False)
-        self._trajectory_names.clear()
         if not self._config.show_trajectories:
             return
+        visible = set()
         for uav in snapshot.uavs:
             if len(uav.trajectory_points) < 2:
                 continue
             name = f"trajectory-{uav.uid}"
-            self._plotter.add_mesh(self._line_mesh(uav.trajectory_points), color="dimgray", line_width=2,
-                                   opacity=0.72, pickable=False, name=name)
-            self._trajectory_names.add(name)
+            visible.add(name)
+            points = np.asarray(uav.trajectory_points, dtype=float)
+            if name not in self._trajectory_meshes:
+                mesh = self._line_mesh(points)
+                self._trajectory_meshes[name] = mesh
+                self._plotter.add_mesh(mesh, color="dimgray", line_width=2, opacity=0.72, pickable=False, name=name)
+            else:
+                self._trajectory_meshes[name].points = points
+        for name in self._trajectory_names - visible:
+            self._plotter.remove_actor(name, render=False)
+            self._trajectory_meshes.pop(name, None)
+        self._trajectory_names = visible
 
     def _update_hud(self, snapshot: WorldRenderSnapshot) -> None:
         occupancy = "  ".join(f"{ring.role[0].upper()} {ring.occupancy}/{ring.capacity}" for ring in snapshot.rings)
@@ -263,18 +271,43 @@ class Terminal3DViewer:
 
 
 class ViewerStepObserver:
-    """Frame-strided adapter from post-tick environment callbacks to a viewer."""
+    """Latest-frame, non-blocking adapter from simulation to rendering."""
 
     def __init__(self, viewer: Terminal3DViewer, config: VisualizationConfig) -> None:
         self.viewer = viewer
         self.config = config
         self.stop_requested = False
+        import queue
+        import threading
+        self._frames: queue.Queue = queue.Queue(maxsize=1)
+        self._closed = threading.Event()
+        self._worker = threading.Thread(target=self._render_loop, daemon=True, name="terminal-viewer")
+        self._worker.start()
+
+    def _render_loop(self) -> None:
+        while not self._closed.is_set():
+            try:
+                snapshot = self._frames.get(timeout=0.05)
+            except Exception:
+                continue
+            self.stop_requested = not self.viewer.update(snapshot)
+
+    def close(self) -> None:
+        self._closed.set()
+        self._worker.join(timeout=1.0)
 
     def __call__(self, env: "TerminalParallelEnv") -> None:
         if env.step_count % self.config.frame_stride:
             return
-        self.stop_requested = not self.viewer.update(build_world_render_snapshot(env))
-        if not self.stop_requested and self.viewer.paused:
-            self.stop_requested = not self.viewer.wait_until_resumed()
-        if not self.stop_requested and self.viewer.playback_speed > 0.0:
-            time.sleep(env.config.dt / self.viewer.playback_speed)
+        snapshot = build_world_render_snapshot(env, trajectory_max_points=self.config.trajectory_max_points)
+        try:
+            self._frames.put_nowait(snapshot)
+        except Exception:
+            try:
+                self._frames.get_nowait()
+            except Exception:
+                pass
+            try:
+                self._frames.put_nowait(snapshot)
+            except Exception:
+                pass
