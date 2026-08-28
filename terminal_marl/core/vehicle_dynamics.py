@@ -60,38 +60,60 @@ class VehicleDynamics:
         return min(self.profile.max_horizontal_speed, math.sqrt(radius * math.sqrt(max(0.0, remaining))))
 
     def limited_tangential_speed(self, current_speed: float, target_speed: float, radius: float, dt: float) -> float:
+        """Return the next safe ring speed without a production solver loop.
+
+        The continuous acceleration envelope reserves centripetal load before
+        applying a bounded tangential update.  A short discrete check guards
+        the chord-versus-tangent difference of the actual executor; it is a
+        correction only, never the previous 48-iteration default path.
+        """
         if dt <= 0.0:
             raise ValueError("dynamics dt must be positive")
-        target = min(max(target_speed, 0.0), self.ring_speed_limit(radius))
-        lower = max(0.0, current_speed - self.profile.max_horizontal_decel * dt)
-        upper = min(target, current_speed + self.profile.max_horizontal_accel * dt) if target >= current_speed else target
-        direction = 1.0 if target >= current_speed else -1.0
+        current = min(max(float(current_speed), 0.0), self.ring_speed_limit(radius))
+        target = min(max(float(target_speed), 0.0), self.ring_speed_limit(radius))
+        direction = 1.0 if target >= current else -1.0
+        nominal_limit = self.profile.max_horizontal_accel if direction > 0.0 else self.profile.max_horizontal_decel
+        preliminary = min(target, current + nominal_limit * dt) if direction > 0.0 else max(target, current - nominal_limit * dt)
+        # Use the largest speed in the proposed interval.  This is a
+        # conservative analytic bound because centripetal acceleration grows
+        # monotonically with speed.
+        radial_speed = max(current, preliminary)
+        centripetal = radial_speed * radial_speed / radius
+        tangential_limit = math.sqrt(max(0.0, self.profile.max_lateral_accel ** 2 - centripetal ** 2))
+        tangential_limit = min(nominal_limit, tangential_limit)
+        candidate = min(target, current + tangential_limit * dt) if direction > 0.0 else max(target, current - tangential_limit * dt)
+
         def feasible(speed: float) -> bool:
             # Check the exact discrete velocity-vector change that the
             # executor will use.  The continuous combined formula is its
             # limiting case, while this catches the small chord/tangent
             # discrepancy at finite physics timesteps.
-            angle = .5 * (current_speed + speed) * dt / radius
-            previous = np.asarray((0.0, current_speed), dtype=float)
-            current = np.asarray((-math.sin(angle) * speed, math.cos(angle) * speed), dtype=float)
-            return float(np.linalg.norm(current - previous)) / dt <= self.profile.max_lateral_accel + 1e-9
-        if direction < 0.0:
-            if feasible(lower):
-                return lower
-            lo, hi = lower, current_speed
-            for _ in range(48):
-                mid = .5 * (lo + hi)
-                if feasible(mid): hi = mid
-                else: lo = mid
-            return hi
-        if feasible(upper):
-            return upper
-        lo, hi = lower, upper
-        for _ in range(48):
-            mid = .5 * (lo + hi)
-            if feasible(mid): lo = mid
-            else: hi = mid
-        return lo
+            angle = .5 * (current + speed) * dt / radius
+            previous = np.asarray((0.0, current), dtype=float)
+            next_velocity = np.asarray((-math.sin(angle) * speed, math.cos(angle) * speed), dtype=float)
+            return float(np.linalg.norm(next_velocity - previous)) / dt <= self.profile.max_lateral_accel + 1e-9
+        if feasible(candidate):
+            return candidate
+        # Only a finite-step boundary needs refinement.  Three iterations
+        # preserve a feasible endpoint and avoid silently accepting a bad
+        # chord update.
+        if direction > 0.0:
+            lo, hi = current, candidate
+            for _ in range(3):
+                middle = .5 * (lo + hi)
+                if feasible(middle):
+                    lo = middle
+                else:
+                    hi = middle
+            return lo
+        lo, hi = candidate, current
+        for _ in range(3):
+            middle = .5 * (lo + hi)
+            if feasible(middle):
+                hi = middle
+            else:
+                lo = middle
+        return hi
 
     def ring_motion_step(self, ring, theta: float, current_speed: float, target_speed: float, dt: float) -> RingMotion:
         """Integrate a bounded holder step shared by execution and prediction.

@@ -138,3 +138,21 @@ class TopologyNeighborSelector:
             return NeighborSlot()
         rows = [_slot(ego, item, self.airspace, path_gap=0.0, horizon=self.cpa_horizon) for item in candidates]
         return min(rows, key=lambda row: (row.d_cpa, row.t_cpa, row.uid if row.uid is not None else -1))
+
+
+class TopologyCache:
+    """One-step cache of V2 topology roles with unchanged selector semantics."""
+
+    def __init__(self, airspace, active: Iterable, *, now: float, cpa_horizon: float) -> None:
+        self._slots: dict[int, tuple[NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot]] = {}
+        ordered = tuple(active)
+        selector = TopologyNeighborSelector(airspace, now=now, cpa_horizon=cpa_horizon)
+        for uav in ordered:
+            self._slots[int(uav.uid)] = (
+                selector.same_ring_leader(uav, ordered), selector.same_ring_follower(uav, ordered),
+                selector.target_ring_predecessor(uav, ordered), selector.target_ring_successor(uav, ordered),
+                selector.nearest_predicted_conflict(uav, ordered),
+            )
+
+    def slots_for(self, uid: int) -> tuple[NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot]:
+        return self._slots.get(int(uid), (NeighborSlot(),) * 5)

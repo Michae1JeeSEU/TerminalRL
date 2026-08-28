@@ -25,6 +25,7 @@ from ..core.execution_scheduler import ExecutionScheduler
 from ..core.teacher_scheduler import TeacherScheduler
 from ..core.action_trace import LowLevelActionTrace
 from ..core.observations import build_low_observation
+from ..core.topology_neighbors import TopologyCache
 from ..core.priority import PriorityEngine
 from ..core.rewards import LowLevelReward
 from ..core.safety_filter import SafetyFilter
@@ -165,7 +166,11 @@ class TerminalParallelEnv:
         return result
 
     def _observations(self) -> dict[str, np.ndarray]:
-        return {str(uid): build_low_observation(uav, self) for uid, uav in self.active.items()}
+        cache = None
+        if self.config.observation_schema_version == "phaseA_low_obs_v2_topology_87d":
+            cache = TopologyCache(self.airspace, self.active.values(), now=self.now,
+                                 cpa_horizon=self.config.shield_horizon_seconds)
+        return {str(uid): build_low_observation(uav, self, topology_cache=cache) for uid, uav in self.active.items()}
 
     def _refresh_airspace_occupancy(self) -> None:
         values = {role: 0 for role in RingRole}
@@ -620,8 +625,14 @@ class TerminalParallelEnv:
                 return "lz_unavailable"
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
         candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
+        # The immediate phase is deliberately closed before future-delay
+        # forecasting.  Delayed candidates already contain a source-holder
+        # prefix, so generating every one here used to repeat full canonical
+        # trajectory construction before any current repair had been ruled
+        # out.
+        immediate_candidates = tuple(candidate for candidate in candidates if candidate.delay_seconds == 0.0)
         last_reason = None
-        for candidate in candidates:
+        for candidate in immediate_candidates:
             proposal, plan, reason = self._candidate_plan(uav, candidate, target, snapshot, lz_id)
             if reason is not None:
                 last_reason = reason
@@ -638,7 +649,7 @@ class TerminalParallelEnv:
                 last_reason = "headway_conflict"; continue
             # Re-run the same plan through SafetyFilter at the atomic state;
             # _commit installs this very object, never a reconstructed path.
-            plan.reservation_ids = [reservation.reservation_id]
+            plan = plan.with_reservation_ids((reservation.reservation_id,))
             if self._commit(uav, plan):
                 uav.merge_reservation_id = reservation.reservation_id
                 if target == "final": uav.assigned_lz = lz_id

@@ -128,6 +128,9 @@ class SimConfig:
     prospective_repair_delays_seconds: tuple[float, ...] = (5.0, 10.0, 20.0, 40.0)
     shield_horizon_seconds: float = 30.0
     shield_enabled: bool = True
+    # Broad phase may only discard pairs with a geometry-proof clearance;
+    # this margin is never used by the narrow-phase hard safety decision.
+    shield_broad_phase_margin: float = 20.0
     priority_feature_scale: float = 5.0
     teacher_intervention_penalty: float = 0.10
     teacher_correction_magnitude_penalty: float = 0.05
@@ -236,5 +239,5 @@ class SimConfig:
             raise ValueError("formal student/deployment modes require teacher_enabled=False")
         if self.experiment_mode in {"fixed_low_student", "dynamic_hrl_student"} and not self.shield_enabled:
             raise ValueError("formal student/deployment modes require shield_enabled=True")
-        if self.shield_horizon_seconds <= 0.0:
-            raise ValueError("shield_horizon_seconds must be positive")
+        if self.shield_horizon_seconds <= 0.0 or self.shield_broad_phase_margin < 0.0:
+            raise ValueError("shield horizon must be positive and broad-phase margin non-negative")

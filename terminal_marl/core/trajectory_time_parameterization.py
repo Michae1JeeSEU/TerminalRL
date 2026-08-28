@@ -137,6 +137,34 @@ class TrajectoryTimeParameterizer:
 
     def estimate_duration(self, path: GeometricPath, *, initial_velocity: np.ndarray, target_horizontal_speed: float,
                           constraints: TrajectoryConstraints | None = None) -> float:
-        points = self.parameterize(path, start_time=0.0, initial_velocity=initial_velocity,
-                                   target_horizontal_speed=target_horizontal_speed, constraints=constraints)
-        return points[-1].t
+        """Fast conservative duration estimate for candidate scheduling.
+
+        This deliberately does not allocate trajectory points or call the
+        expensive discrete-plan validator.  The canonical ``parameterize``
+        path remains mandatory when a candidate is actually committed.
+        """
+        constraints = constraints or TrajectoryConstraints()
+        points = path.points
+        tangents = self._tangents(points)
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        profile = self.dynamics.profile
+        horizontal_factor = np.linalg.norm(tangents[:, :2], axis=1)
+        vertical_factor = np.abs(tangents[:, 2])
+        curvature = self._curvature_xy(points)
+        limits = np.full(len(points), max(0.1, float(target_horizontal_speed)), dtype=float)
+        limits = np.minimum(limits, profile.max_horizontal_speed / np.maximum(horizontal_factor, 1e-9))
+        limits = np.minimum(limits, profile.max_climb_rate / np.maximum(vertical_factor, 1e-9))
+        limits = np.minimum(limits, profile.max_descent_rate / np.maximum(vertical_factor, 1e-9))
+        limits = np.minimum(limits, np.sqrt(.8 * profile.max_lateral_accel / np.maximum(curvature, 1e-12)) /
+                            np.maximum(horizontal_factor, 1e-9))
+        speeds = limits.copy()
+        speeds[0] = min(speeds[0], float(np.linalg.norm(np.asarray(initial_velocity, dtype=float))))
+        for index, distance in enumerate(segments):
+            speeds[index + 1] = min(speeds[index + 1], math.sqrt(max(0.0, speeds[index] ** 2 + 2.0 * (.57 * profile.max_horizontal_accel) * distance)))
+        if constraints.end_horizontal_speed is not None:
+            speeds[-1] = min(speeds[-1], constraints.end_horizontal_speed / max(horizontal_factor[-1], 1e-9))
+        for index in range(len(segments) - 1, -1, -1):
+            speeds[index] = min(speeds[index], math.sqrt(max(0.0, speeds[index + 1] ** 2 + 2.0 * (.57 * profile.max_horizontal_decel) * segments[index])))
+        return float(np.sum(2.0 * segments / np.maximum(speeds[:-1] + speeds[1:], 1e-6)))

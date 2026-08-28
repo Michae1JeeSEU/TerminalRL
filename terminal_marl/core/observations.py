@@ -5,7 +5,7 @@ import hashlib
 import numpy as np
 from .config import RingRole
 from .uav import FlightPhase
-from .topology_neighbors import NeighborSlot, TopologyNeighborSelector
+from .topology_neighbors import NeighborSlot, TopologyCache, TopologyNeighborSelector
 
 @dataclass(frozen=True)
 class FeatureSpec: name:str; size:int
@@ -87,18 +87,21 @@ def _release_eligible(uav, env) -> bool:
     return interface is not None and interface not in env.airspace.affected_interfaces()
 
 
-def build_low_observation_v2(uav, env) -> np.ndarray:
+def build_low_observation_v2(uav, env, *, topology_cache: TopologyCache | None = None) -> np.ndarray:
     """Build the canonical 87D online topology observation without leakage."""
     phase_values=(FlightPhase.INBOUND,FlightPhase.RING_OUTER,FlightPhase.TRANSFER_O2M,FlightPhase.RING_MIDDLE,FlightPhase.TRANSFER_M2I,FlightPhase.RING_INNER,FlightPhase.FINAL,FlightPhase.LANDING)
     config=env.config; theta=uav.ring_progress or 0.0
     free_zones=sum(zone.status.value == "free" for zone in env.lz_manager.zones)
     assigned_usable = bool(uav.assigned_lz is not None and env.lz_manager.zones[uav.assigned_lz].status.value == "free")
     final_available = float(sum(item.phase is FlightPhase.FINAL for item in env.active.values()) < config.final_queue_capacity)
-    selector=TopologyNeighborSelector(env.airspace, now=env.now, cpa_horizon=config.shield_horizon_seconds)
-    active=env.active.values()
-    slots=(selector.same_ring_leader(uav, active), selector.same_ring_follower(uav, active),
-           selector.target_ring_predecessor(uav, active), selector.target_ring_successor(uav, active),
-           selector.nearest_predicted_conflict(uav, active))
+    if topology_cache is None:
+        selector=TopologyNeighborSelector(env.airspace, now=env.now, cpa_horizon=config.shield_horizon_seconds)
+        active=env.active.values()
+        slots=(selector.same_ring_leader(uav, active), selector.same_ring_follower(uav, active),
+               selector.target_ring_predecessor(uav, active), selector.target_ring_successor(uav, active),
+               selector.nearest_predicted_conflict(uav, active))
+    else:
+        slots = topology_cache.slots_for(uav.uid)
     interface={RingRole.OUTER:"o2m", RingRole.MIDDLE:"m2i", RingRole.INNER:"i2f"}.get(uav.ring_role)
     last_release = -np.inf if interface is None else env.scheduler.last_executed_release[interface]
     headway = 0.0 if interface is None else env.airspace.headways[interface]
@@ -135,11 +138,11 @@ def observation_schema_for_version(version: str) -> ObservationSchema:
     raise ValueError(f"unsupported low-level observation schema: {version}")
 
 
-def build_low_observation(uav, env) -> np.ndarray:
+def build_low_observation(uav, env, *, topology_cache: TopologyCache | None = None) -> np.ndarray:
     if env.config.observation_schema_version == "phaseA_low_obs_v1_41d":
         return build_a5_observation(uav, env)
     if env.config.observation_schema_version == "phaseA_low_obs_v2_topology_87d":
-        return build_low_observation_v2(uav, env)
+        return build_low_observation_v2(uav, env, topology_cache=topology_cache)
     raise ValueError(f"unsupported low-level observation schema: {env.config.observation_schema_version}")
 
 def pad_agent_sets(agent_sets:list[np.ndarray])->tuple[np.ndarray,np.ndarray]:

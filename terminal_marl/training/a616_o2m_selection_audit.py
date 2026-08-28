@@ -82,7 +82,7 @@ def _safe_o2m(env, arrival_id, requested):
 
 def _force(env, uid, item):
     uav = env.active[uid]; proposal, plan = item["proposal"], item["plan"]
-    reservation = env.scheduler.reserve(uav, proposal, now=env.now); plan.reservation_ids = [reservation.reservation_id]
+    reservation = env.scheduler.reserve(uav, proposal, now=env.now); plan = plan.with_reservation_ids((reservation.reservation_id,))
     if not env._commit(uav, plan):
         env.scheduler.cancel(reservation.reservation_id, "counterfactual_safety_reject"); return False
     uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.TRANSFER_O2M, env.now); uav.ring_role = None

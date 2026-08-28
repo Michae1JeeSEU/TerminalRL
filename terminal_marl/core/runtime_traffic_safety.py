@@ -12,6 +12,18 @@ from .action_trace import LowLevelActionTrace
 from .vehicle_dynamics import VehicleDynamics
 
 
+class PredictionCache:
+    """Per-shield-step immutable prediction reuse boundary."""
+
+    def __init__(self) -> None:
+        self.holder_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
+        self.plan_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
+
+    @staticmethod
+    def _time_key(times: np.ndarray) -> tuple[float, ...]:
+        return tuple(np.round(np.asarray(times, dtype=float), 8))
+
+
 @dataclass(frozen=True)
 class RiskAssessment:
     predicted_min_swept_separation: float
@@ -44,7 +56,8 @@ class PredictiveSafetyShield:
         self.overrides: dict[int, tuple[float, float]] = {}
         self.telemetry = {"shield_interventions": 0, "shield_correction_magnitude": 0.0,
                           "runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0,
-                          "shield_fail_closed": 0}
+                          "shield_fail_closed": 0, "shield_broad_phase_rejected": 0,
+                          "shield_narrow_phase_checked": 0}
 
     def assess(self, env) -> RiskAssessment:
         best: tuple[float, float, float, tuple[int, int]] | None = None
@@ -114,18 +127,51 @@ class PredictiveSafetyShield:
             previous = max(previous, float(value))
         return positions
 
-    def _minimum_to_plan(self, holder, plan, airspace, now: float, residual: float) -> float:
+    def _minimum_to_plan(self, holder, plan, airspace, now: float, residual: float, cache: PredictionCache | None = None) -> float:
         start = max(now, plan.start_time); horizon = min(plan.end_time, now + 30.0)
-        times = np.arange(start, horizon + 1e-9, self.config.dt)
+        times = np.arange(start, horizon + 1e-9, self.config.safety_sampling_dt)
         if len(times) < 2: return float("inf")
         minimum = float("inf")
-        holder_positions = self._holder_positions(holder, airspace, now, times, residual)
-        plan_positions = [plan.sample(float(time)).position for time in times]
+        time_key = PredictionCache._time_key(times)
+        holder_key = (holder.uid, round(float(residual), 8), round(float(now), 8), time_key)
+        plan_key = (plan.plan_id, plan.trajectory_hash, time_key)
+        if cache is not None and holder_key in cache.holder_positions:
+            holder_positions = cache.holder_positions[holder_key]
+        else:
+            holder_positions = tuple(self._holder_positions(holder, airspace, now, times, residual))
+            if cache is not None: cache.holder_positions[holder_key] = holder_positions
+        if cache is not None and plan_key in cache.plan_positions:
+            plan_positions = cache.plan_positions[plan_key]
+        else:
+            plan_positions = tuple(plan.sample(float(time)).position for time in times)
+            if cache is not None: cache.plan_positions[plan_key] = plan_positions
         for index in range(len(times) - 1):
             distance, _ = swept_minimum_distance(holder_positions[index], holder_positions[index + 1],
                                                   plan_positions[index], plan_positions[index + 1])
             minimum = min(minimum, distance)
         return minimum
+
+    def _broad_phase_reject(self, holder, plan, airspace, now: float) -> bool:
+        """Reject only pairs with a geometric proof of no shield interaction.
+
+        CPA is intentionally calculated as a cheap diagnostic/ranking value;
+        it never by itself approves a pair because curved trajectories could
+        invalidate a constant-velocity assumption.  The actual rejection is
+        limited to a conservative vertical envelope that cannot intersect the
+        holder's constant ring altitude even under linear plan interpolation.
+        """
+        start, end = max(now, plan.start_time), min(plan.end_time, now + self.config.shield_horizon_seconds)
+        if end <= start:
+            return True
+        ring_height = float(airspace.actual_ring(holder.ring_role).height)
+        samples = plan.points
+        vertical_clearance = min(
+            0.0 if min(left.position[2], right.position[2]) <= ring_height <= max(left.position[2], right.position[2])
+            else min(abs(left.position[2] - ring_height), abs(right.position[2] - ring_height))
+            for left, right in zip(samples, samples[1:])
+            if right.t >= start and left.t <= end
+        )
+        return vertical_clearance > self.config.safe_distance + self.config.shield_broad_phase_margin
 
     def _repair_plan(self, holder, airspace, now: float, end: float, residual: float) -> TrajectoryPlan:
         """Create the canonical bounded ring-speed prediction for a repair."""
@@ -175,18 +221,23 @@ class PredictiveSafetyShield:
     def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
         self.overrides = {uid: value for uid, value in self.overrides.items() if value[1] > env.now and uid in env.active}
         committed = [uav.committed_plan for uav in env.active.values() if uav.committed_plan is not None]
+        cache = PredictionCache()
         for holder in env.active.values():
             if holder.ring_role is None or holder.committed_plan is not None:
                 continue
             for plan in committed:
                 if plan.uav_id == holder.uid or plan.end_time <= env.now:
                     continue
+                if self._broad_phase_reject(holder, plan, env.airspace, env.now):
+                    self.telemetry["shield_broad_phase_rejected"] += 1
+                    continue
                 # Shift only an uncommitted holder.  Candidate plans are
                 # sampled using the same swept-distance semantics as runtime.
                 options = [self.config.max_speed_residual_mps, -self.config.max_speed_residual_mps]
-                scored = [(self._minimum_to_plan(holder, plan, env.airspace, env.now, option), option) for option in options]
+                scored = [(self._minimum_to_plan(holder, plan, env.airspace, env.now, option, cache), option) for option in options]
                 best_distance, best = max(scored)
-                nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0)
+                nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0, cache)
+                self.telemetry["shield_narrow_phase_checked"] += 1
                 repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best)
                 if nominal < self.config.safe_distance and repaired:
                     self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))

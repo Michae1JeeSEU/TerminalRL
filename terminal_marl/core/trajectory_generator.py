@@ -15,7 +15,7 @@ from .trajectory_time_parameterization import GeometricPath, TrajectoryConstrain
 from .vehicle_dynamics import VehicleDynamics
 
 
-@dataclass
+@dataclass(frozen=True)
 class TrajectoryPoint:
     t: float
     position: np.ndarray
@@ -25,23 +25,31 @@ class TrajectoryPoint:
     yaw_rate: float | None = None
 
     def __post_init__(self) -> None:
-        self.position = np.asarray(self.position, dtype=float)
-        self.velocity = np.zeros(3, dtype=float) if self.velocity is None else np.asarray(self.velocity, dtype=float)
-        self.acceleration = np.zeros(3, dtype=float) if self.acceleration is None else np.asarray(self.acceleration, dtype=float)
+        for name, value in (
+            ("position", self.position),
+            ("velocity", np.zeros(3, dtype=float) if self.velocity is None else self.velocity),
+            ("acceleration", np.zeros(3, dtype=float) if self.acceleration is None else self.acceleration),
+        ):
+            array = np.asarray(value, dtype=float).copy()
+            array.setflags(write=False)
+            object.__setattr__(self, name, array)
 
 
-@dataclass
+@dataclass(frozen=True)
 class TrajectoryPlan:
     plan_id: str
     uav_id: int
     mode: str
-    points: list[TrajectoryPoint]
+    points: tuple[TrajectoryPoint, ...]
     start_time: float
     end_time: float
-    reservation_ids: list[str] = field(default_factory=list)
+    reservation_ids: tuple[str, ...] = field(default_factory=tuple)
     metadata: dict = field(default_factory=dict)
+    _trajectory_hash: str = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "points", tuple(self.points))
+        object.__setattr__(self, "reservation_ids", tuple(self.reservation_ids))
         if len(self.points) < 2 or self.end_time <= self.start_time:
             raise ValueError("trajectory plan requires at least two increasing-time points")
         if any(right.t <= left.t for left, right in zip(self.points, self.points[1:])):
@@ -52,13 +60,26 @@ class TrajectoryPlan:
         # diagnostic plans constructed directly rather than by the generator.
         self.metadata.setdefault("vehicle_profile_id", "research_evtol")
         self.metadata.setdefault("vehicle_profile_version", "eh216s_research_v1")
-        self.metadata.setdefault("trajectory_hash", self.trajectory_hash)
+        payload = [(round(point.t, 8), np.round(point.position, 8).tolist(), np.round(point.velocity, 8).tolist(),
+                    np.round(point.acceleration, 8).tolist(), point.yaw, point.yaw_rate) for point in self.points]
+        object.__setattr__(self, "_trajectory_hash", hashlib.sha256(json.dumps(payload, separators=(",", ":"), default=float).encode("utf-8")).hexdigest())
+        self.metadata.setdefault("trajectory_hash", self._trajectory_hash)
 
     @property
     def trajectory_hash(self) -> str:
+        return self._trajectory_hash
+
+    def verify_trajectory_integrity(self) -> bool:
+        """Expensive opt-in integrity check for qualification/debug runs."""
         payload = [(round(point.t, 8), np.round(point.position, 8).tolist(), np.round(point.velocity, 8).tolist(),
                     np.round(point.acceleration, 8).tolist(), point.yaw, point.yaw_rate) for point in self.points]
-        return hashlib.sha256(json.dumps(payload, separators=(",", ":"), default=float).encode("utf-8")).hexdigest()
+        actual = hashlib.sha256(json.dumps(payload, separators=(",", ":"), default=float).encode("utf-8")).hexdigest()
+        return actual == self._trajectory_hash
+
+    def with_reservation_ids(self, reservation_ids: list[str] | tuple[str, ...]) -> "TrajectoryPlan":
+        """Attach an external reservation without changing trajectory bytes."""
+        return TrajectoryPlan(self.plan_id, self.uav_id, self.mode, self.points, self.start_time, self.end_time,
+                              tuple(reservation_ids), dict(self.metadata))
 
     def sample(self, now: float) -> TrajectoryPoint:
         if now <= self.start_time:
@@ -86,12 +107,10 @@ class TrajectoryGenerator:
         points = self.parameterizer.parameterize(path, start_time=start, initial_velocity=uav.velocity,
                                                  target_horizontal_speed=target_speed,
                                                  constraints=TrajectoryConstraints(end_horizontal_speed=end_speed, tangent_yaw=False))
-        plan = TrajectoryPlan(str(uuid.uuid4()), uav.uid, mode, points, start, points[-1].t,
-                              [] if reservation is None else [reservation.reservation_id], metadata or {})
-        plan.metadata.update({"vehicle_profile_id": self.config.vehicle_profile_id,
-                              "vehicle_profile_version": self.config.vehicle_profile.profile_version,
-                              "trajectory_hash": plan.trajectory_hash})
-        return plan
+        details = {**(metadata or {}), "vehicle_profile_id": self.config.vehicle_profile_id,
+                   "vehicle_profile_version": self.config.vehicle_profile.profile_version}
+        return TrajectoryPlan(str(uuid.uuid4()), uav.uid, mode, points, start, points[-1].t,
+                              () if reservation is None else (reservation.reservation_id,), details)
 
     def _ring_position(self, ring, theta: float) -> np.ndarray:
         return np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float)
@@ -179,17 +198,18 @@ class TrajectoryGenerator:
             transfer_path = GeometricPath.cubic_bezier(p0, p0 + tangent_length * source_tangent,
                                                         p3 - tangent_length * target_tangent, p3)
             transfer_uav = type("State", (), {"uid": uav.uid, "velocity": held[-1].velocity})()
-        transfer = self._plan(transfer_uav, "ring_transfer", transfer_path, departure, target_speed, reservation=reservation,
-                              metadata={"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner",
-                                        "source_tangent": source_tangent, "target_tangent": target_tangent,
-                                        "speed_residual_mps": float(speed_residual_mps), "scheduled_departure": departure,
-                                        "merge_time": reservation.merge_time}, end_speed=target_speed)
-        if points:
-            # Preserve exactly the trajectory used in planning; hand-off only
-            # joins at the same sampled start point/time.
-            transfer.points = [*points, *transfer.points]
-            transfer.start_time = now
-            transfer.metadata["trajectory_hash"] = transfer.trajectory_hash
+        transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,
+                                                           initial_velocity=transfer_uav.velocity,
+                                                           target_horizontal_speed=target_speed,
+                                                           constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
+        details = {"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner",
+                   "source_tangent": source_tangent, "target_tangent": target_tangent,
+                   "speed_residual_mps": float(speed_residual_mps), "scheduled_departure": departure,
+                   "merge_time": reservation.merge_time, "vehicle_profile_id": self.config.vehicle_profile_id,
+                   "vehicle_profile_version": self.config.vehicle_profile.profile_version}
+        all_points = (*points, *transfer_points)
+        transfer = TrajectoryPlan(str(uuid.uuid4()), uav.uid, "ring_transfer", all_points, now if points else departure,
+                                  transfer_points[-1].t, (reservation.reservation_id,), details)
         if transfer.end_time > reservation.merge_time + 1e-6:
             transfer.metadata["dynamic_unreachable_merge_time"] = True
         return transfer
@@ -222,15 +242,15 @@ class TrajectoryGenerator:
         p2 = endpoint - min(.25 * distance, 80.0) * np.asarray((direction[0], direction[1], 0.0))
         path = GeometricPath.cubic_bezier(p0, p1, p2, endpoint, samples=101)
         proxy = type("State", (), {"uid": uav.uid, "velocity": initial_velocity})()
-        plan = self._plan(proxy, "final_approach", path, start, min(10.0, self.config.max_speed), reservation=reservation,
-                          metadata={"target_phase": "landing", "scheduled_departure": start,
-                                    "scheduled_delay": max(0.0, scheduled_delay), "speed_residual_mps": float(speed_residual_mps)},
-                          end_speed=0.0)
-        if prefix:
-            plan.points = [*prefix, *plan.points]
-            plan.start_time = now
-            plan.metadata["trajectory_hash"] = plan.trajectory_hash
-        return plan
+        final_points = self.parameterizer.parameterize(path, start_time=start, initial_velocity=proxy.velocity,
+                                                       target_horizontal_speed=min(10.0, self.config.max_speed),
+                                                       constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False))
+        details = {"target_phase": "landing", "scheduled_departure": start,
+                   "scheduled_delay": max(0.0, scheduled_delay), "speed_residual_mps": float(speed_residual_mps),
+                   "vehicle_profile_id": self.config.vehicle_profile_id,
+                   "vehicle_profile_version": self.config.vehicle_profile.profile_version}
+        return TrajectoryPlan(str(uuid.uuid4()), uav.uid, "final_approach", (*prefix, *final_points), now if prefix else start,
+                              final_points[-1].t, (reservation.reservation_id,), details)
 
     def validate_kinematics(self, plan: TrajectoryPlan) -> list[str]:
         errors = self.dynamics.validate_plan(plan.points)
