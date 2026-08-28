@@ -12,10 +12,14 @@ class TrajectorySafetyResult:
 class SafetyFilter:
     def __init__(self,config):
         self.config=config;self.dynamics=VehicleDynamics(config.vehicle_profile);self.checked_plan_ids=[];self.checked_trajectory_hashes={}
+        self._holder_track_cache={}
         # Candidate verifications are auditable.  ``None`` is deliberately
         # distinct from a safe infinite separation so callers cannot turn a
         # missing prediction into a passing safety metric.
         self.last_predicted_track_audit={"minimum_separation": None, "checked_pairs": 0, "reason": "not_run"}
+    def begin_prediction_step(self):
+        """Invalidate reusable holder tracks after an authoritative state tick."""
+        self._holder_track_cache.clear()
     def filter_intent(self,uav,intent,*,interface_frozen=False,lz_available=True,final_available=True):
         if interface_frozen:return IntentSafetyResult(False,"geometry_reconfiguring")
         if not lz_available:return IntentSafetyResult(False,"lz_unavailable")
@@ -118,7 +122,26 @@ class SafetyFilter:
         if theta is None:
             theta = float(np.arctan2(uav.position[1], uav.position[0]))
         target = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
-        return self._ring_prediction_positions(ring, theta, uav.speed, target, snapshot.now, times)
+        # Candidate plans in one policy step share the same state and 0.2-s
+        # safety grid.  Extend one authoritative finite-response track rather
+        # than re-integrating it for every candidate verification.
+        key=(uav.uid, round(float(snapshot.now),8), round(float(theta),8), round(float(uav.speed),8),
+             round(float(ring.radius),8), round(float(ring.height),8), round(target,8))
+        track=self._holder_track_cache.get(key)
+        if track is None:
+            track=[[np.asarray(uav.position,dtype=float).copy()], float(theta), max(0.0,float(uav.speed))]
+            self._holder_track_cache[key]=track
+        positions, angle, speed = track[0], track[1], track[2]
+        needed=int(round((float(times[-1])-snapshot.now)/self.config.physics_dt))
+        while len(positions)-1 < needed:
+            motion=self.dynamics.ring_motion_step(ring,angle,speed,target,self.config.physics_dt)
+            angle,speed=motion.theta,motion.speed
+            positions.append(motion.position)
+        track[1],track[2]=angle,speed
+        indices=np.rint((times-snapshot.now)/self.config.physics_dt).astype(int)
+        if np.allclose(times, snapshot.now+indices*self.config.physics_dt, atol=1e-8):
+            return [np.asarray(positions[index],dtype=float) for index in indices]
+        return self._ring_prediction_positions(ring,theta,uav.speed,target,snapshot.now,times)
 
     def filter_plan(self,plan,committed_plans,snapshot):
         if plan.plan_id!=getattr(plan,"plan_id",None):return TrajectorySafetyResult(False,"invalid_plan")
