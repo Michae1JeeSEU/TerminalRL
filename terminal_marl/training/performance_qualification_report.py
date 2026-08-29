@@ -66,6 +66,24 @@ def main() -> None:
             f"{speedup_text} | {case['peak_rss_bytes'] / 1048576:.2f} |"
         )
 
+    lines += ["", "## Component cumulative before/after (exact one-step profiles)", "",
+              "The viewer worker is intentionally outside the simulation-thread profiler; its end-to-end result is reported below.", "",
+              "| Scenario | Component | Before cumulative s | After cumulative s | Reduction |",
+              "|---|---|---:|---:|---:|"]
+    for case in exact["cases"]:
+        if case["scenario"] not in {"mixed", "committed_heavy", "shield_risk", "full_teacher"}:
+            continue
+        old = before.get(_key(case), {})
+        old_components = old.get("components_cumulative_seconds", {})
+        for component, after_value in case.get("components_cumulative_seconds", {}).items():
+            before_value = old_components.get(component)
+            reduction = None if before_value in (None, 0) else before_value / max(after_value, 1e-12)
+            reduction_text = "timeout" if before_value is None else ("n/a" if before_value == 0 else _number(reduction))
+            lines.append(
+                f"| {case['scenario']} | {component} | {_number(before_value, 4)} | "
+                f"{after_value:.4f} | {reduction_text} |"
+            )
+
     lines += ["", "## Sustained 20-step qualification", "",
               "| Scenario | N | steps/s | wall/simulated-s | CPU s | Peak RSS MiB | hard/NMAC/collision |",
               "|---|---:|---:|---:|---:|---:|---:|  "]
