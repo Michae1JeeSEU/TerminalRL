@@ -71,6 +71,8 @@ class VehicleDynamics:
             raise ValueError("dynamics dt must be positive")
         current = min(max(float(current_speed), 0.0), self.ring_speed_limit(radius))
         target = min(max(float(target_speed), 0.0), self.ring_speed_limit(radius))
+        if abs(target - current) <= 1e-12:
+            return current
         direction = 1.0 if target >= current else -1.0
         nominal_limit = self.profile.max_horizontal_accel if direction > 0.0 else self.profile.max_horizontal_decel
         preliminary = min(target, current + nominal_limit * dt) if direction > 0.0 else max(target, current - nominal_limit * dt)
@@ -89,9 +91,9 @@ class VehicleDynamics:
             # limiting case, while this catches the small chord/tangent
             # discrepancy at finite physics timesteps.
             angle = .5 * (current + speed) * dt / radius
-            previous = np.asarray((0.0, current), dtype=float)
-            next_velocity = np.asarray((-math.sin(angle) * speed, math.cos(angle) * speed), dtype=float)
-            return float(np.linalg.norm(next_velocity - previous)) / dt <= self.profile.max_lateral_accel + 1e-9
+            delta_x = -math.sin(angle) * speed
+            delta_y = math.cos(angle) * speed - current
+            return math.hypot(delta_x, delta_y) / dt <= self.profile.max_lateral_accel + 1e-9
         if feasible(candidate):
             return candidate
         # Only a finite-step boundary needs refinement.  Three iterations

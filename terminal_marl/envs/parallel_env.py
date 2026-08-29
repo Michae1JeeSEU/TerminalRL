@@ -325,25 +325,34 @@ class TerminalParallelEnv:
         # so project it once, then evaluate all merge-time variants from that
         # frozen future state.  We retain the global candidate index and pick
         # the least-intervention successful candidate afterwards.
-        groups: dict[tuple[float, float], list[tuple[int, RepairCandidate]]] = {}
-        for index, candidate in delayed:
-            groups.setdefault((candidate.delay_seconds, candidate.intent.speed_residual), []).append((index, candidate))
-        successes: list[tuple[int, dict]] = []
         base_world = ForecastWorld(self)
-        for (delay, speed), group in groups.items():
-            world = base_world.fork()
-            world.advance(uav.uid, speed, delay)
-            for index, candidate in group:
-                probe = world.fork()
-                proposal, plan, reason = probe.candidate_plan(uav.uid, candidate, target, lz_id=None)
-                if reason is not None or plan is None or proposal is None:
-                    continue
-                if not self.scheduler.can_reserve(proposal):
-                    continue
-                successes.append((index, {"candidate": candidate, "not_before": self.now + delay,
-                                           "proposal": proposal, "forecast_plan_id": plan.plan_id, "phase": phase,
-                                           "target": target, "forecast_safety": "approved"}))
-        return min(successes, key=lambda item: item[0])[1] if successes else None
+        projected: dict[tuple[float, float], ForecastWorld] = {}
+        # Candidate order is already minimum-intervention order.  Evaluate it
+        # directly and stop at the first verified witness.  A candidate probe
+        # is read-only, so merge-time variants sharing one projected world do
+        # not require another state copy.
+        for _, candidate in delayed:
+            key = (candidate.delay_seconds, candidate.intent.speed_residual)
+            world = projected.get(key)
+            if world is None:
+                prior = [item for item in projected if item[1] == candidate.intent.speed_residual
+                         and item[0] < candidate.delay_seconds]
+                if prior:
+                    prior_key = max(prior, key=lambda item: item[0])
+                    world = projected[prior_key].fork()
+                    remaining = candidate.delay_seconds - prior_key[0]
+                else:
+                    world = base_world.fork()
+                    remaining = candidate.delay_seconds
+                world.advance(uav.uid, candidate.intent.speed_residual, remaining)
+                projected[key] = world
+            proposal, plan, reason = world.candidate_plan(uav.uid, candidate, target, lz_id=None)
+            if reason is not None or plan is None or proposal is None or not self.scheduler.can_reserve(proposal):
+                continue
+            return {"candidate": candidate, "not_before": self.now + candidate.delay_seconds,
+                    "proposal": proposal, "forecast_plan_id": plan.plan_id, "phase": phase,
+                    "target": target, "forecast_safety": "approved"}
+        return None
 
     def _commit_future_release(self, uav: UAVState, pending: dict) -> str:
         """Atomically turn a future slot into the exact executed plan."""
@@ -467,6 +476,11 @@ class TerminalParallelEnv:
             self.events.append(("touchdown", uav.uid, self.now + self.config.dt))
             return distance, True
         uav.ring_progress = math.atan2(uav.position[1], uav.position[0])
+        ring = self.airspace.actual_ring(uav.ring_role)
+        tangent = np.asarray((-math.sin(uav.ring_progress), math.cos(uav.ring_progress), 0.0), dtype=float)
+        radial = np.asarray((-math.cos(uav.ring_progress), -math.sin(uav.ring_progress), 0.0), dtype=float)
+        uav.velocity = tangent * uav.speed
+        uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
         return distance, False
 
     def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent) -> float:
@@ -656,6 +670,7 @@ class TerminalParallelEnv:
         return decision
 
     def step(self, actions: dict[str, np.ndarray] | None = None):
+        self.safety.begin_prediction_step()
         previous = dict(self.active)
         self.last_release_telemetry = {}
         rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}

@@ -145,14 +145,87 @@ class TopologyCache:
 
     def __init__(self, airspace, active: Iterable, *, now: float, cpa_horizon: float) -> None:
         self._slots: dict[int, tuple[NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot]] = {}
-        ordered = tuple(active)
-        selector = TopologyNeighborSelector(airspace, now=now, cpa_horizon=cpa_horizon)
-        for uav in ordered:
-            self._slots[int(uav.uid)] = (
-                selector.same_ring_leader(uav, ordered), selector.same_ring_follower(uav, ordered),
-                selector.target_ring_predecessor(uav, ordered), selector.target_ring_successor(uav, ordered),
-                selector.nearest_predicted_conflict(uav, ordered),
+        ordered = tuple(sorted(active, key=lambda item: int(item.uid)))
+        count = len(ordered)
+        if count == 0:
+            return
+        positions = np.asarray([item.position for item in ordered], dtype=float)
+        velocities = np.asarray([_tangent_velocity(item, airspace) for item in ordered], dtype=float)
+        relative_position = positions[None, :, :] - positions[:, None, :]
+        relative_velocity = velocities[None, :, :] - velocities[:, None, :]
+        distances = np.linalg.norm(relative_position, axis=2)
+        speed_sq = np.einsum("ijk,ijk->ij", relative_velocity, relative_velocity)
+        dot = np.einsum("ijk,ijk->ij", relative_position, relative_velocity)
+        t_cpa = np.zeros((count, count), dtype=float)
+        moving = speed_sq > 1e-10
+        t_cpa[moving] = np.clip(-dot[moving] / speed_sq[moving], 0.0, cpa_horizon)
+        d_cpa = np.linalg.norm(relative_position + relative_velocity * t_cpa[:, :, None], axis=2)
+        direction = relative_position / np.maximum(distances[:, :, None], 1e-9)
+        closing = np.maximum(0.0, -np.einsum("ijk,ijk->ij", relative_velocity, direction))
+        speeds = np.linalg.norm(velocities, axis=1)
+        angles = np.asarray([_angle(item) for item in ordered], dtype=float)
+        uids = np.asarray([int(item.uid) for item in ordered], dtype=int)
+
+        def slot(ego_index: int, other_index: int, path_gap: float) -> NeighborSlot:
+            ego, other = ordered[ego_index], ordered[other_index]
+            return NeighborSlot(
+                present=True, uid=int(other.uid), path_gap=float(path_gap),
+                euclidean_distance=float(distances[ego_index, other_index]),
+                relative_speed=float(speeds[other_index] - speeds[ego_index]),
+                closing_rate=float(closing[ego_index, other_index]),
+                d_cpa=float(d_cpa[ego_index, other_index]), t_cpa=float(t_cpa[ego_index, other_index]),
+                priority_delta=float(other.dynamic_priority - ego.dynamic_priority),
+                reserved_or_committed=bool(other.committed_plan is not None or other.merge_reservation_id is not None),
             )
+
+        for ego_index, ego in enumerate(ordered):
+            same = [index for index, item in enumerate(ordered)
+                    if index != ego_index and item.ring_role is ego.ring_role] if ego.ring_role is not None else []
+            if same:
+                ring = airspace.actual_ring(ego.ring_role)
+                forward = [((angles[index] - angles[ego_index]) % TAU, int(uids[index]), index) for index in same]
+                backward = [((angles[ego_index] - angles[index]) % TAU, int(uids[index]), index) for index in same]
+                leader_gap, _, leader_index = min(forward)
+                follower_gap, _, follower_index = min(backward)
+                leader = slot(ego_index, leader_index, leader_gap * ring.radius)
+                follower = slot(ego_index, follower_index, -follower_gap * ring.radius)
+            else:
+                leader = follower = NeighborSlot()
+
+            target = {RingRole.OUTER: RingRole.MIDDLE, RingRole.MIDDLE: RingRole.INNER}.get(ego.ring_role)
+            target_indices = [index for index, item in enumerate(ordered)
+                              if index != ego_index and item.ring_role is target] if target is not None else []
+            if target_indices:
+                source_ring = airspace.actual_ring(ego.ring_role)
+                target_ring = airspace.actual_ring(target)
+                merge_time = max(0.0, abs(source_ring.radius - target_ring.radius) / max(1.0, target_ring.nominal_speed) + 6.0)
+                expected = (angles[ego_index] + target_ring.nominal_speed * merge_time / target_ring.radius) % TAU
+                predicted = [
+                    (index, (angles[index] + target_ring.nominal_speed * merge_time / target_ring.radius) % TAU)
+                    for index in target_indices
+                ]
+                _, _, pred_index, pred_angle = min(
+                    ((angle - expected) % TAU, int(uids[index]), index, angle) for index, angle in predicted
+                )
+                _, _, succ_index, succ_angle = min(
+                    ((expected - angle) % TAU, int(uids[index]), index, angle) for index, angle in predicted
+                )
+                # Preserve the established V2 feature semantics: the selector
+                # stores the selected predicted absolute angle as path_gap.
+                predecessor = slot(ego_index, pred_index, pred_angle * target_ring.radius)
+                successor = slot(ego_index, succ_index, -succ_angle * target_ring.radius)
+            else:
+                predecessor = successor = NeighborSlot()
+
+            conflict_indices = [index for index in range(count) if index != ego_index]
+            if conflict_indices:
+                conflict_index = min(conflict_indices, key=lambda index: (
+                    d_cpa[ego_index, index], t_cpa[ego_index, index], int(uids[index])
+                ))
+                conflict = slot(ego_index, conflict_index, 0.0)
+            else:
+                conflict = NeighborSlot()
+            self._slots[int(ego.uid)] = (leader, follower, predecessor, successor, conflict)
 
     def slots_for(self, uid: int) -> tuple[NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot]:
         return self._slots.get(int(uid), (NeighborSlot(),) * 5)

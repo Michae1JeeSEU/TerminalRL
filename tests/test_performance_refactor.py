@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 
 import numpy as np
 import pytest
@@ -15,6 +16,16 @@ from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
 from terminal_marl.core.merge_scheduler import LowLevelIntent
+from terminal_marl.core.forecast_world import ForecastWorld
+from terminal_marl.core.config import RingRole
+
+
+def test_p0_qualified_runtime_defaults_are_explicit():
+    config = SimConfig()
+    assert config.physics_dt == pytest.approx(0.2)
+    assert config.safety_sampling_dt == pytest.approx(1.0)
+    assert config.trajectory_bezier_samples == 41
+    assert config.trajectory_final_samples == 51
 
 
 def test_trajectory_plan_hash_is_cached_and_trajectory_arrays_are_read_only():
@@ -114,3 +125,54 @@ def test_final_51_sample_production_choice_matches_101_sample_reference():
         durations.append(parameterizer.parameterize(path, start_time=0., initial_velocity=np.zeros(3), target_horizontal_speed=10.,
                                                      constraints=TrajectoryConstraints(end_horizontal_speed=0.0))[-1].t)
     assert abs(durations[1] - durations[0]) / durations[0] < .01
+
+
+def test_selected_trajectory_densities_meet_tracking_tolerance_and_next_lower_do_not():
+    from terminal_marl.training.performance_qualification import trajectory_sampling_convergence
+    report = trajectory_sampling_convergence()
+    bezier = {row["samples"]: row for row in report["bezier"]}
+    final = {row["samples"]: row for row in report["final"]}
+    assert bezier[41]["dense_reference_tracking_error"] < 0.05
+    assert bezier[33]["dense_reference_tracking_error"] > 0.05
+    assert final[51]["dense_reference_tracking_error"] < 0.05
+    assert final[41]["dense_reference_tracking_error"] > 0.05
+    assert all(row["dynamics_feasible"] and row["safety_filter_approved"] for rows in report.values() for row in rows)
+
+
+def test_forecast_world_matches_single_aircraft_reference_replay_and_release():
+    """Freeze the former clone-step semantics without using it in production."""
+    config = SimConfig(
+        experiment_mode="fixed_teacher_heavy", scheduler_mode="teacher_full", teacher_enabled=True,
+        reset_mode="warm_start_rings", warm_start_uavs=1,
+        fixed_arrival_schedule=(0.0,), total_requested_uavs=1,
+    )
+    env = TerminalParallelEnv(config)
+    env.reset(19)
+    subject = next(iter(env.active.values()))
+    requested = LowLevelIntent(1.0, 0.0, 0.0)
+    candidate = next(row for row in env.teacher_scheduler.candidates(requested) if row.delay_seconds == 5.0)
+
+    reference = deepcopy(env)
+    for _ in range(int(round(candidate.delay_seconds / config.dt))):
+        reference.step({str(subject.uid): np.asarray((0.0, candidate.intent.speed_residual, 0.0), dtype=np.float32)})
+
+    world = ForecastWorld(env)
+    world.advance(subject.uid, candidate.intent.speed_residual, candidate.delay_seconds)
+    projected = world.active[subject.uid]
+    replayed = reference.active[subject.uid]
+    assert world.now == pytest.approx(reference.now)
+    assert projected.phase is replayed.phase
+    assert projected.ring_role is replayed.ring_role
+    assert projected.speed == pytest.approx(replayed.speed, abs=1e-10)
+    assert projected.ring_progress == pytest.approx(replayed.ring_progress, abs=1e-10)
+    assert np.allclose(projected.position, replayed.position, atol=1e-10)
+    assert np.allclose(projected.velocity, replayed.velocity, atol=1e-10)
+
+    proposal, plan, reason = world.candidate_plan(subject.uid, candidate, RingRole.MIDDLE, lz_id=None)
+    replayed.safety_retry_after = min(replayed.safety_retry_after, reference.now)
+    decision = reference._release_legacy(replayed, candidate.intent)
+    assert (reason is None and plan is not None and proposal is not None) == (decision == "approved")
+    if decision == "approved":
+        reservation = reference.scheduler.reservations[replayed.merge_reservation_id]
+        assert proposal.merge_time == pytest.approx(reservation.merge_time, abs=1e-10)
+        assert proposal.merge_angle == pytest.approx(reservation.merge_angle, abs=1e-10)

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import time
+from queue import Empty, Full, Queue
+from threading import Event, Thread
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -41,8 +43,12 @@ class Terminal3DViewer:
         self._trajectory_names: set[str] = set()
         self._trajectory_meshes: dict[str, object] = {}
         self._lz_actors: dict[int, object] = {}
-        self._uav_cloud = self._pv.PolyData(np.empty((0, 3)))
-        self._uav_cloud["rgb"] = np.empty((0, 3), dtype=np.uint8)
+        # PyVista rejects zero-length point arrays during construction.  A
+        # hidden one-point backing mesh keeps the actor persistent even when
+        # the simulation temporarily has no airborne UAVs.
+        self._uav_cloud = self._pv.PolyData(np.zeros((1, 3), dtype=float))
+        self._uav_cloud["rgb"] = np.zeros((1, 3), dtype=np.uint8)
+        self._uav_actor = None
         self._latest_snapshot = initial
         self._selected_uid: int | None = None
         self._paused = False
@@ -85,8 +91,8 @@ class Terminal3DViewer:
                                            color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, pickable=False,
                                            name=f"lz-{lz.lz_id}")
             self._lz_actors[lz.lz_id] = actor
-        self._plotter.add_mesh(self._uav_cloud, scalars="rgb", rgb=True, point_size=15,
-                               render_points_as_spheres=True, pickable=True, name="uavs")
+        self._uav_actor = self._plotter.add_mesh(self._uav_cloud, scalars="rgb", rgb=True, point_size=15,
+                                                 render_points_as_spheres=True, pickable=True, name="uavs")
 
     @staticmethod
     def _speed_label(speed: float) -> str:
@@ -171,6 +177,15 @@ class Terminal3DViewer:
             actor.GetProperty().SetColor(self._pv.Color(_LZ_COLORS.get(lz.status, "white")).float_rgb)
 
     def _update_uavs(self, snapshot: WorldRenderSnapshot) -> None:
+        if not snapshot.uavs:
+            self._uav_cloud.points = np.zeros((1, 3), dtype=float)
+            self._uav_cloud["rgb"] = np.zeros((1, 3), dtype=np.uint8)
+            if self._uav_actor is not None:
+                self._uav_actor.SetVisibility(False)
+            self._plotter.remove_actor("uav-labels", render=False)
+            return
+        if self._uav_actor is not None:
+            self._uav_actor.SetVisibility(True)
         points = np.asarray([uav.position for uav in snapshot.uavs], dtype=float)
         colors = np.empty((len(snapshot.uavs), 3), dtype=np.uint8)
         # An aircraft keeps this deterministic identity color throughout its
@@ -277,18 +292,16 @@ class ViewerStepObserver:
         self.viewer = viewer
         self.config = config
         self.stop_requested = False
-        import queue
-        import threading
-        self._frames: queue.Queue = queue.Queue(maxsize=1)
-        self._closed = threading.Event()
-        self._worker = threading.Thread(target=self._render_loop, daemon=True, name="terminal-viewer")
+        self._frames: Queue = Queue(maxsize=1)
+        self._closed = Event()
+        self._worker = Thread(target=self._render_loop, daemon=True, name="terminal-viewer")
         self._worker.start()
 
     def _render_loop(self) -> None:
         while not self._closed.is_set():
             try:
                 snapshot = self._frames.get(timeout=0.05)
-            except Exception:
+            except Empty:
                 continue
             self.stop_requested = not self.viewer.update(snapshot)
 
@@ -302,12 +315,70 @@ class ViewerStepObserver:
         snapshot = build_world_render_snapshot(env, trajectory_max_points=self.config.trajectory_max_points)
         try:
             self._frames.put_nowait(snapshot)
-        except Exception:
+        except Full:
             try:
                 self._frames.get_nowait()
-            except Exception:
+            except Empty:
                 pass
             try:
                 self._frames.put_nowait(snapshot)
-            except Exception:
+            except Full:
+                pass
+
+
+class AsyncTerminalViewerObserver:
+    """Own the complete VTK lifecycle on one dedicated render thread."""
+
+    def __init__(self, initial: WorldRenderSnapshot, config: VisualizationConfig) -> None:
+        self.config = config
+        self.stop_requested = False
+        self.error: Exception | None = None
+        self._initial = initial
+        self._frames: Queue = Queue(maxsize=1)
+        self._closed = Event()
+        self._ready = Event()
+        self._worker = Thread(target=self._render_loop, daemon=True, name="terminal-viewer")
+        self._worker.start()
+
+    def _render_loop(self) -> None:
+        viewer = None
+        try:
+            viewer = Terminal3DViewer(self._initial, self.config)
+            self._ready.set()
+            while not self._closed.is_set():
+                try:
+                    snapshot = self._frames.get(timeout=0.05)
+                except Empty:
+                    continue
+                self.stop_requested = not viewer.update(snapshot)
+        except Exception as error:  # surfaced to rollout/qualification callers
+            self.error = error
+            self.stop_requested = True
+            self._ready.set()
+        finally:
+            if viewer is not None:
+                viewer.close()
+
+    def wait_ready(self, timeout: float = 10.0) -> bool:
+        self._ready.wait(timeout)
+        return self._ready.is_set() and self.error is None
+
+    def close(self) -> None:
+        self._closed.set()
+        self._worker.join(timeout=2.0)
+
+    def __call__(self, env: "TerminalParallelEnv") -> None:
+        if env.step_count % self.config.frame_stride:
+            return
+        snapshot = build_world_render_snapshot(env, trajectory_max_points=self.config.trajectory_max_points)
+        try:
+            self._frames.put_nowait(snapshot)
+        except Full:
+            try:
+                self._frames.get_nowait()
+            except Empty:
+                pass
+            try:
+                self._frames.put_nowait(snapshot)
+            except Full:
                 pass

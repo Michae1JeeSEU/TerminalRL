@@ -12,7 +12,7 @@ from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import DynamicRulePolicy
 from ..training.high_level_a6 import load_high_level
 from .config import VisualizationConfig
-from .pyvista_viewer import Terminal3DViewer, ViewerStepObserver
+from .pyvista_viewer import AsyncTerminalViewerObserver, Terminal3DViewer, ViewerStepObserver
 from .snapshot import build_world_render_snapshot
 
 
@@ -49,15 +49,16 @@ def _config_for_mode(mode: str, max_simulation_seconds: float, scenario: str = "
     return SimConfig(experiment_mode=mode, high_level_enabled=dynamic, max_simulation_seconds=max_simulation_seconds)
 
 
-def _attach_viewer(env: TerminalParallelEnv, config: VisualizationConfig) -> tuple[Terminal3DViewer, ViewerStepObserver]:
-    viewer = Terminal3DViewer(build_world_render_snapshot(env), config)
-    observer = ViewerStepObserver(viewer, config)
+def _attach_viewer(env: TerminalParallelEnv, config: VisualizationConfig) -> tuple[None, AsyncTerminalViewerObserver]:
+    observer = AsyncTerminalViewerObserver(
+        build_world_render_snapshot(env, trajectory_max_points=config.trajectory_max_points), config
+    )
     env.set_step_observer(observer)
-    return viewer, observer
+    return None, observer
 
 
 def run_rollout(
-    *, mode: str, seed: int, gui: bool = False, frame_stride: int = 1,
+    *, mode: str, seed: int, gui: bool = False, frame_stride: int = 5,
     playback_speed: float = 0.0, show_trajectories: bool = False, show_labels: bool = False,
     low_checkpoint: str | None = None, high_checkpoint: str | None = None,
     max_simulation_seconds: float = 3600.0, max_steps: int | None = None, scenario: str = "default",
@@ -141,7 +142,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--frame-stride", type=int, default=5)
     parser.add_argument("--playback-speed", type=float, default=0.0, help="0 is unthrottled; positive values are simulated seconds per wall-clock second.")
-    parser.add_argument("--no-trajectories", action="store_true")
+    parser.add_argument("--trajectories", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--labels", action="store_true")
     parser.add_argument("--low-checkpoint")
     parser.add_argument("--high-checkpoint")
@@ -154,7 +155,7 @@ def main() -> None:
     args = _parser().parse_args()
     env = run_rollout(
         mode=args.mode, seed=args.seed, gui=args.gui, frame_stride=args.frame_stride,
-        playback_speed=args.playback_speed, show_trajectories=not args.no_trajectories,
+        playback_speed=args.playback_speed, show_trajectories=args.trajectories,
         show_labels=args.labels, low_checkpoint=args.low_checkpoint, high_checkpoint=args.high_checkpoint,
         max_simulation_seconds=args.max_simulation_seconds, max_steps=args.max_steps,
         scenario=args.scenario,

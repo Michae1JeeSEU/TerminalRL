@@ -69,6 +69,11 @@ class ForecastWorld:
         transition(uav, phase, self.now)
         uav.ring_role = role
         uav.ring_progress = math.atan2(uav.position[1], uav.position[0]) % (2.0 * math.pi)
+        ring = self.airspace.actual_ring(role)
+        tangent = np.asarray((-math.sin(uav.ring_progress), math.cos(uav.ring_progress), 0.0), dtype=float)
+        radial = np.asarray((-math.cos(uav.ring_progress), -math.sin(uav.ring_progress), 0.0), dtype=float)
+        uav.velocity = tangent * uav.speed
+        uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
 
     def _advance_one(self, uav, subject_uid: int, subject_speed_residual: float) -> None:
         plan = uav.committed_plan

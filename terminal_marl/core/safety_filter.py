@@ -1,6 +1,7 @@
 """Resource/intent then canonical-plan safety verification."""
 from __future__ import annotations
 from dataclasses import dataclass
+import math
 import numpy as np
 from .runtime_separation import swept_minimum_distance
 from .vehicle_dynamics import VehicleDynamics
@@ -81,8 +82,9 @@ class SafetyFilter:
             remaining = max(0.0, moment - previous)
             while remaining > 1e-9:
                 step = min(self.config.physics_dt, remaining)
-                motion = self.dynamics.ring_motion_step(ring, angle, speed, target_speed, step)
-                angle, speed, remaining = motion.theta, motion.speed, remaining - step
+                next_speed = self.dynamics.limited_tangential_speed(speed, target_speed, ring.radius, step)
+                angle += .5 * (speed + next_speed) * step / ring.radius
+                speed, remaining = next_speed, remaining - step
             positions.append(np.asarray((ring.radius * np.cos(angle), ring.radius * np.sin(angle), ring.height), dtype=float))
             previous = max(previous, moment)
         return positions
@@ -129,19 +131,77 @@ class SafetyFilter:
              round(float(ring.radius),8), round(float(ring.height),8), round(target,8))
         track=self._holder_track_cache.get(key)
         if track is None:
-            track=[[np.asarray(uav.position,dtype=float).copy()], float(theta), max(0.0,float(uav.speed))]
+            track=[
+                [np.asarray(uav.position,dtype=float).copy()],
+                [float(theta)],
+                [max(0.0,float(uav.speed))],
+            ]
             self._holder_track_cache[key]=track
-        positions, angle, speed = track[0], track[1], track[2]
-        needed=int(round((float(times[-1])-snapshot.now)/self.config.physics_dt))
+        positions, angles, speeds = track
+        needed=int(np.floor((float(times[-1])-snapshot.now)/self.config.physics_dt + 1e-9))
         while len(positions)-1 < needed:
-            motion=self.dynamics.ring_motion_step(ring,angle,speed,target,self.config.physics_dt)
-            angle,speed=motion.theta,motion.speed
-            positions.append(motion.position)
-        track[1],track[2]=angle,speed
-        indices=np.rint((times-snapshot.now)/self.config.physics_dt).astype(int)
-        if np.allclose(times, snapshot.now+indices*self.config.physics_dt, atol=1e-8):
-            return [np.asarray(positions[index],dtype=float) for index in indices]
-        return self._ring_prediction_positions(ring,theta,uav.speed,target,snapshot.now,times)
+            angle, speed = angles[-1], speeds[-1]
+            next_speed=self.dynamics.limited_tangential_speed(speed,target,ring.radius,self.config.physics_dt)
+            next_angle=angle+.5*(speed+next_speed)*self.config.physics_dt/ring.radius
+            positions.append(np.asarray((ring.radius*math.cos(next_angle),ring.radius*math.sin(next_angle),ring.height),dtype=float))
+            angles.append(next_angle)
+            speeds.append(next_speed)
+        offsets=(times-snapshot.now)/self.config.physics_dt
+        indices=np.floor(offsets+1e-9).astype(int)
+        result=[]
+        for moment,index,offset in zip(times,indices,offsets):
+            fraction=float(offset-index)*self.config.physics_dt
+            if fraction <= 1e-8:
+                result.append(np.asarray(positions[index],dtype=float))
+            else:
+                next_speed=self.dynamics.limited_tangential_speed(speeds[index],target,ring.radius,fraction)
+                next_angle=angles[index]+.5*(speeds[index]+next_speed)*fraction/ring.radius
+                result.append(np.asarray((ring.radius*math.cos(next_angle),ring.radius*math.sin(next_angle),ring.height),dtype=float))
+        return result
+
+    @staticmethod
+    def _track_distances(left, right) -> tuple[np.ndarray, np.ndarray]:
+        """Vectorized equivalent of point and pairwise swept checks."""
+        left = np.asarray(left, dtype=float)
+        right = np.asarray(right, dtype=float)
+        point = np.linalg.norm(left - right, axis=1)
+        if len(left) < 2:
+            return point, np.empty(0, dtype=float)
+        relative_start = left[:-1] - right[:-1]
+        relative_delta = (left[1:] - left[:-1]) - (right[1:] - right[:-1])
+        denominator = np.einsum("ij,ij->i", relative_delta, relative_delta)
+        projection = np.zeros_like(denominator)
+        moving = denominator > 1e-12
+        projection[moving] = -np.einsum(
+            "ij,ij->i", relative_start[moving], relative_delta[moving]
+        ) / denominator[moving]
+        projection = np.clip(projection, 0.0, 1.0)
+        closest = relative_start + projection[:, None] * relative_delta
+        return point, np.linalg.norm(closest, axis=1)
+
+    def _holder_broad_phase_safe(self, uav, snapshot, candidate_positions: np.ndarray) -> bool:
+        """Conservatively reject an obviously-safe full-circle holder pair."""
+        if uav.ring_role is None or len(candidate_positions) == 0:
+            return False
+        ring = snapshot.airspace.actual_ring(uav.ring_role)
+        xy = candidate_positions[:, :2]
+        radii = np.linalg.norm(xy, axis=1)
+        radial_min = float(np.min(radii))
+        if len(xy) > 1:
+            start = xy[:-1]
+            delta = xy[1:] - start
+            denominator = np.einsum("ij,ij->i", delta, delta)
+            projection = np.zeros_like(denominator)
+            moving = denominator > 1e-12
+            projection[moving] = -np.einsum("ij,ij->i", start[moving], delta[moving]) / denominator[moving]
+            closest = start + np.clip(projection, 0.0, 1.0)[:, None] * delta
+            radial_min = min(radial_min, float(np.min(np.linalg.norm(closest, axis=1))))
+        radial_max = float(np.max(radii))
+        radial_gap = max(radial_min - ring.radius, ring.radius - radial_max, 0.0)
+        z_min = float(np.min(candidate_positions[:, 2]))
+        z_max = float(np.max(candidate_positions[:, 2]))
+        vertical_gap = max(z_min - ring.height, ring.height - z_max, 0.0)
+        return math.hypot(radial_gap, vertical_gap) >= self.config.safe_distance
 
     def filter_plan(self,plan,committed_plans,snapshot):
         if plan.plan_id!=getattr(plan,"plan_id",None):return TrajectorySafetyResult(False,"invalid_plan")
@@ -159,20 +219,20 @@ class SafetyFilter:
         # same canonical interpolation for every protected aircraft.
         samples=np.arange(plan.start_time,plan.end_time+1e-9,self.config.safety_sampling_dt)
         if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
-        candidate_positions = [plan.sample(float(time)).position for time in samples]
+        candidate_positions = np.asarray([plan.sample(float(time)).position for time in samples], dtype=float)
+        committed_tracks = {}
         for other_id,other in committed_plans.items():
             if other_id==plan.uav_id:continue
             # The other plan may finish before this candidate.  Use the same
             # post-plan ring-holder prediction for the remaining candidate
             # horizon rather than silently dropping it at ``other.end_time``.
-            committed_positions = self._committed_positions(other, snapshot, samples)
-            for candidate_position, committed_position in zip(candidate_positions, committed_positions):
-                if np.linalg.norm(candidate_position-committed_position) < self.config.safe_distance:
-                    return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
-            for index in range(len(samples) - 1):
-                distance,_=swept_minimum_distance(candidate_positions[index], candidate_positions[index + 1],
-                                                   committed_positions[index], committed_positions[index + 1])
-                if distance<self.config.safe_distance:return TrajectorySafetyResult(False,"predicted_swept_separation",plan.plan_id)
+            committed_positions = np.asarray(self._committed_positions(other, snapshot, samples), dtype=float)
+            committed_tracks[other_id] = committed_positions
+            point_distances, swept_distances = self._track_distances(candidate_positions, committed_positions)
+            if np.any(point_distances < self.config.safe_distance):
+                return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
+            if np.any(swept_distances < self.config.safe_distance):
+                return TrajectorySafetyResult(False,"predicted_swept_separation",plan.plan_id)
             # A candidate that hands off to a ring must remain safe as the
             # canonical post-plan holder while an already committed transfer
             # continues.  Checking only the overlap of the two plan objects
@@ -183,18 +243,13 @@ class SafetyFilter:
                 post_end=other.end_time
                 post_samples=np.arange(post_start,post_end+1e-9,self.config.safety_sampling_dt)
                 if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
-                candidate_post_positions = self._post_plan_positions(plan, snapshot, post_samples)
-                other_positions = [other.sample(float(time)).position for time in post_samples]
-                for candidate_position, other_position in zip(candidate_post_positions, other_positions):
-                    if np.linalg.norm(candidate_position-other_position) < self.config.safe_distance:
-                        return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)
-                for index in range(len(post_samples) - 1):
-                    distance,_=swept_minimum_distance(
-                        candidate_post_positions[index], candidate_post_positions[index + 1],
-                        other_positions[index], other_positions[index + 1],
-                    )
-                    if distance < self.config.safe_distance:
-                        return TrajectorySafetyResult(False,"predicted_post_plan_holder_swept_separation",plan.plan_id)
+                candidate_post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
+                other_positions = np.asarray([other.sample(float(time)).position for time in post_samples], dtype=float)
+                point_distances, swept_distances = self._track_distances(candidate_post_positions, other_positions)
+                if np.any(point_distances < self.config.safe_distance):
+                    return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)
+                if np.any(swept_distances < self.config.safe_distance):
+                    return TrajectorySafetyResult(False,"predicted_post_plan_holder_swept_separation",plan.plan_id)
         # A holder has no committed transfer plan, but is nevertheless an
         # active aircraft.  Omitting it lets a new transfer cut through the
         # occupied target ring; this was the source of the historical A5
@@ -204,27 +259,53 @@ class SafetyFilter:
             if other_id == plan.uav_id:
                 continue
             other_plan = other_uav.committed_plan
+            if other_id in committed_tracks:
+                # Standard point/swept checks already ran above.  Retain only
+                # the deliberately larger executor hand-off margin.
+                if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
+                    endpoint = samples >= plan.end_time - 1e-9
+                    if np.any(endpoint):
+                        distances = np.linalg.norm(
+                            candidate_positions[endpoint] - committed_tracks[other_id][endpoint], axis=1
+                        )
+                        if np.any(distances < self.config.safe_distance + self.config.max_speed * self.config.dt):
+                            return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
+                continue
+            target_role_name = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(
+                plan.metadata.get("target_phase")
+            )
+            same_target_ring = target_role_name is not None and getattr(other_uav.ring_role, "value", None) == target_role_name
+            if other_plan is None and not same_target_ring and self._holder_broad_phase_safe(other_uav, snapshot, candidate_positions):
+                continue
             # A plan ending inside the candidate's horizon becomes a holder at
             # its endpoint.  The dense canonical plan samples provide a cheap
             # conservative hand-off check without multiplying every rejected
             # rule action by a one-second cross-product.
             other_positions = (self._committed_positions(other_plan, snapshot, samples)
                                if other_plan is not None else self._holder_positions(other_uav, snapshot, samples))
-            for index, (time, candidate_position, other_position) in enumerate(zip(samples, candidate_positions, other_positions)):
-                # A plan that ends on a ring crosses an executor hand-off on
-                # the next tick.  Reserve one bounded holder-motion step at
-                # that boundary so a checked endpoint cannot immediately
-                # become an unverified same-ring encounter.
-                required = self.config.safe_distance
-                if time >= plan.end_time - 1e-9 and plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
-                    required += self.config.max_speed * self.config.dt
-                if np.linalg.norm(candidate_position-other_position) < required:
-                    return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
-            for index in range(len(samples) - 1):
-                distance,_=swept_minimum_distance(candidate_positions[index], candidate_positions[index + 1],
-                                                   other_positions[index], other_positions[index + 1])
-                if distance < self.config.safe_distance:
-                    return TrajectorySafetyResult(False, "predicted_holder_swept_separation", plan.plan_id)
+            other_positions = np.asarray(other_positions, dtype=float)
+            required = np.full(len(samples), self.config.safe_distance, dtype=float)
+            if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
+                required[samples >= plan.end_time - 1e-9] += self.config.max_speed * self.config.dt
+            point_distances, swept_distances = self._track_distances(candidate_positions, other_positions)
+            if np.any(point_distances < required):
+                return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
+            if np.any(swept_distances < self.config.safe_distance):
+                return TrajectorySafetyResult(False, "predicted_holder_swept_separation", plan.plan_id)
+            if other_plan is None and same_target_ring:
+                # An inbound/transfer endpoint can be outside the hard sphere
+                # yet still close rapidly while its low hand-off speed
+                # converges to ring nominal speed.  Verify that finite-speed
+                # transient over the same shield horizon before admitting it.
+                post_end = plan.end_time + self.config.shield_horizon_seconds
+                post_samples = np.arange(plan.end_time, post_end + 1e-9, self.config.safety_sampling_dt)
+                candidate_post = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
+                other_post = np.asarray(self._holder_positions(other_uav, snapshot, post_samples), dtype=float)
+                point_distances, swept_distances = self._track_distances(candidate_post, other_post)
+                if np.any(point_distances < self.config.safe_distance):
+                    return TrajectorySafetyResult(False, "predicted_post_plan_holder_separation", plan.plan_id)
+                if np.any(swept_distances < self.config.safe_distance):
+                    return TrajectorySafetyResult(False, "predicted_post_plan_holder_swept_separation", plan.plan_id)
         trajectory_hash = plan.trajectory_hash
         self.checked_plan_ids.append(plan.plan_id);self.checked_trajectory_hashes[plan.plan_id] = trajectory_hash
         return TrajectorySafetyResult(True,checked_plan_id=plan.plan_id,checked_trajectory_hash=trajectory_hash)

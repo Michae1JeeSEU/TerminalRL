@@ -43,7 +43,7 @@ class SimConfig:
     # fixed substep in the performance-constrained mode.
     dt: float = 1.0
     physics_dt: float = 0.2
-    safety_sampling_dt: float = 0.2
+    safety_sampling_dt: float = 1.0
     trajectory_bezier_samples: int = 41
     trajectory_final_samples: int = 51
     max_simulation_seconds: float = 3600.0

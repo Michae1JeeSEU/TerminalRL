@@ -6,7 +6,6 @@ import uuid
 from dataclasses import dataclass
 import numpy as np
 
-from .runtime_separation import swept_minimum_distance
 from .trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from .action_trace import LowLevelActionTrace
 from .vehicle_dynamics import VehicleDynamics
@@ -19,6 +18,7 @@ class PredictionCache:
         self.holder_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
         self.plan_positions: dict[tuple, tuple[np.ndarray, ...]] = {}
         self.repair_plans: dict[tuple, TrajectoryPlan] = {}
+        self.plan_envelopes: dict[tuple, tuple[float, float, float, float]] = {}
 
     @staticmethod
     def _time_key(times: np.ndarray) -> tuple[float, ...]:
@@ -122,8 +122,9 @@ class PredictiveSafetyShield:
             remaining = max(0.0, float(value) - previous)
             while remaining > 1e-9:
                 step = min(self.config.physics_dt, remaining)
-                motion = self.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
-                theta, speed, remaining = motion.theta, motion.speed, remaining - step
+                next_speed = self.dynamics.limited_tangential_speed(speed, target_speed, ring.radius, step)
+                theta += .5 * (speed + next_speed) * step / ring.radius
+                speed, remaining = next_speed, remaining - step
             positions.append(np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float))
             previous = max(previous, float(value))
         return positions
@@ -132,7 +133,6 @@ class PredictiveSafetyShield:
         start = max(now, plan.start_time); horizon = min(plan.end_time, now + 30.0)
         times = np.arange(start, horizon + 1e-9, self.config.safety_sampling_dt)
         if len(times) < 2: return float("inf")
-        minimum = float("inf")
         time_key = PredictionCache._time_key(times)
         holder_key = (holder.uid, round(float(residual), 8), round(float(now), 8), time_key)
         plan_key = (plan.plan_id, plan.trajectory_hash, time_key)
@@ -146,13 +146,21 @@ class PredictiveSafetyShield:
         else:
             plan_positions = tuple(plan.sample(float(time)).position for time in times)
             if cache is not None: cache.plan_positions[plan_key] = plan_positions
-        for index in range(len(times) - 1):
-            distance, _ = swept_minimum_distance(holder_positions[index], holder_positions[index + 1],
-                                                  plan_positions[index], plan_positions[index + 1])
-            minimum = min(minimum, distance)
-        return minimum
+        holder_positions = np.asarray(holder_positions, dtype=float)
+        plan_positions = np.asarray(plan_positions, dtype=float)
+        relative_start = holder_positions[:-1] - plan_positions[:-1]
+        relative_delta = ((holder_positions[1:] - holder_positions[:-1])
+                          - (plan_positions[1:] - plan_positions[:-1]))
+        denominator = np.einsum("ij,ij->i", relative_delta, relative_delta)
+        projection = np.zeros_like(denominator)
+        moving = denominator > 1e-12
+        projection[moving] = -np.einsum(
+            "ij,ij->i", relative_start[moving], relative_delta[moving]
+        ) / denominator[moving]
+        closest = relative_start + np.clip(projection, 0.0, 1.0)[:, None] * relative_delta
+        return float(np.min(np.linalg.norm(closest, axis=1)))
 
-    def _broad_phase_reject(self, holder, plan, airspace, now: float) -> bool:
+    def _broad_phase_reject(self, holder, plan, airspace, now: float, cache: PredictionCache | None = None) -> bool:
         """Reject only pairs with a geometric proof of no shield interaction.
 
         CPA is intentionally calculated as a cheap diagnostic/ranking value;
@@ -164,15 +172,40 @@ class PredictiveSafetyShield:
         start, end = max(now, plan.start_time), min(plan.end_time, now + self.config.shield_horizon_seconds)
         if end <= start:
             return True
-        ring_height = float(airspace.actual_ring(holder.ring_role).height)
-        samples = plan.points
-        vertical_clearance = min(
-            0.0 if min(left.position[2], right.position[2]) <= ring_height <= max(left.position[2], right.position[2])
-            else min(abs(left.position[2] - ring_height), abs(right.position[2] - ring_height))
-            for left, right in zip(samples, samples[1:])
-            if right.t >= start and left.t <= end
-        )
-        return vertical_clearance > self.config.safe_distance + self.config.shield_broad_phase_margin
+        ring = airspace.actual_ring(holder.ring_role)
+        envelope_key = (plan.plan_id, plan.trajectory_hash, round(start, 8), round(end, 8))
+        envelope = None if cache is None else cache.plan_envelopes.get(envelope_key)
+        if envelope is None:
+            segments = []
+            for left, right in zip(plan.points, plan.points[1:]):
+                segment_start = max(start, left.t)
+                segment_end = min(end, right.t)
+                if segment_end < segment_start:
+                    continue
+                segments.append((plan.sample(segment_start).position, plan.sample(segment_end).position))
+            if not segments:
+                return True
+            radial_min = float("inf")
+            radial_max = 0.0
+            z_min = float("inf")
+            z_max = -float("inf")
+            for left, right in segments:
+                left_xy = np.asarray(left[:2], dtype=float)
+                delta = np.asarray(right[:2], dtype=float) - left_xy
+                denominator = float(np.dot(delta, delta))
+                projection = 0.0 if denominator <= 1e-12 else float(np.clip(-np.dot(left_xy, delta) / denominator, 0.0, 1.0))
+                radial_min = min(radial_min, float(np.linalg.norm(left_xy + projection * delta)))
+                radial_max = max(radial_max, float(np.linalg.norm(left_xy)), float(np.linalg.norm(right[:2])))
+                z_min = min(z_min, float(left[2]), float(right[2]))
+                z_max = max(z_max, float(left[2]), float(right[2]))
+            envelope = (radial_min, radial_max, z_min, z_max)
+            if cache is not None:
+                cache.plan_envelopes[envelope_key] = envelope
+        radial_min, radial_max, z_min, z_max = envelope
+        radial_gap = max(radial_min - ring.radius, ring.radius - radial_max, 0.0)
+        vertical_gap = max(z_min - ring.height, ring.height - z_max, 0.0)
+        lower_bound = math.hypot(radial_gap, vertical_gap)
+        return lower_bound > self.config.safe_distance + self.config.shield_broad_phase_margin
 
     def _repair_plan(self, holder, airspace, now: float, end: float, residual: float) -> TrajectoryPlan:
         """Create the canonical bounded ring-speed prediction for a repair."""
@@ -233,6 +266,74 @@ class PredictiveSafetyShield:
                 tracks[other.uid] = holder_plan_for(other, 0.0)
         return env.safety.verify_predicted_tracks(tracks, start=start, end=end).approved
 
+    def _protect_holder_headways(self, env, cache: PredictionCache) -> None:
+        """Protect the next same-ring holder gap under finite speed response."""
+        horizon = env.now + self.config.shield_horizon_seconds
+        for role in env.config.rings:
+            holders = [item for item in env.active.values()
+                       if item.ring_role is role and item.committed_plan is None]
+            if len(holders) < 2:
+                continue
+            ring = env.airspace.actual_ring(role)
+            holders.sort(key=lambda item: (
+                item.ring_progress if item.ring_progress is not None else math.atan2(item.position[1], item.position[0]),
+                item.uid,
+            ))
+
+            def plan_for(item, residual: float) -> TrajectoryPlan:
+                key = ("holder-headway", item.uid, round(float(residual), 8), round(env.now, 8), round(horizon, 8))
+                if key not in cache.repair_plans:
+                    cache.repair_plans[key] = self._repair_plan(item, env.airspace, env.now, horizon, residual)
+                return cache.repair_plans[key]
+
+            for index, trailing in enumerate(holders):
+                leader = holders[(index + 1) % len(holders)]
+                trailing_theta = trailing.ring_progress if trailing.ring_progress is not None else math.atan2(trailing.position[1], trailing.position[0])
+                leader_theta = leader.ring_progress if leader.ring_progress is not None else math.atan2(leader.position[1], leader.position[0])
+                arc_gap = ((leader_theta - trailing_theta) % (2.0 * math.pi)) * ring.radius
+                current_distance = float(np.linalg.norm(
+                    np.asarray(leader.position, dtype=float) - np.asarray(trailing.position, dtype=float)
+                ))
+                trailing_base = self.overrides.get(trailing.uid, (0.0, env.now))[0]
+                leader_base = self.overrides.get(leader.uid, (0.0, env.now))[0]
+                if (abs(trailing.speed - leader.speed) <= 1e-10 and abs(trailing_base - leader_base) <= 1e-10
+                        and current_distance >= self.config.safe_distance):
+                    # Equal-speed holders on the same fixed ring preserve
+                    # their angular separation exactly; no sampled repair
+                    # tracks are needed for this overwhelmingly common case.
+                    continue
+                reachable = (self.config.safe_distance + 2.0 * self.config.max_speed_residual_mps *
+                             self.config.shield_horizon_seconds + self.config.shield_broad_phase_margin)
+                if arc_gap > reachable:
+                    continue
+                nominal = {trailing.uid: plan_for(trailing, trailing_base),
+                           leader.uid: plan_for(leader, leader_base)}
+                if env.safety.verify_predicted_tracks(nominal, start=env.now, end=horizon).approved:
+                    continue
+                options = (
+                    {trailing.uid: -self.config.max_speed_residual_mps, leader.uid: leader_base},
+                    {trailing.uid: trailing_base, leader.uid: self.config.max_speed_residual_mps},
+                    {trailing.uid: -self.config.max_speed_residual_mps,
+                     leader.uid: self.config.max_speed_residual_mps},
+                )
+                repaired = False
+                pair = {trailing.uid: trailing, leader.uid: leader}
+                for residuals in options:
+                    tracks = {uid: plan_for(pair[uid], residual) for uid, residual in residuals.items()}
+                    if env.safety.verify_predicted_tracks(tracks, start=env.now, end=horizon).approved:
+                        changed = [(uid, residual) for uid, residual in residuals.items() if residual != 0.0]
+                        for uid, residual in changed:
+                            self.overrides[uid] = (residual, horizon)
+                        magnitude = sum(abs(residual) for _, residual in changed)
+                        self.telemetry["shield_interventions"] += len(changed)
+                        self.telemetry["shield_correction_magnitude"] += magnitude
+                        self.telemetry["runtime_traffic_interventions"] += len(changed)
+                        self.telemetry["runtime_traffic_repair_magnitude"] += magnitude
+                        repaired = True
+                        break
+                if not repaired:
+                    self.telemetry["shield_fail_closed"] += 1
+
     def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
         self.overrides = {uid: value for uid, value in self.overrides.items() if value[1] > env.now and uid in env.active}
         committed = [uav.committed_plan for uav in env.active.values() if uav.committed_plan is not None]
@@ -243,28 +344,34 @@ class PredictiveSafetyShield:
             for plan in committed:
                 if plan.uav_id == holder.uid or plan.end_time <= env.now:
                     continue
-                if self._broad_phase_reject(holder, plan, env.airspace, env.now):
+                if self._broad_phase_reject(holder, plan, env.airspace, env.now, cache):
                     self.telemetry["shield_broad_phase_rejected"] += 1
+                    continue
+                # The nominal swept check is the hard-safety gate.  A pair
+                # that is already safe needs neither residual candidates nor
+                # an expensive SafetyFilter repair proof.
+                nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0, cache)
+                self.telemetry["shield_narrow_phase_checked"] += 1
+                if nominal >= self.config.safe_distance:
                     continue
                 # Shift only an uncommitted holder.  Candidate plans are
                 # sampled using the same swept-distance semantics as runtime.
                 options = [self.config.max_speed_residual_mps, -self.config.max_speed_residual_mps]
                 scored = [(self._minimum_to_plan(holder, plan, env.airspace, env.now, option, cache), option) for option in options]
                 best_distance, best = max(scored)
-                nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0, cache)
-                self.telemetry["shield_narrow_phase_checked"] += 1
                 repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best, cache)
-                if nominal < self.config.safe_distance and repaired:
+                if repaired:
                     self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))
                     self.telemetry["shield_interventions"] += 1
                     self.telemetry["shield_correction_magnitude"] += abs(best)
                     self.telemetry["runtime_traffic_interventions"] += 1
                     self.telemetry["runtime_traffic_repair_magnitude"] += abs(best)
-                elif nominal < self.config.safe_distance:
+                else:
                     # The shield does not rewrite a committed plan or invent
                     # hover behaviour.  Record the fail-closed condition so a
                     # protected run cannot mistake it for a safe no-op.
                     self.telemetry["shield_fail_closed"] += 1
+        self._protect_holder_headways(env, cache)
         repaired = dict(intents)
         for uid, (residual, _) in self.overrides.items():
             if uid in intents:

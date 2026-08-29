@@ -271,7 +271,12 @@ class ReconfigurationSafetyCoordinator:
         if not geometry_gate or not np.any(structural):
             applied, update, unsafe, repairs, magnitude = self._apply_operational_if_safe(
                 proposed, reason="event_gate_or_deadband")
-            outcome = "no_op" if unsafe is None else "operational_rejected"
+            # A gated structural request may still apply independently
+            # verified speed/headway controls.  Report that as an approval,
+            # not a no-op; true structural deadband-only requests remain
+            # explicit no-ops.
+            outcome = ("approved" if unsafe is None and np.any(structural) else
+                       ("no_op" if unsafe is None else "operational_rejected"))
             reason = "event_gate_or_deadband" if unsafe is None else "unsafe_operational_action"
             return self._record(outcome, reason, raw, applied, repairs, magnitude, 0.0, None, unsafe, update,
                                 control_before, request_id, original_request_time)

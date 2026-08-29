@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+import time
 
 from terminal_marl.core.config import SimConfig
 from terminal_marl.envs.high_level_wrapper import DynamicHighLevelWrapper, RuleLowLevelAdapter
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.visualization.pyvista_viewer import Terminal3DViewer
+from terminal_marl.visualization.pyvista_viewer import ViewerStepObserver
+from terminal_marl.visualization.config import VisualizationConfig
 from terminal_marl.visualization.snapshot import build_world_render_snapshot
 
 
@@ -98,3 +101,32 @@ def test_uav_picker_uses_current_point_cloud_index() -> None:
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 0) == snapshot.uavs[0].uid
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, -1) is None
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 1) is None
+
+
+def test_viewer_observer_is_non_blocking_and_drops_stale_frames() -> None:
+    class SlowViewer:
+        def __init__(self):
+            self.times = []
+
+        def update(self, snapshot):
+            time.sleep(0.03)
+            self.times.append(snapshot.time)
+            return True
+
+    env = TerminalParallelEnv(_config(max_simulation_seconds=200.0))
+    env.reset(0)
+    viewer = SlowViewer()
+    observer = ViewerStepObserver(viewer, VisualizationConfig(frame_stride=5))
+    started = time.perf_counter()
+    for index in range(100):
+        env.step_count = index * 5
+        env.now = float(index)
+        observer(env)
+    enqueue_wall = time.perf_counter() - started
+    deadline = time.perf_counter() + 1.0
+    while (not viewer.times or viewer.times[-1] != 99.0) and time.perf_counter() < deadline:
+        time.sleep(0.01)
+    observer.close()
+    assert enqueue_wall < 0.15
+    assert viewer.times[-1] == 99.0
+    assert len(viewer.times) < 20
