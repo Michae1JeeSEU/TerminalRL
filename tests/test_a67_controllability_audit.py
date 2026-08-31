@@ -41,7 +41,7 @@ def test_a67_interface_trace_counts_only_its_source_phase_and_reasons():
     assert row["interface_frozen"] == row["safety_rejected"] == row["resource_blocked"] == 1
 
 
-def test_a67_empty_target_ring_merges_through_source_gap_not_fixed_zero_angle():
+def test_a67_empty_target_ring_uses_predicted_requester_merge_phase_not_fixed_angle():
     env = TerminalParallelEnv(SimConfig()); env.reset(seed=0)
     uav = _uav(1, FlightPhase.RING_OUTER); uav.ring_role = RingRole.OUTER; uav.ring_progress = 1.25
     env.active[1] = uav
@@ -50,6 +50,11 @@ def test_a67_empty_target_ring_merges_through_source_gap_not_fixed_zero_angle():
     proposal = MergeScheduler(env.config).propose(uav, LowLevelIntent(1., 0., 0.), WorldSnapshot(0., env.active, env.airspace), RingRole.MIDDLE)
     assert not math.isclose(proposal.merge_angle, 0.)
     assert not math.isclose(proposal.merge_angle, 1.25)
+    snapshot = WorldSnapshot(0., env.active, env.airspace)
+    scheduler = MergeScheduler(env.config)
+    source = env.airspace.actual_ring(RingRole.OUTER)
+    expected = (uav.ring_progress + source.nominal_speed * proposal.merge_time / source.radius) % (2 * math.pi)
+    assert math.isclose(proposal.merge_angle, expected)
 
 
 def test_a67_transfer_wait_is_explicit_source_ring_arc_in_canonical_plan():
@@ -84,6 +89,25 @@ def test_a67_inbound_handoff_is_checked_against_continuing_transfer():
     ], 0., 2., metadata={"target_phase": "ring_middle"})
     snapshot = WorldSnapshot(0., {}, env.airspace)
     verdict = SafetyFilter(env.config).filter_plan(candidate, {2: other}, snapshot)
+    assert not verdict.approved
+    assert verdict.reason.startswith("predicted_post_plan_holder")
+
+
+def test_a67_later_inbound_handoff_is_checked_against_earlier_fast_holder():
+    env = TerminalParallelEnv(SimConfig()); env.reset(seed=0)
+    ring = env.airspace.actual_ring(RingRole.OUTER)
+    behind = np.asarray((ring.radius, 0.0, ring.height))
+    ahead_angle = .2
+    ahead = np.asarray((ring.radius * math.cos(ahead_angle), ring.radius * math.sin(ahead_angle), ring.height))
+    candidate = TrajectoryPlan("candidate-late", 1, "inbound", [
+        TrajectoryPoint(0., ahead, np.asarray((-7. * math.sin(ahead_angle), 7. * math.cos(ahead_angle), 0.))),
+        TrajectoryPoint(10., ahead, np.asarray((-7. * math.sin(ahead_angle), 7. * math.cos(ahead_angle), 0.))),
+    ], 0., 10., metadata={"target_phase": "ring_outer"})
+    earlier = TrajectoryPlan("earlier-fast", 2, "inbound", [
+        TrajectoryPoint(0., behind, np.asarray((0., 22., 0.))),
+        TrajectoryPoint(10., behind, np.asarray((0., 22., 0.))),
+    ], 0., 10., metadata={"target_phase": "ring_outer", "committed": True})
+    verdict = SafetyFilter(env.config).filter_plan(candidate, {2: earlier}, WorldSnapshot(0., {}, env.airspace))
     assert not verdict.approved
     assert verdict.reason.startswith("predicted_post_plan_holder")
 

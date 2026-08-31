@@ -38,6 +38,10 @@ class SimConfig:
     high_level_enabled: bool = False
     reset_mode: str = "flow_from_empty"
     warm_start_uavs: int = 0
+    # A populated live/debug scene may represent aircraft already established
+    # in steady ring flight.  Curriculum/test warm starts retain their legacy
+    # zero-speed initialization unless this is explicitly enabled.
+    warm_start_steady_motion: bool = False
     # ``dt`` remains the policy/environment decision period for compatibility.
     # The physics executor samples the same authoritative plan at a smaller,
     # fixed substep in the performance-constrained mode.

@@ -33,6 +33,7 @@ def _fixed_rule_warm_flow_config(max_simulation_seconds: float) -> SimConfig:
     return SimConfig(
         experiment_mode="fixed_rule", high_level_enabled=False,
         reset_mode="warm_start_rings", warm_start_uavs=initial_count,
+        warm_start_steady_motion=True,
         fixed_arrival_schedule=schedule, total_requested_uavs=len(schedule),
         gate_probabilities=(0.25, 0.25, 0.25, 0.25),
         max_simulation_seconds=max_simulation_seconds,

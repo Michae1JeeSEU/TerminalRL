@@ -233,18 +233,18 @@ class SafetyFilter:
                 return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
             if np.any(swept_distances < self.config.safe_distance):
                 return TrajectorySafetyResult(False,"predicted_swept_separation",plan.plan_id)
-            # A candidate that hands off to a ring must remain safe as the
-            # canonical post-plan holder while an already committed transfer
-            # continues.  Checking only the overlap of the two plan objects
-            # misses this future encounter (e.g. INBOUND -> OUTER holder vs
-            # a previously committed O2M transfer).
-            if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"} and other.end_time > plan.end_time:
-                post_start=max(plan.end_time, other.start_time)
-                post_end=other.end_time
+            # A candidate that hands off to a ring must remain safe for the
+            # full finite-response horizon against every committed track.
+            # This includes the easily missed ordering where ``other`` ends
+            # first and has already accelerated into a fast holder behind the
+            # candidate's slower hand-off state.
+            if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
+                post_start=plan.end_time
+                post_end=plan.end_time + self.config.shield_horizon_seconds
                 post_samples=np.arange(post_start,post_end+1e-9,self.config.safety_sampling_dt)
                 if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
                 candidate_post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
-                other_positions = np.asarray([other.sample(float(time)).position for time in post_samples], dtype=float)
+                other_positions = np.asarray(self._committed_positions(other, snapshot, post_samples), dtype=float)
                 point_distances, swept_distances = self._track_distances(candidate_post_positions, other_positions)
                 if np.any(point_distances < self.config.safe_distance):
                     return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)

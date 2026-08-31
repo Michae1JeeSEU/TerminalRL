@@ -159,16 +159,36 @@ class TrajectoryGenerator:
         target_theta = reservation.merge_angle or 0.0
         source_target_speed = float(np.clip(source_ring.nominal_speed + airspace.speed_profile_bias + speed_residual_mps,
                                             self.config.speed_min, self.config.max_speed))
-        # A curved transfer cannot inherit an arbitrary high ring velocity at
-        # its first Bezier sample.  Deceleration remains an explicit source
-        # ring arc, never an instantaneous change at departure.
-        transfer_entry_speed = 0.0
+        # The Bezier leaves tangent to the source ring, so a normal holder can
+        # carry its finite tangential velocity into the transfer.  Braking
+        # every aircraft to zero on the occupied source ring lets its follower
+        # close the protected headway and makes every dense-ring release
+        # permanently infeasible.  Any required source-speed adjustment is
+        # still integrated explicitly by ``ring_hold_points``.
+        transfer_entry_speed = source_target_speed
         target_speed = float(np.clip(target_ring.nominal_speed + airspace.speed_profile_bias + speed_residual_mps,
                                      self.config.speed_min, self.config.max_speed))
         departure = now
+        initial_theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(current[1], current[0])
         p0 = current
         p3 = self._ring_position(target_ring, target_theta)
-        for _ in range(3):
+
+        def departure_state(moment: float, requested_entry_speed: float):
+            angle = float(initial_theta)
+            speed = max(0.0, float(uav.speed))
+            remaining = max(0.0, moment - now)
+            while remaining > 1e-9:
+                step = min(self.config.physics_dt, remaining)
+                motion = self.dynamics.ring_motion_step(source_ring, angle, speed, requested_entry_speed, step)
+                angle, speed, remaining = motion.theta, motion.speed, remaining - step
+            tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0))
+            return angle, speed, self._ring_position(source_ring, angle), tangent * speed
+
+        # Couple the scheduled departure, finite source-ring speed response,
+        # and curve-local entry limit.  Four bounded refinements are enough
+        # because both the merge slot and the cubic geometry are fixed.
+        for _ in range(4):
+            theta, actual_entry_speed, p0, entry_velocity = departure_state(departure, transfer_entry_speed)
             length = float(np.linalg.norm(p3 - p0))
             source_tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0))
             target_tangent = np.asarray((-math.sin(target_theta), math.cos(target_theta), 0.0))
@@ -176,20 +196,16 @@ class TrajectoryGenerator:
             transfer_path = GeometricPath.cubic_bezier(p0, p0 + tangent_length * source_tangent,
                                                         p3 - tangent_length * target_tangent, p3,
                                                         samples=self.config.trajectory_bezier_samples)
-            # The transfer curve begins only after the explicit source-ring
-            # braking prefix, so its duration must be evaluated from that
-            # zero-speed hand-off rather than the current holder velocity.
-            duration = self.parameterizer.estimate_duration(transfer_path, initial_velocity=np.zeros(3),
-                                                             target_horizontal_speed=target_speed,
+            transfer_entry_speed = min(source_target_speed, self.parameterizer.entry_speed_limit(transfer_path))
+            theta, actual_entry_speed, p0, entry_velocity = departure_state(departure, transfer_entry_speed)
+            duration = self.parameterizer.estimate_duration(transfer_path, initial_velocity=entry_velocity,
+                                                             target_horizontal_speed=max(actual_entry_speed, target_speed),
                                                              constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
             braking_time = max(0.0, uav.speed - transfer_entry_speed) / self.dynamics.profile.max_horizontal_decel
             departure = max(now + braking_time, reservation.merge_time - duration)
-            theta = (uav.ring_progress if uav.ring_progress is not None else math.atan2(current[1], current[0])) + source_target_speed * (departure - now) / source_ring.radius
-            p0 = self._ring_position(source_ring, theta)
         points: list[TrajectoryPoint] = []
         transfer_uav = uav
         if departure > now + 1e-9:
-            initial_theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(current[1], current[0])
             held = self.ring_hold_points(source_ring, initial_theta, uav.speed, transfer_entry_speed, now, departure - now)
             points = held[:-1]
             p0 = held[-1].position
@@ -202,11 +218,12 @@ class TrajectoryGenerator:
             transfer_uav = type("State", (), {"uid": uav.uid, "velocity": held[-1].velocity})()
         transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,
                                                            initial_velocity=transfer_uav.velocity,
-                                                           target_horizontal_speed=target_speed,
+                                                           target_horizontal_speed=max(float(np.linalg.norm(transfer_uav.velocity)), target_speed),
                                                            constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
         details = {"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner",
                    "source_tangent": source_tangent, "target_tangent": target_tangent,
                    "speed_residual_mps": float(speed_residual_mps), "scheduled_departure": departure,
+                   "transfer_entry_speed_mps": float(np.linalg.norm(transfer_uav.velocity)),
                    "merge_time": reservation.merge_time, "vehicle_profile_id": self.config.vehicle_profile_id,
                    "vehicle_profile_version": self.config.vehicle_profile.profile_version}
         all_points = (*points, *transfer_points)

@@ -68,6 +68,27 @@ class TrajectoryTimeParameterizer:
         values[0] = values[1]; values[-1] = values[-2]
         return values
 
+    def entry_speed_limit(self, path: GeometricPath) -> float:
+        """Maximum dynamically admissible scalar speed at the path entrance.
+
+        This is a local geometric bound used when a ring holder leaves along
+        a tangent-continuous curve.  It uses the same curvature and vertical
+        margins as the canonical forward/backward parameterizer; it does not
+        change the vehicle envelope or approve a trajectory by itself.
+        """
+        tangents = self._tangents(path.points)
+        curvature = self._curvature_xy(path.points)
+        horizontal_factor = max(float(np.linalg.norm(tangents[0, :2])), 1e-9)
+        vertical_factor = max(abs(float(tangents[0, 2])), 1e-9)
+        profile = self.dynamics.profile
+        curvature_limit = math.sqrt(.8 * profile.max_lateral_accel / max(float(curvature[0]), 1e-12))
+        return float(min(
+            profile.max_horizontal_speed / horizontal_factor,
+            profile.max_climb_rate / vertical_factor,
+            profile.max_descent_rate / vertical_factor,
+            curvature_limit / horizontal_factor,
+        ))
+
     def parameterize(self, path: GeometricPath, *, start_time: float, initial_velocity: np.ndarray,
                      target_horizontal_speed: float, constraints: TrajectoryConstraints | None = None):
         """Return rich ``TrajectoryPoint`` objects; import avoids a cycle."""

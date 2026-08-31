@@ -25,3 +25,19 @@ def test_curvature_caps_speed_below_straight_line_operational_limit():
                                      np.asarray((-20., 20., 0.)), np.asarray((-20., 0., 0.)))
     points = parameterizer.parameterize(path, start_time=0.0, initial_velocity=np.zeros(3), target_horizontal_speed=25.0)
     assert max(np.linalg.norm(point.velocity[:2]) for point in points) < 25.0
+
+
+def test_entry_speed_limit_preserves_nonzero_tangent_continuity_for_curved_transfer():
+    parameterizer = TrajectoryTimeParameterizer(VehicleDynamics(RESEARCH_EVTOL))
+    path = GeometricPath.cubic_bezier(
+        np.asarray((400.0, 0.0, 70.0)), np.asarray((400.0, 160.0, 70.0)),
+        np.asarray((200.0, -160.0, 40.0)), np.asarray((200.0, 0.0, 40.0)), samples=41,
+    )
+    limit = parameterizer.entry_speed_limit(path)
+    assert 0.0 < limit < RESEARCH_EVTOL.max_horizontal_speed
+    points = parameterizer.parameterize(
+        path, start_time=0.0, initial_velocity=np.asarray((0.0, limit, 0.0)),
+        target_horizontal_speed=max(limit, 16.0), constraints=TrajectoryConstraints(end_horizontal_speed=16.0),
+    )
+    assert not VehicleDynamics(RESEARCH_EVTOL).validate_plan(points)
+    assert np.linalg.norm(points[0].velocity) > 0.0

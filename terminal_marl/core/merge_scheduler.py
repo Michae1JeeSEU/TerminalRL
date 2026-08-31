@@ -109,29 +109,22 @@ class MergeScheduler:
         states=[u for u in snapshot.active.values() if u.ring_role is target]
         # An empty target ring has no target-holder gap to optimize.  A fixed
         # zero-angle capture made every O2M request bend through the same
-        # arbitrary corridor; using the requester's own phase still threads a
-        # dense source ring at an arbitrary point.  Select the centre of a
-        # predicted *source-ring* gap instead.  This is a canonical merge
-        # capture phase, not a free-flight heading command.
+        # arbitrary corridor.  With no target traffic, use the requester's
+        # own phase propagated to the merge time.  This keeps the transfer
+        # progressing in the circulation direction even when conservative
+        # slot lead time exceeds the eventual canonical curve duration.  It
+        # remains a scheduler-derived
+        # canonical capture phase, not a free-flight heading command.
         if not states:
-            source = [item for item in snapshot.active.values() if item.ring_role is uav.ring_role and item.uid != uav.uid]
-            if not source:
-                return float(uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])) % (2*math.pi)
-            source_ring=snapshot.airspace.actual_ring(uav.ring_role)
-            # For a source-gap capture, the relevant occupancy is at planned
-            # departure rather than at the later target-ring merge slot.
-            # ``ring_transfer`` contains that source-ring hold explicitly.
-            departure=time-self.transfer_duration_estimate(uav,target,snapshot)
-            horizon=max(0.0,departure-snapshot.now)
-            angles=sorted(((item.ring_progress or 0.)+(source_ring.nominal_speed*horizon/source_ring.radius))%(2*math.pi) for item in source)
-            # A ring gap must accommodate an 80 m separation both before and
-            # after the departing holder.  The gap *centre* is the only
-            # phase that maximizes this minimum clearance; using the largest
-            # empty angular sector's midpoint would put the plan at the same
-            # phase as an unmodelled self motion when the slot is in future.
-            gaps=[((angles[(index+1)%len(angles)]-angle)%(2*math.pi),angle) for index,angle in enumerate(angles)]
-            gap,start=max(gaps)
-            return (start+gap/2)%(2*math.pi)
+            source_role = uav.ring_role or {
+                "ring_outer": RingRole.OUTER, "ring_middle": RingRole.MIDDLE, "ring_inner": RingRole.INNER,
+            }.get(uav.phase.value)
+            if source_role is None:
+                return float(uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])) % (2 * math.pi)
+            source_ring=snapshot.airspace.actual_ring(source_role)
+            horizon=max(0.0,time-snapshot.now)
+            phase = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
+            return float(phase + source_ring.nominal_speed * horizon / source_ring.radius) % (2*math.pi)
         horizon = max(0.0, time - snapshot.now)
         angles=sorted(((u.ring_progress or 0.)+speed*horizon/snapshot.airspace.actual_ring(target).radius)%(2*math.pi) for u in states)
         gaps=[((angles[(i+1)%len(angles)]-a)%(2*math.pi),a) for i,a in enumerate(angles)]

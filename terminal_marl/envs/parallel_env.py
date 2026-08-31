@@ -137,6 +137,15 @@ class TerminalParallelEnv:
             uav.phase = {RingRole.OUTER: FlightPhase.RING_OUTER, RingRole.MIDDLE: FlightPhase.RING_MIDDLE, RingRole.INNER: FlightPhase.RING_INNER}[role]
             uav.ring_role = role; uav.ring_progress = theta
             uav.position = np.array((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height))
+            if self.config.warm_start_steady_motion:
+                # A populated live scene represents aircraft already
+                # established in steady ring flight.  Initialize the complete
+                # dynamics state so prediction and execution start identically.
+                uav.speed = min(ring.nominal_speed, self.generator.dynamics.ring_speed_limit(ring.radius))
+                tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0), dtype=float)
+                radial = np.asarray((-math.cos(theta), -math.sin(theta), 0.0), dtype=float)
+                uav.velocity = tangent * uav.speed
+                uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
             self.active[uav.uid] = uav
         self._refresh_airspace_occupancy()
 

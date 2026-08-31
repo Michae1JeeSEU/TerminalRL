@@ -30,3 +30,33 @@ Production geometric sampling is 41 Bezier and 51 final points, selected
 against 81/101-point references with a 0.05 m dense-reference tolerance and
 unchanged feasibility/safety decisions. None of these values changes the
 EH216-S vehicle envelope.
+
+## Fixed-rule populated-ring transfer repair (2026-08-31)
+
+The `fixed_rule_warm_flow` visualization represents aircraft already
+established in flight.  Its warm-start states therefore initialize the
+complete steady ring-motion state (speed, tangential velocity and centripetal
+acceleration); legacy curriculum warm starts keep their zero-speed semantics
+unless `warm_start_steady_motion` is explicitly enabled.
+
+Ring transfers preserve tangent-continuous, dynamically admissible entry
+speed instead of forcing every source-ring holder to stop before entering the
+Bezier.  The entry limit is derived from the same EH216-S curvature,
+horizontal/vertical speed and acceleration constraints used by the canonical
+time parameterizer.  Empty-target merge reservations propagate the
+requester's source-ring phase to the merge time, avoiding a backward/looping
+curve caused by an unrelated fixed or source-gap angle.
+
+The SafetyFilter also verifies a ring-handoff candidate for the complete
+30-second post-plan shield horizon against every committed trajectory.  This
+closes the case where an earlier committed arrival has already become a fast
+holder behind a later, slower candidate.  Safe distance, swept verification,
+the EH216-S envelope, `physics_dt=0.2 s`, and `safety_sampling_dt=1.0 s` are
+unchanged.
+
+Deterministic `fixed_rule_warm_flow`, seed 17, 240-second evidence changed
+from no outer-to-middle/middle-to-inner progress (only 2 releases approved;
+3026 `safety_wait`) to 3 completed outer-to-middle and 3 completed
+middle-to-inner transfers, with ongoing gate admissions.  Minimum actual and
+swept separation was 81.189 m and hard-separation/NMAC/collision counts were
+all zero.  Full regression after the repair: 202 passed.
