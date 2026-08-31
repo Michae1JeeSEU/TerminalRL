@@ -10,6 +10,7 @@ from terminal_marl.visualization.pyvista_viewer import Terminal3DViewer
 from terminal_marl.visualization.pyvista_viewer import ViewerStepObserver
 from terminal_marl.visualization.config import VisualizationConfig
 from terminal_marl.visualization.snapshot import build_world_render_snapshot
+from terminal_marl.visualization.rollout_viewer import _pace_live_rollout
 
 
 def _config(**overrides) -> SimConfig:
@@ -130,3 +131,19 @@ def test_viewer_observer_is_non_blocking_and_drops_stale_frames() -> None:
     assert enqueue_wall < 0.15
     assert viewer.times[-1] == 99.0
     assert len(viewer.times) < 20
+
+
+def test_live_pacing_only_waits_for_an_explicit_playback_rate() -> None:
+    class Observer:
+        paused = False
+        stop_requested = False
+        playback_speed = 0.0
+
+    started = time.perf_counter()
+    _pace_live_rollout(Observer(), 1.0, started)
+    assert time.perf_counter() - started < 0.05
+
+    Observer.playback_speed = 100.0
+    started = time.perf_counter()
+    _pace_live_rollout(Observer(), 1.0, started)
+    assert time.perf_counter() - started >= 0.008

@@ -333,6 +333,11 @@ class AsyncTerminalViewerObserver:
         self.config = config
         self.stop_requested = False
         self.error: Exception | None = None
+        # These are intentionally advisory UI controls.  The simulation
+        # thread never waits for rendering, but an operator can explicitly
+        # request a paced or paused live playback.
+        self.paused = False
+        self.playback_speed = config.playback_speed
         self._initial = initial
         self._frames: Queue = Queue(maxsize=1)
         self._closed = Event()
@@ -349,8 +354,16 @@ class AsyncTerminalViewerObserver:
                 try:
                     snapshot = self._frames.get(timeout=0.05)
                 except Empty:
+                    if viewer.paused:
+                        self.paused = True
+                        self.playback_speed = viewer.playback_speed
+                        self.stop_requested = not viewer.wait_until_resumed()
+                        self.paused = viewer.paused
+                        self.playback_speed = viewer.playback_speed
                     continue
                 self.stop_requested = not viewer.update(snapshot)
+                self.paused = viewer.paused
+                self.playback_speed = viewer.playback_speed
         except Exception as error:  # surfaced to rollout/qualification callers
             self.error = error
             self.stop_requested = True

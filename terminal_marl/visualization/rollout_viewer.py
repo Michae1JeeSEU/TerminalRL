@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 from typing import Callable
 
 import numpy as np
@@ -12,7 +13,7 @@ from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import DynamicRulePolicy
 from ..training.high_level_a6 import load_high_level
 from .config import VisualizationConfig
-from .pyvista_viewer import AsyncTerminalViewerObserver, Terminal3DViewer, ViewerStepObserver
+from .pyvista_viewer import AsyncTerminalViewerObserver
 from .snapshot import build_world_render_snapshot
 
 
@@ -57,6 +58,26 @@ def _attach_viewer(env: TerminalParallelEnv, config: VisualizationConfig) -> tup
     return None, observer
 
 
+def _pace_live_rollout(observer: AsyncTerminalViewerObserver | None, simulated_dt: float, tick_started: float) -> float:
+    """Honor an explicit live-playback request without waiting for rendering.
+
+    A zero speed remains the performance/default mode.  A positive value is a
+    user-facing simulation-time rate, not renderer back-pressure; pauses are
+    likewise explicit UI control rather than a stale-frame dependency.
+    """
+    if observer is None:
+        return time.perf_counter()
+    while observer.paused and not observer.stop_requested:
+        time.sleep(0.03)
+    if observer.stop_requested:
+        return time.perf_counter()
+    if observer.playback_speed > 0.0:
+        remaining = simulated_dt / observer.playback_speed - (time.perf_counter() - tick_started)
+        if remaining > 0.0:
+            time.sleep(remaining)
+    return time.perf_counter()
+
+
 def run_rollout(
     *, mode: str, seed: int, gui: bool = False, frame_stride: int = 5,
     playback_speed: float = 0.0, show_trajectories: bool = False, show_labels: bool = False,
@@ -75,8 +96,7 @@ def run_rollout(
         enabled=gui, frame_stride=frame_stride, playback_speed=playback_speed,
         show_trajectories=show_trajectories, show_labels=show_labels,
     )
-    viewer: Terminal3DViewer | None = None
-    observer: ViewerStepObserver | None = None
+    observer: AsyncTerminalViewerObserver | None = None
 
     def stopped() -> bool:
         return observer is not None and observer.stop_requested
@@ -86,17 +106,27 @@ def run_rollout(
             env = TerminalParallelEnv(config)
             observations, _ = env.reset(seed)
             if gui:
-                viewer, observer = _attach_viewer(env, render_config)
+                _, observer = _attach_viewer(env, render_config)
+                if not observer.wait_ready():
+                    raise RuntimeError(f"viewer failed to start: {observer.error!r}")
             if mode == "fixed_rule":
+                tick_started = time.perf_counter()
                 for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
                     observations, _, _, _, _ = env.step()
                     if stopped() or (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
                         break
+                    tick_started = _pace_live_rollout(observer, config.dt, tick_started)
+                    if stopped():
+                        break
             else:
                 low = FrozenLowLevelPolicy(low_checkpoint, config)
+                tick_started = time.perf_counter()
                 for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
                     observations, _, _, _, _ = env.step(low.act(observations))
                     if stopped() or (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
+                        break
+                    tick_started = _pace_live_rollout(observer, config.dt, tick_started)
+                    if stopped():
                         break
             return env
 
@@ -120,18 +150,22 @@ def run_rollout(
         wrapper = DynamicHighLevelWrapper(config, low_level)
         observation, _ = wrapper.reset(seed)
         if gui:
-            viewer, observer = _attach_viewer(wrapper.base, render_config)
+            _, observer = _attach_viewer(wrapper.base, render_config)
+            if not observer.wait_ready():
+                raise RuntimeError(f"viewer failed to start: {observer.error!r}")
         macro_limit = max_steps or int(np.ceil(config.max_simulation_seconds / config.high_level_decision_interval_seconds))
+        tick_started = time.perf_counter()
         for _ in range(macro_limit):
             observation, _, terminated, truncated, _ = wrapper.step(high_policy(observation, wrapper))
             if stopped() or terminated or truncated:
+                break
+            tick_started = _pace_live_rollout(observer, config.high_level_decision_interval_seconds, tick_started)
+            if stopped():
                 break
         return wrapper.base
     finally:
         if observer is not None:
             observer.close()
-        if viewer is not None:
-            viewer.close()
 
 
 def _parser() -> argparse.ArgumentParser:
