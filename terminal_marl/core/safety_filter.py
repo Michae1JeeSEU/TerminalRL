@@ -116,14 +116,15 @@ class SafetyFilter:
                 positions[index] = position
         return [np.asarray(position, dtype=float) for position in positions]
 
-    def _holder_positions(self, uav, snapshot, times: np.ndarray) -> list[np.ndarray]:
+    def _holder_positions(self, uav, snapshot, times: np.ndarray, speed_residual_mps: float = 0.0) -> list[np.ndarray]:
         if uav.ring_role is None:
             return [np.asarray(uav.position, dtype=float) for _ in times]
         ring = snapshot.airspace.actual_ring(uav.ring_role)
         theta = uav.ring_progress
         if theta is None:
             theta = float(np.arctan2(uav.position[1], uav.position[0]))
-        target = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
+        target = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias + speed_residual_mps,
+                               self.config.speed_min, self.config.max_speed))
         # Candidate plans in one policy step share the same state and 0.2-s
         # safety grid.  Extend one authoritative finite-response track rather
         # than re-integrating it for every candidate verification.
@@ -141,11 +142,10 @@ class SafetyFilter:
         needed=int(np.floor((float(times[-1])-snapshot.now)/self.config.physics_dt + 1e-9))
         while len(positions)-1 < needed:
             angle, speed = angles[-1], speeds[-1]
-            next_speed=self.dynamics.limited_tangential_speed(speed,target,ring.radius,self.config.physics_dt)
-            next_angle=angle+.5*(speed+next_speed)*self.config.physics_dt/ring.radius
-            positions.append(np.asarray((ring.radius*math.cos(next_angle),ring.radius*math.sin(next_angle),ring.height),dtype=float))
-            angles.append(next_angle)
-            speeds.append(next_speed)
+            motion = self.dynamics.ring_motion_step(ring, angle, speed, target, self.config.physics_dt)
+            positions.append(np.asarray(motion.position, dtype=float))
+            angles.append(motion.theta)
+            speeds.append(motion.speed)
         offsets=(times-snapshot.now)/self.config.physics_dt
         indices=np.floor(offsets+1e-9).astype(int)
         result=[]
@@ -154,9 +154,8 @@ class SafetyFilter:
             if fraction <= 1e-8:
                 result.append(np.asarray(positions[index],dtype=float))
             else:
-                next_speed=self.dynamics.limited_tangential_speed(speeds[index],target,ring.radius,fraction)
-                next_angle=angles[index]+.5*(speeds[index]+next_speed)*fraction/ring.radius
-                result.append(np.asarray((ring.radius*math.cos(next_angle),ring.radius*math.sin(next_angle),ring.height),dtype=float))
+                motion = self.dynamics.ring_motion_step(ring, angles[index], speeds[index], target, fraction)
+                result.append(np.asarray(motion.position, dtype=float))
         return result
 
     @staticmethod
@@ -281,17 +280,25 @@ class SafetyFilter:
             # its endpoint.  The dense canonical plan samples provide a cheap
             # conservative hand-off check without multiplying every rejected
             # rule action by a one-second cross-product.
-            other_positions = (self._committed_positions(other_plan, snapshot, samples)
-                               if other_plan is not None else self._holder_positions(other_uav, snapshot, samples))
-            other_positions = np.asarray(other_positions, dtype=float)
             required = np.full(len(samples), self.config.safe_distance, dtype=float)
             if plan.metadata.get("target_phase") in {"ring_outer", "ring_middle", "ring_inner"}:
                 required[samples >= plan.end_time - 1e-9] += self.config.max_speed * self.config.dt
-            point_distances, swept_distances = self._track_distances(candidate_positions, other_positions)
-            if np.any(point_distances < required):
-                return TrajectorySafetyResult(False, "predicted_holder_separation", plan.plan_id)
-            if np.any(swept_distances < self.config.safe_distance):
-                return TrajectorySafetyResult(False, "predicted_holder_swept_separation", plan.plan_id)
+            # A committed candidate must remain safe even if any current
+            # holder legally applies its full bounded speed residual on the
+            # next policy tick.  Previously this check used only nominal
+            # holder speed, then the runtime Shield discovered the mismatch
+            # after the immutable transfer had already begun.
+            residual_envelope = (0.0,) if other_plan is not None else (0.0, self.config.max_speed_residual_mps,
+                                                                         -self.config.max_speed_residual_mps)
+            for residual in residual_envelope:
+                other_positions = (self._committed_positions(other_plan, snapshot, samples)
+                                   if other_plan is not None else self._holder_positions(other_uav, snapshot, samples, residual))
+                other_positions = np.asarray(other_positions, dtype=float)
+                point_distances, swept_distances = self._track_distances(candidate_positions, other_positions)
+                if np.any(point_distances < required):
+                    return TrajectorySafetyResult(False, "predicted_holder_speed_envelope", plan.plan_id)
+                if np.any(swept_distances < self.config.safe_distance):
+                    return TrajectorySafetyResult(False, "predicted_holder_speed_envelope_swept", plan.plan_id)
             if other_plan is None and same_target_ring:
                 # An inbound/transfer endpoint can be outside the hard sphere
                 # yet still close rapidly while its low hand-off speed
@@ -300,12 +307,13 @@ class SafetyFilter:
                 post_end = plan.end_time + self.config.shield_horizon_seconds
                 post_samples = np.arange(plan.end_time, post_end + 1e-9, self.config.safety_sampling_dt)
                 candidate_post = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
-                other_post = np.asarray(self._holder_positions(other_uav, snapshot, post_samples), dtype=float)
-                point_distances, swept_distances = self._track_distances(candidate_post, other_post)
-                if np.any(point_distances < self.config.safe_distance):
-                    return TrajectorySafetyResult(False, "predicted_post_plan_holder_separation", plan.plan_id)
-                if np.any(swept_distances < self.config.safe_distance):
-                    return TrajectorySafetyResult(False, "predicted_post_plan_holder_swept_separation", plan.plan_id)
+                for residual in (0.0, self.config.max_speed_residual_mps, -self.config.max_speed_residual_mps):
+                    other_post = np.asarray(self._holder_positions(other_uav, snapshot, post_samples, residual), dtype=float)
+                    point_distances, swept_distances = self._track_distances(candidate_post, other_post)
+                    if np.any(point_distances < self.config.safe_distance):
+                        return TrajectorySafetyResult(False, "predicted_post_plan_holder_speed_envelope", plan.plan_id)
+                    if np.any(swept_distances < self.config.safe_distance):
+                        return TrajectorySafetyResult(False, "predicted_post_plan_holder_speed_envelope_swept", plan.plan_id)
         trajectory_hash = plan.trajectory_hash
         self.checked_plan_ids.append(plan.plan_id);self.checked_trajectory_hashes[plan.plan_id] = trajectory_hash
         return TrajectorySafetyResult(True,checked_plan_id=plan.plan_id,checked_trajectory_hash=trajectory_hash)

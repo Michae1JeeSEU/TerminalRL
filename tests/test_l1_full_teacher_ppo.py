@@ -45,6 +45,7 @@ def test_l1_config_is_medium_nominal_full_teacher_and_uses_safe_warm_start():
     assert config.scheduler_mode == config.teacher_mode == "teacher_full"
     assert config.teacher_enabled and config.shield_enabled and not config.high_level_enabled
     assert config.initial_soc == 0.80 and config.mission_probabilities == (1.0, 0.0, 0.0, 0.0)
+    assert config.priority_mode == "fixed" and config.initial_priority == 1
     assert len(config.fixed_arrival_schedule) == 12 and config.fixed_arrival_schedule[:8] == (0.0,) * 8
 
 
@@ -55,6 +56,14 @@ def test_l1_scenario_matrix_keeps_warm_starts_legal_and_includes_poisson_from_em
     assert any(config.arrival_model == "poisson" for config in designs if config.reset_mode == "flow_from_empty")
     finite_empty = next(config for config in designs if config.reset_mode == "flow_from_empty" and config.arrival_model == "finite_cohort")
     assert finite_empty.fixed_arrival_schedule[0] == 0.0
+
+
+def test_l1_fixed_priority_is_homogeneous_while_default_arrivals_keep_random_135():
+    config = l1_full_teacher_config(medium_rate=0.0015, reset_mode="flow_from_empty", demand_model="finite_cohort",
+                                    warm_start_uavs=0, cohort_uavs=8, horizon_seconds=50.0)
+    env = TerminalParallelEnv(config)
+    env.reset(19)
+    assert {request.base_priority for request in env.arrivals.requests_until(0.0)} == {1}
 
 
 def test_l1_rejects_an_unparameterizable_teacher_candidate_without_changing_teacher_semantics(monkeypatch):

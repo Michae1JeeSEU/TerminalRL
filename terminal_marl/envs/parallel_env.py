@@ -435,12 +435,45 @@ class TerminalParallelEnv:
     def _uav_trace(self, uav: UAVState) -> dict:
         return {"uid": uav.uid, "arrival_id": uav.arrival_id, "phase": uav.phase.value,
                 "ring_role": None if uav.ring_role is None else uav.ring_role.value,
-                "position": uav.position.tolist(), "velocity": uav.velocity.tolist(), "speed": uav.speed,
+                "position": uav.position.tolist(), "velocity": uav.velocity.tolist(), "acceleration": uav.acceleration.tolist(), "speed": uav.speed,
                 "ring_progress": uav.ring_progress, "entry_gate": uav.assigned_gate,
                 "trajectory_plan_id": uav.trajectory_plan_id, "merge_reservation_id": uav.merge_reservation_id,
+                "trajectory_hash": None if uav.committed_plan is None else uav.committed_plan.trajectory_hash,
+                "reservation_ids": [] if uav.committed_plan is None else list(uav.committed_plan.reservation_ids),
                 "committed": uav.committed_plan is not None, "phase_entry_time": uav.phase_entry_time,
                 "last_safety_decision": self.last_safety_decisions.get(uav.uid),
                 "last_release_decision": self.last_release_decisions.get(uav.uid)}
+
+    def _next_state_prediction(self, intents: dict[int, LowLevelIntent]) -> dict[int, np.ndarray]:
+        """Diagnostic-only one-tick predictor sharing executor dynamics.
+
+        It never feeds the transition.  The report makes any future divergence
+        between canonical-plan execution and holder integration observable.
+        """
+        expected: dict[int, np.ndarray] = {}
+        for uid, uav in self.active.items():
+            plan = uav.committed_plan
+            if plan is not None:
+                expected[uid] = plan.sample(min(self.now + self.config.dt, plan.end_time)).position.copy()
+                continue
+            intent = intents.get(uid)
+            if uav.ring_role is None or intent is None:
+                continue
+            ring = self.airspace.actual_ring(uav.ring_role)
+            theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
+            speed = max(0.0, uav.speed)
+            target = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias +
+                                   intent.speed_residual * self.config.max_speed_residual_mps,
+                                   self.config.speed_min, self.config.max_speed))
+            elapsed = 0.0
+            position = uav.position.copy()
+            while elapsed < self.config.dt - 1e-9:
+                dt = min(self.config.physics_dt, self.config.dt - elapsed)
+                motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target, dt)
+                theta, speed, position = motion.theta, motion.speed, motion.position
+                elapsed += dt
+            expected[uid] = np.asarray(position, dtype=float)
+        return expected
 
     def _first_conflict_trace(self, encounter) -> dict:
         left, right = (self.active[uid] for uid in encounter.pair)
@@ -778,6 +811,7 @@ class TerminalParallelEnv:
                 magnitude = abs(trace.shield_applied.speed_residual-trace.execution_applied.speed_residual)
                 rewards.setdefault(uid, LowLevelReward()).shield -= self.config.shield_intervention_penalty + self.config.shield_correction_magnitude_penalty*magnitude
         self.last_action_traces = traces
+        predicted_positions = self._next_state_prediction(intents)
         for uid, uav in list(self.active.items()):
             phase = uav.phase
             had_committed_plan = uav.committed_plan is not None
@@ -795,6 +829,10 @@ class TerminalParallelEnv:
                 self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
         encounters = self.separation_monitor.observe(self.active, pre_motion_positions)
         self.telemetry.update(self.separation_monitor.telemetry)
+        prediction_execution_error = {
+            str(uid): float(np.linalg.norm(prediction - self.active[uid].position))
+            for uid, prediction in predicted_positions.items() if uid in self.active
+        }
         for encounter in encounters:
             if any(uid not in self.active for uid in encounter.pair):
                 continue
@@ -814,6 +852,7 @@ class TerminalParallelEnv:
         self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
             "release_decisions": dict(decisions), "release_intents": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
             "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
+            "prediction_execution_position_error": prediction_execution_error,
             "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
@@ -830,6 +869,7 @@ class TerminalParallelEnv:
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
             "release_intent_telemetry": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
             "actions": action_rows, "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
+            "prediction_execution_position_error": prediction_execution_error,
             "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
         }
 

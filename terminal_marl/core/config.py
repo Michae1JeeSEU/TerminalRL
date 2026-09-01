@@ -119,6 +119,12 @@ class SimConfig:
     priority_gamma: float = 1.0
     priority_delta: float = 2.0
     priority_wait_reference_seconds: float = 3600.0
+    # Scenario-owned arrival priority protocol.  The default retains the
+    # historical 1/3/5 distribution; L1-S explicitly freezes it to a
+    # homogeneous baseline so a safety witness cannot be confounded by
+    # random scheduling priority.
+    priority_mode: str = "random_135"
+    initial_priority: int | None = None
     num_landing_zones: int = 6
     final_queue_capacity: int = 1
     max_speed_residual_mps: float = 2.0
@@ -214,6 +220,12 @@ class SimConfig:
             raise ValueError("initial_soc_min and initial_soc_max must be set together")
         if self.initial_soc_min is not None and not (0.0 < self.initial_soc_min <= self.initial_soc_max <= 1.0):
             raise ValueError("initial SOC bounds must satisfy 0 < min <= max <= 1")
+        if self.priority_mode not in {"random_135", "fixed"}:
+            raise ValueError("priority_mode must be random_135 or fixed")
+        if self.priority_mode == "fixed" and self.initial_priority not in {1, 3, 5}:
+            raise ValueError("fixed priority_mode requires initial_priority in {1, 3, 5}")
+        if self.priority_mode == "random_135" and self.initial_priority is not None:
+            raise ValueError("random_135 priority_mode cannot set initial_priority")
         supported_modes = {
             "fixed_rule", "fixed_teacher_heavy", "fixed_a5_legacy", "fixed_low_student",
             "dynamic_rule", "dynamic_hrl_student",

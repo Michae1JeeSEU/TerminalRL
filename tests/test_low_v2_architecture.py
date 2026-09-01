@@ -84,6 +84,7 @@ def test_step_emits_requested_execution_shield_provenance():
         assert trace["teacher_corrected_action"] is None
         assert trace["teacher_used"] is False
         assert trace["teacher_verified"] is False and trace["teacher_witness_plan_id"] is None
+    assert max(info["prediction_execution_position_error"].values(), default=0.0) < 1e-9
 
 
 def test_predictive_shield_detects_future_conflict_without_rewriting_committed_plan():

@@ -205,6 +205,7 @@ def l1_full_teacher_config(
         max_active_uavs=32, scheduler_mode="teacher_full", teacher_enabled=True,
         teacher_mode="teacher_full", shield_enabled=True,
         initial_soc_mode="fixed", initial_soc=0.80,
+        priority_mode="fixed", initial_priority=1,
         gate_probabilities=(0.25, 0.25, 0.25, 0.25),
         mission_probabilities=(1.0, 0.0, 0.0, 0.0),
     )
@@ -494,6 +495,7 @@ def train_l1_full_teacher(
         "medium_interval": list(medium_range), "protocol": asdict(protocol),
         "environment": {"teacher": "FULL", "scheduler_mode": "teacher_full", "shield_enabled": True, "high_level_enabled": False,
                         "geometry": "nominal_fixed", "gate_probabilities": [0.25] * 4, "mission_probabilities": [1.0, 0.0, 0.0, 0.0], "initial_soc": 0.80,
+                        "priority_mode": "fixed", "initial_priority": 1,
                         "finite_cohort_range": [8, 20], "warm_start_range": [8, 16], "warm_start_fraction": 0.60},
         "checkpoint": str(checkpoint), "resumed_from_checkpoint": None if resume_checkpoint is None else str(resume_checkpoint),
         "resume_checkpoint_sha256": resume_hash, "rollout_rows": total_rollout_rows, "safety_passed": safety_passed,

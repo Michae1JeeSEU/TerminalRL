@@ -13,7 +13,7 @@ from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPo
 from terminal_marl.core.trajectory_time_parameterization import GeometricPath, TrajectoryConstraints, TrajectoryTimeParameterizer
 from terminal_marl.core.vehicle_dynamics import VehicleDynamics
 from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL
-from terminal_marl.envs.parallel_env import TerminalParallelEnv
+from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
 from terminal_marl.core.merge_scheduler import LowLevelIntent
 from terminal_marl.core.forecast_world import ForecastWorld
@@ -83,6 +83,31 @@ def test_safety_sampling_witness_keeps_shield_trigger(sampling_dt: float):
     assert shield.assess(env).trigger_reason == "predicted_swept_separation"
     shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
     assert shield.telemetry["shield_fail_closed"] + shield.telemetry["shield_interventions"] >= 1
+
+
+def test_l1_holder_committed_witness_checks_the_legal_speed_residual_envelope(monkeypatch):
+    """Regression for L1-S seed 2003's holder--committed hard witness."""
+    config = SimConfig(experiment_mode="fixed_teacher_heavy", scheduler_mode="teacher_full", teacher_enabled=True,
+                       reset_mode="warm_start_rings", warm_start_uavs=1, fixed_arrival_schedule=(0.0,),
+                       total_requested_uavs=1, shield_horizon_seconds=30.0)
+    env = TerminalParallelEnv(config); env.reset(2003)
+    holder = next(iter(env.active.values()))
+    ring = env.airspace.actual_ring(holder.ring_role)
+    holder.position = np.asarray((ring.radius, 0.0, ring.height)); holder.ring_progress = 0.0; holder.speed = ring.nominal_speed
+    times = np.asarray((0.0, 30.0))
+    nominal = env.safety._holder_positions(holder, WorldSnapshot(env.now, env.active, env.airspace), times, 0.0)
+    tangent = np.asarray((0.0, 1.0, 0.0))
+    # A transfer that is barely safe against nominal guidance becomes unsafe
+    # when the holder legally requests +2 m/s for the 30 s shield horizon.
+    plan = TrajectoryPlan("l1-s-holder-committed", 999, "transfer", [
+        TrajectoryPoint(0.0, nominal[0] + tangent * 85.0),
+        TrajectoryPoint(30.0, nominal[1] + tangent * 85.0),
+    ], 0.0, 30.0, metadata={"trajectory_schema_version": config.trajectory_schema_version,
+                              "vehicle_profile_id": config.vehicle_profile_id, "target_phase": "ring_middle"})
+    monkeypatch.setattr(env.safety.dynamics, "validate_plan", lambda points: [])
+    verdict = env.safety.filter_plan(plan, {}, WorldSnapshot(env.now, env.active, env.airspace))
+    assert not verdict.approved
+    assert verdict.reason in {"predicted_holder_speed_envelope", "predicted_holder_speed_envelope_swept"}
 
 
 @pytest.mark.parametrize("samples", (81, 41, 33))

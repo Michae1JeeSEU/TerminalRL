@@ -27,7 +27,9 @@ class ArrivalProcess:
             gap=(.25 if self.wave%4<3 else 3.25)/rate; self.wave+=1; return now+gap
         return now+1/rate
     def _request(self,time:float)->ArrivalRequest:
-        n=self.generated; mission=MissionType(self.rng.choice([m.value for m in MissionType],p=self.config.mission_probabilities)); base=int(self.rng.choice([1,3,5],p=[.50,.35,.15]))
+        n=self.generated; mission=MissionType(self.rng.choice([m.value for m in MissionType],p=self.config.mission_probabilities))
+        base = (int(self.config.initial_priority) if self.config.priority_mode == "fixed"
+                else int(self.rng.choice([1,3,5], p=[.50,.35,.15])))
         if mission is MissionType.EMERGENCY: base=5
         if self.config.initial_soc_mode=="fixed": soc=float(self.config.initial_soc)
         else:
