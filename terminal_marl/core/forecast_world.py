@@ -122,15 +122,18 @@ class ForecastWorld:
                                      proposal.merge_time, proposal.merge_angle, None, None, status="future",
                                      expires_at=proposal.merge_time + 60.0)
         residual = candidate.intent.speed_residual * self.config.max_speed_residual_mps
-        if target == "final":
-            if lz_id is None:
-                lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
-            if lz_id is None:
-                return None, None, "lz_unavailable"
-            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], temporary, self.now,
-                                                 speed_residual_mps=residual, airspace=self.airspace)
-        else:
-            plan = self.generator.ring_transfer(uav, uav.ring_role, target, temporary, self.airspace, self.now, residual)
+        try:
+            if target == "final":
+                if lz_id is None:
+                    lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+                if lz_id is None:
+                    return None, None, "lz_unavailable"
+                plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], temporary, self.now,
+                                                     speed_residual_mps=residual, airspace=self.airspace)
+            else:
+                plan = self.generator.ring_transfer(uav, uav.ring_role, target, temporary, self.airspace, self.now, residual)
+        except RuntimeError:
+            return proposal, None, "trajectory_infeasible"
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         verdict = self.safety.filter_plan(plan, committed, snapshot)
         return proposal, plan, None if verdict.approved else verdict.reason

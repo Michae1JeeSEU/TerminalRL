@@ -107,6 +107,7 @@ class TerminalParallelEnv:
             "repair_candidates_checked": 0, "repair_used": 0, "future_release_reservations": 0,
             "checked_executed_plan_matches": 0, "checked_executed_plan_samples": 0,
             "checked_executed_plan_hash_mismatches": 0,
+            "trajectory_infeasible_candidates": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -314,12 +315,20 @@ class TerminalParallelEnv:
                                      proposal.merge_time, proposal.merge_angle, None, None,
                                      status="future" if proposal.merge_time > self.now else "committed", expires_at=proposal.merge_time + 60.0)
         residual = candidate.intent.speed_residual * self.config.max_speed_residual_mps
-        if target == "final":
-            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], temporary, self.now,
-                                                 scheduled_delay=candidate.delay_seconds, speed_residual_mps=residual,
-                                                 airspace=self.airspace)
-        else:
-            plan = self.generator.ring_transfer(uav, uav.ring_role, target, temporary, self.airspace, self.now, residual)
+        try:
+            if target == "final":
+                plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], temporary, self.now,
+                                                     scheduled_delay=candidate.delay_seconds, speed_residual_mps=residual,
+                                                     airspace=self.airspace)
+            else:
+                plan = self.generator.ring_transfer(uav, uav.ring_role, target, temporary, self.airspace, self.now, residual)
+        except RuntimeError:
+            # Canonical parameterization is part of executable feasibility.
+            # A failed candidate is rejected fail-closed; it is never turned
+            # into an approximate path nor permitted to abort a teacher scan.
+            self.telemetry["repair_candidates_checked"] += 1
+            self.telemetry["trajectory_infeasible_candidates"] += 1
+            return proposal, None, "trajectory_infeasible"
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         self.telemetry["repair_candidates_checked"] += 1
         verdict = self.safety.filter_plan(plan, committed, snapshot)
@@ -382,13 +391,23 @@ class TerminalParallelEnv:
                 self.scheduler.cancel(reservation.reservation_id, "lz_unavailable")
                 self._finish_release_intent(uav, row, "lz_unavailable")
                 return "lz_unavailable"
-            plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
-                                                 speed_residual_mps=candidate.intent.speed_residual * self.config.max_speed_residual_mps,
-                                                 airspace=self.airspace)
         else:
             lz_id = None
-            plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now,
-                                                candidate.intent.speed_residual * self.config.max_speed_residual_mps)
+        try:
+            if target == "final":
+                plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
+                                                     speed_residual_mps=candidate.intent.speed_residual * self.config.max_speed_residual_mps,
+                                                     airspace=self.airspace)
+            else:
+                plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now,
+                                                    candidate.intent.speed_residual * self.config.max_speed_residual_mps)
+        except RuntimeError:
+            if lz_id is not None:
+                self.lz_manager.release(lz_id, uav.uid, "trajectory_infeasible")
+            self.scheduler.cancel(reservation.reservation_id, "trajectory_infeasible")
+            uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[row["interface"]])
+            self._finish_release_intent(uav, row, "safety_wait", safety_reason="trajectory_infeasible")
+            return "safety_wait"
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id
             if lz_id is not None: uav.assigned_lz = lz_id

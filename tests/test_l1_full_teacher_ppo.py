@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import json
-
+from terminal_marl.core.merge_scheduler import LowLevelIntent, RepairCandidate
+from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.training.train_low_v2_ppo import (
     L1FullTeacherProtocol,
     _episode_design,
@@ -33,7 +34,7 @@ def _write_prerequisites(tmp_path):
     dataset = tmp_path / "l0.jsonl"
     dataset.write_text("".join(json.dumps(_teacher_row(index == 0)) + "\n" for index in range(20)), encoding="utf-8")
     (tmp_path / "seed_partitions.json").write_text(json.dumps({"schema_version": "A5V2-TRAINING-CURRICULUM-v3", "seed_partition": {
-        "train": [1001], "validation": [2001, 2002, 2003, 2004], "qualification": [3001], "ood": [4001],
+        "train": [1001], "validation": list(range(2001, 2013)), "qualification": [3001], "ood": [4001],
     }}), encoding="utf-8")
     return c0, dataset
 
@@ -54,6 +55,19 @@ def test_l1_scenario_matrix_keeps_warm_starts_legal_and_includes_poisson_from_em
     assert any(config.arrival_model == "poisson" for config in designs if config.reset_mode == "flow_from_empty")
     finite_empty = next(config for config in designs if config.reset_mode == "flow_from_empty" and config.arrival_model == "finite_cohort")
     assert finite_empty.fixed_arrival_schedule[0] == 0.0
+
+
+def test_l1_rejects_an_unparameterizable_teacher_candidate_without_changing_teacher_semantics(monkeypatch):
+    config = l1_full_teacher_config(medium_rate=0.0015, reset_mode="warm_start_rings", demand_model="finite_cohort",
+                                    warm_start_uavs=8, cohort_uavs=8, horizon_seconds=20.0)
+    env = TerminalParallelEnv(config)
+    env.reset(7)
+    uav = next(item for item in env.active.values() if item.ring_role.value == "outer")
+    monkeypatch.setattr(env.generator, "ring_transfer", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("unparameterizable")))
+    proposal, plan, reason = env._candidate_plan(uav, RepairCandidate("requested", LowLevelIntent(1.0, 0.0, 0.0)),
+                                                  "middle", WorldSnapshot(env.now, env.active, env.airspace), None)
+    assert proposal is not None and plan is None and reason == "trajectory_infeasible"
+    assert env.telemetry["trajectory_infeasible_candidates"] == 1
 
 
 def test_l1_short_run_authorizes_l0_and_writes_checkpoint_and_manifests(tmp_path):
