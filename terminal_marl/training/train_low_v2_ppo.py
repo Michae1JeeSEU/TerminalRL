@@ -115,6 +115,9 @@ class L1EpisodeSummary:
     shield_interventions: int
     correction_magnitude_sum: float
     correction_magnitudes: tuple[float, ...]
+    teacher_correction_components: tuple[tuple[str, ...], ...]
+    requested_action_saturation_counts: tuple[int, int, int]
+    requested_action_count: int
     completion_delays: tuple[float, ...]
     collisions: int
     nmac: int
@@ -245,6 +248,9 @@ def _rollout_l1(
     release_intents = teacher_interventions = shield_interventions = 0
     correction_magnitude_sum = 0.0
     correction_magnitudes: list[float] = []
+    teacher_correction_components: list[tuple[str, ...]] = []
+    saturation_counts = np.zeros(3, dtype=int)
+    requested_action_count = 0
     for _ in range(min(max_steps, int(config.max_simulation_seconds / config.dt))):
         ids = list(observations)
         if not ids:
@@ -256,6 +262,8 @@ def _rollout_l1(
             for row_index, uid in enumerate(ids):
                 trace = info.get("action_traces", {}).get(uid, {})
                 requested = np.asarray(trace.get("requested_low_action", actions[row_index]), dtype=np.float32)
+                requested_action_count += 1
+                saturation_counts += (np.abs(requested) >= 0.98).astype(int)
                 teacher = trace.get("teacher_corrected_action")
                 shield = trace.get("shield_applied_action")
                 execution = trace.get("execution_applied_action")
@@ -276,6 +284,11 @@ def _rollout_l1(
                     correction = float(trace.get("correction_magnitude", 0.0))
                     correction_magnitude_sum += correction
                     correction_magnitudes.append(correction)
+                    corrected = np.asarray(teacher, dtype=np.float32) if teacher is not None else requested
+                    names = ("release", "speed", "merge_time")
+                    teacher_correction_components.append(tuple(
+                        name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
+                    ) or ("hold_reject",))
             observations = next_observations
         if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
             break
@@ -285,7 +298,8 @@ def _rollout_l1(
                                config.total_requested_uavs or 0, len(rows), reward_sum, int(env.arrivals.generated),
                                len(env.ledger.requested), int(env.telemetry.get("arrivals_admitted", 0)), len(env.completed_uavs),
                                release_intents, teacher_interventions, shield_interventions, correction_magnitude_sum,
-                               tuple(correction_magnitudes), completion_delays,
+                               tuple(correction_magnitudes), tuple(teacher_correction_components),
+                               tuple(int(value) for value in saturation_counts), requested_action_count, completion_delays,
                                int(env.telemetry.get("collisions", 0)), int(env.telemetry.get("nmac", 0)),
                                int(env.telemetry.get("hard_separation_violations", 0)), env.step_count)
     return rows, summary
@@ -310,6 +324,14 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
     """Aggregate teacher, efficiency and safety metrics without zero-intent dilution."""
     effective = [row for row in summaries if row.arrivals > 0 and row.release_intents > 0]
     corrections = [value for row in effective for value in row.correction_magnitudes]
+    component_counts = {name: 0 for name in ("release", "speed", "merge_time", "hold_reject")}
+    for row in effective:
+        for components in row.teacher_correction_components:
+            for component in components:
+                component_counts[component] = component_counts.get(component, 0) + 1
+    action_count = sum(row.requested_action_count for row in effective)
+    saturation = np.sum(np.asarray([row.requested_action_saturation_counts for row in effective], dtype=int), axis=0) \
+        if effective else np.zeros(3, dtype=int)
     delays = [value for row in effective for value in row.completion_delays]
     intents = sum(row.release_intents for row in effective)
     steps = sum(row.steps for row in effective)
@@ -324,6 +346,11 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
         "teacher_interventions_per_100_release_intents": _rate(effective),
         "correction_magnitude_mean": None if not corrections else float(np.mean(corrections)),
         "correction_magnitude_p95": None if not corrections else float(np.percentile(corrections, 95)),
+        "teacher_correction_components": component_counts,
+        "requested_action_saturation": {
+            name: None if action_count == 0 else float(value / action_count)
+            for name, value in zip(("release", "speed", "merge_time"), saturation)
+        },
         "release_rate_per_second": None if steps == 0 else intents / steps,
         "completion_ratio": None if requested == 0 else completed / requested,
         "throughput_per_second": None if steps == 0 else completed / steps,

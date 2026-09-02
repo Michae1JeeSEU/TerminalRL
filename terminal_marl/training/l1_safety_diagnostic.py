@@ -8,6 +8,7 @@ candidate safety-sampling interval.
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass, replace
+from concurrent.futures import ProcessPoolExecutor
 import argparse
 from collections.abc import Mapping
 from enum import Enum
@@ -23,7 +24,7 @@ from ..core.checkpoints import load_checkpoint
 from ..envs.parallel_env import TerminalParallelEnv
 from .train_low_v2_ppo import (
     L1_VALIDATION_SCENARIO_INDICES, _episode_design, _read_frozen_capacity,
-    _read_seed_partition, _rollout_l1,
+    _read_seed_partition, _rollout_l1, l1_full_teacher_config,
 )
 
 
@@ -103,12 +104,20 @@ def _run(
         pre_states = [_json(env._uav_trace(uav)) for uav in env.active.values()]
         risk = env.runtime_traffic.assess(env)
         observations, _, _, _, info = env.step(actions)
+        pre_by_uid = {str(row["uid"]): row for row in pre_states}
+        execution_error_series = [
+            {"uid": int(uid), "error_norm": float(value),
+             "trajectory_kind": "committed" if pre_by_uid.get(uid, {}).get("committed") else
+                                "holder" if pre_by_uid.get(uid, {}).get("ring_role") is not None else "other"}
+            for uid, value in info["prediction_execution_position_error"].items()
+        ]
         tick = {
             "step": index, "time": float(info["time"]), "pre_active": pre_states,
             "active": [_json(env._uav_trace(uav)) for uav in env.active.values()],
             "a_requested": tape[-1], "a_teacher_shield_applied": _json(info["action_traces"]),
             "teacher_shield_decisions": _json(info["release_intent_telemetry"]),
             "prediction_execution_position_error": _json(info["prediction_execution_position_error"]),
+            "prediction_execution_error_series": execution_error_series,
             "predicted_min_separation": risk.predicted_min_swept_separation,
             "predicted_d_cpa": risk.d_cpa, "predicted_t_cpa": risk.t_cpa,
             "reservations": _json(env.scheduler.reservations), "release_state": _json(env.release_intents),
@@ -130,38 +139,63 @@ def _run(
         witness_ticks: list[dict] = []
     else:
         witness_ticks = [row for row in ticks if first["time"] - 30.0 <= row["time"] <= first["time"] + 30.0]
-    errors = [value for row in witness_ticks for value in row["prediction_execution_position_error"].values()]
+    errors = [item["error_norm"] for row in witness_ticks for item in row["prediction_execution_error_series"]]
+    by_kind = {}
+    for kind in ("holder", "committed", "other"):
+        values = [item["error_norm"] for row in witness_ticks for item in row["prediction_execution_error_series"]
+                  if item["trajectory_kind"] == kind]
+        by_kind[kind] = {"samples": len(values), "max": None if not values else float(max(values)),
+                         "mean": None if not values else float(np.mean(values)),
+                         "series": [float(value) for value in values]}
     result = {
         "seed": seed, "safety_sampling_dt": config.safety_sampling_dt, "steps": len(ticks),
         "telemetry": _json(env.telemetry), "first_violation": first,
         "prediction_execution_error": {"samples": len(errors), "max": None if not errors else float(max(errors)),
                                          "mean": None if not errors else float(np.mean(errors)), "series": [float(value) for value in errors]},
+        "prediction_execution_error_by_trajectory": by_kind,
         "witness_ticks": witness_ticks,
     }
     return result, tape
 
 
 def qualify_warm_starts(policy: SharedPPO, *, medium_rate: float, seeds: tuple[int, ...], horizon_seconds: float = 60.0) -> list[dict]:
-    """Require legal initial geometry plus a no-op dynamic safety rollout."""
+    """Qualify unseen warm starts under nominal and adversarial executable actions."""
     records: list[dict] = []
-    for index, seed in enumerate(seeds):
-        config, _ = _episode_design(index, medium_rate=medium_rate, horizon_seconds=horizon_seconds)
-        if config.reset_mode != "warm_start_rings":
-            continue
+    cohorts = (8, 10, 12, 14, 16)
+    scripts = ("nominal_noop", "all_speed_plus", "all_speed_minus", "alternating", "neighbour_opposite",
+               "multiple_aggressive_release", "repeated_release")
+    for index, cohort in enumerate(cohorts):
+        seed = seeds[index % len(seeds)]
+        config = l1_full_teacher_config(medium_rate=medium_rate, reset_mode="warm_start_rings", demand_model="finite_cohort",
+                                        warm_start_uavs=cohort, cohort_uavs=cohort, horizon_seconds=horizon_seconds)
         env = TerminalParallelEnv(config); observations, _ = env.reset(seed)
         positions = [uav.position for uav in env.active.values()]
         distances = [float(np.linalg.norm(left - right)) for offset, left in enumerate(positions) for right in positions[offset + 1:]]
         initial_margin = float("inf") if not distances else min(distances)
-        teacher = shield = 0
-        for _ in range(int(horizon_seconds / config.dt)):
-            actions = {uid: np.zeros(3, dtype=np.float32) for uid in observations}
-            observations, _, _, _, info = env.step(actions)
-            teacher += sum(int(bool(row["teacher_used"])) for row in info["action_traces"].values())
-            shield += sum(int(bool(row["shield_used"])) for row in info["action_traces"].values())
-        safety = {key: int(env.telemetry.get(key, 0)) for key in ("collisions", "nmac", "hard_separation_violations")}
-        records.append({"seed": seed, "initial_min_separation": initial_margin, "required_min_separation": 1.2 * config.safe_distance,
-                        "teacher_interventions": teacher, "shield_interventions": shield, "safety": safety,
-                        "passed": initial_margin >= 1.2 * config.safe_distance and teacher == shield == 0 and not any(safety.values())})
+        for script in scripts:
+            env = TerminalParallelEnv(config); observations, _ = env.reset(seed)
+            teacher = shield = 0
+            for step in range(int(horizon_seconds / config.dt)):
+                actions = {}
+                for position, uid in enumerate(sorted(observations, key=int)):
+                    sign = 1.0 if (position + step) % 2 == 0 else -1.0
+                    if script == "nominal_noop": action = (0.0, 0.0, 0.0)
+                    elif script == "all_speed_plus": action = (0.0, 1.0, 0.0)
+                    elif script == "all_speed_minus": action = (0.0, -1.0, 0.0)
+                    elif script in {"alternating", "neighbour_opposite"}: action = (0.0, sign, 0.0)
+                    elif script == "multiple_aggressive_release": action = (1.0, sign, 1.0)
+                    else: action = (1.0, sign, -1.0 if step % 2 else 1.0)
+                    actions[uid] = np.asarray(action, dtype=np.float32)
+                observations, _, _, _, info = env.step(actions)
+                teacher += sum(int(bool(row["teacher_used"])) for row in info["action_traces"].values())
+                shield += sum(int(bool(row["shield_used"])) for row in info["action_traces"].values())
+            safety = {key: int(env.telemetry.get(key, 0)) for key in ("collisions", "nmac", "hard_separation_violations")}
+            nominal = script == "nominal_noop"
+            records.append({"seed": seed, "warm_start_uavs": cohort, "script": script,
+                            "initial_min_separation": initial_margin, "required_min_separation": 1.2 * config.safe_distance,
+                            "teacher_interventions": teacher, "shield_interventions": shield, "safety": safety,
+                            "passed": not any(safety.values()) and (not nominal or
+                                      (initial_margin >= 1.2 * config.safe_distance and teacher == shield == 0))})
     return records
 
 
@@ -177,13 +211,87 @@ def run_l1_safety_diagnostic(*, checkpoint: str | Path, c0_report: str | Path, t
     for dt in (0.5, 0.2):
         dt_results[str(dt)], _ = _run(policy, replace(config, safety_sampling_dt=dt), seed, max_steps, action_tape=tape)
     partition = _read_seed_partition(teacher_dataset)
-    warm = qualify_warm_starts(policy, medium_rate=medium_rate, seeds=tuple(partition.validation[:3]))
-    payload = {"stage": "L1-S", "checkpoint": str(checkpoint), "checkpoint_status": "diagnostic_failed_safety",
+    warm = qualify_warm_starts(policy, medium_rate=medium_rate, seeds=tuple(partition.qualification))
+    payload = {"stage": "L1-S", "checkpoint": str(checkpoint), "checkpoint_status": "diagnostic_failed_training_safety_v2",
                "config": {**asdict(config), "rings": {role.value: asdict(spec) for role, spec in config.rings.items()}},
                "scenario": design, "fixed_priority": {"mode": config.priority_mode, "initial_priority": config.initial_priority},
                "deterministic_replay": dt_results, "warm_start_qualification": warm,
                "warm_start_passed": bool(warm) and all(row["passed"] for row in warm)}
     (destination / "l1_safety_diagnostic.json").write_text(json.dumps(_json(payload), indent=2, allow_nan=False), encoding="utf-8")
+    return payload
+
+
+def _training_failure_rows(path: str | Path) -> list[dict]:
+    """Extract only episode-level historical hard-safety failures.
+
+    The first L1 implementation persisted aggregate episode outcomes but not
+    a policy snapshot/action tape for each PPO update.  This loader therefore
+    makes that provenance gap explicit instead of mislabelling a replay of the
+    final checkpoint as an exact reconstruction of an early PPO policy.
+    """
+    rows: list[dict] = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        if "episode" not in row:
+            continue
+        if any(int(row.get(key, 0)) > 0 for key in ("collisions", "nmac", "hard_separation_violations")):
+            rows.append(row)
+    return rows
+
+
+def _replay_training_failure(args: tuple[str, float, int, dict]) -> dict:
+    checkpoint, medium_rate, max_steps, historical = args
+    config = l1_full_teacher_config(
+        medium_rate=medium_rate, reset_mode=historical["reset_mode"], demand_model=historical["demand_model"],
+        warm_start_uavs=int(historical["warm_start_uavs"]), cohort_uavs=int(historical["cohort_uavs"]),
+        horizon_seconds=float(max_steps),
+    )
+    policy = SharedPPO(87)
+    load_checkpoint(checkpoint, policy, config)
+    policy.model.eval()
+    replay, _ = _run(policy, config, int(historical["seed"]), max_steps)
+    replay["historical_episode"] = {
+        key: historical.get(key) for key in (
+            "update", "episode", "seed", "reset_mode", "demand_model", "warm_start_uavs", "cohort_uavs",
+            "arrivals", "requested", "release_intents", "completed", "collisions", "nmac", "hard_separation_violations",
+        )
+    }
+    replay["replay_provenance"] = {
+        "kind": "reconstructed_final_checkpoint_policy",
+        "same_initial_state": True,
+        "same_requested_action_tape": False,
+        "limitation": "historical PPO update snapshots and action tapes were not persisted; this is a deterministic scenario replay, not an exact historical-policy replay",
+    }
+    return replay
+
+
+def replay_all_training_failures(*, checkpoint: str | Path, c0_report: str | Path, training_metrics: str | Path,
+                                 output_dir: str | Path, max_steps: int = 1200, workers: int = 4) -> dict:
+    """Run all persisted unsafe L1 scenarios as explicit reconstructed witnesses."""
+    destination = Path(output_dir); destination.mkdir(parents=True, exist_ok=True)
+    _, medium = _read_frozen_capacity(c0_report)
+    historical = _training_failure_rows(training_metrics)
+    tasks = [(str(checkpoint), 0.5 * sum(medium), max_steps, row) for row in historical]
+    if workers <= 1:
+        replays = [_replay_training_failure(task) for task in tasks]
+    else:
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks) or 1)) as executor:
+            replays = list(executor.map(_replay_training_failure, tasks))
+    safety_passed = all(item["telemetry"].get("collisions", 0) == item["telemetry"].get("nmac", 0) ==
+                        item["telemetry"].get("hard_separation_violations", 0) == 0 for item in replays)
+    payload = {
+        "stage": "L1-S2_training_violation_replay",
+        "evidence_type": "newly_run",
+        "checkpoint": str(checkpoint),
+        "historical_training_metrics": str(training_metrics),
+        "historical_failure_episode_count": len(historical),
+        "exact_historical_policy_replay_available": False,
+        "reconstructed_scenario_replay_safety_passed": safety_passed,
+        "replays": replays,
+    }
+    (destination / "l1_s2_training_witness_replays.json").write_text(
+        json.dumps(_json(payload), indent=2, allow_nan=False), encoding="utf-8",
+    )
     return payload
 
 
@@ -193,11 +301,18 @@ def main() -> None:
     parser.add_argument("--teacher-dataset", required=True); parser.add_argument("--output", required=True)
     parser.add_argument("--seed", type=int, default=2003); parser.add_argument("--scenario-index", type=int, default=2)
     parser.add_argument("--max-steps", type=int, default=1200)
+    parser.add_argument("--training-metrics", help="Optional prior L1 metrics JSONL; replays every persisted hard-safety failure.")
+    parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
     result = run_l1_safety_diagnostic(checkpoint=args.checkpoint, c0_report=args.c0_report, teacher_dataset=args.teacher_dataset,
                                       output_dir=args.output, seed=args.seed, scenario_index=args.scenario_index, max_steps=args.max_steps)
+    training = None if not args.training_metrics else replay_all_training_failures(
+        checkpoint=args.checkpoint, c0_report=args.c0_report, training_metrics=args.training_metrics,
+        output_dir=args.output, max_steps=args.max_steps, workers=args.workers,
+    )
     print(json.dumps({"output": args.output, "first_violation": result["deterministic_replay"]["1.0"]["first_violation"],
-                      "warm_start_passed": result["warm_start_passed"]}, allow_nan=False))
+                      "warm_start_passed": result["warm_start_passed"],
+                      "training_witness_replay_passed": None if training is None else training["reconstructed_scenario_replay_safety_passed"]}, allow_nan=False))
 
 
 if __name__ == "__main__":

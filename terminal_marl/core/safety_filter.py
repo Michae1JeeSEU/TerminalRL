@@ -14,6 +14,7 @@ class SafetyFilter:
     def __init__(self,config):
         self.config=config;self.dynamics=VehicleDynamics(config.vehicle_profile);self.checked_plan_ids=[];self.checked_trajectory_hashes={}
         self._holder_track_cache={}
+        self._holder_tube_cache={}
         # Candidate verifications are auditable.  ``None`` is deliberately
         # distinct from a safe infinite separation so callers cannot turn a
         # missing prediction into a passing safety metric.
@@ -21,6 +22,7 @@ class SafetyFilter:
     def begin_prediction_step(self):
         """Invalidate reusable holder tracks after an authoritative state tick."""
         self._holder_track_cache.clear()
+        self._holder_tube_cache.clear()
     def filter_intent(self,uav,intent,*,interface_frozen=False,lz_available=True,final_available=True):
         if interface_frozen:return IntentSafetyResult(False,"geometry_reconfiguring")
         if not lz_available:return IntentSafetyResult(False,"lz_unavailable")
@@ -158,6 +160,75 @@ class SafetyFilter:
                 result.append(np.asarray(motion.position, dtype=float))
         return result
 
+    def holder_reachable_tube(self, uav, snapshot, times: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Angular reachable tube for every legal future holder residual sequence.
+
+        The control can switch once per policy tick, but propagating the two
+        extremal targets at every physics tick is a conservative superset of
+        those piecewise-constant legal sequences.  It therefore replaces the
+        unsafe three-trajectory approximation (nominal/+max/-max).
+        """
+        if uav.ring_role is None:
+            position = np.asarray(uav.position, dtype=float)
+            return np.repeat(position[None, :], len(times), axis=0), np.repeat(position[None, :], len(times), axis=0)
+        if len(times) == 0 or np.any(np.diff(times) < -1e-9):
+            raise ValueError("reachable-tube times must be non-empty and ordered")
+        ring = snapshot.airspace.actual_ring(uav.ring_role)
+        theta = uav.ring_progress if uav.ring_progress is not None else float(np.arctan2(uav.position[1], uav.position[0]))
+        key=(uav.uid,round(float(snapshot.now),8),round(float(theta),8),round(float(uav.speed),8),
+             round(float(ring.radius),8),round(float(ring.height),8))
+        target_low = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias - self.config.max_speed_residual_mps,
+                                   self.config.speed_min, self.config.max_speed))
+        target_high = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias + self.config.max_speed_residual_mps,
+                                    self.config.speed_min, self.config.max_speed))
+        # Cache one authoritative physics-dt envelope per immutable state
+        # tick, then extend it only when a later candidate needs a longer
+        # horizon.  Candidate plans commonly differ in merge timing but share
+        # exactly this holder state; a whole-grid cache key would otherwise
+        # replay the same tube dozens of times during teacher search.
+        cached=self._holder_tube_cache.get(key)
+        if cached is None:
+            cached={"angles_low": [float(theta)], "speeds_low": [max(0.0, float(uav.speed))],
+                    "angles_high": [float(theta)], "speeds_high": [max(0.0, float(uav.speed))]}
+            self._holder_tube_cache[key]=cached
+        max_offset=max(0.0, float(np.max(times)) - float(snapshot.now))
+        needed=int(np.floor(max_offset/self.config.physics_dt + 1e-9))
+        while len(cached["angles_low"])-1 < needed:
+            low = self.dynamics.ring_motion_step(ring, cached["angles_low"][-1], cached["speeds_low"][-1],
+                                                  target_low, self.config.physics_dt)
+            high = self.dynamics.ring_motion_step(ring, cached["angles_high"][-1], cached["speeds_high"][-1],
+                                                   target_high, self.config.physics_dt)
+            cached["angles_low"].append(low.theta); cached["speeds_low"].append(low.speed)
+            cached["angles_high"].append(high.theta); cached["speeds_high"].append(high.speed)
+        lower=[]; upper=[]
+        for time in times:
+            offset=max(0.0, float(time)-float(snapshot.now)); index=int(np.floor(offset/self.config.physics_dt+1e-9))
+            fraction=offset-index*self.config.physics_dt
+            if fraction <= 1e-8:
+                lower.append(cached["angles_low"][index]); upper.append(cached["angles_high"][index])
+            else:
+                low=self.dynamics.ring_motion_step(ring,cached["angles_low"][index],cached["speeds_low"][index],target_low,fraction)
+                high=self.dynamics.ring_motion_step(ring,cached["angles_high"][index],cached["speeds_high"][index],target_high,fraction)
+                lower.append(low.theta); upper.append(high.theta)
+        return np.asarray(lower,dtype=float),np.asarray(upper,dtype=float)
+
+    @staticmethod
+    def _tube_point_distances(points: np.ndarray, ring, lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
+        """Exact minimum distance from each point to its circular reachable arc."""
+        values = []
+        for point, lo, hi in zip(np.asarray(points, dtype=float), lower, upper):
+            radius = float(np.linalg.norm(point[:2])); angle = float(np.arctan2(point[1], point[0]))
+            candidates = [lo, hi]
+            # The closest circular point has the point's polar angle when it
+            # lies inside the unwrapped reachable interval.
+            for turns in range(-2, 3):
+                shifted = angle + turns * 2.0 * math.pi
+                if lo <= shifted <= hi:
+                    candidates.append(shifted)
+            values.append(min(math.sqrt(max(0.0, ring.radius**2 + radius**2 - 2.0 * ring.radius * radius * math.cos(candidate - angle)) +
+                                        (ring.height - point[2])**2) for candidate in candidates))
+        return np.asarray(values, dtype=float)
+
     @staticmethod
     def _track_distances(left, right) -> tuple[np.ndarray, np.ndarray]:
         """Vectorized equivalent of point and pairwise swept checks."""
@@ -276,6 +347,26 @@ class SafetyFilter:
             same_target_ring = target_role_name is not None and getattr(other_uav.ring_role, "value", None) == target_role_name
             if other_plan is None and not same_target_ring and self._holder_broad_phase_safe(other_uav, snapshot, candidate_positions):
                 continue
+            # Check the full legal speed-control reachable tube at physics
+            # resolution.  A commit must be safe for any bounded future
+            # holder residual sequence, not only three constant trajectories.
+            if other_plan is None:
+                tube_times = np.arange(plan.start_time, plan.end_time + 1e-9, self.config.physics_dt)
+                if tube_times[-1] < plan.end_time:
+                    tube_times = np.append(tube_times, plan.end_time)
+                tube_positions = np.asarray([plan.sample(float(time)).position for time in tube_times], dtype=float)
+                lower, upper = self.holder_reachable_tube(other_uav, snapshot, tube_times)
+                ring = snapshot.airspace.actual_ring(other_uav.ring_role)
+                if np.any(self._tube_point_distances(tube_positions, ring, lower, upper) < self.config.safe_distance):
+                    return TrajectorySafetyResult(False, "predicted_holder_reachable_tube", plan.plan_id)
+                if same_target_ring:
+                    post_end = plan.end_time + self.config.shield_horizon_seconds
+                    post_times = np.arange(plan.end_time, post_end + 1e-9, self.config.physics_dt)
+                    post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_times), dtype=float)
+                    lower, upper = self.holder_reachable_tube(other_uav, snapshot, post_times)
+                    if np.any(self._tube_point_distances(post_positions, ring, lower, upper) < self.config.safe_distance):
+                        return TrajectorySafetyResult(False, "predicted_post_plan_holder_reachable_tube", plan.plan_id)
+                continue
             # A plan ending inside the candidate's horizon becomes a holder at
             # its endpoint.  The dense canonical plan samples provide a cheap
             # conservative hand-off check without multiplying every rejected
@@ -288,11 +379,8 @@ class SafetyFilter:
             # next policy tick.  Previously this check used only nominal
             # holder speed, then the runtime Shield discovered the mismatch
             # after the immutable transfer had already begun.
-            residual_envelope = (0.0,) if other_plan is not None else (0.0, self.config.max_speed_residual_mps,
-                                                                         -self.config.max_speed_residual_mps)
-            for residual in residual_envelope:
-                other_positions = (self._committed_positions(other_plan, snapshot, samples)
-                                   if other_plan is not None else self._holder_positions(other_uav, snapshot, samples, residual))
+            for residual in (0.0,):
+                other_positions = self._committed_positions(other_plan, snapshot, samples)
                 other_positions = np.asarray(other_positions, dtype=float)
                 point_distances, swept_distances = self._track_distances(candidate_positions, other_positions)
                 if np.any(point_distances < required):

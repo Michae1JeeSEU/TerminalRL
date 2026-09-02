@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import uuid
 from dataclasses import dataclass
+from types import SimpleNamespace
 import numpy as np
 
 from .trajectory_generator import TrajectoryPlan, TrajectoryPoint
@@ -58,7 +59,9 @@ class PredictiveSafetyShield:
         self.telemetry = {"shield_interventions": 0, "shield_correction_magnitude": 0.0,
                           "runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0,
                           "shield_fail_closed": 0, "shield_broad_phase_rejected": 0,
-                          "shield_narrow_phase_checked": 0}
+                          "shield_narrow_phase_checked": 0,
+                          "joint_safety_checks": 0, "joint_safety_corrections": 0,
+                          "joint_safety_fail_closed": 0, "admissibility_rejections": 0}
 
     def assess(self, env) -> RiskAssessment:
         best: tuple[float, float, float, tuple[int, int]] | None = None
@@ -334,56 +337,169 @@ class PredictiveSafetyShield:
                 if not repaired:
                     self.telemetry["shield_fail_closed"] += 1
 
-    def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
-        self.overrides = {uid: value for uid, value in self.overrides.items() if value[1] > env.now and uid in env.active}
-        committed = [uav.committed_plan for uav in env.active.values() if uav.committed_plan is not None]
-        cache = PredictionCache()
-        for holder in env.active.values():
-            if holder.ring_role is None or holder.committed_plan is not None:
+    def _joint_pairs(self, env) -> tuple[tuple[int, int], ...]:
+        """Return the complete set of potentially interacting runtime pairs.
+
+        Same-ring holders only need their cyclic immediate neighbours: a
+        non-neighbour cannot meet without first crossing one of those two
+        neighbours, which the continuous swept check forbids.  Every holder
+        versus a committed transfer is retained unless the conservative
+        vertical/radial broad-phase proves the paths disjoint.  Immutable
+        committed--committed pairs were proven atomically at commit time.
+        """
+        pairs: set[tuple[int, int]] = set()
+        holders_by_ring: dict[object, list[object]] = {}
+        committed = []
+        for uav in env.active.values():
+            if uav.committed_plan is not None:
+                committed.append(uav)
+            elif uav.ring_role is not None:
+                holders_by_ring.setdefault(uav.ring_role, []).append(uav)
+        for holders in holders_by_ring.values():
+            if len(holders) < 2:
                 continue
-            for plan in committed:
-                if plan.uav_id == holder.uid or plan.end_time <= env.now:
-                    continue
-                if self._broad_phase_reject(holder, plan, env.airspace, env.now, cache):
-                    self.telemetry["shield_broad_phase_rejected"] += 1
-                    continue
-                # The nominal swept check is the hard-safety gate.  A pair
-                # that is already safe needs neither residual candidates nor
-                # an expensive SafetyFilter repair proof.
-                nominal = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0, cache)
-                self.telemetry["shield_narrow_phase_checked"] += 1
-                if nominal >= self.config.safe_distance:
-                    continue
-                # Shift only an uncommitted holder.  Candidate plans are
-                # sampled using the same swept-distance semantics as runtime.
-                options = [self.config.max_speed_residual_mps, -self.config.max_speed_residual_mps]
-                scored = [(self._minimum_to_plan(holder, plan, env.airspace, env.now, option, cache), option) for option in options]
-                best_distance, best = max(scored)
-                repaired = best_distance >= self.config.safe_distance and self._passes_safety_filter(env, holder, plan, best, cache)
-                if repaired:
-                    self.overrides[holder.uid] = (best, min(plan.end_time, env.now + 30.0))
-                    self.telemetry["shield_interventions"] += 1
-                    self.telemetry["shield_correction_magnitude"] += abs(best)
-                    self.telemetry["runtime_traffic_interventions"] += 1
-                    self.telemetry["runtime_traffic_repair_magnitude"] += abs(best)
-                else:
-                    # The shield does not rewrite a committed plan or invent
-                    # hover behaviour.  Record the fail-closed condition so a
-                    # protected run cannot mistake it for a safe no-op.
-                    self.telemetry["shield_fail_closed"] += 1
-        self._protect_holder_headways(env, cache)
+            holders.sort(key=lambda uav: (uav.ring_progress if uav.ring_progress is not None else
+                                           math.atan2(uav.position[1], uav.position[0]), uav.uid))
+            for index, holder in enumerate(holders):
+                neighbour = holders[(index + 1) % len(holders)]
+                pairs.add(tuple(sorted((holder.uid, neighbour.uid))))
+        cache = PredictionCache()
+        for holders in holders_by_ring.values():
+            for holder in holders:
+                for other in committed:
+                    plan = other.committed_plan
+                    if plan is None or plan.end_time <= env.now:
+                        continue
+                    if self._broad_phase_reject(holder, plan, env.airspace, env.now, cache):
+                        self.telemetry["shield_broad_phase_rejected"] += 1
+                        continue
+                    pairs.add(tuple(sorted((holder.uid, other.uid))))
+        return tuple(sorted(pairs))
+
+    def _joint_tracks(self, env, residuals: dict[int, float], uids: set[int]) -> dict[int, TrajectoryPlan]:
+        """Build one execution-equivalent track set for every active UAV.
+
+        This is deliberately a *joint* proof.  Pairwise repairs accepted in
+        isolation can be mutually inconsistent when several holders receive
+        residual commands on the same policy tick.  Committed trajectories
+        retain absolute priority; their post-plan holder continuation is
+        sampled through the same SafetyFilter dynamics used at commit time.
+        """
+        start = float(env.now)
+        end = start + float(self.config.shield_horizon_seconds)
+        times = np.arange(start, end + 1e-9, self.config.physics_dt)
+        if times[-1] < end:
+            times = np.append(times, end)
+        snapshot = SimpleNamespace(now=start, active=env.active, airspace=env.airspace)
+        tracks: dict[int, TrajectoryPlan] = {}
+        for uid, uav in sorted(env.active.items()):
+            if uid not in uids:
+                continue
+            if uav.committed_plan is not None:
+                positions = env.safety._committed_positions(uav.committed_plan, snapshot, times)
+                points = tuple(TrajectoryPoint(float(time), position) for time, position in zip(times, positions))
+                tracks[uid] = TrajectoryPlan(
+                    f"joint-committed-{uav.committed_plan.plan_id}", uid, "joint_committed", points, start, end,
+                    metadata={"committed": True, "active_end": end,
+                              "source_plan_id": uav.committed_plan.plan_id},
+                )
+            elif uav.ring_role is not None:
+                tracks[uid] = self._repair_plan(uav, env.airspace, start, end, residuals.get(uid, 0.0))
+        return tracks
+
+    def _joint_approved(self, env, residuals: dict[int, float]) -> bool:
+        pairs = self._joint_pairs(env)
+        self.telemetry["joint_safety_checks"] += 1
+        if not pairs:
+            return True
+        tracks = self._joint_tracks(env, residuals, {uid for pair in pairs for uid in pair})
+        return all(env.safety.verify_predicted_tracks(
+            {left: tracks[left], right: tracks[right]}, start=env.now,
+            end=env.now + self.config.shield_horizon_seconds,
+        ).approved for left, right in pairs)
+
+    def _holder_priority(self, env, uid: int) -> tuple[int, int]:
+        """Higher-priority intent is changed last (then stable UID order)."""
+        uav = env.active[uid]
+        if uav.committed_plan is not None:
+            return (0, uid)
+        if uid in env.future_release_reservations:
+            return (1, uid)
+        return (2, uid)
+
+    @staticmethod
+    def _candidate_residuals(requested: float) -> tuple[float, ...]:
+        grid = np.linspace(-1.0, 1.0, 17)
+        values = sorted({float(np.clip(requested, -1.0, 1.0)), *(float(item) for item in grid)},
+                        key=lambda item: (abs(item - requested), abs(item), item))
+        return tuple(values)
+
+    def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
+        """Project every holder speed residual through a joint admissibility test.
+
+        This is the final pre-physics gate: no holder speed residual reaches
+        ``_advance_ring_hold`` unless the whole active set passes the same
+        swept separation verifier.  The finite grid is an auditable bounded
+        admissible action set; the nearest safe grid value is selected.  If
+        none exists, the controller fails closed to nominal holding and leaves
+        a telemetry witness rather than silently executing an unchecked value.
+        """
         repaired = dict(intents)
-        for uid, (residual, _) in self.overrides.items():
-            if uid in intents:
-                intent = intents[uid]
-                shield_intent = type(intent)(intent.release_request, float(np.clip(residual / self.config.max_speed_residual_mps, -1., 1.)), intent.merge_time_residual)
-                repaired[uid] = shield_intent
-                if traces is not None and uid in traces:
-                    trace = traces[uid]
-                    trace.shield_applied = shield_intent
-                    trace.shield_used = True
-                    trace.shield_reason = "predicted_swept_separation"
-                    trace.correction_magnitude += abs(shield_intent.speed_residual - trace.execution_applied.speed_residual)
+        holders = [uid for uid, uav in env.active.items()
+                   if uid in repaired and uav.ring_role is not None and uav.committed_plan is None]
+        if not holders:
+            return repaired
+        residuals = {
+            uid: float(np.clip(repaired[uid].speed_residual, -1.0, 1.0)) * self.config.max_speed_residual_mps
+            for uid in holders
+        }
+        requested = dict(residuals)
+        if not self._joint_approved(env, residuals):
+            # Least protected existing holders are projected first.  For equal
+            # priority, a descending UID tie-break makes the outcome stable.
+            for uid in sorted(holders, key=lambda item: (-self._holder_priority(env, item)[0], -item)):
+                base = residuals[uid] / self.config.max_speed_residual_mps
+                for candidate in self._candidate_residuals(base):
+                    trial = dict(residuals)
+                    trial[uid] = candidate * self.config.max_speed_residual_mps
+                    if self._joint_approved(env, trial):
+                        residuals = trial
+                        break
+            # Some conflicts require simultaneous changes.  Nominal holding is
+            # the deterministic fail-closed set; make the projection jointly,
+            # never as unchecked independent pair repairs.
+            if not self._joint_approved(env, residuals):
+                for uid in sorted(holders, key=lambda item: (-self._holder_priority(env, item)[0], -item)):
+                    residuals[uid] = 0.0
+                    if self._joint_approved(env, residuals):
+                        break
+        approved = self._joint_approved(env, residuals)
+        if not approved:
+            self.telemetry["shield_fail_closed"] += 1
+            self.telemetry["joint_safety_fail_closed"] += 1
+        for uid in holders:
+            actual = residuals[uid]
+            before = requested[uid]
+            if abs(actual - before) <= 1e-10:
+                continue
+            intent = repaired[uid]
+            shield_intent = type(intent)(intent.release_request,
+                                         float(np.clip(actual / self.config.max_speed_residual_mps, -1.0, 1.0)),
+                                         intent.merge_time_residual)
+            repaired[uid] = shield_intent
+            magnitude = abs(shield_intent.speed_residual - intent.speed_residual)
+            self.telemetry["shield_interventions"] += 1
+            self.telemetry["shield_correction_magnitude"] += magnitude
+            self.telemetry["runtime_traffic_interventions"] += 1
+            self.telemetry["runtime_traffic_repair_magnitude"] += magnitude
+            self.telemetry["joint_safety_corrections"] += 1
+            self.telemetry["admissibility_rejections"] += 1
+            if traces is not None and uid in traces:
+                trace = traces[uid]
+                trace.shield_applied = shield_intent
+                trace.shield_used = True
+                trace.shield_reason = "joint_admissibility_projection" if approved else "joint_admissibility_fail_closed"
+                trace.correction_magnitude += magnitude
         return repaired
 
 

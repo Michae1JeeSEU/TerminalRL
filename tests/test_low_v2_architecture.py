@@ -14,6 +14,7 @@ from terminal_marl.core.merge_scheduler import LowLevelIntent, MergeScheduler
 from terminal_marl.core.observations import LOW_OBS_V2, build_low_observation_v2
 from terminal_marl.core.teacher_scheduler import TeacherScheduler
 from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
+from terminal_marl.core.safety_filter import SafetyFilter
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
@@ -126,6 +127,43 @@ def test_predictive_shield_cached_holder_samples_match_scalar_executor_predictio
     cached = shield._holder_positions(holder, env.airspace, env.now, times, .5)
     scalar = [shield._holder_position(holder, env.airspace, float(time - env.now), .5) for time in times]
     assert all(np.allclose(left, right, atol=1e-10) for left, right in zip(cached, scalar))
+
+
+def test_commit_holder_reachable_tube_contains_both_extreme_executor_tracks():
+    """The commit guard covers legal residual switching extrema, not 3 traces."""
+    env = _student_env(1)
+    holder = next(iter(env.active.values()))
+    safety = SafetyFilter(env.config)
+    snapshot = WorldSnapshot(env.now, env.active, env.airspace)
+    times = np.arange(env.now, env.now + 4.0 + 1e-9, env.config.physics_dt)
+    lower, upper = safety.holder_reachable_tube(holder, snapshot, times)
+    ring = env.airspace.actual_ring(holder.ring_role)
+    for residual, bound in ((-env.config.max_speed_residual_mps, lower),
+                            (env.config.max_speed_residual_mps, upper)):
+        positions = safety._holder_positions(holder, snapshot, times, residual)
+        angles = np.unwrap(np.asarray([np.arctan2(position[1], position[0]) for position in positions]))
+        assert np.allclose(angles, bound, atol=1e-10)
+        assert np.allclose([np.linalg.norm(position[:2]) for position in positions], ring.radius, atol=1e-10)
+
+
+def test_joint_shield_projects_multiple_holder_residuals_before_execution(monkeypatch):
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holders = sorted(uid for uid, uav in env.active.items() if uav.ring_role is not None and uav.committed_plan is None)
+    assert len(holders) == 2
+    requested = {uid: LowLevelIntent(0.0, 1.0, 0.0) for uid in holders}
+    calls = []
+
+    def jointly_safe(_env, residuals):
+        normalized = {uid: round(value / env.config.max_speed_residual_mps, 6) for uid, value in residuals.items()}
+        calls.append(normalized)
+        return all(value == 0.0 for value in normalized.values())
+
+    monkeypatch.setattr(shield, "_joint_approved", jointly_safe)
+    repaired = shield.protect(env, requested)
+    assert all(repaired[uid].speed_residual == 0.0 for uid in holders)
+    assert shield.telemetry["joint_safety_corrections"] == 2
+    assert any(all(value == 0.0 for value in candidate.values()) for candidate in calls)
 
 
 def test_checkpoint_schema_rejects_legacy_actor_metadata():
