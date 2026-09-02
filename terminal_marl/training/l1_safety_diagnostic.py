@@ -8,7 +8,8 @@ candidate safety-sampling interval.
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass, replace
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 import argparse
 from collections.abc import Mapping
 from enum import Enum
@@ -272,11 +273,22 @@ def replay_all_training_failures(*, checkpoint: str | Path, c0_report: str | Pat
     _, medium = _read_frozen_capacity(c0_report)
     historical = _training_failure_rows(training_metrics)
     tasks = [(str(checkpoint), 0.5 * sum(medium), max_steps, row) for row in historical]
+    partial_path = destination / "l1_s2_training_witness_replays.partial.json"
+    replays: list[dict] = []
     if workers <= 1:
-        replays = [_replay_training_failure(task) for task in tasks]
+        for task in tasks:
+            replays.append(_replay_training_failure(task))
+            partial_path.write_text(json.dumps(_json({"completed_replays": replays}), indent=2, allow_nan=False), encoding="utf-8")
     else:
-        with ProcessPoolExecutor(max_workers=min(workers, len(tasks) or 1)) as executor:
-            replays = list(executor.map(_replay_training_failure, tasks))
+        # Torch/OpenMP pools may already exist in the diagnostic parent.  A
+        # Linux ``fork`` can inherit their locked futex state and leave every
+        # replay worker permanently asleep; use a clean interpreter process.
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks) or 1),
+                                 mp_context=mp.get_context("spawn")) as executor:
+            futures = [executor.submit(_replay_training_failure, task) for task in tasks]
+            for future in as_completed(futures):
+                replays.append(future.result())
+                partial_path.write_text(json.dumps(_json({"completed_replays": replays}), indent=2, allow_nan=False), encoding="utf-8")
     safety_passed = all(item["telemetry"].get("collisions", 0) == item["telemetry"].get("nmac", 0) ==
                         item["telemetry"].get("hard_separation_violations", 0) == 0 for item in replays)
     payload = {
@@ -292,6 +304,7 @@ def replay_all_training_failures(*, checkpoint: str | Path, c0_report: str | Pat
     (destination / "l1_s2_training_witness_replays.json").write_text(
         json.dumps(_json(payload), indent=2, allow_nan=False), encoding="utf-8",
     )
+    partial_path.unlink(missing_ok=True)
     return payload
 
 
@@ -303,7 +316,19 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=1200)
     parser.add_argument("--training-metrics", help="Optional prior L1 metrics JSONL; replays every persisted hard-safety failure.")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--replay-training-failures-only", action="store_true",
+                        help="Resume only the historical training-failure replay closure.")
     args = parser.parse_args()
+    if args.replay_training_failures_only:
+        if not args.training_metrics:
+            parser.error("--replay-training-failures-only requires --training-metrics")
+        training = replay_all_training_failures(
+            checkpoint=args.checkpoint, c0_report=args.c0_report, training_metrics=args.training_metrics,
+            output_dir=args.output, max_steps=args.max_steps, workers=args.workers,
+        )
+        print(json.dumps({"output": args.output,
+                          "training_witness_replay_passed": training["reconstructed_scenario_replay_safety_passed"]}, allow_nan=False))
+        return
     result = run_l1_safety_diagnostic(checkpoint=args.checkpoint, c0_report=args.c0_report, teacher_dataset=args.teacher_dataset,
                                       output_dir=args.output, seed=args.seed, scenario_index=args.scenario_index, max_steps=args.max_steps)
     training = None if not args.training_metrics else replay_all_training_failures(
