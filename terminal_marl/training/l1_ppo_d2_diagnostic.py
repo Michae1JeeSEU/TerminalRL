@@ -91,8 +91,10 @@ def _gradient_summary(records: list[dict[str, Any]]) -> tuple[dict[str, Any], st
 
 
 def _health(records: list[dict[str, Any]]) -> dict[str, Any]:
-    ppo = [row["ppo"] for row in records]
-    optimizer = [row["optimizer"] for row in records]
+    """Use post-update PPO telemetry, not the intentionally pre-update snapshot."""
+    snapshots = [row["diagnostic"] for row in records]
+    ppo = [row["ppo_update"] for row in records]
+    optimizer = [row["optimizer"] for row in snapshots]
     return {
         "learning_rate": _range([row["learning_rate"] for row in optimizer]),
         "entropy_coefficient": _range([row["entropy_coefficient"] for row in optimizer]),
@@ -101,10 +103,10 @@ def _health(records: list[dict[str, Any]]) -> dict[str, Any]:
         "actor_loss": _range([row["actor_loss"] for row in ppo]),
         "value_loss": _range([row["value_loss"] for row in ppo]),
         "explained_variance": _range([row["explained_variance"] for row in ppo]),
-        "raw_advantage_mean": _range([row["advantages"]["raw"]["mean"] for row in records]),
-        "raw_advantage_std_proxy": _range([row["advantages"]["raw"]["p90"] - row["advantages"]["raw"]["p10"] for row in records]),
-        "normalized_advantage_mean": _range([row["advantages"]["normalized"]["mean"] for row in records]),
-        "normalized_advantage_std_proxy": _range([row["advantages"]["normalized"]["p90"] - row["advantages"]["normalized"]["p10"] for row in records]),
+        "raw_advantage_mean": _range([row["advantages"]["raw"]["mean"] for row in snapshots]),
+        "raw_advantage_std_proxy": _range([row["advantages"]["raw"]["p90"] - row["advantages"]["raw"]["p10"] for row in snapshots]),
+        "normalized_advantage_mean": _range([row["advantages"]["normalized"]["mean"] for row in snapshots]),
+        "normalized_advantage_std_proxy": _range([row["advantages"]["normalized"]["p90"] - row["advantages"]["normalized"]["p10"] for row in snapshots]),
         "healthy": all(abs(row["approx_kl"]) <= .05 and row["clip_fraction"] <= .30 for row in ppo),
     }
 
@@ -216,7 +218,7 @@ def run_l1_ppo_d2_diagnostic(*, c0_report: str | Path, teacher_dataset_path: str
                     "critic_to_actor_grad_ratio": [critic / max(actor, 1e-12) for actor, critic in zip(actor_grads, critic_grads)],
                     "shared_backbone_note": detail[0]["gradient_blocks"]["shared_backbone_note"],
                     "value_to_abs_actor_loss": [row["ppo"]["value_to_abs_actor_loss"] for row in detail]}
-    optimizer_health = _health(detail)
+    optimizer_health = _health(records)
     any_sampling = any(np.mean(head_causes[head]["sample_hit_away_from_mean_by_update"]) >= .10 for head in HEADS)
     any_mean_boundary = any(np.mean(head_causes[head]["actor_mean_boundary_by_update"]) >= .10 for head in HEADS)
     if any_sampling:
@@ -238,6 +240,47 @@ def run_l1_ppo_d2_diagnostic(*, c0_report: str | Path, teacher_dataset_path: str
     return summary
 
 
+def summarize_existing_l1_ppo_d2(output_dir: str | Path) -> dict[str, Any]:
+    """Regenerate the report from completed immutable rollout/update records."""
+    destination = Path(output_dir)
+    payload = json.loads((destination / "l1_ppo_d2_updates.json").read_text(encoding="utf-8"))
+    manifest, records = payload["manifest"], payload["updates"]
+    if len(records) != 3:
+        raise RuntimeError("D2 report regeneration requires exactly three completed updates")
+    detail = [row["diagnostic"] for row in records]
+    head_causes = {head: _head_cause(detail, head) for head in HEADS}
+    gradient_conflict, worst_head = _gradient_summary(detail)
+    actor_grads = [row["gradient_blocks"]["actor"] for row in detail]
+    critic_grads = [row["gradient_blocks"]["critic"] for row in detail]
+    critic_audit = {"actor_grad_norm": actor_grads, "critic_grad_norm": critic_grads,
+                    "critic_to_actor_grad_ratio": [critic / max(actor, 1e-12) for actor, critic in zip(actor_grads, critic_grads)],
+                    "shared_backbone_note": detail[0]["gradient_blocks"]["shared_backbone_note"],
+                    "value_to_abs_actor_loss": [row["ppo"]["value_to_abs_actor_loss"] for row in detail]}
+    optimizer_health = _health(records)
+    any_sampling = any(np.mean(head_causes[head]["sample_hit_away_from_mean_by_update"]) >= .10 for head in HEADS)
+    any_mean_boundary = any(np.mean(head_causes[head]["actor_mean_boundary_by_update"]) >= .10 for head in HEADS)
+    if any_sampling:
+        next_step = "actor distribution / log_std/entropy targeted ablation; retain normalized action range and safety stack"
+    elif any_mean_boundary:
+        next_step = "actor distribution mean/logit targeted ablation; do not change action range"
+    elif worst_head is not None:
+        next_step = f"head-wise BC diagnostic ablation for {worst_head}; do not change global BC weight yet"
+    else:
+        next_step = "learning-rate / advantage-scale diagnostic ablation"
+    safety_passed = all(not (episode["collisions"] or episode["nmac"] or episode["hard_separation_violations"])
+                        for row in records for episode in row["episode_summaries"])
+    summary = {"status": "completed", "evidence_type": "newly_run", "frozen": manifest["frozen"],
+               "normalized_space_audit": manifest["normalized_space_audit"], "updates": records,
+               "head_causes": head_causes, "gradient_conflict": gradient_conflict,
+               "worst_gradient_conflict_head": worst_head, "critic_audit": critic_audit,
+               "optimizer_health": optimizer_health, "next_targeted_ablation": next_step,
+               "safety_passed": safety_passed,
+               "allow_targeted_ablation": bool(safety_passed and optimizer_health["healthy"])}
+    _json_dump(destination / "l1_ppo_d2_diagnostic_summary.json", summary)
+    (destination / "l1_ppo_d2_diagnostic_summary.md").write_text(_markdown(summary), encoding="utf-8")
+    return summary
+
+
 def _main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Run exactly three frozen L1 PPO-D2 diagnostic updates.")
@@ -246,10 +289,12 @@ def _main() -> None:
     parser.add_argument("--initial-checkpoint", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--summarize-existing", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(run_l1_ppo_d2_diagnostic(c0_report=args.c0_report, teacher_dataset_path=args.teacher_dataset,
-                                               initial_checkpoint=args.initial_checkpoint, output_dir=args.output,
-                                               rollout_workers=args.workers), indent=2))
+    result = summarize_existing_l1_ppo_d2(args.output) if args.summarize_existing else run_l1_ppo_d2_diagnostic(
+        c0_report=args.c0_report, teacher_dataset_path=args.teacher_dataset, initial_checkpoint=args.initial_checkpoint,
+        output_dir=args.output, rollout_workers=args.workers)
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
