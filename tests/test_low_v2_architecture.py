@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+import copy
 import json
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import torch
 
 from terminal_marl.core.config import SimConfig
 from terminal_marl.core.config import RingRole
@@ -418,6 +420,29 @@ def test_ppo_transition_keeps_requested_action_when_teacher_label_is_present():
     assert np.array_equal(buffer.by_agent["uav-1"][0].action, requested)
     metrics = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=0.1).update(buffer, epochs=1, minibatch_size=1)
     assert "teacher_bc_loss" in metrics and np.isfinite(metrics["teacher_bc_loss"])
+
+
+def test_ppo_ratio_is_invariant_to_applied_action_and_reports_diagnostics():
+    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
+    world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
+
+    def buffer_for(applied: np.ndarray) -> RolloutBuffer:
+        buffer = RolloutBuffer()
+        buffer.add(Transition("uav-1", world[0], world, requested, -0.2, 0.0, 1.0, True,
+                              applied_action=applied, teacher_used=False))
+        return buffer
+
+    torch.manual_seed(4)
+    first = SharedPPO(LOW_OBS_V2.dimension)
+    second = SharedPPO(LOW_OBS_V2.dimension)
+    second.model.load_state_dict(copy.deepcopy(first.model.state_dict()))
+    np.random.seed(17)
+    first_metrics = first.update(buffer_for(np.asarray((1.0, 1.0, 1.0), np.float32)), epochs=1, minibatch_size=1)
+    np.random.seed(17)
+    second_metrics = second.update(buffer_for(np.asarray((-1.0, -1.0, -1.0), np.float32)), epochs=1, minibatch_size=1)
+    assert first_metrics == pytest.approx(second_metrics)
+    assert all(torch.allclose(left, right) for left, right in zip(first.model.parameters(), second.model.parameters()))
+    assert {"approx_kl", "clip_fraction", "explained_variance", "grad_norm"} <= set(first_metrics)
 
 
 def test_teacher_dataset_records_requested_and_correction_fields_without_training(tmp_path):

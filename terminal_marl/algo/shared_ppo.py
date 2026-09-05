@@ -100,7 +100,10 @@ class SharedPPO:
 
     def update(self, buffer: RolloutBuffer, *, epochs: int = 4, minibatch_size: int = 128, gamma: float = .99, gae_lambda: float = .95) -> dict[str, float]:
         rows = buffer.flattened(gamma, gae_lambda)
-        if not rows: return {"loss": 0.0, "actor_loss": 0.0, "value_loss": 0.0, "entropy": 0.0, "teacher_bc_loss": 0.0}
+        metric_names = ("loss", "actor_loss", "value_loss", "entropy", "teacher_bc_loss", "approx_kl",
+                        "clip_fraction", "explained_variance", "grad_norm")
+        if not rows:
+            return {name: 0.0 for name in metric_names}
         advantages = np.asarray([x[1] for x in rows], np.float32); advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         totals = defaultdict(float); updates = 0
         for _ in range(epochs):
@@ -117,7 +120,9 @@ class SharedPPO:
                 padded = np.zeros((len(worlds), max_n, self.observation_dim), np.float32); mask = np.zeros((len(worlds), max_n), bool)
                 for i, world in enumerate(worlds): padded[i, :len(world)] = world; mask[i, :len(world)] = True
                 distribution = self.model.actor_distribution(observations)
-                ratio = (distribution.log_prob(actions).sum(-1) - old_log_prob).exp()
+                new_log_prob = distribution.log_prob(actions).sum(-1)
+                log_ratio = new_log_prob - old_log_prob
+                ratio = log_ratio.exp()
                 actor_loss = -torch.minimum(ratio * adv, ratio.clamp(1-self.clip_ratio, 1+self.clip_ratio) * adv).mean()
                 values = self.model.critic(torch.as_tensor(padded, device=self.device), torch.as_tensor(mask, device=self.device))
                 value_loss = (values - returns).pow(2).mean()
@@ -132,7 +137,15 @@ class SharedPPO:
                     teacher_loss = torch.zeros((), device=self.device)
                 loss = actor_loss + self.value_coef * value_loss - self.entropy_coef * entropy + self.teacher_bc_weight * teacher_loss
                 if not torch.isfinite(loss): raise FloatingPointError("non-finite PPO loss")
-                self.optimizer.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(self.model.parameters(), 1.0); self.optimizer.step()
-                totals["loss"] += float(loss.detach()); totals["actor_loss"] += float(actor_loss.detach()); totals["value_loss"] += float(value_loss.detach()); totals["entropy"] += float(entropy.detach()); totals["teacher_bc_loss"] += float(teacher_loss.detach()); updates += 1
+                approx_kl = (old_log_prob - new_log_prob).mean()
+                clip_fraction = ((ratio - 1.0).abs() > self.clip_ratio).float().mean()
+                variance = returns.var(unbiased=False)
+                explained_variance = 1.0 - (returns - values).var(unbiased=False) / variance.clamp_min(1e-8)
+                self.optimizer.zero_grad(); loss.backward()
+                grad_norm = nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                self.optimizer.step()
+                totals["loss"] += float(loss.detach()); totals["actor_loss"] += float(actor_loss.detach()); totals["value_loss"] += float(value_loss.detach()); totals["entropy"] += float(entropy.detach()); totals["teacher_bc_loss"] += float(teacher_loss.detach())
+                totals["approx_kl"] += float(approx_kl.detach()); totals["clip_fraction"] += float(clip_fraction.detach())
+                totals["explained_variance"] += float(explained_variance.detach()); totals["grad_norm"] += float(grad_norm.detach()); updates += 1
         buffer.clear()
         return {key: value / max(1, updates) for key, value in totals.items()}

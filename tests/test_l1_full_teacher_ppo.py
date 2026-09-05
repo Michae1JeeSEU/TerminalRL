@@ -89,6 +89,11 @@ def test_l1_short_run_authorizes_l0_and_writes_checkpoint_and_manifests(tmp_path
     assert (tmp_path / "l1" / "l1_full_teacher_ppo.pt").is_file()
     manifest = json.loads((tmp_path / "l1" / "l1_full_teacher.manifest.json").read_text(encoding="utf-8"))
     assert manifest["environment"]["teacher"] == "FULL"
+    assert manifest["ppo_bc_provenance"] == {
+        "ppo_behavior_action": "a_requested", "ppo_old_log_prob": "log_pi(a_requested|s)",
+        "ppo_ratio_uses_a_applied": False, "teacher_bc_target": "a_teacher",
+        "teacher_bc_mask": "teacher_used && a_teacher is not None",
+    }
     assert manifest["environment"]["warm_start_fraction"] == 0.60
     validation = [json.loads(line) for line in (tmp_path / "l1" / "l1_validation_metrics.jsonl").read_text(encoding="utf-8").splitlines()]
     assert any(row["reset_mode"] == "flow_from_empty" and row["demand_model"] == "poisson" for row in validation)

@@ -88,6 +88,8 @@ class L1FullTeacherProtocol:
     teacher_bc_weight: float = 0.05
     ppo_epochs: int = 2
     ppo_minibatch_size: int = 256
+    optimizer_seed: int = 1701
+    stop_on_safety_failure: bool = True
 
     def __post_init__(self) -> None:
         if min(self.updates, self.episodes_per_update, self.rollout_workers, self.max_steps, self.validation_every,
@@ -96,6 +98,10 @@ class L1FullTeacherProtocol:
             raise ValueError("L1 protocol counts must be positive")
         if not 0.0 <= self.teacher_bc_weight <= 1.0:
             raise ValueError("teacher_bc_weight must be in [0, 1]")
+
+
+class L1SafetyGateError(RuntimeError):
+    """Raised before another PPO update when an L1 safety hard gate fails."""
 
 
 @dataclass(frozen=True)
@@ -350,10 +356,19 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
     effective = [row for row in summaries if row.arrivals > 0 and row.release_intents > 0]
     corrections = [value for row in effective for value in row.correction_magnitudes]
     component_counts = {name: 0 for name in ("release", "speed", "merge_time", "hold_reject")}
+    correction_reasons = {name: 0 for name in ("release", "speed", "merge-time", "combined", "hold_reject")}
     for row in effective:
         for components in row.teacher_correction_components:
             for component in components:
                 component_counts[component] = component_counts.get(component, 0) + 1
+            if len(components) != 1:
+                correction_reasons["combined"] += 1
+            elif components[0] == "merge_time":
+                correction_reasons["merge-time"] += 1
+            elif components[0] in correction_reasons:
+                correction_reasons[components[0]] += 1
+            else:
+                correction_reasons["combined"] += 1
     action_count = sum(row.requested_action_count for row in effective)
     saturation = np.sum(np.asarray([row.requested_action_saturation_counts for row in effective], dtype=int), axis=0) \
         if effective else np.zeros(3, dtype=int)
@@ -372,6 +387,7 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
         "correction_magnitude_mean": None if not corrections else float(np.mean(corrections)),
         "correction_magnitude_p95": None if not corrections else float(np.percentile(corrections, 95)),
         "teacher_correction_components": component_counts,
+        "teacher_correction_reasons": correction_reasons,
         "requested_action_saturation": {
             name: None if action_count == 0 else float(value / action_count)
             for name, value in zip(("release", "speed", "merge_time"), saturation)
@@ -403,13 +419,15 @@ def _model_state(policy: SharedPPO) -> dict[str, torch.Tensor]:
 
 
 def _run_fixed_validation(policy: SharedPPO, partition: LowV2SeedPartition, *, medium_rate: float,
-                          max_steps: int, rollout_workers: int, update: int) -> list[L1EpisodeSummary]:
+                          max_steps: int, rollout_workers: int, update: int,
+                          trace_output_dir: str | Path | None = None) -> list[L1EpisodeSummary]:
     specs = list(zip(L1_VALIDATION_SCENARIO_INDICES, partition.validation[:len(L1_VALIDATION_SCENARIO_INDICES)]))
     tasks = []
     state = _model_state(policy)
     for episode, (design_index, seed) in enumerate(specs):
         config, _ = _episode_design(design_index, medium_rate=medium_rate, horizon_seconds=float(max_steps))
-        tasks.append((state, config, seed, update, episode, max_steps))
+        tasks.append((state, config, seed, update, episode, max_steps, False,
+                      None if trace_output_dir is None else str(trace_output_dir)))
     if rollout_workers == 1:
         collected = [_rollout_task(task) for task in tasks]
     else:
@@ -435,6 +453,11 @@ def train_l1_full_teacher(
     stages with separate acceptance gates.
     """
     protocol = protocol or L1FullTeacherProtocol()
+    # The central optimizer permutation is part of an ablation's controlled
+    # protocol.  Rollout workers retain their own deterministic episode seeds.
+    random.seed(protocol.optimizer_seed)
+    np.random.seed(protocol.optimizer_seed)
+    torch.manual_seed(protocol.optimizer_seed)
     audit = authorize_low_v2_training(teacher_dataset_path)
     partition = _read_seed_partition(teacher_dataset_path)
     if len(partition.validation) < len(L1_VALIDATION_SCENARIO_INDICES):
@@ -463,7 +486,8 @@ def train_l1_full_teacher(
 
     def capture_validation(label: str, update: int) -> None:
         summaries = _run_fixed_validation(policy, partition, medium_rate=medium_rate, max_steps=protocol.max_steps,
-                                          rollout_workers=protocol.rollout_workers, update=update)
+                                          rollout_workers=protocol.rollout_workers, update=update,
+                                          trace_output_dir=destination / "safety_action_tapes" / "validation" / label)
         grouped = _grouped_metrics(summaries)
         record = {"label": label, "update": update, "overall": _summary_metrics(summaries),
                   "by_scenario": grouped, "sufficiency": _validation_sufficiency(grouped, protocol)}
@@ -471,6 +495,10 @@ def train_l1_full_teacher(
         for summary in summaries:
             validation_rows.append({**asdict(summary), "scenario": _scenario_name(summary), "validation": True,
                                     "validation_label": label})
+        if protocol.stop_on_safety_failure and any(
+            row.collisions or row.nmac or row.hard_separation_violations for row in summaries
+        ):
+            raise L1SafetyGateError(f"L1 validation safety gate failed at {label}")
 
     # This is the early L1 reference for the resumed checkpoint.  It is
     # written before any new update, so later trend claims never compare
@@ -499,6 +527,11 @@ def train_l1_full_teacher(
             total_rollout_rows += len(transitions)
             update_summaries.append(summary)
             episode_rows.append({**asdict(summary), **design, "scenario": _scenario_name(summary)})
+        if protocol.stop_on_safety_failure and any(
+            row.collisions or row.nmac or row.hard_separation_violations for row in update_summaries
+        ):
+            _write_jsonl(destination / "l1_training_metrics.jsonl", episode_rows)
+            raise L1SafetyGateError(f"L1 training safety gate failed before PPO update {update}")
         ppo = policy.update(buffer, epochs=protocol.ppo_epochs, minibatch_size=protocol.ppo_minibatch_size)
         per_update_summaries.append(update_summaries)
         window_updates = per_update_summaries[-protocol.rolling_window_updates:]
@@ -546,6 +579,13 @@ def train_l1_full_teacher(
         "c0_report": str(c0_report), "teacher_dataset_path": str(teacher_dataset_path), "teacher_dataset_audit": asdict(audit),
         "seed_partition": asdict(partition), "mu_hat": mu_hat, "medium_rate": medium_rate,
         "medium_interval": list(medium_range), "protocol": asdict(protocol),
+        "ppo_bc_provenance": {
+            "ppo_behavior_action": "a_requested",
+            "ppo_old_log_prob": "log_pi(a_requested|s)",
+            "ppo_ratio_uses_a_applied": False,
+            "teacher_bc_target": "a_teacher",
+            "teacher_bc_mask": "teacher_used && a_teacher is not None",
+        },
         "environment": {"teacher": "FULL", "scheduler_mode": "teacher_full", "shield_enabled": True, "high_level_enabled": False,
                         "geometry": "nominal_fixed", "gate_probabilities": [0.25] * 4, "mission_probabilities": [1.0, 0.0, 0.0, 0.0], "initial_soc": 0.80,
                         "priority_mode": "fixed", "initial_priority": 1,
