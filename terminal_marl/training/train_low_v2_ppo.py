@@ -13,6 +13,7 @@ import hashlib
 import itertools
 from pathlib import Path
 import json
+import random
 
 import numpy as np
 import torch
@@ -21,6 +22,8 @@ from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import load_checkpoint, save_checkpoint
 from ..core.config import SimConfig
 from ..core.observations import LOW_OBS_V2
+from ..core.safety_trace import SafetyTraceRecorder
+from ..core.runtime_traffic_safety import SafetyInvariantError
 from ..envs.parallel_env import TerminalParallelEnv
 from .audit_low_teacher_dataset import TeacherDatasetAudit, audit_teacher_dataset
 from .low_v2_protocol import LOW_V2_TEACHER_CURRICULUM, phase_config, validate_low_v2_config
@@ -234,6 +237,7 @@ def _episode_design(index: int, *, medium_rate: float, horizon_seconds: float) -
 
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
+    trace_output_dir: str | Path | None = None,
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
@@ -243,6 +247,11 @@ def _rollout_l1(
     policy.model.load_state_dict(model_state)
     env = TerminalParallelEnv(config)
     observations, _ = env.reset(seed)
+    trace_recorder = None if trace_output_dir is None else SafetyTraceRecorder(trace_output_dir, dt=config.dt)
+    if trace_recorder is not None:
+        trace_recorder.start_episode(env, episode_seed=seed, policy_rng_state={
+            "torch": torch.get_rng_state(), "numpy": np.random.get_state(), "python": random.getstate(),
+        })
     rows: list[Transition] = []
     reward_sum = 0.0
     release_intents = teacher_interventions = shield_interventions = 0
@@ -251,47 +260,63 @@ def _rollout_l1(
     teacher_correction_components: list[tuple[str, ...]] = []
     saturation_counts = np.zeros(3, dtype=int)
     requested_action_count = 0
-    for _ in range(min(max_steps, int(config.max_simulation_seconds / config.dt))):
-        ids = list(observations)
-        if not ids:
-            observations, _, _, _, _ = env.step({})
-        else:
-            actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
-            actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
-            next_observations, rewards, terminated, truncated, info = env.step({uid: action for uid, action in zip(ids, actions)})
-            for row_index, uid in enumerate(ids):
-                trace = info.get("action_traces", {}).get(uid, {})
-                requested = np.asarray(trace.get("requested_low_action", actions[row_index]), dtype=np.float32)
-                requested_action_count += 1
-                saturation_counts += (np.abs(requested) >= 0.98).astype(int)
-                teacher = trace.get("teacher_corrected_action")
-                shield = trace.get("shield_applied_action")
-                execution = trace.get("execution_applied_action")
-                applied = shield if shield is not None else execution
-                teacher_used = bool(trace.get("teacher_used", False))
-                shield_used = bool(trace.get("shield_used", False))
-                reward = float(rewards.get(uid, 0.0))
-                rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,
-                                       float(log_probs[row_index]), value, reward,
-                                       bool(terminated.get(uid, False) or truncated.get(uid, False)),
-                                       None if teacher is None else np.asarray(teacher, dtype=np.float32),
-                                       None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used))
-                reward_sum += reward
-                release_intents += int(requested[0] > config.release_threshold)
-                teacher_interventions += int(teacher_used)
-                shield_interventions += int(shield_used)
-                if teacher_used:
-                    correction = float(trace.get("correction_magnitude", 0.0))
-                    correction_magnitude_sum += correction
-                    correction_magnitudes.append(correction)
-                    corrected = np.asarray(teacher, dtype=np.float32) if teacher is not None else requested
-                    names = ("release", "speed", "merge_time")
-                    teacher_correction_components.append(tuple(
-                        name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
-                    ) or ("hold_reject",))
-            observations = next_observations
-        if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
-            break
+    trace_row: dict[str, object] | None = None
+    try:
+        for _ in range(min(max_steps, int(config.max_simulation_seconds / config.dt))):
+            ids = list(observations)
+            if not ids:
+                requested_actions: dict[str, np.ndarray] = {}
+                trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(env, observations, requested_actions)
+                observations, _, _, _, info = env.step(requested_actions)
+                if trace_recorder is not None and trace_row is not None:
+                    trace_recorder.record_post_step(env, trace_row, info)
+            else:
+                actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
+                actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
+                requested_actions = {uid: action for uid, action in zip(ids, actions)}
+                trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(
+                    env, observations, requested_actions, {uid: float(log_prob) for uid, log_prob in zip(ids, log_probs)}
+                )
+                next_observations, rewards, terminated, truncated, info = env.step(requested_actions)
+                if trace_recorder is not None and trace_row is not None:
+                    trace_recorder.record_post_step(env, trace_row, info)
+                for row_index, uid in enumerate(ids):
+                    trace = info.get("action_traces", {}).get(uid, {})
+                    requested = np.asarray(trace.get("requested_low_action", actions[row_index]), dtype=np.float32)
+                    requested_action_count += 1
+                    saturation_counts += (np.abs(requested) >= 0.98).astype(int)
+                    teacher = trace.get("teacher_corrected_action")
+                    shield = trace.get("shield_applied_action")
+                    execution = trace.get("execution_applied_action")
+                    applied = shield if shield is not None else execution
+                    teacher_used = bool(trace.get("teacher_used", False))
+                    shield_used = bool(trace.get("shield_used", False))
+                    reward = float(rewards.get(uid, 0.0))
+                    rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,
+                                           float(log_probs[row_index]), value, reward,
+                                           bool(terminated.get(uid, False) or truncated.get(uid, False)),
+                                           None if teacher is None else np.asarray(teacher, dtype=np.float32),
+                                           None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used))
+                    reward_sum += reward
+                    release_intents += int(requested[0] > config.release_threshold)
+                    teacher_interventions += int(teacher_used)
+                    shield_interventions += int(shield_used)
+                    if teacher_used:
+                        correction = float(trace.get("correction_magnitude", 0.0))
+                        correction_magnitude_sum += correction
+                        correction_magnitudes.append(correction)
+                        corrected = np.asarray(teacher, dtype=np.float32) if teacher is not None else requested
+                        names = ("release", "speed", "merge_time")
+                        teacher_correction_components.append(tuple(
+                            name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
+                        ) or ("hold_reject",))
+                observations = next_observations
+            if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
+                break
+    except SafetyInvariantError as error:
+        if trace_recorder is not None:
+            trace_recorder.record_safety_invariant(trace_row, error)
+        raise
     completion_delays = tuple(float(uav.completion_time - uav.request_time) for uav in env.completed_uavs
                               if uav.completion_time is not None)
     summary = L1EpisodeSummary(update, episode, seed, config.reset_mode, config.arrival_model, config.warm_start_uavs,
@@ -305,7 +330,7 @@ def _rollout_l1(
     return rows, summary
 
 
-def _rollout_task(args: tuple[dict[str, torch.Tensor], SimConfig, int, int, int, int]) -> tuple[list[Transition], L1EpisodeSummary]:
+def _rollout_task(args: tuple) -> tuple[list[Transition], L1EpisodeSummary]:
     return _rollout_l1(*args)
 
 
@@ -458,7 +483,8 @@ def train_l1_full_teacher(
         for episode in range(protocol.episodes_per_update):
             config, design = _episode_design(design_index, medium_rate=medium_rate, horizon_seconds=float(protocol.max_steps))
             design_index += 1
-            tasks.append((state, config, next(train_seeds), update, episode, protocol.max_steps))
+            tasks.append((state, config, next(train_seeds), update, episode, protocol.max_steps, False,
+                          str(destination / "safety_action_tapes")))
             designs.append(design)
         if protocol.rollout_workers == 1:
             collected = [_rollout_task(task) for task in tasks]

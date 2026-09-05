@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 import json
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -13,9 +14,11 @@ from terminal_marl.core.execution_scheduler import ExecutionScheduler
 from terminal_marl.core.merge_scheduler import LowLevelIntent, MergeScheduler
 from terminal_marl.core.observations import LOW_OBS_V2, build_low_observation_v2
 from terminal_marl.core.teacher_scheduler import TeacherScheduler
-from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
+from terminal_marl.core.runtime_traffic_safety import JointSafetyAssessment, PredictiveSafetyShield, SafetyInvariantError
+from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.core.safety_filter import SafetyFilter
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
+from terminal_marl.core.uav import FlightPhase
 from terminal_marl.core.checkpoints import checkpoint_metadata, validate_checkpoint_metadata, IncompatibleCheckpointError
 from terminal_marl.algo.shared_ppo import RolloutBuffer, SharedPPO, Transition
 from terminal_marl.training.build_low_teacher_dataset import TeacherDatasetCohort, build_low_teacher_dataset, build_low_teacher_dataset_matrix
@@ -107,7 +110,11 @@ def test_predictive_shield_detects_future_conflict_without_rewriting_committed_p
     blocker = type("CommittedTraffic", (), {"uid": 999, "ring_role": None, "committed_plan": plan})()
     env.active[999] = blocker
     risk = shield.assess(env)
-    shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
+    # The transfer is immutable and the bounded holder action set cannot
+    # certify a recovery.  S3's fail-closed invariant must block physics,
+    # rather than quietly dispatching a nominal residual.
+    with pytest.raises(SafetyInvariantError):
+        shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
     assert risk.trigger_reason == "predicted_swept_separation"
     assert all(np.array_equal(before, after.position) for before, after in zip(committed_points, plan.points))
 
@@ -151,19 +158,246 @@ def test_joint_shield_projects_multiple_holder_residuals_before_execution(monkey
     shield = PredictiveSafetyShield(env.config)
     holders = sorted(uid for uid, uav in env.active.items() if uav.ring_role is not None and uav.committed_plan is None)
     assert len(holders) == 2
-    requested = {uid: LowLevelIntent(0.0, 1.0, 0.0) for uid in holders}
+    requested = {uid: LowLevelIntent(0.0, 0.0, 0.0) for uid in holders}
     calls = []
 
-    def jointly_safe(_env, residuals):
+    def jointly_safe(_env, residuals, *, pairs=None, horizon=None):
         normalized = {uid: round(value / env.config.max_speed_residual_mps, 6) for uid, value in residuals.items()}
-        calls.append(normalized)
-        return all(value == 0.0 for value in normalized.values())
+        calls.append((normalized, horizon))
+        # A component-level complementary correction is safe; nominal zero is
+        # deliberately unsafe, proving it is not used as a fail-closed escape.
+        safe = normalized[holders[0]] == -1.0 and normalized[holders[1]] == 1.0
+        return JointSafetyAssessment(safe, 100.0 if safe else 0.0,
+                                     () if safe else (tuple(holders),))
 
-    monkeypatch.setattr(shield, "_joint_approved", jointly_safe)
+    monkeypatch.setattr(shield, "_joint_assessment", jointly_safe)
     repaired = shield.protect(env, requested)
-    assert all(repaired[uid].speed_residual == 0.0 for uid in holders)
+    assert repaired[holders[0]].speed_residual == -1.0
+    assert repaired[holders[1]].speed_residual == 1.0
     assert shield.telemetry["joint_safety_corrections"] == 2
-    assert any(all(value == 0.0 for value in candidate.values()) for candidate in calls)
+    assert any(candidate == {holders[0]: -1.0, holders[1]: 1.0} for candidate, _ in calls)
+
+
+def test_safety_trace_keeps_exact_requested_action_provenance(tmp_path):
+    env = _student_env(1)
+    observations, _ = env.reset(77)
+    recorder = SafetyTraceRecorder(tmp_path, dt=env.config.dt)
+    recorder.start_episode(env, episode_seed=77, policy_rng_state={"unit": "state"})
+    actions = {uid: np.zeros(3, dtype=np.float32) for uid in observations}
+    row = recorder.record_pre_step(env, observations, actions, {uid: -0.5 for uid in actions})
+    _, _, _, _, info = env.step(actions)
+    recorder.record_post_step(env, row, info)
+    path = recorder.dump(reason="unit_test")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["episode_seed"] == 77
+    assert payload["reset_state_hash"]
+    assert payload["policy_rng_state_b64"]
+    record = payload["records"][0]
+    assert len(payload["action_tape"]) == 1
+    assert record["observation_hash"] and record["a_requested"] and record["log_prob"]
+    assert "a_teacher_shield_applied" in record and "reservations" in record["pre_state"]
+    header, tape = SafetyTraceRecorder.load_action_tape(path)
+    assert header["reset_state_hash"] == payload["reset_state_hash"]
+    assert np.array_equal(tape[0][next(iter(actions))], actions[next(iter(actions))])
+    replay = SafetyTraceRecorder.replay_action_tape(_student_env(1), path)
+    assert replay["exact"]
+
+
+def test_safety_trace_retains_full_tape_after_diagnostic_ring_wrap(tmp_path):
+    env = _student_env(1)
+    observations, _ = env.reset(91)
+    # One detailed record is retained, but every requested action must remain
+    # available for reset-to-event replay.
+    recorder = SafetyTraceRecorder(tmp_path, max_seconds=env.config.dt, dt=env.config.dt)
+    recorder.start_episode(env, episode_seed=91, policy_rng_state={"unit": "state"})
+    for _ in range(3):
+        actions = {uid: np.zeros(3, dtype=np.float32) for uid in observations}
+        row = recorder.record_pre_step(env, observations, actions)
+        observations, _, _, _, info = env.step(actions)
+        recorder.record_post_step(env, row, info)
+    path = recorder.dump(reason="late_unit_event")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert len(payload["records"]) == 1
+    assert len(payload["action_tape"]) == 3
+    replay = SafetyTraceRecorder.replay_action_tape(_student_env(1), path)
+    assert replay["exact"] and replay["steps_replayed"] == 3
+
+
+def test_safety_trace_marks_fail_closed_safety_invariant_event(tmp_path):
+    env = _student_env(1)
+    observations, _ = env.reset(93)
+    recorder = SafetyTraceRecorder(tmp_path, dt=env.config.dt)
+    recorder.start_episode(env, episode_seed=93, policy_rng_state={"unit": "state"})
+    actions = {uid: np.zeros(3, dtype=np.float32) for uid in observations}
+    row = recorder.record_pre_step(env, observations, actions)
+    recorder.record_safety_invariant(row, SafetyInvariantError("blocked", diagnostic={"component": [1, 2]}))
+    payload = json.loads(recorder.dumped_path.read_text(encoding="utf-8"))
+    assert payload["dump_reason"] == "uncertified_joint_safety_action"
+    assert payload["action_tape"][0]["safety_event"]["diagnostic"] == {"component": [1, 2]}
+
+
+def test_joint_shield_rejects_currently_safe_action_without_next_tick_backup(monkeypatch):
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holders = sorted(uid for uid, uav in env.active.items() if uav.ring_role is not None and uav.committed_plan is None)
+    requested = {uid: LowLevelIntent(0.0, 0.0, 0.0) for uid in holders}
+
+    def assessment(_env, residuals, *, pairs=None, horizon=None):
+        normalized = tuple(round(residuals[uid] / env.config.max_speed_residual_mps, 6) for uid in holders)
+        return JointSafetyAssessment(True, 100.0, ())
+
+    def backup(_env, residuals, _pairs):
+        normalized = tuple(round(residuals[uid] / env.config.max_speed_residual_mps, 6) for uid in holders)
+        safe = normalized == (-1.0, 1.0)
+        return (dict(residuals) if safe else None,
+                JointSafetyAssessment(safe, 100.0 if safe else 0.0,
+                                      () if safe else (tuple(holders),)))
+
+    monkeypatch.setattr(shield, "_joint_assessment", assessment)
+    monkeypatch.setattr(shield, "_next_executor_state", lambda _env, _residuals: env)
+    monkeypatch.setattr(shield, "_backup_safe", backup)
+    repaired = shield.protect(env, requested)
+    assert (repaired[holders[0]].speed_residual, repaired[holders[1]].speed_residual) == (-1.0, 1.0)
+    assert shield.telemetry["recursive_feasibility_rejections"] > 0
+
+
+def test_joint_shield_backup_offers_common_ring_profile_for_cyclic_component():
+    env = _student_env(4)
+    shield = PredictiveSafetyShield(env.config)
+    holders = sorted(uid for uid, uav in env.active.items() if uav.ring_role is not None and uav.committed_plan is None)
+    assert len(holders) == 4
+    # Make the synthetic component explicitly cyclic on one ring.  The warm
+    # start helper otherwise distributes aircraft across rings, which does not
+    # exercise a shared ring profile.
+    role = env.active[holders[0]].ring_role
+    for uid in holders:
+        env.active[uid].ring_role = role
+    requested = {
+        holders[0]: -env.config.max_speed_residual_mps,
+        **{uid: env.config.max_speed_residual_mps for uid in holders[1:]},
+    }
+    # The cyclic neighbour set is intentionally sufficient to give every
+    # holder both a predecessor and successor.  The backup catalogue must
+    # include an equal target profile instead of applying contradictory local
+    # follower/leader overrides around the loop.
+    pairs = tuple((holders[index], holders[(index + 1) % len(holders)]) for index in range(len(holders)))
+    candidates = shield._ring_profile_backup_candidates(env, requested, pairs)
+    assert candidates
+    assert any(len({round(candidate[uid], 8) for uid in holders}) == 1 for candidate in candidates)
+
+
+def test_runtime_repair_tracks_use_executor_equivalent_safety_semantics():
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holders = sorted(uid for uid, uav in env.active.items() if uav.ring_role is not None and uav.committed_plan is None)
+    assert len(holders) == 2
+    end = env.now + env.config.shield_horizon_seconds
+    tracks = {
+        uid: shield._repair_plan(env.active[uid], env.airspace, env.now, end, env.config.max_speed_residual_mps)
+        for uid in holders
+    }
+    assert all(plan.metadata["runtime_executor_equivalent"] for plan in tracks.values())
+    # The separation verifier must judge the exact shared dynamics track, not
+    # re-interpret its sampled chord as a free-form transfer trajectory.
+    assert env.safety.verify_predicted_tracks(tracks, start=env.now, end=end).approved
+
+
+def test_joint_shield_keeps_imminent_transfer_handoff_pair_despite_broad_phase(monkeypatch):
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holder, transfer = (env.active[uid] for uid in sorted(env.active)[:2])
+    role = holder.ring_role
+    assert role is not None
+    end = env.now + 0.5
+    transfer.committed_plan = TrajectoryPlan(
+        "imminent-handoff", transfer.uid, "transfer", (
+            TrajectoryPoint(env.now, transfer.position.copy()),
+            TrajectoryPoint(end, holder.position.copy()),
+        ), env.now, end, metadata={"target_phase": f"ring_{role.value}", "committed": True},
+    )
+    transfer.ring_role = None
+    # This reproduces the old erroneous cull: an imminent target-ring handoff
+    # must remain in the runtime conflict graph even if its current transfer
+    # geometry is far from the holder.
+    monkeypatch.setattr(shield, "_broad_phase_reject", lambda *_args, **_kwargs: True)
+    assert tuple(sorted((holder.uid, transfer.uid))) in shield._joint_pairs(env)
+
+
+def test_recursive_successor_converts_completed_transfer_to_ring_holder():
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holder, transfer = (env.active[uid] for uid in sorted(env.active)[:2])
+    role = holder.ring_role
+    assert role is not None
+    end = env.now + 0.5 * env.config.dt
+    endpoint = holder.position.copy()
+    transfer.committed_plan = TrajectoryPlan(
+        "successor-handoff", transfer.uid, "transfer", (
+            TrajectoryPoint(env.now, transfer.position.copy(), transfer.velocity.copy(), transfer.acceleration.copy()),
+            TrajectoryPoint(end, endpoint, transfer.velocity.copy(), transfer.acceleration.copy()),
+        ), env.now, end, metadata={"target_phase": f"ring_{role.value}", "committed": True},
+    )
+    transfer.ring_role = None
+    assert shield._has_imminent_ring_handoff(env, within_seconds=env.config.dt)
+    expected = env.safety._post_plan_positions(
+        transfer.committed_plan, SimpleNamespace(now=env.now, active=env.active, airspace=env.airspace),
+        np.asarray((env.now + env.config.dt,)),
+    )[0]
+    successor = shield._next_executor_state(env, {holder.uid: 0.0})
+    predicted = successor.active[transfer.uid]
+    assert predicted.committed_plan is None
+    assert predicted.ring_role is role
+    assert np.allclose(predicted.position, expected)
+    assert not np.allclose(predicted.position, endpoint)
+
+
+def test_recursive_successor_adds_handed_off_holder_to_backup_action_domain():
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holder, transfer = (env.active[uid] for uid in sorted(env.active)[:2])
+    role = holder.ring_role
+    assert role is not None
+    end = env.now + 0.5 * env.config.dt
+    transfer.committed_plan = TrajectoryPlan(
+        "backup-domain-handoff", transfer.uid, "transfer", (
+            TrajectoryPoint(env.now, transfer.position.copy()),
+            TrajectoryPoint(end, holder.position.copy()),
+        ), env.now, end, metadata={"target_phase": f"ring_{role.value}", "committed": True},
+    )
+    transfer.ring_role = None
+    successor = shield._next_executor_state(env, {holder.uid: 0.0})
+    domain = shield._successor_action_domain(successor, {holder.uid: 0.0})
+    assert domain[transfer.uid] == 0.0
+    assert set(domain) >= {holder.uid, transfer.uid}
+
+
+def test_partial_tick_plan_handoff_matches_post_plan_prediction():
+    env = _student_env(1)
+    uav = next(iter(env.active.values()))
+    role = RingRole.MIDDLE
+    ring = env.airspace.actual_ring(role)
+    endpoint = np.asarray((ring.radius, 0.0, ring.height))
+    endpoint_velocity = np.asarray((0.0, ring.nominal_speed, 0.0))
+    uav.phase = FlightPhase.TRANSFER_O2M
+    uav.ring_role = None
+    end = env.now + 0.5 * env.config.dt
+    plan = TrajectoryPlan(
+        "partial-tick-handoff", uav.uid, "transfer", (
+            TrajectoryPoint(env.now, uav.position.copy(), uav.velocity.copy(), uav.acceleration.copy()),
+            TrajectoryPoint(end, endpoint, endpoint_velocity, np.zeros(3)),
+        ), env.now, end, metadata={"target_phase": f"ring_{role.value}", "committed": True},
+    )
+    expected = env.safety._post_plan_positions(
+        plan, SimpleNamespace(now=env.now, active=env.active, airspace=env.airspace),
+        np.asarray((env.now + env.config.dt,)),
+    )[0]
+    uav.committed_plan = plan
+    uav.trajectory_plan_id = plan.plan_id
+    env.safety.checked_trajectory_hashes[plan.plan_id] = plan.trajectory_hash
+    observations, _, _, _, info = env.step({str(uav.uid): np.zeros(3, dtype=np.float32)})
+    assert observations
+    assert np.allclose(env.active[uav.uid].position, expected)
+    assert info["prediction_execution_position_error"][str(uav.uid)] < 1e-9
 
 
 def test_checkpoint_schema_rejects_legacy_actor_metadata():
