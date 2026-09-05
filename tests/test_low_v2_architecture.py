@@ -445,6 +445,37 @@ def test_ppo_ratio_is_invariant_to_applied_action_and_reports_diagnostics():
     assert {"approx_kl", "clip_fraction", "explained_variance", "grad_norm"} <= set(first_metrics)
 
 
+def test_ppo_d2_snapshot_is_non_mutating_and_keeps_teacher_targets_normalized():
+    """D2 can inspect requested/teacher actions without changing PPO state."""
+    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
+    teacher = np.asarray((1.0, -1.0, 1.0), np.float32)
+    world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
+    buffer = RolloutBuffer()
+    buffer.add(Transition("uav-1", world[0], world, requested, -0.2, 0.0, 1.0, True,
+                          teacher_action=teacher, applied_action=teacher, teacher_used=True))
+    buffer.add(Transition("uav-2", world[0], world, -requested, -0.1, 0.0, -1.0, True,
+                          teacher_action=-teacher, applied_action=-teacher, teacher_used=True))
+    policy = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=.05)
+    before = [parameter.detach().clone() for parameter in policy.model.parameters()]
+    snapshot = policy.diagnostic_snapshot(buffer, teacher_bc_weight=.05)
+    assert snapshot["rows"] == 2 and snapshot["teacher_used_rows"] == 2
+    assert set(snapshot["heads"]) == {"release_request", "speed_residual", "merge_time_residual"}
+    assert snapshot["heads"]["merge_time_residual"]["teacher_target_saturation_rate"] == 1.0
+    # One PPO gradient can legitimately be exactly zero after clipping; the
+    # diagnostic excludes undefined cosines rather than fabricating a sign.
+    assert snapshot["heads"]["merge_time_residual"]["teacher_used_head_output_gradient_cosine"]["samples"] >= 1
+    assert snapshot["gradient_blocks"]["shared_backbone"] == 0.0
+    assert all(torch.equal(before_parameter, after_parameter)
+               for before_parameter, after_parameter in zip(before, policy.model.parameters()))
+
+
+def test_low_level_intent_keeps_merge_residual_normalized_until_scheduler_execution():
+    intent = LowLevelIntent.from_array((3.0, -3.0, 2.0))
+    assert (intent.release_request, intent.speed_residual, intent.merge_time_residual) == (1.0, -1.0, 1.0)
+    config = SimConfig()
+    assert config.max_merge_time_residual_seconds == 6.0
+
+
 def test_teacher_dataset_records_requested_and_correction_fields_without_training(tmp_path):
     class ZeroPolicy:
         def act(self, observations):

@@ -6,6 +6,7 @@ variable-size active-UAV set.  No attention, GNN, or fixed max-N action exists.
 from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any
 import numpy as np
 import torch
 from torch import nn
@@ -97,6 +98,148 @@ class SharedPPO:
             log_prob = distribution.log_prob(actions).sum(dim=-1)
             value = self.model.critic(world_tensor, mask)[0]
         return actions.cpu().numpy().astype(np.float32), log_prob.cpu().numpy(), float(value.cpu())
+
+    @staticmethod
+    def _quantiles(values: list[float] | np.ndarray) -> dict[str, float | None]:
+        array = np.asarray(values, dtype=np.float64)
+        if array.size == 0:
+            return {"mean": None, "median": None, "p10": None, "p90": None}
+        return {"mean": float(array.mean()), "median": float(np.median(array)),
+                "p10": float(np.percentile(array, 10)), "p90": float(np.percentile(array, 90))}
+
+    @staticmethod
+    def _grad_norm(loss: torch.Tensor, parameters: list[torch.Tensor], *, retain_graph: bool = True) -> float:
+        gradients = torch.autograd.grad(loss, parameters, retain_graph=retain_graph, allow_unused=True)
+        squared = sum(float(gradient.detach().pow(2).sum()) for gradient in gradients if gradient is not None)
+        return float(np.sqrt(squared))
+
+    def diagnostic_snapshot(self, buffer: RolloutBuffer, *, teacher_bc_weight: float,
+                            gamma: float = .99, gae_lambda: float = .95) -> dict[str, Any]:
+        """Return non-mutating per-head and gradient evidence for one PPO update.
+
+        ``Transition.action`` and ``Transition.log_prob`` remain the requested
+        behaviour action and its log-probability.  This method never calls an
+        optimizer, clips gradients, or changes a model parameter; it exists
+        solely to make a frozen diagnostic update explainable.
+        """
+        rows = buffer.flattened(gamma, gae_lambda)
+        heads = ("release_request", "speed_residual", "merge_time_residual")
+        if not rows:
+            return {"rows": 0, "heads": {name: {} for name in heads}, "gradient": {},
+                    "advantages": {"raw": self._quantiles([]), "normalized": self._quantiles([])}}
+        raw_advantages = np.asarray([item[1] for item in rows], dtype=np.float32)
+        normalized = (raw_advantages - raw_advantages.mean()) / (raw_advantages.std() + 1e-8)
+        transitions = [item[0] for item in rows]
+        observations = torch.as_tensor(np.stack([row.observation for row in transitions]), dtype=torch.float32, device=self.device)
+        actions = torch.as_tensor(np.stack([row.action for row in transitions]), dtype=torch.float32, device=self.device)
+        old_log_prob = torch.as_tensor([row.log_prob for row in transitions], dtype=torch.float32, device=self.device)
+        advantages = torch.as_tensor(normalized, dtype=torch.float32, device=self.device)
+        logits = self.model.actor_mean(self.model.actor_body(observations))
+        means = torch.tanh(logits)
+        distribution = Normal(means, self.model.log_std.exp().expand_as(means))
+        new_log_prob = distribution.log_prob(actions).sum(-1)
+        ratio = (new_log_prob - old_log_prob).exp()
+        actor_loss_rows = -torch.minimum(ratio * advantages,
+                                         ratio.clamp(1 - self.clip_ratio, 1 + self.clip_ratio) * advantages)
+        actor_loss = actor_loss_rows.mean()
+        worlds = [row.world for row in transitions]
+        max_n = max(len(world) for world in worlds)
+        padded = np.zeros((len(worlds), max_n, self.observation_dim), np.float32)
+        mask = np.zeros((len(worlds), max_n), bool)
+        for index, world in enumerate(worlds):
+            padded[index, :len(world)] = world
+            mask[index, :len(world)] = True
+        returns = torch.as_tensor([item[2] for item in rows], dtype=torch.float32, device=self.device)
+        values = self.model.critic(torch.as_tensor(padded, device=self.device), torch.as_tensor(mask, device=self.device))
+        value_loss = (values - returns).pow(2).mean()
+        actor_parameters = list(self.model.actor_body.parameters()) + list(self.model.actor_mean.parameters()) + [self.model.log_std]
+        critic_parameters = list(self.model.critic_encoder.parameters()) + list(self.model.critic_head.parameters())
+        actor_grad_norm = self._grad_norm(actor_loss, actor_parameters)
+        critic_grad_norm = self._grad_norm(self.value_coef * value_loss, critic_parameters)
+
+        action_array = actions.detach().cpu().numpy()
+        mean_array = means.detach().cpu().numpy()
+        logit_array = logits.detach().cpu().numpy()
+        std_array = self.model.log_std.detach().exp().cpu().numpy()
+        teacher_indices = [index for index, row in enumerate(transitions) if row.teacher_used and row.teacher_action is not None]
+        teacher_targets = np.asarray([transitions[index].teacher_action for index in teacher_indices], dtype=np.float32) \
+            if teacher_indices else np.empty((0, 3), dtype=np.float32)
+        head_rows: dict[str, dict[str, Any]] = {}
+        head_gradient_rows: dict[str, dict[str, Any]] = {name: {"ppo": [], "bc": [], "combined": [], "cosine": []} for name in heads}
+        parameter_blocks = [self.model.actor_mean.weight, self.model.actor_mean.bias, self.model.log_std]
+
+        def head_gradient(loss: torch.Tensor, head_index: int) -> np.ndarray:
+            gradients = torch.autograd.grad(loss, parameter_blocks, retain_graph=True, allow_unused=True)
+            weight = np.zeros_like(self.model.actor_mean.weight[head_index].detach().cpu().numpy()) if gradients[0] is None \
+                else gradients[0][head_index].detach().cpu().numpy()
+            bias = np.zeros(1, dtype=np.float32) if gradients[1] is None else gradients[1][head_index:head_index + 1].detach().cpu().numpy()
+            log_std = np.zeros(1, dtype=np.float32) if gradients[2] is None else gradients[2][head_index:head_index + 1].detach().cpu().numpy()
+            return np.concatenate((weight.reshape(-1), bias.reshape(-1), log_std.reshape(-1))).astype(np.float64, copy=False)
+
+        for head_index, head in enumerate(heads):
+            bounded = np.abs(action_array[:, head_index]) >= .98
+            exact_bound = np.abs(action_array[:, head_index]) >= 1.0 - 1e-7
+            mean_boundary = np.abs(mean_array[:, head_index]) >= .98
+            head_rows[head] = {
+                "pre_squash_logit": self._quantiles(logit_array[:, head_index]),
+                "post_squash_actor_mean": self._quantiles(mean_array[:, head_index]),
+                "std": float(std_array[head_index]), "log_std": float(self.model.log_std.detach().cpu()[head_index]),
+                "post_bound_requested_action": self._quantiles(action_array[:, head_index]),
+                "saturation_rate": float(bounded.mean()), "exact_bound_pile_rate": float(exact_bound.mean()),
+                "actor_mean_boundary_rate": float(mean_boundary.mean()),
+                "sample_bound_hit_away_from_mean_rate": float((bounded & ~mean_boundary).mean()),
+                "entropy": float(distribution.entropy()[:, head_index].mean().detach()),
+                "teacher_correction_rate": float(len(teacher_indices) / len(transitions)),
+                "teacher_target": self._quantiles(teacher_targets[:, head_index]) if len(teacher_targets) else self._quantiles([]),
+                "teacher_target_saturation_rate": None if not len(teacher_targets) else float((np.abs(teacher_targets[:, head_index]) >= .98).mean()),
+                "absolute_requested_teacher_difference": self._quantiles(
+                    np.abs(action_array[teacher_indices, head_index] - teacher_targets[:, head_index]) if len(teacher_targets) else []),
+            }
+        for row_index in teacher_indices:
+            one_observation = observations[row_index:row_index + 1]
+            one_action = actions[row_index:row_index + 1]
+            one_logits = self.model.actor_mean(self.model.actor_body(one_observation))
+            one_mean = torch.tanh(one_logits)
+            one_distribution = Normal(one_mean, self.model.log_std.exp().expand_as(one_mean))
+            one_ratio = (one_distribution.log_prob(one_action).sum(-1) - old_log_prob[row_index:row_index + 1]).exp()
+            one_advantage = advantages[row_index:row_index + 1]
+            one_ppo = -torch.minimum(one_ratio * one_advantage,
+                                     one_ratio.clamp(1 - self.clip_ratio, 1 + self.clip_ratio) * one_advantage).mean()
+            target = torch.as_tensor(transitions[row_index].teacher_action, dtype=torch.float32, device=self.device)
+            for head_index, head in enumerate(heads):
+                one_bc = nn.functional.smooth_l1_loss(one_mean[0, head_index], target[head_index])
+                ppo_gradient = head_gradient(one_ppo, head_index)
+                bc_gradient = head_gradient(one_bc, head_index)
+                combined_gradient = ppo_gradient + teacher_bc_weight * bc_gradient
+                ppo_norm, bc_norm = np.linalg.norm(ppo_gradient), np.linalg.norm(bc_gradient)
+                cosine = None if ppo_norm <= 1e-12 or bc_norm <= 1e-12 else float(np.dot(ppo_gradient, bc_gradient) / (ppo_norm * bc_norm))
+                head_gradient_rows[head]["ppo"].append(float(ppo_norm))
+                head_gradient_rows[head]["bc"].append(float(bc_norm))
+                head_gradient_rows[head]["combined"].append(float(np.linalg.norm(combined_gradient)))
+                if cosine is not None:
+                    head_gradient_rows[head]["cosine"].append(cosine)
+        for head, values_by_kind in head_gradient_rows.items():
+            head_rows[head]["teacher_used_head_output_gradients"] = {
+                kind: self._quantiles(values) for kind, values in values_by_kind.items() if kind != "cosine"
+            }
+            cosines = values_by_kind["cosine"]
+            head_rows[head]["teacher_used_head_output_gradient_cosine"] = {
+                **self._quantiles(cosines), "negative_fraction": None if not cosines else float(np.mean(np.asarray(cosines) < 0.0)),
+                "samples": len(cosines),
+            }
+        return {
+            "rows": len(rows), "teacher_used_rows": len(teacher_indices), "heads": head_rows,
+            "advantages": {"raw": self._quantiles(raw_advantages), "normalized": self._quantiles(normalized)},
+            "optimizer": {"learning_rate": float(self.optimizer.param_groups[0]["lr"]),
+                          "entropy_coefficient": float(self.entropy_coef), "clip_ratio": float(self.clip_ratio)},
+            "ppo": {"approx_kl": float((old_log_prob - new_log_prob).mean().detach()),
+                    "clip_fraction": float(((ratio - 1.0).abs() > self.clip_ratio).float().mean().detach()),
+                    "actor_loss": float(actor_loss.detach()), "value_loss": float(value_loss.detach()),
+                    "value_to_abs_actor_loss": float(value_loss.detach() / actor_loss.detach().abs().clamp_min(1e-8)),
+                    "explained_variance": float((1.0 - (returns - values).var(unbiased=False) / returns.var(unbiased=False).clamp_min(1e-8)).detach())},
+            "gradient_blocks": {"actor": actor_grad_norm, "critic": critic_grad_norm,
+                                "shared_backbone": 0.0, "shared_backbone_note": "not_applicable: actor_body and critic_encoder are disjoint"},
+        }
 
     def update(self, buffer: RolloutBuffer, *, epochs: int = 4, minibatch_size: int = 128, gamma: float = .99, gae_lambda: float = .95) -> dict[str, float]:
         rows = buffer.flattened(gamma, gae_lambda)
