@@ -8,7 +8,7 @@ from terminal_marl.core.merge_scheduler import LowLevelIntent
 from terminal_marl.core.observations import LOW_OBS_V2
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.training.l1_ppo_d3_bounded_distribution import _requested_action_provenance
-from terminal_marl.training.l1_release_mixed_actor_diagnostic import release_decision_metrics
+from terminal_marl.training.l1_release_mixed_actor_diagnostic import _release_probe_task, release_decision_metrics
 from terminal_marl.training.train_low_v2_ppo import l1_full_teacher_config
 
 
@@ -66,3 +66,17 @@ def test_release_magnitude_is_scheduler_aliased_within_each_binary_decision() ->
     low = env.scheduler.propose(uav, LowLevelIntent(.01, .2, .3), snapshot, target)
     high = env.scheduler.propose(uav, LowLevelIntent(.99, .2, .3), snapshot, target)
     assert low == high
+
+
+def test_release_probe_has_aligned_fields_and_threshold_equivalence() -> None:
+    config = l1_full_teacher_config(medium_rate=.001575, reset_mode="warm_start_rings",
+                                    demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
+                                    horizon_seconds=2.)
+    rows = [_release_probe_task((config, 1001, magnitude, 2)) for magnitude in (-.99, -.01, .01, .99)]
+    by_magnitude = {row["requested_release_value"]: row for row in rows}
+    comparable = ("teacher_target_counts", "false_release", "false_wait", "decision_counts", "completion", "safety")
+    assert all(by_magnitude[.01][field] == by_magnitude[.99][field] for field in comparable)
+    assert all(by_magnitude[-.01][field] == by_magnitude[-.99][field] for field in comparable)
+    assert by_magnitude[.01]["near_threshold_samples"] > 0
+    assert by_magnitude[-.01]["near_threshold_samples"] > 0
+    assert all(set(row["safety"]) == {"collisions", "nmac", "hard_separation_violations"} for row in rows)

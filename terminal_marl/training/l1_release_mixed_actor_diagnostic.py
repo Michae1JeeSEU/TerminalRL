@@ -18,11 +18,12 @@ from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import load_checkpoint
 from ..core.observations import LOW_OBS_V2
 from ..core.runtime_traffic_safety import SafetyInvariantError
+from ..envs.parallel_env import TerminalParallelEnv
 from .l1_ppo_d3_bounded_distribution import _requested_action_provenance
 from .train_low_v2_ppo import (
     L1SafetyGateError, _episode_design, _grouped_metrics, _model_state,
     _read_frozen_capacity, _read_seed_partition, _rollout_task, _summary_metrics,
-    authorize_low_v2_training, l1_full_teacher_config,
+    _release_teacher_target, authorize_low_v2_training, l1_full_teacher_config,
 )
 
 
@@ -30,6 +31,8 @@ VARIANTS = {
     "A_continuous_release_tanh": {"policy_distribution": "tanh_squashed_gaussian", "release_teacher_bc": False},
     "B_bernoulli_release_tanh_residuals": {"policy_distribution": "mixed_bernoulli_tanh", "release_teacher_bc": True},
 }
+
+RELEASE_PROBE_MAGNITUDES = (-.99, -.01, .01, .99)
 
 
 def _write(path: Path, value: dict[str, Any]) -> None:
@@ -58,6 +61,92 @@ def _teacher_dataset_release_audit(path: str | Path) -> dict[str, Any]:
         "teacher_release_target_counts": {"WAIT": int((targets < 0.0).sum()), "RELEASE": int((targets > 0.0).sum())},
         "historical_release_bc_semantics": "continuous magnitude regression to the unchanged requested release sample",
     }
+
+
+def _release_probe_task(task: tuple[Any, int, float, int]) -> dict[str, Any]:
+    """Run one deterministic threshold-equivalence probe without PPO."""
+    config, seed, magnitude, max_steps = task
+    env = TerminalParallelEnv(config)
+    observations, _ = env.reset(seed)
+    label_wait = label_release = false_release = false_wait = 0
+    near_threshold = busy = safe_open = 0
+    decision_counts: dict[str, int] = {}
+    eligibility_index = LOW_OBS_V2.slices["release_eligible"].start
+    for _ in range(max_steps):
+        actions = {uid: np.asarray((magnitude, 0.0, 0.0), dtype=np.float32) for uid in observations}
+        before = observations
+        observations, _, _, _, info = env.step(actions)
+        for uid, observation in before.items():
+            decision = str(info["release_decisions"].get(uid, "phase_masked"))
+            eligible = bool(observation[eligibility_index] > .5)
+            target = _release_teacher_target(release_eligible=eligible, requested_release=magnitude > 0.0,
+                                             decision=decision)
+            predicted_release = magnitude > 0.0
+            teacher_release = target > 0.0
+            label_release += int(teacher_release); label_wait += int(not teacher_release)
+            false_release += int(predicted_release and not teacher_release)
+            false_wait += int(not predicted_release and teacher_release)
+            near_threshold += int(abs(magnitude) <= .10)
+            busy += int(not eligible)
+            safe_open += int(eligible and teacher_release)
+            decision_counts[decision] = decision_counts.get(decision, 0) + 1
+        if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
+            break
+    return {
+        "seed": seed, "requested_release_value": magnitude,
+        "requested_decision": "RELEASE" if magnitude > 0.0 else "WAIT",
+        "requested_release_probability": float(magnitude > 0.0),
+        "teacher_target_counts": {"WAIT": label_wait, "RELEASE": label_release},
+        "false_release": false_release, "false_wait": false_wait,
+        "teacher_correction_rate": _safe_rate(false_release + false_wait, label_wait + label_release),
+        "near_threshold_samples": near_threshold, "busy_or_committed_samples": busy,
+        "safe_open_gap_samples": safe_open, "decision_counts": decision_counts,
+        "completion": len(env.completed_uavs),
+        "safety": {"collisions": int(env.telemetry.get("collisions", 0)),
+                   "nmac": int(env.telemetry.get("nmac", 0)),
+                   "hard_separation_violations": int(env.telemetry.get("hard_separation_violations", 0))},
+    }
+
+
+def run_release_semantics_probe(*, c0_report: str | Path, output_path: str | Path,
+                                workers: int = 4, max_steps: int = 240) -> dict[str, Any]:
+    """Create the fixed WAIT/RELEASE, sign-equivalence Phase-2 regression."""
+    _, medium_interval = _read_frozen_capacity(c0_report)
+    medium_rate = sum(medium_interval) / 2.0
+    tasks = []
+    for seed in (1001, 1002):
+        config = l1_full_teacher_config(medium_rate=medium_rate, reset_mode="warm_start_rings",
+                                        demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
+                                        horizon_seconds=float(max_steps))
+        tasks.extend((config, seed, magnitude, max_steps) for magnitude in RELEASE_PROBE_MAGNITUDES)
+    if workers == 1:
+        records = [_release_probe_task(task) for task in tasks]
+    else:
+        with ProcessPoolExecutor(max_workers=min(workers, len(tasks))) as executor:
+            records = list(executor.map(_release_probe_task, tasks))
+    by_key = {(row["seed"], row["requested_release_value"]): row for row in records}
+    comparable_fields = ("teacher_target_counts", "false_release", "false_wait", "decision_counts", "completion", "safety")
+    positive_equivalent = all(all(by_key[(seed, .01)][field] == by_key[(seed, .99)][field]
+                                  for field in comparable_fields) for seed in (1001, 1002))
+    negative_equivalent = all(all(by_key[(seed, -.01)][field] == by_key[(seed, -.99)][field]
+                                  for field in comparable_fields) for seed in (1001, 1002))
+    coverage = {
+        "teacher_wait": sum(row["teacher_target_counts"]["WAIT"] for row in records),
+        "teacher_release": sum(row["teacher_target_counts"]["RELEASE"] for row in records),
+        "false_release": sum(row["false_release"] for row in records),
+        "false_wait": sum(row["false_wait"] for row in records),
+        "near_threshold": sum(row["near_threshold_samples"] for row in records),
+        "busy_or_committed": sum(row["busy_or_committed_samples"] for row in records),
+        "safe_open_gap": sum(row["safe_open_gap_samples"] for row in records),
+    }
+    passed = bool(positive_equivalent and negative_equivalent and all(value > 0 for value in coverage.values()) and
+                  not any(value for row in records for value in row["safety"].values()))
+    result = {"status": "completed", "evidence_type": "newly_run", "records": records,
+              "positive_magnitude_execution_equivalent": positive_equivalent,
+              "negative_magnitude_execution_equivalent": negative_equivalent,
+              "coverage": coverage, "passed": passed}
+    _write(Path(output_path), result)
+    return result
 
 
 def _ppo_health(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -318,11 +407,20 @@ def run_release_mixed_actor_diagnostic(*, c0_report: str | Path, teacher_dataset
 
 def _main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(description="Run only the three-update release mixed-actor diagnostic.")
-    parser.add_argument("--c0-report", required=True); parser.add_argument("--teacher-dataset", required=True)
-    parser.add_argument("--initial-checkpoint", required=True); parser.add_argument("--output", required=True)
+    parser = argparse.ArgumentParser(description="Run the release semantics probe or three-update mixed-actor diagnostic.")
+    parser.add_argument("--c0-report", required=True); parser.add_argument("--teacher-dataset")
+    parser.add_argument("--initial-checkpoint"); parser.add_argument("--output", required=True)
     parser.add_argument("--workers", type=int, default=4); parser.add_argument("--source-commit", default="unknown")
+    parser.add_argument("--probe-only", action="store_true")
+    parser.add_argument("--probe-max-steps", type=int, default=240)
     args = parser.parse_args()
+    if args.probe_only:
+        print(json.dumps(run_release_semantics_probe(
+            c0_report=args.c0_report, output_path=args.output,
+            workers=args.workers, max_steps=args.probe_max_steps), indent=2))
+        return
+    if not args.teacher_dataset or not args.initial_checkpoint:
+        parser.error("--teacher-dataset and --initial-checkpoint are required unless --probe-only is used")
     print(json.dumps(run_release_mixed_actor_diagnostic(
         c0_report=args.c0_report, teacher_dataset_path=args.teacher_dataset,
         initial_checkpoint=args.initial_checkpoint, output_dir=args.output,
