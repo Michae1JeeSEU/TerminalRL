@@ -6,6 +6,7 @@ teacher-executed action: PPO's rollout buffer always contains the sampled
 only as an auxiliary target and as a reward/diagnostic signal.
 """
 from __future__ import annotations
+import copy
 
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
@@ -253,11 +254,37 @@ def _release_teacher_target(*, release_eligible: bool, requested_release: bool, 
     return 1.0
 
 
+def _counterfactual_release_teacher_targets(
+    env: TerminalParallelEnv,
+    observations: dict[str, np.ndarray],
+    requested_actions: dict[str, np.ndarray],
+) -> tuple[dict[str, float], dict[str, str]]:
+    """Query WAIT/RELEASE labels from an isolated all-RELEASE teacher step.
+
+    The copied environment preserves the exact scheduler, TeacherScheduler,
+    SafetyFilter, reservations, and peer ordering at the current state.  Only
+    the release component is forced to +1; residual components remain the
+    policy's requested values.  The real rollout is never mutated.
+    """
+    counterfactual = copy.deepcopy(env)
+    release_actions: dict[str, np.ndarray] = {}
+    for uid in observations:
+        action = np.asarray(requested_actions[uid], dtype=np.float32).copy()
+        action[0] = 1.0
+        release_actions[uid] = action
+    _, _, _, _, info = counterfactual.step(release_actions)
+    decisions = {uid: str(info["release_decisions"].get(uid, "phase_masked")) for uid in observations}
+    targets = {uid: (1.0 if decision in _TEACHER_RELEASE_ACCEPTED else -1.0)
+               for uid, decision in decisions.items()}
+    return targets, decisions
+
+
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
     trace_output_dir: str | Path | None = None, policy_distribution: str = "tanh_squashed_gaussian",
     collect_head_log_probs: bool = False,
     collect_release_teacher_labels: bool = False, release_teacher_bc: bool = False,
+    counterfactual_release_labels: bool = False,
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
@@ -300,6 +327,10 @@ def _rollout_l1(
                     actions, log_probs, value = result
                     log_probs_by_head = None
                 requested_actions = {uid: action for uid, action in zip(ids, actions)}
+                counterfactual_targets = None
+                if collect_release_teacher_labels and counterfactual_release_labels:
+                    counterfactual_targets, _ = _counterfactual_release_teacher_targets(
+                        env, observations, requested_actions)
                 trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(
                     env, observations, requested_actions, {uid: float(log_prob) for uid, log_prob in zip(ids, log_probs)}
                 )
@@ -321,12 +352,15 @@ def _rollout_l1(
                     teacher_head_mask = None
                     if collect_release_teacher_labels:
                         teacher_target = requested.copy() if teacher_target is None else teacher_target.copy()
-                        eligibility_index = LOW_OBS_V2.slices["release_eligible"].start
-                        teacher_target[0] = _release_teacher_target(
-                            release_eligible=bool(actor_obs[row_index, eligibility_index] > .5),
-                            requested_release=bool(requested[0] > config.release_threshold),
-                            decision=str(info["release_decisions"].get(uid, "phase_masked")),
-                        )
+                        if counterfactual_targets is not None:
+                            teacher_target[0] = counterfactual_targets[uid]
+                        else:
+                            eligibility_index = LOW_OBS_V2.slices["release_eligible"].start
+                            teacher_target[0] = _release_teacher_target(
+                                release_eligible=bool(actor_obs[row_index, eligibility_index] > .5),
+                                requested_release=bool(requested[0] > config.release_threshold),
+                                decision=str(info["release_decisions"].get(uid, "phase_masked")),
+                            )
                         teacher_head_mask = np.asarray((release_teacher_bc, teacher_used, teacher_used), dtype=np.float32)
                     reward = float(rewards.get(uid, 0.0))
                     rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,

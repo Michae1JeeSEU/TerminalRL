@@ -23,7 +23,8 @@ from .l1_ppo_d3_bounded_distribution import _requested_action_provenance
 from .train_low_v2_ppo import (
     L1SafetyGateError, _episode_design, _grouped_metrics, _model_state,
     _read_frozen_capacity, _read_seed_partition, _rollout_task, _summary_metrics,
-    _release_teacher_target, authorize_low_v2_training, l1_full_teacher_config,
+    _counterfactual_release_teacher_targets, _release_teacher_target,
+    authorize_low_v2_training, l1_full_teacher_config,
 )
 
 
@@ -75,12 +76,15 @@ def _release_probe_task(task: tuple[Any, int, float, int]) -> dict[str, Any]:
     for _ in range(max_steps):
         actions = {uid: np.asarray((magnitude, 0.0, 0.0), dtype=np.float32) for uid in observations}
         before = observations
+        counterfactual_targets = None
+        if magnitude <= 0.0:
+            counterfactual_targets, _ = _counterfactual_release_teacher_targets(env, before, actions)
         observations, _, _, _, info = env.step(actions)
         for uid, observation in before.items():
             decision = str(info["release_decisions"].get(uid, "phase_masked"))
             eligible = bool(observation[eligibility_index] > .5)
-            target = _release_teacher_target(release_eligible=eligible, requested_release=magnitude > 0.0,
-                                             decision=decision)
+            target = (counterfactual_targets[uid] if counterfactual_targets is not None else
+                      _release_teacher_target(release_eligible=eligible, requested_release=True, decision=decision))
             predicted_release = magnitude > 0.0
             teacher_release = target > 0.0
             label_release += int(teacher_release); label_wait += int(not teacher_release)

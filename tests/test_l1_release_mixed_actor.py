@@ -11,7 +11,9 @@ from terminal_marl.training.l1_ppo_d3_bounded_distribution import _requested_act
 from terminal_marl.training.l1_release_mixed_actor_diagnostic import (
     _release_probe_task, release_decision_metrics, release_objective_metrics,
 )
-from terminal_marl.training.train_low_v2_ppo import l1_full_teacher_config
+from terminal_marl.training.train_low_v2_ppo import (
+    _counterfactual_release_teacher_targets, l1_full_teacher_config,
+)
 
 
 def _observation(*, eligible: bool, conflict: bool = False, reserved: bool = False) -> np.ndarray:
@@ -74,6 +76,22 @@ def test_release_magnitude_is_scheduler_aliased_within_each_binary_decision() ->
     low = env.scheduler.propose(uav, LowLevelIntent(.01, .2, .3), snapshot, target)
     high = env.scheduler.propose(uav, LowLevelIntent(.99, .2, .3), snapshot, target)
     assert low == high
+
+
+def test_counterfactual_release_labels_are_isolated_and_authoritative() -> None:
+    config = l1_full_teacher_config(medium_rate=.001575, reset_mode="warm_start_rings",
+                                    demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
+                                    horizon_seconds=2.)
+    env = TerminalParallelEnv(config)
+    observations, _ = env.reset(1001)
+    state_before = (env.now, env.step_count, tuple(env.active), len(env.completed_uavs))
+    actions = {uid: np.asarray((-.01, 0., 0.), dtype=np.float32) for uid in observations}
+    targets, decisions = _counterfactual_release_teacher_targets(env, observations, actions)
+    assert (env.now, env.step_count, tuple(env.active), len(env.completed_uavs)) == state_before
+    assert set(targets) == set(observations) == set(decisions)
+    assert set(targets.values()) == {-1., 1.}
+    assert all((target > 0.) == (decisions[uid] in {"approved", "future_reserved", "future_reservation_wait"})
+               for uid, target in targets.items())
 
 
 def test_release_probe_has_aligned_fields_and_threshold_equivalence() -> None:
