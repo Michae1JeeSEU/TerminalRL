@@ -78,3 +78,46 @@ def test_squashed_entropy_has_finite_gradients_for_boundary_seeking_logits() -> 
     loss.backward()
     assert all(parameter.grad is None or torch.isfinite(parameter.grad).all()
                for parameter in policy.model.parameters())
+
+
+def test_mixed_release_sample_and_joint_log_prob_are_consistent() -> None:
+    torch.manual_seed(19)
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="mixed_bernoulli_tanh")
+    observation = _observations(512)
+    actions, log_prob, _, by_head = policy.act(observation, observation, return_head_log_probs=True)
+    assert set(np.unique(actions[:, 0])).issubset({-1.0, 1.0})
+    assert np.all(np.abs(actions[:, 1:]) < 1.0)
+    assert np.allclose(log_prob, by_head.sum(axis=-1), atol=2e-6)
+    with torch.no_grad():
+        recomputed = policy.distribution(torch.as_tensor(observation)).log_prob(torch.as_tensor(actions)).sum(-1)
+    assert np.allclose(log_prob, recomputed.cpu().numpy(), atol=2e-6)
+
+
+def test_mixed_release_deterministic_mapping_binary_teacher_and_entropy() -> None:
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="mixed_bernoulli_tanh", teacher_bc_weight=.05)
+    observation = _observations(2)
+    with torch.no_grad():
+        policy.model.actor_mean.bias[0] = -0.1
+    wait, _, _ = policy.act(observation[:1], observation[:1], deterministic=True)
+    with torch.no_grad():
+        policy.model.actor_mean.bias[0] = 0.1
+    release, _, _ = policy.act(observation[:1], observation[:1], deterministic=True)
+    assert wait[0, 0] == -1.0 and release[0, 0] == 1.0
+
+    distribution = policy.distribution(torch.as_tensor(observation))
+    targets = torch.as_tensor(((-1.0, -0.2, 0.3), (1.0, 0.2, -0.3)))
+    losses = policy._teacher_loss_per_head(distribution, distribution.mean, targets)
+    assert losses.shape == (2, 3) and torch.isfinite(losses).all()
+    assert torch.isfinite(distribution.entropy()).all()
+
+
+def test_mixed_policy_keeps_speed_and_merge_tanh_distribution_unchanged() -> None:
+    continuous = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="tanh_squashed_gaussian")
+    mixed = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="mixed_bernoulli_tanh")
+    mixed.model.load_state_dict(continuous.model.state_dict())
+    observation = torch.as_tensor(_observations(4))
+    continuous_distribution = continuous.distribution(observation)
+    mixed_distribution = mixed.distribution(observation)
+    assert torch.equal(continuous_distribution.mean[:, 1:], mixed_distribution.mean[:, 1:])
+    probe = torch.as_tensor(np.tile((1.0, .2, -.3), (4, 1)), dtype=torch.float32)
+    assert torch.allclose(continuous_distribution.log_prob(probe)[:, 1:], mixed_distribution.log_prob(probe)[:, 1:])

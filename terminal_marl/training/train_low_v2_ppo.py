@@ -241,9 +241,23 @@ def _episode_design(index: int, *, medium_rate: float, horizon_seconds: float) -
     return config, {"reset_mode": config.reset_mode, "demand_model": demand, "warm_start_uavs": warm_count, "cohort_uavs": cohort}
 
 
+_TEACHER_RELEASE_ACCEPTED = {"approved", "future_reserved", "future_reservation_wait"}
+
+
+def _release_teacher_target(*, release_eligible: bool, requested_release: bool, decision: str) -> float:
+    """Map the Full-Teacher decision to exact external WAIT/RELEASE semantics."""
+    if not release_eligible:
+        return -1.0
+    if requested_release and decision not in _TEACHER_RELEASE_ACCEPTED:
+        return -1.0
+    return 1.0
+
+
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
     trace_output_dir: str | Path | None = None, policy_distribution: str = "tanh_squashed_gaussian",
+    collect_head_log_probs: bool = False,
+    collect_release_teacher_labels: bool = False, release_teacher_bc: bool = False,
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
@@ -278,7 +292,13 @@ def _rollout_l1(
                     trace_recorder.record_post_step(env, trace_row, info)
             else:
                 actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
-                actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
+                result = policy.act(actor_obs, actor_obs, deterministic=deterministic,
+                                    return_head_log_probs=collect_head_log_probs)
+                if collect_head_log_probs:
+                    actions, log_probs, value, log_probs_by_head = result
+                else:
+                    actions, log_probs, value = result
+                    log_probs_by_head = None
                 requested_actions = {uid: action for uid, action in zip(ids, actions)}
                 trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(
                     env, observations, requested_actions, {uid: float(log_prob) for uid, log_prob in zip(ids, log_probs)}
@@ -297,12 +317,25 @@ def _rollout_l1(
                     applied = shield if shield is not None else execution
                     teacher_used = bool(trace.get("teacher_used", False))
                     shield_used = bool(trace.get("shield_used", False))
+                    teacher_target = None if teacher is None else np.asarray(teacher, dtype=np.float32)
+                    teacher_head_mask = None
+                    if collect_release_teacher_labels:
+                        teacher_target = requested.copy() if teacher_target is None else teacher_target.copy()
+                        eligibility_index = LOW_OBS_V2.slices["release_eligible"].start
+                        teacher_target[0] = _release_teacher_target(
+                            release_eligible=bool(actor_obs[row_index, eligibility_index] > .5),
+                            requested_release=bool(requested[0] > config.release_threshold),
+                            decision=str(info["release_decisions"].get(uid, "phase_masked")),
+                        )
+                        teacher_head_mask = np.asarray((release_teacher_bc, teacher_used, teacher_used), dtype=np.float32)
                     reward = float(rewards.get(uid, 0.0))
                     rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,
                                            float(log_probs[row_index]), value, reward,
                                            bool(terminated.get(uid, False) or truncated.get(uid, False)),
-                                           None if teacher is None else np.asarray(teacher, dtype=np.float32),
-                                           None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used))
+                                           teacher_target,
+                                           None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used,
+                                           None if log_probs_by_head is None else log_probs_by_head[row_index].copy(),
+                                           teacher_head_mask))
                     reward_sum += reward
                     release_intents += int(requested[0] > config.release_threshold)
                     teacher_interventions += int(teacher_used)

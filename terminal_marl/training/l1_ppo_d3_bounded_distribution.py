@@ -37,6 +37,15 @@ VARIANTS = {
     "B_tanh_squashed_gaussian": "tanh_squashed_gaussian",
 }
 
+# Rollouts deliberately persist requested log-probabilities as float32.  A
+# later batched recomputation can differ by a few float32 ULPs (especially at
+# an endpoint-adjacent tanh action) even with identical weights and action.
+# This is a storage-precision allowance, not a semantic relaxation: action
+# identity, bounded support, and a small absolute density mismatch are still
+# required before a PPO update may proceed.
+_PROVENANCE_LOG_PROB_ATOL = 1e-5
+_PROVENANCE_LOG_PROB_RTOL = 3e-6
+
 
 def _write(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,14 +61,17 @@ def _requested_action_provenance(policy: SharedPPO, buffer: RolloutBuffer) -> di
     actions = torch.as_tensor(np.stack([row.action for row in rows]), dtype=torch.float32, device=policy.device)
     old = np.asarray([row.log_prob for row in rows], dtype=np.float64)
     with torch.no_grad():
-        distribution = policy.model.actor_distribution(observations, bounded=policy.uses_bounded_distribution)
+        distribution = policy.distribution(observations)
         recomputed = distribution.log_prob(actions).sum(-1).cpu().numpy().astype(np.float64)
     requested_bounded = bool(np.all(np.abs(actions.cpu().numpy()) <= 1.0 + 1e-7))
     # Applied actions are deliberately excluded from this calculation.
     return {
-        "passed": bool(requested_bounded and np.allclose(old, recomputed, atol=3e-6, rtol=3e-6)),
+        "passed": bool(requested_bounded and np.allclose(
+            old, recomputed, atol=_PROVENANCE_LOG_PROB_ATOL, rtol=_PROVENANCE_LOG_PROB_RTOL)),
         "rows": len(rows), "requested_action_in_normalized_range": requested_bounded,
         "max_abs_old_log_prob_error": float(np.max(np.abs(old - recomputed))),
+        "log_prob_atol": _PROVENANCE_LOG_PROB_ATOL,
+        "log_prob_rtol": _PROVENANCE_LOG_PROB_RTOL,
         "ppo_behavior_action": "a_requested", "ppo_ratio_action": "a_requested",
         "a_applied_enters_ratio": False,
     }
@@ -124,13 +136,26 @@ def _comparison(control: dict[str, Any], bounded: dict[str, Any]) -> dict[str, A
         "teacher_p95_shield_not_worse": burden,
         "B_passed": bool(exact_repaired and safety and health and burden and bounded["provenance_passed"]),
         "remaining_near_boundary_saturation": remaining_near_boundary,
-        "allow_log_std_entropy_ablation": bool(exact_repaired and safety and health and remaining_near_boundary),
+        # A later ablation is meaningful only after the bounded replacement
+        # itself clears every D3 gate, including teacher/shield non-regression.
+        "allow_log_std_entropy_ablation": bool(exact_repaired and safety and health and burden and
+                                                bounded["provenance_passed"] and remaining_near_boundary),
         "next_step": (
             "log_std / entropy targeted ablation is authorized; bounded sampling fixed the exact pile but near-boundary saturation remains"
-            if exact_repaired and safety and health and remaining_near_boundary else
+            if exact_repaired and safety and health and burden and bounded["provenance_passed"] and remaining_near_boundary else
             "do not enter log_std / entropy ablation until D3 acceptance criteria are met"
         ),
     }
+
+
+def refresh_existing_l1_ppo_d3_summary(output_dir: str | Path) -> dict[str, Any]:
+    """Re-evaluate only D3's deterministic acceptance rule; never rerun PPO."""
+    path = Path(output_dir) / "l1_ppo_d3_summary.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    variants = payload["variants"]
+    payload["comparison"] = _comparison(variants["A_gaussian_hard_clamp"], variants["B_tanh_squashed_gaussian"])
+    _write(path, payload)
+    return payload
 
 
 def run_l1_ppo_d3_bounded_distribution(*, c0_report: str | Path, teacher_dataset_path: str | Path,
