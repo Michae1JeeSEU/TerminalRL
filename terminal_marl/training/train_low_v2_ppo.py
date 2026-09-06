@@ -328,7 +328,13 @@ def _rollout_l1(
                     log_probs_by_head = None
                 requested_actions = {uid: action for uid, action in zip(ids, actions)}
                 counterfactual_targets = None
-                if collect_release_teacher_labels and counterfactual_release_labels:
+                # If every sampled action already requests RELEASE, the real
+                # step below is itself the authoritative query.  Clone only
+                # when at least one WAIT needs a counterfactual label.
+                needs_counterfactual = (collect_release_teacher_labels and counterfactual_release_labels and
+                                        any(action[0] <= config.release_threshold
+                                            for action in requested_actions.values()))
+                if needs_counterfactual:
                     counterfactual_targets, _ = _counterfactual_release_teacher_targets(
                         env, observations, requested_actions)
                 trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(

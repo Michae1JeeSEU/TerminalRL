@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import numpy as np
 
 from terminal_marl.algo import RolloutBuffer, SharedPPO, Transition
@@ -11,6 +12,7 @@ from terminal_marl.training.l1_ppo_d3_bounded_distribution import _requested_act
 from terminal_marl.training.l1_release_mixed_actor_diagnostic import (
     _release_probe_task, release_decision_metrics, release_objective_metrics,
 )
+from terminal_marl.training.l1_release_d5a_objective import _d5a_gate
 from terminal_marl.training.train_low_v2_ppo import (
     _counterfactual_release_teacher_targets, l1_full_teacher_config,
 )
@@ -106,3 +108,19 @@ def test_release_probe_has_aligned_fields_and_threshold_equivalence() -> None:
     assert by_magnitude[.01]["near_threshold_samples"] > 0
     assert by_magnitude[-.01]["near_threshold_samples"] > 0
     assert all(set(row["safety"]) == {"collisions", "nmac", "hard_separation_violations"} for row in rows)
+
+
+def test_d5a_gate_requires_targeted_probe_and_all_frozen_health_gates() -> None:
+    control = {
+        "release": {"teacher_release_correction_rate": 1.0},
+        "teacher_burden_overall": 10., "teacher_burden_warm": 10.,
+        "correction_p95": 1., "shield_burden": 1.,
+        "completion_ratio": 1., "throughput_per_second": .01,
+        "ppo_health": {"healthy": True}, "safety_passed": True, "provenance_passed": True,
+    }
+    candidate = copy.deepcopy(control)
+    candidate["release"]["teacher_release_correction_rate"] = .5
+    assert _d5a_gate(control, candidate, targeted_probe_passed=True)["window_passed"]
+    assert not _d5a_gate(control, candidate, targeted_probe_passed=False)["window_passed"]
+    candidate["safety_passed"] = False
+    assert not _d5a_gate(control, candidate, targeted_probe_passed=True)["window_passed"]
