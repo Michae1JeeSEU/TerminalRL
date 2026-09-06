@@ -3,9 +3,13 @@ from __future__ import annotations
 import numpy as np
 
 from terminal_marl.algo import RolloutBuffer, SharedPPO, Transition
+from terminal_marl.core.config import RingRole
+from terminal_marl.core.merge_scheduler import LowLevelIntent
 from terminal_marl.core.observations import LOW_OBS_V2
+from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.training.l1_ppo_d3_bounded_distribution import _requested_action_provenance
 from terminal_marl.training.l1_release_mixed_actor_diagnostic import release_decision_metrics
+from terminal_marl.training.train_low_v2_ppo import l1_full_teacher_config
 
 
 def _observation(*, eligible: bool, conflict: bool = False, reserved: bool = False) -> np.ndarray:
@@ -49,3 +53,16 @@ def test_mixed_release_binary_bc_keeps_requested_action_and_ratio_provenance() -
     assert proof["passed"] and not proof["a_applied_enters_ratio"]
     metrics = policy.update(buffer, epochs=1, minibatch_size=2)
     assert all(np.isfinite(value) for value in metrics.values())
+
+
+def test_release_magnitude_is_scheduler_aliased_within_each_binary_decision() -> None:
+    config = l1_full_teacher_config(medium_rate=.001575, reset_mode="warm_start_rings",
+                                    demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
+                                    horizon_seconds=60.)
+    env = TerminalParallelEnv(config); env.reset(1001)
+    uav = next(item for item in env.active.values() if item.ring_role is not RingRole.INNER)
+    target = RingRole.MIDDLE if uav.ring_role is RingRole.OUTER else RingRole.INNER
+    snapshot = WorldSnapshot(env.now, env.active, env.airspace)
+    low = env.scheduler.propose(uav, LowLevelIntent(.01, .2, .3), snapshot, target)
+    high = env.scheduler.propose(uav, LowLevelIntent(.99, .2, .3), snapshot, target)
+    assert low == high

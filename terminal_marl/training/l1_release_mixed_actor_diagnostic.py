@@ -183,9 +183,10 @@ def _decision(variants: dict[str, dict[str, Any]]) -> dict[str, Any]:
     a = variants["A_continuous_release_tanh"]
     b = variants["B_bernoulli_release_tanh_residuals"]
     release_a, release_b = a["release"], b["release"]
-    coverage = all(release_a[key] > 0 for key in
-                   ("teacher_release_corrections", "false_release", "false_wait",
-                    "busy_or_committed_samples", "safe_open_gap_samples"))
+    coverage = (all(release_a[key] > 0 for key in
+                    ("teacher_release_corrections", "false_release", "false_wait", "near_threshold_samples",
+                     "busy_or_committed_samples", "safe_open_gap_samples")) and
+                all(release_a["label_counts"][key] > 0 for key in ("WAIT", "RELEASE")))
     release_reduced = bool(release_b["teacher_release_correction_rate"] <=
                            .80 * release_a["teacher_release_correction_rate"])
     burden = all(_not_worse(b[key], a[key]) for key in
