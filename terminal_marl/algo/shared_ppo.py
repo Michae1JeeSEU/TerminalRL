@@ -76,7 +76,11 @@ class TanhSquashedNormal:
              0.000228338636016354, 7.80255647853206e-6, 1.08606937076928e-7,
              4.39934099227318e-10, 2.22939364553415e-13), device=self.loc.device, dtype=self.loc.dtype)
         latent = self.loc.unsqueeze(-1) + (2.0 ** .5) * self.scale.unsqueeze(-1) * nodes
-        log_jacobian = torch.log1p(-torch.tanh(latent).square()).clamp_min(-30.0)
+        # Clamp before logarithm.  Clamping the *result* would leave an
+        # infinite derivative at tanh(z)==+/-1 in float precision, which can
+        # turn the entropy bonus into NaN for a boundary-seeking actor.
+        jacobian = (1.0 - torch.tanh(latent).square()).clamp_min(self._endpoint_epsilon)
+        log_jacobian = torch.log(jacobian)
         expected_log_jacobian = (log_jacobian * (weights / np.sqrt(np.pi))).sum(dim=-1)
         return self.base_dist.entropy() + expected_log_jacobian
 

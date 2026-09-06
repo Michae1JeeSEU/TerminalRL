@@ -67,3 +67,14 @@ def test_historical_control_exposes_its_clamp_pile_for_d3_comparison() -> None:
     policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="gaussian_hard_clamp")
     actions, _, _ = policy.act(_observations(10_000), _observations(10_000))
     assert np.mean(np.abs(actions[:, 0]) == 1.0) > .10
+
+
+def test_squashed_entropy_has_finite_gradients_for_boundary_seeking_logits() -> None:
+    policy = SharedPPO(LOW_OBS_V2.dimension)
+    with torch.no_grad():
+        policy.model.actor_mean.bias.fill_(20.0)
+    distribution = policy.model.actor_distribution(torch.as_tensor(_observations(4)), bounded=True)
+    loss = -distribution.entropy().sum()
+    loss.backward()
+    assert all(parameter.grad is None or torch.isfinite(parameter.grad).all()
+               for parameter in policy.model.parameters())

@@ -81,7 +81,8 @@ def _variant_summary(records: list[dict[str, Any]], provenance: list[dict[str, A
     }
     gradient_conflict, worst = _gradient_summary(diagnostics)
     health = _health(records)
-    safety = {key: int(sum(row[key] for row in summaries)) for key in ("collisions", "nmac", "hard_separation_violations")}
+    safety = {key: int(sum(getattr(row, key) for row in summaries))
+              for key in ("collisions", "nmac", "hard_separation_violations")}
     return {
         "updates": records, "provenance": provenance,
         "provenance_passed": all(row["passed"] for row in provenance),
