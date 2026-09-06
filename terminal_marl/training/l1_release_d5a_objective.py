@@ -72,6 +72,54 @@ def _d5a_gate(control: dict[str, Any], candidate: dict[str, Any], *, targeted_pr
     }
 
 
+def run_d5a_runtime_preflight(
+    *, c0_report: str | Path, teacher_dataset_path: str | Path,
+    initial_checkpoint: str | Path, output_dir: str | Path,
+) -> dict[str, Any]:
+    """Exercise the real counterfactual rollout and serialized D5a fields."""
+    authorize_low_v2_training(teacher_dataset_path)
+    partition = _read_seed_partition(teacher_dataset_path)
+    _, medium_interval = _read_frozen_capacity(c0_report)
+    medium_rate = sum(medium_interval) / 2.0
+    random.seed(1701); np.random.seed(1701); torch.manual_seed(1701)
+    policy = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=.05,
+                       policy_distribution="mixed_bernoulli_tanh")
+    config = l1_full_teacher_config(medium_rate=medium_rate, reset_mode="warm_start_rings",
+                                    demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
+                                    horizon_seconds=2.0)
+    load_checkpoint(Path(initial_checkpoint), policy, config)
+    transitions, summary = _rollout_task((
+        _model_state(policy), config, partition.train[0], 0, 0, 2, False, None,
+        "mixed_bernoulli_tanh", True, True, True, True,
+    ))
+    buffer = RolloutBuffer()
+    for transition in transitions:
+        buffer.add(transition)
+    provenance = _requested_action_provenance(policy, buffer)
+    release = release_decision_metrics(policy, transitions)
+    objective = release_objective_metrics(policy, buffer)
+    safety = {name: int(getattr(summary, name)) for name in
+              ("collisions", "nmac", "hard_separation_violations")}
+    required = {
+        "release": all(key in release for key in
+                       ("label_counts", "false_release", "false_wait", "teacher_release_correction_rate")),
+        "objective": all(key in objective for key in
+                         ("label_balance", "advantage_by_requested_decision", "release_binary_entropy_mean", "calibration")),
+        "teacher_masks": bool(transitions) and all(row.teacher_head_mask is not None for row in transitions),
+        "head_log_probs": bool(transitions) and all(row.log_prob_by_head is not None for row in transitions),
+    }
+    result = {
+        "status": "completed", "evidence_type": "newly_run", "rollout_rows": len(transitions),
+        "required_fields": required, "release": release, "release_objective": objective,
+        "provenance": provenance, "safety": safety,
+        "passed": bool(transitions and all(required.values()) and provenance["passed"] and not any(safety.values())),
+    }
+    _write(Path(output_dir) / "release_d5a.runtime_preflight.json", result)
+    if not result["passed"]:
+        raise RuntimeError(f"D5a runtime preflight failed: {result}")
+    return result
+
+
 def run_release_d5a_objective(
     *, c0_report: str | Path, teacher_dataset_path: str | Path,
     initial_checkpoint: str | Path, baseline_summary: str | Path,
@@ -204,7 +252,13 @@ def _main() -> None:
     parser.add_argument("--targeted-probe", required=True); parser.add_argument("--output", required=True)
     parser.add_argument("--workers", type=int, default=4); parser.add_argument("--source-commit", default="unknown")
     parser.add_argument("--seed-offset", type=int, default=0)
+    parser.add_argument("--preflight-only", action="store_true")
     args = parser.parse_args()
+    if args.preflight_only:
+        print(json.dumps(run_d5a_runtime_preflight(
+            c0_report=args.c0_report, teacher_dataset_path=args.teacher_dataset,
+            initial_checkpoint=args.initial_checkpoint, output_dir=args.output), indent=2))
+        return
     print(json.dumps(run_release_d5a_objective(
         c0_report=args.c0_report, teacher_dataset_path=args.teacher_dataset,
         initial_checkpoint=args.initial_checkpoint, baseline_summary=args.baseline_summary,
