@@ -8,7 +8,9 @@ from terminal_marl.core.merge_scheduler import LowLevelIntent
 from terminal_marl.core.observations import LOW_OBS_V2
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.training.l1_ppo_d3_bounded_distribution import _requested_action_provenance
-from terminal_marl.training.l1_release_mixed_actor_diagnostic import _release_probe_task, release_decision_metrics
+from terminal_marl.training.l1_release_mixed_actor_diagnostic import (
+    _release_probe_task, release_decision_metrics, release_objective_metrics,
+)
 from terminal_marl.training.train_low_v2_ppo import l1_full_teacher_config
 
 
@@ -51,6 +53,12 @@ def test_mixed_release_binary_bc_keeps_requested_action_and_ratio_provenance() -
                               log_prob_by_head=by_head[index], teacher_head_mask=np.asarray((1., 0., 0.))))
     proof = _requested_action_provenance(policy, buffer)
     assert proof["passed"] and not proof["a_applied_enters_ratio"]
+    objective = release_objective_metrics(policy, buffer)
+    assert objective["label_balance"] == {"WAIT": 1, "RELEASE": 1, "release_fraction": .5}
+    assert objective["advantage_by_requested_decision"]["WAIT"]["samples"] + \
+        objective["advantage_by_requested_decision"]["RELEASE"]["samples"] == 2
+    assert np.isfinite(objective["release_binary_entropy_mean"])
+    assert np.isfinite(objective["calibration"]["binary_nll"])
     metrics = policy.update(buffer, epochs=1, minibatch_size=2)
     assert all(np.isfinite(value) for value in metrics.values())
 

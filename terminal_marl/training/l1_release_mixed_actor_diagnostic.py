@@ -220,6 +220,62 @@ def release_decision_metrics(policy: SharedPPO, transitions: list[Transition]) -
     }
 
 
+def release_objective_metrics(policy: SharedPPO, buffer: RolloutBuffer, *, gamma: float = .99,
+                              gae_lambda: float = .95) -> dict[str, Any]:
+    """Return the D5a class, advantage, entropy, and calibration evidence."""
+    flattened = buffer.flattened(gamma, gae_lambda)
+    rows = [(transition, advantage) for transition, advantage, _ in flattened
+            if transition.teacher_action is not None]
+    if not rows:
+        raise RuntimeError("release objective diagnostic requires binary teacher targets")
+    transitions = [row[0] for row in rows]
+    advantages = np.asarray([row[1] for row in rows], dtype=np.float64)
+    observations = np.stack([row.observation for row in transitions]).astype(np.float32, copy=False)
+    requested = np.asarray([row.action[0] > 0.0 for row in transitions], dtype=bool)
+    labels = np.asarray([row.teacher_action[0] > 0.0 for row in transitions], dtype=bool)
+    probabilities, logits = _release_probability(policy, observations)
+    stable_probability = np.clip(probabilities.astype(np.float64), 1e-7, 1.0 - 1e-7)
+    binary_entropy = -(stable_probability * np.log(stable_probability) +
+                       (1.0 - stable_probability) * np.log(1.0 - stable_probability))
+    tensor = torch.as_tensor(observations, dtype=torch.float32, device=policy.device)
+    with torch.no_grad():
+        distribution_entropy = policy.distribution(tensor).entropy()[:, 0].cpu().numpy()
+
+    def conditional(mask: np.ndarray) -> dict[str, Any]:
+        values = advantages[mask]
+        return {
+            "samples": int(mask.sum()),
+            "advantage_mean": _mean_or_none(values),
+            "advantage_positive_rate": _safe_rate(int((values > 0.0).sum()), int(values.size)),
+            "advantage_p10": None if not values.size else float(np.percentile(values, 10)),
+            "advantage_p90": None if not values.size else float(np.percentile(values, 90)),
+        }
+
+    nll = -(labels * np.log(stable_probability) + (~labels) * np.log(1.0 - stable_probability))
+    return {
+        "samples": len(rows),
+        "label_balance": {"WAIT": int((~labels).sum()), "RELEASE": int(labels.sum()),
+                          "release_fraction": float(labels.mean())},
+        "requested_balance": {"WAIT": int((~requested).sum()), "RELEASE": int(requested.sum()),
+                              "release_fraction": float(requested.mean())},
+        "advantage_by_requested_decision": {"WAIT": conditional(~requested), "RELEASE": conditional(requested)},
+        "advantage_by_teacher_label": {"WAIT": conditional(~labels), "RELEASE": conditional(labels)},
+        "advantage_by_confusion_cell": {
+            "true_wait": conditional(~requested & ~labels),
+            "false_release": conditional(requested & ~labels),
+            "false_wait": conditional(~requested & labels),
+            "true_release": conditional(requested & labels),
+        },
+        "release_binary_entropy_mean": float(binary_entropy.mean()),
+        "release_distribution_entropy_mean": float(distribution_entropy.mean()),
+        "release_logit": {"mean": float(logits.mean()), "min": float(logits.min()), "max": float(logits.max())},
+        "calibration": {"brier": float(np.mean((stable_probability - labels.astype(np.float64)) ** 2)),
+                        "binary_nll": float(nll.mean()),
+                        "wait_label_probability_mean": _mean_or_none(stable_probability[~labels]),
+                        "release_label_probability_mean": _mean_or_none(stable_probability[labels])},
+    }
+
+
 def _aggregate_release(records: list[dict[str, Any]]) -> dict[str, Any]:
     rows = [record["release"] for record in records]
     total = sum(row["samples"] for row in rows)
@@ -373,9 +429,11 @@ def run_release_mixed_actor_diagnostic(*, c0_report: str | Path, teacher_dataset
                 if not proof["passed"]:
                     raise RuntimeError(f"release A/B provenance failed in {label}: {proof}")
                 release = release_decision_metrics(policy, transitions)
+                release_objective = release_objective_metrics(policy, buffer)
                 provenance.append(proof)
                 ppo = policy.update(buffer, epochs=2, minibatch_size=256)
-                records.append({"update": update, "summaries": summaries, "release": release, "ppo_update": ppo})
+                records.append({"update": update, "summaries": summaries, "release": release,
+                                "release_objective": release_objective, "ppo_update": ppo})
                 _write(destination / f"{label}.updates.json", {"manifest": manifest, "records": records})
             variants[label] = _variant_summary(records, provenance)
         except (SafetyInvariantError, L1SafetyGateError, RuntimeError, FloatingPointError) as error:
