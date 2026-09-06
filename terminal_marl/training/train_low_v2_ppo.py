@@ -243,13 +243,13 @@ def _episode_design(index: int, *, medium_rate: float, horizon_seconds: float) -
 
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
-    trace_output_dir: str | Path | None = None,
+    trace_output_dir: str | Path | None = None, policy_distribution: str = "tanh_squashed_gaussian",
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    policy = SharedPPO(LOW_OBS_V2.dimension)
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution=policy_distribution)
     policy.model.load_state_dict(model_state)
     env = TerminalParallelEnv(config)
     observations, _ = env.reset(seed)

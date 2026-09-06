@@ -13,6 +13,74 @@ from torch import nn
 from torch.distributions import Normal
 
 
+class TanhSquashedNormal:
+    """A Normal policy transformed into the open interval ``(-1, 1)``.
+
+    The action stored in the rollout is the *bounded* action.  Its density is
+    consequently the change-of-variables density, rather than the density of
+    a pre-squash Gaussian evaluated at a post-hoc-clamped value.
+    """
+
+    _endpoint_epsilon = 1e-6
+
+    def __init__(self, loc: torch.Tensor, scale: torch.Tensor) -> None:
+        self.loc, self.scale = loc, scale
+        self.base_dist = Normal(loc, scale)
+
+    @property
+    def mean(self) -> torch.Tensor:
+        return self._squash(self.loc)
+
+    @classmethod
+    def _squash(cls, latent: torch.Tensor) -> torch.Tensor:
+        action = torch.tanh(latent)
+        # Finite precision can round tanh(large finite z) to exactly +/-1.
+        # Move only those numerical round-offs one representable value inward;
+        # this is not a behaviour clamp and preserves the tanh policy support.
+        inward = torch.zeros_like(action)
+        return torch.where(action == 1, torch.nextafter(action, inward),
+                           torch.where(action == -1, torch.nextafter(action, inward), action))
+
+    def sample(self) -> torch.Tensor:
+        return self._squash(self.base_dist.sample())
+
+    def rsample(self) -> torch.Tensor:
+        return self._squash(self.base_dist.rsample())
+
+    def log_prob(self, action: torch.Tensor) -> torch.Tensor:
+        # atanh is needed only to recover z from a stored bounded action.
+        # Exact teacher endpoints never enter PPO, but clamping internally
+        # makes diagnostics/auxiliary endpoint probes finite without changing
+        # their external +/-1 semantics.
+        stable_action = action.clamp(-1 + self._endpoint_epsilon, 1 - self._endpoint_epsilon)
+        latent = torch.atanh(stable_action)
+        log_jacobian = torch.log1p(-stable_action.square())
+        return self.base_dist.log_prob(latent) - log_jacobian
+
+    def entropy(self) -> torch.Tensor:
+        """Deterministic Gauss-Hermite estimate of the transformed entropy."""
+        nodes = torch.as_tensor(
+            (-5.38748089001123, -4.60368244955074, -3.94476404011562,
+             -3.34785456738322, -2.78880605842813, -2.25497400208928,
+             -1.73853771211659, -1.23407621539532, -.737473728545394,
+             -.245340708300901, .245340708300901, .737473728545394,
+             1.23407621539532, 1.73853771211659, 2.25497400208928,
+             2.78880605842813, 3.34785456738322, 3.94476404011562,
+             4.60368244955074, 5.38748089001123), device=self.loc.device, dtype=self.loc.dtype)
+        weights = torch.as_tensor(
+            (2.22939364553415e-13, 4.39934099227318e-10, 1.08606937076928e-7,
+             7.80255647853206e-6, 0.000228338636016354, 0.00324377334223786,
+             0.0248105208874636, 0.109017206020023, 0.286675505362834,
+             0.46224366960061, 0.46224366960061, 0.286675505362834,
+             0.109017206020023, 0.0248105208874636, 0.00324377334223786,
+             0.000228338636016354, 7.80255647853206e-6, 1.08606937076928e-7,
+             4.39934099227318e-10, 2.22939364553415e-13), device=self.loc.device, dtype=self.loc.dtype)
+        latent = self.loc.unsqueeze(-1) + (2.0 ** .5) * self.scale.unsqueeze(-1) * nodes
+        log_jacobian = torch.log1p(-torch.tanh(latent).square()).clamp_min(-30.0)
+        expected_log_jacobian = (log_jacobian * (weights / np.sqrt(np.pi))).sum(dim=-1)
+        return self.base_dist.entropy() + expected_log_jacobian
+
+
 def mlp(input_dim: int, output_dim: int, hidden: int = 96) -> nn.Sequential:
     return nn.Sequential(nn.Linear(input_dim, hidden), nn.Tanh(), nn.Linear(hidden, hidden), nn.Tanh(), nn.Linear(hidden, output_dim))
 
@@ -31,9 +99,12 @@ class SharedActorCentralCritic(nn.Module):
         self.critic_encoder = mlp(observation_dim, hidden, hidden)
         self.critic_head = mlp(2 * hidden, 1, hidden)
 
-    def actor_distribution(self, observations: torch.Tensor) -> Normal:
-        mean = torch.tanh(self.actor_mean(self.actor_body(observations)))
-        return Normal(mean, self.log_std.exp().expand_as(mean))
+    def actor_distribution(self, observations: torch.Tensor, *, bounded: bool = True) -> TanhSquashedNormal | Normal:
+        logits = self.actor_mean(self.actor_body(observations))
+        scale = self.log_std.exp().expand_as(logits)
+        # ``bounded=False`` exists solely for the frozen D3 control arm.  New
+        # training and all normal call sites use the tanh-squashed policy.
+        return TanhSquashedNormal(logits, scale) if bounded else Normal(torch.tanh(logits), scale)
 
     def critic(self, agent_sets: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         encoded = self.critic_encoder(agent_sets)
@@ -80,21 +151,31 @@ class RolloutBuffer:
 
 
 class SharedPPO:
-    def __init__(self, observation_dim: int, *, device: str = "cpu", learning_rate: float = 3e-4, clip_ratio: float = .2, value_coef: float = .5, entropy_coef: float = .01, teacher_bc_weight: float = 0.0) -> None:
+    def __init__(self, observation_dim: int, *, device: str = "cpu", learning_rate: float = 3e-4, clip_ratio: float = .2, value_coef: float = .5, entropy_coef: float = .01, teacher_bc_weight: float = 0.0,
+                 policy_distribution: str = "tanh_squashed_gaussian") -> None:
+        if policy_distribution not in {"tanh_squashed_gaussian", "gaussian_hard_clamp"}:
+            raise ValueError("unsupported low-level policy distribution")
         self.device = torch.device(device)
         self.model = SharedActorCentralCritic(observation_dim).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.clip_ratio, self.value_coef, self.entropy_coef, self.teacher_bc_weight = clip_ratio, value_coef, entropy_coef, teacher_bc_weight
         self.observation_dim = observation_dim
+        self.policy_distribution = policy_distribution
+
+    @property
+    def uses_bounded_distribution(self) -> bool:
+        return self.policy_distribution == "tanh_squashed_gaussian"
 
     def act(self, observations: np.ndarray, world: np.ndarray, *, deterministic: bool = False):
         obs = torch.as_tensor(observations, dtype=torch.float32, device=self.device)
         world_tensor = torch.as_tensor(world[None], dtype=torch.float32, device=self.device)
         mask = torch.ones((1, world.shape[0]), dtype=torch.bool, device=self.device)
         with torch.no_grad():
-            distribution = self.model.actor_distribution(obs)
+            distribution = self.model.actor_distribution(obs, bounded=self.uses_bounded_distribution)
             actions = distribution.mean if deterministic else distribution.sample()
-            actions = actions.clamp(-1, 1)
+            if not self.uses_bounded_distribution:
+                # D3's deliberately inconsistent historical control only.
+                actions = actions.clamp(-1, 1)
             log_prob = distribution.log_prob(actions).sum(dim=-1)
             value = self.model.critic(world_tensor, mask)[0]
         return actions.cpu().numpy().astype(np.float32), log_prob.cpu().numpy(), float(value.cpu())
@@ -136,7 +217,7 @@ class SharedPPO:
         advantages = torch.as_tensor(normalized, dtype=torch.float32, device=self.device)
         logits = self.model.actor_mean(self.model.actor_body(observations))
         means = torch.tanh(logits)
-        distribution = Normal(means, self.model.log_std.exp().expand_as(means))
+        distribution = self.model.actor_distribution(observations, bounded=self.uses_bounded_distribution)
         new_log_prob = distribution.log_prob(actions).sum(-1)
         ratio = (new_log_prob - old_log_prob).exp()
         actor_loss_rows = -torch.minimum(ratio * advantages,
@@ -200,7 +281,7 @@ class SharedPPO:
             one_action = actions[row_index:row_index + 1]
             one_logits = self.model.actor_mean(self.model.actor_body(one_observation))
             one_mean = torch.tanh(one_logits)
-            one_distribution = Normal(one_mean, self.model.log_std.exp().expand_as(one_mean))
+            one_distribution = self.model.actor_distribution(one_observation, bounded=self.uses_bounded_distribution)
             one_ratio = (one_distribution.log_prob(one_action).sum(-1) - old_log_prob[row_index:row_index + 1]).exp()
             one_advantage = advantages[row_index:row_index + 1]
             one_ppo = -torch.minimum(one_ratio * one_advantage,
@@ -262,7 +343,7 @@ class SharedPPO:
                 worlds = [x[0].world for x in selected]; max_n = max(len(x) for x in worlds)
                 padded = np.zeros((len(worlds), max_n, self.observation_dim), np.float32); mask = np.zeros((len(worlds), max_n), bool)
                 for i, world in enumerate(worlds): padded[i, :len(world)] = world; mask[i, :len(world)] = True
-                distribution = self.model.actor_distribution(observations)
+                distribution = self.model.actor_distribution(observations, bounded=self.uses_bounded_distribution)
                 new_log_prob = distribution.log_prob(actions).sum(-1)
                 log_ratio = new_log_prob - old_log_prob
                 ratio = log_ratio.exp()
