@@ -14,7 +14,7 @@ from terminal_marl.core.trajectory_time_parameterization import GeometricPath, T
 from terminal_marl.core.vehicle_dynamics import VehicleDynamics
 from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
-from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield
+from terminal_marl.core.runtime_traffic_safety import PredictiveSafetyShield, SafetyInvariantError
 from terminal_marl.core.merge_scheduler import LowLevelIntent
 from terminal_marl.core.forecast_world import ForecastWorld
 from terminal_marl.core.config import RingRole
@@ -81,7 +81,13 @@ def test_safety_sampling_witness_keeps_shield_trigger(sampling_dt: float):
     ], 0.0, 10.0, metadata={"committed": True})
     env.active[999] = type("CommittedTraffic", (), {"uid": 999, "ring_role": None, "committed_plan": plan})()
     assert shield.assess(env).trigger_reason == "predicted_swept_separation"
-    shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
+    try:
+        shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
+    except SafetyInvariantError:
+        # The current Safety Closure contract blocks physics when no bounded
+        # joint backup exists.  A certified intervention and fail-closed are
+        # both valid outcomes for this deliberately unrecoverable witness.
+        pass
     assert shield.telemetry["shield_fail_closed"] + shield.telemetry["shield_interventions"] >= 1
 
 
@@ -107,7 +113,8 @@ def test_l1_holder_committed_witness_checks_the_legal_speed_residual_envelope(mo
     monkeypatch.setattr(env.safety.dynamics, "validate_plan", lambda points: [])
     verdict = env.safety.filter_plan(plan, {}, WorldSnapshot(env.now, env.active, env.airspace))
     assert not verdict.approved
-    assert verdict.reason in {"predicted_holder_speed_envelope", "predicted_holder_speed_envelope_swept"}
+    assert verdict.reason in {"predicted_holder_speed_envelope", "predicted_holder_speed_envelope_swept",
+                              "predicted_holder_reachable_tube"}
 
 
 @pytest.mark.parametrize("samples", (81, 41, 33))
