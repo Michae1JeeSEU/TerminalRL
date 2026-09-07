@@ -14,6 +14,7 @@ from terminal_marl.training.l1_release_mixed_actor_diagnostic import (
 )
 from terminal_marl.training.l1_release_d5a_objective import _d5a_gate, run_d5a_runtime_preflight
 from terminal_marl.training.l1_release_d5b_observation import analyze_release_observation_sufficiency
+from terminal_marl.training.l1_release_d5c_merge_coupling import analyze_release_merge_coupling
 from terminal_marl.training.train_low_v2_ppo import (
     _counterfactual_release_teacher_targets, l1_full_teacher_config,
 )
@@ -144,3 +145,21 @@ def test_d5b_detects_identical_observations_with_opposite_release_labels() -> No
     assert result["observation_aliasing_detected"]
     assert result["requested_residual_coupling_hint"]
     assert result["quantized_label_conflicts"]["full_observation"][-1]["release_fraction_in_mixed_bins"] == 1.
+
+
+def test_d5c_counts_release_merge_combined_corrections() -> None:
+    observation = _observation(eligible=True)
+    rows = []
+    for index in range(6):
+        action = np.asarray((1., 0., .8 if index < 4 else -.8), dtype=np.float32)
+        teacher = action.copy()
+        if index < 4:
+            teacher[0] = -1.; teacher[2] = -.8
+        rows.append(Transition(str(index), observation.copy(), observation[None].copy(), action,
+                               0., 0., 0., True, teacher_action=teacher,
+                               teacher_used=index < 4, teacher_head_mask=np.ones(3)))
+    result = analyze_release_merge_coupling(rows)
+    assert result["correction_category_counts"]["release_merge"] == 4
+    assert result["correction_category_counts"]["none"] == 2
+    assert result["coupling"]["release_merge_lift_over_independence"] > 1.
+    assert result["strong_release_merge_coupling"]
