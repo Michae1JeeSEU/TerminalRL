@@ -36,9 +36,24 @@ def checkpoint_metadata(config: SimConfig | None = None, *, policy_kind: str = "
 def save_checkpoint(path, policy, config: SimConfig, **extra) -> None:
     torch.save({"metadata": checkpoint_metadata(config), "model": policy.model.state_dict(), "optimizer": policy.optimizer.state_dict(), **extra}, path)
 
-def load_checkpoint(path, policy, config: SimConfig | None = None):
+def load_checkpoint(path, policy, config: SimConfig | None = None, *,
+                    allow_policy_migration: bool = False, load_optimizer: bool = True):
     payload = torch.load(path, map_location=policy.device, weights_only=False)
     validate_checkpoint_metadata(payload.get("metadata", {}), config)
-    policy.model.load_state_dict(payload["model"])
-    if "optimizer" in payload: policy.optimizer.load_state_dict(payload["optimizer"])
+    if hasattr(policy, "load_model_state"):
+        migrated = policy.load_model_state(payload["model"], allow_architecture_migration=allow_policy_migration)
+    else:
+        policy.model.load_state_dict(payload["model"])
+        migrated = False
+    if "optimizer" in payload and load_optimizer:
+        optimizer_state = payload["optimizer"]
+        if migrated:
+            current = policy.optimizer.state_dict()
+            if len(optimizer_state["param_groups"]) != 1 or len(current["param_groups"]) != 1:
+                raise RuntimeError("conditional actor optimizer migration requires one parameter group")
+            optimizer_state = {"state": dict(optimizer_state["state"]),
+                               "param_groups": [dict(optimizer_state["param_groups"][0])]}
+            optimizer_state["param_groups"][0]["params"] = current["param_groups"][0]["params"]
+        policy.optimizer.load_state_dict(optimizer_state)
+    payload["policy_architecture_migrated"] = migrated
     return payload

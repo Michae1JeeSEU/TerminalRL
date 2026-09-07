@@ -121,3 +121,44 @@ def test_mixed_policy_keeps_speed_and_merge_tanh_distribution_unchanged() -> Non
     assert torch.equal(continuous_distribution.mean[:, 1:], mixed_distribution.mean[:, 1:])
     probe = torch.as_tensor(np.tile((1.0, .2, -.3), (4, 1)), dtype=torch.float32)
     assert torch.allclose(continuous_distribution.log_prob(probe)[:, 1:], mixed_distribution.log_prob(probe)[:, 1:])
+
+
+def test_autoregressive_release_sample_log_prob_and_residual_conditioning_are_consistent() -> None:
+    torch.manual_seed(29)
+    source = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="mixed_bernoulli_tanh")
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="autoregressive_release_tanh")
+    assert policy.load_model_state(source.model.state_dict(), allow_architecture_migration=True)
+    observation = _observations(128)
+    actions, log_prob, _, by_head = policy.act(observation, observation, return_head_log_probs=True)
+    assert set(np.unique(actions[:, 0])).issubset({-1.0, 1.0})
+    assert np.all(np.abs(actions[:, 1:]) < 1.0)
+    distribution = policy.distribution(torch.as_tensor(observation))
+    recomputed = distribution.log_prob(torch.as_tensor(actions))
+    assert np.allclose(by_head, recomputed.detach().numpy(), atol=2e-6)
+    assert np.allclose(log_prob, by_head.sum(axis=-1), atol=2e-6)
+
+    first, last = policy.model.release_conditioner[0], policy.model.release_conditioner[-1]
+    with torch.no_grad():
+        first.weight.zero_(); first.bias.zero_(); first.weight[0, -1] = 1.
+        last.weight.zero_(); last.bias.zero_(); last.weight[0, 0] = 2.
+    hidden = policy.model.actor_body(torch.as_tensor(observation[:1]))
+    logits = policy.model.actor_mean(hidden)
+    conditioned = policy.model.actor_distribution(torch.as_tensor(observation[:1]), conditional_release=True)
+    low = conditioned.release_logits_for(torch.as_tensor(((0., -.8),)))
+    high = conditioned.release_logits_for(torch.as_tensor(((0., .8),)))
+    assert low < logits[:, 0] < high
+
+
+def test_autoregressive_release_teacher_loss_deterministic_mode_and_entropy_are_finite() -> None:
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="autoregressive_release_tanh",
+                       teacher_bc_weight=.05)
+    observation = _observations(2)
+    first, _, _ = policy.act(observation, observation, deterministic=True)
+    second, _, _ = policy.act(observation, observation, deterministic=True)
+    assert np.array_equal(first, second)
+    distribution = policy.distribution(torch.as_tensor(observation))
+    targets = torch.as_tensor(((-1., -.2, .3), (1., .2, -.3)))
+    losses = policy._teacher_loss_per_head(distribution, distribution.mean, targets)
+    assert losses.shape == (2, 3) and torch.isfinite(losses).all()
+    entropy = distribution.entropy()
+    assert entropy.shape == (2, 3) and torch.isfinite(entropy).all()

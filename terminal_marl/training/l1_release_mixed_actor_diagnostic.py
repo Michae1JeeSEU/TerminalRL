@@ -172,7 +172,9 @@ def _release_probability(policy: SharedPPO, observations: np.ndarray) -> tuple[n
     with torch.no_grad():
         logits = policy.model.actor_mean(policy.model.actor_body(tensor))[:, 0]
         if policy.uses_mixed_release:
-            probability = torch.sigmoid(logits)
+            distribution = policy.distribution(tensor)
+            logits = distribution.release_logits
+            probability = distribution.release_probability
         else:
             std = policy.model.log_std[0].exp()
             probability = 1.0 - torch.distributions.Normal(logits, std).cdf(torch.zeros_like(logits))

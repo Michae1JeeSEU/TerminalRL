@@ -107,6 +107,10 @@ class MixedReleaseTanhNormal:
         return self.release.probs
 
     @property
+    def release_logits(self) -> torch.Tensor:
+        return self.logits[..., 0]
+
+    @property
     def mean(self) -> torch.Tensor:
         expected_release = 2.0 * self.release_probability - 1.0
         return torch.cat((expected_release.unsqueeze(-1), self.residual.mean), dim=-1)
@@ -133,12 +137,69 @@ class MixedReleaseTanhNormal:
         return torch.cat((self.release.entropy().unsqueeze(-1), self.residual.entropy()), dim=-1)
 
 
+class ResidualConditionedReleaseTanhNormal:
+    """Autoregressive tanh residuals followed by Bernoulli WAIT/RELEASE."""
+
+    def __init__(self, logits: torch.Tensor, scale: torch.Tensor, hidden: torch.Tensor,
+                 conditioner: nn.Module) -> None:
+        self.base_logits = logits
+        self.hidden = hidden
+        self.conditioner = conditioner
+        self.residual = TanhSquashedNormal(logits[..., 1:], scale[..., 1:])
+
+    def release_logits_for(self, residual_action: torch.Tensor) -> torch.Tensor:
+        conditioned = self.conditioner(torch.cat((self.hidden, residual_action), dim=-1)).squeeze(-1)
+        return self.base_logits[..., 0] + conditioned
+
+    @property
+    def release_logits(self) -> torch.Tensor:
+        return self.release_logits_for(self.residual.mode)
+
+    @property
+    def release_probability(self) -> torch.Tensor:
+        return torch.sigmoid(self.release_logits)
+
+    @property
+    def mean(self) -> torch.Tensor:
+        expected_release = 2.0 * self.release_probability - 1.0
+        return torch.cat((expected_release.unsqueeze(-1), self.residual.mean), dim=-1)
+
+    @property
+    def mode(self) -> torch.Tensor:
+        residual = self.residual.mode
+        release = torch.where(self.release_logits_for(residual) >= 0.0, 1.0, -1.0)
+        return torch.cat((release.unsqueeze(-1), residual), dim=-1)
+
+    def sample(self) -> torch.Tensor:
+        residual = self.residual.sample()
+        release = 2.0 * Bernoulli(logits=self.release_logits_for(residual)).sample() - 1.0
+        return torch.cat((release.unsqueeze(-1), residual), dim=-1)
+
+    def rsample(self) -> torch.Tensor:
+        return self.sample()
+
+    def log_prob(self, action: torch.Tensor) -> torch.Tensor:
+        residual = action[..., 1:]
+        release_label = action[..., 0].gt(0.0).to(action.dtype)
+        release_log_prob = Bernoulli(logits=self.release_logits_for(residual)).log_prob(release_label)
+        return torch.cat((release_log_prob.unsqueeze(-1), self.residual.log_prob(residual)), dim=-1)
+
+    def entropy(self) -> torch.Tensor:
+        # H(residual) + E_residual[H(release | residual)].  One pathwise
+        # residual draw is an unbiased estimate of the conditional term.
+        residual_sample = torch.tanh(self.residual.base_dist.rsample()).clamp(
+            -1.0 + self.residual._endpoint_epsilon, 1.0 - self.residual._endpoint_epsilon)
+        release_entropy = Bernoulli(logits=self.release_logits_for(residual_sample)).entropy()
+        return torch.cat((release_entropy.unsqueeze(-1), self.residual.entropy()), dim=-1)
+
+
 def mlp(input_dim: int, output_dim: int, hidden: int = 96) -> nn.Sequential:
     return nn.Sequential(nn.Linear(input_dim, hidden), nn.Tanh(), nn.Linear(hidden, hidden), nn.Tanh(), nn.Linear(hidden, output_dim))
 
 
 class SharedActorCentralCritic(nn.Module):
-    def __init__(self, observation_dim: int, action_dim: int = 3, hidden: int = 96) -> None:
+    def __init__(self, observation_dim: int, action_dim: int = 3, hidden: int = 96,
+                 *, conditional_release: bool = False) -> None:
         super().__init__()
         self.actor_body = mlp(observation_dim, hidden, hidden)
         self.actor_mean = nn.Linear(hidden, action_dim)
@@ -150,11 +211,23 @@ class SharedActorCentralCritic(nn.Module):
         self.log_std = nn.Parameter(torch.full((action_dim,), -0.7))
         self.critic_encoder = mlp(observation_dim, hidden, hidden)
         self.critic_head = mlp(2 * hidden, 1, hidden)
+        self.release_conditioner = None
+        if conditional_release:
+            self.release_conditioner = nn.Sequential(
+                nn.Linear(hidden + 2, hidden // 2), nn.Tanh(), nn.Linear(hidden // 2, 1))
+            nn.init.zeros_(self.release_conditioner[-1].weight)
+            nn.init.zeros_(self.release_conditioner[-1].bias)
 
     def actor_distribution(self, observations: torch.Tensor, *, bounded: bool = True,
-                           mixed_release: bool = False) -> TanhSquashedNormal | MixedReleaseTanhNormal | Normal:
-        logits = self.actor_mean(self.actor_body(observations))
+                           mixed_release: bool = False, conditional_release: bool = False
+                           ) -> TanhSquashedNormal | MixedReleaseTanhNormal | ResidualConditionedReleaseTanhNormal | Normal:
+        hidden = self.actor_body(observations)
+        logits = self.actor_mean(hidden)
         scale = self.log_std.exp().expand_as(logits)
+        if conditional_release:
+            if self.release_conditioner is None:
+                raise RuntimeError("conditional release distribution requires a conditioner")
+            return ResidualConditionedReleaseTanhNormal(logits, scale, hidden, self.release_conditioner)
         if mixed_release:
             return MixedReleaseTanhNormal(logits, scale)
         # ``bounded=False`` exists solely for the frozen D3 control arm.  New
@@ -211,14 +284,16 @@ class SharedPPO:
     def __init__(self, observation_dim: int, *, device: str = "cpu", learning_rate: float = 3e-4, clip_ratio: float = .2, value_coef: float = .5, entropy_coef: float = .01, teacher_bc_weight: float = 0.0,
                  policy_distribution: str = "tanh_squashed_gaussian", teacher_bc_loss: str = "action_smooth_l1",
                  intervention_ppo_mask: bool = False) -> None:
-        if policy_distribution not in {"tanh_squashed_gaussian", "mixed_bernoulli_tanh", "gaussian_hard_clamp"}:
+        if policy_distribution not in {"tanh_squashed_gaussian", "mixed_bernoulli_tanh",
+                                       "autoregressive_release_tanh", "gaussian_hard_clamp"}:
             raise ValueError("unsupported low-level policy distribution")
         if teacher_bc_loss not in {"action_smooth_l1", "squashed_nll"}:
             raise ValueError("unsupported teacher BC loss")
         if teacher_bc_loss == "squashed_nll" and policy_distribution != "tanh_squashed_gaussian":
             raise ValueError("squashed NLL BC requires the tanh-squashed policy")
         self.device = torch.device(device)
-        self.model = SharedActorCentralCritic(observation_dim).to(self.device)
+        self.model = SharedActorCentralCritic(
+            observation_dim, conditional_release=policy_distribution == "autoregressive_release_tanh").to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.clip_ratio, self.value_coef, self.entropy_coef, self.teacher_bc_weight = clip_ratio, value_coef, entropy_coef, teacher_bc_weight
         self.observation_dim = observation_dim
@@ -228,15 +303,32 @@ class SharedPPO:
 
     @property
     def uses_bounded_distribution(self) -> bool:
-        return self.policy_distribution in {"tanh_squashed_gaussian", "mixed_bernoulli_tanh"}
+        return self.policy_distribution in {"tanh_squashed_gaussian", "mixed_bernoulli_tanh",
+                                            "autoregressive_release_tanh"}
 
     @property
     def uses_mixed_release(self) -> bool:
-        return self.policy_distribution == "mixed_bernoulli_tanh"
+        return self.policy_distribution in {"mixed_bernoulli_tanh", "autoregressive_release_tanh"}
 
-    def distribution(self, observations: torch.Tensor) -> TanhSquashedNormal | MixedReleaseTanhNormal | Normal:
+    @property
+    def uses_conditional_release(self) -> bool:
+        return self.policy_distribution == "autoregressive_release_tanh"
+
+    def distribution(self, observations: torch.Tensor) -> TanhSquashedNormal | MixedReleaseTanhNormal | ResidualConditionedReleaseTanhNormal | Normal:
         return self.model.actor_distribution(observations, bounded=self.uses_bounded_distribution,
-                                             mixed_release=self.uses_mixed_release)
+                                             mixed_release=self.uses_mixed_release,
+                                             conditional_release=self.uses_conditional_release)
+
+    def load_model_state(self, state: dict[str, torch.Tensor], *, allow_architecture_migration: bool = False) -> bool:
+        """Load a checkpoint, optionally adding a zero-initialized conditioner."""
+        if not allow_architecture_migration:
+            self.model.load_state_dict(state)
+            return False
+        missing, unexpected = self.model.load_state_dict(state, strict=False)
+        allowed = self.uses_conditional_release and all(key.startswith("release_conditioner.") for key in missing)
+        if unexpected or (missing and not allowed):
+            raise RuntimeError(f"unsupported actor checkpoint migration: missing={missing}, unexpected={unexpected}")
+        return bool(missing)
 
     def act(self, observations: np.ndarray, world: np.ndarray, *, deterministic: bool = False,
             return_head_log_probs: bool = False):
@@ -255,13 +347,15 @@ class SharedPPO:
         result = (actions.cpu().numpy().astype(np.float32), log_prob.cpu().numpy(), float(value.cpu()))
         return (*result, log_prob_by_head.cpu().numpy().astype(np.float32)) if return_head_log_probs else result
 
-    def _teacher_loss_per_head(self, distribution: TanhSquashedNormal | MixedReleaseTanhNormal | Normal, means: torch.Tensor,
+    def _teacher_loss_per_head(self, distribution: TanhSquashedNormal | MixedReleaseTanhNormal | ResidualConditionedReleaseTanhNormal | Normal, means: torch.Tensor,
                                targets: torch.Tensor) -> torch.Tensor:
         """Return a [batch, head] BC loss without changing target semantics."""
         if self.uses_mixed_release:
             release_labels = targets[:, 0].gt(0.0).to(targets.dtype)
+            release_logits = (distribution.release_logits_for(targets[:, 1:]) if self.uses_conditional_release else
+                              distribution.logits[:, 0])
             release_loss = nn.functional.binary_cross_entropy_with_logits(
-                distribution.logits[:, 0], release_labels, reduction="none")
+                release_logits, release_labels, reduction="none")
             residual_loss = nn.functional.smooth_l1_loss(means[:, 1:], targets[:, 1:], reduction="none")
             return torch.cat((release_loss.unsqueeze(-1), residual_loss), dim=-1)
         if self.teacher_bc_loss == "squashed_nll":

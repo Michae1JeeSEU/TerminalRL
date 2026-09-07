@@ -69,6 +69,26 @@ def test_a5_shared_ppo_update_and_checkpoint_metadata(tmp_path):
     path=tmp_path/"a5.pt"; config=SimConfig(experiment_mode="fixed_low_rl"); save_checkpoint(path,policy,config); load_checkpoint(path,policy,config)
 
 
+def test_checkpoint_migrates_zero_initialized_release_conditioner_and_optimizer(tmp_path):
+    dimension = A5_OBSERVATION_SCHEMA.dimension
+    source = SharedPPO(dimension, policy_distribution="mixed_bernoulli_tanh")
+    observations = np.zeros((2, dimension), dtype=np.float32)
+    actions, log_probs, value = source.act(observations, observations)
+    buffer = RolloutBuffer()
+    for index in range(2):
+        buffer.add(Transition(str(index), observations[index], observations, actions[index],
+                              float(log_probs[index]), value, 1., True))
+    source.update(buffer, epochs=1, minibatch_size=2)
+    path = tmp_path / "mixed.pt"; config = SimConfig(experiment_mode="fixed_low_rl")
+    save_checkpoint(path, source, config)
+    conditional = SharedPPO(dimension, policy_distribution="autoregressive_release_tanh")
+    payload = load_checkpoint(path, conditional, config, allow_policy_migration=True)
+    assert payload["policy_architecture_migrated"]
+    assert all(torch.count_nonzero(parameter) == 0 for parameter in conditional.model.release_conditioner[-1].parameters())
+    optimizer_parameters = sum(len(group["params"]) for group in conditional.optimizer.param_groups)
+    assert optimizer_parameters == len(list(conditional.model.parameters()))
+
+
 def test_a5_short_curriculum_training_has_no_nan(tmp_path):
     base=SimConfig(max_simulation_seconds=250., experiment_mode="fixed_low_rl")
     stages=(CurriculumStage("sanity",2,1,1.0), CurriculumStage("variable",2,3,.2))

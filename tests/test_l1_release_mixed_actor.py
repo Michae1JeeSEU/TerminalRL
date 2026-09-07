@@ -69,6 +69,23 @@ def test_mixed_release_binary_bc_keeps_requested_action_and_ratio_provenance() -
     assert all(np.isfinite(value) for value in metrics.values())
 
 
+def test_autoregressive_release_keeps_requested_action_and_ratio_provenance() -> None:
+    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution="autoregressive_release_tanh",
+                       teacher_bc_weight=.05)
+    observations = np.stack((_observation(eligible=False), _observation(eligible=True)))
+    actions, log_probs, value, by_head = policy.act(observations, observations, return_head_log_probs=True)
+    buffer = RolloutBuffer()
+    for index, target in enumerate((-1., 1.)):
+        teacher = actions[index].copy(); teacher[0] = target
+        buffer.add(Transition(str(index), observations[index], observations, actions[index], float(log_probs[index]),
+                              value, 1., True, teacher_action=teacher, applied_action=-actions[index],
+                              log_prob_by_head=by_head[index], teacher_head_mask=np.asarray((1., 0., 0.))))
+    proof = _requested_action_provenance(policy, buffer)
+    assert proof["passed"] and not proof["a_applied_enters_ratio"]
+    metrics = policy.update(buffer, epochs=1, minibatch_size=2)
+    assert all(np.isfinite(value) for value in metrics.values())
+
+
 def test_release_magnitude_is_scheduler_aliased_within_each_binary_decision() -> None:
     config = l1_full_teacher_config(medium_rate=.001575, reset_mode="warm_start_rings",
                                     demand_model="finite_cohort", warm_start_uavs=8, cohort_uavs=8,
