@@ -251,9 +251,10 @@ def _coverage(rows: Iterable[dict]) -> dict:
         "WAIT_to_RELEASE": sum(row["a_requested"]["release_index"] == 0 and row["a_teacher"]["release_index"] == 1 for row in rows),
         "RELEASE_to_WAIT": sum(row["a_requested"]["release_index"] == 1 and row["a_teacher"]["release_index"] == 0 for row in rows),
     }
+    per_head = {head: sum(head in row["teacher_correction_heads"] for row in rows) for head in HEAD_NAMES}
     return {"requested_frequency": requested, "teacher_target_frequency": teacher,
             "combined_corrections": corrections, "release_transitions": transitions,
-            "teacher_used": sum(bool(row["teacher_used"]) for row in rows)}
+            "per_head_corrections": per_head, "teacher_used": sum(bool(row["teacher_used"]) for row in rows)}
 
 
 def run_v3_l0_teacher_dataset(*, output_dir: str | Path, target_rows: int = TARGET_ROWS) -> V3L0Run:

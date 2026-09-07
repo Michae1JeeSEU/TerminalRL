@@ -15,6 +15,7 @@ from ..core.low_level_action import ACTION_SCHEMA_V3, LowLevelActionV3, indices_
 from ..core.safety_trace import SafetyTraceRecorder
 from ..envs.parallel_env import TerminalParallelEnv
 from .audit_low_teacher_dataset import audit_teacher_dataset
+from .run_v3_l0_teacher_dataset import _coverage
 from .train_low_v2_ppo import _rollout_l1, authorize_low_v2_training, l1_full_teacher_config
 
 
@@ -174,6 +175,7 @@ def _markdown_l0(manifest: dict, bc: V3BCSanity, quantization: dict) -> str:
     lines += ["", "## Corrections", "", f"- Per-combination: {coverage['combined_corrections']}",
               f"- WAIT→RELEASE: {coverage['release_transitions']['WAIT_to_RELEASE']}",
               f"- RELEASE→WAIT: {coverage['release_transitions']['RELEASE_to_WAIT']}",
+              f"- Per-head: {coverage['per_head_corrections']}",
               f"- Provenance audit: {'PASS' if manifest['provenance_audit']['passed'] else 'FAIL'} ({manifest['provenance_audit']['corrected_rows']} corrected rows)",
               "", "## BC sanity", "", f"- CE before (release/speed/merge): {bc.ce_before}",
               f"- CE after (release/speed/merge): {bc.ce_after}", f"- Joint CE before/after: {bc.joint_before:.6f} / {bc.joint_after:.6f}",
@@ -194,7 +196,12 @@ def _markdown_l1(preflight: V3L1Preflight) -> str:
 
 def run_v3_preflight(*, dataset_path: str | Path, output_dir: str | Path) -> tuple[V3BCSanity, V3L1Preflight]:
     destination = Path(output_dir); destination.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads((Path(dataset_path).parent / "v3_l0_teacher_dataset.manifest.json").read_text(encoding="utf-8"))
+    manifest_path = Path(dataset_path).parent / "v3_l0_teacher_dataset.manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    # Backfill this derived reporting field for a previously completed fresh
+    # collection without touching samples, labels, or seed provenance.
+    manifest["coverage"] = _coverage(_rows(dataset_path))
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     quantization = _quantization_qualification()
     bc = categorical_bc_sanity(dataset_path)
     preflight = l1_preflight(dataset_path=dataset_path, output_dir=destination)
