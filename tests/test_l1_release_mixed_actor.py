@@ -13,6 +13,7 @@ from terminal_marl.training.l1_release_mixed_actor_diagnostic import (
     _release_probe_task, release_decision_metrics, release_objective_metrics,
 )
 from terminal_marl.training.l1_release_d5a_objective import _d5a_gate, run_d5a_runtime_preflight
+from terminal_marl.training.l1_release_d5b_observation import analyze_release_observation_sufficiency
 from terminal_marl.training.train_low_v2_ppo import (
     _counterfactual_release_teacher_targets, l1_full_teacher_config,
 )
@@ -128,3 +129,18 @@ def test_d5a_gate_requires_targeted_probe_and_all_frozen_health_gates() -> None:
 
 def test_d5a_runtime_preflight_signature_exposes_output_closure() -> None:
     assert callable(run_d5a_runtime_preflight)
+
+
+def test_d5b_detects_identical_observations_with_opposite_release_labels() -> None:
+    observation = _observation(eligible=True)
+    rows = []
+    for index, (label, residual) in enumerate(((-1., -.8), (-1., -.4), (1., .4), (1., .8))):
+        action = np.asarray((1., residual, residual), dtype=np.float32)
+        teacher = action.copy(); teacher[0] = label
+        rows.append(Transition(str(index), observation.copy(), observation[None].copy(), action,
+                               0., 0., 0., True, teacher_action=teacher,
+                               teacher_head_mask=np.asarray((1., 0., 0.))))
+    result = analyze_release_observation_sufficiency(rows)
+    assert result["observation_aliasing_detected"]
+    assert result["requested_residual_coupling_hint"]
+    assert result["quantized_label_conflicts"]["full_observation"][-1]["release_fraction_in_mixed_bins"] == 1.
