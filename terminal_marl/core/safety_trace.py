@@ -57,14 +57,41 @@ class SafetyTraceRecorder:
         self.dumped_path: Path | None = None
 
     @staticmethod
+    def _replay_state_value(value: Any) -> Any:
+        """Remove opaque runtime IDs from an otherwise exact replay state.
+
+        Scheduler and trajectory identifiers are UUIDs allocated independently
+        during replay.  They are not policy/safety semantics, but including
+        them in a state digest made a genuinely identical replay fail as soon
+        as a release created a reservation.  Preserve the existence and shape
+        of each reference while excluding its allocator-specific spelling.
+        """
+        opaque = {"reservation_id", "trajectory_plan_id", "merge_reservation_id", "plan_id", "forecast_plan_id"}
+        if isinstance(value, dict):
+            return {str(key): ("<opaque-runtime-id>" if str(key) in opaque else
+                               ["<opaque-runtime-id>"] * len(item) if str(key) == "reservation_ids" and isinstance(item, (tuple, list)) else
+                               SafetyTraceRecorder._replay_state_value(item))
+                    for key, item in value.items()}
+        if isinstance(value, (tuple, list, deque)):
+            return ["<opaque-runtime-id>" if isinstance(item, str) and item.startswith(("plan-", "reservation-"))
+                    else SafetyTraceRecorder._replay_state_value(item) for item in value]
+        return value
+
+    @staticmethod
     def _state(env) -> dict[str, Any]:
+        reservations = [vars(value).copy() for value in sorted(
+            env.scheduler.reservations.values(),
+            key=lambda value: (value.uav_id, value.source_stage, value.target_stage, value.merge_time),
+        )]
         return {
             "time": float(env.now),
             "step_count": int(env.step_count),
-            "uavs": [_json(env._uav_trace(uav)) for _, uav in sorted(env.active.items())],
-            "reservations": _json(env.scheduler.reservations),
-            "release_state": _json(env.release_intents),
-            "future_release_reservations": _json(env.future_release_reservations),
+            "uavs": _json(SafetyTraceRecorder._replay_state_value(
+                [env._uav_trace(uav) for _, uav in sorted(env.active.items())]
+            )),
+            "reservations": _json(SafetyTraceRecorder._replay_state_value(reservations)),
+            "release_state": _json(SafetyTraceRecorder._replay_state_value(env.release_intents)),
+            "future_release_reservations": _json(SafetyTraceRecorder._replay_state_value(env.future_release_reservations)),
         }
 
     def start_episode(self, env, *, episode_seed: int, policy_rng_state: Any) -> None:

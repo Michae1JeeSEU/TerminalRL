@@ -215,6 +215,9 @@ def l1_full_teacher_config(
         priority_mode="fixed", initial_priority=1,
         gate_probabilities=(0.25, 0.25, 0.25, 0.25),
         mission_probabilities=(1.0, 0.0, 0.0, 0.0),
+        # Bind the L1 path explicitly to the V3 Safety Closure qualification:
+        # 0.2 s physics integration and 1.0 s safety sampling.
+        physics_dt=.2, safety_sampling_dt=1.0,
     )
 
 
@@ -238,7 +241,7 @@ def _episode_design(index: int, *, medium_rate: float, horizon_seconds: float) -
 
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
-    trace_output_dir: str | Path | None = None,
+    trace_output_dir: str | Path | None = None, dump_trace_on_completion: bool = False,
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
@@ -341,6 +344,8 @@ def _rollout_l1(
                                tuple(int(value) for value in saturation_counts), requested_action_count, completion_delays,
                                int(env.telemetry.get("collisions", 0)), int(env.telemetry.get("nmac", 0)),
                                int(env.telemetry.get("hard_separation_violations", 0)), env.step_count)
+    if trace_recorder is not None and dump_trace_on_completion:
+        trace_recorder.dump(reason="preflight_smoke_completion")
     return rows, summary
 
 
