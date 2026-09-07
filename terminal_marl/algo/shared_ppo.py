@@ -167,7 +167,7 @@ class SharedPPO:
         rows = buffer.flattened(gamma, gae_lambda)
         zero = {"loss": 0.0, "actor_loss": 0.0, "value_loss": 0.0, "entropy": 0.0, "teacher_bc_loss": 0.0,
                 "entropy_release": 0.0, "entropy_speed": 0.0, "entropy_merge_time": 0.0, "approx_kl": 0.0,
-                "clip_fraction": 0.0}
+                "clip_fraction": 0.0, "explained_variance": 0.0, "grad_norm": 0.0}
         if not rows:
             return zero
         advantages = np.asarray([row[1] for row in rows], np.float32)
@@ -198,6 +198,8 @@ class SharedPPO:
                 actor_loss = -torch.minimum(ratio * adv, clipped_ratio * adv).mean()
                 values = self.model.critic(torch.as_tensor(padded, device=self.device), torch.as_tensor(mask, device=self.device))
                 value_loss = (values - returns).pow(2).mean()
+                variance = returns.var(unbiased=False)
+                explained_variance = 1.0 - (returns - values).var(unbiased=False) / variance.clamp_min(1e-8)
                 entropy_by_head = distribution.entropy_per_head()
                 entropy = entropy_by_head.sum(-1).mean()
                 teacher_rows = [row for row in selected if row[0].teacher_used and row[0].teacher_action is not None]
@@ -213,7 +215,7 @@ class SharedPPO:
                     raise FloatingPointError("non-finite categorical PPO loss")
                 self.optimizer.zero_grad()
                 loss.backward()
-                nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                grad_norm = nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
                 self.optimizer.step()
                 log_ratio = current_log_prob - old_log_prob
                 totals["loss"] += float(loss.detach()); totals["actor_loss"] += float(actor_loss.detach())
@@ -224,6 +226,8 @@ class SharedPPO:
                 totals["entropy_merge_time"] += float(entropy_by_head[:, 2].mean().detach())
                 totals["approx_kl"] += float((-log_ratio).mean().detach())
                 totals["clip_fraction"] += float((torch.abs(ratio - 1.0) > self.clip_ratio).float().mean().detach())
+                totals["explained_variance"] += float(explained_variance.detach())
+                totals["grad_norm"] += float(grad_norm.detach())
                 updates += 1
         buffer.clear()
         return {key: value / max(1, updates) for key, value in (dict(zero) | totals).items()}

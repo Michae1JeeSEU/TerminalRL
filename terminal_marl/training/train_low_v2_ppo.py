@@ -127,6 +127,9 @@ class L1EpisodeSummary:
     nmac: int
     hard_separation_violations: int
     steps: int
+    external_queue_final: int
+    external_queue_mean: float
+    external_queue_max: int
 
 
 @dataclass(frozen=True)
@@ -265,6 +268,7 @@ def _rollout_l1(
     saturation_counts = np.zeros(3, dtype=int)
     requested_action_count = 0
     trace_row: dict[str, object] | None = None
+    external_queue_sizes = [len(env.admission.queue.items)]
     try:
         for _ in range(min(max_steps, int(config.max_simulation_seconds / config.dt))):
             ids = list(observations)
@@ -328,6 +332,7 @@ def _rollout_l1(
                             name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
                         ) or ("hold_reject",))
                 observations = next_observations
+            external_queue_sizes.append(len(env.admission.queue.items))
             if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
                 break
     except SafetyInvariantError as error:
@@ -343,7 +348,8 @@ def _rollout_l1(
                                tuple(correction_magnitudes), tuple(teacher_correction_components),
                                tuple(int(value) for value in saturation_counts), requested_action_count, completion_delays,
                                int(env.telemetry.get("collisions", 0)), int(env.telemetry.get("nmac", 0)),
-                               int(env.telemetry.get("hard_separation_violations", 0)), env.step_count)
+                               int(env.telemetry.get("hard_separation_violations", 0)), env.step_count,
+                               len(env.admission.queue.items), float(np.mean(external_queue_sizes)), int(max(external_queue_sizes)))
     if trace_recorder is not None and dump_trace_on_completion:
         trace_recorder.dump(reason="preflight_smoke_completion")
     return rows, summary
@@ -400,6 +406,9 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
         "throughput_per_second": None if steps == 0 else completed / steps,
         "delay_mean": None if not delays else float(np.mean(delays)),
         "delay_p95": None if not delays else float(np.percentile(delays, 95)),
+        "external_queue_final_mean": None if not summaries else float(np.mean([row.external_queue_final for row in summaries])),
+        "external_queue_mean": None if not summaries else float(np.mean([row.external_queue_mean for row in summaries])),
+        "external_queue_max": None if not summaries else int(max(row.external_queue_max for row in summaries)),
         "shield_interventions_per_100_release_intents": None if intents == 0 else 100.0 * sum(row.shield_interventions for row in effective) / intents,
         "collisions": sum(row.collisions for row in summaries), "nmac": sum(row.nmac for row in summaries),
         "hard_separation_violations": sum(row.hard_separation_violations for row in summaries),
