@@ -347,7 +347,8 @@ class LandingZoneManager:
 
 ## 12. Low-level action mapping
 
-输入 shape：`(3,)`。canonical order：
+Execution adapter input shape remains `(3,)`; policy input is three
+factorized categories with cardinalities `(2, 5, 5)`. Canonical order:
 
 ```text
 [release_request, speed_residual, merge_time_residual]
@@ -356,7 +357,7 @@ class LandingZoneManager:
 mapper：
 
 ```python
-release_requested = raw[0] > release_threshold
+release_requested = release_category == RELEASE
 delta_v = raw[1] * max_speed_residual_mps
 delta_t = raw[2] * max_merge_time_residual_seconds
 ```
@@ -368,7 +369,7 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 ## 13. Per-agent action spec
 
 ```python
-Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+{"release": Discrete(2), "speed_residual": Discrete(5), "merge_time_residual": Discrete(5)}
 ```
 
 环境按 agent 返回 action spec：
@@ -381,10 +382,11 @@ actions: dict[str, np.ndarray]
 
 ```text
 batch_obs    = (N_active, d_obs)
-batch_action = (N_active, 3)
+batch_action_categories = (N_active, 3)  # category indices
+batch_action_normalized = (N_active, 3)  # execution adapter values
 ```
 
-不是一个 `Box(max_n,3)` 的全局策略动作。
+不是一个 `Box(max_n,3)` 的全局策略动作，也不是一个 `Categorical(50)`。
 
 ---
 
@@ -828,7 +830,7 @@ no deadlock
 定义：
 
 ```text
-action_schema_version = low_intent_v1_3d
+action_schema_version = low_intent_v3_factorized_discrete
 high_action_schema_version = high_airspace_v1_10d
 observation_schema_version = phaseA_obs_v1
 airspace_schema_version = three_ring_v1

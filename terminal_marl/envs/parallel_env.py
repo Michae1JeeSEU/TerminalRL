@@ -59,8 +59,9 @@ class TerminalParallelEnv:
     def agents(self) -> list[str]:
         return [str(uid) for uid in self.active]
 
-    def action_spec(self, _agent: str | None = None) -> tuple[int]:
-        return (3,)
+    def action_spec(self, _agent: str | None = None) -> dict[str, tuple[int, ...]]:
+        """Factorized V3 scheduling categories (not a 50-way joint action)."""
+        return {"release": (2,), "speed_residual": (5,), "merge_time_residual": (5,)}
 
     def set_step_observer(self, observer: Callable[["TerminalParallelEnv"], None] | None) -> None:
         """Register an optional post-tick observer without changing step semantics."""
@@ -454,7 +455,37 @@ class TerminalParallelEnv:
         for uid, uav in self.active.items():
             plan = uav.committed_plan
             if plan is not None:
-                expected[uid] = plan.sample(min(self.now + self.config.dt, plan.end_time)).position.copy()
+                target_time = min(self.now + self.config.dt, plan.end_time)
+                endpoint = plan.sample(target_time)
+                # A canonical transfer may end within this control interval.
+                # Continue its post-handoff nominal ring motion for the
+                # remaining fraction, exactly as SafetyFilter's
+                # ``_post_plan_positions`` does.  Stopping at the endpoint
+                # until the next tick created an unmodelled 0--dt hold.
+                target_name = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(
+                    plan.metadata.get("target_phase")
+                )
+                remaining = max(0.0, self.now + self.config.dt - plan.end_time)
+                if target_name is None or remaining <= 1e-9:
+                    expected[uid] = endpoint.position.copy()
+                    continue
+                role = next((item for item in RingRole if item.value == target_name), None)
+                if role is None:
+                    expected[uid] = endpoint.position.copy()
+                    continue
+                ring = self.airspace.actual_ring(role)
+                theta = math.atan2(endpoint.position[1], endpoint.position[0])
+                speed = float(np.linalg.norm(endpoint.velocity[:2]))
+                target = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias,
+                                       self.config.speed_min, self.config.max_speed))
+                position = endpoint.position.copy()
+                elapsed = 0.0
+                while elapsed < remaining - 1e-9:
+                    dt = min(self.config.physics_dt, remaining - elapsed)
+                    motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target, dt)
+                    theta, speed, position = motion.theta, motion.speed, motion.position
+                    elapsed += dt
+                expected[uid] = np.asarray(position, dtype=float)
                 continue
             intent = intents.get(uid)
             if uav.ring_role is None or intent is None:
@@ -519,14 +550,15 @@ class TerminalParallelEnv:
         uav.committed_plan = None
         uav.trajectory_plan_id = None
         target = plan.metadata["target_phase"]
+        completion_time = float(plan.end_time)
         if target == "ring_outer":
-            transition(uav, FlightPhase.RING_OUTER, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_OUTER, completion_time)
             uav.ring_role = RingRole.OUTER
         elif target == "ring_middle":
-            transition(uav, FlightPhase.RING_MIDDLE, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_MIDDLE, completion_time)
             uav.ring_role = RingRole.MIDDLE
         elif target == "ring_inner":
-            transition(uav, FlightPhase.RING_INNER, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_INNER, completion_time)
             uav.ring_role = RingRole.INNER
         elif target == "landing":
             transition(uav, FlightPhase.LANDING, self.now + self.config.dt)
@@ -542,9 +574,17 @@ class TerminalParallelEnv:
         radial = np.asarray((-math.cos(uav.ring_progress), -math.sin(uav.ring_progress), 0.0), dtype=float)
         uav.velocity = tangent * uav.speed
         uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
+        # The plan may have completed between executor ticks.  Advance the
+        # remainder under the canonical nominal holder policy rather than
+        # freezing at the endpoint.  The action for this tick belonged to the
+        # already committed transfer; a fresh residual is considered only on
+        # the next control tick by the Shield.
+        remaining = max(0.0, self.now + self.config.dt - completion_time)
+        if remaining > 1e-9:
+            distance += self._advance_ring_hold(uav, LowLevelIntent(0.0, 0.0, 0.0), duration=remaining)
         return distance, False
 
-    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent) -> float:
+    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent, *, duration: float | None = None) -> float:
         if uav.ring_role is None or uav.committed_plan is not None:
             return 0.0
         ring = self.airspace.actual_ring(uav.ring_role)
@@ -555,10 +595,11 @@ class TerminalParallelEnv:
             ring.nominal_speed + self.airspace.speed_profile_bias + intent.speed_residual * self.config.max_speed_residual_mps,
             self.config.speed_min, self.config.max_speed,
         ))
+        duration = self.config.dt if duration is None else float(duration)
         theta, speed = theta0, max(0.0, uav.speed)
         elapsed, distance = 0.0, 0.0
-        while elapsed < self.config.dt - 1e-9:
-            step = min(self.config.physics_dt, self.config.dt - elapsed)
+        while elapsed < duration - 1e-9:
+            step = min(self.config.physics_dt, duration - elapsed)
             before = uav.position.copy()
             motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
             theta, speed = motion.theta, motion.speed
@@ -568,8 +609,8 @@ class TerminalParallelEnv:
             elapsed += step
         uav.ring_progress = theta % (2 * math.pi)
         uav.path_length += distance
-        uav.internal_wait_time += self.config.dt
-        uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + self.config.dt
+        uav.internal_wait_time += duration
+        uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + duration
         return distance
 
     def _release_legacy(self, uav: UAVState, intent: LowLevelIntent) -> str:

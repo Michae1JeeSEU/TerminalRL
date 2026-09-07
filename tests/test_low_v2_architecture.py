@@ -408,8 +408,8 @@ def test_checkpoint_schema_rejects_legacy_actor_metadata():
 
 
 def test_ppo_transition_keeps_requested_action_when_teacher_label_is_present():
-    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
-    teacher = np.asarray((1.0, 1.0, -1.0), np.float32)
+    requested = np.asarray((1, 2, 3), np.int64)
+    teacher = np.asarray((1, 4, 0), np.int64)
     world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
     row = Transition("uav-1", world[0], world, requested, 0.0, 0.0, 1.0, True,
                      teacher_action=teacher, applied_action=teacher, teacher_used=True)

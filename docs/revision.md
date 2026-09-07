@@ -352,7 +352,7 @@ schema_version: phaseA_landing_v1
 新：
 
 ```text
-low_intent_v1_3d
+low_intent_v3_factorized_discrete
 ```
 
 旧 high：8D。  

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from .merge_scheduler import LowLevelIntent, RepairCandidate, MergeScheduler
+from .low_level_action import LowLevelActionV3
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,18 @@ class TeacherScheduler:
 
     def candidates(self, requested: LowLevelIntent) -> tuple[RepairCandidate, ...]:
         rows = self._scheduler.repair_candidates(requested)
+        # The scheduler may internally reason over a continuous optimum in a
+        # future implementation. Teacher labels may not expose that private
+        # representation: quantize once, here, onto the policy's V3 catalog.
+        quantized: list[RepairCandidate] = []
+        for row in rows:
+            action = LowLevelActionV3.quantized_teacher((row.intent.release_request,
+                                                          row.intent.speed_residual,
+                                                          row.intent.merge_time_residual))
+            candidate = RepairCandidate(row.kind, LowLevelIntent(*action.normalized), row.delay_seconds)
+            if candidate not in quantized:
+                quantized.append(candidate)
+        rows = tuple(quantized)
         if self.config.teacher_mode == "teacher_immediate":
             rows = tuple(row for row in rows if row.delay_seconds == 0.0)
         if self.config.teacher_mode == "teacher_label_only":

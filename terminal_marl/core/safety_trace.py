@@ -11,6 +11,8 @@ from typing import Any
 
 import numpy as np
 
+from .low_level_action import ACTION_SCHEMA_V3, LowLevelActionV3
+
 
 def _json(value: Any) -> Any:
     if isinstance(value, np.ndarray):
@@ -40,7 +42,7 @@ class SafetyTraceRecorder:
     witnesses independently replayable.
     """
 
-    schema_version = "A5V2-L1-S3-SafetyTrace-v2"
+    schema_version = "A5V2-L1-S3-SafetyTrace-v3"
 
     def __init__(self, output_dir: str | Path, *, max_seconds: float = 120.0, dt: float = 1.0) -> None:
         self.output_dir = Path(output_dir)
@@ -83,12 +85,32 @@ class SafetyTraceRecorder:
         }
 
     def record_pre_step(self, env, observations: dict[str, np.ndarray], actions: dict[str, np.ndarray],
-                        log_probs: dict[str, float] | None = None) -> dict[str, Any]:
+                        log_probs: dict[str, Any] | None = None) -> dict[str, Any]:
+        action_v3: dict[str, Any] = {}
+        joint_log_prob: dict[str, float] = {}
+        head_log_prob: dict[str, list[float]] = {}
+        for uid, action in sorted(actions.items()):
+            try:
+                action_v3[str(uid)] = LowLevelActionV3.from_normalized(action).as_dict()
+            except ValueError:
+                action_v3[str(uid)] = {"legacy_continuous_action": _json(action)}
+        for uid, value in sorted((log_probs or {}).items()):
+            if isinstance(value, dict):
+                joint_log_prob[str(uid)] = float(value["joint"])
+                head_log_prob[str(uid)] = [float(item) for item in value.get("per_head", ())]
+            else:
+                joint_log_prob[str(uid)] = float(value)
         action_row = {
             "step": int(env.step_count), "time_before": float(env.now),
             "observation_hash": _digest({key: value for key, value in sorted(observations.items())}),
             "a_requested": _json({key: value for key, value in sorted(actions.items())}),
-            "log_prob": _json({key: float(value) for key, value in sorted((log_probs or {}).items())}),
+            "action_schema_version": ACTION_SCHEMA_V3,
+            "a_requested_v3": action_v3,
+            "joint_log_prob": joint_log_prob,
+            "per_head_log_prob": head_log_prob,
+            # Read-only compatibility name for archived tooling. New code
+            # consumes ``joint_log_prob`` and ``per_head_log_prob``.
+            "log_prob": joint_log_prob,
         }
         self._action_tape.append(action_row)
         record = {
@@ -112,6 +134,8 @@ class SafetyTraceRecorder:
         self._action_tape[tape_index].update({
             "time_after": float(env.now),
             "post_state_hash": _digest(post_state),
+            "executed_mapped_action": _json({uid: trace.get("execution_applied_action")
+                                                for uid, trace in info.get("action_traces", {}).items()}),
             "conflict_events": _json(info.get("conflict_events", [])),
         })
         events = info.get("conflict_events", [])
@@ -186,10 +210,24 @@ class SafetyTraceRecorder:
         for row in rows:
             observation_match = _digest({key: value for key, value in sorted(observations.items())}) == row["observation_hash"]
             actions = {str(uid): np.asarray(action, dtype=np.float32) for uid, action in row["a_requested"].items()}
+            category_match = True
+            if row.get("action_schema_version") == ACTION_SCHEMA_V3:
+                for uid, action in actions.items():
+                    try:
+                        expected = LowLevelActionV3.from_normalized(action).as_dict()
+                        category_match = category_match and expected == row.get("a_requested_v3", {}).get(uid)
+                    except ValueError:
+                        category_match = False
+            executed_match = True
             try:
-                observations, _, _, _, _ = env.step(actions)
+                observations, _, _, _, info = env.step(actions)
                 post_match = ("post_state_hash" not in row or
                               _digest(SafetyTraceRecorder._state(env)) == row["post_state_hash"])
+                if "executed_mapped_action" in row:
+                    executed_match = _json({uid: trace.get("execution_applied_action")
+                                             for uid, trace in info.get("action_traces", {}).items()}) == row["executed_mapped_action"]
+                else:
+                    executed_match = True
                 blocked = False
             except Exception as error:  # SafetyInvariantError is expected in a blocked event trace.
                 expected_event = row.get("safety_event", {})
@@ -198,9 +236,10 @@ class SafetyTraceRecorder:
                 blocked = True
                 error_text = str(error)
             steps.append({"step": int(row["step"]), "observation_match": observation_match,
-                          "post_state_match": post_match, "blocked": blocked,
+                          "requested_category_match": category_match, "post_state_match": post_match,
+                          "executed_mapped_action_match": executed_match, "blocked": blocked,
                           **({"error": error_text} if blocked else {})})
-            exact = exact and observation_match and post_match
+            exact = exact and observation_match and category_match and post_match and executed_match
             if blocked:
                 break
         return {"exact": exact, "reset_state_match": reset_match, "config_match": config_match,

@@ -21,6 +21,7 @@ import torch
 from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import load_checkpoint, save_checkpoint
 from ..core.config import SimConfig
+from ..core.low_level_action import HEAD_NAMES, LowLevelActionV3, normalized_to_indices
 from ..core.observations import LOW_OBS_V2
 from ..core.safety_trace import SafetyTraceRecorder
 from ..core.runtime_traffic_safety import SafetyInvariantError
@@ -272,17 +273,28 @@ def _rollout_l1(
                     trace_recorder.record_post_step(env, trace_row, info)
             else:
                 actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
-                actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
-                requested_actions = {uid: action for uid, action in zip(ids, actions)}
+                batch = policy.act_details(actor_obs, actor_obs, deterministic=deterministic)
+                requested_actions = {uid: action for uid, action in zip(ids, batch.normalized)}
                 trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(
-                    env, observations, requested_actions, {uid: float(log_prob) for uid, log_prob in zip(ids, log_probs)}
+                    env, observations, requested_actions, {
+                        uid: {"joint": float(log_prob), "per_head": head_log_prob.tolist(),
+                              "categories": categories.tolist(),
+                              "action_v3": LowLevelActionV3.from_indices(categories).as_dict()}
+                        for uid, log_prob, head_log_prob, categories in zip(ids, batch.joint_log_prob, batch.head_log_prob, batch.categories)
+                    }
                 )
                 next_observations, rewards, terminated, truncated, info = env.step(requested_actions)
                 if trace_recorder is not None and trace_row is not None:
                     trace_recorder.record_post_step(env, trace_row, info)
                 for row_index, uid in enumerate(ids):
                     trace = info.get("action_traces", {}).get(uid, {})
-                    requested = np.asarray(trace.get("requested_low_action", actions[row_index]), dtype=np.float32)
+                    requested = np.asarray(trace.get("requested_low_action", batch.normalized[row_index]), dtype=np.float32)
+                    requested_categories = np.asarray(batch.categories[row_index], dtype=np.int64)
+                    # The environment must execute the exact requested V3
+                    # catalog value. Any mismatch would invalidate PPO ratio
+                    # provenance and is a hard failure before storing a row.
+                    if not np.array_equal(normalized_to_indices(requested), requested_categories):
+                        raise RuntimeError("PPO requested action differs from executed V3 catalog request")
                     requested_action_count += 1
                     saturation_counts += (np.abs(requested) >= 0.98).astype(int)
                     teacher = trace.get("teacher_corrected_action")
@@ -292,11 +304,13 @@ def _rollout_l1(
                     teacher_used = bool(trace.get("teacher_used", False))
                     shield_used = bool(trace.get("shield_used", False))
                     reward = float(rewards.get(uid, 0.0))
-                    rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,
-                                           float(log_probs[row_index]), value, reward,
+                    teacher_categories = None if teacher is None else normalized_to_indices(np.asarray(teacher, dtype=np.float32))
+                    rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested_categories,
+                                           float(batch.joint_log_prob[row_index]), batch.value, reward,
                                            bool(terminated.get(uid, False) or truncated.get(uid, False)),
-                                           None if teacher is None else np.asarray(teacher, dtype=np.float32),
-                                           None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used))
+                                           teacher_categories,
+                                           None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used,
+                                           requested, np.asarray(batch.head_log_prob[row_index], dtype=np.float32)))
                     reward_sum += reward
                     release_intents += int(requested[0] > config.release_threshold)
                     teacher_interventions += int(teacher_used)
@@ -306,7 +320,7 @@ def _rollout_l1(
                         correction_magnitude_sum += correction
                         correction_magnitudes.append(correction)
                         corrected = np.asarray(teacher, dtype=np.float32) if teacher is not None else requested
-                        names = ("release", "speed", "merge_time")
+                        names = HEAD_NAMES
                         teacher_correction_components.append(tuple(
                             name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
                         ) or ("hold_reject",))
@@ -547,6 +561,8 @@ def train_l1_full_teacher(
         "seed_partition": asdict(partition), "mu_hat": mu_hat, "medium_rate": medium_rate,
         "medium_interval": list(medium_range), "protocol": asdict(protocol),
         "environment": {"teacher": "FULL", "scheduler_mode": "teacher_full", "shield_enabled": True, "high_level_enabled": False,
+                        "low_level_action_schema": "low_intent_v3_factorized_discrete",
+                        "low_level_policy_distribution": "factorized_categorical", "action_head_cardinalities": [2, 5, 5],
                         "geometry": "nominal_fixed", "gate_probabilities": [0.25] * 4, "mission_probabilities": [1.0, 0.0, 0.0, 0.0], "initial_soc": 0.80,
                         "priority_mode": "fixed", "initial_priority": 1,
                         "finite_cohort_range": [8, 20], "warm_start_range": [8, 16], "warm_start_fraction": 0.60},

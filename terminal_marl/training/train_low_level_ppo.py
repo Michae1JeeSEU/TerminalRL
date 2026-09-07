@@ -7,6 +7,7 @@ import numpy as np
 from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import save_checkpoint
 from ..core.config import SimConfig
+from ..core.low_level_action import normalized_to_indices
 from ..core.observations import A5_OBSERVATION_SCHEMA, LOW_OBS_V2, observation_schema_for_version
 from ..envs.parallel_env import TerminalParallelEnv
 
@@ -35,7 +36,15 @@ def _episode(policy: SharedPPO, config: SimConfig, seed: int, buffer: RolloutBuf
             if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs: break
             continue
         actor_obs = np.stack([observations[key] for key in ids])
-        actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
+        if hasattr(policy, "act_details"):
+            batch = policy.act_details(actor_obs, actor_obs, deterministic=deterministic)
+            actions, log_probs, value = batch.normalized, batch.joint_log_prob, batch.value
+        else:  # archived rule adapters expose normalized V3 values only
+            actions, log_probs, value = policy.act(actor_obs, actor_obs, deterministic=deterministic)
+            categories = normalized_to_indices(actions)
+            from types import SimpleNamespace
+            batch = SimpleNamespace(categories=categories, normalized=actions, joint_log_prob=log_probs,
+                                    head_log_prob=np.zeros_like(actions, dtype=np.float32), value=value)
         action_map = {key: action for key, action in zip(ids, actions)}
         next_observations, rewards, terminated, truncated, info = env.step(action_map)
         for index, key in enumerate(ids):
@@ -43,10 +52,11 @@ def _episode(policy: SharedPPO, config: SimConfig, seed: int, buffer: RolloutBuf
             trace = info.get("action_traces", {}).get(key, {})
             teacher_action = trace.get("teacher_corrected_action")
             applied_action = trace.get("shield_applied_action") or trace.get("execution_applied_action")
-            if buffer is not None: buffer.add(Transition(key, actor_obs[index], actor_obs, actions[index], float(log_probs[index]), value, reward, done,
-                                                          None if teacher_action is None else np.asarray(teacher_action, np.float32),
+            if buffer is not None: buffer.add(Transition(key, actor_obs[index], actor_obs, batch.categories[index], float(log_probs[index]), value, reward, done,
+                                                          None if teacher_action is None else normalized_to_indices(np.asarray(teacher_action, np.float32)),
                                                           None if applied_action is None else np.asarray(applied_action, np.float32),
-                                                          bool(trace.get("teacher_used", False)), bool(trace.get("shield_used", False))))
+                                                          bool(trace.get("teacher_used", False)), bool(trace.get("shield_used", False)),
+                                                          actions[index], batch.head_log_prob[index]))
             episode_reward += reward
         action_values.extend(actions.tolist()); reward_components.extend(info["reward_components"].values())
         observations = next_observations

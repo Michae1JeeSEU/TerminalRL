@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .merge_scheduler import LowLevelIntent
+from .low_level_action import LowLevelActionV3
 
 
 @dataclass
@@ -27,6 +28,15 @@ class LowLevelActionTrace:
 
     def as_dict(self) -> dict:
         encode = lambda action: None if action is None else [action.release_request, action.speed_residual, action.merge_time_residual]
+        def v3(action):
+            if action is None:
+                return None
+            try:
+                return LowLevelActionV3.from_normalized(encode(action)).as_dict()
+            except ValueError:
+                # Archived continuous callers can still be inspected, but
+                # cannot be treated as an exact V3 policy/teacher label.
+                return {"legacy_continuous_action": encode(action)}
         return {
             "requested_low_action": encode(self.requested),
             "teacher_corrected_action": encode(self.teacher_corrected),
@@ -37,4 +47,8 @@ class LowLevelActionTrace:
             "teacher_witness_plan_id": self.teacher_witness_plan_id, "teacher_verified": self.teacher_verified,
             "shield_reason": self.shield_reason,
             "correction_magnitude": self.correction_magnitude,
+            "requested_action_v3": v3(self.requested),
+            "teacher_action_v3": v3(self.teacher_corrected),
+            "execution_action_v3": v3(self.execution_applied),
+            "shield_action_v3": v3(self.shield_applied),
         }

@@ -137,9 +137,12 @@ a_i^L = [r_i,\;\Delta v_i,\;\Delta t_i]
 
 分别表示：
 
-1. `release_request`：请求进入下一运行阶段；
-2. `speed_residual`：相对 nominal/rule speed 的有限速度修正；
-3. `merge_time_residual`：相对基准 merge schedule 的时间修正。
+1. `release_request`：二元 WAIT/RELEASE 请求；
+2. `speed_residual`：五级 normalized speed residual；
+3. `merge_time_residual`：五级 normalized merge-time residual。
+
+这是 factorized discrete MARL scheduling/request layer；飞行器执行仍是连续、
+受性能约束的 3D point-mass trajectory execution，而不是离散飞控。
 
 随后由：
 

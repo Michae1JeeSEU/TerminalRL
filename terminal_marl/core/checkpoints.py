@@ -2,6 +2,7 @@
 from __future__ import annotations
 from .config import SimConfig
 from .observations import observation_schema_for_version
+from .low_level_action import HEAD_CARDINALITIES
 import torch
 class IncompatibleCheckpointError(ValueError): pass
 def validate_checkpoint_metadata(metadata:dict, config:SimConfig|None=None)->None:
@@ -14,7 +15,9 @@ def validate_checkpoint_metadata(metadata:dict, config:SimConfig|None=None)->Non
               "vehicle_profile_version":c.vehicle_profile.profile_version,
               "action_schema_version":c.action_schema_version,"high_action_schema_version":c.high_action_schema_version,
               "observation_schema_version":c.observation_schema_version,"observation_dimension":schema.dimension,
-              "observation_feature_hash":schema.feature_hash}
+              "observation_feature_hash":schema.feature_hash,
+              "low_level_action_head_cardinalities": list(HEAD_CARDINALITIES),
+              "low_level_policy_distribution": "factorized_categorical"}
     mismatch={k:(metadata.get(k),v) for k,v in expected.items() if metadata.get(k)!=v}
     if mismatch:raise IncompatibleCheckpointError(f"incompatible checkpoint schema: {mismatch}")
 
@@ -29,6 +32,8 @@ def checkpoint_metadata(config: SimConfig | None = None, *, policy_kind: str = "
             "action_schema_version": c.action_schema_version, "high_action_schema_version": c.high_action_schema_version,
             "observation_schema_version": c.observation_schema_version, "observation_dimension": schema.dimension,
             "observation_feature_hash": schema.feature_hash, "low_level_action_dim": 3,
+            "low_level_action_head_cardinalities": list(HEAD_CARDINALITIES),
+            "low_level_policy_distribution": "factorized_categorical",
             "high_level_action_dim": 10, "high_level_enabled": c.high_level_enabled,
             "policy_kind": policy_kind, "low_level_checkpoint_hash": low_level_checkpoint_hash,
             "scheduler_mode": c.scheduler_mode, "teacher_enabled": c.teacher_enabled}
