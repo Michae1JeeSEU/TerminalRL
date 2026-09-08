@@ -106,7 +106,8 @@ def _replay_task(spec: dict) -> dict:
                        for index, uid in enumerate(ids)}
         probes = {
             uid: (_counterfactual_release(env, env.active[int(uid)], _intent(action))
-                  if eligibility[uid] and int(uid) in env.active else (None, "not_release_eligible"))
+                  if eligibility[uid] and action[0] <= config.release_threshold and int(uid) in env.active
+                  else (None, "native_release_trace" if action[0] > config.release_threshold else "not_release_eligible"))
             for uid, action in actions.items()
         }
         next_observations, _, terminated, truncated, info = env.step(actions)
