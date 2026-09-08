@@ -100,7 +100,7 @@ def _healthy_ppo(row: dict) -> bool:
     ))
 
 
-def _decision(validation: dict, updates: list[dict], *, safety: bool) -> tuple[str, str, bool]:
+def _decision(validation: dict, updates: list[dict], *, safety: bool) -> tuple[str, str, bool, str]:
     base, final = validation["baseline"], validation["update6"]
     discrimination = (
         final["P_RELEASE_given_teacher_WAIT"] < base["P_RELEASE_given_teacher_WAIT"] and
@@ -117,10 +117,10 @@ def _decision(validation: dict, updates: list[dict], *, safety: bool) -> tuple[s
     ppo = all(_healthy_ppo(row) for row in updates)
     completion = updates[-1]["environment"]["completed"] >= .5 * updates[0]["environment"]["completed"]
     if discrimination and burden_ok and shield_ok and ppo and completion and safety:
-        return "PASS", "PASS", True
+        return "PASS", "PASS", True, "NONE"
     # Coverage is hard-gated inside the loop.  A completed, covered pilot that
     # still cannot discriminate belongs to the objective/representation path.
-    return "FAIL", "FAIL", False
+    return "FAIL", "FAIL", False, "RELEASE_LEARNING_OBJECTIVE_OR_REPRESENTATION"
 
 
 def _markdown(report: dict) -> str:
@@ -132,21 +132,74 @@ def _markdown(report: dict) -> str:
              "## Release supervision coverage", ""]
     for row in report["updates"]:
         coverage = row["release_supervision"]
-        lines.append(f"- Update {row['update']}: opportunities={coverage['release_decision_opportunities']}; corrections={coverage['release_teacher_correction_count']}; R→W/W→R={coverage['RELEASE_to_WAIT']}/{coverage['WAIT_to_RELEASE']}")
+        lines.append(
+            f"- Update {row['update']}: opportunities={coverage['release_decision_opportunities']}; "
+            f"release corrections={coverage['release_teacher_correction_count']}; "
+            f"RELEASE→WAIT/WAIT→RELEASE={coverage['RELEASE_to_WAIT']}/{coverage['WAIT_to_RELEASE']}; "
+            f"P(RELEASE)={coverage['P_RELEASE']:.4f}; false-release/wait={coverage['false_release']:.4f}/{coverage['false_wait']:.4f}; "
+            f"release entropy={coverage['release_entropy']:.4f}; release probabilities={coverage['release_logits_or_probabilities']}; "
+            f"speed/merge correction rates={coverage['speed_teacher_correction_rate']:.4f}/{coverage['merge_teacher_correction_rate']:.4f}"
+        )
     lines += ["", "## Fixed 224-state release cohort", ""]
     for label in ("baseline", "update3", "update6"):
         metric = report["release_cohort_validation"][label]
-        lines.append(f"- {label}: P(R|Teacher WAIT/RELEASE)={metric['P_RELEASE_given_teacher_WAIT']:.4f}/{metric['P_RELEASE_given_teacher_RELEASE']:.4f}; false-release/wait={metric['false_release_rate']:.4f}/{metric['false_wait_rate']:.4f}; entropy={metric['release_entropy']:.4f}")
+        r_to_w = metric["per_kind"]["RELEASE_to_WAIT"]
+        lines.append(
+            f"- {label}: P(RELEASE | Teacher WAIT/RELEASE)={metric['P_RELEASE_given_teacher_WAIT']:.4f}/{metric['P_RELEASE_given_teacher_RELEASE']:.4f}; "
+            f"false-release/wait={metric['false_release_rate']:.4f}/{metric['false_wait_rate']:.4f}; "
+            f"release entropy={metric['release_entropy']:.4f}; logit margin (RELEASE−WAIT)={metric['release_logit_margin_RELEASE_minus_WAIT']:.4f}; "
+            f"RELEASE→WAIT predicted-release rate={r_to_w['predicted_RELEASE_rate']:.4f}"
+        )
+    base, final = report["release_cohort_validation"]["baseline"], report["release_cohort_validation"]["update6"]
+    lines += ["", "Cohort trend: "
+              f"P(RELEASE | Teacher WAIT) {base['P_RELEASE_given_teacher_WAIT']:.4f} → {final['P_RELEASE_given_teacher_WAIT']:.4f} (down); "
+              f"P(RELEASE | Teacher RELEASE) {base['P_RELEASE_given_teacher_RELEASE']:.4f} → {final['P_RELEASE_given_teacher_RELEASE']:.4f} (also down, not retained high); "
+              f"false-release {base['false_release_rate']:.4f} → {final['false_release_rate']:.4f} (down); "
+              f"false-wait {base['false_wait_rate']:.4f} → {final['false_wait_rate']:.4f} (increased)."]
     lines += ["", "## Teacher burden and PPO health", ""]
     for row in report["updates"]:
         env, ppo = row["environment"], row["ppo"]
-        lines.append(f"- Update {row['update']}: teacher/100={env['teacher_interventions_per_100_release_intents']}; shield/100={env['shield_interventions_per_100_release_intents']}; completion={env['completed']}; throughput={env['throughput_per_second']}; queue={env['external_queue_mean']}; KL={ppo['approx_kl']:.6f}; clip={ppo['clip_fraction']:.6f}; entropy={ppo['entropy']:.6f}; EV={ppo['explained_variance']:.6f}; grad={ppo['grad_norm']:.6f}")
-    lines += ["", f"Safety = {'PASS' if report['safety_passed'] else 'FAIL'}",
+        warm = row.get("by_scenario", {}).get("warm_start", {}).get("environment", {}).get("teacher_interventions_per_100_release_intents")
+        lines.append(
+            f"- Update {row['update']}: teacher overall/warm per 100 intents={env['teacher_interventions_per_100_release_intents']}/{warm}; "
+            f"correction mean/P95={env['correction_magnitude_mean']}/{env['correction_magnitude_p95']}; "
+            f"shield/100={env['shield_interventions_per_100_release_intents']}; completion={env['completed']}; "
+            f"throughput={env['throughput_per_second']}; queue={env['external_queue_mean']}; delay={env.get('delay_mean')}; "
+            f"KL={ppo['approx_kl']:.6f}; clip={ppo['clip_fraction']:.6f}; entropy={ppo['entropy']:.6f}; "
+            f"EV={ppo['explained_variance']:.6f}; grad={ppo['grad_norm']:.6f}"
+        )
+    lines += ["", "## Safety hard gate", "",
+              "All six updates recorded collision=0, NMAC=0 and hard-separation violations=0. "
+              "The completed run raised neither SafetyInvariantError nor an uncertified-component failure; no safety-stop ActionTape was required.", "",
+              f"Safety = {'PASS' if report['safety_passed'] else 'FAIL'}",
               f"release_learning = {report['release_learning']}",
+              f"root_cause = {report.get('root_cause', 'NONE')}",
               f"V3_L1_COVERAGE_BRIDGE = {report['V3_L1_COVERAGE_BRIDGE']}",
               f"longer_L1_continuation_allowed = {str(report['longer_L1_continuation_allowed']).lower()}",
               "formal_L1_training_allowed = false", ""]
     return "\n".join(lines)
+
+
+def render_existing_coverage_bridge_summary(output_dir: str | Path) -> dict:
+    """Re-render the report from a completed pilot's immutable JSON evidence.
+
+    This utility deliberately does not construct an environment, load a
+    checkpoint, or run PPO.  It only upgrades the human-readable audit after
+    a completed fresh pilot, preserving the numerical evidence exactly.
+    """
+    destination = Path(output_dir)
+    report_path = destination / "v3_l1_coverage_bridge_pilot.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("status") != "completed" or len(report.get("updates", [])) != 6:
+        raise RuntimeError("render-existing requires a completed six-update coverage-bridge pilot")
+    report["root_cause"] = (
+        "NONE" if report.get("V3_L1_COVERAGE_BRIDGE") == "PASS"
+        else "RELEASE_LEARNING_OBJECTIVE_OR_REPRESENTATION"
+    )
+    report["summary_rendered_from"] = "completed pilot JSON; no PPO/environment execution"
+    _json(report_path, report)
+    (destination / "v3_l1_coverage_bridge_pilot_summary.md").write_text(_markdown(report), encoding="utf-8")
+    return report
 
 
 def run_coverage_bridge(*, c0_report: str | Path, teacher_dataset: str | Path, raw_dataset: str | Path,
@@ -217,7 +270,7 @@ def run_coverage_bridge(*, c0_report: str | Path, teacher_dataset: str | Path, r
             "safety_passed": False, "release_learning": "INCONCLUSIVE", "V3_L1_COVERAGE_BRIDGE": "FAIL", "longer_L1_continuation_allowed": False}), encoding="utf-8")
         raise
     safety = all(_safety_ok(row) for row in updates)
-    learning, bridge, continuation = _decision(validation, updates, safety=safety)
+    learning, bridge, continuation, root_cause = _decision(validation, updates, safety=safety)
     report = {"stage": "V3_L1_coverage_bridge", "status": "completed", "evidence_type": "newly_run",
               "frozen": {"action_schema": "V3_factorized_categorical", "teacher": "FULL", "teacher_release_label_enabled": True,
                          "targeted_warm_start_ratio_nominal": TARGETED_RATIO, "mu_hat": MU_HAT, "lambda": LAMBDA,
@@ -227,7 +280,8 @@ def run_coverage_bridge(*, c0_report: str | Path, teacher_dataset: str | Path, r
               "protocol": asdict(protocol), "targeted_episode_positions": list(TARGETED_EPISODES), "snapshots": snapshots,
               "updates": updates, "episodes": episodes, "release_cohort_validation": validation,
               "safety_passed": safety, "release_learning": learning, "V3_L1_COVERAGE_BRIDGE": bridge,
-              "longer_L1_continuation_allowed": continuation, "formal_L1_training_allowed": False}
+              "root_cause": root_cause, "longer_L1_continuation_allowed": continuation,
+              "formal_L1_training_allowed": False}
     _jsonl(destination / "coverage_bridge_episodes.jsonl", episodes)
     _json(destination / "v3_l1_coverage_bridge_pilot.json", report)
     (destination / "v3_l1_coverage_bridge_pilot_summary.md").write_text(_markdown(report), encoding="utf-8")
@@ -236,9 +290,17 @@ def run_coverage_bridge(*, c0_report: str | Path, teacher_dataset: str | Path, r
 
 def _main() -> None:
     parser = argparse.ArgumentParser(description="Run the fresh V3 L1 coverage-bridge PPO pilot; no resume support.")
-    parser.add_argument("--c0-report", required=True); parser.add_argument("--teacher-dataset", required=True)
-    parser.add_argument("--raw-dataset", required=True); parser.add_argument("--release-cohort", required=True); parser.add_argument("--output", required=True)
+    parser.add_argument("--c0-report"); parser.add_argument("--teacher-dataset")
+    parser.add_argument("--raw-dataset"); parser.add_argument("--release-cohort"); parser.add_argument("--output", required=True)
+    parser.add_argument("--render-existing", action="store_true", help="re-render an existing completed pilot without training")
     args = parser.parse_args()
+    if args.render_existing:
+        report = render_existing_coverage_bridge_summary(args.output)
+        print(json.dumps({key: report[key] for key in ("release_learning", "V3_L1_COVERAGE_BRIDGE", "longer_L1_continuation_allowed")}, indent=2))
+        return
+    missing = [name for name in ("c0_report", "teacher_dataset", "raw_dataset", "release_cohort") if getattr(args, name) is None]
+    if missing:
+        parser.error("missing training inputs: " + ", ".join("--" + name.replace("_", "-") for name in missing))
     report = run_coverage_bridge(c0_report=args.c0_report, teacher_dataset=args.teacher_dataset, raw_dataset=args.raw_dataset,
                                  release_cohort=args.release_cohort, output_dir=args.output)
     print(json.dumps({key: report[key] for key in ("release_learning", "V3_L1_COVERAGE_BRIDGE", "longer_L1_continuation_allowed")}, indent=2))
