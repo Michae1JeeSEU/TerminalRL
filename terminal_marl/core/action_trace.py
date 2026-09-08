@@ -27,7 +27,7 @@ class LowLevelActionTrace:
             self.execution_applied = self.requested
 
     def as_dict(self) -> dict:
-        encode = lambda action: None if action is None else [action.release_request, action.speed_residual, action.merge_time_residual]
+        encode = lambda action: None if action is None else [float(action.release_request), float(action.speed_residual), float(action.merge_time_residual)]
         def v3(action):
             if action is None:
                 return None

@@ -213,7 +213,7 @@ def l1_full_teacher_config(
         fixed_arrival_schedule=schedule, total_requested_uavs=cohort_uavs if demand_model == "finite_cohort" else None,
         arrival_rate_per_second=medium_rate, max_simulation_seconds=horizon_seconds,
         max_active_uavs=32, scheduler_mode="teacher_full", teacher_enabled=True,
-        teacher_mode="teacher_full", shield_enabled=True,
+        teacher_mode="teacher_full", teacher_release_label_enabled=True, shield_enabled=True,
         initial_soc_mode="fixed", initial_soc=0.80,
         priority_mode="fixed", initial_priority=1,
         gate_probabilities=(0.25, 0.25, 0.25, 0.25),

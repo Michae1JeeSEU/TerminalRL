@@ -138,6 +138,7 @@ class SimConfig:
     scheduler_mode: str = "execution"
     teacher_enabled: bool = False
     teacher_mode: str = "teacher_full"
+    teacher_release_label_enabled: bool = False
     # Deprecated compatibility knob for archived A6 audits.  New code must
     # select an explicit scheduler mode instead.
     repair_aware_scheduler: bool = False
