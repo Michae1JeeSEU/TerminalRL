@@ -27,8 +27,12 @@ from .train_low_v2_ppo import _episode_design, l1_full_teacher_config
 
 
 RATIOS = (.10, .20, .30)
-EPISODES_PER_RATIO = 40
-MAX_STEPS = 120
+# This is a coverage *preflight*, not a performance pilot.  The initial
+# release decision is the qualified target state, so one tick is the smallest
+# faithful SafetyFilter/Teacher witness.  Completion/throughput are reported
+# as one-tick diagnostics only, never treated as performance evidence.
+EPISODES_PER_RATIO = 12
+MAX_STEPS = 1
 TARGET_KINDS = ("RELEASE_to_WAIT", "WAIT_to_RELEASE", "correct_RELEASE", "correct_WAIT")
 
 
