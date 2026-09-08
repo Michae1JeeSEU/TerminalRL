@@ -99,9 +99,15 @@ def _replay_task(spec: dict) -> dict:
         actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
         batch = policy.act_details(actor_obs, actor_obs, deterministic=False)
         actions = {uid: action for uid, action in zip(ids, batch.normalized)}
+        # Counterfactual labels are required only for B/C's *legal* release
+        # decision events.  Probing phase-masked rows is both semantically
+        # irrelevant and unnecessarily expensive in dense traffic.
+        eligibility = {uid: bool(actor_obs[index, LOW_OBS_V2.slices["release_eligible"].start] > .5)
+                       for index, uid in enumerate(ids)}
         probes = {
-            uid: _counterfactual_release(env, env.active[int(uid)], _intent(action))
-            for uid, action in actions.items() if int(uid) in env.active
+            uid: (_counterfactual_release(env, env.active[int(uid)], _intent(action))
+                  if eligibility[uid] and int(uid) in env.active else (None, "not_release_eligible"))
+            for uid, action in actions.items()
         }
         next_observations, _, terminated, truncated, info = env.step(actions)
         for index, uid in enumerate(ids):
@@ -117,7 +123,7 @@ def _replay_task(spec: dict) -> dict:
             full_index = int(normalized_to_indices(np.asarray((full_teacher.release_request, full_teacher.speed_residual,
                                                                 full_teacher.merge_time_residual), dtype=np.float32))[0])
             observation = actor_obs[index].copy()
-            eligible = bool(observation[LOW_OBS_V2.slices["release_eligible"].start] > .5)
+            eligible = eligibility[uid]
             records.append({
                 "update": spec["update"], "episode": spec["episode"], "seed": seed, "source": spec["source"],
                 "tick": tick, "uid": str(uid), "phase": int(np.argmax(observation[LOW_OBS_V2.slices["phase"]])),
