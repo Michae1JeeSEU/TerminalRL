@@ -84,9 +84,8 @@ def test_safety_sampling_witness_keeps_shield_trigger(sampling_dt: float):
     try:
         shield.protect(env, {holder.uid: LowLevelIntent(0.0, 0.0, 0.0)})
     except SafetyInvariantError:
-        # The current Safety Closure contract blocks physics when no bounded
-        # joint backup exists.  A certified intervention and fail-closed are
-        # both valid outcomes for this deliberately unrecoverable witness.
+        # A deliberately unrecoverable witness is valid only when the
+        # fail-closed Safety Closure contract blocks physics.
         pass
     assert shield.telemetry["shield_fail_closed"] + shield.telemetry["shield_interventions"] >= 1
 

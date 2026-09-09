@@ -1,6 +1,6 @@
 schema_version: phaseA_landing_v1
 airspace_schema_version: three_ring_v1
-action_schema_version: low_intent_v1_3d
+action_schema_version: low_action_schema_v4_joint_discrete
 observation_schema_version: phaseA_low_obs_v2_topology_87d
 high_level_enabled: false
 shield_enabled: true

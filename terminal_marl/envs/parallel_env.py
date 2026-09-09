@@ -59,8 +59,11 @@ class TerminalParallelEnv:
     def agents(self) -> list[str]:
         return [str(uid) for uid in self.active]
 
-    def action_spec(self, _agent: str | None = None) -> tuple[int]:
-        return (3,)
+    def action_spec(self, _agent: str | None = None) -> dict[str, tuple[int, ...]]:
+        """One V4 joint scheduling category; execution still receives its decode."""
+        if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
+            return {"joint_action": (30,)}
+        return {"release": (2,), "speed_residual": (5,), "merge_time_residual": (5,)}
 
     def set_step_observer(self, observer: Callable[["TerminalParallelEnv"], None] | None) -> None:
         """Register an optional post-tick observer without changing step semantics."""
@@ -334,6 +337,36 @@ class TerminalParallelEnv:
         verdict = self.safety.filter_plan(plan, committed, snapshot)
         return proposal, plan, None if verdict.approved else verdict.reason
 
+    def _teacher_counterfactual_release(self, uav: UAVState, requested: LowLevelIntent) -> tuple[LowLevelIntent | None, str]:
+        """Read-only, SafetyFilter-certified teacher label for a WAIT request."""
+        if uav.committed_plan is not None or self.now < uav.safety_retry_after: return None, "phase_or_retry_mask"
+        if uav.phase is FlightPhase.RING_OUTER: target, interface = RingRole.MIDDLE, "o2m"
+        elif uav.phase is FlightPhase.RING_MIDDLE: target, interface = RingRole.INNER, "m2i"
+        elif uav.phase is FlightPhase.RING_INNER: target, interface = "final", "i2f"
+        else: return None, "phase_or_retry_mask"
+        if interface in self.airspace.affected_interfaces(): return None, "geometry_frozen"
+        lz_id = None
+        if target == "final":
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity: return None, "final_capacity"
+            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+            if lz_id is None: return None, "lz_unavailable"
+        intent = LowLevelIntent(1.0, float(requested.speed_residual), float(requested.merge_time_residual))
+        for candidate in self.teacher_scheduler.candidates(intent):
+            if candidate.delay_seconds: continue
+            proposal, plan, reason = self._candidate_plan(uav, candidate, target, WorldSnapshot(self.now, self.active, self.airspace), lz_id)
+            if proposal is not None and plan is not None and reason is None: return candidate.intent, "counterfactual_safe_release"
+        return None, "no_certified_release"
+
+    @staticmethod
+    def _teacher_release_label(requested: LowLevelIntent, probe: tuple[LowLevelIntent | None, str], trace: LowLevelActionTrace, decision: str) -> tuple[LowLevelIntent, str]:
+        if requested.release_request <= 0.0:
+            candidate, reason = probe
+            return (candidate, reason) if candidate is not None else (requested, reason)
+        current = trace.teacher_corrected or requested
+        blocked = {"plan_active", "phase_masked", "geometry_frozen", "soc", "safety_wait", "safety_reject", "headway_conflict", "final_capacity", "lz_unavailable", "lz_reservation_reject"}
+        current = LowLevelIntent(float(current.release_request), float(current.speed_residual), float(current.merge_time_residual))
+        return (LowLevelIntent(0.0, current.speed_residual, current.merge_time_residual), f"release_to_wait:{decision}") if decision in blocked else (current, trace.teacher_kind or "teacher_identity")
+
     def _forecast_future_repair(self, uav: UAVState, target: RingRole | str, phase: FlightPhase,
                                 candidates: tuple[RepairCandidate, ...]) -> dict | None:
         """Find a future slot with a minimal active-traffic forecast world."""
@@ -454,7 +487,37 @@ class TerminalParallelEnv:
         for uid, uav in self.active.items():
             plan = uav.committed_plan
             if plan is not None:
-                expected[uid] = plan.sample(min(self.now + self.config.dt, plan.end_time)).position.copy()
+                target_time = min(self.now + self.config.dt, plan.end_time)
+                endpoint = plan.sample(target_time)
+                # A canonical transfer may end within this control interval.
+                # Continue its post-handoff nominal ring motion for the
+                # remaining fraction, exactly as SafetyFilter's
+                # ``_post_plan_positions`` does.  Stopping at the endpoint
+                # until the next tick created an unmodelled 0--dt hold.
+                target_name = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(
+                    plan.metadata.get("target_phase")
+                )
+                remaining = max(0.0, self.now + self.config.dt - plan.end_time)
+                if target_name is None or remaining <= 1e-9:
+                    expected[uid] = endpoint.position.copy()
+                    continue
+                role = next((item for item in RingRole if item.value == target_name), None)
+                if role is None:
+                    expected[uid] = endpoint.position.copy()
+                    continue
+                ring = self.airspace.actual_ring(role)
+                theta = math.atan2(endpoint.position[1], endpoint.position[0])
+                speed = float(np.linalg.norm(endpoint.velocity[:2]))
+                target = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias,
+                                       self.config.speed_min, self.config.max_speed))
+                position = endpoint.position.copy()
+                elapsed = 0.0
+                while elapsed < remaining - 1e-9:
+                    dt = min(self.config.physics_dt, remaining - elapsed)
+                    motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target, dt)
+                    theta, speed, position = motion.theta, motion.speed, motion.position
+                    elapsed += dt
+                expected[uid] = np.asarray(position, dtype=float)
                 continue
             intent = intents.get(uid)
             if uav.ring_role is None or intent is None:
@@ -519,14 +582,15 @@ class TerminalParallelEnv:
         uav.committed_plan = None
         uav.trajectory_plan_id = None
         target = plan.metadata["target_phase"]
+        completion_time = float(plan.end_time)
         if target == "ring_outer":
-            transition(uav, FlightPhase.RING_OUTER, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_OUTER, completion_time)
             uav.ring_role = RingRole.OUTER
         elif target == "ring_middle":
-            transition(uav, FlightPhase.RING_MIDDLE, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_MIDDLE, completion_time)
             uav.ring_role = RingRole.MIDDLE
         elif target == "ring_inner":
-            transition(uav, FlightPhase.RING_INNER, self.now + self.config.dt)
+            transition(uav, FlightPhase.RING_INNER, completion_time)
             uav.ring_role = RingRole.INNER
         elif target == "landing":
             transition(uav, FlightPhase.LANDING, self.now + self.config.dt)
@@ -542,9 +606,17 @@ class TerminalParallelEnv:
         radial = np.asarray((-math.cos(uav.ring_progress), -math.sin(uav.ring_progress), 0.0), dtype=float)
         uav.velocity = tangent * uav.speed
         uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
+        # The plan may have completed between executor ticks.  Advance the
+        # remainder under the canonical nominal holder policy rather than
+        # freezing at the endpoint.  The action for this tick belonged to the
+        # already committed transfer; a fresh residual is considered only on
+        # the next control tick by the Shield.
+        remaining = max(0.0, self.now + self.config.dt - completion_time)
+        if remaining > 1e-9:
+            distance += self._advance_ring_hold(uav, LowLevelIntent(0.0, 0.0, 0.0), duration=remaining)
         return distance, False
 
-    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent) -> float:
+    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent, *, duration: float | None = None) -> float:
         if uav.ring_role is None or uav.committed_plan is not None:
             return 0.0
         ring = self.airspace.actual_ring(uav.ring_role)
@@ -555,10 +627,11 @@ class TerminalParallelEnv:
             ring.nominal_speed + self.airspace.speed_profile_bias + intent.speed_residual * self.config.max_speed_residual_mps,
             self.config.speed_min, self.config.max_speed,
         ))
+        duration = self.config.dt if duration is None else float(duration)
         theta, speed = theta0, max(0.0, uav.speed)
         elapsed, distance = 0.0, 0.0
-        while elapsed < self.config.dt - 1e-9:
-            step = min(self.config.physics_dt, self.config.dt - elapsed)
+        while elapsed < duration - 1e-9:
+            step = min(self.config.physics_dt, duration - elapsed)
             before = uav.position.copy()
             motion = self.generator.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
             theta, speed = motion.theta, motion.speed
@@ -568,8 +641,8 @@ class TerminalParallelEnv:
             elapsed += step
         uav.ring_progress = theta % (2 * math.pi)
         uav.path_length += distance
-        uav.internal_wait_time += self.config.dt
-        uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + self.config.dt
+        uav.internal_wait_time += duration
+        uav.holding_time_by_ring[uav.ring_role] = uav.holding_time_by_ring.get(uav.ring_role, 0.0) + duration
         return distance
 
     def _release_legacy(self, uav: UAVState, intent: LowLevelIntent) -> str:
@@ -671,7 +744,15 @@ class TerminalParallelEnv:
                 self._finish_release_intent(uav, row, "lz_unavailable")
                 return "lz_unavailable"
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
-        candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
+        # V4 changes the learning target, not the deployment authority.  The
+        # policy supplies exactly one decoded joint intention and runtime may
+        # certify or reject that one proposal, but may not search a catalogue
+        # on the policy's behalf.  Training-only V4 labels use
+        # ``TeacherScheduler.choose_joint_verified`` outside this method.
+        if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
+            candidates = (RepairCandidate("requested", intent),)
+        else:
+            candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
         # The immediate phase is deliberately closed before future-delay
         # forecasting.  Delayed candidates already contain a source-holder
         # prefix, so generating every one here used to repeat full canonical
@@ -774,6 +855,11 @@ class TerminalParallelEnv:
             self.completed_uavs.append(uav)
             self.events.append(("completed", uid, self.now + self.config.dt))
         pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
+        teacher_probes = {
+            uid: self._teacher_counterfactual_release(uav, LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0]))))
+            for uid, uav in self.active.items()
+            if self.config.teacher_release_label_enabled and self.config.teacher_enabled and self.config.teacher_mode == "teacher_full" and actions.get(str(uid), np.array([1.0, 0.0, 0.0]))[0] <= self.config.release_threshold
+        }
         for uid, uav in list(self.active.items()):
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
             intents[uid] = intent; traces[uid] = LowLevelActionTrace(requested=intent); self.priority.update(uav, self.now)
@@ -791,6 +877,14 @@ class TerminalParallelEnv:
                 traces[uid].teacher_verified = traces[uid].teacher_witness_plan_id is not None
                 traces[uid].correction_magnitude = abs(corrected.speed_residual-intent.speed_residual) + abs(corrected.merge_time_residual-intent.merge_time_residual)
                 rewards.setdefault(uid, LowLevelReward()).teacher -= self.config.teacher_intervention_penalty + self.config.teacher_correction_magnitude_penalty * traces[uid].correction_magnitude
+            if self.config.teacher_release_label_enabled and self.config.teacher_enabled and self.config.teacher_mode == "teacher_full":
+                label, label_kind = self._teacher_release_label(intent, teacher_probes.get(uid, (None, "not_requested")), traces[uid], decision)
+                if label != intent:
+                    # Teacher preference is a training label, deliberately
+                    # independent of execution_applied and shield_applied.
+                    traces[uid].teacher_corrected = label; traces[uid].teacher_used = True
+                    traces[uid].teacher_kind = label_kind; traces[uid].teacher_verified = True
+                    traces[uid].correction_magnitude = float(abs(label.release_request-intent.release_request) + abs(label.speed_residual-intent.speed_residual) + abs(label.merge_time_residual-intent.merge_time_residual))
             pending = self.future_release_reservations.get(uid)
             if pending is not None and decision in {"future_reserved", "future_reservation_wait"}:
                 # This is the source-holder portion of the future canonical

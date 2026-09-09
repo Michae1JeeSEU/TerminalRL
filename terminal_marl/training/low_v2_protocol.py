@@ -39,8 +39,8 @@ def phase_config(base: SimConfig, phase: TeacherPhase) -> SimConfig:
 def validate_low_v2_config(config: SimConfig, *, for_training: bool) -> None:
     if config.observation_schema_version != "phaseA_low_obs_v2_topology_87d":
         raise ValueError("A5-v2 requires the canonical 87D topology observation")
-    if config.action_schema_version != "low_intent_v1_3d":
-        raise ValueError("A5-v2 requires exactly the canonical 3D intention action")
+    if config.action_schema_version not in {"low_intent_v3_factorized_discrete", "low_action_schema_v4_joint_discrete"}:
+        raise ValueError("low-level action schema must be an explicitly versioned discrete catalogue")
     if not config.shield_enabled:
         raise ValueError("A5-v2 requires PredictiveSafetyShield enabled")
     if for_training and config.scheduler_mode == "execution":

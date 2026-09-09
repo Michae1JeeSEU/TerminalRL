@@ -73,9 +73,11 @@ class MergeScheduler:
     def repair_candidates(self, requested: LowLevelIntent) -> tuple[RepairCandidate, ...]:
         """Minimum-intervention ordering over the existing ±6 s / ±2 m/s authority.
 
-        The finite endpoints match the frozen-state audit witnesses.  A
-        candidate remains an ordinary three-dimensional low-level intention;
-        no geometric or free-flight command is introduced here.
+        Candidate repairs retain the established endpoint authority; the
+        requested V3 level is included unchanged. TeacherScheduler quantizes
+        every candidate to the V3 catalogue before it becomes a label. This
+        preserves the qualified search scope and avoids silently multiplying
+        safety-search cost by all 5×5 combinations.
         """
         values = (-1.0, 1.0)
         rows: list[RepairCandidate] = [RepairCandidate("requested", requested)]

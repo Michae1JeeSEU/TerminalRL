@@ -347,7 +347,9 @@ class LandingZoneManager:
 
 ## 12. Low-level action mapping
 
-输入 shape：`(3,)`。canonical order：
+Execution adapter input shape remains `(3,)`; V4 policy input is one joint
+categorical index over 30 non-duplicated scheduling intentions. The decoder's
+canonical order is:
 
 ```text
 [release_request, speed_residual, merge_time_residual]
@@ -356,7 +358,7 @@ class LandingZoneManager:
 mapper：
 
 ```python
-release_requested = raw[0] > release_threshold
+release_requested = release_category == RELEASE
 delta_v = raw[1] * max_speed_residual_mps
 delta_t = raw[2] * max_merge_time_residual_seconds
 ```
@@ -368,7 +370,7 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 ## 13. Per-agent action spec
 
 ```python
-Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+{"joint_action": Discrete(30)}
 ```
 
 环境按 agent 返回 action spec：
@@ -381,10 +383,13 @@ actions: dict[str, np.ndarray]
 
 ```text
 batch_obs    = (N_active, d_obs)
-batch_action = (N_active, 3)
+batch_joint_action = (N_active,)         # requested V4 joint index
+batch_action_normalized = (N_active, 3)  # execution adapter values
 ```
 
-不是一个 `Box(max_n,3)` 的全局策略动作。
+WAIT keeps five speed variants and fixes merge to zero; RELEASE has five speed
+by five merge variants. PPO and BC use the requested/Teacher joint index,
+respectively; execution or shield actions never enter PPO ratios.
 
 ---
 
@@ -828,10 +833,12 @@ no deadlock
 定义：
 
 ```text
-action_schema_version = low_intent_v1_3d
+action_schema_version = low_action_schema_v4_joint_discrete
 high_action_schema_version = high_airspace_v1_10d
-observation_schema_version = phaseA_obs_v1
+observation_schema_version = phaseA_low_obs_v2_topology_87d
 airspace_schema_version = three_ring_v1
+low_level_joint_action_count = 30
+low_level_policy_distribution = joint_categorical
 ```
 
 checkpoint metadata 不匹配：

@@ -14,6 +14,7 @@ import argparse
 from collections.abc import Mapping
 from enum import Enum
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ import torch
 
 from ..algo import SharedPPO
 from ..core.checkpoints import load_checkpoint
+from ..core.runtime_traffic_safety import SafetyInvariantError
 from ..envs.parallel_env import TerminalParallelEnv
 from .train_low_v2_ppo import (
     L1_VALIDATION_SCENARIO_INDICES, _episode_design, _read_frozen_capacity,
@@ -33,7 +35,7 @@ def _json(value: Any) -> Any:
     if isinstance(value, np.ndarray):
         return value.tolist()
     if isinstance(value, np.generic):
-        return value.item()
+        return _json(value.item())
     if isinstance(value, Enum):
         return value.value
     if is_dataclass(value):
@@ -42,7 +44,12 @@ def _json(value: Any) -> Any:
         return {str(key): _json(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_json(item) for item in value]
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if isinstance(value, float):
+        # ``inf`` is a valid in-memory representation for a disjoint
+        # predicted pair but is not legal JSON.  Preserve its semantics as a
+        # null optional metric rather than losing a completed replay.
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, int, bool)):
         return value
     return repr(value)
 
@@ -63,6 +70,10 @@ def _conflict_classification(states: list[dict], pair: tuple[int, int]) -> str:
     if labels == {"holder", "committed"}: return "holder-committed"
     if labels == {"committed"}: return "committed-committed"
     if labels == {"committed", "final"}: return "transfer-final"
+    # A final-approach plan is the final leg of a committed transfer.  The
+    # closure taxonomy has no separate final-holder label, so retain the
+    # operationally meaningful transfer-final bucket rather than "other".
+    if labels == {"holder", "final"}: return "transfer-final"
     if labels == {"final"}: return "final-final"
     return "other"
 
@@ -104,7 +115,20 @@ def _run(
         tape.append({key: value.tolist() for key, value in actions.items()})
         pre_states = [_json(env._uav_trace(uav)) for uav in env.active.values()]
         risk = env.runtime_traffic.assess(env)
-        observations, _, _, _, info = env.step(actions)
+        try:
+            observations, _, _, _, info = env.step(actions)
+        except SafetyInvariantError as error:
+            # A blocked physics tick is a fail-closed safety regression, not
+            # a zero-violation pass.  Preserve its exact requested action and
+            # pre-state so it can be repaired without ever executing it.
+            first = {"event": {"kind": "safety_invariant_blocked", "message": str(error)},
+                     "step": index, "time": float(env.now), "pair": (), "classification": "other",
+                     "cpa": {"d_cpa": None, "t_cpa": None}}
+            ticks.append({"step": index, "time": float(env.now), "pre_active": pre_states,
+                          "a_requested": tape[-1], "safety_invariant_blocked": str(error),
+                          "certification_diagnostic": _json(error.diagnostic),
+                          "reservations": _json(env.scheduler.reservations), "release_state": _json(env.release_intents)})
+            break
         pre_by_uid = {str(row["uid"]): row for row in pre_states}
         execution_error_series = [
             {"uid": int(uid), "error_norm": float(value),
@@ -140,10 +164,10 @@ def _run(
         witness_ticks: list[dict] = []
     else:
         witness_ticks = [row for row in ticks if first["time"] - 30.0 <= row["time"] <= first["time"] + 30.0]
-    errors = [item["error_norm"] for row in witness_ticks for item in row["prediction_execution_error_series"]]
+    errors = [item["error_norm"] for row in witness_ticks for item in row.get("prediction_execution_error_series", [])]
     by_kind = {}
     for kind in ("holder", "committed", "other"):
-        values = [item["error_norm"] for row in witness_ticks for item in row["prediction_execution_error_series"]
+        values = [item["error_norm"] for row in witness_ticks for item in row.get("prediction_execution_error_series", [])
                   if item["trajectory_kind"] == kind]
         by_kind[kind] = {"samples": len(values), "max": None if not values else float(max(values)),
                          "mean": None if not values else float(np.mean(values)),
@@ -151,6 +175,7 @@ def _run(
     result = {
         "seed": seed, "safety_sampling_dt": config.safety_sampling_dt, "steps": len(ticks),
         "telemetry": _json(env.telemetry), "first_violation": first,
+        "safety_invariant_blocked": bool(first and first["event"].get("kind") == "safety_invariant_blocked"),
         "prediction_execution_error": {"samples": len(errors), "max": None if not errors else float(max(errors)),
                                          "mean": None if not errors else float(np.mean(errors)), "series": [float(value) for value in errors]},
         "prediction_execution_error_by_trajectory": by_kind,
@@ -159,45 +184,60 @@ def _run(
     return result, tape
 
 
-def qualify_warm_starts(policy: SharedPPO, *, medium_rate: float, seeds: tuple[int, ...], horizon_seconds: float = 60.0) -> list[dict]:
-    """Qualify unseen warm starts under nominal and adversarial executable actions."""
-    records: list[dict] = []
+def _qualify_warm_start(task: tuple[float, int, int, str, float]) -> dict:
+    """One independent qualification script; safe to execute in a worker."""
+    medium_rate, seed, cohort, script, horizon_seconds = task
+    config = l1_full_teacher_config(medium_rate=medium_rate, reset_mode="warm_start_rings", demand_model="finite_cohort",
+                                    warm_start_uavs=cohort, cohort_uavs=cohort, horizon_seconds=horizon_seconds)
+    env = TerminalParallelEnv(config); observations, _ = env.reset(seed)
+    positions = [uav.position for uav in env.active.values()]
+    distances = [float(np.linalg.norm(left - right)) for offset, left in enumerate(positions) for right in positions[offset + 1:]]
+    initial_margin = float("inf") if not distances else min(distances)
+    teacher = shield = 0
+    for step in range(int(horizon_seconds / config.dt)):
+        actions = {}
+        for position, uid in enumerate(sorted(observations, key=int)):
+            sign = 1.0 if (position + step) % 2 == 0 else -1.0
+            if script == "nominal_noop": action = (0.0, 0.0, 0.0)
+            elif script == "all_speed_plus": action = (0.0, 1.0, 0.0)
+            elif script == "all_speed_minus": action = (0.0, -1.0, 0.0)
+            elif script in {"alternating", "neighbour_opposite"}: action = (0.0, sign, 0.0)
+            elif script == "multiple_aggressive_release": action = (1.0, sign, 1.0)
+            else: action = (1.0, sign, -1.0 if step % 2 else 1.0)
+            actions[uid] = np.asarray(action, dtype=np.float32)
+        observations, _, _, _, info = env.step(actions)
+        teacher += sum(int(bool(row["teacher_used"])) for row in info["action_traces"].values())
+        shield += sum(int(bool(row["shield_used"])) for row in info["action_traces"].values())
+    safety = {key: int(env.telemetry.get(key, 0)) for key in ("collisions", "nmac", "hard_separation_violations")}
+    nominal = script == "nominal_noop"
+    return {"seed": seed, "warm_start_uavs": cohort, "script": script,
+            "initial_min_separation": initial_margin, "required_min_separation": 1.2 * config.safe_distance,
+            "teacher_interventions": teacher, "shield_interventions": shield, "safety": safety,
+            "passed": not any(safety.values()) and (not nominal or
+                      (initial_margin >= 1.2 * config.safe_distance and teacher == shield == 0))}
+
+
+def qualify_warm_starts(policy: SharedPPO, *, medium_rate: float, seeds: tuple[int, ...], horizon_seconds: float = 60.0,
+                        workers: int = 10) -> list[dict]:
+    """Qualify 35 independent warm starts in parallel without changing scripts."""
+    del policy  # Qualification uses fixed executable action scripts, not PPO inference.
     cohorts = (8, 10, 12, 14, 16)
     scripts = ("nominal_noop", "all_speed_plus", "all_speed_minus", "alternating", "neighbour_opposite",
                "multiple_aggressive_release", "repeated_release")
-    for index, cohort in enumerate(cohorts):
-        seed = seeds[index % len(seeds)]
-        config = l1_full_teacher_config(medium_rate=medium_rate, reset_mode="warm_start_rings", demand_model="finite_cohort",
-                                        warm_start_uavs=cohort, cohort_uavs=cohort, horizon_seconds=horizon_seconds)
-        env = TerminalParallelEnv(config); observations, _ = env.reset(seed)
-        positions = [uav.position for uav in env.active.values()]
-        distances = [float(np.linalg.norm(left - right)) for offset, left in enumerate(positions) for right in positions[offset + 1:]]
-        initial_margin = float("inf") if not distances else min(distances)
-        for script in scripts:
-            env = TerminalParallelEnv(config); observations, _ = env.reset(seed)
-            teacher = shield = 0
-            for step in range(int(horizon_seconds / config.dt)):
-                actions = {}
-                for position, uid in enumerate(sorted(observations, key=int)):
-                    sign = 1.0 if (position + step) % 2 == 0 else -1.0
-                    if script == "nominal_noop": action = (0.0, 0.0, 0.0)
-                    elif script == "all_speed_plus": action = (0.0, 1.0, 0.0)
-                    elif script == "all_speed_minus": action = (0.0, -1.0, 0.0)
-                    elif script in {"alternating", "neighbour_opposite"}: action = (0.0, sign, 0.0)
-                    elif script == "multiple_aggressive_release": action = (1.0, sign, 1.0)
-                    else: action = (1.0, sign, -1.0 if step % 2 else 1.0)
-                    actions[uid] = np.asarray(action, dtype=np.float32)
-                observations, _, _, _, info = env.step(actions)
-                teacher += sum(int(bool(row["teacher_used"])) for row in info["action_traces"].values())
-                shield += sum(int(bool(row["shield_used"])) for row in info["action_traces"].values())
-            safety = {key: int(env.telemetry.get(key, 0)) for key in ("collisions", "nmac", "hard_separation_violations")}
-            nominal = script == "nominal_noop"
-            records.append({"seed": seed, "warm_start_uavs": cohort, "script": script,
-                            "initial_min_separation": initial_margin, "required_min_separation": 1.2 * config.safe_distance,
-                            "teacher_interventions": teacher, "shield_interventions": shield, "safety": safety,
-                            "passed": not any(safety.values()) and (not nominal or
-                                      (initial_margin >= 1.2 * config.safe_distance and teacher == shield == 0))})
-    return records
+    tasks = [(medium_rate, seeds[index % len(seeds)], cohort, script, horizon_seconds)
+             for index, cohort in enumerate(cohorts) for script in scripts]
+    with ProcessPoolExecutor(max_workers=min(workers, len(tasks)), mp_context=mp.get_context("spawn")) as executor:
+        records = list(executor.map(_qualify_warm_start, tasks))
+    return sorted(records, key=lambda row: (row["warm_start_uavs"], row["script"]))
+
+
+def _replay_action_tape(task: tuple[str, object, int, int, list[dict[str, list[float]]]]) -> tuple[str, dict]:
+    """Replay one fixed action tape at a requested sampling interval in isolation."""
+    checkpoint, config, seed, max_steps, tape = task
+    torch.set_num_threads(1)
+    policy = SharedPPO(87); load_checkpoint(checkpoint, policy, config); policy.model.eval()
+    result, _ = _run(policy, config, seed, max_steps, action_tape=tape)
+    return str(config.safety_sampling_dt), result
 
 
 def run_l1_safety_diagnostic(*, checkpoint: str | Path, c0_report: str | Path, teacher_dataset: str | Path,
@@ -209,10 +249,12 @@ def run_l1_safety_diagnostic(*, checkpoint: str | Path, c0_report: str | Path, t
     policy = SharedPPO(87); load_checkpoint(checkpoint, policy, config); policy.model.eval()
     baseline, tape = _run(policy, config, seed, max_steps)
     dt_results = {"1.0": baseline}
-    for dt in (0.5, 0.2):
-        dt_results[str(dt)], _ = _run(policy, replace(config, safety_sampling_dt=dt), seed, max_steps, action_tape=tape)
+    replay_tasks = [(str(checkpoint), replace(config, safety_sampling_dt=dt), seed, max_steps, tape) for dt in (0.5, 0.2)]
+    with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as executor:
+        for dt, result in executor.map(_replay_action_tape, replay_tasks):
+            dt_results[dt] = result
     partition = _read_seed_partition(teacher_dataset)
-    warm = qualify_warm_starts(policy, medium_rate=medium_rate, seeds=tuple(partition.qualification))
+    warm = qualify_warm_starts(policy, medium_rate=medium_rate, seeds=tuple(partition.qualification), workers=10)
     payload = {"stage": "L1-S", "checkpoint": str(checkpoint), "checkpoint_status": "diagnostic_failed_training_safety_v2",
                "config": {**asdict(config), "rings": {role.value: asdict(spec) for role, spec in config.rings.items()}},
                "scenario": design, "fixed_priority": {"mode": config.priority_mode, "initial_priority": config.initial_priority},
@@ -267,11 +309,15 @@ def _replay_training_failure(args: tuple[str, float, int, dict]) -> dict:
 
 
 def replay_all_training_failures(*, checkpoint: str | Path, c0_report: str | Path, training_metrics: str | Path,
-                                 output_dir: str | Path, max_steps: int = 1200, workers: int = 4) -> dict:
+                                 output_dir: str | Path, max_steps: int = 1200, workers: int = 4,
+                                 witness_seeds: tuple[int, ...] | None = None) -> dict:
     """Run all persisted unsafe L1 scenarios as explicit reconstructed witnesses."""
     destination = Path(output_dir); destination.mkdir(parents=True, exist_ok=True)
     _, medium = _read_frozen_capacity(c0_report)
     historical = _training_failure_rows(training_metrics)
+    if witness_seeds is not None:
+        selected = {int(seed) for seed in witness_seeds}
+        historical = [row for row in historical if int(row["seed"]) in selected]
     tasks = [(str(checkpoint), 0.5 * sum(medium), max_steps, row) for row in historical]
     partial_path = destination / "l1_s2_training_witness_replays.partial.json"
     replays: list[dict] = []
@@ -290,13 +336,15 @@ def replay_all_training_failures(*, checkpoint: str | Path, c0_report: str | Pat
                 replays.append(future.result())
                 partial_path.write_text(json.dumps(_json({"completed_replays": replays}), indent=2, allow_nan=False), encoding="utf-8")
     safety_passed = all(item["telemetry"].get("collisions", 0) == item["telemetry"].get("nmac", 0) ==
-                        item["telemetry"].get("hard_separation_violations", 0) == 0 for item in replays)
+                        item["telemetry"].get("hard_separation_violations", 0) == 0 and
+                        not item.get("safety_invariant_blocked", False) for item in replays)
     payload = {
         "stage": "L1-S2_training_violation_replay",
         "evidence_type": "newly_run",
         "checkpoint": str(checkpoint),
         "historical_training_metrics": str(training_metrics),
         "historical_failure_episode_count": len(historical),
+        "selected_witness_seeds": None if witness_seeds is None else sorted(set(int(seed) for seed in witness_seeds)),
         "exact_historical_policy_replay_available": False,
         "reconstructed_scenario_replay_safety_passed": safety_passed,
         "replays": replays,
@@ -316,6 +364,8 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=1200)
     parser.add_argument("--training-metrics", help="Optional prior L1 metrics JSONL; replays every persisted hard-safety failure.")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--witness-seeds", type=int, nargs="*",
+                        help="Optional historical witness seed subset for staged safety closure.")
     parser.add_argument("--replay-training-failures-only", action="store_true",
                         help="Resume only the historical training-failure replay closure.")
     args = parser.parse_args()
@@ -325,6 +375,7 @@ def main() -> None:
         training = replay_all_training_failures(
             checkpoint=args.checkpoint, c0_report=args.c0_report, training_metrics=args.training_metrics,
             output_dir=args.output, max_steps=args.max_steps, workers=args.workers,
+            witness_seeds=None if args.witness_seeds is None else tuple(args.witness_seeds),
         )
         print(json.dumps({"output": args.output,
                           "training_witness_replay_passed": training["reconstructed_scenario_replay_safety_passed"]}, allow_nan=False))
@@ -334,6 +385,7 @@ def main() -> None:
     training = None if not args.training_metrics else replay_all_training_failures(
         checkpoint=args.checkpoint, c0_report=args.c0_report, training_metrics=args.training_metrics,
         output_dir=args.output, max_steps=args.max_steps, workers=args.workers,
+        witness_seeds=None if args.witness_seeds is None else tuple(args.witness_seeds),
     )
     print(json.dumps({"output": args.output, "first_violation": result["deterministic_replay"]["1.0"]["first_violation"],
                       "warm_start_passed": result["warm_start_passed"],

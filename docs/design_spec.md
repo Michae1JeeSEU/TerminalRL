@@ -404,7 +404,10 @@ class LowLevelIntent:
     merge_time_residual: float
 ```
 
-三个 raw 分量均在 `[-1,1]`，实际物理量由 mapper 转换。
+V3 policy samples factorized categories: `WAIT/RELEASE` and two five-level
+normalized residuals. The resulting normalized execution values are in
+`[0,1] × {-1,-.5,0,.5,1} × {-1,-.5,0,.5,1}`; actual physical units are read
+from the configured profile mapper, never hard-coded in the actor.
 
 ### 9.2 Phase-specific interpretation
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from terminal_marl.core.low_level_action import ACTION_SCHEMA_V3, LowLevelActionV3
 from terminal_marl.core.merge_scheduler import LowLevelIntent, RepairCandidate
 from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 from terminal_marl.training.train_low_v2_ppo import (
@@ -13,9 +14,14 @@ from terminal_marl.training.train_low_v2_ppo import (
 
 
 def _teacher_row(corrected: bool) -> dict:
+    requested = [1.0, 0.0, 0.0]
+    teacher = [1.0, 0.0, 0.0] if corrected else None
     return {
-        "observation": [0.0] * 87, "requested_action": [1.0, 0.0, 0.0],
-        "teacher_action": [1.0, 0.0, 0.0] if corrected else None,
+        "action_schema_version": ACTION_SCHEMA_V3,
+        "observation": [0.0] * 87, "requested_action": requested,
+        "requested_action_v3": LowLevelActionV3.from_normalized(requested).as_dict(),
+        "teacher_action": teacher,
+        "teacher_action_v3": None if teacher is None else LowLevelActionV3.from_normalized(teacher).as_dict(),
         "execution_action": [1.0, 0.0, 0.0], "shield_action": None,
         "teacher_used": corrected, "teacher_kind": "teacher_repair" if corrected else None,
         "teacher_delay_seconds": 0.0 if corrected else None,

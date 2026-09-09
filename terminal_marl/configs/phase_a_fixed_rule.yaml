@@ -4,7 +4,7 @@ vehicle_dynamics_schema_version: performance_constrained_v2
 trajectory_schema_version: executable_trajectory_v2
 vehicle_profile_id: research_evtol
 vehicle_execution_mode: performance_constrained
-action_schema_version: low_intent_v1_3d
+action_schema_version: low_intent_v3_factorized_discrete
 high_action_schema_version: high_airspace_v1_10d
 observation_schema_version: phaseA_low_obs_v2_topology_87d
 experiment_mode: fixed_rule

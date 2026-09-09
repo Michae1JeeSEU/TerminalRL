@@ -64,7 +64,7 @@ domain semantics
 3. 配置 schema 改为 `phaseA_landing_v1`；
 4. 定义：
    - `airspace_schema_version = three_ring_v1`
-   - `action_schema_version = low_intent_v1_3d`
+   - `action_schema_version = low_intent_v3_factorized_discrete`
    - `high_action_schema_version = high_airspace_v1_10d`
    - `observation_schema_version = phaseA_obs_v1`
 5. 禁止加载旧 checkpoint。

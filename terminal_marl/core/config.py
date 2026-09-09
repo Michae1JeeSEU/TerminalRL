@@ -31,7 +31,9 @@ class SimConfig:
     trajectory_schema_version: str = "executable_trajectory_v2"
     vehicle_profile_id: str = "research_evtol"
     vehicle_execution_mode: str = "performance_constrained"
-    action_schema_version: str = "low_intent_v1_3d"
+    # V4 policy requests one joint categorical scheduling intention.  The
+    # decoder alone maps it to the unchanged normalized execution intent.
+    action_schema_version: str = "low_action_schema_v4_joint_discrete"
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_low_obs_v2_topology_87d"
     experiment_mode: str = "fixed_rule"
@@ -134,6 +136,7 @@ class SimConfig:
     scheduler_mode: str = "execution"
     teacher_enabled: bool = False
     teacher_mode: str = "teacher_full"
+    teacher_release_label_enabled: bool = False
     # Deprecated compatibility knob for archived A6 audits.  New code must
     # select an explicit scheduler mode instead.
     repair_aware_scheduler: bool = False

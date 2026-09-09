@@ -14,6 +14,7 @@ from typing import Protocol
 import numpy as np
 
 from ..core.config import SimConfig
+from ..core.low_level_action import ACTION_SCHEMA_V3
 from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import RuleLowLevelPolicy
 
@@ -93,11 +94,14 @@ def build_low_teacher_dataset(
                 if trace is None:
                     continue
                 rows.append({
+                    "action_schema_version": ACTION_SCHEMA_V3,
                     "episode": episode, "step": step, "agent_id": agent_id,
                     "seed": seed + episode, "active_agent_count": len(observations),
                     "observation": np.asarray(observation, dtype=float).tolist(),
                     "requested_action": trace["requested_low_action"],
+                    "requested_action_v3": trace["requested_action_v3"],
                     "teacher_action": trace["teacher_corrected_action"],
+                    "teacher_action_v3": trace["teacher_action_v3"],
                     "execution_action": trace["execution_applied_action"],
                     "shield_action": trace["shield_applied_action"],
                     "teacher_used": trace["teacher_used"], "teacher_kind": trace["teacher_kind"],

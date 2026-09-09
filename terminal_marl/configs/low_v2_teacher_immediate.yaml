@@ -1,6 +1,6 @@
 schema_version: phaseA_landing_v1
 observation_schema_version: phaseA_low_obs_v2_topology_87d
-action_schema_version: low_intent_v1_3d
+action_schema_version: low_action_schema_v4_joint_discrete
 experiment_mode: fixed_teacher_heavy
 high_level_enabled: false
 scheduler_mode: teacher_immediate

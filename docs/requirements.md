@@ -497,17 +497,25 @@ Inner→Final clearance 至少需要：
 
 每个 active UAV 的唯一低层动作：
 
-\[
-a_i^L=[r_i,\Delta v_i,\Delta t_i]\in[-1,1]^3
-\]
+```text
+Low-Level Action V3 (factorized categorical scheduling request)
+release_request: WAIT / RELEASE
+speed_residual: {-1.0, -0.5, 0.0, +0.5, +1.0}
+merge_time_residual: {-1.0, -0.5, 0.0, +0.5, +1.0}
+```
+
+Policy factorization is `Categorical(2) × Categorical(5) × Categorical(5)`,
+not one 50-way action. The three normalized values retain the canonical
+execution order `[release_request, speed_residual, merge_time_residual]`.
 
 #### `release_request`
-连续值映射为阶段转移请求强度。是否批准由 scheduler/safety layer 决定。
+`WAIT=0`，`RELEASE=1`。是否批准仍由 scheduler/safety layer 决定。
 
 #### `speed_residual`
 
 \[
-\Delta v_i\in[-\Delta v_{max},+\Delta v_{max}]
+normalized level is selected from the five-level catalog and is mapped by the
+vehicle/profile adapter to \(\Delta v_i\in[-\Delta v_{max},+\Delta v_{max}]\).
 \]
 
 默认：
@@ -519,7 +527,8 @@ max_speed_residual = 2.0 m/s
 #### `merge_time_residual`
 
 \[
-\Delta t_i\in[-\Delta t_{max},+\Delta t_{max}]
+normalized level is selected from the same five-level catalog and mapped by
+the scheduler/profile adapter to \(\Delta t_i\in[-\Delta t_{max},+\Delta t_{max}]\).
 \]
 
 默认：

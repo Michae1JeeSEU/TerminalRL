@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .merge_scheduler import LowLevelIntent
+from .low_level_action import LowLevelActionV3
+from .low_level_joint_action import joint_index_from_normalized
 
 
 @dataclass
@@ -26,7 +28,25 @@ class LowLevelActionTrace:
             self.execution_applied = self.requested
 
     def as_dict(self) -> dict:
-        encode = lambda action: None if action is None else [action.release_request, action.speed_residual, action.merge_time_residual]
+        encode = lambda action: None if action is None else [float(action.release_request), float(action.speed_residual), float(action.merge_time_residual)]
+        def v3(action):
+            if action is None:
+                return None
+            try:
+                return LowLevelActionV3.from_normalized(encode(action)).as_dict()
+            except ValueError:
+                # Archived continuous callers can still be inspected, but
+                # cannot be treated as an exact V3 policy/teacher label.
+                return {"legacy_continuous_action": encode(action)}
+        def v4(action):
+            if action is None:
+                return None
+            try:
+                index = int(joint_index_from_normalized(encode(action)))
+                return {"joint_action_index": index, "decoded": encode(action)}
+            except ValueError:
+                return {"non_catalog_action": encode(action)}
+        requested_joint = v4(self.requested)
         return {
             "requested_low_action": encode(self.requested),
             "teacher_corrected_action": encode(self.teacher_corrected),
@@ -37,4 +57,13 @@ class LowLevelActionTrace:
             "teacher_witness_plan_id": self.teacher_witness_plan_id, "teacher_verified": self.teacher_verified,
             "shield_reason": self.shield_reason,
             "correction_magnitude": self.correction_magnitude,
+            "requested_action_v3": v3(self.requested),
+            "teacher_action_v3": v3(self.teacher_corrected),
+            "execution_action_v3": v3(self.execution_applied),
+            "shield_action_v3": v3(self.shield_applied),
+            "joint_action_index": None if requested_joint is None else requested_joint.get("joint_action_index"),
+            "decoded_joint_action": requested_joint,
+            "teacher_joint_action": v4(self.teacher_corrected),
+            "execution_applied_joint_action": v4(self.execution_applied),
+            "shield_applied_joint_action": v4(self.shield_applied),
         }

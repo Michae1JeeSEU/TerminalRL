@@ -26,7 +26,7 @@ def finite_config(**overrides):
 def test_a0_schema_and_action_dimensions_are_locked():
     c = SimConfig()
     assert (c.schema_version, c.airspace_schema_version) == ("phaseA_landing_v1", "three_ring_v1")
-    assert (c.action_schema_version, c.high_action_schema_version) == ("low_intent_v1_3d", "high_airspace_v1_10d")
+    assert (c.action_schema_version, c.high_action_schema_version) == ("low_intent_v3_factorized_discrete", "high_airspace_v1_10d")
     assert DynamicAirspace.ACTION_SIZE == 10
     assert LowLevelIntent.from_array([0, 0, 0])
     with pytest.raises(ValueError): LowLevelIntent.from_array([0, 0, 0, 0])

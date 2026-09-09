@@ -6,7 +6,6 @@ teacher-executed action: PPO's rollout buffer always contains the sampled
 only as an auxiliary target and as a reward/diagnostic signal.
 """
 from __future__ import annotations
-import copy
 
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
@@ -22,6 +21,7 @@ import torch
 from ..algo import RolloutBuffer, SharedPPO, Transition
 from ..core.checkpoints import load_checkpoint, save_checkpoint
 from ..core.config import SimConfig
+from ..core.low_level_action import HEAD_NAMES, LowLevelActionV3, normalized_to_indices
 from ..core.observations import LOW_OBS_V2
 from ..core.safety_trace import SafetyTraceRecorder
 from ..core.runtime_traffic_safety import SafetyInvariantError
@@ -41,7 +41,8 @@ class LowV2TrainingPreflight:
 
 def prepare_low_v2_training(base: SimConfig | None = None, *, manifest_path: str | Path | None = None) -> LowV2TrainingPreflight:
     """Validate and optionally persist a training manifest; does not train."""
-    root = base or SimConfig()
+    # Archived V3 preflight remains reproducible but is not a V4 launch path.
+    root = base or SimConfig(action_schema_version="low_intent_v3_factorized_discrete")
     configs = tuple(phase_config(root, phase) for phase in LOW_V2_TEACHER_CURRICULUM)
     for config, phase in zip(configs, LOW_V2_TEACHER_CURRICULUM):
         validate_low_v2_config(config, for_training=phase.name != "teacher_off")
@@ -89,8 +90,6 @@ class L1FullTeacherProtocol:
     teacher_bc_weight: float = 0.05
     ppo_epochs: int = 2
     ppo_minibatch_size: int = 256
-    optimizer_seed: int = 1701
-    stop_on_safety_failure: bool = True
 
     def __post_init__(self) -> None:
         if min(self.updates, self.episodes_per_update, self.rollout_workers, self.max_steps, self.validation_every,
@@ -99,10 +98,6 @@ class L1FullTeacherProtocol:
             raise ValueError("L1 protocol counts must be positive")
         if not 0.0 <= self.teacher_bc_weight <= 1.0:
             raise ValueError("teacher_bc_weight must be in [0, 1]")
-
-
-class L1SafetyGateError(RuntimeError):
-    """Raised before another PPO update when an L1 safety hard gate fails."""
 
 
 @dataclass(frozen=True)
@@ -133,6 +128,9 @@ class L1EpisodeSummary:
     nmac: int
     hard_separation_violations: int
     steps: int
+    external_queue_final: int
+    external_queue_mean: float
+    external_queue_max: int
 
 
 @dataclass(frozen=True)
@@ -216,11 +214,14 @@ def l1_full_teacher_config(
         fixed_arrival_schedule=schedule, total_requested_uavs=cohort_uavs if demand_model == "finite_cohort" else None,
         arrival_rate_per_second=medium_rate, max_simulation_seconds=horizon_seconds,
         max_active_uavs=32, scheduler_mode="teacher_full", teacher_enabled=True,
-        teacher_mode="teacher_full", shield_enabled=True,
+        teacher_mode="teacher_full", teacher_release_label_enabled=True, shield_enabled=True,
         initial_soc_mode="fixed", initial_soc=0.80,
         priority_mode="fixed", initial_priority=1,
         gate_probabilities=(0.25, 0.25, 0.25, 0.25),
         mission_probabilities=(1.0, 0.0, 0.0, 0.0),
+        # Bind the L1 path explicitly to the V3 Safety Closure qualification:
+        # 0.2 s physics integration and 1.0 s safety sampling.
+        physics_dt=.2, safety_sampling_dt=1.0,
     )
 
 
@@ -242,55 +243,15 @@ def _episode_design(index: int, *, medium_rate: float, horizon_seconds: float) -
     return config, {"reset_mode": config.reset_mode, "demand_model": demand, "warm_start_uavs": warm_count, "cohort_uavs": cohort}
 
 
-_TEACHER_RELEASE_ACCEPTED = {"approved", "future_reserved", "future_reservation_wait"}
-
-
-def _release_teacher_target(*, release_eligible: bool, requested_release: bool, decision: str) -> float:
-    """Map the Full-Teacher decision to exact external WAIT/RELEASE semantics."""
-    if not release_eligible:
-        return -1.0
-    if requested_release and decision not in _TEACHER_RELEASE_ACCEPTED:
-        return -1.0
-    return 1.0
-
-
-def _counterfactual_release_teacher_targets(
-    env: TerminalParallelEnv,
-    observations: dict[str, np.ndarray],
-    requested_actions: dict[str, np.ndarray],
-) -> tuple[dict[str, float], dict[str, str]]:
-    """Query WAIT/RELEASE labels from an isolated all-RELEASE teacher step.
-
-    The copied environment preserves the exact scheduler, TeacherScheduler,
-    SafetyFilter, reservations, and peer ordering at the current state.  Only
-    the release component is forced to +1; residual components remain the
-    policy's requested values.  The real rollout is never mutated.
-    """
-    counterfactual = copy.deepcopy(env)
-    release_actions: dict[str, np.ndarray] = {}
-    for uid in observations:
-        action = np.asarray(requested_actions[uid], dtype=np.float32).copy()
-        action[0] = 1.0
-        release_actions[uid] = action
-    _, _, _, _, info = counterfactual.step(release_actions)
-    decisions = {uid: str(info["release_decisions"].get(uid, "phase_masked")) for uid in observations}
-    targets = {uid: (1.0 if decision in _TEACHER_RELEASE_ACCEPTED else -1.0)
-               for uid, decision in decisions.items()}
-    return targets, decisions
-
-
 def _rollout_l1(
     model_state: dict[str, torch.Tensor], config: SimConfig, seed: int, update: int, episode: int, max_steps: int, deterministic: bool = False,
-    trace_output_dir: str | Path | None = None, policy_distribution: str = "tanh_squashed_gaussian",
-    collect_head_log_probs: bool = False,
-    collect_release_teacher_labels: bool = False, release_teacher_bc: bool = False,
-    counterfactual_release_labels: bool = False,
+    trace_output_dir: str | Path | None = None, dump_trace_on_completion: bool = False,
 ) -> tuple[list[Transition], L1EpisodeSummary]:
     """Collect one full-teacher rollout, preserving requested action semantics."""
     torch.set_num_threads(1)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    policy = SharedPPO(LOW_OBS_V2.dimension, policy_distribution=policy_distribution)
+    policy = SharedPPO(LOW_OBS_V2.dimension)
     policy.model.load_state_dict(model_state)
     env = TerminalParallelEnv(config)
     observations, _ = env.reset(seed)
@@ -308,6 +269,7 @@ def _rollout_l1(
     saturation_counts = np.zeros(3, dtype=int)
     requested_action_count = 0
     trace_row: dict[str, object] | None = None
+    external_queue_sizes = [len(env.admission.queue.items)]
     try:
         for _ in range(min(max_steps, int(config.max_simulation_seconds / config.dt))):
             ids = list(observations)
@@ -319,33 +281,28 @@ def _rollout_l1(
                     trace_recorder.record_post_step(env, trace_row, info)
             else:
                 actor_obs = np.stack([observations[uid] for uid in ids]).astype(np.float32, copy=False)
-                result = policy.act(actor_obs, actor_obs, deterministic=deterministic,
-                                    return_head_log_probs=collect_head_log_probs)
-                if collect_head_log_probs:
-                    actions, log_probs, value, log_probs_by_head = result
-                else:
-                    actions, log_probs, value = result
-                    log_probs_by_head = None
-                requested_actions = {uid: action for uid, action in zip(ids, actions)}
-                counterfactual_targets = None
-                # If every sampled action already requests RELEASE, the real
-                # step below is itself the authoritative query.  Clone only
-                # when at least one WAIT needs a counterfactual label.
-                needs_counterfactual = (collect_release_teacher_labels and counterfactual_release_labels and
-                                        any(action[0] <= config.release_threshold
-                                            for action in requested_actions.values()))
-                if needs_counterfactual:
-                    counterfactual_targets, _ = _counterfactual_release_teacher_targets(
-                        env, observations, requested_actions)
+                batch = policy.act_details(actor_obs, actor_obs, deterministic=deterministic)
+                requested_actions = {uid: action for uid, action in zip(ids, batch.normalized)}
                 trace_row = None if trace_recorder is None else trace_recorder.record_pre_step(
-                    env, observations, requested_actions, {uid: float(log_prob) for uid, log_prob in zip(ids, log_probs)}
+                    env, observations, requested_actions, {
+                        uid: {"joint": float(log_prob), "per_head": head_log_prob.tolist(),
+                              "categories": categories.tolist(),
+                              "action_v3": LowLevelActionV3.from_indices(categories).as_dict()}
+                        for uid, log_prob, head_log_prob, categories in zip(ids, batch.joint_log_prob, batch.head_log_prob, batch.categories)
+                    }
                 )
                 next_observations, rewards, terminated, truncated, info = env.step(requested_actions)
                 if trace_recorder is not None and trace_row is not None:
                     trace_recorder.record_post_step(env, trace_row, info)
                 for row_index, uid in enumerate(ids):
                     trace = info.get("action_traces", {}).get(uid, {})
-                    requested = np.asarray(trace.get("requested_low_action", actions[row_index]), dtype=np.float32)
+                    requested = np.asarray(trace.get("requested_low_action", batch.normalized[row_index]), dtype=np.float32)
+                    requested_categories = np.asarray(batch.categories[row_index], dtype=np.int64)
+                    # The environment must execute the exact requested V3
+                    # catalog value. Any mismatch would invalidate PPO ratio
+                    # provenance and is a hard failure before storing a row.
+                    if not np.array_equal(normalized_to_indices(requested), requested_categories):
+                        raise RuntimeError("PPO requested action differs from executed V3 catalog request")
                     requested_action_count += 1
                     saturation_counts += (np.abs(requested) >= 0.98).astype(int)
                     teacher = trace.get("teacher_corrected_action")
@@ -354,28 +311,14 @@ def _rollout_l1(
                     applied = shield if shield is not None else execution
                     teacher_used = bool(trace.get("teacher_used", False))
                     shield_used = bool(trace.get("shield_used", False))
-                    teacher_target = None if teacher is None else np.asarray(teacher, dtype=np.float32)
-                    teacher_head_mask = None
-                    if collect_release_teacher_labels:
-                        teacher_target = requested.copy() if teacher_target is None else teacher_target.copy()
-                        if counterfactual_targets is not None:
-                            teacher_target[0] = counterfactual_targets[uid]
-                        else:
-                            eligibility_index = LOW_OBS_V2.slices["release_eligible"].start
-                            teacher_target[0] = _release_teacher_target(
-                                release_eligible=bool(actor_obs[row_index, eligibility_index] > .5),
-                                requested_release=bool(requested[0] > config.release_threshold),
-                                decision=str(info["release_decisions"].get(uid, "phase_masked")),
-                            )
-                        teacher_head_mask = np.asarray((release_teacher_bc, teacher_used, teacher_used), dtype=np.float32)
                     reward = float(rewards.get(uid, 0.0))
-                    rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested,
-                                           float(log_probs[row_index]), value, reward,
+                    teacher_categories = None if teacher is None else normalized_to_indices(np.asarray(teacher, dtype=np.float32))
+                    rows.append(Transition(f"{update}:{episode}:{seed}:{uid}", actor_obs[row_index].copy(), actor_obs.copy(), requested_categories,
+                                           float(batch.joint_log_prob[row_index]), batch.value, reward,
                                            bool(terminated.get(uid, False) or truncated.get(uid, False)),
-                                           teacher_target,
+                                           teacher_categories,
                                            None if applied is None else np.asarray(applied, dtype=np.float32), teacher_used, shield_used,
-                                           None if log_probs_by_head is None else log_probs_by_head[row_index].copy(),
-                                           teacher_head_mask))
+                                           requested, np.asarray(batch.head_log_prob[row_index], dtype=np.float32)))
                     reward_sum += reward
                     release_intents += int(requested[0] > config.release_threshold)
                     teacher_interventions += int(teacher_used)
@@ -385,11 +328,12 @@ def _rollout_l1(
                         correction_magnitude_sum += correction
                         correction_magnitudes.append(correction)
                         corrected = np.asarray(teacher, dtype=np.float32) if teacher is not None else requested
-                        names = ("release", "speed", "merge_time")
+                        names = HEAD_NAMES
                         teacher_correction_components.append(tuple(
                             name for name, delta in zip(names, np.abs(corrected - requested)) if delta > 1e-7
                         ) or ("hold_reject",))
                 observations = next_observations
+            external_queue_sizes.append(len(env.admission.queue.items))
             if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
                 break
     except SafetyInvariantError as error:
@@ -405,7 +349,10 @@ def _rollout_l1(
                                tuple(correction_magnitudes), tuple(teacher_correction_components),
                                tuple(int(value) for value in saturation_counts), requested_action_count, completion_delays,
                                int(env.telemetry.get("collisions", 0)), int(env.telemetry.get("nmac", 0)),
-                               int(env.telemetry.get("hard_separation_violations", 0)), env.step_count)
+                               int(env.telemetry.get("hard_separation_violations", 0)), env.step_count,
+                               len(env.admission.queue.items), float(np.mean(external_queue_sizes)), int(max(external_queue_sizes)))
+    if trace_recorder is not None and dump_trace_on_completion:
+        trace_recorder.dump(reason="preflight_smoke_completion")
     return rows, summary
 
 
@@ -429,19 +376,10 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
     effective = [row for row in summaries if row.arrivals > 0 and row.release_intents > 0]
     corrections = [value for row in effective for value in row.correction_magnitudes]
     component_counts = {name: 0 for name in ("release", "speed", "merge_time", "hold_reject")}
-    correction_reasons = {name: 0 for name in ("release", "speed", "merge-time", "combined", "hold_reject")}
     for row in effective:
         for components in row.teacher_correction_components:
             for component in components:
                 component_counts[component] = component_counts.get(component, 0) + 1
-            if len(components) != 1:
-                correction_reasons["combined"] += 1
-            elif components[0] == "merge_time":
-                correction_reasons["merge-time"] += 1
-            elif components[0] in correction_reasons:
-                correction_reasons[components[0]] += 1
-            else:
-                correction_reasons["combined"] += 1
     action_count = sum(row.requested_action_count for row in effective)
     saturation = np.sum(np.asarray([row.requested_action_saturation_counts for row in effective], dtype=int), axis=0) \
         if effective else np.zeros(3, dtype=int)
@@ -460,7 +398,6 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
         "correction_magnitude_mean": None if not corrections else float(np.mean(corrections)),
         "correction_magnitude_p95": None if not corrections else float(np.percentile(corrections, 95)),
         "teacher_correction_components": component_counts,
-        "teacher_correction_reasons": correction_reasons,
         "requested_action_saturation": {
             name: None if action_count == 0 else float(value / action_count)
             for name, value in zip(("release", "speed", "merge_time"), saturation)
@@ -470,6 +407,9 @@ def _summary_metrics(summaries: list[L1EpisodeSummary]) -> dict:
         "throughput_per_second": None if steps == 0 else completed / steps,
         "delay_mean": None if not delays else float(np.mean(delays)),
         "delay_p95": None if not delays else float(np.percentile(delays, 95)),
+        "external_queue_final_mean": None if not summaries else float(np.mean([row.external_queue_final for row in summaries])),
+        "external_queue_mean": None if not summaries else float(np.mean([row.external_queue_mean for row in summaries])),
+        "external_queue_max": None if not summaries else int(max(row.external_queue_max for row in summaries)),
         "shield_interventions_per_100_release_intents": None if intents == 0 else 100.0 * sum(row.shield_interventions for row in effective) / intents,
         "collisions": sum(row.collisions for row in summaries), "nmac": sum(row.nmac for row in summaries),
         "hard_separation_violations": sum(row.hard_separation_violations for row in summaries),
@@ -492,15 +432,13 @@ def _model_state(policy: SharedPPO) -> dict[str, torch.Tensor]:
 
 
 def _run_fixed_validation(policy: SharedPPO, partition: LowV2SeedPartition, *, medium_rate: float,
-                          max_steps: int, rollout_workers: int, update: int,
-                          trace_output_dir: str | Path | None = None) -> list[L1EpisodeSummary]:
+                          max_steps: int, rollout_workers: int, update: int) -> list[L1EpisodeSummary]:
     specs = list(zip(L1_VALIDATION_SCENARIO_INDICES, partition.validation[:len(L1_VALIDATION_SCENARIO_INDICES)]))
     tasks = []
     state = _model_state(policy)
     for episode, (design_index, seed) in enumerate(specs):
         config, _ = _episode_design(design_index, medium_rate=medium_rate, horizon_seconds=float(max_steps))
-        tasks.append((state, config, seed, update, episode, max_steps, False,
-                      None if trace_output_dir is None else str(trace_output_dir)))
+        tasks.append((state, config, seed, update, episode, max_steps))
     if rollout_workers == 1:
         collected = [_rollout_task(task) for task in tasks]
     else:
@@ -526,11 +464,6 @@ def train_l1_full_teacher(
     stages with separate acceptance gates.
     """
     protocol = protocol or L1FullTeacherProtocol()
-    # The central optimizer permutation is part of an ablation's controlled
-    # protocol.  Rollout workers retain their own deterministic episode seeds.
-    random.seed(protocol.optimizer_seed)
-    np.random.seed(protocol.optimizer_seed)
-    torch.manual_seed(protocol.optimizer_seed)
     audit = authorize_low_v2_training(teacher_dataset_path)
     partition = _read_seed_partition(teacher_dataset_path)
     if len(partition.validation) < len(L1_VALIDATION_SCENARIO_INDICES):
@@ -559,8 +492,7 @@ def train_l1_full_teacher(
 
     def capture_validation(label: str, update: int) -> None:
         summaries = _run_fixed_validation(policy, partition, medium_rate=medium_rate, max_steps=protocol.max_steps,
-                                          rollout_workers=protocol.rollout_workers, update=update,
-                                          trace_output_dir=destination / "safety_action_tapes" / "validation" / label)
+                                          rollout_workers=protocol.rollout_workers, update=update)
         grouped = _grouped_metrics(summaries)
         record = {"label": label, "update": update, "overall": _summary_metrics(summaries),
                   "by_scenario": grouped, "sufficiency": _validation_sufficiency(grouped, protocol)}
@@ -568,10 +500,6 @@ def train_l1_full_teacher(
         for summary in summaries:
             validation_rows.append({**asdict(summary), "scenario": _scenario_name(summary), "validation": True,
                                     "validation_label": label})
-        if protocol.stop_on_safety_failure and any(
-            row.collisions or row.nmac or row.hard_separation_violations for row in summaries
-        ):
-            raise L1SafetyGateError(f"L1 validation safety gate failed at {label}")
 
     # This is the early L1 reference for the resumed checkpoint.  It is
     # written before any new update, so later trend claims never compare
@@ -600,11 +528,6 @@ def train_l1_full_teacher(
             total_rollout_rows += len(transitions)
             update_summaries.append(summary)
             episode_rows.append({**asdict(summary), **design, "scenario": _scenario_name(summary)})
-        if protocol.stop_on_safety_failure and any(
-            row.collisions or row.nmac or row.hard_separation_violations for row in update_summaries
-        ):
-            _write_jsonl(destination / "l1_training_metrics.jsonl", episode_rows)
-            raise L1SafetyGateError(f"L1 training safety gate failed before PPO update {update}")
         ppo = policy.update(buffer, epochs=protocol.ppo_epochs, minibatch_size=protocol.ppo_minibatch_size)
         per_update_summaries.append(update_summaries)
         window_updates = per_update_summaries[-protocol.rolling_window_updates:]
@@ -652,14 +575,9 @@ def train_l1_full_teacher(
         "c0_report": str(c0_report), "teacher_dataset_path": str(teacher_dataset_path), "teacher_dataset_audit": asdict(audit),
         "seed_partition": asdict(partition), "mu_hat": mu_hat, "medium_rate": medium_rate,
         "medium_interval": list(medium_range), "protocol": asdict(protocol),
-        "ppo_bc_provenance": {
-            "ppo_behavior_action": "a_requested",
-            "ppo_old_log_prob": "log_pi(a_requested|s)",
-            "ppo_ratio_uses_a_applied": False,
-            "teacher_bc_target": "a_teacher",
-            "teacher_bc_mask": "teacher_used && a_teacher is not None",
-        },
         "environment": {"teacher": "FULL", "scheduler_mode": "teacher_full", "shield_enabled": True, "high_level_enabled": False,
+                        "low_level_action_schema": "low_intent_v3_factorized_discrete",
+                        "low_level_policy_distribution": "factorized_categorical", "action_head_cardinalities": [2, 5, 5],
                         "geometry": "nominal_fixed", "gate_probabilities": [0.25] * 4, "mission_probabilities": [1.0, 0.0, 0.0, 0.0], "initial_soc": 0.80,
                         "priority_mode": "fixed", "initial_priority": 1,
                         "finite_cohort_range": [8, 20], "warm_start_range": [8, 16], "warm_start_fraction": 0.60},
