@@ -41,7 +41,8 @@ class LowV2TrainingPreflight:
 
 def prepare_low_v2_training(base: SimConfig | None = None, *, manifest_path: str | Path | None = None) -> LowV2TrainingPreflight:
     """Validate and optionally persist a training manifest; does not train."""
-    root = base or SimConfig()
+    # Archived V3 preflight remains reproducible but is not a V4 launch path.
+    root = base or SimConfig(action_schema_version="low_intent_v3_factorized_discrete")
     configs = tuple(phase_config(root, phase) for phase in LOW_V2_TEACHER_CURRICULUM)
     for config, phase in zip(configs, LOW_V2_TEACHER_CURRICULUM):
         validate_low_v2_config(config, for_training=phase.name != "teacher_off")

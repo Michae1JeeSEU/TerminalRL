@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from .merge_scheduler import LowLevelIntent
 from .low_level_action import LowLevelActionV3
+from .low_level_joint_action import joint_index_from_normalized
 
 
 @dataclass
@@ -37,6 +38,15 @@ class LowLevelActionTrace:
                 # Archived continuous callers can still be inspected, but
                 # cannot be treated as an exact V3 policy/teacher label.
                 return {"legacy_continuous_action": encode(action)}
+        def v4(action):
+            if action is None:
+                return None
+            try:
+                index = int(joint_index_from_normalized(encode(action)))
+                return {"joint_action_index": index, "decoded": encode(action)}
+            except ValueError:
+                return {"non_catalog_action": encode(action)}
+        requested_joint = v4(self.requested)
         return {
             "requested_low_action": encode(self.requested),
             "teacher_corrected_action": encode(self.teacher_corrected),
@@ -51,4 +61,9 @@ class LowLevelActionTrace:
             "teacher_action_v3": v3(self.teacher_corrected),
             "execution_action_v3": v3(self.execution_applied),
             "shield_action_v3": v3(self.shield_applied),
+            "joint_action_index": None if requested_joint is None else requested_joint.get("joint_action_index"),
+            "decoded_joint_action": requested_joint,
+            "teacher_joint_action": v4(self.teacher_corrected),
+            "execution_applied_joint_action": v4(self.execution_applied),
+            "shield_applied_joint_action": v4(self.shield_applied),
         }

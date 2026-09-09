@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 
 from .low_level_action import ACTION_SCHEMA_V3, LowLevelActionV3
+from .low_level_joint_action import ACTION_SCHEMA_V4, joint_index_from_normalized
 
 
 def _json(value: Any) -> Any:
@@ -42,7 +43,7 @@ class SafetyTraceRecorder:
     witnesses independently replayable.
     """
 
-    schema_version = "A5V2-L1-S3-SafetyTrace-v3"
+    schema_version = "A5V2-L1-S4-SafetyTrace-v4"
 
     def __init__(self, output_dir: str | Path, *, max_seconds: float = 120.0, dt: float = 1.0) -> None:
         self.output_dir = Path(output_dir)
@@ -113,7 +114,7 @@ class SafetyTraceRecorder:
 
     def record_pre_step(self, env, observations: dict[str, np.ndarray], actions: dict[str, np.ndarray],
                         log_probs: dict[str, Any] | None = None) -> dict[str, Any]:
-        action_v3: dict[str, Any] = {}
+        action_v3: dict[str, Any] = {}; joint_actions: dict[str, int] = {}
         joint_log_prob: dict[str, float] = {}
         head_log_prob: dict[str, list[float]] = {}
         for uid, action in sorted(actions.items()):
@@ -121,6 +122,10 @@ class SafetyTraceRecorder:
                 action_v3[str(uid)] = LowLevelActionV3.from_normalized(action).as_dict()
             except ValueError:
                 action_v3[str(uid)] = {"legacy_continuous_action": _json(action)}
+            try:
+                joint_actions[str(uid)] = int(joint_index_from_normalized(action))
+            except ValueError:
+                pass
         for uid, value in sorted((log_probs or {}).items()):
             if isinstance(value, dict):
                 joint_log_prob[str(uid)] = float(value["joint"])
@@ -131,8 +136,9 @@ class SafetyTraceRecorder:
             "step": int(env.step_count), "time_before": float(env.now),
             "observation_hash": _digest({key: value for key, value in sorted(observations.items())}),
             "a_requested": _json({key: value for key, value in sorted(actions.items())}),
-            "action_schema_version": ACTION_SCHEMA_V3,
+            "action_schema_version": (ACTION_SCHEMA_V4 if env.config.action_schema_version == ACTION_SCHEMA_V4 else ACTION_SCHEMA_V3),
             "a_requested_v3": action_v3,
+            "joint_action_index": joint_actions,
             "joint_log_prob": joint_log_prob,
             "per_head_log_prob": head_log_prob,
             # Read-only compatibility name for archived tooling. New code
@@ -238,7 +244,13 @@ class SafetyTraceRecorder:
             observation_match = _digest({key: value for key, value in sorted(observations.items())}) == row["observation_hash"]
             actions = {str(uid): np.asarray(action, dtype=np.float32) for uid, action in row["a_requested"].items()}
             category_match = True
-            if row.get("action_schema_version") == ACTION_SCHEMA_V3:
+            if row.get("action_schema_version") == ACTION_SCHEMA_V4:
+                for uid, action in actions.items():
+                    try:
+                        category_match = category_match and int(joint_index_from_normalized(action)) == row.get("joint_action_index", {}).get(uid)
+                    except ValueError:
+                        category_match = False
+            elif row.get("action_schema_version") == ACTION_SCHEMA_V3:
                 for uid, action in actions.items():
                     try:
                         expected = LowLevelActionV3.from_normalized(action).as_dict()

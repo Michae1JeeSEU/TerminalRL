@@ -60,7 +60,9 @@ class TerminalParallelEnv:
         return [str(uid) for uid in self.active]
 
     def action_spec(self, _agent: str | None = None) -> dict[str, tuple[int, ...]]:
-        """Factorized V3 scheduling categories (not a 50-way joint action)."""
+        """One V4 joint scheduling category; execution still receives its decode."""
+        if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
+            return {"joint_action": (30,)}
         return {"release": (2,), "speed_residual": (5,), "merge_time_residual": (5,)}
 
     def set_step_observer(self, observer: Callable[["TerminalParallelEnv"], None] | None) -> None:
@@ -742,7 +744,15 @@ class TerminalParallelEnv:
                 self._finish_release_intent(uav, row, "lz_unavailable")
                 return "lz_unavailable"
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
-        candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
+        # V4 changes the learning target, not the deployment authority.  The
+        # policy supplies exactly one decoded joint intention and runtime may
+        # certify or reject that one proposal, but may not search a catalogue
+        # on the policy's behalf.  Training-only V4 labels use
+        # ``TeacherScheduler.choose_joint_verified`` outside this method.
+        if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
+            candidates = (RepairCandidate("requested", intent),)
+        else:
+            candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
         # The immediate phase is deliberately closed before future-delay
         # forecasting.  Delayed candidates already contain a source-holder
         # prefix, so generating every one here used to repeat full canonical

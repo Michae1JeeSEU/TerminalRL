@@ -1,6 +1,6 @@
 schema_version: phaseA_landing_v1
 airspace_schema_version: three_ring_v1
-action_schema_version: low_intent_v3_factorized_discrete
+action_schema_version: low_action_schema_v4_joint_discrete
 high_action_schema_version: high_airspace_v1_10d
 observation_schema_version: phaseA_low_obs_v2_topology_87d
 experiment_mode: fixed_teacher_heavy

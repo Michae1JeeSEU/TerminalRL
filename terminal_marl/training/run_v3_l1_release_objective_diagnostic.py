@@ -38,8 +38,15 @@ PROBE_BATCH = 256
 
 
 def _json(path: Path, value: dict) -> None:
+    def _default(item):
+        if isinstance(item, np.generic):
+            return item.item()
+        if isinstance(item, np.ndarray):
+            return item.tolist()
+        raise TypeError(f"unsupported JSON value: {type(item).__name__}")
+
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False), encoding="utf-8")
+    temporary.write_text(json.dumps(value, indent=2, allow_nan=False, default=_default), encoding="utf-8")
     temporary.replace(path)
 
 
@@ -76,6 +83,24 @@ def _release_full_state(env: TerminalParallelEnv, uav) -> dict:
             reservations.append({"owner": item.uav_id, "status": item.status, "merge_time": item.merge_time,
                                  "time_to_merge": item.merge_time - env.now, "expires_in": item.expires_at - env.now,
                                  "predecessor": item.predecessor_id, "successor": item.successor_id})
+    active = []
+    for item in sorted(env.active.values(), key=lambda row: int(row.uid)):
+        plan = item.committed_plan
+        active.append({"uid": item.uid, "phase": item.phase.value,
+                       "ring_role": None if item.ring_role is None else item.ring_role.value,
+                       "position": [float(value) for value in item.position],
+                       "velocity": [float(value) for value in item.velocity],
+                       "ring_progress": item.ring_progress, "merge_reservation_id": item.merge_reservation_id,
+                       "retry_remaining": max(0.0, item.safety_retry_after - env.now),
+                       "committed_plan_id": None if plan is None else plan.plan_id,
+                       "committed_start": None if plan is None else plan.start_time,
+                       "committed_end": None if plan is None else plan.end_time,
+                       "committed_reservations": [] if plan is None else list(plan.reservation_ids)})
+    all_reservations = sorted(({"owner": item.uav_id, "target": item.target_stage, "status": item.status,
+                                "merge_time": item.merge_time, "time_to_merge": item.merge_time - env.now,
+                                "predecessor": item.predecessor_id, "successor": item.successor_id}
+                               for item in env.scheduler.reservations.values()),
+                              key=lambda item: (item["merge_time"], item["owner"]))
     pending = env.future_release_reservations.get(uav.uid)
     committed = uav.committed_plan
     def _finite_or_none(value):
@@ -91,10 +116,14 @@ def _release_full_state(env: TerminalParallelEnv, uav) -> dict:
                       "committed": committed is not None, "phase_entry_time": uav.phase_entry_time,
                       "release_retry_remaining": max(0.0, uav.safety_retry_after - env.now),
                       "merge_reservation_id": uav.merge_reservation_id},
+        "scheduler": {"all_reservations": all_reservations,
+                      "last_release": {key: _finite_or_none(value) for key, value in env.scheduler.last_release.items()},
+                      "last_executed_release": {key: _finite_or_none(value) for key, value in env.scheduler.last_executed_release.items()}},
         "reservation": {"target_interface_reservations": sorted(reservations, key=lambda item: (item["merge_time"], item["owner"])),
                         "own_future_release_pending": pending is not None,
                         "own_future_release_not_before": None if pending is None else pending.get("not_before"),
                         "own_future_release_target": None if pending is None else str(pending.get("target"))},
+        "active_traffic": active,
         "trajectory": {"committed_plan_id": None if committed is None else committed.plan_id,
                        "committed_start": None if committed is None else committed.start_time,
                        "committed_end": None if committed is None else committed.end_time,

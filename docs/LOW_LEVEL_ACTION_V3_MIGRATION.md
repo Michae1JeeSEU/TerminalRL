@@ -1,4 +1,9 @@
-# Low-Level Action V3 migration
+# Low-Level Action V3 migration — SUPERSEDED
+
+> **SUPERSEDED by Low-Level Action V4.** Complete-state audit established that
+> release feasibility depends on requested speed and merge residuals; V3's
+> independent per-head Teacher targets are invalid. Historical V3 results are
+> retained only for reproduction, not new training conclusions.
 
 Low-Level Action V3 supersedes the continuous-action learning experiments for
 policy-learning conclusions. It does not change terminal-airspace scheduling

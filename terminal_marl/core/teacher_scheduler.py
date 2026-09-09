@@ -6,6 +6,7 @@ from typing import Callable
 
 from .merge_scheduler import LowLevelIntent, RepairCandidate, MergeScheduler
 from .low_level_action import LowLevelActionV3
+from .low_level_joint_action import JOINT_ACTION_CATALOG, JointAction
 
 
 @dataclass(frozen=True)
@@ -67,3 +68,31 @@ class TeacherScheduler:
                 return self.correction(requested, candidate, verified=True,
                                        witness_plan_id=getattr(verdict, "checked_plan_id", None))
         return None
+
+    def joint_catalogue(self) -> tuple[JointAction, ...]:
+        """Deterministic V4 teacher preference: release witnesses, then hold.
+
+        The runtime scheduler never calls this method.  It is training-only
+        bounded enumeration of the policy catalogue and removes all V3
+        per-head target construction.
+        """
+        releases = [row for row in JOINT_ACTION_CATALOG if row.release_request > 0.0]
+        releases.sort(key=lambda row: (abs(row.speed_residual), abs(row.merge_time_residual), row.index))
+        waits = [row for row in JOINT_ACTION_CATALOG if row.release_request == 0.0]
+        waits.sort(key=lambda row: (abs(row.speed_residual), row.index))
+        return tuple(releases + waits)
+
+    def choose_joint_verified(self, verify: Callable[[JointAction], object]) -> JointAction:
+        """Return one state-deterministic V4 joint Teacher label.
+
+        ``verify`` owns canonical proposal generation and SafetyFilter use;
+        each candidate is passed once, so ExecutionScheduler never performs
+        catalogue optimisation at deployment.
+        """
+        for candidate in self.joint_catalogue():
+            verdict = verify(candidate)
+            if bool(getattr(verdict, "approved", verdict)):
+                return candidate
+        # WAIT nominal is always a valid scheduling intent; a verifier may
+        # reject release proposals but must not make the Teacher label absent.
+        return next(row for row in self.joint_catalogue() if row.release_request == 0.0 and row.speed_residual == 0.0)

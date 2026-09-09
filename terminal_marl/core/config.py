@@ -31,11 +31,9 @@ class SimConfig:
     trajectory_schema_version: str = "executable_trajectory_v2"
     vehicle_profile_id: str = "research_evtol"
     vehicle_execution_mode: str = "performance_constrained"
-    # V3 policy requests are factorized categorical scheduling decisions:
-    # WAIT/RELEASE × five speed levels × five merge-time levels.  The public
-    # execution intent is still a normalized 3-vector, which the profile
-    # adapter maps to vehicle units outside the actor.
-    action_schema_version: str = "low_intent_v3_factorized_discrete"
+    # V4 policy requests one joint categorical scheduling intention.  The
+    # decoder alone maps it to the unchanged normalized execution intent.
+    action_schema_version: str = "low_action_schema_v4_joint_discrete"
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_low_obs_v2_topology_87d"
     experiment_mode: str = "fixed_rule"
