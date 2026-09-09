@@ -60,6 +60,59 @@ def _state_hash(observation: np.ndarray) -> str:
     return sha256(np.ascontiguousarray(observation, dtype=np.float32).tobytes()).hexdigest()
 
 
+def _interface_for(uav) -> str | None:
+    from ..core.config import RingRole
+    return {RingRole.OUTER: "o2m", RingRole.MIDDLE: "m2i", RingRole.INNER: "i2f"}.get(uav.ring_role)
+
+
+def _release_full_state(env: TerminalParallelEnv, uav) -> dict:
+    """Deployment-visible state used to attribute a V2 alias, never a label."""
+    interface = _interface_for(uav)
+    reservations = []
+    for item in env.scheduler.reservations.values():
+        target = item.target_stage
+        item_interface = {"ring_middle": "o2m", "ring_inner": "m2i", "final": "i2f"}.get(target)
+        if item_interface == interface:
+            reservations.append({"owner": item.uav_id, "status": item.status, "merge_time": item.merge_time,
+                                 "time_to_merge": item.merge_time - env.now, "expires_in": item.expires_at - env.now,
+                                 "predecessor": item.predecessor_id, "successor": item.successor_id})
+    pending = env.future_release_reservations.get(uav.uid)
+    committed = uav.committed_plan
+    return {
+        "simulator": {"now": env.now, "active_count": len(env.active), "final_count": sum(x.phase.value == "final" for x in env.active.values()),
+                      "interface": interface, "headway": None if interface is None else env.airspace.headways[interface],
+                      "last_executed_release": None if interface is None else env.scheduler.last_executed_release[interface],
+                      "last_tentative_release": None if interface is None else env.scheduler.last_release[interface]},
+        "lifecycle": {"phase": uav.phase.value, "ring_role": None if uav.ring_role is None else uav.ring_role.value,
+                      "committed": committed is not None, "phase_entry_time": uav.phase_entry_time,
+                      "release_retry_remaining": max(0.0, uav.safety_retry_after - env.now),
+                      "merge_reservation_id": uav.merge_reservation_id},
+        "reservation": {"target_interface_reservations": sorted(reservations, key=lambda item: (item["merge_time"], item["owner"])),
+                        "own_future_release_pending": pending is not None,
+                        "own_future_release_not_before": None if pending is None else pending.get("not_before"),
+                        "own_future_release_target": None if pending is None else str(pending.get("target"))},
+        "trajectory": {"committed_plan_id": None if committed is None else committed.plan_id,
+                       "committed_start": None if committed is None else committed.start_time,
+                       "committed_end": None if committed is None else committed.end_time,
+                       "committed_reservations": [] if committed is None else list(committed.reservation_ids)},
+    }
+
+
+def _opposite_hash_pairs(records: list[dict], *, limit: int = 12) -> list[dict]:
+    groups: dict[str, dict[int, list[dict]]] = defaultdict(lambda: defaultdict(list))
+    for row in records:
+        if row["eligible"]: groups[row["observation_hash"]][row["all_event_teacher"]].append(row)
+    result = []
+    for state_hash, labels in groups.items():
+        if set(labels) != {0, 1}: continue
+        wait, release = labels[0][0], labels[1][0]
+        result.append({"observation_hash": state_hash, "WAIT": {"update": wait["update"], "episode": wait["episode"], "uid": wait["uid"],
+                        "tick": wait["tick"], "teacher_reason": wait["teacher_reason"], "native_decision": wait["native_decision"], "full_state": wait["full_state"]},
+                       "RELEASE": {"update": release["update"], "episode": release["episode"], "uid": release["uid"],
+                                   "tick": release["tick"], "teacher_reason": release["teacher_reason"], "native_decision": release["native_decision"], "full_state": release["full_state"]}})
+    return result[:limit]
+
+
 def _task_specs(pilot: dict, raw_dataset: str | Path, teacher_dataset: str | Path) -> list[dict]:
     """Build the exact update-1/update-4 task identities from frozen pilot rules."""
     sources, partition = _target_sources(raw_dataset), _read_seed_partition(teacher_dataset)
@@ -104,6 +157,7 @@ def _replay_task(spec: dict) -> dict:
         # irrelevant and unnecessarily expensive in dense traffic.
         eligibility = {uid: bool(actor_obs[index, LOW_OBS_V2.slices["release_eligible"].start] > .5)
                        for index, uid in enumerate(ids)}
+        full_states = {uid: _release_full_state(env, env.active[int(uid)]) for uid in ids if int(uid) in env.active}
         probes = {
             uid: (_counterfactual_release(env, env.active[int(uid)], _intent(action))
                   if eligibility[uid] and action[0] <= config.release_threshold and int(uid) in env.active
@@ -112,6 +166,7 @@ def _replay_task(spec: dict) -> dict:
         }
         next_observations, _, terminated, truncated, info = env.step(actions)
         for index, uid in enumerate(ids):
+            full_state = full_states.get(uid)
             trace = info.get("action_traces", {}).get(uid, {})
             requested = np.asarray(trace.get("requested_low_action", actions[uid]), dtype=np.float32)
             requested_index = int(normalized_to_indices(requested)[0])
@@ -133,7 +188,8 @@ def _replay_task(spec: dict) -> dict:
                 "all_event_teacher": full_index, "teacher_used": teacher_used,
                 "teacher_action_present": native is not None,
                 "native_release_corrected": bool(teacher_used and requested_index != native_index),
-                "teacher_reason": reason, "done": bool(terminated.get(uid, False) or truncated.get(uid, False)),
+                "teacher_reason": reason, "native_decision": info.get("release_decisions", {}).get(uid), "full_state": full_state,
+                "done": bool(terminated.get(uid, False) or truncated.get(uid, False)),
             })
         observations = next_observations
         if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
@@ -308,6 +364,10 @@ def _markdown(report: dict) -> str:
               f"- Deduplicated events / exact hashes / opposite-label exact hashes: {aliasing['deduplicated_events']} / {aliasing['exact_hashes']} / {aliasing['opposite_label_exact_hashes']}.",
               f"- Nearest opposite-label L2 mean/P50/P95/max: {aliasing['nearest_opposite_label_l2']['mean']:.4f}/{aliasing['nearest_opposite_label_l2']['P50']:.4f}/{aliasing['nearest_opposite_label_l2']['P95']:.4f}/{aliasing['nearest_opposite_label_l2']['max']}.",
               f"- Mean absolute feature deltas at nearest opposite-label pairs: {aliasing['nearest_opposite_label_feature_abs_delta']}."]
+    lines += ["", "## Exact-hash full-state attribution", "",
+              "- Teacher condition chain: release eligibility and topology slots are observed in V2; scheduler tentative/executed slot timing, owner/pending reservation, retry cooldown and committed-plan timing are hidden from V2."]
+    for pair in report["exact_hash_opposite_label_pairs"]:
+        lines.append(f"- hash={pair['observation_hash'][:12]}: WAIT reason={pair['WAIT']['teacher_reason']}, RELEASE reason={pair['RELEASE']['teacher_reason']}; full state is retained in the JSON artifact.")
     lines += ["", f"Observation V2 sufficient = {str(report['observation_v2_sufficient']).lower()}", f"final root cause = {report['root_cause']}", f"recommended minimum repair = {report['recommended_minimum_repair']}", f"fresh PPO rerun allowed = {str(report['fresh_PPO_rerun_allowed']).lower()}", ""]
     return "\n".join(lines)
 
@@ -346,6 +406,7 @@ def run_diagnostic(*, pilot_dir: str | Path, raw_dataset: str | Path, teacher_da
               "replay_slices": [{key: value for key, value in chunk["spec"].items() if key != "checkpoint"} for chunk in slices],
               "event_audit": {"RELEASE_to_WAIT": r2w, "WAIT_to_RELEASE": w2r, "all_legal_release_ticks": len(all_ticks), "deduplicated_legal_events": len(dedup)},
               "observation_aliasing_audit": _aliasing_audit(dedup),
+              "exact_hash_opposite_label_pairs": _opposite_hash_pairs(records),
               "bc_distribution": _bc_distribution(records), "probes": probes, "observation_v2_sufficient": sufficient,
               "root_cause": root_cause, "recommended_minimum_repair": repair,
               "fresh_PPO_rerun_allowed": sufficient, "formal_L1_training_allowed": False,
