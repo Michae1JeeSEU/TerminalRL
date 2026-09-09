@@ -255,6 +255,44 @@ def _ece(probabilities: np.ndarray, labels: np.ndarray, bins: int = 10) -> float
     return values
 
 
+def _aliasing_audit(rows: list[dict]) -> dict:
+    """Inspect opposite Teacher labels at identical or nearest V2 event states.
+
+    This is an audit only: the raw V2 vector and the Teacher labels remain
+    unchanged.  Nearest cross-label comparisons make the requested release
+    eligibility/topology/resource fields explicit instead of treating the
+    87-D vector as an opaque classifier input.
+    """
+    observations = np.asarray([row["observation"] for row in rows], dtype=np.float32)
+    labels = np.asarray([row["label"] for row in rows], dtype=np.int64)
+    hashes: dict[str, set[int]] = defaultdict(set)
+    for row in rows: hashes[row["observation_hash"]].add(int(row["label"]))
+    conflicting_hashes = [key for key, value in hashes.items() if len(value) > 1]
+    opposite_distance = []
+    pairs: list[tuple[int, int]] = []
+    for index, label in enumerate(labels):
+        candidates = np.flatnonzero(labels != label)
+        distances = np.linalg.norm(observations[candidates] - observations[index], axis=1)
+        nearest = int(candidates[int(np.argmin(distances))])
+        opposite_distance.append(float(distances.min())); pairs.append((index, nearest))
+    group_slices = {
+        "release_eligibility": LOW_OBS_V2.slices["release_eligible"],
+        "phase_ring": slice(LOW_OBS_V2.slices["phase"].start, LOW_OBS_V2.slices["ring_role"].stop),
+        "target_predecessor": LOW_OBS_V2.slices["target_ring_predecessor"],
+        "target_successor": LOW_OBS_V2.slices["target_ring_successor"],
+        "nearest_predicted_conflict": LOW_OBS_V2.slices["nearest_predicted_conflict"],
+        "resource_state": slice(LOW_OBS_V2.slices["assigned_lz_present"].start, LOW_OBS_V2.slices["global_free_lz_fraction"].stop),
+        "headway_and_interface": slice(LOW_OBS_V2.slices["headways"].start, LOW_OBS_V2.slices["reconfiguration_active_pending"].stop),
+    }
+    deltas = {}
+    for name, field in group_slices.items():
+        values = [np.mean(np.abs(observations[left, field] - observations[right, field])) for left, right in pairs]
+        deltas[name] = float(np.mean(values))
+    return {"deduplicated_events": len(rows), "exact_hashes": len(hashes), "opposite_label_exact_hashes": len(conflicting_hashes),
+            "nearest_opposite_label_l2": _quantiles(opposite_distance), "nearest_opposite_label_feature_abs_delta": deltas,
+            "interpretation": "Small nearest opposite-label distances with small topology/resource deltas indicate V2 aliasing; otherwise the failed supervised separation still establishes insufficient representation under this frozen probe."}
+
+
 def _markdown(report: dict) -> str:
     audit, probes = report["event_audit"], report["probes"]
     lines = ["# V3-L1-D Release Objective + Decision-Event Diagnostic", "", "Evidence: deterministic replay from preexisting pilot checkpoints (newly_run) plus the fixed 224-state cohort (preexisting artifact). No PPO update was executed.", "",
@@ -265,6 +303,11 @@ def _markdown(report: dict) -> str:
     for name in ("A_current_correction_only", "B_all_legal_ticks", "C_deduplicated_events", "D_deduplicated_balanced"):
         row = probes[name]
         lines.append(f"- {name}: n={row['train_samples']}; labels WAIT/RELEASE={row['train_labels']['WAIT']}/{row['train_labels']['RELEASE']}; accuracy={row['release_accuracy']:.4f}; false-release/wait={row['false_release_rate']:.4f}/{row['false_wait_rate']:.4f}; P(R|Teacher WAIT/RELEASE)={row['P_RELEASE_given_teacher_WAIT']:.4f}/{row['P_RELEASE_given_teacher_RELEASE']:.4f}; gap={row['conditional_probability_gap']:.4f}; CE={row['cohort_CE']:.4f}; brier={row['brier']:.4f}; ECE={row['ECE_10']:.4f}")
+    aliasing = report["observation_aliasing_audit"]
+    lines += ["", "## Observation V2 aliasing audit", "",
+              f"- Deduplicated events / exact hashes / opposite-label exact hashes: {aliasing['deduplicated_events']} / {aliasing['exact_hashes']} / {aliasing['opposite_label_exact_hashes']}.",
+              f"- Nearest opposite-label L2 mean/P50/P95/max: {aliasing['nearest_opposite_label_l2']['mean']:.4f}/{aliasing['nearest_opposite_label_l2']['P50']:.4f}/{aliasing['nearest_opposite_label_l2']['P95']:.4f}/{aliasing['nearest_opposite_label_l2']['max']}.",
+              f"- Mean absolute feature deltas at nearest opposite-label pairs: {aliasing['nearest_opposite_label_feature_abs_delta']}."]
     lines += ["", f"Observation V2 sufficient = {str(report['observation_v2_sufficient']).lower()}", f"final root cause = {report['root_cause']}", f"recommended minimum repair = {report['recommended_minimum_repair']}", f"fresh PPO rerun allowed = {str(report['fresh_PPO_rerun_allowed']).lower()}", ""]
     return "\n".join(lines)
 
@@ -302,6 +345,7 @@ def run_diagnostic(*, pilot_dir: str | Path, raw_dataset: str | Path, teacher_da
               "evidence_boundary": "The pilot stored aggregate updates/checkpoints but no per-tick transitions. This run exactly replayed update1 from baseline and update4 from update3; update1 matched the stored 10,620 opportunities and 7,885 R→W corrections exactly. It does not claim raw-tick evidence for unreplayable pre-update states of updates 2/3/5/6.",
               "replay_slices": [{key: value for key, value in chunk["spec"].items() if key != "checkpoint"} for chunk in slices],
               "event_audit": {"RELEASE_to_WAIT": r2w, "WAIT_to_RELEASE": w2r, "all_legal_release_ticks": len(all_ticks), "deduplicated_legal_events": len(dedup)},
+              "observation_aliasing_audit": _aliasing_audit(dedup),
               "bc_distribution": _bc_distribution(records), "probes": probes, "observation_v2_sufficient": sufficient,
               "root_cause": root_cause, "recommended_minimum_repair": repair,
               "fresh_PPO_rerun_allowed": sufficient, "formal_L1_training_allowed": False,

@@ -1,6 +1,6 @@
 import numpy as np
 
-from terminal_marl.training.run_v3_l1_release_objective_diagnostic import _bc_distribution, _events, _streaks
+from terminal_marl.training.run_v3_l1_release_objective_diagnostic import _aliasing_audit, _bc_distribution, _events, _streaks
 
 
 def _row(tick, *, requested=1, target=0, used=True, eligible=True):
@@ -29,3 +29,12 @@ def test_current_bc_gate_and_event_deduplication_are_explicit():
     assert not bc["CORRECTION_ONLY_BINARY_SUPERVISION"]
     assert len(_events(rows, deduplicate=False)) == 5
     assert len(_events(rows, deduplicate=True)) == 3
+
+
+def test_aliasing_audit_reports_exact_opposite_label_hashes():
+    left, right = _row(1), _row(2, requested=0, target=1)
+    left.update(label=0, observation_hash="shared")
+    right.update(label=1, observation_hash="shared")
+    audit = _aliasing_audit([left, right])
+    assert audit["opposite_label_exact_hashes"] == 1
+    assert audit["nearest_opposite_label_l2"]["count"] == 2
