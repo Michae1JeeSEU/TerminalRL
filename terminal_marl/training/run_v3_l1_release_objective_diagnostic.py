@@ -78,11 +78,15 @@ def _release_full_state(env: TerminalParallelEnv, uav) -> dict:
                                  "predecessor": item.predecessor_id, "successor": item.successor_id})
     pending = env.future_release_reservations.get(uav.uid)
     committed = uav.committed_plan
+    def _finite_or_none(value):
+        value = float(value)
+        return value if np.isfinite(value) else None
+
     return {
         "simulator": {"now": env.now, "active_count": len(env.active), "final_count": sum(x.phase.value == "final" for x in env.active.values()),
                       "interface": interface, "headway": None if interface is None else env.airspace.headways[interface],
-                      "last_executed_release": None if interface is None else env.scheduler.last_executed_release[interface],
-                      "last_tentative_release": None if interface is None else env.scheduler.last_release[interface]},
+                      "last_executed_release": None if interface is None else _finite_or_none(env.scheduler.last_executed_release[interface]),
+                      "last_tentative_release": None if interface is None else _finite_or_none(env.scheduler.last_release[interface])},
         "lifecycle": {"phase": uav.phase.value, "ring_role": None if uav.ring_role is None else uav.ring_role.value,
                       "committed": committed is not None, "phase_entry_time": uav.phase_entry_time,
                       "release_retry_remaining": max(0.0, uav.safety_retry_after - env.now),
