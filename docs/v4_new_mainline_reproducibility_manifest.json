@@ -91,6 +91,8 @@
     "terminal_marl/training/run_v4_2_v2_1_i1_multiseed_qualification.py": "347929f40926e1f03950aa802f8b563817ec3d3554c628ff09d0a1b8c11e2250",
     "terminal_marl/training/run_v4_2_v2_1_i1_failure_attribution.py": "2256ccb1a85bb21fca0a6c0e3c0afc631953b7772fd53a9b2edbbbcc57fa99b9",
     "tests/test_v4_2_v2_1_i1_failure_attribution.py": "b84cd59de649dde8a670bea4af2bc957eabacd76ae1e4760662fcbdbe1a4cbe8",
+    "terminal_marl/training/run_v4_2_v2_1_formal_i0_r2.py": "80bbd628f0d3c621b0fa3a04d8d229f08d3d54839cd1eab140bd5db869d5d971",
+    "tests/test_v4_2_v2_1_i0_r2_protocol.py": "8d12776c40ec56e19699886d85d67e6c2b85389a69bafec2c4c3c380b72bdfec",
     "terminal_marl/training/low_v4_1_imitation.py": "8b306df65fcb7492a8f42d621974780bd21df5d32b292e1236cbb43766a22c1a",
     "terminal_marl/training/run_v4_1_learnability_diagnostic.py": "860ed48c68f67f501bb4a5a5b529bea764ed68febb6535d242028860d1d97e33",
     "tests/test_low_v4_1_imitation.py": "a21370402b438e5bfc577641d0db02bca16707a6a2af64ef293976f504fba443",
