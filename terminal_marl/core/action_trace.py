@@ -6,11 +6,14 @@ from dataclasses import dataclass
 from .merge_scheduler import LowLevelIntent
 from .low_level_action import LowLevelActionV3
 from .low_level_joint_action import joint_index_from_normalized
+from .low_level_joint_action_v4_1 import ACTION_SCHEMA_V4_1, joint_index_from_normalized_v4_1
+from .low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2, hierarchical_from_normalized_v4_2
 
 
 @dataclass
 class LowLevelActionTrace:
     requested: LowLevelIntent
+    action_schema_version: str | None = None
     teacher_corrected: LowLevelIntent | None = None
     execution_applied: LowLevelIntent | None = None
     shield_applied: LowLevelIntent | None = None
@@ -42,11 +45,16 @@ class LowLevelActionTrace:
             if action is None:
                 return None
             try:
-                index = int(joint_index_from_normalized(encode(action)))
+                if self.action_schema_version == ACTION_SCHEMA_V4_2:
+                    return hierarchical_from_normalized_v4_2(encode(action)).as_dict()
+                encoder = joint_index_from_normalized_v4_1 if self.action_schema_version == ACTION_SCHEMA_V4_1 else joint_index_from_normalized
+                index = int(encoder(encode(action)))
                 return {"joint_action_index": index, "decoded": encode(action)}
             except ValueError:
                 return {"non_catalog_action": encode(action)}
         requested_joint = v4(self.requested)
+        requested_hierarchical = requested_joint if self.action_schema_version == ACTION_SCHEMA_V4_2 else None
+        teacher_hierarchical = v4(self.teacher_corrected) if self.action_schema_version == ACTION_SCHEMA_V4_2 else None
         return {
             "requested_low_action": encode(self.requested),
             "teacher_corrected_action": encode(self.teacher_corrected),
@@ -57,12 +65,15 @@ class LowLevelActionTrace:
             "teacher_witness_plan_id": self.teacher_witness_plan_id, "teacher_verified": self.teacher_verified,
             "shield_reason": self.shield_reason,
             "correction_magnitude": self.correction_magnitude,
+            "action_schema_version": self.action_schema_version,
             "requested_action_v3": v3(self.requested),
             "teacher_action_v3": v3(self.teacher_corrected),
             "execution_action_v3": v3(self.execution_applied),
             "shield_action_v3": v3(self.shield_applied),
-            "joint_action_index": None if requested_joint is None else requested_joint.get("joint_action_index"),
+            "joint_action_index": None if requested_joint is None else requested_joint.get("joint_action_index", requested_joint.get("joint_index_v4_1")),
             "decoded_joint_action": requested_joint,
+            "requested_hierarchical_action": requested_hierarchical,
+            "teacher_hierarchical_action": teacher_hierarchical,
             "teacher_joint_action": v4(self.teacher_corrected),
             "execution_applied_joint_action": v4(self.execution_applied),
             "shield_applied_joint_action": v4(self.shield_applied),

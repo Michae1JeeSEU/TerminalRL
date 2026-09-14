@@ -1,0 +1,43 @@
+stage: V2_1_I1_Q_COHORT_COLLECTION_AND_FREEZE
+protocol: V4_2_V2_1_I1_QUALIFICATION_V1
+observation_schema: phaseA_low_obs_v2_1_retry_state
+observation_dim: 88
+action_schema: low_action_schema_v4_2_hierarchical
+candidate_seed_start: 210001
+candidate_seed_end: 210999
+minimum_rows: 650
+hard_ceiling_rows: 1200
+minimum_support:
+  wait_rows: 300
+  wait_lifecycles: 250
+  release_rows: 160
+  release_lifecycles: 150
+  proposal_11_lifecycles: 15
+  proposal_12_lifecycles: 15
+  proposal_13_lifecycles: 30
+  proposal_14_lifecycles: 15
+  clear_outer_release_lifecycles: 30
+  middle_interface_release_lifecycles: 30
+  post_wait_release_lifecycles: 30
+  post_conflict_release_lifecycles: 30
+  retry_active_wait_lifecycles: 60
+  retry_expired_release_lifecycles: 60
+scenario_schedule:
+  - clear_outer_low_traffic
+  - middle_interface
+  - post_WAIT_release
+  - conflict_recovery
+  - transition_retry
+  - nominal_mixed
+  - resource_pressure
+  - proposal_12_context
+  - proposal_14_context
+schedule_rule: complete_initial_cycle_then_fixed_round_robin_over_unmet_deficits
+row_admission: semantic_event_sampler_only
+model_prediction_during_collection: forbidden
+row_duplication: forbidden
+oversampling: forbidden
+class_weighting: forbidden
+i1_training: forbidden
+dagger: forbidden
+ppo: forbidden

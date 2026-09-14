@@ -1,0 +1,15 @@
+stage: I1_V4_2_HIERARCHICAL_BC
+action_schema: low_action_schema_v4_2_hierarchical
+input: v4_2_derived_i0_target_view
+train_rows: 1500
+frozen_cohort_rows: 243
+fresh_actor: true
+resume_checkpoint: null
+loss: CE_gate_all_samples + CE_proposal_teacher_RELEASE_only
+epochs: 100
+batch_size: 64
+learning_rate: 0.0003
+class_weighting: forbidden
+focal_loss: forbidden
+release_oversampling: forbidden
+ppo_allowed: false

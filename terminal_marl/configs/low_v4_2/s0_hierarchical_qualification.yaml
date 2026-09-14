@@ -1,0 +1,17 @@
+stage: V4_2_S0_HIERARCHICAL_QUALIFICATION
+action_schema: low_action_schema_v4_2_hierarchical
+observation_schema: phaseA_low_obs_v2_topology_87d
+execution_action_count: 26
+gate_actions: 2
+release_proposals: 25
+ppo_allowed: false
+i1_allowed_only_after: V4_2_HIERARCHICAL_SCHEMA_PASS
+forbidden:
+  - i1_training
+  - dagger
+  - ppo
+  - i0_recollection
+  - teacher_change
+  - observation_change
+  - reward_change
+  - safety_authority_change

@@ -1,0 +1,5 @@
+stage: I1_JOINT_BC
+runner: terminal_marl.training.low_v4_imitation:train_i1_joint_bc
+loss: categorical_cross_entropy_joint_teacher_index
+actor_initialization: fresh_v4_joint_actor
+ppo_allowed: false

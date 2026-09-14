@@ -1,0 +1,17 @@
+stage: I2_V4_2_DAGGER_ROUND1
+action_schema: low_action_schema_v4_2_hierarchical
+student_checkpoint: i1_v4_2_hierarchical_fresh_actor.pt
+parent_dataset: v4_2_derived_i0_target_view
+teacher_mode: label_only
+round: 1
+collection:
+  target_semantic_events: 500
+  max_seeds: 24
+  max_steps_per_seed: 10
+  sampler: event_start + teacher_target_change + meaningful_observation_change + bounded_sparse_persistence
+retraining:
+  initialization: i1_checkpoint
+  loss: CE_gate_all_samples + CE_proposal_teacher_RELEASE_only
+  class_weighting: forbidden
+  oversampling: forbidden
+ppo_allowed: false

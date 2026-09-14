@@ -5,8 +5,15 @@ from .observations import observation_schema_for_version
 from .low_level_joint_action import N_JOINT_ACTIONS
 import torch
 class IncompatibleCheckpointError(ValueError): pass
+def _joint_schema(config: SimConfig) -> tuple[int, str]:
+    if config.action_schema_version == "low_action_schema_v4_1_joint_discrete_26":
+        return 26, "joint_categorical_v4_1"
+    if config.action_schema_version == "low_action_schema_v4_2_hierarchical":
+        return 26, "hierarchical_gate_2_conditional_proposal_25"
+    return N_JOINT_ACTIONS, "joint_categorical"
 def validate_checkpoint_metadata(metadata:dict, config:SimConfig|None=None)->None:
     c=config or SimConfig()
+    joint_count, distribution = _joint_schema(c)
     schema=observation_schema_for_version(c.observation_schema_version)
     expected={"schema_version":c.schema_version,"airspace_schema_version":c.airspace_schema_version,
               "vehicle_dynamics_schema_version":c.vehicle_dynamics_schema_version,
@@ -16,13 +23,14 @@ def validate_checkpoint_metadata(metadata:dict, config:SimConfig|None=None)->Non
               "action_schema_version":c.action_schema_version,"high_action_schema_version":c.high_action_schema_version,
               "observation_schema_version":c.observation_schema_version,"observation_dimension":schema.dimension,
               "observation_feature_hash":schema.feature_hash,
-              "low_level_joint_action_count": N_JOINT_ACTIONS,
-              "low_level_policy_distribution": "joint_categorical"}
+              "low_level_joint_action_count": joint_count,
+              "low_level_policy_distribution": distribution}
     mismatch={k:(metadata.get(k),v) for k,v in expected.items() if metadata.get(k)!=v}
     if mismatch:raise IncompatibleCheckpointError(f"incompatible checkpoint schema: {mismatch}")
 
 def checkpoint_metadata(config: SimConfig | None = None, *, policy_kind: str = "low_level", low_level_checkpoint_hash: str | None = None) -> dict:
     c = config or SimConfig()
+    joint_count, distribution = _joint_schema(c)
     schema = observation_schema_for_version(c.observation_schema_version)
     return {"schema_version": c.schema_version, "airspace_schema_version": c.airspace_schema_version,
             "vehicle_dynamics_schema_version": c.vehicle_dynamics_schema_version,
@@ -32,8 +40,8 @@ def checkpoint_metadata(config: SimConfig | None = None, *, policy_kind: str = "
             "action_schema_version": c.action_schema_version, "high_action_schema_version": c.high_action_schema_version,
             "observation_schema_version": c.observation_schema_version, "observation_dimension": schema.dimension,
             "observation_feature_hash": schema.feature_hash, "low_level_action_dim": 3,
-            "low_level_joint_action_count": N_JOINT_ACTIONS,
-            "low_level_policy_distribution": "joint_categorical",
+            "low_level_joint_action_count": joint_count,
+            "low_level_policy_distribution": distribution,
             "high_level_action_dim": 10, "high_level_enabled": c.high_level_enabled,
             "policy_kind": policy_kind, "low_level_checkpoint_hash": low_level_checkpoint_hash,
             "scheduler_mode": c.scheduler_mode, "teacher_enabled": c.teacher_enabled}

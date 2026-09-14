@@ -1,0 +1,6 @@
+stage: I2_SAFE_DAGGER
+runner: terminal_marl.training.low_v4_imitation:run_i2_dagger_preflight
+student_authoritative: true
+teacher_role: label_only
+execution_chain: [ExecutionScheduler, TrajectoryGenerator, SafetyFilter, PredictiveSafetyShield]
+ppo_allowed: false

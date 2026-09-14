@@ -1,0 +1,17 @@
+stage: V4_2_OBSERVATION_V2_1_RETRY_STATE_QUALIFICATION
+action_schema: low_action_schema_v4_2_hierarchical
+old_observation_schema: phaseA_low_obs_v2_topology_87d
+observation_schema: phaseA_low_obs_v2_1_retry_state
+retry_norm_horizon_seconds: 30.0
+retry_norm_horizon_proof: retry delay is max(5 s, interface headway); interface headway is bounded by SimConfig.headway_max = 30 s
+parent_dataset: v4_2_derived_i0_target_view
+forbidden:
+  - I1_training
+  - DAgger_round1_rerun
+  - DAgger_round2
+  - PPO
+  - teacher_change
+  - safety_change
+  - reward_change
+  - class_weighting
+  - oversampling

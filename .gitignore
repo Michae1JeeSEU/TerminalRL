@@ -23,6 +23,10 @@ htmlcov/
 logs/
 *.log
 runs/
+tmp_*/
+.stfolder/
+.stignore
+.worktrees/
 .codex_sync_token
 terminal_server_training_package.zip
 

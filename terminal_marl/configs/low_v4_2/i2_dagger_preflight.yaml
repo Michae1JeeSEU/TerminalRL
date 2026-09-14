@@ -1,0 +1,9 @@
+stage: I2_V4_2_DAGGER_PREFLIGHT
+action_schema: low_action_schema_v4_2_hierarchical
+student_checkpoint: i1_v4_2_hierarchical_fresh_actor.pt
+teacher_mode: label_only
+seeds: [9701, 9702]
+max_steps: 6
+round: preflight
+formal_dagger_retraining: forbidden
+ppo_allowed: false

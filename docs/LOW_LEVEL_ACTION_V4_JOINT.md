@@ -1,6 +1,66 @@
-# Low-Level Action V4: joint discrete scheduling intention
+# Low-Level Action V4.2: hierarchical scheduling intention
 
-V4 replaces factorized V3 supervision. The policy emits one categorical
+## Active mainline: V4.2
+
+V4.2 preserves V4.1's 26 physical execution intents but replaces its flat
+`Categorical(26)` policy representation with a conditional hierarchy:
+
+```text
+gate = Categorical(2): WAIT / RELEASE
+proposal = Categorical(25), evaluated only when gate = RELEASE
+```
+
+WAIT decodes to `[WAIT, 0, 0]`. RELEASE plus proposal `k` decodes exactly to
+V4.1 joint index `k + 1`, retaining every V4.1 speed×merge physical proposal.
+This is not a return to independent V3 speed/merge heads. The actor uses one
+shared Observation V2 encoder with a two-way gate head and a 25-way proposal
+head.
+
+The semantic Teacher remains V4.1: joint target 0 maps deterministically to
+`(WAIT, null)`, and joint targets 1–25 map to `(RELEASE, joint-1)`. Derived
+I0 views add those targets without altering observation, Teacher semantic
+action, state, source, seed, or lineage. BC is unweighted
+`CE(gate) + CE(proposal | Teacher RELEASE)`, with each term averaged over its
+own valid samples.
+
+For future PPO only, the requested-action log-probability is `log P(WAIT)`
+for WAIT and `log P(RELEASE) + log P(proposal | RELEASE)` for RELEASE.
+Conditional entropy is `H(gate) + P(RELEASE) H(proposal)`. Teacher, applied,
+and shield actions never enter the PPO ratio. PPO remains disabled until a
+separate authorization and qualification.
+
+V4.2 ActionTape records requested gate/proposal, their component log-probs,
+joint log-probability, decoded requested action, Teacher gate/proposal,
+applied/shield actions, observation hash, and post-state hash. V4 and V4.1
+tapes are read-only historical records and cannot replay under V4.2. V4 and
+V4.1 checkpoints are not resumable; V4.2 learning starts from a fresh actor.
+
+## Historical V4.1 (superseded as actor representation)
+
+V4.1 supersedes V4's 30-way catalog because the WAIT-speed semantic audit
+found WAIT residuals dominated as policy decisions. The active schema is
+`low_action_schema_v4_1_joint_discrete_26`: one canonical WAIT plus 25
+RELEASE(`speed×merge`) proposals. Index `0` decodes exactly to
+`[WAIT, speed=0, merge=0]`; indices `1..25` preserve the V4 RELEASE physical
+decode. WAIT means no release and no reservation proposal. Holder-speed and
+safety correction while waiting remain owned by ring-holder execution and
+PredictiveSafetyShield, never the policy action.
+
+Teacher labels enumerate the 25 RELEASE proposals and one canonical WAIT;
+there is no WAIT residual ranking. ExecutionScheduler still certifies only
+the one requested proposal. V4.1 ActionTape records schema, requested joint
+index/decode/log-probability, Teacher/execution/shield actions, observation
+hash and post-state hash. Historical V4 tapes are read-only and cannot be
+silently replayed as V4.1. V4 `Categorical(30)` checkpoints are not resumable:
+V4.1 learning always starts from a fresh actor.
+
+I0 coverage is based on decision-relevant expert target families (WAIT and
+RELEASE, multiple RELEASE speed/merge/joint targets, simple/rejected/conflict/
+interface/resource cases), not every catalog index.
+
+## Historical V4 (superseded)
+
+V4 replaced factorized V3 supervision. The policy emitted one categorical
 joint-action index, the Teacher supervises one joint-action index, and vehicle
 execution remains the existing normalized intent / trajectory / SafetyFilter
 pipeline.

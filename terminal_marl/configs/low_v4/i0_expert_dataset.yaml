@@ -1,0 +1,7 @@
+# New V4 mainline.  Teacher supplies state-conditioned labels only; PPO is off.
+stage: I0_STRUCTURED_EXPERT_DATASET
+runner: terminal_marl.training.low_v4_imitation:collect_i0_dataset
+action_schema: low_action_schema_v4_joint_discrete
+teacher_role: state_conditioned_expert_labeler
+decision_sampling: bounded_event_persistence
+ppo_allowed: false

@@ -7,6 +7,8 @@ from typing import Callable
 from .merge_scheduler import LowLevelIntent, RepairCandidate, MergeScheduler
 from .low_level_action import LowLevelActionV3
 from .low_level_joint_action import JOINT_ACTION_CATALOG, JointAction
+from .low_level_joint_action_v4_1 import ACTION_SCHEMA_V4_1, JOINT_ACTION_CATALOG_V4_1
+from .low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2
 
 
 @dataclass(frozen=True)
@@ -76,10 +78,13 @@ class TeacherScheduler:
         bounded enumeration of the policy catalogue and removes all V3
         per-head target construction.
         """
-        releases = [row for row in JOINT_ACTION_CATALOG if row.release_request > 0.0]
+        catalogue = JOINT_ACTION_CATALOG_V4_1 if self.config.action_schema_version in {ACTION_SCHEMA_V4_1, ACTION_SCHEMA_V4_2} else JOINT_ACTION_CATALOG
+        releases = [row for row in catalogue if row.release_request > 0.0]
         releases.sort(key=lambda row: (abs(row.speed_residual), abs(row.merge_time_residual), row.index))
-        waits = [row for row in JOINT_ACTION_CATALOG if row.release_request == 0.0]
-        waits.sort(key=lambda row: (abs(row.speed_residual), row.index))
+        waits = [row for row in catalogue if row.release_request == 0.0]
+        # V4.1 has exactly one canonical WAIT; the residual tie-break belongs
+        # only to historical V4's now-superseded catalogue.
+        waits.sort(key=lambda row: row.index)
         return tuple(releases + waits)
 
     def choose_joint_verified(self, verify: Callable[[JointAction], object]) -> JointAction:

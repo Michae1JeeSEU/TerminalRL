@@ -1,0 +1,6 @@
+stage: I1_JOINT_BC
+action_schema: low_action_schema_v4_1_joint_discrete_26
+actor_initialization: fresh_only
+loss: categorical_cross_entropy_teacher_joint
+requires: V4_1_I0_SCHEMA_PROVENANCE_PASS_and_I0_LEARNING_COVERAGE_PASS
+ppo_allowed: false

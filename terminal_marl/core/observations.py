@@ -49,8 +49,20 @@ LOW_OBS_V2 = ObservationSchema((
     FeatureSpec("interface_frozen", 1), FeatureSpec("interface_headway_slack", 1), FeatureSpec("reconfiguration_active_pending", 1),
 ))
 
+# V2.1 preserves the V2 prefix byte-for-byte and appends precisely one online
+# state variable.  Rejected release execution sets ``safety_retry_after`` to
+# ``now + max(5 s, interface_headway)``; DynamicAirspace bounds every headway
+# by the frozen formal V4.2 ``headway_max`` (30 s).  The matching config value
+# is checked at construction, so a V2.1 deployment cannot silently normalize
+# a retry interval outside its declared range.
+LOW_OBS_V2_1 = ObservationSchema(LOW_OBS_V2.features + (
+    FeatureSpec("safety_retry_remaining_norm", 1),
+))
+
 if LOW_OBS_V2.dimension != 87:  # import-time guard against accidental schema drift
     raise RuntimeError("phaseA_low_obs_v2_topology_87d must be exactly 87D")
+if LOW_OBS_V2_1.dimension != 88:
+    raise RuntimeError("phaseA_low_obs_v2_1_retry_state must be exactly 88D")
 
 def _one(value, values):return [float(value==x) for x in values]
 def build_a5_observation(uav, env)->np.ndarray:
@@ -130,11 +142,36 @@ def build_low_observation_v2(uav, env, *, topology_cache: TopologyCache | None =
     return vector
 
 
+def safety_retry_remaining_norm(uav, env) -> float:
+    """Current-state-only retry mask appended by Observation V2.1.
+
+    This is deliberately separate from ``release_eligible``: its zero/nonzero
+    semantics expose the Teacher's retry predicate without changing any V2
+    field or using a future trajectory, reservation, or policy action.
+    """
+    retry_remaining = max(0.0, float(uav.safety_retry_after - env.now))
+    horizon = float(env.config.retry_norm_horizon_seconds)
+    if horizon <= 0.0:
+        raise ValueError("retry_norm_horizon_seconds must be positive")
+    return float(np.clip(retry_remaining / horizon, 0.0, 1.0))
+
+
+def build_low_observation_v2_1(uav, env, *, topology_cache: TopologyCache | None = None) -> np.ndarray:
+    """Return V2's unchanged 87D prefix plus normalized retry remaining."""
+    prefix = build_low_observation_v2(uav, env, topology_cache=topology_cache)
+    vector = np.concatenate((prefix, np.asarray([safety_retry_remaining_norm(uav, env)], dtype=np.float32)))
+    if vector.shape != (LOW_OBS_V2_1.dimension,):
+        raise RuntimeError(f"V2.1 observation schema mismatch: {vector.shape}")
+    return vector
+
+
 def observation_schema_for_version(version: str) -> ObservationSchema:
     if version == "phaseA_low_obs_v1_41d":
         return LOW_OBS_V1_LEGACY
     if version == "phaseA_low_obs_v2_topology_87d":
         return LOW_OBS_V2
+    if version == "phaseA_low_obs_v2_1_retry_state":
+        return LOW_OBS_V2_1
     raise ValueError(f"unsupported low-level observation schema: {version}")
 
 
@@ -143,6 +180,8 @@ def build_low_observation(uav, env, *, topology_cache: TopologyCache | None = No
         return build_a5_observation(uav, env)
     if env.config.observation_schema_version == "phaseA_low_obs_v2_topology_87d":
         return build_low_observation_v2(uav, env, topology_cache=topology_cache)
+    if env.config.observation_schema_version == "phaseA_low_obs_v2_1_retry_state":
+        return build_low_observation_v2_1(uav, env, topology_cache=topology_cache)
     raise ValueError(f"unsupported low-level observation schema: {env.config.observation_schema_version}")
 
 def pad_agent_sets(agent_sets:list[np.ndarray])->tuple[np.ndarray,np.ndarray]:

@@ -1,0 +1,10 @@
+# V4.1 I0 is enabled only after the S0 schema qualification gate passes.
+stage: I0_STRUCTURED_EXPERT_DATASET
+runner: terminal_marl.training.low_v4_1_imitation
+action_schema: low_action_schema_v4_1_joint_discrete_26
+catalog: 1_WAIT_plus_25_RELEASE
+teacher_role: state_conditioned_expert_labeler
+decision_sampling: semantic_event_change_plus_sparse_persistence
+coverage_gate: decision_relevant_expert_target_families_plus_learning_support
+learning_support_probe: fresh_ce_only_no_checkpoint
+ppo_allowed: false

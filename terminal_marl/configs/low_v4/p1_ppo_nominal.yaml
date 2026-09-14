@@ -1,0 +1,5 @@
+# This file intentionally cannot authorize PPO in the current curriculum.
+stage: P1_PPO_NOMINAL
+requires: [I0_PASS, I1_PASS, I2_SAFE_DAGGER_PASS, I3_STUDENT_IMITATION_QUALIFICATION_PASS]
+ppo_allowed: false
+status: locked

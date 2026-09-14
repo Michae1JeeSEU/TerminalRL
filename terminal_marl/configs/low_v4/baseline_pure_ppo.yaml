@@ -1,0 +1,5 @@
+# Baseline declaration only.  It is not a runnable training authorization.
+stage: B0_PURE_PPO
+execution_safety_stack: enabled
+ppo_allowed: false
+status: reserved_until_i3_passes

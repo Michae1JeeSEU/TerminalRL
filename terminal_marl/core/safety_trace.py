@@ -13,13 +13,17 @@ import numpy as np
 
 from .low_level_action import ACTION_SCHEMA_V3, LowLevelActionV3
 from .low_level_joint_action import ACTION_SCHEMA_V4, joint_index_from_normalized
+from .low_level_joint_action_v4_1 import ACTION_SCHEMA_V4_1, joint_index_from_normalized_v4_1
+from .low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2, hierarchical_from_normalized_v4_2
 
 
 def _json(value: Any) -> Any:
     if isinstance(value, np.ndarray):
-        return value.tolist()
+        return _json(value.tolist())
     if isinstance(value, np.generic):
-        return value.item()
+        value = value.item()
+    if isinstance(value, float) and not np.isfinite(value):
+        return "-Infinity" if value < 0 else "Infinity" if value > 0 else "NaN"
     if isinstance(value, dict):
         return {str(key): _json(item) for key, item in value.items()}
     if isinstance(value, (tuple, list, deque)):
@@ -84,6 +88,16 @@ class SafetyTraceRecorder:
             env.scheduler.reservations.values(),
             key=lambda value: (value.uav_id, value.source_stage, value.target_stage, value.merge_time),
         )]
+        def ring(state):
+            return {"role": state.role.value, "radius": float(state.radius), "height": float(state.height),
+                    "nominal_speed": float(state.nominal_speed), "derived_capacity": int(state.derived_capacity)}
+        transition = env.airspace.transition
+        geometry_transition = None if transition is None else {
+            "start_time": float(transition.start_time), "end_time": float(transition.end_time),
+            "start": {role.value: ring(value) for role, value in transition.start.items()},
+            "target": {role.value: ring(value) for role, value in transition.target.items()},
+            "affected_interfaces": sorted(transition.affected_interfaces),
+        }
         return {
             "time": float(env.now),
             "step_count": int(env.step_count),
@@ -93,18 +107,44 @@ class SafetyTraceRecorder:
             "reservations": _json(SafetyTraceRecorder._replay_state_value(reservations)),
             "release_state": _json(SafetyTraceRecorder._replay_state_value(env.release_intents)),
             "future_release_reservations": _json(SafetyTraceRecorder._replay_state_value(env.future_release_reservations)),
+            "dynamic_airspace": {
+                "actual": {role.value: ring(env.airspace.actual_ring(role)) for role in env.airspace._actual},
+                "target": {role.value: ring(env.airspace.target_ring(role)) for role in env.airspace._target},
+                "headways": _json(env.airspace.headways), "speed_profile_bias": float(env.airspace.speed_profile_bias),
+                "last_geometry_update": float(env.airspace.last_geometry_update),
+                "occupancy": {role.value: int(value) for role, value in env.airspace._occupancy.items()},
+                "committed_incoming": {role.value: int(value) for role, value in env.airspace._committed.items()},
+                "transition": geometry_transition,
+            },
+            "scheduler_last_executed_release": _json(env.scheduler.last_executed_release),
+            "landing_zones": [{"lz_id": int(zone.lz_id), "status": zone.status.value,
+                               "reserved_by": zone.reserved_by, "reservation_start": zone.reservation_start,
+                               "occupied_by": zone.occupied_by, "service_remaining": float(zone.service_remaining)}
+                              for zone in env.lz_manager.zones],
+            "event_scheduler": _json(env.events),
+            "arrival_process": {"generated": int(env.arrivals.generated), "index": int(env.arrivals.index),
+                                "wave": int(env.arrivals.wave), "next_time": float(env.arrivals.next_time),
+                                "rng_state": _json(env.arrivals.rng.bit_generator.state)},
         }
 
-    def start_episode(self, env, *, episode_seed: int, policy_rng_state: Any) -> None:
+    def start_episode(self, env, *, episode_seed: int, policy_rng_state: Any,
+                      reset_recipe: dict[str, Any] | None = None) -> None:
         self._records.clear()
         self._action_tape.clear()
         self.dumped_path = None
-        reset_state = self._state(env)
+        pre_decision_state = self._state(env)
+        recipe = _json(reset_recipe) if reset_recipe is not None else {"kind": "generic_reset", "steps": []}
         self.header = {
             "schema_version": self.schema_version,
             "episode_seed": int(episode_seed),
-            "reset_state_hash": _digest(reset_state),
-            "reset_state": reset_state,
+            # This state is after any collector-specific deterministic setup,
+            # i.e. exactly the first low-level decision environment.
+            "reset_state_hash": _digest(pre_decision_state),
+            "reset_state": pre_decision_state,
+            "reset_recipe": recipe,
+            "reset_recipe_hash": _digest(recipe),
+            "dynamic_airspace_state_hash": _digest(pre_decision_state["dynamic_airspace"]),
+            "arrival_rng_state_hash": _digest(pre_decision_state["arrival_process"]["rng_state"]),
             "environment_config_hash": _digest(vars(env.config)),
             # Pickle is only a lossless local trace encoding, never an input
             # protocol.  It permits exact restoration of NumPy/Torch RNGs.
@@ -112,35 +152,65 @@ class SafetyTraceRecorder:
             "max_pre_event_seconds": self.max_records * float(env.config.dt),
         }
 
+    @staticmethod
+    def _apply_reset_recipe(env, recipe: dict[str, Any]) -> dict[str, np.ndarray]:
+        """Restore declared collector setup between ``reset`` and low-level step 0.
+
+        Recipes intentionally contain only deterministic environment operations;
+        they are never policy actions and cannot alter requested-action
+        provenance. Unknown recipe kinds fail closed rather than silently
+        reducing exact replay to a seed-only reset.
+        """
+        kind = recipe.get("kind", "generic_reset")
+        if kind == "generic_reset":
+            return env._observations()
+        if kind != "high_level_action_after_reset":
+            raise ValueError(f"unsupported ActionTape reset recipe: {kind}")
+        action = np.asarray(recipe["high_level_action"], dtype=np.float32)
+        env.apply_high_level_action(action, geometry_gate=bool(recipe["geometry_gate"]))
+        return env._observations()
+
     def record_pre_step(self, env, observations: dict[str, np.ndarray], actions: dict[str, np.ndarray],
                         log_probs: dict[str, Any] | None = None) -> dict[str, Any]:
-        action_v3: dict[str, Any] = {}; joint_actions: dict[str, int] = {}
+        action_v3: dict[str, Any] = {}; joint_actions: dict[str, int] = {}; hierarchical: dict[str, dict[str, Any]] = {}
         joint_log_prob: dict[str, float] = {}
         head_log_prob: dict[str, list[float]] = {}
+        gate_log_prob: dict[str, float] = {}; proposal_log_prob: dict[str, float | None] = {}
         for uid, action in sorted(actions.items()):
             try:
                 action_v3[str(uid)] = LowLevelActionV3.from_normalized(action).as_dict()
             except ValueError:
                 action_v3[str(uid)] = {"legacy_continuous_action": _json(action)}
             try:
-                joint_actions[str(uid)] = int(joint_index_from_normalized(action))
+                decoder = joint_index_from_normalized_v4_1 if env.config.action_schema_version in {ACTION_SCHEMA_V4_1, ACTION_SCHEMA_V4_2} else joint_index_from_normalized
+                joint_actions[str(uid)] = int(decoder(action))
+                if env.config.action_schema_version == ACTION_SCHEMA_V4_2:
+                    requested = hierarchical_from_normalized_v4_2(action)
+                    hierarchical[str(uid)] = {"gate": requested.gate, "proposal": requested.proposal}
             except ValueError:
                 pass
         for uid, value in sorted((log_probs or {}).items()):
             if isinstance(value, dict):
                 joint_log_prob[str(uid)] = float(value["joint"])
                 head_log_prob[str(uid)] = [float(item) for item in value.get("per_head", ())]
+                if "gate" in value:
+                    gate_log_prob[str(uid)] = float(value["gate"])
+                    proposal_log_prob[str(uid)] = None if value.get("proposal") is None else float(value["proposal"])
             else:
                 joint_log_prob[str(uid)] = float(value)
         action_row = {
             "step": int(env.step_count), "time_before": float(env.now),
             "observation_hash": _digest({key: value for key, value in sorted(observations.items())}),
             "a_requested": _json({key: value for key, value in sorted(actions.items())}),
-            "action_schema_version": (ACTION_SCHEMA_V4 if env.config.action_schema_version == ACTION_SCHEMA_V4 else ACTION_SCHEMA_V3),
+            "action_schema_version": (ACTION_SCHEMA_V4_2 if env.config.action_schema_version == ACTION_SCHEMA_V4_2 else ACTION_SCHEMA_V4_1 if env.config.action_schema_version == ACTION_SCHEMA_V4_1 else ACTION_SCHEMA_V4 if env.config.action_schema_version == ACTION_SCHEMA_V4 else ACTION_SCHEMA_V3),
             "a_requested_v3": action_v3,
             "joint_action_index": joint_actions,
             "joint_log_prob": joint_log_prob,
             "per_head_log_prob": head_log_prob,
+            "requested_gate": {uid: value["gate"] for uid, value in hierarchical.items()},
+            "requested_proposal": {uid: value["proposal"] for uid, value in hierarchical.items()},
+            "gate_logprob": gate_log_prob,
+            "proposal_logprob": proposal_log_prob,
             # Read-only compatibility name for archived tooling. New code
             # consumes ``joint_log_prob`` and ``per_head_log_prob``.
             "log_prob": joint_log_prob,
@@ -164,9 +234,26 @@ class SafetyTraceRecorder:
             "conflict_events": _json(info.get("conflict_events", [])),
         })
         tape_index = int(record["action_tape_index"])
+        def hierarchy_field(trace: dict[str, Any], field: str) -> dict[str, Any] | None:
+            value = trace.get(field)
+            return value if isinstance(value, dict) and "gate_index" in value else None
+        teacher_hierarchy = {uid: hierarchy_field(trace, "teacher_hierarchical_action")
+                             for uid, trace in info.get("action_traces", {}).items()}
         self._action_tape[tape_index].update({
             "time_after": float(env.now),
             "post_state_hash": _digest(post_state),
+            "decoded_action": _json({uid: trace.get("decoded_joint_action", trace.get("requested_low_action"))
+                                       for uid, trace in info.get("action_traces", {}).items()}),
+            "decoded_requested_action": _json({uid: trace.get("decoded_joint_action", trace.get("requested_low_action"))
+                                                 for uid, trace in info.get("action_traces", {}).items()}),
+            "teacher_joint": _json({uid: trace.get("teacher_joint_action")
+                                     for uid, trace in info.get("action_traces", {}).items()}),
+            "teacher_gate": _json({uid: None if value is None else value["gate_index"] for uid, value in teacher_hierarchy.items()}),
+            "teacher_proposal": _json({uid: None if value is None else value["proposal"] for uid, value in teacher_hierarchy.items()}),
+            "applied_action": _json({uid: trace.get("execution_applied_action")
+                                      for uid, trace in info.get("action_traces", {}).items()}),
+            "shield_action": _json({uid: trace.get("shield_applied_action")
+                                     for uid, trace in info.get("action_traces", {}).items()}),
             "executed_mapped_action": _json({uid: trace.get("execution_applied_action")
                                                 for uid, trace in info.get("action_traces", {}).items()}),
             "conflict_events": _json(info.get("conflict_events", [])),
@@ -176,6 +263,22 @@ class SafetyTraceRecorder:
             "first_hard_separation_trace", "nmac_entry", "collision"
         } for row in events):
             self.dump(reason="hard_safety_event")
+
+    def record_teacher_labels(self, record: dict[str, Any], labels: dict[str, dict[str, Any]]) -> None:
+        """Attach external label-only Teacher targets without changing execution.
+
+        The caller computes these labels from the state already captured by
+        ``record_pre_step``.  This method is deliberately trace-only: it does
+        not pass labels to the environment, scheduler, shield, or policy.
+        """
+        tape_index = int(record["action_tape_index"])
+        gate = {str(uid): int(value["gate"]) for uid, value in labels.items()}
+        proposal = {str(uid): value.get("proposal") for uid, value in labels.items()}
+        joint = {str(uid): int(value["joint_index_v4_1"]) for uid, value in labels.items()}
+        self._action_tape[tape_index].update({"teacher_gate": gate, "teacher_proposal": proposal,
+                                               "teacher_joint": joint, "teacher_label_only": True})
+        record.update({"teacher_gate": gate, "teacher_proposal": proposal, "teacher_joint": joint,
+                       "teacher_label_only": True})
 
     def record_safety_invariant(self, record: dict[str, Any] | None, error: Exception) -> None:
         """Attach a blocked fail-closed decision to the exact action tape."""
@@ -202,7 +305,7 @@ class SafetyTraceRecorder:
             "records": list(self._records),
             "action_tape": self._action_tape,
         }
-        path.write_text(json.dumps(payload, indent=2, allow_nan=False), encoding="utf-8")
+        path.write_text(json.dumps(_json(payload), indent=2, allow_nan=False), encoding="utf-8")
         self.dumped_path = path
         return path
 
@@ -235,16 +338,44 @@ class SafetyTraceRecorder:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         header = {key: value for key, value in payload.items() if key not in {"records", "action_tape"}}
         rows = payload.get("action_tape", payload.get("records", []))
+        tape_schema = rows[0].get("action_schema_version") if rows else None
+        if env.config.action_schema_version == ACTION_SCHEMA_V4_1 and tape_schema == ACTION_SCHEMA_V4:
+            raise ValueError("historical V4 30-class ActionTape is read-only and cannot replay under V4.1")
+        if env.config.action_schema_version == ACTION_SCHEMA_V4_2 and tape_schema in {ACTION_SCHEMA_V4, ACTION_SCHEMA_V4_1}:
+            raise ValueError("historical V4/V4.1 ActionTape is read-only and cannot replay under V4.2")
+        if tape_schema == ACTION_SCHEMA_V4_1 and env.config.action_schema_version != ACTION_SCHEMA_V4_1:
+            raise ValueError("V4.1 ActionTape requires a V4.1 environment schema")
+        if tape_schema == ACTION_SCHEMA_V4_2 and env.config.action_schema_version != ACTION_SCHEMA_V4_2:
+            raise ValueError("V4.2 ActionTape requires a V4.2 environment schema")
         observations, _ = env.reset(int(header["episode_seed"]))
+        recipe = header.get("reset_recipe", {"kind": "generic_reset", "steps": []})
+        recipe_hash_match = _digest(recipe) == header.get("reset_recipe_hash", _digest(recipe))
+        base_reset_match = (_digest(SafetyTraceRecorder._state(env)) == recipe.get("base_reset_state_hash")
+                            if recipe.get("base_reset_state_hash") is not None else True)
+        observations = SafetyTraceRecorder._apply_reset_recipe(env, recipe)
         reset_match = _digest(SafetyTraceRecorder._state(env)) == header["reset_state_hash"]
         config_match = _digest(vars(env.config)) == header.get("environment_config_hash", _digest(vars(env.config)))
         steps: list[dict[str, Any]] = []
-        exact = bool(reset_match and config_match)
+        exact = bool(reset_match and config_match and recipe_hash_match and base_reset_match)
         for row in rows:
             observation_match = _digest({key: value for key, value in sorted(observations.items())}) == row["observation_hash"]
             actions = {str(uid): np.asarray(action, dtype=np.float32) for uid, action in row["a_requested"].items()}
             category_match = True
-            if row.get("action_schema_version") == ACTION_SCHEMA_V4:
+            teacher_label_match = True
+            if row.get("action_schema_version") == ACTION_SCHEMA_V4_2:
+                for uid, action in actions.items():
+                    try:
+                        recovered = hierarchical_from_normalized_v4_2(action)
+                        category_match = category_match and recovered.gate == row.get("requested_gate", {}).get(uid) and recovered.proposal == row.get("requested_proposal", {}).get(uid)
+                    except ValueError:
+                        category_match = False
+            elif row.get("action_schema_version") == ACTION_SCHEMA_V4_1:
+                for uid, action in actions.items():
+                    try:
+                        category_match = category_match and int(joint_index_from_normalized_v4_1(action)) == row.get("joint_action_index", {}).get(uid)
+                    except ValueError:
+                        category_match = False
+            elif row.get("action_schema_version") == ACTION_SCHEMA_V4:
                 for uid, action in actions.items():
                     try:
                         category_match = category_match and int(joint_index_from_normalized(action)) == row.get("joint_action_index", {}).get(uid)
@@ -257,6 +388,17 @@ class SafetyTraceRecorder:
                         category_match = category_match and expected == row.get("a_requested_v3", {}).get(uid)
                     except ValueError:
                         category_match = False
+            if row.get("action_schema_version") == ACTION_SCHEMA_V4_2 and row.get("teacher_label_only"):
+                # Local import prevents core runtime ownership from depending
+                # on the training labeler unless an explicit replay asks for it.
+                from ..training.v4_1_joint_teacher import teacher_joint_label_v4_1
+                from .low_level_joint_action_v4_2 import hierarchical_from_joint_index_v4_1
+                expected_gate, expected_proposal, expected_joint = row.get("teacher_gate", {}), row.get("teacher_proposal", {}), row.get("teacher_joint", {})
+                for uid in actions:
+                    if int(uid) not in env.active:
+                        teacher_label_match = False; continue
+                    target = hierarchical_from_joint_index_v4_1(teacher_joint_label_v4_1(env, env.active[int(uid)]).index)
+                    teacher_label_match = teacher_label_match and target.gate == expected_gate.get(uid) and target.proposal == expected_proposal.get(uid) and target.joint_index_v4_1 == expected_joint.get(uid)
             executed_match = True
             try:
                 observations, _, _, _, info = env.step(actions)
@@ -275,13 +417,15 @@ class SafetyTraceRecorder:
                 blocked = True
                 error_text = str(error)
             steps.append({"step": int(row["step"]), "observation_match": observation_match,
-                          "requested_category_match": category_match, "post_state_match": post_match,
+                          "requested_category_match": category_match, "teacher_label_match": teacher_label_match, "post_state_match": post_match,
                           "executed_mapped_action_match": executed_match, "blocked": blocked,
                           **({"error": error_text} if blocked else {})})
-            exact = exact and observation_match and category_match and post_match and executed_match
+            exact = exact and observation_match and category_match and teacher_label_match and post_match and executed_match
             if blocked:
                 break
         return {"exact": exact, "reset_state_match": reset_match, "config_match": config_match,
+                "reset_recipe_match": recipe_hash_match,
+                "base_reset_state_match": base_reset_match,
                 "steps_replayed": len(steps), "steps_expected": len(rows), "steps": steps}
 
     @staticmethod

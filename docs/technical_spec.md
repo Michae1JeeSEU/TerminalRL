@@ -347,8 +347,9 @@ class LandingZoneManager:
 
 ## 12. Low-level action mapping
 
-Execution adapter input shape remains `(3,)`; V4 policy input is one joint
-categorical index over 30 non-duplicated scheduling intentions. The decoder's
+Execution adapter input shape remains `(3,)`; active V4.1 policy input is one
+joint categorical index over 26 scheduling intentions (one WAIT and 25
+RELEASE). Historical V4 used 30 and is read-only. The decoder's
 canonical order is:
 
 ```text
@@ -370,7 +371,7 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 ## 13. Per-agent action spec
 
 ```python
-{"joint_action": Discrete(30)}
+{"joint_action": Discrete(26)}
 ```
 
 环境按 agent 返回 action spec：
@@ -383,7 +384,7 @@ actions: dict[str, np.ndarray]
 
 ```text
 batch_obs    = (N_active, d_obs)
-batch_joint_action = (N_active,)         # requested V4 joint index
+batch_joint_action = (N_active,)         # requested V4.1 joint index
 batch_action_normalized = (N_active, 3)  # execution adapter values
 ```
 
@@ -833,13 +834,18 @@ no deadlock
 定义：
 
 ```text
-action_schema_version = low_action_schema_v4_joint_discrete
+action_schema_version = low_action_schema_v4_2_hierarchical
 high_action_schema_version = high_airspace_v1_10d
 observation_schema_version = phaseA_low_obs_v2_topology_87d
 airspace_schema_version = three_ring_v1
-low_level_joint_action_count = 30
-low_level_policy_distribution = joint_categorical
+low_level_joint_action_count = 26
+low_level_policy_distribution = hierarchical_gate_2_conditional_proposal_25
 ```
+
+V4.2 keeps 26 execution decodes but records a two-way WAIT/RELEASE gate and
+a conditional 25-way RELEASE proposal.  A future requested-action likelihood
+is `log P(WAIT)` or `log P(RELEASE) + log P(proposal | RELEASE)`; V4.1 flat-26
+checkpoints are historical and must be rejected rather than resumed.
 
 checkpoint metadata 不匹配：
 

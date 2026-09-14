@@ -63,6 +63,10 @@ class TerminalParallelEnv:
         """One V4 joint scheduling category; execution still receives its decode."""
         if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
             return {"joint_action": (30,)}
+        if self.config.action_schema_version == "low_action_schema_v4_1_joint_discrete_26":
+            return {"joint_action": (26,)}
+        if self.config.action_schema_version == "low_action_schema_v4_2_hierarchical":
+            return {"gate": (2,), "release_proposal": (25,)}
         return {"release": (2,), "speed_residual": (5,), "merge_time_residual": (5,)}
 
     def set_step_observer(self, observer: Callable[["TerminalParallelEnv"], None] | None) -> None:
@@ -181,7 +185,7 @@ class TerminalParallelEnv:
 
     def _observations(self) -> dict[str, np.ndarray]:
         cache = None
-        if self.config.observation_schema_version == "phaseA_low_obs_v2_topology_87d":
+        if self.config.observation_schema_version in {"phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state"}:
             cache = TopologyCache(self.airspace, self.active.values(), now=self.now,
                                  cpa_horizon=self.config.shield_horizon_seconds)
         return {str(uid): build_low_observation(uav, self, topology_cache=cache) for uid, uav in self.active.items()}
@@ -749,7 +753,7 @@ class TerminalParallelEnv:
         # certify or reject that one proposal, but may not search a catalogue
         # on the policy's behalf.  Training-only V4 labels use
         # ``TeacherScheduler.choose_joint_verified`` outside this method.
-        if self.config.action_schema_version == "low_action_schema_v4_joint_discrete":
+        if self.config.action_schema_version in {"low_action_schema_v4_joint_discrete", "low_action_schema_v4_1_joint_discrete_26", "low_action_schema_v4_2_hierarchical"}:
             candidates = (RepairCandidate("requested", intent),)
         else:
             candidates = self.teacher_scheduler.candidates(intent) if self.teacher_scheduler is not None else (RepairCandidate("requested", intent),)
@@ -862,7 +866,7 @@ class TerminalParallelEnv:
         }
         for uid, uav in list(self.active.items()):
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
-            intents[uid] = intent; traces[uid] = LowLevelActionTrace(requested=intent); self.priority.update(uav, self.now)
+            intents[uid] = intent; traces[uid] = LowLevelActionTrace(requested=intent, action_schema_version=self.config.action_schema_version); self.priority.update(uav, self.now)
             decision = self._release(uav, intent); decisions[uid] = decision
             self.last_release_decisions[uid] = decision
             release_row = self.last_release_telemetry.get(uid)

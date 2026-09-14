@@ -81,6 +81,12 @@ class SimConfig:
     headway_min: float = 3.0
     headway_max: float = 30.0
     max_headway_change_per_update: float = 1.0
+    # V2.1 normalizes the remaining retry mask against the maximum headway in
+    # the frozen Phase-A design range.  A rejected release waits for
+    # ``max(5 s, interface_headway)`` and DynamicAirspace clamps every
+    # interface headway at ``headway_max``.  The formal V4.2 V2.1 config
+    # freezes this to 30 s; it is not a learned or tuned parameter.
+    retry_norm_horizon_seconds: float = 30.0
     metrics_sampling_interval_seconds: float = 20.0
     high_level_decision_interval_seconds: float = 180.0
     geometry_min_dwell_seconds: float = 600.0
@@ -245,8 +251,14 @@ class SimConfig:
             raise ValueError("unsupported reset_mode")
         if self.reset_mode == "warm_start_rings" and self.warm_start_uavs > 0 and len(self.fixed_arrival_schedule) < self.warm_start_uavs:
             raise ValueError("safe warm-start requires an explicit fixed_arrival_schedule for every initial UAV")
-        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d"}:
+        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state"}:
             raise ValueError("unsupported low-level observation schema")
+        if self.retry_norm_horizon_seconds <= 0.0:
+            raise ValueError("retry_norm_horizon_seconds must be positive")
+        if self.observation_schema_version == "phaseA_low_obs_v2_1_retry_state" and self.retry_norm_horizon_seconds < max(5.0, self.headway_max):
+            raise ValueError("V2.1 retry normalization horizon must cover the configured retry/cooldown maximum")
+        if self.action_schema_version not in {"low_intent_v3_factorized_discrete", "low_action_schema_v4_joint_discrete", "low_action_schema_v4_1_joint_discrete_26", "low_action_schema_v4_2_hierarchical"}:
+            raise ValueError("unsupported low-level action schema")
         if self.scheduler_mode not in {"execution", "teacher_full", "teacher_immediate", "teacher_label_only"}:
             raise ValueError("unsupported scheduler_mode")
         if self.teacher_mode not in {"teacher_full", "teacher_immediate", "teacher_label_only"}:

@@ -1,0 +1,35 @@
+# Frozen V4.2 / Observation V2.1 formal I0 protocol. No learning is enabled.
+stage: V4_2_V2_1_FORMAL_I0
+observation_schema: phaseA_low_obs_v2_1_retry_state
+observation_dim: 88
+retry_feature_index: 87
+retry_norm_horizon_seconds: 30.0
+action_schema: low_action_schema_v4_2_hierarchical
+gate_actions: [WAIT, RELEASE]
+release_proposals: 25
+collection:
+  train_rows_target: 1800
+  frozen_rows_target: 300
+  semantic_event_sampling: event_change_plus_bounded_sparse_persistence
+  fresh_seed_ranges: [51001, 53000, 61001, 63000]
+  train_release_lifecycles_min: 100
+  release_joint_classes_min: 8
+  release_speed_values_min: 4
+  release_merge_values_required: 5
+  frozen_release_min: 60
+  frozen_retry_wait_min: 40
+forbidden:
+  - old_87d_i0_rows
+  - i0_r_rows
+  - old_frozen_cohort
+  - dagger_d1
+  - closure_banks
+  - powered_confirmation_banks
+  - i1_training
+  - dagger
+  - ppo
+  - class_weighting
+  - oversampling
+  - observation_change
+  - teacher_change
+  - safety_change
