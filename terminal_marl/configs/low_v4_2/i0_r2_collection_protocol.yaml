@@ -1,0 +1,248 @@
+protocol: V2_1_I0_R2_COLLECTOR_PROTOCOL_V1
+preregistered_at: 2026-09-15
+purpose: close_formal_i1_release_manifold_support_gap
+applies_to: one_fresh_standalone_I0_R2_collection
+
+frozen_semantics:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dim: 88
+  retry_feature_index: 87
+  retry_norm_horizon_seconds: 30.0
+  action_schema: low_action_schema_v4_2_hierarchical
+  teacher: unchanged
+  teacher_ranking: unchanged
+  execution_scheduler: unchanged
+  safety_filter: unchanged
+  predictive_shield: unchanged
+
+lineage:
+  strategy: fresh_standalone
+  historical_rows_allowed: false
+  consumed_q_rows_allowed: false
+  failed_checkpoint_resume_allowed: false
+  training_seed_range: [310001, 319999]
+  internal_audit_seed_range: [320001, 329999]
+  future_q2_seed_range_reserved: [330001, 339999]
+  seed_registry_before_first_reset: required
+  collision_policy: reject_before_reset
+  independence_keys:
+    - seed
+    - episode_id
+    - uav_id
+    - lifecycle_event_id
+    - decision_event_id
+    - full_state_hash
+  exclude_artifact_families:
+    - original_I0_R
+    - old_frozen_cohort
+    - consumed_Q
+    - closure_banks
+    - powered_confirmation_banks
+    - reachability_banks
+    - support_closure_banks
+    - failed_I1_checkpoints
+    - failure_attribution_banks
+
+consumed_q_diagnostic_reference:
+  sha256: 8d1e80bbf7efbf8bdada1814efc3c435daa80dd00564935c2e9dd3ba466dffe5
+  status: CONSUMED_DIAGNOSTIC_REFERENCE
+  actor_input: false
+  training_input: false
+  model_selection: false
+  threshold_tuning: false
+  permitted_use: post_collection_support_distance_diagnostic_only
+
+collection:
+  partitioning: separate_episode_level_training_and_internal_audit
+  admission_unit: complete_episode
+  semantic_sampling:
+    - event_start
+    - teacher_target_change
+    - retry_or_release_eligibility_change
+    - phase_commit_or_lifecycle_change
+    - leader_follower_or_topology_change
+    - reservation_interface_resource_change
+    - meaningful_normalized_observation_change
+    - bounded_sparse_persistence
+  raw_tick_wait_flooding: forbidden
+  label_conditioned_row_admission: forbidden
+  target_training_rows: [2500, 3500]
+  hard_training_row_ceiling: 3500
+  target_internal_audit_rows: [600, 900]
+  hard_internal_audit_row_ceiling: 1000
+  stop_rule: all_coverage_provenance_replay_safety_gates_after_complete_stratum_cycle
+  ceiling_rule: fail_closed_without_threshold_revision
+  stratum_schedule: fixed_round_robin_complete_episodes
+  strata:
+    - post_wait_release
+    - retry_expired_transition_release
+    - conflict_recovery_release
+    - high_traffic_proposal11
+    - middle_interface_proposal14
+    - post_wait_proposal14
+    - post_conflict_proposal14
+    - nominal_mixed
+    - clear_outer
+    - resource_pressure
+
+transition_ledger_required_fields:
+  - previous_wait_gate
+  - previous_wait_rationale
+  - previous_wait_state_hash
+  - previous_wait_time
+  - current_release_state_hash
+  - elapsed_time
+  - retry_active_to_inactive
+  - interface_state_transition
+  - headway_state_transition
+  - conflict_state_transition
+  - same_uav_id
+  - same_lifecycle_event_id
+  - wait_release_transition_kind
+transition_kinds:
+  - retry_WAIT_to_RELEASE
+  - transition_WAIT_to_RELEASE
+  - geometry_conflict_WAIT_to_RELEASE
+  - ordinary_WAIT_to_RELEASE
+
+prospective_context_minima_independent_lifecycles:
+  post_WAIT_RELEASE: 60
+  retry_expired_or_transition_cleared_RELEASE: 40
+  post_conflict_RELEASE: 40
+  high_traffic_N12_proposal_11: 30
+  middle_interface_proposal_14: 20
+  post_WAIT_proposal_14: 20
+  post_conflict_proposal_14: 15
+prospective_context_minimum_independent_episodes:
+  post_WAIT_RELEASE: 12
+  retry_expired_or_transition_cleared_RELEASE: 10
+  post_conflict_RELEASE: 10
+  high_traffic_N12_proposal_11: 10
+  middle_interface_proposal_14: 8
+  post_WAIT_proposal_14: 8
+  post_conflict_proposal_14: 8
+
+nominal_anchor_minima_independent_lifecycles:
+  ordinary_WAIT: 250
+  retry_active_WAIT: 100
+  committed_WAIT: 100
+  interface_frozen_WAIT: 80
+  resource_WAIT: 30
+  clear_outer_RELEASE: 100
+  middle_interface_normal_RELEASE: 100
+  proposal_12_RELEASE: 80
+  proposal_13_RELEASE: 160
+stable_teacher_selected_support_required: [11, 12, 13, 14]
+
+context_report_dimensions:
+  - proposal_id
+  - traffic_N
+  - phase
+  - ring_role
+  - family_flags
+  - previous_WAIT_rationale
+  - retry_state
+  - conflict_recovery_state
+  - interface_state
+  - headway_state
+  - resource_state
+
+support_closure_diagnostic:
+  reference: consumed_q_diagnostic_reference
+  distance: euclidean_normalized_observation_v2_1_88d
+  knn_k: 10
+  local_radii: [0.05, 0.10, 0.25]
+  required_reports:
+    - nearest_RELEASE_distance
+    - nearest_same_proposal_distance
+    - nearest_same_family_RELEASE_distance
+    - knn_RELEASE_fraction
+    - traffic_distribution_total_variation
+    - phase_ring_distribution_total_variation
+    - family_distribution_total_variation
+  gates:
+    proposal_11_support_gap_closed:
+      high_traffic_N12_lifecycles_min: 30
+      max_context_distribution_total_variation: 0.20
+    proposal_14_support_gap_closed:
+      middle_interface_lifecycles_min: 20
+      post_WAIT_lifecycles_min: 20
+      post_conflict_lifecycles_min: 15
+      max_context_distribution_total_variation: 0.20
+    post_WAIT_support_gap_closed:
+      lifecycles_min: 60
+      reference_nearest_RELEASE_median_max: 1.00
+      reference_knn_RELEASE_fraction_median_min: 0.60
+    transition_retry_support_gap_closed:
+      lifecycles_min: 40
+      reference_nearest_RELEASE_median_max: 1.00
+      reference_knn_RELEASE_fraction_median_min: 0.60
+    post_conflict_support_gap_closed:
+      lifecycles_min: 40
+      reference_nearest_same_family_RELEASE_median_max: 1.00
+      reference_knn_RELEASE_fraction_median_min: 0.60
+
+row_provenance_required:
+  - reconstructable_88d_observation
+  - env_now
+  - safety_retry_after
+  - reset_recipe
+  - rng_state_hashes
+  - full_uav_environment_state
+  - dynamic_airspace_state
+  - scheduler_interface_headway_state
+  - resource_lz_state
+  - transition_ledger
+  - teacher_gate
+  - teacher_proposal
+  - teacher_rationale
+  - full_25_proposal_audit_sidecar
+  - config_hash
+  - full_state_hash
+  - observation_hash
+  - post_state_hash
+
+formal_pass_gates:
+  fresh_lineage: required
+  schema_retry_provenance_100_percent: required
+  teacher_determinism: required
+  action_tape_exact_replay_100_percent: required
+  safety: required
+  exact_observation_hash_opposite_gate_conflicts_zero: required
+  nominal_anchor_coverage: required
+  all_context_minima: required
+  stable_teacher_selected_support: required
+  all_support_gap_closure_gates: required
+
+safety_zero_tolerance:
+  collision: 0
+  NMAC: 0
+  hard_violation: 0
+  SafetyInvariantError: 0
+  uncertified_execution: 0
+
+forbidden:
+  - I0_R2_collection_during_preregistration
+  - actor_retraining
+  - Q2_collection
+  - DAgger
+  - PPO
+  - teacher_modification
+  - observation_modification
+  - safety_modification
+  - architecture_modification
+  - loss_modification
+  - class_weighting
+  - oversampling
+  - row_duplication
+  - historical_row_reuse
+  - consumed_Q_reuse
+  - teacher_label_conditioned_row_discard
+  - post_collection_threshold_revision
+
+authorization:
+  I0_R2_PROTOCOL_PREREGISTERED: true
+  I0_R2_COLLECTION_ALLOWED: true
+  V4_2_V2_1_I1: FAIL
+  V4_2_V2_1_I2_DAGGER_PREFLIGHT_ALLOWED: false
+  PPO_ALLOWED: false
