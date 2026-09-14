@@ -247,10 +247,10 @@ def _make_transition_proof(row: dict, previous: dict | None, current: dict) -> d
     if is_transition:
         if previous["retry_active"] and not current["retry_active"]:
             kind = "retry_WAIT_to_RELEASE"
-        elif previous["wait_rationale"] in {"geometry_conflict", "headway_conflict", "holder_tube_conflict", "candidate_conflict"}:
-            kind = "geometry_conflict_WAIT_to_RELEASE"
         elif previous["interface_open"] != current["interface_open"]:
             kind = "transition_WAIT_to_RELEASE"
+        elif previous["wait_rationale"] in {"geometry_conflict", "headway_conflict", "holder_tube_conflict", "candidate_conflict"}:
+            kind = "geometry_conflict_WAIT_to_RELEASE"
         else:
             kind = "ordinary_WAIT_to_RELEASE"
     return {

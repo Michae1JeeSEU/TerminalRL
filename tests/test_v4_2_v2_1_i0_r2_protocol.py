@@ -47,3 +47,20 @@ def test_retry_wait_release_proof_requires_same_lifecycle() -> None:
     broken = _make_transition_proof(row, previous, current)
     assert broken["wait_release_transition_kind"] is None
     assert not broken["same_lifecycle_event_id"]
+
+
+def test_interface_clear_is_counted_as_transition_not_generic_conflict() -> None:
+    row = {
+        "uav_id": 4, "lifecycle_event_id": "life-4", "teacher_gate": 1,
+        "full_state_hash": "released", "headway_state": {"interface": "m2i"},
+    }
+    previous = {
+        "uid": 4, "lifecycle_id": "life-4", "teacher_gate": 0,
+        "wait_rationale": "geometry_conflict", "state_hash": "waiting",
+        "time": 20.0, "retry_active": False, "interface_open": False,
+        "conflict_state": True, "headway_state": {"interface": "m2i"},
+    }
+    current = {"time": 21.0, "retry_active": False,
+               "interface_open": True, "conflict_state": False}
+    proof = _make_transition_proof(row, previous, current)
+    assert proof["wait_release_transition_kind"] == "transition_WAIT_to_RELEASE"
