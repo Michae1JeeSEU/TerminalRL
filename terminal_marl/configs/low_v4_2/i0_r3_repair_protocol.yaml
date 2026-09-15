@@ -1,0 +1,385 @@
+protocol: V2_1_I0_R3_REPAIR_PROTOCOL_V2
+preregistered_at: 2026-09-15
+stage: protocol_design_only
+root_cause: MIXED_SUPPORT_AND_METRIC_FAILURE
+purpose: prospective_residual_error_manifold_and_metric_repair
+
+frozen_status:
+  V4_2_V2_1_I0_R2: FAIL
+  r2_artifacts: READ_ONLY_FAILED_QUALIFICATION_ARTIFACT
+  consumed_q: CONSUMED_DIAGNOSTIC_REFERENCE
+  consumed_q_rows_allowed_in_r3: false
+  old_i0_rows_allowed_in_r3: false
+  r2_rows_allowed_in_r3: false
+
+evidence_freeze:
+  consumed_q_sha256: 8d1e80bbf7efbf8bdada1814efc3c435daa80dd00564935c2e9dd3ba466dffe5
+  r2_training_sha256: c2f0f947a2b02d8977757924cc2bfe3ddeb68e0552e9158aedd8cc432394fd3a
+  attribution_summary_sha256: de45059363aec3d2e7d9b268e4f839e60ff6fb7f15f07d1699bbc0340567b05e
+  failed_state_coverage_sha256: 6910e573e5c8691e78b99050315a7a9e1002f32734a86bd1fd17c6ae3ea2137a
+  shared_gate_false_negative_states: 52
+  shared_proposal_error_states: 30
+  currently_covered_at_radius_0_25:
+    shared_gate_false_negative_fraction: 0.34615384615384615
+    shared_proposal_error_same_proposal_fraction: 0.5
+
+frozen_semantics:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dim: 88
+  retry_feature_index: 87
+  retry_norm_horizon_seconds: 30.0
+  action_schema: low_action_schema_v4_2_hierarchical
+  teacher: unchanged
+  observation: unchanged
+  execution_scheduler: unchanged
+  trajectory_generator: unchanged
+  safety_filter: unchanged
+  predictive_shield: unchanged
+
+lineage:
+  strategy: fresh_standalone_complete_expert_episodes
+  training_seed_range: [410001, 419999]
+  internal_audit_seed_range: [420001, 429999]
+  future_q2_seed_range_reserved: [430001, 439999]
+  seed_registry_before_first_reset: required
+  collision_policy: reject_before_reset
+  historical_registry_scan: all_training_qualification_and_diagnostic_banks
+  independence_keys:
+    - seed
+    - episode_id
+    - uav_id
+    - lifecycle_event_id
+    - decision_event_id
+    - full_state_hash
+    - observation_hash_audited
+
+collection:
+  collection_allowed_after_protocol_hash_freeze: true
+  admission_unit: complete_episode
+  label_conditioned_episode_discard: forbidden
+  label_conditioned_row_discard: forbidden
+  target_training_rows: [3000, 4000]
+  hard_training_row_ceiling: 4200
+  target_internal_audit_rows: [800, 1200]
+  hard_internal_audit_row_ceiling: 1400
+  stop_only_after_complete_stratum_cycle: true
+  ceiling_policy: fail_closed
+  semantic_event_sampling:
+    - event_start
+    - teacher_target_change
+    - retry_or_release_eligibility_change
+    - phase_commit_or_lifecycle_change
+    - leader_follower_or_topology_change
+    - reservation_interface_resource_change
+    - meaningful_normalized_observation_change
+    - bounded_sparse_persistence
+  raw_tick_wait_flooding: forbidden
+  schedule: fixed_round_robin_complete_episodes
+  strata:
+    - proposal14_N5_outer
+    - proposal14_N5_middle_interface
+    - proposal14_N5_post_wait
+    - proposal14_N5_post_conflict
+    - proposal14_N6_outer
+    - proposal14_N6_middle_interface
+    - proposal14_N6_post_wait
+    - proposal14_N6_post_conflict
+    - proposal14_N12_mixed
+    - residual_p11_N12_outer_o2m
+    - residual_p13_N12_middle_m2i
+    - residual_middle_N12_m2i
+    - residual_inner_N12_i2f_transition
+    - residual_post_wait_N8_outer
+    - residual_post_wait_N8_middle
+    - nominal_mixed
+    - nominal_clear_outer
+    - nominal_middle_interface
+    - nominal_retry_wait
+    - nominal_committed_interface_resource
+
+scenario_recipe_authority:
+  allowed:
+    - traffic_N
+    - initial_uav_spacing
+    - ring_occupancy
+    - phase_and_ring_role
+    - relative_progress
+    - interface_and_headway_age
+    - reservation_context
+    - arrival_timing
+    - initial_lifecycle_phase
+    - retry_expiry_timing
+    - conflict_recovery_setup
+    - resource_pressure
+  forbidden:
+    - teacher_label_forcing
+    - proposal_label_forcing
+    - fabricated_observation
+    - replay_of_consumed_q_state
+    - row_duplication
+    - row_weighting
+
+proposal14_traffic_minima:
+  N5:
+    independent_teacher_release_lifecycles: 15
+    independent_episodes: 5
+  N6:
+    independent_teacher_release_lifecycles: 15
+    independent_episodes: 5
+  N12:
+    independent_teacher_release_lifecycles: 30
+    independent_episodes: 5
+  counting_role: episode_level_natural_teacher_outcome
+  discard_episode_when_teacher_not_proposal14: false
+
+residual_context_cell_dimensions:
+  - traffic_N
+  - phase
+  - ring_role
+  - interface_context
+  - family_flags
+  - previous_WAIT_rationale
+  - retry_or_transition_context
+  - conflict_recovery_context
+  - teacher_proposal
+residual_context_cell_notes:
+  previous_WAIT_rationale: no_discriminative_value_recorded_in_the_uncovered_attribution_cells_but_must_be_reported_for_R3
+  cell_minima_count_only_natural_teacher_RELEASE_outcomes: true
+  nonmatching_episode_or_row_discard: forbidden
+
+residual_error_context_cells:
+  - id: C01_p11_N12_outer_o2m_multi_family
+    evidence_uncovered_shared_fn: 5
+    evidence_uncovered_proposal_error: 5
+    traffic_N: 12
+    phase: ring_outer
+    ring_role: outer
+    interface_context: o2m
+    teacher_proposal_family: 11
+    semantic_context: [clear_outer, post_wait, post_conflict]
+    minimum_release_lifecycles: 20
+    minimum_episodes: 6
+  - id: C02_p14_N12_middle_m2i_multi_family
+    evidence_uncovered_shared_fn: 4
+    evidence_uncovered_proposal_error: 2
+    traffic_N: 12
+    phase: ring_middle
+    ring_role: middle
+    interface_context: m2i
+    teacher_proposal_family: 14
+    semantic_context: [middle_interface, post_wait, post_conflict]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C03_transition_N12_inner_i2f
+    evidence_uncovered_shared_fn: 3
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 12
+    phase: ring_inner
+    ring_role: inner
+    interface_context: i2f
+    teacher_proposal_family: any_stable
+    semantic_context: [post_wait, post_conflict, transition_retry]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C04_middle_N12_m2i_release
+    evidence_uncovered_shared_fn: 3
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 12
+    phase: ring_middle
+    ring_role: middle
+    interface_context: m2i
+    teacher_proposal_family: any_stable
+    semantic_context: [middle_interface]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C05_p14_N5_outer_o2m
+    evidence_uncovered_shared_fn: 2
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 5
+    phase: ring_outer
+    ring_role: outer
+    interface_context: o2m
+    teacher_proposal_family: 14
+    semantic_context: [clear_outer]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C06_p14_N6_outer_o2m
+    evidence_uncovered_shared_fn: 2
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 6
+    phase: ring_outer
+    ring_role: outer
+    interface_context: o2m
+    teacher_proposal_family: 14
+    semantic_context: [clear_outer]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C07_post_wait_N8_outer
+    evidence_uncovered_shared_fn: 3
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 8
+    phase: ring_outer
+    ring_role: outer
+    interface_context: o2m
+    teacher_proposal_family: any_stable
+    semantic_context: [clear_outer, post_wait]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C08_post_wait_N8_middle
+    evidence_uncovered_shared_fn: 2
+    evidence_uncovered_proposal_error: 0
+    traffic_N: 8
+    phase: ring_middle
+    ring_role: middle
+    interface_context: m2i
+    teacher_proposal_family: any_stable
+    semantic_context: [middle_interface, post_wait]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+  - id: C09_p13_N12_middle_m2i_multi_family
+    evidence_uncovered_shared_fn: 0
+    evidence_uncovered_proposal_error: 4
+    traffic_N: 12
+    phase: ring_middle
+    ring_role: middle
+    interface_context: m2i
+    teacher_proposal_family: 13
+    semantic_context: [middle_interface, post_wait, post_conflict]
+    minimum_release_lifecycles: 15
+    minimum_episodes: 5
+
+nominal_anchor_minima_independent_lifecycles:
+  ordinary_WAIT: 250
+  retry_active_WAIT: 100
+  committed_WAIT: 100
+  interface_frozen_WAIT: 80
+  resource_WAIT: 30
+  clear_outer_RELEASE: 100
+  middle_interface_RELEASE: 100
+  proposal_11_RELEASE: 60
+  proposal_12_RELEASE: 80
+  proposal_13_RELEASE: 160
+  proposal_14_RELEASE: 60
+stable_teacher_selected_support_required: [11, 12, 13, 14]
+
+support_qualification:
+  reference: consumed_q_and_frozen_error_consensus_diagnostic_only
+  distance: euclidean_normalized_observation_v2_1_88d
+  reporting_radii: [0.05, 0.10, 0.25, 1.00]
+  radius_based_coverage_gate: HARD
+  knn_k: 10
+  knn_purity_role: DIAGNOSTIC_ONLY
+  class_prior_adjusted_score_role: DIAGNOSTIC_ONLY
+  total_variation_role: DIAGNOSTIC_ONLY
+  error_manifold_hard_gates:
+    shared_gate_FN_same_gate_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+    shared_proposal_error_same_proposal_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+  family_hard_gates:
+    post_WAIT_same_gate_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+    transition_retry_same_gate_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+    post_conflict_same_family_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+    proposal11_same_proposal_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+    proposal14_same_proposal_RELEASE:
+      coverage_at_0_25_min: 0.75
+      coverage_at_1_00_min: 0.90
+  purity_diagnostics:
+    report_R3_to_reference_knn_RELEASE_fraction: true
+    report_reference_intrinsic_leave_one_out_knn_RELEASE_fraction: true
+    report_local_gate_entropy: true
+    report_global_and_context_class_prior: true
+    absolute_knn_RELEASE_fraction_minimum: null
+    non_inferiority_gate: null
+  proposal14_distribution:
+    traffic_cell_minima_are_hard: true
+    TV_is_hard_gate: false
+    report_TV_and_bootstrap_uncertainty: true
+
+row_provenance_required:
+  - reconstructable_88d_observation
+  - env_now
+  - safety_retry_after
+  - reset_recipe
+  - rng_state_hashes
+  - full_uav_environment_state
+  - dynamic_airspace_state
+  - scheduler_interface_headway_state
+  - resource_lz_state
+  - transition_ledger
+  - teacher_gate
+  - teacher_proposal
+  - teacher_rationale
+  - full_25_proposal_audit_sidecar
+  - config_hash
+  - full_state_hash
+  - observation_hash
+  - post_state_hash
+
+formal_pass_gates:
+  fresh_lineage: required
+  nominal_anchors: required
+  proposal14_N5_N6_N12_coverage: required
+  all_residual_error_context_minima: required
+  shared_FN_radius_coverage: required
+  shared_proposal_error_same_proposal_radius_coverage: required
+  all_family_radius_coverage: required
+  schema_retry_provenance_100_percent: required
+  teacher_determinism: required
+  action_tape_exact_replay_100_percent: required
+  exact_observation_hash_opposite_gate_conflicts_zero: required
+  safety: required
+
+safety_zero_tolerance:
+  collision: 0
+  NMAC: 0
+  hard_violation: 0
+  SafetyInvariantError: 0
+  uncertified_execution: 0
+
+forbidden:
+  - collection_before_protocol_hash_freeze
+  - actor_training
+  - Q2_collection
+  - I1
+  - DAgger
+  - PPO
+  - teacher_modification
+  - observation_modification
+  - safety_modification
+  - architecture_modification
+  - loss_modification
+  - retroactive_R2_gate_revision
+  - threshold_revision_after_R3_reset
+  - class_weighting
+  - oversampling
+  - row_duplication
+  - historical_row_reuse
+  - consumed_Q_row_reuse
+  - label_conditioned_admission_or_discard
+
+future_sequence_after_R3_PASS:
+  - preregister_I1_Qualification_Protocol_V2
+  - collect_fresh_untouched_Q2
+  - freeze_Q2
+  - train_fresh_multiseed_I1_actors
+  - evaluate_Q2_exactly_once
+
+authorization:
+  I0_R3_PROTOCOL_PREREGISTERED: true
+  I0_R3_COLLECTION_ALLOWED: true
+  observation_revision_required: false
+  V4_2_V2_1_I0_R2: FAIL
+  V4_2_V2_1_I1_V2_PROTOCOL_PREREGISTRATION_ALLOWED: false
+  V4_2_V2_1_I2_DAGGER_PREFLIGHT_ALLOWED: false
+  PPO_ALLOWED: false
