@@ -1,0 +1,45 @@
+protocol: V4_2_V2_1_I1_QUALIFICATION_V2
+preregistered_at: 2026-09-17
+applies_to: future_fresh_I1_only
+diagnostic_checkpoint_4201_eligible: false
+observation_schema: phaseA_low_obs_v2_1_retry_state
+observation_dim: 88
+action_schema: low_action_schema_v4_2_hierarchical
+training_dataset_sha256: c0a9e63e380051273460d13a51abc06313d9c2f9d09e202859380ebd77edb797
+training_rows: 7576
+fresh_actor_seeds: [6201, 6202, 6203]
+canonical_checkpoint_seed: 6201
+optimizer: Adam
+learning_rate: 0.0003
+batch_size: 64
+epochs: 100
+checkpoint_selection: final_epoch
+loss: CE_gate_all_samples + CE_proposal_teacher_RELEASE_only
+per_seed_hard_gates:
+  wait_recall_min: 0.90
+  release_recall_min: 0.70
+  gate_macro_f1_min: 0.80
+  proposal_top1_min: 0.85
+  proposal_top3_min: 0.95
+  decoded_joint_accuracy_min: 0.85
+  stable_teacher_proposals_required: [11, 12, 13, 14]
+  every_stable_proposal_predicted: true
+  finite_gradients: true
+  gate_class_prediction_share_min: 0.05
+  proposal_dominant_prediction_share_max_exclusive: 0.95
+multi_seed_rule: all_three_seeds_must_pass_every_per_seed_hard_gate
+report_across_seeds: [mean, std, min, max]
+q_cohort_use: one_evaluation_after_all_training_complete
+q_cohort_backprop: false
+q_cohort_model_selection: false
+q_cohort_threshold_tuning: false
+boundary_diagnostics_not_hard_gates: [clear_outer, middle_interface, post_WAIT, post_conflict, retry_active_WAIT, retry_expired_RELEASE]
+class_weighting: forbidden
+focal_loss: forbidden
+oversampling: forbidden
+undersampling: forbidden
+balanced_sampler: forbidden
+label_smoothing: forbidden
+threshold_adjustment_after_q: forbidden
+dagger_allowed_before_pass: false
+ppo_allowed: false

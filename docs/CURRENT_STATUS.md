@@ -1,6 +1,6 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-16
+> **状态日期**：2026-09-17
 >
 > **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，R4 预注册提交 `1fb0105`
 >
@@ -10,11 +10,7 @@
 
 ## 一句话状态
 
-三环 landing-only 环境、EH216-S 性能约束动力学、轨迹/安全链和 V4.2/Observation
-V2.1 schema 已建立并通过各自的基础 qualification；当前瓶颈是低层模仿学习所需的
-RELEASE 决策流形覆盖。I0-R3 数据集未通过预注册 gate；2026-09-16 已完成停止规则、
-场景配置和距离指标诊断，预注册 I0-R4 修复。新的 I1、DAgger、PPO 以及高层动态空域
-训练仍须等待对应前置 gate，不能以 R4 已启动代替 PASS。
+I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 rows / 52 episodes，52/52 replay 一致。已预注册 I1 V2 与 fresh Q2，按 BC → Safe DAgger → student-only qualification → PPO admission 推进；PPO_ALLOWED 仍为 false。旧 R3 和 I1 的 FAIL 不变。
 
 ## 当前冻结的主线语义
 
@@ -48,9 +44,9 @@ RELEASE 决策流形覆盖。I0-R3 数据集未通过预注册 gate；2026-09-16
 | Fresh V2.1 I0-R | PASS | [I0-R qualification](evidence/v4_2/v4_2_v2_1_formal_i0_r_summary.md) |
 | Fresh multi-seed I1 | FAIL | RELEASE manifold/context generalization gap；[qualification](evidence/v4_2/v4_2_v2_1_i1_formal_qualification_summary.md) 与 [attribution](evidence/v4_2/v4_2_v2_1_i1_failure_attribution.md) |
 | I0-R2 repair collection | FAIL | 未闭合所需 support；协议和结果保存在 `evidence/v4_2/` |
-| I0-R3 repair collection | **FAIL（最新）** | [R3 result](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md) |
-| I0-R4 repair collection | RUNNING | [固定 episode 协议](evidence/v4_2/v4_2_v2_1_i0_r4_repair_protocol.md)，等待正式 manifest |
-| I1 Qualification Protocol V2 / Q2 | BLOCKED | 只有 fresh I0 repair PASS 后才能预注册并采集 |
+| I0-R3 repair collection | FAIL（历史） | [R3 result](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md) |
+| I0-R4 repair collection | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md) |
+| I1 Qualification Protocol V2 / Q2 | PREREGISTERED | [V2 协议](evidence/v4_2/v4_2_v2_1_i1_qualification_protocol_v2.md)，小样本验证通过，待正式采集 |
 | I2 Safe DAgger | BLOCKED | 需要新的 I1 qualification PASS |
 | PPO | `PPO_ALLOWED = false` | 需要 student-only imitation qualification 和 PPO admission checklist 全部通过 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
@@ -72,44 +68,19 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 
 ## 当前允许的下一步
 
-### 2026-09-16 修复执行
-
-- [R4 协议与课程判断](evidence/v4_2/v4_2_v2_1_i0_r4_repair_protocol.md)：保留
-  BC → Safe DAgger → student-only → PPO 主线；修正不兼容的整轮停止预算。
-- R3 每轮约 756 rows，C05 仅 2 lifecycles/轮；原 4,200 rows 无法容纳所需约 8 轮。
-- R4 固定 208 个训练 episodes、52 个内部审计 episodes；真实场景支持、安全、replay、
-  schema 与独立性仍为 hard gates。88D radius 仅作为新协议的诊断项，R3 FAIL 不变。
-- R2/R3 文档搬迁路径已修复；14 个定向测试通过。R4 小样本采集、序列化、
-  88D/retry provenance、Teacher determinism、4/4 exact replay 和 Safety 已验证。
-  smoke 不满足正式样本量且不产生准入授权。
-- 已新增独立 `StudentPPOV42` 更新内核及 88D student rollout：requested-action ratio、
-  conditional entropy、team-time GAE、committed actor mask、empty-world 和标签独立执行。
-  这是实现/单测准备，不是 I2/PPO 正式训练。I2 新 lineage、正式 admission/训练入口仍待完成。
-- R4 在 `lab-server` 运行，PID `2493811`；产物根目录
-  `~/training_outputs/terminal/v4_2_i0_r4_formal_20260916`，日志为该路径追加 `.log`。
-  2026-09-16 13:43 CST 已完成 training 64/208 episodes、2,283 rows，Safety 计数为零。
-  internal audit 52 episodes 与 replay 尚未开始；未生成 manifest 不能判 PASS。
-- 当前组合定向回归通过 52 项；加入确定性 rollout 拒绝更新测试后，受影响的
-  rollout/PPO/schema 39 项再次全通过。仅 R4 全 gate PASS 后登记 I1 V2 和 untouched Q2。
-- 本地 Git 未配置 remote，因此已提交改动尚未推送；不得声称已上传。
-
-1. 先诊断 R3 的“场景可达性 / 完整 cycle 停止规则 / 88D 距离 gate”为什么同时失配；
-2. 若需要新一轮数据修复，必须在采集前单独预注册新协议、seeds、上限和 qualification gate；
-3. 只有新的 fresh I0 repair 全部 PASS，才能依次执行：
+- R4 正式结果与哈希见 [R4 summary](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md)。
+- I1 V2 保持原 BC 超参数与 hard gates；全新 actor seeds 为 6201/6202/6203。
+- Q2 固定 45 episodes，seeds 430001–430045，先完成历史独立性检查并冻结；全部 actor 训练冻结后只评估一次。
+- 新入口及采集器 11 项测试通过；2 episodes / 9 rows smoke 的 schema、Teacher determinism、replay、Safety 和 aliasing 均通过。smoke 不产生正式准入。
+- 正式输出计划：`~/training_outputs/terminal/v4_2_i1_v2_formal_20260917`，同名 `.log`。
+- 已有独立 StudentPPOV42 和 88D rollout；尚需 I2 新 lineage、student-only qualification、PPO admission 与正式训练入口验证。
+- 按用户要求，长任务由 Luna high 子 agent 监控，主窗口等待；终态返回后继续下一 gate。
+- 本地 Git 无 remote；仅通过 Syncthing 同步服务器，不能声称 Git 推送成功。
 
 ```text
-preregister I1 Qualification Protocol V2
-→ collect and freeze untouched Q2
-→ train fresh multi-seed V4.2 actors
-→ evaluate Q2 once
-→ I2 Safe DAgger preflight
-→ student-only imitation qualification
-→ PPO admission review
+freeze untouched Q2 → fresh multi-seed BC → evaluate Q2 once
+→ I2 Safe DAgger → student-only qualification → PPO admission → training entry verification
 ```
-
-4. 当前不得通过改 Teacher、Safety threshold、observation/action schema、class weighting、
-   row duplication 或消费旧 Q cohort 来绕过失败；若研究判断确实要求改 schema，必须新开明确版本。
-
 ## 不应恢复的旧路线
 
 - V3 factorized 三头策略；

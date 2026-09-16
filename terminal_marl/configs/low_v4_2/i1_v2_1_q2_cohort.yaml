@@ -1,0 +1,17 @@
+protocol: V4_2_V2_1_I1_Q2_FIXED_EPISODES_V1
+preregistered_at: 2026-09-17
+requires: I0_R4_PASS
+seed_start: 430001
+cycles: 5
+strata: unchanged_nine_effective_Q1_scenarios
+episodes: 45
+minimum_rows: 1200
+maximum_rows: 2400
+support_minima: unchanged_from_Q1
+stop: fixed_complete_episodes_independent_of_labels
+ceiling_overrun: retain_complete_episode_and_fail
+smoke_seeds: [591001, 591002]
+sampling: unchanged_R3_semantic_events
+forbidden: [historical_rows, training, model_selection, threshold_tuning, label_conditioned_discard]
+use: exactly_one_evaluation_after_all_three_final_checkpoints_frozen
+PPO_ALLOWED: false
