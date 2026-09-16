@@ -347,10 +347,10 @@ class LandingZoneManager:
 
 ## 12. Low-level action mapping
 
-Execution adapter input shape remains `(3,)`; active V4.1 policy input is one
-joint categorical index over 26 scheduling intentions (one WAIT and 25
-RELEASE). Historical V4 used 30 and is read-only. The decoder's
-canonical order is:
+Execution adapter input shape remains `(3,)`; active V4.2 policy output is a
+two-way WAIT/RELEASE gate and, only for RELEASE, a conditional 25-way proposal.
+The decoder preserves 26 execution intentions（one WAIT + 25 RELEASE）and uses
+the canonical order:
 
 ```text
 [release_request, speed_residual, merge_time_residual]
@@ -371,7 +371,10 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 ## 13. Per-agent action spec
 
 ```python
-{"joint_action": Discrete(26)}
+{
+    "gate": Discrete(2),
+    "release_proposal": Discrete(25),  # only valid for RELEASE
+}
 ```
 
 环境按 agent 返回 action spec：
@@ -384,13 +387,16 @@ actions: dict[str, np.ndarray]
 
 ```text
 batch_obs    = (N_active, d_obs)
-batch_joint_action = (N_active,)         # requested V4.1 joint index
+batch_gate = (N_active,)                 # WAIT / RELEASE
+batch_release_proposal = (N_active,)     # null/sentinel for WAIT
 batch_action_normalized = (N_active, 3)  # execution adapter values
 ```
 
-WAIT keeps five speed variants and fixes merge to zero; RELEASE has five speed
-by five merge variants. PPO and BC use the requested/Teacher joint index,
-respectively; execution or shield actions never enter PPO ratios.
+WAIT has no proposal and decodes to zero residuals. RELEASE has five speed by
+five merge-time variants. BC uses `CE(gate) + CE(proposal | Teacher RELEASE)`；
+未来 PPO 的 requested log-probability 为 `log P(WAIT)`，或
+`log P(RELEASE) + log P(proposal | RELEASE)`。execution、Teacher 与 shield
+actions 不得进入 PPO ratio。
 
 ---
 
@@ -413,6 +419,9 @@ class ObservationBuilder:
 ```
 
 每个 feature normalized 到稳定范围；presence mask 与 zero padding 成对出现。最终 `d_obs` 由 schema 计算，变更时 bump `observation_schema_version`。
+
+当前正式 schema 是 `phaseA_low_obs_v2_1_retry_state`（88D）。它保留 V2 的 87D prefix，
+仅追加 `safety_retry_remaining_norm`；详细分组见 `reference/low_level_policy.md`。
 
 ---
 
@@ -819,7 +828,8 @@ no deadlock
 ```
 
 ### Gate D
-固定三环 + low-level PPO 可训练，N 可变化。
+固定三环 + V4.2 low-level student-only qualification 通过，N 可变化。PPO 只有在独立
+admission checklist 通过后才允许启动。
 
 ### Gate E
 三环动态 geometry 可运行且 reconfiguration 不破坏 committed traffic。
@@ -836,7 +846,7 @@ no deadlock
 ```text
 action_schema_version = low_action_schema_v4_2_hierarchical
 high_action_schema_version = high_airspace_v1_10d
-observation_schema_version = phaseA_low_obs_v2_topology_87d
+observation_schema_version = phaseA_low_obs_v2_1_retry_state
 airspace_schema_version = three_ring_v1
 low_level_joint_action_count = 26
 low_level_policy_distribution = hierarchical_gate_2_conditional_proposal_25
@@ -873,4 +883,4 @@ two different transfer trajectory implementations
 safety heading/pitch nudge as primary protection
 ```
 
-迁移清单见 `revision.md`。
+历史迁移清单见 `history/plans/phase_a_alignment_revision.md`；它仅用于追溯，不定义当前实现。

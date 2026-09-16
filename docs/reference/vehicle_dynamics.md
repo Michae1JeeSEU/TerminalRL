@@ -1,6 +1,6 @@
 # Performance-Constrained Vehicle Dynamics Specification
 
-Implemented facts as of D6:
+Current frozen implementation facts:
 
 - Vehicle: `research_evtol` / EHang EH216-S / `eh216s_research_v1`.
 - State semantics: position, 3-D velocity, horizontal `speed`, acceleration, yaw and yaw-rate diagnostics.
@@ -14,9 +14,9 @@ Implemented facts as of D6:
 - Checkpoints now bind the vehicle-dynamics and trajectory schema versions plus profile identifier/version.
 
 D7 core dynamics qualification passed on 2026-08-28; see
-`docs/dynamics_qualification_report_2026-08-28.md`.  `physics_dt=0.2 s` is
-frozen for `performance_constrained_v2`.  The separate long-horizon A6.8
-dynamic-airspace replay remains required before C0 and low-level PPO.
+[`dynamics_qualification_report_2026-08-28.md`](../evidence/dynamics/dynamics_qualification_report_2026-08-28.md). `physics_dt=0.2 s` is
+frozen for `performance_constrained_v2`. Later phase authorization and current blockers are recorded only in
+[CURRENT_STATUS.md](../CURRENT_STATUS.md).
 
 P0 performance qualification passed on 2026-08-29 without changing these
 dynamics limits. `physics_dt=0.2 s` remains frozen. Deterministic fixed,

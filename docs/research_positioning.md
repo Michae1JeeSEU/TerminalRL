@@ -3,7 +3,7 @@
 > **文档地位**：本文档是当前论文项目的研究定位总纲。  
 > **当前唯一研究范围**：**Phase A — Landing-only terminal-area operations**。  
 > Phase B（departure-only）与 Phase C（arrival + departure integrated operations）仅作为后续研究路线，不进入当前代码实现、训练或正式实验。  
-> 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md`、`revision.md` 共同构成当前唯一有效的设计说明。历史“两环版本”“直接输出自由飞行动作版本”以及旧的阶段性 addendum 不再作为实现依据。
+> 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md` 共同构成当前唯一有效的主线说明；阅读入口与文档权威关系见 `README.md`，当前进度见 `CURRENT_STATUS.md`。历史“两环版本”“直接输出自由飞行动作版本”、日期型 handoff 和旧迁移指南不再作为实现依据。
 
 ---
 

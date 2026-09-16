@@ -411,7 +411,11 @@ high-level policy disabled
 所有 UAV shared actor：
 
 ```text
-o_i → π_L → [release, Δv, Δt]
+88D Observation V2.1
+→ shared encoder
+→ WAIT/RELEASE gate
+→ conditional 25-way RELEASE proposal
+→ [release, Δv, Δt] execution intent
 ```
 
 ### 8.3 Critic
@@ -426,11 +430,14 @@ agent encoder + masked mean/max pooling
 
 ### 8.4 Curriculum
 
-- **A5.1**：warm-start ring scenes，小规模 5–10 UAV，学习 release/speed；
-- **A5.2**：flow-from-empty，10–20 UAV；
-- **A5.3**：variable N + medium/high/bursty。
+- **A5.0 / S0**：action、observation、checkpoint、replay 与 safety schema qualification；
+- **A5.1 / I0**：fresh structured expert dataset qualification；
+- **A5.2 / I1–I3**：hierarchical BC、Safe DAgger、student-only imitation qualification；
+- **A5.3 / P1+**：通过 admission 后才进行 student-controlled PPO、variable N 与 traffic curriculum；
+- **A5.4 / L5**：static geometry generalization，完成后冻结低层供 A6 使用。
 
-训练期间逐步减少 curriculum shortcut，正式 eval 只用真实 arrival flow。
+每个阶段必须先通过独立 gate。训练期间逐步减少 curriculum shortcut，正式 eval 只用真实
+arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 
 ### 8.5 Baseline comparison
 
@@ -447,7 +454,8 @@ fixed_low_rl
 
 至少验证：
 
-- action 3D 全部真正影响语义；
+- V4.2 gate/proposal 语义、单请求执行边界与 ActionTape replay 通过；
+- WAIT/RELEASE 和有效 RELEASE proposal 均有独立支持，不发生保守性 collapse；
 - policy 可处理不同 N；
 - no NaN；
 - no hidden direct flight action；
@@ -654,7 +662,9 @@ assert all arrivals share one inbound bearing
 [ ] rule pipeline completes finite cohort
 [ ] one canonical transfer trajectory
 [ ] same trajectory checked and executed
-[ ] low-level action exactly 3D
+[ ] low-level action is V4.2 gate + conditional proposal
+[ ] execution decoder remains one canonical 3-value intention
+[ ] observation is versioned 88D V2.1
 [ ] high-level action exactly 10D
 [ ] variable-N observation/policy works
 [ ] geometry transition safe

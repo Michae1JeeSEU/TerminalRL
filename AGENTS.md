@@ -35,18 +35,20 @@ Dynamic terminal airspace reconfiguration
 
 | 文档 | 路径 | 用途 |
 |---|---|---|
+| 文档入口 | [docs/README.md](docs/README.md) | 阅读顺序、文档权威关系、证据与历史目录规则 |
+| 当前状态 | [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) | 当前 schema、阶段进度、最新阻塞和允许的下一步 |
 | 研究定位 | [docs/research_positioning.md](docs/research_positioning.md) | Q1 创新主线、gap、贡献点和实验体系 |
-| 需求文档 | [docs/requirements.md](docs/requirements.md) | 重构后的研究目标、动作语义、实验平台适配需求 |
+| 需求文档 | [docs/requirements.md](docs/requirements.md) | 当前研究目标、业务语义、动作与平台需求 |
 | 设计规范 | [docs/design_spec.md](docs/design_spec.md) | 动态空域、轨迹生成器、安全过滤、Crazyswarm2 adapter 架构 |
 | 技术规范 | [docs/technical_spec.md](docs/technical_spec.md) | 依赖、接口、配置、动作/观测、测试和日志规范 |
-| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | Phase A–J 的开发路线 |
-| Codex 任务 | [docs/CODEX_NEXT_STEPS.md](docs/CODEX_NEXT_STEPS.md) | 下一轮 Codex 具体执行任务 |
+| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | Phase A / A0–A8 的依赖路线与 gate |
+| 低层策略规范 | [docs/reference/low_level_policy.md](docs/reference/low_level_policy.md) | V4.2 action、Observation V2.1、训练与 qualification 纪律 |
 
 ## 开发原则
 
 1. **主线明确**：只在 `terminal_marl/` 上推进新架构，`src/` 不再作为主开发对象。
 2. **创新聚焦**：必须服务于动态空域构型与多 UAV 降落流协同，不要退化成普通多机避障或固定环降落控制。
-3. **轨迹意图优先**：低层策略输出 release/speed/timing/slot residual，不直接输出自由 `ψ, γ, V`。
+3. **轨迹意图优先**：低层 V4.2 策略输出 WAIT/RELEASE gate 与条件 RELEASE speed×timing proposal，不直接输出自由 `ψ, γ, V`。
 4. **安全优先**：所有推进、切环、final approach 和 landing 必须经过 VTAC/SafetyFilter。
 5. **硬件解耦**：`core/` 不 import ROS2/Crazyswarm2；硬件接口放在 `terminal_marl/hardware/` 并采用懒加载。
 6. **先仿真后实物**：先完成 rule-only、residual policy 和 dynamic airspace 的仿真/dry-run，再接入真实 Crazyflie。
@@ -57,17 +59,17 @@ Dynamic terminal airspace reconfiguration
 
 ## 近期优先任务
 
-按顺序执行：
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为唯一滚动进度入口。当前按顺序执行：
 
 ```text
-1. terminal_marl/core/dynamic_airspace.py
-2. tests/test_dynamic_airspace.py
-3. terminal_marl/core/trajectory_generator.py
-4. tests/test_trajectory_generator.py
-5. ExperimentMode / fixed_dynamic switches
-6. crazyflie_lab 配置骨架
-7. SafetyFilter 骨架
-8. intention_residual action_mode
+1. 诊断 I0-R3 的场景可达性、完整-cycle 停止规则与 88D radius gate 失配
+2. 若需新一轮数据修复，先预注册 fresh I0 protocol、seeds、上限和 hard gates
+3. fresh I0 repair 全 gate PASS
+4. 预注册 I1 Qualification Protocol V2 并冻结 untouched Q2
+5. fresh multi-seed V4.2 I1；只评估 Q2 一次
+6. I2 Safe DAgger → student-only imitation qualification
+7. PPO admission review；未通过前 PPO_ALLOWED=false
+8. static-geometry qualification 后才进入 A6 high-level dynamic airspace
 ```
 
 ## 本地-服务器同步准则

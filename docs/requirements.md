@@ -495,21 +495,25 @@ Inner→Final clearance 至少需要：
 
 ### 10.1 Action
 
-每个 active UAV 的唯一低层动作：
+每个 active UAV 使用 V4.2 hierarchical scheduling intention：
 
 ```text
-Low-Level Action V3 (factorized categorical scheduling request)
-release_request: WAIT / RELEASE
-speed_residual: {-1.0, -0.5, 0.0, +0.5, +1.0}
-merge_time_residual: {-1.0, -0.5, 0.0, +0.5, +1.0}
+gate: Categorical(2) = WAIT / RELEASE
+proposal: Categorical(25), only when gate = RELEASE
 ```
 
-Policy factorization is `Categorical(2) × Categorical(5) × Categorical(5)`,
-not one 50-way action. The three normalized values retain the canonical
-execution order `[release_request, speed_residual, merge_time_residual]`.
+`WAIT` 是唯一 canonical wait，不携带 proposal，执行解码为 `[0, 0, 0]`。
+`RELEASE` proposal 是五档 speed residual 与五档 merge-time residual 的 25 个组合：
 
-#### `release_request`
-`WAIT=0`，`RELEASE=1`。是否批准仍由 scheduler/safety layer 决定。
+```text
+speed_residual ∈ {-1.0, -0.5, 0.0, +0.5, +1.0}
+merge_time_residual ∈ {-1.0, -0.5, 0.0, +0.5, +1.0}
+```
+
+V4.2 actor 的 factorization 是 `WAIT/RELEASE gate + conditional proposal`，但执行层仍只接收
+一个解码后的三元意图，顺序固定为
+`[release_request, speed_residual, merge_time_residual]`。是否批准 RELEASE 仍由
+ExecutionScheduler、trajectory 与 safety layer 决定；这些层不得替 actor 搜索替代 proposal。
 
 #### `speed_residual`
 
@@ -551,6 +555,7 @@ independent slot_residual
 ```
 
 merge slot/angle 由 scheduler 根据 merge time 和目标环 gap 派生。
+完整 action、概率和 provenance 规范见 `reference/low_level_policy.md`。
 
 ---
 
@@ -734,17 +739,22 @@ issue hold instruction
 
 ### 16.1 Per-UAV actor observation
 
-每架 UAV observation 必须固定维度，并包括：
+当前 actor observation 固定为
+`phaseA_low_obs_v2_1_retry_state`（88D）。前 87 维为 topology-aware V2，最后一维为
+当前 `safety_retry_remaining_norm`。分组必须是：
 
-**Self**：phase、ring role、ring progress (`sinθ,cosθ`)、radial/height tracking error、speed/nominal、SOC、wait、dynamic priority、mission type、assigned gate、assigned LZ、time in phase、transition/reconfiguration flags。
+**Self / flight（18D）**：phase、ring role、ring progress (`sinθ,cosθ`)、speed、SOC、wait、dynamic priority、release eligibility。
 
-**Same-ring topology**：leader/follower arc gap、relative speed、TTC。
+**Mission / resource identity（12D）**：mission type、assigned gate、assigned-LZ presence/usability、final resource availability、free-LZ fraction。
 
-**Target-ring merge context**：predicted predecessor/successor gap、available merge gap、baseline merge wait、reservation state。
+**Semantic topology（45D）**：same-ring leader/follower、target-ring predecessor/successor、nearest predicted conflict；每槽固定为 presence、path gap、Euclidean distance、relative speed、closing rate、`d_CPA`、`t_CPA`、priority delta、reserved/committed flag。
 
-**Resource context**：final availability、assigned LZ state/service remaining、free LZ count、earliest LZ release、external/final queue summary。
+**System / flow（12D）**：ring occupancy ratios、三个 interface headway、external queue ratio、final queue pressure、global free-LZ fraction、interface frozen、interface headway slack、reconfiguration active/pending。
 
-**Global compact summary**：ring occupancy/capacity ratios、headways、normalized geometry、demand estimate、geometry gate/reconfiguration state。
+**Retry state（1D）**：`safety_retry_remaining_norm`。
+
+Observation 不得包含未来动作、25-proposal 扫描结果、trajectory certificate 或 Teacher 私有信息。
+V2.1 必须保持 V2 87D prefix 的顺序和语义，并通过 schema version 与 feature hash 防止漂移。
 
 ### 16.2 Neighbor selection
 
@@ -761,7 +771,9 @@ conflict-nearest fallback
 Actor：
 
 ```text
-shared network: R^d_obs → R^3
+shared encoder: R^88
+→ WAIT/RELEASE gate logits (2)
+→ conditional RELEASE proposal logits (25)
 ```
 
 对 N 架 active UAV batch 执行。

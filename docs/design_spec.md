@@ -2,7 +2,7 @@
 
 > **当前架构**：Phase A — Landing-only  
 > **核心原则**：三环终端区 + 连续到达流 + 地面服务资源 + 两层策略 + 确定性调度/轨迹/安全层。  
-> 本文档描述目标系统结构，不承担历史兼容说明；迁移工作见 `revision.md`。
+> 本文档描述当前目标系统结构，不承担历史兼容说明；旧迁移过程保存在 `history/`，当前完成度见 `CURRENT_STATUS.md`。
 
 ---
 
@@ -394,7 +394,18 @@ class PriorityEngine:
 
 ## 9. Low-level intention interface
 
-### 9.1 Action dataclass
+### 9.1 Policy action 与执行意图
+
+```python
+@dataclass(frozen=True)
+class HierarchicalActionV42:
+    gate: int                 # WAIT=0, RELEASE=1
+    proposal: int | None      # WAIT=None, RELEASE in [0, 25)
+```
+
+V4.2 policy 使用二分类 gate 与 RELEASE 条件下的 25-way proposal head。proposal 解码为
+五档 speed residual × 五档 merge-time residual；唯一 WAIT 解码为 `[0, 0, 0]`。
+ExecutionScheduler 仍接收一个规范化 `LowLevelIntent`：
 
 ```python
 @dataclass(frozen=True)
@@ -404,10 +415,7 @@ class LowLevelIntent:
     merge_time_residual: float
 ```
 
-V3 policy samples factorized categories: `WAIT/RELEASE` and two five-level
-normalized residuals. The resulting normalized execution values are in
-`[0,1] × {-1,-.5,0,.5,1} × {-1,-.5,0,.5,1}`; actual physical units are read
-from the configured profile mapper, never hard-coded in the actor.
+实际物理单位由配置 profile mapper 给出，不得硬编码进 actor。V4/V4.1 的 actor 表示只用于历史诊断。
 
 ### 9.2 Phase-specific interpretation
 
@@ -426,13 +434,12 @@ from the configured profile mapper, never hard-coded in the actor.
 ```python
 ActionMask(
     can_request_release: bool,
-    speed_residual_enabled: bool,
-    timing_residual_enabled: bool,
     reason_codes: list[str],
 )
 ```
 
-policy 输出不可用维度时，环境必须 mask 并记录统计。
+WAIT 不产生 proposal；RELEASE gate 不可用时，环境必须 mask/reject 并记录原因。mask 不得包含
+候选 trajectory certificate，也不得替 actor 在 25 个 proposal 中搜索。
 
 ---
 
@@ -633,6 +640,10 @@ ObservationSchema(
 
 禁止依赖匿名“第 37 维”约定。
 
+当前 schema 固定为 `phaseA_low_obs_v2_1_retry_state`（88D）：V2 的 87D topology-aware
+prefix 保持不变，索引 87 追加 `safety_retry_remaining_norm`。任何字段顺序变化都必须升级
+schema version，并拒绝不兼容 checkpoint。
+
 ### 14.2 Topological context
 
 优先提取：
@@ -649,17 +660,18 @@ nearest_conflict_aircraft
 
 ### 14.3 LZ summary
 
-actor 至少使用：
+当前 88D actor 使用紧凑、可在线获取的 LZ/resource summary：
 
 ```text
-assigned_lz_state
-assigned_lz_service_remaining
+assigned_lz_present
+assigned_lz_usable
+final_resource_available
 free_lz_fraction
-earliest_lz_release
-top-K candidate LZ availability
 ```
 
-默认 M=6 时可附加 6 个 LZ occupancy feature，但核心网络不得假设 M 永远等于 6。
+单个 LZ 的 service remaining、earliest release 和完整 candidate 列表保留在 scheduler/resource
+层，不进入当前 actor schema。未来若需要加入，必须升级 observation schema 并重新 qualification；
+核心网络不得假设 M 永远等于 6。
 
 ---
 
@@ -668,10 +680,11 @@ top-K candidate LZ availability
 Actor：
 
 ```text
-per-UAV feature vector
+per-UAV 88D feature vector
 → shared encoder
-→ actor head
-→ 3D intent
+→ WAIT/RELEASE gate head
+→ conditional 25-way RELEASE proposal head
+→ one decoded 3-value execution intent
 ```
 
 Centralized critic：
