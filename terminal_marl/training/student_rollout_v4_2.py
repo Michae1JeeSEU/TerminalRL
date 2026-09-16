@@ -84,7 +84,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     tape.start_episode(env, episode_seed=seed, policy_rng_state={"seed": seed, "mode": "student_only_v2_1"})
     steps, events, queues = [], [], []
     safety_error = None
-    counts = {"WAIT": 0, "RELEASE": 0, "shield": 0, "actor_decisions": 0}
+    counts = {"WAIT": 0, "RELEASE": 0, "shield": 0, "shield_actor": 0, "actor_decisions": 0}
     for tick in range(max_steps):
         uids, world, actor_mask, requested, gates, proposals, gate_lp, proposal_lp, likelihoods = student_request(policy, env, observations, deterministic=deterministic)
         value = world_value(policy, world)
@@ -134,6 +134,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             row.update(execution_applied_action=trace["execution_applied_action"], shield_applied_action=trace["shield_applied_action"], post_state_hash=_digest(record["post_state"]))
         events.extend(pending)
         counts["shield"] += sum(bool(t.get("shield_used")) for t in info["action_traces"].values())
+        counts["shield_actor"] += sum(bool(info["action_traces"][uid].get("shield_used"))
+                                      for i, uid in enumerate(uids) if actor_mask[i])
         queues.append(int(info["queue_size"]))
         terminal = env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs
         end = terminal or tick + 1 == max_steps or env.now >= config.max_simulation_seconds
@@ -144,6 +146,10 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         step.validate(88)
         steps.append(step)
         observations = following
+        if (tick + 1) % 25 == 0 or end:
+            (output / "progress.json").write_text(json.dumps({"seed": seed, "steps": tick + 1,
+                "seconds": env.now, "counts": counts, "completed": len(env.completed_uavs),
+                "queue": queues[-1], "terminal": terminal}), encoding="utf-8")
         if end:
             break
     tape_path = tape.dump(reason="student_only_v2_1")

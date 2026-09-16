@@ -1,0 +1,27 @@
+protocol: V4_2_V2_1_I3_STUDENT_ONLY_V1
+preregistered_at: 2026-09-17
+dagger_manifest_sha256: 3be18287f3956ded27a376ac53b9cf5b285d77df553fb1738db1d6c1eae0e079
+checkpoint_sha256: a97e0284b07b18404f60cd666c72806cbf5e261bf807c7f9f3a1d897c69b1584
+seeds: [660001, 660002, 660003, 660004, 660005, 660006]
+scenarios: [warm3, flow3, flow6]
+behaviors: [deterministic, stochastic]
+horizon_seconds: 900
+arrival_interval_seconds: 60
+first_arrival_seconds: 10
+gates:
+  all_requested_complete_before_deadline: true
+  terminal_and_queue_drained: true
+  safety_all_zero: true
+  exact_replay_every_episode: true
+  requested_logprob_exact_every_episode: true
+  shield_actor_fraction_max: 0.05
+  both_gates_in_total: true
+teacher_enabled: false
+high_level_enabled: false
+training: forbidden
+qualification_use: once
+admission_scope: fixed_geometry_initial_curriculum_N3_to_N6
+full_static_geometry_qualification: false
+smoke_seed: 669001
+smoke_steps: 1
+PPO_ALLOWED: false
