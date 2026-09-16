@@ -1,0 +1,26 @@
+protocol: V4_2_V2_1_I2_ROUND1_V1
+preregistered_at: 2026-09-17
+preflight_manifest_sha256: daa321fb09e73108ef8236d43db1fc10a21d33dabddf2e8fcded659902b2486c
+collection_seeds: [640001, 640002, 640003, 640004, 640005, 640006, 640007, 640008, 640009, 640010, 640011, 640012]
+warm_start_sizes: [3, 6, 8, 12]
+collection_steps: 30
+minimum_new_events: 500
+maximum_new_events: 4000
+sampler: event_start + teacher_target_change + phase_change + RMS_observation_change_0.20 + persistence_3_steps
+validation_seeds: [650001, 650002, 650003, 650004]
+validation_steps: 12
+smoke_seeds: [649001, 649002]
+epochs: 35
+batch_size: 64
+learning_rate: 0.0003
+optimizer: fresh_Adam
+training_seed: 6401
+checkpoint_selection: final_epoch
+loss: unweighted_hierarchical_CE
+parent: all_7576_R4_training_rows_once
+retention_audit: R4_internal_audit_only_after_checkpoint_freeze
+retention_gates: unchanged_I1_V2_per_seed_hard_gates
+validation_gate: both_WAIT_and_RELEASE_actor_decisions
+replay: every_collection_and_validation_episode
+Q2_access: forbidden
+PPO_ALLOWED: false

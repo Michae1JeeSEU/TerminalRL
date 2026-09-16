@@ -47,7 +47,7 @@ I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 
 | I0-R3 repair collection | FAIL（历史） | [R3 result](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md) |
 | I0-R4 repair collection | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md) |
 | I1 Qualification Protocol V2 / Q2 | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i1_v2_summary.md)，Q2 1,787 rows，三 seed 全通过 |
-| I2 Safe DAgger | PREFLIGHT PREREGISTERED | [88D preflight 协议](evidence/v4_2/v4_2_v2_1_i2_preflight_protocol.md)，未授权正式聚合训练 |
+| I2 Safe DAgger | PREFLIGHT PASS / R1 PREREGISTERED | [R1 协议](evidence/v4_2/v4_2_v2_1_dagger_round1_protocol.md)，12 个固定采集 episodes，尚未完成正式训练 |
 | PPO | `PPO_ALLOWED = false` | 需要 student-only imitation qualification 和 PPO admission checklist 全部通过 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
@@ -73,7 +73,8 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 - Q2 固定 45 episodes，seeds 430001–430045，先完成历史独立性检查并冻结；全部 actor 训练冻结后只评估一次。
 - 新入口及采集器 11 项测试通过；2 episodes / 9 rows smoke 的 schema、Teacher determinism、replay、Safety 和 aliasing 均通过。smoke 不产生正式准入。
 - I1 V2 已完成输出：`~/training_outputs/terminal/v4_2_i1_v2_formal_20260917`，同名 `.log`。
-- 已有独立 StudentPPOV42 和 88D rollout；尚需 I2 新 lineage、student-only qualification、PPO admission 与正式训练入口验证。
+- 88D preflight 两个 seed × 六步全部 PASS；已预注册 R1，R4 audit 仅作训练后内部 retention guard，Q2 不再使用。
+- 已有独立 StudentPPOV42 和 88D rollout；尚需完成 DAgger、student-only qualification、PPO admission 与正式训练入口验证。
 - 按用户要求，长任务由 Luna high 子 agent 监控，主窗口等待；终态返回后继续下一 gate。
 - 本地 Git 无 remote；仅通过 Syncthing 同步服务器，不能声称 Git 推送成功。
 
