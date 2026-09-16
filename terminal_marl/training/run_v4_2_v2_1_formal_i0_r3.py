@@ -42,8 +42,8 @@ from .v4_1_joint_teacher import teacher_joint_expert_v4_1
 PROTOCOL_VERSION = "V2_1_I0_R3_REPAIR_PROTOCOL_V2"
 SCHEMA_VERSION = "v4_2_v2_1_formal_i0_r3_v1"
 PROTOCOL_PATH = Path("terminal_marl/configs/low_v4_2/i0_r3_repair_protocol.yaml")
-DESIGN_PATH = Path("docs/v4_2_v2_1_i0_r3_repair_protocol.md")
-REPRO_PATH = Path("docs/v4_new_mainline_reproducibility_manifest.json")
+DESIGN_PATH = Path("docs/evidence/v4_2/v4_2_v2_1_i0_r3_repair_protocol.md")
+REPRO_PATH = Path("docs/evidence/v4/v4_new_mainline_reproducibility_manifest.json")
 EXPECTED_PROTOCOL_SHA = "9daf8a2b279a517fb763a06cd011ae088b4000fd31b2a144767bd7bbfa4deb20"
 EXPECTED_DESIGN_SHA = "7a4d0a3801d29109d5fbff229544ae05e8ba7fe751774bbcf0e3f57d8abf5d19"
 EXPECTED_Q_SHA = "8d1e80bbf7efbf8bdada1814efc3c435daa80dd00564935c2e9dd3ba466dffe5"
@@ -72,6 +72,19 @@ ANCHOR_MINIMA = {
 class R3Stratum:
     name: str
     spec: SourceSpec
+
+
+@dataclass(frozen=True)
+class FixedCollectionSchedule:
+    """Prospective fixed episode budget; historical R3 defaults stay frozen."""
+    strata: tuple[R3Stratum, ...]
+    cycles: int
+    row_ceiling: int
+    namespace: str
+
+    def __post_init__(self):
+        if not self.strata or self.cycles < 1 or self.row_ceiling < 1:
+            raise ValueError("positive fixed collection budget required")
 
 
 STRATA = (
@@ -287,13 +300,13 @@ def _r3_row(env, observation: np.ndarray, *, partition: str, stratum: R3Stratum,
             seed: int, episode: int, tick: int, uid: int, lifecycle: str,
             event_index: int, reason: str, streak: int, similarity: float,
             selected, audit: list[dict], current: dict, previous: dict | None,
-            reset_recipe: dict) -> tuple[dict, dict]:
+            reset_recipe: dict, namespace: str = "v2-1-i0-r3") -> tuple[dict, dict]:
     row = _formal_row(env, observation, partition=partition, stratum=stratum, seed=seed,
                       episode=episode, tick=tick, uid=uid, lifecycle_id=lifecycle,
                       event_index=event_index, retention_reason=reason, streak=streak,
                       similarity=similarity, selected=selected, audit=audit, current=current,
                       previous_semantic=previous, reset_recipe=reset_recipe)
-    episode_id = f"v2-1-i0-r3:{partition}:episode-{episode}:seed-{seed}"
+    episode_id = f"{namespace}:{partition}:episode-{episode}:seed-{seed}"
     row.update({"schema_version": SCHEMA_VERSION, "partition": partition,
                 "episode_id": episode_id, "uav_instance_id": f"{episode_id}:uav-{uid}"})
     rich = {**current, "uid": uid, "lifecycle_id": lifecycle,
@@ -303,19 +316,28 @@ def _r3_row(env, observation: np.ndarray, *, partition: str, stratum: R3Stratum,
     return row, rich
 
 
-def _collect_partition(output: Path, partition: str, seeds: list[int], protocol: dict, *, smoke_cycles: int | None = None) -> tuple[list[dict], dict, list]:
+def _collect_partition(output: Path, partition: str, seeds: list[int], protocol: dict, *, smoke_cycles: int | None = None,
+                       schedule: FixedCollectionSchedule | None = None) -> tuple[list[dict], dict, list]:
     minimum, ceiling = TRAIN_TARGET[0], TRAIN_CEILING
     if partition == "internal_audit": minimum, ceiling = AUDIT_TARGET[0], AUDIT_CEILING
+    strata = STRATA if schedule is None else schedule.strata
+    namespace = "v2-1-i0-r3" if schedule is None else schedule.namespace
+    if schedule is not None:
+        if smoke_cycles is not None:
+            raise ValueError("use either legacy smoke or a fixed schedule")
+        ceiling = schedule.row_ceiling
+        if len(seeds) != schedule.cycles * len(strata):
+            raise ValueError("fixed schedule requires exactly one seed per episode")
     rows: list[dict] = []; state_hashes: set[str] = set(); decision_ids: set[str] = set()
     safety = Counter(); raw_gate = Counter(); raw_ticks = 0
     tapes = []; taped = set(); selected_seeds = []; fatal = None; episode = 0
     max_episodes = smoke_cycles if smoke_cycles is not None else len(seeds)
     while episode < max_episodes:
-        if smoke_cycles is None and episode and episode % len(STRATA) == 0:
+        if schedule is None and smoke_cycles is None and episode and episode % len(strata) == 0:
             coverage = _coverage(rows, protocol)
             ready = len(rows) >= minimum and (partition == "internal_audit" or (coverage["nominal_anchor_PASS"] and coverage["all_residual_context_cells_PASS"] and coverage["proposal14_traffic_PASS"] and coverage["stable_support_PASS"]))
             if ready or len(rows) >= ceiling: break
-        stratum = STRATA[0] if smoke_cycles is not None else STRATA[episode % len(STRATA)]
+        stratum = strata[0] if smoke_cycles is not None else strata[episode % len(strata)]
         if smoke_cycles is not None: stratum = R3Stratum(stratum.name, replace(stratum.spec, max_steps=1))
         seed = seeds[episode]; selected_seeds.append(seed)
         env = TerminalParallelEnv(_config(stratum.spec)); env.reset(seed)
@@ -323,8 +345,8 @@ def _collect_partition(output: Path, partition: str, seeds: list[int], protocol:
         tape = None
         if stratum.name not in taped:
             tape = SafetyTraceRecorder(output / "action_tapes" / partition / stratum.name, dt=env.config.dt)
-            tape.start_episode(env, episode_seed=seed, policy_rng_state={"stage": "formal_i0_r3", "partition": partition, "stratum": stratum.name}, reset_recipe=reset_recipe)
-        lifecycle = {int(uid): f"v2-1-i0-r3:{partition}:episode-{episode}:seed-{seed}:uav-{int(uid)}" for uid in env.active}
+            tape.start_episode(env, episode_seed=seed, policy_rng_state={"stage": namespace, "partition": partition, "stratum": stratum.name}, reset_recipe=reset_recipe)
+        lifecycle = {int(uid): f"{namespace}:{partition}:episode-{episode}:seed-{seed}:uav-{int(uid)}" for uid in env.active}
         raw_memory: dict[int, dict] = {}; semantic: dict[int, dict] = {}; event_index = Counter()
         for tick in range(stratum.spec.max_steps):
             actions = {}; labels = {}; pending = []
@@ -346,7 +368,9 @@ def _collect_partition(output: Path, partition: str, seeds: list[int], protocol:
                     row, rich = _r3_row(env, obs, partition=partition, stratum=stratum, seed=seed, episode=episode,
                                         tick=tick, uid=uid, lifecycle=lifecycle[uid], event_index=event_index[uid],
                                         reason=reason, streak=streak, similarity=similarity, selected=full, audit=audit,
-                                        current=current, previous=semantic.get(uid), reset_recipe=reset_recipe)
+                                        current=current, previous=semantic.get(uid), reset_recipe=reset_recipe, namespace=namespace)
+                    if schedule is not None:
+                        row["schema_version"] = namespace + "_event_v1"
                     if row["full_state_hash"] not in state_hashes and row["decision_event_id"] not in decision_ids:
                         pending.append((row, rich))
                 action = hierarchical_from_joint_index_v4_1(int(selected.index))
@@ -368,16 +392,18 @@ def _collect_partition(output: Path, partition: str, seeds: list[int], protocol:
         for key, field in (("collision", "collisions"), ("NMAC", "nmac"), ("hard_violation", "hard_separation_violations"), ("uncertified_execution", "uncertified_execution")):
             safety[key] += int(env.telemetry.get(field, 0))
         if tape:
-            path = tape.dump(reason=f"formal_i0_r3_{partition}_{stratum.name}")
+            path = tape.dump(reason=f"{namespace}_{partition}_{stratum.name}")
             tapes.append((path, stratum.spec, stratum.name)); taped.add(stratum.name)
         episode += 1
         progress = {"partition": partition, "episodes": episode, "rows": len(rows), "last_stratum": stratum.name,
-                    "complete_cycles": episode // len(STRATA), "coverage": _coverage(rows, protocol),
+                    "complete_cycles": episode // len(strata), "coverage": _coverage(rows, protocol),
                     "safety": dict(safety), "fatal": fatal, "consumed_Q_rows_opened": False}
         _write(output / f"collection_progress_{partition}.json", progress)
+        if schedule is not None and len(rows) > ceiling:
+            fatal = "fixed collection row ceiling exceeded after complete episode"
         if fatal: break
     info = {"episodes": episode, "selected_seeds": selected_seeds, "rows": len(rows),
-            "complete_stratum_cycles": episode // len(STRATA), "raw_decision_ticks": raw_ticks,
+            "complete_stratum_cycles": episode // len(strata), "raw_decision_ticks": raw_ticks,
             "raw_WAIT_RELEASE": {"WAIT": int(raw_gate[0]), "RELEASE": int(raw_gate[1])},
             "safety": {k: int(safety[k]) for k in ("collision", "NMAC", "hard_violation", "SafetyInvariantError", "uncertified_execution")},
             "fatal": fatal, "coverage": _coverage(rows, protocol), "ceiling_exceeded": len(rows) > ceiling}

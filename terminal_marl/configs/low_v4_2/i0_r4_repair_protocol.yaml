@@ -1,0 +1,41 @@
+protocol: V4_2_V2_1_I0_R4_FIXED_EPISODES_V1
+preregistered_at: 2026-09-16
+observation_schema: phaseA_low_obs_v2_1_retry_state
+action_schema: low_action_schema_v4_2_hierarchical
+teacher_execution_safety_observation_unchanged: true
+schedule: r3_effective_configs_plus_nominal_contexts
+training:
+  seed_start: 510001
+  cycles: 8
+  minimum_rows: 5000
+  maximum_rows: 12000
+internal_audit:
+  seed_start: 520001
+  cycles: 2
+  minimum_rows: 1200
+  maximum_rows: 3500
+smoke_seed_start: 590001
+future_q2_seed_range: [430001, 439999]
+admission_unit: complete_episode
+stop: fixed_episode_count_independent_of_labels
+ceiling_overrun: retain_complete_episode_fail_and_stop
+historical_rows_reused: false
+internal_audit_usage: NEVER_TRAIN_NEVER_MODEL_SELECT
+semantic_sampling: unchanged_from_r3
+support_minima: unchanged_from_r3
+distance_role: diagnostic_only_not_a_surrogate_for_learning
+formal_gates:
+  - fixed_schedule_complete
+  - cardinality
+  - nominal_anchors
+  - all_residual_context_cells
+  - proposal14_N5_N6_N12
+  - stable_support
+  - schema_retry_provenance
+  - teacher_determinism
+  - replay
+  - aliasing
+  - safety
+  - independence
+I1_protocol_only_after_I0_PASS: true
+PPO_ALLOWED: false

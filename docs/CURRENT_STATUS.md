@@ -12,8 +12,9 @@
 
 三环 landing-only 环境、EH216-S 性能约束动力学、轨迹/安全链和 V4.2/Observation
 V2.1 schema 已建立并通过各自的基础 qualification；当前瓶颈是低层模仿学习所需的
-RELEASE 决策流形覆盖。最新 I0-R3 数据集未通过预注册 gate，因此新的 I1、DAgger、
-PPO 以及高层动态空域训练仍未获准启动。
+RELEASE 决策流形覆盖。I0-R3 数据集未通过预注册 gate；2026-09-16 已完成停止规则、
+场景配置和距离指标诊断，预注册 I0-R4 修复。新的 I1、DAgger、PPO 以及高层动态空域
+训练仍须等待对应前置 gate，不能以 R4 已启动代替 PASS。
 
 ## 当前冻结的主线语义
 
@@ -69,6 +70,19 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 [I0-R3 collection summary](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md)。
 
 ## 当前允许的下一步
+
+### 2026-09-16 修复执行
+
+- [R4 协议与课程判断](evidence/v4_2/v4_2_v2_1_i0_r4_repair_protocol.md)：保留
+  BC → Safe DAgger → student-only → PPO 主线；修正不兼容的整轮停止预算。
+- R3 每轮约 756 rows，C05 仅 2 lifecycles/轮；原 4,200 rows 无法容纳所需约 8 轮。
+- R4 固定 208 个训练 episodes、52 个内部审计 episodes；真实场景支持、安全、replay、
+  schema 与独立性仍为 hard gates。88D radius 仅作为新协议的诊断项，R3 FAIL 不变。
+- R2/R3 文档搬迁路径已修复；14 个定向测试通过。R4 小样本采集、序列化、
+  88D/retry provenance、Teacher determinism、4/4 exact replay 和 Safety 已验证。
+  smoke 不满足正式样本量且不产生准入授权。
+- I2 仍需接入 88D 新 lineage；V4.2 actor 尚无 PPO update 实现，不能直接运行旧 V2 PPO。
+- 当前允许启动 R4；仅 R4 全 gate PASS 后登记 I1 V2 和 untouched Q2。
 
 1. 先诊断 R3 的“场景可达性 / 完整 cycle 停止规则 / 88D 距离 gate”为什么同时失配；
 2. 若需要新一轮数据修复，必须在采集前单独预注册新协议、seeds、上限和 qualification gate；

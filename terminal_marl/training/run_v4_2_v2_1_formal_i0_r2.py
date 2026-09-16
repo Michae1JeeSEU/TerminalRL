@@ -36,8 +36,8 @@ from .v4_1_joint_teacher import teacher_joint_expert_v4_1
 PROTOCOL_VERSION = "V2_1_I0_R2_COLLECTOR_PROTOCOL_V1"
 SCHEMA_VERSION = "v4_2_v2_1_formal_i0_r2_v1"
 PROTOCOL_PATH = Path("terminal_marl/configs/low_v4_2/i0_r2_collection_protocol.yaml")
-DESIGN_PATH = Path("docs/v4_2_v2_1_i0_r2_collection_protocol.md")
-REPRO_PATH = Path("docs/v4_new_mainline_reproducibility_manifest.json")
+DESIGN_PATH = Path("docs/evidence/v4_2/v4_2_v2_1_i0_r2_collection_protocol.md")
+REPRO_PATH = Path("docs/evidence/v4/v4_new_mainline_reproducibility_manifest.json")
 EXPECTED_PROTOCOL_SHA = "40685f58b1db2096b86d84630f29527f0985430a1c284a60c78a49963c2994db"
 EXPECTED_DESIGN_SHA = "6fea1cc6b8949957089d08b9c50fff6cc4b90fc77f2121ac2492c96a066d174f"
 EXPECTED_Q_SHA = "8d1e80bbf7efbf8bdada1814efc3c435daa80dd00564935c2e9dd3ba466dffe5"
