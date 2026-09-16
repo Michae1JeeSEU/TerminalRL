@@ -2,7 +2,7 @@
 
 > **状态日期**：2026-09-16
 >
-> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，整理前 HEAD `d46daab`
+> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，R4 预注册提交 `1fb0105`
 >
 > **当前阶段**：Phase A / A5 固定空域低层策略，expert dataset qualification
 >
@@ -49,6 +49,7 @@ RELEASE 决策流形覆盖。I0-R3 数据集未通过预注册 gate；2026-09-16
 | Fresh multi-seed I1 | FAIL | RELEASE manifold/context generalization gap；[qualification](evidence/v4_2/v4_2_v2_1_i1_formal_qualification_summary.md) 与 [attribution](evidence/v4_2/v4_2_v2_1_i1_failure_attribution.md) |
 | I0-R2 repair collection | FAIL | 未闭合所需 support；协议和结果保存在 `evidence/v4_2/` |
 | I0-R3 repair collection | **FAIL（最新）** | [R3 result](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md) |
+| I0-R4 repair collection | RUNNING | [固定 episode 协议](evidence/v4_2/v4_2_v2_1_i0_r4_repair_protocol.md)，等待正式 manifest |
 | I1 Qualification Protocol V2 / Q2 | BLOCKED | 只有 fresh I0 repair PASS 后才能预注册并采集 |
 | I2 Safe DAgger | BLOCKED | 需要新的 I1 qualification PASS |
 | PPO | `PPO_ALLOWED = false` | 需要 student-only imitation qualification 和 PPO admission checklist 全部通过 |
@@ -81,8 +82,16 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 - R2/R3 文档搬迁路径已修复；14 个定向测试通过。R4 小样本采集、序列化、
   88D/retry provenance、Teacher determinism、4/4 exact replay 和 Safety 已验证。
   smoke 不满足正式样本量且不产生准入授权。
-- I2 仍需接入 88D 新 lineage；V4.2 actor 尚无 PPO update 实现，不能直接运行旧 V2 PPO。
-- 当前允许启动 R4；仅 R4 全 gate PASS 后登记 I1 V2 和 untouched Q2。
+- 已新增独立 `StudentPPOV42` 更新内核及 88D student rollout：requested-action ratio、
+  conditional entropy、team-time GAE、committed actor mask、empty-world 和标签独立执行。
+  这是实现/单测准备，不是 I2/PPO 正式训练。I2 新 lineage、正式 admission/训练入口仍待完成。
+- R4 在 `lab-server` 运行，PID `2493811`；产物根目录
+  `~/training_outputs/terminal/v4_2_i0_r4_formal_20260916`，日志为该路径追加 `.log`。
+  2026-09-16 13:43 CST 已完成 training 64/208 episodes、2,283 rows，Safety 计数为零。
+  internal audit 52 episodes 与 replay 尚未开始；未生成 manifest 不能判 PASS。
+- 当前组合定向回归通过 52 项；加入确定性 rollout 拒绝更新测试后，受影响的
+  rollout/PPO/schema 39 项再次全通过。仅 R4 全 gate PASS 后登记 I1 V2 和 untouched Q2。
+- 本地 Git 未配置 remote，因此已提交改动尚未推送；不得声称已上传。
 
 1. 先诊断 R3 的“场景可达性 / 完整 cycle 停止规则 / 88D 距离 gate”为什么同时失配；
 2. 若需要新一轮数据修复，必须在采集前单独预注册新协议、seeds、上限和 qualification gate；

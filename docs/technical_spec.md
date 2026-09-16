@@ -561,11 +561,12 @@ class RuleLowLevelPolicy:
 
 ## 22. Shared low-level PPO
 
-推荐起始网络：
+V4.2 当前网络（与 fresh BC actor 一致）：
 
 ```text
-AgentEncoder(d_obs → 128 → 128)
-ActorHead(128 → 64 → 3)
+AgentEncoder(88 → 96 → 96)
+GateHead(96 → 2)
+ConditionalProposalHead(96 → 25)
 ```
 
 Centralized critic：
@@ -579,6 +580,21 @@ all agent embeddings
 ```
 
 第一版可先 mean/max pooling，接口允许以后换 attention。必须用 mask 排除 inactive padding。
+
+`algo/student_ppo_v4_2.py` 提供独立 PPO 内核；历史 `JointPPOV42` 仍为 BC/采样容器。
+`training/student_rollout_v4_2.py` 提供 88D rollout。上述接口完成不代表正式准入，
+正式入口仍须绑定通过 student-only qualification 的 checkpoint 和 admission 结果。
+
+- 每个 simulator step 存一份 world、team reward（当步各 UAV reward 之和）、
+  centralized value 与 next value；critic 每个 world 只计算一次损失。
+- actor 对每个 world 内有效 UAV 求均值，再对 world 求均值。committed trajectory、
+  非 holder 阶段和 future reservation 使用 canonical WAIT 并从 actor loss 排除。
+- WAIT proposal 为 `-1`，条件 log-prob 不存在；RELEASE ratio 使用 gate 与 proposal
+  log-prob 之和。Teacher、执行、安全层动作仅作 sidecar，不能替换 buffer 请求。
+- 时间截断保留 next value，但截断处停止 GAE 跨 episode 传播；真正 terminal 不 bootstrap。
+  空入场/服务区间继续推进 simulator，不将空观测误判为 terminal。
+- PPO 仅接收随机采样 rollout；确定性评估轨迹禁止更新。DAgger 可启用显式
+  `teacher_label_only`，正式 student/PPO rollout 关闭 Teacher。
 
 ---
 
