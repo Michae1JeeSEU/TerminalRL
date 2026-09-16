@@ -1,0 +1,14 @@
+protocol: V4_2_V2_1_I2_PREFLIGHT_V1
+preregistered_at: 2026-09-17
+requires: I1_V2_PASS
+seeds: [630001, 630002]
+max_steps: 6
+warm_start_uavs: 8
+smoke_seeds: [639001]
+smoke_steps: 1
+smoke_uavs: 1
+teacher_mode: teacher_label_only
+student_behavior: stochastic_requested_actions
+gates: [lineage, complete_rollouts, label_provenance, unique_decisions, exact_replay, requested_logprob, safety]
+retraining: forbidden
+PPO_ALLOWED: false
