@@ -12,7 +12,7 @@
 
 低层 V4.2 / Observation V2.1（88D）已通过 R4、I1 V2/Q2、88D Safe DAgger、
 I3 student-only qualification、PPO admission 和入口 V2 验证。
-**PPO_ALLOWED = true**，仅限固定空域 N3–N6 初始课程；尚未启动正式 PPO block。
+**PPO_ALLOWED = true**，仅限固定空域 N3–N6 初始课程；首个正式 PPO block 已启动（12 episodes）。
 完整证据及可执行命令见 [准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)。
 历史 R3、旧 I1 和入口 V1 的 FAIL 保持不变。
 ## 当前冻结的主线语义
@@ -76,7 +76,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - Admission：`~/training_outputs/terminal/v4_2_ppo_entry_verify_v2_20260917/admission.json`，SHA256 `959bf9300fb44f4eec02783136dcfda11826dbf125e36a85e60550e241511c62`。
 - I3 六个 episode 全部完成 24 架 UAV，队列清空，Safety 与 actor shield 均为零；最慢 flow6 为 867/900 秒，扩大交通或缩短间隔前仍需验证。
 - 最新 16 项 admission/PPO/rollout/I3 定向测试通过；入口 V2 两个真实 rollout 的 ratio、更新、replay、checkpoint 恢复通过。正式 PPO 收敛效果尚未评估。
-- 当前服务器任务与子 agent 监控均已结束。后续长任务启动并验证中间产物后，由 Luna high 子 agent 监控，本窗口等待。
+- 当前正式 PPO PID `2610770`，输出 `~/training_outputs/terminal/v4_2_ppo_initial_block_20260917`，同名 `.log`；已确认进程及中间产物。Luna high 子 agent 负责监控，本窗口等待。
+- 各阶段数量、到达流、属性与约束审查已更新到 execution_plan.md 的8.5节；后续P2–P5尚未准入，不自动扩大当前训练范围。
 - 本地 Git 无 remote；代码仅经 Syncthing 同步，提交未推送。保留用户未提交文件。
 
 ```text
