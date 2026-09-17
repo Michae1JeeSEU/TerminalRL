@@ -1,0 +1,25 @@
+protocol: V4_2_P2_RESUME_SEGMENT_GEOMETRY_V3
+scope: fixed_geometry_natural_flow_N6_N8_N12
+initial_checkpoint_sha256: 8a8466f61119f7f5b5f780249d26f218ee9b8ae3e4aededc5c7f5fe2e51b201b
+failed_manifest_sha256: 72f660bb26a7f08bd04a0c99fc2bc4362435e488f7d89ccddab599aefa77bc2e
+qualification_seeds: [762001, 762002, 762003, 762004, 762005, 762006]
+entry_seeds: [763001, 763002]
+entry_scenarios: [flow6, flow8]
+entry_steps: [160, 192]
+smoke_seed: 764000
+smoke_steps: 160
+scenarios: [flow6, flow8, flow12]
+seed_start: 761001
+episodes: 8
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+evaluation_seeds_reserved: [755001, 755002, 755003, 755004, 755005, 755006]
+low_level_progress_reward_per_meter: 0.0
+horizon_rule: last_arrival_plus_900_seconds

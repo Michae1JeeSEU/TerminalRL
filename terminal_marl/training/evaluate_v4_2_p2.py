@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from terminal_marl.training.run_v4_2_ppo_block2 import restore
-from terminal_marl.training.run_v4_2_ppo_p2_resume import p2_config, p2_source_hashes
+from terminal_marl.training.run_v4_2_ppo_p2_resume_v3 import p2_config, p2_source_hashes
 from terminal_marl.training.run_v4_2_curriculum_pilot import episode as rule_episode
 from terminal_marl.training.run_v4_2_v2_1_i1_v2 import _sha, reserve_once
 from terminal_marl.training.run_v4_2_v2_1_formal_i0_r3 import _write
@@ -58,7 +58,7 @@ def run(output,checkpoint,baseline,history_root,smoke=False):
     if _sha(baseline)!=BASELINE_SHA:raise ValueError('P2 baseline mismatch')
     if not smoke:
         training=json.loads((checkpoint.parent/'manifest.json').read_text())
-        if not training['PASS'] or len(training['records'])!=13 or checkpoint.name!='checkpoint_13.pt':
+        if not training['PASS'] or len(training['records'])!=8 or checkpoint.name!='checkpoint_8.pt':
             raise ValueError('requires completed P2 final checkpoint')
         if training['source_hashes']!=p2_source_hashes():raise ValueError('P2 implementation changed')
     actors={name:restore(path,dict(initial_checkpoint_sha256=_sha(path),learning_rate=.00003))

@@ -167,8 +167,16 @@ class TrajectoryGenerator:
         radii = np.linalg.norm(xy, axis=1)
         r0, r1 = float(np.linalg.norm(p0[:2])), float(np.linalg.norm(p3[:2]))
         cross = xy[:-1, 0] * xy[1:, 1] - xy[:-1, 1] * xy[1:, 0]
-        # Permit only sub-millimetre numerical noise, not operational excursions.
-        if cross.min() >= -1e-8 and radii.min() >= min(r0, r1) - 1e-4 and radii.max() <= max(r0, r1) + 1e-4:
+        # The executor linearly interpolates nodes. Even an admissible node
+        # radius can hide a chord cutting inside the target ring. Check the
+        # exact closest point of every segment against the existing 5 cm
+        # discretization allowance before retaining a legacy curve.
+        delta = np.diff(xy, axis=0)
+        fraction = np.clip(-np.sum(xy[:-1] * delta, axis=1) /
+                           np.maximum(np.sum(delta * delta, axis=1), 1e-20), 0., 1.)
+        segment_min_radius = np.linalg.norm(xy[:-1] + fraction[:, None] * delta, axis=1).min()
+        # Permit only sub-millimetre node noise, not operational excursions.
+        if segment_min_radius >= min(r0, r1) - .05 and cross.min() >= -1e-8 and radii.min() >= min(r0, r1) - 1e-4 and radii.max() <= max(r0, r1) + 1e-4:
             return path, False
         theta0 = math.atan2(p0[1], p0[0])
         angle = (math.atan2(p3[1], p3[0]) - theta0) % (2 * math.pi)

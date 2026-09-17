@@ -1,6 +1,6 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-17
+> **状态日期**：2026-09-18
 >
 > **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，PPO 入口 V2 提交 `1470229`
 >
@@ -75,7 +75,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 持续课程推进（2026-09-17）
 
-用户已授权持续推进至满意低层策略，仍逐级验证，不跳安全gate。checkpoint24独立评估PASS但未见明确性能增益；P2 N6/N8/N12 rule/student 12次可达性pilot全部PASS，student等待明显高于rule。发现旧距离奖励也奖励绕环，P2仅将该奖励系数设0，物理/安全链不变。P2 V1第24回合因initial_ratio检查停止：前23次更新成功，失败回合未更新且安全/完成通过。只读复放证明full-world likelihood误差0，actor子批次浮点误差1.1444e-5；已修正验证器批次一致性，阈值不变，按[持续课程协议](evidence/v4_2/continuous_curriculum_20260917.md)验证V2从checkpoint23恢复并补足13次更新；最终P3–P5与独立效果验收尚未完成，不能称满意策略。Luna high额度不足时主任务接管监控。
+用户已授权持续推进至满意低层策略，仍逐级验证，不跳安全gate。checkpoint24独立评估PASS但未见明确性能增益；P2 N6/N8/N12 rule/student 12次可达性pilot全部PASS，student等待明显高于rule。发现旧距离奖励也奖励绕环，P2仅将该奖励系数设0，物理/安全链不变。P2 V1第24回合因initial_ratio检查停止：前23次更新成功，失败回合未更新且安全/完成通过。只读复放证明full-world likelihood误差0，actor子批次浮点误差1.1444e-5；已修正验证器批次一致性，阈值不变，V2从checkpoint23恢复后5次更新成功，第6回合因legacy曲线线段内切0.0592m超0.05m停止。已定位并补连续线段最近点检查，保持原门槛，按[持续课程协议](evidence/v4_2/continuous_curriculum_20260917.md)验证V3从V2 checkpoint5恢复补足8次更新；最终P3–P5与独立效果验收尚未完成，不能称满意策略。Luna high额度不足时主任务接管监控。
 
 ## 当前允许的下一步
 
