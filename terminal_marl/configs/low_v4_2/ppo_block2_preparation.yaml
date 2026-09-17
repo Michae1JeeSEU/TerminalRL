@@ -1,0 +1,22 @@
+protocol: V4_2_V2_1_PPO_BLOCK2_PREPARATION_V1
+status: prepared_not_started
+evaluation_manifest_sha256: fe6973c8689886a1f9f344bbd8481a525c810b051017c33af5b9e869657dd46f
+initial_checkpoint_sha256: 965c5438dfc42f9898a4059b1225527bebd94f048ae9dfe6253cb49fc0519198
+scope: fixed_geometry_N3_to_N6
+seed_start: 700001
+episodes: 24
+scenarios: [warm3, flow3, flow6]
+horizon_seconds: 900
+initialization: checkpoint12_model_and_optimizer
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+evaluation_seeds_reserved: [710001, 710002, 710003, 710004, 710005, 710006]
+before_launch: explicit_continuation_entry_and_restore_smoke_required
+automatic_curriculum_promotion: false
