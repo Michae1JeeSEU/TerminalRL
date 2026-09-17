@@ -1,0 +1,17 @@
+protocol: V4_2_V2_1_PPO_CHECKPOINT12_EVAL_V1
+preregistered_at: 2026-09-17
+checkpoint_sha256: 965c5438dfc42f9898a4059b1225527bebd94f048ae9dfe6253cb49fc0519198
+training_manifest_sha256: 3a0461b663538af26dd7b2ca06a74c6ac203c0ac41c856535357c39c7783022a
+seeds: [690001, 690002, 690003, 690004, 690005, 690006]
+scenarios: [warm3, flow3, flow6]
+behaviors: [deterministic, stochastic]
+gates: unchanged_I3_episode_gates_and_both_gate_support
+baseline: qualified_DAgger_same_seeds_scenarios_behavior
+baseline_use: paired_diagnostic_not_model_selection
+visualization_seed: 690003
+snapshot_stride: 2
+smoke_seed: 699001
+smoke_steps: 2
+training: forbidden
+Q2_access: forbidden
+next_stage_if_pass: prepare_same_scope_continuation_only
