@@ -73,6 +73,10 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3。完整数值见
 [I0-R3 collection summary](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md)。
 
+## 持续课程推进（2026-09-17）
+
+用户已授权持续推进至满意低层策略，仍逐级验证，不跳安全gate。checkpoint24独立评估PASS但未见明确性能增益；P2 N6/N8/N12 rule/student 12次可达性pilot全部PASS，student等待明显高于rule。发现旧距离奖励也奖励绕环，P2仅将该奖励系数设0，物理/安全链不变。正在按[持续课程协议](evidence/v4_2/continuous_curriculum_20260917.md)验证并启动36回合自然流课程；最终P3–P5与独立效果验收尚未完成，不能称满意策略。Luna high额度不足时主任务接管监控。
+
 ## 当前允许的下一步
 
 - 已完成已注册的 PPO 初始 block，下一步先用 fresh seeds 评估最终 checkpoint，再决定显式续训协议或课程升级。

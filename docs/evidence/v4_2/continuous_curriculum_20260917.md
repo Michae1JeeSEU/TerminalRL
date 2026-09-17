@@ -26,3 +26,13 @@
 - pilot horizon预设为末次到达+900s，即1210/1330/1570秒，属于扩大请求数后的可达性诊断，不覆盖/更改P1 900秒gate。正式课程截止时间将在pilot结果后另行冻结。
 - 保存完成/未完成、active峰值/队列峰值、平均等待和请求至touchdown时间、shield、安全、geometry、exact replay；不把总请求数称为并发数。
 - smoke seed748000 N6、32步，先验证双方输入与序列化；正式pilot结果决定是否准入N8/N12训练，不自动跳P3。
+
+## 下一训练块的局部奖励修正（执行前）
+
+源码检查发现旧progress奖励使用 `_advance_plan + _advance_ring_hold` 的累计距离，等待外环22m/s带来每秒约+0.022奖励，大于时间惩罚-0.01。其偏好与减少等待冲突；仅此证据不能证明它是全部性能差异的原因。P2新配置将 `low_level_progress_reward_per_meter=0`，不改旧配置/模型/manifest，不改环境推进；其余time/touchdown/release/shield/failure奖励保持原值。单测验证配置仅该奖励项不同、真实warm-ring WAIT总reward为负。
+
+P2计划（仅pilot PASS后执行）：恢复checkpoint24模型及optimizer，固定N6/N8/N12自然流、60秒间隔、相同P1属性，horizon=末次到达+900秒。六资格seeds750001–750006（前三deterministic后三stochastic）、两入口seeds753001–753002（flow6 160步、flow8 192步），全部gate通过后36回合seeds754001–754036，N6/N8/N12循环，无warm-start。超参数保持block2（lr3e-5、2epochs、batch32、gamma.99、lambda.95、clip.1、entropy.001）。smoke752000 flow6 160步。新独立评估预留755001–755006，与训练/资格隔离。训练每回合沿用safety/geometry/replay/initial ratio/finite/KL/restore及complete gates；任一失败终止并定位，不修改已消费结果。不以训练通过代替延误效果评估。
+
+P2 pilot终态PASS：12/12配对rollout，rule和student均完成52/52架，全部安全/几何/replay gate通过。两组N12 student完成1251/1278s，rule1187/1029s；student平均等待65.66/73.91s，rule19.07/26.88s。证据支持该负荷可达，但不支持student优于rule。pilot manifest SHA edc2772860c705cc08dd52f7bf3574bde964ea14c15c5bf44d848ac51b6662d4；block2独立评估manifest SHA 1fce2a4889b8b5d4b53c01b71698d03cb92e65b020671136c72f99ce9fd6ff24。
+
+P2新协议与参数文件：`terminal_marl/configs/low_v4_2/ppo_p2_natural_flow.yaml`；runner `run_v4_2_ppo_p2`。资格、入口、36回合训练分开，仍按阶段gate推进。后续评估必须报告rule差距而非只看completion。

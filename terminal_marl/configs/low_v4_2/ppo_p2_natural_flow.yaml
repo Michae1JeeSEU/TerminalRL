@@ -1,0 +1,26 @@
+protocol: V4_2_P2_NATURAL_FLOW_NO_DISTANCE_REWARD_V1
+scope: fixed_geometry_natural_flow_N6_N8_N12
+initial_checkpoint_sha256: 6420df9a8562135756819459c7682ec897d47acd64e841b75a21c697298ea14f
+evaluation_manifest_sha256: 1fce2a4889b8b5d4b53c01b71698d03cb92e65b020671136c72f99ce9fd6ff24
+pilot_manifest_sha256: edc2772860c705cc08dd52f7bf3574bde964ea14c15c5bf44d848ac51b6662d4
+qualification_seeds: [750001, 750002, 750003, 750004, 750005, 750006]
+entry_seeds: [753001, 753002]
+entry_scenarios: [flow6, flow8]
+entry_steps: [160, 192]
+smoke_seed: 752000
+smoke_steps: 160
+scenarios: [flow6, flow8, flow12]
+seed_start: 754001
+episodes: 36
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+evaluation_seeds_reserved: [755001, 755002, 755003, 755004, 755005, 755006]
+low_level_progress_reward_per_meter: 0.0
+horizon_rule: last_arrival_plus_900_seconds
