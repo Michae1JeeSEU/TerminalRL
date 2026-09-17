@@ -151,6 +151,42 @@ class TrajectoryGenerator:
         norm = float(np.linalg.norm(value))
         return fallback if norm <= 1e-9 else np.asarray(value, dtype=float) / norm
 
+    def _transfer_path(self, p0, p3, source_tangent, target_tangent):
+        """Keep admissible legacy curves; repair only reverse/overshoot geometry.
+
+        Endpoint tangency alone does not prevent a cubic from crossing the
+        inner disk and returning against circulation. The fallback progresses
+        counterclockwise with smooth, monotone radius/height interpolation.
+        Timing and the existing safety chain still decide reachability.
+        """
+        length = float(np.linalg.norm(p3 - p0))
+        control = min(.42 * length, 160.0)
+        path = GeometricPath.cubic_bezier(p0, p0 + control * source_tangent,
+            p3 - control * target_tangent, p3, samples=self.config.trajectory_bezier_samples)
+        xy = path.points[:, :2]
+        radii = np.linalg.norm(xy, axis=1)
+        r0, r1 = float(np.linalg.norm(p0[:2])), float(np.linalg.norm(p3[:2]))
+        cross = xy[:-1, 0] * xy[1:, 1] - xy[:-1, 1] * xy[1:, 0]
+        # Permit only sub-millimetre numerical noise, not operational excursions.
+        if cross.min() >= -1e-8 and radii.min() >= min(r0, r1) - 1e-4 and radii.max() <= max(r0, r1) + 1e-4:
+            return path, False
+        theta0 = math.atan2(p0[1], p0[0])
+        angle = (math.atan2(p3[1], p3[0]) - theta0) % (2 * math.pi)
+        # Coincident bearings need forward travel, not a radial departure
+        # with zero tangent. An unreachable full circuit will be rejected by
+        # the existing merge-time check rather than shortcut through the disk.
+        if angle < 1e-6:
+            angle = 2 * math.pi
+        samples = max(81, self.config.trajectory_bezier_samples, int(math.ceil(angle / .02)) + 1)
+        s = np.linspace(0., 1., samples)
+        blend = s ** 3 * (10. - 15. * s + 6. * s ** 2)
+        radius = r0 + (r1 - r0) * blend
+        theta = theta0 + angle * s
+        values = np.column_stack((radius * np.cos(theta), radius * np.sin(theta),
+                                  p0[2] + (p3[2] - p0[2]) * blend))
+        values[0], values[-1] = p0, p3
+        return GeometricPath(values), True
+
     def ring_transfer(self, uav, source: RingRole, target: RingRole, reservation, airspace, now: float,
                       speed_residual_mps: float = 0.0) -> TrajectoryPlan:
         current = np.asarray(uav.position, dtype=float)
@@ -216,11 +252,51 @@ class TrajectoryGenerator:
                                                         p3 - tangent_length * target_tangent, p3,
                                                         samples=self.config.trajectory_bezier_samples)
             transfer_uav = type("State", (), {"uid": uav.uid, "velocity": held[-1].velocity})()
-        transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,
-                                                           initial_velocity=transfer_uav.velocity,
-                                                           target_horizontal_speed=max(float(np.linalg.norm(transfer_uav.velocity)), target_speed),
-                                                           constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
+        transfer_path, geometry_repaired = self._transfer_path(p0, p3, source_tangent, target_tangent)
+
+        def executable_transfer(moment):
+            held = self.ring_hold_points(source_ring, initial_theta, uav.speed,
+                                         transfer_entry_speed, now, moment - now) if moment > now + 1e-9 else []
+            start_position = held[-1].position if held else current
+            velocity = held[-1].velocity if held else uav.velocity
+            angle = math.atan2(start_position[1], start_position[0])
+            tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0))
+            path, repaired = self._transfer_path(start_position, p3, tangent, target_tangent)
+            result = self.parameterizer.parameterize(path, start_time=moment,
+                initial_velocity=velocity,
+                target_horizontal_speed=max(float(np.linalg.norm(velocity)), target_speed),
+                constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
+            return held[:-1], result, tangent, velocity, repaired
+
+        if geometry_repaired:
+            # The forward curve changes its feasible entry speed and departure.
+            # Search only this reservation's existing window;
+            # do not change slots, speed bounds, or safety acceptance criteria.
+            transfer_entry_speed = min(source_target_speed, self.parameterizer.entry_speed_limit(transfer_path))
+            earliest = now + max(0., uav.speed-transfer_entry_speed) / self.dynamics.profile.max_horizontal_decel
+            chosen = None
+            candidates = [max(earliest, departure), *np.linspace(earliest, max(earliest, reservation.merge_time), 17)]
+            for moment in candidates:
+                try:
+                    candidate = executable_transfer(float(moment))
+                except RuntimeError:
+                    continue
+                if chosen is None:
+                    chosen = (float(moment), candidate)
+                if candidate[1][-1].t <= reservation.merge_time + 1e-6:
+                    chosen = (float(moment), candidate)
+                    break
+            if chosen is None:
+                raise RuntimeError("could not time-parameterize a dynamically feasible transfer")
+            departure, (points, transfer_points, source_tangent, velocity, geometry_repaired) = chosen
+            transfer_uav = type("State", (), {"uid": uav.uid, "velocity": velocity})()
+        else:
+            transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,
+                initial_velocity=transfer_uav.velocity,
+                target_horizontal_speed=max(float(np.linalg.norm(transfer_uav.velocity)), target_speed),
+                constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
         details = {"target_phase": "ring_middle" if target is RingRole.MIDDLE else "ring_inner",
+                   "transfer_geometry": "forward_annular_v1" if geometry_repaired else "legacy_cubic",
                    "source_tangent": source_tangent, "target_tangent": target_tangent,
                    "speed_residual_mps": float(speed_residual_mps), "scheduled_departure": departure,
                    "transfer_entry_speed_mps": float(np.linalg.norm(transfer_uav.velocity)),
