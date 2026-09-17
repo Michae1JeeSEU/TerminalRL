@@ -1,0 +1,27 @@
+protocol: V4_2_PPO_BLOCK2_TRANSFER_REPAIR_V1
+scope: fixed_geometry_N3_to_N6
+initial_checkpoint_sha256: 965c5438dfc42f9898a4059b1225527bebd94f048ae9dfe6253cb49fc0519198
+training_manifest_sha256: 3a0461b663538af26dd7b2ca06a74c6ac203c0ac41c856535357c39c7783022a
+evaluation_manifest_sha256: fe6973c8689886a1f9f344bbd8481a525c810b051017c33af5b9e869657dd46f
+generator_sha256: 1b1f5e2ea2d9107b279a87d1b37e57469839a466bc3760c757e00c735c600024
+qualification_seeds: [730001, 730002, 730003, 730004, 730005, 730006]
+entry_seeds: [731001, 731002]
+entry_scenarios: [warm3, flow3]
+entry_steps: [64, 160]
+smoke_seed: 732000
+smoke_steps: 32
+scenarios: [warm3, flow3, flow6]
+seed_start: 700001
+episodes: 24
+horizon_seconds: 900
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+evaluation_seeds_reserved: [710001, 710002, 710003, 710004, 710005, 710006]
+automatic_curriculum_promotion: false

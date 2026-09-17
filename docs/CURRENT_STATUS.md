@@ -82,7 +82,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 最新 16 项 admission/PPO/rollout/I3 定向测试通过；入口 V2 两个真实 rollout 的 ratio、更新、replay、checkpoint 恢复通过。正式 PPO 收敛效果尚未评估。
 - 首个正式 PPO PID `2610770` 已退出，12/12 episodes 全通过；[正式结果](evidence/v4_2/v4_2_v2_1_ppo_initial_block_summary.md)。Luna high 已完成监控。
 - checkpoint_12.pt 已通过六个 fresh episode 独立评估，24架全部完成；[结果与本地可视化命令](evidence/v4_2/checkpoint12_evaluation_summary.md)。与DAgger配对结果不足以证明普遍优势，暂保持N3–N6。
-- 已准备下一block配置：24episodes、fresh seeds700001–700024，尚未启动；需完成显式checkpoint12续训入口与恢复小样本验证后启动。
+- 已实现修复后显式checkpoint12续训入口与完整optimizer恢复，按[新协议](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)推进：六回合student-only → 两回合入口 → 24回合正式续训；固定N3–N6，任一gate失败停止。状态以新输出 `ppo_block2_transfer_repair_20260917` 为准；资格/入口通过前不启动正式训练。
 - 各阶段数量、到达流、属性与约束审查已更新到 execution_plan.md 的8.5节；后续P2–P5尚未准入，不自动扩大当前训练范围。
 - 本地 Git 无 remote；代码仅经 Syncthing 同步，提交未推送。保留用户未提交文件。
 
