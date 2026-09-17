@@ -2,16 +2,19 @@
 
 > **状态日期**：2026-09-17
 >
-> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，R4 预注册提交 `1fb0105`
+> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，PPO 入口 V2 提交 `1470229`
 >
-> **当前阶段**：Phase A / A5 固定空域低层策略，PPO admission / training-entry validation
+> **当前阶段**：Phase A / A5 固定空域低层策略，初始课程 PPO 正式训练准入完成
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
 ## 一句话状态
 
-I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 rows / 52 episodes，52/52 replay 一致。I1 V2 三 seed 与 fresh Q2 已全部 PASS，按 BC → Safe DAgger → student-only qualification → PPO admission 推进；I3 student-only 六个 episodes 也已 PASS，正在完成准入与训练入口验证；PPO_ALLOWED 仍为 false。旧 R3 和 I1 的 FAIL 不变。
-
+低层 V4.2 / Observation V2.1（88D）已通过 R4、I1 V2/Q2、88D Safe DAgger、
+I3 student-only qualification、PPO admission 和入口 V2 验证。
+**PPO_ALLOWED = true**，仅限固定空域 N3–N6 初始课程；尚未启动正式 PPO block。
+完整证据及可执行命令见 [准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)。
+历史 R3、旧 I1 和入口 V1 的 FAIL 保持不变。
 ## 当前冻结的主线语义
 
 | 项目 | 当前值 |
@@ -48,11 +51,11 @@ I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 
 | I0-R4 repair collection | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md) |
 | I1 Qualification Protocol V2 / Q2 | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i1_v2_summary.md)，Q2 1,787 rows，三 seed 全通过 |
 | I2 Safe DAgger | R1 PASS / I3 PASS | [I3 协议与 R1 结果](evidence/v4_2/v4_2_v2_1_student_qualification_protocol.md)，976 新事件、35 epochs、全部 gate PASS |
-| PPO | `PPO_ALLOWED = false` | I3 已通过；[准入与入口协议](evidence/v4_2/v4_2_v2_1_ppo_admission_protocol.md) 已冻结，待实际入口验证 |
+| PPO | **PPO_ALLOWED = true（初始 N3–N6）** | [准入结果与训练命令](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)，正式 train 模式已接受最新 admission |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
-## 最新失败：I0-R3
+## 保留的历史失败：I0-R3
 
 I0-R3 的 provenance、Teacher determinism、exact replay、Safety、partition independence、
 aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
@@ -63,25 +66,23 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 - shared gate false-negative、shared proposal error，以及 post-WAIT、transition/retry、
   post-conflict、proposal-11、proposal-14 的 radius coverage gate 全部未达预注册阈值。
 
-因此不能把 R3 标记为“基本通过”，也不能直接进入新 I1。完整数值见
+R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3。完整数值见
 [I0-R3 collection summary](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md)。
 
 ## 当前允许的下一步
 
-- R4 正式结果与哈希见 [R4 summary](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md)。
-- I1 V2 保持原 BC 超参数与 hard gates；全新 actor seeds 为 6201/6202/6203。
-- Q2 固定 45 episodes，seeds 430001–430045，先完成历史独立性检查并冻结；全部 actor 训练冻结后只评估一次。
-- 新入口及采集器 11 项测试通过；2 episodes / 9 rows smoke 的 schema、Teacher determinism、replay、Safety 和 aliasing 均通过。smoke 不产生正式准入。
-- I1 V2 已完成输出：`~/training_outputs/terminal/v4_2_i1_v2_formal_20260917`，同名 `.log`。
-- DAgger R1 已通过：D1 共 8,552 rows、12 个采集和 4 个验证 episodes，Safety 与 replay 全通过。
-- I3 预注册六个 fresh seed，warm3 / flow3 / flow6，确定性与随机 student-only，各最多 900 秒；仅面向初始 N3–N6 课程准入。
-- 已有独立 StudentPPOV42 和 88D rollout；尚需完成 DAgger、student-only qualification、PPO admission 与正式训练入口验证。
-- 按用户要求，长任务由 Luna high 子 agent 监控，主窗口等待；终态返回后继续下一 gate。
-- 本地 Git 无 remote；仅通过 Syncthing 同步服务器，不能声称 Git 推送成功。
+- 可从合格 DAgger checkpoint 启动已注册的 PPO 初始 block，最多 12 episodes，warm3 / flow3 / flow6，固定空域和原安全链。
+- 正式入口：`terminal_marl.training.run_v4_2_v2_1_ppo --mode train`；参数及证据哈希见准入结果。不能用 entry-test checkpoint 初始化正式训练。
+- Admission：`~/training_outputs/terminal/v4_2_ppo_entry_verify_v2_20260917/admission.json`，SHA256 `959bf9300fb44f4eec02783136dcfda11826dbf125e36a85e60550e241511c62`。
+- I3 六个 episode 全部完成 24 架 UAV，队列清空，Safety 与 actor shield 均为零；最慢 flow6 为 867/900 秒，扩大交通或缩短间隔前仍需验证。
+- 最新 16 项 admission/PPO/rollout/I3 定向测试通过；入口 V2 两个真实 rollout 的 ratio、更新、replay、checkpoint 恢复通过。正式 PPO 收敛效果尚未评估。
+- 当前服务器任务与子 agent 监控均已结束。后续长任务启动并验证中间产物后，由 Luna high 子 agent 监控，本窗口等待。
+- 本地 Git 无 remote；代码仅经 Syncthing 同步，提交未推送。保留用户未提交文件。
 
 ```text
-I1 V2 / Q2 PASS → 88D I2 preflight
-→ I2 Safe DAgger → student-only qualification → PPO admission → training entry verification
+R4 PASS → I1 V2/Q2 PASS → 88D Safe DAgger PASS → I3 PASS
+→ PPO admission + entry V2 PASS → bounded initial PPO training
+→ load/geometry curriculum → full static qualification → A6
 ```
 ## 不应恢复的旧路线
 
