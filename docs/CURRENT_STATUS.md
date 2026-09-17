@@ -17,7 +17,7 @@ I3 student-only qualification、PPO admission 和入口 V2 验证。
 历史 R3、旧 I1 和入口 V1 的 FAIL 保持不变。
 ## 2026-09-17 切环轨迹局部修复
 
-checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因为旧 cubic 仅约束端点切向。正在按[固定回归协议](evidence/v4_2/transfer_geometry_repair_20260917.md)进行局部修复验证。历史 PASS/FAIL 不变，但不外推到新生成器；**下一 PPO block 暂缓**，需完成修复回归及新快照 student-only/入口复核。
+checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因为旧 cubic 仅约束端点切向。已完成局部修复及[固定回归验证](evidence/v4_2/transfer_geometry_repair_20260917.md)：3场景12/12完成，实际切环无逆环向、安全0、回放一致；UID6最小切向速度16.02m/s。历史 PASS/FAIL 不变，但不外推到新生成器；**下一 PPO block 暂缓**，修复回归已通过，继续训练前仍需新快照 student-only/入口复核。
 
 ## 当前冻结的主线语义
 
