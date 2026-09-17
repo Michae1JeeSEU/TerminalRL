@@ -36,3 +36,7 @@ P2计划（仅pilot PASS后执行）：恢复checkpoint24模型及optimizer，�
 P2 pilot终态PASS：12/12配对rollout，rule和student均完成52/52架，全部安全/几何/replay gate通过。两组N12 student完成1251/1278s，rule1187/1029s；student平均等待65.66/73.91s，rule19.07/26.88s。证据支持该负荷可达，但不支持student优于rule。pilot manifest SHA edc2772860c705cc08dd52f7bf3574bde964ea14c15c5bf44d848ac51b6662d4；block2独立评估manifest SHA 1fce2a4889b8b5d4b53c01b71698d03cb92e65b020671136c72f99ce9fd6ff24。
 
 P2新协议与参数文件：`terminal_marl/configs/low_v4_2/ppo_p2_natural_flow.yaml`；runner `run_v4_2_ppo_p2`。资格、入口、36回合训练分开，仍按阶段gate推进。后续评估必须报告rule差距而非只看completion。
+
+## P2训练后独立评估（训练进行中预注册）
+
+固定评估最终checkpoint_36，不按验证集选中间checkpoint。一次性保留seeds755001–755006，N6/N8/N12循环两次，全部自然入流、deterministic部署动作；配对本阶段初始checkpoint24与nominal rule，均在P2相同物理/场景/奖励配置下运行，禁止更新。候选沿用安全/完成/geometry/replay/likelihood/shield gate。报告按完成UAV加权的平均等待、request-to-touchdown及每场景完成时间、active峰值、队列峰值和rule差距。硬gate通过但效果未改善时不能宣称训练收敛，先分析原因再决定后续参数；不自动扩大压力。独立评估不提供统计显著性结论。smoke756000 N6 160步只验证输出路径，可用checkpoint24自配对，无资格作用。
