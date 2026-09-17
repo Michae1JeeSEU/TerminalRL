@@ -4,13 +4,13 @@
 >
 > **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，R4 预注册提交 `1fb0105`
 >
-> **当前阶段**：Phase A / A5 固定空域低层策略，expert dataset qualification
+> **当前阶段**：Phase A / A5 固定空域低层策略，PPO admission / training-entry validation
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
 ## 一句话状态
 
-I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 rows / 52 episodes，52/52 replay 一致。I1 V2 三 seed 与 fresh Q2 已全部 PASS，按 BC → Safe DAgger → student-only qualification → PPO admission 推进；PPO_ALLOWED 仍为 false。旧 R3 和 I1 的 FAIL 不变。
+I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 rows / 52 episodes，52/52 replay 一致。I1 V2 三 seed 与 fresh Q2 已全部 PASS，按 BC → Safe DAgger → student-only qualification → PPO admission 推进；I3 student-only 六个 episodes 也已 PASS，正在完成准入与训练入口验证；PPO_ALLOWED 仍为 false。旧 R3 和 I1 的 FAIL 不变。
 
 ## 当前冻结的主线语义
 
@@ -47,8 +47,8 @@ I0-R4 全部 12 个 gate PASS：训练 7,576 rows / 208 episodes，审计 1,886 
 | I0-R3 repair collection | FAIL（历史） | [R3 result](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md) |
 | I0-R4 repair collection | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i0_r4_collection_summary.md) |
 | I1 Qualification Protocol V2 / Q2 | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i1_v2_summary.md)，Q2 1,787 rows，三 seed 全通过 |
-| I2 Safe DAgger | R1 PASS / I3 PREREGISTERED | [I3 协议与 R1 结果](evidence/v4_2/v4_2_v2_1_student_qualification_protocol.md)，976 新事件、35 epochs、全部 gate PASS |
-| PPO | `PPO_ALLOWED = false` | 需要 student-only imitation qualification 和 PPO admission checklist 全部通过 |
+| I2 Safe DAgger | R1 PASS / I3 PASS | [I3 协议与 R1 结果](evidence/v4_2/v4_2_v2_1_student_qualification_protocol.md)，976 新事件、35 epochs、全部 gate PASS |
+| PPO | `PPO_ALLOWED = false` | I3 已通过；[准入与入口协议](evidence/v4_2/v4_2_v2_1_ppo_admission_protocol.md) 已冻结，待实际入口验证 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 

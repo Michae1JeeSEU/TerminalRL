@@ -1,0 +1,24 @@
+protocol: V4_2_V2_1_PPO_INITIAL_ENTRY_V1
+preregistered_at: 2026-09-17
+i3_manifest_sha256: e4350050629207045d880f4cc9b82347daf08771985397665a7e72a12cc16c25
+scope: fixed_geometry_initial_curriculum_N3_to_N6
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+verification_seeds: [670001, 670002]
+verification_scenarios: [warm3, flow3]
+verification_steps: 32
+formal_seed_start: 680001
+formal_max_episodes: 12
+formal_scenarios: [warm3, flow3, flow6]
+formal_horizon_seconds: 900
+teacher_enabled: false
+action_ratio: student_requested_hierarchical_gate_and_conditional_proposal
+checkpoint_initialization: qualified_DAgger_only
+verification_checkpoint_for_formal_initialization: forbidden
