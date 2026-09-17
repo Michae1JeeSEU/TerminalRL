@@ -17,7 +17,7 @@ I3 student-only qualification、PPO admission 和入口 V2 验证。
 历史 R3、旧 I1 和入口 V1 的 FAIL 保持不变。
 ## 2026-09-17 切环轨迹局部修复
 
-checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因为旧 cubic 仅约束端点切向。已完成局部修复及[固定回归验证](evidence/v4_2/transfer_geometry_repair_20260917.md)：3场景12/12完成，实际切环无逆环向、安全0、回放一致；UID6最小切向速度16.02m/s。历史 PASS/FAIL 不变，但不外推到新生成器；**下一 PPO block 暂缓**，修复回归已通过，继续训练前仍需新快照 student-only/入口复核。
+checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因为旧 cubic 仅约束端点切向。已完成局部修复及[固定回归验证](evidence/v4_2/transfer_geometry_repair_20260917.md)：3场景12/12完成，实际切环无逆环向、安全0、回放一致；UID6最小切向速度16.02m/s。历史 PASS/FAIL 不变，但不外推到新生成器；**修复后资格与入口复核已通过，第二个 PPO block 已完成**：24回合96/96架完成，安全/逆环向/shield全0。详见[续训结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。
 
 ## 当前冻结的主线语义
 
@@ -82,7 +82,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 最新 16 项 admission/PPO/rollout/I3 定向测试通过；入口 V2 两个真实 rollout 的 ratio、更新、replay、checkpoint 恢复通过。正式 PPO 收敛效果尚未评估。
 - 首个正式 PPO PID `2610770` 已退出，12/12 episodes 全通过；[正式结果](evidence/v4_2/v4_2_v2_1_ppo_initial_block_summary.md)。Luna high 已完成监控。
 - checkpoint_12.pt 已通过六个 fresh episode 独立评估，24架全部完成；[结果与本地可视化命令](evidence/v4_2/checkpoint12_evaluation_summary.md)。与DAgger配对结果不足以证明普遍优势，暂保持N3–N6。
-- 已实现修复后显式checkpoint12续训入口与完整optimizer恢复，按[新协议](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)推进：六回合student-only → 两回合入口 → 24回合正式续训；固定N3–N6，任一gate失败停止。状态以新输出 `ppo_block2_transfer_repair_20260917` 为准；资格/入口通过前不启动正式训练。
+- 修复后第二block已完成：六回合student-only（24/24架）→两回合入口→24回合正式续训（96/96架），全部gate PASS；[结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。最终 `ppo_block2_transfer_repair_20260917/train/checkpoint_24.pt`，未扩大N3–N6范围。下一步使用保留710001–710006独立评估该checkpoint，完成前不声称策略普遍改善、不自动升课程。
 - 各阶段数量、到达流、属性与约束审查已更新到 execution_plan.md 的8.5节；后续P2–P5尚未准入，不自动扩大当前训练范围。
 - 本地 Git 无 remote；代码仅经 Syncthing 同步，提交未推送。保留用户未提交文件。
 
