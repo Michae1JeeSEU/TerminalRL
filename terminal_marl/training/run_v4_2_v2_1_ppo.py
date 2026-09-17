@@ -22,8 +22,8 @@ from .run_v4_2_v2_1_i2_preflight import qualified_student
 from .run_v4_2_v2_1_student_qualification import protocol as i3_protocol, qualified_dagger, scenario_config
 from .student_rollout_v4_2 import rollout
 
-PROTOCOL = Path("terminal_marl/configs/low_v4_2/ppo_v2_1_initial_entry.yaml")
-PROTOCOL_SHA = "ee0fc847c7565e87ff271dafe5be21ff0630d099a6f4baeb1690b603217738a4"
+PROTOCOL = Path("terminal_marl/configs/low_v4_2/ppo_v2_1_initial_entry_v2.yaml")
+PROTOCOL_SHA = "6f810662a10bf42b439bde233d166137bc8e3a7d84da60796677565e6d653864"
 
 
 def protocol():
@@ -109,7 +109,7 @@ def run(output, admission_path, dagger_path, history_root, *, formal=False, epis
     update_keys = ("minibatch_size", "gamma", "gae_lambda", "clip_ratio", "value_coef", "entropy_coef")
     for index, seed in enumerate(seeds):
         config = scenario_config(scenarios[index % len(scenarios)], i3_protocol())
-        horizon = int(p["formal_horizon_seconds"] / config.dt) if formal else p["verification_steps"]
+        horizon = int(p["formal_horizon_seconds"] / config.dt) if formal else p["verification_steps"][index]
         config = replace(config, max_simulation_seconds=horizon * config.dt)
         steps, summary = rollout(policy, config, seed=seed, max_steps=horizon, output=output / f"seed{seed}")
         error = requested_logprob_error(policy, steps)

@@ -23,7 +23,7 @@ def test_unadmitted_and_changed_code_are_rejected():
 
 def test_full_entry_updates_reloads_and_writes_admission(tmp_path, monkeypatch):
     p = runner.protocol()
-    monkeypatch.setattr(runner, "protocol", lambda: {**p, "verification_steps": 2,
+    monkeypatch.setattr(runner, "protocol", lambda: {**p, "verification_steps": [2, 2],
         "verification_scenarios": ["warm3", "warm3"]})
     monkeypatch.setattr(runner, "validate_admission", lambda *args, **kwargs: None)
     monkeypatch.setattr(runner, "qualified_dagger", lambda *args: None)
