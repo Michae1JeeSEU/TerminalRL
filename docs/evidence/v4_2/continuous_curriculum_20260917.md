@@ -14,3 +14,15 @@
 - 历史manifest只读，新结果独立保存；正式评估后才设计P2 N8/12的rule可达性pilot及训练参数。
 
 已知差异：requirements.md仍存在旧高度/速度数字，当前已验证场景为config与CURRENT_STATUS的100/70/40m、22/20/16m/s；此次沿用已验证参数，P5单独审查合法变化，不静默切换物理配置。
+
+## checkpoint24评估结果与P2 pilot预注册
+
+独立评估 `block2_eval_formal_20260917` 已完成，candidate和baseline各6回合全部gate PASS，均24/24架完成、安全及逆环向全0。候选相对baseline完成时间差为0/0/+12/0/+9/-2秒，未证明性能改善；不能据此认定满意。710001–710006已消费，不再作为untouched评估。
+
+下一步仅做可达性pilot，不训练：
+- seeds748001/748004 N6锚点，748002/748005 N8，748003/748006 N12。
+- 每seed配对rule（标准nominal RELEASE意图+同一安全链，无Teacher）与checkpoint24 deterministic student。
+- 自然流首到达10s、间隔60s；P1 SOC=.8、priority固定1（emergency5），相同随机mission/gate；物理约束全部保留。
+- pilot horizon预设为末次到达+900s，即1210/1330/1570秒，属于扩大请求数后的可达性诊断，不覆盖/更改P1 900秒gate。正式课程截止时间将在pilot结果后另行冻结。
+- 保存完成/未完成、active峰值/队列峰值、平均等待和请求至touchdown时间、shield、安全、geometry、exact replay；不把总请求数称为并发数。
+- smoke seed748000 N6、32步，先验证双方输入与序列化；正式pilot结果决定是否准入N8/N12训练，不自动跳P3。
