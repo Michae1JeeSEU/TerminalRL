@@ -45,3 +45,25 @@ def test_full_entry_updates_reloads_and_writes_admission(tmp_path, monkeypatch):
     assert all(r["gates"]["checkpoint_reload"] for r in result["records"])
     assert not result["formal_training_called"]
     assert (tmp_path / "verify" / "admission.json").exists()
+
+def test_ratio_check_preserves_rollout_batch_and_detects_real_change():
+    import numpy as np
+    from types import SimpleNamespace
+    from terminal_marl.algo.joint_ppo_v4_2 import hierarchical_joint_logprob
+    class BatchSensitiveModel:
+        def __init__(self): self.bias=0.; self.sizes=[]
+        def distributions(self, x):
+            self.sizes.append(len(x))
+            logits=torch.zeros((len(x),2));logits[:,1]=len(x)*.01+self.bias
+            return torch.distributions.Categorical(logits=logits), torch.distributions.Categorical(logits=torch.zeros((len(x),25)))
+    model=BatchSensitiveModel();world=np.zeros((5,88),dtype=np.float32)
+    gate=np.array([0,1,0,0,1]);proposal=np.array([-1,12,-1,-1,14])
+    gd,pd=model.distributions(torch.as_tensor(world))
+    _,_,old=hierarchical_joint_logprob(gd,pd,torch.as_tensor(gate),torch.as_tensor(proposal))
+    step=SimpleNamespace(world=world,actor_mask=np.array([False,True,False,False,True]),
+        requested_gate=gate,requested_proposal=proposal,requested_logprob=old.numpy())
+    policy=SimpleNamespace(model=model,device='cpu')
+    assert runner.requested_logprob_error(policy,[step])==0.
+    assert model.sizes[-1]==5
+    model.bias=.1
+    assert runner.requested_logprob_error(policy,[step])>1e-5

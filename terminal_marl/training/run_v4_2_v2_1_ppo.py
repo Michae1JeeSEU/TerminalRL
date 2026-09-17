@@ -78,10 +78,13 @@ def requested_logprob_error(policy, steps):
             mask = step.actor_mask
             if not mask.any():
                 continue
-            gd, pd = policy.model.distributions(torch.as_tensor(step.world[mask]))
-            _, _, current = hierarchical_joint_logprob(gd, pd, torch.as_tensor(step.requested_gate[mask]),
-                                                       torch.as_tensor(step.requested_proposal[mask]))
-            maximum = max(maximum, float(np.abs(current.numpy() - step.requested_logprob[mask]).max()))
+            # Match the rollout batch before selecting actors. Changing GEMM
+            # batch shape can introduce float32 rounding even without updates.
+            gd, pd = policy.model.distributions(torch.as_tensor(step.world, device=policy.device))
+            _, _, current = hierarchical_joint_logprob(gd, pd,
+                torch.as_tensor(step.requested_gate, device=policy.device),
+                torch.as_tensor(step.requested_proposal, device=policy.device))
+            maximum = max(maximum, float(np.abs(current.cpu().numpy()[mask] - step.requested_logprob[mask]).max()))
     return maximum
 
 

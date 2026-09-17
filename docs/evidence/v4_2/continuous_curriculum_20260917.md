@@ -40,3 +40,9 @@ P2新协议与参数文件：`terminal_marl/configs/low_v4_2/ppo_p2_natural_flow
 ## P2训练后独立评估（训练进行中预注册）
 
 固定评估最终checkpoint_36，不按验证集选中间checkpoint。一次性保留seeds755001–755006，N6/N8/N12循环两次，全部自然入流、deterministic部署动作；配对本阶段初始checkpoint24与nominal rule，均在P2相同物理/场景/奖励配置下运行，禁止更新。候选沿用安全/完成/geometry/replay/likelihood/shield gate。报告按完成UAV加权的平均等待、request-to-touchdown及每场景完成时间、active峰值、队列峰值和rule差距。硬gate通过但效果未改善时不能宣称训练收敛，先分析原因再决定后续参数；不自动扩大压力。独立评估不提供统计显著性结论。smoke756000 N6 160步只验证输出路径，可用checkpoint24自配对，无资格作用。
+
+P2 V1在第24回合seed754024停止，前23次更新全部通过；该回合12/12完成、1226s、安全/geometry/replay/requested_logprob均通过，唯一失败为initial_ratio检查误差1.1444091796875e-5略超原1e-5阈值，未执行更新。保留原FAIL与checkpoint23，不评估/覆盖原预留最终模型。需只读诊断同一action tape：原采样使用完整world batch，initial_ratio验证用actor子集batch；核验是否由float32矩阵计算batch shape导致差异。该旧seed只用于定位，不作为fresh qualification，不放宽阈值。
+
+诊断已完成1226步原action tape只读复放：full_world_error=0.0，actor_subset_error=1.1444091796875e-5，最大差出现在step379（world5架、actor2架）。修正仅initial_ratio验证器保留采样时world批次后再mask；不改变PPO优化目标、动作/Teacher语义、物理或1e-5阈值。新增回归测试验证检查器保持batch，并仍能拒绝真实模型变化。V1历史FAIL不改。
+
+恢复V2预注册：从最后合格checkpoint23（SHA b9c66290a00896d760070f9c2e9e5077afd986a802d55f38114adb4977fa068d）恢复模型及optimizer；核对V1 23个成功更新、最后回合未更新且唯一ratio gate失败。fresh qualification758001–758006，entry759001/759002，smoke760000，正式训练757001–757013共13回合，补足总计36次合格更新，其他参数/场景/gate不变。配置`ppo_p2_resume_v2.yaml`。原训练剩余预注册seed不复用。最终评估计划755001–755006仍untouched，因V1未生成checkpoint36，明确改为V2最终checkpoint13（不按效果选checkpoint）；不会评估中间权重择优。
