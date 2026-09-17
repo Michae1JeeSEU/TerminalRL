@@ -54,3 +54,38 @@ V2第6回合757006停止，前5次更新成功。失败回合12/12完成、1277s
 只读复放1277步exact：UID39，t1037s，legacy_cubic节点最小半径200m，但线段连续最小半径199.9275204m，最近点位于该段55.885%处。原修复只检查节点半径（测试也只检查中点）漏掉弦内切。现在使用每段投影最近点精确检查，沿用0.05m容限，仅超限旧曲线进入现有forward-annular fallback；不改物理/安全阈值，不改合格旧曲线。固定见证测试和原几何/动力学/预约测试验证。
 
 V3执行前预注册：从V2最后合格checkpoint5恢复（SHA8a8466f61119f7f5b5f780249d26f218ee9b8ae3e4aededc5c7f5fe2e51b201b），此前23+5=28次合格更新，剩8次。新资格762001–762006、入口763001/763002、smoke764000、训练761001–761008；其余场景/奖励/PPO参数/门槛不变。V3资格绑定新生成器，正式训练前小样本验证与入口检查。最终预留评估755001–755006仍未消费，候选明确为V3最终checkpoint8，三个对比控制器都使用同一最新生成器。未依验证成绩挑checkpoint。
+
+## 2026-09-18：V3 入口终态与 KL 只读诊断
+
+V3 资格阶段 `p2_resume_v3_20260918/qualify` 通过 6/6；六个 seed 的完成数量、safety、shield、geometry、replay、initial requested-logprob、finite 与 restore gate 均通过。入口阶段只执行了 seed763001（flow6，160步），因 `approx_kl=0.11257042959332467` 超过冻结上限 `0.05` 而 FAIL；该回合 `actor_decisions=8`、`updates=10`、`clip_fraction=0.16666666865348817`、`grad_norm=48.13680276870728`，其余 entry gate 通过。未执行 formal train，没有 `checkpoint_8.pt`；V3 FAIL 和旧 V1/V2 FAIL 均保留。entry manifest SHA256 为 `2098af1c3109c17fc489b7c9f20a9db11eb67aa62b77b5a03beb2de66909cd7d`。
+
+为区分 Adam 恢复、短 rollout/actor 样本和实际策略漂移，新增独立诊断协议
+`terminal_marl/configs/low_v4_2/ppo_p2_v3_kl_diagnostic_v1.yaml`（SHA256
+`846c15454e20ba02e330011ec2675df2fec62f007a7274dfc0d130e7db6c4d9c`）及 runner
+`terminal_marl/training/diagnose_v4_2_p2_v3_kl.py`（SHA256
+`09e454b2d3fdf158b2425ddeafbd90e5c40f9a029f3584f75b92775b16768b47`）。它固定 V2
+checkpoint5，分别对同一次 stochastic rollout 使用恢复 Adam 和 fresh-zero Adam，
+复用真实 `StudentPPOV42.update`，固定同一 minibatch permutation，并记录 actor GAE、
+每批 actor/world 数量、每批及 full-rollout requested-action KL、梯度范数、参数变化、
+safety/replay。诊断 seed765001/765002 为 fresh，heldout 755001–755006 未使用，
+并避开已注册/消费的 761xxx–764xxx seed 段；smoke seed765000 只验证输出闭环。
+
+| seed / 场景 | actor decisions | raw actor GAE mean/std | restored Adam approx/full KL | fresh-zero Adam approx/full KL |
+|---|---:|---:|---:|---:|
+| 765001 / flow6 / 160 | 3 | -2.92631555 / 1.27700114 | 0 / 0 | 0 / 0 |
+| 765002 / flow8 / 192 | 11 | -2.74803329 / 0.98559004 | 0.00201741193 / 0.00530911097 | 0.0342860984 / 0.0970129967 |
+
+两条件均通过 safety、geometry、replay、requested-logprob exact 和 initial ratio；每个
+seed 的两条件 batch-plan SHA 相同。seed765002 的 fresh-zero trace 中 batch10
+（2个 actor decision）的 pre-step KL 为 `0.3883524537`，对应 restored 为
+`0.0217540264`。因此这两个 fresh seed 未复现原始 `0.11257`，且不支持把 Adam
+清零作为修复；fresh-zero 在 flow8 反而产生更大的实际漂移，但单个新 seed 不能排除
+原 seed 与原 Adam 状态的交互。诊断 manifest SHA256 为
+`41017e10f45105a6125213ac51a630bdcfda9c35bac196608e2affc891955f69`。
+
+原 PPO kernel 的 `approx_kl` 是各 minibatch **更新前** actor KL 的平均值，而 full-rollout
+KL 是最后一次更新后的整段 action tape 漂移；诊断中二者可明显不同（例如
+765002 fresh 的 `0.0342861` 对 `0.0970130`）。在任何 fresh formal rerun 前，最小候选
+修复是预注册显式 target-KL 的逐步检查，并在超限时对该 optimizer step 做事务回滚；
+不扩大阈值、不用新 seed 覆盖原 FAIL、不消费 heldout 评估 seed。当前 P2 仍未准入正式
+训练，独立评估与 P3–P5 保持阻塞，直到 root 完成审查并另行预注册。

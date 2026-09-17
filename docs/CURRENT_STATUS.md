@@ -2,7 +2,7 @@
 
 > **状态日期**：2026-09-18
 >
-> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，PPO 入口 V2 提交 `1470229`
+> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`，V3 几何修复提交 `114a5e0`
 >
 > **当前阶段**：Phase A / A5 固定空域低层策略，初始课程 PPO 正式训练准入完成
 >
@@ -12,7 +12,7 @@
 
 低层 V4.2 / Observation V2.1（88D）已通过 R4、I1 V2/Q2、88D Safe DAgger、
 I3 student-only qualification、PPO admission 和入口 V2 验证。
-**PPO_ALLOWED = true**，仅限固定空域 N3–N6 初始课程；首个正式 PPO block 已完成（12 episodes、48架全部完成，全部 gate PASS）。
+**PPO_ALLOWED = true**，仅限固定空域 N3–N6 初始课程；首个正式 PPO block 已完成（12 episodes、48架全部完成，全部 gate PASS）。P2 自然流 V3 入口未通过，未获得扩大训练范围的准入。
 完整证据及可执行命令见 [准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)。
 历史 R3、旧 I1 和入口 V1 的 FAIL 保持不变。
 ## 2026-09-17 切环轨迹局部修复
@@ -56,6 +56,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | I1 Qualification Protocol V2 / Q2 | PASS | [正式结果](evidence/v4_2/v4_2_v2_1_i1_v2_summary.md)，Q2 1,787 rows，三 seed 全通过 |
 | I2 Safe DAgger | R1 PASS / I3 PASS | [I3 协议与 R1 结果](evidence/v4_2/v4_2_v2_1_student_qualification_protocol.md)，976 新事件、35 epochs、全部 gate PASS |
 | PPO | **PPO_ALLOWED = true（初始 N3–N6）** | [准入结果与训练命令](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)，正式 train 模式已接受最新 admission |
+| P2 自然流 V3 | **FAIL（entry KL）** | 资格 6/6 PASS；entry seed763001 的 `approx_kl=0.11257042959332467>0.05`，未执行 formal train；[持续课程终态与诊断](evidence/v4_2/continuous_curriculum_20260917.md) |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -75,11 +76,11 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 持续课程推进（2026-09-17）
 
-用户已授权持续推进至满意低层策略，仍逐级验证，不跳安全gate。checkpoint24独立评估PASS但未见明确性能增益；P2 N6/N8/N12 rule/student 12次可达性pilot全部PASS，student等待明显高于rule。发现旧距离奖励也奖励绕环，P2仅将该奖励系数设0，物理/安全链不变。P2 V1第24回合因initial_ratio检查停止：前23次更新成功，失败回合未更新且安全/完成通过。只读复放证明full-world likelihood误差0，actor子批次浮点误差1.1444e-5；已修正验证器批次一致性，阈值不变，V2从checkpoint23恢复后5次更新成功，第6回合因legacy曲线线段内切0.0592m超0.05m停止。已定位并补连续线段最近点检查，保持原门槛，按[持续课程协议](evidence/v4_2/continuous_curriculum_20260917.md)验证V3从V2 checkpoint5恢复补足8次更新；最终P3–P5与独立效果验收尚未完成，不能称满意策略。Luna high额度不足时主任务接管监控。
+用户已授权持续推进至满意低层策略，仍逐级验证，不跳安全gate。checkpoint24独立评估PASS但未见明确性能增益；P2 N6/N8/N12 rule/student 12次可达性pilot全部PASS，student等待明显高于rule。发现旧距离奖励也奖励绕环，P2仅将该奖励系数设0，物理/安全链不变。P2 V1第24回合因initial_ratio检查停止：前23次更新成功，失败回合未更新且安全/完成通过。只读复放证明full-world likelihood误差0，actor子批次浮点误差1.1444e-5；已修正验证器批次一致性，阈值不变，V2从checkpoint23恢复后5次更新成功，第6回合因legacy曲线线段内切0.0592m超0.05m停止。已定位并补连续线段最近点检查，保持原门槛；V3 从 V2 checkpoint5 恢复后资格 6/6 PASS，但 entry seed763001 因 `approx_kl=0.11257042959332467` 超过 0.05 FAIL，未执行 formal train、未生成 checkpoint8。独立 fresh Adam 诊断未支持清零 Adam 为修复，当前候选是显式 target-KL 逐步检查与超限回滚，须先审查和预注册；最终P3–P5与独立效果验收尚未完成，不能称满意策略。Luna high额度不足时主任务接管监控。
 
 ## 当前允许的下一步
 
-- 已完成已注册的 PPO 初始 block，下一步先用 fresh seeds 评估最终 checkpoint，再决定显式续训协议或课程升级。
+- 已完成已注册的 PPO 初始 block；P2 V3 entry FAIL 后没有可供独立评估的 checkpoint8，不消费 heldout 755001–755006，先完成 KL 机制审查和新协议注册。
 - 正式入口：`terminal_marl.training.run_v4_2_v2_1_ppo --mode train`；参数及证据哈希见准入结果。不能用 entry-test checkpoint 初始化正式训练。
 - Admission：`~/training_outputs/terminal/v4_2_ppo_entry_verify_v2_20260917/admission.json`，SHA256 `959bf9300fb44f4eec02783136dcfda11826dbf125e36a85e60550e241511c62`。
 - I3 六个 episode 全部完成 24 架 UAV，队列清空，Safety 与 actor shield 均为零；最慢 flow6 为 867/900 秒，扩大交通或缩短间隔前仍需验证。
@@ -87,6 +88,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 首个正式 PPO PID `2610770` 已退出，12/12 episodes 全通过；[正式结果](evidence/v4_2/v4_2_v2_1_ppo_initial_block_summary.md)。Luna high 已完成监控。
 - checkpoint_12.pt 已通过六个 fresh episode 独立评估，24架全部完成；[结果与本地可视化命令](evidence/v4_2/checkpoint12_evaluation_summary.md)。与DAgger配对结果不足以证明普遍优势，暂保持N3–N6。
 - 修复后第二block已完成：六回合student-only（24/24架）→两回合入口→24回合正式续训（96/96架），全部gate PASS；[结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。最终 `ppo_block2_transfer_repair_20260917/train/checkpoint_24.pt`，未扩大N3–N6范围。下一步使用保留710001–710006独立评估该checkpoint，完成前不声称策略普遍改善、不自动升课程。
+- P2 V3 终态与 paired KL 诊断已记录于[持续课程证据](evidence/v4_2/continuous_curriculum_20260917.md)：seed763001 entry 唯一失败 gate 为 bounded KL；诊断 seeds765001/765002 仅为 non-formal evidence，不能覆盖原 FAIL 或直接放宽门槛。
 - 各阶段数量、到达流、属性与约束审查已更新到 execution_plan.md 的8.5节；后续P2–P5尚未准入，不自动扩大当前训练范围。
 - 本地 Git 无 remote；代码仅经 Syncthing 同步，提交未推送。保留用户未提交文件。
 

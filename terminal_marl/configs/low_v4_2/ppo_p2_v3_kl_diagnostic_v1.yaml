@@ -1,0 +1,25 @@
+protocol: V4_2_P2_V3_KL_DIAGNOSTIC_V1
+purpose: diagnose_entry_approx_kl_without_formal_training
+diagnostic_only: true
+formal_training_allowed: false
+checkpoint_promotion_allowed: false
+scope: fixed_geometry_natural_flow_N6_N8_N12
+initial_checkpoint_sha256: 8a8466f61119f7f5b5f780249d26f218ee9b8ae3e4aededc5c7f5fe2e51b201b
+seeds: [765001, 765002]
+scenarios: [flow6, flow8]
+steps: [160, 192]
+smoke_seed: 765000
+smoke_scenario: flow6
+smoke_steps: 64
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+maximum_approx_kl: 0.05
+heldout_evaluation_seeds: [755001, 755002, 755003, 755004, 755005, 755006]
+excluded_seed_blocks: [761000-761999, 762000-762999, 763000-763999, 764000-764999]
+output_root_name: p2_v3_kl_diagnostic_20260918
