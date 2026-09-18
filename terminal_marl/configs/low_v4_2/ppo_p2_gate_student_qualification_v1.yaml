@@ -1,0 +1,96 @@
+protocol: V4_2_P2_GATE_STUDENT_QUALIFICATION_V1
+preregistered_at: 2026-09-18
+scope: fresh_student_only_stochastic_qualification
+predecessor:
+  protocol: V4_2_P2_GATE_TEMPERATURE_CALIBRATION_V3
+  calibration_manifest_sha256: a784ffa753d4588d9a0b997a8ee913010c128abfbf49c96b5e790f5bf6ae7272
+  calibrated_checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+  calibration_protocol_sha256: c5e0b50f645f488cf3d36784cd37ba97fa016cae11decb9ac149bf3b932ba946
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  calibrated_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+formal:
+  seeds: [774001, 774002, 774003, 774004, 774005, 774006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  stochastic: true
+  episodes: 6
+  expected_requested: 52
+  max_steps_from_support_config: true
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_student_qualification_v1_consumed.json
+  reserve_once: true
+smoke:
+  seed: 774000
+  scenario: flow6
+  max_steps: 160
+  stochastic: true
+  formal_marker: false
+training:
+  training_called: false
+  optimizer_called: false
+  policy_update: false
+  environment_rollout: true
+  teacher_calls: true
+  teacher_label_only: true
+  student_authoritative: true
+evaluation:
+  probability_threshold: 0.5
+  datasets: [fresh_formal_actor_rows]
+  action_source: sampled_requested_gate
+  support_breakdowns: [scenario, interface]
+  all_rows_finite_88d: true
+  decision_event_id_unique: true
+thresholds:
+  episode:
+    completed_equals_requested: true
+    terminal: true
+    queue_final_zero: true
+    within_horizon: true
+    safety_all_zero: true
+    shield_actor_fraction_max: 0.05
+    exact_replay: true
+    requested_logprob_exact: true
+    teacher_label_only: true
+    student_authoritative: true
+    actor_rows_positive: true
+    no_training_or_optimizer: true
+  sampled_actions:
+    overall_false_wait_rate_max: 0.30
+    overall_false_release_rate_max: 0.30
+    interface_false_wait_rate_max: 0.40
+    interface_false_release_rate_max: 0.40
+    require_both_teacher_classes: true
+    require_both_requested_gates: true
+  probabilities:
+    macro_F1_min: 0.75
+    WAIT_recall_min: 0.65
+    RELEASE_recall_min: 0.75
+    brier_max: 0.20
+    binary_nll_max: 0.70
+    interface_macro_F1_min: 0.65
+  completeness:
+    episodes: 6
+    requested: 52
+    all_seeds_executed: true
+    finite_88d_rows: true
+    unique_decision_ids: true
+authorization:
+  pass_only:
+    P2_GATE_STUDENT_QUALIFICATION: PASS
+    P2_EFFECTIVENESS_EVALUATION_ALLOWED: true
+    checkpoint_role: effectiveness_candidate
+  always_false:
+    - PPO_ALLOWED
+    - P3_ALLOWED
+    - curriculum_promotion_allowed
+    - checkpoint_promotable
+  smoke_always_fail: true
+prohibited:
+  - policy_training
+  - optimizer_updates
+  - policy_updates
+  - teacher_replacing_student_behavior
+  - qualification_seed_selection
