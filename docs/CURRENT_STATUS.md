@@ -2,7 +2,7 @@
 
 > **状态日期**：2026-09-18
 >
-> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`；WAIT/credit终态提交 `4bb400f`，fresh gate support收集协议提交 `4166249`
+> **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`；gate support V1提交 `4166249`，fresh V2提交 `3a60c9f`
 >
 > **当前阶段**：Phase A / A5；P2 V4确定性heldout通过但fresh stochastic WAIT诊断失败，阻塞在P2 gate support/credit修复
 >
@@ -16,9 +16,11 @@
 
 2026-09-18 V4正式训练与确定性heldout已终止；WAIT诊断及离线审计也已终止，当前没有需监控的服务器任务。历史PASS/FAIL均保留；V4结果见[训练与评估终态](evidence/v4_2/ppo_p2_v4_training_evaluation_summary.md)，当前阻塞见[WAIT/credit诊断终态](evidence/v4_2/ppo_p2_v4_wait_credit_diagnostic_summary.md)。
 
-fresh P2自然流gate support收集已在任何新reset前预注册：train 772001–772009、dev
-773001–773006、未来资格774001–774006严格分离；当前仅允许先做smoke与formal support
-collection，不授权训练。见[gate support收集协议](evidence/v4_2/ppo_p2_gate_support_collection_protocol.md)。
+fresh P2 gate support V1已执行但因seed772009出现3/959次shield而保持FAIL；V1 rows不得训练。
+V2在任何新reset前以fresh train 775001–775009、dev 776001–776006预注册，未来资格
+774001–774006继续untouched；唯一变化是继承既有I3每回合shield actor fraction≤5% gate。
+当前仅允许V2 smoke与formal collection，不授权训练。见[V1终态](evidence/v4_2/ppo_p2_gate_support_collection_v1_summary.md)
+和[V2协议](evidence/v4_2/ppo_p2_gate_support_collection_v2_protocol.md)。
 
 ## 2026-09-17 切环轨迹局部修复
 
@@ -65,6 +67,8 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | P2 自然流 V4 | **训练 PASS / 效果审查 BLOCKED** | target-KL 资格6/6、入口2/2、训练8/8 PASS；heldout 18/18 PASS，但等待55.11s仍高于rule 16.18s；[正式终态](evidence/v4_2/ppo_p2_v4_training_evaluation_summary.md) |
 | P2 WAIT/credit诊断 | **FAIL** | fresh stochastic 12/12 records；candidate50/52、baseline48/52；false-WAIT 83.21%/80.76%，安全与shield全0；[诊断终态](evidence/v4_2/ppo_p2_v4_wait_credit_diagnostic_summary.md) |
 | Gate forgetting离线审计 | **COMPLETE / 不支持单纯PPO遗忘** | I3 false-WAIT 82.85%，checkpoint24 83.11%，V4 80.37%；I3并未解决P2状态支持缺口 |
+| P2 gate support V1 | **FAIL（shield gate）** | 15/15 records、train/dev覆盖通过、安全0；seed772009有3/959次shield，V1零容忍gate失败；rows不得训练 |
+| P2 gate support V2 | **PRE-REGISTERED** | fresh 775001–776006；仅继承既有I3 shield fraction≤5%，其余gate不变；尚未reset |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -121,7 +125,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-1. 按已冻结协议执行smoke与fresh P2自然流Teacher-label-only support collection；train/dev/future qualification seed分开，旧D1只读绑定，771001–771006只作诊断参考不得训练。
+1. 按V2冻结协议执行smoke与fresh P2自然流Teacher-label-only support collection；V1 rows与771001–771006均只作诊断参考不得训练。
 2. 先证明N6/N8/N12自然流状态上的gate learnability、WAIT/RELEASE双类覆盖、三个interface覆盖与校准改善，再做CE/DAgger gate repair和student-only stochastic qualification。
 3. qualification必须全部请求排空、安全/shield为0并显著降低false-WAIT；未通过前禁止继续原team-GAE PPO。若后续仍需PPO，必须先预注册local gate credit或监督锚点的单变量修复。
 4. 新P2候选在fresh paired效果评估中显著缩小与rule的等待及request-to-touchdown差距后，才允许进入P3。

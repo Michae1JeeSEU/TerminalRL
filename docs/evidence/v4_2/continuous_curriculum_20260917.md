@@ -150,3 +150,13 @@ label-only。旧8,552-row D1与失败WAIT diagnostic只做hash绑定，不混入
 offline learnability audit；`GATE_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`。runner/配置
 提交为`4166249`，协议见
 [P2 gate support collection V1](ppo_p2_gate_support_collection_protocol.md)。
+
+V1 formal随后产生15/15 records，train/dev分别4,342/3,274 rows，完成78/78与52/52请求，
+Safety、replay、logprob、双类和interface覆盖均通过；但train seed772009在959个actor decisions
+中有3次shield，违反预注册的`shield_zero`，所以V1保持FAIL且rows不得训练。完整证据见
+[V1终态](ppo_p2_gate_support_collection_v1_summary.md)。
+
+fresh V2在任何新reset前冻结：train775001–775009、dev776001–776006，未来资格
+774001–774006不动。唯一语义变化是继承历史I3已存在的每回合shield actor fraction≤5%；
+其余Safety、replay、schema、class/interface和数量gate不变。V2 runner提交为`3a60c9f`，见
+[V2协议](ppo_p2_gate_support_collection_v2_protocol.md)。

@@ -1,6 +1,6 @@
 # P2 natural-flow gate support collection protocol V1
 
-> 状态：执行前预注册；runner 提交 `4166249`；尚未消费 formal seeds
+> 状态：已执行，`SUPPORT_COLLECTION=FAIL`；runner 提交 `4166249`
 >
 > 协议 SHA256：`8e614001e2475c2e1821036b88aeea93aa14afec468320eb7fd5792afca82aac`
 >
@@ -82,3 +82,4 @@ curriculum_promotion_allowed=false
 PASS 后下一步只能预注册离线 learnability audit；该审计必须仅用 train support 拟合，并在
 冻结 dev support 与旧 D1 anchor 上报告 gate recall、macro-F1、Brier/NLL 和 interface 分解。
 
+实际终态见 [P2 gate support collection V1 summary](ppo_p2_gate_support_collection_v1_summary.md)。
