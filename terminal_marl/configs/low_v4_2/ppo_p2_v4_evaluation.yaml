@@ -1,0 +1,50 @@
+protocol: V4_2_P2_HELDOUT_EVALUATION_V4
+purpose: once_only_paired_student_baseline_rule_evaluation
+scope: fixed_geometry_natural_flow_N6_N8_N12
+candidate:
+  checkpoint_sha256: 5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f
+  checkpoint_filename: checkpoint_8.pt
+  stage: V4_2_P2_FORMAL_TRAIN
+  formal: true
+  training_manifest_sha256: 73502ed0f956e517c47dd14ea6bfcc411cb927eba43c4a409fdee119fa7c82f0
+  training_manifest_stage: train
+  training_manifest_pass: true
+  training_record_count: 8
+  training_protocol_sha256: 01c92c44aecc50035e76b89a4e8d330fac5cfe5124b79d593c92a69260154ebf
+baseline:
+  checkpoint_sha256: 6420df9a8562135756819459c7682ec897d47acd64e841b75a21c697298ea14f
+  stage: V4_2_V2_1_PPO
+  formal: true
+formal:
+  seeds: [755001, 755002, 755003, 755004, 755005, 755006]
+  scenarios: [flow6, flow8, flow12]
+  scenario_cycle: [flow6, flow8, flow12, flow6, flow8, flow12]
+  controllers: [candidate, baseline, rule]
+  deterministic: true
+  updates: false
+  teacher_enabled: false
+  collect_labels: false
+smoke:
+  seed: 770000
+  scenario: flow6
+  steps: 160
+  reserves_seeds: false
+gates:
+  complete: terminal_and_all_requests_touch_down
+  safety: all_safety_counters_zero
+  replay: exact_action_tape_replay
+  geometry: no_reverse_ring_transfer_and_inner_excursion_leq_0.05m
+  student_likelihood: exact_requested_action_likelihood_replay
+  shield_actor_fraction_max: 0.05
+  rule_shield: zero_shield_interventions
+metrics:
+  per_record: [completed, requests, terminal, seconds, active_peak, queue_peak, weighted_wait_seconds, request_to_touchdown_seconds]
+  aggregate: [completed, requests, completion_fraction, mean_seconds, weighted_wait_seconds, request_to_touchdown_seconds]
+  paired_deltas: [seconds, weighted_wait_seconds, request_to_touchdown_seconds]
+reservation:
+  formal_consumed_seed_file: p2_v4_heldout_consumed.json
+  formal_reservation: candidate_checkpoint_parent
+  smoke_reservation: none
+  historical_registry_check: formal_only
+training_called: false
+results: not_run
