@@ -1,0 +1,68 @@
+protocol: V4_2_P2_GATE_SUPPORT_COLLECTION_V1
+scope: fixed_geometry_natural_flow_student_authoritative_teacher_labels_only
+candidate_checkpoint_sha256: 5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f
+formal:
+  train_support_seeds: [772001, 772002, 772003, 772004, 772005, 772006, 772007, 772008, 772009]
+  dev_support_seeds: [773001, 773002, 773003, 773004, 773005, 773006]
+  future_qualification_seeds: [774001, 774002, 774003, 774004, 774005, 774006]
+  scenarios: [flow6, flow8, flow12]
+  scenario_assignment: cycle_in_list_order_per_split
+  deterministic: false
+  teacher_mode: teacher_label_only
+  teacher_release_label_enabled: false
+  scheduler_mode: execution
+  first_reset_requires: historical_registry_and_consumed_reservation
+smoke:
+  seeds: [772000, 773000]
+  scenarios: [flow6, flow6]
+  steps: 160
+  reserve_formal_seeds: false
+  create_consumed_marker: false
+  authorization: false
+bindings:
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  diagnostic_manifest_sha256: b290e2d5f69749e1109bff2c5f348458732a22fbe8c0ce34c15ce98880eefc93
+  source_usage: read_only_binding_no_rows_mixed_into_support
+collection:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  output_files: [train_support.jsonl, dev_support.jsonl]
+  replay: exact_action_tape
+  requested_logprob: exact
+  natural_flow: true
+  no_policy_update: true
+  student_authoritative: true
+  teacher_label_only: true
+gates:
+  train:
+    rows: [3000, 30000]
+    teacher_class_minimum: 600
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 500
+    interface_class_minimum: 120
+  dev:
+    rows: [1800, 20000]
+    teacher_class_minimum: 350
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 250
+    interface_class_minimum: 60
+  required_teacher_classes: [WAIT, RELEASE]
+  required_interfaces: [o2m, m2i, i2f]
+  required_episode_execution: all_planned_episodes_terminal_or_frozen_horizon
+  schema: every_actor_row_has_finite_88d_observation
+  identity: global_decision_event_id_unique_and_train_dev_disjoint
+authorization:
+  formal_all_gates_pass:
+    SUPPORT_COLLECTION: PASS
+    SUPPORT_FROZEN: true
+    LEARNABILITY_AUDIT_ALLOWED: true
+  always_false: [GATE_REPAIR_ALLOWED, PPO_ALLOWED, curriculum_promotion_allowed]
+prohibited:
+  - policy_update
+  - teacher_action_substitution
+  - D1_row_mixing
+  - diagnostic_row_mixing
+  - future_qualification_rollouts
+  - future_qualification_consumed_marker
