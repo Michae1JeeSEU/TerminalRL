@@ -22,7 +22,7 @@ def _row(step: int, gate: int, teacher: int, *, uid: int = 1, interface: str = "
         "wait_feature": step / 10.0,
         "headway_slack": 1.0,
         "retry_remaining": 0.0,
-        "predicted_conflict": False,
+        "nearest_conflict_slot_present": False,
     }
 
 

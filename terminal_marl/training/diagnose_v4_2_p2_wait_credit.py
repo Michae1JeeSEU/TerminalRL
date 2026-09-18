@@ -146,7 +146,9 @@ def decision_diagnostics(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
             "retry_remaining": _stats([float(row["retry_remaining"]) for row in group]),
             "release_probability": _stats([float(row["release_probability"]) for row in group]),
             "release_eligible_rate": None if not group else float(np.mean([bool(row["release_eligible"]) for row in group])),
-            "predicted_conflict_rate": None if not group else float(np.mean([bool(row["predicted_conflict"]) for row in group])),
+            "nearest_conflict_slot_present_rate": None if not group else float(
+                np.mean([bool(row["nearest_conflict_slot_present"]) for row in group])
+            ),
         }
 
     probabilities = np.asarray([float(row["release_probability"]) for row in rows], dtype=np.float64)
@@ -220,7 +222,9 @@ def _decorate_rows(
             "wait_feature": float(observation[slices["wait"]][0]),
             "headway_slack": float(observation[slices["interface_headway_slack"]][0]),
             "retry_remaining": float(observation[slices["safety_retry_remaining_norm"]][0]),
-            "predicted_conflict": bool(observation[conflict.start] > 0.5),
+            # The first component of a topology slot is presence, not a
+            # certified conflict predicate.  Keep the diagnostic label exact.
+            "nearest_conflict_slot_present": bool(observation[conflict.start] > 0.5),
         })
     return result
 
