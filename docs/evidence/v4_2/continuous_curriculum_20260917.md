@@ -137,3 +137,16 @@ PPO checkpoint，因此不支持“单纯PPO遗忘”，更支持P2自然流状�
 下一步转为fresh自然流label support → seed-disjoint gate repair → student-only stochastic
 qualification；不继续盲加原team-GAE PPO。完整结果见
 [WAIT/credit诊断终态](ppo_p2_v4_wait_credit_diagnostic_summary.md)。
+
+## 2026-09-18：fresh natural-flow gate support预注册
+
+在任何新reset前冻结只收集协议：train support seeds772001–772009、dev support
+seeds773001–773006、未来student-only qualification seeds774001–774006，三组互斥；场景为
+flow6/flow8/flow12循环，行为保持V4 candidate stochastic student authoritative，Teacher仅
+label-only。旧8,552-row D1与失败WAIT diagnostic只做hash绑定，不混入新support。
+
+本阶段要求每回合安全/shield为0、replay与requested logprob精确，并对train/dev分别冻结
+双类、三个interface、88D finite schema、event唯一性和数量下限。即使全部PASS也只授权
+offline learnability audit；`GATE_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`。runner/配置
+提交为`4166249`，协议见
+[P2 gate support collection V1](ppo_p2_gate_support_collection_protocol.md)。
