@@ -50,6 +50,7 @@ SHIELD_ACTOR_FRACTION_MAX = v3.SHIELD_ACTOR_FRACTION_MAX
 V3_TRAIN_ROWS = 1150
 V3_DEV_ROWS = 908
 FORMAL_AUDIT_SEEDS = set(range(783000, 785000))
+FORMAL_SUPPLEMENT_SEEDS = set(FORMAL_TRAIN_SEEDS) | set(FORMAL_DEV_SEEDS)
 
 _sha = v3._sha
 _write = v3._write
@@ -496,8 +497,11 @@ def _reserve_formal(
     _require(not marker.exists(), f"V4 supplement consumed marker already exists: {marker}")
     history = historical_registry(history_root, output)
     consumed = set(int(value) for value in history.get("seeds", set()))
-    _require(not (FORMAL_AUDIT_SEEDS & consumed),
-             "V4 supplement audited seed range already contains consumed seeds")
+    formal_overlap = sorted(FORMAL_SUPPLEMENT_SEEDS & consumed)
+    _require(not formal_overlap,
+             f"V4 supplement formal_supplement_seed_overlap: {formal_overlap}")
+    audited_overlap = sorted(FORMAL_AUDIT_SEEDS & consumed)
+    smoke_overlap = sorted(set(SMOKE_SEEDS) & consumed)
     reserve_once(marker, {
         "protocol_sha256": PROTOCOL_SHA or _sha(PROTOCOL),
         "candidate_checkpoint_sha256": CANDIDATE_SHA,
@@ -509,7 +513,10 @@ def _reserve_formal(
     })
     return marker, {
         "historical_seed_count": len(consumed),
-        "checked_audited_seed_range": "783000-784999",
+        "formal_supplement_seed_overlap": formal_overlap,
+        "audited_seed_range": "783000-784999",
+        "audited_seed_overlap": audited_overlap,
+        "smoke_seed_overlap": smoke_overlap,
         "future_qualification_marker_mutated": False,
     }
 
@@ -570,7 +577,10 @@ def run(
     else:
         registry = {
             "historical_seed_count": None,
-            "checked_audited_seed_range": False,
+            "formal_supplement_seed_overlap": [],
+            "audited_seed_range": "783000-784999",
+            "audited_seed_overlap": [],
+            "smoke_seed_overlap": [],
             "future_qualification_marker_mutated": False,
         }
     _write(output / "pre_reset_registry.json", {
@@ -729,6 +739,7 @@ def run(
         "PPO_ALLOWED": False,
         "curriculum_promotion_allowed": False,
         "formal_episode_plan_complete": supplement_complete,
+        "formal_reservation_registry": registry,
         "training_called": False,
         "optimizer_called": False,
         "student_authoritative": True,

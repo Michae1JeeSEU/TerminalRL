@@ -301,25 +301,46 @@ def test_formal_reservation_only_uses_supplement_seeds_and_rejects_collision(mon
     assert payload["supplemental_dev_seeds"] == list(runner.FORMAL_DEV_SEEDS)
     assert "future_qualification_seeds" not in payload
     assert payload["future_qualification_marker_mutated"] is False
-    assert registry["future_qualification_marker_mutated"] is False
+    assert registry["formal_supplement_seed_overlap"] == []
+    assert registry["audited_seed_range"] == "783000-784999"
+    assert registry["audited_seed_overlap"] == []
+    assert registry["smoke_seed_overlap"] == []
     with pytest.raises(ValueError, match="consumed marker"):
         runner._reserve_formal(
             checkpoint, tmp_path, tmp_path / "again", tmp_path / "v3" / "manifest.json",
         )
 
-    collision_dir = tmp_path / "collision"
-    collision_dir.mkdir()
-    collision_checkpoint = collision_dir / "candidate.pt"
+    smoke_checkpoint_dir = tmp_path / "smoke-history-checkpoint"
+    smoke_checkpoint_dir.mkdir()
+    smoke_checkpoint = smoke_checkpoint_dir / "candidate.pt"
     monkeypatch.setattr(
         runner, "historical_registry",
-        lambda history, output: {"seeds": {next(iter(runner.FORMAL_TRAIN_SEEDS))}},
+        lambda history, output: {"seeds": set(runner.SMOKE_SEEDS)},
     )
-    with pytest.raises(ValueError, match="audited seed range"):
-        runner._reserve_formal(
-            collision_checkpoint, tmp_path, tmp_path / "collision-output",
-            tmp_path / "v3" / "manifest.json",
+    smoke_marker, smoke_registry = runner._reserve_formal(
+        smoke_checkpoint, tmp_path, tmp_path / "smoke-history-output",
+        tmp_path / "v3" / "manifest.json",
+    )
+    assert smoke_marker.is_file()
+    assert smoke_registry["formal_supplement_seed_overlap"] == []
+    assert smoke_registry["audited_seed_overlap"] == list(runner.SMOKE_SEEDS)
+    assert smoke_registry["smoke_seed_overlap"] == list(runner.SMOKE_SEEDS)
+
+    for index, seed in enumerate((runner.FORMAL_TRAIN_SEEDS[0], runner.FORMAL_DEV_SEEDS[0])):
+        collision_dir = tmp_path / f"collision-{index}"
+        collision_dir.mkdir()
+        collision_checkpoint = collision_dir / "candidate.pt"
+        monkeypatch.setattr(
+            runner,
+            "historical_registry",
+            lambda history, output, seed=seed: {"seeds": {seed}},
         )
-    assert not (collision_dir / runner.RESERVATION_MARKER).exists()
+        with pytest.raises(ValueError, match="formal_supplement_seed_overlap"):
+            runner._reserve_formal(
+                collision_checkpoint, tmp_path, tmp_path / f"collision-output-{index}",
+                tmp_path / "v3" / "manifest.json",
+            )
+        assert not (collision_dir / runner.RESERVATION_MARKER).exists()
 
 
 def test_manifest_provenance_declares_four_output_hash_slots():
