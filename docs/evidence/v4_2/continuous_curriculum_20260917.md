@@ -89,3 +89,28 @@ KL 是最后一次更新后的整段 action tape 漂移；诊断中二者可明�
 修复是预注册显式 target-KL 的逐步检查，并在超限时对该 optimizer step 做事务回滚；
 不扩大阈值、不用新 seed 覆盖原 FAIL、不消费 heldout 评估 seed。当前 P2 仍未准入正式
 训练，独立评估与 P3–P5 保持阻塞，直到 root 完成审查并另行预注册。
+
+## 2026-09-18：V4 target-KL 训练与 heldout 效果审查
+
+target-KL kernel 与独立 V4 runner 已完成审查、定向测试、小样本输出验证并提交为
+`c9d5b38`。新协议从V2最后合格checkpoint5恢复，资格seeds766001–766006为6/6 PASS，
+入口767001/767002为2/2 PASS并得到`PPO_ALLOWED=true`；正式训练769001–769008为8/8
+PASS，66/66架完成，468个optimizer step全部接受、0拒绝，最大accepted full-rollout
+KL为0.006534<0.01，safety/shield/逆环向均0。最终checkpoint8 SHA256为
+`5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f`，manifest SHA256为
+`73502ed0f956e517c47dd14ea6bfcc411cb927eba43c4a409fdee119fa7c82f0`。V3原FAIL不变。
+
+V4 heldout入口提交为`c030858`。一次性seeds755001–755006在candidate/baseline/rule三个
+控制器下共18/18 records全gate PASS，各52/52架完成，safety与shield全0。candidate
+加权平均等待55.1096s、request-to-touchdown 355.8077s、平均完成时间957.1667s；baseline
+分别65.0183s、361.3269s、962.1667s；rule分别16.1842s、319.3077s、939.5s。candidate
+相对baseline有改善，但相对rule仍有38.9254s等待和36.5s request-to-touchdown差距，
+所以P2效果审查BLOCKED，不进入P3。heldout manifest SHA256为
+`167d22cb29d8ef6d08275cb0ff4cbe270c0d9005611a176b85d81fd64730f104`；755001–755006已消费。
+
+既有tape只读分解显示candidate WAIT占2,506/2,851=87.90%，baseline为
+3,019/3,370=89.58%；candidate首次release尝试后的lifecycle平均审批延迟6.73s，baseline
+8.21s，rule 4.43s。按三interface折算，candidate-rule审批后差约6.9s/机，明显小于
+38.9254s/机的平均等待差。因此当前优先诊断pre-attempt WAIT，而不是放宽安全或把全部
+差距归因于release后的重试。完整终态见
+[P2 V4 训练与评估终态](ppo_p2_v4_training_evaluation_summary.md)。
