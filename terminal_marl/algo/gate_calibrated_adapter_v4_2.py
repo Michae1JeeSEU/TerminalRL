@@ -140,4 +140,3 @@ migrate_v2_to_calibrated = migrate_v2_policy_to_calibrated
 def calibrated_buffer_names(model: nn.Module) -> tuple[str, ...]:
     """Return the persistent state introduced by V3 calibration."""
     return tuple(name for name, _ in model.named_buffers() if name == TEMPERATURE_BUFFER)
-

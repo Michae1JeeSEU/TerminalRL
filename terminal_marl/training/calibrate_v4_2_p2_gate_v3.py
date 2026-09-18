@@ -147,7 +147,7 @@ def _validate_v2_threshold_shape(manifest: Mapping[str, Any]) -> None:
     _require(support.get("all") is False, "V2 support-dev gate was not failed")
     interfaces = support.get("interface", {})
     _require(set(interfaces) == set(audit.INTERFACES), "V2 interface threshold shape changed")
-    _require(all(value.get("macro_F1") is True for value in interfaces.values()),
+    _require(all(value is True for value in interfaces.values()),
              "V2 interface threshold failure detected")
     d1 = thresholds.get("d1_anchor", {})
     d1_names = ("macro_F1", "WAIT_recall", "RELEASE_recall", "brier", "binary_nll")

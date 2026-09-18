@@ -85,6 +85,43 @@ def test_v2_failure_shape_rejection(tmp_path) -> None:
         runner.validate_v2_repair_manifest(path, expected_sha256=None)
 
 
+def test_v2_actual_direct_interface_threshold_shape_accepts_and_rejects_false() -> None:
+    manifest = {
+        "thresholds": {
+            "support_dev": {
+                "macro_F1": True,
+                "WAIT_recall": True,
+                "RELEASE_recall": True,
+                "brier": True,
+                "binary_nll": False,
+                "every_interface_macro_F1": True,
+                "interface": {name: True for name in runner.audit.INTERFACES},
+                "all": False,
+            },
+            "d1_anchor": {
+                "macro_F1": True,
+                "WAIT_recall": True,
+                "RELEASE_recall": True,
+                "brier": True,
+                "binary_nll": True,
+                "all": True,
+            },
+            "invariants": {
+                "proposal_invariant": True,
+                "critic_invariant": True,
+                "parameter_isolation": True,
+                "finite_losses": True,
+                "finite_gradients": True,
+                "all": True,
+            },
+        },
+    }
+    runner._validate_v2_threshold_shape(manifest)
+    manifest["thresholds"]["support_dev"]["interface"]["m2i"] = False
+    with pytest.raises(runner.RepairInputError, match="interface threshold"):
+        runner._validate_v2_threshold_shape(manifest)
+
+
 def test_protocol_binds_v2_sources_and_fixed_grid() -> None:
     value = runner.protocol()
     assert value["predecessor"]["repair_manifest_sha256"] == runner.V2_REPAIR_MANIFEST_SHA
