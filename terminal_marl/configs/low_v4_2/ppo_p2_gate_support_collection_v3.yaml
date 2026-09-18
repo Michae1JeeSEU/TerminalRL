@@ -1,0 +1,92 @@
+protocol: V4_2_P2_GATE_SUPPORT_COLLECTION_V3
+preregistered_at: 2026-09-18
+scope: calibrated_candidate_natural_flow_student_authoritative_teacher_labels_only
+candidate_checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+candidate_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+candidate_temperature: 2.5
+predecessors:
+  support_v2_manifest_sha256: 09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304
+  failed_qualification_manifest_sha256: c781ffc1230ee6c86db0a127ae8d17b014571c3b391feb27bf06643b9e5ed3c8
+  qualification_protocol_sha256: 8064bebd115cad253e22ea019f678bb0a5c9085bb8a47989319fd9956a54aa65
+formal:
+  train_support_seeds: [780001, 780002, 780003, 780004, 780005, 780006, 780007, 780008, 780009]
+  dev_support_seeds: [781001, 781002, 781003, 781004, 781005, 781006]
+  future_qualification_seeds: [782001, 782002, 782003, 782004, 782005, 782006]
+  scenarios: [flow6, flow8, flow12]
+  scenario_assignment: cycle_in_list_order_per_split
+  deterministic: false
+  teacher_mode: teacher_label_only
+  teacher_release_label_enabled: false
+  scheduler_mode: execution
+  first_reset_requires: historical_registry_and_consumed_reservation
+  consumed_marker: p2_gate_support_collection_v3_consumed.json
+  qualification_seed_range_audited: 780000-782999
+smoke:
+  seeds: [780000, 781000]
+  scenarios: [flow6, flow6]
+  steps: 160
+  reserve_formal_seeds: false
+  create_consumed_marker: false
+  authorization: false
+bindings:
+  support_v2_manifest_sha256: 09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304
+  failed_qualification_manifest_sha256: c781ffc1230ee6c86db0a127ae8d17b014571c3b391feb27bf06643b9e5ed3c8
+  qualification_protocol_sha256: 8064bebd115cad253e22ea019f678bb0a5c9085bb8a47989319fd9956a54aa65
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  source_usage: manifest_only_predecessor_bindings_no_rows_mixed
+episode_gate:
+  inherited_from: i3_v2_1_qualification.yaml
+  shield_actor_fraction_max: 0.05
+  safety_all_zero: true
+  teacher_replaced_behavior: false
+  student_authoritative: true
+collection:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  output_files: [train_support.jsonl, dev_support.jsonl]
+  replay: exact_action_tape
+  requested_logprob: exact
+  natural_flow: true
+  no_policy_update: true
+  student_authoritative: true
+  teacher_label_only: true
+  teacher_replaced_behavior: false
+  calibrated_candidate_distribution: true
+  failed_qualification_rows_mixed: false
+gates:
+  train:
+    rows: [3000, 30000]
+    teacher_class_minimum: 600
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 500
+    interface_class_minimum: 120
+  dev:
+    rows: [1800, 20000]
+    teacher_class_minimum: 350
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 250
+    interface_class_minimum: 60
+  required_teacher_classes: [WAIT, RELEASE]
+  required_interfaces: [o2m, m2i, i2f]
+  required_episode_execution: all_planned_episodes_terminal_or_frozen_horizon
+  required_episode_gate: shield_actor_fraction_within_inherited_limit
+  schema: every_actor_row_has_finite_88d_observation
+  identity: global_decision_event_id_unique_and_train_dev_disjoint
+authorization:
+  formal_all_gates_pass:
+    SUPPORT_COLLECTION: PASS
+    SUPPORT_FROZEN: true
+    LEARNABILITY_AUDIT_ALLOWED: true
+  always_false: [GATE_REPAIR_ALLOWED, PPO_ALLOWED, curriculum_promotion_allowed]
+prohibited:
+  - policy_update
+  - optimizer_update
+  - teacher_action_substitution
+  - support_v2_row_mixing
+  - failed_qualification_row_mixing
+  - failed_qualification_label_mixing
+  - future_qualification_rollouts
+  - future_qualification_consumed_marker
