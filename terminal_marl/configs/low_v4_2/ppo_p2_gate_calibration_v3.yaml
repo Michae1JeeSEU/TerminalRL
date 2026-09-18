@@ -1,0 +1,95 @@
+protocol: V4_2_P2_GATE_TEMPERATURE_CALIBRATION_V3
+preregistered_at: 2026-09-18
+scope: offline_gate_temperature_calibration_qualification_only
+predecessor:
+  protocol: V4_2_P2_GATE_RESIDUAL_ADAPTER_REPAIR_V2
+  repair_manifest_sha256: 6586154aa8caa111d335f0f1f0658e264372242764e9adb8e874817b435064ce
+  checkpoint_sha256: 91509526f9d26dc7560336c376891a7746be79adb5099229d58ccd3bc8a587e5
+  protocol_sha256: 5b56a47f0d816f59f537836ab504d8c369d77ec5bd54b9679bdb6aeeb7b1719f
+bindings:
+  support_manifest_sha256: 09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+architecture:
+  id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  base: v4_2_hierarchical_gate_residual_adapter_v1
+  calibration: scalar_gate_temperature_buffer
+  temperature_buffer: gate_temperature
+  temperature: 2.5
+  proposal_unchanged: true
+  critic_unchanged: true
+  raw_gate_argmax_unchanged: true
+  common_state_strict_copy: true
+temperature_selection:
+  temperature: 2.5
+  preregistered_grid: [1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0]
+  selected_as: smallest_grid_value_meeting_support_dev_binary_nll_max_0.50
+  selection_source: post_v2_development_diagnostic_on_frozen_dev
+  qualification_seeds_untouched: true
+  diagnostic_metrics:
+    support_dev:
+      macro_F1: 0.858881
+      WAIT_recall: 0.883848
+      RELEASE_recall: 0.879973
+      brier: 0.099220
+      binary_nll: 0.482382
+    d1_anchor:
+      macro_F1: 0.970643
+      brier: 0.014731
+      binary_nll: 0.053260
+training:
+  training_called: false
+  optimizer_called: false
+  environment_rollout: false
+  teacher_calls: false
+evaluation:
+  probability_threshold: 0.5
+  datasets: [support_train, support_dev, d1_anchor]
+  support_breakdowns: [scenario, interface]
+  proposal_logits_invariance: bitwise
+  critic_state_invariance: bitwise
+  common_state_invariance: bitwise
+thresholds:
+  support_dev:
+    macro_F1_min: 0.80
+    WAIT_recall_min: 0.70
+    RELEASE_recall_min: 0.80
+    brier_max: 0.15
+    binary_nll_max: 0.50
+    interface_macro_F1_min: 0.70
+  d1_anchor:
+    macro_F1_min: 0.90
+    WAIT_recall_min: 0.90
+    RELEASE_recall_min: 0.90
+    brier_max: 0.08
+    binary_nll_max: 0.30
+  invariants:
+    raw_gate_argmax: true
+    proposal_logits_invariant: true
+    critic_state_invariant: true
+    common_state_bitwise_equal: true
+    only_new_temperature_buffer: true
+    temperature_finite_positive: true
+    finite_metrics: true
+    no_training_or_optimizer: true
+authorization:
+  always_false:
+    - PPO_ALLOWED
+    - GATE_REPAIR_ALLOWED
+    - curriculum_promotion_allowed
+    - checkpoint_promotable
+  pass_only:
+    STUDENT_QUALIFICATION_ALLOWED: true
+    checkpoint_role: qualification_candidate
+  environment_rollout: false
+  teacher_calls: false
+  training_called: false
+prohibited:
+  - environment_rollout
+  - teacher_calls
+  - optimizer_updates
+  - policy_training
+  - qualification_seed_selection
