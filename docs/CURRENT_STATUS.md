@@ -4,23 +4,24 @@
 >
 > **代码快照**：分支 `codex/v4-2-v2-1-formal-i1`；gate support V1提交 `4166249`，fresh V2提交 `3a60c9f`
 >
-> **当前阶段**：Phase A / A5；P2 V4确定性heldout通过但fresh stochastic WAIT诊断失败，阻塞在P2 gate support/credit修复
+> **当前阶段**：Phase A / A5；P2 gate student-only stochastic qualification 已终态 FAIL，effectiveness/PPO/P3 均阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
 ## 一句话状态
 
-低层 V4.2 / Observation V2.1（88D）已完成 R4 → I1 V2/Q2 → Safe DAgger → I3 → 初始 PPO 准入，并在 target-KL 保护下完成 P2 V4 与一次性确定性heldout。随后fresh stochastic WAIT/credit诊断产生12/12 records但未闭合排空gate：candidate 50/52、baseline 48/52。**当前根因边界已收敛为P2自然流状态上的gate support/calibration缺口与team-step信用分配失配；不能进入P3或继续盲加PPO。**
+低层 V4.2 / Observation V2.1（88D）已完成 R4 → I1 V2/Q2 → Safe DAgger → I3 → 初始 PPO 准入，并在 target-KL 保护下完成 P2 V4 与一次性确定性heldout。随后完成 V2 gate support、离线 learnability、repair/calibration 与 fresh student-only qualification 链：support V2、learnability 与 V3 calibration 通过，但 formal qualification 在 `774001–774006` 上因 sampled false-WAIT 与 RELEASE recall 两个预注册 gate 失败。**当前结论是自然流 gate 的 RELEASE recall / false-WAIT robustness 仍不足；不得进入 effectiveness、PPO 或 P3，也不得重跑已消费 seeds。**
 
 初始 N3–N6 的 `PPO_ALLOWED=true` 是对应冻结版本及协议的历史准入。P2 V1/V2 累计 28 次合格更新；V3 在入口 KL 超限后保持历史 FAIL。独立预注册的 V4 重新资格与入口通过，并补足剩余 8 回合；这不改写 V1–V3 的历史终态。
 
-2026-09-18 V4正式训练与确定性heldout已终止；WAIT诊断及离线审计也已终止，当前没有需监控的服务器任务。历史PASS/FAIL均保留；V4结果见[训练与评估终态](evidence/v4_2/ppo_p2_v4_training_evaluation_summary.md)，当前阻塞见[WAIT/credit诊断终态](evidence/v4_2/ppo_p2_v4_wait_credit_diagnostic_summary.md)。
+2026-09-18 V4正式训练、确定性heldout、WAIT/credit诊断及 P2 gate qualification 均已终止，当前没有需监控的服务器任务。历史 PASS/FAIL 均保留；本轮 support→repair→qualification 终态见[汇总证据](evidence/v4_2/ppo_p2_gate_support_repair_qualification_summary.md)，V4结果见[训练与评估终态](evidence/v4_2/ppo_p2_v4_training_evaluation_summary.md)，WAIT/credit诊断见[诊断终态](evidence/v4_2/ppo_p2_v4_wait_credit_diagnostic_summary.md)。
 
-fresh P2 gate support V1已执行但因seed772009出现3/959次shield而保持FAIL；V1 rows不得训练。
-V2在任何新reset前以fresh train 775001–775009、dev 776001–776006预注册，未来资格
-774001–774006继续untouched；唯一变化是继承既有I3每回合shield actor fraction≤5% gate。
-当前仅允许V2 smoke与formal collection，不授权训练。见[V1终态](evidence/v4_2/ppo_p2_gate_support_collection_v1_summary.md)
-和[V2协议](evidence/v4_2/ppo_p2_gate_support_collection_v2_protocol.md)。
+fresh P2 gate support V1因seed772009出现3/959次shield而保持FAIL；其 rows 不得训练。随后
+V2 support collection 在 fresh train 775001–775009、dev 776001–776006 上 PASS：train/dev
+分别78/78、52/52请求完成，rows 为5,627/2,009，manifest SHA256 为
+`09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304`。该 V2 只授权离线
+learnability audit；之后 learnability 3/3 PASS、V3 fixed-T calibration PASS，但 fresh
+student-only qualification 已终态 FAIL。完整链条见[汇总证据](evidence/v4_2/ppo_p2_gate_support_repair_qualification_summary.md)。
 
 ## 2026-09-17 切环轨迹局部修复
 
@@ -68,7 +69,11 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | P2 WAIT/credit诊断 | **FAIL** | fresh stochastic 12/12 records；candidate50/52、baseline48/52；false-WAIT 83.21%/80.76%，安全与shield全0；[诊断终态](evidence/v4_2/ppo_p2_v4_wait_credit_diagnostic_summary.md) |
 | Gate forgetting离线审计 | **COMPLETE / 不支持单纯PPO遗忘** | I3 false-WAIT 82.85%，checkpoint24 83.11%，V4 80.37%；I3并未解决P2状态支持缺口 |
 | P2 gate support V1 | **FAIL（shield gate）** | 15/15 records、train/dev覆盖通过、安全0；seed772009有3/959次shield，V1零容忍gate失败；rows不得训练 |
-| P2 gate support V2 | **PRE-REGISTERED** | fresh 775001–776006；仅继承既有I3 shield fraction≤5%，其余gate不变；尚未reset |
+| P2 gate support V2 | **PASS** | train 78/78、dev 52/52；5,627/2,009 rows；manifest SHA `09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304` |
+| P2 gate learnability audit | **PASS（离线）** | 3/3 fresh seeds；fresh MLP dev macro-F1 `.871–.896`、Brier `.064–.079`、NLL `.212–.266`；不等价于闭环 qualification |
+| P2 gate repair V1 / V2 | **FAIL** | V1 non-finite loss；V2 仅 support-dev NLL `.969>.50` 失败，其他主要 metric 与 D1 anchor gates通过 |
+| P2 gate calibration V3 | **PASS（离线）** | fixed `T=2.5`；无 training/optimizer/environment/Teacher；仅授权 fresh student-only qualification |
+| P2 student-only qualification | **FAIL（终态）** | 6/6 episodes、52/52 UAVs、983 actor rows；false-WAIT `.333333>.30`、RELEASE recall `.625786<.75`；effectiveness/PPO/P3均未授权 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -100,6 +105,9 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 | KL 更新保护 | 已提交并接入独立 V4 协议；资格6/6、入口2/2、训练8/8 | 468/468 formal optimizer steps 接受，0拒绝；最大 accepted rollout KL 0.006534<0.01 |
 | P2 V4 heldout | 755001–755006 已一次性消费；candidate/baseline/rule 各52/52完成 | candidate 等待55.11s，优于baseline 65.02s但落后rule 16.18s；效果审查不通过 |
 | P2 WAIT/credit fresh diagnostic | 771001–771006 已消费；12/12 records生成 | `DIAGNOSTIC_COMPLETE=false`；candidate50/52、baseline48/52；false-WAIT和team credit失配 |
+| P2 gate support V2 | 775001–775009 / 776001–776006 已消费；78/78、52/52请求完成 | train/dev 5,627/2,009 rows；support V2 PASS，仅进入离线 learnability |
+| P2 gate learnability → repair → calibration | support 后已完成；V1/V2 repair与V3 calibration均已终态 | learnability PASS；repair V1/V2保留FAIL；V3 fixed-T calibration PASS，不授权PPO |
+| P2 student-only qualification | 774001–774006 已消费；6/6 episodes、52/52 UAVs、983 actor rows；recovery仅补写manifest | **FAIL**：sampled false-WAIT 0.333333、RELEASE recall 0.625786；effectiveness/PPO/P3均未授权 |
 | P3–P5 / static qualification | 尚未执行 | 满意策略与 A6 高层动态空域均未达成 |
 
 ## 已识别的问题与处理状态
@@ -108,7 +116,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 2. **初始动作概率检查存在批次浮点差异，已局部修复。** V1 seed754024 的误差为1.1444091796875e-5，超过1e-5。原action tape只读复放表明完整world批次误差0，actor子批次复现误差。检查器现保留原采样批次再mask，阈值和PPO行为不变；后续V2/V3初始ratio检查通过。
 3. **轨迹节点检查漏掉连续线段内切，已局部修复并通过V3资格复核。** V2 seed757006实际内侵0.0592194m，超过0.05m。UID39见证曲线节点半径均合格，但线段最近点半径199.9275204m。修复使用每段投影最近点，仅超限旧曲线进入已有forward-annular fallback，保持有效旧曲线和原安全容限；此前38项定向测试通过。V3资格最大内侵0.0186652m，安全/shield/逆环向均0。
 4. **V3 的 PPO 更新漂移已由独立 V4 协议闭合，但历史 FAIL 不变。** V4 每个 optimizer step 后检查完整 rollout requested-action KL，超限或非有限值时事务回滚模型与 Adam；原0.05 gate不放宽。资格、入口和8回合训练均通过，formal 468次更新全部接受，最大 accepted rollout KL 0.006534<0.01。该结果恢复了独立 V4 的训练准入，不追溯升级 V3。
-5. **当前主要阻塞是P2 gate support/calibration与team-step credit失配。** fresh诊断中candidate false-WAIT为1,601/1,924=83.21%，三个interface均严重；false-WAIT状态release-eligible、retry=0，RELEASE概率中位数仅6.59e-7。requested WAIT raw team GAE均值+2.17，RELEASE为-1.05；false-WAIT均值+2.60。I3离线false-WAIT已达82.85%，不支持“只是后续PPO遗忘”。因此下一步是fresh自然流label support与seed-disjoint gate repair，而不是继续原team-GAE PPO或放宽SafetyFilter。
+5. **P2 gate support 已证明离线可学习，但fresh qualification仍失败。** support V2 train/dev为5,627/2,009 rows，learnability 3/3 PASS，V3 fixed-T calibration PASS；student-only qualification仍有 sampled false-WAIT `106/318=.333333` 与 RELEASE recall `.625786` 两个 gate 失败。774001–774006 已消费，不能重跑或调参；下一轮必须新预注册、seed-disjoint，并聚焦 RELEASE recall / false-WAIT robustness，不得继续原team-GAE PPO或放宽SafetyFilter。
 6. **当前课程覆盖仍较窄。** P2 N6/N8/N12是总请求数，N12 pilot在空峰值仅6–7架，不能称12架并发或高负载验证。自然流首到达10秒、间隔固定60秒；SOC=.8、常规priority=1，尚未覆盖间隔扰动、priority/SOC异质性、20/40/60总请求、持续/突发流和合法静态几何泛化。当前课程按单项增难的主线合理，但离最终终端区场景仍有明确跨度。
 7. **文档参数及运行交接需保持一致。** 需求文档仍有旧高度/速度数字；当前验证配置为三环高度100/70/40m、速度22/20/16m/s，不能静默切换。后续长任务按用户要求由`luna_worker`跟踪、主agent静默等待终态。Git无remote，代码仅经Syncthing同步，不能声称已推送。
 
@@ -120,16 +128,23 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - V3 root/entry manifest SHA256：`2098af1c3109c17fc489b7c9f20a9db11eb67aa62b77b5a03beb2de66909cd7d`；KL诊断manifest：`41017e10f45105a6125213ac51a630bdcfda9c35bac196608e2affc891955f69`。结果位于输出根目录下 `p2_resume_v3_20260918` 与 `p2_v3_kl_diagnostic_20260918`。
 - checkpoint24评估seeds710001–710006与P2最终评估755001–755006均 **已消费**，不得重跑或用于调参。V4 heldout manifest SHA256为 `167d22cb29d8ef6d08275cb0ff4cbe270c0d9005611a176b85d81fd64730f104`。
 - WAIT/credit diagnostic seeds771001–771006亦 **已消费**；manifest SHA256为 `b290e2d5f69749e1109bff2c5f348458732a22fbe8c0ce34c15ce98880eefc93`，终态FAIL不得重跑或升级。
+- P2 gate support→qualification链的完整证据见[汇总](evidence/v4_2/ppo_p2_gate_support_repair_qualification_summary.md)：support V2 manifest SHA256为
+  `09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304`；V3 calibration manifest SHA256为
+  `a784ffa753d4588d9a0b997a8ee913010c128abfbf49c96b5e790f5bf6ae7272`，calibrated checkpoint SHA256为
+  `61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b`；qualification protocol SHA256为
+  `8064bebd115cad253e22ea019f678bb0a5c9085bb8a47989319fd9956a54aa65`。
+- qualification recovery manifest SHA256为 `c781ffc1230ee6c86db0a127ae8d17b014571c3b391feb27bf06643b9e5ed3c8`，marker SHA256为
+  `921cb108a23e9125da007c987eed10250a6e26fb95b589e43c1d1bbc0286799e`；recovery未重复 rollout/reset，且终态 FAIL 不授权任何后续 promotion。
 - 入口 `entry/checkpoint_1.pt` 和Adam诊断快照均不能晋级正式模型；历史失败manifest不得重写。
 - 服务器输出根为 `~/training_outputs/terminal`，本地镜像为 `D:/7_codespace/training_outputs/terminal`。源码只在本地修改，经Syncthing同步，服务器仅运行。
 
 ## 当前允许的下一步
 
-1. 按V2冻结协议执行smoke与fresh P2自然流Teacher-label-only support collection；V1 rows与771001–771006均只作诊断参考不得训练。
-2. 先证明N6/N8/N12自然流状态上的gate learnability、WAIT/RELEASE双类覆盖、三个interface覆盖与校准改善，再做CE/DAgger gate repair和student-only stochastic qualification。
-3. qualification必须全部请求排空、安全/shield为0并显著降低false-WAIT；未通过前禁止继续原team-GAE PPO。若后续仍需PPO，必须先预注册local gate credit或监督锚点的单变量修复。
-4. 新P2候选在fresh paired效果评估中显著缩小与rule的等待及request-to-touchdown差距后，才允许进入P3。
-5. 通过P2效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成static qualification后才进入A6。
+1. 保留本轮 support→learnability→repair/calibration→qualification 作为 immutable evidence；774001–774006 不得 rerun/reset，也不得用于 threshold/model tuning。
+2. 在任何新 reset 前，预注册新的 seed-disjoint repair/qualification protocol，重点改善 RELEASE recall 与 overall false-WAIT robustness，同时保留 safety、D1 anchoring 和 no-original-team-GAE-PPO 边界。
+3. 新 qualification 必须再次满足全部请求排空、安全/shield、replay/logprob、Teacher-label-only、双 gate/interface 与概率 gates；未通过前禁止 effectiveness evaluation、PPO、P3 或课程升级。
+4. 新 P2 候选在 fresh paired 效果评估中显著缩小与 rule 的等待及 request-to-touchdown 差距后，才允许进入 P3。
+5. 通过 P2 效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成 static qualification 后才进入 A6。
 6. 后续长训练或评估由 `luna_worker` 持续跟踪并在终态通知主agent；主agent在运行期间保持静默，不创建heartbeat重复监控。
 
 完整协议、旧失败与诊断详情见[持续课程证据](evidence/v4_2/continuous_curriculum_20260917.md)；初始准入见[准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)，轨迹修复与第二训练块见[续训结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。

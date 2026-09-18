@@ -160,3 +160,46 @@ fresh V2在任何新reset前冻结：train775001–775009、dev776001–776006�
 774001–774006不动。唯一语义变化是继承历史I3已存在的每回合shield actor fraction≤5%；
 其余Safety、replay、schema、class/interface和数量gate不变。V2 runner提交为`3a60c9f`，见
 [V2协议](ppo_p2_gate_support_collection_v2_protocol.md)。
+
+## 2026-09-18：support → learnability → repair/calibration → fresh qualification 终态
+
+V2 support collection 已完成并 PASS：train 78/78、dev 52/52，rows 分别为5,627/2,009；
+support manifest SHA256 为
+`09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304`。离线 learnability
+audit 以3/3 fresh seeds PASS，fresh MLP 的 dev macro-F1 为 `.871–.896`、Brier
+`.064–.079`、NLL `.212–.266`；该证据只证明 offline learnability，不替代 closed-loop
+qualification。
+
+后续 repair V1 因 non-finite loss FAIL；V2 使用稳定 float64 KL 后仍只在 support-dev
+NLL（`.969>.50`）失败，D1 anchor gates 通过。V3 固定 `T=2.5` calibration 无
+training/optimizer/environment/Teacher，所有离线 metric/invariant gates 通过。V3 manifest
+SHA256 为
+`a784ffa753d4588d9a0b997a8ee913010c128abfbf49c96b5e790f5bf6ae7272`，calibrated checkpoint
+SHA256 为
+`61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b`，只授权 fresh
+student-only qualification。
+
+qualification protocol SHA256 为
+`8064bebd115cad253e22ea019f678bb0a5c9085bb8a47989319fd9956a54aa65`，正式 seeds
+`774001–774006`（flow6/flow8/flow12循环两次）均以 stochastic student-authoritative
+行为执行，Teacher 仅 label-only。六个 episode 全部完成，合计52/52 UAVs、983 actor rows，
+每回合 completion/safety/shield/replay/requested-logprob/provenance gates 均通过。
+
+formal run 在全部 rollout 完成后仅于最终 JSON serializer 处理 reservation registry 的 set
+值时中断；随后从 immutable summary、labels、action tapes recovery-only finalization，未
+重复 rollout/reset，one-shot marker 未改变。recovery commit 为`b1c2f7c`，manifest SHA256
+为`c781ffc1230ee6c86db0a127ae8d17b014571c3b391feb27bf06643b9e5ed3c8`，marker SHA256
+为`921cb108a23e9125da007c987eed10250a6e26fb95b589e43c1d1bbc0286799e`；
+`formal_rollouts_repeated=false`、`formal_seed_resets=0`。
+
+终态 qualification FAIL 由两个预注册 gates 触发：sampled false-WAIT 为
+`106/318=.333333>.30`，probability RELEASE recall 为`.625786<.75`。false-RELEASE
+`.043609`、macro-F1 `.815534`、WAIT recall `.960902`、Brier `.121740`、NLL `.524499`、
+三个 interface checks 与 row integrity 均通过。该失败不授权 effectiveness evaluation、
+PPO、P3、curriculum promotion 或 checkpoint promotion。详细证据见
+[P2 gate support/repair/qualification summary](ppo_p2_gate_support_repair_qualification_summary.md)。
+
+`774001–774006` 已消费，不能重跑或调参。当前没有 server task；任何后续 reset 前必须
+重新预注册 seed-disjoint repair/qualification protocol，重点针对 RELEASE recall 与
+overall false-WAIT robustness，同时保留 safety、D1 anchoring 和 no-original-team-GAE-PPO
+边界。Effectiveness/P3 继续 blocked。
