@@ -1,0 +1,52 @@
+protocol: V4_2_P2_WAIT_CREDIT_DIAGNOSTIC_V1
+purpose: diagnose_pre_attempt_wait_bias_without_policy_updates
+scope: fixed_geometry_natural_flow_N6_N8_N12
+bindings:
+  candidate_checkpoint_sha256: 5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f
+  baseline_checkpoint_sha256: 6420df9a8562135756819459c7682ec897d47acd64e841b75a21c697298ea14f
+  heldout_manifest_sha256: 167d22cb29d8ef6d08275cb0ff4cbe270c0d9005611a176b85d81fd64730f104
+formal:
+  seeds: [771001, 771002, 771003, 771004, 771005, 771006]
+  scenarios: [flow6, flow8, flow12]
+  scenario_cycle: [flow6, flow8, flow12, flow6, flow8, flow12]
+  controllers: [candidate, baseline]
+  deterministic: false
+  updates: false
+  teacher_mode: teacher_label_only
+  teacher_replaces_behavior: false
+  gamma: 0.99
+  gae_lambda: 0.95
+smoke:
+  seed: 771000
+  scenario: flow6
+  steps: 160
+  reserves_seeds: false
+diagnostics:
+  - requested_gate_balance
+  - teacher_gate_balance
+  - false_wait_rate
+  - release_probability_calibration
+  - team_gae_by_requested_gate
+  - team_gae_by_teacher_gate
+  - team_gae_by_confusion_cell
+  - wait_and_false_wait_streaks
+  - confusion_cell_observation_context
+  - interface_breakdown
+gates:
+  no_policy_update: true
+  student_authoritative_execution: true
+  teacher_label_only: true
+  safety_all_zero: true
+  shield_zero: true
+  terminal_and_all_requests_complete: true
+  requested_WAIT_and_RELEASE_observed: true
+  teacher_WAIT_and_RELEASE_observed: true
+  all_three_interfaces_observed: true
+reservation:
+  formal_consumed_seed_file: p2_v4_wait_diagnostic_consumed.json
+  smoke_reservation: none
+authorization:
+  PPO_ALLOWED: false
+  curriculum_promotion_allowed: false
+  result_role: diagnostic_only
+results: not_run
