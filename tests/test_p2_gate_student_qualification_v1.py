@@ -183,3 +183,154 @@ def test_formal_reservation_is_one_shot_and_checks_history(tmp_path, monkeypatch
     assert reserved["payload"]["reserved_before_first_reset"] is True
     with pytest.raises(ValueError, match="already exists"):
         runner.reserve_formal_attempt(marker, history, output, protocol_sha256="test")
+
+
+def test_jsonable_serializes_sets_deterministically() -> None:
+    assert runner._jsonable({3, 1, 2}) == [1, 2, 3]
+    assert runner._jsonable(frozenset({"b", "a"})) == ["a", "b"]
+    assert runner._jsonable({("b", 2), ("a", 1)}) == [["a", 1], ["b", 2]]
+
+
+def _recovery_scaffold(tmp_path):
+    output = tmp_path / "completed"
+    output.mkdir()
+    history = tmp_path / "history"
+    history.mkdir()
+    calibration_manifest = tmp_path / "calibration.json"
+    calibration_manifest.write_text("{}", encoding="utf-8")
+    checkpoint = tmp_path / "calibration.pt"
+    checkpoint.write_bytes(b"synthetic-checkpoint")
+    marker = runner.reservation_marker_path(checkpoint)
+    marker_payload = {
+        "protocol": runner.QUALIFICATION_STAGE,
+        "protocol_sha256": runner.PROTOCOL_SHA,
+        "formal_seeds": list(runner.FORMAL_SEEDS),
+        "output": str(output),
+        "calibrated_checkpoint_sha256": runner.CALIBRATED_CHECKPOINT_SHA,
+        "reserved_before_first_reset": True,
+    }
+    marker.write_text(json.dumps(marker_payload), encoding="utf-8")
+    (output / "progress.json").write_text(json.dumps({
+        "stage": runner.QUALIFICATION_STAGE,
+        "smoke": False,
+        "episodes_completed": 6,
+        "episodes_planned": 6,
+        "seeds_completed": list(runner.FORMAL_SEEDS),
+    }), encoding="utf-8")
+    (output / "pre_reset_registry.json").write_text(json.dumps({
+        "built_before_first_reset": True,
+        "historical_registry_checked": True,
+        "formal_seeds": list(runner.FORMAL_SEEDS),
+        "protocol_sha256": runner.PROTOCOL_SHA,
+        "reservation_marker": str(marker),
+    }), encoding="utf-8")
+    interfaces = ("ring_outer", "ring_middle", "ring_inner", "ring_outer", "ring_middle", "ring_inner")
+    for index, (seed, scenario, phase) in enumerate(zip(
+        runner.FORMAL_SEEDS, runner.FORMAL_SCENARIOS, interfaces,
+    )):
+        episode = output / f"seed{seed}_{scenario}"
+        episode.mkdir()
+        tape = episode / "action_tape.json"
+        tape.write_text("{}", encoding="utf-8")
+        row = _row(index, index % 2, index % 2,
+                   {"ring_outer": "o2m", "ring_middle": "m2i", "ring_inner": "i2f"}[phase])
+        row["seed"] = seed
+        row["phase"] = phase
+        row["decision_event_id"] = f"recovery-event-{index}"
+        (episode / "labels.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+        requested = int(scenario.removeprefix("flow"))
+        (episode / "summary.json").write_text(json.dumps({
+            "seed": seed,
+            "steps": 1,
+            "counts": {"actor_decisions": 1, "shield_actor": 0, "shield": 0},
+            "safety": {"collisions": 0, "nmac": 0, "hard_separation_violations": 0,
+                       "uncertified_execution": 0, "SafetyInvariantError": 0},
+            "completed": requested,
+            "queue": [0],
+            "terminal": True,
+            "action_tape": str(tape),
+            "label_rows": 1,
+        }), encoding="utf-8")
+    return output, history, calibration_manifest, checkpoint, marker
+
+
+def _patch_recovery_runtime(monkeypatch, *, fake_metrics=True):
+    fake_policy = SimpleNamespace(model=object())
+    monkeypatch.setattr(runner, "_load_inputs", lambda *args: (
+        {"status": "PASS", "calibration_pass": True, "STUDENT_QUALIFICATION_ALLOWED": True},
+        fake_policy,
+        {"stage": runner.CALIBRATION_STAGE, "architecture_id": runner.CALIBRATED_ARCHITECTURE_ID,
+         "temperature": 2.5, "qualification_only": True, "checkpoint_promotable": False},
+    ))
+    monkeypatch.setattr(runner, "TerminalParallelEnv", lambda config: object())
+    monkeypatch.setattr(runner.SafetyTraceRecorder, "replay_action_tape",
+                        staticmethod(lambda env, tape: {"exact": True}))
+    monkeypatch.setattr(runner, "_policy_tape_logprob_exact",
+                        lambda *args, **kwargs: True)
+    monkeypatch.setattr(runner.support_v2, "_tape_flags",
+                        lambda path: {"teacher_label_only": True, "student_authoritative": True})
+    monkeypatch.setattr(runner.support_v2, "_episode_record",
+                        lambda *args, **kwargs: pytest.fail("formal rollout was repeated"))
+    monkeypatch.setattr(runner, "reserve_formal_attempt",
+                        lambda *args, **kwargs: pytest.fail("reservation was repeated"))
+    if fake_metrics:
+        monkeypatch.setattr(runner, "probability_metrics", lambda *args, **kwargs: {
+            "macro_F1": 0.0,
+            "WAIT_recall": 0.0,
+            "RELEASE_recall": 0.0,
+            "brier": 1.0,
+            "binary_nll": 1.0,
+            "interface": {name: {"macro_F1": 0.0} for name in runner.INTERFACES},
+        })
+
+
+def test_finalize_existing_rejects_incomplete_or_mismatched_artifacts(tmp_path, monkeypatch) -> None:
+    output, history, calibration_manifest, checkpoint, marker = _recovery_scaffold(tmp_path)
+    _patch_recovery_runtime(monkeypatch)
+    (output / "progress.json").write_text(json.dumps({
+        "stage": runner.QUALIFICATION_STAGE,
+        "smoke": False,
+        "episodes_completed": 5,
+        "episodes_planned": 6,
+        "seeds_completed": list(runner.FORMAL_SEEDS[:5]),
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="6/6"):
+        runner.finalize_existing(output, calibration_manifest, checkpoint, history)
+
+    (output / "progress.json").write_text(json.dumps({
+        "stage": runner.QUALIFICATION_STAGE,
+        "smoke": False,
+        "episodes_completed": 6,
+        "episodes_planned": 6,
+        "seeds_completed": list(runner.FORMAL_SEEDS),
+    }), encoding="utf-8")
+    marker.write_text(json.dumps({
+        "protocol": runner.QUALIFICATION_STAGE,
+        "protocol_sha256": runner.PROTOCOL_SHA,
+        "formal_seeds": list(runner.FORMAL_SEEDS),
+        "output": str(tmp_path / "wrong-output"),
+        "calibrated_checkpoint_sha256": runner.CALIBRATED_CHECKPOINT_SHA,
+        "reserved_before_first_reset": True,
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="output mismatch"):
+        runner.finalize_existing(output, calibration_manifest, checkpoint, history)
+
+
+def test_finalize_existing_recovers_once_without_rollout_or_marker_write(tmp_path, monkeypatch) -> None:
+    output, history, calibration_manifest, checkpoint, marker = _recovery_scaffold(tmp_path)
+    _patch_recovery_runtime(monkeypatch)
+    marker_before = marker.read_bytes()
+    result = runner.finalize_existing(output, calibration_manifest, checkpoint, history)
+    assert result["status"] == "FAIL"
+    assert result["P2_EFFECTIVENESS_EVALUATION_ALLOWED"] is False
+    assert result["PPO_ALLOWED"] is False
+    assert result["P3_ALLOWED"] is False
+    assert result["recovered_from_completed_artifacts"] is True
+    assert result["formal_rollouts_repeated"] is False
+    assert result["formal_seed_resets"] == 0
+    assert result["environment_rollout"] is True
+    assert result["exception"] is None
+    assert (output / "manifest.json").is_file()
+    assert marker.read_bytes() == marker_before
+    with pytest.raises(ValueError, match="manifest already exists"):
+        runner.finalize_existing(output, calibration_manifest, checkpoint, history)

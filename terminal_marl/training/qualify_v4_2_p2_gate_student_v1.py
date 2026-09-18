@@ -25,6 +25,8 @@ from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
     TemperatureCalibratedGateResidualAdapterStudentPPOV42,
 )
 from terminal_marl.core.checkpoints import load_checkpoint
+from terminal_marl.core.safety_trace import SafetyTraceRecorder
+from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.training import audit_v4_2_p2_gate_learnability_v1 as audit
 from terminal_marl.training import calibrate_v4_2_p2_gate_v3 as calibration_v3
 from terminal_marl.training import collect_v4_2_p2_gate_support_v2 as support_v2
@@ -48,6 +50,7 @@ SHIELD_ACTOR_FRACTION_MAX = 0.05
 EXPECTED_FORMAL_REQUESTED = 52
 INTERFACES = tuple(audit.INTERFACES)
 RepairInputError = calibration_v3.RepairInputError
+_policy_tape_logprob_exact = support_v2._v1._policy_tape_logprob_exact
 
 
 def _require(condition: bool, message: str) -> None:
@@ -75,6 +78,14 @@ def _read_json(path: str | Path) -> dict[str, Any]:
 def _jsonable(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (set, frozenset)):
+        converted = [_jsonable(item) for item in value]
+        try:
+            return sorted(converted)
+        except TypeError:
+            return sorted(converted, key=lambda item: json.dumps(
+                item, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+            ))
     if isinstance(value, (list, tuple)):
         return [_jsonable(item) for item in value]
     if isinstance(value, np.ndarray):
@@ -510,6 +521,227 @@ def row_integrity_checks(rows: Sequence[Mapping[str, Any]]) -> dict[str, bool]:
     return checks
 
 
+def _resolve_existing_artifact(raw: str | Path, episode_output: Path) -> Path:
+    """Resolve a recorded server path, falling back to the synced episode path."""
+    recorded = Path(str(raw))
+    candidates = [recorded]
+    if recorded.is_absolute():
+        candidates.extend((
+            episode_output / recorded.name,
+            episode_output / "action_tapes" / recorded.name,
+        ))
+    else:
+        candidates.append(episode_output / recorded)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise RepairInputError(f"episode artifact missing: {raw}")
+
+
+def _read_jsonl_rows(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, 1):
+            if not line.strip():
+                continue
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise RepairInputError(f"invalid episode labels JSONL at {path}:{line_number}") from exc
+            _require(isinstance(value, dict), f"episode label row is not an object: {path}:{line_number}")
+            rows.append(value)
+    return rows
+
+
+def _reconstruct_episode_record(
+    policy: TemperatureCalibratedGateResidualAdapterStudentPPOV42,
+    *,
+    output: Path,
+    seed: int,
+    scenario: str,
+    max_steps: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Rebuild one completed record without rollout or environment reset."""
+    episode_output = output / f"seed{seed}_{scenario}"
+    _require(episode_output.is_dir(), f"episode output missing: {episode_output}")
+    summary_path = episode_output / "summary.json"
+    labels_path = episode_output / "labels.jsonl"
+    _require(summary_path.is_file(), f"episode summary missing: {summary_path}")
+    _require(labels_path.is_file(), f"episode labels missing: {labels_path}")
+    summary = _read_json(summary_path)
+    _require(int(summary.get("seed", -1)) == int(seed), f"episode seed mismatch: {episode_output}")
+    raw_labels = _read_jsonl_rows(labels_path)
+    _require(int(summary.get("label_rows", len(raw_labels))) == len(raw_labels),
+             f"episode label count mismatch: {episode_output}")
+    rows = support_v2._actor_rows(raw_labels, split="qualification", scenario=scenario)
+    tape_raw = summary.get("action_tape")
+    _require(tape_raw not in (None, ""), f"episode action tape missing from summary: {episode_output}")
+    tape_path = _resolve_existing_artifact(tape_raw, episode_output)
+    config = support_v2.support_config(int(scenario.removeprefix("flow")))
+    replay = SafetyTraceRecorder.replay_action_tape(TerminalParallelEnv(config), str(tape_path))
+    summary["replay_exact"] = bool(replay["exact"])
+    summary["requested_logprob_exact"] = bool(
+        _policy_tape_logprob_exact(policy, config, str(tape_path))
+    )
+    tape_flags = support_v2._tape_flags(tape_path)
+    safety_ok = not any(int(value) for value in summary.get("safety", {}).values())
+    frozen = bool(summary.get("terminal")) or int(summary.get("steps", 0)) == int(max_steps)
+    summary.update({
+        "split": "qualification",
+        "scenario": scenario,
+        "seed": int(seed),
+        "requested": int(config.total_requested_uavs),
+        "completed": int(summary.get("completed", 0)),
+        "episode_execution_complete": bool(frozen and safety_ok),
+        "terminal_or_frozen_horizon": bool(frozen),
+        "safety_all_zero": bool(safety_ok),
+        "shield_zero": int(summary.get("counts", {}).get("shield", 0)) == 0,
+        "label_rows": len(raw_labels),
+        "actor_rows": len(rows),
+        "label_actor_rows_only": bool(raw_labels) and bool(rows) and all(
+            bool(row.get("actor_mask")) and row.get("interface") in support_v2.INTERFACES
+            for row in rows
+        ),
+        "teacher_label_only": bool(tape_flags["teacher_label_only"]),
+        "student_authoritative": bool(tape_flags["student_authoritative"]),
+        "training_called": False,
+        "max_steps": int(max_steps),
+    })
+    summary["gates"] = {
+        "terminal_or_frozen_horizon": summary["terminal_or_frozen_horizon"],
+        "safety_all_zero": summary["safety_all_zero"],
+        "shield_zero": summary["shield_zero"],
+        "ActionTape_exact_replay": summary["replay_exact"],
+        "requested_logprob_exact": summary["requested_logprob_exact"],
+        "label_actor_rows": summary["label_actor_rows_only"] and summary["actor_rows"] > 0,
+        "teacher_label_only": summary["teacher_label_only"],
+        "student_authoritative": summary["student_authoritative"],
+        "no_policy_update": summary["training_called"] is False,
+    }
+    counts = summary.get("counts", {})
+    shield_actor_count = int(counts.get("shield_actor", 0))
+    actor_decisions = int(counts.get("actor_decisions", 0))
+    fraction = shield_actor_count / max(1, actor_decisions)
+    summary.update({
+        "shield_actor_count": shield_actor_count,
+        "actor_decisions": actor_decisions,
+        "shield_actor_fraction": fraction,
+        "shield_actor_fraction_max": SHIELD_ACTOR_FRACTION_MAX,
+        "shield_actor_fraction_within_inherited_limit": fraction <= SHIELD_ACTOR_FRACTION_MAX,
+        "teacher_replaced_behavior": False,
+        "v1_rows_mixed": False,
+    })
+    gates = dict(summary.get("gates", {}))
+    gates.pop("shield_zero", None)
+    gates["shield_actor_fraction_within_inherited_limit"] = summary[
+        "shield_actor_fraction_within_inherited_limit"
+    ]
+    summary["gates"] = gates
+    summary["qualification_gates"] = episode_gate_checks(summary, max_steps)
+    return summary, rows
+
+
+def _validate_completed_artifacts(
+    output: Path,
+    checkpoint: Path,
+    marker_payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate the immutable top-level evidence before reconstructing episodes."""
+    progress_path = output / "progress.json"
+    registry_path = output / "pre_reset_registry.json"
+    manifest_path = output / "manifest.json"
+    _require(not manifest_path.exists(), f"qualification manifest already exists: {manifest_path}")
+    _require(progress_path.is_file(), f"qualification progress missing: {progress_path}")
+    _require(registry_path.is_file(), f"pre-reset registry missing: {registry_path}")
+    progress = _read_json(progress_path)
+    _require(progress.get("stage") == QUALIFICATION_STAGE, "qualification progress stage mismatch")
+    _require(progress.get("smoke") is False, "completed artifacts are not formal")
+    _require(progress.get("episodes_completed") == len(FORMAL_SEEDS)
+             and progress.get("episodes_planned") == len(FORMAL_SEEDS),
+             "qualification progress is not exactly 6/6")
+    _require(list(progress.get("seeds_completed", ())) == list(FORMAL_SEEDS),
+             "qualification progress seed registry mismatch")
+    registry = _read_json(registry_path)
+    marker_path = checkpoint.parent / RESERVATION_MARKER
+    expected_marker = str(marker_path)
+    _require(registry.get("built_before_first_reset") is True,
+             "pre-reset registry was not built before first reset")
+    _require(registry.get("historical_registry_checked") is True,
+             "pre-reset historical registry check missing")
+    _require(registry.get("formal_seeds") == list(FORMAL_SEEDS),
+             "pre-reset formal seed registry mismatch")
+    _require(registry.get("protocol_sha256") == (PROTOCOL_SHA or _sha256(PROTOCOL)),
+             "pre-reset protocol binding mismatch")
+    _require(registry.get("reservation_marker") == expected_marker,
+             "pre-reset reservation marker mismatch")
+    _require(marker_payload.get("protocol") == QUALIFICATION_STAGE,
+             "reservation marker protocol mismatch")
+    _require(marker_payload.get("protocol_sha256") == (PROTOCOL_SHA or _sha256(PROTOCOL)),
+             "reservation marker protocol SHA mismatch")
+    _require(marker_payload.get("formal_seeds") == list(FORMAL_SEEDS),
+             "reservation marker seeds mismatch")
+    _require(marker_payload.get("output") == str(output), "reservation marker output mismatch")
+    _require(marker_payload.get("calibrated_checkpoint_sha256") == CALIBRATED_CHECKPOINT_SHA,
+             "reservation marker checkpoint mismatch")
+    _require(marker_payload.get("reserved_before_first_reset") is True,
+             "reservation marker ordering mismatch")
+    return {"progress": progress, "pre_reset_registry": registry, "marker": marker_payload}
+
+
+def _aggregate_records(
+    policy: TemperatureCalibratedGateResidualAdapterStudentPPOV42,
+    records: Sequence[Mapping[str, Any]],
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    smoke: bool,
+    exception_text: str | None = None,
+) -> dict[str, Any]:
+    """Compute the shared terminal aggregation for fresh and recovered runs."""
+    if rows:
+        row_checks = row_integrity_checks(rows)
+        sampled = sampled_action_metrics(rows)
+        sampled_checks = sampled_action_threshold_checks(sampled)
+        probabilities = probability_metrics(policy.model, rows)
+        probability_checks = probability_threshold_checks(probabilities)
+    else:
+        row_checks = {"finite_88d_rows": False, "unique_decision_ids": False,
+                      "both_requested_gates": False, "all": False}
+        sampled = {}
+        sampled_checks = _empty_threshold_result()
+        probabilities = {}
+        probability_checks = _empty_threshold_result()
+    requested = sum(int(record.get("requested", 0)) for record in records)
+    completed = sum(int(record.get("completed", 0)) for record in records)
+    complete = {
+        "episodes": len(records) == len(FORMAL_SEEDS)
+        and {int(record.get("seed", -1)) for record in records} == set(FORMAL_SEEDS),
+        "requested": requested == EXPECTED_FORMAL_REQUESTED and completed == EXPECTED_FORMAL_REQUESTED,
+        "all_episode_gates": bool(records) and len(records) == len(FORMAL_SEEDS)
+        and all(bool(record.get("qualification_gates", {}).get("all")) for record in records),
+    }
+    complete["all"] = all(complete.values())
+    qualification_pass = False if smoke else bool(
+        complete["all"] and row_checks["all"] and sampled_checks["all"] and probability_checks["all"]
+        and exception_text is None
+    )
+    return {
+        "qualification_pass": qualification_pass,
+        "row_checks": row_checks,
+        "sampled": sampled,
+        "sampled_checks": sampled_checks,
+        "probabilities": probabilities,
+        "probability_checks": probability_checks,
+        "completeness": {
+            "episodes": len(records),
+            "expected_episodes": len(FORMAL_SEEDS),
+            "requested": requested,
+            "completed": completed,
+            "expected_requested": EXPECTED_FORMAL_REQUESTED,
+        },
+        "exception": exception_text,
+    }
+
+
 def _empty_threshold_result() -> dict[str, Any]:
     return {"all": False}
 
@@ -607,37 +839,16 @@ def run(
             })
             break
 
-    if rows:
-        row_checks = row_integrity_checks(rows)
-        sampled = sampled_action_metrics(rows)
-        sampled_checks = sampled_action_threshold_checks(sampled)
-        probabilities = probability_metrics(policy.model, rows)
-        probability_checks = probability_threshold_checks(probabilities)
-    else:
-        row_checks = {"finite_88d_rows": False, "unique_decision_ids": False,
-                      "both_requested_gates": False, "all": False}
-        sampled = {}
-        sampled_checks = _empty_threshold_result()
-        probabilities = {}
-        probability_checks = _empty_threshold_result()
-
-    if smoke:
-        qualification_pass = False
-    else:
-        requested = sum(int(record.get("requested", 0)) for record in records)
-        completed = sum(int(record.get("completed", 0)) for record in records)
-        complete = {
-            "episodes": len(records) == len(FORMAL_SEEDS)
-            and {int(record.get("seed", -1)) for record in records} == set(FORMAL_SEEDS),
-            "requested": requested == EXPECTED_FORMAL_REQUESTED and completed == EXPECTED_FORMAL_REQUESTED,
-            "all_episode_gates": bool(records) and len(records) == len(FORMAL_SEEDS)
-            and all(bool(record.get("qualification_gates", {}).get("all")) for record in records),
-        }
-        complete["all"] = all(complete.values())
-        qualification_pass = bool(
-            complete["all"] and row_checks["all"] and sampled_checks["all"] and probability_checks["all"]
-            and exception_text is None
-        )
+    aggregate = _aggregate_records(
+        policy, records, rows, smoke=smoke, exception_text=exception_text,
+    )
+    qualification_pass = bool(aggregate["qualification_pass"])
+    row_checks = aggregate["row_checks"]
+    sampled = aggregate["sampled"]
+    sampled_checks = aggregate["sampled_checks"]
+    probabilities = aggregate["probabilities"]
+    probability_checks = aggregate["probability_checks"]
+    completeness = aggregate["completeness"]
 
     result = {
         "stage": QUALIFICATION_STAGE,
@@ -675,13 +886,7 @@ def run(
         "sampled_action_checks": sampled_checks,
         "probability_metrics": probabilities,
         "probability_checks": probability_checks,
-        "completeness": {
-            "episodes": len(records),
-            "expected_episodes": len(FORMAL_SEEDS),
-            "requested": sum(int(record.get("requested", 0)) for record in records),
-            "completed": sum(int(record.get("completed", 0)) for record in records),
-            "expected_requested": EXPECTED_FORMAL_REQUESTED,
-        },
+        "completeness": completeness,
         "reservation": reservation,
         "exception": exception_text,
         "P2_GATE_STUDENT_QUALIFICATION": "PASS" if qualification_pass else "FAIL",
@@ -715,6 +920,123 @@ def run(
     return result
 
 
+def finalize_existing(
+    output: str | Path,
+    calibration_manifest: str | Path,
+    checkpoint: str | Path,
+    history_root: str | Path,
+) -> dict[str, Any]:
+    """Finalize a completed formal run without repeating any formal rollout."""
+    protocol_value = protocol()
+    output_path = Path(output)
+    _require(output_path.is_dir(), f"completed qualification output missing: {output_path}")
+    _require(not (output_path / "manifest.json").exists(),
+             f"qualification manifest already exists: {output_path / 'manifest.json'}")
+    history_path = Path(history_root)
+    _require(history_path.is_dir(), f"qualification history root missing: {history_path}")
+    calibration_manifest_value, policy, checkpoint_payload = _load_inputs(calibration_manifest, checkpoint)
+    checkpoint_path = Path(checkpoint)
+    marker_path = reservation_marker_path(checkpoint_path)
+    _require(marker_path.is_file(), f"formal reservation marker missing: {marker_path}")
+    marker_payload = _read_json(marker_path)
+    top_level = _validate_completed_artifacts(output_path, checkpoint_path, marker_payload)
+    records: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    horizons = formal_horizons()
+    for seed, scenario, max_steps in zip(FORMAL_SEEDS, FORMAL_SCENARIOS, horizons):
+        episode_output = output_path / f"seed{seed}_{scenario}"
+        summary, episode_rows = _reconstruct_episode_record(
+            policy,
+            output=output_path,
+            seed=int(seed),
+            scenario=scenario,
+            max_steps=int(max_steps),
+        )
+        records.append(summary)
+        rows.extend(episode_rows)
+    aggregate = _aggregate_records(policy, records, rows, smoke=False, exception_text=None)
+    qualification_pass = bool(aggregate["qualification_pass"])
+    result = {
+        "stage": QUALIFICATION_STAGE,
+        "status": "PASS" if qualification_pass else "FAIL",
+        "evidence_type": "recovered_completed_artifacts",
+        "smoke": False,
+        "protocol_sha256": PROTOCOL_SHA or _sha256(PROTOCOL),
+        "protocol": str(PROTOCOL),
+        "calibration_manifest": str(calibration_manifest),
+        "calibration_manifest_sha256": CALIBRATION_MANIFEST_SHA,
+        "calibrated_checkpoint": str(checkpoint),
+        "calibrated_checkpoint_sha256": CALIBRATED_CHECKPOINT_SHA,
+        "calibration_protocol_sha256": CALIBRATION_PROTOCOL_SHA,
+        "calibration_status": {
+            "status": calibration_manifest_value.get("status"),
+            "calibration_pass": calibration_manifest_value.get("calibration_pass"),
+            "STUDENT_QUALIFICATION_ALLOWED": calibration_manifest_value.get("STUDENT_QUALIFICATION_ALLOWED"),
+        },
+        "checkpoint_payload": {
+            "stage": checkpoint_payload.get("stage"),
+            "architecture_id": checkpoint_payload.get("architecture_id"),
+            "temperature": checkpoint_payload.get("temperature"),
+            "qualification_only": checkpoint_payload.get("qualification_only"),
+            "checkpoint_promotable": checkpoint_payload.get("checkpoint_promotable"),
+        },
+        "architecture_id": CALIBRATED_ARCHITECTURE_ID,
+        "temperature": CALIBRATION_TEMPERATURE,
+        "formal_seeds": list(FORMAL_SEEDS),
+        "formal_scenarios": list(FORMAL_SCENARIOS),
+        "records": records,
+        "rows": len(rows),
+        "row_checks": aggregate["row_checks"],
+        "sampled_action_metrics": aggregate["sampled"],
+        "sampled_action_checks": aggregate["sampled_checks"],
+        "probability_metrics": aggregate["probabilities"],
+        "probability_checks": aggregate["probability_checks"],
+        "completeness": aggregate["completeness"],
+        "reservation": {
+            "marker": str(marker_path),
+            "reused_existing": True,
+            "payload": marker_payload,
+        },
+        "pre_reset_registry": top_level["pre_reset_registry"],
+        "exception": None,
+        "recovery_note": "recovered_from_completed_artifacts",
+        "recovered_from_completed_artifacts": True,
+        "formal_rollouts_repeated": False,
+        "formal_seed_resets": 0,
+        "P2_GATE_STUDENT_QUALIFICATION": "PASS" if qualification_pass else "FAIL",
+        "P2_EFFECTIVENESS_EVALUATION_ALLOWED": bool(qualification_pass),
+        "checkpoint_role": "effectiveness_candidate" if qualification_pass else None,
+        "qualification_only": True,
+        "PPO_ALLOWED": False,
+        "P3_ALLOWED": False,
+        "curriculum_promotion_allowed": False,
+        "checkpoint_promotable": False,
+        "training_called": False,
+        "optimizer_called": False,
+        "policy_update": False,
+        "environment_rollout": True,
+        "teacher_called": True,
+        "teacher_label_only": True,
+        "student_authoritative": True,
+        "formal_marker_created": False,
+        "formal_marker_present": True,
+        "qualification_seed_selection": False,
+    }
+    manifest_path = output_path / "manifest.json"
+    result["manifest"] = str(manifest_path)
+    _write_json(manifest_path, result)
+    print(json.dumps({
+        "stage": QUALIFICATION_STAGE,
+        "status": result["status"],
+        "recovered_from_completed_artifacts": True,
+        "formal_rollouts_repeated": False,
+        "formal_seed_resets": 0,
+        "P2_EFFECTIVENESS_EVALUATION_ALLOWED": result["P2_EFFECTIVENESS_EVALUATION_ALLOWED"],
+        "PPO_ALLOWED": False,
+    }, sort_keys=True), flush=True)
+    return result
+
+
 def _main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -722,8 +1044,28 @@ def _main() -> None:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--finalize-existing", action="store_true")
     torch.set_num_threads(1)
-    print(json.dumps(run(**vars(parser.parse_args())), indent=2, sort_keys=True), flush=True)
+    args = parser.parse_args()
+    if args.finalize_existing:
+        if args.smoke:
+            raise SystemExit("--finalize-existing cannot be combined with --smoke")
+        values = {
+            "output": args.output,
+            "calibration_manifest": args.calibration_manifest,
+            "checkpoint": args.checkpoint,
+            "history_root": args.history_root,
+        }
+        print(json.dumps(finalize_existing(**values), indent=2, sort_keys=True), flush=True)
+    else:
+        values = {
+            "output": args.output,
+            "calibration_manifest": args.calibration_manifest,
+            "checkpoint": args.checkpoint,
+            "history_root": args.history_root,
+            "smoke": args.smoke,
+        }
+        print(json.dumps(run(**values), indent=2, sort_keys=True), flush=True)
 
 
 if __name__ == "__main__":
