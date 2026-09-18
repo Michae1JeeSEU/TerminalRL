@@ -114,3 +114,26 @@ V4 heldout入口提交为`c030858`。一次性seeds755001–755006在candidate/b
 38.9254s/机的平均等待差。因此当前优先诊断pre-attempt WAIT，而不是放宽安全或把全部
 差距归因于release后的重试。完整终态见
 [P2 V4 训练与评估终态](ppo_p2_v4_training_evaluation_summary.md)。
+
+## 2026-09-18：fresh WAIT/credit诊断与checkpoint归因
+
+为定位candidate与rule之间的pre-attempt WAIT差距，预注册fresh stochastic
+seeds771001–771006，candidate/checkpoint24各6回合，Teacher仅label-only审计、不替换行为，
+不训练。12/12 records均生成，但candidate完成50/52、baseline48/52，三个回合未在冻结
+horizon排空，另一个小样本回合缺Teacher双类覆盖；所以`DIAGNOSTIC_COMPLETE=false`。
+所有safety和shield计数仍为0。manifest SHA256为
+`b290e2d5f69749e1109bff2c5f348458732a22fbe8c0ce34c15ce98880eefc93`，seeds已消费，不重跑。
+
+candidate聚合false-WAIT为1,601/1,924=83.21%，baseline为80.76%；candidate三个interface
+分别为o2m84.86%、m2i75.19%、i2f90.81%。false-WAIT状态release-eligible、retry为0，
+RELEASE概率中位数6.59e-7。candidate requested WAIT raw team GAE均值+2.1719，RELEASE
+-1.0538；false-WAIT均值+2.6025且61.46%为正。六个candidate seed中WAIT均值都高于
+RELEASE，支持team-step credit与gate目标失配。
+
+同一批9,597个冻结actor observations离线评分显示：I3/checkpoint24/V4的combined
+false-WAIT分别82.85%/83.11%/80.37%，Brier为0.4636/0.4703/0.4826；I3并未系统优于
+PPO checkpoint，因此不支持“单纯PPO遗忘”，更支持P2自然流状态support/calibration缺口。
+离线结果SHA256为`64c34bfbbeece10c6308c7b9cffc43b58bdb6000ec64357c82bb51943facabb3`。
+下一步转为fresh自然流label support → seed-disjoint gate repair → student-only stochastic
+qualification；不继续盲加原team-GAE PPO。完整结果见
+[WAIT/credit诊断终态](ppo_p2_v4_wait_credit_diagnostic_summary.md)。

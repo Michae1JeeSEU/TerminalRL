@@ -1,6 +1,6 @@
 # P2 V4 WAIT / credit diagnostic protocol
 
-> 状态：执行前预注册；diagnostic-only；不授权 PPO 或课程升级
+> 状态：已执行，`DIAGNOSTIC_COMPLETE=false`；diagnostic-only；不授权 PPO 或课程升级
 
 P2 V4 正式 heldout 已证明 candidate 相对 checkpoint24 baseline 有改善，但平均等待仍比
 nominal rule 高38.9254s。已消费 action tape 只保留每回合末120秒，能够排除“差距主要来自
@@ -35,3 +35,5 @@ headway slack、retry remaining、wait feature和predicted conflict上下文。
 完整输出必须同时满足：无训练调用、student行为权威、Teacher label-only、全部请求完成、
 安全与shield计数全0、requested与Teacher两类gate均出现、三个interface均覆盖。即使全部满足，也只标记
 `DIAGNOSTIC_COMPLETE=true`；`PPO_ALLOWED=false`、`curriculum_promotion_allowed=false`。
+
+实际终态与归因见 [P2 V4 WAIT / credit diagnostic summary](ppo_p2_v4_wait_credit_diagnostic_summary.md)。
