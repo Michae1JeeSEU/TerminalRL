@@ -1,0 +1,38 @@
+protocol: V4_2_P2_RESUME_TARGET_KL_GUARDED_V4
+purpose: fresh_p2_resume_with_transactional_target_kl_guard
+scope: fixed_geometry_natural_flow_N6_N8_N12
+initial_checkpoint_sha256: 8a8466f61119f7f5b5f780249d26f218ee9b8ae3e4aededc5c7f5fe2e51b201b
+failed_manifest_sha256: 2098af1c3109c17fc489b7c9f20a9db11eb67aa62b77b5a03beb2de66909cd7d
+qualification_seeds: [766001, 766002, 766003, 766004, 766005, 766006]
+entry_seeds: [767001, 767002]
+entry_scenarios: [flow6, flow8]
+entry_steps: [160, 192]
+smoke_seed: 768000
+smoke_scenario: flow6
+smoke_steps: 160
+formal_train_seeds: [769001, 769002, 769003, 769004, 769005, 769006, 769007, 769008]
+scenarios: [flow6, flow8, flow12]
+learning_rate: 0.00003
+update_epochs: 2
+minibatch_size: 32
+gamma: 0.99
+gae_lambda: 0.95
+clip_ratio: 0.1
+value_coef: 0.5
+entropy_coef: 0.001
+target_kl: 0.01
+maximum_approx_kl: 0.05
+minimum_accepted_updates: 1
+maximum_rejected_updates: 1
+kl_definition: sampled_requested_gate_conditional_proposal_expm1_float64
+kl_aggregation: agent_mean_then_actor_world_mean
+rollback: model_and_adam_state_before_optimizer_step
+stop_after_rejection: true
+nonfinite_update_rejected: true
+low_level_progress_reward_per_meter: 0.0
+horizon_rule: last_arrival_plus_900_seconds
+evaluation_seeds_reserved: [755001, 755002, 755003, 755004, 755005, 755006]
+heldout_evaluation_untouched: true
+entry_updates_discarded: true
+qualification_updates: false
+smoke_formal_training_authorized: false

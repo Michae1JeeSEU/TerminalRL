@@ -6,6 +6,7 @@ to critic context but are masked out of the actor objective.
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -74,19 +75,70 @@ def team_gae(steps: list[StudentStepV42], gamma: float, gae_lambda: float) -> tu
     return advantages, advantages + np.asarray([s.value for s in steps], dtype=np.float32)
 
 
+def _full_rollout_sampled_approx_kl(policy: "StudentPPOV42", steps: list[StudentStepV42]) -> float:
+    """Compute the requested-action KL proxy over all actor worlds in a rollout.
+
+    The sampled requested gate and conditional proposal are the same actions and
+    old log-probabilities used by PPO.  Agent likelihoods are averaged within a
+    world and then across actor worlds.  The network remains float32; the
+    expm1 subtraction is promoted to float64 to avoid cancellation near zero.
+    """
+    active = [row for row in steps if bool(row.actor_mask.any())]
+    if not active:
+        return 0.0
+    observations = np.concatenate([row.world[row.actor_mask] for row in active])
+    gates = np.concatenate([row.requested_gate[row.actor_mask] for row in active])
+    proposals = np.concatenate([row.requested_proposal[row.actor_mask] for row in active])
+    old = np.concatenate([row.requested_logprob[row.actor_mask] for row in active])
+    counts = [int(row.actor_mask.sum()) for row in active]
+    with torch.no_grad():
+        tensor_obs = torch.as_tensor(observations, dtype=torch.float32, device=policy.device)
+        gate_dist, proposal_dist = policy.model.distributions(tensor_obs)
+        _, _, current = hierarchical_joint_logprob(
+            gate_dist,
+            proposal_dist,
+            torch.as_tensor(gates, dtype=torch.long, device=policy.device),
+            torch.as_tensor(proposals, dtype=torch.long, device=policy.device),
+        )
+        logratio = current - torch.as_tensor(old, dtype=torch.float32, device=policy.device)
+        logratio64 = logratio.to(dtype=torch.float64)
+        sampled_kl = torch.expm1(logratio64) - logratio64
+        world_means = torch.stack([chunk.mean() for chunk in torch.split(sampled_kl, counts)])
+        return float(world_means.mean().cpu())
+
+
+def _state_finite(value: object) -> bool:
+    if isinstance(value, torch.Tensor):
+        return bool(torch.isfinite(value).all().item())
+    if isinstance(value, np.ndarray):
+        return bool(np.isfinite(value).all())
+    if isinstance(value, dict):
+        return all(_state_finite(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return all(_state_finite(item) for item in value)
+    if isinstance(value, (float, np.floating)):
+        return bool(np.isfinite(value))
+    return True
+
+
 class StudentPPOV42(JointPPOV42):
     """Opt-in optimizer; constructing a BC policy never unlocks formal PPO."""
 
     def update(self, steps: list[StudentStepV42], *, training_authorized: bool = False,
                epochs: int = 4, minibatch_size: int = 32, gamma: float = .99,
                gae_lambda: float = .95, clip_ratio: float = .2,
-               value_coef: float = .5, entropy_coef: float = .01) -> dict:
+               value_coef: float = .5, entropy_coef: float = .01,
+               target_kl: float | None = None) -> dict:
         if not training_authorized:
             raise PermissionError("PPO requires student-only qualification and admission")
         if not steps or epochs < 1 or minibatch_size < 1:
             raise ValueError("nonempty rollout and positive update budget required")
         if not (0 <= gamma <= 1 and 0 <= gae_lambda <= 1 and 0 < clip_ratio < 1):
             raise ValueError("invalid PPO discount or clipping settings")
+        if target_kl is not None:
+            if not np.isfinite(target_kl) or target_kl <= 0:
+                raise ValueError("target_kl must be finite and positive")
+            target_kl = float(target_kl)
         for row in steps:
             row.validate(self.observation_dim)
             if not row.stochastic_behavior:
@@ -98,6 +150,11 @@ class StudentPPOV42(JointPPOV42):
             advantages = (advantages - values.mean()) / (values.std() + 1e-8)
         totals = {key: 0. for key in ("loss", "actor_loss", "value_loss", "entropy", "approx_kl", "clip_fraction", "grad_norm")}
         updates = 0
+        attempted_updates = 0
+        rejected_updates = 0
+        stopped = False
+        final_rollout_kl = 0.0
+        max_accepted_rollout_kl = 0.0
         for _ in range(epochs):
             permutation = np.random.permutation(len(steps))
             for start in range(0, len(steps), minibatch_size):
@@ -140,13 +197,61 @@ class StudentPPOV42(JointPPOV42):
                 loss = actor + value_coef * value_loss - entropy_coef * entropy
                 if not torch.isfinite(loss):
                     raise FloatingPointError("non-finite PPO objective")
+                model_snapshot = copy.deepcopy(self.model.state_dict()) if target_kl is not None else None
+                optimizer_snapshot = copy.deepcopy(self.optimizer.state_dict()) if target_kl is not None else None
+                if target_kl is not None:
+                    attempted_updates += 1
                 self.optimizer.zero_grad()
-                loss.backward()
-                norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1., error_if_nonfinite=True)
-                self.optimizer.step()
+                try:
+                    loss.backward()
+                    norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1., error_if_nonfinite=True)
+                    self.optimizer.step()
+                except (FloatingPointError, RuntimeError):
+                    if target_kl is None:
+                        raise
+                    self.model.load_state_dict(model_snapshot)
+                    self.optimizer.load_state_dict(optimizer_snapshot)
+                    self.optimizer.zero_grad(set_to_none=True)
+                    rejected_updates += 1
+                    stopped = True
+                    break
+                if target_kl is not None:
+                    model_finite = _state_finite(self.model.state_dict())
+                    optimizer_finite = _state_finite(self.optimizer.state_dict())
+                    if model_finite and optimizer_finite:
+                        try:
+                            rollout_kl = _full_rollout_sampled_approx_kl(self, steps)
+                        except (FloatingPointError, RuntimeError, ValueError):
+                            rollout_kl = float("nan")
+                    else:
+                        rollout_kl = float("nan")
+                    finite_update = model_finite and optimizer_finite and np.isfinite(rollout_kl)
+                    if not finite_update or rollout_kl > target_kl:
+                        self.model.load_state_dict(model_snapshot)
+                        self.optimizer.load_state_dict(optimizer_snapshot)
+                        self.optimizer.zero_grad(set_to_none=True)
+                        rejected_updates += 1
+                        stopped = True
+                        break
                 for key, value in (("loss", loss), ("actor_loss", actor), ("value_loss", value_loss),
                                    ("entropy", entropy), ("approx_kl", kl), ("clip_fraction", clipped), ("grad_norm", norm)):
                     totals[key] += float(value.detach())
                 updates += 1
-        return {**{key: value / updates for key, value in totals.items()}, "updates": updates,
-                "team_steps": len(steps), "actor_decisions": sum(int(s.actor_mask.sum()) for s in steps)}
+                if target_kl is not None:
+                    final_rollout_kl = float(rollout_kl)
+                    max_accepted_rollout_kl = max(max_accepted_rollout_kl, final_rollout_kl)
+            if stopped:
+                break
+        result = {**{key: value / updates if updates else 0.0 for key, value in totals.items()}, "updates": updates,
+                  "team_steps": len(steps), "actor_decisions": sum(int(s.actor_mask.sum()) for s in steps)}
+        if target_kl is not None:
+            result.update({
+                "accepted_updates": updates,
+                "attempted_updates": attempted_updates,
+                "rejected_updates": rejected_updates,
+                "stopped": stopped,
+                "target_kl": target_kl,
+                "final_rollout_kl": final_rollout_kl,
+                "max_accepted_rollout_kl": max_accepted_rollout_kl,
+            })
+        return result
