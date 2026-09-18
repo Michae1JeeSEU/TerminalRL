@@ -1,0 +1,29 @@
+protocol: V4_2_P2_GATE_FORGETTING_AUDIT_V1
+purpose: offline_compare_I3_checkpoint24_and_P2_V4_gate_calibration
+input:
+  wait_diagnostic_manifest_sha256: b290e2d5f69749e1109bff2c5f348458732a22fbe8c0ce34c15ce98880eefc93
+  wait_diagnostic_status: DIAGNOSTIC_COMPLETE_false_preserved
+  actor_rows_only: true
+  teacher_labels: frozen_teacher_label_only_sidecars
+checkpoints:
+  i3_dagger:
+    sha256: a97e0284b07b18404f60cd666c72806cbf5e261bf807c7f9f3a1d897c69b1584
+  checkpoint24:
+    sha256: 6420df9a8562135756819459c7682ec897d47acd64e841b75a21c697298ea14f
+  p2_v4_checkpoint8:
+    sha256: 5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f
+evaluation:
+  behavior_rollout: false
+  training: false
+  teacher_calls: false
+  threshold: 0.5
+  state_sets: [candidate_visited, baseline_visited, combined]
+  metrics: [false_wait_rate, false_release_rate, brier, binary_nll, release_probability_by_teacher_label, interface_breakdown]
+interpretation:
+  i3_better_than_both_ppo_checkpoints: supports_PPO_gate_forgetting_hypothesis
+  i3_not_better: imitation_or_support_limitation_remains
+authorization:
+  PPO_ALLOWED: false
+  curriculum_promotion_allowed: false
+  result_role: diagnostic_only
+results: not_run
