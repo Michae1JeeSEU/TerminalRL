@@ -1,0 +1,87 @@
+protocol: V4_2_P2_GATE_LEARNABILITY_AUDIT_V1
+preregistered_at: 2026-09-18
+scope: offline_gate_learnability_only_no_environment_rollout_no_policy_promotion
+bindings:
+  support_manifest_sha256: 09402508bc02155c1369de477dc320d5ca596768d4de6461f4a0526f2c7d9304
+  candidate_checkpoint_sha256: 5e6811b8349d875fb007943476aec62d93550a74ffaf4ae46614c5c188ab004f
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+support_requirements:
+  status: PASS
+  frozen: true
+  learnability_audit_allowed: true
+  row_schema: finite_88d_observation
+  unique_and_disjoint_events: true
+  future_qualification_seeds: [774001, 774002, 774003, 774004, 774005, 774006]
+datasets:
+  train_support: V2_manifest_support_files_only
+  dev_support: V2_manifest_support_files_only
+  d1_anchor: report_only_not_used_for_gradients_selection_or_thresholds
+probes:
+  candidate_frozen_encoder_gate_head:
+    initialization: candidate_checkpoint
+    trainable: [gate_head]
+    frozen: [actor_encoder, proposal_head, critic_encoder, critic_head]
+    role: diagnostic_informative_not_required_for_pass
+  fresh_actor_encoder_gate_head:
+    initialization: fresh_HierarchicalActorCentralCriticV42_88
+    trainable: [actor_encoder, gate_head]
+    frozen: [proposal_head, critic_encoder, critic_head]
+    role: diagnostic_pass_determining
+training:
+  seeds: [778101, 778102, 778103]
+  epochs: 40
+  batch_size: 256
+  learning_rate: 0.0003
+  loss: unweighted_two_class_cross_entropy
+  gradient_clip_norm: 1.0
+  checkpoint_selection: final_epoch_only
+  training_rows: train_support_only
+  dev_gradients: false
+  d1_gradients: false
+  dev_selection: false
+  d1_selection: false
+  early_stopping: false
+  threshold_tuning: false
+evaluation:
+  probability_threshold: 0.5
+  metrics:
+    - confusion
+    - WAIT_recall
+    - RELEASE_recall
+    - WAIT_precision
+    - RELEASE_precision
+    - macro_F1
+    - false_WAIT
+    - false_RELEASE
+    - brier
+    - binary_nll
+    - probabilities_by_teacher_label
+  support_breakdowns: [scenario, interface]
+thresholds:
+  fresh_probe:
+    dev_macro_F1_min: 0.80
+    dev_WAIT_recall_min: 0.70
+    dev_RELEASE_recall_min: 0.80
+    dev_brier_max: 0.15
+    dev_binary_nll_max: 0.50
+    interface_macro_F1_min: 0.70
+  candidate_frozen_encoder_gate_head:
+    required_for_audit_pass: false
+authorization:
+  always_false:
+    - GATE_REPAIR_ALLOWED
+    - PPO_ALLOWED
+    - curriculum_promotion_allowed
+    - checkpoint_promotable
+  audit_pass_allows_only: preregistration_of_gate_repair
+prohibited:
+  - environment_rollout
+  - teacher_calls
+  - policy_promotion
+  - D1_training_rows
+  - dev_gradients
+  - D1_gradients
