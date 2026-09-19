@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import numpy as np
@@ -76,3 +77,15 @@ def test_v2_2_smoke_path_does_not_reserve_formal_seeds(tmp_path, monkeypatch):
     assert not result["formal_seed_reservation"] and not result["paired_probe_called"]
     assert (output / "manifest.json").is_file()
     assert not (checkpoint.parent / pilot.RESERVATION_MARKER).exists()
+
+
+def test_v2_2_pre_reset_recovery_requires_exact_marker_and_registry_only(tmp_path):
+    output = tmp_path / "formal"; output.mkdir()
+    marker = tmp_path / pilot.RESERVATION_MARKER
+    marker.write_text(json.dumps(pilot._expected_marker(output)), encoding="utf-8")
+    (output / "registry_progress.json").write_text(
+        '{"files_read": 3301, "files_total": 3360}', encoding="utf-8")
+    evidence = pilot._validate_pre_reset_recovery(output, marker)
+    assert evidence["environment_resets_before_recovery"] == 0
+    assert not evidence["seeds_replaced"] and not evidence["thresholds_changed"]
+    assert (output / "pre_reset_recovery.json").is_file()

@@ -338,13 +338,46 @@ def _feature_summary(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "all_features_finite": bool(np.isfinite(values).all())}
 
 
-def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = False) -> dict[str, Any]:
+def _expected_marker(output: Path) -> dict[str, Any]:
+    return {"protocol_sha256": PROTOCOL_SHA, "train_seeds": list(TRAIN_SEEDS),
+            "dev_seeds": list(DEV_SEEDS), "output": str(output)}
+
+
+def _validate_pre_reset_recovery(output: Path, marker: Path) -> dict[str, Any]:
+    """Validate the one allowed continuation after the pre-reset mkdir bug.
+
+    The failed attempt completed the historical scan and reserved the frozen
+    seeds, but raised before constructing TerminalParallelEnv.  Recovery is
+    therefore the same attempt: it must reuse the exact output and marker and
+    is rejected if any episode/data artifact exists.
+    """
+    _require(output.is_dir(), "pre-reset recovery output is missing")
+    _require(marker.is_file(), "pre-reset recovery marker is missing")
+    marker_payload = json.loads(marker.read_text(encoding="utf-8"))
+    _require(marker_payload == _expected_marker(output), "pre-reset recovery marker changed")
+    children = {item.name for item in output.iterdir()}
+    _require(children == {"registry_progress.json"},
+             f"pre-reset recovery found unexpected artifacts: {sorted(children)}")
+    registry = json.loads((output / "registry_progress.json").read_text(encoding="utf-8"))
+    _require(int(registry.get("files_read", 0)) > 0 and int(registry.get("files_total", 0)) > 0,
+             "pre-reset registry evidence is incomplete")
+    evidence = {"kind": "same_attempt_pre_reset_recovery", "marker": str(marker),
+                "marker_sha256": _sha256(marker), "registry_progress": registry,
+                "environment_resets_before_recovery": 0, "seeds_replaced": False,
+                "thresholds_changed": False}
+    _write_json(output / "pre_reset_recovery.json", evidence)
+    return evidence
+
+
+def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = False,
+        recover_pre_reset: bool = False) -> dict[str, Any]:
     protocol()
     _require(not output.exists(), f"output already exists: {output}")
     _require(_sha256(checkpoint) == CANDIDATE_SHA, "candidate checkpoint SHA mismatch")
     _require(set(TRAIN_SEEDS).isdisjoint(DEV_SEEDS), "V2.2 pilot splits overlap")
     policy, payload = effectiveness.load_candidate_checkpoint(checkpoint)
     if smoke:
+        _require(not recover_pre_reset, "smoke cannot use formal pre-reset recovery")
         output.mkdir(parents=True, exist_ok=False)
         record, rows = _episode(policy, seed=SMOKE_SEED, split="smoke",
                                 output=output / f"smoke_{SMOKE_SEED}_flow12", max_steps=SMOKE_STEPS,
@@ -362,13 +395,17 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         print(json.dumps({"stage": STAGE, "status": "INCOMPLETE", "smoke": True,
                           "rows": len(rows), "checks": record["checks"]}, sort_keys=True), flush=True)
         return result
-    history = historical_registry(history_root, output)
-    _require(not ((set(TRAIN_SEEDS) | set(DEV_SEEDS)) & set(history["seeds"])), "V2.2 pilot seed already consumed")
     marker = checkpoint.parent / RESERVATION_MARKER
-    _require(not marker.exists(), "V2.2 closure pilot already consumed")
-    reserve_once(marker, {"protocol_sha256": PROTOCOL_SHA, "train_seeds": list(TRAIN_SEEDS),
-                          "dev_seeds": list(DEV_SEEDS), "output": str(output)})
-    output.mkdir(parents=True, exist_ok=False)
+    recovery = None
+    if recover_pre_reset:
+        recovery = _validate_pre_reset_recovery(output, marker)
+    else:
+        output.mkdir(parents=True, exist_ok=False)
+        history = historical_registry(history_root, output)
+        _require(not ((set(TRAIN_SEEDS) | set(DEV_SEEDS)) & set(history["seeds"])),
+                 "V2.2 pilot seed already consumed")
+        _require(not marker.exists(), "V2.2 closure pilot already consumed")
+        reserve_once(marker, _expected_marker(output))
     records: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
     for index, (split, seed) in enumerate([*(("train", value) for value in TRAIN_SEEDS),
@@ -408,6 +445,7 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         "train_rows": str(train_path), "train_rows_sha256": train_sha,
         "dev_rows": str(dev_path), "dev_rows_sha256": dev_sha,
         "feature_summary": feature, "paired_probes": paired,
+        "pre_reset_recovery": recovery,
         "collection_checks": {"all_episodes_pass": all(row["checks"]["all"] for row in records),
                               "train_dev_seed_disjoint": set(TRAIN_SEEDS).isdisjoint(DEV_SEEDS),
                               "train_dev_event_disjoint": not ({row["decision_event_id"] for row in train_rows}
@@ -432,6 +470,7 @@ def _main() -> None:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--recover-pre-reset", action="store_true")
     torch.set_num_threads(1)
     run(**vars(parser.parse_args()))
 
