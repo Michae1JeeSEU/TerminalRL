@@ -1,0 +1,58 @@
+protocol: V4_2_P2_GATE_PROPOSAL_SET_FAILURE_ATTRIBUTION_V1
+stage: V4_2_P2_GATE_PROPOSAL_SET_FAILURE_ATTRIBUTION_V1
+purpose: distinguish_anchor_or_residual_limit_from_88D_set_target_learnability_limit
+
+bindings:
+  audit_manifest_sha256: a1b76fa16427cecdc0c70e0d38c6247d8e6e6d943063aeeddd00a8cede28e937
+  audit_protocol_sha256: 9dcb54d0b23dc81ad5fabacfb97762e127b3169f7908736540b9b8275e28868f
+  audit_status: FAIL
+  support_manifest_sha256: d057d0f39a3a99f6641c331eecd1a127a2b639b5046bf78d39b55d1b8caf7f37
+  support_train_sha256: f5511da554f21614e399b6384609bac93a41e9fdef94b8735eb2ecd6cb5d3f14
+  support_dev_sha256: dd07e8f2b877bd7f08db113aa0fc8988ed8d106223d799284b3e1f8b6324d17a
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  observation_dimension: 88
+  proposal_classes: 25
+
+descriptive_checks:
+  candidate_best_feasible_rank: true
+  candidate_feasible_mass: true
+  exact_observation_hash_set_conflicts: true
+  standardized_nearest_neighbor:
+    train_statistics_only: true
+    dev_to_train_set_jaccard: true
+    dev_to_train_any_intersection: true
+
+standalone_probes:
+  seeds: [798101, 798102, 798103]
+  models:
+    - linear_88x25
+    - mlp_88x128x128x25
+  epochs: 100
+  batch_size: 128
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  loss: proposal_set_negative_log_mass
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+
+classification:
+  standalone_top1_feasible_min: 0.80
+  standalone_top3_feasible_min: 0.93
+  standalone_partial_top1_feasible_min: 0.70
+  every_interface_top1_feasible_min: 0.70
+  all_three_mlp_seeds_required: true
+  outcomes:
+    mlp_pass: D1_anchor_or_residual_adapter_constraint_supported
+    mlp_fail: observation_or_set_target_learnability_limit_supported
+
+authorizations:
+  diagnostic_only: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
