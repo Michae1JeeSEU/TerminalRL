@@ -1,0 +1,60 @@
+protocol: V4_2_P2_PROPOSAL_CONDITIONED_FEASIBILITY_AUDIT_V1
+stage: V4_2_P2_PROPOSAL_CONDITIONED_FEASIBILITY_AUDIT_V1
+purpose: test_shared_state_plus_proposal_feasibility_factorization_on_fresh_flow12_sets
+
+bindings:
+  failure_attribution_manifest_sha256: 4a1d6d9d9b594c1d680203e8c8b728e08101ec1fdfc26aa64028be9f800c5e10
+  failure_attribution_protocol_sha256: f2e145734c267742ca13093c39df4e1534c6f7855413e07fff5d94ba35bbaa26
+  failure_classification: observation_or_set_target_learnability_limit_supported
+  support_manifest_sha256: d057d0f39a3a99f6641c331eecd1a127a2b639b5046bf78d39b55d1b8caf7f37
+  support_train_sha256: f5511da554f21614e399b6384609bac93a41e9fdef94b8735eb2ecd6cb5d3f14
+  support_dev_sha256: dd07e8f2b877bd7f08db113aa0fc8988ed8d106223d799284b3e1f8b6324d17a
+  observation_dimension: 88
+  proposal_feature_dimension: 2
+  proposal_features: [speed_residual, merge_time_residual]
+  proposal_classes: 25
+  no_environment: true
+  no_teacher: true
+  no_policy_update: true
+
+probe:
+  seeds: [799101, 799102, 799103]
+  models:
+    - linear_90x1
+    - mlp_90x128x128x1
+  epochs: 100
+  batch_size: 512
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  objective: train_split_balanced_binary_cross_entropy
+  normalization: train_split_mean_std_only
+  state_grouped_train_dev_split: true
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+
+evaluation:
+  binary:
+    macro_f1_min: 0.80
+    roc_auc_min: 0.90
+    feasible_recall_min: 0.85
+    infeasible_recall_min: 0.75
+  state_ranking:
+    top1_feasible_min: 0.90
+    partial_set_top1_feasible_min: 0.80
+    every_interface_top1_feasible_min: 0.85
+  all_three_mlp_seeds_required: true
+
+authorizations:
+  pass_sets:
+    AUDIT_COMPLETE: true
+    proposal_conditioned_feasibility_learnable: true
+    factorized_proposal_architecture_preregistration_allowed: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
