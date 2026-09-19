@@ -1,0 +1,82 @@
+protocol: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V2
+stage: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V2
+preregistered_at: 2026-09-20
+purpose: rerun_fresh_closure_after_correcting_committed_transfer_target_phase_mapping
+
+predecessor:
+  v1_manifest_sha256: 7da68885a365eeb9ce68b22dc4ce1c3488feeb4c6554e8528bb50508231e59af
+  v1_train_rows_sha256: 52099f689c3524cf73fa8ec79b855b3f1eb13e81bef0cf2c293d03d9a25a3779
+  v1_dev_rows_sha256: 643ebcc0cbfaa63548e19e19efeeb0d71bba0f8847ecec09c811f3a68faa2e75
+  v1_status: COMPLETE
+  observed_issue: committed_transfer_feature_compared_reservation_stage_to_plan_phase
+  observed_effect: interface_committed_transfers_norm_constant_zero
+  corrected_mapping_commit: 0d3c2e5
+  old_rows_reused: false
+  old_probe_metrics_reused_for_threshold_tuning: false
+
+bindings:
+  schema_protocol_sha256: 393b11f119202045a3a9c9c12bdd7c2d34d45570c3756fa4481446812dc1ab6e
+  observation_schema: phaseA_low_obs_v2_2_scheduler_context_94d
+  observation_dimension: 94
+  observation_feature_hash_sha256: 338eb2769e184909a559afe270d3d7ee41588d7a130040fa93cfe69c10bf47cd
+  v2_1_prefix_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  frozen_behavior_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  behavior_reads_v2_1_prefix_only: true
+  teacher_mode: teacher_label_only
+  deterministic_behavior: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  no_policy_update: true
+  no_runtime_catalogue_search: true
+
+collection:
+  train_seeds: [800001, 800002, 800003, 800004]
+  dev_seeds: [800005, 800006]
+  split_disjoint: true
+  retained_states: actor_states_with_teacher_release_and_nonempty_complete_25_proposal_catalogue
+  require_all_12_requests_complete: true
+  require_safety_zero: true
+  require_exact_action_tape_replay: true
+  require_exact_v2_1_prefix: true
+  require_finite_bounded_94d: true
+
+smoke:
+  seed: 800000
+  steps: 160
+  formal_seed_reservation: false
+  paired_probe: false
+
+paired_probe:
+  seeds: [800101, 800102, 800103]
+  compared_inputs: [v2_1_88d_plus_proposal_2d, v2_2_94d_plus_proposal_2d]
+  model: mlp_inputx128x128x1
+  epochs: 100
+  batch_size: 512
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  objective: train_split_balanced_binary_cross_entropy
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+  report:
+    - feasible_recall
+    - infeasible_recall
+    - macro_f1
+    - roc_auc
+    - state_top1_feasible
+    - partial_set_top1_feasible
+    - per_interface_top1_feasible
+    - paired_94d_minus_88d
+
+authorizations:
+  diagnostic_only: true
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false

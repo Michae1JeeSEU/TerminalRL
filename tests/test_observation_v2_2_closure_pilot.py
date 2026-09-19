@@ -108,3 +108,19 @@ def test_v2_2_run_allows_existing_output_only_for_guarded_recovery(tmp_path, mon
     with pytest.raises(ReachedRecovery):
         pilot.run(output=output, checkpoint=checkpoint, history_root=tmp_path,
                   recover_pre_reset=True)
+
+
+def test_v2_2_successor_protocol_uses_fresh_disjoint_seeds():
+    names = ("STAGE", "PROTOCOL", "PROTOCOL_SHA", "TRAIN_SEEDS", "DEV_SEEDS",
+             "PROBE_SEEDS", "SMOKE_SEED", "RESERVATION_MARKER")
+    original = {name: getattr(pilot, name) for name in names}
+    try:
+        pilot.configure_successor_v2()
+        protocol = pilot.protocol()
+        assert protocol["predecessor"]["corrected_mapping_commit"] == "0d3c2e5"
+        assert pilot.TRAIN_SEEDS == (800001, 800002, 800003, 800004)
+        assert set(pilot.TRAIN_SEEDS).isdisjoint(pilot.DEV_SEEDS)
+        assert protocol["predecessor"]["old_rows_reused"] is False
+    finally:
+        for name, value in original.items():
+            setattr(pilot, name, value)

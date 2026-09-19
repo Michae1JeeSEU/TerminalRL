@@ -62,6 +62,20 @@ PROPOSAL_FEATURES = np.asarray([
 ], dtype=np.float32)
 
 
+def configure_successor_v2() -> None:
+    """Select the fresh successor after the committed-transfer mapping fix."""
+    global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
+    global SMOKE_SEED, RESERVATION_MARKER
+    STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V2"
+    PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v2.yaml")
+    PROTOCOL_SHA = "9835d890838088723b4e0415c38b4b9e6f9004189302ddffd0abce9f0ee3b571"
+    TRAIN_SEEDS = (800001, 800002, 800003, 800004)
+    DEV_SEEDS = (800005, 800006)
+    PROBE_SEEDS = (800101, 800102, 800103)
+    SMOKE_SEED = 800000
+    RESERVATION_MARKER = "observation_v2_2_closure_pilot_v2_consumed.json"
+
+
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
@@ -474,8 +488,13 @@ def _main() -> None:
     parser.add_argument("--history-root", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--recover-pre-reset", action="store_true")
+    parser.add_argument("--successor-v2", action="store_true")
     torch.set_num_threads(1)
-    run(**vars(parser.parse_args()))
+    args = parser.parse_args()
+    if args.successor_v2:
+        configure_successor_v2()
+    delattr(args, "successor_v2")
+    run(**vars(args))
 
 
 if __name__ == "__main__":
