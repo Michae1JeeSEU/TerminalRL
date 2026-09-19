@@ -1,0 +1,131 @@
+protocol: V4_2_P2_GATE_RESIDUAL_ADAPTER_REPAIR_V3
+preregistered_at: 2026-09-19
+scope: conservative_anchored_offline_gate_adapter_repair_qualification_only
+
+predecessor:
+  audit_protocol: V4_2_P2_GATE_LEARNABILITY_AUDIT_V2
+  audit_stage: V4_2_P2_GATE_LEARNABILITY_AUDIT_V2
+  audit_manifest_sha256: 5a72549d05c4733c2163512bf30cfe28d601c38e3ddfe23dc8291ec2f17b3679
+  audit_pass: true
+  repair_preregistration_allowed: true
+
+bindings:
+  support_manifest_sha256: 100448260298b13cb33ce301267a44f9503a9cc1baea5c93f6121bff22fae960
+  support_train_sha256: 40002db70c2e0d5d181b53b2f23290c65954f6bbe6282be1066b6f558e6153d4
+  support_dev_sha256: da106e0d862c8e435748514abb10c4e0e5c500fb3bbd73f03cbfa6aa186a261b
+  candidate_checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+  candidate_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  candidate_temperature: 2.5
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  future_qualification_seeds: [782001, 782002, 782003, 782004, 782005, 782006]
+
+audit_prerequisite:
+  stage: V4_2_P2_GATE_LEARNABILITY_AUDIT_V2
+  AUDIT_COMPLETE: true
+  audit_pass: true
+  learnability_pass: true
+  repair_preregistration_allowed: true
+  GATE_REPAIR_ALLOWED: false
+  PPO_ALLOWED: false
+  curriculum_promotion_allowed: false
+  checkpoint_promotable: false
+
+architecture:
+  id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  base: TemperatureCalibratedGateResidualAdapterStudentPPOV42
+  initialized_from: exact_deepcopy_of_calibrated_candidate
+  trainable_scope: gate_adapter_only
+  frozen_components: [actor_encoder, gate_head, proposal_head, critic_encoder, critic_head, gate_temperature]
+  proposal_unchanged: true
+  critic_unchanged: true
+  temperature: 2.5
+  migration: none
+
+training:
+  seed: 787101
+  epochs: 20
+  support_batch_size: 128
+  d1_batch_size: 128
+  steps_per_epoch: max_ceil_support_or_d1_batches
+  reshuffle_each_epoch: true
+  cycle_shorter_source: true
+  optimizer: Adam
+  learning_rate: 0.0001
+  gradient_clip_norm: 1.0
+  objective: 0.5_support_CE_plus_0.5_D1_CE_plus_2.0_D1_anchor_KL
+  anchor_KL: categorical_KL_frozen_candidate_to_repaired_float64_logits
+  dev_gradients: false
+  d1_selection: false
+  early_stopping: false
+  threshold_tuning: false
+  checkpoint_selection: final_epoch_only
+  progress: after_each_completed_epoch
+
+numerical_stability:
+  candidate_log_probability_dtype: float64
+  repaired_log_probability_dtype: float64
+  probability_source: exp_candidate_log_softmax
+  categorical_from_float32_probabilities: false
+  stable_formula: sum(exp(candidate_logp) * (candidate_logp - repaired_logp), dim=-1).mean()
+  anchor_weight: 2.0
+  finite_component_checks: true
+  finite_gradient_checks: true
+  failure_context: epoch_step_finite_flags_component_values
+
+evaluation:
+  probability_threshold: 0.5
+  datasets: [support_train, support_dev, d1_anchor]
+  support_breakdowns: [scenario, interface]
+  evaluate_final_epoch_once: true
+  proposal_logits_invariance: bitwise_or_zero_max_abs_delta
+  critic_state_invariance: bitwise
+  temperature_state_invariance: bitwise
+
+thresholds:
+  support_dev:
+    macro_F1_min: 0.80
+    WAIT_recall_min: 0.70
+    RELEASE_recall_min: 0.80
+    brier_max: 0.15
+    binary_nll_max: 0.50
+    interface_macro_F1_min: 0.70
+  d1_anchor:
+    macro_F1_min: 0.90
+    WAIT_recall_min: 0.90
+    RELEASE_recall_min: 0.90
+    brier_max: 0.08
+    binary_nll_max: 0.30
+  invariants:
+    proposal_logits: true
+    critic_state: true
+    temperature_state: true
+    common_state_bitwise_equal: true
+    parameter_isolation: true
+    finite_losses_and_gradients: true
+
+authorization:
+  always_false:
+    - PPO_ALLOWED
+    - GATE_REPAIR_ALLOWED
+    - curriculum_promotion_allowed
+    - checkpoint_promotable
+  pass_only:
+    STUDENT_QUALIFICATION_ALLOWED: true
+    checkpoint_role: qualification_candidate
+  qualification_only: true
+  environment_rollout: false
+  teacher_calls: false
+
+prohibited:
+  - environment_rollout
+  - teacher_calls
+  - dev_gradients
+  - d1_selection
+  - threshold_tuning
+  - early_stopping
+  - PPO
+  - policy_migration
