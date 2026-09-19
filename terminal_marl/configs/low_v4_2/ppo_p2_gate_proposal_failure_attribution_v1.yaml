@@ -1,0 +1,59 @@
+protocol: V4_2_P2_GATE_PROPOSAL_FAILURE_ATTRIBUTION_V1
+stage: V4_2_P2_GATE_PROPOSAL_FAILURE_ATTRIBUTION_V1
+purpose: distinguish_observation_learnability_from_base_logit_or_D1_anchor_conflict
+
+bindings:
+  audit_manifest_sha256: 87bdf9b5ce0b9d9cbf967d858669a6f17679c0cf271d83c8c39e7f4fa4e52e95
+  audit_protocol_sha256: fd05c7b7928474bd649520b6bec7261df997e7d04ec14972955ae3335e99d196
+  audit_status: FAIL
+  support_manifest_sha256: 48c0b1cd0b92bd746bd52f18090bbffd8facf59457eb82d503802eb4fc2c512b
+  support_train_sha256: 7aa8adaf805b22fd58aaaf258111e1b457cf5159241135d8ca262d32a5d11fa2
+  support_dev_sha256: 2ea5bbfe66d6a688a486039a6c12461356ea51abce3c778cc85e8b6b05589415
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  observation_dimension: 88
+  proposal_classes: 25
+
+descriptive_checks:
+  candidate_target_margin_quantiles: [0.0, 0.1, 0.5, 0.9, 1.0]
+  majority_baseline: true
+  exact_observation_hash_conflicts: true
+  standardized_nearest_neighbor:
+    train_statistics_only: true
+    dev_to_train: true
+    dev_to_D1: true
+
+standalone_probes:
+  seeds: [793101, 793102, 793103]
+  models:
+    - linear_88x25
+    - mlp_88x128x128x25
+  epochs: 100
+  batch_size: 128
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  loss: unweighted_cross_entropy
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+
+classification:
+  standalone_top1_min: 0.60
+  standalone_top3_min: 0.80
+  every_interface_top1_min: 0.50
+  all_three_mlp_seeds_required: true
+  outcomes:
+    mlp_pass: base_logit_or_D1_anchor_constraint_supported
+    mlp_fail: observation_or_label_learnability_limit_supported
+
+authorizations:
+  diagnostic_only: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
+
