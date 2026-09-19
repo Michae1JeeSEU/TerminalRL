@@ -203,7 +203,7 @@ def test_observation_v2_2_preserves_v2_1_and_exposes_only_current_scheduler_cont
     slices = LOW_OBS_V2_2.slices
     assert baseline[slices["same_step_interface_contenders_norm"]][0] > 0.0
 
-    committed.committed_plan = type("PlanStub", (), {"metadata": {"target_phase": "middle"}})()
+    committed.committed_plan = type("PlanStub", (), {"metadata": {"target_phase": "ring_middle"}})()
     reservation = MergeReservation("v22", committed.uid, "ring_outer", "middle",
         env.now + 12.0, 0.0, None, None, status="future", expires_at=env.now + 72.0)
     env.scheduler.reservations[reservation.reservation_id] = reservation

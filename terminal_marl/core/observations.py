@@ -182,12 +182,12 @@ def build_low_observation_v2_1(uav, env, *, topology_cache: TopologyCache | None
     return vector
 
 
-def _interface_context(uav) -> tuple[str, str] | None:
-    """Return the current source interface and its scheduler target-stage key."""
+def _interface_context(uav) -> tuple[str, str, str] | None:
+    """Return interface, reservation target, and plan target-phase keys."""
     return {
-        RingRole.OUTER: ("o2m", RingRole.MIDDLE.value),
-        RingRole.MIDDLE: ("m2i", RingRole.INNER.value),
-        RingRole.INNER: ("i2f", "final"),
+        RingRole.OUTER: ("o2m", RingRole.MIDDLE.value, "ring_middle"),
+        RingRole.MIDDLE: ("m2i", RingRole.INNER.value, "ring_inner"),
+        RingRole.INNER: ("i2f", "final", "landing"),
     }.get(uav.ring_role)
 
 
@@ -202,7 +202,7 @@ def _v2_2_scheduler_context(uav, env) -> np.ndarray:
     context = _interface_context(uav)
     if context is None:
         return np.zeros(6, dtype=np.float32)
-    interface, target_stage = context
+    interface, target_stage, target_phase = context
     reservations = tuple(
         item for item in env.scheduler.reservations.values()
         if item.target_stage == target_stage
@@ -214,7 +214,7 @@ def _v2_2_scheduler_context(uav, env) -> np.ndarray:
     )
     committed_transfers = sum(
         item.committed_plan is not None
-        and item.committed_plan.metadata.get("target_phase") == target_stage
+        and item.committed_plan.metadata.get("target_phase") == target_phase
         for item in env.active.values()
     )
     last_reserved = env.scheduler.last_release[interface]
