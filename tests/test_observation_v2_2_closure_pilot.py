@@ -49,3 +49,21 @@ def test_v2_2_probe_expansion_and_fixed_one_epoch_smoke(monkeypatch):
     result = pilot._probe(train, dev, observation_key="observation_v2_2", seed=797101)
     assert result["optimizer_steps"] == 1 and not result["checkpoint_saved"]
     assert result["state_dev"]["states"] == 3
+
+
+def test_v2_2_smoke_path_does_not_reserve_formal_seeds(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "candidate.pt"; checkpoint.write_bytes(b"candidate")
+    monkeypatch.setattr(pilot, "protocol", lambda: {})
+    original_sha = pilot._sha256
+    monkeypatch.setattr(pilot, "_sha256", lambda path: pilot.CANDIDATE_SHA
+                        if str(path) == str(checkpoint) else original_sha(path))
+    monkeypatch.setattr(pilot.effectiveness, "load_candidate_checkpoint",
+                        lambda path: (object(), {"stage": "test", "architecture_id": "test"}))
+    record = {"checks": {"all": True}, "rows": 1}
+    monkeypatch.setattr(pilot, "_episode", lambda *args, **kwargs: (record, [_row(0.0)]))
+    output = tmp_path / "smoke"
+    result = pilot.run(output=output, checkpoint=checkpoint, history_root=tmp_path, smoke=True)
+    assert result["status"] == "INCOMPLETE" and result["smoke"]
+    assert not result["formal_seed_reservation"] and not result["paired_probe_called"]
+    assert (output / "manifest.json").is_file()
+    assert not (checkpoint.parent / pilot.RESERVATION_MARKER).exists()

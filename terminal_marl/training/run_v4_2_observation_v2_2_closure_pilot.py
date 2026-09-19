@@ -39,13 +39,15 @@ from terminal_marl.training.v4_1_joint_teacher import teacher_joint_expert_v4_1
 
 STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V1"
 PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v1.yaml")
-PROTOCOL_SHA = "d49da05c4c7b69b29aa6e1a498e5acca404f8c9be0021b457a06021169efb72d"
+PROTOCOL_SHA = "f7eb688ad6f9b368d940ac033a1cc940bbdd8399409be7b07fb96d865a002e10"
 SCHEMA_PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_schema.yaml")
 SCHEMA_PROTOCOL_SHA = "393b11f119202045a3a9c9c12bdd7c2d34d45570c3756fa4481446812dc1ab6e"
 CANDIDATE_SHA = effectiveness.REPAIRED_CHECKPOINT_SHA
 TRAIN_SEEDS = (797001, 797002, 797003, 797004)
 DEV_SEEDS = (797005, 797006)
 PROBE_SEEDS = (797101, 797102, 797103)
+SMOKE_SEED = 797000
+SMOKE_STEPS = 160
 OBS_SCHEMA = "phaseA_low_obs_v2_2_scheduler_context_94d"
 OBS_DIM = 94
 PREFIX_DIM = 88
@@ -123,6 +125,9 @@ def protocol() -> dict[str, Any]:
     _require(probe["epochs"] == EPOCHS and probe["batch_size"] == BATCH_SIZE, "probe budget changed")
     _require(float(probe["learning_rate"]) == LEARNING_RATE, "probe learning rate changed")
     _require(float(probe["gradient_clip_norm"]) == GRADIENT_CLIP_NORM, "probe clip changed")
+    _require(value["smoke"] == {"seed": SMOKE_SEED, "steps": SMOKE_STEPS,
+                                 "formal_seed_reservation": False, "paired_probe": False},
+             "smoke protocol changed")
     return value
 
 
@@ -159,7 +164,8 @@ def _behavior_request(policy: Any, env: TerminalParallelEnv, observations: Mappi
     return uids, world, actor_mask, actions, likelihoods
 
 
-def _episode(policy: Any, *, seed: int, split: str, output: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _episode(policy: Any, *, seed: int, split: str, output: Path,
+             max_steps: int | None = None, require_complete: bool = True) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     config = replace(support.support_config(12), observation_schema_version=OBS_SCHEMA)
     output.mkdir(parents=True, exist_ok=False)
     env = TerminalParallelEnv(config)
@@ -169,7 +175,8 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path) -> tuple[dict[
     rows: list[dict[str, Any]] = []
     prefix_checks = 0
     repeated_checks = 0
-    for tick in range(int(config.max_simulation_seconds / config.dt)):
+    horizon = int(config.max_simulation_seconds / config.dt) if max_steps is None else int(max_steps)
+    for tick in range(horizon):
         uids, world, actor_mask, actions, likelihoods = _behavior_request(policy, env, observations)
         state_hash = _digest(SafetyTraceRecorder._state(env))
         for index, uid in enumerate(uids):
@@ -215,7 +222,7 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path) -> tuple[dict[
               ("collisions", "nmac", "hard_separation_violations", "uncertified_execution")}
     complete = len(env.completed_uavs) == 12
     checks = {
-        "all_requests_complete": complete,
+        "all_requests_complete": complete if require_complete else True,
         "safety_zero": not any(safety.values()),
         "exact_action_tape_replay": bool(replay.get("exact")),
         "prefix_checks_nonzero": prefix_checks > 0,
@@ -328,18 +335,36 @@ def _feature_summary(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "all_features_finite": bool(np.isfinite(values).all())}
 
 
-def run(*, output: Path, checkpoint: Path, history_root: Path) -> dict[str, Any]:
+def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = False) -> dict[str, Any]:
     protocol()
     _require(not output.exists(), f"output already exists: {output}")
     _require(_sha256(checkpoint) == CANDIDATE_SHA, "candidate checkpoint SHA mismatch")
     _require(set(TRAIN_SEEDS).isdisjoint(DEV_SEEDS), "V2.2 pilot splits overlap")
+    policy, payload = effectiveness.load_candidate_checkpoint(checkpoint)
+    if smoke:
+        output.mkdir(parents=True, exist_ok=False)
+        record, rows = _episode(policy, seed=SMOKE_SEED, split="smoke",
+                                output=output / f"smoke_{SMOKE_SEED}_flow12", max_steps=SMOKE_STEPS,
+                                require_complete=False)
+        result = {
+            "stage": STAGE, "status": "INCOMPLETE", "smoke": True,
+            "protocol_sha256": PROTOCOL_SHA, "candidate_checkpoint_sha256": CANDIDATE_SHA,
+            "record": record, "rows": len(rows), "formal_seed_reservation": False,
+            "paired_probe_called": False, "behavior_policy_updated": False,
+            "support_collection_allowed": False, "policy_repair_allowed": False,
+            "PPO_ALLOWED": False, "P3_ALLOWED": False,
+            "source_hashes": {"runner": _sha256(Path(__file__)), "protocol": _sha256(PROTOCOL)},
+        }
+        manifest = output / "manifest.json"; result["manifest"] = str(manifest); _write_json(manifest, result)
+        print(json.dumps({"stage": STAGE, "status": "INCOMPLETE", "smoke": True,
+                          "rows": len(rows), "checks": record["checks"]}, sort_keys=True), flush=True)
+        return result
     history = historical_registry(history_root, output)
     _require(not ((set(TRAIN_SEEDS) | set(DEV_SEEDS)) & set(history["seeds"])), "V2.2 pilot seed already consumed")
     marker = checkpoint.parent / RESERVATION_MARKER
     _require(not marker.exists(), "V2.2 closure pilot already consumed")
     reserve_once(marker, {"protocol_sha256": PROTOCOL_SHA, "train_seeds": list(TRAIN_SEEDS),
                           "dev_seeds": list(DEV_SEEDS), "output": str(output)})
-    policy, payload = effectiveness.load_candidate_checkpoint(checkpoint)
     output.mkdir(parents=True, exist_ok=False)
     records: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
@@ -403,6 +428,7 @@ def _main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
+    parser.add_argument("--smoke", action="store_true")
     torch.set_num_threads(1)
     run(**vars(parser.parse_args()))
 

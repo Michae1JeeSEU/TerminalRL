@@ -31,6 +31,12 @@ collection:
   require_exact_v2_1_prefix: true
   require_finite_bounded_94d: true
 
+smoke:
+  seed: 797000
+  steps: 160
+  formal_seed_reservation: false
+  paired_probe: false
+
 paired_probe:
   seeds: [797101, 797102, 797103]
   compared_inputs: [v2_1_88d_plus_proposal_2d, v2_2_94d_plus_proposal_2d]
