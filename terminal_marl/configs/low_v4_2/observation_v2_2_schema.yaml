@@ -1,0 +1,61 @@
+protocol: V4_2_OBSERVATION_V2_2_SCHEDULER_CONTEXT_V1
+status: FROZEN_SCHEMA_CANDIDATE
+preregistered_at: 2026-09-20
+purpose: expose_current_scheduler_reservation_and_same_step_competition_state_without_catalogue_search
+
+schema:
+  parent: phaseA_low_obs_v2_1_retry_state
+  parent_dimension: 88
+  observation_schema: phaseA_low_obs_v2_2_scheduler_context_94d
+  dimension: 94
+  feature_hash_sha256: 338eb2769e184909a559afe270d3d7ee41588d7a130040fa93cfe69c10bf47cd
+  prefix_rule: indices_0_87_are_byte_identical_to_v2_1
+  appended_features:
+    - {index: 88, name: interface_active_reservations_norm, source: MergeScheduler.reservations}
+    - {index: 89, name: interface_future_reservations_norm, source: MergeScheduler.reservations_and_env.future_release_reservations}
+    - {index: 90, name: interface_committed_transfers_norm, source: active_uav_committed_plan_target_phase}
+    - {index: 91, name: interface_reservation_block_remaining_norm, source: MergeScheduler.last_release_plus_current_headway_minus_now}
+    - {index: 92, name: same_step_interface_contenders_norm, source: current_release_eligible_same_interface_holders}
+    - {index: 93, name: same_step_interface_predecessors_norm, source: contenders_before_self_in_deterministic_active_uav_execution_order}
+  normalization:
+    reservation_and_transfer_counts: divide_by_max_active_uavs_then_clip_0_1
+    contender_counts: divide_by_current_source_ring_capacity_then_clip_0_1
+    reservation_block_remaining: tanh_nonnegative_seconds_divided_by_headway_max
+
+boundaries:
+  online_current_state_only: true
+  action_conditioned: false
+  teacher_private_information: false
+  proposal_catalogue_scan: false
+  trajectory_generation: false
+  safety_certificate: false
+  runtime_policy_emits_one_intent: true
+  safety_filter_validates_one_intent: true
+  action_schema_unchanged: low_action_schema_v4_2_hierarchical
+
+closure_pilot:
+  status: PREREGISTERED_NOT_RUN
+  scenario: flow12
+  deterministic_behavior: frozen_88d_candidate_using_v2_1_prefix_only
+  teacher_mode: teacher_label_only
+  train_seeds: [797001, 797002, 797003, 797004]
+  dev_seeds: [797005, 797006]
+  split_disjoint: true
+  retained_states: actor_states_with_teacher_release_and_complete_25_proposal_catalogue
+  checks:
+    - exact_v2_1_prefix
+    - finite_bounded_deterministic_features
+    - feature_source_recomputation
+    - nonconstant_appended_features_by_interface
+    - safe_complete_exact_replay_episodes
+    - paired_88d_vs_94d_fixed_probe_without_threshold_tuning
+
+authorizations:
+  schema_implementation_allowed: true
+  closure_pilot_allowed: true
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false

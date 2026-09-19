@@ -644,6 +644,12 @@ ObservationSchema(
 prefix 保持不变，索引 87 追加 `safety_retry_remaining_norm`。任何字段顺序变化都必须升级
 schema version，并拒绝不兼容 checkpoint。
 
+2026-09-20 已冻结待验证候选 `phaseA_low_obs_v2_2_scheduler_context_94d`：它保持前 88 维
+不变，在索引 88–93 追加当前接口 active/future reservation、committed transfer、reservation
+block remaining，以及同一步 contender/predecessor 数量。候选仍禁止 proposal catalogue scan、
+trajectory certificate 和 Teacher 私有字段；在 fresh closure 与 learnability 通过前，已资格的
+正式 schema 仍是 V2.1。
+
 ### 14.2 Topological context
 
 优先提取：

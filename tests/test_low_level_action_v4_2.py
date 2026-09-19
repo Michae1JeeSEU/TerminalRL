@@ -13,8 +13,10 @@ from terminal_marl.algo.joint_ppo_v4_2 import (JointPPOV42, hierarchical_bc_loss
     hierarchical_joint_logprob)
 from terminal_marl.core.checkpoints import IncompatibleCheckpointError, load_checkpoint, save_checkpoint
 from terminal_marl.core.config import SimConfig
-from terminal_marl.core.observations import (LOW_OBS_V2, LOW_OBS_V2_1,
-    build_low_observation_v2, build_low_observation_v2_1)
+from terminal_marl.core.observations import (LOW_OBS_V2, LOW_OBS_V2_1, LOW_OBS_V2_2,
+    build_low_observation_v2, build_low_observation_v2_1, build_low_observation_v2_2,
+    observation_schema_for_version)
+from terminal_marl.core.merge_scheduler import MergeReservation
 from terminal_marl.core.low_level_joint_action_v4_2 import (ACTION_SCHEMA_V4_2,
     RELEASE_GATE, WAIT_GATE, decode_hierarchical_actions_v4_2,
     hierarchical_from_joint_index_v4_1, hierarchical_from_normalized_v4_2,
@@ -185,6 +187,52 @@ def test_observation_v2_1_appends_only_exact_retry_state_and_rejects_short_horiz
     assert build_low_observation_v2_1(uav, env)[87] == 0.0
     with pytest.raises(ValueError, match="retry normalization horizon"):
         SimConfig(observation_schema_version=OBSERVATION_V2_1, retry_norm_horizon_seconds=29.0)
+
+
+def test_observation_v2_2_preserves_v2_1_and_exposes_only_current_scheduler_context():
+    schema = "phaseA_low_obs_v2_2_scheduler_context_94d"
+    config = replace(_config(), observation_schema_version=schema)
+    env = TerminalParallelEnv(config); observations, _ = env.reset(74)
+    outer = [item for item in env.active.values() if item.ring_role.value == "outer"]
+    assert len(outer) >= 2
+    uav, committed = outer[:2]
+    baseline = build_low_observation_v2_2(uav, env)
+    assert LOW_OBS_V2_2.dimension == 94
+    assert observation_schema_for_version(schema) is LOW_OBS_V2_2
+    assert np.array_equal(build_low_observation_v2_1(uav, env), baseline[:88])
+    slices = LOW_OBS_V2_2.slices
+    assert baseline[slices["same_step_interface_contenders_norm"]][0] > 0.0
+
+    committed.committed_plan = type("PlanStub", (), {"metadata": {"target_phase": "middle"}})()
+    reservation = MergeReservation("v22", committed.uid, "ring_outer", "middle",
+        env.now + 12.0, 0.0, None, None, status="future", expires_at=env.now + 72.0)
+    env.scheduler.reservations[reservation.reservation_id] = reservation
+    env.scheduler.last_release["o2m"] = reservation.merge_time
+    env.future_release_reservations[committed.uid] = {"not_before": env.now + 5.0}
+    enriched = build_low_observation_v2_2(uav, env)
+    assert np.array_equal(build_low_observation_v2_1(uav, env), enriched[:88])
+    assert enriched[slices["interface_active_reservations_norm"]][0] == pytest.approx(1 / config.max_active_uavs)
+    assert enriched[slices["interface_future_reservations_norm"]][0] == pytest.approx(1 / config.max_active_uavs)
+    assert enriched[slices["interface_committed_transfers_norm"]][0] == pytest.approx(1 / config.max_active_uavs)
+    assert 0.0 < enriched[slices["interface_reservation_block_remaining_norm"]][0] < 1.0
+    assert np.isfinite(enriched).all() and np.logical_and(enriched >= -1.0, enriched <= 1.0).all()
+    assert observations[str(uav.uid)].shape == (94,)
+
+
+def test_observation_v2_2_schema_candidate_freezes_boundary_and_fresh_pilot_seeds():
+    path = Path("terminal_marl/configs/low_v4_2/observation_v2_2_schema.yaml")
+    protocol = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert protocol["status"] == "FROZEN_SCHEMA_CANDIDATE"
+    assert protocol["schema"]["feature_hash_sha256"] == LOW_OBS_V2_2.feature_hash
+    assert protocol["schema"]["prefix_rule"] == "indices_0_87_are_byte_identical_to_v2_1"
+    assert protocol["boundaries"]["runtime_policy_emits_one_intent"]
+    assert protocol["boundaries"]["safety_filter_validates_one_intent"]
+    assert not protocol["boundaries"]["proposal_catalogue_scan"]
+    pilot = protocol["closure_pilot"]
+    assert set(pilot["train_seeds"]).isdisjoint(pilot["dev_seeds"])
+    assert protocol["authorizations"]["closure_pilot_allowed"]
+    assert not protocol["authorizations"]["support_collection_allowed"]
+    assert not protocol["authorizations"]["PPO_ALLOWED"]
 
 
 def test_observation_v2_1_provenance_fails_closed_without_exact_snapshot_retry(tmp_path):

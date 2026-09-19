@@ -185,7 +185,7 @@ class TerminalParallelEnv:
 
     def _observations(self) -> dict[str, np.ndarray]:
         cache = None
-        if self.config.observation_schema_version in {"phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state"}:
+        if self.config.observation_schema_version in {"phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d"}:
             cache = TopologyCache(self.airspace, self.active.values(), now=self.now,
                                  cpa_horizon=self.config.shield_horizon_seconds)
         return {str(uid): build_low_observation(uav, self, topology_cache=cache) for uid, uav in self.active.items()}

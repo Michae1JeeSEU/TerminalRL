@@ -59,10 +59,27 @@ LOW_OBS_V2_1 = ObservationSchema(LOW_OBS_V2.features + (
     FeatureSpec("safety_retry_remaining_norm", 1),
 ))
 
+# V2.2 keeps the qualified V2.1 prefix intact and exposes only scheduler state
+# that already exists at the actor's pre-action instant.  It does not scan the
+# 25-way proposal catalogue and does not expose a future trajectory or safety
+# certificate.  The final two fields describe deterministic same-step
+# execution competition under TerminalParallelEnv's active-UAV iteration
+# order; they are state facts, not predictions of another policy's action.
+LOW_OBS_V2_2 = ObservationSchema(LOW_OBS_V2_1.features + (
+    FeatureSpec("interface_active_reservations_norm", 1),
+    FeatureSpec("interface_future_reservations_norm", 1),
+    FeatureSpec("interface_committed_transfers_norm", 1),
+    FeatureSpec("interface_reservation_block_remaining_norm", 1),
+    FeatureSpec("same_step_interface_contenders_norm", 1),
+    FeatureSpec("same_step_interface_predecessors_norm", 1),
+))
+
 if LOW_OBS_V2.dimension != 87:  # import-time guard against accidental schema drift
     raise RuntimeError("phaseA_low_obs_v2_topology_87d must be exactly 87D")
 if LOW_OBS_V2_1.dimension != 88:
     raise RuntimeError("phaseA_low_obs_v2_1_retry_state must be exactly 88D")
+if LOW_OBS_V2_2.dimension != 94:
+    raise RuntimeError("phaseA_low_obs_v2_2_scheduler_context_94d must be exactly 94D")
 
 def _one(value, values):return [float(value==x) for x in values]
 def build_a5_observation(uav, env)->np.ndarray:
@@ -165,6 +182,83 @@ def build_low_observation_v2_1(uav, env, *, topology_cache: TopologyCache | None
     return vector
 
 
+def _interface_context(uav) -> tuple[str, str] | None:
+    """Return the current source interface and its scheduler target-stage key."""
+    return {
+        RingRole.OUTER: ("o2m", RingRole.MIDDLE.value),
+        RingRole.MIDDLE: ("m2i", RingRole.INNER.value),
+        RingRole.INNER: ("i2f", "final"),
+    }.get(uav.ring_role)
+
+
+def _v2_2_scheduler_context(uav, env) -> np.ndarray:
+    """Six bounded, pre-action scheduler/competition state features.
+
+    Counts are normalized by declared capacity, while the potentially
+    unbounded reservation horizon uses a monotone tanh scale.  All values are
+    recomputable from the current environment state and deterministic
+    executor order; no requested action or Teacher result is consulted.
+    """
+    context = _interface_context(uav)
+    if context is None:
+        return np.zeros(6, dtype=np.float32)
+    interface, target_stage = context
+    reservations = tuple(
+        item for item in env.scheduler.reservations.values()
+        if item.target_stage == target_stage
+    )
+    future_uids = set(env.future_release_reservations)
+    future_reservations = tuple(
+        item for item in reservations
+        if item.status == "future" and item.uav_id in future_uids
+    )
+    committed_transfers = sum(
+        item.committed_plan is not None
+        and item.committed_plan.metadata.get("target_phase") == target_stage
+        for item in env.active.values()
+    )
+    last_reserved = env.scheduler.last_release[interface]
+    block_remaining = 0.0 if not np.isfinite(last_reserved) else max(
+        0.0, float(last_reserved + env.airspace.headways[interface] - env.now)
+    )
+    block_norm = float(np.tanh(block_remaining / max(env.config.headway_max, 1e-9)))
+
+    affected = set(env.airspace.affected_interfaces())
+    def is_contender(item) -> bool:
+        return (
+            item.ring_role is uav.ring_role
+            and item.committed_plan is None
+            and item.uid not in future_uids
+            and item.soc > 0.0
+            and env.now >= item.safety_retry_after
+            and interface not in affected
+        )
+
+    ordered = tuple(env.active.values())
+    contenders = tuple(item for item in ordered if is_contender(item))
+    position = next((index for index, item in enumerate(ordered) if item.uid == uav.uid), len(ordered))
+    predecessors = sum(is_contender(item) for item in ordered[:position])
+    ring_capacity = max(1, env.airspace.capacity(uav.ring_role))
+    system_capacity = max(1, env.config.max_active_uavs)
+    return np.asarray([
+        min(1.0, len(reservations) / system_capacity),
+        min(1.0, len(future_reservations) / system_capacity),
+        min(1.0, committed_transfers / system_capacity),
+        block_norm,
+        min(1.0, len(contenders) / ring_capacity),
+        min(1.0, predecessors / ring_capacity),
+    ], dtype=np.float32)
+
+
+def build_low_observation_v2_2(uav, env, *, topology_cache: TopologyCache | None = None) -> np.ndarray:
+    """Return V2.1's unchanged 88D prefix plus scheduler context."""
+    prefix = build_low_observation_v2_1(uav, env, topology_cache=topology_cache)
+    vector = np.concatenate((prefix, _v2_2_scheduler_context(uav, env)))
+    if vector.shape != (LOW_OBS_V2_2.dimension,):
+        raise RuntimeError(f"V2.2 observation schema mismatch: {vector.shape}")
+    return vector
+
+
 def observation_schema_for_version(version: str) -> ObservationSchema:
     if version == "phaseA_low_obs_v1_41d":
         return LOW_OBS_V1_LEGACY
@@ -172,6 +266,8 @@ def observation_schema_for_version(version: str) -> ObservationSchema:
         return LOW_OBS_V2
     if version == "phaseA_low_obs_v2_1_retry_state":
         return LOW_OBS_V2_1
+    if version == "phaseA_low_obs_v2_2_scheduler_context_94d":
+        return LOW_OBS_V2_2
     raise ValueError(f"unsupported low-level observation schema: {version}")
 
 
@@ -182,6 +278,8 @@ def build_low_observation(uav, env, *, topology_cache: TopologyCache | None = No
         return build_low_observation_v2(uav, env, topology_cache=topology_cache)
     if env.config.observation_schema_version == "phaseA_low_obs_v2_1_retry_state":
         return build_low_observation_v2_1(uav, env, topology_cache=topology_cache)
+    if env.config.observation_schema_version == "phaseA_low_obs_v2_2_scheduler_context_94d":
+        return build_low_observation_v2_2(uav, env, topology_cache=topology_cache)
     raise ValueError(f"unsupported low-level observation schema: {env.config.observation_schema_version}")
 
 def pad_agent_sets(agent_sets:list[np.ndarray])->tuple[np.ndarray,np.ndarray]:

@@ -1,6 +1,8 @@
 # 低层共享策略规范
 
-> **当前版本**：V4.2 hierarchical action + Observation V2.1
+> **当前已资格版本**：V4.2 hierarchical action + Observation V2.1
+>
+> **冻结候选**：Observation V2.2 scheduler context（待 fresh closure/learnability qualification）
 >
 > **适用范围**：Phase A / A5 fixed-airspace low-level learning
 >
@@ -55,6 +57,26 @@ safety_retry_remaining_norm = clip(retry_remaining / 30.0, 0.0, 1.0)
 
 该特征只表示当前 retry mask，不包含未来动作、候选扫描、trajectory certificate 或 Teacher
 私有信息。V2 的 87D checkpoint 不能作为 V2.1 的 88D checkpoint 续训。
+
+### 2.1 Observation V2.2 冻结候选
+
+V2.2 使用 schema `phaseA_low_obs_v2_2_scheduler_context_94d`。索引 `0–87` 必须与
+V2.1 逐字节一致，只在末尾追加 6 个当前状态字段：
+
+| 索引 | 字段 | 语义 |
+|---:|---|---|
+| 88 | `interface_active_reservations_norm` | 当前接口 active reservation 数量 |
+| 89 | `interface_future_reservations_norm` | 当前接口已登记 future reservation 数量 |
+| 90 | `interface_committed_transfers_norm` | 以当前接口目标为终点的 committed transfer 数量 |
+| 91 | `interface_reservation_block_remaining_norm` | 最近预留槽与当前 headway 对接口形成的剩余阻塞余量 |
+| 92 | `same_step_interface_contenders_norm` | 当前同接口、可实际进入 release 检查的 holder 数量 |
+| 93 | `same_step_interface_predecessors_norm` | 确定性执行顺序中位于本机之前的上述 contender 数量 |
+
+计数按系统或源环容量归一化；阻塞余量使用单调 `tanh` 归一化。所有字段均在 policy
+动作前从当前环境状态重算。V2.2 不扫描 25 个 proposal，不生成候选轨迹，不读取 SafetyFilter
+certificate，也不预测其他策略动作。因此部署边界仍为“policy 给出一个意图，执行器与
+SafetyFilter 只验证这一个意图”。V2.1 的 88D checkpoint 不能直接加载为 94D policy；closure
+pilot 只允许冻结旧策略读取前 88 维作为行为策略，不构成 94D checkpoint 迁移或训练授权。
 
 ## 3. V4.2 hierarchical action
 
