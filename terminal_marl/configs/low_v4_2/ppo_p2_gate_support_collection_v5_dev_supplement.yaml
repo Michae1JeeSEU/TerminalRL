@@ -1,0 +1,108 @@
+protocol: V4_2_P2_GATE_SUPPORT_COLLECTION_V5_DEV_SUPPLEMENT
+preregistered_at: 2026-09-19
+scope: calibrated_candidate_natural_flow_dev_only_support_supplement_retaining_v4_rows
+candidate_checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+candidate_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+candidate_temperature: 2.5
+predecessors:
+  v4_manifest_sha256: d0efbc0bfd2cd2f8c0d3a35898ae850c6cee2f133d987b2bd46b2aa1eba82f93
+  v4_combined_train_sha256: 40002db70c2e0d5d181b53b2f23290c65954f6bbe6282be1066b6f558e6153d4
+  v4_combined_dev_sha256: 2261ef53377706a6ec6e3a735cb0ab4be300663979226ff7eebc97ee7f36fea0
+  v4_protocol_sha256: d626690c054f61b40c2740ee7fe05bf80e4e2f5c2f8d291f229291897538b8c3
+  v4_consumed_marker_sha256: dd969ead1957085667f3ffcf5deb606a33b0d763f86228a9dd0211425ace4eca
+formal:
+  retained_v4_train_seeds: [780001, 780002, 780003, 780004, 780005, 780006, 780007, 780008, 780009, 783001, 783002, 783003, 783004, 783005, 783006, 783007, 783008, 783009, 783010, 783011, 783012, 783013, 783014, 783015, 783016, 783017, 783018]
+  retained_v4_dev_seeds: [781001, 781002, 781003, 781004, 781005, 781006, 784001, 784002, 784003, 784004, 784005, 784006, 784007, 784008, 784009]
+  supplemental_dev_seeds: [785001, 785002, 785003]
+  future_qualification_seeds: [782001, 782002, 782003, 782004, 782005, 782006]
+  scenarios: [flow6, flow8, flow12]
+  scenario_assignment: cycle_in_list_order_per_split
+  deterministic: false
+  teacher_mode: teacher_label_only
+  teacher_release_label_enabled: false
+  scheduler_mode: execution
+  first_reset_requires: historical_registry_and_dev_supplement_reservation
+  retained_v3_marker: p2_gate_support_collection_v3_consumed.json
+  retained_v4_marker: p2_gate_support_collection_v4_supplement_consumed.json
+  consumed_marker: p2_gate_support_collection_v5_dev_supplement_consumed.json
+  qualification_seed_range_audited: 785000-785003
+  future_qualification_rollouts: 0
+  future_qualification_markers_mutated: false
+smoke:
+  seeds: [785000]
+  scenarios: [flow6]
+  steps: 160
+  reserve_formal_seeds: false
+  create_consumed_marker: false
+  authorization: false
+bindings:
+  v4_manifest_sha256: d0efbc0bfd2cd2f8c0d3a35898ae850c6cee2f133d987b2bd46b2aa1eba82f93
+  v4_combined_train_sha256: 40002db70c2e0d5d181b53b2f23290c65954f6bbe6282be1066b6f558e6153d4
+  v4_combined_dev_sha256: 2261ef53377706a6ec6e3a735cb0ab4be300663979226ff7eebc97ee7f36fea0
+  v4_consumed_marker_sha256: dd969ead1957085667f3ffcf5deb606a33b0d763f86228a9dd0211425ace4eca
+  v3_consumed_marker_read_only: true
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  source_usage: v4_rows_retained_dev_rows_new_no_v2_or_qualification_rows
+episode_gate:
+  inherited_from: i3_v2_1_qualification.yaml
+  shield_actor_fraction_max: 0.05
+  safety_all_zero: true
+  teacher_replaced_behavior: false
+  student_authoritative: true
+collection:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  output_files: [dev_support_supplement.jsonl, train_support.jsonl, dev_support.jsonl]
+  combined_row_order: retained_v4_rows_then_dev_supplement_rows
+  v4_incomplete_support_rows_retained: true
+  replay: exact_action_tape
+  requested_logprob: exact
+  natural_flow: true
+  no_policy_update: true
+  student_authoritative: true
+  teacher_label_only: true
+  teacher_replaced_behavior: false
+  calibrated_candidate_distribution: true
+  support_v2_rows_mixed: false
+  failed_qualification_rows_mixed: false
+  failed_qualification_labels_mixed: false
+gates:
+  unchanged_from: V4_2_P2_GATE_SUPPORT_COLLECTION_V2
+  train:
+    rows: [3000, 30000]
+    teacher_class_minimum: 600
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 500
+    interface_class_minimum: 120
+  dev:
+    rows: [1800, 20000]
+    teacher_class_minimum: 350
+    teacher_class_fraction_minimum: 0.20
+    interface_minimum: 250
+    interface_class_minimum: 60
+  required_teacher_classes: [WAIT, RELEASE]
+  required_interfaces: [o2m, m2i, i2f]
+  required_episode_execution: all_planned_episodes_terminal_or_frozen_horizon
+  required_episode_gate: shield_actor_fraction_within_inherited_limit
+  schema: every_actor_row_has_finite_88d_observation
+  identity: global_decision_event_id_unique_and_train_dev_disjoint
+authorization:
+  formal_all_gates_pass:
+    SUPPORT_COLLECTION: PASS
+    SUPPORT_FROZEN: true
+    LEARNABILITY_AUDIT_ALLOWED: true
+  always_false: [GATE_REPAIR_ALLOWED, PPO_ALLOWED, curriculum_promotion_allowed]
+prohibited:
+  - threshold_relaxation
+  - train_seed_addition
+  - policy_update
+  - optimizer_update
+  - teacher_action_substitution
+  - support_v2_row_mixing
+  - failed_qualification_row_mixing
+  - failed_qualification_label_mixing
+  - future_qualification_rollouts
+  - retained_marker_mutation
