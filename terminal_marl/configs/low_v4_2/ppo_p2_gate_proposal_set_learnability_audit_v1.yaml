@@ -1,0 +1,79 @@
+protocol: V4_2_P2_GATE_PROPOSAL_SET_LEARNABILITY_AUDIT_V1
+stage: V4_2_P2_GATE_PROPOSAL_SET_LEARNABILITY_AUDIT_V1
+purpose: offline_set_mass_residual_probe_with_D1_exact_anchor
+
+bindings:
+  support_manifest_sha256: d057d0f39a3a99f6641c331eecd1a127a2b639b5046bf78d39b55d1b8caf7f37
+  support_train_sha256: f5511da554f21614e399b6384609bac93a41e9fdef94b8735eb2ecd6cb5d3f14
+  support_dev_sha256: dd07e8f2b877bd7f08db113aa0fc8988ed8d106223d799284b3e1f8b6324d17a
+  support_stage: V4_2_P2_GATE_PROPOSAL_SET_SUPPORT_V1
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  candidate_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  candidate_temperature: 2.5
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+
+support_requirements:
+  PROPOSAL_SET_SUPPORT_COLLECTION: PASS
+  PROPOSAL_SET_SUPPORT_FROZEN: true
+  PROPOSAL_SET_LEARNABILITY_AUDIT_ALLOWED: true
+  train_rows: 463
+  dev_rows: 372
+  train_all_gates: true
+  dev_all_gates: true
+  train_dev_seed_disjoint: true
+  train_dev_event_disjoint: true
+  training_called: false
+  policy_update: false
+
+probe:
+  seeds: [797101, 797102, 797103]
+  architecture: frozen_candidate_proposal_logits_plus_residual_MLP_88x64x25
+  initialization: zero_output_layer
+  trainable_scope: diagnostic_residual_adapter_only
+  epochs: 50
+  support_batch_size: 128
+  d1_batch_size: 128
+  learning_rate: 0.0003
+  gradient_clip_norm: 1.0
+  steps_per_epoch: max_ceil_support_or_d1_batches
+  reshuffle_each_epoch: true
+  cycle_shorter_source: true
+  objective: 0.5_support_set_NLL_plus_0.5_D1_exact_CE_plus_1.0_D1_anchor_KL
+  anchor_kl_weight: 1.0
+  checkpoint_selection: final_epoch_only
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+  d1_selection: false
+
+evaluation:
+  fresh_dev:
+    top1_feasible_min: 0.80
+    top1_feasible_gain_min: 0.07
+    top3_feasible_min: 0.93
+    top3_feasible_gain_min: 0.05
+    partial_set_top1_feasible_min: 0.70
+    every_interface_top1_feasible_min: 0.70
+    partial_set_nll_reduction_min: 0.20
+  d1_anchor:
+    top1_drop_max: 0.03
+    top3_drop_max: 0.02
+    nll_increase_max: 0.10
+  all_three_seeds_required: true
+
+authorizations:
+  pass_sets:
+    AUDIT_COMPLETE: true
+    proposal_set_learnability_pass: true
+    proposal_set_repair_preregistration_allowed: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
