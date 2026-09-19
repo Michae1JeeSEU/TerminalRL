@@ -1,0 +1,91 @@
+protocol: V4_2_P2_GATE_PROPOSAL_SET_SUPPORT_V1
+stage: V4_2_P2_GATE_PROPOSAL_SET_SUPPORT_V1
+purpose: fresh_split_disjoint_teacher_release_feasible_set_support
+
+predecessor:
+  feasible_set_manifest_sha256: 957bc2535fbef767a90fbf6cd299ea5aa38cd2f680099a3c5f79aff97fe4821f
+  feasible_set_protocol_sha256: dbe387cc134741f87cde8caa2b8910410e42e5ad756dcb197bc2c04c208eabca
+  feasible_set_status: COMPLETE
+  diagnostic_complete: true
+  repaired_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  controller: repaired_candidate
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  teacher_mode: teacher_label_only
+  student_authoritative: true
+  catalogue_scope: actor_events_with_teacher_RELEASE
+  catalogue_semantics: all_25_RELEASE_proposals_checked_before_env_step
+  retained_rows: actor_events_with_teacher_RELEASE_and_nonempty_feasible_set
+  no_training: true
+  no_optimizer: true
+  no_policy_update: true
+
+formal:
+  train_seeds: [795001, 795002, 795003, 795004, 795005, 795006, 795007, 795008, 795009]
+  dev_seeds: [796001, 796002, 796003, 796004, 796005, 796006]
+  scenario: flow12
+  expected_train_episodes: 9
+  expected_dev_episodes: 6
+  expected_requests_per_episode: 12
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_proposal_set_support_v1_consumed.json
+  reserve_once: true
+
+smoke:
+  seed: 795000
+  scenario: flow12
+  steps: 160
+  formal_marker: false
+  authorization: false
+
+support_gates:
+  train:
+    rows_min: 400
+    rows_max: 1200
+    interface_min: {o2m: 150, m2i: 120, i2f: 80}
+    unique_feasible_sets_min: 8
+    candidate_infeasible_rows_min: 50
+    top3_miss_rows_min: 10
+    late_arrival_fraction_min: 0.50
+  dev:
+    rows_min: 250
+    rows_max: 800
+    interface_min: {o2m: 100, m2i: 80, i2f: 60}
+    unique_feasible_sets_min: 6
+    candidate_infeasible_rows_min: 30
+    top3_miss_rows_min: 6
+    late_arrival_fraction_min: 0.50
+  catalogue_complete: true
+  feasible_set_nonempty: true
+  teacher_selected_proposal_feasible: true
+  schema_88d_finite: true
+  decision_event_id_unique: true
+  train_dev_seed_disjoint: true
+  train_dev_event_disjoint: true
+  all_requests_complete: true
+  safety_all_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  geometry: true
+  teacher_label_only: true
+  student_authoritative: true
+
+authorizations:
+  pass_sets:
+    PROPOSAL_SET_SUPPORT_COLLECTION: PASS
+    PROPOSAL_SET_SUPPORT_FROZEN: true
+    PROPOSAL_SET_LEARNABILITY_AUDIT_ALLOWED: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false

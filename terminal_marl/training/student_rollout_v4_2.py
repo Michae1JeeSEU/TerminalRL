@@ -74,11 +74,14 @@ def student_request(policy: JointPPOV42, env, observations: dict, *, determinist
 def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             output: Path, deterministic: bool = False, collect_labels: bool = False,
             collect_diagnostics: bool = False,
-            collect_catalogue_diagnostics: bool = False) -> tuple[list[StudentStepV42], dict]:
+            collect_catalogue_diagnostics: bool = False,
+            catalogue_scope: str = "requested_release") -> tuple[list[StudentStepV42], dict]:
     if collect_diagnostics and not collect_labels:
         raise ValueError("diagnostic attribution requires label-only Teacher rows")
     if collect_catalogue_diagnostics and not collect_diagnostics:
         raise ValueError("catalogue diagnostics require diagnostic attribution rows")
+    if catalogue_scope not in {"requested_release", "teacher_release"}:
+        raise ValueError("catalogue_scope must be requested_release or teacher_release")
     validate_student_config(config, collect_labels=collect_labels)
     if policy.observation_dim != 88 or max_steps < 1:
         raise ValueError("88D policy and positive rollout horizon required")
@@ -103,12 +106,24 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                 counts["RELEASE" if gates[i] else "WAIT"] += 1
             if collect_labels:
                 catalogue = ()
-                catalogue_requested = bool(
-                    collect_catalogue_diagnostics and actor_mask[i] and gates[i] == 1
-                )
-                label, catalogue = teacher_joint_expert_v4_1(
-                    env, env.active[int(uid)], audit_catalogue=catalogue_requested,
-                )
+                if collect_catalogue_diagnostics and catalogue_scope == "teacher_release":
+                    label, _ = teacher_joint_expert_v4_1(
+                        env, env.active[int(uid)], audit_catalogue=False,
+                    )
+                    catalogue_requested = bool(actor_mask[i] and label.index > 0)
+                    if catalogue_requested:
+                        full_label, catalogue = teacher_joint_expert_v4_1(
+                            env, env.active[int(uid)], audit_catalogue=True,
+                        )
+                        if full_label.index != label.index:
+                            raise RuntimeError("catalogue Teacher changed the label")
+                else:
+                    catalogue_requested = bool(
+                        collect_catalogue_diagnostics and actor_mask[i] and gates[i] == 1
+                    )
+                    label, catalogue = teacher_joint_expert_v4_1(
+                        env, env.active[int(uid)], audit_catalogue=catalogue_requested,
+                    )
                 repeated, _ = teacher_joint_expert_v4_1(env, env.active[int(uid)], audit_catalogue=False)
                 if label.index != repeated.index:
                     raise RuntimeError("nondeterministic DAgger label")
@@ -133,6 +148,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                     } if collect_diagnostics else {}),
                     **({
                         "teacher_catalogue_complete": bool(catalogue_requested),
+                        "teacher_catalogue_scope": catalogue_scope,
                         "teacher_feasible_proposals": [
                             int(item["joint_index"]) - 1 for item in catalogue
                             if bool(item.get("feasible")) and int(item.get("joint_index", 0)) > 0
