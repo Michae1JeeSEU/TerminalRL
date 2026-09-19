@@ -1,0 +1,108 @@
+protocol: V4_2_P2_GATE_EFFECTIVENESS_EVALUATION_V1
+stage: V4_2_P2_GATE_EFFECTIVENESS_EVALUATION_V1
+purpose: once_only_paired_deterministic_fixed_geometry_natural_flow_N6_N8_N12_evaluation
+
+predecessor:
+  qualification_manifest_sha256: 7cd4f02c88dc953fe1545c613424e8c961c295d4f8c099456d6697f300088feb
+  qualification_protocol_sha256: 7ab9e2a84b9aea8da2ea975d98b4867de4a45bd5725bc72019b2e95ddbb75094
+  qualification_status: PASS
+  P2_GATE_STUDENT_QUALIFICATION: PASS
+  P2_EFFECTIVENESS_EVALUATION_ALLOWED: true
+  repair_manifest_sha256: e1e0883e355676593ab4d561aeb46fb37656629ec514ad6f01e12c3bbd17d410
+  repair_protocol_sha256: f8a84632fea21e6789c8a40c0a22938cb5f0bdfcdb4ec9efd5e48304867778e8
+  repaired_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  repaired_checkpoint_stage: V4_2_P2_GATE_RESIDUAL_ADAPTER_REPAIR_V3
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+
+candidate:
+  controller: candidate
+  checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  checkpoint_stage: V4_2_P2_GATE_RESIDUAL_ADAPTER_REPAIR_V3
+  checkpoint_role: qualification_candidate
+  architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+  load_optimizer: false
+
+baseline:
+  controller: baseline
+  calibration_manifest_sha256: a784ffa753d4588d9a0b997a8ee913010c128abfbf49c96b5e790f5bf6ae7272
+  checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+  checkpoint_stage: V4_2_P2_GATE_TEMPERATURE_CALIBRATION_V3
+  checkpoint_role: qualification_candidate
+  architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+  load_optimizer: false
+
+rule:
+  controller: rule
+  implementation: nominal_rule
+  temperature: null
+  load_optimizer: false
+
+formal:
+  seeds: [788001, 788002, 788003, 788004, 788005, 788006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  controllers: [candidate, baseline, rule]
+  deterministic: true
+  expected_records: 18
+  expected_requests_per_controller: 52
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_effectiveness_v1_consumed.json
+  reserve_once: true
+  old_qualification_seeds_forbidden: [782001, 782002, 782003, 782004, 782005, 782006]
+
+smoke:
+  seed: 788000
+  scenario: flow6
+  steps: 160
+  formal_marker: false
+  authorization: false
+
+episode_gates:
+  all_requests_complete: true
+  safety_all_zero: true
+  exact_tape_replay: true
+  exact_requested_likelihood: true
+  no_reverse_transfer: true
+  max_inner_excursion_m: 0.05
+  shield_actor_fraction_max: 0.05
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+
+effectiveness:
+  candidate_wait_le_baseline: true
+  candidate_request_to_touchdown_le_baseline: true
+  gap_closure_min: 0.50
+  mean_wait_metric: weighted_mean_wait_seconds
+  request_to_touchdown_metric: weighted_mean_request_to_touchdown_seconds
+
+authorizations:
+  pass_sets:
+    P2_EFFECTIVENESS_EVALUATION: PASS
+    P2_PPO_ADMISSION_REVIEW_ALLOWED: true
+  always_false:
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
+    checkpoint_rewrite: false
+
+training:
+  training_called: false
+  optimizer_called: false
+  policy_update: false
+  teacher_called: false
+  labels_collected: false
