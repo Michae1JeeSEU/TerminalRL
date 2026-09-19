@@ -372,7 +372,10 @@ def _validate_pre_reset_recovery(output: Path, marker: Path) -> dict[str, Any]:
 def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = False,
         recover_pre_reset: bool = False) -> dict[str, Any]:
     protocol()
-    _require(not output.exists(), f"output already exists: {output}")
+    if recover_pre_reset:
+        _require(output.is_dir(), f"pre-reset recovery output is missing: {output}")
+    else:
+        _require(not output.exists(), f"output already exists: {output}")
     _require(_sha256(checkpoint) == CANDIDATE_SHA, "candidate checkpoint SHA mismatch")
     _require(set(TRAIN_SEEDS).isdisjoint(DEV_SEEDS), "V2.2 pilot splits overlap")
     policy, payload = effectiveness.load_candidate_checkpoint(checkpoint)

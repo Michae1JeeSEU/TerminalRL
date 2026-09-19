@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from terminal_marl.algo.joint_ppo_v4_2 import JointPPOV42
 from terminal_marl.core.config import SimConfig
@@ -89,3 +90,21 @@ def test_v2_2_pre_reset_recovery_requires_exact_marker_and_registry_only(tmp_pat
     assert evidence["environment_resets_before_recovery"] == 0
     assert not evidence["seeds_replaced"] and not evidence["thresholds_changed"]
     assert (output / "pre_reset_recovery.json").is_file()
+
+
+def test_v2_2_run_allows_existing_output_only_for_guarded_recovery(tmp_path, monkeypatch):
+    class ReachedRecovery(Exception):
+        pass
+
+    output = tmp_path / "formal"; output.mkdir()
+    checkpoint = tmp_path / "candidate.pt"; checkpoint.write_bytes(b"candidate")
+    monkeypatch.setattr(pilot, "protocol", lambda: {})
+    monkeypatch.setattr(pilot, "_sha256", lambda path: pilot.CANDIDATE_SHA
+                        if str(path) == str(checkpoint) else "unused")
+    monkeypatch.setattr(pilot.effectiveness, "load_candidate_checkpoint",
+                        lambda path: (object(), {}))
+    monkeypatch.setattr(pilot, "_validate_pre_reset_recovery",
+                        lambda *args: (_ for _ in ()).throw(ReachedRecovery()))
+    with pytest.raises(ReachedRecovery):
+        pilot.run(output=output, checkpoint=checkpoint, history_root=tmp_path,
+                  recover_pre_reset=True)
