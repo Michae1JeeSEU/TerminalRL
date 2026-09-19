@@ -1,0 +1,87 @@
+protocol: V4_2_P2_GATE_PROPOSAL_SUPPORT_V1
+stage: V4_2_P2_GATE_PROPOSAL_SUPPORT_V1
+purpose: fresh_split_disjoint_flow12_conditional_proposal_support
+
+predecessor:
+  attribution_manifest_sha256: f2382b1a8c5ee486c4246e716fc27b97a34d2948bfe90633e33d0f428a56f35c
+  attribution_protocol_sha256: 50b2cb7dc40160a54ecfe150122d7bcc3407b638a40e887b20045120e220b1fd
+  attribution_status: COMPLETE
+  diagnostic_complete: true
+  repaired_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+  controller: repaired_candidate
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  teacher_mode: teacher_label_only
+  student_authoritative: true
+  retained_rows: actor_events_with_teacher_RELEASE
+  no_training: true
+  no_optimizer: true
+  no_policy_update: true
+
+formal:
+  train_seeds: [790001, 790002, 790003, 790004, 790005, 790006, 790007, 790008, 790009]
+  dev_seeds: [791001, 791002, 791003, 791004, 791005, 791006]
+  scenario: flow12
+  expected_train_episodes: 9
+  expected_dev_episodes: 6
+  expected_requests_per_episode: 12
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_proposal_support_v1_consumed.json
+  reserve_once: true
+
+smoke:
+  seed: 790000
+  scenario: flow12
+  steps: 160
+  formal_marker: false
+  authorization: false
+
+support_gates:
+  train:
+    teacher_release_rows_min: 400
+    teacher_release_rows_max: 1200
+    interface_min: {o2m: 170, m2i: 120, i2f: 80}
+    unique_teacher_proposals_min: 8
+    dominant_teacher_proposal_fraction_max: 0.85
+    late_arrival_fraction_min: 0.50
+  dev:
+    teacher_release_rows_min: 250
+    teacher_release_rows_max: 800
+    interface_min: {o2m: 100, m2i: 80, i2f: 60}
+    unique_teacher_proposals_min: 6
+    dominant_teacher_proposal_fraction_max: 0.85
+    late_arrival_fraction_min: 0.50
+  schema_88d_finite: true
+  decision_event_id_unique: true
+  train_dev_seed_disjoint: true
+  train_dev_event_disjoint: true
+  all_requests_complete: true
+  safety_all_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  geometry: true
+  teacher_label_only: true
+  student_authoritative: true
+
+authorizations:
+  pass_sets:
+    PROPOSAL_SUPPORT_COLLECTION: PASS
+    PROPOSAL_SUPPORT_FROZEN: true
+    PROPOSAL_LEARNABILITY_AUDIT_ALLOWED: true
+  always_false:
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
+
