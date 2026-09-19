@@ -1,0 +1,116 @@
+protocol: V4_2_P2_GATE_LEARNABILITY_AUDIT_V2
+version: 2
+preregistered_at: 2026-09-19
+scope: offline_gate_learnability_only_no_environment_rollout_or_policy_promotion
+
+bindings:
+  support_manifest_sha256: 100448260298b13cb33ce301267a44f9503a9cc1baea5c93f6121bff22fae960
+  support_train_sha256: 40002db70c2e0d5d181b53b2f23290c65954f6bbe6282be1066b6f558e6153d4
+  support_dev_sha256: da106e0d862c8e435748514abb10c4e0e5c500fb3bbd73f03cbfa6aa186a261b
+  support_stage: V4_2_P2_GATE_SUPPORT_COLLECTION_V5_DEV_SUPPLEMENT
+  candidate_checkpoint_sha256: 61e03e02e3fb204d2db4e814097543905f51e1a3772626fdac1d7bc02ab8ca6b
+  candidate_architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  candidate_temperature: 2.5
+  d1_dataset_sha256: 270e54ef6ed0c36f535e2a0f25cef7cf9fdd6c91016ee295e7e336fb800cacb0
+  d1_manifest_sha256: a6319c291e5c91e155fd1c7fb20ae95dcdd4973733abfe83fc10c5e6006f472c
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  future_qualification_seeds: [782001, 782002, 782003, 782004, 782005, 782006]
+
+support_requirements:
+  SUPPORT_COLLECTION: PASS
+  SUPPORT_FROZEN: true
+  LEARNABILITY_AUDIT_ALLOWED: true
+  GATE_REPAIR_ALLOWED: false
+  PPO_ALLOWED: false
+  curriculum_promotion_allowed: false
+  checkpoint_promotable: false
+  train_rows: 3786
+  dev_rows: 2415
+  train_all_gates: true
+  dev_all_gates: true
+  support_v2_rows_mixed: false
+  failed_qualification_rows_mixed: false
+  failed_qualification_labels_mixed: false
+  future_qualification_rollouts: 0
+  future_qualification_consumed_marker: false
+  future_qualification_markers_mutated: false
+
+datasets:
+  train_support:
+    split: train
+    use_for_gradients: true
+    source: final_v5_on_policy_calibrated_candidate_support
+  dev_support:
+    split: dev
+    use_for_gradients: false
+    use_for_selection: false
+  d1_anchor:
+    report_only: true
+    use_for_gradients: false
+    use_for_selection: false
+    threshold_tuning: false
+
+training:
+  seeds: [786101, 786102, 786103]
+  epochs: 40
+  batch_size: 256
+  optimizer: Adam
+  learning_rate: 0.0003
+  gradient_clip_norm: 1.0
+  loss: unweighted_two_class_cross_entropy
+  final_epoch_only: true
+  early_stopping: false
+  selection_split: none_final_epoch_only
+  dev_gradients: false
+  d1_gradients: false
+
+probes:
+  candidate_gate_adapter_only:
+    initialization: exact_calibrated_candidate_deepcopy
+    trainable_prefixes: [gate_adapter]
+    frozen_components: [actor_encoder, gate_head, proposal_head, critic_encoder, critic_head, gate_temperature]
+    diagnostic_only: true
+    required_for_audit_pass: false
+  fresh_actor_encoder_gate_head:
+    initialization: fresh_HierarchicalActorCentralCriticV42_88
+    trainable_prefixes: [actor_encoder, gate_head]
+    frozen_components: [proposal_head, critic_encoder, critic_head]
+    diagnostic_only: true
+    required_for_audit_pass: true
+
+evaluation:
+  probability_threshold: 0.5
+  evaluate_final_epoch_once: true
+  datasets: [train_support, dev_support, d1_anchor]
+  breakdowns: [scenario, interface]
+  metrics: [confusion, WAIT_recall, RELEASE_recall, WAIT_precision, RELEASE_precision, macro_F1, false_WAIT, false_RELEASE, brier, binary_nll, probabilities_by_teacher_label]
+
+thresholds:
+  fresh_probe:
+    dev_macro_F1_min: 0.80
+    dev_WAIT_recall_min: 0.70
+    dev_RELEASE_recall_min: 0.80
+    dev_brier_max: 0.15
+    dev_binary_nll_max: 0.50
+    interface_macro_F1_min: 0.70
+    all_three_seeds_required: true
+
+authorization:
+  audit_pass_allows: preregistration_of_gate_repair_only
+  GATE_REPAIR_ALLOWED: false
+  PPO_ALLOWED: false
+  curriculum_promotion_allowed: false
+  checkpoint_promotable: false
+  environment_called: false
+  teacher_called: false
+  formal_training_called: false
+
+provenance:
+  support_rows_are_on_policy_v5_only: true
+  no_old_support_v2_rows: true
+  no_failed_qualification_rows: true
+  no_environment_rollout: true
+  no_teacher_calls: true
+  no_formal_policy_training: true
