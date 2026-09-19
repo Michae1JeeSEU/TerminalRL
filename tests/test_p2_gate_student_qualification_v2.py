@@ -185,6 +185,12 @@ def test_jsonable_serializes_sets_deterministically() -> None:
     assert runner._jsonable({("b", 2), ("a", 1)}) == [["a", 1], ["b", 2]]
 
 
+def test_print_result_serializes_nested_history_sets(capsys: pytest.CaptureFixture[str]) -> None:
+    runner._print_result({"reservation": {"historical": {"seeds": {782003, 782001}}}})
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {"reservation": {"historical": {"seeds": [782001, 782003]}}}
+
+
 def _recovery_scaffold(tmp_path: Path):
     output = tmp_path / "completed"
     output.mkdir()

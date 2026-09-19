@@ -133,6 +133,11 @@ def _write_json(path: str | Path, value: Mapping[str, Any]) -> None:
     Path(path).write_text(json.dumps(_jsonable(value), indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _print_result(value: Mapping[str, Any]) -> None:
+    """Print a terminal result after applying the manifest JSON conversion."""
+    print(json.dumps(_jsonable(value), indent=2, sort_keys=True), flush=True)
+
+
 def _all_boolean_flags_true(value: Any) -> bool:
     """Return true only when every boolean threshold flag is true."""
     if isinstance(value, Mapping):
@@ -804,14 +809,14 @@ def _main() -> None:
     if args.finalize_existing:
         if args.smoke:
             raise SystemExit("--finalize-existing cannot be combined with --smoke")
-        print(json.dumps(finalize_existing(
+        _print_result(finalize_existing(
             args.output, args.repair_manifest, args.checkpoint, args.history_root,
-        ), indent=2, sort_keys=True), flush=True)
+        ))
     else:
-        print(json.dumps(run(
+        _print_result(run(
             args.output, args.repair_manifest, args.checkpoint, args.history_root,
             smoke=args.smoke,
-        ), indent=2, sort_keys=True), flush=True)
+        ))
 
 
 if __name__ == "__main__":
