@@ -133,6 +133,9 @@ def protocol() -> dict[str, Any]:
 
 def _behavior_request(policy: Any, env: TerminalParallelEnv, observations: Mapping[str, np.ndarray]):
     uids = sorted(observations)
+    if not uids:
+        return (uids, np.zeros((0, OBS_DIM), dtype=np.float32), np.zeros(0, dtype=bool),
+                {}, {})
     world = np.asarray([observations[uid] for uid in uids], dtype=np.float32).reshape(-1, OBS_DIM)
     actor_mask = np.asarray([
         env.active[int(uid)].committed_plan is None

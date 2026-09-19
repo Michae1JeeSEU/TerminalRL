@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 
 from terminal_marl.algo.joint_ppo_v4_2 import JointPPOV42
@@ -36,6 +38,13 @@ def test_v2_2_closure_protocol_and_prefix_behavior_are_frozen():
     uids, world, actor_mask, actions, likelihoods = pilot._behavior_request(policy, env, observations)
     assert world.shape == (len(uids), 94) and actor_mask.shape == (len(uids),)
     assert set(actions) == set(uids) and set(likelihoods) == set(uids)
+
+
+def test_v2_2_prefix_behavior_handles_empty_active_interval_without_model_call():
+    uids, world, actor_mask, actions, likelihoods = pilot._behavior_request(
+        None, SimpleNamespace(active={}, future_release_reservations={}), {})
+    assert uids == [] and world.shape == (0, 94) and actor_mask.shape == (0,)
+    assert actions == {} and likelihoods == {}
 
 
 def test_v2_2_probe_expansion_and_fixed_one_epoch_smoke(monkeypatch):
