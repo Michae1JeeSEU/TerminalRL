@@ -224,11 +224,13 @@ def attribution(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def _episode(
     policy: Any, *, seed: int, output: Path, max_steps: int, smoke: bool,
+    collect_catalogue_diagnostics: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     config = diagnostic_config()
     _, summary = rollout(
         policy, config, seed=seed, max_steps=max_steps, output=output,
         deterministic=True, collect_labels=True, collect_diagnostics=True,
+        collect_catalogue_diagnostics=collect_catalogue_diagnostics,
     )
     labels_path = output / "labels.jsonl"
     raw = [json.loads(line) for line in labels_path.read_text(encoding="utf-8").splitlines() if line.strip()]

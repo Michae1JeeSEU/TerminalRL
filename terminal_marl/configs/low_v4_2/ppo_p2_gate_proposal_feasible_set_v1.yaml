@@ -1,0 +1,69 @@
+protocol: V4_2_P2_GATE_PROPOSAL_FEASIBLE_SET_V1
+stage: V4_2_P2_GATE_PROPOSAL_FEASIBLE_SET_V1
+purpose: fresh_set_valued_proposal_target_diagnostic_after_exact_label_learnability_failure
+
+predecessor:
+  failure_attribution_manifest_sha256: 3c8e0980f4f970bb66ca207ceb3305dc3fbe9e3eb79e9e7a827a1b086acf11f5
+  failure_attribution_protocol_sha256: 2b39758e62af4aed58c7e5dadc0172e96aa920523d29db2819e0ebc5f6dd8f43
+  failure_attribution_status: COMPLETE
+  classification: observation_or_label_learnability_limit_supported
+  repaired_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+
+bindings:
+  scenario: flow12
+  deterministic: true
+  fixed_geometry: true
+  student_authoritative: true
+  teacher_mode: teacher_label_only
+  catalogue_scope: actor_requested_RELEASE_only
+  catalogue_semantics: all_25_RELEASE_proposals_checked_before_env_step
+  no_training: true
+  no_optimizer: true
+  no_policy_update: true
+
+formal:
+  seeds: [794001, 794002, 794003]
+  scenarios: [flow12, flow12, flow12]
+  expected_episodes: 3
+  expected_requests_per_episode: 12
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_proposal_feasible_set_v1_consumed.json
+  reserve_once: true
+
+smoke:
+  seed: 794000
+  scenario: flow12
+  steps: 160
+  formal_marker: false
+  authorization: false
+
+reported_metrics:
+  - feasible_set_size
+  - candidate_proposal_in_feasible_set
+  - teacher_proposal_in_feasible_set
+  - proposal_12_in_feasible_set
+  - candidate_top1_and_top3_feasible_set_hit
+  - execution_accept_reject_cross_feasible_set_membership
+  - interface_and_arrival_half_slices
+
+validity:
+  all_requests_complete: true
+  safety_all_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  geometry: true
+  catalogue_complete_for_every_requested_RELEASE: true
+  teacher_selected_proposal_feasible_when_teacher_RELEASE: true
+  student_authoritative: true
+
+authorizations:
+  diagnostic_only: true
+  always_false:
+    SET_VALUED_SUPPORT_ALLOWED: false
+    PROPOSAL_REPAIR_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
+
