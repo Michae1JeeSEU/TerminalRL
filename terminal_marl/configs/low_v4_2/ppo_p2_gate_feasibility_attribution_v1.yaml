@@ -1,0 +1,99 @@
+protocol: V4_2_P2_GATE_FEASIBILITY_ATTRIBUTION_V1
+stage: V4_2_P2_GATE_FEASIBILITY_ATTRIBUTION_V1
+purpose: fresh_flow12_label_only_attribution_after_terminal_effectiveness_failure
+
+predecessor:
+  effectiveness_manifest_sha256: 6aaebeac4dc8dcf425ce250df6c6abcd991921263605b3dd71d3d717f0783e88
+  effectiveness_protocol_sha256: 5882361adcabaff4c0017cae73a8b95dc8029e204942bf4a83879981bd321d84
+  effectiveness_status: FAIL
+  failed_gate: wait_gap_closure_ge_50pct
+  observed_wait_gap_closure: 0.4600799557
+  repaired_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+
+question:
+  primary: whether_late_flow12_delay_is_gate_disagreement_or_release_proposal_execution_infeasibility
+  unit: actor_decision_event
+  descriptive_only: true
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  architecture_id: v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3
+  temperature: 2.5
+  controller: repaired_candidate
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  teacher_mode: teacher_label_only
+  student_authoritative: true
+  no_training: true
+  no_optimizer: true
+  no_policy_update: true
+
+formal:
+  seeds: [789001, 789002, 789003, 789004, 789005, 789006]
+  scenarios: [flow12, flow12, flow12, flow12, flow12, flow12]
+  expected_episodes: 6
+  expected_requests_per_episode: 12
+  historical_registry_before_first_reset: true
+  reservation_marker: p2_gate_feasibility_attribution_v1_consumed.json
+  reserve_once: true
+  forbidden_consumed_seeds:
+    - 774001
+    - 774002
+    - 774003
+    - 774004
+    - 774005
+    - 774006
+    - 782001
+    - 782002
+    - 782003
+    - 782004
+    - 782005
+    - 782006
+    - 788001
+    - 788002
+    - 788003
+    - 788004
+    - 788005
+    - 788006
+
+smoke:
+  seed: 789000
+  scenario: flow12
+  steps: 160
+  formal_marker: false
+  authorization: false
+
+required_evidence:
+  - gate_confusion_by_interface_and_arrival_half
+  - requested_release_outcome_by_interface_and_arrival_half
+  - rejected_release_primary_blocker_counts
+  - rejected_release_teacher_gate_and_proposal_match
+  - retry_counts
+  - exact_action_tape_replay
+  - exact_requested_likelihood
+
+episode_validity:
+  formal_all_requests_complete: true
+  safety_all_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  no_reverse_transfer: true
+  max_inner_excursion_m: 0.05
+  teacher_label_only: true
+  student_authoritative: true
+  no_training: true
+
+authorizations:
+  diagnostic_complete_sets_no_training_authority: true
+  always_false:
+    SUPPORT_COLLECTION_ALLOWED: false
+    GATE_REPAIR_ALLOWED: false
+    PROPOSAL_REPAIR_ALLOWED: false
+    PPO_ALLOWED: false
+    P3_ALLOWED: false
+    curriculum_promotion_allowed: false
+    checkpoint_promotable: false
+

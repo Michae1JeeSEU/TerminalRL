@@ -72,7 +72,10 @@ def student_request(policy: JointPPOV42, env, observations: dict, *, determinist
 
 
 def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
-            output: Path, deterministic: bool = False, collect_labels: bool = False) -> tuple[list[StudentStepV42], dict]:
+            output: Path, deterministic: bool = False, collect_labels: bool = False,
+            collect_diagnostics: bool = False) -> tuple[list[StudentStepV42], dict]:
+    if collect_diagnostics and not collect_labels:
+        raise ValueError("diagnostic attribution requires label-only Teacher rows")
     validate_student_config(config, collect_labels=collect_labels)
     if policy.observation_dim != 88 or max_steps < 1:
         raise ValueError("88D policy and positive rollout horizon required")
@@ -112,7 +115,13 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                     "observation_hash": _digest(world[i]), "state_hash": state_hash, "uav_id": uid,
                     "requested_gate": int(gates[i]), "requested_proposal": None if proposals[i] == -1 else int(proposals[i]),
                     "gate_logprob": float(gate_lp[i]), "proposal_logprob": likelihoods[uid]["proposal"],
-                    "requested_logprob": likelihoods[uid]["joint"], "actor_mask": bool(actor_mask[i])})
+                    "requested_logprob": likelihoods[uid]["joint"], "actor_mask": bool(actor_mask[i]),
+                    **({
+                        "sim_time_before": float(env.now),
+                        "arrival_id": int(env.active[int(uid)].arrival_id),
+                        "active_uavs_before": int(len(env.active)),
+                        "completed_uavs_before": int(len(env.completed_uavs)),
+                    } if collect_diagnostics else {})})
         record = tape.record_pre_step(env, observations, requested, likelihoods)
         record["actor_mask"] = {uid: bool(actor_mask[i]) for i, uid in enumerate(uids)}
         try:
@@ -132,6 +141,18 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         for row in pending:
             trace = info["action_traces"][row["uav_id"]]
             row.update(execution_applied_action=trace["execution_applied_action"], shield_applied_action=trace["shield_applied_action"], post_state_hash=_digest(record["post_state"]))
+            if collect_diagnostics:
+                release = env.last_release_telemetry.get(int(row["uav_id"]))
+                history = [] if release is None else list(release.get("decision_history", ()))
+                row.update({
+                    "release_decision": history[-1] if history else None,
+                    "release_interface": None if release is None else release.get("interface"),
+                    "release_attempt_count": None if release is None else release.get("attempt_count"),
+                    "release_retry_count": None if release is None else release.get("retry_count"),
+                    "release_primary_blocker": None if release is None else release.get("primary_blocker"),
+                    "release_secondary_constraints": [] if release is None else list(release.get("secondary_constraints", ())),
+                    "release_diagnostic_present": bool(release is not None),
+                })
         events.extend(pending)
         counts["shield"] += sum(bool(t.get("shield_used")) for t in info["action_traces"].values())
         counts["shield_actor"] += sum(bool(info["action_traces"][uid].get("shield_used"))
