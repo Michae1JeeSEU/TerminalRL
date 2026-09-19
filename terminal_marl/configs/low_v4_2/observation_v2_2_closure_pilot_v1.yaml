@@ -1,0 +1,65 @@
+protocol: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V1
+stage: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V1
+preregistered_at: 2026-09-20
+purpose: test_materiality_of_frozen_scheduler_context_before_full_support_collection
+
+bindings:
+  schema_protocol_sha256: 393b11f119202045a3a9c9c12bdd7c2d34d45570c3756fa4481446812dc1ab6e
+  observation_schema: phaseA_low_obs_v2_2_scheduler_context_94d
+  observation_dimension: 94
+  observation_feature_hash_sha256: 338eb2769e184909a559afe270d3d7ee41588d7a130040fa93cfe69c10bf47cd
+  v2_1_prefix_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  frozen_behavior_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  behavior_reads_v2_1_prefix_only: true
+  teacher_mode: teacher_label_only
+  deterministic_behavior: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  no_policy_update: true
+  no_runtime_catalogue_search: true
+
+collection:
+  train_seeds: [797001, 797002, 797003, 797004]
+  dev_seeds: [797005, 797006]
+  split_disjoint: true
+  retained_states: actor_states_with_teacher_release_and_nonempty_complete_25_proposal_catalogue
+  require_all_12_requests_complete: true
+  require_safety_zero: true
+  require_exact_action_tape_replay: true
+  require_exact_v2_1_prefix: true
+  require_finite_bounded_94d: true
+
+paired_probe:
+  seeds: [797101, 797102, 797103]
+  compared_inputs: [v2_1_88d_plus_proposal_2d, v2_2_94d_plus_proposal_2d]
+  model: mlp_inputx128x128x1
+  epochs: 100
+  batch_size: 512
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  objective: train_split_balanced_binary_cross_entropy
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+  report:
+    - feasible_recall
+    - infeasible_recall
+    - macro_f1
+    - roc_auc
+    - state_top1_feasible
+    - partial_set_top1_feasible
+    - per_interface_top1_feasible
+    - paired_94d_minus_88d
+
+authorizations:
+  diagnostic_only: true
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false

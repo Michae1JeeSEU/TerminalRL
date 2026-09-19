@@ -1,0 +1,51 @@
+import numpy as np
+
+from terminal_marl.algo.joint_ppo_v4_2 import JointPPOV42
+from terminal_marl.core.config import SimConfig
+from terminal_marl.core.low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2
+from terminal_marl.envs.parallel_env import TerminalParallelEnv
+from terminal_marl.training import run_v4_2_observation_v2_2_closure_pilot as pilot
+
+
+def _config():
+    return SimConfig(
+        action_schema_version=ACTION_SCHEMA_V4_2,
+        observation_schema_version=pilot.OBS_SCHEMA,
+        teacher_enabled=True, teacher_mode="teacher_label_only", scheduler_mode="execution",
+        experiment_mode="fixed_teacher_heavy", reset_mode="warm_start_rings", warm_start_uavs=3,
+        fixed_arrival_schedule=(0.0, 0.0, 0.0), total_requested_uavs=3,
+        max_simulation_seconds=2.0,
+    )
+
+
+def _row(value: float, feasible=(0, 1), interface="o2m"):
+    return {
+        "observation_v2_1": [value] * 88,
+        "observation_v2_2": [value] * 88 + [value, 0.0, 0.0, value, value, 0.0],
+        "proposal_set_target": list(feasible), "interface": interface,
+    }
+
+
+def test_v2_2_closure_protocol_and_prefix_behavior_are_frozen():
+    protocol = pilot.protocol()
+    assert protocol["bindings"]["observation_dimension"] == 94
+    assert protocol["collection"]["train_seeds"] == list(pilot.TRAIN_SEEDS)
+    assert set(pilot.TRAIN_SEEDS).isdisjoint(pilot.DEV_SEEDS)
+    env = TerminalParallelEnv(_config()); observations, _ = env.reset(797000)
+    policy = JointPPOV42(88)
+    uids, world, actor_mask, actions, likelihoods = pilot._behavior_request(policy, env, observations)
+    assert world.shape == (len(uids), 94) and actor_mask.shape == (len(uids),)
+    assert set(actions) == set(uids) and set(likelihoods) == set(uids)
+
+
+def test_v2_2_probe_expansion_and_fixed_one_epoch_smoke(monkeypatch):
+    train = [_row(0.0, (0, 1)), _row(0.2, (2, 3), "m2i"), _row(0.4, (4,), "i2f")]
+    dev = [_row(0.1, (0, 1)), _row(0.3, (2,), "m2i"), _row(0.5, (4, 5), "i2f")]
+    old_x, old_y = pilot._expand(train, "observation_v2_1")
+    new_x, new_y = pilot._expand(train, "observation_v2_2")
+    assert old_x.shape == (75, 90) and new_x.shape == (75, 96)
+    assert np.array_equal(old_y.numpy(), new_y.numpy())
+    monkeypatch.setattr(pilot, "EPOCHS", 1)
+    result = pilot._probe(train, dev, observation_key="observation_v2_2", seed=797101)
+    assert result["optimizer_steps"] == 1 and not result["checkpoint_saved"]
+    assert result["state_dev"]["states"] == 3
