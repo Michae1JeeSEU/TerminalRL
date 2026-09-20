@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`；runtime shortlist entry/formal/heldout/review `a8424cb`、`96e6329`、`8255e66`、`6129875`、`ccd9999`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；K=3 formal checkpoint 的 untouched heldout immutable FAIL，已由独立只读审查正式淘汰。当前选择 original K3 candidate，`P2_PPO_STOP=true`，只授权预注册 P3 priority/SOC 异质性协议；P3 尚未获准执行，checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；P2 已停止并选择 original K3 candidate。P3 priority/SOC 异质性 pipeline V1 已预注册：先 qualification，再 entry，全部通过后才进入 formal PPO；P4 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -142,6 +142,11 @@ K=3 runtime 边界失效。manifest SHA256
 `5617c96255c040797abf2d2f44ed81ce53be955ed94d3a8447a5c943b2f59969`。结论为：保持 heldout
 FAIL，拒绝 formal checkpoint，停止追加 P2 PPO，选择 original K3 candidate；仅
 `P3_PROTOCOL_PREREGISTRATION_ALLOWED=true`，`P3_ALLOWED=false`、`checkpoint_promotable=false`。
+据此已冻结 P3 V1：保持固定几何与 N6/N8/N12、60 s 到达间隔及 K=3 runtime，只把 priority 从
+固定 1 恢复为随机 `1/3/5`，SOC 从固定 `.8` 改为可完成区间 `[.55,.90]`；qualification seeds
+`810001–810006`，entry `811001/811002`，formal `812001–812006`，并保留 untouched heldout
+`813001–813006`。entry 更新不得作为 formal 初始化，formal 仍从 original K3 + fresh optimizer
+启动。协议 SHA256 `ea5efc064f763b39cd18f07f55e84f07754aebbe40d8ded588b9b61998559b25`。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -228,6 +233,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | K=3 formal PPO V1 | **PASS / HELDOUT ALLOWED** | fresh `808001–808006`；6/6、52/52完成；354/354 updates 接受、0拒绝；全部 hard gates PASS |
 | K=3 paired heldout V1 | **FAIL（效果）** | 18/18 records hard gates PASS；trained vs initial wait `-0.033386s`、RTT `+0.019231s`；formal checkpoint 不可晋级，seeds 不重用 |
 | P2 candidate selection review V1 | **PASS（只读）** | original K3 被选为下一阶段候选；formal checkpoint 淘汰；`P2_PPO_STOP=true`；仅授权 P3 protocol 预注册 |
+| P3 priority/SOC curriculum V1 | **PREREGISTERED / 未运行** | 固定几何和流量课程；priority `1/3/5`、SOC `[.55,.90]`；qualification→entry→formal fail-closed pipeline |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 

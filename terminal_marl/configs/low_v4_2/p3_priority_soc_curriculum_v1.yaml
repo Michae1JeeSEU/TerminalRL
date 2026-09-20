@@ -1,0 +1,96 @@
+protocol: V4_2_P3_PRIORITY_SOC_CURRICULUM_V1
+status: PREREGISTERED_PIPELINE
+scope: fixed_geometry_N6_N8_N12_priority_soc_heterogeneity_k3
+
+bindings:
+  selection_review_sha256: 5617c96255c040797abf2d2f44ed81ce53be955ed94d3a8447a5c943b2f59969
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  selected_candidate: original_k3
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  fixed_geometry: true
+  no_teacher: true
+
+scenario:
+  priority_mode: random_135
+  priority_values: [1, 3, 5]
+  initial_soc_mode: uniform
+  initial_soc_min: 0.55
+  initial_soc_max: 0.90
+  mission_probabilities: [0.45, 0.25, 0.10, 0.20]
+  first_arrival_seconds: 10
+  arrival_interval_seconds: 60
+  horizon_rule: last_arrival_plus_900_seconds
+
+qualification:
+  seeds: [810001, 810002, 810003, 810004, 810005, 810006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  controllers: [candidate_k3, rule]
+  deterministic: true
+  no_updates: true
+  candidate_wait_nonworse_than_rule: true
+  candidate_request_to_touchdown_nonworse_than_rule: true
+  priority_coverage_required: [1, 3, 5]
+  observed_soc_min_at_most: 0.65
+  observed_soc_max_at_least: 0.80
+
+entry:
+  seeds: [811001, 811002]
+  scenarios: [flow6, flow12]
+  steps: [160, 256]
+  deterministic: false
+  updates_discarded: true
+  checkpoints_formal_initialization: forbidden
+
+formal:
+  seeds: [812001, 812002, 812003, 812004, 812005, 812006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  deterministic: false
+  sequential_updates: true
+  stop_after_first_failed_episode: true
+  heldout_seeds_reserved: [813001, 813002, 813003, 813004, 813005, 813006]
+  heldout_untouched: true
+  reservation_marker: p3_priority_soc_curriculum_v1_consumed.json
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+
+hard_gates:
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  initial_ratio_error_max: 0.00001
+  runtime_shortlist_contract: true
+  shield_actor_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+  formal_all_requested_complete: true
+  formal_priority_coverage_required: [1, 3, 5]
+  formal_observed_soc_min_at_most: 0.65
+  formal_observed_soc_max_at_least: 0.80
+
+authorization:
+  P3_formal_training_allowed_after_qualification_and_entry: true
+  heldout_evaluation_allowed_on_formal_pass: true
+  P4_ALLOWED: false
+  checkpoint_promotable: false
