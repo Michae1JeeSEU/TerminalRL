@@ -98,7 +98,8 @@ def _load_profile(checkpoint: Path, profile: str):
 
 def run(
     checkpoint, *, profile="checkpoint12", scenario="flow6", seed=690003,
-    gui=True, playback_speed=10., max_steps=None,
+    gui=True, playback_speed=10., max_steps=None, frame_stride=2,
+    show_trajectories=True, show_labels=True, trajectory_max_points=12,
 ):
     checkpoint = Path(checkpoint)
     config = (
@@ -116,8 +117,14 @@ def run(
     observer = None
     try:
         if gui:
-            _, observer = _attach_viewer(env, VisualizationConfig(enabled=True, frame_stride=1,
-                playback_speed=playback_speed, show_trajectories=True, show_labels=True))
+            _, observer = _attach_viewer(env, VisualizationConfig(
+                enabled=True,
+                frame_stride=frame_stride,
+                playback_speed=playback_speed,
+                show_trajectories=show_trajectories,
+                show_labels=show_labels,
+                trajectory_max_points=trajectory_max_points,
+            ))
             if not observer.wait_ready():
                 raise RuntimeError(f"viewer failed: {observer.error}")
         tick = time.perf_counter()
@@ -154,9 +161,15 @@ if __name__ == "__main__":
     )
     parser.add_argument("--seed", type=int, default=690003)
     parser.add_argument("--playback-speed", type=float, default=10.)
+    parser.add_argument("--frame-stride", type=int, default=2)
+    parser.add_argument("--trajectory-max-points", type=int, default=12)
+    parser.add_argument("--trajectories", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--labels", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max-steps", type=int)
     a = parser.parse_args()
     torch.set_num_threads(1)
     print(run(a.checkpoint, profile=a.profile, scenario=a.scenario, seed=a.seed, gui=a.gui,
-              playback_speed=a.playback_speed, max_steps=a.max_steps))
+              playback_speed=a.playback_speed, max_steps=a.max_steps, frame_stride=a.frame_stride,
+              show_trajectories=a.trajectories, show_labels=a.labels,
+              trajectory_max_points=a.trajectory_max_points))

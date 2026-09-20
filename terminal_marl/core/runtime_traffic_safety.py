@@ -4,7 +4,7 @@ from __future__ import annotations
 import itertools
 import math
 import uuid
-from copy import deepcopy
+from copy import copy
 from dataclasses import dataclass
 from types import SimpleNamespace
 import numpy as np
@@ -110,10 +110,10 @@ class PredictiveSafetyShield:
                 start = max(env.now, plan.start_time)
                 minimum = self._minimum_to_plan(holder, plan, env.airspace, env.now, 0.0)
                 holder_start = self._holder_position(holder, env.airspace, start - env.now, 0.0)
-                relative = plan.sample(start).position - holder_start
+                relative = plan.sample_position(start) - holder_start
                 next_time = min(plan.end_time, start + env.config.dt)
                 holder_next = self._holder_position(holder, env.airspace, next_time - env.now, 0.0)
-                velocity = (plan.sample(next_time).position - plan.sample(start).position) / max(next_time - start, 1e-9)
+                velocity = (plan.sample_position(next_time) - plan.sample_position(start)) / max(next_time - start, 1e-9)
                 velocity -= (holder_next - holder_start) / max(next_time - start, 1e-9)
                 relative_speed_sq = float(np.dot(velocity, velocity))
                 t_cpa = 0.0 if relative_speed_sq <= 1e-9 else float(np.clip(-np.dot(relative, velocity) / relative_speed_sq, 0.0, self.config.shield_horizon_seconds))
@@ -182,7 +182,7 @@ class PredictiveSafetyShield:
         if cache is not None and plan_key in cache.plan_positions:
             plan_positions = cache.plan_positions[plan_key]
         else:
-            plan_positions = tuple(plan.sample(float(time)).position for time in times)
+            plan_positions = tuple(plan.sample_position(float(time)) for time in times)
             if cache is not None: cache.plan_positions[plan_key] = plan_positions
         holder_positions = np.asarray(holder_positions, dtype=float)
         plan_positions = np.asarray(plan_positions, dtype=float)
@@ -220,7 +220,7 @@ class PredictiveSafetyShield:
                 segment_end = min(end, right.t)
                 if segment_end < segment_start:
                     continue
-                segments.append((plan.sample(segment_start).position, plan.sample(segment_end).position))
+                segments.append((plan.sample_position(segment_start), plan.sample_position(segment_end)))
             if not segments:
                 return True
             radial_min = float("inf")
@@ -637,7 +637,11 @@ class PredictiveSafetyShield:
         transfer can complete during this tick and become a ring holder; it
         must not remain an expired immutable plan in the successor state.
         """
-        active = deepcopy(env.active)
+        # Recursive feasibility mutates only top-level UAVState fields below.
+        # TrajectoryPlan is immutable and the remaining nested dictionaries are
+        # read-only in this projection, so copying the entire plan point arrays
+        # for every shield tick is unnecessary and extremely expensive.
+        active = {uid: copy(uav) for uid, uav in env.active.items()}
         elapsed = float(env.config.dt)
         for uid, uav in list(active.items()):
             plan = uav.committed_plan

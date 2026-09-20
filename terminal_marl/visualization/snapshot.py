@@ -4,6 +4,8 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from ..core.config import RingRole
 from .schema import (
     GateRenderState,
@@ -30,16 +32,28 @@ def _recent_conflict_uids(env: "TerminalParallelEnv") -> tuple[int, ...]:
     return tuple(int(uid) for uid in ids)
 
 
-def _trajectory_points(plan, maximum: int | None) -> tuple[tuple[float, float, float], ...]:
+def _trajectory_points(
+    plan,
+    maximum: int | None,
+    *,
+    now: float,
+    current_position,
+) -> tuple[tuple[float, float, float], ...]:
+    """Return only the still-executable portion of the committed plan."""
     if plan is None:
         return ()
-    points = plan.points
-    if maximum is None:
-        return tuple(_point(point.position) for point in points)
-    stride = max(1, (len(points) - 1) // max(1, maximum - 1))
-    sampled = tuple(_point(point.position) for point in points[::stride])
-    endpoint = _point(points[-1].position)
-    return sampled if sampled[-1] == endpoint else (*sampled, endpoint)
+    remaining = [_point(current_position)]
+    remaining.extend(
+        _point(point.position)
+        for point in plan.points
+        if point.t > now + 1e-9
+    )
+    if len(remaining) < 2:
+        return ()
+    if maximum is None or len(remaining) <= maximum:
+        return tuple(remaining)
+    indices = np.linspace(0, len(remaining) - 1, num=maximum, dtype=int)
+    return tuple(remaining[int(index)] for index in np.unique(indices))
 
 
 def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_points: int | None = None) -> WorldRenderSnapshot:
@@ -94,7 +108,12 @@ def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_po
             trajectory_plan_id=uav.trajectory_plan_id,
             merge_reservation_id=uav.merge_reservation_id,
             committed=uav.committed_plan is not None,
-            trajectory_points=_trajectory_points(uav.committed_plan, trajectory_max_points),
+            trajectory_points=_trajectory_points(
+                uav.committed_plan,
+                trajectory_max_points,
+                now=float(env.now),
+                current_position=uav.position,
+            ),
             dynamic_priority=float(uav.dynamic_priority),
             last_release_decision=env.last_release_decisions.get(uav.uid),
             last_safety_decision=env.last_safety_decisions.get(uav.uid),

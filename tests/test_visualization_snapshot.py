@@ -63,7 +63,7 @@ def test_snapshot_uses_actual_dynamic_geometry() -> None:
     assert outer.target_radius == env.airspace.target_ring(RingRole.OUTER).radius
 
 
-def test_snapshot_uses_canonical_plan_points() -> None:
+def test_snapshot_uses_only_remaining_canonical_plan_points() -> None:
     env = TerminalParallelEnv(_config())
     env.reset(0)
     env.step()
@@ -71,7 +71,25 @@ def test_snapshot_uses_canonical_plan_points() -> None:
     assert uav.committed_plan is not None
     snapshot_uav = build_world_render_snapshot(env).uavs[0]
     assert snapshot_uav.trajectory_plan_id == uav.trajectory_plan_id
-    assert snapshot_uav.trajectory_points == tuple(tuple(float(value) for value in point.position) for point in uav.committed_plan.points)
+    expected = (tuple(float(value) for value in uav.position),) + tuple(
+        tuple(float(value) for value in point.position)
+        for point in uav.committed_plan.points
+        if point.t > env.now + 1e-9
+    )
+    assert snapshot_uav.trajectory_points == expected
+    assert snapshot_uav.trajectory_points[0] == tuple(float(value) for value in uav.position)
+
+
+def test_snapshot_trajectory_downsampling_honors_exact_point_limit() -> None:
+    env = TerminalParallelEnv(_config())
+    env.reset(0)
+    env.step()
+    snapshot_uav = build_world_render_snapshot(env, trajectory_max_points=7).uavs[0]
+    assert 2 <= len(snapshot_uav.trajectory_points) <= 7
+    assert snapshot_uav.trajectory_points[0] == tuple(float(value) for value in env.active[snapshot_uav.uid].position)
+    assert snapshot_uav.trajectory_points[-1] == tuple(
+        float(value) for value in env.active[snapshot_uav.uid].committed_plan.points[-1].position
+    )
 
 
 def test_external_queue_is_not_fake_airborne_uav() -> None:

@@ -17,10 +17,25 @@ if TYPE_CHECKING:
 
 
 _RING_COLORS = {"outer": "steelblue", "middle": "darkorange", "inner": "seagreen"}
-_UAV_COLORS = ("tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:brown", "tab:pink", "tab:olive", "tab:cyan", "black")
+_UAV_COLORS = (
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b",
+    "#e377c2", "#4d4d4d", "#8c9d16", "#17becf", "#393b79", "#637939",
+    "#8c6d31", "#843c39", "#7b4173", "#3182bd", "#e6550d", "#31a354",
+    "#756bb1", "#636363", "#6b6ecf", "#9c9ede", "#bd9e39", "#ad494a",
+)
 _LZ_COLORS = {"free": "seagreen", "reserved": "gold", "occupied": "tomato"}
 _PLAYBACK_OPTIONS = ("0.25x", "0.5x", "1x", "2x", "5x", "10x", "max")
 _PLAYBACK_VALUES = {"0.25x": 0.25, "0.5x": 0.5, "1x": 1.0, "2x": 2.0, "5x": 5.0, "10x": 10.0, "max": 0.0}
+
+
+def _identity_color(uid: int) -> str:
+    """Stable UAV/trajectory color shared across the complete lifecycle."""
+    return _UAV_COLORS[int(uid) % len(_UAV_COLORS)]
+
+
+def _trajectory_signature(uav) -> tuple[str | None, int]:
+    """Topology identity used to rebuild a line when its committed plan changes."""
+    return uav.trajectory_plan_id, len(uav.trajectory_points)
 
 
 class Terminal3DViewer:
@@ -42,6 +57,8 @@ class Terminal3DViewer:
         self._target_ring_meshes: dict[str, object] = {}
         self._trajectory_names: set[str] = set()
         self._trajectory_meshes: dict[str, object] = {}
+        self._trajectory_actors: dict[str, object] = {}
+        self._trajectory_signatures: dict[str, tuple[str | None, int]] = {}
         self._lz_actors: dict[int, object] = {}
         # PyVista rejects zero-length point arrays during construction.  A
         # hidden one-point backing mesh keeps the actor persistent even when
@@ -135,6 +152,7 @@ class Terminal3DViewer:
         point_id = int(picker.GetPointId())
         self._selected_uid = self._uav_uid_from_point_id(self._latest_snapshot, point_id)
         self._update_selected_uav_panel()
+        self._update_trajectory_styles()
 
     def _selected_uav(self):
         return next((uav for uav in self._latest_snapshot.uavs if uav.uid == self._selected_uid), None)
@@ -191,7 +209,7 @@ class Terminal3DViewer:
         # An aircraft keeps this deterministic identity color throughout its
         # entire life cycle.  Phase is conveyed by the selected-state panel.
         for index, uav in enumerate(snapshot.uavs):
-            color = "magenta" if uav.uid in snapshot.recent_conflict_uids else _UAV_COLORS[uav.uid % len(_UAV_COLORS)]
+            color = "magenta" if uav.uid in snapshot.recent_conflict_uids else _identity_color(uav.uid)
             colors[index] = self._pv.Color(color).int_rgb
         self._uav_cloud.points = points
         self._uav_cloud["rgb"] = colors
@@ -202,6 +220,12 @@ class Terminal3DViewer:
 
     def _update_trajectories(self, snapshot: WorldRenderSnapshot) -> None:
         if not self._config.show_trajectories:
+            for name in tuple(self._trajectory_names):
+                self._plotter.remove_actor(name, render=False)
+            self._trajectory_names.clear()
+            self._trajectory_meshes.clear()
+            self._trajectory_actors.clear()
+            self._trajectory_signatures.clear()
             return
         visible = set()
         for uav in snapshot.uavs:
@@ -210,16 +234,37 @@ class Terminal3DViewer:
             name = f"trajectory-{uav.uid}"
             visible.add(name)
             points = np.asarray(uav.trajectory_points, dtype=float)
-            if name not in self._trajectory_meshes:
+            signature = _trajectory_signature(uav)
+            if self._trajectory_signatures.get(name) != signature:
+                if name in self._trajectory_meshes:
+                    self._plotter.remove_actor(name, render=False)
                 mesh = self._line_mesh(points)
                 self._trajectory_meshes[name] = mesh
-                self._plotter.add_mesh(mesh, color="dimgray", line_width=2, opacity=0.72, pickable=False, name=name)
+                self._trajectory_actors[name] = self._plotter.add_mesh(
+                    mesh,
+                    color=_identity_color(uav.uid),
+                    line_width=2,
+                    opacity=0.58,
+                    pickable=False,
+                    name=name,
+                )
+                self._trajectory_signatures[name] = signature
             else:
                 self._trajectory_meshes[name].points = points
         for name in self._trajectory_names - visible:
             self._plotter.remove_actor(name, render=False)
             self._trajectory_meshes.pop(name, None)
+            self._trajectory_actors.pop(name, None)
+            self._trajectory_signatures.pop(name, None)
         self._trajectory_names = visible
+        self._update_trajectory_styles()
+
+    def _update_trajectory_styles(self) -> None:
+        for name, actor in self._trajectory_actors.items():
+            uid = int(name.rsplit("-", 1)[-1])
+            selected = uid == self._selected_uid
+            actor.GetProperty().SetLineWidth(5 if selected else 2)
+            actor.GetProperty().SetOpacity(0.95 if selected else 0.58)
 
     def _update_hud(self, snapshot: WorldRenderSnapshot) -> None:
         occupancy = "  ".join(f"{ring.role[0].upper()} {ring.occupancy}/{ring.capacity}" for ring in snapshot.rings)

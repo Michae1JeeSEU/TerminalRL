@@ -2,9 +2,22 @@ from __future__ import annotations
 
 import numpy as np
 
+from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from terminal_marl.core.trajectory_time_parameterization import GeometricPath, TrajectoryConstraints, TrajectoryTimeParameterizer
 from terminal_marl.core.vehicle_dynamics import VehicleDynamics
 from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL
+
+
+def test_position_only_sampling_matches_full_trajectory_sampling():
+    plan = TrajectoryPlan(
+        "position-only", 1, "test", (
+            TrajectoryPoint(2.0, np.asarray((0.0, 0.0, 0.0))),
+            TrajectoryPoint(4.0, np.asarray((4.0, 2.0, 1.0))),
+            TrajectoryPoint(7.0, np.asarray((10.0, -1.0, 3.0))),
+        ), 2.0, 7.0,
+    )
+    for moment in (1.0, 2.0, 2.5, 4.0, 5.5, 7.0, 8.0):
+        assert np.array_equal(plan.sample_position(moment), plan.sample(moment).position)
 
 
 def test_forward_backward_profile_respects_speed_acceleration_and_vertical_limits():

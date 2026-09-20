@@ -15,6 +15,7 @@ class SafetyFilter:
         self.config=config;self.dynamics=VehicleDynamics(config.vehicle_profile);self.checked_plan_ids=[];self.checked_trajectory_hashes={}
         self._holder_track_cache={}
         self._holder_tube_cache={}
+        self._committed_track_cache={}
         # Candidate verifications are auditable.  ``None`` is deliberately
         # distinct from a safe infinite separation so callers cannot turn a
         # missing prediction into a passing safety metric.
@@ -23,6 +24,7 @@ class SafetyFilter:
         """Invalidate reusable holder tracks after an authoritative state tick."""
         self._holder_track_cache.clear()
         self._holder_tube_cache.clear()
+        self._committed_track_cache.clear()
     def filter_intent(self,uav,intent,*,interface_frozen=False,lz_available=True,final_available=True):
         if interface_frozen:return IntentSafetyResult(False,"geometry_reconfiguring")
         if not lz_available:return IntentSafetyResult(False,"lz_unavailable")
@@ -41,7 +43,7 @@ class SafetyFilter:
         return self._ring_prediction(ring, theta, uav.speed, target, max(0.0, time - snapshot.now))
 
     def _post_plan_prediction(self, other_plan, snapshot, time: float) -> np.ndarray:
-        endpoint = other_plan.sample(other_plan.end_time).position
+        endpoint = other_plan.points[-1].position
         target = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(other_plan.metadata.get("target_phase"))
         if target is None:
             return endpoint
@@ -49,7 +51,7 @@ class SafetyFilter:
         role = RingRole(target)
         ring = snapshot.airspace.actual_ring(role)
         theta = float(np.arctan2(endpoint[1], endpoint[0]))
-        end = other_plan.sample(other_plan.end_time)
+        end = other_plan.points[-1]
         target_speed = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
         return self._ring_prediction(ring, theta, float(np.linalg.norm(end.velocity[:2])), target_speed,
                                      max(0.0, time - other_plan.end_time))
@@ -92,7 +94,7 @@ class SafetyFilter:
         return positions
 
     def _post_plan_positions(self, plan, snapshot, times: np.ndarray) -> list[np.ndarray]:
-        endpoint = plan.sample(plan.end_time)
+        endpoint = plan.points[-1]
         target = {"ring_outer": "outer", "ring_middle": "middle", "ring_inner": "inner"}.get(plan.metadata.get("target_phase"))
         if target is None:
             return [endpoint.position.copy() for _ in times]
@@ -103,20 +105,28 @@ class SafetyFilter:
         return self._ring_prediction_positions(ring, theta, float(np.linalg.norm(endpoint.velocity[:2])),
                                                target_speed, plan.end_time, times)
 
-    def _committed_positions(self, plan, snapshot, times: np.ndarray) -> list[np.ndarray]:
+    def _committed_positions(self, plan, snapshot, times: np.ndarray) -> np.ndarray:
         """Canonical committed-plan plus post-handoff samples for one horizon."""
+        values = np.asarray(times, dtype=float)
+        key = (plan.plan_id, plan.trajectory_hash, plan.metadata.get("target_phase"), tuple(np.round(values, 8)))
+        cached = self._committed_track_cache.get(key)
+        if cached is not None:
+            return cached
         positions: list[np.ndarray | None] = [None] * len(times)
         post_indices = []
         for index, value in enumerate(times):
             if value <= plan.end_time + 1e-9:
-                positions[index] = plan.sample(float(value)).position
+                positions[index] = plan.sample_position(float(value))
             else:
                 post_indices.append(index)
         if post_indices:
             post_times = np.asarray([times[index] for index in post_indices], dtype=float)
             for index, position in zip(post_indices, self._post_plan_positions(plan, snapshot, post_times)):
                 positions[index] = position
-        return [np.asarray(position, dtype=float) for position in positions]
+        result = np.asarray(positions, dtype=float)
+        result.setflags(write=False)
+        self._committed_track_cache[key] = result
+        return result
 
     def _holder_positions(self, uav, snapshot, times: np.ndarray, speed_residual_mps: float = 0.0) -> list[np.ndarray]:
         if uav.ring_role is None:
@@ -289,7 +299,7 @@ class SafetyFilter:
         # same canonical interpolation for every protected aircraft.
         samples=np.arange(plan.start_time,plan.end_time+1e-9,self.config.safety_sampling_dt)
         if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
-        candidate_positions = np.asarray([plan.sample(float(time)).position for time in samples], dtype=float)
+        candidate_positions = np.asarray([plan.sample_position(float(time)) for time in samples], dtype=float)
         tube_times = None
         tube_positions = None
         committed_tracks = {}
@@ -361,7 +371,7 @@ class SafetyFilter:
                     if tube_times[-1] < plan.end_time:
                         tube_times = np.append(tube_times, plan.end_time)
                     tube_positions = np.asarray(
-                        [plan.sample(float(time)).position for time in tube_times], dtype=float,
+                        [plan.sample_position(float(time)) for time in tube_times], dtype=float,
                     )
                 lower, upper = self.holder_reachable_tube(other_uav, snapshot, tube_times)
                 ring = snapshot.airspace.actual_ring(other_uav.ring_role)
@@ -451,7 +461,7 @@ class SafetyFilter:
         # swept tests below use precisely the samples that the scalar loop
         # used previously.
         positions = np.asarray([
-            [plan.sample(float(time)).position for time in samples]
+            [plan.sample_position(float(time)) for time in samples]
             for _, plan in ordered
         ], dtype=float)
         active_ends = np.asarray([

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import time
 
 from terminal_marl.core.config import SimConfig
 from terminal_marl.envs.high_level_wrapper import DynamicHighLevelWrapper, RuleLowLevelAdapter
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
-from terminal_marl.visualization.pyvista_viewer import Terminal3DViewer
+from terminal_marl.visualization.pyvista_viewer import Terminal3DViewer, _identity_color, _trajectory_signature
 from terminal_marl.visualization.pyvista_viewer import ViewerStepObserver
 from terminal_marl.visualization.config import VisualizationConfig
 from terminal_marl.visualization.snapshot import build_world_render_snapshot
@@ -102,6 +104,19 @@ def test_uav_picker_uses_current_point_cloud_index() -> None:
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 0) == snapshot.uavs[0].uid
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, -1) is None
     assert Terminal3DViewer._uav_uid_from_point_id(snapshot, 1) is None
+
+
+def test_trajectory_identity_uses_uav_color_and_plan_topology_signature() -> None:
+    assert _identity_color(5) == _identity_color(5)
+    assert len({_identity_color(uid) for uid in range(24)}) == 24
+    first = SimpleNamespace(trajectory_plan_id="plan-a", trajectory_points=((0., 0., 0.), (1., 0., 0.)))
+    changed_plan = SimpleNamespace(trajectory_plan_id="plan-b", trajectory_points=first.trajectory_points)
+    changed_topology = SimpleNamespace(
+        trajectory_plan_id="plan-a",
+        trajectory_points=(*first.trajectory_points, (2., 0., 0.)),
+    )
+    assert _trajectory_signature(first) != _trajectory_signature(changed_plan)
+    assert _trajectory_signature(first) != _trajectory_signature(changed_topology)
 
 
 def test_viewer_observer_is_non_blocking_and_drops_stale_frames() -> None:

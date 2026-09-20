@@ -95,6 +95,23 @@ class TrajectoryPlan:
                                left.velocity + fraction * (right.velocity - left.velocity),
                                left.acceleration + fraction * (right.acceleration - left.acceleration), yaw, yaw_rate)
 
+    def sample_position(self, now: float) -> np.ndarray:
+        """Interpolate only position for read-only collision calculations.
+
+        Safety review samples trajectories many thousands of times and does
+        not need velocity, acceleration, yaw, or a copied TrajectoryPoint.
+        This preserves the exact piecewise-linear position semantics of
+        :meth:`sample` while avoiding those unrelated allocations.
+        """
+        if now <= self.start_time:
+            return self.points[0].position
+        if now >= self.end_time:
+            return self.points[-1].position
+        right_index = bisect_right(self.points, now, key=lambda point: point.t)
+        left, right = self.points[right_index - 1], self.points[right_index]
+        fraction = (now - left.t) / (right.t - left.t)
+        return left.position + fraction * (right.position - left.position)
+
 
 class TrajectoryGenerator:
     def __init__(self, config) -> None:

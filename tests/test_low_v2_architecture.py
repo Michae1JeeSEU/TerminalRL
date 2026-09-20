@@ -373,6 +373,55 @@ def test_recursive_successor_adds_handed_off_holder_to_backup_action_domain():
     assert set(domain) >= {holder.uid, transfer.uid}
 
 
+def test_recursive_successor_projection_does_not_mutate_authoritative_uavs():
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    before = {
+        uid: (
+            uav.position.copy(), uav.velocity.copy(), uav.acceleration.copy(),
+            uav.speed, uav.ring_progress, uav.ring_role, uav.committed_plan,
+        )
+        for uid, uav in env.active.items()
+    }
+
+    successor = shield._next_executor_state(env, {uid: 0.0 for uid in env.active})
+
+    for uid, uav in env.active.items():
+        position, velocity, acceleration, speed, progress, role, plan = before[uid]
+        assert successor.active[uid] is not uav
+        assert np.array_equal(uav.position, position)
+        assert np.array_equal(uav.velocity, velocity)
+        assert np.array_equal(uav.acceleration, acceleration)
+        assert uav.speed == speed
+        assert uav.ring_progress == progress
+        assert uav.ring_role is role
+        assert uav.committed_plan is plan
+
+
+def test_committed_track_cache_is_step_scoped_and_reuses_exact_array():
+    env = _student_env(1)
+    uav = next(iter(env.active.values()))
+    endpoint = uav.position + np.asarray((10.0, 0.0, -5.0))
+    uav.committed_plan = TrajectoryPlan(
+        "committed-cache", uav.uid, "final", (
+            TrajectoryPoint(env.now, uav.position.copy()),
+            TrajectoryPoint(env.now + 2.0, endpoint),
+        ), env.now, env.now + 2.0, metadata={"target_phase": "landing"},
+    )
+    times = np.arange(env.now, env.now + 3.0 + 1e-9, env.config.safety_sampling_dt)
+    snapshot = SimpleNamespace(now=env.now, active=env.active, airspace=env.airspace)
+
+    first = env.safety._committed_positions(uav.committed_plan, snapshot, times)
+    second = env.safety._committed_positions(uav.committed_plan, snapshot, times.copy())
+    assert second is first
+    assert not first.flags.writeable
+
+    env.safety.begin_prediction_step()
+    third = env.safety._committed_positions(uav.committed_plan, snapshot, times)
+    assert third is not first
+    assert np.array_equal(third, first)
+
+
 def test_partial_tick_plan_handoff_matches_post_plan_prediction():
     env = _student_env(1)
     uav = next(iter(env.active.values()))
