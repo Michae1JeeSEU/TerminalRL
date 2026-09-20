@@ -405,7 +405,7 @@ class HierarchicalActionV42:
 
 V4.2 policy 使用二分类 gate 与 RELEASE 条件下的 25-way proposal head。proposal 解码为
 五档 speed residual × 五档 merge-time residual；唯一 WAIT 解码为 `[0, 0, 0]`。
-ExecutionScheduler 仍接收一个规范化 `LowLevelIntent`：
+ExecutionScheduler 的原子输入仍是一个规范化 `LowLevelIntent`：
 
 ```python
 @dataclass(frozen=True)
@@ -416,6 +416,11 @@ class LowLevelIntent:
 ```
 
 实际物理单位由配置 profile mapper 给出，不得硬编码进 actor。V4/V4.1 的 actor 表示只用于历史诊断。
+
+部署默认 `runtime_proposal_shortlist_k=1`。待资格的 K=3 模式由一次 policy forward 产生
+`requested + two ranked alternatives`，逐一构造 canonical trajectory 并认证，首个通过项原子提交；
+最多检查三个 proposal，不调用 Teacher、不扫描完整 catalogue、不生成 future-delay candidate。
+fallback 的 applied action 与 rank 必须独立记录，不能重写 rank-1 requested action provenance。
 
 ### 9.2 Phase-specific interpretation
 

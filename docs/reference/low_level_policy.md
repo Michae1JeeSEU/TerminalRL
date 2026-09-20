@@ -20,8 +20,8 @@
 ```text
 Observation V2.1
 → shared actor π_L
-→ requested WAIT / RELEASE proposal
-→ ExecutionScheduler（只认证这一个请求）
+→ requested WAIT / ranked RELEASE shortlist（K=1 默认；K=3 候选）
+→ ExecutionScheduler（按序认证，执行首个通过项）
 → CanonicalTrajectoryGenerator
 → SafetyFilter
 → PredictiveSafetyShield
@@ -74,8 +74,8 @@ V2.1 逐字节一致，只在末尾追加 6 个当前状态字段：
 
 计数按系统或源环容量归一化；阻塞余量使用单调 `tanh` 归一化。所有字段均在 policy
 动作前从当前环境状态重算。V2.2 不扫描 25 个 proposal，不生成候选轨迹，不读取 SafetyFilter
-certificate，也不预测其他策略动作。因此部署边界仍为“policy 给出一个意图，执行器与
-SafetyFilter 只验证这一个意图”。V2.1 的 88D checkpoint 不能直接加载为 94D policy；closure
+certificate，也不预测其他策略动作。该 observation 结论不授权 runtime catalogue search；
+V2.1 的 88D checkpoint 不能直接加载为 94D policy；closure
 pilot 只允许冻结旧策略读取前 88 维作为行为策略，不构成 94D checkpoint 迁移或训练授权。
 
 ## 3. V4.2 hierarchical action
@@ -130,9 +130,21 @@ post-state hash
 
 Teacher、ExecutionScheduler 或 Shield 的 action 都不能替代 requested action 进入 PPO ratio。
 
+### 4.1 Bounded runtime shortlist candidate
+
+经用户显式授权，当前仅允许验证 `runtime_proposal_shortlist_k ∈ {1, 3}`。K=3 不增加网络
+前向：gate 与 25-way proposal logits 由同一次前向产生；确定性 RELEASE 请求取 proposal Top-1，
+并附带其后两个最高分且不重复的 proposal。运行时按 rank 最多检查三个 canonical candidate，
+执行第一个通过 trajectory/SafetyFilter 认证的 candidate；全失败则 RELEASE 被拒绝并进入既有
+backoff。该选择属于 runtime safety selection，不是 Teacher repair，不产生 Teacher penalty，且
+PPO likelihood 仍只对应 rank-1 requested action。ActionTape 必须保存完整 shortlist、实际 rank、
+检查数和 applied action，以支持精确回放。K=3 通过 fresh paired qualification 前仍是 candidate，
+不能据此授权 PPO、checkpoint promotion 或 25 项 catalogue scan。
+
 ## 5. 执行与安全不变量
 
-1. ExecutionScheduler 只检查 actor 请求的一个 proposal，不搜索 25 个候选来替 actor 决策；
+1. 默认 K=1 只检查 actor 请求的 proposal；候选 K=3 只可检查同一次 policy forward 给出的
+   有序 Top-3，不得扩展为 25 项 catalogue search 或 delayed repair；
 2. RELEASE 必须通过 headway、reservation、resource、vehicle dynamics、trajectory 和 safety 检查；
 3. SafetyFilter 检查的 trajectory 必须与实际执行的 trajectory 相同；
 4. PredictiveSafetyShield 是部署安全层，不是 Teacher；

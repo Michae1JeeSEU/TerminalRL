@@ -8,7 +8,9 @@ from terminal_marl.algo.student_ppo_v4_2 import StudentPPOV42, StudentStepV42
 from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.training.run_v4_2_hierarchical_s0_qualification import _config
-from terminal_marl.training.student_rollout_v4_2 import rollout, validate_student_config, world_value
+from terminal_marl.core.low_level_joint_action_v4_2 import hierarchical_from_normalized_v4_2
+from terminal_marl.training.student_rollout_v4_2 import (_student_request_details, rollout,
+    validate_student_config, world_value)
 
 
 def config():
@@ -67,3 +69,44 @@ def test_empty_initial_arrival_interval_does_not_end_episode(tmp_path):
     assert all(len(row.world) == 0 for row in steps)
     assert not result["terminal"]
     assert steps[-1].episode_end
+
+
+def test_single_forward_produces_requested_first_bounded_ranked_shortlist():
+    policy = StudentPPOV42(88)
+    with torch.no_grad():
+        policy.model.gate_head.weight.zero_()
+        policy.model.gate_head.bias.copy_(torch.tensor([-10., 10.]))
+        policy.model.proposal_head.weight.zero_()
+        policy.model.proposal_head.bias.fill_(-10.)
+        policy.model.proposal_head.bias[4] = 3.
+        policy.model.proposal_head.bias[7] = 2.
+        policy.model.proposal_head.bias[2] = 1.
+    runtime = replace(config(), runtime_proposal_shortlist_k=3)
+    env = TerminalParallelEnv(runtime)
+    observations, _ = env.reset(703)
+    details = _student_request_details(
+        policy, env, observations, deterministic=True, shortlist_k=3,
+    )
+    requested, shortlists = details[3], details[-1]
+    uid = next(iter(shortlists))
+    ranked = [hierarchical_from_normalized_v4_2(row).proposal for row in shortlists[uid]]
+    assert ranked == [4, 7, 2]
+    assert np.array_equal(shortlists[uid][0], requested[uid])
+
+
+def test_k3_rollout_records_and_exactly_replays_runtime_shortlists(tmp_path):
+    policy = StudentPPOV42(88)
+    with torch.no_grad():
+        policy.model.gate_head.weight.zero_()
+        policy.model.gate_head.bias.copy_(torch.tensor([-10., 10.]))
+        policy.model.proposal_head.weight.zero_()
+        policy.model.proposal_head.bias.copy_(torch.arange(25, dtype=torch.float32))
+    runtime = replace(config(), runtime_proposal_shortlist_k=3)
+    _, result = rollout(
+        policy, runtime, seed=704, max_steps=2,
+        output=tmp_path / "k3", deterministic=True,
+    )
+    replay = SafetyTraceRecorder.replay_action_tape(
+        TerminalParallelEnv(runtime), result["action_tape"],
+    )
+    assert replay["exact"]

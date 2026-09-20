@@ -25,6 +25,9 @@ class LowLevelActionTrace:
     teacher_verified: bool = False
     shield_reason: str | None = None
     correction_magnitude: float = 0.0
+    runtime_shortlist_used: bool = False
+    runtime_shortlist_rank: int | None = None
+    runtime_shortlist_candidates_checked: int = 0
 
     def __post_init__(self) -> None:
         if self.execution_applied is None:
@@ -65,6 +68,9 @@ class LowLevelActionTrace:
             "teacher_witness_plan_id": self.teacher_witness_plan_id, "teacher_verified": self.teacher_verified,
             "shield_reason": self.shield_reason,
             "correction_magnitude": self.correction_magnitude,
+            "runtime_shortlist_used": self.runtime_shortlist_used,
+            "runtime_shortlist_rank": self.runtime_shortlist_rank,
+            "runtime_shortlist_candidates_checked": self.runtime_shortlist_candidates_checked,
             "action_schema_version": self.action_schema_version,
             "requested_action_v3": v3(self.requested),
             "teacher_action_v3": v3(self.teacher_corrected),

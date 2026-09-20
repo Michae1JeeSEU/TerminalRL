@@ -13,7 +13,9 @@ import torch
 
 from ..algo.joint_ppo_v4_2 import JointPPOV42, hierarchical_joint_logprob
 from ..algo.student_ppo_v4_2 import StudentStepV42
-from ..core.low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2, decode_hierarchical_actions_v4_2, hierarchical_from_joint_index_v4_1
+from ..core.low_level_joint_action_v4_2 import (ACTION_SCHEMA_V4_2, RELEASE_GATE,
+    HierarchicalActionV42, decode_hierarchical_actions_v4_2,
+    hierarchical_from_joint_index_v4_1)
 from ..core.runtime_traffic_safety import SafetyInvariantError
 from ..core.safety_trace import SafetyTraceRecorder, _digest
 from ..envs.parallel_env import TerminalParallelEnv
@@ -41,7 +43,10 @@ def world_value(policy: JointPPOV42, world: np.ndarray) -> float:
         return float(policy.model.critic(torch.as_tensor(values[None], dtype=torch.float32, device=policy.device), mask)[0])
 
 
-def student_request(policy: JointPPOV42, env, observations: dict, *, deterministic: bool):
+def _student_request_details(policy: JointPPOV42, env, observations: dict, *, deterministic: bool,
+                             shortlist_k: int):
+    if shortlist_k not in {1, 3}:
+        raise ValueError("student runtime shortlist must have K=1 or K=3")
     uids = sorted(observations)
     world = np.asarray([observations[uid] for uid in uids], dtype=np.float32).reshape(-1, policy.observation_dim)
     actor_mask = np.asarray([
@@ -50,7 +55,8 @@ def student_request(policy: JointPPOV42, env, observations: dict, *, determinist
         and int(uid) not in env.future_release_reservations
         for uid in uids], dtype=bool)
     if not uids:
-        return uids, world, actor_mask, {}, np.zeros(0, dtype=int), np.zeros(0, dtype=int), np.zeros(0), np.zeros(0), {}
+        return (uids, world, actor_mask, {}, np.zeros(0, dtype=int), np.zeros(0, dtype=int),
+                np.zeros(0), np.zeros(0), {}, {})
     tensor = torch.as_tensor(world, device=policy.device)
     with torch.no_grad():
         gates, proposals = torch.zeros(len(uids), dtype=torch.long, device=policy.device), torch.full((len(uids),), -1, dtype=torch.long, device=policy.device)
@@ -68,7 +74,32 @@ def student_request(policy: JointPPOV42, env, observations: dict, *, determinist
     decoded = decode_hierarchical_actions_v4_2(gate_np, np.asarray([None if p == -1 else int(p) for p in proposal_np], dtype=object))
     actions = {uid: decoded[i] for i, uid in enumerate(uids)}
     likelihoods = {uid: {"gate": float(gate_lp[i]), "proposal": None if proposal_np[i] == -1 else float(proposal_lp[i]), "joint": float(joint_lp[i])} for i, uid in enumerate(uids)}
-    return uids, world, actor_mask, actions, gate_np, proposal_np, gate_lp.cpu().numpy(), proposal_lp.cpu().numpy(), likelihoods
+    shortlists: dict[str, tuple[np.ndarray, ...]] = {}
+    if shortlist_k > 1:
+        # The requested proposal remains rank 1 so PPO likelihood provenance
+        # is unchanged.  Deterministic execution therefore uses the policy's
+        # ordinary descending ranking; stochastic collection places its one
+        # sampled request first, followed by the highest remaining logits.
+        proposal_logits = proposal_dist.logits.detach().cpu()
+        for index, uid in enumerate(uids):
+            if not actor_mask[index] or gate_np[index] != RELEASE_GATE:
+                continue
+            selected = int(proposal_np[index])
+            ranked = torch.argsort(proposal_logits[index], descending=True, stable=True).tolist()
+            ordered = [selected] + [int(value) for value in ranked if int(value) != selected]
+            shortlists[uid] = tuple(
+                HierarchicalActionV42(RELEASE_GATE, proposal).normalized.copy()
+                for proposal in ordered[:shortlist_k]
+            )
+    return (uids, world, actor_mask, actions, gate_np, proposal_np, gate_lp.cpu().numpy(),
+            proposal_lp.cpu().numpy(), likelihoods, shortlists)
+
+
+def student_request(policy: JointPPOV42, env, observations: dict, *, deterministic: bool):
+    """Backward-compatible single-request policy API."""
+    return _student_request_details(
+        policy, env, observations, deterministic=deterministic, shortlist_k=1,
+    )[:-1]
 
 
 def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
@@ -95,7 +126,11 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     safety_error = None
     counts = {"WAIT": 0, "RELEASE": 0, "shield": 0, "shield_actor": 0, "actor_decisions": 0}
     for tick in range(max_steps):
-        uids, world, actor_mask, requested, gates, proposals, gate_lp, proposal_lp, likelihoods = student_request(policy, env, observations, deterministic=deterministic)
+        (uids, world, actor_mask, requested, gates, proposals, gate_lp, proposal_lp,
+         likelihoods, proposal_shortlists) = _student_request_details(
+            policy, env, observations, deterministic=deterministic,
+            shortlist_k=config.runtime_proposal_shortlist_k,
+        )
         value = world_value(policy, world)
         labels = {}
         pending = []
@@ -154,10 +189,13 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                             if bool(item.get("feasible")) and int(item.get("joint_index", 0)) > 0
                         ],
                     } if collect_catalogue_diagnostics and actor_mask[i] else {})})
-        record = tape.record_pre_step(env, observations, requested, likelihoods)
+        record = tape.record_pre_step(
+            env, observations, requested, likelihoods,
+            proposal_shortlists=proposal_shortlists,
+        )
         record["actor_mask"] = {uid: bool(actor_mask[i]) for i, uid in enumerate(uids)}
         try:
-            following, rewards, _, _, info = env.step(requested)
+            following, rewards, _, _, info = env.step(requested, proposal_shortlists)
         except SafetyInvariantError as exc:
             safety_error = str(exc)
             tape.record_safety_invariant(record, exc)
@@ -211,10 +249,15 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             handle.write(json.dumps(row, sort_keys=True) + "\n")
     safety = {k: int(env.telemetry.get(k, 0)) for k in ("collisions", "nmac", "hard_separation_violations", "uncertified_execution")}
     safety["SafetyInvariantError"] = int(safety_error is not None)
+    runtime_shortlist = {key: int(env.telemetry.get(key, 0)) for key in (
+        "runtime_shortlist_candidates_checked", "runtime_shortlist_fallback_selected",
+        "runtime_shortlist_exhausted",
+    )}
     result = {"seed": seed, "steps": len(steps), "seconds": env.now, "counts": counts,
               "safety": safety, "safety_error": safety_error, "completed": len(env.completed_uavs),
               "outcomes": dict(env.ledger.outcomes), "queue": queues,
               "terminal": bool(steps and steps[-1].terminated), "action_tape": str(tape_path),
-              "label_rows": len(events), "PPO_ALLOWED": False}
+              "label_rows": len(events), "runtime_shortlist": runtime_shortlist,
+              "PPO_ALLOWED": False}
     (output / "summary.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return steps, result

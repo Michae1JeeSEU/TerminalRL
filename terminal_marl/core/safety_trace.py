@@ -171,7 +171,8 @@ class SafetyTraceRecorder:
         return env._observations()
 
     def record_pre_step(self, env, observations: dict[str, np.ndarray], actions: dict[str, np.ndarray],
-                        log_probs: dict[str, Any] | None = None) -> dict[str, Any]:
+                        log_probs: dict[str, Any] | None = None, *,
+                        proposal_shortlists: dict[str, tuple[np.ndarray, ...] | list[np.ndarray]] | None = None) -> dict[str, Any]:
         action_v3: dict[str, Any] = {}; joint_actions: dict[str, int] = {}; hierarchical: dict[str, dict[str, Any]] = {}
         joint_log_prob: dict[str, float] = {}
         head_log_prob: dict[str, list[float]] = {}
@@ -211,6 +212,9 @@ class SafetyTraceRecorder:
             "requested_proposal": {uid: value["proposal"] for uid, value in hierarchical.items()},
             "gate_logprob": gate_log_prob,
             "proposal_logprob": proposal_log_prob,
+            "runtime_proposal_shortlists": _json({
+                str(uid): list(values) for uid, values in sorted((proposal_shortlists or {}).items())
+            }),
             # Read-only compatibility name for archived tooling. New code
             # consumes ``joint_log_prob`` and ``per_head_log_prob``.
             "log_prob": joint_log_prob,
@@ -256,6 +260,14 @@ class SafetyTraceRecorder:
                                      for uid, trace in info.get("action_traces", {}).items()}),
             "executed_mapped_action": _json({uid: trace.get("execution_applied_action")
                                                 for uid, trace in info.get("action_traces", {}).items()}),
+            "runtime_shortlist_result": _json({
+                uid: {
+                    "used": bool(trace.get("runtime_shortlist_used")),
+                    "rank": trace.get("runtime_shortlist_rank"),
+                    "candidates_checked": int(trace.get("runtime_shortlist_candidates_checked", 0)),
+                }
+                for uid, trace in info.get("action_traces", {}).items()
+            }),
             "conflict_events": _json(info.get("conflict_events", [])),
         })
         events = info.get("conflict_events", [])
@@ -360,6 +372,10 @@ class SafetyTraceRecorder:
         for row in rows:
             observation_match = _digest({key: value for key, value in sorted(observations.items())}) == row["observation_hash"]
             actions = {str(uid): np.asarray(action, dtype=np.float32) for uid, action in row["a_requested"].items()}
+            proposal_shortlists = {
+                str(uid): tuple(np.asarray(action, dtype=np.float32) for action in values)
+                for uid, values in row.get("runtime_proposal_shortlists", {}).items()
+            }
             category_match = True
             teacher_label_match = True
             if row.get("action_schema_version") == ACTION_SCHEMA_V4_2:
@@ -400,8 +416,9 @@ class SafetyTraceRecorder:
                     target = hierarchical_from_joint_index_v4_1(teacher_joint_label_v4_1(env, env.active[int(uid)]).index)
                     teacher_label_match = teacher_label_match and target.gate == expected_gate.get(uid) and target.proposal == expected_proposal.get(uid) and target.joint_index_v4_1 == expected_joint.get(uid)
             executed_match = True
+            runtime_shortlist_match = True
             try:
-                observations, _, _, _, info = env.step(actions)
+                observations, _, _, _, info = env.step(actions, proposal_shortlists)
                 post_match = ("post_state_hash" not in row or
                               _digest(SafetyTraceRecorder._state(env)) == row["post_state_hash"])
                 if "executed_mapped_action" in row:
@@ -409,6 +426,15 @@ class SafetyTraceRecorder:
                                              for uid, trace in info.get("action_traces", {}).items()}) == row["executed_mapped_action"]
                 else:
                     executed_match = True
+                if "runtime_shortlist_result" in row:
+                    runtime_shortlist_match = _json({
+                        uid: {
+                            "used": bool(trace.get("runtime_shortlist_used")),
+                            "rank": trace.get("runtime_shortlist_rank"),
+                            "candidates_checked": int(trace.get("runtime_shortlist_candidates_checked", 0)),
+                        }
+                        for uid, trace in info.get("action_traces", {}).items()
+                    }) == row["runtime_shortlist_result"]
                 blocked = False
             except Exception as error:  # SafetyInvariantError is expected in a blocked event trace.
                 expected_event = row.get("safety_event", {})
@@ -418,9 +444,10 @@ class SafetyTraceRecorder:
                 error_text = str(error)
             steps.append({"step": int(row["step"]), "observation_match": observation_match,
                           "requested_category_match": category_match, "teacher_label_match": teacher_label_match, "post_state_match": post_match,
-                          "executed_mapped_action_match": executed_match, "blocked": blocked,
+                          "executed_mapped_action_match": executed_match,
+                          "runtime_shortlist_match": runtime_shortlist_match, "blocked": blocked,
                           **({"error": error_text} if blocked else {})})
-            exact = exact and observation_match and category_match and teacher_label_match and post_match and executed_match
+            exact = exact and observation_match and category_match and teacher_label_match and post_match and executed_match and runtime_shortlist_match
             if blocked:
                 break
         return {"exact": exact, "reset_state_match": reset_match, "config_match": config_match,

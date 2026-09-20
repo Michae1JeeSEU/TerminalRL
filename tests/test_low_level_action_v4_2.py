@@ -94,6 +94,79 @@ def test_v4_2_preserves_all_26_execution_decodes_and_has_no_wait_proposal():
         decode_hierarchical_actions_v4_2([WAIT_GATE], [0])
 
 
+def test_runtime_shortlist_config_is_bounded_and_teacher_free():
+    config = SimConfig(action_schema_version=ACTION_SCHEMA_V4_2,
+                       runtime_proposal_shortlist_k=3)
+    assert config.runtime_proposal_shortlist_k == 3
+    with pytest.raises(ValueError, match="must be 1 or 3"):
+        SimConfig(action_schema_version=ACTION_SCHEMA_V4_2,
+                  runtime_proposal_shortlist_k=2)
+    with pytest.raises(ValueError, match="Teacher-free"):
+        SimConfig(action_schema_version=ACTION_SCHEMA_V4_2,
+                  runtime_proposal_shortlist_k=3,
+                  teacher_enabled=True)
+
+
+def test_runtime_shortlist_fallback_is_execution_not_teacher(monkeypatch):
+    config = SimConfig(
+        action_schema_version=ACTION_SCHEMA_V4_2,
+        observation_schema_version="phaseA_low_obs_v2_1_retry_state",
+        experiment_mode="fixed_low_student", teacher_enabled=False,
+        runtime_proposal_shortlist_k=3,
+        reset_mode="warm_start_rings", warm_start_uavs=1,
+        warm_start_steady_motion=True, fixed_arrival_schedule=(0.0,),
+        total_requested_uavs=1, max_simulation_seconds=2.0,
+    )
+    env = TerminalParallelEnv(config)
+    observations, _ = env.reset(75)
+    uid = next(iter(observations))
+    requested = hierarchical_from_joint_index_v4_1(13).normalized
+    fallback = hierarchical_from_joint_index_v4_1(14).normalized
+    third = hierarchical_from_joint_index_v4_1(12).normalized
+    original = env._candidate_plan
+    calls = []
+
+    def reject_first(uav, candidate, target, snapshot, lz_id):
+        calls.append(candidate.kind)
+        if len(calls) == 1:
+            return None, None, "forced_first_rejection"
+        return original(uav, candidate, target, snapshot, lz_id)
+
+    monkeypatch.setattr(env, "_candidate_plan", reject_first)
+    _, _, _, _, info = env.step(
+        {uid: requested}, {uid: (requested, fallback, third)},
+    )
+    trace = info["action_traces"][uid]
+    assert info["release_decisions"][uid] == "approved"
+    assert calls == ["runtime_shortlist_rank_1", "runtime_shortlist_rank_2"]
+    assert trace["runtime_shortlist_used"]
+    assert trace["runtime_shortlist_rank"] == 2
+    assert trace["runtime_shortlist_candidates_checked"] == 2
+    assert not trace["teacher_used"] and trace["teacher_corrected_action"] is None
+    assert np.array_equal(np.asarray(trace["execution_applied_action"]), fallback)
+
+
+def test_runtime_shortlist_rejects_duplicate_or_mismatched_first_proposal():
+    config = SimConfig(
+        action_schema_version=ACTION_SCHEMA_V4_2,
+        runtime_proposal_shortlist_k=3,
+        reset_mode="warm_start_rings", warm_start_uavs=1,
+        fixed_arrival_schedule=(0.0,), total_requested_uavs=1,
+    )
+    env = TerminalParallelEnv(config)
+    observations, _ = env.reset(76)
+    uid = next(iter(observations))
+    requested = hierarchical_from_joint_index_v4_1(13).normalized
+    other = hierarchical_from_joint_index_v4_1(14).normalized
+    with pytest.raises(ValueError, match="must begin"):
+        env.step({uid: requested}, {uid: (other, requested)})
+    env = TerminalParallelEnv(config)
+    observations, _ = env.reset(76)
+    uid = next(iter(observations))
+    with pytest.raises(ValueError, match="unique"):
+        env.step({uid: requested}, {uid: (requested, requested)})
+
+
 def test_v4_2_teacher_encoding_bc_mask_logprob_and_conditional_entropy():
     gate_target, proposal_target = hierarchical_targets_from_v4_1_joint(np.arange(26))
     assert gate_target.tolist() == [0] + [1] * 25 and proposal_target.tolist() == [-1] + list(range(25))

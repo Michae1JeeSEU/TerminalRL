@@ -35,6 +35,7 @@ from ..core.trajectory_generator import TrajectoryGenerator
 from ..core.forecast_world import ForecastWorld
 from ..core.uav import FlightPhase, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
+from ..core.low_level_joint_action_v4_2 import RELEASE_GATE, hierarchical_from_normalized_v4_2
 
 
 @dataclass
@@ -115,6 +116,9 @@ class TerminalParallelEnv:
             "checked_executed_plan_matches": 0, "checked_executed_plan_samples": 0,
             "checked_executed_plan_hash_mismatches": 0,
             "trajectory_infeasible_candidates": 0,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_fallback_selected": 0,
+            "runtime_shortlist_exhausted": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -293,11 +297,16 @@ class TerminalParallelEnv:
 
     def _finish_release_intent(self, uav: UAVState, row: dict, decision: str, *, candidate: RepairCandidate | None = None,
                                safety_reason: str | None = None, plan_id: str | None = None,
-                               secondary: list[str] | None = None) -> None:
+                               secondary: list[str] | None = None,
+                               selection_source: str | None = None) -> None:
         row["decision_history"].append(decision)
         if decision == "approved":
+            source = selection_source or (
+                "requested" if candidate is None or candidate.kind == "requested" else "teacher_repair"
+            )
             row.update({"approval_time": self.now, "scheduled_delay": 0.0 if candidate is None else candidate.delay_seconds,
-                        "repair_used": bool(candidate is not None and candidate.kind != "requested"),
+                        "repair_used": bool(source == "teacher_repair"),
+                        "execution_selection_source": source,
                         "candidate_kind": None if candidate is None else candidate.kind,
                         "applied_speed_residual": None if candidate is None else float(candidate.intent.speed_residual),
                         "applied_merge_time_residual": None if candidate is None else float(candidate.intent.merge_time_residual),
@@ -309,6 +318,95 @@ class TerminalParallelEnv:
             row["primary_blocker"] = self._primary_blocker(decision, safety_reason)
             row["secondary_constraints"] = list(secondary or ([] if safety_reason is None else [safety_reason]))
         self.last_release_telemetry[uav.uid] = dict(row)
+
+    def _runtime_shortlist_release(self, uav: UAVState, intent: LowLevelIntent,
+                                   shortlist: tuple[LowLevelIntent, ...]) -> str:
+        """Certify a policy-ranked, bounded RELEASE shortlist.
+
+        Every candidate comes from one policy forward pass.  Runtime checks
+        them in the supplied order and executes the first approved canonical
+        trajectory.  It never expands the catalogue, delays a candidate, or
+        attributes a fallback to the training-only Teacher.
+        """
+        if intent.release_request <= self.config.release_threshold:
+            return "not_requested"
+        if uav.committed_plan is not None:
+            return "plan_active"
+        if uav.phase is FlightPhase.RING_OUTER:
+            interface, target, phase = "o2m", RingRole.MIDDLE, FlightPhase.TRANSFER_O2M
+        elif uav.phase is FlightPhase.RING_MIDDLE:
+            interface, target, phase = "m2i", RingRole.INNER, FlightPhase.TRANSFER_M2I
+        elif uav.phase is FlightPhase.RING_INNER:
+            interface, target, phase = "i2f", "final", FlightPhase.FINAL
+        else:
+            return "phase_masked"
+        row = self._start_release_intent(uav, intent, interface)
+        row.update({"runtime_shortlist_size": len(shortlist),
+                    "runtime_shortlist_candidates_checked": 0,
+                    "runtime_shortlist_rank": None})
+        if interface in self.airspace.affected_interfaces():
+            self._finish_release_intent(uav, row, "geometry_frozen")
+            return "geometry_frozen"
+        if uav.soc <= 0.0:
+            self._finish_release_intent(uav, row, "soc")
+            return "soc"
+        if self.now < uav.safety_retry_after:
+            self._finish_release_intent(uav, row, "safety_wait", safety_reason=self.last_safety_decisions.get(uav.uid))
+            return "safety_wait"
+        lz_id = None
+        if target == "final":
+            if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
+                self._finish_release_intent(uav, row, "final_capacity")
+                return "final_capacity"
+            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+            if lz_id is None:
+                self._finish_release_intent(uav, row, "lz_unavailable")
+                return "lz_unavailable"
+        snapshot = WorldSnapshot(self.now, self.active, self.airspace)
+        reasons: list[str] = []
+        for rank, ranked_intent in enumerate(shortlist, start=1):
+            candidate = RepairCandidate(f"runtime_shortlist_rank_{rank}", ranked_intent)
+            proposal, plan, reason = self._candidate_plan(uav, candidate, target, snapshot, lz_id)
+            row["runtime_shortlist_candidates_checked"] += 1
+            self.telemetry["runtime_shortlist_candidates_checked"] += 1
+            if reason is not None or proposal is None or plan is None:
+                reasons.append(reason or "candidate_invalid")
+                continue
+            if target == "final" and not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved:
+                reasons.append("lz_reservation_reject")
+                break
+            try:
+                reservation = self.scheduler.reserve(uav, proposal, now=self.now)
+            except ValueError:
+                if target == "final":
+                    self.lz_manager.release(lz_id, uav.uid, "headway_conflict")
+                reasons.append("headway_conflict")
+                continue
+            plan = plan.with_reservation_ids((reservation.reservation_id,))
+            if self._commit(uav, plan):
+                uav.merge_reservation_id = reservation.reservation_id
+                if target == "final":
+                    uav.assigned_lz = lz_id
+                transition(uav, phase, self.now)
+                uav.ring_role = None
+                row["runtime_shortlist_rank"] = rank
+                row["runtime_shortlist_used"] = rank > 1
+                if rank > 1:
+                    self.telemetry["runtime_shortlist_fallback_selected"] += 1
+                self._finish_release_intent(
+                    uav, row, "approved", candidate=candidate, plan_id=plan.plan_id,
+                    selection_source="runtime_shortlist",
+                )
+                return "approved"
+            if target == "final":
+                self.lz_manager.release(lz_id, uav.uid, "safety_reject")
+            self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+            reasons.append(self.last_safety_decisions.get(uav.uid, "predicted_separation"))
+        self.telemetry["runtime_shortlist_exhausted"] += 1
+        uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
+        last_reason = reasons[-1] if reasons else "no_certified_candidate"
+        self._finish_release_intent(uav, row, "safety_reject", safety_reason=last_reason, secondary=reasons)
+        return "safety_reject"
 
     def _candidate_plan(self, uav: UAVState, candidate: RepairCandidate, target: RingRole | str, snapshot: WorldSnapshot, lz_id: int | None):
         proposal = self.scheduler.propose(uav, candidate.intent, snapshot, target, delay_seconds=candidate.delay_seconds)
@@ -701,7 +799,16 @@ class TerminalParallelEnv:
         uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
         return finish("safety_reject", self.last_safety_decisions.get(uav.uid))
 
-    def _release(self, uav: UAVState, intent: LowLevelIntent) -> str:
+    def _release(self, uav: UAVState, intent: LowLevelIntent,
+                 shortlist: tuple[LowLevelIntent, ...] | None = None) -> str:
+        if shortlist is not None:
+            return self._runtime_shortlist_release(uav, intent, shortlist)
+        # K=1 and K=3 must share the same canonical proposal construction and
+        # atomic certification path; otherwise a paired evaluation could be
+        # confounded by implementation differences (notably final residuals).
+        if (self.config.action_schema_version == "low_action_schema_v4_2_hierarchical"
+                and (not self.config.teacher_enabled or self.config.teacher_mode == "teacher_label_only")):
+            return self._runtime_shortlist_release(uav, intent, (intent,))
         # Label-only is intentionally execution-equivalent to student mode;
         # training code may query TeacherScheduler separately for an auxiliary
         # target, but it must not turn the label into an environment action.
@@ -815,12 +922,19 @@ class TerminalParallelEnv:
         self._finish_release_intent(uav, row, decision, safety_reason=last_reason)
         return decision
 
-    def step(self, actions: dict[str, np.ndarray] | None = None):
+    def step(self, actions: dict[str, np.ndarray] | None = None,
+             proposal_shortlists: dict[str, tuple[np.ndarray, ...] | list[np.ndarray]] | None = None):
         self.safety.begin_prediction_step()
         previous = dict(self.active)
         self.last_release_telemetry = {}
         rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}
         actions = actions or {}
+        proposal_shortlists = proposal_shortlists or {}
+        if proposal_shortlists and self.config.runtime_proposal_shortlist_k == 1:
+            raise ValueError("proposal shortlists require runtime_proposal_shortlist_k=3")
+        unknown_shortlist_uids = set(proposal_shortlists) - set(actions)
+        if unknown_shortlist_uids:
+            raise ValueError(f"proposal shortlist has no requested action: {sorted(unknown_shortlist_uids)}")
         intents: dict[int, LowLevelIntent] = {}
         traces: dict[int, LowLevelActionTrace] = {}
         decisions: dict[int, str] = {}
@@ -866,11 +980,35 @@ class TerminalParallelEnv:
         }
         for uid, uav in list(self.active.items()):
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
+            ranked_intents = None
+            raw_shortlist = proposal_shortlists.get(str(uid))
+            if raw_shortlist is not None:
+                if intent.release_request <= self.config.release_threshold:
+                    raise ValueError("WAIT action must not carry a proposal shortlist")
+                if not 1 <= len(raw_shortlist) <= self.config.runtime_proposal_shortlist_k:
+                    raise ValueError("proposal shortlist length exceeds the configured bound")
+                decoded = [hierarchical_from_normalized_v4_2(item) for item in raw_shortlist]
+                requested = hierarchical_from_normalized_v4_2(actions[str(uid)])
+                if requested.gate != RELEASE_GATE or decoded[0] != requested:
+                    raise ValueError("proposal shortlist must begin with the requested RELEASE proposal")
+                proposal_ids = [item.proposal for item in decoded]
+                if len(set(proposal_ids)) != len(proposal_ids):
+                    raise ValueError("proposal shortlist must contain unique proposals")
+                ranked_intents = tuple(LowLevelIntent.from_array(item.normalized) for item in decoded)
             intents[uid] = intent; traces[uid] = LowLevelActionTrace(requested=intent, action_schema_version=self.config.action_schema_version); self.priority.update(uav, self.now)
-            decision = self._release(uav, intent); decisions[uid] = decision
+            decision = self._release(uav, intent, ranked_intents); decisions[uid] = decision
             self.last_release_decisions[uid] = decision
             release_row = self.last_release_telemetry.get(uid)
-            if release_row and release_row.get("repair_used"):
+            if release_row and "runtime_shortlist_size" in release_row:
+                traces[uid].runtime_shortlist_used = bool(release_row.get("runtime_shortlist_used"))
+                traces[uid].runtime_shortlist_rank = (None if release_row.get("runtime_shortlist_rank") is None
+                                                      else int(release_row["runtime_shortlist_rank"]))
+                traces[uid].runtime_shortlist_candidates_checked = int(release_row["runtime_shortlist_candidates_checked"])
+                if release_row.get("execution_selection_source") == "runtime_shortlist":
+                    applied = LowLevelIntent(intent.release_request, float(release_row["applied_speed_residual"]), float(release_row["applied_merge_time_residual"]))
+                    traces[uid].execution_applied = applied
+                    traces[uid].correction_magnitude = abs(applied.speed_residual-intent.speed_residual) + abs(applied.merge_time_residual-intent.merge_time_residual)
+            elif release_row and release_row.get("repair_used"):
                 corrected = LowLevelIntent(intent.release_request, float(release_row["applied_speed_residual"]), float(release_row["applied_merge_time_residual"]))
                 traces[uid].teacher_corrected = corrected
                 traces[uid].execution_applied = corrected

@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 与 corrected fixed-neutral V2 均终态 FAIL。学习式 proposal 与单一固定 rule proposal 两条“不搜索、单 intent”分支均已停止。下一步需要显式决定是否改变 runtime boundary（例如 bounded shortlist certification）或回退为 rule-only low layer；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 与 corrected fixed-neutral V2 均终态 FAIL。用户已显式授权改变 runtime boundary，K=3 bounded shortlist candidate 已实现并预注册 fresh paired certification；尚未通过 smoke/formal 前不冻结。proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -75,10 +75,20 @@ fixed-neutral 相对 candidate 的 request-to-touchdown 改善 `4.3611 s`，但 
 `13.0303 s` 增至 `17.5845 s`（delta `+4.5542 s`），违反预注册 non-worse gate，故 aggregate
 FAIL、architecture freeze=false。manifest SHA256
 `df7ab01ef8a828189300d2e79e4f2073b2de8fe0937ae4f0b47faa010cbedac0`。
-按停止规则，不再用本轮 dev 调固定 proposal index，也不再追加 learned head/loss。继续推进需要改变
-边界：要么明确授权 deployment-time bounded shortlist certification，要么将低层整体固定为 rule-only，
-把学习创新集中在高层动态空域构型；两者都超出当前冻结的“策略单次给出一个 proposal、SafetyFilter
-只验证一次”假设，必须先作架构决定。
+按停止规则，不再用本轮 dev 调固定 proposal index，也不再追加 learned head/loss。该结果把下一步
+限定为显式改变 runtime boundary 或回退 rule-only；用户已在随后选择并授权前者，历史 K=1 停止
+结论仍保留，不因新架构候选而改写。
+
+用户随后显式授权 K=3 bounded shortlist certification。实现保持一次 policy forward：确定性
+RELEASE 的原请求为 proposal Top-1，再附带两个最高分且不重复的候选；runtime 按序最多认证三项，
+只执行首个通过的 canonical trajectory。fallback 记为 runtime safety selection，不记 Teacher、
+不扣 Teacher penalty，requested likelihood 仍绑定 rank 1；ActionTape 已覆盖 shortlist/rank/check count
+并纳入 exact replay。fresh protocol
+`ppo_p2_gate_runtime_shortlist_evaluation_v1.yaml` 冻结 smoke seed `805000`、formal seeds
+`805001–805006`，比较 candidate K=1 / candidate K=3 / rule。正式 hard gates 包括 safety、completion、
+replay、likelihood、每次最多三候选、fallback 非零，以及 K=3 wait/RTT 均不劣且至少一项严格改善。
+当前本地实现、回放和历史回归共 50 tests PASS；服务器 smoke/formal 尚未执行，
+`RUNTIME_SHORTLIST_FREEZE=false`、`PPO_ALLOWED=false`。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15

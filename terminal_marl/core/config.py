@@ -137,8 +137,11 @@ class SimConfig:
     final_queue_capacity: int = 1
     max_speed_residual_mps: float = 2.0
     max_merge_time_residual_seconds: float = 6.0
-    # Deployment always interprets exactly one requested action.  Teacher
-    # modes are training-only and never valid for formal/student evaluation.
+    # Deployment interprets one gate decision.  For RELEASE, the default
+    # remains one requested proposal; the explicitly qualified bounded mode
+    # may certify at most the first three proposals ranked by the same policy
+    # forward pass.  This is runtime safety selection, never Teacher repair.
+    runtime_proposal_shortlist_k: int = 1
     scheduler_mode: str = "execution"
     teacher_enabled: bool = False
     teacher_mode: str = "teacher_full"
@@ -270,6 +273,13 @@ class SimConfig:
             self.teacher_enabled = True
         if self.scheduler_mode != "execution":
             self.teacher_enabled = True
+        if self.runtime_proposal_shortlist_k not in {1, 3}:
+            raise ValueError("runtime_proposal_shortlist_k must be 1 or 3")
+        if self.runtime_proposal_shortlist_k > 1:
+            if self.action_schema_version != "low_action_schema_v4_2_hierarchical":
+                raise ValueError("runtime proposal shortlist requires V4.2 hierarchical actions")
+            if self.scheduler_mode != "execution" or self.teacher_enabled:
+                raise ValueError("runtime proposal shortlist requires Teacher-free execution scheduling")
         if self.experiment_mode in {"fixed_low_student", "dynamic_hrl_student"} and self.teacher_enabled:
             raise ValueError("formal student/deployment modes require teacher_enabled=False")
         if self.experiment_mode in {"fixed_low_student", "dynamic_hrl_student"} and not self.shield_enabled:
