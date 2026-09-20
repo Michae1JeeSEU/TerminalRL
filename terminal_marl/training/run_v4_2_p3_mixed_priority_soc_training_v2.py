@@ -335,21 +335,68 @@ def _rollout_gates(
 
 
 def _coverage(attributes: list[dict[str, Any]], p: Mapping[str, Any]) -> dict[str, Any]:
-    priorities = sorted({int(value) for row in attributes for value in row.get("priorities", [])})
-    soc = [float(value) for row in attributes for value in row.get("initial_soc", [])]
+    if not isinstance(attributes, list) or not attributes:
+        raise ValueError("formal coverage attributes must be a non-empty list")
+    priorities: list[int] = []
+    soc: list[float] = []
+    for attribute_index, attribute in enumerate(attributes):
+        if not isinstance(attribute, Mapping):
+            raise ValueError(f"formal coverage attribute {attribute_index} is not a mapping")
+        rows = attribute.get("rows")
+        if not isinstance(rows, list) or not rows:
+            raise ValueError(f"formal coverage attribute {attribute_index}.rows is invalid")
+        for row_index, row in enumerate(rows):
+            if not isinstance(row, Mapping):
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} is not a mapping"
+                )
+            if "base_priority" not in row or "initial_soc" not in row:
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} is missing fields"
+                )
+            raw_priority = row["base_priority"]
+            if isinstance(raw_priority, bool) or not isinstance(
+                raw_priority, (int, float, np.integer, np.floating)
+            ):
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} priority is invalid"
+                )
+            priority = float(raw_priority)
+            if not np.isfinite(priority) or not priority.is_integer():
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} priority is not finite"
+                )
+            raw_soc = row["initial_soc"]
+            if isinstance(raw_soc, bool) or not isinstance(
+                raw_soc, (int, float, np.integer, np.floating)
+            ):
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} SOC is invalid"
+                )
+            initial_soc = float(raw_soc)
+            if not np.isfinite(initial_soc):
+                raise ValueError(
+                    f"formal coverage row {attribute_index}:{row_index} SOC is not finite"
+                )
+            priorities.append(int(priority))
+            soc.append(initial_soc)
     required = [int(value) for value in p["hard_gates"]["formal_priority_coverage_required"]]
     lower = float(p["attributes"]["initial_soc_min"])
     upper = float(p["attributes"]["initial_soc_max"])
+    if not required or not np.isfinite([lower, upper]).all() or lower > upper:
+        raise ValueError("formal coverage thresholds are invalid")
+    observed_min = min(soc)
+    observed_max = max(soc)
     return {
-        "priorities_observed": priorities,
-        "priority_coverage": priorities == required,
+        "priorities_observed": sorted(set(priorities)),
+        "priority_coverage": sorted(set(priorities)) == required,
         "soc_count": len(soc),
-        "soc_min": None if not soc else min(soc),
-        "soc_max": None if not soc else max(soc),
+        "soc_min": observed_min,
+        "soc_max": observed_max,
         "soc_in_bounds": bool(soc) and all(lower <= value <= upper for value in soc),
         "soc_range_observed": bool(soc)
-        and min(soc) <= float(p["hard_gates"]["formal_observed_soc_min_at_most"])
-        and max(soc) >= float(p["hard_gates"]["formal_observed_soc_max_at_least"]),
+        and observed_min <= float(p["hard_gates"]["formal_observed_soc_min_at_most"])
+        and observed_max >= float(p["hard_gates"]["formal_observed_soc_max_at_least"]),
     }
 
 

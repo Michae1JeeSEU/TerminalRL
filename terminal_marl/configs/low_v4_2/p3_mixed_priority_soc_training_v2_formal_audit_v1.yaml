@@ -1,0 +1,42 @@
+protocol: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V2_FORMAL_AUDIT_V1
+status: FROZEN_FORMAL_AUDIT
+scope: offline_coverage_repair_from_immutable_p3_v2_formal_outputs
+
+bindings:
+  training_stage: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V2
+  training_root_manifest_sha256: 27027da894f9caa03a429bc6a617bb84cec0370e0ffc22a4dbc27792ab946aeb
+  formal_stage: P3_FORMAL
+  formal_manifest_sha256: 9a391c6e4d70cfe5c76ea5a802e1eddde48fa6efa57a3af0ecee88bc4b6cac38
+  checkpoint_8_sha256: bdff62ac94fbbd42ebb0fc571c09b6b2cd7b182058b0bf1a2ef496ab863ca9c6
+  training_protocol_sha256: 4a445d885f0e7662c9f1592f44464d970ece8322aa8a7cf81012d59e7fd916ed
+  scheduler_source: terminal_marl/core/merge_scheduler.py
+  scheduler_source_sha256: 58bf3f3a29b86f00855610000a819424e5c90b0c1f1433a780bcb42f86309ce1
+
+formal_failure_contract:
+  root_pass: false
+  root_heldout_evaluation_allowed: false
+  formal_pass: false
+  required_true_gates: [all_episodes, all_episode_gates]
+  allowed_false_gates: [priority_coverage, soc_in_bounds, soc_range_observed]
+  record_count: 8
+  record_episode_gates_all_true: true
+  record_attributes_replay_exact: true
+
+coverage:
+  required_priorities: [1, 3, 5]
+  initial_soc_min: 0.55
+  initial_soc_max: 0.90
+  observed_soc_min_at_most: 0.65
+  observed_soc_max_at_least: 0.80
+
+authorization:
+  heldout_evaluation_allowed_on_audit_pass: true
+  heldout_untouched: true
+  P4_ALLOWED: false
+  checkpoint_promotable: false
+
+output:
+  manifest_name: manifest.json
+  original_inputs_immutable: true
+  environment_reset_allowed: false
+  seed_reservation_allowed: false

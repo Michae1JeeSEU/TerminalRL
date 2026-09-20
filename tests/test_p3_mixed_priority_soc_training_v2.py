@@ -69,6 +69,41 @@ def test_v2_reuses_exact_sparse_and_dense_scenario_semantics():
     assert steps == int(720.0 / configured.dt)
 
 
+def test_formal_coverage_recomputes_from_lifecycle_rows():
+    value = training.protocol()
+    attributes = [
+        {
+            "priorities": [99],
+            "initial_soc": [0.99],
+            "rows": [
+                {"base_priority": 1, "initial_soc": 0.55},
+                {"base_priority": 3, "initial_soc": 0.72},
+                {"base_priority": 5, "initial_soc": 0.90},
+            ],
+        }
+    ]
+
+    coverage = training._coverage(attributes, value)
+    assert coverage["priorities_observed"] == [1, 3, 5]
+    assert coverage["priority_coverage"]
+    assert coverage["soc_count"] == 3
+    assert coverage["soc_min"] == 0.55
+    assert coverage["soc_max"] == 0.90
+    assert coverage["soc_in_bounds"]
+    assert coverage["soc_range_observed"]
+
+
+def test_formal_coverage_fails_closed_for_missing_or_nonfinite_row_fields():
+    value = training.protocol()
+    with pytest.raises(ValueError):
+        training._coverage([{"rows": [{"base_priority": 1}]}], value)
+    with pytest.raises(ValueError):
+        training._coverage(
+            [{"rows": [{"base_priority": 1, "initial_soc": float("nan")}]}],
+            value,
+        )
+
+
 def test_v1_failed_manifest_validation_is_exact_and_fail_closed(tmp_path, monkeypatch):
     value = training.protocol()
     path = tmp_path / "v1.json"
