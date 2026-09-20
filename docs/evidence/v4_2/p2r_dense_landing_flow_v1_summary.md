@@ -1,8 +1,11 @@
 # P2R Dense Landing-Flow Resource Semantics V1 Summary
 
-> Date: 2026-09-21  
-> Evidence type: newly-run paired diagnostic  
-> Scope: dense fixed-geometry landing-flow resource semantics; no policy training or checkpoint promotion  
+> Date: 2026-09-21
+>
+> Evidence type: newly-run paired diagnostic
+>
+> Scope: dense fixed-geometry landing-flow resource semantics; no policy training or checkpoint promotion
+>
 > Historical boundary: all prior P2 protocols, seeds, checkpoints and PASS/FAIL conclusions remain immutable
 
 ## 1. Question and intervention
