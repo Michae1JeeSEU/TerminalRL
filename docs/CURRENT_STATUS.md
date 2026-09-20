@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`；runtime shortlist entry `a8424cb`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；K=3 bounded runtime shortlist 的 paired certification、admission review、fresh PPO entry 与 formal PPO 已 PASS。现只允许执行已冻结的 untouched paired heldout `809001–809006`；在 heldout 通过前，P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；K=3 bounded runtime shortlist 的 certification、PPO entry 与 formal 训练均 PASS，但 untouched paired heldout 因 RTT 相对 initial K3 恶化 `0.019231 s` 而 immutable FAIL。formal checkpoint 不可晋级；P3、curriculum 与 checkpoint promotion 仍阻塞，下一步只允许独立审查是否回退 original K3 candidate
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -131,7 +131,13 @@ likelihood/frozen-shortlist/restore gates PASS。manifest SHA256
 `714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e`。详见
 [K=3 formal PPO V1](evidence/v4_2/ppo_p2_runtime_shortlist_formal_v1_summary.md)。heldout V1 已按
 trained K3 / initial K3 / rule 三控制器预注册，协议 SHA256
-`eee2543918bf80610e80ccf11efdac602369d3bb46dd2226ce53ed87d57950e6`。
+`eee2543918bf80610e80ccf11efdac602369d3bb46dd2226ce53ed87d57950e6`。heldout 18/18 records
+全部 completion/safety/replay/likelihood/shortlist gates PASS；trained K3 相对 initial K3 的 wait
+改善 `0.033386 s`，但 RTT 恶化 `0.019231 s`，违反预注册双指标 non-worse gate，故 immutable
+`PASS=false`、checkpoint 不可晋级。两种 K3 均显著优于 rule，说明失败是 PPO 无一致增益，而非
+K=3 runtime 边界失效。manifest SHA256
+`f44acf5e5c78925b71202e0bb81ce4c2c56d302a51fd207025b2228714a666ce`；详见
+[K=3 paired heldout V1](evidence/v4_2/ppo_p2_runtime_shortlist_heldout_v1_summary.md)。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -216,7 +222,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | K=3 PPO admission review V1 | **PASS（只读）** | review SHA `a549ffc60c35cb5ac1403ba0c4b59412096b2936d4a209ddb1a25219e09e8783`；仅授权 fresh entry protocol 预注册，不直接授权 PPO |
 | K=3 PPO entry V1 | **PASS / PPO_ALLOWED** | fresh `807001/807002`；26/26 updates 接受、0拒绝；全部 safety/replay/likelihood/frozen-shortlist/restore gates PASS；entry checkpoints 不得作为 formal 初始化 |
 | K=3 formal PPO V1 | **PASS / HELDOUT ALLOWED** | fresh `808001–808006`；6/6、52/52完成；354/354 updates 接受、0拒绝；全部 hard gates PASS |
-| K=3 paired heldout V1 | **PREREGISTERED / 未运行** | untouched `809001–809006`；trained K3 / initial K3 / rule；效果、安全与冻结 proposal 子图均为 hard gates |
+| K=3 paired heldout V1 | **FAIL（效果）** | 18/18 records hard gates PASS；trained vs initial wait `-0.033386s`、RTT `+0.019231s`；formal checkpoint 不可晋级，seeds 不重用 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
