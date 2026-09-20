@@ -1,0 +1,31 @@
+protocol: V4_2_P2_RUNTIME_SHORTLIST_SELECTION_REVIEW_V1
+status: PREREGISTERED_READ_ONLY_REVIEW
+scope: select_p2_candidate_after_formal_ppo_heldout_failure
+
+bindings:
+  heldout_manifest_sha256: f44acf5e5c78925b71202e0bb81ce4c2c56d302a51fd207025b2228714a666ce
+  runtime_certification_manifest_sha256: 6050088d3c28d1531c7e8dde5b828403390bfdeb51dde8bde54e0f2759323905
+  original_candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  rejected_formal_checkpoint_sha256: 714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e
+  runtime_proposal_shortlist_k: 3
+  no_simulator_reset: true
+  no_training: true
+  no_threshold_change: true
+
+review_gates:
+  heldout_failure_preserved: true
+  heldout_episode_integrity: true
+  formal_checkpoint_rejected: true
+  original_k3_runtime_certification_pass: true
+  original_k3_heldout_complete_and_safe: true
+  original_k3_heldout_contract_pass: true
+  original_k3_wait_better_than_rule: true
+  original_k3_request_to_touchdown_better_than_rule: true
+  frozen_proposal_subgraph: true
+
+authorization:
+  select_original_k3_candidate_on_pass: true
+  stop_additional_p2_ppo_on_pass: true
+  P3_protocol_preregistration_allowed_on_pass: true
+  P3_ALLOWED: false
+  checkpoint_promotable: false
