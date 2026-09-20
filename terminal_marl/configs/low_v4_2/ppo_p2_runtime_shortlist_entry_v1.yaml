@@ -1,0 +1,58 @@
+protocol: V4_2_P2_RUNTIME_SHORTLIST_PPO_ENTRY_V1
+status: PREREGISTERED_ENTRY
+scope: fixed_geometry_natural_flow_N6_N12_runtime_shortlist_k3
+
+bindings:
+  admission_review_sha256: a549ffc60c35cb5ac1403ba0c4b59412096b2936d4a209ddb1a25219e09e8783
+  admission_review_protocol_sha256: 076c4feb5937e500050e9bb66486408363dc127a33713d276d96d658eab95152
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  no_teacher: true
+  entry_updates_discarded: true
+  entry_checkpoints_formal_initialization: forbidden
+
+entry:
+  seeds: [807001, 807002]
+  scenarios: [flow6, flow12]
+  steps: [160, 256]
+  deterministic: false
+  reserve_before_first_reset: true
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+
+hard_gates:
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  initial_ratio_error_max: 0.00001
+  stochastic_student: true
+  actor_decisions_nonzero: true
+  runtime_shortlist_contract: true
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  finite_model_optimizer_update: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+
+authorization:
+  PPO_ALLOWED_on_pass: true
+  formal_training_called: false
+  P3_ALLOWED: false
+  checkpoint_promotable: false
