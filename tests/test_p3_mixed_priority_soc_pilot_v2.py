@@ -2,6 +2,7 @@ import pytest
 
 from terminal_marl.training import diagnose_v4_2_p3_mixed_priority_soc_pilot_v2 as p3
 from terminal_marl.training import diagnose_v4_2_p3_mixed_priority_soc_pilot_v3 as p3v3
+from terminal_marl.training import diagnose_v4_2_p3_mixed_priority_soc_pilot_v4 as p3v4
 
 
 def _protocol_without_hash_check():
@@ -91,3 +92,47 @@ def test_v3_protocol_is_frozen_and_uses_fresh_seeds():
     assert value["protocol"] == p3v3.STAGE
     assert value["pilot"]["seeds"] == [815001, 815002, 815003]
     assert value["pilot"]["expected_records"] == 6
+
+
+def test_v4_protocol_binds_repaired_scheduler_and_fresh_seeds():
+    value = p3v4.protocol()
+
+    assert value["protocol"] == p3v4.STAGE
+    assert value["status"] == "PREREGISTERED_REQUALIFICATION"
+    assert value["pilot"]["seeds"] == [816001, 816002, 816003]
+    assert value["pilot"]["reservation_marker"] == "p3_mixed_priority_soc_pilot_v4_consumed.json"
+    assert value["bindings"]["scheduler_source"] == "terminal_marl/core/merge_scheduler.py"
+    assert value["bindings"]["scheduler_source_sha256"] == p3v4.SCHEDULER_SOURCE_SHA
+    assert value["authorization"]["PPO_ALLOWED"] is False
+
+
+def test_v4_integrity_helper_excludes_completion_and_all_but_detects_safety_failure():
+    result = {"gates": {
+        key: True for key in set(p3v4.CANDIDATE_INTEGRITY_KEYS)
+    } | {"complete": False, "all": False, "all_requests_complete": False}}
+    shortlist = {"all": True}
+    values = p3v4.integrity_gates(
+        result, controller="candidate_k3", runtime_shortlist=shortlist
+    )
+
+    assert "complete" not in values
+    assert "all" not in values
+    assert "all_requests_complete" not in values
+    assert p3v4.integrity_passes(values)
+    result["gates"]["safety"] = False
+    failed = p3v4.integrity_gates(
+        result, controller="candidate_k3", runtime_shortlist=shortlist
+    )
+    assert failed["safety"] is False
+    assert not p3v4.integrity_passes(failed)
+
+
+def test_v4_run_has_no_fail_fast_break_path():
+    import inspect
+
+    assert "break" not in inspect.getsource(p3v4.run)
+
+
+def test_v4_optional_comparison_does_not_crash_on_zero_completion():
+    assert p3v4._optional_difference(None, 1.0) is None
+    assert p3v4._optional_difference(3.0, 1.0) == 2.0
