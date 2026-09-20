@@ -30,6 +30,32 @@ def test_a67_consumed_and_expired_reservations_do_not_accumulate_or_poison_headw
     assert not scheduler.reservations
 
 
+def test_a67_dense_reservations_add_headway_not_full_transfer_duration():
+    env = TerminalParallelEnv(SimConfig()); env.reset(seed=0)
+    first = _uav(1, FlightPhase.RING_OUTER)
+    second = _uav(2, FlightPhase.RING_OUTER)
+    for index, uav in enumerate((first, second)):
+        uav.ring_role = RingRole.OUTER
+        uav.ring_progress = float(index)
+        uav.position = np.asarray((600.0 * math.cos(index), 600.0 * math.sin(index), 100.0))
+        env.active[uav.uid] = uav
+    scheduler = MergeScheduler(env.config)
+    snapshot = WorldSnapshot(0., env.active, env.airspace)
+
+    first_proposal = scheduler.propose(
+        first, LowLevelIntent(1., 0., 0.), snapshot, RingRole.MIDDLE,
+    )
+    scheduler.reserve(first, first_proposal)
+    second_proposal = scheduler.propose(
+        second, LowLevelIntent(1., 0., 0.), snapshot, RingRole.MIDDLE,
+    )
+
+    assert second_proposal.merge_time == first_proposal.merge_time + env.airspace.headways["o2m"]
+    assert second_proposal.merge_time - first_proposal.merge_time < scheduler.transfer_duration_estimate(
+        second, RingRole.MIDDLE, snapshot,
+    )
+
+
 def test_a67_interface_trace_counts_only_its_source_phase_and_reasons():
     env = TerminalParallelEnv(SimConfig()); env.reset(seed=0)
     env.active[1] = _uav(1, FlightPhase.RING_OUTER)

@@ -59,8 +59,16 @@ class MergeScheduler:
         # Nominal merge preparation time.  A bounded residual modifies the
         # scheduler's reservation subject to the hard earliest headway.
         key=self._key(target); previous=max(self.last_release[key],self.last_executed_release[key])
-        earliest=max(snapshot.now,snapshot.airspace.headways[key]+previous)
-        return earliest + 6.0 + self.transfer_duration_estimate(uav,target,snapshot)
+        # Reachability and interface separation are parallel lower bounds.
+        # Adding the full transfer-duration estimate after the previous slot
+        # serializes every transfer end-to-end and makes later reservations
+        # drift hundreds of seconds into the future under dense traffic.
+        # The safety filter still certifies the overlapping executable plans;
+        # the scheduler only needs the later of the vehicle's reachable slot
+        # and the interface headway slot.
+        reachable=max(snapshot.now, snapshot.now+6.0+self.transfer_duration_estimate(uav,target,snapshot))
+        headway_ready=previous+snapshot.airspace.headways[key]
+        return max(reachable,headway_ready)
     def propose(self,uav,intent,snapshot,target, *, delay_seconds: float = 0.0):
         if delay_seconds < 0.0:
             raise ValueError("prospective release delay must be non-negative")
