@@ -1,4 +1,7 @@
+import pytest
+
 from terminal_marl.training import diagnose_v4_2_p3_mixed_priority_soc_pilot_v2 as p3
+from terminal_marl.training import diagnose_v4_2_p3_mixed_priority_soc_pilot_v3 as p3v3
 
 
 def _protocol_without_hash_check():
@@ -72,3 +75,19 @@ def test_lifecycle_summary_preserves_priority_and_low_soc_metrics():
         "mean_landing_soc": 0.45,
         "minimum_landing_soc": 0.45,
     }
+
+
+def test_v3_action_tape_adapter_handles_student_and_rule_result_shapes():
+    assert p3v3.action_tape_path({"summary": {"action_tape": "student.json"}}) == "student.json"
+    assert p3v3.action_tape_path({"action_tape": "rule.json"}) == "rule.json"
+    assert p3v3.action_tape_path({"summary": {}, "action_tape": "rule.json"}) == "rule.json"
+    with pytest.raises(KeyError, match="no action_tape"):
+        p3v3.action_tape_path({"summary": {}})
+
+
+def test_v3_protocol_is_frozen_and_uses_fresh_seeds():
+    value = p3v3.protocol()
+
+    assert value["protocol"] == p3v3.STAGE
+    assert value["pilot"]["seeds"] == [815001, 815002, 815003]
+    assert value["pilot"]["expected_records"] == 6
