@@ -28,6 +28,17 @@ CONTROLLERS = ("candidate_k1", "candidate_k3", "rule")
 RESERVATION_MARKER = "p2_gate_runtime_shortlist_evaluation_v1_consumed.json"
 
 
+def configure_successor_v2() -> None:
+    """Select the fresh successor after correcting likelihood tape replay."""
+    global STAGE, PROTOCOL, PROTOCOL_SHA, FORMAL_SEEDS, SMOKE_SEED, RESERVATION_MARKER
+    STAGE = "V4_2_P2_GATE_RUNTIME_SHORTLIST_EVALUATION_V2"
+    PROTOCOL = Path("terminal_marl/configs/low_v4_2/ppo_p2_gate_runtime_shortlist_evaluation_v2.yaml")
+    PROTOCOL_SHA = "67e61165ef5c056d1b1ebd0a789cafd17f5e0554d07b29128617df3aa8bf6d5d"
+    FORMAL_SEEDS = (806001, 806002, 806003, 806004, 806005, 806006)
+    SMOKE_SEED = 806000
+    RESERVATION_MARKER = "p2_gate_runtime_shortlist_evaluation_v2_consumed.json"
+
+
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
@@ -245,7 +256,10 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--successor-v2", action="store_true")
     args = parser.parse_args()
+    if args.successor_v2:
+        configure_successor_v2()
     print(json.dumps(_jsonable(run(
         candidate_checkpoint=args.candidate_checkpoint, output=args.output,
         history_root=args.history_root, smoke=args.smoke,

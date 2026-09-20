@@ -33,8 +33,12 @@ def _policy_tape_logprob_exact(policy: JointPPOV42, config, tape_path: str | Pat
     observations, _ = env.reset(int(payload["episode_seed"]))
     for row in payload["action_tape"]:
         uids = sorted(row["a_requested"])
+        proposal_shortlists = {
+            str(uid): tuple(np.asarray(action, dtype=np.float32) for action in values)
+            for uid, values in row.get("runtime_proposal_shortlists", {}).items()
+        }
         if not uids:
-            observations, *_ = env.step({})
+            observations, *_ = env.step({}, proposal_shortlists)
             continue
         values = torch.as_tensor(np.asarray([observations[uid] for uid in uids], dtype=np.float32))
         gates = torch.as_tensor([row["requested_gate"][uid] for uid in uids], dtype=torch.long)
@@ -52,7 +56,7 @@ def _policy_tape_logprob_exact(policy: JointPPOV42, config, tape_path: str | Pat
             elif abs(float(proposal_lp[offset]) - float(expected)) > atol:
                 return False
         actions = {uid: np.asarray(value, dtype=np.float32) for uid, value in row["a_requested"].items()}
-        observations, *_ = env.step(actions)
+        observations, *_ = env.step(actions, proposal_shortlists)
     return True
 
 

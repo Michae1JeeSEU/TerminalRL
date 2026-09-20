@@ -87,8 +87,19 @@ RELEASE 的原请求为 proposal Top-1，再附带两个最高分且不重复的
 `ppo_p2_gate_runtime_shortlist_evaluation_v1.yaml` 冻结 smoke seed `805000`、formal seeds
 `805001–805006`，比较 candidate K=1 / candidate K=3 / rule。正式 hard gates 包括 safety、completion、
 replay、likelihood、每次最多三候选、fallback 非零，以及 K=3 wait/RTT 均不劣且至少一项严格改善。
-当前本地实现、回放和历史回归共 50 tests PASS；服务器 smoke/formal 尚未执行，
-`RUNTIME_SHORTLIST_FREEZE=false`、`PPO_ALLOWED=false`。
+V1 smoke seed `805000` 完成预定 160 s：服务器 43 tests PASS，三 controller 的 safety、exact
+environment replay、requested likelihood 与 shortlist contract 均通过；短 horizon 未完成 12 架，按
+smoke 非授权语义保持 `INCOMPLETE`。V1 formal 在 seed `805001` 的 K=1 与 K=3 后 fail-closed 停止：
+两者均 12/12 完成且安全、trajectory replay 通过，K=3 提供 38 个 shortlist、实际选择 4 次 fallback、
+每次最多检查 3 项；但旧 `_policy_tape_logprob_exact` 在复核时只回放 requested action，没有把 tape
+中的 runtime shortlist 交回环境，导致第一次 fallback 后复核世界错误并把 likelihood 标成 false。
+因此 V1 是 **INVALID_EVALUATOR**，不是 policy/runtime hard-gate FAIL；`805001–805006` 已消费，
+不重跑、不复用其指标。
+
+复核器现与 exact environment replay 一样恢复 `runtime_proposal_shortlists`。fresh V2 successor 已
+预注册 protocol SHA `67e61165ef5c056d1b1ebd0a789cafd17f5e0554d07b29128617df3aa8bf6d5d`，
+使用 smoke `806000`、formal `806001–806006`，其他 controller、checkpoint、边界和 hard gates 均不变。
+V2 尚未执行；`RUNTIME_SHORTLIST_FREEZE=false`、`PPO_ALLOWED=false`。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15

@@ -1,0 +1,61 @@
+protocol: V4_2_P2_GATE_RUNTIME_SHORTLIST_EVALUATION_V2
+status: PREREGISTERED_SUCCESSOR
+
+predecessor:
+  v1_status: INVALID_EVALUATOR
+  v1_protocol_sha256: 82ec0721972b120c105d79ceb288ee11bfdba36d3c950977c090bb0f5a36e82f
+  v1_consumed_seeds: [805001, 805002, 805003, 805004, 805005, 805006]
+  v1_observed_runtime_safety_complete_replay_pass: true
+  v1_failure: likelihood_replay_omitted_runtime_shortlist
+  v1_rows_reused: false
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  deterministic: true
+  one_policy_forward: true
+  requested_proposal_is_rank_1: true
+  max_runtime_proposals: 3
+  execute_first_certified: true
+  full_catalogue_search: false
+  delayed_candidate_search: false
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+
+smoke:
+  seed: 806000
+  scenario: flow12
+  formal_marker: false
+  authorization: false
+
+formal:
+  seeds: [806001, 806002, 806003, 806004, 806005, 806006]
+  scenario: flow12
+  controllers: [candidate_k1, candidate_k3, rule]
+  expected_records: 18
+  expected_requests_per_controller: 72
+  reserve_once: true
+  reservation_marker: p2_gate_runtime_shortlist_evaluation_v2_consumed.json
+  forbidden_predecessor_seeds: [805001, 805002, 805003, 805004, 805005, 805006]
+
+hard_gates:
+  all_episode_gates: true
+  completion_fraction: 1.0
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  teacher_used: false
+  max_candidates_checked_per_release: 3
+  shortlist_fallback_selected_nonzero: true
+  k3_wait_nonworse_than_k1: true
+  k3_request_to_touchdown_nonworse_than_k1: true
+  at_least_one_effectiveness_metric_strictly_better: true
+
+decision:
+  pass_authorizes_runtime_shortlist_freeze_only: true
+  ppo_allowed: false
+  checkpoint_promotable: false
+  failure_stops_shortlist_branch: true

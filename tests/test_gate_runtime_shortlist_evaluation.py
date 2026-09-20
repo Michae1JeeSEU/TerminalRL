@@ -47,3 +47,20 @@ def test_tape_shortlist_contract_fails_catalogue_expansion_or_teacher_use(tmp_pa
     assert not result["all"]
     assert not result["bounded"]
     assert not result["teacher_free"]
+
+
+def test_runtime_shortlist_v2_successor_uses_fresh_seeds_and_frozen_fix():
+    names = ("STAGE", "PROTOCOL", "PROTOCOL_SHA", "FORMAL_SEEDS", "SMOKE_SEED",
+             "RESERVATION_MARKER")
+    original = {name: getattr(evaluation, name) for name in names}
+    try:
+        evaluation.configure_successor_v2()
+        value = evaluation.protocol()
+        assert value["predecessor"]["v1_status"] == "INVALID_EVALUATOR"
+        assert value["predecessor"]["v1_failure"] == "likelihood_replay_omitted_runtime_shortlist"
+        assert not value["predecessor"]["v1_rows_reused"]
+        assert evaluation.FORMAL_SEEDS == (806001, 806002, 806003, 806004, 806005, 806006)
+        assert set(value["formal"]["forbidden_predecessor_seeds"]).isdisjoint(evaluation.FORMAL_SEEDS)
+    finally:
+        for name, value in original.items():
+            setattr(evaluation, name, value)

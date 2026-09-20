@@ -11,6 +11,7 @@ from terminal_marl.training.run_v4_2_hierarchical_s0_qualification import _confi
 from terminal_marl.core.low_level_joint_action_v4_2 import hierarchical_from_normalized_v4_2
 from terminal_marl.training.student_rollout_v4_2 import (_student_request_details, rollout,
     validate_student_config, world_value)
+from terminal_marl.training.run_v4_2_i2_dagger_preflight import _policy_tape_logprob_exact
 
 
 def config():
@@ -94,7 +95,7 @@ def test_single_forward_produces_requested_first_bounded_ranked_shortlist():
     assert np.array_equal(shortlists[uid][0], requested[uid])
 
 
-def test_k3_rollout_records_and_exactly_replays_runtime_shortlists(tmp_path):
+def test_k3_rollout_records_and_exactly_replays_runtime_shortlists(tmp_path, monkeypatch):
     policy = StudentPPOV42(88)
     with torch.no_grad():
         policy.model.gate_head.weight.zero_()
@@ -102,11 +103,21 @@ def test_k3_rollout_records_and_exactly_replays_runtime_shortlists(tmp_path):
         policy.model.proposal_head.weight.zero_()
         policy.model.proposal_head.bias.copy_(torch.arange(25, dtype=torch.float32))
     runtime = replace(config(), runtime_proposal_shortlist_k=3)
+    original = TerminalParallelEnv._candidate_plan
+
+    def reject_rank_one(self, uav, candidate, target, snapshot, lz_id):
+        if candidate.kind == "runtime_shortlist_rank_1" and self.config.runtime_proposal_shortlist_k == 3:
+            return None, None, "forced_rank_one_rejection"
+        return original(self, uav, candidate, target, snapshot, lz_id)
+
+    monkeypatch.setattr(TerminalParallelEnv, "_candidate_plan", reject_rank_one)
     _, result = rollout(
         policy, runtime, seed=704, max_steps=2,
         output=tmp_path / "k3", deterministic=True,
     )
+    assert result["runtime_shortlist"]["runtime_shortlist_fallback_selected"] > 0
     replay = SafetyTraceRecorder.replay_action_tape(
         TerminalParallelEnv(runtime), result["action_tape"],
     )
     assert replay["exact"]
+    assert _policy_tape_logprob_exact(policy, runtime, result["action_tape"])
