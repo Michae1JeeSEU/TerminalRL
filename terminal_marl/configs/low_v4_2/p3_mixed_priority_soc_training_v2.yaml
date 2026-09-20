@@ -1,0 +1,166 @@
+protocol: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V2
+status: PREREGISTERED_TRAINING_REPAIR
+scope: fixed_geometry_sparse_regression_plus_dense24_priority_soc_k3
+supersedes: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V1
+
+bindings:
+  superseded_training_stage: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V1
+  superseded_training_manifest_sha256: 7b6420139c53f269aa48c25e75e6f1bd9205ea91fd38e2fdf8d0088b59619c59
+  superseded_training_pass: false
+  superseded_training_entry_pass: true
+  superseded_training_formal_pass: false
+  superseded_training_heldout_evaluation_allowed: false
+  superseded_training_heldout_untouched: true
+  superseded_training_final_checkpoint: null
+  superseded_training_failure:
+    kind: completion_floor
+    seed: 818003
+    scenario: dense24
+    formal_episode_index: 3
+    formal_episode_count: 8
+    only_failed_gate: completion_floor
+    safety_and_integrity_gates_passed: true
+    update_attempted: false
+    observed_completion_fraction: 0.5
+    required_completion_fraction: 0.75
+    heldout_seeds_already_reserved: [819001, 819002, 819003, 819004, 819005, 819006]
+  pilot_manifest_sha256: c094528791475d8748174c2b3c0408d22dc53d0f8e0a1b64029d54e8bb012d0e
+  pilot_stage: V4_2_P3_MIXED_PRIORITY_SOC_PILOT_V4
+  pilot_protocol_sha256: 1597b9363b4bc3cda9da76237bd7109b36cb64bdec446beb6f48d8bdbfe80a82
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  selected_candidate: original_k3
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  fixed_geometry: true
+  no_teacher: true
+  entry_updates_discarded: true
+  entry_checkpoints_formal_initialization: forbidden
+  formal_initialization: original_qualified_candidate
+  heldout_untouched: true
+  scheduler_source: terminal_marl/core/merge_scheduler.py
+  scheduler_source_sha256: 58bf3f3a29b86f00855610000a819424e5c90b0c1f1433a780bcb42f86309ce1
+
+attributes:
+  priority_mode: random_135
+  priority_values: [1, 3, 5]
+  initial_soc_mode: uniform
+  initial_soc_min: 0.55
+  initial_soc_max: 0.90
+  mission_probabilities: [0.45, 0.25, 0.10, 0.20]
+  low_soc_analysis_threshold: 0.65
+
+scenarios:
+  flow6:
+    reset_mode: flow_from_empty
+    total_requested_uavs: 6
+    first_arrival_seconds: 10
+    arrival_interval_seconds: 60
+    horizon_rule: last_arrival_plus_900_seconds
+  flow12:
+    reset_mode: flow_from_empty
+    total_requested_uavs: 12
+    first_arrival_seconds: 10
+    arrival_interval_seconds: 60
+    horizon_rule: last_arrival_plus_900_seconds
+  dense24:
+    reset_mode: warm_start_rings
+    total_requested_uavs: 24
+    warm_start_uavs: 12
+    warm_start_ring_allocation: [6, 4, 2]
+    continuing_arrivals: 12
+    arrival_interval_seconds: 15
+    horizon_rule: last_arrival_plus_900_seconds
+    training_horizon_seconds: 720
+    lz_assignment_mode: nearest_available
+    release_arbitration_mode: downstream_priority
+    final_queue_capacity: 3
+
+completion_reporting:
+  mode: report_only
+  training_rollout_completion_gate: false
+  performance_deficit_is_learning_target: true
+
+entry:
+  seeds: [820001, 820002]
+  scenarios: [dense24, flow6]
+  steps: [256, 160]
+  stochastic: true
+  updates_discarded: true
+  checkpoints_formal_initialization: forbidden
+  admission_only: true
+
+formal:
+  seeds: [821001, 821002, 821003, 821004, 821005, 821006, 821007, 821008]
+  scenarios: [dense24, flow6, dense24, flow12, dense24, flow6, dense24, flow12]
+  stochastic: true
+  dense_horizon_seconds: 720
+  sparse_uses_full_scenario_horizon: true
+  sequential_updates: true
+  stop_after_first_failed_episode: true
+
+heldout:
+  seeds: [822001, 822002, 822003, 822004, 822005, 822006]
+  scenarios: [flow6, flow12, dense24, flow6, flow12, dense24]
+  controllers: [trained, initial, rule]
+  untouched: true
+  reserve_before_first_reset: true
+  criteria:
+    all_safety_replay_likelihood_shortlist_gates: true
+    trained_sparse_completion: 1.0
+    trained_dense_completion_aggregate_nonworse_than_initial: true
+    trained_dense_strict_improvement_across_completion_or_priority_weighted_wait: true
+    trained_sparse_priority_weighted_wait_nonworse_than_initial: true
+    trained_dense_priority_weighted_wait_nonworse_than_initial: true
+    trained_low_soc_mean_wait_nonworse_than_initial: true
+    checkpoint_promotable_only_after_heldout_pass: true
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+
+hard_gates:
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  initial_ratio_error_max: 0.00001
+  student_only: true
+  stochastic: true
+  actor_decisions_nonzero: true
+  runtime_shortlist_contract: true
+  shield_actor_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  no_failed_outcomes: true
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+  formal_priority_coverage_required: [1, 3, 5]
+  formal_observed_soc_min_at_most: 0.65
+  formal_observed_soc_max_at_least: 0.80
+
+authorization:
+  entry_admission_only: true
+  formal_pass_authorizes_heldout_only: true
+  heldout_evaluation_allowed_on_formal_pass: true
+  P4_ALLOWED: false
+  checkpoint_promotable: false
+
+reservation:
+  marker: p3_mixed_priority_soc_training_v2_consumed.json
+  reserve_pipeline_and_heldout_before_first_reset: true
