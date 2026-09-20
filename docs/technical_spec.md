@@ -333,7 +333,9 @@ class EnergyModel:
 
 ```python
 class LandingZoneManager:
+    def __init__(self, assignment_mode: str = "lowest_id") -> None: ...
     def available_zones(self, uav: UAVState, now: float) -> list[int]: ...
+    def rank_available_zones(self, uav: UAVState, now: float) -> list[int]: ...
     def choose_rule_zone(self, uav: UAVState, now: float) -> int | None: ...
     def reserve(self, lz_id: int, uav_id: int, now: float) -> ReservationResult: ...
     def release(self, lz_id: int, uav_id: int, reason: str) -> None: ...
@@ -342,6 +344,9 @@ class LandingZoneManager:
 ```
 
 `step()` 返回 service completed 的 UAV ids。
+
+`assignment_mode` 只允许 `lowest_id` 与 `nearest_available`。后者以当前三维几何距离排序并以
+`lz_id` 打破平局；reserved、occupied 或 mission-incompatible LZ 必须在排序前剔除。
 
 ---
 
@@ -725,6 +730,22 @@ observation_schema_version
 action_schema_version
 ```
 
+密集降落流诊断还必须记录：
+
+```text
+max_concurrent_final
+final_concurrency_step_sum
+free_lz_step_sum
+lz_idle_with_inner_demand_steps
+lz_assignments
+lz_assignment_distance_sum
+lz_nearest_distance_sum
+lz_assignment_regret_sum
+```
+
+`lz_idle_with_inner_demand_steps` 只表示“有内环需求且名义资源空闲”，不能直接解释为策略漏放行；
+正式归因需要再报告 individually-certified counterfactual RELEASE opportunity。
+
 ---
 
 ## 27. Training / experiment modes
@@ -802,6 +823,8 @@ test_energy_model.py
 test_lz_reservation.py
 test_lz_service_time.py
 test_lz_release_on_failure.py
+test_landing_zone.py
+test_landing_flow_efficiency.py
 
 test_lifecycle_state_machine.py
 test_rule_pipeline_full_landing.py
@@ -847,6 +870,9 @@ external queue grows
 no demand censoring
 no resource double booking
 no deadlock
+nearest-LZ assignment regret = 0 in nearest_available mode
+concurrent final never exceeds configured capacity
+every concurrent final trajectory remains safety-certified
 ```
 
 ### Gate D

@@ -451,6 +451,7 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 |---|---|---|---|
 | P1 初始 PPO（已准入） | 12 episodes 内循环 warm3、flow3、flow6，各4次；自然流10秒首到达、60秒间隔，900秒上限 | SOC=.8；常规 priority=1，emergency仍提升至5；保留原四种 mission/service分布、6个LZ、final容量1 | 先验证真实 PPO 更新下低层意图与闭环稳定，不宣称容量或收敛；warm-start是训练辅助 |
 | P2 自然流与 variable-N | 以flow3/6为锚点，先扩到总请求8/12；逐步降低warm-start占比；先保持到达强度，再单独引入间隔扰动 | 先保留P1属性，避免同时改变负荷与任务属性 | 900秒不能照搬：按末次到达与rule基线清空时间预设观察/排空窗口；正式评估只用自然流 |
+| P2R 密集资源桥接 | warm12（6/4/2）+ 12 架按15秒继续到达；保留旧自然流回归，后续训练应混合 warm 与 flow-from-empty，而非只用 warm-start | 6个LZ；`nearest_available`；downstream-first；final容量3；每条轨迹仍逐条认证 | 暴露跨环同一步竞争、LZ分配和并发final；报告吞吐、touchdown间隔、并发final、LZ距离后悔、反事实安全机会与全部hard-safety计数；不得改写旧P2结果 |
 | P3 任务与资源异质性 | 保持已验证负荷和入口分布 | 恢复需求规定的priority 1/3/5分布，再引入可完成任务的SOC分布；mission混合本已启用；覆盖长service占用和reservation/retry压力 | 能耗与优先级机制始终存在，此处增加状态覆盖；不以不可能完成的低SOC训练案例制造“能力不足” |
 | P4 终端区交通压力 | finite cohort总请求20/40/60；continuous low/medium/high/bursty，overload单列；根据本机型/布局rule基线容量选择强度 | 保持真实任务/资源分布，逐步加入入口偏斜和突发流 | 总请求数不等于同时在空数；报告active峰值、队列、请求完成/未完成/转降与延误。过载不要求队列稳定或全部成功，不能套用P1全完成gate |
 | P5 静态几何泛化 | 在已经验证的流量与N范围内，每episode冻结一种合法布局 | 分阶段改变合法半径/高度/速度与headway组合；仍执行完整可执行性检查 | 先静态泛化并冻结低层，再进入A6高层动态空域；不同时引入高负荷、几何变化和新任务分布 |
@@ -460,6 +461,11 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 但与论文最终20/40/60请求及随机持续到达场景之间尚有课程跨度，不能直接认定完成终端区训练。
 60秒间隔对应到达时段60请求/小时，不等于实测落地吞吐；多入口和随机mission已存在，
 时间到达目前仍是确定性的。六个LZ在当前低流量下未必形成足够排队压力。
+
+P2R 是旧 P2 与 P3/P4 之间的资源语义桥接，不是把“环占满”作为奖励。warm-start 用于主动覆盖
+三环同时有机和瞬时竞争，flow-from-empty 用于检查真实到达链；二者必须混合，heldout 至少包含
+未见 seed 的 dense24 压力场景。只有当 individually-certified-but-not-requested 比例显示稳定的
+gate 漏放行时，才新增 fresh support/训练；资源空闲但轨迹不可认证不得作为错误标签。
 
 所有阶段从第一步起保留：EH216-S性能约束、80m安全间隔、NMAC/collision阈值、
 轨迹可执行性、SafetyFilter/shield、切环headway、final/LZ容量、预约与retry、能耗和外部admission。

@@ -21,7 +21,8 @@
 Observation V2.1
 → shared actor π_L
 → requested WAIT / ranked RELEASE shortlist（冻结 K=3）
-→ ExecutionScheduler（按序认证，执行首个通过项）
+→ ExecutionScheduler（P2R 同一步按 INNER→MIDDLE→OUTER，再按 priority/wait/UID；
+  每架 shortlist 仍按序认证并只执行首个通过项）
 → CanonicalTrajectoryGenerator
 → SafetyFilter
 → PredictiveSafetyShield
@@ -30,6 +31,10 @@ Observation V2.1
 
 TeacherScheduler 只在训练和审计中提供 state-conditioned expert label。它不是最终部署组件，
 也不得把 policy 请求替换后仍用原请求的 log-probability 做 PPO 更新。
+
+LZ assignment 同样不属于策略动作。历史回放使用 `lowest_id`；P2R 使用
+`nearest_available`，且 final 容量从历史 1 显式提升为 3。上述变化只扩大可被认证的资源候选，
+不允许绕过 headway、reservation、SafetyFilter 或 shield。
 
 ## 2. Observation V2.1
 

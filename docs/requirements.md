@@ -434,6 +434,11 @@ compatible_missions
 
 `Inner→Final` 前必须先完成 LZ reservation。
 
+LZ 由 resource scheduler 分配，低层策略不直接输出 `lz_id`。历史协议保留
+`lowest_id` 以支持精确回放；密集降落流使用 `nearest_available`，在所有 FREE 且任务兼容的
+LZ 中按 UAV 当前三维位置的欧氏距离排序，距离相同时以 `lz_id` 稳定打破平局。无论采用哪种
+排序，reservation 与最终航迹仍必须通过同一 SafetyFilter，距离近不构成安全豁免。
+
 ```text
 FREE → RESERVED → OCCUPIED → FREE
 ```
@@ -465,12 +470,24 @@ mission outcome → COMPLETED
 
 Final 不是无限容量区域。
 
-默认：
+历史默认（旧 P0/P1/P2 证据回放）：
 
 ```text
 final_queue_capacity = 1
 inner_to_final_min_headway = 12 s
 ```
+
+P2R 密集降落流配置显式采用：
+
+```text
+final_queue_capacity = 3
+lz_assignment_mode = nearest_available
+release_arbitration_mode = downstream_priority
+```
+
+`final_queue_capacity` 是并发上限，不是并发目标；每条 final trajectory 仍逐条通过 headway、
+reservation 和 SafetyFilter。环容量同样是安全上限而非利用率目标：当下游资源可用时，应及时
+排空 INNER/MIDDLE，而不是为了“填满环”让 UAV 无效等待。
 
 必须显式记录：
 
@@ -815,6 +832,10 @@ hard safety
 > dynamic priority
 > FCFS/request time
 ```
+
+同一 control tick 存在跨环竞争时，P2R 执行仲裁先按 `INNER → MIDDLE → OUTER` 排空下游，
+环内再按 dynamic priority、累计等待时间、UID 稳定排序。该顺序只决定候选被认证的先后，
+不得降低 hard safety、headway、LZ reservation 或轨迹可执行性门槛。
 
 ---
 

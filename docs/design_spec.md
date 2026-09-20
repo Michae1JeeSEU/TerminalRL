@@ -346,16 +346,17 @@ earliest_release_time(lz_id) -> float
 
 ### 6.3 Assignment strategy
 
-Rule baseline：
+当前实现提供两个显式模式：
 
 ```text
-feasible LZ
-→ earliest service availability
-→ shortest final path
-→ lz_id tie-break
+lowest_id          # 历史协议默认；只用于兼容与精确回放
+nearest_available  # P2R；FREE + mission-compatible 后按三维距离、lz_id 排序
 ```
 
 低层 RL **不直接输出 `lz_id`**。LZ assignment 属于 resource scheduler，避免 action space 随 LZ 数量变化。
+`nearest_available` 只是资源排序器；选中的 LZ 仍需原子 reservation，并由最终进近轨迹与
+SafetyFilter 决定是否可执行。后续如加入预测服务时间或轨迹时长成本，应新增模式，不得静默改变
+历史 `lowest_id` 或当前 `nearest_available` 的语义。
 
 ---
 
@@ -389,6 +390,10 @@ class PriorityEngine:
 ```
 
 `compute()` 必须与 `requirements.md` 公式一致。PriorityEngine 不拥有动作，也不绕过 safety constraints。
+
+P2R 的同一步执行顺序为：先按环角色 `INNER → MIDDLE → OUTER`，再按更高 dynamic
+priority、更长累计等待、更小 UID。该顺序在每步动作认证前刷新 priority；只改变竞争候选的处理
+顺序，不改变策略请求、proposal shortlist、reservation 或 SafetyFilter 的所有权。
 
 ---
 

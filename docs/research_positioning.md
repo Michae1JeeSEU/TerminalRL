@@ -405,6 +405,10 @@ Inner→Final 的放行必须同时满足 assigned LZ reservation、final corrid
 
 至少包含 low、medium、high、bursty、overload stress test。正式比较采用 common random numbers：同 seed 下，不同 policy 接收相同 arrival request times、mission types、priority classes、gate assignments 和 initial energy draws。
 
+低层课程必须同时覆盖两类互补状态：`flow_from_empty` 验证真实到达与完整生命周期，
+`warm_start_rings` 主动覆盖 O/M/I 三环同时已有 UAV 的瞬时竞争。warm-start 可用于 curriculum、
+压力诊断和独立资格，但正式主结论不能只依赖 warm-start；dense bridge 应把两类 cohort 分开报告。
+
 ### 11.4 两类正式评估
 
 **Protocol A — Finite-cohort resolution**：固定请求数量 N，所有 request 必须进入终态。  
@@ -419,6 +423,8 @@ Inner→Final 的放行必须同时满足 assigned LZ reservation、final corrid
 - **Safety**：collision、NMAC/separation violation、minimum separation、trajectory reject/modify；
 - **Efficiency**：throughput、request-to-completion delay、external waiting、internal terminal time、holding、makespan、final queue；
 - **Resource**：LZ utilization、reservation wait、service bottleneck、ring occupancy/capacity；
+- **Dense landing flow**：nearest-LZ assignment regret、concurrent final、free-LZ-with-inner-demand、
+  individually-certified-but-not-requested RELEASE opportunity；
 - **Energy**：energy consumed、SOC at landing、low-SOC diversion、reserve violation；
 - **Fairness**：priority/mission 分组 delay、starvation、分位差；
 - **Dynamic airspace**：geometry change count、transition time、gate mask ratio、headway/capacity changes。
