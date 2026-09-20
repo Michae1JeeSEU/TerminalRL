@@ -1,0 +1,64 @@
+protocol: V4_2_OBSERVATION_V2_2_JOINT_FEASIBILITY_HEAD_AUDIT_V1
+stage: V4_2_OBSERVATION_V2_2_JOINT_FEASIBILITY_HEAD_AUDIT_V1
+preregistered_at: 2026-09-20
+purpose: exploratory_architecture_attribution_after_v2_2_conditioned_probe_was_inconsistent
+
+inputs:
+  closure_stage: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V3
+  closure_protocol_sha256: 227dfa7e252613f5c3755b04fd143c9c42d53d141451cef9748d83cb42926c4a
+  closure_manifest_sha256: 20cb9d6ac2377aa5bb3e20c87707405f4aa553eecadae0581ac64a0631cc8211
+  train_rows_sha256: 57e376cc164e42af56d2ead967eca988c7a90bf9a31d60b204d7ec0f0c2c5199
+  dev_rows_sha256: 6f7232887be3d9f07c12514a7ba3693d4d17fb06154344050695f0366c8f2d34
+  train_rows: 247
+  dev_rows: 106
+  reuse_reason: paired_exploratory_architecture_attribution_only
+  no_new_environment_seeds: true
+
+architecture:
+  input: observation_v2_2_94d
+  output: 25_independent_proposal_feasibility_logits
+  model: mlp_94x128x128x25
+  activation: relu
+  target: complete_25_proposal_feasible_mask
+  loss: globally_balanced_binary_cross_entropy
+  runtime_contract: one_forward_pass_one_selected_proposal_one_safety_validation
+  runtime_catalogue_search: false
+
+probe:
+  seeds: [801101, 801102, 801103]
+  epochs: 100
+  batch_size_states: 64
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold: 0.5
+  threshold_tuning: false
+  dev_gradients: false
+  paired_baseline: v3_94d_plus_proposal_2d_shared_mlp
+  report:
+    - feasible_recall
+    - infeasible_recall
+    - macro_f1
+    - roc_auc
+    - state_top1_feasible
+    - partial_set_top1_feasible
+    - per_interface_top1_feasible
+    - delta_head_minus_conditioned
+
+interpretation:
+  exploratory_only: true
+  no_pass_threshold: true
+  cannot_authorize_policy_repair: true
+  fresh_confirmation_required_before_architecture_freeze: true
+
+authorizations:
+  diagnostic_only: true
+  architecture_freeze_allowed: false
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false
