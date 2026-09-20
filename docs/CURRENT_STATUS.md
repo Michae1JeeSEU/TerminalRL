@@ -121,6 +121,10 @@ shortlist 排序稳定，安全/replay/likelihood/restore 全 PASS。`admission.
 `8d425da16345dd0546851d83bfe706877dd4e6298437b8ef9bd91da324175db3`，因此
 `PPO_ALLOWED=true`；entry checkpoints 仍禁止作为 formal 初始化。详见
 [K=3 PPO entry V1](evidence/v4_2/ppo_p2_runtime_shortlist_ppo_entry_v1_summary.md)。
+formal V1 已独立预注册：fresh training seeds `808001–808006`，按 flow6/8/12 重复两轮并运行
+完整 cycle；heldout `809001–809006` 已冻结且训练阶段不可访问。formal 仍从原始 candidate 以
+fresh optimizer 启动，只训练 gate adapter + critic；协议 SHA256
+`7e6cf765af93925ffe960ff2ab8a4f141e13c1101e8b2f933fd64a2296bf3048`。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -204,6 +208,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | K=3 bounded runtime shortlist V2 | **PASS / FROZEN** | fresh `806001–806006`；18/18 records、216/216 requests；全部 safety/replay/likelihood/contract gates PASS；K3 相对 K1 等待改善9.52s、RTT改善2.06s |
 | K=3 PPO admission review V1 | **PASS（只读）** | review SHA `a549ffc60c35cb5ac1403ba0c4b59412096b2936d4a209ddb1a25219e09e8783`；仅授权 fresh entry protocol 预注册，不直接授权 PPO |
 | K=3 PPO entry V1 | **PASS / PPO_ALLOWED** | fresh `807001/807002`；26/26 updates 接受、0拒绝；全部 safety/replay/likelihood/frozen-shortlist/restore gates PASS；entry checkpoints 不得作为 formal 初始化 |
+| K=3 formal PPO V1 | **PREREGISTERED / 未运行** | fresh `808001–808006` 完整 cycle；heldout `809001–809006` 冻结；原始 candidate + fresh optimizer，proposal 子图保持冻结 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 

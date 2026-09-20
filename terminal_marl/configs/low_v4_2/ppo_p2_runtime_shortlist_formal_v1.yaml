@@ -1,0 +1,69 @@
+protocol: V4_2_P2_RUNTIME_SHORTLIST_FORMAL_V1
+status: PREREGISTERED_FORMAL
+scope: fixed_geometry_natural_flow_N6_N8_N12_runtime_shortlist_k3
+
+bindings:
+  entry_admission_sha256: 8d425da16345dd0546851d83bfe706877dd4e6298437b8ef9bd91da324175db3
+  entry_protocol_sha256: d3400bf47d0f7f0d86ce4ed16c5b547b6ab30e0220691eb1f33eef320af932be
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  initialization: original_qualified_candidate
+  fresh_optimizer: true
+  entry_checkpoints_formal_initialization: forbidden
+  no_teacher: true
+
+formal:
+  seeds: [808001, 808002, 808003, 808004, 808005, 808006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  deterministic: false
+  horizon_rule: last_arrival_plus_900_seconds
+  sequential_updates: true
+  stop_after_first_failed_episode: true
+  heldout_evaluation_seeds_reserved: [809001, 809002, 809003, 809004, 809005, 809006]
+  heldout_evaluation_untouched: true
+  reservation_marker: p2_runtime_shortlist_formal_v1_consumed.json
+  reserve_once_before_first_reset: true
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+
+hard_gates:
+  safety_all_zero: true
+  all_requested_complete: true
+  terminal_and_queue_drained: true
+  shield_actor_fraction_max: 0.05
+  exact_replay: true
+  exact_requested_likelihood: true
+  initial_ratio_error_max: 0.00001
+  stochastic_student: true
+  actor_decisions_nonzero: true
+  runtime_shortlist_contract: true
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  finite_model_optimizer_update: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+
+authorization:
+  formal_training_called: true
+  heldout_evaluation_allowed_on_pass: true
+  P3_ALLOWED: false
+  checkpoint_promotable: false
