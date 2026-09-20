@@ -1,0 +1,75 @@
+protocol: V4_2_P3_MIXED_PRIORITY_SOC_PILOT_V2
+status: PREREGISTERED_DIAGNOSTIC
+scope: fixed_geometry_sparse_regression_plus_dense24_priority_soc_k3
+
+bindings:
+  selected_candidate: original_k3
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  fixed_geometry: true
+  no_teacher: true
+  no_updates: true
+
+attributes:
+  priority_mode: random_135
+  priority_values: [1, 3, 5]
+  initial_soc_mode: uniform
+  initial_soc_min: 0.55
+  initial_soc_max: 0.90
+  mission_probabilities: [0.45, 0.25, 0.10, 0.20]
+  low_soc_analysis_threshold: 0.65
+
+scenarios:
+  flow6:
+    reset_mode: flow_from_empty
+    total_requested_uavs: 6
+    first_arrival_seconds: 10
+    arrival_interval_seconds: 60
+    horizon_rule: last_arrival_plus_900_seconds
+  flow12:
+    reset_mode: flow_from_empty
+    total_requested_uavs: 12
+    first_arrival_seconds: 10
+    arrival_interval_seconds: 60
+    horizon_rule: last_arrival_plus_900_seconds
+  dense24:
+    reset_mode: warm_start_rings
+    total_requested_uavs: 24
+    warm_start_uavs: 12
+    warm_start_ring_allocation: [6, 4, 2]
+    continuing_arrivals: 12
+    arrival_interval_seconds: 15
+    horizon_rule: last_arrival_plus_900_seconds
+    lz_assignment_mode: nearest_available
+    release_arbitration_mode: downstream_priority
+    final_queue_capacity: 3
+
+pilot:
+  seeds: [814001, 814002, 814003]
+  scenarios: [flow6, flow12, dense24]
+  controllers: [candidate_k3, rule]
+  deterministic: true
+  expected_records: 6
+  reservation_marker: p3_mixed_priority_soc_pilot_v2_consumed.json
+
+hard_gates:
+  all_records: true
+  all_requested_complete: true
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  runtime_shortlist_contract: true
+  shield_actor_fraction_max: 0.05
+  priority_coverage_required: [1, 3, 5]
+  observed_soc_min_at_most: 0.65
+  observed_soc_max_at_least: 0.80
+
+authorization:
+  PPO_ALLOWED: false
+  P3_FORMAL_ALLOWED: false
+  P3_V2_TRAINING_PROTOCOL_PREREGISTRATION_ALLOWED_on_pass: true
+  checkpoint_promotable: false
+
