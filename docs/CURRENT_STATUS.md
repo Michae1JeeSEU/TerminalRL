@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 与 corrected fixed-neutral V2 均终态 FAIL。用户已显式授权改变 runtime boundary，K=3 bounded shortlist candidate 已实现并预注册 fresh paired certification；尚未通过 smoke/formal 前不冻结。proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；K=3 bounded runtime shortlist fresh V2 paired certification 已 PASS 并冻结。Observation V2.2 V4 hybrid 与 fixed-neutral V2 的历史 FAIL 保留。下一步仅允许在冻结 K=3 边界上做独立 PPO admission review；PPO、P3、curriculum 与 checkpoint promotion 当前仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -99,7 +99,14 @@ smoke 非授权语义保持 `INCOMPLETE`。V1 formal 在 seed `805001` 的 K=1 �
 复核器现与 exact environment replay 一样恢复 `runtime_proposal_shortlists`。fresh V2 successor 已
 预注册 protocol SHA `67e61165ef5c056d1b1ebd0a789cafd17f5e0554d07b29128617df3aa8bf6d5d`，
 使用 smoke `806000`、formal `806001–806006`，其他 controller、checkpoint、边界和 hard gates 均不变。
-V2 尚未执行；`RUNTIME_SHORTLIST_FREEZE=false`、`PPO_ALLOWED=false`。
+V2 formal 已完成 18/18 records、三 controller 各 72/72 requests；全部 safety、completion、exact
+replay、requested likelihood、Teacher isolation 与 shortlist contract hard gates PASS。K=3 六个 seed
+均实际选择 fallback，每次最多检查 3 项；相对 K=1 的 weighted wait 为 `-9.519080 s`，
+request-to-touchdown 为 `-2.055556 s`，两项均改善；K=3 的 wait `11.303291 s` 也优于 rule
+`19.883828 s`。manifest SHA256
+`6050088d3c28d1531c7e8dde5b828403390bfdeb51dde8bde54e0f2759323905`；正式结论见
+[K=3 runtime shortlist V2 summary](evidence/v4_2/ppo_p2_gate_runtime_shortlist_v2_summary.md)。
+`RUNTIME_SHORTLIST_FREEZE=true`；按预注册 `PPO_ALLOWED=false`，下一步只允许独立 admission review。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15

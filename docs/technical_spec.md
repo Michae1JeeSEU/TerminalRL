@@ -366,7 +366,7 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 
 任何 code/doc/test 都不得出现不同顺序。
 
-`SimConfig.runtime_proposal_shortlist_k` 只允许 `1` 或 `3`。`1` 保持历史单请求路径；`3` 仅适用于
+`SimConfig.runtime_proposal_shortlist_k` 只允许 `1` 或 `3`。`1` 保留历史单请求消融；冻结部署值 `3` 仅适用于
 V4.2、`scheduler_mode=execution`、Teacher disabled。K=3 rollout 必须在一次 distribution forward
 中形成 request-first unique Top-3，调用
 `env.step(actions, proposal_shortlists)`；环境逐项认证并在第一个通过项停止。ActionTape 字段

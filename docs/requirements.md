@@ -510,8 +510,8 @@ speed_residual ∈ {-1.0, -0.5, 0.0, +0.5, +1.0}
 merge_time_residual ∈ {-1.0, -0.5, 0.0, +0.5, +1.0}
 ```
 
-V4.2 actor 的 factorization 是 `WAIT/RELEASE gate + conditional proposal`。默认 K=1 时执行层
-只接收一个解码后的三元意图；待资格的 K=3 模式允许同一次前向附带最多三个按 proposal logit
+V4.2 actor 的 factorization 是 `WAIT/RELEASE gate + conditional proposal`。K=1 作为消融时执行层
+只接收一个解码后的三元意图；当前冻结的 K=3 模式允许同一次前向附带最多三个按 proposal logit
 排序且不重复的三元意图，顺序均固定为
 `[release_request, speed_residual, merge_time_residual]`。是否批准 RELEASE 仍由
 ExecutionScheduler、trajectory 与 safety layer 决定。执行层只能按序认证 policy 提供的 bounded

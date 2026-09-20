@@ -417,7 +417,7 @@ class LowLevelIntent:
 
 实际物理单位由配置 profile mapper 给出，不得硬编码进 actor。V4/V4.1 的 actor 表示只用于历史诊断。
 
-部署默认 `runtime_proposal_shortlist_k=1`。待资格的 K=3 模式由一次 policy forward 产生
+部署资格边界为 `runtime_proposal_shortlist_k=3`；K=1 仅保留为消融。K=3 由一次 policy forward 产生
 `requested + two ranked alternatives`，逐一构造 canonical trajectory 并认证，首个通过项原子提交；
 最多检查三个 proposal，不调用 Teacher、不扫描完整 catalogue、不生成 future-delay candidate。
 fallback 的 applied action 与 rank 必须独立记录，不能重写 rank-1 requested action provenance。

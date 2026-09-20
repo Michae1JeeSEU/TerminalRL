@@ -1,6 +1,6 @@
 # 低层共享策略规范
 
-> **当前已资格版本**：V4.2 hierarchical action + Observation V2.1
+> **当前已资格版本**：V4.2 hierarchical action + Observation V2.1 + K=3 bounded runtime shortlist
 >
 > **冻结候选**：Observation V2.2 scheduler context（待 fresh closure/learnability qualification）
 >
@@ -20,7 +20,7 @@
 ```text
 Observation V2.1
 → shared actor π_L
-→ requested WAIT / ranked RELEASE shortlist（K=1 默认；K=3 候选）
+→ requested WAIT / ranked RELEASE shortlist（冻结 K=3）
 → ExecutionScheduler（按序认证，执行首个通过项）
 → CanonicalTrajectoryGenerator
 → SafetyFilter
@@ -130,20 +130,22 @@ post-state hash
 
 Teacher、ExecutionScheduler 或 Shield 的 action 都不能替代 requested action 进入 PPO ratio。
 
-### 4.1 Bounded runtime shortlist candidate
+### 4.1 Qualified bounded runtime shortlist
 
-经用户显式授权，当前仅允许验证 `runtime_proposal_shortlist_k ∈ {1, 3}`。K=3 不增加网络
+`runtime_proposal_shortlist_k ∈ {1, 3}`，当前正式边界冻结为 K=3；K=1 保留为配对消融。
+K=3 不增加网络
 前向：gate 与 25-way proposal logits 由同一次前向产生；确定性 RELEASE 请求取 proposal Top-1，
 并附带其后两个最高分且不重复的 proposal。运行时按 rank 最多检查三个 canonical candidate，
 执行第一个通过 trajectory/SafetyFilter 认证的 candidate；全失败则 RELEASE 被拒绝并进入既有
 backoff。该选择属于 runtime safety selection，不是 Teacher repair，不产生 Teacher penalty，且
 PPO likelihood 仍只对应 rank-1 requested action。ActionTape 必须保存完整 shortlist、实际 rank、
-检查数和 applied action，以支持精确回放。K=3 通过 fresh paired qualification 前仍是 candidate，
-不能据此授权 PPO、checkpoint promotion 或 25 项 catalogue scan。
+检查数和 applied action，以支持精确回放。fresh V2 paired qualification 已以 18/18 records、
+216/216 requests、安全与 replay/likelihood 全 PASS 冻结此边界；该结论仍不直接授权 PPO、
+checkpoint promotion 或 25 项 catalogue scan。
 
 ## 5. 执行与安全不变量
 
-1. 默认 K=1 只检查 actor 请求的 proposal；候选 K=3 只可检查同一次 policy forward 给出的
+1. K=1 只检查 actor 请求的 proposal；冻结 K=3 只可检查同一次 policy forward 给出的
    有序 Top-3，不得扩展为 25 项 catalogue search 或 delayed repair；
 2. RELEASE 必须通过 headway、reservation、resource、vehicle dynamics、trajectory 和 safety 检查；
 3. SafetyFilter 检查的 trajectory 必须与实际执行的 trajectory 相同；
