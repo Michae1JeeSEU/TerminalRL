@@ -96,6 +96,7 @@ class PredictiveSafetyShield:
         self.unrecoverable_components: tuple[tuple[int, ...], ...] = ()
         self.last_certification_diagnostic: dict[str, object] = {}
         self.last_recursive_gate = "not_run"
+        self._joint_track_cache: dict[tuple, np.ndarray] = {}
 
     def assess(self, env) -> RiskAssessment:
         best: tuple[float, float, float, tuple[int, int]] | None = None
@@ -436,8 +437,40 @@ class PredictiveSafetyShield:
                     pairs.add(tuple(sorted((holder.uid, other.uid))))
         return tuple(sorted(pairs))
 
-    def _joint_tracks(self, env, residuals: dict[int, float], uids: set[int], *, horizon: float | None = None) -> dict[int, TrajectoryPlan]:
-        """Build one execution-equivalent track set for every active UAV.
+    @staticmethod
+    def _resample_position_track(
+        source_times: np.ndarray, source_positions: np.ndarray, sample_times: np.ndarray,
+    ) -> np.ndarray:
+        """Match ``TrajectoryPlan.sample`` without constructing point objects.
+
+        Joint safety checks need positions only.  The former path wrapped the
+        same physics-grid positions in thousands of immutable
+        ``TrajectoryPoint`` objects, hashed each temporary plan, and then
+        sampled it again for every pair.  This performs the identical linear
+        interpolation directly on the shared arrays.
+        """
+        source_times = np.asarray(source_times, dtype=float)
+        source_positions = np.asarray(source_positions, dtype=float)
+        sample_times = np.asarray(sample_times, dtype=float)
+        right = np.searchsorted(source_times, sample_times, side="right")
+        right = np.clip(right, 1, len(source_times) - 1)
+        left = right - 1
+        spans = source_times[right] - source_times[left]
+        fractions = np.divide(
+            sample_times - source_times[left], spans,
+            out=np.zeros_like(sample_times), where=spans > 0.0,
+        )
+        result = source_positions[left] + fractions[:, None] * (
+            source_positions[right] - source_positions[left]
+        )
+        result[sample_times <= source_times[0]] = source_positions[0]
+        result[sample_times >= source_times[-1]] = source_positions[-1]
+        return result
+
+    def _joint_position_tracks(
+        self, env, residuals: dict[int, float], uids: set[int], *, horizon: float | None = None,
+    ) -> tuple[np.ndarray, dict[int, np.ndarray]]:
+        """Build one shared position array per UAV for a joint proof.
 
         This is deliberately a *joint* proof.  Pairwise repairs accepted in
         isolation can be mutually inconsistent when several holders receive
@@ -450,22 +483,99 @@ class PredictiveSafetyShield:
         times = np.arange(start, end + 1e-9, self.config.physics_dt)
         if times[-1] < end:
             times = np.append(times, end)
+        samples = np.arange(start, end + 1e-9, self.config.safety_sampling_dt)
+        if samples[-1] < end:
+            samples = np.append(samples, end)
         snapshot = SimpleNamespace(now=start, active=env.active, airspace=env.airspace)
-        tracks: dict[int, TrajectoryPlan] = {}
+        tracks: dict[int, np.ndarray] = {}
         for uid, uav in sorted(env.active.items()):
             if uid not in uids:
                 continue
             if uav.committed_plan is not None:
-                positions = env.safety._committed_positions(uav.committed_plan, snapshot, times)
-                points = tuple(TrajectoryPoint(float(time), position) for time, position in zip(times, positions))
-                tracks[uid] = TrajectoryPlan(
-                    f"joint-committed-{uav.committed_plan.plan_id}", uid, "joint_committed", points, start, end,
-                    metadata={"committed": True, "active_end": end,
-                              "source_plan_id": uav.committed_plan.plan_id},
+                key = (
+                    "committed", uav.committed_plan.plan_id, start, end,
+                    float(env.airspace.speed_profile_bias),
                 )
+                positions = self._joint_track_cache.get(key)
+                if positions is None:
+                    positions = np.asarray(
+                        env.safety._committed_positions(uav.committed_plan, snapshot, times),
+                        dtype=float,
+                    )
+                    self._joint_track_cache[key] = positions
             elif uav.ring_role is not None:
-                tracks[uid] = self._repair_plan(uav, env.airspace, start, end, residuals.get(uid, 0.0))
-        return tracks
+                ring = env.airspace.actual_ring(uav.ring_role)
+                theta = (
+                    float(uav.ring_progress) if uav.ring_progress is not None
+                    else math.atan2(float(uav.position[1]), float(uav.position[0]))
+                )
+                residual = float(residuals.get(uid, 0.0))
+                key = (
+                    "holder", uid, start, end, uav.ring_role.value,
+                    tuple(float(value) for value in np.asarray(uav.position, dtype=float)),
+                    theta, float(uav.speed), residual,
+                    float(ring.radius), float(ring.height), float(ring.nominal_speed),
+                    float(env.airspace.speed_profile_bias),
+                )
+                positions = self._joint_track_cache.get(key)
+                if positions is None:
+                    speed = max(0.0, float(uav.speed))
+                    target_speed = float(np.clip(
+                        ring.nominal_speed + env.airspace.speed_profile_bias + residual,
+                        self.config.speed_min, self.config.max_speed,
+                    ))
+                    values = [np.asarray(uav.position, dtype=float).copy()]
+                    for left, right in zip(times, times[1:]):
+                        motion = self.dynamics.ring_motion_step(
+                            ring, theta, speed, target_speed, float(right - left),
+                        )
+                        theta, speed = motion.theta, motion.speed
+                        values.append(np.asarray(motion.position, dtype=float))
+                    positions = np.asarray(values, dtype=float)
+                    self._joint_track_cache[key] = positions
+            else:
+                continue
+            tracks[uid] = self._resample_position_track(times, positions, samples)
+        return samples, tracks
+
+    @staticmethod
+    def _position_track_distances(
+        left: np.ndarray, right: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Vectorized point and linearly swept separation for one pair."""
+        left = np.asarray(left, dtype=float)
+        right = np.asarray(right, dtype=float)
+        point = np.linalg.norm(left - right, axis=1)
+        if len(left) < 2:
+            return point, np.empty(0, dtype=float)
+        relative_start = left[:-1] - right[:-1]
+        relative_delta = (left[1:] - left[:-1]) - (right[1:] - right[:-1])
+        denominator = np.einsum("ij,ij->i", relative_delta, relative_delta)
+        projection = np.divide(
+            -np.einsum("ij,ij->i", relative_start, relative_delta), denominator,
+            out=np.zeros_like(denominator), where=denominator > 1e-12,
+        )
+        projection = np.clip(projection, 0.0, 1.0)
+        closest = relative_start + projection[:, None] * relative_delta
+        return point, np.linalg.norm(closest, axis=1)
+
+    def _assess_position_pair(
+        self, left: np.ndarray, right: np.ndarray,
+    ) -> tuple[bool, float]:
+        """Reproduce the pairwise order and threshold semantics of the arbiter."""
+        point, swept = self._position_track_distances(left, right)
+        bad_point = np.flatnonzero(point < self.config.safe_distance)
+        if len(bad_point):
+            index = int(bad_point[0])
+            return False, float(np.min(point[:index + 1]))
+        minimum = float(np.min(point)) if len(point) else float("inf")
+        bad_swept = np.flatnonzero(swept < self.config.safe_distance)
+        if len(bad_swept):
+            index = int(bad_swept[0])
+            return False, min(minimum, float(np.min(swept[:index + 1])))
+        if len(swept):
+            minimum = min(minimum, float(np.min(swept)))
+        return True, minimum
 
     def _joint_assessment(self, env, residuals: dict[int, float], *, pairs: tuple[tuple[int, int], ...] | None = None,
                           horizon: float | None = None) -> JointSafetyAssessment:
@@ -478,22 +588,18 @@ class PredictiveSafetyShield:
         if not active_pairs:
             return JointSafetyAssessment(True, float("inf"), ())
         effective_horizon = float(self.config.shield_horizon_seconds if horizon is None else horizon)
-        tracks = self._joint_tracks(env, residuals, {uid for pair in active_pairs for uid in pair}, horizon=effective_horizon)
+        _, tracks = self._joint_position_tracks(
+            env, residuals, {uid for pair in active_pairs for uid in pair},
+            horizon=effective_horizon,
+        )
         minimum = float("inf")
         unsafe: list[tuple[int, int]] = []
         for left, right in active_pairs:
-            verdict = env.safety.verify_predicted_tracks(
-                {left: tracks[left], right: tracks[right]}, start=env.now,
-                end=env.now + effective_horizon,
+            approved, pair_minimum = self._assess_position_pair(
+                tracks[left], tracks[right],
             )
-            audit = getattr(env.safety, "last_predicted_track_audit", {})
-            audited_minimum = audit.get("minimum_separation", float("inf"))
-            # A pair can have no overlapping sampled interval (for example a
-            # plan that ends exactly at this tick).  The SafetyFilter records
-            # that as ``None``; it is not a numeric separation or a reason to
-            # abort the search, and contributes no finite minimum here.
-            minimum = min(minimum, float("inf") if audited_minimum is None else float(audited_minimum))
-            if not verdict.approved:
+            minimum = min(minimum, pair_minimum)
+            if not approved:
                 unsafe.append((left, right))
         return JointSafetyAssessment(not unsafe, minimum, tuple(sorted(unsafe)))
 
@@ -937,6 +1043,11 @@ class PredictiveSafetyShield:
         separation proof exists.  Nominal (zero) residual is merely one legal
         candidate; it is never an unchecked fail-closed fallback.
         """
+        # One policy tick may evaluate dozens of bounded joint candidates.
+        # Their immutable committed tracks and repeated holder residuals are
+        # shared only within this tick and are invalidated before any new
+        # authoritative state can be executed.
+        self._joint_track_cache.clear()
         repaired = dict(intents)
         holders = [uid for uid, uav in env.active.items()
                    if uid in repaired and uav.ring_role is not None and uav.committed_plan is None]

@@ -290,6 +290,8 @@ class SafetyFilter:
         samples=np.arange(plan.start_time,plan.end_time+1e-9,self.config.safety_sampling_dt)
         if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
         candidate_positions = np.asarray([plan.sample(float(time)).position for time in samples], dtype=float)
+        tube_times = None
+        tube_positions = None
         committed_tracks = {}
         for other_id,other in committed_plans.items():
             if other_id==plan.uav_id:continue
@@ -354,10 +356,13 @@ class SafetyFilter:
             # resolution.  A commit must be safe for any bounded future
             # holder residual sequence, not only three constant trajectories.
             if other_plan is None:
-                tube_times = np.arange(plan.start_time, plan.end_time + 1e-9, self.config.physics_dt)
-                if tube_times[-1] < plan.end_time:
-                    tube_times = np.append(tube_times, plan.end_time)
-                tube_positions = np.asarray([plan.sample(float(time)).position for time in tube_times], dtype=float)
+                if tube_times is None:
+                    tube_times = np.arange(plan.start_time, plan.end_time + 1e-9, self.config.physics_dt)
+                    if tube_times[-1] < plan.end_time:
+                        tube_times = np.append(tube_times, plan.end_time)
+                    tube_positions = np.asarray(
+                        [plan.sample(float(time)).position for time in tube_times], dtype=float,
+                    )
                 lower, upper = self.holder_reachable_tube(other_uav, snapshot, tube_times)
                 ring = snapshot.airspace.actual_ring(other_uav.ring_role)
                 if np.any(self._tube_point_distances(tube_positions, ring, lower, upper) < self.config.safe_distance):

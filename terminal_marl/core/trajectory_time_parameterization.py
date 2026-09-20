@@ -147,12 +147,15 @@ class TrajectoryTimeParameterizer:
             if constraints.tangent_yaw:
                 yaw_rates[1:] = np.diff(yaw) / np.diff(times)
                 yaw_rates[0] = yaw_rates[1]
-            result = [TrajectoryPoint(float(time), point, velocity, acceleration,
-                                      None if not constraints.tangent_yaw else float(angle),
-                                      None if not constraints.tangent_yaw else float(rate))
-                      for time, point, velocity, acceleration, angle, rate in zip(times, points, velocities, accelerations, yaw, yaw_rates)]
-            if not self.dynamics.validate_plan(result):
-                return result
+            if self.dynamics.samples_are_feasible(
+                np.asarray(times, dtype=float), points, velocities,
+                None if not constraints.tangent_yaw else yaw_rates,
+            ):
+                return [TrajectoryPoint(float(time), point, velocity, acceleration,
+                                        None if not constraints.tangent_yaw else float(angle),
+                                        None if not constraints.tangent_yaw else float(rate))
+                        for time, point, velocity, acceleration, angle, rate in
+                        zip(times, points, velocities, accelerations, yaw, yaw_rates)]
             speeds *= .88
         raise RuntimeError("could not time-parameterize a dynamically feasible trajectory")
 

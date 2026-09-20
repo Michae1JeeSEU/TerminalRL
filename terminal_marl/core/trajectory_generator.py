@@ -122,16 +122,23 @@ class TrajectoryGenerator:
         points: list[TrajectoryPoint] = []
         speed = max(0.0, current_speed)
         angle = theta
+        radius = float(ring.radius)
+        height = float(ring.height)
         for index in range(samples):
             if index == 0:
                 tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0))
                 radial = np.asarray((-math.cos(angle), -math.sin(angle), 0.0))
                 points.append(TrajectoryPoint(start, self._ring_position(ring, angle), tangent * speed,
-                                              radial * (speed * speed / ring.radius)))
+                                              radial * (speed * speed / radius)))
                 continue
-            motion = self.dynamics.ring_motion_step(ring, angle, speed, target_speed, step)
-            angle, speed = motion.theta, motion.speed
-            points.append(TrajectoryPoint(start + index * step, motion.position, motion.velocity, motion.acceleration))
+            previous_speed = speed
+            speed = self.dynamics.limited_tangential_speed(previous_speed, target_speed, radius, step)
+            angle += .5 * (previous_speed + speed) * step / radius
+            tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0), dtype=float)
+            radial = np.asarray((-math.cos(angle), -math.sin(angle), 0.0), dtype=float)
+            position = np.asarray((radius * math.cos(angle), radius * math.sin(angle), height), dtype=float)
+            acceleration = tangent * ((speed - previous_speed) / step) + radial * (speed * speed / radius)
+            points.append(TrajectoryPoint(start + index * step, position, tangent * speed, acceleration))
         return points
 
     def inbound(self, uav, gate, airspace, now: float) -> TrajectoryPlan:
@@ -223,8 +230,11 @@ class TrajectoryGenerator:
             remaining = max(0.0, moment - now)
             while remaining > 1e-9:
                 step = min(self.config.physics_dt, remaining)
-                motion = self.dynamics.ring_motion_step(source_ring, angle, speed, requested_entry_speed, step)
-                angle, speed, remaining = motion.theta, motion.speed, remaining - step
+                next_speed = self.dynamics.limited_tangential_speed(
+                    speed, requested_entry_speed, source_ring.radius, step,
+                )
+                angle += .5 * (speed + next_speed) * step / source_ring.radius
+                speed, remaining = next_speed, remaining - step
             tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0))
             return angle, speed, self._ring_position(source_ring, angle), tangent * speed
 

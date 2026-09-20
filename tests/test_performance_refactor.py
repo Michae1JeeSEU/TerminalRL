@@ -90,6 +90,137 @@ def test_safety_sampling_witness_keeps_shield_trigger(sampling_dt: float):
     assert shield.telemetry["shield_fail_closed"] + shield.telemetry["shield_interventions"] >= 1
 
 
+@pytest.mark.parametrize("residual", (-2.0, 0.0, 2.0))
+def test_joint_position_tracks_match_reference_plan_sampling(residual: float):
+    config = SimConfig(
+        experiment_mode="fixed_low_student",
+        reset_mode="warm_start_rings",
+        warm_start_uavs=2,
+        warm_start_steady_motion=True,
+        fixed_arrival_schedule=(0.0, 0.0),
+        total_requested_uavs=2,
+    )
+    env = TerminalParallelEnv(config)
+    env.reset(23)
+    shield = PredictiveSafetyShield(config)
+    uid = min(env.active)
+    holder = env.active[uid]
+    end = env.now + config.shield_horizon_seconds
+
+    samples, tracks = shield._joint_position_tracks(
+        env, {uid: residual}, {uid},
+    )
+    reference = shield._repair_plan(holder, env.airspace, env.now, end, residual)
+    expected = np.asarray([reference.sample(float(time)).position for time in samples])
+
+    assert np.allclose(tracks[uid], expected, atol=1e-12, rtol=0.0)
+
+
+def test_joint_position_pair_assessment_matches_existing_safety_arbiter():
+    config = SimConfig(
+        experiment_mode="fixed_low_student",
+        reset_mode="warm_start_rings",
+        warm_start_uavs=2,
+        warm_start_steady_motion=True,
+        fixed_arrival_schedule=(0.0, 0.0),
+        total_requested_uavs=2,
+    )
+    env = TerminalParallelEnv(config)
+    env.reset(29)
+    shield = PredictiveSafetyShield(config)
+    pair = tuple(sorted(env.active))
+    end = env.now + config.shield_horizon_seconds
+    residuals = {pair[0]: -1.25, pair[1]: 1.5}
+    reference_tracks = {
+        uid: shield._repair_plan(env.active[uid], env.airspace, env.now, end, residuals[uid])
+        for uid in pair
+    }
+    reference = env.safety.verify_predicted_tracks(
+        reference_tracks, start=env.now, end=end,
+    )
+    reference_minimum = env.safety.last_predicted_track_audit["minimum_separation"]
+
+    actual = shield._joint_assessment(env, residuals, pairs=(pair,))
+
+    assert actual.approved is reference.approved
+    assert actual.unsafe_pairs == (() if reference.approved else (pair,))
+    assert actual.minimum_separation == pytest.approx(reference_minimum, abs=1e-12)
+
+
+def test_vectorized_sample_feasibility_matches_authoritative_plan_validation():
+    dynamics = VehicleDynamics(RESEARCH_EVTOL)
+    feasible_times = np.asarray((0.0, 1.0, 2.0))
+    feasible_positions = np.asarray(((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0)))
+    feasible_velocities = np.asarray(((1.0, 0.0, 0.0),) * 3)
+    feasible_points = tuple(
+        TrajectoryPoint(time, position, velocity, np.zeros(3, dtype=float))
+        for time, position, velocity in zip(feasible_times, feasible_positions, feasible_velocities)
+    )
+    assert not dynamics.validate_plan(feasible_points)
+    assert dynamics.samples_are_feasible(
+        feasible_times, feasible_positions, feasible_velocities,
+    )
+
+    rng = np.random.default_rng(20260920)
+    for _ in range(50):
+        count = int(rng.integers(2, 30))
+        times = np.cumsum(rng.uniform(0.05, 2.0, size=count))
+        positions = np.cumsum(rng.normal(0.0, 5.0, size=(count, 3)), axis=0)
+        velocities = rng.normal(0.0, 18.0, size=(count, 3))
+        accelerations = np.vstack((
+            np.zeros(3, dtype=float),
+            np.diff(velocities, axis=0) / np.diff(times)[:, None],
+        ))
+        yaw_rates = rng.normal(0.0, 0.5, size=count)
+        points = tuple(
+            TrajectoryPoint(time, position, velocity, acceleration, 0.0, yaw_rate)
+            for time, position, velocity, acceleration, yaw_rate in
+            zip(times, positions, velocities, accelerations, yaw_rates)
+        )
+
+        expected = not dynamics.validate_plan(points)
+        actual = dynamics.samples_are_feasible(times, positions, velocities, yaw_rates)
+
+        assert actual is expected
+
+
+@pytest.mark.parametrize("duration", (0.2, 1.13, 8.0))
+def test_ring_hold_fast_path_matches_ring_motion_reference(duration: float):
+    config = SimConfig()
+    env = TerminalParallelEnv(config)
+    env.reset(20260920)
+    generator = env.generator
+    ring = env.airspace.actual_ring(RingRole.OUTER)
+    theta = 0.37
+    speed = 11.25
+    target_speed = 14.5
+    start = 3.75
+
+    actual = generator.ring_hold_points(ring, theta, speed, target_speed, start, duration)
+    samples = max(2, int(math.ceil(duration / config.physics_dt)) + 1)
+    step = duration / (samples - 1)
+    tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0))
+    radial = np.asarray((-math.cos(theta), -math.sin(theta), 0.0))
+    expected = [TrajectoryPoint(
+        start,
+        generator._ring_position(ring, theta),
+        tangent * speed,
+        radial * (speed * speed / ring.radius),
+    )]
+    for index in range(1, samples):
+        motion = generator.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
+        theta, speed = motion.theta, motion.speed
+        expected.append(TrajectoryPoint(
+            start + index * step, motion.position, motion.velocity, motion.acceleration,
+        ))
+
+    for fast, reference in zip(actual, expected):
+        assert fast.t == reference.t
+        assert np.array_equal(fast.position, reference.position)
+        assert np.array_equal(fast.velocity, reference.velocity)
+        assert np.array_equal(fast.acceleration, reference.acceleration)
+
+
 def test_l1_holder_committed_witness_checks_the_legal_speed_residual_envelope(monkeypatch):
     """Regression for L1-S seed 2003's holder--committed hard witness."""
     config = SimConfig(experiment_mode="fixed_teacher_heavy", scheduler_mode="teacher_full", teacher_enabled=True,

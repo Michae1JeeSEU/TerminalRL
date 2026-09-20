@@ -183,6 +183,57 @@ class VehicleDynamics:
                 errors.append(error)
         return errors
 
+    def samples_are_feasible(
+        self,
+        times: np.ndarray,
+        positions: np.ndarray,
+        velocities: np.ndarray,
+        yaw_rates: np.ndarray | None = None,
+    ) -> bool:
+        """Vectorized feasibility predicate for in-memory planner samples.
+
+        The time parameterizer previously allocated immutable trajectory
+        objects for every rejected speed-profile refinement and then routed
+        them through ``validate_plan`` one transition at a time.  Candidate
+        search only needs the same pass/fail result at that stage.  Keep the
+        authoritative, diagnostic ``validate_plan`` API unchanged and apply
+        its exact numeric inequalities directly to the planner arrays here.
+        """
+        times = np.asarray(times, dtype=float)
+        positions = np.asarray(positions, dtype=float)
+        velocities = np.asarray(velocities, dtype=float)
+        if len(times) < 2:
+            return False
+        dt = np.diff(times)
+        if np.any(~np.isfinite(dt)) or np.any(dt <= 0.0):
+            return False
+        current_velocity = velocities[1:]
+        segment_velocity = np.diff(positions, axis=0) / dt[:, None]
+        acceleration = np.diff(velocities, axis=0) / dt[:, None]
+        tolerance = 1e-3
+        profile = self.profile
+
+        def velocity_limits_exceeded(values: np.ndarray) -> bool:
+            return bool(
+                np.any(np.linalg.norm(values[:, :2], axis=1) > profile.max_horizontal_speed + tolerance)
+                or np.any(values[:, 2] > profile.max_climb_rate + tolerance)
+                or np.any(-values[:, 2] > profile.max_descent_rate + tolerance)
+            )
+
+        if velocity_limits_exceeded(current_velocity) or velocity_limits_exceeded(segment_velocity):
+            return False
+        if (
+            np.any(np.linalg.norm(acceleration[:, :2], axis=1) > profile.max_horizontal_accel + tolerance)
+            or np.any(acceleration[:, 2] > profile.max_vertical_accel_up + tolerance)
+            or np.any(-acceleration[:, 2] > profile.max_vertical_accel_down + tolerance)
+        ):
+            return False
+        if yaw_rates is not None:
+            values = np.asarray(yaw_rates, dtype=float)[1:]
+            if np.any(np.abs(values) > math.radians(profile.max_yaw_rate_deg_s) + tolerance):
+                return False
+        return True
+
     def validate_plan(self, points: Iterable) -> list[str]:
         rows = list(points)
         if len(rows) < 2:
