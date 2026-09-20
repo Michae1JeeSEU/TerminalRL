@@ -2,9 +2,9 @@
 
 > **状态日期**：2026-09-20
 >
-> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
+> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`；runtime shortlist entry `a8424cb`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；K=3 bounded runtime shortlist fresh V2 paired certification 与独立 admission review 已 PASS。现已预注册仅训练 gate adapter + critic、冻结 proposal 生成子图的 fresh PPO entry validation；在 entry 全 gate PASS 前，PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；K=3 bounded runtime shortlist fresh V2 paired certification、独立 admission review 与 fresh PPO entry 已 PASS，`PPO_ALLOWED=true`。下一步只允许从原始合格 candidate 重新初始化、冻结 proposal 生成子图的独立预注册 formal PPO；P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -115,7 +115,12 @@ protocol 预注册，未授权直接训练。fresh entry V1 已冻结 seeds `807
 只允许更新 `gate_adapter + critic`，冻结 `actor_encoder/gate_head/proposal_head/temperature`，并把
 更新后 shortlist 排序逐状态不变设为 hard gate；任一 update/排序/恢复 gate 失败即事务回滚并保持
 `PPO_ALLOWED=false`。协议 SHA256
-`d3400bf47d0f7f0d86ce4ed16c5b547b6ab30e0220691eb1f33eef320af932be`。
+`d3400bf47d0f7f0d86ce4ed16c5b547b6ab30e0220691eb1f33eef320af932be`。entry 随后
+2/2 records 全 gate PASS：26/26 optimizer steps 接受、0拒绝；proposal 子图 byte-exact 不变，
+shortlist 排序稳定，安全/replay/likelihood/restore 全 PASS。`admission.json` SHA256
+`8d425da16345dd0546851d83bfe706877dd4e6298437b8ef9bd91da324175db3`，因此
+`PPO_ALLOWED=true`；entry checkpoints 仍禁止作为 formal 初始化。详见
+[K=3 PPO entry V1](evidence/v4_2/ppo_p2_runtime_shortlist_ppo_entry_v1_summary.md)。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -198,7 +203,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | Learned gate + fixed neutral proposal V2 | **FAIL（效果）** | 18/18 records 安全完成且实现 hard gates PASS；RTT改善4.36s，但平均等待恶化4.55s，aggregate gate FAIL |
 | K=3 bounded runtime shortlist V2 | **PASS / FROZEN** | fresh `806001–806006`；18/18 records、216/216 requests；全部 safety/replay/likelihood/contract gates PASS；K3 相对 K1 等待改善9.52s、RTT改善2.06s |
 | K=3 PPO admission review V1 | **PASS（只读）** | review SHA `a549ffc60c35cb5ac1403ba0c4b59412096b2936d4a209ddb1a25219e09e8783`；仅授权 fresh entry protocol 预注册，不直接授权 PPO |
-| K=3 PPO entry V1 | **PREREGISTERED / 未运行** | fresh `807001/807002`；仅 gate adapter + critic 可训练，proposal 子图冻结；entry checkpoint 不得作为 formal 初始化 |
+| K=3 PPO entry V1 | **PASS / PPO_ALLOWED** | fresh `807001/807002`；26/26 updates 接受、0拒绝；全部 safety/replay/likelihood/frozen-shortlist/restore gates PASS；entry checkpoints 不得作为 formal 初始化 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
