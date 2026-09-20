@@ -11,6 +11,8 @@ from typing import Any
 import numpy as np
 import torch
 import yaml
+from torch import nn
+from torch.distributions import Categorical
 
 from terminal_marl.algo.joint_ppo_v4_2 import HierarchicalPolicyBatchV42, hierarchical_joint_logprob
 from terminal_marl.core.low_level_joint_action_v4_2 import RELEASE_GATE, decode_hierarchical_actions_v4_2
@@ -29,6 +31,17 @@ SMOKE_SEED = 803000
 CONTROLLERS = ("candidate", "gate_fixed_neutral", "rule")
 FIXED_PROPOSAL = 12
 RESERVATION_MARKER = "p2_gate_fixed_neutral_proposal_evaluation_v1_consumed.json"
+
+
+def configure_successor_v2() -> None:
+    """Select the fresh successor after moving proposal replacement into the model."""
+    global STAGE, PROTOCOL, PROTOCOL_SHA, FORMAL_SEEDS, SMOKE_SEED, RESERVATION_MARKER
+    STAGE = "V4_2_P2_GATE_FIXED_NEUTRAL_PROPOSAL_EVALUATION_V2"
+    PROTOCOL = Path("terminal_marl/configs/low_v4_2/ppo_p2_gate_fixed_neutral_proposal_evaluation_v2.yaml")
+    PROTOCOL_SHA = "6c9c9fb11736c639ec59aca32e79cd56ac78762c599c2c998dc0f464418ab0f9"
+    FORMAL_SEEDS = (804001, 804002, 804003, 804004, 804005, 804006)
+    SMOKE_SEED = 804000
+    RESERVATION_MARKER = "p2_gate_fixed_neutral_proposal_evaluation_v2_consumed.json"
 
 
 def _require(condition: bool, message: str) -> None:
@@ -85,12 +98,33 @@ def protocol() -> dict[str, Any]:
     return value
 
 
+class FixedNeutralProposalModel(nn.Module):
+    """Preserve the frozen gate/critic while exposing a degenerate proposal distribution."""
+
+    def __init__(self, base: nn.Module) -> None:
+        super().__init__()
+        self.base = base
+
+    def distributions(self, observations: torch.Tensor) -> tuple[Categorical, Categorical]:
+        gate, _ = self.base.distributions(observations)
+        logits = observations.new_full((len(observations), 25), -1e9)
+        logits[:, FIXED_PROPOSAL] = 0.0
+        return gate, Categorical(logits=logits)
+
+    def conditional_entropy(self, observations: torch.Tensor) -> torch.Tensor:
+        gate, proposal = self.distributions(observations)
+        return gate.entropy() + gate.probs[:, RELEASE_GATE] * proposal.entropy()
+
+    def critic(self, agent_sets: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        return self.base.critic(agent_sets, mask)
+
+
 class FixedNeutralProposalPolicy:
     """Use the frozen student's gate and replace only RELEASE proposal selection."""
 
     def __init__(self, base: Any) -> None:
         self.base = base
-        self.model = base.model
+        self.model = FixedNeutralProposalModel(base.model)
         self.device = base.device
         self.observation_dim = base.observation_dim
 
@@ -132,6 +166,19 @@ def _delta(left: Any, right: Any) -> float | None:
     return float(left) - float(right)
 
 
+def _requested_action_signature(action_tape: str | Path) -> tuple[tuple[Any, ...], ...]:
+    payload = json.loads(Path(action_tape).read_text(encoding="utf-8"))
+    signature = []
+    for row in payload["action_tape"]:
+        gates = row.get("requested_gate", {})
+        proposals = row.get("requested_proposal", {})
+        signature.append(tuple(
+            (str(uid), int(gates[uid]), None if proposals.get(uid) is None else int(proposals[uid]))
+            for uid in sorted(gates, key=lambda value: int(value))
+        ))
+    return tuple(signature)
+
+
 def run(*, candidate_checkpoint: Path, output: Path, history_root: Path, smoke: bool = False) -> dict[str, Any]:
     protocol()
     _require(not output.exists(), f"output already exists: {output}")
@@ -166,6 +213,32 @@ def run(*, candidate_checkpoint: Path, output: Path, history_root: Path, smoke: 
                 _require(bool(result.get("gates", {}).get("all")),
                          f"fixed-proposal episode failed: {controller}/{seed}")
     aggregates = {name: effectiveness.aggregate_records(records, name) for name in CONTROLLERS}
+    signatures = {
+        (str(row["controller"]), int(row["seed"])):
+            _requested_action_signature(row["result"]["summary"]["action_tape"])
+        for row in records if row["controller"] != "rule"
+    }
+    fixed_release_proposals = [
+        proposal
+        for (controller, _), rows in signatures.items() if controller == "gate_fixed_neutral"
+        for step in rows for _, gate, proposal in step if gate == RELEASE_GATE
+    ]
+    differing_seeds = [
+        seed for seed in seeds
+        if signatures[("candidate", seed)] != signatures[("gate_fixed_neutral", seed)]
+    ]
+    implementation_checks = {
+        "fixed_release_rows_nonzero": bool(fixed_release_proposals),
+        "fixed_release_proposals_all_index_12": bool(fixed_release_proposals)
+            and all(value == FIXED_PROPOSAL for value in fixed_release_proposals),
+        "candidate_fixed_requested_actions_differ": bool(differing_seeds),
+        "differing_seeds": differing_seeds,
+    }
+    if not smoke:
+        _require(implementation_checks["fixed_release_proposals_all_index_12"],
+                 "fixed-neutral proposal replacement did not reach rollout")
+        _require(implementation_checks["candidate_fixed_requested_actions_differ"],
+                 "candidate/fixed requested actions are still identical")
     fixed_agg, candidate_agg = aggregates["gate_fixed_neutral"], aggregates["candidate"]
     deltas = {
         "weighted_wait_seconds": _delta(fixed_agg["weighted_wait_seconds"], candidate_agg["weighted_wait_seconds"]),
@@ -188,6 +261,7 @@ def run(*, candidate_checkpoint: Path, output: Path, history_root: Path, smoke: 
         "candidate_payload": {"stage": payload.get("stage"), "architecture_id": payload.get("architecture_id")},
         "seeds": list(seeds), "controllers": list(CONTROLLERS), "records": records,
         "aggregates": aggregates, "fixed_minus_candidate": deltas, "decision_gate": decision,
+        "implementation_checks": implementation_checks,
         "reservation": reservation, "formal_seed_reservation": not smoke,
         "environment_called": True, "teacher_called": False, "labels_collected": False,
         "policy_updated": False, "checkpoint_saved": False, "runtime_catalogue_search": False,
@@ -207,8 +281,13 @@ def _main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--successor-v2", action="store_true")
     torch.set_num_threads(1)
-    run(**vars(parser.parse_args()))
+    args = parser.parse_args()
+    if args.successor_v2:
+        configure_successor_v2()
+    delattr(args, "successor_v2")
+    run(**vars(args))
 
 
 if __name__ == "__main__":

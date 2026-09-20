@@ -1,0 +1,66 @@
+protocol: V4_2_P2_GATE_FIXED_NEUTRAL_PROPOSAL_EVALUATION_V2
+stage: V4_2_P2_GATE_FIXED_NEUTRAL_PROPOSAL_EVALUATION_V2
+preregistered_at: 2026-09-20
+purpose: fresh_evaluation_after_fixed_proposal_adapter_was_moved_to_model_distribution_boundary
+
+predecessor:
+  v1_manifest_sha256: 15bd56cf439be13796a292ee1a745a683e4c8c9632466667676f25c597b3cf35
+  v1_status: INVALID_IMPLEMENTATION
+  observed_bug: student_rollout_calls_policy_model_distributions_and_bypassed_act_details_override
+  observed_evidence: candidate_and_fixed_requested_actions_were_stepwise_identical
+  v1_seeds_reused: false
+  v1_metrics_reused_for_decision: false
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  fixed_proposal_index: 12
+  fixed_speed_residual: 0.0
+  fixed_merge_time_residual: 0.0
+  proposal_basis: minimum_intervention_first_teacher_preference_without_search
+  implementation_boundary: policy_model_distributions
+  runtime_contract: one_gate_one_fixed_proposal_one_safety_validation
+  runtime_catalogue_search: false
+
+formal:
+  seeds: [804001, 804002, 804003, 804004, 804005, 804006]
+  scenario: flow12
+  controllers: [candidate, gate_fixed_neutral, rule]
+  reserve_once: true
+  completion_required: true
+  safety_zero_required: true
+  exact_replay_required: true
+  exact_requested_likelihood_required_for_students: true
+  require_candidate_fixed_requested_actions_differ: true
+  require_fixed_release_proposals_all_index_12: true
+
+smoke:
+  seed: 804000
+  scenario: flow12
+  steps: 160
+  formal_seed_reservation: false
+  authorization: false
+
+decision_gate:
+  fixed_controller_all_episode_gates: true
+  fixed_completion_fraction_min: 1.0
+  fixed_safety_zero: true
+  fixed_wait_delta_vs_candidate_max: 0.0
+  fixed_request_to_touchdown_delta_vs_candidate_max: 0.0
+  fixed_shield_actor_fraction_delta_vs_candidate_max: 0.0
+  aggregate: all_required
+
+authorizations:
+  diagnostic_only: true
+  architecture_freeze_allowed: conditional_on_decision_gate
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false
