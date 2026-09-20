@@ -35,11 +35,41 @@ CHECKPOINT_SHA = CHECKPOINT12_SHA
 
 PROFILES = ("checkpoint12", "p2_initial_k3", "p2_trained_k3")
 P2_SCENARIOS = ("flow6", "flow8", "flow12")
+P2_DENSE_SCENARIO = "p2_dense24"
+
+
+def _p2_dense_scene_config():
+    """Out-of-distribution visual stress scene for the fixed P2 controller.
+
+    Twelve separation-safe aircraft start in steady flight across all three
+    rings (canonical 6/4/2 allocation).  Twelve more requests then arrive at
+    15-second intervals.  This is deliberately denser than P2 training and is
+    diagnostic only; it must not be reported as P2 qualification evidence.
+    """
+    warm_count = 12
+    continuing_count = 12
+    interval_seconds = 15.0
+    schedule = (0.0,) * warm_count + tuple(
+        interval_seconds * index for index in range(1, continuing_count + 1)
+    )
+    return replace(
+        p2_config(len(schedule)),
+        reset_mode="warm_start_rings",
+        warm_start_uavs=warm_count,
+        warm_start_steady_motion=True,
+        fixed_arrival_schedule=schedule,
+        total_requested_uavs=len(schedule),
+        max_simulation_seconds=schedule[-1] + 900.0,
+        runtime_proposal_shortlist_k=3,
+    )
 
 
 def _p2_scene_config(scenario: str):
+    if scenario == P2_DENSE_SCENARIO:
+        return _p2_dense_scene_config()
     if scenario not in P2_SCENARIOS:
-        raise ValueError(f"P2 profiles require one of {P2_SCENARIOS}, got {scenario!r}")
+        choices = (*P2_SCENARIOS, P2_DENSE_SCENARIO)
+        raise ValueError(f"P2 profiles require one of {choices}, got {scenario!r}")
     return replace(
         p2_config(int(scenario.removeprefix("flow"))),
         runtime_proposal_shortlist_k=3,
@@ -114,7 +144,9 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--profile", choices=PROFILES, default="checkpoint12")
     parser.add_argument(
-        "--scenario", choices=("warm3", "flow3", "flow6", "flow8", "flow12"),
+        "--scenario", choices=(
+            "warm3", "flow3", "flow6", "flow8", "flow12", P2_DENSE_SCENARIO,
+        ),
         default="flow6",
     )
     parser.add_argument("--seed", type=int, default=690003)

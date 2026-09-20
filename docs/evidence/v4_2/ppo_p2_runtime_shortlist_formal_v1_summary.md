@@ -48,6 +48,10 @@ python -m terminal_marl.visualization.ppo_checkpoint_viewer `
 For a visual comparison, use `--profile p2_initial_k3` with the original qualified checkpoint.
 The replay is diagnostic only and does not change the heldout promotion decision below.
 
+The optional `--scenario p2_dense24` is an out-of-distribution visual stress scene, not a P2
+training or qualification condition. It starts 12 aircraft in steady flight across the outer,
+middle, and inner rings (6/4/2) and injects 12 additional requests at 15-second intervals.
+
 ## Decision
 
 `PASS=true` and `HELDOUT_EVALUATION_ALLOWED=true`. The checkpoint remains non-promotable and
