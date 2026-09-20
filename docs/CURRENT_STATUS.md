@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 终态 FAIL，学习式 proposal 分支停止。fixed-neutral evaluation V1 因 adapter 覆写层级错误而判定为 INVALID；已将替换移动到 rollout 实际调用的 `policy.model.distributions` 并冻结 fresh V2。proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 与 corrected fixed-neutral V2 均终态 FAIL。学习式 proposal 与单一固定 rule proposal 两条“不搜索、单 intent”分支均已停止。下一步需要显式决定是否改变 runtime boundary（例如 bounded shortlist certification）或回退为 rule-only low layer；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -67,6 +67,18 @@ fixed controller 的 requested gate/proposal 序列在六个 seed 上逐步完�
 boundary，保持原 gate logits/critic 不变，并新增 action-tape hard gates：全部 fixed RELEASE 必须为
 proposal 12，且 candidate/fixed 请求序列必须存在实际差异。V2 使用全新 `804001–804006`，不重跑
 或复用 V1 seeds/metrics。
+
+Corrected fixed-neutral V2 随后使用 fresh `804001–804006` 完成 18/18 paired records；实现 hard
+gates 证明六个 seed 的 candidate/fixed 请求序列均有差异，且 fixed controller 的全部 RELEASE 均为
+proposal 12。三种 controller 均 72/72 requests 完成、安全/回放/likelihood 全 PASS、shield 为零。
+fixed-neutral 相对 candidate 的 request-to-touchdown 改善 `4.3611 s`，但 weighted mean wait 从
+`13.0303 s` 增至 `17.5845 s`（delta `+4.5542 s`），违反预注册 non-worse gate，故 aggregate
+FAIL、architecture freeze=false。manifest SHA256
+`df7ab01ef8a828189300d2e79e4f2073b2de8fe0937ae4f0b47faa010cbedac0`。
+按停止规则，不再用本轮 dev 调固定 proposal index，也不再追加 learned head/loss。继续推进需要改变
+边界：要么明确授权 deployment-time bounded shortlist certification，要么将低层整体固定为 rule-only，
+把学习创新集中在高层动态空域构型；两者都超出当前冻结的“策略单次给出一个 proposal、SafetyFilter
+只验证一次”假设，必须先作架构决定。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -146,6 +158,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | V2.2 25-logit feasibility head exploratory | **COMPLETE（不闭合）** | negative recall/F1 3/3 改善，但 AUC 3/3 下降、Top-1 仅1/3改善；architecture freeze 不授权 |
 | Observation V2.2 hybrid confirmation V4 | **FAIL（架构）** | collection 6/6 PASS；hybrid 仅1/3 probes 全 gate PASS；学习式 proposal 分支停止，不再基于 V4 dev 调参 |
 | Learned gate + fixed neutral proposal V1 | **INVALID_IMPLEMENTATION** | rollout 绕过 `act_details()` adapter；candidate/fixed action tapes 完全相同；表面 PASS 作废，803xxx 不重跑 |
+| Learned gate + fixed neutral proposal V2 | **FAIL（效果）** | 18/18 records 安全完成且实现 hard gates PASS；RTT改善4.36s，但平均等待恶化4.55s，aggregate gate FAIL |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -263,8 +276,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 ## 当前允许的下一步
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
-2. 暂停 proposal repair。执行 corrected fixed-neutral V2 fresh paired evaluation；只做 controller evaluation，无训练、无 Teacher、无 label、无 checkpoint 保存，并强制验证替换确实到达 rollout action tape。
-3. fixed-neutral V2 只有在实现 hard gates、6/6 fresh flow12 completion/safety/replay/likelihood，以及 wait、request-to-touchdown、shield actor fraction 全部通过时才允许冻结 proposal-source 架构。若失败，则停止当前单意图学习/规则混合分支并请求 runtime-boundary 决策；不得改用 V1/V2 dev 调 proposal index。runtime catalogue search 会改变当前主线，不能作为隐式修复。
+2. 暂停 proposal repair、learned proposal head/loss 与 fixed proposal index 调整；V1/V2/V3/V4 及 fixed-neutral V1/V2 seeds、rows、metrics 均为 immutable evidence，不得重跑或作为新阈值调优集。
+3. 下一步必须先作 runtime-boundary 决策：`(a)` 显式授权有限 shortlist（例如最多 K 个 proposal）逐个 certificate，仍只执行首个通过项；或 `(b)` 取消 learned low-level proposal，把低层冻结为 rule-only/VTAC，并将学习主线移到 A6 dynamic airspace。选择前不得隐式加入 catalogue search。
 4. 只有 proposal/observation repair、fresh qualification 与 fresh effectiveness 全部闭合后，才可进行 evidence-based PPO admission review；其前 `PROPOSAL_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`、`P3_ALLOWED=false`。
 5. 通过 P2 效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成 static qualification 后才进入 A6。后续长训练或评估由 `luna_worker` 跟踪、主agent负责解释与决策。
 
