@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；Observation V2.2 V3 与 25-logit joint-feasibility exploratory audit 均已完成但未闭合。后者负类召回/F1 稳定改善，却牺牲 AUC 且 Top-1 两次下降。已预注册最后一轮 fresh V4 confirmation，以 balanced BCE + feasible-set NLL 同时约束分类与排序；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；Observation V2.2 V4 hybrid confirmation 终态 FAIL（仅 1/3 probes 全 gate PASS），学习式 proposal 分支按预注册纪律停止。下一步评估“已合格 learned gate + 单一固定 neutral rule proposal”，保持一次 proposal/一次 SafetyFilter validation 且不做 catalogue search；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -47,6 +47,16 @@ conditioned shared scorer，infeasible recall 三次提高 `.0552/.0456/.1295`�
 `0.5 balanced BCE + 0.5 feasible-set NLL`；每个 probe 必须同时满足 feasible recall≥`.85`，且
 infeasible recall、macro-F1、AUC、state Top-1 相对 fresh 94D conditioned baseline 均不下降。
 只有 3/3 probes 全 gate PASS 才允许冻结架构；无论结果如何都不直接授权 policy repair。
+
+V4 formal 已完成，6/6 episodes、72/72 requests、安全与 replay 全 PASS，train/dev 236/145 rows；
+manifest SHA256 `1983d5dcbb4cc7ceea28bd02a47ccb7829c33d3e8514a2c53bc86f8f1416270d`。
+Hybrid probe seed `802101` 全 gate PASS，但 `802102` 的四项相对指标失败，`802103` 的 AUC 与
+state Top-1 失败，aggregate `all_three_probes_pass=false`，architecture freeze 保持 false。此结果
+触发预注册停止条件：不再使用 V4 dev 调整 learned proposal head/loss。下一步改测 proposal source
+边界：gate 仍取 anchored repair V3 checkpoint 的 deterministic argmax，RELEASE 时固定使用 catalogue
+index 12（speed/merge residual 均为 0，minimum-intervention 首选），随后只调用一次 SafetyFilter；
+该路径无 Teacher、无候选枚举、无训练更新。fresh paired evaluation 使用 flow12 seeds
+`803001–803006`，与原 candidate 及 nominal rule 对比。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -124,6 +134,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | P2 proposal-conditioned feasibility V1 | **FAIL** | 88D+proposal参数的binary MLP feasible recall约`.90`，但 infeasible recall `.454–.462`、AUC `.793–.810`，o2m与全部综合gate失败；不授权factorized architecture或repair |
 | Observation V2.2 closure V3 | **COMPLETE（诊断，不闭合）** | 6/6 episodes、247/106 train/dev rows；94D 的 AUC 3/3 提高，但 negative recall、F1、Top-1 不一致；observation-only repair 不授权 |
 | V2.2 25-logit feasibility head exploratory | **COMPLETE（不闭合）** | negative recall/F1 3/3 改善，但 AUC 3/3 下降、Top-1 仅1/3改善；architecture freeze 不授权 |
+| Observation V2.2 hybrid confirmation V4 | **FAIL（架构）** | collection 6/6 PASS；hybrid 仅1/3 probes 全 gate PASS；学习式 proposal 分支停止，不再基于 V4 dev 调参 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -241,8 +252,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 ## 当前允许的下一步
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
-2. 暂停 proposal repair。执行 V4 fresh hybrid-objective confirmation；V3 artifacts 只保留为 predecessor evidence，V4 使用全新 split-disjoint environment/probe seeds，不调 threshold、不保存 probe checkpoint。
-3. V4 是该学习式 proposal 分支最后一轮架构确认：只有 3/3 probes 全部通过预注册五项 gate 才允许冻结架构；否则停止该分支并重新评估 runtime-boundary，不再基于 V4 dev 继续调 loss/head。runtime catalogue search 会改变“策略给出一个意图、SafetyFilter仅验证”的当前主线，不能作为隐式修复。
+2. 暂停 proposal repair。执行 learned-gate + fixed-neutral-proposal fresh paired evaluation；只做 controller evaluation，无训练、无 Teacher、无 label、无 checkpoint 保存。
+3. fixed-neutral 只有在 6/6 fresh flow12 的 completion/safety/replay/likelihood 全 PASS，且 wait、request-to-touchdown、shield actor fraction 均不差于原 candidate 时才允许冻结该 proposal-source 架构。若失败，则停止当前单意图学习/规则混合分支并请求 runtime-boundary 决策；不得改用 V4/本轮 dev 调 proposal index。runtime catalogue search 会改变当前主线，不能作为隐式修复。
 4. 只有 proposal/observation repair、fresh qualification 与 fresh effectiveness 全部闭合后，才可进行 evidence-based PPO admission review；其前 `PROPOSAL_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`、`P3_ALLOWED=false`。
 5. 通过 P2 效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成 static qualification 后才进入 A6。后续长训练或评估由 `luna_worker` 跟踪、主agent负责解释与决策。
 

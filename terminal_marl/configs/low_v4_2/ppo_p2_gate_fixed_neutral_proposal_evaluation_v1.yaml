@@ -1,0 +1,61 @@
+protocol: V4_2_P2_GATE_FIXED_NEUTRAL_PROPOSAL_EVALUATION_V1
+stage: V4_2_P2_GATE_FIXED_NEUTRAL_PROPOSAL_EVALUATION_V1
+preregistered_at: 2026-09-20
+purpose: evaluate_qualified_learned_gate_with_single_deterministic_neutral_rule_proposal
+
+predecessor:
+  candidate_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  v4_closure_manifest_sha256: 1983d5dcbb4cc7ceea28bd02a47ccb7829c33d3e8514a2c53bc86f8f1416270d
+  v4_architecture_confirmation_pass: false
+  learned_proposal_branch_stopped: true
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  deterministic: true
+  fixed_geometry: true
+  natural_flow: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  fixed_proposal_index: 12
+  fixed_speed_residual: 0.0
+  fixed_merge_time_residual: 0.0
+  proposal_basis: minimum_intervention_first_teacher_preference_without_search
+  runtime_contract: one_gate_one_fixed_proposal_one_safety_validation
+  runtime_catalogue_search: false
+
+formal:
+  seeds: [803001, 803002, 803003, 803004, 803005, 803006]
+  scenario: flow12
+  controllers: [candidate, gate_fixed_neutral, rule]
+  reserve_once: true
+  completion_required: true
+  safety_zero_required: true
+  exact_replay_required: true
+  exact_requested_likelihood_required_for_students: true
+
+smoke:
+  seed: 803000
+  scenario: flow12
+  steps: 160
+  formal_seed_reservation: false
+  authorization: false
+
+decision_gate:
+  fixed_controller_all_episode_gates: true
+  fixed_completion_fraction_min: 1.0
+  fixed_safety_zero: true
+  fixed_wait_delta_vs_candidate_max: 0.0
+  fixed_request_to_touchdown_delta_vs_candidate_max: 0.0
+  fixed_shield_actor_fraction_delta_vs_candidate_max: 0.0
+  aggregate: all_required
+
+authorizations:
+  diagnostic_only: true
+  architecture_freeze_allowed: conditional_on_decision_gate
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false
