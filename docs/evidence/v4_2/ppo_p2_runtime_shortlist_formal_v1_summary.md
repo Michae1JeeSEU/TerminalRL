@@ -33,6 +33,21 @@ steps were accepted and none rejected; all safety counters and shield fractions 
 The final checkpoint is `checkpoint_6.pt`, SHA256
 `714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e`.
 
+## Local 3D replay
+
+The existing PyVista viewer can replay the learned P2 controller with the same fixed geometry,
+natural arrival flow, deterministic action selection, and K=3 runtime proposal shortlist used by
+the P2 evaluation path:
+
+```powershell
+python -m terminal_marl.visualization.ppo_checkpoint_viewer `
+  --checkpoint D:\7_codespace\training_outputs\terminal\p2_runtime_shortlist_formal_v1_808001_808006\checkpoint_6.pt `
+  --profile p2_trained_k3 --scenario flow12 --seed 809006 --playback-speed 2
+```
+
+For a visual comparison, use `--profile p2_initial_k3` with the original qualified checkpoint.
+The replay is diagnostic only and does not change the heldout promotion decision below.
+
 ## Decision
 
 `PASS=true` and `HELDOUT_EVALUATION_ALLOWED=true`. The checkpoint remains non-promotable and
