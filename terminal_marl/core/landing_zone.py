@@ -17,12 +17,43 @@ class ReservationResult: approved: bool; lz_id: int | None; reason: str = ""
 
 class LandingZoneManager:
     POSITIONS = ((-80.,-40.,0.), (0.,-40.,0.), (80.,-40.,0.), (-80.,40.,0.), (0.,40.,0.), (80.,40.,0.))
-    def __init__(self) -> None: self.zones = [LandingZone(i, np.array(p)) for i,p in enumerate(self.POSITIONS)]
+    ASSIGNMENT_MODES = frozenset(("lowest_id", "nearest_available"))
+
+    def __init__(self, assignment_mode: str = "lowest_id") -> None:
+        if assignment_mode not in self.ASSIGNMENT_MODES:
+            raise ValueError(
+                f"unsupported landing-zone assignment_mode {assignment_mode!r}; "
+                f"expected one of {sorted(self.ASSIGNMENT_MODES)!r}"
+            )
+        self.assignment_mode = assignment_mode
+        self.zones = [LandingZone(i, np.array(p)) for i,p in enumerate(self.POSITIONS)]
+
     def available_zones(self, uav: UAVState, now: float = 0.0) -> list[int]:
         return [z.lz_id for z in self.zones if z.status is LZStatus.FREE and uav.mission_type in z.compatible_missions]
-    def choose_rule_zone(self, uav: UAVState, now: float = 0.0) -> int | None:
+
+    def rank_available_zones(self, uav: UAVState, now: float = 0.0) -> list[int]:
+        """Return free, mission-compatible LZ ids in deterministic assignment order.
+
+        ``lowest_id`` is the historical rule and remains the constructor default.
+        ``nearest_available`` ranks by 3-D Euclidean distance from the current UAV
+        position, with the LZ id as the deterministic tie-breaker.
+        """
         available = self.available_zones(uav, now)
-        return min(available) if available else None
+        if self.assignment_mode == "lowest_id":
+            return sorted(available)
+
+        position = np.asarray(uav.position, dtype=float)
+        return sorted(
+            available,
+            key=lambda lz_id: (
+                float(np.linalg.norm(self.zones[lz_id].position - position)),
+                lz_id,
+            ),
+        )
+
+    def choose_rule_zone(self, uav: UAVState, now: float = 0.0) -> int | None:
+        ranked = self.rank_available_zones(uav, now)
+        return ranked[0] if ranked else None
     def reserve(self, lz_id: int, uav_id: int, now: float) -> ReservationResult:
         z=self.zones[lz_id]
         if z.status is not LZStatus.FREE: return ReservationResult(False,None,"lz_not_free")

@@ -61,6 +61,9 @@ def _p2_dense_scene_config():
         total_requested_uavs=len(schedule),
         max_simulation_seconds=schedule[-1] + 900.0,
         runtime_proposal_shortlist_k=3,
+        lz_assignment_mode="nearest_available",
+        release_arbitration_mode="downstream_priority",
+        final_queue_capacity=3,
     )
 
 

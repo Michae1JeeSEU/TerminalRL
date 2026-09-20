@@ -90,7 +90,7 @@ class TerminalParallelEnv:
         self.arrivals = ArrivalProcess(self.config, seed)
         self.admission = AdmissionManager(self.config)
         self.airspace = DynamicAirspace(self.config)
-        self.lz_manager = LandingZoneManager()
+        self.lz_manager = LandingZoneManager(self.config.lz_assignment_mode)
         self.scheduler = MergeScheduler(self.config)
         self.execution_scheduler = ExecutionScheduler(self.config, self.scheduler)
         self.teacher_scheduler = TeacherScheduler(self.config, self.scheduler) if self.config.teacher_enabled else None
@@ -112,6 +112,10 @@ class TerminalParallelEnv:
             "arrivals_admitted": 0, "release_approved": 0, "release_rejected": 0, "safety_interventions": 0,
             "merge_time_modified": 0, "geometry_updates": 0,
             "max_concurrent_final": 0, "final_overcapacity_steps": 0, "final_busy_steps": 0,
+            "final_concurrency_step_sum": 0, "free_lz_step_sum": 0,
+            "lz_idle_with_inner_demand_steps": 0,
+            "lz_assignments": 0, "lz_assignment_distance_sum": 0.0,
+            "lz_nearest_distance_sum": 0.0, "lz_assignment_regret_sum": 0.0,
             "repair_candidates_checked": 0, "repair_used": 0, "future_release_reservations": 0,
             "checked_executed_plan_matches": 0, "checked_executed_plan_samples": 0,
             "checked_executed_plan_hash_mismatches": 0,
@@ -244,9 +248,58 @@ class TerminalParallelEnv:
 
     def _record_final_occupancy(self) -> None:
         concurrent = sum(uav.phase is FlightPhase.FINAL for uav in self.active.values())
+        free_lz = sum(zone.status.value == "free" for zone in self.lz_manager.zones)
+        inner_demand = any(
+            uav.ring_role is RingRole.INNER and uav.committed_plan is None
+            for uav in self.active.values()
+        )
         self.telemetry["max_concurrent_final"] = max(self.telemetry["max_concurrent_final"], concurrent)
         self.telemetry["final_busy_steps"] += int(concurrent > 0)
         self.telemetry["final_overcapacity_steps"] += int(concurrent > self.config.final_queue_capacity)
+        self.telemetry["final_concurrency_step_sum"] += concurrent
+        self.telemetry["free_lz_step_sum"] += free_lz
+        self.telemetry["lz_idle_with_inner_demand_steps"] += int(
+            inner_demand and free_lz > 0 and concurrent < self.config.final_queue_capacity
+        )
+
+    def _release_processing_order(self) -> list[tuple[int, UAVState]]:
+        """Return the configured deterministic same-tick arbitration order.
+
+        The legacy insertion order remains the default for historical replay.
+        Dense throughput curricula drain the downstream stage first, then use
+        operational priority, accumulated wait, and UID as stable tie-breaks.
+        Safety certification and reservations still run for every selected
+        request in this exact order.
+        """
+        rows = list(self.active.items())
+        if self.config.release_arbitration_mode == "legacy_insertion":
+            return rows
+        rank = {RingRole.INNER: 0, RingRole.MIDDLE: 1, RingRole.OUTER: 2}
+        return sorted(rows, key=lambda row: (
+            rank.get(row[1].ring_role, 3),
+            -float(row[1].dynamic_priority),
+            -float(row[1].external_wait_time + row[1].internal_wait_time),
+            int(row[0]),
+        ))
+
+    def _record_lz_assignment(self, uav: UAVState, lz_id: int) -> None:
+        """Record committed LZ travel distance and avoidable geometric regret."""
+        selected = float(np.linalg.norm(
+            self.lz_manager.zones[lz_id].position - np.asarray(uav.position, dtype=float)
+        ))
+        compatible = [
+            zone for zone in self.lz_manager.zones
+            if (zone.lz_id == lz_id or zone.status.value == "free")
+            and uav.mission_type in zone.compatible_missions
+        ]
+        nearest = min(
+            (float(np.linalg.norm(zone.position - np.asarray(uav.position, dtype=float))) for zone in compatible),
+            default=selected,
+        )
+        self.telemetry["lz_assignments"] += 1
+        self.telemetry["lz_assignment_distance_sum"] += selected
+        self.telemetry["lz_nearest_distance_sum"] += nearest
+        self.telemetry["lz_assignment_regret_sum"] += max(0.0, selected - nearest)
 
     def _commit(self, uav: UAVState, plan) -> bool:
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
@@ -387,6 +440,7 @@ class TerminalParallelEnv:
                 uav.merge_reservation_id = reservation.reservation_id
                 if target == "final":
                     uav.assigned_lz = lz_id
+                    self._record_lz_assignment(uav, lz_id)
                 transition(uav, phase, self.now)
                 uav.ring_role = None
                 row["runtime_shortlist_rank"] = rank
@@ -545,7 +599,9 @@ class TerminalParallelEnv:
             return "safety_wait"
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id
-            if lz_id is not None: uav.assigned_lz = lz_id
+            if lz_id is not None:
+                uav.assigned_lz = lz_id
+                self._record_lz_assignment(uav, lz_id)
             transition(uav, pending["phase"], self.now); uav.ring_role = None
             self._finish_release_intent(uav, row, "approved", candidate=candidate, plan_id=plan.plan_id)
             return "approved"
@@ -782,7 +838,9 @@ class TerminalParallelEnv:
             plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
                                                  airspace=self.airspace)
             if self._commit(uav, plan):
-                uav.assigned_lz = lz_id; uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
+                uav.assigned_lz = lz_id
+                self._record_lz_assignment(uav, lz_id)
+                uav.merge_reservation_id = reservation.reservation_id; transition(uav, FlightPhase.FINAL, self.now); uav.ring_role = None
                 return finish("approved")
             self.lz_manager.release(lz_id, uav.uid, "safety_reject"); self.execution_scheduler.cancel(reservation.reservation_id, "safety_reject")
             uav.safety_retry_after = self.now + 5.0
@@ -891,7 +949,9 @@ class TerminalParallelEnv:
             plan = plan.with_reservation_ids((reservation.reservation_id,))
             if self._commit(uav, plan):
                 uav.merge_reservation_id = reservation.reservation_id
-                if target == "final": uav.assigned_lz = lz_id
+                if target == "final":
+                    uav.assigned_lz = lz_id
+                    self._record_lz_assignment(uav, lz_id)
                 transition(uav, phase, self.now); uav.ring_role = None
                 self._finish_release_intent(uav, row, "approved", candidate=candidate, plan_id=plan.plan_id)
                 return "approved"
@@ -978,7 +1038,10 @@ class TerminalParallelEnv:
             for uid, uav in self.active.items()
             if self.config.teacher_release_label_enabled and self.config.teacher_enabled and self.config.teacher_mode == "teacher_full" and actions.get(str(uid), np.array([1.0, 0.0, 0.0]))[0] <= self.config.release_threshold
         }
-        for uid, uav in list(self.active.items()):
+        if self.config.release_arbitration_mode == "downstream_priority":
+            for uav in self.active.values():
+                self.priority.update(uav, self.now)
+        for uid, uav in self._release_processing_order():
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
             ranked_intents = None
             raw_shortlist = proposal_shortlists.get(str(uid))

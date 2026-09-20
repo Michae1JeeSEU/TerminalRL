@@ -135,6 +135,11 @@ class SimConfig:
     initial_priority: int | None = None
     num_landing_zones: int = 6
     final_queue_capacity: int = 1
+    # Historical protocols retain the lowest-ID/single-pass behavior.  Dense
+    # throughput curricula opt into geometry-aware LZ selection and a
+    # downstream-first arbitration order without rewriting old evidence.
+    lz_assignment_mode: str = "lowest_id"
+    release_arbitration_mode: str = "legacy_insertion"
     max_speed_residual_mps: float = 2.0
     max_merge_time_residual_seconds: float = 6.0
     # Deployment interprets one gate decision.  For RELEASE, the default
@@ -207,6 +212,12 @@ class SimConfig:
             raise ValueError("mission_probabilities must be a non-negative distribution over the four mission types")
         if self.num_landing_zones != 6:
             raise ValueError("Phase A v1 requires six landing zones")
+        if self.lz_assignment_mode not in {"lowest_id", "nearest_available"}:
+            raise ValueError("unsupported landing-zone assignment mode")
+        if self.release_arbitration_mode not in {"legacy_insertion", "downstream_priority"}:
+            raise ValueError("unsupported release arbitration mode")
+        if not 0 <= self.final_queue_capacity <= self.num_landing_zones:
+            raise ValueError("final queue capacity must fit the landing-zone set")
         if self.dt <= 0 or self.physics_dt <= 0 or self.safety_sampling_dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:
             raise ValueError("dt, physics_dt, safety_sampling_dt, max_active_uavs and energy_capacity must be positive")
         if self.physics_dt > self.dt or self.safety_sampling_dt > self.dt:
