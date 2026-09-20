@@ -932,3 +932,31 @@ safety heading/pitch nudge as primary protection
 ```
 
 历史迁移清单见 `history/plans/phase_a_alignment_revision.md`；它仅用于追溯，不定义当前实现。
+
+---
+
+## 33. 仿真性能与可视化约束
+
+安全审查的性能优化不得减少预测时域、采样密度或安全对象。允许的等价优化包括：
+
+- 递归 successor projection 只复制会被投影修改的 `UAVState` 顶层对象；不可变
+  `TrajectoryPlan` 可共享，但任何新增的嵌套可变字段在采用该路径前必须单独审计；
+- 同一个 authoritative prediction step 内，完全相同的 plan、target phase 与时间网格可复用
+  只读位置轨迹；`begin_prediction_step()` 必须清空该缓存；
+- 只需要位置的碰撞计算使用 `TrajectoryPlan.sample_position()`；需要速度、加速度或姿态的执行
+  路径仍使用完整 `sample()`。
+
+viewer是只读observer，不得反向修改环境或重新定义航迹。实时航迹显示规则为：
+
+```text
+displayed path = authoritative current position + future committed-plan points
+executed history = not displayed
+UAV color = trajectory color = stable uid identity color
+plan id or point topology changes = rebuild line actor
+plan completion/disappearance = remove line actor
+```
+
+`ppo_checkpoint_viewer` 的密集场景默认 `frame_stride=2`、
+`trajectory_max_points=12`。两者只控制渲染采样，不改变仿真步、策略输入或安全认证；命令行可用
+`--frame-stride`、`--trajectory-max-points`、`--[no-]trajectories` 与
+`--[no-]labels` 调整。

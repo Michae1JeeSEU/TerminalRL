@@ -2,7 +2,7 @@
 
 > **状态日期**：2026-09-21
 >
-> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`；runtime shortlist entry/formal/heldout/review `a8424cb`、`96e6329`、`8255e66`、`6129875`、`ccd9999`；P2R dense resource semantics `c1efba1`。Git 无 remote，未 push。
+> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`；runtime shortlist entry/formal/heldout/review `a8424cb`、`96e6329`、`8255e66`、`6129875`、`ccd9999`；P2R dense resource semantics `c1efba1`；dense safety/viewer performance `3157b5c`。Git 无 remote，未 push。
 >
 > **当前阶段**：Phase A / A5；original K3 candidate 的 P2R 密集降落流资源语义 V1 已完成实现与多种子诊断，未改写旧 P2 证据、未启动新 PPO。P3 priority/SOC pipeline V1 保持已预注册但未运行；P4 与 checkpoint promotion 仍阻塞
 >
@@ -24,6 +24,15 @@ completions `17→22`，每个 seed 最大并发 final `1→2`，新语义 LZ as
 108个内环资源机会时刻仅4个存在“已单机认证但策略未请求”的 RELEASE，故当前问题主要属于资源
 语义而非 gate 全面失效；未据此启动新 PPO。证据见
 [P2R dense landing-flow V1](evidence/v4_2/p2r_dense_landing_flow_v1_summary.md)。
+
+同日完成 `p2_dense24` 仿真与可视化性能修复。无GUI基准证明主要瓶颈位于递归安全预测，
+而非单纯PyVista绘制：20步 `env.step` 的cProfile累计时间由 `15.726 s` 降至 `8.052 s`
+（`-48.8%`）。修改只消除递归投影对不可变轨迹数组的深拷贝、复用单步内完全相同的已提交
+航迹，并为仅需位置的碰撞审查使用等价的轻量插值；安全阈值、预测时域、采样间隔与动作语义
+均未改变。同检查点/seed的放行计数、最小间隔与全部安全遥测逐值一致。viewer现在只显示“当前
+真实位置 + 尚未执行的计划点”，按UAV稳定着色，选中航迹加粗，并在plan/topology变化或结束时
+正确重建/删除actor；P2 viewer默认 `frame_stride=2`、每条航迹最多12点。完整证据见
+[P2 dense visualization/performance](evidence/v4_2/p2_dense_visualization_performance_20260921.md)。
 
 2026-09-20 冻结 Observation V2.2 candidate：保持 V2.1 的 88D byte-identical prefix，追加 6 个
 scheduler/reservation/同一步竞争上下文特征，形成 94D schema；runtime 仍为单一 intent + 单次
