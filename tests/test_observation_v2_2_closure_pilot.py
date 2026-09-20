@@ -71,10 +71,16 @@ def test_v2_2_smoke_path_does_not_reserve_formal_seeds(tmp_path, monkeypatch):
     monkeypatch.setattr(pilot.effectiveness, "load_candidate_checkpoint",
                         lambda path: (object(), {"stage": "test", "architecture_id": "test"}))
     record = {"checks": {"all": True}, "rows": 1}
-    monkeypatch.setattr(pilot, "_episode", lambda *args, **kwargs: (record, [_row(0.0)]))
+    episode_call = {}
+    def fake_episode(*args, **kwargs):
+        episode_call.update(kwargs)
+        return record, [_row(0.0)]
+    monkeypatch.setattr(pilot, "_episode", fake_episode)
     output = tmp_path / "smoke"
     result = pilot.run(output=output, checkpoint=checkpoint, history_root=tmp_path, smoke=True)
     assert result["status"] == "INCOMPLETE" and result["smoke"]
+    assert episode_call["require_complete"] is False
+    assert episode_call["require_all_arrivals"] is False
     assert not result["formal_seed_reservation"] and not result["paired_probe_called"]
     assert (output / "manifest.json").is_file()
     assert not (checkpoint.parent / pilot.RESERVATION_MARKER).exists()

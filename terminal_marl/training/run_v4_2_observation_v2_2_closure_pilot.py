@@ -204,7 +204,8 @@ def _behavior_request(policy: Any, env: TerminalParallelEnv, observations: Mappi
 
 
 def _episode(policy: Any, *, seed: int, split: str, output: Path,
-             max_steps: int | None = None, require_complete: bool = True) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+             max_steps: int | None = None, require_complete: bool = True,
+             require_all_arrivals: bool = True) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     config = replace(support.support_config(12), observation_schema_version=OBS_SCHEMA)
     output.mkdir(parents=True, exist_ok=False)
     env = TerminalParallelEnv(config)
@@ -262,7 +263,7 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path,
     generated = int(env.arrivals.generated)
     complete = len(env.completed_uavs) == 12
     checks = {
-        "all_arrivals_generated": generated == 12,
+        "all_arrivals_generated": generated == 12 if require_all_arrivals else True,
         "all_requests_complete": complete if require_complete else True,
         "safety_zero": not any(safety.values()),
         "exact_action_tape_replay": bool(replay.get("exact")),
@@ -280,6 +281,8 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path,
         "seed": seed, "split": split, "steps": tick + 1, "seconds": float(env.now),
         "completed": len(env.completed_uavs), "requested": generated,
         "completion_observed": complete, "completion_hard_gate": require_complete,
+        "all_arrivals_observed": generated == 12,
+        "arrival_generation_hard_gate": require_all_arrivals,
         "safety": safety,
         "rows": len(rows), "prefix_checks": prefix_checks, "repeated_checks": repeated_checks,
         "action_tape": str(tape_path), "checks": checks,
@@ -424,7 +427,7 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         output.mkdir(parents=True, exist_ok=False)
         record, rows = _episode(policy, seed=SMOKE_SEED, split="smoke",
                                 output=output / f"smoke_{SMOKE_SEED}_flow12", max_steps=SMOKE_STEPS,
-                                require_complete=False)
+                                require_complete=False, require_all_arrivals=False)
         result = {
             "stage": STAGE, "status": "INCOMPLETE", "smoke": True,
             "protocol_sha256": PROTOCOL_SHA, "candidate_checkpoint_sha256": CANDIDATE_SHA,
