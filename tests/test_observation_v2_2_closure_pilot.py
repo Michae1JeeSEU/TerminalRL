@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import torch
 
 from terminal_marl.algo.joint_ppo_v4_2 import JointPPOV42
 from terminal_marl.core.config import SimConfig
@@ -149,3 +150,39 @@ def test_v2_2_v3_uses_fresh_seeds_and_report_only_completion():
     finally:
         for name, value in original.items():
             setattr(pilot, name, value)
+
+
+def test_v2_2_v4_freezes_fresh_hybrid_confirmation():
+    names = ("STAGE", "PROTOCOL", "PROTOCOL_SHA", "TRAIN_SEEDS", "DEV_SEEDS",
+             "PROBE_SEEDS", "SMOKE_SEED", "RESERVATION_MARKER", "COMPLETION_HARD_GATE",
+             "RUN_JOINT_CONFIRMATION")
+    original = {name: getattr(pilot, name) for name in names}
+    try:
+        pilot.configure_successor_v4()
+        value = pilot.protocol()
+        assert value["predecessor"]["old_rows_reused"] is False
+        assert value["joint_feasibility_confirmation"]["loss"] == (
+            "0.5_balanced_bce_plus_0.5_feasible_set_nll"
+        )
+        assert pilot.TRAIN_SEEDS == (802001, 802002, 802003, 802004)
+        assert set(pilot.TRAIN_SEEDS).isdisjoint(pilot.DEV_SEEDS)
+        assert pilot.RUN_JOINT_CONFIRMATION is True
+        assert pilot.COMPLETION_HARD_GATE is False
+    finally:
+        for name, value in original.items():
+            setattr(pilot, name, value)
+
+
+def test_v2_2_joint_confirmation_loss_and_probe(monkeypatch):
+    train = [_row(0.0, (0, 1)), _row(0.2, (2,), "m2i"), _row(0.4, (4,), "i2f")]
+    dev = [_row(0.1, (0, 1)), _row(0.3, (2,), "m2i"), _row(0.5, (4, 5), "i2f")]
+    logits = torch.zeros((3, 25))
+    targets = pilot._target_mask(train).float()
+    loss = pilot._feasible_set_nll(logits, targets)
+    assert bool(torch.isfinite(loss))
+    monkeypatch.setattr(pilot, "EPOCHS", 1)
+    monkeypatch.setattr(pilot, "JOINT_BATCH_SIZE", 2)
+    result = pilot._joint_probe(train, dev, seed=802101)
+    assert result["optimizer_steps"] == 2
+    assert result["state_dev"]["states"] == 3
+    assert result["checkpoint_saved"] is False

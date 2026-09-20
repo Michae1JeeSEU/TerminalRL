@@ -4,7 +4,7 @@
 >
 > **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；Observation V2.2 V3 已完成。94D 相对 88D 的 ROC-AUC 三个 probe 均提高，但 infeasible recall、macro-F1 与 state Top-1 改善不一致，故不授权 observation-only repair。下一步为冻结的 25-logit joint-feasibility head 探索性 audit；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
+> **当前阶段**：Phase A / A5；Observation V2.2 V3 与 25-logit joint-feasibility exploratory audit 均已完成但未闭合。后者负类召回/F1 稳定改善，却牺牲 AUC 且 Top-1 两次下降。已预注册最后一轮 fresh V4 confirmation，以 balanced BCE + feasible-set NLL 同时约束分类与排序；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -37,6 +37,16 @@ active-reservation 与 committed-transfer 完全同值，future-reservation 恒�
 rows 非零，进一步说明 6 个全局 scalar 未充分表达 proposal-specific joint feasibility。下一步仅允许
 探索性比较固定 94D shared scorer 与 `94D→25 independent feasibility logits`；后者仍只做一次前向、
 选择一个 proposal 并交 SafetyFilter 验证一次，不改变 runtime 边界。
+
+25-logit exploratory audit 已在冻结 V3 artifacts 上完成，manifest SHA256
+`9d07f8cb2de43c0edf1f5875aedd9966d72b83df911d31a21996ba5566a43d06`。相对 94D
+conditioned shared scorer，infeasible recall 三次提高 `.0552/.0456/.1295`，macro-F1 三次提高
+`.0142/.0052/.0361`；但 ROC-AUC 三次下降 `.0054/.0278/.0205`，state Top-1 为
+`+.0283/-.0377/-.0566`，因此不允许 architecture freeze。为避免继续使用同一 dev 调结构，V4
+一次性冻结 fresh `802001–802006` 与 probe seeds `802101–802103`，使用
+`0.5 balanced BCE + 0.5 feasible-set NLL`；每个 probe 必须同时满足 feasible recall≥`.85`，且
+infeasible recall、macro-F1、AUC、state Top-1 相对 fresh 94D conditioned baseline 均不下降。
+只有 3/3 probes 全 gate PASS 才允许冻结架构；无论结果如何都不直接授权 policy repair。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -113,6 +123,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | P2 proposal-set failure attribution V1 | **COMPLETE** | standalone linear仅1/3全gate PASS，MLP 0/3；分类为`observation_or_set_target_learnability_limit_supported`；不授权repair |
 | P2 proposal-conditioned feasibility V1 | **FAIL** | 88D+proposal参数的binary MLP feasible recall约`.90`，但 infeasible recall `.454–.462`、AUC `.793–.810`，o2m与全部综合gate失败；不授权factorized architecture或repair |
 | Observation V2.2 closure V3 | **COMPLETE（诊断，不闭合）** | 6/6 episodes、247/106 train/dev rows；94D 的 AUC 3/3 提高，但 negative recall、F1、Top-1 不一致；observation-only repair 不授权 |
+| V2.2 25-logit feasibility head exploratory | **COMPLETE（不闭合）** | negative recall/F1 3/3 改善，但 AUC 3/3 下降、Top-1 仅1/3改善；architecture freeze 不授权 |
 | A6 高层动态空域训练 | BLOCKED | 需要低层 static-geometry qualification 后冻结低层策略 |
 | Crazyflie 实物验证 | FUTURE | 仅在主仿真策略冻结后进入 small-N 缩尺验证 |
 
@@ -230,8 +241,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 ## 当前允许的下一步
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
-2. 暂停 proposal repair。执行预注册的 25-logit joint-feasibility head exploratory audit；只复用 V3 冻结 train/dev artifacts 作架构归因，不调用 environment/Teacher、不调 threshold、不保存 checkpoint。
-3. 该 exploratory audit 无 pass threshold，也不能直接冻结架构。若相对 conditioned shared scorer 给出稳定改善，再用全新 split-disjoint environment seeds 做 confirmatory architecture audit；否则停止此分支并重新评估 runtime-boundary。runtime catalogue search 会改变“策略给出一个意图、SafetyFilter仅验证”的当前主线，不能作为隐式修复。
+2. 暂停 proposal repair。执行 V4 fresh hybrid-objective confirmation；V3 artifacts 只保留为 predecessor evidence，V4 使用全新 split-disjoint environment/probe seeds，不调 threshold、不保存 probe checkpoint。
+3. V4 是该学习式 proposal 分支最后一轮架构确认：只有 3/3 probes 全部通过预注册五项 gate 才允许冻结架构；否则停止该分支并重新评估 runtime-boundary，不再基于 V4 dev 继续调 loss/head。runtime catalogue search 会改变“策略给出一个意图、SafetyFilter仅验证”的当前主线，不能作为隐式修复。
 4. 只有 proposal/observation repair、fresh qualification 与 fresh effectiveness 全部闭合后，才可进行 evidence-based PPO admission review；其前 `PROPOSAL_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`、`P3_ALLOWED=false`。
 5. 通过 P2 效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成 static qualification 后才进入 A6。后续长训练或评估由 `luna_worker` 跟踪、主agent负责解释与决策。
 

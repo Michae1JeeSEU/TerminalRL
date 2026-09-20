@@ -1,0 +1,99 @@
+protocol: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V4
+stage: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V4
+preregistered_at: 2026-09-20
+purpose: fresh_confirmation_of_hybrid_joint_feasibility_head
+
+predecessor:
+  v3_manifest_sha256: 20cb9d6ac2377aa5bb3e20c87707405f4aa553eecadae0581ac64a0631cc8211
+  exploratory_joint_head_manifest_sha256: 9d07f8cb2de43c0edf1f5875aedd9966d72b83df911d31a21996ba5566a43d06
+  exploratory_result: classification_improved_but_ranking_did_not
+  old_rows_reused: false
+  old_environment_seeds_reused: false
+  old_dev_used_for_v4_training_or_thresholds: false
+
+bindings:
+  schema_protocol_sha256: 393b11f119202045a3a9c9c12bdd7c2d34d45570c3756fa4481446812dc1ab6e
+  observation_schema: phaseA_low_obs_v2_2_scheduler_context_94d
+  observation_dimension: 94
+  observation_feature_hash_sha256: 338eb2769e184909a559afe270d3d7ee41588d7a130040fa93cfe69c10bf47cd
+  v2_1_prefix_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  frozen_behavior_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  behavior_reads_v2_1_prefix_only: true
+  teacher_mode: teacher_label_only
+  deterministic_behavior: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  max_simulation_seconds: 1570.0
+  no_policy_update: true
+  no_runtime_catalogue_search: true
+
+collection:
+  train_seeds: [802001, 802002, 802003, 802004]
+  dev_seeds: [802005, 802006]
+  split_disjoint: true
+  stop_rule: terminal_or_fixed_1570_second_horizon
+  completion_gate: report_only
+  require_all_12_arrivals_generated: true
+  retained_states: actor_states_with_teacher_release_and_nonempty_complete_25_proposal_catalogue
+  require_safety_zero: true
+  require_exact_action_tape_replay: true
+  require_exact_v2_1_prefix: true
+  require_finite_bounded_94d: true
+
+smoke:
+  seed: 802000
+  steps: 160
+  formal_seed_reservation: false
+  paired_probe: false
+
+paired_probe:
+  seeds: [802101, 802102, 802103]
+  compared_inputs: [v2_1_88d_plus_proposal_2d, v2_2_94d_plus_proposal_2d]
+  model: mlp_inputx128x128x1
+  epochs: 100
+  batch_size: 512
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  objective: train_split_balanced_binary_cross_entropy
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+
+joint_feasibility_confirmation:
+  seeds: [802101, 802102, 802103]
+  input: observation_v2_2_94d
+  model: mlp_94x128x128x25
+  target: complete_25_proposal_feasible_mask
+  loss: 0.5_balanced_bce_plus_0.5_feasible_set_nll
+  epochs: 100
+  batch_size_states: 64
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold: 0.5
+  threshold_tuning: false
+  dev_gradients: false
+  runtime_contract: one_forward_pass_one_selected_proposal_one_safety_validation
+  hard_gates_each_probe:
+    feasible_recall_min: 0.85
+    infeasible_recall_delta_vs_conditioned_min: 0.0
+    macro_f1_delta_vs_conditioned_min: 0.0
+    roc_auc_delta_vs_conditioned_min: 0.0
+    state_top1_delta_vs_conditioned_min: 0.0
+  aggregate_gate: all_three_probes_pass_all_hard_gates
+
+authorizations:
+  diagnostic_only: true
+  architecture_freeze_allowed: conditional_on_aggregate_gate
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false

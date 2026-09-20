@@ -57,6 +57,8 @@ LEARNING_RATE = 1e-3
 GRADIENT_CLIP_NORM = 1.0
 RESERVATION_MARKER = "observation_v2_2_closure_pilot_v1_consumed.json"
 COMPLETION_HARD_GATE = True
+RUN_JOINT_CONFIRMATION = False
+JOINT_BATCH_SIZE = 64
 PROPOSAL_FEATURES = np.asarray([
     [float(item.speed_residual), float(item.merge_time_residual)]
     for item in JOINT_ACTION_CATALOG_V4_1 if item.index > 0
@@ -66,7 +68,7 @@ PROPOSAL_FEATURES = np.asarray([
 def configure_successor_v2() -> None:
     """Select the fresh successor after the committed-transfer mapping fix."""
     global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
-    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE
+    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE, RUN_JOINT_CONFIRMATION
     STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V2"
     PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v2.yaml")
     PROTOCOL_SHA = "9835d890838088723b4e0415c38b4b9e6f9004189302ddffd0abce9f0ee3b571"
@@ -76,12 +78,13 @@ def configure_successor_v2() -> None:
     SMOKE_SEED = 800000
     RESERVATION_MARKER = "observation_v2_2_closure_pilot_v2_consumed.json"
     COMPLETION_HARD_GATE = True
+    RUN_JOINT_CONFIRMATION = False
 
 
 def configure_successor_v3() -> None:
     """Select the fixed-horizon diagnostic successor after V2 reachability failed."""
     global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
-    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE
+    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE, RUN_JOINT_CONFIRMATION
     STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V3"
     PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v3.yaml")
     PROTOCOL_SHA = "227dfa7e252613f5c3755b04fd143c9c42d53d141451cef9748d83cb42926c4a"
@@ -91,6 +94,23 @@ def configure_successor_v3() -> None:
     SMOKE_SEED = 801000
     RESERVATION_MARKER = "observation_v2_2_closure_pilot_v3_consumed.json"
     COMPLETION_HARD_GATE = False
+    RUN_JOINT_CONFIRMATION = False
+
+
+def configure_successor_v4() -> None:
+    """Select the fresh hybrid-objective joint-feasibility confirmation."""
+    global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
+    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE, RUN_JOINT_CONFIRMATION
+    STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V4"
+    PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v4.yaml")
+    PROTOCOL_SHA = "955409e6d575b4c89cf6ec98f96228b829aaec2d2890f3d00a79b9c1bdcdb8c2"
+    TRAIN_SEEDS = (802001, 802002, 802003, 802004)
+    DEV_SEEDS = (802005, 802006)
+    PROBE_SEEDS = (802101, 802102, 802103)
+    SMOKE_SEED = 802000
+    RESERVATION_MARKER = "observation_v2_2_closure_pilot_v4_consumed.json"
+    COMPLETION_HARD_GATE = False
+    RUN_JOINT_CONFIRMATION = True
 
 
 def _require(condition: bool, message: str) -> None:
@@ -164,6 +184,14 @@ def protocol() -> dict[str, Any]:
     _require(value["smoke"] == {"seed": SMOKE_SEED, "steps": SMOKE_STEPS,
                                  "formal_seed_reservation": False, "paired_probe": False},
              "smoke protocol changed")
+    if RUN_JOINT_CONFIRMATION:
+        joint = value["joint_feasibility_confirmation"]
+        _require(joint["model"] == "mlp_94x128x128x25", "joint model changed")
+        _require(joint["loss"] == "0.5_balanced_bce_plus_0.5_feasible_set_nll",
+                 "joint loss changed")
+        _require(joint["batch_size_states"] == JOINT_BATCH_SIZE,
+                 "joint batch size changed")
+        _require(joint["seeds"] == list(PROBE_SEEDS), "joint seeds changed")
     return value
 
 
@@ -312,6 +340,18 @@ class FeasibilityProbe(nn.Module):
         return self.net(values).squeeze(-1)
 
 
+class JointFeasibilityProbe(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(OBS_DIM, 128), nn.ReLU(), nn.Linear(128, 128), nn.ReLU(),
+            nn.Linear(128, 25),
+        )
+
+    def forward(self, values: torch.Tensor) -> torch.Tensor:
+        return self.net(values)
+
+
 def _state_metrics(logits: torch.Tensor, rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     logits = logits.reshape(len(rows), 25)
     target = _target_mask(rows)
@@ -359,6 +399,53 @@ def _probe(train_rows: Sequence[Mapping[str, Any]], dev_rows: Sequence[Mapping[s
         "observation": observation_key, "seed": seed, "optimizer_steps": steps,
         "binary_dev": binary_metrics(dev_logits, dev_y),
         "state_dev": _state_metrics(dev_logits, dev_rows), "checkpoint_saved": False,
+    }
+
+
+def _feasible_set_nll(logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    _require(logits.shape == targets.shape and targets.dtype == torch.float32,
+             "joint target shape/dtype changed")
+    _require(bool((targets.sum(dim=-1) > 0).all()), "joint target contains empty feasible set")
+    logp = F.log_softmax(logits.double(), dim=-1)
+    feasible = torch.logsumexp(logp.masked_fill(targets == 0, float("-inf")), dim=-1)
+    return -feasible.mean().float()
+
+
+def _joint_probe(train_rows: Sequence[Mapping[str, Any]], dev_rows: Sequence[Mapping[str, Any]],
+                 *, seed: int) -> dict[str, Any]:
+    random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
+    train_x = torch.as_tensor(np.asarray([row["observation_v2_2"] for row in train_rows], dtype=np.float32))
+    dev_x = torch.as_tensor(np.asarray([row["observation_v2_2"] for row in dev_rows], dtype=np.float32))
+    train_y, dev_y = _target_mask(train_rows).float(), _target_mask(dev_rows).float()
+    mean, scale = train_x.mean(dim=0), train_x.std(dim=0).clamp_min(1e-6)
+    train_x, dev_x = (train_x - mean) / scale, (dev_x - mean) / scale
+    model = JointFeasibilityProbe()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    positive_weight = float((train_y == 0).sum() / (train_y == 1).sum().clamp_min(1))
+    steps = 0
+    for _ in range(EPOCHS):
+        order = torch.randperm(len(train_y))
+        for start in range(0, len(order), JOINT_BATCH_SIZE):
+            index = order[start:start + JOINT_BATCH_SIZE]
+            logits = model(train_x[index])
+            binary = F.binary_cross_entropy_with_logits(
+                logits, train_y[index], pos_weight=logits.new_tensor(positive_weight)
+            )
+            ranking = _feasible_set_nll(logits, train_y[index])
+            loss = 0.5 * binary + 0.5 * ranking
+            _require(bool(torch.isfinite(loss)), "non-finite joint confirmation loss")
+            optimizer.zero_grad(set_to_none=True); loss.backward()
+            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP_NORM)
+            _require(bool(torch.isfinite(norm)), "non-finite joint confirmation gradient")
+            optimizer.step(); steps += 1
+    with torch.no_grad():
+        dev_logits = model(dev_x)
+    return {
+        "seed": seed, "optimizer_steps": steps,
+        "binary_dev": binary_metrics(dev_logits.reshape(-1), dev_y.reshape(-1)),
+        "state_dev": _state_metrics(dev_logits, dev_rows),
+        "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
+        "checkpoint_saved": False,
     }
 
 
@@ -481,6 +568,38 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
                        } | {
                            "state_top1_feasible": float(new["state_dev"]["top1_feasible"]) - float(old["state_dev"]["top1_feasible"]),
                        }})
+    joint_confirmation = None
+    if RUN_JOINT_CONFIRMATION:
+        probes = []
+        for paired_result in paired:
+            seed = int(paired_result["seed"])
+            baseline = paired_result["v2_2_94d"]
+            joint = _joint_probe(train_rows, dev_rows, seed=seed)
+            delta = {
+                key: float(joint["binary_dev"][key]) - float(baseline["binary_dev"][key])
+                for key in ("feasible_recall", "infeasible_recall", "macro_f1", "roc_auc")
+            }
+            delta["state_top1_feasible"] = (
+                float(joint["state_dev"]["top1_feasible"])
+                - float(baseline["state_dev"]["top1_feasible"])
+            )
+            checks = {
+                "feasible_recall_floor": float(joint["binary_dev"]["feasible_recall"]) >= 0.85,
+                "infeasible_recall_nonworse": delta["infeasible_recall"] >= 0.0,
+                "macro_f1_nonworse": delta["macro_f1"] >= 0.0,
+                "roc_auc_nonworse": delta["roc_auc"] >= 0.0,
+                "state_top1_nonworse": delta["state_top1_feasible"] >= 0.0,
+            }
+            checks["all"] = all(checks.values())
+            probes.append({"seed": seed, "conditioned_shared_baseline": baseline,
+                           "joint_hybrid_head": joint,
+                           "delta_head_minus_conditioned": delta, "checks": checks})
+        confirmation_pass = all(item["checks"]["all"] for item in probes)
+        joint_confirmation = {
+            "probes": probes,
+            "all_three_probes_pass": confirmation_pass,
+            "architecture_freeze_allowed": confirmation_pass,
+        }
     feature = _feature_summary(rows)
     interface_counts = Counter(row["interface"] for row in rows)
     result = {
@@ -501,6 +620,7 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         "train_rows": str(train_path), "train_rows_sha256": train_sha,
         "dev_rows": str(dev_path), "dev_rows_sha256": dev_sha,
         "feature_summary": feature, "paired_probes": paired,
+        "joint_feasibility_confirmation": joint_confirmation,
         "pre_reset_recovery": recovery,
         "collection_checks": {"all_episodes_pass": all(row["checks"]["all"] for row in records),
                               "train_dev_seed_disjoint": set(TRAIN_SEEDS).isdisjoint(DEV_SEEDS),
@@ -509,6 +629,7 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         "environment_called": True, "teacher_called": True, "teacher_label_only": True,
         "behavior_policy_updated": False, "diagnostic_probe_optimizer_called": True,
         "probe_checkpoint_saved": False, "threshold_tuning": False, "dev_gradients": False,
+        "architecture_freeze_allowed": bool(joint_confirmation and joint_confirmation["architecture_freeze_allowed"]),
         "support_collection_allowed": False, "policy_repair_allowed": False,
         "student_qualification_allowed": False, "effectiveness_evaluation_allowed": False,
         "PPO_ALLOWED": False, "P3_ALLOWED": False,
@@ -529,16 +650,20 @@ def _main() -> None:
     parser.add_argument("--recover-pre-reset", action="store_true")
     parser.add_argument("--successor-v2", action="store_true")
     parser.add_argument("--successor-v3", action="store_true")
+    parser.add_argument("--successor-v4", action="store_true")
     torch.set_num_threads(1)
     args = parser.parse_args()
-    _require(not (args.successor_v2 and args.successor_v3),
+    _require(sum((args.successor_v2, args.successor_v3, args.successor_v4)) <= 1,
              "select at most one V2.2 successor")
     if args.successor_v2:
         configure_successor_v2()
     if args.successor_v3:
         configure_successor_v3()
+    if args.successor_v4:
+        configure_successor_v4()
     delattr(args, "successor_v2")
     delattr(args, "successor_v3")
+    delattr(args, "successor_v4")
     run(**vars(args))
 
 
