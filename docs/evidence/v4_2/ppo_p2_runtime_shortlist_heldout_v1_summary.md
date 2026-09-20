@@ -38,3 +38,12 @@ authorized from it. The threshold is not relaxed and the heldout seeds are not r
 The failure does not invalidate the frozen K=3 runtime boundary: both learned K3 controllers remained
 safe, complete, and substantially better than rule on wait and request-to-touchdown. It shows that this
 PPO block did not add a consistent heldout benefit over the original qualified K3 candidate.
+
+## Independent selection review
+
+The subsequent read-only selection review preserved the heldout FAIL, rejected the formal checkpoint,
+and selected the original K3 candidate for the next curriculum protocol. Review SHA256:
+`5617c96255c040797abf2d2f44ed81ce53be955ed94d3a8447a5c943b2f59969`.
+All nine review gates passed. This sets `P2_PPO_STOP=true` and only
+`P3_PROTOCOL_PREREGISTRATION_ALLOWED=true`; it does not directly authorize P3 execution or checkpoint
+promotion.
