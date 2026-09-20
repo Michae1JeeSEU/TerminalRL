@@ -1,10 +1,10 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-19
+> **状态日期**：2026-09-20
 >
-> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`。Git 无 remote，未 push。
+> **代码快照**：support/audit 历史提交 `18663b3`、`8ed0669`、`b7eaf85`、`c28efd5`、`dfa727f`；repair V3 `8a59312`；qualification V2 `de8047b`；effectiveness/feasibility `81d6c2b`、`13325ff`；exact-proposal chain `4aaea99`、`0e974ad`、`c38aedd`；set-valued chain `6048ccf`、`36aa2e5`、`a25e46f`、`4cdc29b`；proposal-conditioned audit `1ac334c`；Observation V2.2 schema/pilot chain `839dbb1`–`688016f`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5；P2 effectiveness、exact/set-valued learnability 与 proposal-conditioned feasibility audit 均 FAIL。下一步涉及 Observation V2.2、joint target 或 runtime catalogue-search 边界选择；未决前 proposal repair、PPO、P3、curriculum 与 checkpoint promotion 均阻塞
+> **当前阶段**：Phase A / A5；已选择 Observation V2.2 scheduler-context 路线。V1 暴露并修复 committed-transfer phase-key 错配；修复后的 V2 因 frozen 88D deterministic behavior 在 fresh seed `800004` 形成两个 `m2i` holder 的不完整 cycle 而终止，尚未产生 paired probe 结论。V3 改为 fresh、固定时域的 representation-only protocol；proposal repair、PPO、P3、curriculum 与 checkpoint promotion 仍阻塞
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -15,6 +15,17 @@
 初始 N3–N6 的 `PPO_ALLOWED=true` 是对应冻结版本及协议的历史准入。P2 V1/V2 累计 28 次合格更新；V3 在入口 KL 超限后保持历史 FAIL。独立预注册的 V4 重新资格与入口通过，并补足剩余 8 回合；这不改写 V1–V3 的历史终态。
 
 2026-09-19 V4正式训练、确定性heldout、WAIT/credit诊断、support successor chain、Qualification V2、effectiveness V1、feasibility attribution、exact-proposal 与 set-valued proposal target chain 均已终止，当前没有遗留服务器进程。历史 PASS/FAIL 均保留；effectiveness 终态见[配对效果评估](evidence/v4_2/ppo_p2_gate_effectiveness_v1_summary.md)，fresh gate/proposal 归因见[可行性归因](evidence/v4_2/ppo_p2_gate_feasibility_attribution_v1_summary.md)，proposal target 闭环见[条件提案目标链](evidence/v4_2/ppo_p2_proposal_target_chain_summary.md)。
+
+2026-09-20 冻结 Observation V2.2 candidate：保持 V2.1 的 88D byte-identical prefix，追加 6 个
+scheduler/reservation/同一步竞争上下文特征，形成 94D schema；runtime 仍为单一 intent + 单次
+SafetyFilter validation，不引入 catalogue search。V1 fresh pilot 完成 6/6 episodes，但发现
+`interface_committed_transfers_norm` 因 reservation stage 与 trajectory phase key 错配而恒为零，故 V1
+只作诊断。修复后的 V2 使用全新 seeds；前三个 train episodes 完成，seed `800004` 在 1570 s
+仅完成 10/12，末态两机均停留 `ring_middle/m2i`，安全计数为零且 exact replay PASS。V2 保持
+immutable FAIL，未运行 dev/probe、未复用 rows。该失败证明 complete-cycle hard gate 混入了 frozen
+behavior 的 reachability 要求，不能归因于尚未参与执行的 V2.2 feature。已预注册 V3：fresh
+`801001–801006`，固定 1570 s/terminal stop，12/12 arrivals generated 仍为 hard gate，completion
+仅报告；其用途只限 88D+proposal 与 94D+proposal 的配对表示诊断，不能授权 repair/qualification。
 
 fresh P2 gate support V1 因 seed772009 出现 3/959 次 shield 而保持 FAIL；其 rows 不得训练。随后
 V2→V5 successor support chain 在不混入旧 support/qualification rows 的前提下完成：V3 为 15/15
@@ -39,7 +50,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | 空域 | `three_ring_v1`：OUTER / MIDDLE / INNER |
 | 研究机型 | `eh216s_research_v1` |
 | 动力学 | `performance_constrained_v2`；`physics_dt = 0.2 s` |
-| 低层观测 | `phaseA_low_obs_v2_1_retry_state`，88D |
+| 低层观测 | 当前合格策略仍为 `phaseA_low_obs_v2_1_retry_state` 88D；`phaseA_low_obs_v2_2_scheduler_context_94d` 为未晋级 candidate |
 | 低层动作 | `low_action_schema_v4_2_hierarchical` |
 | 低层分布 | `WAIT/RELEASE` 二分类 gate + RELEASE 条件下 25-way proposal |
 | 执行解码 | 1 个 canonical WAIT + 25 个 `speed × merge-time` RELEASE 意图 |
@@ -207,8 +218,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 ## 当前允许的下一步
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
-2. 暂停 proposal repair。下一步先做架构选择：`(a)` Observation V2.2 暴露scheduler/reservation/同一步竞争事实；`(b)` 将proposal选择改成显式joint-feasibility target；或`(c)` 修改runtime边界允许有限catalogue search。选定前只允许设计/只读closure，不得复用失败audit的dev集做阈值调优。
-3. 若选择 Observation V2.2 或 joint-feasibility target，须先冻结schema/target，使用fresh split-disjoint seeds重采support，并重新通过learnability、repair、student-only qualification与paired effectiveness。runtime catalogue search 会改变“策略给出一个意图、SafetyFilter仅验证”的当前主线，必须先明确批准，不能作为隐式修复。
+2. 暂停 proposal repair。先执行 Observation V2.2 closure pilot V3；V1/V2 rows 与 seeds 均不得复用或重跑，V3 不得根据 dev 指标调 threshold。
+3. 仅当 V3 的三组 paired probes 对 94D 改善给出一致 fresh 证据后，才允许冻结 V2.2 support/repair protocol；若改善不一致，回到 joint-feasibility target 与 runtime-boundary 设计选择。runtime catalogue search 会改变“策略给出一个意图、SafetyFilter仅验证”的当前主线，不能作为隐式修复。
 4. 只有 proposal/observation repair、fresh qualification 与 fresh effectiveness 全部闭合后，才可进行 evidence-based PPO admission review；其前 `PROPOSAL_REPAIR_ALLOWED=false`、`PPO_ALLOWED=false`、`P3_ALLOWED=false`。
 5. 通过 P2 效果审查后，按[执行计划8.5节](execution_plan.md)逐步引入间隔扰动、P3任务/资源异质性、P4交通压力、P5静态几何泛化；完成 static qualification 后才进入 A6。后续长训练或评估由 `luna_worker` 跟踪、主agent负责解释与决策。
 

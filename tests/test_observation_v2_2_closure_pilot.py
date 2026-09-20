@@ -112,7 +112,7 @@ def test_v2_2_run_allows_existing_output_only_for_guarded_recovery(tmp_path, mon
 
 def test_v2_2_successor_protocol_uses_fresh_disjoint_seeds():
     names = ("STAGE", "PROTOCOL", "PROTOCOL_SHA", "TRAIN_SEEDS", "DEV_SEEDS",
-             "PROBE_SEEDS", "SMOKE_SEED", "RESERVATION_MARKER")
+             "PROBE_SEEDS", "SMOKE_SEED", "RESERVATION_MARKER", "COMPLETION_HARD_GATE")
     original = {name: getattr(pilot, name) for name in names}
     try:
         pilot.configure_successor_v2()
@@ -121,6 +121,25 @@ def test_v2_2_successor_protocol_uses_fresh_disjoint_seeds():
         assert pilot.TRAIN_SEEDS == (800001, 800002, 800003, 800004)
         assert set(pilot.TRAIN_SEEDS).isdisjoint(pilot.DEV_SEEDS)
         assert protocol["predecessor"]["old_rows_reused"] is False
+    finally:
+        for name, value in original.items():
+            setattr(pilot, name, value)
+
+
+def test_v2_2_v3_uses_fresh_seeds_and_report_only_completion():
+    names = ("STAGE", "PROTOCOL", "PROTOCOL_SHA", "TRAIN_SEEDS", "DEV_SEEDS",
+             "PROBE_SEEDS", "SMOKE_SEED", "RESERVATION_MARKER", "COMPLETION_HARD_GATE")
+    original = {name: getattr(pilot, name) for name in names}
+    try:
+        pilot.configure_successor_v3()
+        protocol = pilot.protocol()
+        assert protocol["predecessor"]["v2_status"] == "FAIL"
+        assert protocol["predecessor"]["v2_rows_reused"] is False
+        assert protocol["collection"]["completion_gate"] == "report_only"
+        assert protocol["collection"]["require_all_12_arrivals_generated"] is True
+        assert pilot.TRAIN_SEEDS == (801001, 801002, 801003, 801004)
+        assert set(pilot.TRAIN_SEEDS).isdisjoint(pilot.DEV_SEEDS)
+        assert pilot.COMPLETION_HARD_GATE is False
     finally:
         for name, value in original.items():
             setattr(pilot, name, value)

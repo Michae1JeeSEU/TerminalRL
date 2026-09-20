@@ -56,6 +56,7 @@ BATCH_SIZE = 512
 LEARNING_RATE = 1e-3
 GRADIENT_CLIP_NORM = 1.0
 RESERVATION_MARKER = "observation_v2_2_closure_pilot_v1_consumed.json"
+COMPLETION_HARD_GATE = True
 PROPOSAL_FEATURES = np.asarray([
     [float(item.speed_residual), float(item.merge_time_residual)]
     for item in JOINT_ACTION_CATALOG_V4_1 if item.index > 0
@@ -65,7 +66,7 @@ PROPOSAL_FEATURES = np.asarray([
 def configure_successor_v2() -> None:
     """Select the fresh successor after the committed-transfer mapping fix."""
     global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
-    global SMOKE_SEED, RESERVATION_MARKER
+    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE
     STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V2"
     PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v2.yaml")
     PROTOCOL_SHA = "9835d890838088723b4e0415c38b4b9e6f9004189302ddffd0abce9f0ee3b571"
@@ -74,6 +75,22 @@ def configure_successor_v2() -> None:
     PROBE_SEEDS = (800101, 800102, 800103)
     SMOKE_SEED = 800000
     RESERVATION_MARKER = "observation_v2_2_closure_pilot_v2_consumed.json"
+    COMPLETION_HARD_GATE = True
+
+
+def configure_successor_v3() -> None:
+    """Select the fixed-horizon diagnostic successor after V2 reachability failed."""
+    global STAGE, PROTOCOL, PROTOCOL_SHA, TRAIN_SEEDS, DEV_SEEDS, PROBE_SEEDS
+    global SMOKE_SEED, RESERVATION_MARKER, COMPLETION_HARD_GATE
+    STAGE = "V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V3"
+    PROTOCOL = Path("terminal_marl/configs/low_v4_2/observation_v2_2_closure_pilot_v3.yaml")
+    PROTOCOL_SHA = "227dfa7e252613f5c3755b04fd143c9c42d53d141451cef9748d83cb42926c4a"
+    TRAIN_SEEDS = (801001, 801002, 801003, 801004)
+    DEV_SEEDS = (801005, 801006)
+    PROBE_SEEDS = (801101, 801102, 801103)
+    SMOKE_SEED = 801000
+    RESERVATION_MARKER = "observation_v2_2_closure_pilot_v3_consumed.json"
+    COMPLETION_HARD_GATE = False
 
 
 def _require(condition: bool, message: str) -> None:
@@ -135,6 +152,11 @@ def protocol() -> dict[str, Any]:
     collection, probe = value["collection"], value["paired_probe"]
     _require(collection["train_seeds"] == list(TRAIN_SEEDS), "train seeds changed")
     _require(collection["dev_seeds"] == list(DEV_SEEDS), "dev seeds changed")
+    expected_completion_gate = "all_12_requests_complete" if COMPLETION_HARD_GATE else "report_only"
+    _require(collection.get("completion_gate", "all_12_requests_complete") == expected_completion_gate,
+             "completion gate changed")
+    _require(collection.get("require_all_12_arrivals_generated", True) is True,
+             "arrival generation gate changed")
     _require(probe["seeds"] == list(PROBE_SEEDS), "probe seeds changed")
     _require(probe["epochs"] == EPOCHS and probe["batch_size"] == BATCH_SIZE, "probe budget changed")
     _require(float(probe["learning_rate"]) == LEARNING_RATE, "probe learning rate changed")
@@ -237,8 +259,10 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path,
     replay = SafetyTraceRecorder.replay_action_tape(TerminalParallelEnv(config), tape_path)
     safety = {key: int(env.telemetry.get(key, 0)) for key in
               ("collisions", "nmac", "hard_separation_violations", "uncertified_execution")}
+    generated = int(env.arrivals.generated)
     complete = len(env.completed_uavs) == 12
     checks = {
+        "all_arrivals_generated": generated == 12,
         "all_requests_complete": complete if require_complete else True,
         "safety_zero": not any(safety.values()),
         "exact_action_tape_replay": bool(replay.get("exact")),
@@ -254,7 +278,9 @@ def _episode(policy: Any, *, seed: int, split: str, output: Path,
     checks["all"] = all(checks.values())
     return {
         "seed": seed, "split": split, "steps": tick + 1, "seconds": float(env.now),
-        "completed": len(env.completed_uavs), "requested": 12, "safety": safety,
+        "completed": len(env.completed_uavs), "requested": generated,
+        "completion_observed": complete, "completion_hard_gate": require_complete,
+        "safety": safety,
         "rows": len(rows), "prefix_checks": prefix_checks, "repeated_checks": repeated_checks,
         "action_tape": str(tape_path), "checks": checks,
     }, rows
@@ -427,7 +453,11 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
     rows: list[dict[str, Any]] = []
     for index, (split, seed) in enumerate([*(("train", value) for value in TRAIN_SEEDS),
                                            *(("dev", value) for value in DEV_SEEDS)]):
-        record, episode_rows = _episode(policy, seed=seed, split=split, output=output / f"{split}_{seed}_flow12")
+        record, episode_rows = _episode(
+            policy, seed=seed, split=split,
+            output=output / f"{split}_{seed}_flow12",
+            require_complete=COMPLETION_HARD_GATE,
+        )
         records.append(record); rows.extend(episode_rows)
         _write_json(output / "progress.json", {"completed": index + 1, "planned": 6,
                                                 "last": record, "rows": len(rows)})
@@ -457,6 +487,12 @@ def run(*, output: Path, checkpoint: Path, history_root: Path, smoke: bool = Fal
         "candidate_checkpoint": str(checkpoint), "candidate_checkpoint_sha256": CANDIDATE_SHA,
         "candidate_payload": {"stage": payload.get("stage"), "architecture_id": payload.get("architecture_id")},
         "train_seeds": list(TRAIN_SEEDS), "dev_seeds": list(DEV_SEEDS),
+        "completion_hard_gate": COMPLETION_HARD_GATE,
+        "completion_report": {
+            "episodes_complete": sum(bool(row["completion_observed"]) for row in records),
+            "episodes_total": len(records),
+            "completed_requests": [int(row["completed"]) for row in records],
+        },
         "records": records, "rows": {"train": len(train_rows), "dev": len(dev_rows),
                                       "interface": dict(sorted(interface_counts.items()))},
         "train_rows": str(train_path), "train_rows_sha256": train_sha,
@@ -489,11 +525,17 @@ def _main() -> None:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--recover-pre-reset", action="store_true")
     parser.add_argument("--successor-v2", action="store_true")
+    parser.add_argument("--successor-v3", action="store_true")
     torch.set_num_threads(1)
     args = parser.parse_args()
+    _require(not (args.successor_v2 and args.successor_v3),
+             "select at most one V2.2 successor")
     if args.successor_v2:
         configure_successor_v2()
+    if args.successor_v3:
+        configure_successor_v3()
     delattr(args, "successor_v2")
+    delattr(args, "successor_v3")
     run(**vars(args))
 
 

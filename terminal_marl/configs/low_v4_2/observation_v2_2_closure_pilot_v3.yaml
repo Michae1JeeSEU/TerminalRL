@@ -1,0 +1,97 @@
+protocol: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V3
+stage: V4_2_OBSERVATION_V2_2_CLOSURE_PILOT_V3
+preregistered_at: 2026-09-20
+purpose: fixed_horizon_representation_closure_after_v2_completion_gate_exposed_behavior_deadlock
+
+predecessor:
+  v2_protocol_sha256: 9835d890838088723b4e0415c38b4b9e6f9004189302ddffd0abce9f0ee3b571
+  v2_status: FAIL
+  v2_failed_seed: 800004
+  v2_failed_seed_completed_requests: 10
+  v2_failed_seed_requested_requests: 12
+  v2_failed_seed_horizon_seconds: 1570.0
+  v2_failed_seed_safety_zero: true
+  v2_failed_seed_exact_action_tape_replay: true
+  v2_failed_seed_terminal_phases: [ring_middle, ring_middle]
+  v2_failed_seed_terminal_interfaces: [m2i, m2i]
+  v2_rows_reused: false
+  v2_seeds_reused: false
+  thresholds_changed: false
+  interpretation: deterministic_88d_behavior_reachability_failure_not_v2_2_feature_evidence
+
+bindings:
+  schema_protocol_sha256: 393b11f119202045a3a9c9c12bdd7c2d34d45570c3756fa4481446812dc1ab6e
+  observation_schema: phaseA_low_obs_v2_2_scheduler_context_94d
+  observation_dimension: 94
+  observation_feature_hash_sha256: 338eb2769e184909a559afe270d3d7ee41588d7a130040fa93cfe69c10bf47cd
+  v2_1_prefix_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  frozen_behavior_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  behavior_reads_v2_1_prefix_only: true
+  teacher_mode: teacher_label_only
+  deterministic_behavior: true
+  fixed_geometry: true
+  natural_flow: true
+  scenario: flow12
+  max_simulation_seconds: 1570.0
+  no_policy_update: true
+  no_runtime_catalogue_search: true
+
+collection:
+  train_seeds: [801001, 801002, 801003, 801004]
+  dev_seeds: [801005, 801006]
+  split_disjoint: true
+  stop_rule: terminal_or_fixed_1570_second_horizon
+  completion_gate: report_only
+  completion_rationale: representation_comparison_does_not_require_behavior_policy_qualification
+  require_all_12_arrivals_generated: true
+  retained_states: actor_states_with_teacher_release_and_nonempty_complete_25_proposal_catalogue
+  require_safety_zero: true
+  require_exact_action_tape_replay: true
+  require_exact_v2_1_prefix: true
+  require_finite_bounded_94d: true
+
+smoke:
+  seed: 801000
+  steps: 160
+  formal_seed_reservation: false
+  paired_probe: false
+
+paired_probe:
+  seeds: [801101, 801102, 801103]
+  compared_inputs: [v2_1_88d_plus_proposal_2d, v2_2_94d_plus_proposal_2d]
+  model: mlp_inputx128x128x1
+  epochs: 100
+  batch_size: 512
+  learning_rate: 0.001
+  gradient_clip_norm: 1.0
+  objective: train_split_balanced_binary_cross_entropy
+  normalization: train_split_mean_std_only
+  final_epoch_only: true
+  early_stopping: false
+  threshold_tuning: false
+  dev_gradients: false
+  report:
+    - feasible_recall
+    - infeasible_recall
+    - macro_f1
+    - roc_auc
+    - state_top1_feasible
+    - partial_set_top1_feasible
+    - per_interface_top1_feasible
+    - paired_94d_minus_88d
+
+interpretation:
+  diagnostic_question: whether_scheduler_context_improves_fresh_proposal_feasibility_prediction
+  completion_is_not_policy_acceptance: true
+  incomplete_episode_cannot_authorize_repair_or_qualification: true
+  paired_result_only: true
+
+authorizations:
+  diagnostic_only: true
+  support_collection_allowed: false
+  policy_repair_allowed: false
+  student_qualification_allowed: false
+  effectiveness_evaluation_allowed: false
+  PPO_ALLOWED: false
+  P3_ALLOWED: false
