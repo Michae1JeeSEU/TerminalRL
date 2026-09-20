@@ -1,0 +1,45 @@
+protocol: V4_2_P2_RUNTIME_SHORTLIST_HELDOUT_V1
+status: PREREGISTERED_HELDOUT
+scope: fixed_geometry_natural_flow_N6_N8_N12_runtime_shortlist_k3
+
+bindings:
+  formal_manifest_sha256: 3c1bc69a518f7e5d99bb606d98b0356397e86f97b493947a0f14b0c8b49b010b
+  formal_protocol_sha256: 7e6cf765af93925ffe960ff2ab8a4f141e13c1101e8b2f933fd64a2296bf3048
+  trained_checkpoint_sha256: 714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  observation_dimension: 88
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  action_schema: low_action_schema_v4_2_hierarchical
+  runtime_proposal_shortlist_k: 3
+  deterministic: true
+  one_policy_forward: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+
+heldout:
+  seeds: [809001, 809002, 809003, 809004, 809005, 809006]
+  scenarios: [flow6, flow8, flow12, flow6, flow8, flow12]
+  controllers: [trained_k3, initial_k3, rule]
+  horizon_rule: last_arrival_plus_900_seconds
+  reservation_marker: p2_runtime_shortlist_heldout_v1_consumed.json
+  reserve_once_before_first_reset: true
+
+hard_gates:
+  all_records_complete: true
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  runtime_shortlist_contract: true
+  runtime_fallback_observed: true
+  frozen_proposal_subgraph: true
+  trained_wait_nonworse_than_initial: true
+  trained_request_to_touchdown_nonworse_than_initial: true
+  at_least_one_metric_strictly_better_than_initial: true
+  trained_wait_nonworse_than_rule: true
+  trained_request_to_touchdown_nonworse_than_rule: true
+
+authorization:
+  checkpoint_promotable_on_pass: true
+  static_geometry_qualification_allowed_on_pass: true
+  P3_ALLOWED: false
