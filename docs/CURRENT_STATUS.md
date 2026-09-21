@@ -378,7 +378,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 2. 暂停 proposal repair、learned proposal head/loss 与 fixed proposal index 调整；V1/V2/V3/V4 及 fixed-neutral V1/V2 seeds、rows、metrics 均为 immutable evidence，不得重跑或作为新阈值调优集。
 3. K=3 runtime boundary 已冻结；P2R 只改变 scheduler-owned LZ/同一步仲裁/final资源语义，不得隐式加入 runtime catalogue search 或让策略直接输出 `lz_id`。
 4. P2R 当前不需要因4/108个单种子漏放行立即重训。若后续 fresh 多种子确认稳定的 individually-certified-but-not-requested 缺口，先独立预注册 train/dev/heldout seeds 和 warm+flow mixed curriculum，再决定 gate support/训练；当前诊断不得直接授权 PPO。
-5. **最新 P3 停止规则：** checkpoint12 的安全 FAIL 与 checkpoint5 的 fresh Q3 完成率 FAIL 均不可改写；不得按 825006/826006 的表现继续挑选旧检查点，或将低等待（只统计完成者）当作高吞吐证据。Q3 dense24 末态 11 架积压、6个LZ空闲；末段98次 RELEASE 请求全部未获批准（63次 safety reject、35次 retry wait），不是简单的“无人请求”。如需修复，重新冻结训练/开发/heldout种子、完整 horizon、吞吐/安全双 hard gates，审查训练中生成拥塞长尾的先前决策，再决定新一轮 P3 训练；不可放松 SafetyFilter。P4/P5 与 A6 仍禁止。后续长任务由 `luna_worker` 执行/监控，主agent审查结果。
+5. **最新 P3 停止规则：** checkpoint12 的安全 FAIL 与 checkpoint5 的 fresh Q3 完成率 FAIL 均不可改写；不得按 825006/826006 的表现继续挑选旧检查点，或将低等待（只统计完成者）当作高吞吐证据。Q3 dense24 的1080步 exact replay 显示 380秒后放行批准持续为0，后续累计 `NO_MERGE_GAP=305`、`PREDICTED_SEPARATION=344`，末态11架积压、6个LZ空闲；不是简单的“无人请求”。如需修复，重新冻结训练/开发/heldout种子、完整 horizon、吞吐/安全双 hard gates，避免训练中生成不可认证的拥塞长尾；不可放松 SafetyFilter。P4/P5 与 A6 仍禁止。后续长任务由 `luna_worker` 执行/监控，主agent审查结果。
 
 完整协议、旧失败与诊断详情见[持续课程证据](evidence/v4_2/continuous_curriculum_20260917.md)；初始准入见[准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)，轨迹修复与第二训练块见[续训结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。
 

@@ -27,6 +27,19 @@ Q3 protocol SHA256 `9dad9f8287d02ef1ac584553fab35c23089a08f2c0d940472778cb1ccb36
 
 只读检查 action tape 的末段 `960–1079 s`：11 架的 1,320 个 actor-step 中 WAIT 请求1,222次、RELEASE 请求98次；98次中63次三项 shortlist 用尽后 `safety_reject`、35次 `safety_wait`，**批准0次、切环/进近 phase transition 0次**。UID88全段未请求 RELEASE，但其余10架均有请求。末态累计 release intents 的 `primary_blocker` 有 `NO_MERGE_GAP` 8个、`PREDICTED_SEPARATION` 2个；无最终 headway/final-capacity blocker。这说明长尾不是“所有无人机完全不请求”或 LZ 直接不足，而是这条 learned 轨迹形成了请求也无法被当前 K3 安全认证的拥塞状态；初始 K3 在同 seed 完成24/24，因而不是这个初始场景必然不可达。`action_tape.applied_action`/`executed_mapped_action` 表示提交给执行路径的意图，并不等于 `last_release_decision=approved`，判断是否推进必须看后者、shortlist rank 和 phase transition。哪些较早决策将系统推入该状态，现有末段快照不足以逐步归因，不能在未做新协议审查前直接改动安全阈值。
 
+随后在与原评估一致的 Linux 环境对 1080 步原始动作带及 Top-3 shortlist 作逐步 exact replay，reset/config/observation/post-state 和执行映射均核对通过；此运行不重新采样策略或消费新 seed。诊断协议 SHA256 `49d43d565127e9cc01a6fa35f8ead1613ff8a3e9e7c02c6f9b38ca318a8e747c`，manifest SHA256 `9202e7154a34bc065624a7173a1f86897ebb92b6a775d223d459ad4e22708d3b`；`PASS=true` 只表示诊断回放完整，晋级标记全为 false。按半开时间段汇总：
+
+| 秒段 | 新获批 RELEASE | safety reject / retry wait | 新完成 | 主阻塞来源 |
+|---|---:|---:|---:|---|
+| 0–180 | 26 | 31 / 3 | 3 | predicted separation 34 |
+| 180–380 | 23 | 45 / 7 | 7 | no merge gap 6、separation 46 |
+| 380–600 | 0 | 122 / 56 | 3 | no merge gap 87、separation 91 |
+| 600–800 | 0 | 111 / 52 | 0 | no merge gap 88、separation 75 |
+| 800–960 | 0 | 87 / 37 | 0 | no merge gap 68、separation 56 |
+| 960–1080 | 0 | 63 / 35 | 0 | no merge gap 56、separation 42 |
+
+因此放行获批累计值自 `t=360 s` 的49次直到结束不再增长；380秒后那3架完成是先前已获批航迹的排空。全回合累计 `NO_MERGE_GAP=305`、`PREDICTED_SEPARATION=344`、reject459、retry wait190。末态 11 架 priority `1/3/5` 与 SOC 均有分布（最低末态 SOC约 `.475`），不能把滞留简单归为低优先级或不可完成低电量。这个时间线把下一轮修复目标限定为**避免形成早期不再有可认证 merge/final 的状态**，而不是在后期放松安全认证或只增加 landing-zone 容量。具体应采用何种训练目标/课程和可重复 gate，需在新的训练协议中冻结，并由 fresh dev/heldout 验证。
+
 ## 约束与后续
 
 V2、V3 final heldout、frontier、Q3 均保留不可变终态。`825006` 与 `826001–826006` 已用于选择/确认，不可拿来训练、重新选择检查点、调阈值或再作资格评估。下一轮应先明确后半段 dense24 停滞机制，并在新协议中提前冻结训练/开发/heldout种子、完整 cycle、未完成惩罚与完成率、安全不变量及与 initial/rule 的配对阈值；任何新 PPO 都必须重新进入 fresh gate。P4 交通压力、P5 几何泛化与 A6 动态空域仍无授权。
