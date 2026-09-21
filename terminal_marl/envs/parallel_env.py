@@ -27,7 +27,7 @@ from ..core.action_trace import LowLevelActionTrace
 from ..core.observations import build_low_observation
 from ..core.topology_neighbors import TopologyCache
 from ..core.priority import PriorityEngine
-from ..core.rewards import LowLevelReward
+from ..core.rewards import LowLevelReward, low_level_urgency_penalty
 from ..core.safety_filter import SafetyFilter
 from ..core.runtime_separation import RuntimeSeparationMonitor
 from ..core.runtime_traffic_safety import PredictiveSafetyShield
@@ -987,7 +987,22 @@ class TerminalParallelEnv:
         self.safety.begin_prediction_step()
         previous = dict(self.active)
         self.last_release_telemetry = {}
-        rewards = {uid: LowLevelReward(time=-self.config.low_level_time_penalty_per_second * self.config.dt) for uid in previous}
+        rewards = {
+            uid: LowLevelReward(
+                time=-self.config.low_level_time_penalty_per_second * self.config.dt,
+                urgency=low_level_urgency_penalty(
+                    base_time_penalty=self.config.low_level_time_penalty_per_second,
+                    dt=self.config.dt,
+                    base_priority=uav.base_priority,
+                    soc=uav.soc,
+                    priority_weight=self.config.low_level_priority_time_weight,
+                    soc_weight=self.config.low_level_soc_urgency_time_weight,
+                    soc_urgency_threshold=self.config.low_level_soc_urgency_threshold,
+                    soc_reserve=self.config.soc_reserve,
+                ),
+            )
+            for uid, uav in previous.items()
+        }
         actions = actions or {}
         proposal_shortlists = proposal_shortlists or {}
         if proposal_shortlists and self.config.runtime_proposal_shortlist_k == 1:

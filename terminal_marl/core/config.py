@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+import math
 from typing import Mapping
 
 
@@ -115,6 +116,11 @@ class SimConfig:
     soc_warning: float = 0.35
     soc_reserve: float = 0.25
     soc_emergency: float = 0.20
+    # Optional P3 urgency shaping.  Zero weights preserve the historical
+    # low-level reward values byte-for-byte; V3 protocols opt in explicitly.
+    low_level_priority_time_weight: float = 0.0
+    low_level_soc_urgency_time_weight: float = 0.0
+    low_level_soc_urgency_threshold: float = 0.65
     power_reference: float = 1.0
     power_external_wait: float = 1.0
     power_inbound: float = 1.0
@@ -243,6 +249,33 @@ class SimConfig:
             raise ValueError("initial_soc_min and initial_soc_max must be set together")
         if self.initial_soc_min is not None and not (0.0 < self.initial_soc_min <= self.initial_soc_max <= 1.0):
             raise ValueError("initial SOC bounds must satisfy 0 < min <= max <= 1")
+        for name in ("low_level_priority_time_weight", "low_level_soc_urgency_time_weight"):
+            value = getattr(self, name)
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{name} must be finite and non-negative") from exc
+            if isinstance(value, bool) or not math.isfinite(numeric_value) or numeric_value < 0.0:
+                raise ValueError(f"{name} must be finite and non-negative")
+        threshold = self.low_level_soc_urgency_threshold
+        try:
+            numeric_threshold = float(threshold)
+            numeric_reserve = float(self.soc_reserve)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "low_level_soc_urgency_threshold must be finite and satisfy "
+                "soc_reserve < threshold <= 1"
+            ) from exc
+        if (
+            isinstance(threshold, bool)
+            or not math.isfinite(numeric_threshold)
+            or not math.isfinite(numeric_reserve)
+            or not (numeric_reserve < numeric_threshold <= 1.0)
+        ):
+            raise ValueError(
+                "low_level_soc_urgency_threshold must be finite and satisfy "
+                "soc_reserve < threshold <= 1"
+            )
         if self.priority_mode not in {"random_135", "fixed"}:
             raise ValueError("priority_mode must be random_135 or fixed")
         if self.priority_mode == "fixed" and self.initial_priority not in {1, 3, 5}:
