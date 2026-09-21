@@ -50,6 +50,34 @@ def test_ring_motion_step_uses_the_exact_finite_timestep_acceleration_envelope()
     assert acceleration <= RESEARCH_EVTOL.max_lateral_accel + 1e-6
 
 
+def test_inner_ring_speed_boundary_allows_target_directed_finite_step_corrections():
+    dynamics = VehicleDynamics(RESEARCH_EVTOL)
+    radius = 200.0
+    dt = .2
+    saturated = dynamics.ring_speed_limit(radius)
+
+    braking = dynamics.limited_tangential_speed(saturated, 14.0, radius, dt)
+    near_cap = dynamics.limited_tangential_speed(17.0256736324044, 18.0, radius, dt)
+
+    assert 14.0 <= braking < saturated
+    assert 17.0256736324044 < near_cap <= saturated
+    assert saturated - braking <= RESEARCH_EVTOL.max_horizontal_decel * dt + 1e-9
+    assert near_cap - 17.0256736324044 <= RESEARCH_EVTOL.max_horizontal_accel * dt + 1e-9
+
+    for current, next_speed in ((saturated, braking), (17.0256736324044, near_cap)):
+        angle = .5 * (current + next_speed) * dt / radius
+        discrete_acceleration = math.hypot(
+            -math.sin(angle) * next_speed,
+            math.cos(angle) * next_speed - current,
+        ) / dt
+        continuous_acceleration = math.hypot(
+            (next_speed - current) / dt,
+            next_speed * next_speed / radius,
+        )
+        assert discrete_acceleration <= RESEARCH_EVTOL.max_lateral_accel + 1e-9
+        assert continuous_acceleration <= RESEARCH_EVTOL.max_lateral_accel + 1e-9
+
+
 def test_scale_config_is_a_future_interface_without_hardware_parameters():
     assert ScaleConfig(.1, .5).length_scale == .1
     with pytest.raises(ValueError):

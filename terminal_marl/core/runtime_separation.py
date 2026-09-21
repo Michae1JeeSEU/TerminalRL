@@ -37,9 +37,13 @@ class RuntimeSeparationMonitor:
 
     def __init__(self, config) -> None:
         self.config = config
-        self._active = {"hard": set(), "nmac": set(), "collision": set()}
+        self._active = {"operational": set(), "hard": set(), "nmac": set(), "collision": set()}
         self.telemetry = {
             "minimum_actual_separation": float("inf"), "minimum_swept_separation": float("inf"),
+            # The operating buffer is the recoverable 40--80 m band.  It is
+            # tracked separately from the protected floor so that a shield
+            # takeover is visible without failing the hard-safety gate.
+            "operational_buffer_entries": 0, "operational_buffer_exposure_steps": 0,
             "hard_separation_violations": 0, "hard_separation_exposure_steps": 0,
             "nmac": 0, "nmac_exposure_steps": 0, "collisions": 0, "collision_exposure_steps": 0,
         }
@@ -56,17 +60,27 @@ class RuntimeSeparationMonitor:
             self.telemetry["minimum_actual_separation"] = min(self.telemetry["minimum_actual_separation"], actual)
             self.telemetry["minimum_swept_separation"] = min(self.telemetry["minimum_swept_separation"], swept)
             thresholds = {
-                "hard": minimum < self.config.safe_distance,
+                # ``safe_distance`` is the desired operating separation.  A
+                # pair in 40--80 m is recoverable by the runtime shield and
+                # is therefore not a hard-safety violation.
+                "operational": self.config.nmac_distance <= minimum < self.config.safe_distance,
+                "hard": minimum < self.config.nmac_distance,
                 "nmac": minimum < self.config.nmac_distance,
                 "collision": minimum < self.config.collision_distance,
             }
             for name, active in thresholds.items():
                 if active:
                     current[name].add(pair)
-                    self.telemetry[f"{name if name != 'hard' else 'hard_separation'}_exposure_steps"] += 1
+                    metric = {
+                        "operational": "operational_buffer",
+                        "hard": "hard_separation",
+                    }.get(name, name)
+                    self.telemetry[f"{metric}_exposure_steps"] += 1
+            operational_entry = thresholds["operational"] and pair not in self._active["operational"]
             hard_entry = thresholds["hard"] and pair not in self._active["hard"]
             nmac_entry = thresholds["nmac"] and pair not in self._active["nmac"]
             collision_entry = thresholds["collision"] and pair not in self._active["collision"]
+            if operational_entry: self.telemetry["operational_buffer_entries"] += 1
             if hard_entry: self.telemetry["hard_separation_violations"] += 1
             if nmac_entry: self.telemetry["nmac"] += 1
             if collision_entry: self.telemetry["collisions"] += 1

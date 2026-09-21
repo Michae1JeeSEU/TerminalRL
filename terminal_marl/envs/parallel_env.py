@@ -751,6 +751,13 @@ class TerminalParallelEnv:
             transition(uav, FlightPhase.RING_INNER, completion_time)
             uav.ring_role = RingRole.INNER
         elif target == "landing":
+            # Energy is consumed for the current control interval after this
+            # executor returns.  Reject a touchdown that would cross the
+            # vehicle-profile landing floor during that same interval; this
+            # prevents an under-reserve UAV from entering ground service.
+            if not self.energy.projected_landing_reserve(uav, uav.phase, self.config.dt):
+                self._resolve(uav, TerminalOutcome.DIVERTED_LOW_SOC, "landing_soc_below_minimum")
+                return distance, False
             transition(uav, FlightPhase.LANDING, self.now + self.config.dt)
             transition(uav, FlightPhase.SERVICE, self.now + self.config.dt)
             self.lz_manager.touchdown(uav.assigned_lz, uav.uid, uav.mission_type)
@@ -1136,7 +1143,13 @@ class TerminalParallelEnv:
             # was never safety-checked.
             if uid in intents and not had_committed_plan:
                 distance += self._advance_ring_hold(uav, intents[uid])
+            # Keep accounting the full control interval even when the landing
+            # reserve check above resolves the UAV before it enters service.
+            # The object is no longer active in that branch, so the following
+            # reserve check does not resolve it twice.
             self.energy.consume(uav, phase, self.config.dt)
+            if uid in self.active and not self.energy.has_landing_reserve(uav):
+                self._resolve(uav, TerminalOutcome.DIVERTED_LOW_SOC, "low_soc_before_touchdown")
             if uid in rewards: rewards[uid].progress += distance * self.config.low_level_progress_reward_per_meter
             if touchdown and uid in rewards: rewards[uid].touchdown += self.config.low_level_touchdown_reward
             if uav.energy_remaining <= 0 and uid in self.active:
@@ -1170,7 +1183,8 @@ class TerminalParallelEnv:
             "telemetry": dict(self.telemetry)})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
-            if uav.terminal_outcome is TerminalOutcome.FAILED_ENERGY: rewards[uid].failure -= self.config.low_level_energy_failure_penalty
+            if uav.terminal_outcome in {TerminalOutcome.FAILED_ENERGY, TerminalOutcome.DIVERTED_LOW_SOC}:
+                rewards[uid].failure -= self.config.low_level_energy_failure_penalty
         self.now += self.config.dt; self.step_count += 1; self._refresh_airspace_occupancy()
         observation = self._observations()
         # This is intentionally after every canonical state update and before

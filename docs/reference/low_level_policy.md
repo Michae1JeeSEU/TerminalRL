@@ -155,9 +155,21 @@ checkpoint promotion 或 25 项 catalogue scan。
 2. RELEASE 必须通过 headway、reservation、resource、vehicle dynamics、trajectory 和 safety 检查；
 3. SafetyFilter 检查的 trajectory 必须与实际执行的 trajectory 相同；
 4. PredictiveSafetyShield 是部署安全层，不是 Teacher；
-5. 任一 collision、NMAC、hard separation violation、`SafetyInvariantError` 或 uncertified
-   execution 都使对应 qualification fail-closed；
+5. 运行时以 `80 m` desired/planning separation 为首选认证目标；若 bounded
+   `PredictiveSafetyShield` 对实际执行轨迹取得与 executor 等价的 swept + recursive
+   证明且全程 `>=40 m`，允许接管并继续 episode。`40--80 m` buffer incursion
+   单独记录；takeover/intervention（包括零数值修正）计入 shield reward cost；
+   预测/实际 `<40 m`、collision event `<10 m`、缺少证明或 uncertified execution
+   才在物理执行前 fail-closed；
 6. committed trajectory 和 reconfiguration takeover step 不作为普通 actor behavior action。
+
+这里的 `80/40/<10 m` 是当前 EH216-S 仿真的 desired separation、protected/NMAC
+floor 和 collision event 研究代理阈值，不是机型适航认证间隔。安全 takeover 不会把
+shield 动作伪装成 actor action；其代价和原始 requested action 的 likelihood 必须分开。
+
+此前 qualification 将任何实际低于 `80 m` 的 hard-separation 事件判为失败；
+`SafetyInvariantError` 则阻止物理执行并使该回合失败。已归档结果保持不变，
+不追溯应用当前的 `40 m` protected-floor 语义。
 
 ## 6. 正式训练顺序
 

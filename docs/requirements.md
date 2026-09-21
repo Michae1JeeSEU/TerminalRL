@@ -307,6 +307,10 @@ energy_consumed
 
 `battery_endurance_seconds` 不再作为主模型状态。
 
+EH216-S 主仿真 profile 使用 `energy_capacity = 1500` s-equivalent，
+`power_reference = 1.0` unit/s。它是将公开的参考最大飞行时间映射到归一化模型的
+工程基准，不是未经验证的实际功耗曲线；phase multiplier 只表示相对功耗。
+
 ### 6.2 Phase-dependent energy
 
 通用模型：
@@ -336,21 +340,30 @@ P_{phase}=k_{phase}P_{ref}
 
 ### 6.3 SOC thresholds
 
-默认：
+当前 `research_evtol/eh216s_research_v1` 默认：
 
 ```text
-SOC_warning = 0.30
-SOC_reserve = 0.15
-SOC_emergency = 0.08
+SOC_warning = 0.35
+SOC_reserve = 0.25
+SOC_emergency = 0.20
+min_landing_soc = 0.25
 ```
 
 语义：
 
 - `< warning`：进入 observation 与指标；
 - `< reserve`：若尚未 admission，优先 diversion，不再正常放入 terminal；
-- `< reserve` 且已在 terminal：显著增加 dynamic priority；
-- `< emergency`：申请最早可行 final/LZ clearance；
+- 接近 reserve 且已在 terminal：通过 SOC urgency 提高调度优先性；
+- 已在 terminal 且成功 touchdown 前低于 `min_landing_soc`：作为低电量未完成退出；
+- `< emergency`：仅作为历史或扩展配置的告警区间；当前主仿真在达到该值前已按
+  `min_landing_soc` 退出，不能据此声称仍可正常申请 final clearance；
+- touchdown 时 `SOC >= min_landing_soc` 才计为成功完成；
+- 在达到成功 touchdown 前低于 profile 的 `min_landing_soc`：不计为完成，按
+  `DIVERTED_LOW_SOC` 或相应能量失败语义记录；
 - `SOC <= 0` 且未完成：`FAILED_ENERGY`。
+
+历史实验中出现的 `energy_capacity = 10000` 或旧 SOC 门槛只属于历史协议，
+不得回写为当前 EH216-S 规范，也不得改写其已归档结果。
 
 ---
 
@@ -740,6 +753,17 @@ inner release state
 
 ### 15.2 Safety override
 
+当前 EH216-S 仿真的安全距离契约为：`80 m` desired/planning operating separation、
+`40 m` protected floor/NMAC 阈值，以及 `<10 m` collision event 研究代理阈值。
+它们是工程仿真和评估语义，不是机型适航认证间隔。
+
+SafetyFilter 对提交的 canonical trajectory 做 `80 m` 轨迹审查；运行时
+PredictiveSafetyShield 对执行轨迹做与 executor 等价的 swept-segment 检查和递归
+后备证明。若原候选不能满足 `80 m`，但 bounded SafetyShield intervention 对实际执行
+轨迹仍可证明全程 `>=40 m`，则允许 shield 接管本步并继续整个 episode；其他已经
+认证的 UAV 不因该次 buffer incursion 停止。`40--80 m` incursion 单独记录；
+takeover/shield intervention 进入 reward safety cost（包括零数值修正的 takeover）。
+
 安全层可以：
 
 ```text
@@ -748,9 +772,12 @@ replace merge time
 reduce residual
 reject trajectory
 issue hold instruction
+bounded shield takeover
 ```
 
-不得通过任意 heading/pitch 偏转把 UAV 临时“推开”后继续执行未验证路径。
+若无法取得 `>=40 m` 的 swept + recursive 证明，预测/实际低于 `40 m`，或执行
+轨迹未认证，则必须在物理执行前 fail-closed；不得通过 reward 扣分替代安全阻断，
+也不得通过任意 heading/pitch 偏转把 UAV 临时“推开”后继续执行未验证路径。
 
 ---
 
@@ -881,6 +908,10 @@ completed
 ```text
 invalid_or_unresolved = 0
 ```
+
+`40--80 m` buffer incursion、shield takeover 和 intervention 不属于
+`invalid_or_unresolved`，但必须作为独立安全负担报告；任一 `<40 m` protected-floor
+违规、collision event 或 uncertified execution 都使该 run fail-closed。
 
 ### 19.2 Continuous flow
 

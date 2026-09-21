@@ -20,8 +20,26 @@ def test_separation_threshold_consistency():
     config = SimConfig(); monitor = RuntimeSeparationMonitor(config)
     class State:
         def __init__(self, p): self.position = np.asarray(p, float)
-    monitor.observe({1: State((0, 0, 0)), 2: State((10, 0, 0))}, {1: np.zeros(3), 2: np.asarray((10, 0, 0))})
+    monitor.observe({1: State((0, 0, 0)), 2: State((5, 0, 0))}, {1: np.zeros(3), 2: np.asarray((5, 0, 0))})
     assert monitor.telemetry["collisions"] == monitor.telemetry["nmac"] == monitor.telemetry["hard_separation_violations"] == 1
+
+
+def test_operational_buffer_is_recoverable_and_collision_floor_is_10m():
+    config = SimConfig(); monitor = RuntimeSeparationMonitor(config)
+    class State:
+        def __init__(self, p): self.position = np.asarray(p, float)
+    monitor.observe({1: State((0, 0, 0)), 2: State((60, 0, 0))},
+                    {1: np.zeros(3), 2: np.asarray((60, 0, 0))})
+    assert monitor.telemetry["operational_buffer_entries"] == 1
+    assert monitor.telemetry["operational_buffer_exposure_steps"] == 1
+    assert monitor.telemetry["hard_separation_violations"] == 0
+    assert monitor.telemetry["nmac"] == monitor.telemetry["collisions"] == 0
+
+    monitor.observe({1: State((0, 0, 0)), 2: State((9, 0, 0))},
+                    {1: np.zeros(3), 2: np.asarray((9, 0, 0))})
+    assert monitor.telemetry["hard_separation_violations"] == 1
+    assert monitor.telemetry["nmac"] == 1
+    assert monitor.telemetry["collisions"] == 1
 
 
 def test_swept_minimum_separation():

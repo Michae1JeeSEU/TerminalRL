@@ -17,6 +17,7 @@ from terminal_marl.core.merge_scheduler import LowLevelIntent, MergeScheduler
 from terminal_marl.core.observations import LOW_OBS_V2, build_low_observation_v2
 from terminal_marl.core.teacher_scheduler import TeacherScheduler
 from terminal_marl.core.runtime_traffic_safety import JointSafetyAssessment, PredictiveSafetyShield, SafetyInvariantError
+from terminal_marl.core.action_trace import LowLevelActionTrace
 from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.core.safety_filter import SafetyFilter
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
@@ -178,6 +179,105 @@ def test_joint_shield_projects_multiple_holder_residuals_before_execution(monkey
     assert repaired[holders[1]].speed_residual == 1.0
     assert shield.telemetry["joint_safety_corrections"] == 2
     assert any(candidate == {holders[0]: -1.0, holders[1]: 1.0} for candidate, _ in calls)
+
+
+def test_operational_buffer_takeover_continues_and_charges_shield_reward(monkeypatch):
+    env = _student_env(2)
+    holders = sorted(env.active)
+    role = env.active[holders[0]].ring_role
+    for uid in holders:
+        env.active[uid].ring_role = role
+    shield = env.runtime_traffic
+
+    def recursive(_env, _residuals, pairs, threshold=None):
+        if threshold is None:
+            return JointSafetyAssessment(False, 79.0, tuple(pairs))
+        return JointSafetyAssessment(True, 45.0, ())
+
+    def backup(_env, residuals, _pairs, threshold=None):
+        if threshold is None:
+            return None, JointSafetyAssessment(False, 79.0, tuple())
+        return dict(residuals), JointSafetyAssessment(True, 45.0, ())
+
+    def component(_env, _requested, _residuals, _component, _pairs, *, backup, recursive=True, threshold=None):
+        if threshold is None:
+            return None, None
+        return None, None
+
+    monkeypatch.setattr(shield, "_recursive_safe", recursive)
+    monkeypatch.setattr(shield, "_backup_safe", backup)
+    monkeypatch.setattr(shield, "_component_search", component)
+    actions = {str(uid): np.asarray((0.0, 0.0, 0.0), np.float32) for uid in env.agents}
+    _, rewards, _, _, info = env.step(actions)
+    for uid in holders:
+        trace = info["action_traces"][str(uid)]
+        assert trace["shield_used"] is True
+        assert trace["shield_applied_action"] is not None
+        assert trace["shield_reason"] == "operational_buffer_takeover"
+        assert info["reward_components"][str(uid)]["shield"] == -env.config.shield_intervention_penalty
+        assert rewards[str(uid)] <= -env.config.shield_intervention_penalty
+    assert info["telemetry"]["operational_buffer_takeovers"] == len(holders)
+
+
+def test_real_inner_ring_buffer_takeover_executes_without_hard_violation():
+    env = _student_env(2)
+    ring = env.airspace.actual_ring(RingRole.INNER)
+    for uid, theta in zip(sorted(env.active), (0.0, 70.0 / ring.radius)):
+        uav = env.active[uid]
+        uav.committed_plan = None
+        uav.ring_role = RingRole.INNER
+        uav.phase = FlightPhase.RING_INNER
+        uav.ring_progress = theta
+        uav.speed = ring.nominal_speed
+        uav.position = np.asarray((ring.radius * np.cos(theta), ring.radius * np.sin(theta), ring.height))
+        uav.velocity = np.asarray((-np.sin(theta), np.cos(theta), 0.0)) * uav.speed
+    env._refresh_airspace_occupancy()
+
+    _, rewards, _, _, info = env.step({uid: np.zeros(3, np.float32) for uid in env.agents})
+
+    assert env.now == env.config.dt
+    assert info["telemetry"]["operational_buffer_entries"] >= 1
+    assert info["telemetry"]["operational_buffer_takeovers"] >= 2
+    assert info["telemetry"]["hard_separation_violations"] == 0
+    assert info["telemetry"]["nmac"] == info["telemetry"]["collisions"] == 0
+    for uid in sorted(env.active):
+        assert info["action_traces"][str(uid)]["shield_used"]
+        assert info["reward_components"][str(uid)]["shield"] < 0.0
+        assert rewards[str(uid)] == pytest.approx(info["reward_components"][str(uid)]["total"])
+
+
+def test_protected_floor_remains_fail_closed_after_operational_fallback(monkeypatch):
+    env = _student_env(2)
+    shield = PredictiveSafetyShield(env.config)
+    holders = sorted(env.active)
+    role = env.active[holders[0]].ring_role
+    for uid in holders:
+        env.active[uid].ring_role = role
+    requested = {uid: LowLevelIntent(0.0, 0.0, 0.0) for uid in holders}
+
+    def recursive(_env, _residuals, pairs, threshold=None):
+        return JointSafetyAssessment(False, 39.0, tuple(pairs))
+
+    def backup(_env, _residuals, pairs, threshold=None):
+        return None, JointSafetyAssessment(False, 39.0, tuple(pairs))
+
+    monkeypatch.setattr(shield, "_recursive_safe", recursive)
+    monkeypatch.setattr(shield, "_backup_safe", backup)
+    monkeypatch.setattr(shield, "_component_search", lambda *_args, **_kwargs: (None, None))
+    with pytest.raises(SafetyInvariantError):
+        shield.protect(env, requested)
+    assert shield.telemetry["joint_safety_fail_closed"] == 1
+
+
+def test_position_track_thresholds_distinguish_operational_buffer_from_floor():
+    shield = PredictiveSafetyShield(SimConfig())
+    left = np.asarray(((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)))
+    at_79 = np.asarray(((79.0, 0.0, 0.0), (79.0, 0.0, 0.0)))
+    at_39 = np.asarray(((39.0, 0.0, 0.0), (39.0, 0.0, 0.0)))
+    assert shield._assess_position_pair(left, at_79, 80.0)[0] is False
+    assert shield._assess_position_pair(left, at_79, 40.0)[0] is True
+    assert shield._assess_position_pair(left, at_39, 80.0)[0] is False
+    assert shield._assess_position_pair(left, at_39, 40.0)[0] is False
 
 
 def test_safety_trace_keeps_exact_requested_action_provenance(tmp_path):

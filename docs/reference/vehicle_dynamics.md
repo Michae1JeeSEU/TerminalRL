@@ -13,6 +13,34 @@ Current frozen implementation facts:
 - `SafetyFilter`, runtime shielding and dynamic-reconfiguration prediction all use `VehicleDynamics`; execution is rejected unless the checked content hash still matches.
 - Checkpoints now bind the vehicle-dynamics and trajectory schema versions plus profile identifier/version.
 
+## Current EH216-S safety and energy contract
+
+The main simulation uses `research_evtol` / EHang EH216-S /
+`eh216s_research_v1`. Its current safety-distance semantics are:
+
+- `80 m` desired/planning operating separation, certified first by executor-equivalent
+  swept-segment checking plus recursive backup proof;
+- `40 m` protected floor and NMAC threshold;
+- `<10 m` collision-event research proxy, not an EH216-S certification distance.
+
+If the nominal candidate cannot prove `80 m` but a bounded `PredictiveSafetyShield`
+takeover can prove the actual executed trajectory remains `>=40 m` under the same swept
+and recursive checks, the episode may continue and other certified UAVs are not stopped.
+The `40--80 m` buffer incursion is logged separately; takeover and intervention are
+charged to the shield reward, including a takeover whose numeric correction is zero. A missing proof, a
+predicted/actual value below `40 m`, or an uncertified execution remains fail-closed
+before physics execution.
+
+The normalized EH216-S energy reference is `power_reference = 1.0` unit/s with
+`energy_capacity = 1500` s-equivalent. Phase multipliers are engineering values until
+an external power calibration is available. A successful landing requires the vehicle
+profile's `min_landing_soc = 0.25`; early low-SOC termination is not completion and is
+recorded as diversion or energy failure according to lifecycle semantics.
+
+The older `20 m` collision threshold, `10000` normalized energy capacity, and historical
+qualification rule that treated any actual `80 m` separation breach as a hard failure
+remain historical-only semantics. Archived evidence is not rewritten.
+
 D7 core dynamics qualification passed on 2026-08-28; see
 [`dynamics_qualification_report_2026-08-28.md`](../evidence/dynamics/dynamics_qualification_report_2026-08-28.md). `physics_dt=0.2 s` is
 frozen for `performance_constrained_v2`. Later phase authorization and current blockers are recorded only in

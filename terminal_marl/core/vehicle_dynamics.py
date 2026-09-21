@@ -76,16 +76,20 @@ class VehicleDynamics:
         direction = 1.0 if target >= current else -1.0
         nominal_limit = self.profile.max_horizontal_accel if direction > 0.0 else self.profile.max_horizontal_decel
         preliminary = min(target, current + nominal_limit * dt) if direction > 0.0 else max(target, current - nominal_limit * dt)
-        # Use the largest speed in the proposed interval.  This is a
-        # conservative analytic bound because centripetal acceleration grows
-        # monotonically with speed.
-        radial_speed = max(current, preliminary)
-        centripetal = radial_speed * radial_speed / radius
-        tangential_limit = math.sqrt(max(0.0, self.profile.max_lateral_accel ** 2 - centripetal ** 2))
-        tangential_limit = min(nominal_limit, tangential_limit)
-        candidate = min(target, current + tangential_limit * dt) if direction > 0.0 else max(target, current - tangential_limit * dt)
+        # The old bound used ``max(current, preliminary)`` for the radial
+        # term.  At the inner-ring speed limit that makes the centripetal
+        # term consume the complete acceleration budget even when the
+        # finite-step velocity change is safe, so a braking/acceleration
+        # request is silently turned into a hold.  Start with the full
+        # target-directed longitudinal interval and let the exact finite-step
+        # predicate below select its feasible boundary.
+        candidate = preliminary
 
         def feasible(speed: float) -> bool:
+            tangential_acceleration = (speed - current) / dt
+            centripetal = speed * speed / radius
+            if math.hypot(tangential_acceleration, centripetal) > self.profile.max_lateral_accel + 1e-9:
+                return False
             # Check the exact discrete velocity-vector change that the
             # executor will use.  The continuous combined formula is its
             # limiting case, while this catches the small chord/tangent
@@ -96,12 +100,12 @@ class VehicleDynamics:
             return math.hypot(delta_x, delta_y) / dt <= self.profile.max_lateral_accel + 1e-9
         if feasible(candidate):
             return candidate
-        # Only a finite-step boundary needs refinement.  Three iterations
-        # preserve a feasible endpoint and avoid silently accepting a bad
-        # chord update.
+        # Only a finite-step boundary needs refinement.  A bounded search
+        # preserves a feasible endpoint without reintroducing the expensive
+        # trajectory-level solver loop used by the old implementation.
         if direction > 0.0:
             lo, hi = current, candidate
-            for _ in range(3):
+            for _ in range(8):
                 middle = .5 * (lo + hi)
                 if feasible(middle):
                     lo = middle
@@ -109,7 +113,7 @@ class VehicleDynamics:
                     hi = middle
             return lo
         lo, hi = candidate, current
-        for _ in range(3):
+        for _ in range(8):
             middle = .5 * (lo + hi)
             if feasible(middle):
                 hi = middle

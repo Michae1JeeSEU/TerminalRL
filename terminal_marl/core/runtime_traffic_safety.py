@@ -90,6 +90,7 @@ class PredictiveSafetyShield:
                           "recursive_feasibility_rejections": 0,
                           "joint_backup_uses": 0,
                           "joint_unrecoverable_components": 0,
+                          "operational_buffer_takeovers": 0,
                           "joint_search_components": 0,
                           "joint_search_candidates": 0,
                           "joint_search_pruned": 0}
@@ -560,16 +561,17 @@ class PredictiveSafetyShield:
         return point, np.linalg.norm(closest, axis=1)
 
     def _assess_position_pair(
-        self, left: np.ndarray, right: np.ndarray,
+        self, left: np.ndarray, right: np.ndarray, threshold: float | None = None,
     ) -> tuple[bool, float]:
         """Reproduce the pairwise order and threshold semantics of the arbiter."""
+        threshold = self.config.safe_distance if threshold is None else float(threshold)
         point, swept = self._position_track_distances(left, right)
-        bad_point = np.flatnonzero(point < self.config.safe_distance)
+        bad_point = np.flatnonzero(point < threshold)
         if len(bad_point):
             index = int(bad_point[0])
             return False, float(np.min(point[:index + 1]))
         minimum = float(np.min(point)) if len(point) else float("inf")
-        bad_swept = np.flatnonzero(swept < self.config.safe_distance)
+        bad_swept = np.flatnonzero(swept < threshold)
         if len(bad_swept):
             index = int(bad_swept[0])
             return False, min(minimum, float(np.min(swept[:index + 1])))
@@ -578,8 +580,9 @@ class PredictiveSafetyShield:
         return True, minimum
 
     def _joint_assessment(self, env, residuals: dict[int, float], *, pairs: tuple[tuple[int, int], ...] | None = None,
-                          horizon: float | None = None) -> JointSafetyAssessment:
+                          horizon: float | None = None, threshold: float | None = None) -> JointSafetyAssessment:
         """Check all relevant pairs and retain the current predicted conflict graph."""
+        threshold = self.config.safe_distance if threshold is None else float(threshold)
         pairs = self._joint_pairs(env) if pairs is None else pairs
         self.telemetry["joint_safety_checks"] += 1
         if not pairs:
@@ -596,7 +599,7 @@ class PredictiveSafetyShield:
         unsafe: list[tuple[int, int]] = []
         for left, right in active_pairs:
             approved, pair_minimum = self._assess_position_pair(
-                tracks[left], tracks[right],
+                tracks[left], tracks[right], threshold,
             )
             minimum = min(minimum, pair_minimum)
             if not approved:
@@ -797,7 +800,8 @@ class PredictiveSafetyShield:
             candidates.append(trial)
         return candidates
 
-    def _backup_safe(self, env, residuals: dict[int, float], pairs: tuple[tuple[int, int], ...]) -> tuple[dict[int, float] | None, JointSafetyAssessment]:
+    def _backup_safe(self, env, residuals: dict[int, float], pairs: tuple[tuple[int, int], ...],
+                     threshold: float | None = None) -> tuple[dict[int, float] | None, JointSafetyAssessment]:
         """Find an existential next-state backup; it need not equal current action.
 
         This is deliberately a policy, not a nested online optimizer.  The
@@ -806,7 +810,10 @@ class PredictiveSafetyShield:
         still receives the complete swept-separation proof.
         """
         baseline = self._headway_backup_request(env, residuals, pairs)
-        baseline_assessment = self._joint_assessment(env, baseline, pairs=pairs)
+        assessment_kwargs = {"pairs": pairs}
+        if threshold is not None:
+            assessment_kwargs["threshold"] = float(threshold)
+        baseline_assessment = self._joint_assessment(env, baseline, **assessment_kwargs)
         # Try ring-wide headway-preserving profiles *before* the local
         # leader/follower proposal.  A local proposal can be safe over one
         # horizon yet inject an alternating cyclic speed pattern which has no
@@ -832,7 +839,7 @@ class PredictiveSafetyShield:
         best = baseline_assessment
         certified: list[tuple[tuple[float, float, tuple[float, ...]], dict[int, float], JointSafetyAssessment]] = []
         for trial in candidates:
-            verdict = self._joint_assessment(env, trial, pairs=pairs)
+            verdict = self._joint_assessment(env, trial, **assessment_kwargs)
             if verdict.approved:
                 # Backup control is selected for maximum certified separation
                 # margin, not merely the first safe lattice point.  This is
@@ -865,6 +872,7 @@ class PredictiveSafetyShield:
                 continue
             choice, verdict = self._component_search(
                 env, baseline, baseline, component, pairs, backup=True, recursive=False,
+                threshold=threshold,
             )
             if choice is not None and verdict is not None and verdict.approved:
                 return choice, verdict
@@ -901,17 +909,24 @@ class PredictiveSafetyShield:
                 domain.setdefault(uid, 0.0)
         return domain
 
-    def _recursive_safe(self, env, residuals: dict[int, float], pairs: tuple[tuple[int, int], ...]) -> JointSafetyAssessment:
+    def _recursive_safe(self, env, residuals: dict[int, float], pairs: tuple[tuple[int, int], ...],
+                        threshold: float | None = None) -> JointSafetyAssessment:
         """Current action is safe iff a (possibly different) next backup exists."""
         self.telemetry["recursive_feasibility_checks"] += 1
-        current = self._joint_assessment(env, residuals, pairs=pairs)
+        assessment_kwargs = {"pairs": pairs}
+        if threshold is not None:
+            assessment_kwargs["threshold"] = float(threshold)
+        current = self._joint_assessment(env, residuals, **assessment_kwargs)
         if not current.approved:
             self.last_recursive_gate = "current_horizon"
             return current
         next_env = self._next_executor_state(env, residuals)
         next_pairs = self._joint_pairs(next_env)
         successor_domain = self._successor_action_domain(next_env, residuals)
-        backup, future = self._backup_safe(next_env, successor_domain, next_pairs)
+        if threshold is None:
+            backup, future = self._backup_safe(next_env, successor_domain, next_pairs)
+        else:
+            backup, future = self._backup_safe(next_env, successor_domain, next_pairs, threshold=threshold)
         if backup is None:
             self.telemetry["recursive_feasibility_rejections"] += 1
             self.last_recursive_gate = "backup_existence"
@@ -927,7 +942,12 @@ class PredictiveSafetyShield:
             after_backup = self._next_executor_state(next_env, backup)
             final_pairs = self._joint_pairs(after_backup)
             final_domain = self._successor_action_domain(after_backup, backup)
-            final_backup, final_assessment = self._backup_safe(after_backup, final_domain, final_pairs)
+            if threshold is None:
+                final_backup, final_assessment = self._backup_safe(after_backup, final_domain, final_pairs)
+            else:
+                final_backup, final_assessment = self._backup_safe(
+                    after_backup, final_domain, final_pairs, threshold=threshold,
+                )
             if final_backup is None:
                 self.telemetry["recursive_feasibility_rejections"] += 1
                 self.last_recursive_gate = "handoff_backup_existence"
@@ -941,7 +961,7 @@ class PredictiveSafetyShield:
 
     def _component_search(self, env, requested: dict[int, float], residuals: dict[int, float],
                           component: tuple[int, ...], all_pairs: tuple[tuple[int, int], ...], *, backup: bool,
-                          recursive: bool = True) -> tuple[dict[int, float] | None, JointSafetyAssessment | None]:
+                          recursive: bool = True, threshold: float | None = None) -> tuple[dict[int, float] | None, JointSafetyAssessment | None]:
         """Search a bounded, deterministic joint action beam.
 
         Only mutable ring holders in the predicted conflict component are
@@ -990,7 +1010,12 @@ class PredictiveSafetyShield:
                 for normalized in grids[uid]:
                     trial = dict(base)
                     trial[uid] = float(normalized * self.config.max_speed_residual_mps)
-                    future = self._recursive_safe(env, trial, relevant_pairs) if recursive else self._joint_assessment(env, trial, pairs=relevant_pairs)
+                    if recursive:
+                        future = (self._recursive_safe(env, trial, relevant_pairs) if threshold is None else
+                                  self._recursive_safe(env, trial, relevant_pairs, threshold=threshold))
+                    else:
+                        future = (self._joint_assessment(env, trial, pairs=relevant_pairs) if threshold is None else
+                                  self._joint_assessment(env, trial, pairs=relevant_pairs, threshold=threshold))
                     self.telemetry["joint_search_candidates"] += 1
                     correction = float(sum(abs(trial[item] - requested[item]) for item in variables))
                     action_key = tuple(round(trial[item] / self.config.max_speed_residual_mps, 8) for item in variables)
@@ -1007,7 +1032,12 @@ class PredictiveSafetyShield:
                 break
         certified: list[tuple[tuple, dict[int, float], JointSafetyAssessment]] = []
         for trial in beam:
-            future = self._recursive_safe(env, trial, relevant_pairs) if recursive else self._joint_assessment(env, trial, pairs=relevant_pairs)
+            if recursive:
+                future = (self._recursive_safe(env, trial, relevant_pairs) if threshold is None else
+                          self._recursive_safe(env, trial, relevant_pairs, threshold=threshold))
+            else:
+                future = (self._joint_assessment(env, trial, pairs=relevant_pairs) if threshold is None else
+                          self._joint_assessment(env, trial, pairs=relevant_pairs, threshold=threshold))
             self.telemetry["joint_search_candidates"] += 1
             if not future.approved:
                 self.telemetry["recursive_feasibility_rejections"] += 1
@@ -1064,6 +1094,8 @@ class PredictiveSafetyShield:
         requested = dict(residuals)
         pairs = self._joint_pairs(env)
         component_records: list[dict[str, object]] = []
+        soft_mode = False
+        soft_takeover_uids: set[int] = set()
         # A single H+dt proof implies current-horizon safety and proves that
         # the candidate remains a legal backup after one executor tick.
         assessment = self._recursive_safe(env, residuals, pairs)
@@ -1107,25 +1139,79 @@ class PredictiveSafetyShield:
                 })
             assessment = self._recursive_safe(env, residuals, pairs)
             if unresolved or not assessment.approved:
-                self.unrecoverable_components = tuple(unresolved or self._components(assessment.unsafe_pairs or pairs))
-                self.telemetry["shield_fail_closed"] += 1
-                self.telemetry["joint_safety_fail_closed"] += 1
-                self.telemetry["joint_unrecoverable_components"] += len(self.unrecoverable_components)
-                self.last_certification_diagnostic = {
-                    "time": float(env.now), "pairs": pairs,
-                    "initial_minimum_separation": assessment.minimum_separation,
-                    "rejected_components": component_records,
-                    "unrecoverable_components": self.unrecoverable_components,
-                    "recursive_gate": self.last_recursive_gate,
-                    "controlled_holder_reachable_tube": "not_used_in_runtime_shield",
-                }
-                raise SafetyInvariantError(
-                    "No certified bounded joint backup action; physics execution blocked for components "
-                    f"{self.unrecoverable_components}", diagnostic=self.last_certification_diagnostic,
+                # The 80 m operating separation is a desired buffer.  When
+                # it cannot be certified, retain the same bounded residual
+                # search and recursive executor-equivalent proof at the 40 m
+                # protected floor.  Only failure at that floor blocks physics.
+                soft_threshold = float(self.config.nmac_distance)
+                soft_failures = assessment.unsafe_pairs or pairs
+                soft_components = self._components(soft_failures)
+                soft_takeover_uids = {uid for component in soft_components for uid in component}
+                soft_choice, _ = self._backup_safe(
+                    env, residuals, pairs, threshold=soft_threshold,
                 )
+                soft_assessment = None
+                if soft_choice is not None:
+                    soft_assessment = self._recursive_safe(
+                        env, soft_choice, pairs, threshold=soft_threshold,
+                    )
+                    if soft_assessment.approved:
+                        residuals, assessment = soft_choice, soft_assessment
+                        soft_mode = True
+                        self.telemetry["joint_backup_uses"] += 1
+                if not soft_mode:
+                    soft_unresolved: list[tuple[int, ...]] = []
+                    for component in soft_components:
+                        choice, result = self._component_search(
+                            env, requested, residuals, component, pairs,
+                            backup=True, threshold=soft_threshold,
+                        )
+                        if choice is None:
+                            soft_unresolved.append(component)
+                        else:
+                            residuals = choice
+                        component_records.append({
+                            "threshold": soft_threshold,
+                            "uids": component, "size": len(component),
+                            "requested_residual": {str(uid): requested[uid] for uid in component if uid in requested},
+                            "best_candidate": None if choice is None else {str(uid): choice[uid] for uid in component if uid in choice},
+                            "best_minimum_separation": None if result is None else result.minimum_separation,
+                            "rejection_gate": self.last_recursive_gate,
+                            "unsafe_pairs": () if result is None else result.unsafe_pairs,
+                        })
+                    soft_assessment = self._recursive_safe(
+                        env, residuals, pairs, threshold=soft_threshold,
+                    )
+                    if not soft_unresolved and soft_assessment.approved:
+                        assessment = soft_assessment
+                        soft_mode = True
+                if not soft_mode:
+                    self.unrecoverable_components = tuple(
+                        soft_unresolved if soft_unresolved
+                        else self._components(soft_assessment.unsafe_pairs if soft_assessment is not None and soft_assessment.unsafe_pairs else pairs)
+                    )
+                    self.telemetry["shield_fail_closed"] += 1
+                    self.telemetry["joint_safety_fail_closed"] += 1
+                    self.telemetry["joint_unrecoverable_components"] += len(self.unrecoverable_components)
+                    self.last_certification_diagnostic = {
+                        "time": float(env.now), "pairs": pairs,
+                        "initial_minimum_separation": assessment.minimum_separation,
+                        "rejected_components": component_records,
+                        "unrecoverable_components": self.unrecoverable_components,
+                        "recursive_gate": self.last_recursive_gate,
+                        "operational_threshold": soft_threshold,
+                        "controlled_holder_reachable_tube": "not_used_in_runtime_shield",
+                    }
+                    raise SafetyInvariantError(
+                        "No certified bounded joint backup action above protected floor; physics execution blocked for components "
+                        f"{self.unrecoverable_components}", diagnostic=self.last_certification_diagnostic,
+                    )
         else:
             self.unrecoverable_components = ()
+        if soft_mode:
+            self.unrecoverable_components = ()
         approved = assessment.approved
+        shielded_uids: set[int] = set()
         for uid in holders:
             actual = residuals[uid]
             before = requested[uid]
@@ -1149,6 +1235,28 @@ class PredictiveSafetyShield:
                 trace.shield_used = True
                 trace.shield_reason = "joint_recursive_admissibility_projection"
                 trace.correction_magnitude += magnitude
+            shielded_uids.add(uid)
+        if soft_mode:
+            # Even a zero-delta action is a shield takeover in the 40--80 m
+            # operating buffer.  Preserve the applied intent explicitly so
+            # the existing environment reward charges the intervention cost.
+            for uid in sorted(soft_takeover_uids.intersection(holders)):
+                actual = residuals[uid]
+                intent = repaired[uid]
+                shield_intent = type(intent)(
+                    intent.release_request,
+                    float(np.clip(actual / self.config.max_speed_residual_mps, -1.0, 1.0)),
+                    intent.merge_time_residual,
+                )
+                if uid not in shielded_uids:
+                    self.telemetry["shield_interventions"] += 1
+                    self.telemetry["runtime_traffic_interventions"] += 1
+                self.telemetry["operational_buffer_takeovers"] += 1
+                if traces is not None and uid in traces:
+                    trace = traces[uid]
+                    trace.shield_applied = shield_intent
+                    trace.shield_used = True
+                    trace.shield_reason = "operational_buffer_takeover"
         return repaired
 
 

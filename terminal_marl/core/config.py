@@ -57,7 +57,7 @@ class SimConfig:
     max_active_uavs: int = 60
     safe_distance: float = 80.0
     nmac_distance: float = 40.0
-    collision_distance: float = 20.0
+    collision_distance: float = 10.0
     rings: Mapping[RingRole, RingSpec] = field(default_factory=lambda: {
         RingRole.OUTER: RingSpec(RingRole.OUTER, 600.0, 100.0, 22.0),
         RingRole.MIDDLE: RingSpec(RingRole.MIDDLE, 400.0, 70.0, 20.0),
@@ -108,7 +108,10 @@ class SimConfig:
     gate_probabilities: tuple[float, ...] = (0.25, 0.25, 0.25, 0.25)
     mission_probabilities: tuple[float, ...] = (0.45, 0.25, 0.10, 0.20)
     max_external_wait_seconds: float | None = None
-    energy_capacity: float = 10000.0
+    # The normalized energy budget is calibrated to the EH216-S reference
+    # maximum flight time (one unit per second at reference power).  Scenario
+    # files may still override this explicitly for controlled diagnostics.
+    energy_capacity: float = 1500.0
     initial_soc_mode: str = "uniform"
     initial_soc: float | None = None
     initial_soc_min: float | None = None
@@ -188,6 +191,17 @@ class SimConfig:
         from .vehicle_profiles import get_vehicle_profile
         return get_vehicle_profile(self.vehicle_profile_id)
 
+    @property
+    def min_landing_soc(self) -> float:
+        """Minimum SOC for a successful EH216-S touchdown.
+
+        This threshold is owned by the selected vehicle profile.  The
+        historical ``soc_reserve`` field remains the queue/admission reserve
+        and is intentionally kept as a separate compatibility setting.
+        """
+        profile_floor = self.vehicle_profile.min_landing_soc
+        return self.soc_reserve if profile_floor is None else float(profile_floor)
+
     # Historical names are compatibility views, never independent fields.
     @property
     def max_speed(self) -> float: return self.vehicle_profile.max_horizontal_speed
@@ -226,6 +240,8 @@ class SimConfig:
             raise ValueError("final queue capacity must fit the landing-zone set")
         if self.dt <= 0 or self.physics_dt <= 0 or self.safety_sampling_dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:
             raise ValueError("dt, physics_dt, safety_sampling_dt, max_active_uavs and energy_capacity must be positive")
+        if not (0.0 < self.collision_distance < self.nmac_distance < self.safe_distance):
+            raise ValueError("separation thresholds must satisfy 0 < collision < protected floor < desired distance")
         if self.physics_dt > self.dt or self.safety_sampling_dt > self.dt:
             raise ValueError("physics/safety sampling dt cannot exceed policy dt")
         if self.trajectory_bezier_samples < 3 or self.trajectory_final_samples < 3:

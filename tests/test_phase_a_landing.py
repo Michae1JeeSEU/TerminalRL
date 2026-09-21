@@ -56,6 +56,57 @@ def test_a1_priority_energy_lifecycle_and_lz_service():
     assert m.step(119)==[] and m.step(1)==[7] and m.zones[0].status is LZStatus.FREE
 
 
+def test_ehang_reference_endurance_and_profile_landing_floor():
+    c = SimConfig()
+    e = EnergyModel(c)
+    assert c.energy_capacity == pytest.approx(c.vehicle_profile.reference_max_flight_time_s)
+    assert e.min_landing_soc == pytest.approx(c.vehicle_profile.min_landing_soc)
+    request = ArrivalRequest(1, 0, 0, MissionType.STANDARD, 1, c.energy_capacity, 1.0)
+    queued = QueuedArrivalState(request, c.energy_capacity)
+    for _ in range(int(c.energy_capacity)):
+        e.consume(queued, FlightPhase.RING_INNER, 1.0)
+    assert queued.energy_consumed == pytest.approx(c.energy_capacity)
+    assert queued.energy_remaining == pytest.approx(0.0)
+    queued.energy_remaining = c.energy_capacity * c.min_landing_soc
+    assert e.has_landing_reserve(queued)
+    queued.energy_remaining -= 1.0
+    assert not e.has_landing_reserve(queued)
+
+
+def test_active_low_soc_diversion_is_non_completion_and_not_double_resolved():
+    c = finite_config(
+        total_requested_uavs=0,
+        arrival_rate_per_second=0.0,
+        initial_soc_mode="fixed",
+        initial_soc=0.2501,
+    )
+    env = TerminalParallelEnv(c)
+    request = ArrivalRequest(1, 0, 0, MissionType.STANDARD, 1, c.energy_capacity, 0.2501)
+    queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
+    uav = UAVState.from_request(0, request, queued, np.zeros(3), 0.0)
+    uav.phase = FlightPhase.RING_INNER
+    uav.ring_role = RingRole.INNER
+    ring = env.airspace.actual_ring(RingRole.INNER)
+    uav.ring_progress = 0.0
+    uav.position = np.asarray((ring.radius, 0.0, ring.height), dtype=float)
+    uav.speed = ring.nominal_speed
+    uav.velocity = np.asarray((0.0, ring.nominal_speed, 0.0), dtype=float)
+    env.ledger.request(request.arrival_id)
+    env.active[uav.uid] = uav
+    # Isolate the reserve branch while retaining the real environment step.
+    env.runtime_traffic.protect = lambda _env, intents, _traces: intents
+    _, rewards, terminated, _, info = env.step({"0": np.zeros(3, dtype=float)})
+    assert env.ledger.outcomes[request.arrival_id] is TerminalOutcome.DIVERTED_LOW_SOC
+    assert request.arrival_id not in env.ledger.unresolved
+    assert uav.terminal_reason == "low_soc_before_touchdown"
+    assert not env.active and not env.service_uavs
+    assert terminated == {"0": True}
+    assert info["reward_components"]["0"]["failure"] == pytest.approx(-c.low_level_energy_failure_penalty)
+    assert rewards["0"] < 0.0
+    with pytest.raises(ValueError, match="duplicate terminal outcome"):
+        env._resolve(uav, TerminalOutcome.DIVERTED_LOW_SOC, "duplicate")
+
+
 def test_a2_common_random_numbers_initial_soc_and_four_physical_gates():
     c=finite_config(total_requested_uavs=4,arrival_rate_per_second=1.0)
     p1,p2=ArrivalProcess(c,42),ArrivalProcess(c,42)

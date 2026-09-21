@@ -3,6 +3,10 @@
 > **当前架构**：Phase A — Landing-only  
 > **核心原则**：三环终端区 + 连续到达流 + 地面服务资源 + 两层策略 + 确定性调度/轨迹/安全层。  
 > 本文档描述当前目标系统结构，不承担历史兼容说明；旧迁移过程保存在 `history/`，当前完成度见 `CURRENT_STATUS.md`。
+>
+> **当前车辆基准**：主仿真使用 `research_evtol` / EHang EH216-S /
+> `eh216s_research_v1`。安全距离和能量值是可审计的工程仿真语义，不是
+> EH216-S 的适航认证间隔或功耗结论。
 
 ---
 
@@ -371,6 +375,12 @@ class EnergyModel:
 
 初期使用 phase nominal coefficients；以后可替换为 calibrated model，但接口保持不变。
 
+当前 EH216-S 仿真的归一化基准为 `power_reference = 1.0` unit/s，
+`energy_capacity = 1500` s-equivalent；phase multiplier 只表达工程化的相对功耗，
+不能被解释为已完成的机型功耗标定。成功 touchdown 必须满足 vehicle profile 的
+`min_landing_soc = 0.25`；低于该门槛的提前降落/终止不计为成功完成，应按
+`DIVERTED_LOW_SOC` 或相应能量失败语义记录。
+
 AdmissionManager 应通过：
 
 ```text
@@ -588,18 +598,37 @@ class SafetyFilter:
 ### 12.2 Safety hierarchy
 
 ```text
-hard collision/separation
+protected floor / collision
+> desired operating separation
 > trajectory executability
 > resource reservation
 > SOC urgency / priority
 > efficiency
 ```
 
-高 priority 只影响“两个均安全候选谁先走”，不能降低 hard safety threshold。
+当前安全距离契约为：
+
+- `80 m` 是首选的 desired/planning operating separation。SafetyFilter 对提交的
+  canonical trajectory 做轨迹审查；运行时 PredictiveSafetyShield 对实际执行轨迹
+  做 executor-equivalent 的 swept-segment 检查与递归后备证明；
+- `40 m` 是运行时不得突破的 protected floor，同时作为 NMAC 保护阈值；
+- `<10 m` 才记为 collision event 的研究代理阈值，不代表 EH216-S 的机体碰撞认证距离。
+
+`80 m`、`40 m` 和 `<10 m` 都是当前仿真的工程/评估语义。高 priority 只影响
+“两个均满足安全契约的候选谁先走”，不能直接降低 `40 m` protected floor。
 
 ### 12.3 Safety responses
 
-允许：approve、delay release、replace merge time、reduce residual、hold、reject。  
+当候选无法证明满足 `80 m`，但 bounded intervention 的实际执行轨迹仍能通过
+同一套 swept + recursive 检查并证明全程不低于 `40 m` 时，
+`PredictiveSafetyShield` 可以接管本步的速度/时序意图；本机和其他已认证 UAV
+继续运行，episode 不因一次 `40--80 m` buffer incursion 自动终止。buffer
+incursion 单独记录；takeover/intervention 计入 shield reward cost，即使接管后
+数值修正为零也收取一次干预代价。
+
+允许：approve、delay release、replace merge time、reduce residual、hold、bounded takeover、reject。
+若无法证明执行轨迹全程 `>=40 m`，预测/实际进入 `<40 m`，或缺少递归后备证明，
+则在物理执行前 fail-closed；不能仅通过最终 reward 扣分来替代安全阻断。
 不允许把任意 heading/pitch offset 当作主安全机制。
 
 ---
@@ -756,6 +785,8 @@ reward 不得直接奖励“半径更大”或“capacity 数字更大”。
 - energy use
 - excessive residual magnitude
 - safety rejection
+- 40--80 m buffer incursion
+- shield takeover/intervention (including zero-delta takeover)
 - separation risk
 - starvation/fairness cost
 - failure

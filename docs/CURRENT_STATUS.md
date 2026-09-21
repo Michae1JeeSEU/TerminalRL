@@ -1,14 +1,16 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-21
+> **状态日期**：2026-09-22
 >
-> **代码快照**：Q3 后的 1800 秒长尾对照提交 `45f67cc`；P3 V4 完成率保护训练与预重置恢复分别提交 `25cec79`、`768b375`。Git 无 remote，未 push。
+> **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5，P3 V4 entry 2/2 PASS，但正式更新前的原始 K3 dense24 开发基线在 seed `828001` 第 533 秒触发 `SafetyInvariantError`（12/24 完成），训练未进入 formal 更新；当前无 V4 进程。V3 final heldout 安全失败、checkpoint 5 fresh Q3 吞吐失败仍为历史终态。`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`。
+> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。新安全/能量语义的探索性 dense24 双种子敏感性 12/12 完成，但 original K3 在 80 m 下仅 41/48 完成，主要未完成终态为低 SOC 分流。`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
 ## 一句话状态
+
+**最新结论（2026-09-22，覆盖下列历史时间线的下一步表述）：** 已实现目标方向的速度可行性修正；运行时首选 80 m，必要时在 swept + recursive 证明满足 40 m 保护下限的条件下由 shield 接管并继续执行，接管进入 reward 惩罚；collision event 门槛改为 `<10 m`。EH216-S 归一化能量参考改为 1500 s-equivalent，touchdown 要求 SOC≥.25。fresh dense24 seeds `830102/830103` × 间隔 `60/80/100 m` × rule/original K3 的 12/12 诊断回合中，288 请求、269 完成、19 低 SOC 分流；0 安全错误、0 `<40 m`、0 NMAC/collision、12/12 exact replay。80 m 的原始 K3 仅 41/48 完成，rule 47/48；本结果是诊断而非 qualification，不能启动旧 V4 PPO。P1/P2 旧结果不重写，但新 MDP 下需先 fresh 资格/效果复评，不能凭旧 gate 晋级；P3 需重新冻结能源可达的 dense24 资格场景与低 SOC 压力场景，再决定训练。详见 [P3 安全、能量与间距敏感性诊断](evidence/v4_2/p3_safety_energy_recalibration_20260922.md)。
 
 **最新结论（2026-09-21，优先于下列历史时间线）：** P3 V3 urgency-shaped PPO 正式训练 12/12 回合、全部安全与更新 gate PASS，但 final checkpoint 12 在一次性 heldout dense24 seed `825006` 第684秒触发 `SafetyInvariantError`；heldout 停在 15/18，不能晋级。对这个已暴露 seed 的 13 个检查点只作诊断：original K3 与 checkpoint 1–11 安全，只有 12 失败；诊断 manifest SHA256 `e2be6b10f9cad30262bf68c3b9b0d57e73d9d5408f08cb7fe77f9e9f0ed40dfa`。事后选定 checkpoint 5，用完全新鲜的 Q3 seeds `826001–826006` 做一次配对确认：18/18 完整性与安全 gate PASS，但 seed `826006` 的 trained dense24 仅 `13/24` 完成（initial `24/24`），dense 聚合完成率 `.771<1.0`，故 Q3 `PASS=false`。manifest SHA256 `2ad3c6e52d52a2431f86284cd604911aed99329bbc9af897fbbb723548309e8c`。等待改善只在已完成 UAV 中聚合，不得遮蔽未完成；全部 825xxx/826xxx seeds 已消费，不能用于训练、参数选择或再次资格评估。详见 [P3 V3 与 Q3 证据](evidence/v4_2/p3_v3_early_stop_q3_20260921.md)。
 
@@ -375,6 +377,8 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 服务器输出根为 `~/training_outputs/terminal`，本地镜像为 `D:/7_codespace/training_outputs/terminal`。源码只在本地修改，经Syncthing同步，服务器仅运行。
 
 ## 当前允许的下一步
+
+**2026-09-22 新顺序（覆盖下列历史第 5 项中的旧 V4 继续建议）：** (1) 用已有双种子矩阵和定向复现检查 40 m 接管与低 SOC 分流；(2) 为新 MDP 分离保证能源可达的 dense24 资格场景和 `.55--.90` SOC 压力场景，fresh seeds 与 gate 先冻结；(3) 先 fresh P1/P2 checkpoint 资格/效果复评，失败时才重训；(4) 在 P3 初始 K3 新基线与 rule 均满足可达/安全门槛后，才设计并启动新的 P3 PPO。所有上述诊断 seeds 已暴露，不得作为资格或调参数据。`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
 2. 暂停 proposal repair、learned proposal head/loss 与 fixed proposal index 调整；V1/V2/V3/V4 及 fixed-neutral V1/V2 seeds、rows、metrics 均为 immutable evidence，不得重跑或作为新阈值调优集。

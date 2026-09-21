@@ -96,17 +96,19 @@ arrival:
   gate_min_time_gap_seconds: 20.0
 
 vehicle:
+  profile: research_evtol/eh216s_research_v1
   safe_distance: 80.0
   nmac_distance: 40.0
-  collision_distance: 20.0
-  max_speed: 36.0
-  max_acceleration: 4.0
+  collision_distance: 10.0
+  max_speed: 25.0
+  max_acceleration: 1.5
   max_turn_rate_deg_s: 12.0
-  max_climb_rate: 5.0
-  max_descent_rate: 7.0
+  max_climb_rate: 4.0
+  max_descent_rate: 6.0
 
 energy:
   model: phase_nominal
+  capacity_seconds_equivalent: 1500.0
   power_reference: 1.0
   phase_multipliers:
     external_wait: 1.00
@@ -115,9 +117,10 @@ energy:
     ring_transfer: 1.10
     final: 0.90
     landing: 1.05
-  soc_warning: 0.30
-  soc_reserve: 0.15
-  soc_emergency: 0.08
+  soc_warning: 0.35
+  soc_reserve: 0.25
+  soc_emergency: 0.20
+  min_landing_soc: 0.25
 
 priority:
   base_values: [1, 3, 5]
@@ -160,9 +163,25 @@ high_level:
 safety:
   trajectory_horizon_seconds: 30.0
   reservation_timeout_seconds: 60.0
+  desired_separation_m: 80.0
+  protected_floor_m: 40.0
+  collision_event_distance_m: 10.0
+  intervention_mode: bounded_swept_recursive
 ```
 
 training/evaluation preset 必须引用相同 schema，不得复制出不同模型语义。
+
+`80 m` 是 desired/planning operating separation；SafetyFilter 审查提交的
+canonical trajectory，运行时 PredictiveSafetyShield 再按与 executor 等价的
+swept + recursive 证明认证执行轨迹。若原候选不能满足 `80 m`，但 bounded
+SafetyShield takeover 对实际执行轨迹仍可证明全程 `>=40 m`，则允许继续执行并让
+其他已认证 UAV 继续运行。`40--80 m` buffer incursion 单独记录；takeover 和
+intervention（包括零数值修正）进入 safety reward cost。低于 `40 m` 或无法取得
+递归证明时，物理执行前 fail-closed，不能只靠 reward 惩罚。
+
+`10 m` 是 collision event 的研究代理阈值，不是 EH216-S 适航认证距离。历史协议
+中使用的 `20 m` collision threshold、`10000` normalized energy capacity 和旧的
+“任一安全异常立即终止”qualification 语义仅用于解释归档结果，不得作为当前规范。
 
 ---
 
@@ -678,6 +697,8 @@ components: dict[str, float]
 | touchdown | +2.00 |
 | service completion | +3.00 |
 | safety rejection | -0.10 |
+| 40--80 m buffer incursion | 单独统计；接管代价计入 shield reward |
+| shield takeover/intervention, including zero-delta takeover | safety-cost term |
 | NMAC event | -5.00 |
 | collision failure | -50.00 |
 | energy failure | -20.00 |
