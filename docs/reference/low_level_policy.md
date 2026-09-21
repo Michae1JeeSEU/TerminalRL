@@ -177,6 +177,14 @@ PPO 之前至少必须证明：schema/replay/safety PASS、WAIT 与 RELEASE 均�
 闭环不崩溃、queue 不发散、throughput/completion 健康、shield burden 可接受，以及数据和
 checkpoint lineage 可复现。任一核心 gate 为 FAIL 时 `PPO_ALLOWED = false`。
 
+P3 的 priority/SOC 时间奖励是**默认关闭的可选 shaping**：仅显式启用时根据活动 UAV 的
+`base_priority` 和 SOC 低于阈值的幅度增加每步时间代价，不能替代完成率/安全 gate。
+2026-09-21 的 V3 使用权重 `1.0/2.0`、阈值 `.65`；虽然训练 formal 通过，最后模型在
+heldout 出现 `SafetyInvariantError`，事后早停的 checkpoint 5 又在 fresh Q3 dense24
+发生 13/24 完成。当前 P3 不合格；未来模型选择不得仅优化**已完成者**的平均等待，
+必须对全部请求报告完成/未完成、完整 horizon、未认证的 RELEASE 与安全不变量。
+详见 [P3 V3/Q3 证据](../evidence/v4_2/p3_v3_early_stop_q3_20260921.md)。
+
 ## 7. 数据与 qualification 纪律
 
 - 每次 schema 或 protocol 修改都使用新版本和 fresh actor；

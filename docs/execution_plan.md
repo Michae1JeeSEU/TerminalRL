@@ -467,6 +467,15 @@ P2R 是旧 P2 与 P3/P4 之间的资源语义桥接，不是把“环占满”�
 未见 seed 的 dense24 压力场景。只有当 individually-certified-but-not-requested 比例显示稳定的
 gate 漏放行时，才新增 fresh support/训练；资源空闲但轨迹不可认证不得作为错误标签。
 
+2026-09-21 P3 执行更新：priority/SOC urgency-shaped mixed PPO 的 V3 formal 12/12 gate PASS，
+但 final heldout 在 dense24 安全不变量失败；暴露种子诊断发现只有最后一个检查点失败。
+事后选取 checkpoint 5 的全新 Q3 尽管 18/18 安全与完整性通过，第二个 dense24 仅完成
+13/24，对照 initial 24/24，故 P3 仍 FAIL。详情见
+[P3 V3/Q3 证据](evidence/v4_2/p3_v3_early_stop_q3_20260921.md)。以后 P3 的
+formal/heldout 必须同时报告完整请求分母的完成率与已完成者等待；不得用后者代替前者。
+出现长时无 touchdown、空闲 LZ、shield/shortlist 激增时先审查状态与可认证动作，
+再预注册新训练修复。P4 流量压力不得因 V3 formal PASS 而提前启动。
+
 所有阶段从第一步起保留：EH216-S性能约束、80m安全间隔、NMAC/collision阈值、
 轨迹可执行性、SafetyFilter/shield、切环headway、final/LZ容量、预约与retry、能耗和外部admission。
 课程只增加负荷/属性/布局覆盖，不能先关闭安全、能耗、资源约束，再在后期突然打开。
