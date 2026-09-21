@@ -1,0 +1,73 @@
+protocol: V4_2_P3_MIXED_PRIORITY_SOC_HELDOUT_V1
+status: PREREGISTERED_HELDOUT
+scope: p3_v2_mixed_priority_soc_trained_vs_initial_vs_rule
+
+bindings:
+  audit_stage: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V2_FORMAL_AUDIT_V1
+  audit_manifest_sha256: 09e920a3945ae3b81a82b5c8a3b9e567785a8c205b8fe7774ff68b0fff33ba3d
+  audit_protocol_sha256: fe2422c9af9ff6b3f0e234cb66987a0ff54a051c3975b60b8846e05a8f0d1ce6
+  training_stage: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V2
+  training_protocol_sha256: 4a445d885f0e7662c9f1592f44464d970ece8322aa8a7cf81012d59e7fd916ed
+  trained_checkpoint_sha256: bdff62ac94fbbd42ebb0fc571c09b6b2cd7b182058b0bf1a2ef496ab863ca9c6
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  scheduler_source: terminal_marl/core/merge_scheduler.py
+  scheduler_source_sha256: 58bf3f3a29b86f00855610000a819424e5c90b0c1f1433a780bcb42f86309ce1
+  training_reservation_marker: p3_mixed_priority_soc_training_v2_consumed.json
+  training_reservation_marker_sha256: 800e0dba20891485ce5a221f95003b3ce61d061993a1ada34f21ce6bddbd989d
+
+heldout:
+  seeds: [822001, 822002, 822003, 822004, 822005, 822006]
+  scenarios: [flow6, flow12, dense24, flow6, flow12, dense24]
+  controllers: [trained, initial, rule]
+  deterministic: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  paired_same_seed_and_scenario: true
+  full_scenario_horizon: true
+  dense_horizon_seconds: 1080
+  expected_records: 18
+
+episode_gates:
+  safety_all_zero: true
+  exact_replay: true
+  student_requested_likelihood_exact: true
+  runtime_shortlist_k: 3
+  geometry_reverse_samples_zero: true
+  geometry_inner_excursion_max_m: 0.05
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  actor_decisions_nonzero: true
+  rule_shield_zero: true
+  lifecycle_replay_exact: true
+  frozen_proposal_subgraph: true
+  completion_report_only: true
+
+decision_gates:
+  all_records: true
+  all_episode_integrity: true
+  trained_sparse_completion: 1.0
+  trained_dense_completion_aggregate_nonworse_than_initial: true
+  trained_dense_strict_improvement: true
+  trained_sparse_priority_weighted_wait_nonworse_than_initial: true
+  trained_dense_priority_weighted_wait_nonworse_than_initial: true
+  trained_overall_low_soc_mean_wait_nonworse_than_initial: true
+  none_metrics_fail_closed: true
+  rule_diagnostic_only: true
+
+coverage:
+  low_soc_threshold: 0.65
+  priority_weighted_wait_weight: base_priority
+
+reservation:
+  marker: p3_mixed_priority_soc_heldout_v1_consumed.json
+  reserve_before_first_reset: true
+  one_time: true
+
+authorization:
+  heldout_evaluation_allowed_on_pass: true
+  heldout_untouched: true
+  P3_QUALIFIED_on_pass: true
+  checkpoint_promotable_on_pass: true
+  P4_ALLOWED: false
