@@ -1,0 +1,104 @@
+protocol: V4_2_P3_V3_EARLY_STOP_Q3_V1
+status: PREREGISTERED_FRESH_Q3_CONFIRMATION
+scope: p3_v3_early_stop_checkpoint5_fresh_paired_confirmation
+provenance:
+  fresh_q3: true
+  posthoc_selected_from_exposed_frontier: true
+  exposed_seed_diagnostic_only: true
+  exposed_seed: 825006
+  exposed_scenario: dense24
+  posthoc_selected_checkpoint: checkpoint_5
+  frontier_failure_checkpoint: 12
+  frontier_safe_checkpoint_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  frontier_candidate_count: 13
+  frontier_ckpt5_safety_zero: true
+  exposed_consumption_marker_sha256: 13e4811e25637273bd8f2f91defd2affc87f343cb6dc7a5d1512fc7be7762946
+
+bindings:
+  training_root_stage: V4_2_P3_MIXED_PRIORITY_SOC_TRAINING_V3
+  training_root_manifest_sha256: 38703fa2af89a56f2ac46551f3c6006bf750547a7768f707990c7873e8209b76
+  training_root_formal_final_checkpoint_sha256: 0fb4acf9b05ba2fa8f5700e64eca6c2b9fc6174bb091c4e12ee4c1ea3942fb6b
+  training_protocol_sha256: c69dc4b308e97652936c8da5bb6a47ef61a73a4f3cb599de8f39cb703f3c4d25
+  trained_checkpoint_sha256: 19c31195dd881e7e4fde91530aff00375f2787754569491749474699b7f06b2d
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  frontier_manifest_sha256: e2be6b10f9cad30262bf68c3b9b0d57e73d9d5408f08cb7fe77f9e9f0ed40dfa
+  frontier_protocol_sha256: 1bd3af56afc3b7db5199125a2ef5ca6c1205913966d19c653e4cfd901a118269
+  scheduler_source: terminal_marl/core/merge_scheduler.py
+  scheduler_source_sha256: 58bf3f3a29b86f00855610000a819424e5c90b0c1f1433a780bcb42f86309ce1
+  training_reservation_marker: p3_mixed_priority_soc_training_v3_consumed.json
+  training_reservation_marker_sha256: 225ccec9068389aeb2d8876443ed94913bc0c9a5f2e11497de789cd5b0bc4517
+  reward_sources:
+    terminal_marl/core/rewards.py: e39503bb2e6ed021d03268c0894fa123efb39ef30b85a225f721b4a1f9dfb28b
+    terminal_marl/core/config.py: 5fbadde0a690b02db05fcaafdca76c814502a33e382f57a5700aed6ce86f9dd7
+    terminal_marl/envs/parallel_env.py: 925ac9a03e56327b98ef29d0b5c408720795cfa61fde6e8ff3ef5036f8255316
+
+reward:
+  low_level_priority_time_weight: 1.0
+  low_level_soc_urgency_time_weight: 2.0
+  low_level_soc_urgency_threshold: 0.65
+  urgency_reward_config_exact: true
+
+q3:
+  seeds: [826001, 826002, 826003, 826004, 826005, 826006]
+  scenarios: [flow6, flow12, dense24, flow6, flow12, dense24]
+  controllers: [trained, initial, rule]
+  deterministic: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  paired_same_seed_and_scenario: true
+  full_scenario_horizon: true
+  flow6_horizon_seconds: 1210
+  flow12_horizon_seconds: 1570
+  dense24_horizon_seconds: 1080
+  expected_records: 18
+  completion_report_only: true
+
+episode_gates:
+  safety_all_zero: true
+  exact_replay: true
+  student_requested_likelihood_exact: true
+  runtime_shortlist_k: 3
+  geometry_reverse_samples_zero: true
+  geometry_inner_excursion_max_m: 0.05
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  actor_decisions_nonzero: true
+  rule_shield_zero: true
+  lifecycle_replay_exact: true
+  frozen_proposal_subgraph: true
+  deterministic: true
+  urgency_reward_config_exact: true
+  completion_report_only: true
+
+decision_gates:
+  all_records: true
+  all_episode_integrity: true
+  trained_sparse_completion: 1.0
+  trained_dense_completion_aggregate_nonworse_than_initial: true
+  trained_dense_strict_improvement: true
+  trained_sparse_priority_weighted_wait_nonworse_than_initial: true
+  trained_dense_priority_weighted_wait_nonworse_than_initial: true
+  trained_overall_low_soc_mean_wait_nonworse_than_initial: true
+  none_metrics_fail_closed: true
+  rule_diagnostic_only: true
+
+coverage:
+  low_soc_threshold: 0.65
+  priority_weighted_wait_weight: base_priority
+
+history:
+  fresh_seed_disjoint: true
+  forbidden_seeds: [816001, 816002, 816003, 817001, 817002, 818001, 818002, 818003, 818004, 818005, 818006, 818007, 818008, 819001, 819002, 819003, 819004, 819005, 819006, 820001, 820002, 821001, 821002, 821003, 821004, 821005, 821006, 821007, 821008, 822001, 822002, 822003, 822004, 822005, 822006, 823001, 823002, 824001, 824002, 824003, 824004, 824005, 824006, 824007, 824008, 824009, 824010, 824011, 824012, 825001, 825002, 825003, 825004, 825005, 825006]
+
+reservation:
+  marker: p3_v3_early_stop_q3_v1_consumed.json
+  reserve_before_first_reset: true
+  one_time: true
+
+authorization:
+  q3_confirmation_allowed_on_pass: true
+  P3_QUALIFIED_on_pass: true
+  checkpoint_promotable_on_pass: true
+  P4_ALLOWED: false
