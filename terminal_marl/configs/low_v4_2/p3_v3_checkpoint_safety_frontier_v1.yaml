@@ -1,0 +1,69 @@
+protocol: V4_2_P3_V3_CHECKPOINT_SAFETY_FRONTIER_V1
+status: PREREGISTERED_EXPOSED_SEED_DIAGNOSTIC
+scope: one_time_dense24_checkpoint_safety_frontier
+exposed_seed_diagnostic_only: true
+
+bindings:
+  heldout_protocol: terminal_marl/configs/low_v4_2/p3_mixed_priority_soc_heldout_v2.yaml
+  heldout_protocol_sha256: bdcd4be571555b0f512af30e8bf548cc11948b3347e18b552093ae1997e42e7a
+  heldout_consumption_marker: p3_mixed_priority_soc_heldout_v2_consumed.json
+  heldout_consumption_marker_sha256: 13e4811e25637273bd8f2f91defd2affc87f343cb6dc7a5d1512fc7be7762946
+  failed_seed: 825006
+  failed_scenario: dense24
+  failed_summary_sha256: 080c7799a235fba1ca1c4b79d29f5bd0e00e44eec616cca1c5c3d6fb75dff3ec
+  failed_action_tape_sha256: 97bfb66b974cfd4e11012733c71cb8c16936a20b359d9af3bbd43d4970a50d6f
+  failed_safety_error_type: SafetyInvariantError
+  failed_safety_component_message: No certified bounded joint backup action; physics execution blocked for components ((35, 118),)
+  final_checkpoint_sha256: 0fb4acf9b05ba2fa8f5700e64eca6c2b9fc6174bb091c4e12ee4c1ea3942fb6b
+  initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  training_protocol_sha256: c69dc4b308e97652936c8da5bb6a47ef61a73a4f3cb599de8f39cb703f3c4d25
+
+scenario:
+  name: dense24
+  seed: 825006
+  deterministic: true
+  no_updates: true
+  no_labels: true
+  no_teacher: true
+  full_horizon_seconds: 1080
+  total_requested_uavs: 24
+  urgency_reward_config_exact: true
+  low_level_priority_time_weight: 1.0
+  low_level_soc_urgency_time_weight: 2.0
+  low_level_soc_urgency_threshold: 0.65
+
+candidates:
+  original_label: original_k3
+  checkpoint_pattern: checkpoint_{index}.pt
+  indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  sha256:
+    - b68a91bb4bedc3731c9fd57a361e8743ee59da1e82a10cad9cf37082b5e20cd1
+    - e02f51537f5ec85b6d496d987384a432508748d395c354465dda9a927624aae9
+    - a562207301725375099608485b02db8ba11eda50fbe9651e66e0930e5d34d9dd
+    - 7524498ecfcb7b1d15bea775a297f803d693dcf72fcb980d3426075c2ddd728f
+    - 19c31195dd881e7e4fde91530aff00375f2787754569491749474699b7f06b2d
+    - 905582829eae0d93c9352498ea7ed42f334f1597f9d22af42980b67179189cd3
+    - 361654b5fae00a9da5dccaf186bc7b227069de496f20c96dd061e230e9693bb8
+    - 1c1c59dd4ea511ea7b9198372087819999055d16158cabeb9bd9aa8a27daf5a9
+    - 16a2be5b3606932530fd684473210faee87bc46dad4b6a06427c251129a9c592
+    - 9b0fef1c898b8b4aeac206fe8d410749f36bbefb677245a2cb7021c81d646582
+    - 8535db9e89adcfc31cecff86f5883b151f7837b1e00b22bc657c08fb5ddbb962
+    - 0fb4acf9b05ba2fa8f5700e64eca6c2b9fc6174bb091c4e12ee4c1ea3942fb6b
+
+diagnostic:
+  evaluate_all_candidates_after_failure: true
+  continue_after_safety_invariant: true
+  direct_student_rollout: terminal_marl/training/student_rollout_v4_2.py
+  no_generic_evaluator: true
+  replay_only_when_safety_zero: true
+  priority_weighted_wait_weight: base_priority
+  low_soc_threshold: 0.65
+  runtime_shortlist_metrics: [exhausted, fallback_selected]
+  output_independent: true
+
+authorization:
+  diagnostic_only: true
+  PASS_used_for_promotion: false
+  checkpoint_promotable: false
+  P3_QUALIFIED: false
+  P4_ALLOWED: false
