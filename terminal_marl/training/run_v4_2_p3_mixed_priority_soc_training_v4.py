@@ -54,6 +54,9 @@ V3_PROTOCOL_SHA = (
 V3_FINAL_CHECKPOINT_SHA = (
     "0fb4acf9b05ba2fa8f5700e64eca6c2b9fc6174bb091c4e12ee4c1ea3942fb6b"
 )
+PRE_RESET_RECOVERY_MARKER_SHA = (
+    "cdbba071cd4bf659399acb4c71ad172e9e57d99a45653b9ac152d22e920f351b"
+)
 SCHEDULER_SOURCE = Path("terminal_marl/core/merge_scheduler.py")
 SCHEDULER_SOURCE_SHA = (
     "58bf3f3a29b86f00855610000a819424e5c90b0c1f1433a780bcb42f86309ce1"
@@ -102,6 +105,8 @@ def _jsonable(value: Any) -> Any:
         return {str(key): _jsonable(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_jsonable(item) for item in value]
+    if isinstance(value, set):
+        return [_jsonable(item) for item in sorted(value)]
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, np.ndarray):
@@ -128,6 +133,45 @@ def _read_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     _require(isinstance(value, dict), f"JSON object required: {path}")
     return value
+
+
+def validate_pre_reset_recovery(output: Path, marker: Path,
+                                p: Mapping[str, Any]) -> dict[str, Any]:
+    """Permit one exact recovery after reservation, before the first reset."""
+    _require(output.is_dir(), "V4 recovery output directory missing")
+    _require({path.name for path in output.iterdir()} == {"registry_progress.json"},
+             "V4 recovery output has episode or unexpected artifacts")
+    progress = _read_json(output / "registry_progress.json")
+    _require(isinstance(progress.get("files_read"), int)
+             and isinstance(progress.get("files_total"), int)
+             and 0 < progress["files_read"] <= progress["files_total"],
+             "V4 recovery registry progress invalid")
+    _require(marker.is_file() and _sha(marker) == PRE_RESET_RECOVERY_MARKER_SHA,
+             "V4 recovery marker SHA mismatch")
+    saved = _read_json(marker)
+    expected = {
+        "stage": STAGE,
+        "protocol_sha256": PROTOCOL_SHA,
+        "superseded_training_manifest_sha256": p["bindings"]["superseded_training_manifest_sha256"],
+        "initial_checkpoint_sha256": p["bindings"]["initial_checkpoint_sha256"],
+        "entry_seeds": p["entry"]["seeds"],
+        "formal_seeds": p["formal"]["seeds"],
+        "dev_seeds": p["dev"]["seeds"],
+        "heldout_seeds": p["heldout"]["seeds"],
+        "heldout_untouched": True,
+        "output": str(output),
+        "reserved_before_first_reset": True,
+        "original_checkpoint_initialization": True,
+        "urgency_reward_config": dict(REWARD_CONFIG),
+    }
+    _require(saved == expected, "V4 recovery marker contents changed")
+    return {
+        "pre_reset_recovery": True,
+        "reservation_marker_sha256": PRE_RESET_RECOVERY_MARKER_SHA,
+        "prior_registry_scan_completed_before_reservation": True,
+        "prior_registry_progress": progress,
+        "no_reset_artifacts": True,
+    }
 
 
 def protocol() -> dict[str, Any]:
@@ -737,9 +781,11 @@ def _formal_stage(*, output: Path, checkpoint: Path, p: Mapping[str, Any]) -> di
 
 
 def run(*, output: Path, superseded_v3_manifest_path: Path,
-        initial_checkpoint: Path, history_root: Path) -> dict[str, Any]:
+        initial_checkpoint: Path, history_root: Path,
+        resume_pre_reset: bool = False) -> dict[str, Any]:
     p = protocol()
-    _require(not output.exists(), f"V4 output already exists: {output}")
+    if not resume_pre_reset:
+        _require(not output.exists(), f"V4 output already exists: {output}")
     root = validate_superseded_v3_manifest(superseded_v3_manifest_path, p)
     _require(_sha(initial_checkpoint) == p["bindings"]["initial_checkpoint_sha256"],
              "V4 initial checkpoint SHA mismatch")
@@ -756,27 +802,31 @@ def run(*, output: Path, superseded_v3_manifest_path: Path,
     _require(len(reserved) == len(set(reserved)), "V4 schedule overlaps itself")
     forbidden = set(int(seed) for seed in p["history"]["forbidden_seeds"])
     _require(not (set(reserved) & forbidden), "V4 schedule overlaps preregistered history")
-    output.mkdir(parents=True, exist_ok=False)
-    history = historical_registry(history_root, output)
-    overlap = sorted(set(reserved) & set(history["seeds"]))
-    _require(not overlap, f"V4 seeds were previously consumed: {overlap}")
     marker = initial_checkpoint.parent / str(p["reservation"]["marker"])
-    reserve_once(marker, {
-        "stage": STAGE, "protocol_sha256": PROTOCOL_SHA,
-        "superseded_training_manifest_sha256": p["bindings"]["superseded_training_manifest_sha256"],
-        "initial_checkpoint_sha256": p["bindings"]["initial_checkpoint_sha256"],
-        "entry_seeds": entry_seeds, "formal_seeds": formal_seeds,
-        "dev_seeds": dev_seeds, "heldout_seeds": heldout_seeds,
-        "heldout_untouched": True, "output": str(output),
-        "reserved_before_first_reset": True,
-        "original_checkpoint_initialization": True,
-        "urgency_reward_config": dict(REWARD_CONFIG),
-    })
+    if resume_pre_reset:
+        history = validate_pre_reset_recovery(output, marker, p)
+    else:
+        output.mkdir(parents=True, exist_ok=False)
+        history = historical_registry(history_root, output)
+        overlap = sorted(set(reserved) & set(history["seeds"]))
+        _require(not overlap, f"V4 seeds were previously consumed: {overlap}")
+        reserve_once(marker, {
+            "stage": STAGE, "protocol_sha256": PROTOCOL_SHA,
+            "superseded_training_manifest_sha256": p["bindings"]["superseded_training_manifest_sha256"],
+            "initial_checkpoint_sha256": p["bindings"]["initial_checkpoint_sha256"],
+            "entry_seeds": entry_seeds, "formal_seeds": formal_seeds,
+            "dev_seeds": dev_seeds, "heldout_seeds": heldout_seeds,
+            "heldout_untouched": True, "output": str(output),
+            "reserved_before_first_reset": True,
+            "original_checkpoint_initialization": True,
+            "urgency_reward_config": dict(REWARD_CONFIG),
+        })
     _write(output / "pre_reset_registry.json", {
         "stage": STAGE, "protocol_sha256": PROTOCOL_SHA,
         "entry_seeds": entry_seeds, "formal_seeds": formal_seeds,
         "dev_seeds": dev_seeds, "heldout_seeds": heldout_seeds,
         "history_registry": history, "reservation_marker": str(marker),
+        "pre_reset_recovery": bool(resume_pre_reset),
         "heldout_untouched": True, "reserved_before_first_reset": True,
         "initial_checkpoint_sha256": p["bindings"]["initial_checkpoint_sha256"],
         "urgency_reward_config": dict(REWARD_CONFIG),
@@ -826,6 +876,7 @@ def main() -> None:
                         dest="superseded_v3_manifest_path", type=Path, required=True)
     parser.add_argument("--initial-checkpoint", type=Path, required=True)
     parser.add_argument("--history-root", type=Path, required=True)
+    parser.add_argument("--resume-pre-reset", action="store_true")
     args = parser.parse_args()
     torch.set_num_threads(1)
     result = run(
@@ -833,6 +884,7 @@ def main() -> None:
         superseded_v3_manifest_path=args.superseded_v3_manifest_path,
         initial_checkpoint=args.initial_checkpoint,
         history_root=args.history_root,
+        resume_pre_reset=args.resume_pre_reset,
     )
     print(json.dumps({
         "stage": result["stage"], "PASS": result["PASS"],

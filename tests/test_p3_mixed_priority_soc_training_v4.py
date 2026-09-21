@@ -1,6 +1,7 @@
 import inspect
 import json
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -263,3 +264,75 @@ def test_v4_formal_stops_after_first_passing_checkpoint(tmp_path, monkeypatch):
     assert rollout_seeds == [827101]
     assert dev_labels == ["initial", "checkpoint_1"]
     assert len(result["records"]) == 1
+
+
+def _write_pre_reset_recovery_inputs(tmp_path, p):
+    output = tmp_path / "recovery"
+    output.mkdir()
+    (output / "registry_progress.json").write_text(
+        json.dumps({"files_read": 1, "files_total": 2}), encoding="utf-8",
+    )
+    marker = tmp_path / "p3_mixed_priority_soc_training_v4_consumed.json"
+    marker.write_text(json.dumps({
+        "stage": training.STAGE,
+        "protocol_sha256": training.PROTOCOL_SHA,
+        "superseded_training_manifest_sha256": p["bindings"]["superseded_training_manifest_sha256"],
+        "initial_checkpoint_sha256": p["bindings"]["initial_checkpoint_sha256"],
+        "entry_seeds": p["entry"]["seeds"],
+        "formal_seeds": p["formal"]["seeds"],
+        "dev_seeds": p["dev"]["seeds"],
+        "heldout_seeds": p["heldout"]["seeds"],
+        "heldout_untouched": True,
+        "output": str(output),
+        "reserved_before_first_reset": True,
+        "original_checkpoint_initialization": True,
+        "urgency_reward_config": dict(training.REWARD_CONFIG),
+    }), encoding="utf-8")
+    return output, marker
+
+
+def test_v4_pre_reset_recovery_accepts_exact_marker_and_registry_progress(tmp_path, monkeypatch):
+    value = training.protocol()
+    output, marker = _write_pre_reset_recovery_inputs(tmp_path, value)
+    monkeypatch.setattr(
+        training, "_sha", lambda path: training.PRE_RESET_RECOVERY_MARKER_SHA
+        if Path(path) == marker else "unused",
+    )
+
+    proof = training.validate_pre_reset_recovery(output, marker, value)
+
+    assert proof["pre_reset_recovery"] is True
+    assert proof["reservation_marker_sha256"] == training.PRE_RESET_RECOVERY_MARKER_SHA
+    assert proof["prior_registry_scan_completed_before_reservation"] is True
+    assert proof["no_reset_artifacts"] is True
+
+
+def test_v4_pre_reset_registry_sets_are_json_serializable(tmp_path):
+    target = tmp_path / "pre_reset_registry.json"
+    training._write(target, {"history_registry": {"seeds": {3, 1, 2}}})
+    assert json.loads(target.read_text(encoding="utf-8"))["history_registry"]["seeds"] == [1, 2, 3]
+
+
+@pytest.mark.parametrize("mutation", ["extra_file", "marker_seed", "wrong_hash"])
+def test_v4_pre_reset_recovery_rejects_extra_artifacts_or_marker_mismatch(
+    tmp_path, monkeypatch, mutation,
+):
+    value = training.protocol()
+    output, marker = _write_pre_reset_recovery_inputs(tmp_path, value)
+    original_sha = training._sha
+    if mutation == "extra_file":
+        (output / "entry").mkdir()
+    elif mutation == "marker_seed":
+        saved = json.loads(marker.read_text(encoding="utf-8"))
+        saved["entry_seeds"] = [827999, 827998]
+        marker.write_text(json.dumps(saved), encoding="utf-8")
+    else:
+        monkeypatch.setattr(training, "_sha", lambda path: "0" * 64)
+    if mutation != "wrong_hash":
+        monkeypatch.setattr(
+            training, "_sha", lambda path: training.PRE_RESET_RECOVERY_MARKER_SHA
+            if Path(path) == marker else original_sha(path),
+        )
+
+    with pytest.raises(ValueError):
+        training.validate_pre_reset_recovery(output, marker, value)
