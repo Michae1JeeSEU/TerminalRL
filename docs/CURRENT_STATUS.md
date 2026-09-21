@@ -4,7 +4,7 @@
 >
 > **代码快照**：Q3 后的 1800 秒长尾对照提交 `45f67cc`；P3 V4 完成率保护训练与预重置恢复分别提交 `25cec79`、`768b375`。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5，P3 V4 正在服务器运行；entry 2/2 PASS，formal 的原始 K3 dense24 开发集基线正在执行。V3 final heldout 安全失败、checkpoint 5 fresh Q3 吞吐失败仍为历史终态。`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`。
+> **当前阶段**：Phase A / A5，P3 V4 entry 2/2 PASS，但正式更新前的原始 K3 dense24 开发基线在 seed `828001` 第 533 秒触发 `SafetyInvariantError`（12/24 完成），训练未进入 formal 更新；当前无 V4 进程。V3 final heldout 安全失败、checkpoint 5 fresh Q3 吞吐失败仍为历史终态。`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -12,7 +12,7 @@
 
 **最新结论（2026-09-21，优先于下列历史时间线）：** P3 V3 urgency-shaped PPO 正式训练 12/12 回合、全部安全与更新 gate PASS，但 final checkpoint 12 在一次性 heldout dense24 seed `825006` 第684秒触发 `SafetyInvariantError`；heldout 停在 15/18，不能晋级。对这个已暴露 seed 的 13 个检查点只作诊断：original K3 与 checkpoint 1–11 安全，只有 12 失败；诊断 manifest SHA256 `e2be6b10f9cad30262bf68c3b9b0d57e73d9d5408f08cb7fe77f9e9f0ed40dfa`。事后选定 checkpoint 5，用完全新鲜的 Q3 seeds `826001–826006` 做一次配对确认：18/18 完整性与安全 gate PASS，但 seed `826006` 的 trained dense24 仅 `13/24` 完成（initial `24/24`），dense 聚合完成率 `.771<1.0`，故 Q3 `PASS=false`。manifest SHA256 `2ad3c6e52d52a2431f86284cd604911aed99329bbc9af897fbbb723548309e8c`。等待改善只在已完成 UAV 中聚合，不得遮蔽未完成；全部 825xxx/826xxx seeds 已消费，不能用于训练、参数选择或再次资格评估。详见 [P3 V3 与 Q3 证据](evidence/v4_2/p3_v3_early_stop_q3_20260921.md)。
 
-将同一 Q3 dense24 回合延至 1800 秒后，trained 仍 `13/24`、末次 touchdown 第 380 秒，原始 K3 在第 911 秒 `24/24`，因而单纯延长上限不能解决停滞。新 V4 保持安全阈值和 1 秒决策步长，dense24 上限改为 1800 秒并采用“全部完成即停、到上限仍未完成则失败”；正式随机回合完成率仅作学习反馈，两个 fresh 确定性 dense24 开发回合须均 24/24 且安全、延误门槛通过，才可选择首个合格检查点。预留 heldout `829001–829006` 不在训练中评估。启动时一次 JSON 序列化错误发生于预约标记落盘后、首次 reset 前；严格核对标记与仅有扫描进度文件后已恢复，entry 2/2 PASS。见 [P3 V4 证据](evidence/v4_2/p3_v4_completion_guard_20260921.md)。
+将同一 Q3 dense24 回合延至 1800 秒后，trained 仍 `13/24`、末次 touchdown 第 380 秒，原始 K3 在第 911 秒 `24/24`，因而单纯延长上限不能解决停滞。新 V4 保持安全阈值和 1 秒决策步长，dense24 上限改为 1800 秒并采用“全部完成即停、到上限仍未完成则失败”；正式随机回合完成率仅作学习反馈，两个 fresh 确定性 dense24 开发回合须均 24/24 且安全、延误门槛通过，才可选择首个合格检查点。预留 heldout `829001–829006` 不在训练中评估。启动时一次 JSON 序列化错误发生于预约标记落盘后、首次 reset 前；严格核对标记与仅有扫描进度文件后已恢复，entry 2/2 PASS。但 dev baseline 的首个 fresh dense24 回合在第 533 秒、完成 12/24 时出现无可认证联合备份动作，进程于 exact-likelihood replay 阶段退出；formal PPO 更新 0 次、无检查点、无 heldout。见 [P3 V4 证据](evidence/v4_2/p3_v4_completion_guard_20260921.md)。
 
 下文 2026-09-17–20 的“当前/下一步”句子是当时的历史状态，不覆盖以上终态；以后续本页末尾的最新允许动作与证据边界为准。
 
@@ -380,7 +380,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 2. 暂停 proposal repair、learned proposal head/loss 与 fixed proposal index 调整；V1/V2/V3/V4 及 fixed-neutral V1/V2 seeds、rows、metrics 均为 immutable evidence，不得重跑或作为新阈值调优集。
 3. K=3 runtime boundary 已冻结；P2R 只改变 scheduler-owned LZ/同一步仲裁/final资源语义，不得隐式加入 runtime catalogue search 或让策略直接输出 `lz_id`。
 4. P2R 当前不需要因4/108个单种子漏放行立即重训。若后续 fresh 多种子确认稳定的 individually-certified-but-not-requested 缺口，先独立预注册 train/dev/heldout seeds 和 warm+flow mixed curriculum，再决定 gate support/训练；当前诊断不得直接授权 PPO。
-5. **最新 P3 停止规则：** checkpoint12 的安全 FAIL 与 checkpoint5 的 fresh Q3 完成率 FAIL 均不可改写；不得按 825006/826006 的表现继续挑选旧检查点，或将低等待（只统计完成者）当作高吞吐证据。Q3 dense24 的1080步 exact replay 显示 380秒后放行批准持续为0，后续累计 `NO_MERGE_GAP=305`、`PREDICTED_SEPARATION=344`，末态11架积压、6个LZ空闲。1800秒对照中 trained 仍停在13/24，而初始 K3 在911秒24/24。V4 已预注册并正在运行；等待 fresh dev 的安全、24/24 完成率和效率 gate，再决定是否允许一次性 heldout，不得放松 SafetyFilter。P4/P5 与 A6 仍禁止。后续长任务由 `luna_worker` 执行/监控，主agent审查结果。
+5. **最新 P3 停止规则：** checkpoint12 的安全 FAIL 与 checkpoint5 的 fresh Q3 完成率 FAIL 均不可改写；不得按 825006/826006 的表现继续挑选旧检查点，或将低等待（只统计完成者）当作高吞吐证据。Q3 dense24 的1080步 exact replay 显示 380秒后放行批准持续为0，后续累计 `NO_MERGE_GAP=305`、`PREDICTED_SEPARATION=344`，末态11架积压、6个LZ空闲。1800秒对照中 trained 仍停在13/24，而初始 K3 在911秒24/24；V4 fresh dev 则证明原始 K3 对所有 dense24 seeds 并非安全保证。828001 失败前60秒 509 个 actor 状态仅17次请求 RELEASE、1次获批；失败当步两架内环 UAV 均未请求 RELEASE，触发的是 `backup_existence` 递归可恢复性门槛。V4 在正式更新前已停，不得因基线失败而继续同协议或放松 SafetyFilter；下轮应先核验该备份认证失效是可行性边界还是求解器漏证，再预注册渐进密度课程和独立安全/吞吐开发集。P4/P5 与 A6 仍禁止。
 
 完整协议、旧失败与诊断详情见[持续课程证据](evidence/v4_2/continuous_curriculum_20260917.md)；初始准入见[准入结果](evidence/v4_2/v4_2_v2_1_ppo_admission_summary.md)，轨迹修复与第二训练块见[续训结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。
 

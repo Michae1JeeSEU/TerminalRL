@@ -24,3 +24,7 @@ episode 在所有请求完成时立即终止，未完成时到有限上限终止
 此协议没有改动安全阈值或以 Teacher 更新 PPO。若 V4 仍不能选出合格检查点，应基于新证据另行预注册修复，不改写 V4 或重用这些 seeds。
 
 首次启动在历史种子扫描和预约标记落盘之后、首次 environment reset 之前，因 `set` 无法 JSON 序列化而退出；输出仅有 `registry_progress.json`，没有 entry/formal 产物。预约标记 SHA256 为 `cdbba071cd4bf659399acb4c71ad172e9e57d99a45653b9ac152d22e920f351b`。后续仅允许通过校验此标记、原输出目录唯一文件和冻结种子清单的 `--resume-pre-reset` 路径继续同一次协议，不删除标记、不新建种子或把这次失败算成训练回合。
+
+恢复执行后，entry 两个短回合及其 episode gates 全 PASS。formal 首先执行原始 K3 的 dense24 开发基线，seed `828001` 在第 533 秒、完成 `12/24` 时出现 `SafetyInvariantError: No certified bounded joint backup action; physics execution blocked for components ((13, 28),)`；碰撞、NMAC、hard separation 和 uncertified execution 计数仍为零，是 fail-closed 阻止了后续物理执行。runner 随后在 likelihood exact replay 同一安全异常处退出，未写 root manifest；formal PPO 更新 **0 次**、未产生检查点，dev 第二种子与全部 heldout 均未评估。恢复日志 `p3_mixed_priority_soc_training_v4_20260921.resume.log`，服务器进程已退出。V4 不得追溯算作 PASS 或通过同一种子重启；完整原因须基于已有动作带另作只读归因。
+
+只读检查现有动作带 `safety_trace_seed_828001_step_533.json`（SHA256 `76da558666497fe7610ed1ead69c1ff41c4a3033b8a22dd784c71e0420f77a39`）：最后 60 个 step 共 509 个 actor 状态，WAIT 请求 492、RELEASE 请求 17，仅 1 次获批；10 次 safety reject、4 次 safety wait、83 次 shield 介入。13 个主阻塞标记为 `PREDICTED_SEPARATION`，1 个为 `NO_MERGE_GAP`。失败当步无人请求 RELEASE，UID13/28 均在内环、未 committed、请求残差均为零；当前预测最小间隔约 `79.48 m`，但递归门槛为 `backup_existence`，没有找到下一执行状态可认证的有界联合备份。动作带止于失败 step，没有 post-state；这表明失败是面向未来可恢复性的认证失败，不能把当前距离或当步放行动作单独解释为根因，也不能据此直接降低安全约束。summary SHA256 `6b300859be373a64f554869dcd7c9bd05d21111e6ad3596c3bb5e1f00b4b7217`。
