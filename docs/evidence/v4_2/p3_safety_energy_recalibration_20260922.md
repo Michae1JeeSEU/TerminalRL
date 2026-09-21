@@ -40,7 +40,7 @@ touchdown 必须保有 `SOC >= 0.25`；此前即达下限的 UAV 记
 | 830103 | 100 m | 20；231.402 / 396.400 | 22；185.416 / 359.955 |
 
 12/12 cases、288/288 requests 均有确定终态：269 完成，19 低 SOC 分流；
-全部 12 条 action tape exact replay，`SafetyInvariantError`、`<40 m`
+全部 12 条 action tape 在**生成时的服务器运行环境** exact replay，`SafetyInvariantError`、`<40 m`
 hard-separation、NMAC、collision 和 uncertified execution 均为 0。
 全矩阵 6 次 shield use、0 次实际 `40--80 m` buffer entry，因此矩阵支持
 “新实现下这些回合没有失守”，**不能**单靠这些回合证明缓冲接管在真实密集
@@ -48,6 +48,13 @@ hard-separation、NMAC、collision 和 uncertified execution 均为 0。
 `80 m` 下 original K3 双种子只完成 `41/48`，rule 为 `47/48`；
 完成者等待不能掩盖未完成。100 m 较 60 m 在这两个种子上明显增加等待和低
 SOC 分流；只有两个种子，不能据此推断总体效果或选定正式阈值。
+
+回放可移植性边界：当前 Windows 本地环境对 seed `830102`、80 m K3
+tape 的字节级 `exact` 判定为 false，差异从 reset 开始，规范化状态仅有同一
+UAV 的 position/acceleration 各一个浮点值相差约 `1e-13`；配置哈希一致，
+该差异不改变上述服务器评估计数。故这里的 12/12 仅陈述生成时同环境
+回放结果，不宣称跨 Python/NumPy/平台字节级复现。尝试在服务器当前进程再次
+独立回放未取得终态结果，不将其计为新增验证。
 
 个体抽查：seed `830102`、80 m 的 original K3 中，UAV 13 于请求
 30 s、入场 35 s 后在 `t=471 s` 从内环以 SOC `.249805` 分流；当时
