@@ -52,6 +52,39 @@ no Teacher/labels/updates 和 runtime shortlist contract。完成比例与低 SO
 结果而非 all-complete gate；必须报告完整请求分母、completed-only wait 的条件性、
 request-to-touchdown 以及 paired deltas。
 
+## Evaluator 与服务器执行
+
+评估器为 `terminal_marl/training/evaluate_v4_2_p3_current_mdp_baseline_v1.py`，配套
+定向测试为 `tests/test_p3_current_mdp_baseline_v1.py`。当前 10 个定向测试与 compile
+检查均通过。使用真实 original K3 SHA
+`4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c` 的 high-SOC
+diagnostic seed `835000` 做 CLI 20 步 smoke，产生 rule/K3 两条 records；safety、exact
+replay、Teacher-free、labels/updates 与 K=3 shortlist gates 通过，未完成 `24` 架是
+smoke 结果边界，formal seeds 消耗为 `0`。评估器按 cohort 分开运行，逐 episode 落盘；
+safety/replay 错误即停并保留已有证据。low-SOC completion fraction 与 low-SOC diversion
+是报告结果，不是 all-complete gate。
+
+正式运行前必须先完成 P1/P2 formal 复评，并确认本地源码已由 Syncthing 同步到服务器。
+unsandboxed `ssh lab-server` 在握手阶段关闭，因此尚未核对 Syncthing，也未启动 formal
+server evaluation。服务器基线评估命令如下；checkpoint 与策略只读，两个 cohort 使用不同输出目录，且必须在
+P1/P2 formal 通过与源码同步确认之后按顺序执行：
+
+```bash
+# High-SOC qualification: 835001--835003
+python -m terminal_marl.training.evaluate_v4_2_p3_current_mdp_baseline_v1 \
+  --cohort high_soc_qualification \
+  --output "$HOME/training_outputs/terminal/p3_current_mdp_baseline_high_soc_20260922" \
+  --history-root "$HOME/training_outputs/terminal" \
+  --checkpoint "$HOME/training_outputs/terminal/p2_gate_repair_v3_anchored_20260919/gate_repair_v3_qualification_candidate.pt"
+
+# Low-SOC stress: 835101--835103
+python -m terminal_marl.training.evaluate_v4_2_p3_current_mdp_baseline_v1 \
+  --cohort low_soc_stress \
+  --output "$HOME/training_outputs/terminal/p3_current_mdp_baseline_low_soc_stress_20260922" \
+  --history-root "$HOME/training_outputs/terminal" \
+  --checkpoint "$HOME/training_outputs/terminal/p2_gate_repair_v3_anchored_20260919/gate_repair_v3_qualification_candidate.pt"
+```
+
 ## Authorization
 
 本协议冻结为 baseline evaluation：`PPO_ALLOWED=false`、`P3_QUALIFIED=false`、
