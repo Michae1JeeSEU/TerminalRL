@@ -64,10 +64,19 @@ smoke 结果边界，formal seeds 消耗为 `0`。评估器按 cohort 分开运�
 safety/replay 错误即停并保留已有证据。low-SOC completion fraction 与 low-SOC diversion
 是报告结果，不是 all-complete gate。
 
-正式运行前必须先完成 P1/P2 formal 复评，并确认本地源码已由 Syncthing 同步到服务器。
-unsandboxed `ssh lab-server` 在握手阶段关闭，因此尚未核对 Syncthing，也未启动 formal
-server evaluation。服务器基线评估命令如下；checkpoint 与策略只读，两个 cohort 使用不同输出目录，且必须在
-P1/P2 formal 通过与源码同步确认之后按顺序执行：
+正式 high-SOC baseline 已在 P1/P2 formal 复评和源码同步确认后完成。服务器输出
+`/home/user/training_outputs/terminal/p3_current_mdp_baseline_high_soc_20260922`，
+manifest 状态为 `COMPLETE`，6/6 records 已落盘；但 rule seed `835001` 与
+original K3 seed `835003` 各有 2 条 `diverted_low_soc`，所以 high-SOC all-complete
+gate 失败，`PASS=false`、`P3_QUALIFIED=false`、`PPO_ALLOWED=false`。完整数值和
+provenance 见 [P3 high-SOC 正式结果](p3_current_mdp_baseline_result_20260922.md)。
+low-SOC stress 已按原冻结边界独立完成：服务器输出
+`/home/user/training_outputs/terminal/p3_current_mdp_baseline_low_soc_stress_20260922`，
+manifest 状态为 `COMPLETE`、6/6 records 已落盘，`PASS=true` 仅表示完整记账、安全、
+replay、Teacher-free、labels/updates 为零与 runtime shortlist 等 integrity gates
+通过；完成率和低 SOC 分流仍是报告结果，不授权 PPO。完整数值和 provenance 见
+[P3 low-SOC stress 正式结果](p3_current_mdp_low_soc_stress_result_20260922.md)。
+checkpoint 与策略只读，两个 cohort 使用不同输出目录，执行命令如下：
 
 ```bash
 # High-SOC qualification: 835001--835003
