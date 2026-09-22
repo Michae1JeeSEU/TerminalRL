@@ -35,14 +35,25 @@ formal 运行中，只要 safety counter 非零、safety 字段缺失/无效、r
 ## 授权与当前运行边界
 
 本协议始终写入 `PPO_ALLOWED=false`、`P3_ALLOWED=false`、`training_called=false` 和
-`checkpoint_saved=false`。当前只完成代码、单元测试和 20 步本地 smoke 验证；正式 seed 尚未消费。
+`checkpoint_saved=false`。20 步本地 smoke 先完成；随后在 SSH 与 Syncthing 状态核对通过后，服务器 formal
+运行已完成，正式 seeds 只消费一次，结果状态为 `FORMAL_COMPLETE`，共 `20/20` records。
 
-服务器 SSH preflight 当前仍关闭连接，因此尚未启动 formal server evaluation。服务器运行必须遵守本地源码经 Syncthing 同步、输出写入 `~/training_outputs/terminal` 的项目规则；本地 smoke 结果不构成 formal qualification。
+正式结果 manifest 位于
+`$HOME/training_outputs/terminal/p12_current_mdp_requalification_20260922/manifest.json`，SHA256 为
+`57c50b926fc03a907a21c83738626a41b0c65077a7b4547d7f9ac43aaada80af`。P1 `834101–834104` 与 P2
+`834201–834206` 的 candidate/rule 配对记录均完成；所有 safety、exact replay、terminal 与 hard gates
+通过，shield actor fraction 为 `0`。P1/P2 的 paired mean wait 与 request-to-touchdown 只作描述性报告，
+没有预设效率改善阈值；硬门槛通过不等于 PPO 授权。详细数值见[复评结果](p12_current_mdp_requalification_result_20260922.md)。
 
-SSH 与 Syncthing 状态均验证通过后，才可在服务器执行以下 formal 命令；本轮未执行该命令：
+首轮启动 wrapper 因提前在 canonical output 目录内写入 PID 文件，导致评估器在第一次 reset 前检测到
+`output already exists` 并退出；该 stub 目录与首轮 log 保留。第二次启动将 PID 文件写在输出目录外，使用
+新的 run2 log 完成 formal 评估，未重复任何 formal seed。服务器源码经 Syncthing 同步，输出写入
+`~/training_outputs/terminal`；PPO/P3 授权字段保持 false。
+
+服务器实际使用的 formal 命令为（解释器为 `/home/user/envs/terminal_env/bin/python`）：
 
 ```bash
-python -m terminal_marl.training.evaluate_v4_2_p12_current_mdp_v1 \
+/home/user/envs/terminal_env/bin/python -m terminal_marl.training.evaluate_v4_2_p12_current_mdp_v1 \
   --output "$HOME/training_outputs/terminal/p12_current_mdp_requalification_20260922" \
   --history-root "$HOME/training_outputs/terminal" \
   --p1-checkpoint "$HOME/training_outputs/terminal/ppo_block2_transfer_repair_20260917/train/checkpoint_24.pt" \
