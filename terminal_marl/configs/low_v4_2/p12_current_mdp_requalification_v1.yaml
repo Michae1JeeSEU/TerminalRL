@@ -1,0 +1,75 @@
+protocol: V4_2_P12_CURRENT_MDP_REQUALIFICATION_V1
+version: 1
+purpose: fresh_read_only_checkpoint_requalification_current_mdp
+status: preregistered
+
+bindings:
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  action_schema: low_action_schema_v4_2_hierarchical
+  deterministic: true
+  natural_flow: true
+  first_arrival_seconds: 10.0
+  arrival_interval_seconds: 60.0
+  fixed_initial_soc: 0.8
+  energy_capacity: 1500.0
+  lz_assignment_mode: lowest_id
+  release_arbitration_mode: legacy_insertion
+  final_queue_capacity: 1
+  safe_distance: 80.0
+  nmac_distance: 40.0
+  collision_distance: 10.0
+  teacher_enabled: false
+  labels_collected: false
+  updates: false
+  fixed_geometry: true
+
+checkpoints:
+  p1:
+    name: P1_K1_checkpoint24
+    role: K1
+    sha256: 6420df9a8562135756819459c7682ec897d47acd64e841b75a21c697298ea14f
+    path: D:/7_codespace/training_outputs/terminal/ppo_block2_transfer_repair_20260917/train/checkpoint_24.pt
+  p2:
+    name: P2_K3_original
+    role: K3
+    sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+    path: D:/7_codespace/training_outputs/terminal/p2_gate_repair_v3_anchored_20260919/gate_repair_v3_qualification_candidate.pt
+
+formal:
+  p1:
+    seeds: [834101, 834102, 834103, 834104]
+    counts: [3, 6, 3, 6]
+    controller_pair: [candidate, rule]
+    runtime_proposal_shortlist_k: 1
+  p2:
+    seeds: [834201, 834202, 834203, 834204, 834205, 834206]
+    counts: [6, 8, 12, 6, 8, 12]
+    controller_pair: [candidate, rule]
+    runtime_proposal_shortlist_k: 3
+  seed_collision_check: historical_registry
+  formal_seed_consumption: true
+
+smoke:
+  seed: 832001
+  count: 6
+  max_steps: 20
+  formal_seed_consumption: false
+
+gates:
+  exact_replay: true
+  safety_zero: true
+  completed_equals_requests: true
+  terminal: true
+  shield_actor_fraction_max: 0.05
+  geometry_samples_required: true
+  reverse_transfer_samples: 0
+  max_inner_excursion_m: 0.05
+  actor_decisions_required: true
+
+authorization:
+  PPO_ALLOWED: false
+  P3_ALLOWED: false
+  training_called: false
+  checkpoint_saved: false
+  effectiveness_threshold: null
