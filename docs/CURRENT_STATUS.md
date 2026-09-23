@@ -8,6 +8,8 @@
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
+**最新结论（2026-09-23，emergency-priority guard V1）：** opt-in guard V1 默认关闭。fresh `840401/840402` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全、Teacher-free、无 labels/updates 和 K=3 检查；聚合为 `28 normal + 51 emergency + 16 upstream-divert + 1 failed_energy`，guard-on `zero_failed_energy` gate 失败，`PPO_ALLOWED=false`。rule `840401` 的 witness 显示固定 `.40` 能量投影切环硬阻断可能造成低 SOC UAV 长时间等待：guard-on 的 `o2m` release 连续 `647` 次被 `emergency_energy_guard` 拒绝并在 `t=647 s` 电量耗尽，而 guard-off 同一 UAV 在 `t=0` 获准切环并于 `t=274 s` 应急降落。Guard V1 不晋级，不宣称预留 LZ 或 PPO 能保证零失败；下一步只允许移除该硬阻断，设计带可达能量预算的应急替代路径，并以全新 seeds 验证，不能重跑 `840401/840402`。详见 [Emergency-priority guard V1](evidence/v4_2/emergency_priority_guard_pilot_v1_20260923.md)。
+
 ## 一句话状态
 
 **最新实现状态（2026-09-23，应急路线 repair）：** 应急路线已由源环有限刹停改为从真实初始位置/速度连续切向脱环的 cubic 路径；OUTER/MIDDLE 进入 `120 m` staging，INNER 保持当前高度，再经 LZ 上方垂直下降，仍使用原 SafetyFilter 和 `80/40/10 m` 契约。第一 repair 协议（`e99cb...`）在 fresh `840101/840102` 上为 `7 normal + 14 emergency + 2 upstream-divert + 1 failed_energy`，安全事件为0，因此 FAIL；同 seed forensic replay 已使目标 UAV 在 `t=118 s` 应急提交并落地。route-repair 协议（`8c13dc...`）在 fresh `840201/840202` 上为 `9 normal + 11 emergency + 4 upstream-divert`，`failed_energy=0` 且安全事件为0，但结果仍是 rule-only 诊断证据，不构成 qualification 或真实 EH216-S 标定；当前 phase_motion_v2 未显式设置初始 SOC 范围时 default uniform floor 为 `.4106`，显式 `.35–.55` 仍保留为 stress；`PPO_ALLOWED=false`。详见[应急迫降与分阶段能耗 V2](evidence/v4_2/emergency_energy_v2_20260923.md)。

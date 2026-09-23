@@ -124,10 +124,12 @@ class TerminalParallelEnv:
             "runtime_shortlist_candidates_checked": 0,
             "runtime_shortlist_fallback_selected": 0,
             "runtime_shortlist_exhausted": 0,
-            "emergency_attempts": 0, "emergency_committed": 0,
-            "emergency_blocked_safety": 0, "emergency_blocked_energy": 0,
-            "emergency_blocked_lz": 0, "emergency_blocked_dynamics": 0,
-            "emergency_touchdowns": 0,
+             "emergency_attempts": 0, "emergency_committed": 0,
+             "emergency_blocked_safety": 0, "emergency_blocked_energy": 0,
+             "emergency_blocked_lz": 0, "emergency_blocked_dynamics": 0,
+             "emergency_touchdowns": 0,
+             "emergency_energy_guard_rejections": 0,
+             "emergency_lz_priority_rejections": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -257,15 +259,21 @@ class TerminalParallelEnv:
         self.active.pop(uav.uid, None)
 
     def _try_emergency_landing(self, uav: UAVState) -> bool:
+        retry_after = (uav.emergency_retry_after
+                       if self.config.emergency_priority_guard_enabled
+                       else uav.safety_retry_after)
         if (not self.config.emergency_landing_enabled or uav.soc > self.config.emergency_trigger_soc
                 or uav.ring_role is None or uav.committed_plan is not None
-                or self.now < uav.safety_retry_after):
+                or self.now < retry_after):
             return False
         self.telemetry["emergency_attempts"] += 1
         zones = self.lz_manager.rank_available_zones(uav, self.now)
         if not zones:
             self.telemetry["emergency_blocked_lz"] += 1
-            uav.safety_retry_after = self.now + 5.0
+            if self.config.emergency_priority_guard_enabled:
+                uav.emergency_retry_after = self.now + 5.0
+            else:
+                uav.safety_retry_after = self.now + 5.0
             return False
         for lz_id in zones:
             zone = self.lz_manager.zones[lz_id]
@@ -294,7 +302,10 @@ class TerminalParallelEnv:
                 return True
             self.lz_manager.release(lz_id, uav.uid, "emergency_safety_reject")
             self.telemetry["emergency_blocked_safety"] += 1
-        uav.safety_retry_after = self.now + 5.0
+        if self.config.emergency_priority_guard_enabled:
+            uav.emergency_retry_after = self.now + 5.0
+        else:
+            uav.safety_retry_after = self.now + 5.0
         return False
 
     def _emergency_processing_order(self) -> list[UAVState]:
@@ -378,14 +389,55 @@ class TerminalParallelEnv:
     def _primary_blocker(decision: str, safety_reason: str | None = None) -> str:
         """One and only one release blocker, independent of diagnostic details."""
         if decision in {"final_capacity", "final_unavailable"}: return "FINAL_RESOURCE"
-        if decision in {"lz_unavailable", "lz_reservation_reject"}: return "LZ_RESOURCE"
+        if decision in {"lz_unavailable", "lz_reservation_reject", "emergency_lz_priority"}: return "LZ_RESOURCE"
         if decision == "geometry_frozen": return "INTERFACE_FROZEN"
         if decision in {"headway_conflict"}: return "HEADWAY"
         if decision in {"capacity"}: return "CAPACITY"
-        if decision in {"soc"}: return "SOC"
+        if decision in {"soc", "emergency_energy_guard"}: return "SOC"
         if safety_reason and "holder" in safety_reason: return "NO_MERGE_GAP"
         if decision in {"safety_wait", "safety_reject"}: return "PREDICTED_SEPARATION"
         return "OTHER"
+
+    def _emergency_at_risk(self, uav: UAVState) -> bool:
+        """Whether an unassigned aircraft is projected to cross the trigger."""
+        if uav.emergency_landing or uav.assigned_lz is not None:
+            return False
+        if uav.soc <= self.config.emergency_trigger_soc:
+            return True
+        plan = uav.committed_plan
+        if plan is None or plan.metadata.get("target_phase") in {"landing", "emergency_landing"}:
+            return False
+        remaining_energy = self.energy.estimate_plan_energy(
+            plan, self.now, plan.end_time
+        )
+        projected_soc = (uav.energy_remaining - remaining_energy) / uav.energy_capacity
+        return projected_soc <= self.config.emergency_trigger_soc + 1e-12
+
+    def _emergency_lz_priority_blocks(self, requester: UAVState) -> bool:
+        """Reserve a free compatible pad for an already urgent aircraft."""
+        if not self.config.emergency_priority_guard_enabled:
+            return False
+        if requester.soc <= self.config.emergency_trigger_soc:
+            return False
+        free_lz_count = len(self.lz_manager.rank_available_zones(requester, self.now))
+        at_risk_count = sum(
+            self._emergency_at_risk(other)
+            for other in self.active.values()
+            if other.uid != requester.uid
+        )
+        return free_lz_count <= at_risk_count
+
+    def _candidate_energy_guard_reason(self, uav: UAVState, plan, target: RingRole | str) -> str | None:
+        """Reject a normal candidate that would consume emergency margin."""
+        if not self.config.emergency_priority_guard_enabled:
+            return None
+        plan_energy = self.energy.estimate_plan_energy(plan, self.now, plan.end_time)
+        projected_soc = (uav.energy_remaining - plan_energy) / uav.energy_capacity
+        if target != "final" and projected_soc <= self.config.emergency_trigger_soc + 1e-12:
+            return "emergency_energy_guard"
+        if target == "final" and projected_soc < self.config.min_landing_soc - 1e-12:
+            return "emergency_energy_guard"
+        return None
 
     def _start_release_intent(self, uav: UAVState, intent: LowLevelIntent, interface: str) -> dict:
         existing = self._active_release_intents.get(uav.uid)
@@ -470,6 +522,10 @@ class TerminalParallelEnv:
             if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
                 self._finish_release_intent(uav, row, "final_capacity")
                 return "final_capacity"
+            if self._emergency_lz_priority_blocks(uav):
+                self.telemetry["emergency_lz_priority_rejections"] += 1
+                self._finish_release_intent(uav, row, "emergency_lz_priority")
+                return "emergency_lz_priority"
             lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
             if lz_id is None:
                 self._finish_release_intent(uav, row, "lz_unavailable")
@@ -516,6 +572,13 @@ class TerminalParallelEnv:
             self.scheduler.cancel(reservation.reservation_id, "safety_reject")
             reasons.append(self.last_safety_decisions.get(uav.uid, "predicted_separation"))
         self.telemetry["runtime_shortlist_exhausted"] += 1
+        if reasons and all(reason == "emergency_energy_guard" for reason in reasons):
+            self.telemetry["emergency_energy_guard_rejections"] += 1
+            self._finish_release_intent(
+                uav, row, "emergency_energy_guard",
+                safety_reason="emergency_energy_guard", secondary=reasons,
+            )
+            return "emergency_energy_guard"
         uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
         last_reason = reasons[-1] if reasons else "no_certified_candidate"
         self._finish_release_intent(uav, row, "safety_reject", safety_reason=last_reason, secondary=reasons)
@@ -549,6 +612,9 @@ class TerminalParallelEnv:
             return proposal, None, "trajectory_infeasible"
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         self.telemetry["repair_candidates_checked"] += 1
+        energy_reason = self._candidate_energy_guard_reason(uav, plan, target)
+        if energy_reason is not None:
+            return proposal, plan, energy_reason
         verdict = self.safety.filter_plan(plan, committed, snapshot)
         return proposal, plan, None if verdict.approved else verdict.reason
 
@@ -683,16 +749,19 @@ class TerminalParallelEnv:
         return "-".join(sorted((a, b)))
 
     def _uav_trace(self, uav: UAVState) -> dict:
-        return {"uid": uav.uid, "arrival_id": uav.arrival_id, "phase": uav.phase.value,
-                "ring_role": None if uav.ring_role is None else uav.ring_role.value,
+        trace = {"uid": uav.uid, "arrival_id": uav.arrival_id, "phase": uav.phase.value,
+                 "ring_role": None if uav.ring_role is None else uav.ring_role.value,
                 "position": uav.position.tolist(), "velocity": uav.velocity.tolist(), "acceleration": uav.acceleration.tolist(), "speed": uav.speed,
                 "ring_progress": uav.ring_progress, "entry_gate": uav.assigned_gate,
                 "trajectory_plan_id": uav.trajectory_plan_id, "merge_reservation_id": uav.merge_reservation_id,
                 "trajectory_hash": None if uav.committed_plan is None else uav.committed_plan.trajectory_hash,
                 "reservation_ids": [] if uav.committed_plan is None else list(uav.committed_plan.reservation_ids),
                 "committed": uav.committed_plan is not None, "phase_entry_time": uav.phase_entry_time,
-                "last_safety_decision": self.last_safety_decisions.get(uav.uid),
-                "last_release_decision": self.last_release_decisions.get(uav.uid)}
+                 "last_safety_decision": self.last_safety_decisions.get(uav.uid),
+                 "last_release_decision": self.last_release_decisions.get(uav.uid)}
+        if self.config.emergency_priority_guard_enabled:
+            trace["emergency_retry_after"] = uav.emergency_retry_after
+        return trace
 
     def _next_state_prediction(self, intents: dict[int, LowLevelIntent]) -> dict[int, np.ndarray]:
         """Diagnostic-only one-tick predictor sharing executor dynamics.

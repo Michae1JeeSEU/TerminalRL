@@ -118,6 +118,7 @@ class UAVState:
     emergency_landing: bool = False
     committed_plan: Any | None = None
     safety_retry_after: float = 0.0
+    emergency_retry_after: float = 0.0
     acceleration: np.ndarray = field(default_factory=lambda: np.zeros(3))
     yaw_rate: float = 0.0
 

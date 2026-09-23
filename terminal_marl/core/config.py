@@ -135,6 +135,10 @@ class SimConfig:
     # original normalized power coefficients and episode semantics.
     energy_model_mode: str = "legacy_phase"
     emergency_landing_enabled: bool = False
+    # Opt-in V4.2 execution guard that preserves free landing capacity for
+    # aircraft approaching the emergency SOC threshold.  Historical
+    # configurations remain byte-for-byte compatible when this is disabled.
+    emergency_priority_guard_enabled: bool = False
     emergency_trigger_soc: float = 0.35
     emergency_energy_margin_seconds: float = 15.0
     phase_motion_nominal_solo_energy: float = 240.9
@@ -225,6 +229,15 @@ class SimConfig:
     def __post_init__(self) -> None:
         if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
             raise ValueError("unsupported energy_model_mode")
+        if self.emergency_priority_guard_enabled and (
+            not self.emergency_landing_enabled
+            or self.energy_model_mode != "phase_motion_v2"
+            or self.action_schema_version != "low_action_schema_v4_2_hierarchical"
+        ):
+            raise ValueError(
+                "emergency_priority_guard_enabled requires emergency_landing_enabled, "
+                "phase_motion_v2, and low_action_schema_v4_2_hierarchical"
+            )
         if not (self.min_landing_soc < self.emergency_trigger_soc <= 1.0):
             raise ValueError("emergency_trigger_soc must exceed the landing SOC floor")
         if (self.emergency_energy_margin_seconds < 0 or self.phase_motion_nominal_solo_energy <= 0
