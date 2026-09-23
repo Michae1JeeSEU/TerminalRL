@@ -45,6 +45,9 @@ class SimConfig:
     # in steady ring flight.  Curriculum/test warm starts retain their legacy
     # zero-speed initialization unless this is explicitly enabled.
     warm_start_steady_motion: bool = False
+    # Optional reset-time precondition for phase/motion emergency reachability.
+    # The historical warm-start path remains unchanged when disabled.
+    warm_start_energy_reachability_check_enabled: bool = False
     # ``dt`` remains the policy/environment decision period for compatibility.
     # The physics executor samples the same authoritative plan at a smaller,
     # fixed substep in the performance-constrained mode.
@@ -55,6 +58,10 @@ class SimConfig:
     trajectory_final_samples: int = 51
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
+    # Source-bound V2.3 uses an explicit finite communication neighborhood for
+    # the five semantic topology slots.  ``None`` preserves legacy V2/V2.1
+    # behavior; V2.3 validates that a finite positive range is supplied.
+    neighbor_comm_range_m: float | None = None
     safe_distance: float = 80.0
     nmac_distance: float = 40.0
     collision_distance: float = 10.0
@@ -139,6 +146,9 @@ class SimConfig:
     # aircraft approaching the emergency SOC threshold.  Historical
     # configurations retain their runtime behavior when this is disabled.
     emergency_priority_guard_enabled: bool = False
+    # Diagnostic-only route-aware candidate energy guard.  This is layered on
+    # the existing priority guard and remains disabled for historical runs.
+    energy_reachability_guard_enabled: bool = False
     emergency_trigger_soc: float = 0.35
     emergency_energy_margin_seconds: float = 15.0
     phase_motion_nominal_solo_energy: float = 240.9
@@ -229,6 +239,18 @@ class SimConfig:
     def __post_init__(self) -> None:
         if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
             raise ValueError("unsupported energy_model_mode")
+        if self.energy_reachability_guard_enabled and (
+            not self.emergency_priority_guard_enabled
+            or not self.emergency_landing_enabled
+            or self.energy_model_mode != "phase_motion_v2"
+            or self.action_schema_version != "low_action_schema_v4_2_hierarchical"
+        ):
+            raise ValueError(
+                "energy_reachability_guard_enabled requires "
+                "emergency_priority_guard_enabled=True, emergency_landing_enabled=True, "
+                "energy_model_mode='phase_motion_v2', and "
+                "action_schema_version='low_action_schema_v4_2_hierarchical'"
+            )
         if self.emergency_priority_guard_enabled and (
             not self.emergency_landing_enabled
             or self.energy_model_mode != "phase_motion_v2"
@@ -340,13 +362,28 @@ class SimConfig:
             raise ValueError("high_level_enabled must agree with the selected canonical experiment mode")
         if self.reset_mode not in {"flow_from_empty", "warm_start_rings"}:
             raise ValueError("unsupported reset_mode")
+        if self.warm_start_energy_reachability_check_enabled and (
+            self.reset_mode != "warm_start_rings"
+            or self.energy_model_mode != "phase_motion_v2"
+            or not self.emergency_landing_enabled
+        ):
+            raise ValueError(
+                "warm_start_energy_reachability_check_enabled requires "
+                "reset_mode='warm_start_rings', energy_model_mode='phase_motion_v2', "
+                "and emergency_landing_enabled=True"
+            )
         if self.reset_mode == "warm_start_rings" and self.warm_start_uavs > 0 and len(self.fixed_arrival_schedule) < self.warm_start_uavs:
             raise ValueError("safe warm-start requires an explicit fixed_arrival_schedule for every initial UAV")
-        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d"}:
+        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d"}:
             raise ValueError("unsupported low-level observation schema")
+        if self.observation_schema_version == "phaseA_low_obs_v2_3_source_bound_88d":
+            if (self.neighbor_comm_range_m is None or isinstance(self.neighbor_comm_range_m, bool)
+                    or not math.isfinite(float(self.neighbor_comm_range_m))
+                    or float(self.neighbor_comm_range_m) <= 0.0):
+                raise ValueError("V2.3 requires a finite positive neighbor_comm_range_m")
         if self.retry_norm_horizon_seconds <= 0.0:
             raise ValueError("retry_norm_horizon_seconds must be positive")
-        if self.observation_schema_version in {"phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d"} and self.retry_norm_horizon_seconds < max(5.0, self.headway_max):
+        if self.observation_schema_version in {"phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d"} and self.retry_norm_horizon_seconds < max(5.0, self.headway_max):
             raise ValueError("V2.1+ retry normalization horizon must cover the configured retry/cooldown maximum")
         if self.action_schema_version not in {"low_intent_v3_factorized_discrete", "low_action_schema_v4_joint_discrete", "low_action_schema_v4_1_joint_discrete_26", "low_action_schema_v4_2_hierarchical"}:
             raise ValueError("unsupported low-level action schema")

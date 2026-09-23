@@ -83,6 +83,27 @@ certificate，也不预测其他策略动作。该 observation 结论不授权 r
 V2.1 的 88D checkpoint 不能直接加载为 94D policy；closure
 pilot 只允许冻结旧策略读取前 88 维作为行为策略，不构成 94D checkpoint 迁移或训练授权。
 
+### 2.2 Observation V2.3 source-bound opt-in
+
+```text
+observation_schema_version = phaseA_low_obs_v2_3_source_bound_88d
+dimension = 88
+```
+
+V2.3 是保持 88D 宽度的 opt-in schema。每架 UAV 使用自身状态，以及由有限通信范围
+筛选出的 5 个语义邻机槽；`neighbor_comm_range_m` 必须配置为有限正值。`320 m` 仅是
+仿真实验示例，不代表无线电硬件通信半径验证。邻机槽按当前距离过滤，观测构造不扫描
+其他全局 active UAV 的轨迹或动作。
+
+起降场中心向每架 UAV 广播环占用、headway、队列、紧急且尚未分配降落点的数量，以及与
+本机任务兼容的降落点释放 ETA。该中心广播复用原有 `assigned_lz_usable` 与
+`global_free_lz_fraction` 的冗余位置，因此不增加维度；已知释放时间编码剩余等待，未知
+的 RESERVED ETA 使用有界不可用值。旧 V2.1/V2.2 schema 保持原有语义。V2.3 使用独立
+的字段名和 schema hash，旧 K=3 checkpoint 不能按位置加载到这些变更语义中。
+
+当前实现采用邻机与中心广播零延迟、无丢失的理想通信假设；通信延迟、丢失和鲁棒性仍需
+后续单独验证。
+
 ## 3. V4.2 hierarchical action
 
 ```text

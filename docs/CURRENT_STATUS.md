@@ -1,14 +1,45 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-23
+> **状态日期**：2026-09-24
 >
 > **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。当前 MDP 的 P3 high-SOC formal all-complete gate 已失败；low-SOC stress 已完成并通过其完整性、安全与 replay gates，完成率和低 SOC 分流仍为报告结果。已完成 RESERVED LZ release ETA 生命周期修复，定向测试 `29 passed`；单机 `phase_motion_v2` 应急可达性预检生成并通过 SafetyFilter 认证 `36` 个 `3 rings × 4 angles × 6 LZ` 样本，但不含拥堵或时隙，不替代 formal qualification。当前 emergency-priority guard 仍为 opt-in FAIL，`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`；后续性能与 source-bound 观察仍在进行。
+> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。当前 MDP 的 P3 high-SOC formal all-complete gate 已失败；low-SOC stress 已完成并通过其完整性、安全与 replay gates，完成率和低 SOC 分流仍为报告结果。已完成 RESERVED LZ release ETA 生命周期修复，定向测试 `29 passed`；单机 `phase_motion_v2` 应急可达性预检生成并通过 SafetyFilter 认证 `36` 个 `3 rings × 4 angles × 6 LZ` 样本，但不含拥堵或时隙，不替代 formal qualification。当前 opt-in V2.3 source-bound 88D/320 m、warm-start solo SOC check、admission pad-ETA budget 与 candidate route/等待/reserve/margin budget 均已接入诊断链；SafetyFilter 仍保持原 `80/40/10 m`，fallback future route 尚未作未来安全认证。2026-09-24 exploratory guard 配对均 `failed_energy=0`、安全事件为0，但 route 检查没有改善终态；所有结果仍为 exploratory，`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
-**最新结论（2026-09-23，emergency-priority guard V2）：** fresh `840501/840502` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全计数为零和 Teacher-free；聚合为 `33 normal + 33 emergency + 24 upstream-divert + 6 failed_energy`，guard-on/off 分别为 `4/2` 次 failed energy，hard gate 失败，`PPO_ALLOWED=false`。只读 evidence 中，guard-on 的 K3 失败目标多次触发 `emergency_energy_guard`，但最后窗口 6 个 LZ 均 free；guard-off 的一个失败目标因长时间 `safety_wait`。V2 不晋级，guard 默认关闭。当前 `_warm_start()` 直接注入 `.35–.55` SOC 且没有 admission check，其中包含低于单机名义下限 `.4106` 的状态，必须单独审视初始可达性。下一步是待实现的三段修复：计划承诺前的可达能量/时间预算与上游分流；有 abort/hover/返环证书、足够 SOC、原子切换和释放 LZ 条件时才允许安全抢占；规则/安全层通过后扩展共享 policy 的 deadline、pad 时隙和自身可达能量观测并加入非法动作 mask，区分 normal/stress、保持 `failed_energy=0` 硬门槛和 `PPO_ALLOWED=false`。详见 [Emergency-priority guard V2](evidence/v4_2/emergency_priority_guard_pilot_v2_20260923.md)。
+**最新结论（2026-09-24，emergency reachability guard exploratory）：** fresh stress seeds
+`840607/840611/840612/840613` 的 old/route 配对每对终态相同；两种模式分别聚合为
+`13 completed + 27 emergency_landed + 8 upstream diverted_low_soc = 48`，均
+`failed_energy=0`、安全事件为0。route-aware checks 非零，但没有改善这些终态。正常高 SOC
+`.55–.90` 的 `840620/840621` 合计为 `23 completed + 1 emergency_landed`；近下限
+`.41–.55` 的 `840622/840623` 合计为 `10 completed + 13 emergency_landed + 1 upstream
+diverted_low_soc`；两组均 `failed_energy=0`、安全事件为0。全部记录为 exploratory，未通过
+exact replay/full qualification，不能据此启动 PPO。V2.3 旧 source-bound observation-only
+证据独立保留。低层 `12` 机课程与 `30` 机离线回放的先后顺序，以及是否先重构 `30` 机安全层
+实时性能，仍需单独决定；当前不宣称可正式 PPO。
+
+**最新实现补充（2026-09-23，source-bound Observation V2.3）：** 已加入保持 88D 宽度的
+opt-in `phaseA_low_obs_v2_3_source_bound_88d`。自身状态、有限
+`neighbor_comm_range_m` 内的 5 个邻机槽，以及由起降场中心广播的环/队列状态、紧急未分配
+数量和兼容降落点释放 ETA 已接入；不增加观测维度，V2.1/V2.2 保持原 schema。当前实现采用
+零延迟、无丢失的理想通信假设，后续仍需鲁棒性验证。新旧 observation/audit 定向测试共
+`28 passed`；该实现说明不改变既有 evidence，`PPO_ALLOWED=false` 保持不变。
+
+**最新实现补充（2026-09-23，warm-start 能量前置检查）：** 已加入默认关闭的
+`warm_start_energy_reachability_check_enabled`。启用后，warm-start reset 会在每架 UAV
+进入 `active` 前计算其当前 ring 到兼容 LZ 的最低单机可执行应急路线 SOC 要求；采样 SOC
+低于该要求时直接报出 uid、ring、初始 SOC 和要求 SOC，不裁剪、不重采样，也不把 UAV
+分流为上游请求。`.35` OUTER 样本被拒绝，`.41` 的三环小样本通过；默认关闭时历史
+warm-start cohort 语义保持不变。这只是单机 reset 前置条件，不提供拥堵、等待或时间耦合
+保证。独立 candidate energy/LZ budget 模块已覆盖 candidate 能耗、LZ release ETA、ring
+hold 等待、应急 fallback route、landing reserve 与 margin；截至 2026-09-23，该模块尚未
+接入 admission/release gate；截至 2026-09-24，admission pad ETA 与 candidate
+route/等待/reserve/margin budget 已在 opt-in exploratory 链中接入。fallback future route
+仍未作未来 SafetyFilter 认证。warm-start、budget、emergency 定向测试共
+`24 passed`；`PPO_ALLOWED=false` 保持不变。
+
+**最新结论（2026-09-23，emergency-priority guard V2）：** fresh `840501/840502` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全计数为零和 Teacher-free；聚合为 `33 normal + 33 emergency + 24 upstream-divert + 6 failed_energy`，guard-on/off 分别为 `4/2` 次 failed energy，hard gate 失败，`PPO_ALLOWED=false`。只读 evidence 中，guard-on 的 K3 失败目标多次触发 `emergency_energy_guard`，但最后窗口 6 个 LZ 均 free；guard-off 的一个失败目标因长时间 `safety_wait`。V2 不晋级，guard 默认关闭。该 formal 运行使用的历史 `_warm_start()` 直接注入 `.35–.55` SOC；当前已加入默认关闭的单机可达性前置检查，详见上方实现补充。下一步是待实现的三段修复：计划承诺前的可达能量/时间预算与上游分流；有 abort/hover/返环证书、足够 SOC、原子切换和释放 LZ 条件时才允许安全抢占；规则/安全层通过后扩展共享 policy 的 deadline、pad 时隙和自身可达能量观测并加入非法动作 mask，区分 normal/stress、保持 `failed_energy=0` 硬门槛和 `PPO_ALLOWED=false`。详见 [Emergency-priority guard V2](evidence/v4_2/emergency_priority_guard_pilot_v2_20260923.md)。
 
 **最新结论（2026-09-23，emergency-priority guard V1）：** opt-in guard V1 默认关闭。fresh `840401/840402` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全、Teacher-free、无 labels/updates 和 K=3 检查；聚合为 `28 normal + 51 emergency + 16 upstream-divert + 1 failed_energy`，guard-on `zero_failed_energy` gate 失败，`PPO_ALLOWED=false`。rule `840401` 的 witness 显示固定 `.40` 能量投影切环硬阻断可能造成低 SOC UAV 长时间等待：guard-on 的 `o2m` release 连续 `647` 次被 `emergency_energy_guard` 拒绝并在 `t=647 s` 电量耗尽，而 guard-off 同一 UAV 在 `t=0` 获准切环并于 `t=274 s` 应急降落。Guard V1 不晋级，不宣称预留 LZ 或 PPO 能保证零失败；下一步只允许移除该硬阻断，设计带可达能量预算的应急替代路径，并以全新 seeds 验证，不能重跑 `840401/840402`。详见 [Emergency-priority guard V1](evidence/v4_2/emergency_priority_guard_pilot_v1_20260923.md)。
 
@@ -397,6 +428,15 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 服务器输出根为 `~/training_outputs/terminal`，本地镜像为 `D:/7_codespace/training_outputs/terminal`。源码只在本地修改，经Syncthing同步，服务器仅运行。
 
 ## 当前允许的下一步
+
+**2026-09-24 当前顺序：** exploratory emergency-reachability guard 的 fresh stress 配对已完成，old/route
+每对终态相同，route-aware checks 没有改善完成/应急/上游分流结果；正常高 SOC 与近下限 SOC
+探索均保持 `failed_energy=0` 和安全事件为0，但全部记录仍未通过 exact replay/full qualification。
+V2.3 source-bound observation-only 旧证据独立保留。下一步需要在“先推进 `12` 机优先课程并做
+`30` 机离线回放”和“先重构 `30` 机安全层实时性能”之间作出决定；在该决定和新协议证据之前，
+不得声称可正式 PPO，`PPO_ALLOWED=false`。当前实现的 V2.3 理想通信、warm-start solo SOC
+check、admission pad ETA budget、candidate route/等待/reserve/margin budget 已进入诊断链；
+SafetyFilter 仍为 `80/40/10 m`，fallback future route 尚未作未来安全认证。
 
 **2026-09-23 当前顺序：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 

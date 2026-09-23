@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import math, numpy as np
 from .config import SimConfig, RingRole
-from .uav import ArrivalRequest, QueuedArrivalState, TerminalOutcome
+from .uav import ArrivalRequest, FlightPhase, QueuedArrivalState, TerminalOutcome
 
 @dataclass
 class EntryGate:
@@ -40,8 +40,10 @@ class AdmissionManager:
             gates.append(EntryGate(i,a,unit*self.config.spawn_radius+np.array((0.,0.,self.config.gate_height)), unit*self.config.approach_threshold_radius+np.array((0.,0.,self.config.gate_height))))
         return gates
     def enqueue(self, request): self.queue.enqueue(request)
-    def step(self,now,active_uavs,airspace,energy_model,priority_engine):
+    def step(self,now,active_uavs,airspace,energy_model,priority_engine,*,lz_manager=None):
         records=[]; admitted=[]
+        if self.config.energy_reachability_guard_enabled and lz_manager is None:
+            raise ValueError("energy_reachability_guard_enabled requires lz_manager")
         for q in list(self.queue.ordered(priority_engine,now)):
             r=q.request
             def record(decision, reason):
@@ -51,6 +53,32 @@ class AdmissionManager:
                 q.diverted_outcome=TerminalOutcome.DIVERTED_LOW_SOC; q.diversion_reason="insufficient_soc"; self.queue.items.remove(q); records.append(record(AdmissionDecision.DIVERT,"low_soc")); continue
             if self.config.max_external_wait_seconds is not None and q.external_wait_time>=self.config.max_external_wait_seconds:
                 q.diverted_outcome=TerminalOutcome.DIVERTED_CAPACITY; self.queue.items.remove(q); records.append(record(AdmissionDecision.DIVERT,"external_wait_limit")); continue
+            if self.config.energy_reachability_guard_enabled:
+                gate = self.gates[r.gate_id]
+                finite_extra_waits = []
+                for zone in lz_manager.zones:
+                    if r.mission_type not in zone.compatible_missions:
+                        continue
+                    release_time = float(lz_manager.earliest_release_time(zone.lz_id, now=float(now)))
+                    if not math.isfinite(release_time):
+                        continue
+                    horizontal_distance = float(np.linalg.norm(
+                        np.asarray(zone.position, dtype=float)[:2]
+                        - np.asarray(gate.spawn_point, dtype=float)[:2]
+                    ))
+                    minimum_travel_time = horizontal_distance / float(self.config.max_speed)
+                    finite_extra_waits.append(max(0.0, release_time - float(now) - minimum_travel_time))
+                if not finite_extra_waits:
+                    records.append(record(AdmissionDecision.WAIT,"lz_slot_unknown")); continue
+                extra_pad_wait = min(finite_extra_waits)
+                required_energy = (
+                    float(energy_model.admission_required_energy(q))
+                    + extra_pad_wait * float(energy_model.phase_power(FlightPhase.RING_INNER))
+                    + float(self.config.emergency_energy_margin_seconds)
+                    * float(self.config.power_reference)
+                )
+                if q.energy_remaining < required_energy:
+                    q.diverted_outcome=TerminalOutcome.DIVERTED_LOW_SOC; q.diversion_reason="low_soc_slot"; self.queue.items.remove(q); records.append(record(AdmissionDecision.DIVERT,"low_soc_slot")); continue
             gate=self.gates[r.gate_id]
             outer=airspace.capacity(RingRole.OUTER)
             if len(active_uavs)>=self.config.max_active_uavs: records.append(record(AdmissionDecision.WAIT,"active_cap")); continue

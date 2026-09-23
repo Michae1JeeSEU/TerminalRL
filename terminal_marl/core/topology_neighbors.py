@@ -71,20 +71,37 @@ def _slot(ego, other, airspace, *, path_gap: float, horizon: float) -> NeighborS
 
 
 class TopologyNeighborSelector:
-    def __init__(self, airspace, *, now: float, cpa_horizon: float = 30.0) -> None:
+    def __init__(self, airspace, *, now: float, cpa_horizon: float = 30.0,
+                 comm_range_m: float | None = None) -> None:
         self.airspace = airspace
         self.now = float(now)
         self.cpa_horizon = float(cpa_horizon)
+        if comm_range_m is not None:
+            if isinstance(comm_range_m, bool) or not math.isfinite(float(comm_range_m)) or float(comm_range_m) <= 0.0:
+                raise ValueError("comm_range_m must be a finite positive number or None")
+            self.comm_range_m = float(comm_range_m)
+        else:
+            self.comm_range_m = None
 
     @staticmethod
     def _ordered(items: Iterable) -> list:
         return sorted(items, key=lambda item: int(item.uid))
 
+    def _in_comm_range(self, ego, other) -> bool:
+        if self.comm_range_m is None:
+            return True
+        distance = float(np.linalg.norm(
+            np.asarray(other.position, dtype=float) - np.asarray(ego.position, dtype=float)
+        ))
+        return distance <= self.comm_range_m + 1e-9
+
     def same_ring_leader(self, ego, active: Iterable) -> NeighborSlot:
         if ego.ring_role is None:
             return NeighborSlot()
         ring = self.airspace.actual_ring(ego.ring_role)
-        candidates = [item for item in self._ordered(active) if item.uid != ego.uid and item.ring_role is ego.ring_role]
+        candidates = [item for item in self._ordered(active)
+                      if item.uid != ego.uid and item.ring_role is ego.ring_role
+                      and self._in_comm_range(ego, item)]
         if not candidates:
             return NeighborSlot()
         ego_angle = _angle(ego)
@@ -95,7 +112,9 @@ class TopologyNeighborSelector:
         if ego.ring_role is None:
             return NeighborSlot()
         ring = self.airspace.actual_ring(ego.ring_role)
-        candidates = [item for item in self._ordered(active) if item.uid != ego.uid and item.ring_role is ego.ring_role]
+        candidates = [item for item in self._ordered(active)
+                      if item.uid != ego.uid and item.ring_role is ego.ring_role
+                      and self._in_comm_range(ego, item)]
         if not candidates:
             return NeighborSlot()
         ego_angle = _angle(ego)
@@ -115,7 +134,9 @@ class TopologyNeighborSelector:
         source = self.airspace.actual_ring(ego.ring_role)
         merge_time = max(0.0, abs(source.radius - ring.radius) / max(1.0, ring.nominal_speed) + 6.0)
         expected = (_angle(ego) + ring.nominal_speed * merge_time / ring.radius) % TAU
-        candidates = [item for item in self._ordered(active) if item.uid != ego.uid and item.ring_role is target]
+        candidates = [item for item in self._ordered(active)
+                      if item.uid != ego.uid and item.ring_role is target
+                      and self._in_comm_range(ego, item)]
         if not candidates:
             return NeighborSlot(), NeighborSlot()
         predicted = [(item, (_angle(item) + ring.nominal_speed * merge_time / ring.radius) % TAU) for item in candidates]
@@ -133,7 +154,8 @@ class TopologyNeighborSelector:
         return self._target_neighbors(ego, active)[1]
 
     def nearest_predicted_conflict(self, ego, active: Iterable) -> NeighborSlot:
-        candidates = [item for item in self._ordered(active) if item.uid != ego.uid]
+        candidates = [item for item in self._ordered(active)
+                      if item.uid != ego.uid and self._in_comm_range(ego, item)]
         if not candidates:
             return NeighborSlot()
         rows = [_slot(ego, item, self.airspace, path_gap=0.0, horizon=self.cpa_horizon) for item in candidates]
@@ -143,8 +165,13 @@ class TopologyNeighborSelector:
 class TopologyCache:
     """One-step cache of V2 topology roles with unchanged selector semantics."""
 
-    def __init__(self, airspace, active: Iterable, *, now: float, cpa_horizon: float) -> None:
+    def __init__(self, airspace, active: Iterable, *, now: float, cpa_horizon: float,
+                 comm_range_m: float | None = None) -> None:
         self._slots: dict[int, tuple[NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot, NeighborSlot]] = {}
+        if comm_range_m is not None:
+            if isinstance(comm_range_m, bool) or not math.isfinite(float(comm_range_m)) or float(comm_range_m) <= 0.0:
+                raise ValueError("comm_range_m must be a finite positive number or None")
+            comm_range_m = float(comm_range_m)
         ordered = tuple(sorted(active, key=lambda item: int(item.uid)))
         count = len(ordered)
         if count == 0:
@@ -154,6 +181,8 @@ class TopologyCache:
         relative_position = positions[None, :, :] - positions[:, None, :]
         relative_velocity = velocities[None, :, :] - velocities[:, None, :]
         distances = np.linalg.norm(relative_position, axis=2)
+        visible = np.ones((count, count), dtype=bool) if comm_range_m is None else distances <= comm_range_m + 1e-9
+        np.fill_diagonal(visible, False)
         speed_sq = np.einsum("ijk,ijk->ij", relative_velocity, relative_velocity)
         dot = np.einsum("ijk,ijk->ij", relative_position, relative_velocity)
         t_cpa = np.zeros((count, count), dtype=float)
@@ -180,7 +209,7 @@ class TopologyCache:
 
         for ego_index, ego in enumerate(ordered):
             same = [index for index, item in enumerate(ordered)
-                    if index != ego_index and item.ring_role is ego.ring_role] if ego.ring_role is not None else []
+                    if visible[ego_index, index] and item.ring_role is ego.ring_role] if ego.ring_role is not None else []
             if same:
                 ring = airspace.actual_ring(ego.ring_role)
                 forward = [((angles[index] - angles[ego_index]) % TAU, int(uids[index]), index) for index in same]
@@ -194,7 +223,7 @@ class TopologyCache:
 
             target = {RingRole.OUTER: RingRole.MIDDLE, RingRole.MIDDLE: RingRole.INNER}.get(ego.ring_role)
             target_indices = [index for index, item in enumerate(ordered)
-                              if index != ego_index and item.ring_role is target] if target is not None else []
+                              if visible[ego_index, index] and item.ring_role is target] if target is not None else []
             if target_indices:
                 source_ring = airspace.actual_ring(ego.ring_role)
                 target_ring = airspace.actual_ring(target)
@@ -217,7 +246,7 @@ class TopologyCache:
             else:
                 predecessor = successor = NeighborSlot()
 
-            conflict_indices = [index for index in range(count) if index != ego_index]
+            conflict_indices = [index for index in range(count) if visible[ego_index, index]]
             if conflict_indices:
                 conflict_index = min(conflict_indices, key=lambda index: (
                     d_cpa[ego_index, index], t_cpa[ego_index, index], int(uids[index])

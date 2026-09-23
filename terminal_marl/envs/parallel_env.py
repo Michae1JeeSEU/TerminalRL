@@ -18,13 +18,17 @@ from ..core.arrival_process import ArrivalProcess
 from ..core.config import RingRole, SimConfig
 from ..core.dynamic_airspace import DynamicAirspace
 from ..core.energy import EnergyModel
+from ..core.energy_reachability import (
+    compute_candidate_energy_budget,
+    minimum_immediate_emergency_soc,
+)
 from ..core.lifecycle import OutcomeLedger, transition
 from ..core.landing_zone import LandingZoneManager
 from ..core.merge_scheduler import LowLevelIntent, MergeScheduler, MergeProposal, RepairCandidate
 from ..core.execution_scheduler import ExecutionScheduler
 from ..core.teacher_scheduler import TeacherScheduler
 from ..core.action_trace import LowLevelActionTrace
-from ..core.observations import build_low_observation
+from ..core.observations import build_center_broadcast, build_low_observation
 from ..core.topology_neighbors import TopologyCache
 from ..core.priority import PriorityEngine
 from ..core.rewards import LowLevelReward, low_level_urgency_penalty
@@ -104,6 +108,7 @@ class TerminalParallelEnv:
         self.last_safety_decisions: dict[int, str] = {}
         self.last_release_decisions: dict[int, str] = {}
         self.last_release_telemetry: dict[int, dict] = {}
+        self.energy_reachability_diagnostics: dict[int, dict] = {}
         self.last_action_traces: dict[int, LowLevelActionTrace] = {}
         self.release_intents: dict[int, dict] = {}
         self._active_release_intents: dict[int, int] = {}
@@ -130,6 +135,8 @@ class TerminalParallelEnv:
              "emergency_touchdowns": 0,
              "emergency_energy_guard_rejections": 0,
              "emergency_lz_priority_rejections": 0,
+             "energy_reachability_checks": 0,
+             "energy_reachability_negative_budgets": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -169,6 +176,24 @@ class TerminalParallelEnv:
                 radial = np.asarray((-math.cos(theta), -math.sin(theta), 0.0), dtype=float)
                 uav.velocity = tangent * uav.speed
                 uav.acceleration = radial * (uav.speed * uav.speed / ring.radius)
+            if self.config.warm_start_energy_reachability_check_enabled:
+                required_soc = minimum_immediate_emergency_soc(
+                    uav,
+                    role,
+                    self.now,
+                    self.airspace,
+                    self.lz_manager,
+                    self.generator,
+                    self.energy,
+                    self.config,
+                )
+                if request.initial_soc + 1e-9 < required_soc:
+                    raise ValueError(
+                        "warm-start solo emergency energy infeasible: "
+                        f"uid={uav.uid}, ring={role.value}, "
+                        f"initial_soc={request.initial_soc:.9f}, "
+                        f"required_soc={required_soc:.9f}"
+                    )
             self.active[uav.uid] = uav
         self._refresh_airspace_occupancy()
 
@@ -200,10 +225,21 @@ class TerminalParallelEnv:
 
     def _observations(self) -> dict[str, np.ndarray]:
         cache = None
-        if self.config.observation_schema_version in {"phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d"}:
+        center_broadcast = None
+        if self.config.observation_schema_version in {"phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d"}:
             cache = TopologyCache(self.airspace, self.active.values(), now=self.now,
-                                 cpa_horizon=self.config.shield_horizon_seconds)
-        return {str(uid): build_low_observation(uav, self, topology_cache=cache) for uid, uav in self.active.items()}
+                                 cpa_horizon=self.config.shield_horizon_seconds,
+                                 comm_range_m=(self.config.neighbor_comm_range_m
+                                               if self.config.observation_schema_version == "phaseA_low_obs_v2_3_source_bound_88d"
+                                               else None))
+        if self.config.observation_schema_version == "phaseA_low_obs_v2_3_source_bound_88d":
+            center_broadcast = build_center_broadcast(self)
+        return {
+            str(uid): build_low_observation(
+                uav, self, topology_cache=cache, center_broadcast=center_broadcast,
+            )
+            for uid, uav in self.active.items()
+        }
 
     def _refresh_airspace_occupancy(self) -> None:
         values = {role: 0 for role in RingRole}
@@ -258,11 +294,11 @@ class TerminalParallelEnv:
         self.resolution_times[uav.arrival_id] = self.now
         self.active.pop(uav.uid, None)
 
-    def _try_emergency_landing(self, uav: UAVState) -> bool:
+    def _try_emergency_landing(self, uav: UAVState, *, force: bool = False) -> bool:
         retry_after = (uav.emergency_retry_after
                        if self.config.emergency_priority_guard_enabled
                        else uav.safety_retry_after)
-        if (not self.config.emergency_landing_enabled or uav.soc > self.config.emergency_trigger_soc
+        if (not self.config.emergency_landing_enabled or (not force and uav.soc > self.config.emergency_trigger_soc)
                 or uav.ring_role is None or uav.committed_plan is not None
                 or self.now < retry_after):
             return False
@@ -443,6 +479,31 @@ class TerminalParallelEnv:
         """Reject a normal candidate that would consume emergency margin."""
         if not self.config.emergency_priority_guard_enabled:
             return None
+        if self.config.energy_reachability_guard_enabled:
+            budget = compute_candidate_energy_budget(
+                uav,
+                plan,
+                target,
+                self.now,
+                self.airspace,
+                self.lz_manager,
+                self.generator,
+                self.energy,
+                self.config,
+                stop_at_first_feasible=True,
+            )
+            self.energy_reachability_diagnostics[uav.uid] = {
+                "candidate_energy": float(budget.candidate_energy),
+                "pad_wait_seconds": float(budget.pad_wait_seconds),
+                "required_energy": float(budget.required_energy),
+                "slack_energy": float(budget.slack_energy),
+                "selected_lz_id": budget.selected_lz_id,
+            }
+            self.telemetry["energy_reachability_checks"] += 1
+            if budget.selected_lz_id is None or budget.slack_energy < -1e-12:
+                self.telemetry["energy_reachability_negative_budgets"] += 1
+                return "emergency_energy_guard"
+            return None
         plan_energy = self.energy.estimate_plan_energy(plan, self.now, plan.end_time)
         projected_soc = (uav.energy_remaining - plan_energy) / uav.energy_capacity
         if target != "final":
@@ -481,6 +542,17 @@ class TerminalParallelEnv:
                                secondary: list[str] | None = None,
                                selection_source: str | None = None) -> None:
         row["decision_history"].append(decision)
+        if decision == "emergency_redirected":
+            row.update({
+                "approval_time": self.now,
+                "execution_selection_source": selection_source or "emergency_redirect",
+                "candidate_kind": None,
+                "primary_blocker": None,
+                "trajectory_plan_id": plan_id,
+            })
+            self._active_release_intents.pop(uav.uid, None)
+            self.last_release_telemetry[uav.uid] = dict(row)
+            return
         if decision == "approved":
             source = selection_source or (
                 "requested" if candidate is None or candidate.kind == "requested" else "teacher_repair"
@@ -590,6 +662,17 @@ class TerminalParallelEnv:
             reasons.append(self.last_safety_decisions.get(uav.uid, "predicted_separation"))
         self.telemetry["runtime_shortlist_exhausted"] += 1
         if reasons and all(reason == "emergency_energy_guard" for reason in reasons):
+            if self.config.energy_reachability_guard_enabled:
+                if self._try_emergency_landing(uav, force=True):
+                    self._finish_release_intent(
+                        uav,
+                        row,
+                        "emergency_redirected",
+                        plan_id=None if uav.committed_plan is None else uav.committed_plan.plan_id,
+                        selection_source="emergency_redirect",
+                    )
+                    return "emergency_redirected"
+                uav.safety_retry_after = self.now + 5.0
             self.telemetry["emergency_energy_guard_rejections"] += 1
             self._finish_release_intent(
                 uav, row, "emergency_energy_guard",
@@ -1179,10 +1262,21 @@ class TerminalParallelEnv:
         self.execution_scheduler.expire(self.now, set(self.active))
         self._refresh_airspace_occupancy()
         self.airspace.step_transition(self.now)
-        admitted, records = self.admission.step(self.now, self.active, self.airspace, self.energy, self.priority)
+        admitted, records = self.admission.step(
+            self.now,
+            self.active,
+            self.airspace,
+            self.energy,
+            self.priority,
+            lz_manager=self.lz_manager,
+        )
         for record in records:
             if record.decision.value == "divert":
-                outcome = TerminalOutcome.DIVERTED_LOW_SOC if record.reason_code == "low_soc" else TerminalOutcome.DIVERTED_CAPACITY
+                outcome = (
+                    TerminalOutcome.DIVERTED_LOW_SOC
+                    if record.reason_code in {"low_soc", "low_soc_slot"}
+                    else TerminalOutcome.DIVERTED_CAPACITY
+                )
                 self.ledger.resolve(record.request.arrival_id, outcome)
                 self.resolution_times[record.request.arrival_id] = self.now
                 self.energy_outcomes.append({"arrival_id": record.request.arrival_id, "uid": None,

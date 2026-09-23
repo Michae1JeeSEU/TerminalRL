@@ -1,6 +1,7 @@
 """Deterministic runtime protection for holders around committed trajectories."""
 from __future__ import annotations
 
+from bisect import bisect_right
 import itertools
 import math
 import uuid
@@ -98,6 +99,7 @@ class PredictiveSafetyShield:
         self.last_certification_diagnostic: dict[str, object] = {}
         self.last_recursive_gate = "not_run"
         self._joint_track_cache: dict[tuple, np.ndarray] = {}
+        self._joint_sampled_track_cache: dict[tuple, np.ndarray] = {}
 
     def assess(self, env) -> RiskAssessment:
         best: tuple[float, float, float, tuple[int, int]] | None = None
@@ -215,28 +217,56 @@ class PredictiveSafetyShield:
         envelope_key = (plan.plan_id, plan.trajectory_hash, round(start, 8), round(end, 8))
         envelope = None if cache is None else cache.plan_envelopes.get(envelope_key)
         if envelope is None:
-            segments = []
-            for left, right in zip(plan.points, plan.points[1:]):
-                segment_start = max(start, left.t)
-                segment_end = min(end, right.t)
-                if segment_end < segment_start:
-                    continue
-                segments.append((plan.sample_position(segment_start), plan.sample_position(segment_end)))
-            if not segments:
+            # The plan is piecewise linear in the geometric envelope.  Only
+            # the clipped boundary points need interpolation; all interior
+            # segment endpoints are already available in ``plan.points``.
+            # This avoids scanning and sampling every point outside the
+            # current overlap interval.
+            point_times = np.fromiter((point.t for point in plan.points), dtype=float)
+            first_segment = max(0, min(
+                len(plan.points) - 2, bisect_right(point_times, start) - 1,
+            ))
+            last_segment = max(first_segment, min(
+                len(plan.points) - 2, bisect_right(point_times, end) - 1,
+            ))
+            segment_indices = np.arange(first_segment, last_segment + 1, dtype=int)
+            segment_starts = np.maximum(start, point_times[segment_indices])
+            segment_ends = np.minimum(end, point_times[segment_indices + 1])
+            valid = segment_ends >= segment_starts
+            if not np.any(valid):
                 return True
-            radial_min = float("inf")
-            radial_max = 0.0
-            z_min = float("inf")
-            z_max = -float("inf")
-            for left, right in segments:
-                left_xy = np.asarray(left[:2], dtype=float)
-                delta = np.asarray(right[:2], dtype=float) - left_xy
-                denominator = float(np.dot(delta, delta))
-                projection = 0.0 if denominator <= 1e-12 else float(np.clip(-np.dot(left_xy, delta) / denominator, 0.0, 1.0))
-                radial_min = min(radial_min, float(np.linalg.norm(left_xy + projection * delta)))
-                radial_max = max(radial_max, float(np.linalg.norm(left_xy)), float(np.linalg.norm(right[:2])))
-                z_min = min(z_min, float(left[2]), float(right[2]))
-                z_max = max(z_max, float(left[2]), float(right[2]))
+            segment_indices = segment_indices[valid]
+            segment_starts = segment_starts[valid]
+            segment_ends = segment_ends[valid]
+            start_position = plan.sample_position(float(start))
+            end_position = plan.sample_position(float(end))
+            left_positions = np.asarray(
+                [start_position if moment == start else plan.points[index].position
+                 for index, moment in zip(segment_indices, segment_starts)],
+                dtype=float,
+            )
+            right_positions = np.asarray(
+                [end_position if moment == end else plan.points[index + 1].position
+                 for index, moment in zip(segment_indices, segment_ends)],
+                dtype=float,
+            )
+            left_xy = left_positions[:, :2]
+            delta = right_positions[:, :2] - left_xy
+            denominator = np.einsum("ij,ij->i", delta, delta)
+            projection = np.zeros_like(denominator)
+            moving = denominator > 1e-12
+            projection[moving] = -np.einsum(
+                "ij,ij->i", left_xy[moving], delta[moving]
+            ) / denominator[moving]
+            projection = np.clip(projection, 0.0, 1.0)
+            closest = left_xy + projection[:, None] * delta
+            radial_min = float(np.min(np.linalg.norm(closest, axis=1)))
+            radial_max = float(np.max(np.linalg.norm(
+                np.concatenate((left_xy, right_positions[:, :2]), axis=0), axis=1,
+            )))
+            z_values = np.concatenate((left_positions[:, 2], right_positions[:, 2]))
+            z_min = float(np.min(z_values))
+            z_max = float(np.max(z_values))
             envelope = (radial_min, radial_max, z_min, z_max)
             if cache is not None:
                 cache.plan_envelopes[envelope_key] = envelope
@@ -536,7 +566,16 @@ class PredictiveSafetyShield:
                     self._joint_track_cache[key] = positions
             else:
                 continue
-            tracks[uid] = self._resample_position_track(times, positions, samples)
+            sampled_key = (
+                "sampled", key,
+                float(self.config.physics_dt),
+                float(self.config.safety_sampling_dt),
+            )
+            sampled = self._joint_sampled_track_cache.get(sampled_key)
+            if sampled is None:
+                sampled = self._resample_position_track(times, positions, samples)
+                self._joint_sampled_track_cache[sampled_key] = sampled
+            tracks[uid] = sampled
         return samples, tracks
 
     @staticmethod
@@ -838,7 +877,23 @@ class PredictiveSafetyShield:
                     candidates.append(trial)
         best = baseline_assessment
         certified: list[tuple[tuple[float, float, tuple[float, ...]], dict[int, float], JointSafetyAssessment]] = []
+        baseline_correction = float(sum(abs(baseline.get(uid, residuals.get(uid, 0.0)) - residuals.get(uid, 0.0))
+                                       for uid in sorted(residuals)))
+        baseline_action_key = tuple(round(baseline.get(uid, 0.0) / self.config.max_speed_residual_mps, 8)
+                                    for uid in sorted(residuals))
+        baseline_key = tuple((uid, float(baseline[uid])) for uid in sorted(baseline))
+        evaluated_candidates: set[tuple[tuple[int, float], ...]] = {baseline_key}
+        if baseline_assessment.approved:
+            certified.append(((-baseline_assessment.minimum_separation,
+                               baseline_correction, baseline_action_key),
+                              baseline, baseline_assessment))
         for trial in candidates:
+            candidate_key = tuple(
+                (uid, float(trial[uid])) for uid in sorted(trial)
+            )
+            if candidate_key in evaluated_candidates:
+                continue
+            evaluated_candidates.add(candidate_key)
             verdict = self._joint_assessment(env, trial, **assessment_kwargs)
             if verdict.approved:
                 # Backup control is selected for maximum certified separation
@@ -1082,6 +1137,7 @@ class PredictiveSafetyShield:
         # shared only within this tick and are invalidated before any new
         # authoritative state can be executed.
         self._joint_track_cache.clear()
+        self._joint_sampled_track_cache.clear()
         repaired = dict(intents)
         holders = [uid for uid, uav in env.active.items()
                    if uid in repaired and uav.ring_role is not None and uav.committed_plan is None]
