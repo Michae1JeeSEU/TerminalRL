@@ -8,7 +8,119 @@
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
-**最新结论（2026-09-24，emergency reachability guard exploratory）：** fresh stress seeds
+**最新前置观测（2026-09-24，runtime timing reconciliation）：** 只读 timing audit 显示，all-warm
+seed `840626` 前 `200` steps 有 `21` 次 approved ring transfer，其中 `20/21` 的 `|end-slot|` 超过
+`1 s`，median `-8.379 s`、minimum `-49.229 s`；mixed seed `840627` 前 `200` steps 为 `20/20`
+mismatch，median `-8.661 s`、minimum `-41.292 s`。mixed actual arrival adjacent gaps 中，
+ring_middle 最小 `1.97 s`（`5` 个低于 `9 s`），ring_inner 最小 `8.29 s`（`4` 个低于 `9 s`）；
+prefix safety events 为 `0`。对应 timing audit 仍属于前置观测，不是 qualification。
+
+product viewer 20-step offscreen benchmark 为 headless `2.918 steps/s`、process `2.820 steps/s`，
+排除 `1.63 s` startup 后 slowdown `3.37%`，`12.01 fps`，p95 gap `0.192 s`，测试 `22 passed`；
+该结果不能替代 GUI 主观验收。CPU profile 的 20-step 总耗时为 `13.18 s`，`ring_transfer` cumulative
+`5.912 s`、runtime protect `3.086 s`、SafetyFilter `1.890 s`；profile 调用嵌套，数值不可相加。
+timing reconciliation fix 仍在进行且尚未验证，`PPO_ALLOWED=false`。
+
+**最新 merge-slot reconciliation 回归（2026-09-24）：** `MergeScheduler` 现将 ring-transfer slot
+对齐到 `plan.end_time`，将 final slot 对齐到已验证的 `scheduled_departure`；integration tests 为
+`158 passed, 1 skipped`。mixed30 前 `200` steps 的 actual slot audit 为 `29/29` exact delta `0`，
+o2m/m2i/i2f 最小事件间隔 `9/9/12 s`，`0` 个低于 headway，prefix safety events 为 `0`。
+all-warm `840626` full-cycle 为 `17 normal + 10 emergency + 3 failed-energy`（step `1067`，
+最小实际/扫掠 `81.578/81.550 m`，壁钟 `64.925 s`，`47` approvals）；mixed `840627` 为
+`18 normal + 12 emergency + 0 failed-energy`（step `910`，最小实际/扫掠 `80.00062/80.00062 m`，
+壁钟 `42.690 s`，`61` approvals）；两者 safety events 均为 `0`。相较此前 all-warm `20/8/2`、
+mixed `23/6/1`，该修正改善了 slot timing 的安全与一致性观测，但 throughput/emergency gate 仍未
+通过，不能作为 qualification 或训练授权；`PPO_ALLOWED=false`。SOC arbitration pilot 仍在进行，
+尚未验证。
+
+**最新 SOC-priority opt-in pilot（2026-09-24）：** `downstream_soc_priority` 保持 downstream ring
+precedence，并在同一优先级内按自身 SOC 升序排序；不改变 observation 维度，默认仍为
+`downstream_priority`。前 `200` steps 的 all-warm `840626` approvals `23→19`、resolved `5→4`、
+墙钟 `26.423→27.693 s`；mixed `840627` approvals `29→28`、resolved `5→5`、墙钟
+`13.841→13.420 s`。mixed full-cycle 中 default 为 `18 normal/12 emergency/0 failed`（step `910`，
+`42.690 s`），SOC priority 为 `20/9/1`（step `1043`，`43.70 s`）；失败 arrival `17` 为
+`UID71`、`ring_middle`、`t=1042`，两种模式 safety events 均为 `0`。该 pilot 因
+`zero_energy_failure` hard gate FAIL，未晋级且不改变默认模式；没有 full all-warm SOC pilot 结论，
+`PPO_ALLOWED=false`。counterfactual emergency contract probe 已完成，单状态结果见下方。
+
+**最新 nominal-holder counterfactual（2026-09-24）：** 只读 current-code seed `840626` 的 `UID13`
+在 `t=200 s`、`ring_outer`、SOC `0.4595651` 状态中，6 条 emergency routes energy `6/6`、
+SafetyFilter `0/6`；唯一 free compatible `LZ4` 为 energy `1/1`、SafetyFilter `0/1`，原因计数为
+`predicted_holder_reachable_tube=3`、`predicted_separation=3`。将 in-memory nominal-holder exact
+trajectory 同时用于 lower/upper tube bounds 后，全部结果和原因计数保持相同。该结果只说明单状态下
+nominal speed promise 单独不足以改变 verdict，不构成一般不可能性证明；未放宽运行时安全阈值、未修改
+source，`PPO_ALLOWED=false`。
+
+**最新诊断（2026-09-24，dense30 continuous final/LZ exploratory）：** 为检查 30 机潜在冲突场景，新增
+opt-in `final_approach_geometry_mode=continuous_inward_v1`。该模式使用连续切向脱环的共享几何，保留
+正常 final-approach 语义，并由中心扫描按兼容性排序的空闲 LZ；SafetyFilter `80/40/10 m` 保持不变。
+默认 `brake_bezier_v1` 未改变。集成定向测试为 `121 passed`。在 seed `840626`、30 架全 warm、
+high-SOC 的 100 s 探索中，该模式获得 `13` 次 approval、完成 `1` 架 normal，emergency、failed-energy
+和 safety 均为 `0`；最小实际间隔 `82.03085 m`，服务器墙钟时间 `13.4638 s`（旧模式同条件约
+`16.47 s`），但仍未完成完整回合。延长同一模式至终态后，运行在 `t=1117` 结束（服务器墙钟
+`51.9834 s`）：`20` 架 normal、`8` 架 emergency、`2` 架 failed-energy、`0` 架 unresolved；失败目标
+为 outer UAV `UID13@889 s` 与 `UID14@1116 s`。请求记账为真，累计 `51` 次 approval、`304` 次
+emergency attempt/`8` 次 commit；最小实际/扫掠间隔为 `80.0331/80.0226 m`，hard-separation、
+NMAC、collision 和 shield fail-closed 均为 `0`。该 full-cycle 结果未通过 `zero_energy_failure`
+hard gate，不能进入课程或 PPO，`PPO_ALLOWED=false`。
+
+本轮 Windows 早期 benchmark 的 `2.21 steps/s` 与服务器完整回合的 `21.49 steps/s` 不可直接比较：
+后者后段 active UAV 已减少，状态计算量较轻，不能作为 30 架并发实时速率。实际 GUI 尚未完成视觉
+验收。UID 级 emergency/release trace 已补齐；下一步前置是量化 merge-slot shortfall，完成安全规则/
+应急路线修正，再冻结 fresh normal/stress protocol；在这些前置条件完成前不推进低层课程或 PPO。
+详见 [dense30 低层预训练前置诊断](evidence/v4_2/dense30_pretraining_20260924.md)。
+
+**最新归因补充（2026-09-24，dense30 UID trace）：** 同一 seed、同一 continuous 配置的完整回放与原始运行
+保持 exact outcome parity：`1117` steps、`20` normal、`8` emergency、`2` failed-energy。`UID13` 首次
+emergency 为 `t=290, SOC=.399565`，有 `120` 次实际尝试和 `14` 次 emergency plan commit 尝试，
+其中 `8` 次被 holder tube、`6` 次被 predicted separation 拒绝；`UID14` 首次 emergency 为
+`t=495, SOC=.414041`，有 `125` 次实际尝试和 `11` 次计划尝试，其中 `9` 次被 holder tube、`2` 次被
+predicted separation 拒绝。两条失败终点均有 `6` 个空闲 LZ；UID13 的 `t=200/290` 和 UID14 的
+`t=400/495` 窗口中，6 条 emergency routes 均 energy `6/6` 通过但 SafetyFilter `0/6` 通过，
+能量 slack 为正（`25.556–177.007`）。因此当前静态 dense30 的 zero-failure gate 明确失败，
+不能归结为 LZ 数量不足，也不支持放宽安全阈值。正常 25-proposal 扫描在 `t=100/200` 为
+`dynamics_unreachable_merge_time` 全拒，在 `t=500/750` 为 `emergency_energy_guard` 全拒。
+相关 forensic artifacts 见 [dense30 证据页](evidence/v4_2/dense30_pretraining_20260924.md)。
+
+**最新 merge-slot 诊断（2026-09-24）：** seed `840626` 的 outer `UID13/UID14` 在 `t=100/200`
+各扫描 `63` 个候选（speed residual `-1/0/1`、merge residual `-1/0/1`、delay `0/10/20/40/80/120/180 s`）。
+`t=100` 两架均为 `0/63` preliminary certified，`t=200` 分别为 `13/63` 和 `21/63`；但最佳
+planned endpoints 比请求 merge slots 提前约 `95–97 s`，因此不能作为可执行安全合流时隙证书。
+严格 `<=1 s` alignment search 的 synthetic candidate 通过，但 12 机回归 `840620` 为
+`1 normal + 8 emergency + 3 failed_energy`，`840622` 为 `1 normal + 10 emergency + 1 failed_energy`；
+该改动已完全回滚，energy guard 定向测试 `8 passed`。详情见 [dense30 证据页](evidence/v4_2/dense30_pretraining_20260924.md)。
+
+**最新 mixed30 探索（2026-09-24）：** seed `840627` 使用 `12` 架 warm-start 加 `18` 架每 `8 s`
+到达、SOC `.55–.90`、continuous geometry 和 route guard，运行 `1032` terminal steps、服务器墙钟
+`43.3962 s`。结果为 `23 normal + 6 emergency + 1 failed_energy`，`30/30` resolved，`68` 次 approval，
+`174/6` 次 emergency attempt/commit，route checks `615`（其中 negative `143`），最小实际/扫掠间隔
+`81.2511/81.2478 m`，safety events `0`；唯一 failure 为 arrival `17` 的 outer `UID44@t=1031`。
+该回合 `20%` emergency 和 `1` 条 energy failure 使训练 gate 失败，不构成 qualification 或问题已解决
+的证据。第二次 20-step 离屏测量为 headless `3.026 steps/s`、async viewer `2.883 steps/s`，开销约
+`4.8%`，插值帧 `24`（前次 `3`）；GUI subjective QA 仍不可用。详见 [dense30 证据页](evidence/v4_2/dense30_pretraining_20260924.md)。
+
+**最新 mixed30 UID44 归因（2026-09-24）：** UID44 exact replay 与 mixed30 原始回合一致：`1032`
+terminal steps，`23 normal + 6 emergency + 1 failed-energy`，peak active `21`，peak ring
+outer/middle/inner `9/4/4`；arrival `17` 的 outer UID44 在 `t=1031` 失败。首个 tracked inbound 为
+`t=70, SOC=.63691`，outer 状态为 `t=130, SOC=.600799`，首次 emergency 为 `t=145, SOC=.590799`。
+在 `t=130/145`，6 条路线均 energy `6/6` 通过但 SafetyFilter `0/6` 通过，energy slack 约
+`+313–386`，normal proposals `25/25` 全拒；`t=750` 为 SafetyFilter `3/6`、energy `0/6`，
+`t=900` 为 SafetyFilter `6/6`、energy `0/6`。`t=70`/`t=100` 仍是 inbound，未进行环上 emergency
+scan，不能据此推断已经执行 admission check。早期 future-exit certification 与 coordinated
+holder/pad traffic plan 仍是 proposed prerequisites，尚未实现或证明；`PPO_ALLOWED=false`。
+
+**最新诊断（2026-09-24，dense30 低层前置与性能）：** 为覆盖 30 机潜在冲突场景，fresh
+high-SOC all-warm seed `840626` 在 route guard、ring `600/400/200 m`、SOC `.55–.90`、
+K1 `[1,0,0]` 下运行 `100 s`，`0` approved、`0` resolved、`30` unresolved，`3000` 次
+release rejection；观察到 `0 failed_energy` 和 `0` hard-separation/NMAC/collision，但
+该 horizon 未完成完整回合。25-proposal catalogue 在 `t=0/t=50` 均为 `750/750` rejected；
+扩大到 `800/550/300 m` 后 100 s 仍为 `0` approvals。Windows 每步耗时已由 `1.06462` 降至
+`0.451737 s`（约 `2.21 steps/s`）；异步离屏 stride1 检查为 headless `2.3685`、viewer
+`2.297 steps/s`，约 `3%` 开销且无 queue backlog，实际 GUI 流畅性尚未由此证明。12 机
+same-seed 回归 outcome/accounting 不变，高 SOC `12/12` normal，近下限 `6` normal+`6`
+emergency，均无 failure/safety event。详见 [dense30 低层预训练前置诊断](evidence/v4_2/dense30_pretraining_20260924.md)。
+
+**历史 exploratory 状态（2026-09-24，emergency reachability guard）：** fresh stress seeds
 `840607/840611/840612/840613` 的 old/route 配对每对终态相同；两种模式分别聚合为
 `13 completed + 27 emergency_landed + 8 upstream diverted_low_soc = 48`，均
 `failed_energy=0`、安全事件为0。route-aware checks 非零，但没有改善这些终态。正常高 SOC
@@ -17,7 +129,7 @@
 diverted_low_soc`；两组均 `failed_energy=0`、安全事件为0。全部记录为 exploratory，未通过
 exact replay/full qualification，不能据此启动 PPO。V2.3 旧 source-bound observation-only
 证据独立保留。低层 `12` 机课程与 `30` 机离线回放的先后顺序，以及是否先重构 `30` 机安全层
-实时性能，仍需单独决定；当前不宣称可正式 PPO。
+实时性能，当时仍待决定；现由上方最新的 [dense30 低层预训练前置诊断](evidence/v4_2/dense30_pretraining_20260924.md) 结论覆盖；当前不宣称可正式 PPO。
 
 **最新实现补充（2026-09-23，source-bound Observation V2.3）：** 已加入保持 88D 宽度的
 opt-in `phaseA_low_obs_v2_3_source_bound_88d`。自身状态、有限
@@ -429,14 +541,15 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-**2026-09-24 当前顺序：** exploratory emergency-reachability guard 的 fresh stress 配对已完成，old/route
-每对终态相同，route-aware checks 没有改善完成/应急/上游分流结果；正常高 SOC 与近下限 SOC
-探索均保持 `failed_energy=0` 和安全事件为0，但全部记录仍未通过 exact replay/full qualification。
-V2.3 source-bound observation-only 旧证据独立保留。下一步需要在“先推进 `12` 机优先课程并做
-`30` 机离线回放”和“先重构 `30` 机安全层实时性能”之间作出决定；在该决定和新协议证据之前，
-不得声称可正式 PPO，`PPO_ALLOWED=false`。当前实现的 V2.3 理想通信、warm-start solo SOC
-check、admission pad ETA budget、candidate route/等待/reserve/margin budget 已进入诊断链；
-SafetyFilter 仍为 `80/40/10 m`，fallback future route 尚未作未来安全认证。
+**2026-09-24 当前顺序：** 30 机 continuous final/LZ exploratory full-cycle 仍未通过
+`zero_energy_failure` hard gate；`PPO_ALLOWED=false`。下一步继续量化 merge-slot shortfall，并完成
+coordinated emergency corridor 的安全认证，或建立可执行的 safe admission envelope。当前扫描因
+reservation/trajectory timing 不一致，不能作为可执行安全合流时隙证书。不得将当前问题标记为单纯
+LZ 数量不足，也不得放宽现有 SafetyFilter 阈值。完成该前置后再冻结 fresh dense30
+normal/stress protocol，协议须保持 `failed_energy=0` 与安全事件为零的 hard gates，并分别报告
+measurable normal completions 与 emergency outcomes。实际 GUI 尚未视觉验收；Windows 早期
+`2.21 steps/s` 不代表 30 架全并发速率。在上述前置条件完成前不推进低层课程，也不以 12 机课程
+替代 30 机前置验证。
 
 **2026-09-23 当前顺序：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 
