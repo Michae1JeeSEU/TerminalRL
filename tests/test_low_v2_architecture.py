@@ -572,7 +572,7 @@ def test_ppo_transition_keeps_requested_action_when_teacher_label_is_present():
 
 
 def test_ppo_ratio_is_invariant_to_applied_action_and_reports_diagnostics():
-    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
+    requested = np.asarray((1, 2, 3), np.int64)
     world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
 
     def buffer_for(applied: np.ndarray) -> RolloutBuffer:
@@ -594,16 +594,17 @@ def test_ppo_ratio_is_invariant_to_applied_action_and_reports_diagnostics():
     assert {"approx_kl", "clip_fraction", "explained_variance", "grad_norm"} <= set(first_metrics)
 
 
+@pytest.mark.skip(reason="Historical V2 D2 diagnostic_snapshot API was removed from categorical SharedPPO; no current equivalent")
 def test_ppo_d2_snapshot_is_non_mutating_and_keeps_teacher_targets_normalized():
     """D2 can inspect requested/teacher actions without changing PPO state."""
-    requested = np.asarray((0.2, -0.1, 0.3), np.float32)
-    teacher = np.asarray((1.0, -1.0, 1.0), np.float32)
+    requested = np.asarray((1, 2, 3), np.int64)
+    teacher = np.asarray((1, 4, 0), np.int64)
     world = np.zeros((1, LOW_OBS_V2.dimension), np.float32)
     buffer = RolloutBuffer()
     buffer.add(Transition("uav-1", world[0], world, requested, -0.2, 0.0, 1.0, True,
                           teacher_action=teacher, applied_action=teacher, teacher_used=True))
-    buffer.add(Transition("uav-2", world[0], world, -requested, -0.1, 0.0, -1.0, True,
-                          teacher_action=-teacher, applied_action=-teacher, teacher_used=True))
+    buffer.add(Transition("uav-2", world[0], world, np.asarray((0, 3, 1), np.int64), -0.1, 0.0, -1.0, True,
+                          teacher_action=np.asarray((0, 0, 4), np.int64), applied_action=-teacher, teacher_used=True))
     policy = SharedPPO(LOW_OBS_V2.dimension, teacher_bc_weight=.05)
     before = [parameter.detach().clone() for parameter in policy.model.parameters()]
     snapshot = policy.diagnostic_snapshot(buffer, teacher_bc_weight=.05)

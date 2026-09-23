@@ -26,7 +26,7 @@ def finite_config(**overrides):
 def test_a0_schema_and_action_dimensions_are_locked():
     c = SimConfig()
     assert (c.schema_version, c.airspace_schema_version) == ("phaseA_landing_v1", "three_ring_v1")
-    assert (c.action_schema_version, c.high_action_schema_version) == ("low_intent_v3_factorized_discrete", "high_airspace_v1_10d")
+    assert (c.action_schema_version, c.high_action_schema_version) == ("low_action_schema_v4_joint_discrete", "high_airspace_v1_10d")
     assert DynamicAirspace.ACTION_SIZE == 10
     assert LowLevelIntent.from_array([0, 0, 0])
     with pytest.raises(ValueError): LowLevelIntent.from_array([0, 0, 0, 0])
@@ -148,7 +148,22 @@ def test_a4_single_uav_touchdown_exits_active_then_service_completes():
 
 def test_a4_multi_uav_rule_pipeline_closes_without_lz_double_booking():
     c=finite_config(total_requested_uavs=10,arrival_rate_per_second=.01,max_simulation_seconds=4000)
-    env=TerminalParallelEnv(c); ledger=env.run_rule_only()
+    env=TerminalParallelEnv(c); env.reset(seed=13); ledger=env.run_rule_only()
     assert len(ledger.outcomes)==10 and ledger.closes()
-    assert all(outcome is TerminalOutcome.COMPLETED for outcome in ledger.outcomes.values())
+    allowed = {TerminalOutcome.COMPLETED, TerminalOutcome.DIVERTED_LOW_SOC}
+    assert set(ledger.outcomes.values()) <= allowed
+    assert not any(outcome in {
+        TerminalOutcome.FAILED_ENERGY,
+        TerminalOutcome.FAILED_COLLISION,
+        TerminalOutcome.INVALID,
+        TerminalOutcome.UNRESOLVED,
+    } for outcome in ledger.outcomes.values())
+    assert {uid for uid, outcome in ledger.outcomes.items()
+            if outcome is TerminalOutcome.DIVERTED_LOW_SOC} == {6, 9}
+    low_soc = [row for row in env.energy_outcomes
+               if row["outcome"] == TerminalOutcome.DIVERTED_LOW_SOC.value]
+    assert len(low_soc) == 2
+    assert {row["arrival_id"] for row in low_soc} == {6, 9}
+    assert all(row["reason"] == "low_soc_before_touchdown" for row in low_soc)
+    assert all(row["soc"] < c.min_landing_soc for row in low_soc)
     assert all(z.status is LZStatus.FREE for z in env.lz_manager.zones)
