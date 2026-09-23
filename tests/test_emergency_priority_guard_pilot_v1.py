@@ -8,7 +8,27 @@ import pytest
 from terminal_marl.training import diagnose_emergency_priority_guard_pilot_v1 as runner
 
 
-def test_protocol_and_guard_config_bindings_are_frozen() -> None:
+def _historical_source_hashes() -> dict[Path, str]:
+    snapshot = runner.yaml.safe_load(runner.PROTOCOL_PATH.read_text(encoding="utf-8-sig"))
+    return {
+        (runner.PROJECT_ROOT / relative).resolve(): str(expected).lower()
+        for relative, expected in snapshot["source_bindings"].items()
+    }
+
+
+def test_protocol_and_guard_config_bindings_are_frozen(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # This historical snapshot test replaces current source hashes with the
+    # frozen V1 values for protocol structure and serialization coverage. The
+    # V1 runner itself remains fail-closed when current hashes differ.
+    real_sha = runner._sha256
+    historical = _historical_source_hashes()
+    monkeypatch.setattr(
+        runner,
+        "_sha256",
+        lambda path: historical.get(Path(path).resolve(), real_sha(path)),
+    )
     protocol = runner.load_protocol()
     scenario = protocol["scenario"]
     assert tuple(protocol["matrix"]["seeds"]) == (840401, 840402)
@@ -109,6 +129,7 @@ def test_smoke_path_serializes_four_cases_and_refuses_overwrite(
     checkpoint = tmp_path / "checkpoint.pt"
     checkpoint.write_bytes(b"test checkpoint")
     real_sha = runner._sha256
+    historical = _historical_source_hashes()
 
     def fake_sha(path: str | Path) -> str:
         resolved = Path(path).resolve()
@@ -116,6 +137,8 @@ def test_smoke_path_serializes_four_cases_and_refuses_overwrite(
             return runner.PROTOCOL_SHA256
         if resolved == checkpoint.resolve():
             return runner.CHECKPOINT_SHA256
+        if resolved in historical:
+            return historical[resolved]
         return real_sha(path)
 
     monkeypatch.setattr(runner, "_sha256", fake_sha)

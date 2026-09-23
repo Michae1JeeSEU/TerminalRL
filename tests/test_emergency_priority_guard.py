@@ -7,7 +7,7 @@ import pytest
 
 from terminal_marl.core.config import RingRole, SimConfig
 from terminal_marl.core.low_level_joint_action_v4_2 import hierarchical_from_joint_index_v4_1
-from terminal_marl.core.merge_scheduler import LowLevelIntent
+from terminal_marl.core.merge_scheduler import LowLevelIntent, RepairCandidate
 from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.core.uav import (
     ArrivalRequest,
@@ -16,7 +16,7 @@ from terminal_marl.core.uav import (
     QueuedArrivalState,
     UAVState,
 )
-from terminal_marl.envs.parallel_env import TerminalParallelEnv
+from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
 def _config(**overrides) -> SimConfig:
@@ -83,9 +83,9 @@ def test_guard_defaults_off_and_rejects_incompatible_enablement() -> None:
         )
 
 
-def test_low_soc_ring_transfer_guard_has_no_reservation_or_retry() -> None:
+def test_low_soc_ring_transfer_guard_rejects_below_landing_plus_margin_reserve() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, RingRole.OUTER, soc=0.401, uid=1)
+    uav = _ring_uav(env, RingRole.OUTER, soc=0.259, uid=1)
     intent = LowLevelIntent(1.0, 0.0, 0.0)
 
     decision = env._runtime_shortlist_release(uav, intent, (intent,))
@@ -97,6 +97,48 @@ def test_low_soc_ring_transfer_guard_has_no_reservation_or_retry() -> None:
     assert not env.scheduler.reservations
     assert env.last_release_telemetry[uav.uid]["primary_blocker"] == "SOC"
     assert env.telemetry["emergency_energy_guard_rejections"] == 1
+
+
+def test_nonfinal_guard_allows_projected_soc_below_trigger_above_emergency_reserve() -> None:
+    env = TerminalParallelEnv(_config())
+    uav = _ring_uav(env, RingRole.OUTER, soc=0.4317193579, uid=1)
+    candidate = RepairCandidate("requested", LowLevelIntent(1.0, 0.0, 0.0))
+
+    _, plan, _ = env._candidate_plan(
+        uav,
+        candidate,
+        RingRole.MIDDLE,
+        WorldSnapshot(env.now, env.active, env.airspace),
+        None,
+    )
+
+    assert plan is not None
+    plan_energy = env.energy.estimate_plan_energy(plan, env.now, plan.end_time)
+    projected_soc = (uav.energy_remaining - plan_energy) / uav.energy_capacity
+    reserve_soc = (
+        env.config.min_landing_soc * uav.energy_capacity
+        + env.config.emergency_energy_margin_seconds * env.config.power_reference
+    ) / uav.energy_capacity
+    assert projected_soc < env.config.emergency_trigger_soc
+    assert projected_soc > reserve_soc
+    assert env._candidate_energy_guard_reason(uav, plan, RingRole.MIDDLE) is None
+
+
+def test_final_guard_keeps_touchdown_floor() -> None:
+    env = TerminalParallelEnv(_config())
+    uav = _ring_uav(env, RingRole.INNER, soc=0.259, uid=1)
+    candidate = RepairCandidate("requested", LowLevelIntent(1.0, 0.0, 0.0))
+    lz_id = env.lz_manager.choose_rule_zone(uav, env.now)
+    _, plan, _ = env._candidate_plan(
+        uav,
+        candidate,
+        "final",
+        WorldSnapshot(env.now, env.active, env.airspace),
+        lz_id,
+    )
+
+    assert plan is not None
+    assert env._candidate_energy_guard_reason(uav, plan, "final") == "emergency_energy_guard"
 
 
 def test_healthy_final_waits_when_one_pad_is_needed_by_urgent_other() -> None:

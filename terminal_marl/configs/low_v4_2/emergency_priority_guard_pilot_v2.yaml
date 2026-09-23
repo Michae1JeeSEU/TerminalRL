@@ -1,0 +1,90 @@
+protocol: EMERGENCY_PRIORITY_GUARD_PILOT_V2
+status: PREREGISTERED_EMERGENCY_PRIORITY_GUARD_DIAGNOSTIC
+scope: paired_guard_off_on_original_k3_and_rule_phase_motion_v2
+
+freeze:
+  diagnostic_only: true
+  no_training: true
+  no_optimizer: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  deterministic: true
+  no_output_overwrite: true
+  no_rerun_no_reset_no_tuning: true
+  ppo_allowed: false
+
+checkpoint:
+  controller: original_k3
+  role: frozen_original_k3
+  sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+
+predecessor:
+  protocol: EMERGENCY_PRIORITY_GUARD_PILOT_V1
+  manifest_sha256: af111076ef98870a1cee930b3396d7555f68be7111cd72c743a9054595da2510
+
+source_bindings:
+  terminal_marl/core/config.py: 9227dea8cb82d0300db553d60a4333c8f9aaebf1e2a9d9a6446fb5d9f9dd1d38
+  terminal_marl/core/uav.py: 137571791c2053f618ecbed9afae8436da5d763f66e49925caa3a0c9ee8baec8
+  terminal_marl/envs/parallel_env.py: 30479306b8aa5ac0e4c4ef1e23e28ae19e1ad2b83d0088cfe4fb687a63c5cb44
+  terminal_marl/training/diagnose_emergency_priority_guard_pilot_v1.py: c76752b0cd417baa6475199379454b20dc2f34c0e98ae2ee5a7bed3a8ebacc8e
+
+scenario:
+  reset_mode: warm_start_rings
+  warm_start_uavs: 6
+  warm_start_steady_motion: true
+  total_requested_uavs: 12
+  fixed_arrival_schedule: [0, 0, 0, 0, 0, 0, 15, 30, 45, 60, 75, 90]
+  initial_soc_mode: uniform
+  initial_soc_min: 0.35
+  initial_soc_max: 0.55
+  horizon_seconds: 1200
+  lz_assignment_mode: nearest_available
+  release_arbitration_mode: downstream_priority
+  final_queue_capacity: 3
+  energy_model_mode: phase_motion_v2
+  phase_motion_nominal_solo_energy: 240.9
+  emergency_landing_enabled: true
+  emergency_trigger_soc: 0.40
+  emergency_energy_margin_seconds: 15
+
+low_level:
+  action_schema: low_action_schema_v4_2_hierarchical
+  observation_schema: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  runtime_proposal_shortlist_k: 3
+
+safety:
+  safe_distance_m: 80
+  protected_floor_m: 40
+  collision_distance_m: 10
+
+matrix:
+  seeds: [840501, 840502]
+  expected_records: 8
+  controllers: [rule, original_k3]
+  guard_modes: [false, true]
+  paired_same_seed_controller_guard: true
+  deterministic: true
+
+smoke:
+  seed: 840500
+  steps: 12
+  formal_marker: false
+
+hard_gates:
+  exact_request_accounting: true
+  all_records_terminal: true
+  zero_safety_events: true
+  guard_on_zero_failed_energy: true
+  zero_in_terminal_low_soc_diversion: true
+  exact_action_replay: true
+  no_teacher: true
+  no_labels: true
+  no_updates: true
+  runtime_shortlist_k3: true
+
+authorization:
+  PPO_ALLOWED: false
+  training_allowed: false
+  checkpoint_promotion_allowed: false

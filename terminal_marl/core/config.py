@@ -137,7 +137,7 @@ class SimConfig:
     emergency_landing_enabled: bool = False
     # Opt-in V4.2 execution guard that preserves free landing capacity for
     # aircraft approaching the emergency SOC threshold.  Historical
-    # configurations remain byte-for-byte compatible when this is disabled.
+    # configurations retain their runtime behavior when this is disabled.
     emergency_priority_guard_enabled: bool = False
     emergency_trigger_soc: float = 0.35
     emergency_energy_margin_seconds: float = 15.0

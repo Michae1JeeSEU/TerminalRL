@@ -8,6 +8,8 @@
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
+**最新结论（2026-09-23，emergency-priority guard V2）：** fresh `840501/840502` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全计数为零和 Teacher-free；聚合为 `33 normal + 33 emergency + 24 upstream-divert + 6 failed_energy`，guard-on/off 分别为 `4/2` 次 failed energy，hard gate 失败，`PPO_ALLOWED=false`。只读 evidence 中，guard-on 的 K3 失败目标多次触发 `emergency_energy_guard`，但最后窗口 6 个 LZ 均 free；guard-off 的一个失败目标因长时间 `safety_wait`。V2 不晋级，guard 默认关闭。当前 `_warm_start()` 直接注入 `.35–.55` SOC 且没有 admission check，其中包含低于单机名义下限 `.4106` 的状态，必须单独审视初始可达性。下一步是待实现的三段修复：计划承诺前的可达能量/时间预算与上游分流；有 abort/hover/返环证书、足够 SOC、原子切换和释放 LZ 条件时才允许安全抢占；规则/安全层通过后扩展共享 policy 的 deadline、pad 时隙和自身可达能量观测并加入非法动作 mask，区分 normal/stress、保持 `failed_energy=0` 硬门槛和 `PPO_ALLOWED=false`。详见 [Emergency-priority guard V2](evidence/v4_2/emergency_priority_guard_pilot_v2_20260923.md)。
+
 **最新结论（2026-09-23，emergency-priority guard V1）：** opt-in guard V1 默认关闭。fresh `840401/840402` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全、Teacher-free、无 labels/updates 和 K=3 检查；聚合为 `28 normal + 51 emergency + 16 upstream-divert + 1 failed_energy`，guard-on `zero_failed_energy` gate 失败，`PPO_ALLOWED=false`。rule `840401` 的 witness 显示固定 `.40` 能量投影切环硬阻断可能造成低 SOC UAV 长时间等待：guard-on 的 `o2m` release 连续 `647` 次被 `emergency_energy_guard` 拒绝并在 `t=647 s` 电量耗尽，而 guard-off 同一 UAV 在 `t=0` 获准切环并于 `t=274 s` 应急降落。Guard V1 不晋级，不宣称预留 LZ 或 PPO 能保证零失败；下一步只允许移除该硬阻断，设计带可达能量预算的应急替代路径，并以全新 seeds 验证，不能重跑 `840401/840402`。详见 [Emergency-priority guard V1](evidence/v4_2/emergency_priority_guard_pilot_v1_20260923.md)。
 
 ## 一句话状态

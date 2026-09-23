@@ -433,8 +433,13 @@ class TerminalParallelEnv:
             return None
         plan_energy = self.energy.estimate_plan_energy(plan, self.now, plan.end_time)
         projected_soc = (uav.energy_remaining - plan_energy) / uav.energy_capacity
-        if target != "final" and projected_soc <= self.config.emergency_trigger_soc + 1e-12:
-            return "emergency_energy_guard"
+        if target != "final":
+            reserve_soc = (
+                self.config.min_landing_soc * uav.energy_capacity
+                + self.config.emergency_energy_margin_seconds * self.config.power_reference
+            ) / uav.energy_capacity
+            if projected_soc < reserve_soc - 1e-12:
+                return "emergency_energy_guard"
         if target == "final" and projected_soc < self.config.min_landing_soc - 1e-12:
             return "emergency_energy_guard"
         return None
