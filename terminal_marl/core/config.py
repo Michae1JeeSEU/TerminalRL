@@ -131,6 +131,14 @@ class SimConfig:
     power_ring_transfer: float = 1.10
     power_final: float = 0.90
     power_landing: float = 1.05
+    # Opt-in phase/motion surrogate. Historical qualification keeps the
+    # original normalized power coefficients and episode semantics.
+    energy_model_mode: str = "legacy_phase"
+    emergency_landing_enabled: bool = False
+    emergency_trigger_soc: float = 0.35
+    emergency_energy_margin_seconds: float = 15.0
+    phase_motion_nominal_solo_energy: float = 240.9
+    low_level_emergency_landing_penalty: float = 8.0
     priority_alpha: float = 0.5
     priority_beta: float = 1.5
     priority_gamma: float = 1.0
@@ -215,6 +223,13 @@ class SimConfig:
     def max_descent_rate(self) -> float: return self.vehicle_profile.max_descent_rate
 
     def __post_init__(self) -> None:
+        if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
+            raise ValueError("unsupported energy_model_mode")
+        if not (self.min_landing_soc < self.emergency_trigger_soc <= 1.0):
+            raise ValueError("emergency_trigger_soc must exceed the landing SOC floor")
+        if (self.emergency_energy_margin_seconds < 0 or self.phase_motion_nominal_solo_energy <= 0
+                or self.low_level_emergency_landing_penalty < 0):
+            raise ValueError("emergency energy margin and landing penalty must be non-negative")
         if self.schema_version != "phaseA_landing_v1":
             raise ValueError("only phaseA_landing_v1 is supported")
         if self.vehicle_dynamics_schema_version != "performance_constrained_v2" or self.trajectory_schema_version != "executable_trajectory_v2":

@@ -1,6 +1,6 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-22
+> **状态日期**：2026-09-23
 >
 > **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
@@ -10,6 +10,8 @@
 
 ## 一句话状态
 
+**最新实现状态（2026-09-23，应急路线 repair）：** 应急路线已由源环有限刹停改为从真实初始位置/速度连续切向脱环的 cubic 路径；OUTER/MIDDLE 进入 `120 m` staging，INNER 保持当前高度，再经 LZ 上方垂直下降，仍使用原 SafetyFilter 和 `80/40/10 m` 契约。第一 repair 协议（`e99cb...`）在 fresh `840101/840102` 上为 `7 normal + 14 emergency + 2 upstream-divert + 1 failed_energy`，安全事件为0，因此 FAIL；同 seed forensic replay 已使目标 UAV 在 `t=118 s` 应急提交并落地。route-repair 协议（`8c13dc...`）在 fresh `840201/840202` 上为 `9 normal + 11 emergency + 4 upstream-divert`，`failed_energy=0` 且安全事件为0，但结果仍是 rule-only 诊断证据，不构成 qualification 或真实 EH216-S 标定；当前 phase_motion_v2 未显式设置初始 SOC 范围时 default uniform floor 为 `.4106`，显式 `.35–.55` 仍保留为 stress；`PPO_ALLOWED=false`。详见[应急迫降与分阶段能耗 V2](evidence/v4_2/emergency_energy_v2_20260923.md)。
+
 **最新结论（2026-09-22，P3 当前 MDP formal baseline）：** high-SOC qualification 的 6 条记录已完成落盘，但 rule seed `835001` 与 original K3 seed `835003` 各有 2 条 `diverted_low_soc`，因此 all-complete gate 失败；双方 controller 汇总均为 `70/72` 完成，安全、exact replay、Teacher-free、labels/updates 与 runtime shortlist gates 均通过。独立 low-SOC stress 的 6 条记录也已完成：rule 为 `71/72`、1 条低 SOC 分流，original K3 为 `62/72`、10 条低 SOC 分流；其完整性、安全与 replay gates 通过，完成率和分流按协议仅作报告。完整结果见 [P3 high-SOC 正式结果](evidence/v4_2/p3_current_mdp_baseline_result_20260922.md) 与 [P3 low-SOC stress 正式结果](evidence/v4_2/p3_current_mdp_low_soc_stress_result_20260922.md)。不授权 P3 PPO 或 checkpoint promotion；`PPO_ALLOWED=false`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。
 
 **此前诊断结论（2026-09-22，高 SOC paired pilot）：** dense24 pilot seed `831002` 中，rule 与 original K3 均完成 `24/24`，diversion 与安全计数均为零，action tape exact replay；完成时间为 `686/740 s`，平均等待为 `99.5899/114.6562 s`。该回合仅作诊断，不是 qualification。它与后续 formal high-SOC seeds `835001–835003`、low-SOC stress seeds `835101–835103` 分开，不能替代 formal gate。
@@ -18,7 +20,7 @@
 
 **最新结论（2026-09-22，P3 当前 MDP baseline evaluator）：** 新增 `terminal_marl/training/evaluate_v4_2_p3_current_mdp_baseline_v1.py` 与 `tests/test_p3_current_mdp_baseline_v1.py`；10 个定向测试和 compile 检查均通过。使用真实 original K3 SHA `4b8be...b8c8c` 的 high-SOC diagnostic seed `835000` 做 CLI 20 步 smoke，得到 rule/K3 两条 records；safety、exact replay、Teacher-free、labels/updates 与 K=3 shortlist gates 通过，`24` 架未全部完成属于 smoke 的预期，formal seeds 消耗为 `0`。正式 high-SOC qualification 与 low-SOC stress 均已按协议完成并逐 episode 落盘：high-SOC all-complete gate 失败，low-SOC `PASS=true` 仅表示其 integrity gates 通过，完成率和分流是报告结果。SSH 地址已修复，源码、协议和 checkpoint 哈希已核对一致，服务器 10 个定向测试通过。详见 [P3 当前 MDP 基线协议](evidence/v4_2/p3_current_mdp_baseline_protocol_20260922.md)。
 
-**最新结论（2026-09-22，SOC 下限核验）：** 在当前 `80/40/10 m`、P3R 资源语义和 rule controller 下，完整单机 `gate(4) x mission(4)` flow-from-empty 矩阵 16/16 完成，touchdown 最大能量消耗为 `240.9`；按 `SOC=.25` reserve 与 `1500` 容量计算，单机名义最低初始 SOC 为 `.4106`。因此当前随机 `.55--.90` 下限高出 `.1394` SOC（`209.1` 个能量单位）；固定 `.55` replay 仍 16/16 完成并保持请求绑定 exact。默认 `ArrivalProcess` fallback 最小值 `.35` 低于该下限，未来协议必须显式设置下限。该证据只覆盖无拥堵单机名义流程，不保证密集等待/交通可达性；本地命令退出码 `0`，不作为服务器 qualification。该单机证据本身不授权 PPO；当前动作以本页最新 formal baseline 与当前允许的下一步为准；`PPO_ALLOWED=false`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。详见 [P3 单机 SOC 下限核验](evidence/v4_2/p3_solo_soc_floor_20260922.md)。
+**最新结论（2026-09-22，SOC 下限核验）：** 在当前 `80/40/10 m`、P3R 资源语义和 rule controller 下，完整单机 `gate(4) x mission(4)` flow-from-empty 矩阵 16/16 完成，touchdown 最大能量消耗为 `240.9`；按 `SOC=.25` reserve 与 `1500` 容量计算，单机名义最低初始 SOC 为 `.4106`。因此当前随机 `.55--.90` 下限高出 `.1394` SOC（`209.1` 个能量单位）；固定 `.55` replay 仍 16/16 完成并保持请求绑定 exact。历史 legacy_phase 的 `ArrivalProcess` 默认 fallback 下限为 `.35`；现行 phase_motion_v2 在 uniform 且未显式设置 `initial_soc_min/max` 时已改为 `.4106`，显式 `.35–.55` 仍仅用于低 SOC stress。该证据只覆盖无拥堵单机名义流程，不保证密集等待/交通可达性；本地命令退出码 `0`，不作为服务器 qualification。该单机证据本身不授权 PPO；当前动作以本页最新 formal baseline 与当前允许的下一步为准；`PPO_ALLOWED=false`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。详见 [P3 单机 SOC 下限核验](evidence/v4_2/p3_solo_soc_floor_20260922.md)。
 
 **最新结论（2026-09-22，覆盖下列历史时间线的下一步表述）：** 已实现目标方向的速度可行性修正；运行时首选 80 m，必要时在 swept + recursive 证明满足 40 m 保护下限的条件下由 shield 接管并继续执行，接管进入 reward 惩罚；collision event 门槛改为 `<10 m`。EH216-S 归一化能量参考改为 1500 s-equivalent，touchdown 要求 SOC≥.25。fresh dense24 seeds `830102/830103` × 间隔 `60/80/100 m` × rule/original K3 的 12/12 诊断回合中，288 请求、269 完成、19 低 SOC 分流；0 安全错误、0 `<40 m`、0 NMAC/collision、生成时的服务器同环境 12/12 exact replay（不宣称跨平台字节级一致）。80 m 的原始 K3 仅 41/48 完成，rule 47/48；本结果是诊断而非 qualification，不能启动旧 V4 PPO。P1/P2 旧结果不重写，但新 MDP 下需先 fresh 资格/效果复评，不能凭旧 gate 晋级；P3 需重新冻结能源可达的 dense24 资格场景与低 SOC 压力场景，再决定训练。详见 [P3 安全、能量与间距敏感性诊断](evidence/v4_2/p3_safety_energy_recalibration_20260922.md)。
 
@@ -388,7 +390,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-**2026-09-22 新顺序（覆盖下列历史第 5 项中的旧 V4 继续建议）：** (1) 将 high-SOC all-complete gate 失败与 low-SOC stress `COMPLETE/PASS=true` 作为 immutable baseline evidence；(2) 对逐 UAV SOC、低 SOC 分流 reason/时刻，以及 queue/transition bottleneck 做诊断 instrumentation；(3) 在诊断后另行预注册 fresh repair protocol、seeds 与 gates，安全阈值保持不变；(4) 在 high-SOC rule 与 original K3 均重新满足可达/安全门槛前，不设计或启动任何新的 P3 PPO。P3 high-SOC 与 low-SOC formal seeds 均已暴露，不得 formal 重用、reset 或用于调参；P1/P2 硬门槛通过不改变 `PPO_ALLOWED=false`。`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
+**2026-09-23 当前顺序：** 可预注册并执行 frozen original K3 vs rule 的 shared-policy SOC-priority paired diagnostic；必须使用 fresh seeds、保持同一能量/应急语义，并报告 normal、emergency、upstream-divert、failed、全请求延误、安全与 replay。该诊断通过且独立课程协议冻结前不启动 PPO；`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 
 1. 保留 support、learnability、repair、Qualification V1/V2、effectiveness、exact-proposal 与 proposal-set 全链条为 immutable evidence；已消费环境seeds不得 rerun/reset，也不得用于训练、阈值或模型调优。
 2. 暂停 proposal repair、learned proposal head/loss 与 fixed proposal index 调整；V1/V2/V3/V4 及 fixed-neutral V1/V2 seeds、rows、metrics 均为 immutable evidence，不得重跑或作为新阈值调优集。

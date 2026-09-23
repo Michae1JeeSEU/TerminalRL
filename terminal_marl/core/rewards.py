@@ -71,6 +71,7 @@ class LowLevelReward:
     teacher: float = 0.0
     shield: float = 0.0
     urgency: float = 0.0
+    emergency: float = 0.0
 
     @property
     def total(self):
@@ -83,6 +84,7 @@ class LowLevelReward:
             + self.teacher
             + self.shield
             + self.urgency
+            + self.emergency
         )
 
     def as_dict(self):
@@ -95,5 +97,6 @@ class LowLevelReward:
             "teacher": self.teacher,
             "shield": self.shield,
             "urgency": self.urgency,
+            "emergency": self.emergency,
             "total": self.total,
         }

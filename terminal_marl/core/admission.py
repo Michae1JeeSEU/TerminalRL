@@ -12,7 +12,13 @@ class EntryGate:
     active_inbound:list[int]=field(default_factory=list); last_admission_time:float=-math.inf
 class AdmissionDecision(str,Enum): ADMIT="admit"; WAIT="wait"; DIVERT="divert"
 @dataclass(frozen=True)
-class AdmissionRecord: request:ArrivalRequest; decision:AdmissionDecision; reason_code:str
+class AdmissionRecord:
+    request: ArrivalRequest
+    decision: AdmissionDecision
+    reason_code: str
+    energy_remaining: float | None = None
+    energy_consumed: float | None = None
+    soc: float | None = None
 
 class ExternalQueue:
     def __init__(self): self.items:list[QueuedArrivalState]=[]
@@ -38,14 +44,17 @@ class AdmissionManager:
         records=[]; admitted=[]
         for q in list(self.queue.ordered(priority_engine,now)):
             r=q.request
-            if q.soc < self.config.soc_reserve or q.energy_remaining < energy_model.estimate_to_complete(q):
-                q.diverted_outcome=TerminalOutcome.DIVERTED_LOW_SOC; q.diversion_reason="insufficient_soc"; self.queue.items.remove(q); records.append(AdmissionRecord(r,AdmissionDecision.DIVERT,"low_soc")); continue
+            def record(decision, reason):
+                return AdmissionRecord(r, decision, reason, float(q.energy_remaining),
+                                       float(q.energy_consumed), float(q.soc))
+            if q.soc < self.config.soc_reserve or q.energy_remaining < energy_model.admission_required_energy(q):
+                q.diverted_outcome=TerminalOutcome.DIVERTED_LOW_SOC; q.diversion_reason="insufficient_soc"; self.queue.items.remove(q); records.append(record(AdmissionDecision.DIVERT,"low_soc")); continue
             if self.config.max_external_wait_seconds is not None and q.external_wait_time>=self.config.max_external_wait_seconds:
-                q.diverted_outcome=TerminalOutcome.DIVERTED_CAPACITY; self.queue.items.remove(q); records.append(AdmissionRecord(r,AdmissionDecision.DIVERT,"external_wait_limit")); continue
+                q.diverted_outcome=TerminalOutcome.DIVERTED_CAPACITY; self.queue.items.remove(q); records.append(record(AdmissionDecision.DIVERT,"external_wait_limit")); continue
             gate=self.gates[r.gate_id]
             outer=airspace.capacity(RingRole.OUTER)
-            if len(active_uavs)>=self.config.max_active_uavs: records.append(AdmissionRecord(r,AdmissionDecision.WAIT,"active_cap")); continue
-            if now-gate.last_admission_time<self.config.gate_min_time_gap_seconds: records.append(AdmissionRecord(r,AdmissionDecision.WAIT,"gate_headway")); continue
-            if airspace.occupancy(RingRole.OUTER)>=outer: records.append(AdmissionRecord(r,AdmissionDecision.WAIT,"outer_capacity")); continue
-            self.queue.items.remove(q); gate.last_admission_time=now; admitted.append((q,gate)); records.append(AdmissionRecord(r,AdmissionDecision.ADMIT,"ok"))
+            if len(active_uavs)>=self.config.max_active_uavs: records.append(record(AdmissionDecision.WAIT,"active_cap")); continue
+            if now-gate.last_admission_time<self.config.gate_min_time_gap_seconds: records.append(record(AdmissionDecision.WAIT,"gate_headway")); continue
+            if airspace.occupancy(RingRole.OUTER)>=outer: records.append(record(AdmissionDecision.WAIT,"outer_capacity")); continue
+            self.queue.items.remove(q); gate.last_admission_time=now; admitted.append((q,gate)); records.append(record(AdmissionDecision.ADMIT,"ok"))
         return admitted,records

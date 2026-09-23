@@ -1,0 +1,63 @@
+protocol: EMERGENCY_ENERGY_V2_ROUTE_REPAIR_PILOT
+status: PREREGISTERED_ROUTE_REPAIR_DIAGNOSTIC
+scope: fixed_geometry_rule_only_continuous_tangential_departure_admission_reserve_explicit_energy_outcome
+
+freeze:
+  diagnostic_only: true
+  no_training: true
+  no_optimizer: true
+  no_teacher: true
+  no_checkpoint: true
+  no_rerun_no_reset_no_tuning: true
+  ppo_allowed: false
+
+repair:
+  predecessor_protocols: [EMERGENCY_ENERGY_V2_PILOT, EMERGENCY_ENERGY_V2_REPAIR_PILOT]
+  predecessor_seeds_consumed: [840001, 840002, 840101, 840102]
+  phase_motion_nominal_solo_energy: 240.9
+  touchdown_reserve_soc: 0.25
+  admission_soc_floor_at_capacity_1500: 0.4106
+  active_low_soc_outcome_must_be_explicit: true
+  continuous_tangential_emergency_departure: true
+
+scenario:
+  reset_mode: warm_start_rings
+  warm_start_uavs: 6
+  warm_start_steady_motion: true
+  total_requested_uavs: 12
+  fixed_arrival_schedule: [0, 0, 0, 0, 0, 0, 15, 30, 45, 60, 75, 90]
+  initial_soc_mode: uniform
+  initial_soc_min: 0.35
+  initial_soc_max: 0.55
+  horizon_seconds: 1200
+  lz_assignment_mode: nearest_available
+  release_arbitration_mode: downstream_priority
+  final_queue_capacity: 3
+  energy_model_mode: phase_motion_v2
+  emergency_landing_enabled: true
+  emergency_trigger_soc_values: [0.40]
+  emergency_energy_margin_seconds: 15
+
+safety:
+  safe_distance_m: 80
+  protected_floor_m: 40
+  collision_distance_m: 10
+
+matrix:
+  seeds: [840201, 840202]
+  expected_records: 2
+
+hard_gates:
+  exact_request_accounting: true
+  all_records_terminal: true
+  zero_hard_separation: true
+  zero_nmac: true
+  zero_collision: true
+  zero_failed_energy: true
+  zero_in_terminal_low_soc_diversion: true
+  at_least_one_emergency_landed: true
+
+authorization:
+  PPO_ALLOWED: false
+  training_allowed: false
+  checkpoint_promotion_allowed: false

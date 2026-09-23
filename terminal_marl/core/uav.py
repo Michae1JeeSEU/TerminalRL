@@ -36,6 +36,7 @@ class FlightPhase(str, Enum):
     RING_INNER = "ring_inner"
     FINAL = "final"
     LANDING = "landing"
+    EMERGENCY_LANDING = "emergency_landing"
     SERVICE = "service"
     COMPLETED = "completed"
     DIVERTED = "diverted"
@@ -46,6 +47,7 @@ class TerminalOutcome(str, Enum):
     COMPLETED = "completed"
     DIVERTED_LOW_SOC = "diverted_low_soc"
     DIVERTED_CAPACITY = "diverted_capacity"
+    EMERGENCY_LANDED = "emergency_landed"
     FAILED_COLLISION = "failed_collision"
     FAILED_ENERGY = "failed_energy"
     INVALID = "invalid"
@@ -113,6 +115,7 @@ class UAVState:
     path_length: float = 0.0
     terminal_outcome: TerminalOutcome | None = None
     terminal_reason: str | None = None
+    emergency_landing: bool = False
     committed_plan: Any | None = None
     safety_retry_after: float = 0.0
     acceleration: np.ndarray = field(default_factory=lambda: np.zeros(3))

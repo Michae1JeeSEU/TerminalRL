@@ -107,7 +107,7 @@ vehicle:
   max_descent_rate: 6.0
 
 energy:
-  model: phase_nominal
+  model: legacy_phase  # new curriculum explicitly selects phase_motion_v2
   capacity_seconds_equivalent: 1500.0
   power_reference: 1.0
   phase_multipliers:
@@ -121,6 +121,11 @@ energy:
   soc_reserve: 0.25
   soc_emergency: 0.20
   min_landing_soc: 0.25
+  emergency_landing_enabled: false
+  emergency_trigger_soc: 0.35
+  emergency_energy_margin_seconds: 15.0
+  phase_motion_nominal_solo_energy: 240.9
+  emergency_landing_penalty: 8.0
 
 priority:
   base_values: [1, 3, 5]
@@ -346,6 +351,13 @@ class EnergyModel:
 
 当前 canonical Phase A 规定 external queue 表示 UAV 已在上游空中等待，因此按 `external_wait` power 消耗能量。未来如需地面 dispatch queue，另设状态，不复用 external queue。
 
+启用 `emergency_landing` 时，环上低 SOC UAV 的应急计划必须从真实当前位置和速度连续切向
+脱环：用 cubic Bézier 进入内部 staging point，OUTER/MIDDLE staging 高度为 `120 m`，INNER
+保持当前高度；parameterizer 绑定真实 initial velocity，并将脱环段的 horizontal end speed
+设为 `0`，再连接现有垂直下降 leg 到已预约 LZ。该计划仍需经过原 SafetyFilter，`80/40/10 m`
+安全契约不因 SOC priority 改变。
+`phase_motion_v2` 的 uniform 默认采样仅在未显式设置 `initial_soc_min/max` 时使用 `.4106` 下限，显式 `.35–.55` 仍表示低 SOC stress。
+
 ---
 
 ## 11. LandingZoneManager API
@@ -510,6 +522,10 @@ class TrajectoryGenerator:
         self, uav, lz, final_reservation, dt
     ) -> TrajectoryPlan: ...
 
+    def emergency_landing(
+        self, uav, lz, airspace, now
+    ) -> TrajectoryPlan: ...
+
     def validate_kinematics(self, plan) -> list[str]: ...
 ```
 
@@ -532,6 +548,10 @@ class SafetyFilter:
 ```
 
 `filter_plan` 至少在未来 horizon 内离散采样 pairwise distance。reject 后保持 holding 或继续当前 committed plan，不临时注入未计划的 heading offset。
+
+`emergency_landing` 计划与普通计划使用相同的 `filter_plan` 和运行时 swept + recursive 证明；
+安全拒绝继续保持/重试，不能通过降低 `80 m` desired separation 或 `40 m` protected floor
+来覆盖，`<10 m` 仍只作为 collision event 研究代理阈值。
 
 ---
 
@@ -557,21 +577,22 @@ Geometry transition 中：
 3. admission decisions
 4. update geometry transition actual state
 5. update LZ service timers
-6. build pre-action world snapshot
-7. map per-agent raw actions → intents
-8. apply action masks / intent safety
-9. schedule resources and merge reservations
-10. generate candidate trajectories
-11. trajectory safety check
-12. commit approved plans
-13. execute one dt along committed plans / ring hold
-14. consume energy
-15. detect actual separation/collision
-16. lifecycle transitions
-17. touchdown → LZ occupied
-18. service completions
-19. reward computation
-20. metrics / ledger / observations
+6. for eligible low-SOC ring holders, build/reserve/certify fixed emergency trajectory
+7. build pre-action world snapshot
+8. map per-agent raw actions → intents
+9. apply action masks / intent safety
+10. schedule resources and merge reservations
+11. generate candidate trajectories
+12. trajectory safety check
+13. commit approved plans
+14. execute one dt along committed plans / ring hold
+15. consume energy
+16. detect actual separation/collision
+17. lifecycle transitions
+18. touchdown → LZ occupied
+19. service completions
+20. reward computation
+21. metrics / ledger / observations
 ```
 
 顺序必须有 integration test，防止 reservation 与 movement 同步错误。

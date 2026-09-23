@@ -9,6 +9,7 @@ class ArrivalProcess:
     def __init__(self, config: SimConfig, seed: int | None = None): self.config=config; self.reset(seed)
     def reset(self, seed: int | None = None) -> None:
         self.rng=np.random.default_rng(seed); self.generated=0; self.index=0; self.wave=0
+        if self.config.initial_soc_mode == "uniform": self._uniform_soc_bounds()
         self._schedule=tuple(sorted(self.config.fixed_arrival_schedule))
         if self._schedule:
             self.next_time = self._schedule[0]
@@ -26,6 +27,23 @@ class ArrivalProcess:
         if self.config.arrival_model=="bursty_wave":
             gap=(.25 if self.wave%4<3 else 3.25)/rate; self.wave+=1; return now+gap
         return now+1/rate
+    def _uniform_soc_bounds(self) -> tuple[float, float]:
+        """Return the configured uniform SOC interval without clamping it."""
+        if self.config.initial_soc_min is not None or self.config.initial_soc_max is not None:
+            return float(self.config.initial_soc_min), float(self.config.initial_soc_max)
+        lower = max(float(self.config.soc_reserve), float(self.config.soc_warning))
+        if self.config.energy_model_mode == "phase_motion_v2":
+            lower = max(
+                lower,
+                float(self.config.min_landing_soc)
+                + float(self.config.phase_motion_nominal_solo_energy) / float(self.config.energy_capacity),
+            )
+            if lower > 1.0:
+                raise ValueError(
+                    "phase_motion_v2 default initial SOC lower bound exceeds 1.0: "
+                    f"{lower:.6f}"
+                )
+        return lower, 1.0
     def _request(self,time:float)->ArrivalRequest:
         n=self.generated; mission=MissionType(self.rng.choice([m.value for m in MissionType],p=self.config.mission_probabilities))
         base = (int(self.config.initial_priority) if self.config.priority_mode == "fixed"
@@ -33,8 +51,7 @@ class ArrivalProcess:
         if mission is MissionType.EMERGENCY: base=5
         if self.config.initial_soc_mode=="fixed": soc=float(self.config.initial_soc)
         else:
-            lower = self.config.initial_soc_min if self.config.initial_soc_min is not None else max(self.config.soc_reserve, self.config.soc_warning)
-            upper = self.config.initial_soc_max if self.config.initial_soc_max is not None else 1.0
+            lower, upper = self._uniform_soc_bounds()
             soc=float(self.rng.uniform(lower, upper))
         self.generated+=1
         return ArrivalRequest(n,time,int(self.rng.choice(self.config.gate_count, p=self.config.gate_probabilities)),mission,base,self.config.energy_capacity,soc)

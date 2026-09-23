@@ -382,6 +382,73 @@ class TrajectoryGenerator:
         return TrajectoryPlan(str(uuid.uuid4()), uav.uid, "final_approach", (*prefix, *final_points), now if prefix else start,
                               final_points[-1].t, (reservation.reservation_id,), details)
 
+    def emergency_landing(self, uav, lz, airspace, now: float) -> TrajectoryPlan:
+        """Fixed over-ring exit, inward corridor and vertical pad descent.
+
+        The route is a candidate only. The caller must reserve its pad and
+        certify the whole timed trajectory with SafetyFilter before execution.
+        """
+        if uav.ring_role is None or uav.committed_plan is not None:
+            raise ValueError("emergency corridor requires an uncommitted ring holder")
+        p0 = np.asarray(uav.position, dtype=float)
+        initial_velocity = np.asarray(uav.velocity, dtype=float)
+        high = min(self.config.height_max, self.dynamics.profile.max_operating_altitude_agl_m)
+        cruise_height = high if uav.ring_role is not RingRole.INNER else float(p0[2])
+        staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
+
+        # Carry the holder's actual tangential velocity into one smooth,
+        # inward departure.  Braking to zero while circling on the source ring
+        # leaves a stationary holder in the safety prediction tube and can
+        # make every subsequent emergency candidate unreachable.  The first
+        # Bezier control point is tangent to the source ring; the second one
+        # approaches the staging point horizontally so its terminal tangent is
+        # horizontal and the vertical pad leg can start from zero velocity.
+        source_tangent = self._unit_or(np.asarray((-math.sin(
+            uav.ring_progress if uav.ring_progress is not None else math.atan2(p0[1], p0[0])),
+            math.cos(uav.ring_progress if uav.ring_progress is not None else math.atan2(p0[1], p0[0])),
+            0.0)), initial_velocity)
+        displacement = staging - p0
+        displacement_xy = np.asarray((displacement[0], displacement[1], 0.0), dtype=float)
+        approach = self._unit_or(source_tangent, displacement_xy)
+        distance = float(np.linalg.norm(displacement))
+        tangent_control = min(.70 * distance, 240.0)
+        approach_control = min(.25 * distance, 120.0)
+        p1 = p0 + tangent_control * source_tangent
+        p2 = staging - approach_control * approach
+        p2[2] = staging[2]
+        departure_path = GeometricPath.cubic_bezier(
+            p0, p1, p2, staging, samples=7
+        )
+        departure = self.parameterizer.parameterize(
+            departure_path,
+            start_time=now,
+            initial_velocity=initial_velocity,
+            target_horizontal_speed=10.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
+        )
+
+        # Keep the existing final vertical leg, now starting at the staging
+        # point reached by the continuous departure curve.
+        pad = np.asarray(lz.position, dtype=float)
+        points = list(departure[:-1])
+        leg_path = GeometricPath.line(staging, pad, samples=17)
+        leg = self.parameterizer.parameterize(
+            leg_path,
+            start_time=departure[-1].t,
+            initial_velocity=departure[-1].velocity,
+            target_horizontal_speed=5.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
+        )
+        points.extend(leg)
+        moment = leg[-1].t
+        return TrajectoryPlan(str(uuid.uuid4()), uav.uid, "emergency_landing", tuple(points), now, moment,
+                              metadata={"target_phase": "emergency_landing", "lz_id": lz.lz_id,
+                                        "corridor_height": cruise_height,
+                                        "source_ring_role": uav.ring_role.value,
+                                        "staging_point": staging.tolist(),
+                                        "vehicle_profile_id": self.config.vehicle_profile_id,
+                                        "vehicle_profile_version": self.config.vehicle_profile.profile_version})
+
     def validate_kinematics(self, plan: TrajectoryPlan) -> list[str]:
         errors = self.dynamics.validate_plan(plan.points)
         if plan.metadata.get("dynamic_unreachable_merge_time"):

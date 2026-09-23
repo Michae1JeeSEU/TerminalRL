@@ -319,7 +319,10 @@ EH216-S 主仿真 profile 使用 `energy_capacity = 1500` s-equivalent，
 E_{t+\Delta t}=E_t-P_{phase}(v,\dot z)\Delta t
 \]
 
-没有机型标定数据前，使用 nominal power model：
+没有机型标定数据前，保留两种显式模式：`legacy_phase` 用于历史协议精确回放；
+`phase_motion_v2` 用于新的能量/应急课程。后者按已提交轨迹的分段时长与速度方向积分，
+无 committed plan 的环上等待仍按 phase power 计量。两者均为 surrogate，不是 EH216-S
+实测功率曲线。
 
 \[
 P_{phase}=k_{phase}P_{ref}
@@ -338,6 +341,17 @@ P_{phase}=k_{phase}P_{ref}
 
 这些倍率必须可配置，并在论文中称为 normalized/nominal energy model，除非后续得到实际功耗标定。
 
+`phase_motion_v2` 使用文献中的相对锚点：巡航 `36 kW`、悬停 `42 kW`、浅下降每增加一秒
+延误的边际能耗 `28 kW`，再归一化到巡航功率。`28 kW` 不得写成整段下降的实测平均功率；
+垂直下降按悬停类功率处理，不能套用固定翼/倾转翼文献的“下降能耗为零”假设。绝对数值在
+获得 EH216-S 遥测标定前不得用于真实续航保证。
+
+`phase_motion_v2` 的 admission 下限按
+`240.9 nominal solo completion energy + 0.25 * energy_capacity touchdown reserve`
+计算；在 `energy_capacity=1500` 时对应 `.4106` SOC。`240.9` 来自当前无拥堵单机
+4-gate × 4-mission 矩阵的最大消耗，只是当前构型的可达性基准。
+仅当 uniform 场景未显式设置 `initial_soc_min/max` 时使用该默认下限；显式 `.35–.55` 仍保留为低 SOC stress 区间。
+
 ### 6.3 SOC thresholds
 
 当前 `research_evtol/eh216s_research_v1` 默认：
@@ -347,20 +361,35 @@ SOC_warning = 0.35
 SOC_reserve = 0.25
 SOC_emergency = 0.20
 min_landing_soc = 0.25
+emergency_trigger_soc = 0.35  # 仅在 emergency_landing_enabled=true 时生效
 ```
 
 语义：
 
 - `< warning`：进入 observation 与指标；
 - `< reserve`：若尚未 admission，优先 diversion，不再正常放入 terminal；
-- 接近 reserve 且已在 terminal：通过 SOC urgency 提高调度优先性；
-- 已在 terminal 且成功 touchdown 前低于 `min_landing_soc`：作为低电量未完成退出；
+- 开启应急课程后，`SOC <= emergency_trigger_soc` 的环上 UAV 先尝试固定应急航迹；提交前必须同时满足
+  可用 LZ 原子预约、预计航迹能耗 + touchdown reserve + margin，以及 SafetyFilter 全航迹认证；
+- 共享策略仍以每架 UAV 自身 SOC 和 dynamic priority 为输入。同一组 actor 参数可以产生不同意图；
+  开启应急课程时，SOC urgency 从 trigger 到 reserve 连续增大，并用于同一步安全候选的仲裁优先级；
+- 应急航迹无法立即认证时继续等待并重试，不终止整个 episode；能量耗尽才记为 `FAILED_ENERGY`；
+- 应急 touchdown 后正常占用 LZ 并完成地面服务，终态为 `EMERGENCY_LANDED`，且收到独立应急惩罚；
+- 未开启应急课程时，已在 terminal 且成功 touchdown 前低于 `min_landing_soc`，作为低电量
+  未完成退出；开启应急课程时不得在环上静默移除，必须继续形成显式
+  `EMERGENCY_LANDED` 或 `FAILED_ENERGY` 结局；
 - `< emergency`：仅作为历史或扩展配置的告警区间；当前主仿真在达到该值前已按
   `min_landing_soc` 退出，不能据此声称仍可正常申请 final clearance；
 - touchdown 时 `SOC >= min_landing_soc` 才计为成功完成；
 - 在达到成功 touchdown 前低于 profile 的 `min_landing_soc`：不计为完成，按
   `DIVERTED_LOW_SOC` 或相应能量失败语义记录；
 - `SOC <= 0` 且未完成：`FAILED_ENERGY`。
+
+应急路线必须从源环 UAV 的真实当前位置和速度连续切向脱环，使用 cubic Bézier 进入内部
+staging point；OUTER/MIDDLE 进入 `120 m` staging，INNER 保持当前高度，随后沿现有垂直 leg
+到达 LZ 上方并下降。parameterizer 必须绑定真实 initial velocity，并以水平速度为零结束脱环段。
+该路线仍由同一 authoritative trajectory generator 生成并交原 SafetyFilter；`80 m` desired
+separation、`40 m` protected floor/NMAC 和 `<10 m` collision event 契约保持不变，SOC priority
+不能覆盖安全拒绝。
 
 历史实验中出现的 `energy_capacity = 10000` 或旧 SOC 门槛只属于历史协议，
 不得回写为当前 EH216-S 规范，也不得改写其已归档结果。
@@ -377,11 +406,14 @@ P_i(t)=P_i^{base}
 \left[1+\gamma U_i(t)^\delta\right]
 \]
 
-其中：
+开启应急课程时：
 
 \[
-U_i(t)=\max\left(0,\frac{SOC_{reserve}-SOC_i(t)}{SOC_{reserve}}\right)
+U_i(t)=\operatorname{clip}\left(\frac{SOC_{trigger}-SOC_i(t)}{SOC_{trigger}-SOC_{reserve}},0,1\right)
 \]
+
+`emergency_landing_enabled=false` 的历史协议继续使用原式
+`max(0,(SOC_reserve-SOC)/SOC_reserve)`，以保持旧证据可回放。
 
 默认：
 
@@ -728,7 +760,15 @@ future hardware adapter
 
 要求：起终点 C0 continuous、水平切向至少 C1 continuous、垂直 profile 平滑、不超过速度/加速度/爬升下降/转弯约束，并到达 target merge reservation。
 
-### 14.4 Final/landing
+### 14.4 Emergency landing
+
+固定应急航迹的源环脱离段必须满足真实当前位置/速度连续，并沿当前环切向方向通过 cubic
+Bézier 进入内部 staging point。OUTER/MIDDLE staging 高度为 `120 m`，INNER 保持当前高度；
+parameterizer 绑定真实 initial velocity，脱环段的 horizontal end speed 为 `0`，随后连接
+现有垂直下降 leg 到已预约 LZ。计划必须继续携带 `emergency_landing` mode 及目标 phase/LZ/
+corridor/profile metadata，并通过同一 SafetyFilter。
+
+### 14.5 Final/landing
 
 Final trajectory 至少包含：
 

@@ -97,6 +97,7 @@ class TerminalParallelEnv:
         self.safety = SafetyFilter(self.config)
         self.events: list[tuple[str, int, float]] = []
         self.conflict_events: list[dict] = []
+        self.energy_outcomes: list[dict] = []
         self.separation_monitor = RuntimeSeparationMonitor(self.config)
         self.runtime_traffic = PredictiveSafetyShield(self.config)
         self.runtime_trace: deque[dict] = deque(maxlen=60)
@@ -123,6 +124,10 @@ class TerminalParallelEnv:
             "runtime_shortlist_candidates_checked": 0,
             "runtime_shortlist_fallback_selected": 0,
             "runtime_shortlist_exhausted": 0,
+            "emergency_attempts": 0, "emergency_committed": 0,
+            "emergency_blocked_safety": 0, "emergency_blocked_energy": 0,
+            "emergency_blocked_lz": 0, "emergency_blocked_dynamics": 0,
+            "emergency_touchdowns": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
@@ -238,6 +243,11 @@ class TerminalParallelEnv:
         return checked_result
 
     def _resolve(self, uav: UAVState, outcome: TerminalOutcome, reason: str) -> None:
+        self.energy_outcomes.append({"arrival_id": uav.arrival_id, "uid": uav.uid,
+                                     "outcome": outcome.value, "reason": reason,
+                                     "soc": uav.soc, "energy_remaining": uav.energy_remaining,
+                                     "energy_consumed": uav.energy_consumed,
+                                     "time": self.now, "phase": uav.phase.value})
         if uav.assigned_lz is not None:
             self.lz_manager.release(uav.assigned_lz, uav.uid, reason)
         uav.terminal_outcome = outcome
@@ -245,6 +255,55 @@ class TerminalParallelEnv:
         self.ledger.resolve(uav.arrival_id, outcome)
         self.resolution_times[uav.arrival_id] = self.now
         self.active.pop(uav.uid, None)
+
+    def _try_emergency_landing(self, uav: UAVState) -> bool:
+        if (not self.config.emergency_landing_enabled or uav.soc > self.config.emergency_trigger_soc
+                or uav.ring_role is None or uav.committed_plan is not None
+                or self.now < uav.safety_retry_after):
+            return False
+        self.telemetry["emergency_attempts"] += 1
+        zones = self.lz_manager.rank_available_zones(uav, self.now)
+        if not zones:
+            self.telemetry["emergency_blocked_lz"] += 1
+            uav.safety_retry_after = self.now + 5.0
+            return False
+        for lz_id in zones:
+            zone = self.lz_manager.zones[lz_id]
+            try:
+                plan = self.generator.emergency_landing(uav, zone, self.airspace, self.now)
+            except (ValueError, RuntimeError):
+                self.telemetry["emergency_blocked_dynamics"] += 1
+                continue
+            required = self.energy.emergency_required_energy(uav, plan)
+            if uav.energy_remaining + 1e-9 < required:
+                self.telemetry["emergency_blocked_energy"] += 1
+                continue
+            reservation = self.lz_manager.reserve(lz_id, uav.uid, self.now)
+            if not reservation.approved:
+                continue
+            if self._commit(uav, plan):
+                pending = self.future_release_reservations.pop(uav.uid, None)
+                if pending is not None:
+                    self.scheduler.cancel(pending["reservation_id"], "emergency_landing")
+                uav.assigned_lz = lz_id
+                uav.emergency_landing = True
+                transition(uav, FlightPhase.EMERGENCY_LANDING, self.now)
+                uav.ring_role = None
+                self.telemetry["emergency_committed"] += 1
+                self.events.append(("emergency_departure", uav.uid, self.now))
+                return True
+            self.lz_manager.release(lz_id, uav.uid, "emergency_safety_reject")
+            self.telemetry["emergency_blocked_safety"] += 1
+        uav.safety_retry_after = self.now + 5.0
+        return False
+
+    def _emergency_processing_order(self) -> list[UAVState]:
+        candidates = list(self.active.values())
+        for uav in candidates:
+            self.priority.update(uav, self.now)
+        return sorted(candidates, key=lambda item: (
+            float(item.soc), -float(item.dynamic_priority), float(item.request_time), int(item.uid),
+        ))
 
     def _record_final_occupancy(self) -> None:
         concurrent = sum(uav.phase is FlightPhase.FINAL for uav in self.active.values())
@@ -750,13 +809,18 @@ class TerminalParallelEnv:
         elif target == "ring_inner":
             transition(uav, FlightPhase.RING_INNER, completion_time)
             uav.ring_role = RingRole.INNER
-        elif target == "landing":
+        elif target in {"landing", "emergency_landing"}:
             # Energy is consumed for the current control interval after this
             # executor returns.  Reject a touchdown that would cross the
             # vehicle-profile landing floor during that same interval; this
             # prevents an under-reserve UAV from entering ground service.
-            if not self.energy.projected_landing_reserve(uav, uav.phase, self.config.dt):
-                self._resolve(uav, TerminalOutcome.DIVERTED_LOW_SOC, "landing_soc_below_minimum")
+            projected_use = (self.energy.estimate_plan_energy(plan, self.now, self.now + self.config.dt)
+                             if self.config.energy_model_mode == "phase_motion_v2"
+                             else self.energy.phase_power(uav.phase) * self.config.dt)
+            if uav.energy_remaining - projected_use + 1e-9 < self.energy.min_landing_soc * uav.energy_capacity:
+                outcome = (TerminalOutcome.FAILED_ENERGY if uav.emergency_landing
+                           else TerminalOutcome.DIVERTED_LOW_SOC)
+                self._resolve(uav, outcome, "landing_soc_below_minimum")
                 return distance, False
             transition(uav, FlightPhase.LANDING, self.now + self.config.dt)
             transition(uav, FlightPhase.SERVICE, self.now + self.config.dt)
@@ -764,6 +828,8 @@ class TerminalParallelEnv:
             self.service_uavs[uav.uid] = uav
             self.active.pop(uav.uid, None)
             self.events.append(("touchdown", uav.uid, self.now + self.config.dt))
+            if uav.emergency_landing:
+                self.telemetry["emergency_touchdowns"] += 1
             return distance, True
         uav.ring_progress = math.atan2(uav.position[1], uav.position[0])
         ring = self.airspace.actual_ring(uav.ring_role)
@@ -1033,6 +1099,11 @@ class TerminalParallelEnv:
                 outcome = TerminalOutcome.DIVERTED_LOW_SOC if record.reason_code == "low_soc" else TerminalOutcome.DIVERTED_CAPACITY
                 self.ledger.resolve(record.request.arrival_id, outcome)
                 self.resolution_times[record.request.arrival_id] = self.now
+                self.energy_outcomes.append({"arrival_id": record.request.arrival_id, "uid": None,
+                    "outcome": outcome.value, "reason": record.reason_code, "time": self.now,
+                    "soc": record.soc, "energy_remaining": record.energy_remaining,
+                    "energy_consumed": record.energy_consumed,
+                    "phase": FlightPhase.EXTERNAL_QUEUE.value})
         for queued, gate in admitted:
             uav = UAVState.from_request(self.uid, queued.request, queued, gate.spawn_point, self.now)
             self.uid += 1; self.active[uav.uid] = uav
@@ -1049,12 +1120,21 @@ class TerminalParallelEnv:
         for uid in self.lz_manager.step(self.config.dt):
             uav = self.service_uavs.pop(uid)
             transition(uav, FlightPhase.COMPLETED, self.now + self.config.dt)
-            uav.completion_time = self.now + self.config.dt; uav.terminal_outcome = TerminalOutcome.COMPLETED
-            self.ledger.resolve(uav.arrival_id, TerminalOutcome.COMPLETED)
+            outcome = TerminalOutcome.EMERGENCY_LANDED if uav.emergency_landing else TerminalOutcome.COMPLETED
+            uav.completion_time = self.now + self.config.dt; uav.terminal_outcome = outcome
+            self.ledger.resolve(uav.arrival_id, outcome)
             self.resolution_times[uav.arrival_id] = self.now + self.config.dt
+            self.energy_outcomes.append({"arrival_id": uav.arrival_id, "uid": uav.uid,
+                "outcome": outcome.value, "reason": "ground_service_complete", "time": self.now + self.config.dt,
+                "soc": uav.soc, "energy_remaining": uav.energy_remaining,
+                "energy_consumed": uav.energy_consumed, "phase": uav.phase.value})
             self.completed_uavs.append(uav)
             self.events.append(("completed", uid, self.now + self.config.dt))
         pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
+        # Scarce pads and certified corridors go first to the aircraft with
+        # the least remaining SOC. Dynamic mission/wait priority breaks ties.
+        for uav in self._emergency_processing_order():
+            self._try_emergency_landing(uav)
         teacher_probes = {
             uid: self._teacher_counterfactual_release(uav, LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0]))))
             for uid, uav in self.active.items()
@@ -1135,6 +1215,7 @@ class TerminalParallelEnv:
         predicted_positions = self._next_state_prediction(intents)
         for uid, uav in list(self.active.items()):
             phase = uav.phase
+            energy_plan = uav.committed_plan
             had_committed_plan = uav.committed_plan is not None
             distance, touchdown = self._advance_plan(uav)
             # A canonical plan already advances to its endpoint for this
@@ -1147,11 +1228,19 @@ class TerminalParallelEnv:
             # reserve check above resolves the UAV before it enters service.
             # The object is no longer active in that branch, so the following
             # reserve check does not resolve it twice.
-            self.energy.consume(uav, phase, self.config.dt)
-            if uid in self.active and not self.energy.has_landing_reserve(uav):
+            if self.config.energy_model_mode == "phase_motion_v2" and energy_plan is not None:
+                plan_use = self.energy.estimate_plan_energy(energy_plan, self.now, self.now + self.config.dt)
+                rest = max(0.0, self.now + self.config.dt - energy_plan.end_time)
+                self.energy.consume_units(uav, plan_use + rest * self.energy.phase_power(uav.phase))
+            else:
+                self.energy.consume(uav, phase, self.config.dt)
+            if (uid in self.active and not self.energy.has_landing_reserve(uav)
+                    and not uav.emergency_landing and not self.config.emergency_landing_enabled):
                 self._resolve(uav, TerminalOutcome.DIVERTED_LOW_SOC, "low_soc_before_touchdown")
             if uid in rewards: rewards[uid].progress += distance * self.config.low_level_progress_reward_per_meter
             if touchdown and uid in rewards: rewards[uid].touchdown += self.config.low_level_touchdown_reward
+            if touchdown and uav.emergency_landing and uid in rewards:
+                rewards[uid].emergency -= self.config.low_level_emergency_landing_penalty
             if uav.energy_remaining <= 0 and uid in self.active:
                 self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
         encounters = self.separation_monitor.observe(self.active, pre_motion_positions)
@@ -1199,6 +1288,7 @@ class TerminalParallelEnv:
             "actions": action_rows, "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
             "prediction_execution_position_error": prediction_execution_error,
             "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
+            "energy_outcomes": list(self.energy_outcomes),
         }
 
     def run_rule_only(self, max_steps: int | None = None) -> OutcomeLedger:

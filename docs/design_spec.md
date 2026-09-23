@@ -373,7 +373,8 @@ class EnergyModel:
     def estimate_energy_to_complete(self, uav, env_state) -> float: ...
 ```
 
-初期使用 phase nominal coefficients；以后可替换为 calibrated model，但接口保持不变。
+`legacy_phase` 使用 phase nominal coefficients；`phase_motion_v2` 对 canonical trajectory
+逐段积分 `motion_power(velocity)`。新模型必须显式启用，不能改变历史 protocol 的能量语义。
 
 当前 EH216-S 仿真的归一化基准为 `power_reference = 1.0` unit/s，
 `energy_capacity = 1500` s-equivalent；phase multiplier 只表达工程化的相对功耗，
@@ -388,6 +389,26 @@ energy_remaining >= estimated_energy_to_complete + reserve_margin
 ```
 
 决定低 SOC request 是否可以进入 terminal。
+
+### 7.1 固定应急迫降
+
+应急路线属于 trajectory generator / scheduler 的确定性后备动作，不属于 RL action：
+
+```text
+ring holder current position/velocity
+→ continuous tangential cubic departure from the source ring
+→ OUTER/MIDDLE enter a 120 m staging point (INNER keeps current altitude)
+→ fly inward above one reserved FREE LZ
+→ vertical descent
+→ touchdown / normal LZ service
+```
+
+脱环 cubic 的首点位置和速度必须与 UAV 当前状态连续；控制点沿当前环切向方向展开，
+并由 parameterizer 绑定真实初始速度、以水平速度为零进入 staging。随后按现有垂直 leg
+到达 LZ。路线在提交前依次检查预计能量、预约 LZ 和完整 canonical trajectory 的原
+SafetyFilter 结果。
+任何安全拒绝都不能被 SOC priority 覆盖，也不能降低 `80/40/10 m` 契约。应急航迹正在执行时，
+普通低 SOC 分流逻辑不得把它提前移出；触地后记 `EMERGENCY_LANDED` 并施加独立 reward cost。
 
 ---
 
@@ -578,7 +599,15 @@ inner release
 
 可以用 composite spline 实现，但日志中保留分段语义。
 
-### 11.5 Execution
+### 11.5 emergency_landing
+
+`emergency_landing` 使用同一个 authoritative trajectory generator。源环脱离段从真实
+`position`/`velocity` 开始，以 cubic Bézier 连续切向进入 staging point：`P1` 沿当前环切向，
+`P2` 使曲线接近 staging point；parameterizer 绑定真实 initial velocity，并将
+`end_horizontal_speed` 设为零。OUTER/MIDDLE 的 staging 高度为 `120 m`，INNER 保持当前高度，
+之后复用现有垂直下降段到已预约 LZ。
+
+### 11.6 Execution
 
 环境每步从当前 committed plan 采样下一状态。不得让 VTAC 再独立计算另一套 transfer curve。
 
