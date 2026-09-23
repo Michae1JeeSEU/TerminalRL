@@ -1,6 +1,6 @@
 """Time/gap based merge reservations; no fixed release angles."""
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math, uuid
 from .config import RingRole
 from .uav import UAVState
@@ -26,6 +26,39 @@ class RepairCandidate:
     intent: LowLevelIntent
     delay_seconds: float = 0.0
 
+
+def canonical_plan_slot_time(plan, *, requested_time: float | None = None) -> float:
+    """Return the interface event represented by a generated plan.
+
+    Ring transfers arrive at the target ring at ``end_time``.  A final
+    approach reservation belongs to the inner-ring departure interface, so
+    its slot is the canonical ``scheduled_departure`` metadata rather than
+    touchdown time.  The metadata is validated against the executable plan
+    before it can affect a reservation.
+    """
+    start = float(plan.start_time)
+    end = float(plan.end_time)
+    mode = str(getattr(plan, "mode", ""))
+    target_phase = str(getattr(plan, "metadata", {}).get("target_phase", ""))
+    if not math.isfinite(start) or not math.isfinite(end) or end <= start:
+        raise ValueError("merge_slot_plan_time_invalid")
+    if mode == "final_approach" or target_phase == "landing":
+        departure = getattr(plan, "metadata", {}).get("scheduled_departure")
+        if departure is None or not math.isfinite(float(departure)):
+            raise ValueError("merge_slot_departure_invalid")
+        actual = float(departure)
+        if actual < start - 1e-9 or actual > end + 1e-9:
+            raise ValueError("merge_slot_departure_invalid")
+    else:
+        actual = end
+    if requested_time is not None and mode == "ring_transfer":
+        requested = float(requested_time)
+        if not math.isfinite(requested):
+            raise ValueError("merge_slot_requested_time_invalid")
+        plan.metadata["requested_merge_time"] = requested
+        plan.metadata["merge_time"] = actual
+    return actual
+
 class MergeScheduler:
     def __init__(self,config):
         self.config=config; self.reservations={}
@@ -33,7 +66,69 @@ class MergeScheduler:
         # must not be confused with the last executed interface release.
         self.last_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
         self.last_executed_release={"o2m":-math.inf,"m2i":-math.inf,"i2f":-math.inf}
-    def _key(self,target):return {RingRole.MIDDLE:"o2m",RingRole.INNER:"m2i","final":"i2f"}[target]
+    def _key(self,target):
+        if target == "final":
+            return "i2f"
+        if isinstance(target, RingRole):
+            return {RingRole.MIDDLE:"o2m",RingRole.INNER:"m2i"}[target]
+        aliases = {
+            "middle": "o2m", "inner": "m2i",
+        }
+        if target in aliases:
+            return aliases[target]
+        raise KeyError(f"unsupported merge interface target: {target!r}")
+
+    def _reservation_key(self, reservation: MergeReservation) -> str:
+        return self._key(reservation.target_stage)
+
+    def can_reserve_at(self, target: RingRole | str, merge_time: float,
+                       *, headway: float | None = None,
+                       exclude_reservation_id: str | None = None) -> bool:
+        """Check one concrete slot against executed and pending reservations.
+
+        ``last_release`` is a useful fast summary, but it cannot detect a
+        candidate moved earlier than the latest pending reservation.  This
+        complete pairwise check is used at the point where a canonical plan
+        reveals its actual endpoint time.
+        """
+        if not math.isfinite(float(merge_time)):
+            return False
+        key = self._key(target)
+        headway = float(headway if headway is not None else
+                        (self.config.headway_o2m if key == "o2m" else
+                         self.config.headway_m2i if key == "m2i" else
+                         self.config.headway_i2f))
+        if not math.isfinite(headway) or headway < 0.0:
+            return False
+        candidate = float(merge_time)
+        if candidate < self.last_executed_release[key] + headway - 1e-9:
+            return False
+        # A new proposal is appended to the interface schedule.  Keep the
+        # existing no-overtaking contract; retiming an already outstanding
+        # reservation is handled by the pairwise check below.
+        if (exclude_reservation_id is None
+                and candidate < self.last_release[key] + headway - 1e-9):
+            return False
+        for reservation in self.reservations.values():
+            if reservation.reservation_id == exclude_reservation_id:
+                continue
+            if self._reservation_key(reservation) != key:
+                continue
+            if abs(candidate - float(reservation.merge_time)) < headway - 1e-9:
+                return False
+        return True
+
+    def reconcile_proposal(self, proposal: MergeProposal, actual_time: float) -> MergeProposal:
+        """Return the same proposal at the plan's actual arrival time.
+
+        The merge angle and all intent-derived geometry remain unchanged.  A
+        moved slot is accepted only when it remains separated from the
+        executed release and every outstanding reservation on the interface.
+        """
+        actual = float(actual_time)
+        if not self.can_reserve_at(proposal.target, actual, headway=proposal.headway):
+            raise ValueError("merge_slot_retime_conflict")
+        return replace(proposal, merge_time=actual)
     def transfer_duration_estimate(self,uav,target,snapshot):
         """Conservative canonical ring-transfer duration before a merge slot.
 
@@ -113,8 +208,30 @@ class MergeScheduler:
         return tuple(rows)
 
     def can_reserve(self, proposal: MergeProposal) -> bool:
-        key = self._key(proposal.target)
-        return proposal.merge_time >= self.last_release[key] + proposal.headway - 1e-9
+        return self.can_reserve_at(
+            proposal.target, proposal.merge_time, headway=proposal.headway,
+        )
+
+    def retime_reservation(self, reservation_id: str, actual_time: float,
+                           *, headway: float | None = None) -> MergeReservation:
+        """Atomically bind an existing reservation to its canonical plan end."""
+        reservation = self.reservations.get(reservation_id)
+        if reservation is None:
+            raise ValueError("merge_reservation_missing")
+        actual = float(actual_time)
+        if not self.can_reserve_at(
+            reservation.target_stage, actual, headway=headway,
+            exclude_reservation_id=reservation_id,
+        ):
+            raise ValueError("merge_slot_retime_conflict")
+        reservation.merge_time = actual
+        key = self._reservation_key(reservation)
+        self.last_release[key] = max(
+            (item.merge_time for item in self.reservations.values()
+             if self._reservation_key(item) == key),
+            default=-math.inf,
+        )
+        return reservation
     def _gap_center(self,uav,target,time,snapshot,speed):
         states=[u for u in snapshot.active.values() if u.ring_role is target]
         # An empty target ring has no target-holder gap to optimize.  A fixed
@@ -149,17 +266,19 @@ class MergeScheduler:
         reservation = self.reservations.pop(reservation_id, None)
         if reservation is None:
             return
-        key = self._key(RingRole(reservation.target_stage) if reservation.target_stage in {role.value for role in RingRole} else "final")
-        committed = [item.merge_time for item in self.reservations.values() if self._key(RingRole(item.target_stage) if item.target_stage in {role.value for role in RingRole} else "final") == key]
+        key = self._reservation_key(reservation)
+        committed = [item.merge_time for item in self.reservations.values()
+                     if self._reservation_key(item) == key]
         self.last_release[key] = max(committed, default=-math.inf)
 
     def consume(self,reservation_id):
         """Close an executed reservation while retaining its real headway."""
         reservation=self.reservations.pop(reservation_id,None)
         if reservation is None:return
-        key=self._key(RingRole(reservation.target_stage) if reservation.target_stage in {role.value for role in RingRole} else "final")
+        key=self._reservation_key(reservation)
         self.last_executed_release[key]=max(self.last_executed_release[key],reservation.merge_time)
-        committed=[item.merge_time for item in self.reservations.values() if self._key(RingRole(item.target_stage) if item.target_stage in {role.value for role in RingRole} else "final")==key]
+        committed=[item.merge_time for item in self.reservations.values()
+                   if self._reservation_key(item)==key]
         self.last_release[key]=max(committed,default=-math.inf)
 
     def expire(self,now,active_uav_ids):

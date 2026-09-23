@@ -344,8 +344,123 @@ class TrajectoryGenerator:
             transfer.metadata["dynamic_unreachable_merge_time"] = True
         return transfer
 
+    def _continuous_inward_landing_points(
+        self,
+        uav,
+        lz,
+        airspace,
+        now: float,
+        *,
+        scheduled_delay: float = 0.0,
+    ) -> tuple[tuple[TrajectoryPoint, ...], float, float, np.ndarray, float, bool]:
+        """Build the shared tangent departure, staging and vertical-leg route.
+
+        The emergency route historically used this exact geometry.  Keeping
+        it in one helper lets the opt-in normal final approach reuse the
+        safety-tested corridor without changing the established emergency
+        points or metadata.  A positive scheduled delay is represented by a
+        ring hold at the current speed; the final departure starts exactly at
+        the hold endpoint.
+        """
+        p0 = np.asarray(uav.position, dtype=float)
+        initial_velocity = np.asarray(uav.velocity, dtype=float)
+        high = min(self.config.height_max, self.dynamics.profile.max_operating_altitude_agl_m)
+        cruise_height = high if uav.ring_role is not RingRole.INNER else float(p0[2])
+        staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
+
+        prefix: list[TrajectoryPoint] = []
+        departure_start = float(now)
+        departure_theta = (
+            uav.ring_progress
+            if uav.ring_progress is not None
+            else math.atan2(p0[1], p0[0])
+        )
+        if scheduled_delay > 1e-9:
+            ring = airspace.actual_ring(uav.ring_role)
+            current_ring_speed = max(0.0, float(uav.speed))
+            hold_points = self.ring_hold_points(
+                ring, departure_theta, current_ring_speed, current_ring_speed,
+                now, float(scheduled_delay),
+            )
+            prefix = hold_points[:-1]
+            start_state = hold_points[-1]
+            p0, initial_velocity = start_state.position, start_state.velocity
+            departure_start = float(start_state.t)
+            departure_theta = math.atan2(p0[1], p0[0])
+
+        # Carry the holder's actual tangential velocity into one smooth,
+        # inward departure.  Braking to zero while circling on the source ring
+        # leaves a stationary holder in the safety prediction tube and can
+        # make every subsequent emergency candidate unreachable.  The first
+        # Bezier control point is tangent to the source ring; the second one
+        # approaches the staging point horizontally so its terminal tangent is
+        # horizontal and the vertical pad leg can start from zero velocity.
+        source_tangent = self._unit_or(np.asarray((
+            -math.sin(departure_theta), math.cos(departure_theta), 0.0,
+        )), initial_velocity)
+        displacement = staging - p0
+        displacement_xy = np.asarray((displacement[0], displacement[1], 0.0), dtype=float)
+        approach = self._unit_or(source_tangent, displacement_xy)
+        distance = float(np.linalg.norm(displacement))
+        tangent_control = min(.70 * distance, 240.0)
+        approach_control = min(.25 * distance, 120.0)
+        p1 = p0 + tangent_control * source_tangent
+        p2 = staging - approach_control * approach
+        p2[2] = staging[2]
+        departure_path = GeometricPath.cubic_bezier(
+            p0, p1, p2, staging, samples=7
+        )
+        departure = self.parameterizer.parameterize(
+            departure_path,
+            start_time=departure_start,
+            initial_velocity=initial_velocity,
+            target_horizontal_speed=10.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
+        )
+
+        pad = np.asarray(lz.position, dtype=float)
+        points = list(prefix)
+        points.extend(departure[:-1])
+        leg_path = GeometricPath.line(staging, pad, samples=17)
+        leg = self.parameterizer.parameterize(
+            leg_path,
+            start_time=departure[-1].t,
+            initial_velocity=departure[-1].velocity,
+            target_horizontal_speed=5.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
+        )
+        points.extend(leg)
+        moment = float(leg[-1].t)
+        return tuple(points), departure_start, moment, staging, cruise_height, bool(prefix)
+
     def final_approach(self, uav, lz, reservation, now: float, *, scheduled_delay: float = 0.0,
                        speed_residual_mps: float = 0.0, airspace=None) -> TrajectoryPlan:
+        if (self.config.final_approach_geometry_mode == "continuous_inward_v1"
+                and uav.ring_role is RingRole.INNER and airspace is not None):
+            points, departure_start, moment, staging, cruise_height, has_prefix = (
+                self._continuous_inward_landing_points(
+                    uav, lz, airspace, now, scheduled_delay=max(0.0, scheduled_delay),
+                )
+            )
+            details = {
+                "target_phase": "landing",
+                "scheduled_departure": departure_start,
+                "scheduled_delay": max(0.0, scheduled_delay),
+                "speed_residual_mps": float(speed_residual_mps),
+                "final_approach_geometry": "continuous_inward_v1",
+                "lz_id": lz.lz_id,
+                "corridor_height": cruise_height,
+                "source_ring_role": uav.ring_role.value,
+                "staging_point": staging.tolist(),
+                "vehicle_profile_id": self.config.vehicle_profile_id,
+                "vehicle_profile_version": self.config.vehicle_profile.profile_version,
+            }
+            return TrajectoryPlan(
+                str(uuid.uuid4()), uav.uid, "final_approach", points,
+                now if has_prefix else departure_start, moment,
+                (reservation.reservation_id,), details,
+            )
+
         # A final approach cannot turn directly from a circulating 16 m/s
         # holder into an arbitrary descent curve.  Allocate an explicit,
         # finite-deceleration inner-ring prefix before the final geometry.
@@ -390,57 +505,9 @@ class TrajectoryGenerator:
         """
         if uav.ring_role is None or uav.committed_plan is not None:
             raise ValueError("emergency corridor requires an uncommitted ring holder")
-        p0 = np.asarray(uav.position, dtype=float)
-        initial_velocity = np.asarray(uav.velocity, dtype=float)
-        high = min(self.config.height_max, self.dynamics.profile.max_operating_altitude_agl_m)
-        cruise_height = high if uav.ring_role is not RingRole.INNER else float(p0[2])
-        staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
-
-        # Carry the holder's actual tangential velocity into one smooth,
-        # inward departure.  Braking to zero while circling on the source ring
-        # leaves a stationary holder in the safety prediction tube and can
-        # make every subsequent emergency candidate unreachable.  The first
-        # Bezier control point is tangent to the source ring; the second one
-        # approaches the staging point horizontally so its terminal tangent is
-        # horizontal and the vertical pad leg can start from zero velocity.
-        source_tangent = self._unit_or(np.asarray((-math.sin(
-            uav.ring_progress if uav.ring_progress is not None else math.atan2(p0[1], p0[0])),
-            math.cos(uav.ring_progress if uav.ring_progress is not None else math.atan2(p0[1], p0[0])),
-            0.0)), initial_velocity)
-        displacement = staging - p0
-        displacement_xy = np.asarray((displacement[0], displacement[1], 0.0), dtype=float)
-        approach = self._unit_or(source_tangent, displacement_xy)
-        distance = float(np.linalg.norm(displacement))
-        tangent_control = min(.70 * distance, 240.0)
-        approach_control = min(.25 * distance, 120.0)
-        p1 = p0 + tangent_control * source_tangent
-        p2 = staging - approach_control * approach
-        p2[2] = staging[2]
-        departure_path = GeometricPath.cubic_bezier(
-            p0, p1, p2, staging, samples=7
+        points, _, moment, staging, cruise_height, _ = self._continuous_inward_landing_points(
+            uav, lz, airspace, now,
         )
-        departure = self.parameterizer.parameterize(
-            departure_path,
-            start_time=now,
-            initial_velocity=initial_velocity,
-            target_horizontal_speed=10.0,
-            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
-        )
-
-        # Keep the existing final vertical leg, now starting at the staging
-        # point reached by the continuous departure curve.
-        pad = np.asarray(lz.position, dtype=float)
-        points = list(departure[:-1])
-        leg_path = GeometricPath.line(staging, pad, samples=17)
-        leg = self.parameterizer.parameterize(
-            leg_path,
-            start_time=departure[-1].t,
-            initial_velocity=departure[-1].velocity,
-            target_horizontal_speed=5.0,
-            constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
-        )
-        points.extend(leg)
-        moment = leg[-1].t
         return TrajectoryPlan(str(uuid.uuid4()), uav.uid, "emergency_landing", tuple(points), now, moment,
                               metadata={"target_phase": "emergency_landing", "lz_id": lz.lz_id,
                                         "corridor_height": cruise_height,

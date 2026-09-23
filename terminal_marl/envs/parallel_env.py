@@ -24,7 +24,10 @@ from ..core.energy_reachability import (
 )
 from ..core.lifecycle import OutcomeLedger, transition
 from ..core.landing_zone import LandingZoneManager
-from ..core.merge_scheduler import LowLevelIntent, MergeScheduler, MergeProposal, RepairCandidate
+from ..core.merge_scheduler import (
+    LowLevelIntent, MergeScheduler, MergeProposal, RepairCandidate,
+    canonical_plan_slot_time,
+)
 from ..core.execution_scheduler import ExecutionScheduler
 from ..core.teacher_scheduler import TeacherScheduler
 from ..core.action_trace import LowLevelActionTrace
@@ -381,6 +384,14 @@ class TerminalParallelEnv:
         if self.config.release_arbitration_mode == "legacy_insertion":
             return rows
         rank = {RingRole.INNER: 0, RingRole.MIDDLE: 1, RingRole.OUTER: 2}
+        if self.config.release_arbitration_mode == "downstream_soc_priority":
+            return sorted(rows, key=lambda row: (
+                rank.get(row[1].ring_role, 3),
+                float(row[1].soc),
+                -float(row[1].dynamic_priority),
+                -float(row[1].external_wait_time + row[1].internal_wait_time),
+                int(row[0]),
+            ))
         return sorted(rows, key=lambda row: (
             rank.get(row[1].ring_role, 3),
             -float(row[1].dynamic_priority),
@@ -433,13 +444,30 @@ class TerminalParallelEnv:
         self.telemetry["checked_executed_plan_matches"] += 1
         return True
 
+    def _retime_reservation_to_plan(self, reservation, plan) -> bool:
+        """Bind an already reserved slot to the exact canonical endpoint."""
+        try:
+            requested_time = float(reservation.merge_time)
+            actual_time = canonical_plan_slot_time(
+                plan, requested_time=requested_time,
+            )
+            interface = self.scheduler._key(reservation.target_stage)
+            self.scheduler.retime_reservation(
+                reservation.reservation_id,
+                actual_time,
+                headway=self.airspace.headways[interface],
+            )
+        except (KeyError, ValueError):
+            return False
+        return abs(float(reservation.merge_time) - float(actual_time)) <= 1e-6
+
     @staticmethod
     def _primary_blocker(decision: str, safety_reason: str | None = None) -> str:
         """One and only one release blocker, independent of diagnostic details."""
         if decision in {"final_capacity", "final_unavailable"}: return "FINAL_RESOURCE"
         if decision in {"lz_unavailable", "lz_reservation_reject", "emergency_lz_priority"}: return "LZ_RESOURCE"
         if decision == "geometry_frozen": return "INTERFACE_FROZEN"
-        if decision in {"headway_conflict"}: return "HEADWAY"
+        if decision in {"headway_conflict", "merge_slot_retime_conflict"} or safety_reason == "merge_slot_retime_conflict": return "HEADWAY"
         if decision in {"capacity"}: return "CAPACITY"
         if decision in {"soc", "emergency_energy_guard"}: return "SOC"
         if safety_reason and "holder" in safety_reason: return "NO_MERGE_GAP"
@@ -607,6 +635,11 @@ class TerminalParallelEnv:
             self._finish_release_intent(uav, row, "safety_wait", safety_reason=self.last_safety_decisions.get(uav.uid))
             return "safety_wait"
         lz_id = None
+        continuous_final_lz_search = (
+            target == "final"
+            and self.config.final_approach_geometry_mode == "continuous_inward_v1"
+        )
+        final_lz_ids: tuple[int | None, ...] = ()
         if target == "final":
             if sum(item.phase is FlightPhase.FINAL for item in self.active.values()) >= self.config.final_queue_capacity:
                 self._finish_release_intent(uav, row, "final_capacity")
@@ -615,51 +648,103 @@ class TerminalParallelEnv:
                 self.telemetry["emergency_lz_priority_rejections"] += 1
                 self._finish_release_intent(uav, row, "emergency_lz_priority")
                 return "emergency_lz_priority"
-            lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
-            if lz_id is None:
-                self._finish_release_intent(uav, row, "lz_unavailable")
-                return "lz_unavailable"
+            if continuous_final_lz_search:
+                # In the continuous inward mode the terminal center owns the
+                # free-pad choice.  The policy still supplies only the
+                # proposal shortlist; it never receives an expanded
+                # proposal-by-pad catalogue.
+                final_lz_ids = tuple(self.lz_manager.rank_available_zones(uav, self.now))
+                row.update({
+                    "final_lz_pairs_checked": [],
+                    "final_lz_selected_id": None,
+                })
+                if not final_lz_ids:
+                    self._finish_release_intent(uav, row, "lz_unavailable")
+                    return "lz_unavailable"
+            else:
+                lz_id = self.lz_manager.choose_rule_zone(uav, self.now)
+                if lz_id is None:
+                    self._finish_release_intent(uav, row, "lz_unavailable")
+                    return "lz_unavailable"
+                final_lz_ids = (lz_id,)
+        else:
+            final_lz_ids = (None,)
         snapshot = WorldSnapshot(self.now, self.active, self.airspace)
         reasons: list[str] = []
+        stop_shortlist = False
         for rank, ranked_intent in enumerate(shortlist, start=1):
             candidate = RepairCandidate(f"runtime_shortlist_rank_{rank}", ranked_intent)
-            proposal, plan, reason = self._candidate_plan(uav, candidate, target, snapshot, lz_id)
             row["runtime_shortlist_candidates_checked"] += 1
             self.telemetry["runtime_shortlist_candidates_checked"] += 1
-            if reason is not None or proposal is None or plan is None:
-                reasons.append(reason or "candidate_invalid")
-                continue
-            if target == "final" and not self.lz_manager.reserve(lz_id, uav.uid, self.now).approved:
-                reasons.append("lz_reservation_reject")
-                break
-            try:
-                reservation = self.scheduler.reserve(uav, proposal, now=self.now)
-            except ValueError:
-                if target == "final":
-                    self.lz_manager.release(lz_id, uav.uid, "headway_conflict")
-                reasons.append("headway_conflict")
-                continue
-            plan = plan.with_reservation_ids((reservation.reservation_id,))
-            if self._commit(uav, plan):
-                uav.merge_reservation_id = reservation.reservation_id
-                if target == "final":
-                    uav.assigned_lz = lz_id
-                    self._record_lz_assignment(uav, lz_id)
-                transition(uav, phase, self.now)
-                uav.ring_role = None
-                row["runtime_shortlist_rank"] = rank
-                row["runtime_shortlist_used"] = rank > 1
-                if rank > 1:
-                    self.telemetry["runtime_shortlist_fallback_selected"] += 1
-                self._finish_release_intent(
-                    uav, row, "approved", candidate=candidate, plan_id=plan.plan_id,
-                    selection_source="runtime_shortlist",
+            for candidate_lz_id in final_lz_ids:
+                proposal, plan, reason = self._candidate_plan(
+                    uav, candidate, target, snapshot, candidate_lz_id
                 )
-                return "approved"
-            if target == "final":
-                self.lz_manager.release(lz_id, uav.uid, "safety_reject")
-            self.scheduler.cancel(reservation.reservation_id, "safety_reject")
-            reasons.append(self.last_safety_decisions.get(uav.uid, "predicted_separation"))
+                pair_record = None
+                if continuous_final_lz_search:
+                    pair_record = {
+                        "proposal_rank": rank,
+                        "lz_id": int(candidate_lz_id),
+                    }
+                if reason is not None or proposal is None or plan is None:
+                    pair_reason = reason or "candidate_invalid"
+                    reasons.append(pair_reason)
+                    if pair_record is not None:
+                        pair_record.update({"status": "rejected", "reason": pair_reason})
+                        row["final_lz_pairs_checked"].append(pair_record)
+                    continue
+                if target == "final" and not self.lz_manager.reserve(candidate_lz_id, uav.uid, self.now).approved:
+                    pair_reason = "lz_reservation_reject"
+                    reasons.append(pair_reason)
+                    if pair_record is not None:
+                        pair_record.update({"status": "rejected", "reason": pair_reason})
+                        row["final_lz_pairs_checked"].append(pair_record)
+                    if not continuous_final_lz_search:
+                        stop_shortlist = True
+                        break
+                    continue
+                try:
+                    reservation = self.scheduler.reserve(uav, proposal, now=self.now)
+                except ValueError:
+                    if target == "final":
+                        self.lz_manager.release(candidate_lz_id, uav.uid, "headway_conflict")
+                    pair_reason = "headway_conflict"
+                    reasons.append(pair_reason)
+                    if pair_record is not None:
+                        pair_record.update({"status": "rejected", "reason": pair_reason})
+                        row["final_lz_pairs_checked"].append(pair_record)
+                    continue
+                plan = plan.with_reservation_ids((reservation.reservation_id,))
+                if self._commit(uav, plan):
+                    uav.merge_reservation_id = reservation.reservation_id
+                    if target == "final":
+                        uav.assigned_lz = candidate_lz_id
+                        self._record_lz_assignment(uav, candidate_lz_id)
+                        if continuous_final_lz_search:
+                            pair_record.update({"status": "approved", "reason": "approved"})
+                            row["final_lz_pairs_checked"].append(pair_record)
+                            row["final_lz_selected_id"] = int(candidate_lz_id)
+                    transition(uav, phase, self.now)
+                    uav.ring_role = None
+                    row["runtime_shortlist_rank"] = rank
+                    row["runtime_shortlist_used"] = rank > 1
+                    if rank > 1:
+                        self.telemetry["runtime_shortlist_fallback_selected"] += 1
+                    self._finish_release_intent(
+                        uav, row, "approved", candidate=candidate, plan_id=plan.plan_id,
+                        selection_source="runtime_shortlist",
+                    )
+                    return "approved"
+                if target == "final":
+                    self.lz_manager.release(candidate_lz_id, uav.uid, "safety_reject")
+                self.scheduler.cancel(reservation.reservation_id, "safety_reject")
+                pair_reason = self.last_safety_decisions.get(uav.uid, "predicted_separation")
+                reasons.append(pair_reason)
+                if pair_record is not None:
+                    pair_record.update({"status": "rejected", "reason": pair_reason})
+                    row["final_lz_pairs_checked"].append(pair_record)
+            if stop_shortlist:
+                break
         self.telemetry["runtime_shortlist_exhausted"] += 1
         if reasons and all(reason == "emergency_energy_guard" for reason in reasons):
             if self.config.energy_reachability_guard_enabled:
@@ -716,7 +801,19 @@ class TerminalParallelEnv:
         if energy_reason is not None:
             return proposal, plan, energy_reason
         verdict = self.safety.filter_plan(plan, committed, snapshot)
-        return proposal, plan, None if verdict.approved else verdict.reason
+        if not verdict.approved:
+            return proposal, plan, verdict.reason
+        try:
+            actual_time = canonical_plan_slot_time(
+                plan, requested_time=proposal.merge_time,
+            )
+        except ValueError as error:
+            return proposal, plan, str(error)
+        try:
+            proposal = self.scheduler.reconcile_proposal(proposal, actual_time)
+        except ValueError:
+            return proposal, plan, "merge_slot_retime_conflict"
+        return proposal, plan, None
 
     def _teacher_counterfactual_release(self, uav: UAVState, requested: LowLevelIntent) -> tuple[LowLevelIntent | None, str]:
         """Read-only, SafetyFilter-certified teacher label for a WAIT request."""
@@ -821,6 +918,13 @@ class TerminalParallelEnv:
             self.scheduler.cancel(reservation.reservation_id, "trajectory_infeasible")
             uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[row["interface"]])
             self._finish_release_intent(uav, row, "safety_wait", safety_reason="trajectory_infeasible")
+            return "safety_wait"
+        if not self._retime_reservation_to_plan(reservation, plan):
+            if lz_id is not None:
+                self.lz_manager.release(lz_id, uav.uid, "merge_slot_retime_conflict")
+            self.scheduler.cancel(reservation.reservation_id, "merge_slot_retime_conflict")
+            uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[row["interface"]])
+            self._finish_release_intent(uav, row, "safety_wait", safety_reason="merge_slot_retime_conflict")
             return "safety_wait"
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id
@@ -1079,6 +1183,10 @@ class TerminalParallelEnv:
             reservation = self.execution_scheduler.reserve_requested(uav, proposal, now=self.now)
             plan = self.generator.final_approach(uav, self.lz_manager.zones[lz_id], reservation, self.now,
                                                  airspace=self.airspace)
+            if not self._retime_reservation_to_plan(reservation, plan):
+                self.lz_manager.release(lz_id, uav.uid, "merge_slot_retime_conflict")
+                self.execution_scheduler.cancel(reservation.reservation_id, "merge_slot_retime_conflict")
+                return finish("safety_wait", "merge_slot_retime_conflict")
             if self._commit(uav, plan):
                 uav.assigned_lz = lz_id
                 self._record_lz_assignment(uav, lz_id)
@@ -1092,6 +1200,10 @@ class TerminalParallelEnv:
             return finish("headway_conflict")
         reservation = self.execution_scheduler.reserve_requested(uav, proposal, now=self.now)
         plan = self.generator.ring_transfer(uav, uav.ring_role, target, reservation, self.airspace, self.now, residual)
+        if not self._retime_reservation_to_plan(reservation, plan):
+            self.execution_scheduler.cancel(reservation.reservation_id, "merge_slot_retime_conflict")
+            uav.safety_retry_after = self.now + max(5.0, self.airspace.headways[interface])
+            return finish("safety_wait", "merge_slot_retime_conflict")
         if self._commit(uav, plan):
             uav.merge_reservation_id = reservation.reservation_id; transition(uav, phase, self.now); uav.ring_role = None
             return finish("approved")
@@ -1320,7 +1432,7 @@ class TerminalParallelEnv:
             for uid, uav in self.active.items()
             if self.config.teacher_release_label_enabled and self.config.teacher_enabled and self.config.teacher_mode == "teacher_full" and actions.get(str(uid), np.array([1.0, 0.0, 0.0]))[0] <= self.config.release_threshold
         }
-        if self.config.release_arbitration_mode == "downstream_priority":
+        if self.config.release_arbitration_mode in {"downstream_priority", "downstream_soc_priority"}:
             for uav in self.active.values():
                 self.priority.update(uav, self.now)
         for uid, uav in self._release_processing_order():

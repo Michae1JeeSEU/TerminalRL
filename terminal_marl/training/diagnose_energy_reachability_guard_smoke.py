@@ -113,8 +113,50 @@ def build_config(
     initial_soc_max: float,
     route_guard_enabled: bool,
     max_simulation_seconds: float,
+    dense_warm_start_uavs: int | None = None,
+    mixed_total_uavs: int | None = None,
+    mixed_warm_start_uavs: int = 12,
+    mixed_arrival_interval_seconds: float = 8.0,
+    final_approach_geometry_mode: str = "brake_bezier_v1",
+    release_arbitration_mode: str = "downstream_priority",
 ) -> SimConfig:
     """Construct the fixed V4.2 / V2.3 smoke scenario."""
+
+    if mixed_total_uavs is not None:
+        mixed_total_uavs = int(mixed_total_uavs)
+        mixed_warm_start_uavs = int(mixed_warm_start_uavs)
+        mixed_arrival_interval_seconds = float(mixed_arrival_interval_seconds)
+        if mixed_total_uavs <= 0:
+            raise ValueError("mixed_total_uavs must be positive")
+        if mixed_warm_start_uavs <= 0:
+            raise ValueError("mixed_warm_start_uavs must be positive")
+        if mixed_warm_start_uavs > mixed_total_uavs:
+            raise ValueError("mixed_warm_start_uavs cannot exceed mixed_total_uavs")
+        if not math.isfinite(mixed_arrival_interval_seconds) or mixed_arrival_interval_seconds <= 0.0:
+            raise ValueError("mixed_arrival_interval_seconds must be finite and positive")
+        warm_start_uavs = mixed_warm_start_uavs
+        total_requested_uavs = mixed_total_uavs
+        remaining_arrivals = mixed_total_uavs - mixed_warm_start_uavs
+        fixed_arrival_schedule = (
+            (0.0,) * mixed_warm_start_uavs
+            + tuple(
+                mixed_arrival_interval_seconds * index
+                for index in range(1, remaining_arrivals + 1)
+            )
+        )
+        if len(fixed_arrival_schedule) != mixed_total_uavs:
+            raise RuntimeError("mixed arrival schedule length does not match total UAV count")
+    elif dense_warm_start_uavs is None:
+        warm_start_uavs = 6
+        total_requested_uavs = 12
+        fixed_arrival_schedule = ARRIVAL_SCHEDULE
+    else:
+        dense_warm_start_uavs = int(dense_warm_start_uavs)
+        if dense_warm_start_uavs <= 0:
+            raise ValueError("dense_warm_start_uavs must be positive")
+        warm_start_uavs = dense_warm_start_uavs
+        total_requested_uavs = dense_warm_start_uavs
+        fixed_arrival_schedule = (0.0,) * dense_warm_start_uavs
 
     return SimConfig(
         action_schema_version="low_action_schema_v4_2_hierarchical",
@@ -123,25 +165,26 @@ def build_config(
         experiment_mode="fixed_rule",
         high_level_enabled=False,
         reset_mode="warm_start_rings",
-        warm_start_uavs=6,
+        warm_start_uavs=warm_start_uavs,
         warm_start_steady_motion=True,
         warm_start_energy_reachability_check_enabled=True,
-        total_requested_uavs=12,
+        total_requested_uavs=total_requested_uavs,
         arrival_model="finite_cohort",
         arrival_rate_per_second=0.0,
-        fixed_arrival_schedule=ARRIVAL_SCHEDULE,
+        fixed_arrival_schedule=fixed_arrival_schedule,
         initial_soc_mode="uniform",
         initial_soc_min=float(initial_soc_min),
         initial_soc_max=float(initial_soc_max),
         max_simulation_seconds=float(max_simulation_seconds),
         energy_model_mode="phase_motion_v2",
+        final_approach_geometry_mode=str(final_approach_geometry_mode),
         emergency_landing_enabled=True,
         emergency_priority_guard_enabled=True,
         energy_reachability_guard_enabled=bool(route_guard_enabled),
         emergency_trigger_soc=0.40,
         emergency_energy_margin_seconds=15.0,
         lz_assignment_mode="nearest_available",
-        release_arbitration_mode="downstream_priority",
+        release_arbitration_mode=str(release_arbitration_mode),
         final_queue_capacity=3,
         safe_distance=80.0,
         nmac_distance=40.0,
@@ -155,21 +198,45 @@ def build_config(
     )
 
 
-def _config_summary(config: SimConfig, *, seed: int, guard_on: bool) -> dict[str, Any]:
+def _config_summary(
+    config: SimConfig,
+    *,
+    seed: int,
+    guard_on: bool,
+    scenario_mode: str = "default",
+    mixed_total_uavs: int | None = None,
+    mixed_warm_start_uavs: int | None = None,
+    mixed_arrival_interval_seconds: float | None = None,
+) -> dict[str, Any]:
     return {
         "seed": int(seed),
+        "scenario_mode": str(scenario_mode),
         "schema_version": config.schema_version,
         "action_schema_version": config.action_schema_version,
         "observation_schema_version": config.observation_schema_version,
         "neighbor_comm_range_m": float(config.neighbor_comm_range_m),
         "energy_model_mode": config.energy_model_mode,
+        "final_approach_geometry_mode": config.final_approach_geometry_mode,
+        "release_arbitration_mode": config.release_arbitration_mode,
         "reset_mode": config.reset_mode,
         "warm_start_uavs": int(config.warm_start_uavs),
         "warm_start_steady_motion": bool(config.warm_start_steady_motion),
         "warm_start_energy_reachability_check_enabled": bool(
             config.warm_start_energy_reachability_check_enabled
         ),
-        "fixed_arrival_schedule": list(ARRIVAL_SCHEDULE),
+        "fixed_arrival_schedule": list(config.fixed_arrival_schedule or ()),
+        "total_requested_uavs": int(config.total_requested_uavs or 0),
+        "mixed_total_uavs": (
+            None if mixed_total_uavs is None else int(mixed_total_uavs)
+        ),
+        "mixed_warm_start_uavs": (
+            None if mixed_warm_start_uavs is None else int(mixed_warm_start_uavs)
+        ),
+        "mixed_arrival_interval_seconds": (
+            None
+            if mixed_arrival_interval_seconds is None
+            else float(mixed_arrival_interval_seconds)
+        ),
         "initial_soc_mode": config.initial_soc_mode,
         "initial_soc_min": float(config.initial_soc_min),
         "initial_soc_max": float(config.initial_soc_max),
@@ -196,6 +263,12 @@ def run_smoke(
     max_steps: int,
     progress_every_steps: int,
     output: Path,
+    dense_warm_start_uavs: int | None = None,
+    mixed_total_uavs: int | None = None,
+    mixed_warm_start_uavs: int = 12,
+    mixed_arrival_interval_seconds: float = 8.0,
+    final_approach_geometry_mode: str = "brake_bezier_v1",
+    release_arbitration_mode: str = "downstream_priority",
 ) -> dict[str, Any]:
     """Run a bounded environment smoke and return one JSON record."""
 
@@ -218,12 +291,23 @@ def run_smoke(
         initial_soc_max=initial_soc_max,
         route_guard_enabled=guard_on,
         max_simulation_seconds=max(1.0, float(max_steps)),
+        dense_warm_start_uavs=dense_warm_start_uavs,
+        mixed_total_uavs=mixed_total_uavs,
+        mixed_warm_start_uavs=mixed_warm_start_uavs,
+        mixed_arrival_interval_seconds=mixed_arrival_interval_seconds,
+        final_approach_geometry_mode=final_approach_geometry_mode,
+        release_arbitration_mode=release_arbitration_mode,
     )
     started = time.perf_counter()
     env = TerminalParallelEnv(config)
     env.reset(seed=int(seed))
     safety_error: str | None = None
     steps = 0
+    release_decision_counts: Counter[str] = Counter()
+    release_primary_blocker_counts: Counter[str] = Counter()
+    release_safety_reason_counts: Counter[str] = Counter()
+    release_secondary_constraint_counts: Counter[str] = Counter()
+    release_terminal_decision_counts: Counter[str] = Counter()
     terminal = _terminal(env)
     _write_progress_atomic(
         progress_path,
@@ -245,11 +329,37 @@ def run_smoke(
             for uid in env.active
         }
         try:
-            env.step(actions)
+            _, _, _, _, info = env.step(actions)
         except SafetyInvariantError as exc:
             safety_error = str(exc)
             steps += 1
             break
+        release_decisions = info.get("release_decisions", {})
+        release_decision_counts.update(
+            str(decision) for decision in release_decisions.values()
+        )
+        release_telemetry = info.get("release_intent_telemetry", {})
+        for raw_uid, row in release_telemetry.items():
+            if not isinstance(row, Mapping):
+                continue
+            decision = release_decisions.get(str(raw_uid), release_decisions.get(raw_uid))
+            primary_blocker = row.get("primary_blocker")
+            if primary_blocker is not None:
+                release_primary_blocker_counts[str(primary_blocker)] += 1
+            safety_reason = row.get("safety_reason")
+            if safety_reason is not None:
+                release_safety_reason_counts[str(safety_reason)] += 1
+            decision_history = row.get("decision_history")
+            if isinstance(decision_history, (list, tuple)) and decision_history:
+                release_terminal_decision_counts[str(decision_history[-1])] += 1
+            if decision in {"safety_reject", "emergency_energy_guard"}:
+                secondary_constraints = row.get("secondary_constraints")
+                if isinstance(secondary_constraints, (list, tuple, set)):
+                    release_secondary_constraint_counts.update(
+                        str(item)
+                        for item in secondary_constraints
+                        if item is not None
+                    )
         steps += 1
         terminal = _terminal(env)
         if steps % progress_every_steps == 0 and not terminal and steps < max_steps:
@@ -302,7 +412,31 @@ def run_smoke(
         "training_called": False,
         "teacher_used": False,
         "PPO_ALLOWED": False,
-        "config": _config_summary(config, seed=seed, guard_on=guard_on),
+        "config": _config_summary(
+            config,
+            seed=seed,
+            guard_on=guard_on,
+            scenario_mode=(
+                "mixed_arrival"
+                if mixed_total_uavs is not None
+                else "dense_warm_start"
+                if dense_warm_start_uavs is not None
+                else "default"
+            ),
+            mixed_total_uavs=(
+                None if mixed_total_uavs is None else int(mixed_total_uavs)
+            ),
+            mixed_warm_start_uavs=(
+                None
+                if mixed_total_uavs is None
+                else int(mixed_warm_start_uavs)
+            ),
+            mixed_arrival_interval_seconds=(
+                None
+                if mixed_total_uavs is None
+                else float(mixed_arrival_interval_seconds)
+            ),
+        ),
         "step_count": int(env.step_count),
         "steps_executed": int(steps),
         "sim_time_seconds": float(env.now),
@@ -329,6 +463,19 @@ def run_smoke(
         "simulation_wall_time_seconds": float(wall_seconds),
         "progress_path": str(progress_path),
         "progress_every_steps": int(progress_every_steps),
+        "release_decision_counts": dict(sorted(release_decision_counts.items())),
+        "release_primary_blocker_counts": dict(
+            sorted(release_primary_blocker_counts.items())
+        ),
+        "release_safety_reason_counts": dict(
+            sorted(release_safety_reason_counts.items())
+        ),
+        "release_secondary_constraint_counts": dict(
+            sorted(release_secondary_constraint_counts.items())
+        ),
+        "release_terminal_decision_counts": dict(
+            sorted(release_terminal_decision_counts.items())
+        ),
     }
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -346,6 +493,42 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--initial-soc-max", type=float, default=0.55)
     parser.add_argument("--max-steps", type=int, default=1200)
     parser.add_argument("--progress-every-steps", type=int, default=100)
+    parser.add_argument(
+        "--dense-warm-start-uavs",
+        type=int,
+        default=None,
+        help="Use N simultaneous warm-start UAVs instead of the default 6+6 schedule.",
+    )
+    parser.add_argument(
+        "--mixed-total-uavs",
+        type=int,
+        default=None,
+        help="Use a mixed schedule with this total count; defaults to 12 warm-start UAVs.",
+    )
+    parser.add_argument(
+        "--mixed-warm-start-uavs",
+        type=int,
+        default=12,
+        help="Warm-start count for --mixed-total-uavs (default: 12).",
+    )
+    parser.add_argument(
+        "--mixed-arrival-interval-seconds",
+        type=float,
+        default=8.0,
+        help="Interval for post-warm-start arrivals in mixed mode (default: 8 s).",
+    )
+    parser.add_argument(
+        "--final-approach-geometry-mode",
+        choices=("brake_bezier_v1", "continuous_inward_v1"),
+        default="brake_bezier_v1",
+        help="Final approach geometry used by the diagnostic environment.",
+    )
+    parser.add_argument(
+        "--release-arbitration-mode",
+        choices=("downstream_priority", "downstream_soc_priority"),
+        default="downstream_priority",
+        help="Center-side release arbitration order used by the diagnostic environment.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     result = run_smoke(
@@ -356,6 +539,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_steps=args.max_steps,
         progress_every_steps=args.progress_every_steps,
         output=args.output,
+        dense_warm_start_uavs=args.dense_warm_start_uavs,
+        mixed_total_uavs=args.mixed_total_uavs,
+        mixed_warm_start_uavs=args.mixed_warm_start_uavs,
+        mixed_arrival_interval_seconds=args.mixed_arrival_interval_seconds,
+        final_approach_geometry_mode=args.final_approach_geometry_mode,
+        release_arbitration_mode=args.release_arbitration_mode,
     )
     print(json.dumps({
         "output": str(args.output),

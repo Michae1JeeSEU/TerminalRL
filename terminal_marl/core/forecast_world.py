@@ -8,7 +8,7 @@ import numpy as np
 
 from .config import RingRole
 from .lifecycle import transition
-from .merge_scheduler import MergeReservation
+from .merge_scheduler import MergeReservation, canonical_plan_slot_time
 from .trajectory_generator import TrajectoryGenerator
 from .safety_filter import SafetyFilter
 from .uav import FlightPhase
@@ -136,4 +136,16 @@ class ForecastWorld:
             return proposal, None, "trajectory_infeasible"
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         verdict = self.safety.filter_plan(plan, committed, snapshot)
-        return proposal, plan, None if verdict.approved else verdict.reason
+        if not verdict.approved:
+            return proposal, plan, verdict.reason
+        try:
+            actual_time = canonical_plan_slot_time(
+                plan, requested_time=proposal.merge_time,
+            )
+        except ValueError as error:
+            return proposal, plan, str(error)
+        try:
+            proposal = self.scheduler.reconcile_proposal(proposal, actual_time)
+        except ValueError:
+            return proposal, plan, "merge_slot_retime_conflict"
+        return proposal, plan, None

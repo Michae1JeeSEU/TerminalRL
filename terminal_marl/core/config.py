@@ -56,6 +56,11 @@ class SimConfig:
     safety_sampling_dt: float = 1.0
     trajectory_bezier_samples: int = 41
     trajectory_final_samples: int = 51
+    # The default preserves the established braking cubic final-approach
+    # geometry.  The continuous inward corridor is an opt-in diagnostic mode
+    # for dense inner-ring flow; it reuses the certified emergency corridor
+    # geometry while retaining normal final-approach semantics.
+    final_approach_geometry_mode: str = "brake_bezier_v1"
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
     # Source-bound V2.3 uses an explicit finite communication neighborhood for
@@ -239,6 +244,8 @@ class SimConfig:
     def __post_init__(self) -> None:
         if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
             raise ValueError("unsupported energy_model_mode")
+        if self.final_approach_geometry_mode not in {"brake_bezier_v1", "continuous_inward_v1"}:
+            raise ValueError("unsupported final_approach_geometry_mode")
         if self.energy_reachability_guard_enabled and (
             not self.emergency_priority_guard_enabled
             or not self.emergency_landing_enabled
@@ -284,7 +291,11 @@ class SimConfig:
             raise ValueError("Phase A v1 requires six landing zones")
         if self.lz_assignment_mode not in {"lowest_id", "nearest_available"}:
             raise ValueError("unsupported landing-zone assignment mode")
-        if self.release_arbitration_mode not in {"legacy_insertion", "downstream_priority"}:
+        if self.release_arbitration_mode not in {
+            "legacy_insertion",
+            "downstream_priority",
+            "downstream_soc_priority",
+        }:
             raise ValueError("unsupported release arbitration mode")
         if not 0 <= self.final_queue_capacity <= self.num_landing_zones:
             raise ValueError("final queue capacity must fit the landing-zone set")
