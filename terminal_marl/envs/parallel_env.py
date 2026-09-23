@@ -33,7 +33,7 @@ from ..core.runtime_separation import RuntimeSeparationMonitor
 from ..core.runtime_traffic_safety import PredictiveSafetyShield
 from ..core.trajectory_generator import TrajectoryGenerator
 from ..core.forecast_world import ForecastWorld
-from ..core.uav import FlightPhase, TerminalOutcome, UAVState
+from ..core.uav import FlightPhase, MISSION_SERVICE_SECONDS, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
 from ..core.low_level_joint_action_v4_2 import RELEASE_GATE, hierarchical_from_normalized_v4_2
 
@@ -382,6 +382,18 @@ class TerminalParallelEnv:
             raise RuntimeError("A6.12 safety approval did not identify the executed canonical plan")
         uav.committed_plan = plan
         uav.trajectory_plan_id = plan.plan_id
+        if plan.metadata.get("target_phase") in {"landing", "emergency_landing"}:
+            expected_release_at = (
+                plan.end_time
+                + self.config.dt
+                + MISSION_SERVICE_SECONDS[uav.mission_type]
+            )
+            for zone in self.lz_manager.zones:
+                if zone.reserved_by == uav.uid:
+                    self.lz_manager.note_committed_landing(
+                        zone.lz_id, uav.uid, expected_release_at
+                    )
+                    break
         self.telemetry["checked_executed_plan_matches"] += 1
         return True
 

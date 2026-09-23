@@ -4,7 +4,7 @@
 >
 > **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。新安全/能量语义的探索性 dense24 双种子敏感性 12/12 完成，但 original K3 在 80 m 下仅 41/48 完成，主要未完成终态为低 SOC 分流。当前 MDP 的 P3 high-SOC formal all-complete gate 已失败；low-SOC stress 已完成并通过其完整性、安全与 replay gates，完成率和低 SOC 分流仍为报告结果。`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
+> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。当前 MDP 的 P3 high-SOC formal all-complete gate 已失败；low-SOC stress 已完成并通过其完整性、安全与 replay gates，完成率和低 SOC 分流仍为报告结果。已完成 RESERVED LZ release ETA 生命周期修复，定向测试 `29 passed`；单机 `phase_motion_v2` 应急可达性预检生成并通过 SafetyFilter 认证 `36` 个 `3 rings × 4 angles × 6 LZ` 样本，但不含拥堵或时隙，不替代 formal qualification。当前 emergency-priority guard 仍为 opt-in FAIL，`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`；后续性能与 source-bound 观察仍在进行。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
