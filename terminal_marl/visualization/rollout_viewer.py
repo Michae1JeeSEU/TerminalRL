@@ -13,7 +13,7 @@ from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import DynamicRulePolicy
 from ..training.high_level_a6 import load_high_level
 from .config import VisualizationConfig
-from .pyvista_viewer import AsyncTerminalViewerObserver
+from .pyvista_viewer import AsyncTerminalViewerObserver, BufferedProcessTerminalViewerObserver
 from .snapshot import build_world_render_snapshot
 
 
@@ -51,15 +51,22 @@ def _config_for_mode(mode: str, max_simulation_seconds: float, scenario: str = "
     return SimConfig(experiment_mode=mode, high_level_enabled=dynamic, max_simulation_seconds=max_simulation_seconds)
 
 
-def _attach_viewer(env: TerminalParallelEnv, config: VisualizationConfig) -> tuple[None, AsyncTerminalViewerObserver]:
-    observer = AsyncTerminalViewerObserver(
+def _attach_viewer(
+    env: TerminalParallelEnv,
+    config: VisualizationConfig,
+) -> tuple[None, BufferedProcessTerminalViewerObserver]:
+    observer = BufferedProcessTerminalViewerObserver(
         build_world_render_snapshot(env, trajectory_max_points=config.trajectory_max_points), config
     )
     env.set_step_observer(observer)
     return None, observer
 
 
-def _pace_live_rollout(observer: AsyncTerminalViewerObserver | None, simulated_dt: float, tick_started: float) -> float:
+def _pace_live_rollout(
+    observer: AsyncTerminalViewerObserver | BufferedProcessTerminalViewerObserver | None,
+    simulated_dt: float,
+    tick_started: float,
+) -> float:
     """Honor an explicit live-playback request without waiting for rendering.
 
     A zero speed remains the performance/default mode.  A positive value is a
@@ -80,7 +87,7 @@ def _pace_live_rollout(observer: AsyncTerminalViewerObserver | None, simulated_d
 
 
 def run_rollout(
-    *, mode: str, seed: int, gui: bool = False, frame_stride: int = 5,
+    *, mode: str, seed: int, gui: bool = False, frame_stride: int = 1,
     playback_speed: float = 0.0, show_trajectories: bool = False, show_labels: bool = False,
     low_checkpoint: str | None = None, high_checkpoint: str | None = None,
     max_simulation_seconds: float = 3600.0, max_steps: int | None = None, scenario: str = "default",
@@ -97,7 +104,7 @@ def run_rollout(
         enabled=gui, frame_stride=frame_stride, playback_speed=playback_speed,
         show_trajectories=show_trajectories, show_labels=show_labels,
     )
-    observer: AsyncTerminalViewerObserver | None = None
+    observer: AsyncTerminalViewerObserver | BufferedProcessTerminalViewerObserver | None = None
 
     def stopped() -> bool:
         return observer is not None and observer.stop_requested
@@ -175,7 +182,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--scenario", choices=("default", "fixed_rule_warm_flow"), default="default")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--frame-stride", type=int, default=5)
+    parser.add_argument("--frame-stride", type=int, default=1)
     parser.add_argument("--playback-speed", type=float, default=0.0, help="0 is unthrottled; positive values are simulated seconds per wall-clock second.")
     parser.add_argument("--trajectories", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--labels", action="store_true")

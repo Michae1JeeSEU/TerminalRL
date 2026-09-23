@@ -1,11 +1,198 @@
-<!doctype html><html lang="zh"><meta charset="utf-8"><title>Terminal · 策略验证回放</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#101827;color:#e4edf7;font:15px system-ui}header{padding:20px 28px;border-bottom:1px solid #344154}h1{font-size:22px;margin:0 0 7px}small{color:#a6b6c8}main{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:20px}canvas{width:100%;height:590px;background:#172235;border-radius:12px}aside{padding:18px;background:#172235;border-radius:12px}button,select{padding:9px;background:#304763;color:white;border:0;border-radius:6px}label{display:inline-flex;gap:8px;align-items:center;margin:10px}input[type=range]{width:220px}#timeline{width:calc(100% - 50px);margin:20px}#hud{line-height:1.9}.uav{margin-top:12px;padding-top:10px;border-top:1px solid #344154;font-size:13px}@media(max-width:850px){main{grid-template-columns:1fr}canvas{height:450px}}</style>
-<header><h1>终端区 · PPO 独立验证</h1><small id="title"></small><br><small>真实 ActionTape 精确重放；复用现有 WorldRenderSnapshot。轨迹为安全链已承诺轨迹，非策略直接飞控。</small></header>
-<main><section><canvas id="scene"></canvas><input id="timeline" type="range" min="0" value="0"><div><button id="play">播放</button><button id="reset">回到起点</button><label>速度<select id="speed"><option>5</option><option selected>10</option><option>20</option><option>40</option></select>×</label><label>方位<input id="angle" type="range" min="0" max="360" value="35"></label><label><input id="trails" type="checkbox" checked>已承诺轨迹</label></div></section><aside><div id="hud"></div><div id="agents"></div><p><small>按时间轴查看入场、等待、切环、final 与服务过程。高度为便于辨识放大显示；回放不能单独证明训练优于基线。</small></p></aside></main>
-<script>const data=__SNAPSHOT_DATA__;const frames=data.frames,c=document.getElementById('scene'),ctx=c.getContext('2d'),slider=document.getElementById('timeline');document.getElementById('title').textContent=data.title;slider.max=frames.length-1;let index=0,playing=false,sim=frames[0].time,last=0;
+<!doctype html>
+<html lang="zh">
+<meta charset="utf-8">
+<title>Terminal · 场景回放</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#e4edf7;font:15px system-ui}
+header{padding:20px 28px;border-bottom:1px solid #344154}
+h1{font-size:22px;margin:0 0 7px}
+small{color:#a6b6c8}
+main{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:20px}
+canvas{width:100%;height:590px;background:#172235;border-radius:12px}
+aside{padding:18px;background:#172235;border-radius:12px}
+button,select{padding:9px;background:#304763;color:white;border:0;border-radius:6px}
+label{display:inline-flex;gap:8px;align-items:center;margin:10px}
+input[type=range]{width:220px}
+#timeline{width:calc(100% - 50px);margin:20px}
+#hud{line-height:1.9}
+.uav{margin-top:12px;padding-top:10px;border-top:1px solid #344154;font-size:13px}
+@media(max-width:850px){main{grid-template-columns:1fr}canvas{height:450px}}
+</style>
+<header>
+  <h1>终端区 · 场景回放</h1>
+  <small id="title"></small><br>
+  <small>WorldRenderSnapshot 逐帧回放；轨迹为安全链已承诺轨迹，非策略直接飞控。位置插值仅用于显示。</small>
+</header>
+<main>
+  <section>
+    <canvas id="scene"></canvas>
+    <input id="timeline" type="range" min="0" value="0">
+    <div>
+      <button id="play">播放</button>
+      <button id="reset">回到起点</button>
+      <label>速度<select id="speed"><option>5</option><option selected>10</option><option>20</option><option>40</option></select>×</label>
+      <label>方位<input id="angle" type="range" min="0" max="360" value="35"></label>
+      <label><input id="trails" type="checkbox" checked>已承诺轨迹</label>
+      <label title="只插值相邻快照中仍存在且 phase 未改变的 UAV 位置">
+        <input id="interpolation" type="checkbox" checked>位置插值（仅显示）
+      </label>
+    </div>
+  </section>
+  <aside>
+    <div id="hud"></div>
+    <div id="agents"></div>
+    <p><small>按时间轴查看入场、等待、切环、final 与服务过程。高度为便于辨识放大显示；位置插值不改变 SOC、状态、承诺轨迹或 HUD 数据。</small></p>
+  </aside>
+</main>
+<script>
+const data=__SNAPSHOT_DATA__;
+const frames=data.frames;
+const c=document.getElementById('scene');
+const ctx=c.getContext('2d');
+const slider=document.getElementById('timeline');
+const interpolationToggle=document.getElementById('interpolation');
+const playButton=document.getElementById('play');
+const title=document.getElementById('title');
+const hud=document.getElementById('hud');
+const agents=document.getElementById('agents');
+title.textContent=data.title;
+slider.max=frames.length-1;
+
+let index=0;
+let playing=false;
+let sim=frames[0].time;
+let last=0;
+let lastDetailsIndex=-1;
+let canvasMetrics=null;
+
 const colors=['#60a5fa','#f59e0b','#34d399','#f472b6','#c4b5fd','#fb923c'];
-function draw(){const r=c.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);const w=r.width,h=r.height,f=frames[index],a=Number(document.getElementById('angle').value)*Math.PI/180,s=Math.min(w/3200,h/2200);ctx.clearRect(0,0,w,h);function xy(p){return [w/2+s*(p[0]*Math.cos(a)-p[1]*Math.sin(a)),h*.57+s*(.55*(p[0]*Math.sin(a)+p[1]*Math.cos(a))-p[2]*2)]}function line(points,color,width=1){if(!points.length)return;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();points.forEach((p,i)=>{let q=xy(p);i?ctx.lineTo(...q):ctx.moveTo(...q)});ctx.stroke()}
-f.rings.forEach((ring,i)=>{line(Array.from({length:121},(_,j)=>[ring.radius*Math.cos(j*Math.PI/60),ring.radius*Math.sin(j*Math.PI/60),ring.height]),colors[i],2);const p=xy([ring.radius,0,ring.height]);ctx.fillStyle=colors[i];ctx.fillText(`${ring.role} ${ring.occupancy}/${ring.capacity}`,p[0],p[1]-8)});f.gates.forEach(g=>{line([g.spawn_position,g.gate_position],'#71849b',2);const p=xy(g.spawn_position);ctx.fillStyle='#abbcd0';ctx.fillText('Gate '+g.gate_id,p[0],p[1])});f.landing_zones.forEach(l=>{const p=xy(l.position);ctx.fillStyle=l.status==='free'?'#34d399':l.status==='occupied'?'#fb7185':'#fbbf24';ctx.fillRect(p[0]-4,p[1]-4,8,8)});
-f.uavs.forEach(u=>{const color=colors[u.uid%colors.length],p=xy(u.position);if(document.getElementById('trails').checked)line(u.trajectory_points,color,1);ctx.fillStyle=color;ctx.beginPath();ctx.arc(p[0],p[1],5,0,Math.PI*2);ctx.fill();ctx.fillText('U'+u.uid,p[0]+8,p[1]-5)});
-document.getElementById('hud').textContent=`仿真时间 ${f.time.toFixed(0)} s · 帧 ${index+1}/${frames.length}\n在空 ${f.uavs.length} · 外部队列 ${f.external_queue_size}\n服务中 ${f.service_count} · 已完成 ${f.completed_count}`;document.getElementById('hud').style.whiteSpace='pre-line';const box=document.getElementById('agents');box.replaceChildren();f.uavs.forEach(u=>{let e=document.createElement('div');e.className='uav';e.textContent=`U${u.uid} · ${u.phase}\nSOC ${(100*u.soc).toFixed(1)}% · ${u.speed.toFixed(1)} m/s\n${u.committed?'已承诺轨迹':'等待/可决策'} · ${u.last_release_decision||'—'}`;e.style.whiteSpace='pre-line';box.append(e)});slider.value=index}
-slider.oninput=()=>{index=Number(slider.value);sim=frames[index].time;draw()};document.getElementById('play').onclick=()=>{playing=!playing;document.getElementById('play').textContent=playing?'暂停':'播放'};document.getElementById('reset').onclick=()=>{index=0;sim=frames[0].time;draw()};document.getElementById('angle').oninput=draw;document.getElementById('trails').onchange=draw;window.onresize=draw;function tick(t){if(playing&&last){sim+=(t-last)/1000*Number(document.getElementById('speed').value);while(index<frames.length-1&&frames[index+1].time<=sim)index++;if(index===frames.length-1){playing=false;document.getElementById('play').textContent='播放'}draw()}last=t;requestAnimationFrame(tick)}draw();requestAnimationFrame(tick);</script></html>
+
+function resizeCanvasIfNeeded(){
+  const r=c.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const width=Math.max(1,Math.round(r.width*dpr));
+  const height=Math.max(1,Math.round(r.height*dpr));
+  if(!canvasMetrics||canvasMetrics.cssWidth!==r.width||canvasMetrics.cssHeight!==r.height||canvasMetrics.dpr!==dpr||c.width!==width||c.height!==height){
+    c.width=width;
+    c.height=height;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    canvasMetrics={cssWidth:r.width,cssHeight:r.height,dpr,width,height};
+  }
+  return {width:r.width,height:r.height};
+}
+
+function updateFrameDetails(f){
+  if(lastDetailsIndex===index)return;
+  hud.textContent=`仿真时间 ${f.time.toFixed(0)} s · 帧 ${index+1}/${frames.length}\n在空 ${f.uavs.length} · 外部队列 ${f.external_queue_size}\n服务中 ${f.service_count} · 已完成 ${f.completed_count}`;
+  hud.style.whiteSpace='pre-line';
+  agents.replaceChildren();
+  f.uavs.forEach(u=>{
+    const e=document.createElement('div');
+    e.className='uav';
+    e.textContent=`U${u.uid} · ${u.phase}\nSOC ${(100*u.soc).toFixed(1)}% · ${u.speed.toFixed(1)} m/s\n${u.committed?'已承诺轨迹':'等待/可决策'} · ${u.last_release_decision||'—'}`;
+    e.style.whiteSpace='pre-line';
+    agents.append(e);
+  });
+  lastDetailsIndex=index;
+}
+
+function setSourceFrame(nextIndex, forceDetails=false){
+  index=Math.max(0,Math.min(frames.length-1,nextIndex));
+  slider.value=index;
+  if(forceDetails||lastDetailsIndex!==index)updateFrameDetails(frames[index]);
+}
+
+function displayAlpha(){
+  if(!interpolationToggle.checked||index>=frames.length-1)return 0;
+  const current=frames[index];
+  const next=frames[index+1];
+  const duration=next.time-current.time;
+  if(duration<=0)return 0;
+  return Math.max(0,Math.min(1,(sim-current.time)/duration));
+}
+
+function displayPosition(u,nextFrame,alpha){
+  if(!alpha||!nextFrame)return u.position;
+  const next=nextFrame.uavs.find(candidate=>candidate.uid===u.uid);
+  if(!next||next.phase!==u.phase||!Array.isArray(u.position)||!Array.isArray(next.position)||u.position.length<3||next.position.length<3)return u.position;
+  return u.position.map((value,axis)=>Number(value)+(Number(next.position[axis])-Number(value))*alpha);
+}
+
+function draw(){
+  const {width:w,height:h}=resizeCanvasIfNeeded();
+  const f=frames[index];
+  const nextFrame=index<frames.length-1?frames[index+1]:null;
+  const alpha=displayAlpha();
+  const a=Number(document.getElementById('angle').value)*Math.PI/180;
+  const s=Math.min(w/3200,h/2200);
+  ctx.clearRect(0,0,w,h);
+  function xy(p){return [w/2+s*(p[0]*Math.cos(a)-p[1]*Math.sin(a)),h*.57+s*(.55*(p[0]*Math.sin(a)+p[1]*Math.cos(a))-p[2]*2)]}
+  function line(points,color,width=1){
+    if(!points.length)return;
+    ctx.strokeStyle=color;
+    ctx.lineWidth=width;
+    ctx.beginPath();
+    points.forEach((p,i)=>{const q=xy(p);i?ctx.lineTo(...q):ctx.moveTo(...q)});
+    ctx.stroke();
+  }
+  f.rings.forEach((ring,i)=>{
+    line(Array.from({length:121},(_,j)=>[ring.radius*Math.cos(j*Math.PI/60),ring.radius*Math.sin(j*Math.PI/60),ring.height]),colors[i],2);
+    const p=xy([ring.radius,0,ring.height]);
+    ctx.fillStyle=colors[i];
+    ctx.fillText(`${ring.role} ${ring.occupancy}/${ring.capacity}`,p[0],p[1]-8);
+  });
+  f.gates.forEach(g=>{
+    line([g.spawn_position,g.gate_position],'#71849b',2);
+    const p=xy(g.spawn_position);
+    ctx.fillStyle='#abbcd0';
+    ctx.fillText('Gate '+g.gate_id,p[0],p[1]);
+  });
+  f.landing_zones.forEach(l=>{
+    const p=xy(l.position);
+    ctx.fillStyle=l.status==='free'?'#34d399':l.status==='occupied'?'#fb7185':'#fbbf24';
+    ctx.fillRect(p[0]-4,p[1]-4,8,8);
+  });
+  f.uavs.forEach(u=>{
+    const color=colors[u.uid%colors.length];
+    const p=xy(displayPosition(u,nextFrame,alpha));
+    if(document.getElementById('trails').checked)line(u.trajectory_points,color,1);
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(p[0],p[1],5,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillText('U'+u.uid,p[0]+8,p[1]-5);
+  });
+  updateFrameDetails(f);
+}
+
+slider.oninput=()=>{setSourceFrame(Number(slider.value),true);sim=frames[index].time;draw()};
+playButton.onclick=()=>{playing=!playing;last=0;playButton.textContent=playing?'暂停':'播放'};
+document.getElementById('reset').onclick=()=>{playing=false;last=0;playButton.textContent='播放';sim=frames[0].time;setSourceFrame(0,true);draw()};
+document.getElementById('angle').oninput=draw;
+document.getElementById('trails').onchange=draw;
+interpolationToggle.onchange=draw;
+window.onresize=draw;
+
+function tick(t){
+  if(playing){
+    if(last)sim+=(t-last)/1000*Number(document.getElementById('speed').value);
+    if(sim>=frames[frames.length-1].time){
+      sim=frames[frames.length-1].time;
+      setSourceFrame(frames.length-1,true);
+      playing=false;
+      playButton.textContent='播放';
+    }else{
+      while(index<frames.length-1&&frames[index+1].time<=sim)setSourceFrame(index+1);
+    }
+    draw();
+  }
+  last=t;
+  requestAnimationFrame(tick);
+}
+
+setSourceFrame(0,true);
+draw();
+requestAnimationFrame(tick);
+</script>
+</html>

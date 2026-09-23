@@ -9,7 +9,7 @@ class VisualizationConfig:
     """Settings that never alter canonical simulation configuration."""
 
     enabled: bool = False
-    frame_stride: int = 5
+    frame_stride: int = 1
     show_trajectories: bool = False
     show_labels: bool = False
     show_target_geometry: bool = True
