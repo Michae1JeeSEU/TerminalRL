@@ -99,7 +99,19 @@ class PredictiveSafetyShield:
         self.last_certification_diagnostic: dict[str, object] = {}
         self.last_recursive_gate = "not_run"
         self._joint_track_cache: dict[tuple, np.ndarray] = {}
+        # Speed integration for holders depends on the ring geometry, target
+        # speed and per-step durations, but not on the holder's phase angle.
+        # Keep this cache scoped to one protect tick; position tracks still
+        # remain keyed by the holder snapshot and residual.
+        self._joint_speed_sequence_cache: dict[
+            tuple, tuple[tuple[float, float, float], ...]
+        ] = {}
         self._joint_sampled_track_cache: dict[tuple, np.ndarray] = {}
+        # Pair verdicts are scoped to one ``protect`` call.  The cache is
+        # intentionally inactive for direct ``_joint_assessment`` calls so a
+        # caller cannot accidentally reuse a result across policy ticks.
+        self._joint_pair_verdict_cache: dict[tuple, tuple[bool, float]] | None = None
+        self._joint_pair_snapshot_refs: dict[int, object] | None = None
 
     def assess(self, env) -> RiskAssessment:
         best: tuple[float, float, float, tuple[int, int]] | None = None
@@ -556,12 +568,39 @@ class PredictiveSafetyShield:
                         self.config.speed_min, self.config.max_speed,
                     ))
                     values = [np.asarray(uav.position, dtype=float).copy()]
-                    for left, right in zip(times, times[1:]):
-                        motion = self.dynamics.ring_motion_step(
-                            ring, theta, speed, target_speed, float(right - left),
-                        )
-                        theta, speed = motion.theta, motion.speed
-                        values.append(np.asarray(motion.position, dtype=float))
+                    dt_sequence = tuple(
+                        float(right - left) for left, right in zip(times, times[1:])
+                    )
+                    speed_key = (
+                        float(ring.radius), speed, target_speed, dt_sequence,
+                    )
+                    speed_sequence = self._joint_speed_sequence_cache.get(speed_key)
+                    if speed_sequence is None:
+                        speed0 = speed
+                        sequence: list[tuple[float, float, float]] = []
+                        for step in dt_sequence:
+                            speed1 = self.dynamics.limited_tangential_speed(
+                                speed0, target_speed, float(ring.radius), step,
+                            )
+                            angular_increment = .5 * (speed0 + speed1) * step / float(ring.radius)
+                            sequence.append((speed0, speed1, angular_increment))
+                            speed0 = speed1
+                        speed_sequence = tuple(sequence)
+                        self._joint_speed_sequence_cache[speed_key] = speed_sequence
+                    for step, (speed0, speed1, _angular_increment) in zip(
+                        dt_sequence, speed_sequence,
+                    ):
+                        # Keep the holder-specific theta update in the same
+                        # order as ring_motion_step.  The shared sequence
+                        # removes repeated speed integration while allowing
+                        # holders with different starting angles to reuse it.
+                        theta += .5 * (speed0 + speed1) * step / float(ring.radius)
+                        speed = speed1
+                        values.append(np.asarray((
+                            float(ring.radius) * math.cos(theta),
+                            float(ring.radius) * math.sin(theta),
+                            float(ring.height),
+                        ), dtype=float))
                     positions = np.asarray(values, dtype=float)
                     self._joint_track_cache[key] = positions
             else:
@@ -618,6 +657,36 @@ class PredictiveSafetyShield:
             minimum = min(minimum, float(np.min(swept)))
         return True, minimum
 
+    def _joint_pair_cache_key(
+        self, env, pair: tuple[int, int], residuals: dict[int, float],
+        effective_horizon: float, threshold: float,
+    ) -> tuple | None:
+        """Return a within-protect identity key for one endpoint pair.
+
+        ``id(env)`` identifies the immutable snapshot presented to a joint
+        assessment.  While the cache is active, the strong reference table
+        keeps every snapshot alive so CPython cannot recycle an id for a
+        different successor projection during the same protect call.
+        """
+        cache = self._joint_pair_verdict_cache
+        refs = self._joint_pair_snapshot_refs
+        if cache is None or refs is None:
+            return None
+        snapshot_id = id(env)
+        refs.setdefault(snapshot_id, env)
+        left, right = pair
+        endpoint_residuals = (
+            float(residuals.get(left, 0.0)),
+            float(residuals.get(right, 0.0)),
+        )
+        return (
+            snapshot_id,
+            (left, right),
+            endpoint_residuals,
+            float(effective_horizon),
+            float(threshold),
+        )
+
     def _joint_assessment(self, env, residuals: dict[int, float], *, pairs: tuple[tuple[int, int], ...] | None = None,
                           horizon: float | None = None, threshold: float | None = None) -> JointSafetyAssessment:
         """Check all relevant pairs and retain the current predicted conflict graph."""
@@ -630,16 +699,35 @@ class PredictiveSafetyShield:
         if not active_pairs:
             return JointSafetyAssessment(True, float("inf"), ())
         effective_horizon = float(self.config.shield_horizon_seconds if horizon is None else horizon)
-        _, tracks = self._joint_position_tracks(
-            env, residuals, {uid for pair in active_pairs for uid in pair},
-            horizon=effective_horizon,
-        )
+        pair_records: list[tuple[tuple[int, int], tuple | None, tuple[bool, float] | None]] = []
+        missing_pairs: list[tuple[int, int]] = []
+        cache = self._joint_pair_verdict_cache
+        for pair in active_pairs:
+            key = self._joint_pair_cache_key(
+                env, pair, residuals, effective_horizon, threshold,
+            )
+            verdict = None if cache is None or key is None else cache.get(key)
+            pair_records.append((pair, key, verdict))
+            if verdict is None:
+                missing_pairs.append(pair)
+        if missing_pairs:
+            _, tracks = self._joint_position_tracks(
+                env, residuals, {uid for pair in missing_pairs for uid in pair},
+                horizon=effective_horizon,
+            )
+        else:
+            tracks = {}
         minimum = float("inf")
         unsafe: list[tuple[int, int]] = []
-        for left, right in active_pairs:
-            approved, pair_minimum = self._assess_position_pair(
-                tracks[left], tracks[right], threshold,
-            )
+        for pair, key, verdict in pair_records:
+            left, right = pair
+            if verdict is None:
+                verdict = self._assess_position_pair(
+                    tracks[left], tracks[right], threshold,
+                )
+                if cache is not None and key is not None:
+                    cache[key] = verdict
+            approved, pair_minimum = verdict
             minimum = min(minimum, pair_minimum)
             if not approved:
                 unsafe.append((left, right))
@@ -1125,6 +1213,26 @@ class PredictiveSafetyShield:
         return tuple(values)
 
     def protect(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
+        """Run one protected policy tick with a scoped pair-verdict cache."""
+        self._joint_pair_verdict_cache = {}
+        self._joint_pair_snapshot_refs = {}
+        self._joint_speed_sequence_cache.clear()
+        try:
+            return self._protect_impl(env, intents, traces)
+        finally:
+            # A verdict is valid only while the exact snapshot and residual
+            # inputs remain within this protect call.  Clear both tables on
+            # normal return and on every exception before the next policy
+            # tick can observe them.
+            if self._joint_pair_verdict_cache is not None:
+                self._joint_pair_verdict_cache.clear()
+            if self._joint_pair_snapshot_refs is not None:
+                self._joint_pair_snapshot_refs.clear()
+            self._joint_pair_verdict_cache = None
+            self._joint_pair_snapshot_refs = None
+            self._joint_speed_sequence_cache.clear()
+
+    def _protect_impl(self, env, intents: dict[int, object], traces: dict[int, LowLevelActionTrace] | None = None) -> dict[int, object]:
         """Project every holder speed residual through a joint admissibility test.
 
         This is the final pre-physics gate: no holder speed residual reaches

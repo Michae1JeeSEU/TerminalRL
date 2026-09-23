@@ -210,34 +210,77 @@ class SafetyFilter:
                                                    target_high, self.config.physics_dt)
             cached["angles_low"].append(low.theta); cached["speeds_low"].append(low.speed)
             cached["angles_high"].append(high.theta); cached["speeds_high"].append(high.speed)
-        lower=[]; upper=[]
-        for time in times:
-            offset=max(0.0, float(time)-float(snapshot.now)); index=int(np.floor(offset/self.config.physics_dt+1e-9))
-            fraction=offset-index*self.config.physics_dt
-            if fraction <= 1e-8:
-                lower.append(cached["angles_low"][index]); upper.append(cached["angles_high"][index])
-            else:
-                low=self.dynamics.ring_motion_step(ring,cached["angles_low"][index],cached["speeds_low"][index],target_low,fraction)
-                high=self.dynamics.ring_motion_step(ring,cached["angles_high"][index],cached["speeds_high"][index],target_high,fraction)
-                lower.append(low.theta); upper.append(high.theta)
-        return np.asarray(lower,dtype=float),np.asarray(upper,dtype=float)
+        # Gather all grid-aligned samples in one NumPy pass.  Fractional
+        # offsets still use the authoritative finite-step integrator so the
+        # result remains numerically identical to the scalar lookup path.
+        values = np.asarray(times, dtype=float)
+        offsets = np.maximum(0.0, values - float(snapshot.now))
+        indices = np.floor(offsets / self.config.physics_dt + 1e-9).astype(int)
+        fractions = offsets - indices * self.config.physics_dt
+        grid_aligned = fractions <= 1e-8
+
+        lower = np.empty(len(values), dtype=float)
+        upper = np.empty(len(values), dtype=float)
+        angles_low = np.asarray(cached["angles_low"], dtype=float)
+        angles_high = np.asarray(cached["angles_high"], dtype=float)
+        lower[grid_aligned] = angles_low[indices[grid_aligned]]
+        upper[grid_aligned] = angles_high[indices[grid_aligned]]
+
+        for position in np.flatnonzero(~grid_aligned):
+            index = int(indices[position])
+            fraction = float(fractions[position])
+            low = self.dynamics.ring_motion_step(
+                ring, angles_low[index], cached["speeds_low"][index], target_low, fraction
+            )
+            high = self.dynamics.ring_motion_step(
+                ring, angles_high[index], cached["speeds_high"][index], target_high, fraction
+            )
+            lower[position] = low.theta
+            upper[position] = high.theta
+        return lower, upper
 
     @staticmethod
     def _tube_point_distances(points: np.ndarray, ring, lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
         """Exact minimum distance from each point to its circular reachable arc."""
-        values = []
-        for point, lo, hi in zip(np.asarray(points, dtype=float), lower, upper):
-            radius = float(np.linalg.norm(point[:2])); angle = float(np.arctan2(point[1], point[0]))
-            candidates = [lo, hi]
-            # The closest circular point has the point's polar angle when it
-            # lies inside the unwrapped reachable interval.
-            for turns in range(-2, 3):
-                shifted = angle + turns * 2.0 * math.pi
-                if lo <= shifted <= hi:
-                    candidates.append(shifted)
-            values.append(min(math.sqrt(max(0.0, ring.radius**2 + radius**2 - 2.0 * ring.radius * radius * math.cos(candidate - angle)) +
-                                        (ring.height - point[2])**2) for candidate in candidates))
-        return np.asarray(values, dtype=float)
+        # Keep the historical zip semantics for malformed caller inputs while
+        # evaluating all points and all five legal turns in one NumPy pass.
+        values = np.asarray(points, dtype=float)
+        lower = np.asarray(lower, dtype=float)
+        upper = np.asarray(upper, dtype=float)
+        count = min(len(values), len(lower), len(upper))
+        if count == 0:
+            return np.empty(0, dtype=float)
+
+        values = values[:count]
+        lower = lower[:count]
+        upper = upper[:count]
+        radius = np.linalg.norm(values[:, :2], axis=1)
+        angle = np.arctan2(values[:, 1], values[:, 0])
+        radial_vertical = (float(ring.height) - values[:, 2]) ** 2
+
+        # The two interval endpoints are always legal candidates.  The
+        # closest circular point is the point's polar angle when one of its
+        # five explicitly supported unwrapped copies lies in [lower, upper].
+        endpoint_angles = np.stack((lower, upper), axis=1)
+        endpoint_delta = endpoint_angles - angle[:, None]
+        endpoint_squared = (
+            float(ring.radius) ** 2
+            + radius[:, None] ** 2
+            - 2.0 * float(ring.radius) * radius[:, None] * np.cos(endpoint_delta)
+        )
+
+        turns = np.arange(-2, 3, dtype=float)
+        shifted = angle[:, None] + turns[None, :] * (2.0 * math.pi)
+        inside = (lower[:, None] <= shifted) & (shifted <= upper[:, None])
+        interior_delta = shifted - angle[:, None]
+        interior_squared = (
+            float(ring.radius) ** 2
+            + radius[:, None] ** 2
+            - 2.0 * float(ring.radius) * radius[:, None] * np.cos(interior_delta)
+        )
+        interior_squared = np.where(inside, interior_squared, np.inf)
+        minimum_squared = np.minimum(np.min(endpoint_squared, axis=1), np.min(interior_squared, axis=1))
+        return np.sqrt(np.maximum(0.0, minimum_squared) + radial_vertical)
 
     @staticmethod
     def _track_distances(left, right) -> tuple[np.ndarray, np.ndarray]:

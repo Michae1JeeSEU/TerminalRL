@@ -59,12 +59,19 @@ class TrajectoryTimeParameterizer:
     @staticmethod
     def _curvature_xy(points: np.ndarray) -> np.ndarray:
         values = np.zeros(len(points), dtype=float)
-        for index in range(1, len(points) - 1):
-            left, middle, right = points[index - 1:index + 2, :2]
-            a, b, c = np.linalg.norm(middle - left), np.linalg.norm(right - middle), np.linalg.norm(right - left)
-            first, second = middle - left, right - left
-            area2 = abs(first[0] * second[1] - first[1] * second[0])
-            values[index] = 0.0 if min(a, b, c) <= 1e-12 else 2.0 * area2 / (a * b * c)
+        if len(points) > 2:
+            xy = np.asarray(points[:, :2], dtype=float)
+            first = xy[1:-1] - xy[:-2]
+            second = xy[2:] - xy[:-2]
+            middle_to_right = xy[2:] - xy[1:-1]
+            a = np.linalg.norm(first, axis=1)
+            b = np.linalg.norm(middle_to_right, axis=1)
+            c = np.linalg.norm(second, axis=1)
+            valid = np.minimum(np.minimum(a, b), c) > 1e-12
+            interior = np.zeros(len(points) - 2, dtype=float)
+            cross = np.abs(first[:, 0] * second[:, 1] - first[:, 1] * second[:, 0])
+            interior[valid] = 2.0 * cross[valid] / (a[valid] * b[valid] * c[valid])
+            values[1:-1] = interior
         values[0] = values[1]; values[-1] = values[-2]
         return values
 
