@@ -38,10 +38,17 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    对应 data protocol 为 `56b4c3`；proposal head/encoder 冻结。服务器 smoke `846000` exit `0`，
    已接受 `18` 条 actor labels（`7 WAIT + 11 RELEASE`），全部 finite 88D 且 schema 映射正确、
    weights unchanged；服务器指定 `5` 个模块测试为 `39 PASS`，本地 `44` 个测试属于另一组，
-   不合并为同一测试总数。完整 `7` 回合 collection 已启动，输出根为
-   `/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925`。启动 wrapper 曾因
+   不合并为同一测试总数。完整 `7` 回合 collection 已完成，结果见
+   [collection/fit result](evidence/v4_2/random_soc_gate_repair_v1_result_20260925.md)。启动 wrapper 曾因
    reset 前预建 output 被拒绝，归档为 `launch_failure_train_flow6_846101`；修正独立 `_control` 日志后，
-   首个实际 `846101` 回合已运行，不称为重复 seed 实验。当前未 fit、`P3_QUALIFIED=false`、
+   首个实际 `846101` 回合已运行，不称为重复 seed 实验。授权的 gate-adapter-only fit 已完成 `35/35`，
+   fit artifact SHA256 为 `e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353`，
+   train/dev rows 为 `1529/812`；dev RELEASE/WAIT recall 为 `.6131687243→.7860082305` /
+   `.8119507909→.7768014060`，macro-F1 `.7092638611→.7562677855`，dev NLL
+   `1.265022278→1.031340837`，train NLL `1.259755254→.755264521`。仅 adapter 改变，
+   non-adapter/proposal logits bitwise unchanged；strict load passed、无 optimizer state、无 dev gradient/
+   early stop/PPO。wrapper 最后有 CRLF shell exit error，但 Python 已完成且 control 保存 Python exit `0`，
+   未重跑。846301/846302/846303 paired rollout 尚未运行；`P3_QUALIFIED=false`、
    `PPO_ALLOWED=false`；旧 formal/heldout 保持 untouched，不放宽既有 gate。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
