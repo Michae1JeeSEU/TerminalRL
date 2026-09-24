@@ -2,11 +2,43 @@
 from __future__ import annotations
 
 from ..core.config import RingRole
-from ..core.low_level_joint_action_v4_1 import JointActionV41
+from ..core.low_level_joint_action_v4_1 import (
+    JOINT_ACTION_CATALOG_V4_1,
+    JointActionV41,
+)
 from ..core.low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2
 from ..core.merge_scheduler import LowLevelIntent, RepairCandidate
 from ..core.uav import FlightPhase
 from ..envs.parallel_env import TerminalParallelEnv, WorldSnapshot
+
+
+STATE_ONLY_JOINT_CATALOGUE_V4_1: tuple[JointActionV41, ...] = (
+    tuple(sorted(
+        (row for row in JOINT_ACTION_CATALOG_V4_1 if row.release_request > 0.0),
+        key=lambda row: (abs(row.speed_residual), abs(row.merge_time_residual), row.index),
+    ))
+    + tuple(sorted(
+        (row for row in JOINT_ACTION_CATALOG_V4_1 if row.release_request == 0.0),
+        key=lambda row: row.index,
+    ))
+)
+
+
+def _joint_catalogue(env: TerminalParallelEnv, *, state_only: bool) -> tuple[JointActionV41, ...]:
+    if state_only:
+        if (
+            env.config.teacher_enabled
+            or env.config.scheduler_mode != "execution"
+            or env.config.teacher_release_label_enabled
+        ):
+            raise ValueError(
+                "state-only Teacher requires teacher_enabled=False, "
+                "scheduler_mode='execution', and teacher_release_label_enabled=False"
+            )
+        return STATE_ONLY_JOINT_CATALOGUE_V4_1
+    if env.teacher_scheduler is None:
+        raise RuntimeError("V4.1 joint Teacher requires TeacherScheduler")
+    return env.teacher_scheduler.joint_catalogue()
 
 
 def _release_context(env: TerminalParallelEnv, uav) -> tuple[RingRole | str, str] | None:
@@ -36,16 +68,21 @@ def _candidate_score(candidate: JointActionV41) -> dict[str, float | int | str]:
     return score
 
 
-def teacher_joint_expert_v4_1(env: TerminalParallelEnv, uav, *, audit_catalogue: bool = False) -> tuple[JointActionV41, tuple[dict, ...]]:
+def teacher_joint_expert_v4_1(
+    env: TerminalParallelEnv,
+    uav,
+    *,
+    audit_catalogue: bool = False,
+    state_only: bool = False,
+) -> tuple[JointActionV41, tuple[dict, ...]]:
     if env.config.action_schema_version not in {"low_action_schema_v4_1_joint_discrete_26", ACTION_SCHEMA_V4_2}:
         raise ValueError("V4.1 semantic Teacher requires the V4.1 or V4.2 action schema")
-    if env.teacher_scheduler is None:
-        raise RuntimeError("V4.1 joint Teacher requires TeacherScheduler")
+    catalogue = _joint_catalogue(env, state_only=state_only)
     context = _release_context(env, uav)
     snapshot = WorldSnapshot(env.now, env.active, env.airspace)
     audit: list[dict] = []
     selected: JointActionV41 | None = None
-    for rank, candidate in enumerate(env.teacher_scheduler.joint_catalogue()):
+    for rank, candidate in enumerate(catalogue):
         feasible, reason = False, ""
         audit_fields: dict[str, object] = {}
         if candidate.release_request <= 0.0:
@@ -120,12 +157,12 @@ def teacher_joint_expert_v4_1(env: TerminalParallelEnv, uav, *, audit_catalogue:
             if not audit_catalogue:
                 break
     if selected is None:
-        selected = next(row for row in env.teacher_scheduler.joint_catalogue() if row.release_request == 0.0)
+        selected = next(row for row in catalogue if row.release_request == 0.0)
     return selected, tuple(audit)
 
 
-def teacher_joint_label_v4_1(env: TerminalParallelEnv, uav) -> JointActionV41:
-    return teacher_joint_expert_v4_1(env, uav)[0]
+def teacher_joint_label_v4_1(env: TerminalParallelEnv, uav, *, state_only: bool = False) -> JointActionV41:
+    return teacher_joint_expert_v4_1(env, uav, state_only=state_only)[0]
 
 
 def component_disagreement_v4_1(requested: JointActionV41, teacher: JointActionV41) -> dict[str, bool]:

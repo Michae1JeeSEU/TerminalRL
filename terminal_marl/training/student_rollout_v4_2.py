@@ -24,6 +24,54 @@ from .v4_1_joint_teacher import teacher_joint_expert_v4_1
 OBS_SCHEMA = "phaseA_low_obs_v2_1_retry_state"
 
 
+def _validate_label_stride_steps(label_stride_steps: int) -> int:
+    if isinstance(label_stride_steps, bool) or not isinstance(label_stride_steps, (int, np.integer)):
+        raise ValueError("label_stride_steps must be a positive integer")
+    value = int(label_stride_steps)
+    if value < 1:
+        raise ValueError("label_stride_steps must be a positive integer")
+    return value
+
+
+def _label_query_uids(
+    *,
+    tick: int,
+    uids: list[str],
+    actor_mask: np.ndarray,
+    gates: np.ndarray,
+    label_stride_steps: int,
+    previous_actor_mask: dict[str, bool],
+    previous_requested_gates: dict[str, int],
+) -> set[str]:
+    """Select rows for bounded Teacher queries and update selector memory."""
+
+    stride = _validate_label_stride_steps(label_stride_steps)
+    periodic = int(tick) % stride == 0
+    selected: set[str] = set()
+    for index, uid in enumerate(uids):
+        uid_key = str(uid)
+        actor = bool(actor_mask[index])
+        requested_gate = int(gates[index])
+        first_actor = actor and not previous_actor_mask.get(uid_key, False)
+        gate_changed = (
+            actor
+            and uid_key in previous_requested_gates
+            and previous_requested_gates[uid_key] != requested_gate
+        )
+        if periodic or first_actor or gate_changed:
+            selected.add(uid_key)
+        previous_actor_mask[uid_key] = actor
+        previous_requested_gates[uid_key] = requested_gate
+    # An active UID missing from one observation is non-actor for the purpose
+    # of the next appearance.  This keeps short-lived arrivals from being
+    # skipped merely because the previous actor state was cached.
+    current_uids = {str(uid) for uid in uids}
+    for uid_key in tuple(previous_actor_mask):
+        if uid_key not in current_uids:
+            previous_actor_mask[uid_key] = False
+    return selected
+
+
 def validate_student_config(config, *, collect_labels: bool = False) -> None:
     if config.action_schema_version != ACTION_SCHEMA_V4_2 or config.observation_schema_version != OBS_SCHEMA:
         raise ValueError("student rollout requires V4.2 / 88D V2.1")
@@ -102,18 +150,51 @@ def student_request(policy: JointPPOV42, env, observations: dict, *, determinist
     )[:-1]
 
 
+def _teacher_label(
+    env,
+    uav,
+    *,
+    audit_catalogue: bool,
+    state_only: bool,
+):
+    if state_only:
+        return teacher_joint_expert_v4_1(
+            env, uav, audit_catalogue=audit_catalogue, state_only=True,
+        )
+    # Keep the historical call signature untouched for existing callers and
+    # monkeypatched Teacher tests when the external labeler is disabled.
+    return teacher_joint_expert_v4_1(env, uav, audit_catalogue=audit_catalogue)
+
+
 def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             output: Path, deterministic: bool = False, collect_labels: bool = False,
             collect_diagnostics: bool = False,
             collect_catalogue_diagnostics: bool = False,
-            catalogue_scope: str = "requested_release") -> tuple[list[StudentStepV42], dict]:
+            catalogue_scope: str = "requested_release",
+            label_stride_steps: int = 1,
+            state_only_labels: bool = False) -> tuple[list[StudentStepV42], dict]:
+    if state_only_labels and not collect_labels:
+        raise ValueError("state_only_labels requires collect_labels")
     if collect_diagnostics and not collect_labels:
         raise ValueError("diagnostic attribution requires label-only Teacher rows")
     if collect_catalogue_diagnostics and not collect_diagnostics:
         raise ValueError("catalogue diagnostics require diagnostic attribution rows")
     if catalogue_scope not in {"requested_release", "teacher_release"}:
         raise ValueError("catalogue_scope must be requested_release or teacher_release")
-    validate_student_config(config, collect_labels=collect_labels)
+    label_stride_steps = _validate_label_stride_steps(label_stride_steps)
+    if state_only_labels:
+        if (
+            config.teacher_enabled
+            or config.scheduler_mode != "execution"
+            or config.teacher_release_label_enabled
+        ):
+            raise ValueError(
+                "state-only labels require teacher_enabled=False, "
+                "scheduler_mode='execution', and teacher_release_label_enabled=False"
+            )
+        validate_student_config(config, collect_labels=False)
+    else:
+        validate_student_config(config, collect_labels=collect_labels)
     if policy.observation_dim != 88 or max_steps < 1:
         raise ValueError("88D policy and positive rollout horizon required")
     output.mkdir(parents=True, exist_ok=False)
@@ -125,6 +206,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     steps, events, queues = [], [], []
     safety_error = None
     counts = {"WAIT": 0, "RELEASE": 0, "shield": 0, "shield_actor": 0, "actor_decisions": 0}
+    previous_actor_mask: dict[str, bool] = {}
+    previous_requested_gates: dict[str, int] = {}
     for tick in range(max_steps):
         (uids, world, actor_mask, requested, gates, proposals, gate_lp, proposal_lp,
          likelihoods, proposal_shortlists) = _student_request_details(
@@ -135,20 +218,31 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         labels = {}
         pending = []
         state_hash = _digest(SafetyTraceRecorder._state(env))
+        label_uids = _label_query_uids(
+            tick=tick,
+            uids=uids,
+            actor_mask=actor_mask,
+            gates=gates,
+            label_stride_steps=label_stride_steps,
+            previous_actor_mask=previous_actor_mask,
+            previous_requested_gates=previous_requested_gates,
+        ) if collect_labels else set()
         for i, uid in enumerate(uids):
             counts["actor_decisions"] += int(actor_mask[i])
             if actor_mask[i]:
                 counts["RELEASE" if gates[i] else "WAIT"] += 1
-            if collect_labels:
+            if collect_labels and str(uid) in label_uids:
                 catalogue = ()
                 if collect_catalogue_diagnostics and catalogue_scope == "teacher_release":
-                    label, _ = teacher_joint_expert_v4_1(
+                    label, _ = _teacher_label(
                         env, env.active[int(uid)], audit_catalogue=False,
+                        state_only=state_only_labels,
                     )
                     catalogue_requested = bool(actor_mask[i] and label.index > 0)
                     if catalogue_requested:
-                        full_label, catalogue = teacher_joint_expert_v4_1(
+                        full_label, catalogue = _teacher_label(
                             env, env.active[int(uid)], audit_catalogue=True,
+                            state_only=state_only_labels,
                         )
                         if full_label.index != label.index:
                             raise RuntimeError("catalogue Teacher changed the label")
@@ -156,10 +250,14 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                     catalogue_requested = bool(
                         collect_catalogue_diagnostics and actor_mask[i] and gates[i] == 1
                     )
-                    label, catalogue = teacher_joint_expert_v4_1(
+                    label, catalogue = _teacher_label(
                         env, env.active[int(uid)], audit_catalogue=catalogue_requested,
+                        state_only=state_only_labels,
                     )
-                repeated, _ = teacher_joint_expert_v4_1(env, env.active[int(uid)], audit_catalogue=False)
+                repeated, _ = _teacher_label(
+                    env, env.active[int(uid)], audit_catalogue=False,
+                    state_only=state_only_labels,
+                )
                 if label.index != repeated.index:
                     raise RuntimeError("nondeterministic DAgger label")
                 target = hierarchical_from_joint_index_v4_1(label.index)
@@ -169,6 +267,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                     "teacher_proposal": target.proposal, "teacher_joint_index": target.joint_index_v4_1,
                     "source": "student_visited_label_only", "seed": seed,
                     "phase": env.active[int(uid)].phase.value, "step": tick,
+                    "observed_soc": float(env.active[int(uid)].soc),
+                    "base_priority": int(env.active[int(uid)].base_priority),
                     "episode_id": f"student:{seed}",
                     "lifecycle_event_id": f"student:{seed}:uav:{uid}", "decision_event_id": f"student:{seed}:uav:{uid}:step:{tick}",
                     "observation_hash": _digest(world[i]), "state_hash": state_hash, "uav_id": uid,
@@ -189,6 +289,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                             if bool(item.get("feasible")) and int(item.get("joint_index", 0)) > 0
                         ],
                     } if collect_catalogue_diagnostics and actor_mask[i] else {})})
+        if collect_labels and _digest(SafetyTraceRecorder._state(env)) != state_hash:
+            raise RuntimeError("Teacher label query mutated environment state")
         record = tape.record_pre_step(
             env, observations, requested, likelihoods,
             proposal_shortlists=proposal_shortlists,
@@ -258,6 +360,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
               "outcomes": dict(env.ledger.outcomes), "queue": queues,
               "terminal": bool(steps and steps[-1].terminated), "action_tape": str(tape_path),
               "label_rows": len(events), "runtime_shortlist": runtime_shortlist,
+              "label_stride_steps": int(label_stride_steps),
+              "state_only_labels": bool(state_only_labels),
               "PPO_ALLOWED": False}
     (output / "summary.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return steps, result
