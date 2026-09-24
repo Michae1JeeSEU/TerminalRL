@@ -162,6 +162,40 @@ def test_each_arm_is_deterministic_student_only_and_weights_are_unchanged(tmp_pa
     assert captured["loaders"][1][2] is captured["rollouts"][1][1]
 
 
+def test_custom_checkpoint_loader_is_used_before_strict_label_dispatch(tmp_path, monkeypatch):
+    config, captured = _patch_pair(monkeypatch)
+    calls = []
+
+    def custom_loader(path, loaded_config):
+        calls.append((path, loaded_config))
+        return _Policy("custom"), {
+            "checkpoint_identity": "canonical_initial",
+            "canonical_initial": True,
+            "migration": {"allowed": True},
+        }
+
+    record, stopped, _ = evaluator._evaluate_arm(
+        label="canonical_initial",
+        checkpoint=tmp_path / "canonical.pt",
+        candidate_sha256=None,
+        config=config,
+        protocol={"attributes": {"low_soc_analysis_threshold": 0.65}},
+        scenario="flow6",
+        seed=846301,
+        output=tmp_path / "arm",
+        checkpoint_loader=custom_loader,
+    )
+
+    assert stopped is False
+    assert calls == [(tmp_path / "canonical.pt", config)]
+    assert captured["loaders"] == []
+    assert record["loader"] == {
+        "checkpoint_identity": "canonical_initial",
+        "canonical_initial": True,
+        "migration": {"allowed": True},
+    }
+
+
 def test_safety_invariant_error_stops_later_arm_and_writes_failure_report(tmp_path, monkeypatch):
     config = _Config()
     loader_calls = []
@@ -257,6 +291,34 @@ def test_loader_record_omits_checkpoint_payload_state():
         "temperature": 1.0,
         "current_execution_metadata": {"teacher_enabled": False},
     }
+
+
+def test_loader_record_keeps_bounded_canonical_provenance():
+    record = evaluator._loader_record({
+        "checkpoint_identity": "canonical_initial",
+        "canonical_initial": True,
+        "weights_match": True,
+        "source_payload_unchanged": True,
+        "migration": {
+            "allowed": True,
+            "source_unchanged": True,
+            "applied_deltas": [
+                {"field": "vehicle_profile_version", "source": "v1", "target": "v2"}
+            ],
+        },
+        "payload_bindings": {
+            "stage": "canonical",
+            "checkpoint_promotable": False,
+        },
+        "model": {"large": "state"},
+    })
+    assert record["checkpoint_identity"] == "canonical_initial"
+    assert record["canonical_initial"] is True
+    assert record["weights_match"] is True
+    assert record["source_payload_unchanged"] is True
+    assert record["migration"]["applied_deltas"][0]["target"] == "v2"
+    assert record["payload_bindings"]["stage"] == "canonical"
+    json.dumps(record, allow_nan=False)
 
 
 def test_output_must_be_fresh(tmp_path):

@@ -120,15 +120,19 @@ def _smoke_arm(
     config: Any,
     seed: int,
     output: Path,
+    checkpoint_loader: Any = None,
 ) -> tuple[dict[str, Any], bool, str | None]:
     record = _new_arm_record(label, checkpoint, config, SCENARIO, seed)
     policy = None
     stop = False
     stop_reason: str | None = None
     try:
-        policy, metadata = load_repaired_checkpoint(
-            checkpoint, config, expected_sha256=candidate_sha256,
-        )
+        if checkpoint_loader is not None:
+            policy, metadata = checkpoint_loader(checkpoint, config)
+        else:
+            policy, metadata = load_repaired_checkpoint(
+                checkpoint, config, expected_sha256=candidate_sha256,
+            )
         record["loader"] = _loader_record(metadata)
         record["weight_digest_before"] = _policy_weight_digest(policy)
         steps, summary = student.rollout(

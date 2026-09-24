@@ -243,6 +243,24 @@ def _arm_invariants(record: Mapping[str, Any]) -> dict[str, bool]:
 def _loader_record(metadata: Any) -> Any:
     if not isinstance(metadata, Mapping):
         return metadata
+
+    def _bounded_json(value: Any, *, depth: int = 0) -> Any:
+        """Keep small loader provenance without retaining checkpoint payloads."""
+
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if depth >= 4:
+            return None
+        if isinstance(value, Mapping):
+            items = list(value.items())[:64]
+            return {
+                str(key): _bounded_json(item, depth=depth + 1)
+                for key, item in items
+            }
+        if isinstance(value, (list, tuple)):
+            return [_bounded_json(item, depth=depth + 1) for item in value[:64]]
+        return None
+
     # The repaired loader returns the checkpoint model state and report in its
     # payload; arm provenance keeps only small binding/loader facts.
     scalar_keys = {
@@ -252,8 +270,14 @@ def _loader_record(metadata: Any) -> Any:
         "weight_digest_matches_payload", "optimizer_restored", "optimizer_saved",
         "checkpoint_promotable", "teacher_enabled", "training_called",
         "supervised_training_called", "teacher_called", "ppo_called", "PPO_ALLOWED",
+        "checkpoint_identity", "canonical_initial", "weights_match",
+        "source_payload_unchanged",
     }
     result = {key: metadata[key] for key in scalar_keys if key in metadata}
+    for key in ("migration", "payload_bindings"):
+        value = metadata.get(key)
+        if isinstance(value, Mapping):
+            result[key] = _bounded_json(value)
     current = metadata.get("current_execution_metadata")
     if isinstance(current, Mapping):
         result["current_execution_metadata"] = dict(current)
@@ -263,6 +287,10 @@ def _loader_record(metadata: Any) -> Any:
         declared_current = declared.get("current_execution_metadata")
         if isinstance(declared_current, Mapping):
             small["current_execution_metadata"] = dict(declared_current)
+        for key in ("migration", "payload_bindings"):
+            value = declared.get(key)
+            if isinstance(value, Mapping):
+                small[key] = _bounded_json(value)
         result["metadata"] = small
     return result
 
@@ -317,6 +345,7 @@ def _evaluate_arm(
     scenario: str,
     seed: int,
     output: Path,
+    checkpoint_loader: Any = None,
 ) -> tuple[dict[str, Any], bool, str | None]:
     record = _new_arm_record(label, checkpoint, config, scenario, seed)
     policy = None
@@ -324,7 +353,9 @@ def _evaluate_arm(
     stop_reason: str | None = None
 
     try:
-        if label == "source":
+        if checkpoint_loader is not None:
+            policy, metadata = checkpoint_loader(checkpoint, config)
+        elif label == "source":
             policy, metadata = load_trained_checkpoint(checkpoint, config)
         else:
             if candidate_sha256 is None:

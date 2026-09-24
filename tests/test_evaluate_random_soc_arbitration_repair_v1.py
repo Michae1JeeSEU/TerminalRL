@@ -171,6 +171,57 @@ def test_smoke_uses_two_steps_without_changing_actual_config(tmp_path, monkeypat
     json.dumps(evaluator._jsonable(result), allow_nan=False)
 
 
+def test_smoke_arm_uses_custom_checkpoint_loader(tmp_path, monkeypatch):
+    config = _Config()
+    loader_calls = []
+    rollout_calls = []
+
+    class Step:
+        teacher_used = False
+
+        def __init__(self):
+            self.world = np.zeros((1, 88), dtype=np.float32)
+
+    def custom_loader(path, loaded_config):
+        loader_calls.append((path, loaded_config))
+        return SimpleNamespace(), {"checkpoint_identity": "canonical_initial"}
+
+    def fake_rollout(policy, loaded_config, **kwargs):
+        rollout_calls.append((loaded_config, kwargs))
+        kwargs["output"].mkdir(parents=True)
+        tape = kwargs["output"] / "action_tape.json"
+        tape.write_text(json.dumps({"action_tape": [{}, {}]}), encoding="utf-8")
+        return [Step(), Step()], {
+            "completed": 0,
+            "outcomes": {},
+            "action_tape": str(tape),
+            "label_rows": 0,
+            "PPO_ALLOWED": False,
+            "safety": {"SafetyInvariantError": 0},
+            "safety_error": None,
+        }
+
+    monkeypatch.setattr(evaluator, "_policy_weight_digest", lambda policy: "stable")
+    monkeypatch.setattr(evaluator.student, "rollout", fake_rollout)
+    record, stopped, reason = evaluator._smoke_arm(
+        label="canonical_initial",
+        checkpoint=tmp_path / "canonical.pt",
+        candidate_sha256="0" * 64,
+        config=config,
+        seed=847000,
+        output=tmp_path / "arm",
+        checkpoint_loader=custom_loader,
+    )
+
+    assert stopped is False
+    assert reason is None
+    assert loader_calls == [(tmp_path / "canonical.pt", config)]
+    assert rollout_calls[0][0] is config
+    assert rollout_calls[0][1]["max_steps"] == 2
+    assert config.max_simulation_seconds == 1800.0
+    assert record["loader"] == {"checkpoint_identity": "canonical_initial"}
+
+
 def test_smoke_nonzero_safety_counter_stops_second_arm(tmp_path, monkeypatch):
     _patch_configs(monkeypatch)
 
