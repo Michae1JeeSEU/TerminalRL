@@ -65,7 +65,7 @@ def test_process_transition_speed_mapping_is_bounded_and_consistent() -> None:
     previous = type("Snapshot", (), {"time": 4.0})()
     current = type("Snapshot", (), {"time": 5.0})()
 
-    assert _process_transition_seconds(previous, current, 0.0) == 0.30
+    assert _process_transition_seconds(previous, current, 0.0) == viewer_module._INTERPOLATION_PERIOD
     assert _process_transition_seconds(previous, current, 2.0) == 0.5
     assert _process_transition_seconds(previous, current, 100.0) >= 1e-3
 

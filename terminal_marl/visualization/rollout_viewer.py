@@ -105,6 +105,8 @@ def run_rollout(
         show_trajectories=show_trajectories, show_labels=show_labels,
     )
     observer: AsyncTerminalViewerObserver | BufferedProcessTerminalViewerObserver | None = None
+    completed_normally = False
+    rollout_env: TerminalParallelEnv | None = None
 
     def stopped() -> bool:
         return observer is not None and observer.stop_requested
@@ -112,6 +114,7 @@ def run_rollout(
     try:
         if mode in {"fixed_rule", "fixed_low_rl"}:
             env = TerminalParallelEnv(config)
+            rollout_env = env
             observations, _ = env.reset(seed)
             if gui:
                 _, observer = _attach_viewer(env, render_config)
@@ -121,21 +124,31 @@ def run_rollout(
                 tick_started = time.perf_counter()
                 for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
                     observations, _, _, _, _ = env.step()
-                    if stopped() or (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
+                    if stopped():
+                        break
+                    if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
+                        completed_normally = True
                         break
                     tick_started = _pace_live_rollout(observer, config.dt, tick_started)
                     if stopped():
                         break
+                if not stopped():
+                    completed_normally = True
             else:
                 low = FrozenLowLevelPolicy(low_checkpoint, config)
                 tick_started = time.perf_counter()
                 for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
                     observations, _, _, _, _ = env.step(low.act(observations))
-                    if stopped() or (env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs):
+                    if stopped():
+                        break
+                    if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
+                        completed_normally = True
                         break
                     tick_started = _pace_live_rollout(observer, config.dt, tick_started)
                     if stopped():
                         break
+                if not stopped():
+                    completed_normally = True
             return env
 
         if mode == "dynamic_rule":
@@ -157,6 +170,7 @@ def run_rollout(
 
         wrapper = DynamicHighLevelWrapper(config, low_level)
         observation, _ = wrapper.reset(seed)
+        rollout_env = wrapper.base
         if gui:
             _, observer = _attach_viewer(wrapper.base, render_config)
             if not observer.wait_ready():
@@ -165,15 +179,24 @@ def run_rollout(
         tick_started = time.perf_counter()
         for _ in range(macro_limit):
             observation, _, terminated, truncated, _ = wrapper.step(high_policy(observation, wrapper))
-            if stopped() or terminated or truncated:
+            if stopped():
+                break
+            if terminated or truncated:
+                completed_normally = True
                 break
             tick_started = _pace_live_rollout(observer, config.high_level_decision_interval_seconds, tick_started)
             if stopped():
                 break
+        if not stopped():
+            completed_normally = True
         return wrapper.base
     finally:
         if observer is not None:
-            observer.close()
+            try:
+                if gui and completed_normally and rollout_env is not None and not observer.stop_requested:
+                    observer.finish(rollout_env)
+            finally:
+                observer.close()
 
 
 def _parser() -> argparse.ArgumentParser:

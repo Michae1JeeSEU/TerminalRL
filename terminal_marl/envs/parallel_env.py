@@ -284,11 +284,16 @@ class TerminalParallelEnv:
         return checked_result
 
     def _resolve(self, uav: UAVState, outcome: TerminalOutcome, reason: str) -> None:
+        position = tuple(float(value) for value in uav.position)
         self.energy_outcomes.append({"arrival_id": uav.arrival_id, "uid": uav.uid,
                                      "outcome": outcome.value, "reason": reason,
                                      "soc": uav.soc, "energy_remaining": uav.energy_remaining,
                                      "energy_consumed": uav.energy_consumed,
-                                     "time": self.now, "phase": uav.phase.value})
+                                     "time": self.now, "phase": uav.phase.value,
+                                     "position": position,
+                                     "energy_capacity": uav.energy_capacity,
+                                     "assigned_lz": uav.assigned_lz,
+                                     "emergency_landing": uav.emergency_landing})
         if uav.assigned_lz is not None:
             self.lz_manager.release(uav.assigned_lz, uav.uid, reason)
         uav.terminal_outcome = outcome

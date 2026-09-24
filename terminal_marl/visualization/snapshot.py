@@ -11,6 +11,7 @@ from .schema import (
     GateRenderState,
     LandingZoneRenderState,
     RingRenderState,
+    TerminalEventRenderState,
     UAVRenderState,
     WorldRenderSnapshot,
 )
@@ -54,6 +55,43 @@ def _trajectory_points(
         return tuple(remaining)
     indices = np.linspace(0, len(remaining) - 1, num=maximum, dtype=int)
     return tuple(remaining[int(index)] for index in np.unique(indices))
+
+
+def _terminal_event_positions(env: "TerminalParallelEnv") -> dict[int, tuple[float, float, float]]:
+    """Index retained ground states for legacy outcome rows without a position."""
+    positions: dict[int, tuple[float, float, float]] = {}
+    for uav in env.completed_uavs:
+        positions[int(uav.uid)] = _point(uav.position)
+    for uav in env.service_uavs.values():
+        positions[int(uav.uid)] = _point(uav.position)
+    return positions
+
+
+def _terminal_events(env: "TerminalParallelEnv") -> tuple[TerminalEventRenderState, ...]:
+    """Copy the cumulative outcome log without fabricating queue positions."""
+    retained_positions = _terminal_event_positions(env)
+    events: list[TerminalEventRenderState] = []
+    for row in env.energy_outcomes:
+        raw_uid = row.get("uid")
+        uid = None if raw_uid is None else int(raw_uid)
+        position_value = row.get("position")
+        if position_value is None and uid is not None:
+            position_value = retained_positions.get(uid)
+        position = None if position_value is None else _point(position_value)
+        events.append(
+            TerminalEventRenderState(
+                uid=uid,
+                arrival_id=int(row["arrival_id"]),
+                outcome=str(row["outcome"]),
+                reason=str(row.get("reason", "")),
+                time=float(row["time"]),
+                position=position,
+                soc=float(row.get("soc", 0.0)),
+                energy_remaining=float(row.get("energy_remaining", 0.0)),
+                phase=str(row.get("phase", "")),
+            )
+        )
+    return tuple(events)
 
 
 def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_points: int | None = None) -> WorldRenderSnapshot:
@@ -117,6 +155,17 @@ def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_po
             dynamic_priority=float(uav.dynamic_priority),
             last_release_decision=env.last_release_decisions.get(uav.uid),
             last_safety_decision=env.last_safety_decisions.get(uav.uid),
+            emergency_landing=bool(uav.emergency_landing),
+            energy_alert=(
+                "emergency"
+                if uav.emergency_landing
+                else (
+                    "low_soc"
+                    if env.config.emergency_landing_enabled
+                    and uav.soc <= env.config.emergency_trigger_soc
+                    else "normal"
+                )
+            ),
         )
         for uav in sorted(env.active.values(), key=lambda item: item.uid)
     )
@@ -139,4 +188,5 @@ def build_world_render_snapshot(env: "TerminalParallelEnv", *, trajectory_max_po
         transition_progress=float(env.airspace.transition_progress(env.now)),
         telemetry=MappingProxyType(numeric_telemetry),
         recent_conflict_uids=_recent_conflict_uids(env),
+        terminal_events=_terminal_events(env),
     )

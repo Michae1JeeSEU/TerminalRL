@@ -58,6 +58,23 @@ class UAVRenderState:
     dynamic_priority: float
     last_release_decision: str | None
     last_safety_decision: str | None
+    emergency_landing: bool = False
+    energy_alert: str = "normal"
+
+
+@dataclass(frozen=True)
+class TerminalEventRenderState:
+    """Immutable record of an arrival which left the airborne lifecycle."""
+
+    uid: int | None
+    arrival_id: int
+    outcome: str
+    reason: str
+    time: float
+    position: Point3D | None
+    soc: float
+    energy_remaining: float
+    phase: str
 
 
 @dataclass(frozen=True)
@@ -75,3 +92,4 @@ class WorldRenderSnapshot:
     transition_progress: float
     telemetry: Mapping[str, float | int]
     recent_conflict_uids: tuple[int, ...]
+    terminal_events: tuple[TerminalEventRenderState, ...] = ()

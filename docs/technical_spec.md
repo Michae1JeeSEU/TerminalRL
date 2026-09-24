@@ -1010,10 +1010,38 @@ viewer是只读observer，不得反向修改环境或重新定义航迹。实时
 ```text
 displayed path = authoritative current position + future committed-plan points
 executed history = not displayed
-UAV color = trajectory color = stable uid identity color
+normal UAV color = stable uid identity color
+trajectory color = stable uid identity color
+low-SOC/emergency UAV color = alert color
 plan id or point topology changes = rebuild line actor
 plan completion/disappearance = remove line actor
 ```
+
+能量与终态也属于只读快照契约的一部分。正常 UAV 与其未来轨迹继续使用稳定的
+UID 身份色；`energy_alert="low_soc"` 的 UAV 使用橙色并显示 `LOW SOC`，
+`emergency_landing=True` 优先使用红色并显示 `EMERGENCY`。快照中的
+`terminal_events` 是累计的不可变事件序列，并可随进程快照 pickle；每条事件保留
+`outcome`、`reason`、时间、SOC、剩余能量和终态阶段。若终态没有可用位置则
+`position=None`，不会为外部队列或其他无位置事件伪造坐标；由 `_resolve` 记录的
+失败事件使用 UAV 从 active 移除前的真实位置。
+
+viewer 对累计事件去重后持续保留。`failed_energy` 事件若有真实位置，会在场景中
+留下直到窗口关闭的红色 X 静态标记，并在可分页的终态事件面板中记录，不会把失败
+UAV 当作仍在 active 集合中的飞机重新绘制。面板输出也会打印终态事件。3D 场景中的
+降落点使用短标 `P0`–`P5`；固定的 `PAD STATUS` 面板逐行显示
+`P<id>: FREE`、`P<id>: RESERVED UID=<uid>` 或 `P<id>: SERVICE UID=<uid>`，避免长
+状态文字挤在降落点附近。
+
+`BufferedProcessTerminalViewerObserver` 使用有界的四帧 source buffer。已经进入队列
+的 source frame 按时间顺序完整消费；生产者在队列满时施加短暂 back-pressure，不用
+替换旧帧，因此累计终态事件不会因漏帧隐藏。即使播放速度设为 `max`，仍逐个消费
+source frame。只有相同 UID、相同 phase 和相同 plan ID、且相邻 source 时间
+间隔不超过 `1.01 s` 时才允许位置线性插值；phase/plan 变化或更大时间间隔直接使用
+目标 source 位置。
+
+GUI 正常结束时会先提交并消费带终态事件的最终 source frame，然后保留最终画面直到
+用户关闭窗口；headless 或 off-screen 运行不等待用户关闭。用户提前关闭窗口或 viewer
+发生错误时按停止信号结束。
 
 `ppo_checkpoint_viewer` 的密集场景默认 `frame_stride=2`、
 `trajectory_max_points=12`。两者只控制渲染采样，不改变仿真步、策略输入或安全认证；命令行可用

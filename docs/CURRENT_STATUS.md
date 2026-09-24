@@ -8,6 +8,31 @@
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
+**最新可视化回放观测（2026-09-24）：** current-code 精确重放 seed `841301`、30 架全 warm、初始
+SOC `.55–.90`、`continuous_inward_v1`、route guard on、`downstream_priority`、late-slot off，使用
+`env.step()` 得到 `1364` steps、`18 completed + 8 emergency + 4 failed-energy`，与此前结果一致。
+`t=813 s` 时 6 个 LZ 均为 free；UID `4/11/12` 均处于 inner `R=200, z=40`、speed `16` 且
+`committed_plan=None`。该回放没有返环让出降落点轨迹证据；`emergency_priority` 只作用于尚未放行的
+request，不撤销已经 committed 的 path。完整本地 trace 为 `results/viewer_trace_841301_full.json`
+（约 149 MB，未提交）。813 s 的局部只读 probe 进一步显示 UID12 的 6 条 emergency candidate
+全部被 `predicted_holder_reachable_tube` 拒绝；即使其他 holder 固定为 nominal 速度，UID4 nominal
+swept 最小间隔按 pad `3/4/5/0/1/2` 仍为 `15.040/17.248/17.210/63.639/39.236/20.469 m`，
+全部低于 `80 m`。该 probe 未执行候选、未放宽阈值，不能把该时刻归结为 tube 约束过严；当前候选
+本身与后方 UID4 的环飞存在冲突。probe 文件为 `results/viewer_trace_841301_probe813.json`。
+
+同一 trace 的 failed-energy 记录为 `UID3@883 outer`、`UID4@991 inner`、`UID11@992 inner`、
+`UID12@1363 inner`，reason 均为 `energy_depleted`；`_resolve` 的 `self.now` 是处理 tick 起点，
+因此下一 snapshot 时间为 `+1 s`，不把记录解释为 substep 精确瞬间。full vertical execution
+trace 显示 `26/26` 个成功 landing plan 均实际 touchdown、`z=0`，pad XY 最大误差 `0`，每架
+有 `15–36` 个真实竖降控制步样本且高度单调下降；vertical duration 为 `14.696–34.834 s`，
+内环正常 final 约从 `40 m` staging 下降，外/中环 emergency 可从 `120 m` staging 下降。4 架
+failed-energy 仍在环飞阶段耗尽，不能与成功落地后退出 active 混淆。UID12 在 `t=991/993` 的
+剩余能量为 `372.1257/370.1257`、SOC 为 `24.808%/24.675%`，已低于 `375` reserve，按同一
+约束不能通过降落 energy gate。viewer 修复范围已覆盖低 SOC 橙色、应急红色、failed-energy 持久
+事件/标记、LZ 状态、顺序 source frame、长间隔禁用插值和正常结束保留最终画面；headless 不等待。
+UI 联合回归为 `67 passed`，但 failed-energy 本身尚未修复，`PPO_ALLOWED=false` 保持不变。详见
+[viewer flight diagnosis](evidence/v4_2/viewer_flight_diagnosis_20260924.md)。
+
 **2026-09-24 综合结论（密度、late-slot 与性能）：** fresh fixed-rule、SOC `.75` 的六个密度
 cell 已完整结束：12 机为 `24/24 normal`，20 机为 `37 normal + 3 emergency / 40`，30 机为
 `46 normal + 14 emergency / 60`；六个 cell 均 `failed_energy=0`，并且

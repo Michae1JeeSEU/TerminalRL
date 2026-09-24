@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import multiprocessing as mp
+import os
 import time
 from queue import Empty, Full, Queue
 from threading import Event, Thread
@@ -35,7 +36,51 @@ _MAX_INTERPOLATION_SECONDS = 0.75
 _PROCESS_BUFFER_CAPACITY = 4
 _PROCESS_BUFFER_PREFILL = 3
 _PROCESS_PREFILL_TIMEOUT_SECONDS = 0.75
-_PROCESS_TRANSITION_SECONDS = 0.30
+_SOURCE_GAP_SECONDS = 1.01
+_EVENT_PAGE_SIZE = 6
+
+
+def _event_value(event, name: str, default=None):
+    """Read event fields from the frozen render contract or test doubles."""
+    if isinstance(event, dict):
+        return event.get(name, default)
+    return getattr(event, name, default)
+
+
+def _terminal_events(snapshot: WorldRenderSnapshot) -> tuple[object, ...]:
+    """Return the cumulative event stream while keeping old test snapshots valid."""
+    return tuple(getattr(snapshot, "terminal_events", ()) or ())
+
+
+def _event_key(event) -> tuple[object, ...]:
+    """Stable deduplication key for cumulative terminal outcome records."""
+    return (
+        _event_value(event, "uid"),
+        _event_value(event, "arrival_id"),
+        _event_value(event, "outcome", ""),
+        _event_value(event, "reason", ""),
+        float(_event_value(event, "time", 0.0) or 0.0),
+    )
+
+
+def _event_outcome(event) -> str:
+    return str(_event_value(event, "outcome", "")).lower()
+
+
+def _uav_alert(uav) -> str:
+    """Normalize the authoritative alert field for renderer/test compatibility."""
+    if bool(getattr(uav, "emergency_landing", False)):
+        return "emergency"
+    alert = str(getattr(uav, "energy_alert", "normal") or "normal").lower()
+    return alert if alert in {"normal", "low_soc", "emergency"} else "normal"
+
+
+def _uav_color(uid: int, alert: str) -> str:
+    if alert == "emergency":
+        return "red"
+    if alert == "low_soc":
+        return "darkorange"
+    return _identity_color(uid)
 
 
 def _interpolated_uav_positions(
@@ -57,13 +102,25 @@ def _interpolated_uav_positions(
     if previous_positions is None:
         previous_positions = tuple(uav.position for uav in previous.uavs)
     previous_by_uid = {
-        uav.uid: (position, uav.phase)
+        uav.uid: (position, uav.phase, getattr(uav, "trajectory_plan_id", None))
         for uav, position in zip(previous.uavs, previous_positions)
     }
+    previous_time = getattr(previous, "time", None)
+    current_time = getattr(current, "time", None)
+    source_gap = None
+    if previous_time is not None and current_time is not None:
+        source_gap = float(current_time) - float(previous_time)
     positions: list[tuple[float, float, float]] = []
     for uav in current.uavs:
         previous_state = previous_by_uid.get(uav.uid)
-        if previous_state is None or previous_state[1] != uav.phase:
+        previous_plan = previous_state[2] if previous_state is not None else None
+        current_plan = getattr(uav, "trajectory_plan_id", None)
+        if (
+            previous_state is None
+            or previous_state[1] != uav.phase
+            or (source_gap is not None and source_gap > _SOURCE_GAP_SECONDS)
+            or previous_plan != current_plan
+        ):
             positions.append(tuple(float(value) for value in uav.position))
             continue
         start = np.asarray(previous_state[0], dtype=float)
@@ -139,6 +196,11 @@ class Terminal3DViewer:
         self._trajectory_actors: dict[str, object] = {}
         self._trajectory_signatures: dict[str, tuple[str | None, int]] = {}
         self._lz_actors: dict[int, object] = {}
+        self._terminal_event_keys: set[tuple[object, ...]] = set()
+        self._terminal_events: list[object] = []
+        self._event_page = 0
+        self._event_markers: dict[tuple[object, ...], object] = {}
+        self._source_gap_warning: str | None = None
         # PyVista rejects zero-length point arrays during construction.  A
         # hidden one-point backing mesh keeps the actor persistent even when
         # the simulation temporarily has no airborne UAVs.
@@ -181,7 +243,11 @@ class Terminal3DViewer:
             )
         self._plotter.add_axes(color="black", x_color="firebrick", y_color="forestgreen", z_color="navy")
         self._plotter.add_text("", position="upper_right", font_size=11, color="black", name="hud")
-        self._plotter.add_text("Right-click a UAV point to inspect", position=(10, 765), font_size=10, color="black", name="pick-help")
+        self._plotter.add_text(
+            "UAV identity\nLOW SOC = orange\nEMERGENCY = red\nfailed_energy = red x\n[ / ]: event history",
+            position=(10, 620), font_size=10, color="black", name="legend",
+        )
+        self._plotter.add_text("Right-click a UAV point to inspect", position=(10, 735), font_size=10, color="black", name="pick-help")
         for lz in snapshot.landing_zones:
             actor = self._plotter.add_mesh(self._pv.Cube(center=lz.position, x_length=45, y_length=45, z_length=6),
                                            color=_LZ_COLORS.get(lz.status, "white"), opacity=0.9, pickable=False,
@@ -189,6 +255,9 @@ class Terminal3DViewer:
             self._lz_actors[lz.lz_id] = actor
         self._uav_actor = self._plotter.add_mesh(self._uav_cloud, scalars="rgb", rgb=True, point_size=15,
                                                  render_points_as_spheres=True, pickable=True, name="uavs")
+        self._update_landing_zone_labels(snapshot)
+        self._update_pad_status_panel(snapshot)
+        self._update_event_panel()
 
     @staticmethod
     def _speed_label(speed: float) -> str:
@@ -202,12 +271,19 @@ class Terminal3DViewer:
             color_on="tomato", color_off="lightgray", background_color="white",
         )
         self._plotter.add_text("Pause", position=(45, 800), font_size=11, color="black", name="pause-label")
-        self._plotter.add_text("Speed", position=(112, 800), font_size=11, color="black", name="speed-label")
+        self._plotter.add_text("Speed", position=(145, 800), font_size=11, color="black", name="speed-label")
         self._plotter.add_text_slider_widget(
             self._set_playback_speed, list(_PLAYBACK_OPTIONS),
             value=float(_PLAYBACK_OPTIONS.index(self._speed_label(self._playback_speed))),
             pointa=(0.18, 0.93), pointb=(0.43, 0.93), color="black", style="modern",
         )
+        # Keep the page controls small and discoverable.  Older/fake plotters
+        # used by unit tests may not implement key registration.
+        try:
+            self._plotter.add_key_event("[", self._previous_event_page)
+            self._plotter.add_key_event("]", self._next_event_page)
+        except (AttributeError, TypeError):  # pragma: no cover - test doubles
+            pass
         self._plotter.enable_point_picking(
             self._select_uav, left_clicking=False, picker="point", show_message=False,
             show_point=False, tolerance=0.025, use_picker=True,
@@ -218,6 +294,17 @@ class Terminal3DViewer:
 
     def _set_playback_speed(self, value: str) -> None:
         self._playback_speed = _PLAYBACK_VALUES[str(value)]
+
+    def _set_event_page(self, page: int) -> None:
+        page_count = max(1, int(np.ceil(len(self._terminal_events) / _EVENT_PAGE_SIZE)))
+        self._event_page = min(max(0, int(page)), page_count - 1)
+        self._update_event_panel()
+
+    def _previous_event_page(self) -> None:
+        self._set_event_page(self._event_page - 1)
+
+    def _next_event_page(self) -> None:
+        self._set_event_page(self._event_page + 1)
 
     @staticmethod
     def _uav_uid_from_point_id(snapshot: WorldRenderSnapshot, point_id: int) -> int | None:
@@ -236,12 +323,34 @@ class Terminal3DViewer:
     def _selected_uav(self):
         return next((uav for uav in self._latest_snapshot.uavs if uav.uid == self._selected_uid), None)
 
+    def _selected_terminal_event(self):
+        if self._selected_uid is None:
+            return None
+        for event in reversed(self._terminal_events):
+            if _event_value(event, "uid") == self._selected_uid:
+                return event
+        return None
+
     def _update_selected_uav_panel(self) -> None:
         uav = self._selected_uav()
         if uav is None:
-            text = "Selected UAV: —"
+            event = self._selected_terminal_event()
+            if event is None:
+                text = "Selected UAV: —"
+            else:
+                text = (
+                    "Selected terminal event\n"
+                    f"UID: {_event_value(event, 'uid', '—')}\n"
+                    f"Time: {float(_event_value(event, 'time', 0.0)):.1f} s\n"
+                    f"Outcome: {_event_value(event, 'outcome', '—')}\n"
+                    f"Reason: {_event_value(event, 'reason', '—')}\n"
+                    f"SOC: {float(_event_value(event, 'soc', 0.0)):.0%}\n"
+                    f"Energy: {float(_event_value(event, 'energy_remaining', 0.0)):.0f}\n"
+                    f"Phase: {_event_value(event, 'phase', '—')}"
+                )
         else:
             energy = f"{uav.energy_remaining:.0f}/{uav.energy_capacity:.0f} ({uav.soc:.0%})"
+            alert = _uav_alert(uav)
             text = (
                 f"Selected UAV\n"
                 f"UID: {uav.uid}\n"
@@ -250,6 +359,7 @@ class Terminal3DViewer:
                 f"Ring: {uav.ring_role or '—'}\n"
                 f"Speed: {uav.speed:.1f} m/s\n"
                 f"Energy: {energy}\n"
+                f"Energy alert: {alert}\n"
                 f"Mission: {uav.mission_type}\n"
                 f"Base priority: {uav.base_priority}\n"
                 f"Dynamic priority: {uav.dynamic_priority:.2f}\n"
@@ -273,6 +383,141 @@ class Terminal3DViewer:
             actor = self._lz_actors[lz.lz_id]
             actor.GetProperty().SetColor(self._pv.Color(_LZ_COLORS.get(lz.status, "white")).float_rgb)
 
+    @staticmethod
+    def _landing_zone_label(lz) -> str:
+        return f"P{lz.lz_id}"
+
+    def _update_landing_zone_labels(self, snapshot: WorldRenderSnapshot) -> None:
+        self._plotter.remove_actor("lz-labels", render=False)
+        if not snapshot.landing_zones:
+            return
+        points = np.asarray(
+            [(float(lz.position[0]), float(lz.position[1]), float(lz.position[2]) + 9.0)
+             for lz in snapshot.landing_zones],
+            dtype=float,
+        )
+        labels = [self._landing_zone_label(lz) for lz in snapshot.landing_zones]
+        self._plotter.add_point_labels(
+            points,
+            labels,
+            point_size=0,
+            font_size=9,
+            text_color="black",
+            shape=None,
+            always_visible=True,
+            name="lz-labels",
+        )
+
+    @staticmethod
+    def _landing_zone_status_line(lz) -> str:
+        if lz.occupied_by is not None:
+            return f"P{lz.lz_id}: SERVICE UID={lz.occupied_by}"
+        if lz.reserved_by is not None:
+            return f"P{lz.lz_id}: RESERVED UID={lz.reserved_by}"
+        return f"P{lz.lz_id}: FREE"
+
+    def _update_pad_status_panel(self, snapshot: WorldRenderSnapshot) -> None:
+        lines = ["PAD STATUS"]
+        lines.extend(self._landing_zone_status_line(lz) for lz in snapshot.landing_zones)
+        self._plotter.add_text(
+            "\n".join(lines), position=(10, 430), font_size=9, color="black", name="pad-status",
+        )
+
+    @staticmethod
+    def _is_attention_event(event) -> bool:
+        return _event_outcome(event) not in {
+            "",
+            "normal",
+            "completed",
+            "complete",
+            "success",
+            "landed",
+            "touchdown",
+        }
+
+    def _event_line(self, event) -> str:
+        uid = _event_value(event, "uid")
+        uid_text = "—" if uid is None else str(uid)
+        return (
+            f"t={float(_event_value(event, 'time', 0.0)):.1f} "
+            f"UID={uid_text} {_event_value(event, 'outcome', 'unknown')} "
+            f"{_event_value(event, 'reason', '')} "
+            f"SOC={float(_event_value(event, 'soc', 0.0)):.0%}"
+        ).strip()
+
+    def _add_failed_energy_marker(self, event, key: tuple[object, ...]) -> None:
+        position = _event_value(event, "position")
+        if position is None or key in self._event_markers:
+            return
+        center = np.asarray(position, dtype=float)
+        span = 14.0
+        p1 = center + np.asarray((-span, -span, 0.0))
+        p2 = center + np.asarray((span, span, 0.0))
+        p3 = center + np.asarray((-span, span, 0.0))
+        p4 = center + np.asarray((span, -span, 0.0))
+        index = len(self._event_markers)
+        uid = _event_value(event, "uid", "—")
+        actors = (
+            self._plotter.add_mesh(
+                self._line_mesh((tuple(p1), tuple(p2))),
+                color="red",
+                line_width=5,
+                pickable=False,
+                name=f"failed-energy-marker-{index}-a",
+            ),
+            self._plotter.add_mesh(
+                self._line_mesh((tuple(p3), tuple(p4))),
+                color="red",
+                line_width=5,
+                pickable=False,
+                name=f"failed-energy-marker-{index}-b",
+            ),
+            self._plotter.add_point_labels(
+                np.asarray([center + np.asarray((0.0, 0.0, 12.0))], dtype=float),
+                [f"UID={uid} FAILED ENERGY"],
+                point_size=0,
+                font_size=9,
+                text_color="red",
+                shape=None,
+                always_visible=True,
+                name=f"failed-energy-marker-{index}-label",
+            ),
+        )
+        self._event_markers[key] = actors
+
+    def _record_terminal_events(self, snapshot: WorldRenderSnapshot) -> None:
+        changed = False
+        for event in _terminal_events(snapshot):
+            if not self._is_attention_event(event):
+                continue
+            key = _event_key(event)
+            if key in self._terminal_event_keys:
+                continue
+            self._terminal_event_keys.add(key)
+            self._terminal_events.append(event)
+            changed = True
+            outcome = _event_outcome(event)
+            if outcome == "failed_energy":
+                self._add_failed_energy_marker(event, key)
+            # The event stream is cumulative, so this is emitted exactly once
+            # per terminal event even when intermediate frames are repeated.
+            print(f"[terminal-viewer-event] {self._event_line(event)}", flush=True)
+        if changed:
+            self._set_event_page(self._event_page)
+
+    def _update_event_panel(self) -> None:
+        total = len(self._terminal_events)
+        page_count = max(1, int(np.ceil(total / _EVENT_PAGE_SIZE)))
+        self._event_page = min(max(0, self._event_page), page_count - 1)
+        start = self._event_page * _EVENT_PAGE_SIZE
+        visible = list(reversed(self._terminal_events))[start:start + _EVENT_PAGE_SIZE]
+        if visible:
+            lines = [self._event_line(event) for event in visible]
+            text = f"Terminal events {total} (page {self._event_page + 1}/{page_count})\n" + "\n".join(lines)
+        else:
+            text = "Terminal events 0"
+        self._plotter.add_text(text, position="lower_left", font_size=9, color="black", name="terminal-events")
+
     def _update_uavs(
         self,
         snapshot: WorldRenderSnapshot,
@@ -284,6 +529,8 @@ class Terminal3DViewer:
             if self._uav_actor is not None:
                 self._uav_actor.SetVisibility(False)
             self._plotter.remove_actor("uav-labels", render=False)
+            self._plotter.remove_actor("uav-alert-labels-emergency", render=False)
+            self._plotter.remove_actor("uav-alert-labels-low_soc", render=False)
             return
         if self._uav_actor is not None:
             self._uav_actor.SetVisibility(True)
@@ -293,17 +540,56 @@ class Terminal3DViewer:
             raise ValueError("positions must contain one point per UAV in snapshot order")
         points = np.asarray(positions, dtype=float)
         colors = np.empty((len(snapshot.uavs), 3), dtype=np.uint8)
-        # An aircraft keeps this deterministic identity color throughout its
-        # entire life cycle.  Phase is conveyed by the selected-state panel.
+        normal_points: list[tuple[float, float, float]] = []
+        normal_labels: list[str] = []
+        alert_points: list[tuple[float, float, float]] = []
+        alert_labels: list[str] = []
+        alert_colors: list[str] = []
+        recent_conflicts = set(getattr(snapshot, "recent_conflict_uids", ()) or ())
         for index, uav in enumerate(snapshot.uavs):
-            color = "magenta" if uav.uid in snapshot.recent_conflict_uids else _identity_color(uav.uid)
+            alert = _uav_alert(uav)
+            color = "magenta" if alert == "normal" and uav.uid in recent_conflicts else _uav_color(uav.uid, alert)
             colors[index] = self._pv.Color(color).int_rgb
+            point = tuple(float(value) for value in points[index])
+            if alert == "normal":
+                if self._config.show_labels:
+                    normal_points.append(point)
+                    normal_labels.append(str(uav.uid))
+            else:
+                alert_points.append(point)
+                alert_labels.append(
+                    f"{'EMERGENCY' if alert == 'emergency' else 'LOW SOC'} "
+                    f"UID={uav.uid} SOC={uav.soc:.0%}"
+                )
+                alert_colors.append("red" if alert == "emergency" else "darkorange")
         self._uav_cloud.points = points
         self._uav_cloud["rgb"] = colors
         self._plotter.remove_actor("uav-labels", render=False)
-        if self._config.show_labels:
-            self._plotter.add_point_labels(points, [str(uav.uid) for uav in snapshot.uavs], point_size=0,
-                                           font_size=10, text_color="black", shape=None, always_visible=True, name="uav-labels")
+        self._plotter.remove_actor("uav-alert-labels-emergency", render=False)
+        self._plotter.remove_actor("uav-alert-labels-low_soc", render=False)
+        if normal_points:
+            self._plotter.add_point_labels(
+                np.asarray(normal_points, dtype=float), normal_labels, point_size=0,
+                font_size=10, text_color="black", shape=None, always_visible=True, name="uav-labels",
+            )
+        if alert_points:
+            # PyVista's point-label helper accepts one colour per actor.  Keep
+            # emergency and low-SOC warnings separate so the visual cue cannot
+            # be lost when both classes are on screen.
+            for alert_name, alert_color in (("emergency", "red"), ("low_soc", "darkorange")):
+                selected = [
+                    (point, label)
+                    for point, label, color in zip(alert_points, alert_labels, alert_colors)
+                    if color == alert_color
+                ]
+                if not selected:
+                    continue
+                self._plotter.add_point_labels(
+                    np.asarray([item[0] for item in selected], dtype=float),
+                    [item[1] for item in selected], point_size=0,
+                    font_size=10, text_color=alert_color, shape=None,
+                    always_visible=True, name=f"uav-alert-labels-{alert_name}",
+                )
 
     def _update_trajectories(self, snapshot: WorldRenderSnapshot) -> None:
         if not self._config.show_trajectories:
@@ -356,15 +642,27 @@ class Terminal3DViewer:
     def _update_hud(self, snapshot: WorldRenderSnapshot) -> None:
         occupancy = "  ".join(f"{ring.role[0].upper()} {ring.occupancy}/{ring.capacity}" for ring in snapshot.rings)
         telemetry = snapshot.telemetry
+        emergency_count = sum(_uav_alert(uav) == "emergency" for uav in snapshot.uavs)
+        low_soc_count = sum(_uav_alert(uav) == "low_soc" for uav in snapshot.uavs)
+        failed_energy_count = sum(
+            _event_outcome(event) == "failed_energy" for event in _terminal_events(snapshot)
+        )
+        hard_separation = telemetry.get("hard_separation_violations", telemetry.get("hard_separation", 0))
         conflict = "  ".join(
-            f"{key}={int(telemetry.get(key, 0))}" for key in ("hard_separation", "nmac", "collisions")
+            f"{key}={int(value)}" for key, value in (
+                ("hard_separation", hard_separation),
+                ("nmac", telemetry.get("nmac", 0)),
+                ("collisions", telemetry.get("collisions", 0)),
+            )
         )
         transition = f" transition={snapshot.transition_progress:.0%}" if snapshot.transition_active else ""
+        gap = f"\n{self._source_gap_warning}" if self._source_gap_warning else ""
         text = (
             f"t = {snapshot.time:.1f} s{transition}\n"
             f"active = {len(snapshot.uavs)}  queue = {snapshot.external_queue_size}\n"
             f"service = {snapshot.service_count}  completed = {snapshot.completed_count}\n"
-            f"{occupancy}\n{conflict}"
+            f"emergency = {emergency_count}  low_soc = {low_soc_count}  failed_energy = {failed_energy_count}\n"
+            f"{occupancy}\n{conflict}{gap}"
         )
         self._plotter.add_text(text, position="upper_right", font_size=11, color="black", name="hud")
 
@@ -400,9 +698,20 @@ class Terminal3DViewer:
         """Redraw the latest snapshot; return False when the window is closed."""
         if self.closed:
             return False
+        previous_time = getattr(self._latest_snapshot, "time", None)
+        current_time = getattr(snapshot, "time", None)
+        if previous_time is not None and current_time is not None:
+            gap = float(current_time) - float(previous_time)
+            self._source_gap_warning = (
+                f"Source gap {gap:.1f}s; interpolation off"
+                if gap > _SOURCE_GAP_SECONDS else None
+            )
         self._latest_snapshot = snapshot
+        self._record_terminal_events(snapshot)
         self._update_rings(snapshot)
         self._update_landing_zones(snapshot)
+        self._update_landing_zone_labels(snapshot)
+        self._update_pad_status_panel(snapshot)
         self._update_uavs(snapshot, uav_positions)
         self._update_trajectories(snapshot)
         self._update_hud(snapshot)
@@ -450,8 +759,19 @@ class Terminal3DViewer:
         """Refresh dynamic source data without rebuilding static scene actors."""
         if self.closed:
             return False
+        previous_time = getattr(self._latest_snapshot, "time", None)
+        current_time = getattr(snapshot, "time", None)
+        if previous_time is not None and current_time is not None:
+            gap = float(current_time) - float(previous_time)
+            self._source_gap_warning = (
+                f"Source gap {gap:.1f}s; interpolation off"
+                if gap > _SOURCE_GAP_SECONDS else None
+            )
         self._latest_snapshot = snapshot
+        self._record_terminal_events(snapshot)
         self._update_landing_zones(snapshot)
+        self._update_landing_zone_labels(snapshot)
+        self._update_pad_status_panel(snapshot)
         self._update_uavs(snapshot, positions)
         self._update_trajectories(snapshot)
         self._update_hud(snapshot)
@@ -695,8 +1015,8 @@ def _process_transition_seconds(
     """Map the UI playback rate to one source-frame transition duration."""
     if playback_speed > 0.0:
         simulated_delta = max(float(current.time) - float(previous.time), 1e-3)
-        return max(1e-3, simulated_delta / playback_speed)
-    return _PROCESS_TRANSITION_SECONDS
+        return max(_INTERPOLATION_PERIOD, simulated_delta / playback_speed)
+    return _INTERPOLATION_PERIOD
 
 
 def _put_process_status(status_queue, payload: dict[str, object]) -> None:
@@ -716,6 +1036,7 @@ def _buffered_process_render_main(
     stop_requested_value,
     initial: WorldRenderSnapshot,
     config: VisualizationConfig,
+    final_consumed_value=None,
 ) -> None:
     """Child-process entry point; all VTK objects stay inside this process."""
     viewer = None
@@ -724,7 +1045,7 @@ def _buffered_process_render_main(
         viewer = Terminal3DViewer(initial, config)
         ready_queue.put({"ready": True, "error": None})
         ready_sent = True
-        source_buffer: list[tuple[WorldRenderSnapshot, float]] = []
+        source_buffer: list[tuple[WorldRenderSnapshot, float, bool]] = []
         displayed_snapshot = initial
         displayed_positions = tuple(uav.position for uav in initial.uavs)
         active_transition = None
@@ -756,16 +1077,22 @@ def _buffered_process_render_main(
                 stop_requested_value.value = True
                 break
 
-            while True:
+            # Keep source order exact.  The producer applies back-pressure
+            # when this bounded presentation buffer is full; dropping its
+            # oldest item would make a terminal event disappear from the UI.
+            while len(source_buffer) < _PROCESS_BUFFER_CAPACITY:
                 try:
-                    queued_snapshot, enqueued_at = frame_queue.get_nowait()
+                    queued = frame_queue.get_nowait()
                 except Empty:
                     break
-                source_buffer.append((queued_snapshot, float(enqueued_at)))
+                if isinstance(queued, tuple) and len(queued) == 3:
+                    queued_snapshot, enqueued_at, is_final = queued
+                else:  # compatibility with direct queue users/tests
+                    queued_snapshot, enqueued_at = queued
+                    is_final = False
+                source_buffer.append((queued_snapshot, float(enqueued_at), bool(is_final)))
                 if prefill_started_at is None:
                     prefill_started_at = now
-                while len(source_buffer) > _PROCESS_BUFFER_CAPACITY:
-                    source_buffer.pop(0)
             if not playback_started and source_buffer:
                 if len(source_buffer) >= _PROCESS_BUFFER_PREFILL:
                     playback_started = True
@@ -776,7 +1103,7 @@ def _buffered_process_render_main(
                     playback_started = True
 
             if active_transition is None and playback_started and source_buffer:
-                target, _enqueued_at = source_buffer.pop(0)
+                target, _enqueued_at, is_final = source_buffer.pop(0)
                 previous = displayed_snapshot
                 previous_positions = displayed_positions
                 start_positions = _interpolated_uav_positions(
@@ -808,10 +1135,11 @@ def _buffered_process_render_main(
                     previous_positions,
                     now,
                     _process_transition_seconds(previous, target, playback_speed_value.value),
+                    is_final,
                 )
 
             if active_transition is not None:
-                previous, target, previous_positions, started_at, duration = active_transition
+                previous, target, previous_positions, started_at, duration, is_final = active_transition
                 alpha = min(1.0, max(0.0, (now - started_at) / duration))
                 displayed_positions = _interpolated_uav_positions(
                     previous,
@@ -825,6 +1153,14 @@ def _buffered_process_render_main(
                 displayed_snapshot = target
                 if alpha >= 1.0:
                     active_transition = None
+                    if is_final and final_consumed_value is not None:
+                        final_consumed_value.value = True
+            elif playback_started and not source_buffer:
+                # Even after the terminal frame, keep pumping VTK so the
+                # window remains responsive to close and keyboard events.
+                if not viewer.update_interpolated_positions(displayed_snapshot, displayed_positions):
+                    stop_requested_value.value = True
+                    break
             paused_value.value = bool(viewer.paused)
             playback_speed_value.value = float(viewer.playback_speed)
     except Exception as error:  # pragma: no cover - exercised in child process
@@ -847,9 +1183,10 @@ def _buffered_process_render_main(
 class BufferedProcessTerminalViewerObserver:
     """Spawn-safe viewer with a bounded presentation buffer.
 
-    The simulation process only builds immutable snapshots and performs
-    non-blocking queue replacement.  The child process owns every PyVista/VTK
-    object and interpolates at a fixed visual cadence.
+    The simulation process builds immutable snapshots and enqueues them in
+    order with short back-pressure waits when the bounded buffer is full.  The
+    child process owns every PyVista/VTK object and interpolates at a fixed
+    visual cadence.
     """
 
     def __init__(self, initial: WorldRenderSnapshot, config: VisualizationConfig) -> None:
@@ -865,6 +1202,7 @@ class BufferedProcessTerminalViewerObserver:
         self._paused_value = self._context.Value("b", False)
         self._playback_speed_value = self._context.Value("d", float(config.playback_speed))
         self._stop_requested_value = self._context.Value("b", False)
+        self._final_consumed_value = self._context.Value("b", False)
         self._process = self._context.Process(
             target=_buffered_process_render_main,
             args=(
@@ -877,6 +1215,7 @@ class BufferedProcessTerminalViewerObserver:
                 self._stop_requested_value,
                 _snapshot_for_process(initial),
                 config,
+                self._final_consumed_value,
             ),
             name="terminal-marl-viewer",
         )
@@ -969,6 +1308,42 @@ class BufferedProcessTerminalViewerObserver:
             except (AssertionError, AttributeError, OSError, ValueError):
                 pass
 
+    def _enqueue(self, snapshot: WorldRenderSnapshot, *, final: bool = False) -> bool:
+        """Put a frame in order, waiting briefly when the bounded queue is full."""
+        queued = (snapshot, time.perf_counter(), bool(final))
+        while not self._closed:
+            if self.stop_requested or self.error is not None:
+                return False
+            try:
+                self._frames.put(queued, timeout=0.05)
+                return True
+            except Full:
+                self._refresh_status()
+                if self.stop_requested or self.error is not None:
+                    return False
+        return False
+
+    def finish(self, env: "TerminalParallelEnv", *, wait_for_close: bool = True) -> bool:
+        """Deliver the terminal frame, then keep a normal GUI open for review."""
+        if self._closed or self.stop_requested:
+            return False
+        snapshot = _snapshot_for_process(
+            build_world_render_snapshot(env, trajectory_max_points=self.config.trajectory_max_points)
+        )
+        if not self._enqueue(snapshot, final=True):
+            return False
+        while not self._closed and not self.stop_requested and not self.error:
+            if self._final_consumed_value.value or not self._process.is_alive():
+                break
+            time.sleep(0.03)
+        if not wait_for_close or os.environ.get("PYVISTA_OFF_SCREEN", "").lower() in {"1", "true", "yes"}:
+            return bool(self._final_consumed_value.value)
+        # A normal interactive run stays visible until the operator closes
+        # it.  Closing the window sets stop_requested in the child process.
+        while not self._closed and not self.stop_requested and not self.error and self._process.is_alive():
+            time.sleep(0.05)
+        return bool(self._final_consumed_value.value)
+
     def __call__(self, env: "TerminalParallelEnv") -> None:
         if self._closed or self.stop_requested:
             return
@@ -977,15 +1352,6 @@ class BufferedProcessTerminalViewerObserver:
         snapshot = _snapshot_for_process(
             build_world_render_snapshot(env, trajectory_max_points=self.config.trajectory_max_points)
         )
-        queued = (snapshot, time.perf_counter())
-        try:
-            self._frames.put_nowait(queued)
-        except Full:
-            try:
-                self._frames.get_nowait()
-            except Empty:
-                pass
-            try:
-                self._frames.put_nowait(queued)
-            except Full:
-                pass
+        # Keep the frame order exact so cumulative terminal events cannot be
+        # hidden by replacing an older source snapshot.
+        self._enqueue(snapshot)
