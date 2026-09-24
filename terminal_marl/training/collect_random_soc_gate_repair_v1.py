@@ -1,8 +1,8 @@
-"""Collect bounded label-only rows for the random-SOC gate repair dataset.
+"""Collect bounded state-only label rows for the random-SOC gate repair data.
 
 The collector validates a frozen checkpoint against the ordinary execution
-configuration, then changes only the Teacher labeler fields for a deterministic
-student rollout.  It writes the raw visited-label sidecar and a separate
+configuration, then runs a deterministic student rollout with state-only
+label queries.  It writes the raw visited-label sidecar and a separate
 actor-only sidecar for later supervised use; this module never trains or
 promotes a policy.
 """
@@ -18,6 +18,7 @@ from typing import Any
 
 from terminal_marl.training import diagnose_trained_dense30_v2 as diagnostic
 from terminal_marl.training import student_rollout_v4_2 as student
+from terminal_marl.training import train_random_soc_gate_repair_v1 as repair_trainer
 
 
 SCENARIOS = ("flow6", "flow12", "dense24")
@@ -76,6 +77,49 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _scalar_metadata(value: Any) -> Any:
+    """Keep checkpoint provenance JSON-safe without retaining model payloads."""
+
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def _repaired_checkpoint_info(
+    checkpoint: Path,
+    payload: Any,
+    checkpoint_sha256: str,
+) -> dict[str, Any]:
+    """Return only small repaired-checkpoint provenance metadata."""
+
+    metadata = payload.get("metadata") if isinstance(payload, dict) else None
+    if not isinstance(metadata, dict):
+        metadata = {}
+    keys = (
+        "stage", "source_checkpoint_sha256", "architecture_id", "temperature",
+        "supervised_training_called", "teacher_called", "ppo_called",
+        "PPO_ALLOWED", "checkpoint_promotable", "optimizer_restored",
+        "optimizer_saved",
+    )
+    return {
+        "checkpoint": str(checkpoint),
+        "checkpoint_sha256": checkpoint_sha256,
+        "metadata": {key: _scalar_metadata(metadata.get(key)) for key in keys},
+    }
+
+
+def _execution_checkpoint_stage(checkpoint_info: Any) -> Any:
+    if not isinstance(checkpoint_info, dict):
+        return None
+    metadata = checkpoint_info.get("metadata")
+    if isinstance(metadata, dict) and metadata.get("stage") is not None:
+        return metadata.get("stage")
+    bindings = checkpoint_info.get("payload_bindings")
+    if isinstance(bindings, dict):
+        return bindings.get("stage")
+    return checkpoint_info.get("stage")
+
+
 def build_collection_configs(scenario: str):
     """Return the validated execution config for the collection scenario."""
 
@@ -98,6 +142,7 @@ def run(
     seed: int,
     max_steps: int,
     label_stride: int = DEFAULT_LABEL_STRIDE,
+    repaired_checkpoint_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Run one bounded deterministic label-only collection episode."""
 
@@ -112,9 +157,23 @@ def run(
     config = build_collection_configs(scenario)
     # Strict checkpoint validation remains on the fully legal execution
     # contract.  External state-only label queries do not alter this config.
-    policy, checkpoint_info = diagnostic.load_trained_checkpoint(
-        checkpoint, config,
-    )
+    if repaired_checkpoint_sha256 is None:
+        policy, checkpoint_info = diagnostic.load_trained_checkpoint(
+            checkpoint, config,
+        )
+        collection_loader = "load_trained_checkpoint"
+        collection_checkpoint_sha256 = checkpoint_info.get("checkpoint_sha256")
+        if collection_checkpoint_sha256 is None and checkpoint.is_file():
+            collection_checkpoint_sha256 = _sha256(checkpoint)
+    else:
+        policy, repaired_payload = repair_trainer.load_repaired_checkpoint(
+            checkpoint, config, expected_sha256=repaired_checkpoint_sha256,
+        )
+        collection_loader = "load_repaired_checkpoint"
+        collection_checkpoint_sha256 = _sha256(checkpoint)
+        checkpoint_info = _repaired_checkpoint_info(
+            checkpoint, repaired_payload, collection_checkpoint_sha256,
+        )
     weight_digest_before = diagnostic._policy_weight_digest(policy)
     started = time.perf_counter()
     _, rollout_summary = student.rollout(
@@ -139,7 +198,7 @@ def run(
     actor_path = output / "actor_labels.jsonl"
     _write_jsonl(actor_path, actor_rows)
 
-    source_sha = checkpoint_info.get("checkpoint_sha256")
+    source_sha = collection_checkpoint_sha256
     if source_sha is None and checkpoint.is_file():
         source_sha = _sha256(checkpoint)
     summary = dict(rollout_summary)
@@ -147,6 +206,10 @@ def run(
         "stage": STAGE,
         "source_checkpoint": str(checkpoint),
         "source_checkpoint_sha256": source_sha,
+        "collection_loader": collection_loader,
+        "collection_source_stage": _execution_checkpoint_stage(checkpoint_info),
+        "collection_source_checkpoint": str(checkpoint),
+        "collection_source_checkpoint_sha256": collection_checkpoint_sha256,
         "scenario": scenario,
         "seed": int(seed),
         "max_steps": max_steps,
@@ -174,6 +237,8 @@ def run(
         "checkpoint_info": checkpoint_info,
         "collector_wall_elapsed_seconds": float(elapsed),
     })
+    if repaired_checkpoint_sha256 is not None:
+        summary["repaired_checkpoint_sha256"] = repaired_checkpoint_sha256
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8",
     )
@@ -188,6 +253,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-steps", type=_positive_int_arg, required=True)
     parser.add_argument("--label-stride", type=_positive_int_arg, default=DEFAULT_LABEL_STRIDE)
+    parser.add_argument("--repaired-checkpoint-sha256", default=None)
     args = parser.parse_args()
     result = run(
         checkpoint=args.checkpoint,
@@ -196,6 +262,7 @@ def main() -> None:
         seed=args.seed,
         max_steps=args.max_steps,
         label_stride=args.label_stride,
+        repaired_checkpoint_sha256=args.repaired_checkpoint_sha256,
     )
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)
 

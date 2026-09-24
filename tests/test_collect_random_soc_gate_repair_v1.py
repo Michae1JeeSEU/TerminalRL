@@ -127,6 +127,127 @@ def test_collector_uses_execution_loader_then_writes_actor_only_rows(tmp_path, m
     assert len((output / "actor_labels.jsonl").read_text(encoding="utf-8").splitlines()) == 1
 
 
+def test_collector_uses_strict_repaired_loader_and_summarizes_only_provenance(
+    tmp_path, monkeypatch,
+):
+    captured = {}
+
+    class FakeModel:
+        def state_dict(self):
+            return {"weight": np.asarray([1.0])}
+
+    policy = SimpleNamespace(model=FakeModel())
+    checkpoint = tmp_path / "repaired.pt"
+    checkpoint.write_bytes(b"repaired-checkpoint")
+    expected_sha = collector._sha256(checkpoint)
+    payload = {
+        "metadata": {
+            "stage": "RANDOM_SOC_GATE_REPAIR_V1",
+            "source_checkpoint_sha256": "source-sha",
+            "architecture_id": "CALIBRATED_GATE_RESIDUAL_ADAPTER_V4_2",
+            "temperature": 2.5,
+            "supervised_training_called": True,
+            "teacher_called": False,
+            "ppo_called": False,
+            "PPO_ALLOWED": False,
+            "checkpoint_promotable": False,
+            "optimizer_restored": False,
+            "optimizer_saved": False,
+        },
+        "model": {"tensor_payload": np.asarray([99.0])},
+    }
+
+    def fake_repaired_loader(path, config, *, expected_sha256):
+        captured["path"] = path
+        captured["config"] = config
+        captured["expected_sha256"] = expected_sha256
+        return policy, payload
+
+    def fail_execution_loader(*args, **kwargs):
+        raise AssertionError("default execution loader must not be used")
+
+    def fake_rollout(policy_arg, config, **kwargs):
+        captured["rollout_config"] = config
+        kwargs["output"].mkdir()
+        row = {"uav_id": "1", "actor_mask": True, "observed_soc": 0.7}
+        (kwargs["output"] / "labels.jsonl").write_text(
+            json.dumps(row) + "\n", encoding="utf-8",
+        )
+        return [], {"terminal": True, "steps": 1, "PPO_ALLOWED": False}
+
+    monkeypatch.setattr(collector.repair_trainer, "load_repaired_checkpoint", fake_repaired_loader)
+    monkeypatch.setattr(collector.diagnostic, "load_trained_checkpoint", fail_execution_loader)
+    monkeypatch.setattr(collector.diagnostic, "_policy_weight_digest", lambda _: "stable-digest")
+    monkeypatch.setattr(collector.student, "rollout", fake_rollout)
+
+    output = tmp_path / "collection"
+    summary = collector.run(
+        checkpoint=checkpoint, output=output, scenario="flow6",
+        seed=3, max_steps=1, label_stride=10,
+        repaired_checkpoint_sha256=expected_sha,
+    )
+
+    assert captured["path"] == checkpoint
+    assert captured["config"] is captured["rollout_config"]
+    assert captured["expected_sha256"] == expected_sha
+    assert summary["collection_loader"] == "load_repaired_checkpoint"
+    assert summary["collection_source_stage"] == "RANDOM_SOC_GATE_REPAIR_V1"
+    assert summary["collection_source_checkpoint_sha256"] == expected_sha
+    assert summary["repaired_checkpoint_sha256"] == expected_sha
+    assert summary["checkpoint_info"]["metadata"]["stage"] == "RANDOM_SOC_GATE_REPAIR_V1"
+    assert "model" not in summary["checkpoint_info"]
+    assert "tensor_payload" not in json.dumps(summary)
+    written = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    assert written["collection_source_checkpoint_sha256"] == expected_sha
+    assert "tensor_payload" not in json.dumps(written)
+
+
+def test_repaired_checkpoint_sha_error_propagates_before_rollout(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "repaired.pt"
+    checkpoint.write_bytes(b"candidate")
+    output = tmp_path / "collection"
+    rollout_called = False
+
+    def fail_rollout(*args, **kwargs):
+        nonlocal rollout_called
+        rollout_called = True
+        raise AssertionError("rollout must not run after strict SHA failure")
+
+    monkeypatch.setattr(collector.student, "rollout", fail_rollout)
+    with pytest.raises(collector.repair_trainer.RepairInputError, match="SHA256 mismatch"):
+        collector.run(
+            checkpoint=checkpoint, output=output, scenario="flow6",
+            seed=3, max_steps=1, repaired_checkpoint_sha256="0" * 64,
+        )
+    assert rollout_called is False
+    assert not output.exists()
+
+
+def test_repaired_loader_error_propagates_before_rollout(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "repaired.pt"
+    checkpoint.write_bytes(b"candidate")
+    output = tmp_path / "collection"
+    rollout_called = False
+
+    def fail_loader(*args, **kwargs):
+        raise RuntimeError("strict repaired loader rejected metadata")
+
+    def fail_rollout(*args, **kwargs):
+        nonlocal rollout_called
+        rollout_called = True
+        raise AssertionError("rollout must not run after loader failure")
+
+    monkeypatch.setattr(collector.repair_trainer, "load_repaired_checkpoint", fail_loader)
+    monkeypatch.setattr(collector.student, "rollout", fail_rollout)
+    with pytest.raises(RuntimeError, match="strict repaired loader rejected metadata"):
+        collector.run(
+            checkpoint=checkpoint, output=output, scenario="flow6",
+            seed=3, max_steps=1, repaired_checkpoint_sha256="1" * 64,
+        )
+    assert rollout_called is False
+    assert not output.exists()
+
+
 def test_rollout_rejects_teacher_state_mutation(tmp_path, monkeypatch):
     runtime = replace(
         _config(), observation_schema_version="phaseA_low_obs_v2_1_retry_state",
