@@ -18,6 +18,14 @@
 > regression 合计五场、`150` UAV、`143 normal / 7 emergency / 0 failed-energy`。此前 V7 fresh gate
 > 的 FAILED 历史仍保留。`PPO_ALLOWED=false`。
 
+**控制器身份澄清（2026-09-24）：** 上述 `fixed_rule_dense30_coordinated` 回放以及五场、
+`150` UAV、`143 normal / 7 emergency / 0 failed-energy` 证据均使用规则控制器，不使用训练的
+神经低层 checkpoint；启动时会打印所选模式、低层控制器类型和实际使用的 checkpoint。训练版
+V4.2 回放位于 `ppo_checkpoint_viewer`，受冻结 profile/hash 约束；本文不宣称
+`dense30_coordinated` 已通过训练策略回放验证。`min_landing_soc=.25` 仍是工程假设，其文献依据
+是条件性的，尚未核验为 EH216-S AFM 的限制；见
+[landing reserve basis](evidence/v4_2/landing_reserve_basis_20260924.md)。
+
 **最新集成 fixed-rule development 回归（2026-09-24）：** 使用
 `fixed_rule_dense30_coordinated` CLI，配置为 30 架 warm-start、初始 SOC `.55–.90`、route
 guard on、`continuous_inward_v1`、`downstream_priority`、late-slot off，并启用 opt-in
@@ -88,6 +96,15 @@ failed-energy 仍在环飞阶段耗尽，不能与成功落地后退出 active �
 事件/标记、LZ 状态、顺序 source frame、长间隔禁用插值和正常结束保留最终画面；headless 不等待。
 UI 联合回归为 `67 passed`，但 failed-energy 本身尚未修复，`PPO_ALLOWED=false` 保持不变。详见
 [viewer flight diagnosis](evidence/v4_2/viewer_flight_diagnosis_20260924.md)。
+
+本轮 PyVista/VTK 离屏 viewer 检查使用 PyVista `0.48.4`、VTK `9.6.2`：30 点云保持
+30 个 vertex cells，真实 picker 可选中非零 UID `4/11/29` 并在收缩后保持映射，标签 actor
+不可拾取；轨迹线宽为普通 `1.5`、选中 `3.0`，轨迹头跟随插值位置。30 Hz 的 position-only
+更新复用了标签缓存和轨迹 mesh，单次中间帧只调用一次 plotter update。八个既有/专项测试文件
+本轮合计 `35 passed`。临时 30 UAV 离屏渲染基准（预热 `10` 帧、计时 `60` 帧）记录 before
+`3.245240299962461 s`、after `0.6678959000855684 s`；这是 offscreen render-only 测量，
+不是仿真或 runtime FPS，也不据此宣称完整 GUI 或整体性能提升。
+本轮未改变仿真控制器、能量阈值或轨迹执行语义；rollout 仅新增启动时 controller identity 输出。
 
 **2026-09-24 综合结论（密度、late-slot 与性能）：** fresh fixed-rule、SOC `.75` 的六个密度
 cell 已完整结束：12 机为 `24/24 normal`，20 机为 `37 normal + 3 emergency / 40`，30 机为

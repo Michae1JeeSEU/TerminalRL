@@ -82,6 +82,25 @@ def _config_for_mode(mode: str, max_simulation_seconds: float, scenario: str = "
     return SimConfig(experiment_mode=mode, high_level_enabled=dynamic, max_simulation_seconds=max_simulation_seconds)
 
 
+def _controller_identity(
+    mode: str, *, low_checkpoint: str | None = None, high_checkpoint: str | None = None
+) -> str:
+    """Format the controller selection shown before a rollout starts."""
+    learned_low_modes = {"fixed_low_rl", "learned_high_frozen_low"}
+    learned_high_modes = {"learned_high_rule_low", "learned_high_frozen_low"}
+    low_level = "learned" if mode in learned_low_modes else "rule"
+    fields = [f"selected_mode={mode}", f"low_level_controller={low_level}"]
+    if mode in learned_low_modes:
+        fields.append(f"low_checkpoint={low_checkpoint}")
+    if mode in learned_high_modes:
+        fields.append(f"high_checkpoint={high_checkpoint}")
+    if mode == "fixed_rule":
+        fields.extend(("low_checkpoint=none", "high_checkpoint=none", "no_trained_checkpoint=true"))
+    elif mode == "dynamic_rule":
+        fields.append("no_trained_checkpoint=true")
+    return "[rollout] controller_identity " + " ".join(fields)
+
+
 def _attach_viewer(
     env: TerminalParallelEnv,
     config: VisualizationConfig,
@@ -131,6 +150,10 @@ def run_rollout(
     if mode == "learned_high_frozen_low" and (low_checkpoint is None or high_checkpoint is None):
         raise ValueError("--low-checkpoint and --high-checkpoint are required for learned_high_frozen_low")
     config = _config_for_mode(mode, max_simulation_seconds, scenario)
+    print(
+        _controller_identity(mode, low_checkpoint=low_checkpoint, high_checkpoint=high_checkpoint),
+        flush=True,
+    )
     render_config = VisualizationConfig(
         enabled=gui, frame_stride=frame_stride, playback_speed=playback_speed,
         show_trajectories=show_trajectories, show_labels=show_labels,

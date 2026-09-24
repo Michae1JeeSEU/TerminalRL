@@ -32,6 +32,8 @@ class _FakePlotter:
         return SimpleNamespace()
 
     def add_point_labels(self, points, labels, **kwargs):
+        if isinstance(labels, str):
+            labels = getattr(points, labels)
         self.labels.append((list(labels), kwargs))
         return SimpleNamespace()
 
@@ -55,6 +57,14 @@ class _FakeCloud:
         setattr(self, key, value)
 
 
+class _FakePolyData:
+    def __init__(self, points):
+        self.points = points
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+
 def _event_viewer() -> Terminal3DViewer:
     viewer = object.__new__(Terminal3DViewer)
     viewer._plotter = _FakePlotter()
@@ -63,7 +73,7 @@ def _event_viewer() -> Terminal3DViewer:
     viewer._terminal_event_keys = set()
     viewer._terminal_events = []
     viewer._event_markers = {}
-    viewer._pv = SimpleNamespace(Color=_FakeColor)
+    viewer._pv = SimpleNamespace(Color=_FakeColor, PolyData=_FakePolyData)
     viewer._line_mesh = lambda points, close=False: points
     viewer._selected_uid = None
     return viewer
@@ -105,7 +115,7 @@ def test_alert_colour_and_warning_label_are_independent_of_normal_labels() -> No
 
     viewer = object.__new__(Terminal3DViewer)
     viewer._plotter = _FakePlotter()
-    viewer._pv = SimpleNamespace(Color=_FakeColor)
+    viewer._pv = SimpleNamespace(Color=_FakeColor, PolyData=_FakePolyData)
     viewer._config = SimpleNamespace(show_labels=False)
     viewer._uav_cloud = _FakeCloud()
     viewer._uav_actor = SimpleNamespace(SetVisibility=lambda _value: None)

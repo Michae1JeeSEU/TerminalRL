@@ -33,9 +33,15 @@ before physics execution.
 
 The normalized EH216-S energy reference is `power_reference = 1.0` unit/s with
 `energy_capacity = 1500` s-equivalent. Phase multipliers are engineering values until
-an external power calibration is available. A successful landing requires the vehicle
-profile's `min_landing_soc = 0.25`; early low-SOC termination is not completion and is
-recorded as diversion or energy failure according to lifecycle semantics.
+an external power calibration is available. The profile's `min_landing_soc = 0.25` is a
+frozen engineering research assumption; it is not a verified EH216-S AFM or type-
+certification limit. Under the normalized reference, this floor corresponds to 375
+normalized energy units, not necessarily 375 seconds of real flight. The conditional
+literature basis and its limits are recorded in
+[`landing_reserve_basis_20260924.md`](../evidence/v4_2/landing_reserve_basis_20260924.md).
+A successful landing requires the vehicle profile's floor; early low-SOC termination
+is not completion and is recorded as diversion or energy failure according to lifecycle
+semantics.
 
 The older `20 m` collision threshold, `10000` normalized energy capacity, and historical
 qualification rule that treated any actual `80 m` separation breach as a hard failure

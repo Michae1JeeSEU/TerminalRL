@@ -29,7 +29,7 @@ _UAV_COLORS = (
 _LZ_COLORS = {"free": "seagreen", "reserved": "gold", "occupied": "tomato"}
 _PLAYBACK_OPTIONS = ("0.25x", "0.5x", "1x", "2x", "5x", "10x", "max")
 _PLAYBACK_VALUES = {"0.25x": 0.25, "0.5x": 0.5, "1x": 1.0, "2x": 2.0, "5x": 5.0, "10x": 10.0, "max": 0.0}
-_INTERPOLATION_HZ = 12.0
+_INTERPOLATION_HZ = 30.0
 _INTERPOLATION_PERIOD = 1.0 / _INTERPOLATION_HZ
 _MIN_INTERPOLATION_SECONDS = _INTERPOLATION_PERIOD
 _MAX_INTERPOLATION_SECONDS = 0.75
@@ -174,6 +174,20 @@ def _trajectory_signature(uav) -> tuple[str | None, int]:
     return uav.trajectory_plan_id, len(uav.trajectory_points)
 
 
+def _vertex_cells(point_count: int) -> np.ndarray:
+    """Return VTK vertex cells for exactly ``point_count`` points.
+
+    ``PolyData.points = ...`` changes the point array but does not change the
+    cell topology.  The viewer keeps a one-point hidden placeholder for an
+    empty scene, and therefore has to update the vertex cells whenever the
+    number of visible UAVs changes.
+    """
+    count = max(1, int(point_count))
+    return np.column_stack(
+        (np.ones(count, dtype=np.int64), np.arange(count, dtype=np.int64))
+    ).ravel()
+
+
 class Terminal3DViewer:
     """Interactive 3D renderer which consumes immutable world snapshots only."""
 
@@ -200,12 +214,20 @@ class Terminal3DViewer:
         self._terminal_events: list[object] = []
         self._event_page = 0
         self._event_markers: dict[tuple[object, ...], object] = {}
+        self._label_datasets: dict[str, object] = {}
+        self._label_actors: dict[str, object] = {}
+        self._label_signatures: dict[str, tuple[str, ...]] = {}
+        self._label_uids: dict[str, tuple[int, ...]] = {}
+        self._text_cache: dict[str, str] = {}
+        self._displayed_uav_positions: dict[int, tuple[float, float, float]] = {}
         self._source_gap_warning: str | None = None
         # PyVista rejects zero-length point arrays during construction.  A
         # hidden one-point backing mesh keeps the actor persistent even when
         # the simulation temporarily has no airborne UAVs.
         self._uav_cloud = self._pv.PolyData(np.zeros((1, 3), dtype=float))
+        self._uav_cloud.verts = _vertex_cells(1)
         self._uav_cloud["rgb"] = np.zeros((1, 3), dtype=np.uint8)
+        self._uav_point_count = 0
         self._uav_actor = None
         self._latest_snapshot = initial
         self._selected_uid: int | None = None
@@ -239,7 +261,9 @@ class Terminal3DViewer:
             self._plotter.add_mesh(self._line_mesh(points), color="slategray", line_width=4, pickable=False, name=f"gate-{gate.gate_id}")
             self._plotter.add_point_labels(
                 np.asarray([gate.gate_position]), [f"Gate {gate.gate_id}"], point_size=0,
-                font_size=12, text_color="black", shape=None, always_visible=True, name=f"gate-label-{gate.gate_id}",
+                font_size=12, text_color="black", shape=None, always_visible=True,
+                show_points=False, pickable=False, render=False,
+                name=f"gate-label-{gate.gate_id}",
             )
         self._plotter.add_axes(color="black", x_color="firebrick", y_color="forestgreen", z_color="navy")
         self._plotter.add_text("", position="upper_right", font_size=11, color="black", name="hud")
@@ -254,7 +278,8 @@ class Terminal3DViewer:
                                            name=f"lz-{lz.lz_id}")
             self._lz_actors[lz.lz_id] = actor
         self._uav_actor = self._plotter.add_mesh(self._uav_cloud, scalars="rgb", rgb=True, point_size=15,
-                                                 render_points_as_spheres=True, pickable=True, name="uavs")
+                                                 render_points_as_spheres=True, pickable=True, render=False,
+                                                 name="uavs")
         self._update_landing_zone_labels(snapshot)
         self._update_pad_status_panel(snapshot)
         self._update_event_panel()
@@ -288,6 +313,13 @@ class Terminal3DViewer:
             self._select_uav, left_clicking=False, picker="point", show_message=False,
             show_point=False, tolerance=0.025, use_picker=True,
         )
+        picker = getattr(getattr(self._plotter, "iren", None), "picker", None)
+        if picker is not None and hasattr(picker, "PickFromListOn"):
+            picker.PickFromListOn()
+            if hasattr(picker, "InitializePickList"):
+                picker.InitializePickList()
+            if hasattr(picker, "AddPickList"):
+                picker.AddPickList(self._uav_actor)
 
     def _set_paused(self, value: bool) -> None:
         self._paused = bool(value)
@@ -311,14 +343,60 @@ class Terminal3DViewer:
         """Map PyVista's current point-cloud index to snapshot identity."""
         return snapshot.uavs[point_id].uid if 0 <= point_id < len(snapshot.uavs) else None
 
+    @staticmethod
+    def _same_vtk_object(left, right) -> bool:
+        if left is None or right is None:
+            return False
+        if left is right:
+            return True
+        try:
+            return left.GetAddressAsString("") == right.GetAddressAsString("")
+        except (AttributeError, TypeError, ValueError):
+            return False
+
+    def _picker_matches_uav_cloud(self, picker) -> bool:
+        """Accept point picks only when VTK reports the UAV actor/dataset."""
+        if picker is None or self._uav_actor is None or self._uav_cloud is None:
+            return False
+        actor = None
+        try:
+            actor = picker.GetActor()
+        except AttributeError:
+            pass
+        if self._same_vtk_object(actor, self._uav_actor):
+            return True
+        if actor is not None:
+            try:
+                mapper = actor.GetMapper()
+                dataset = mapper.GetInput() if mapper is not None else None
+            except AttributeError:
+                dataset = None
+            if self._same_vtk_object(dataset, self._uav_cloud):
+                return True
+        try:
+            dataset = picker.GetDataSet()
+        except AttributeError:
+            dataset = None
+        return self._same_vtk_object(dataset, self._uav_cloud)
+
     def _select_uav(self, picked_point: np.ndarray, picker) -> None:
         """Select a point in the current UAV cloud, never an obscuring mesh."""
-        if not self._latest_snapshot.uavs or self._uav_cloud is None:
+        if not self._latest_snapshot.uavs or not self._picker_matches_uav_cloud(picker):
             return
-        point_id = int(picker.GetPointId())
-        self._selected_uid = self._uav_uid_from_point_id(self._latest_snapshot, point_id)
+        try:
+            point_id = int(picker.GetPointId())
+        except (AttributeError, TypeError, ValueError):
+            return
+        point_count = getattr(self, "_uav_point_count", len(self._latest_snapshot.uavs))
+        if not 0 <= point_id < min(point_count, len(self._latest_snapshot.uavs)):
+            return
+        selected_uid = self._uav_uid_from_point_id(self._latest_snapshot, point_id)
+        if selected_uid is None:
+            return
+        self._selected_uid = selected_uid
         self._update_selected_uav_panel()
         self._update_trajectory_styles()
+        print(f"[terminal-viewer-selection]\n{self._selected_uav_panel_text()}", flush=True)
 
     def _selected_uav(self):
         return next((uav for uav in self._latest_snapshot.uavs if uav.uid == self._selected_uid), None)
@@ -331,7 +409,7 @@ class Terminal3DViewer:
                 return event
         return None
 
-    def _update_selected_uav_panel(self) -> None:
+    def _selected_uav_panel_text(self) -> str:
         uav = self._selected_uav()
         if uav is None:
             event = self._selected_terminal_event()
@@ -370,7 +448,16 @@ class Terminal3DViewer:
                 f"Last release: {uav.last_release_decision or '—'}\n"
                 f"Last safety: {uav.last_safety_decision or '—'}"
             )
+        return text
+
+    def _update_selected_uav_panel(self) -> None:
+        text = self._selected_uav_panel_text()
+        text_cache = getattr(self, "_text_cache", {})
+        self._text_cache = text_cache
+        if text_cache.get("selected-uav") == text:
+            return
         self._plotter.add_text(text, position="lower_right", font_size=10, color="black", name="selected-uav")
+        text_cache["selected-uav"] = text
 
     def _update_rings(self, snapshot: WorldRenderSnapshot) -> None:
         for ring in snapshot.rings:
@@ -388,25 +475,79 @@ class Terminal3DViewer:
         return f"P{lz.lz_id}"
 
     def _update_landing_zone_labels(self, snapshot: WorldRenderSnapshot) -> None:
-        self._plotter.remove_actor("lz-labels", render=False)
-        if not snapshot.landing_zones:
-            return
         points = np.asarray(
             [(float(lz.position[0]), float(lz.position[1]), float(lz.position[2]) + 9.0)
              for lz in snapshot.landing_zones],
             dtype=float,
         )
         labels = [self._landing_zone_label(lz) for lz in snapshot.landing_zones]
-        self._plotter.add_point_labels(
-            points,
-            labels,
+        self._update_label_group(
+            "lz-labels", points, labels, font_size=9, text_color="black",
+        )
+
+    def _remove_label_group(self, name: str) -> None:
+        for actor_name in (name, f"{name}-labels", f"{name}-points"):
+            self._plotter.remove_actor(actor_name, render=False)
+        getattr(self, "_label_datasets", {}).pop(name, None)
+        getattr(self, "_label_actors", {}).pop(name, None)
+        getattr(self, "_label_uids", {}).pop(name, None)
+
+    def _update_label_group(
+        self,
+        name: str,
+        points,
+        labels,
+        *,
+        font_size: int,
+        text_color: str,
+        uids: tuple[int, ...] | None = None,
+    ) -> None:
+        """Update cached label data without recreating unchanged label actors."""
+        label_values = tuple(str(label) for label in labels)
+        label_signatures = getattr(self, "_label_signatures", {})
+        self._label_signatures = label_signatures
+        if not label_values:
+            if name in label_signatures or name in getattr(self, "_label_actors", {}):
+                self._remove_label_group(name)
+            label_signatures[name] = ()
+            getattr(self, "_label_uids", {}).pop(name, None)
+            return
+
+        point_array = np.asarray(points, dtype=float).reshape((-1, 3))
+        if len(point_array) != len(label_values):
+            raise ValueError("label points and labels must have equal lengths")
+        label_datasets = getattr(self, "_label_datasets", {})
+        label_actors = getattr(self, "_label_actors", {})
+        label_uids = getattr(self, "_label_uids", {})
+        self._label_datasets = label_datasets
+        self._label_actors = label_actors
+        self._label_uids = label_uids
+        dataset = label_datasets.get(name)
+        if dataset is not None and label_signatures.get(name) == label_values:
+            dataset.points = point_array
+            label_uids[name] = tuple(uids or ())
+            return
+
+        self._remove_label_group(name)
+        dataset = self._pv.PolyData(point_array)
+        dataset["labels"] = np.asarray(label_values, dtype=str)
+        actor = self._plotter.add_point_labels(
+            dataset,
+            "labels",
             point_size=0,
-            font_size=9,
-            text_color="black",
+            font_size=font_size,
+            text_color=text_color,
             shape=None,
             always_visible=True,
-            name="lz-labels",
+            show_points=False,
+            pickable=False,
+            render=False,
+            name=name,
         )
+        label_datasets[name] = dataset
+        label_actors[name] = actor
+        label_signatures[name] = label_values
+        label_uids[name] = tuple(uids or ())
 
     @staticmethod
     def _landing_zone_status_line(lz) -> str:
@@ -419,9 +560,13 @@ class Terminal3DViewer:
     def _update_pad_status_panel(self, snapshot: WorldRenderSnapshot) -> None:
         lines = ["PAD STATUS"]
         lines.extend(self._landing_zone_status_line(lz) for lz in snapshot.landing_zones)
-        self._plotter.add_text(
-            "\n".join(lines), position=(10, 430), font_size=9, color="black", name="pad-status",
-        )
+        text = "\n".join(lines)
+        text_cache = getattr(self, "_text_cache", {})
+        self._text_cache = text_cache
+        if text_cache.get("pad-status") == text:
+            return
+        self._plotter.add_text(text, position=(10, 430), font_size=9, color="black", name="pad-status")
+        text_cache["pad-status"] = text
 
     @staticmethod
     def _is_attention_event(event) -> bool:
@@ -480,6 +625,9 @@ class Terminal3DViewer:
                 text_color="red",
                 shape=None,
                 always_visible=True,
+                show_points=False,
+                pickable=False,
+                render=False,
                 name=f"failed-energy-marker-{index}-label",
             ),
         )
@@ -523,14 +671,34 @@ class Terminal3DViewer:
         snapshot: WorldRenderSnapshot,
         positions: tuple[tuple[float, float, float], ...] | None = None,
     ) -> None:
+        def update_cloud(points: np.ndarray, colors: np.ndarray, actual_count: int) -> None:
+            previous_count = getattr(self, "_uav_point_count", None)
+            if previous_count != actual_count:
+                self._uav_cloud.points = points
+                self._uav_cloud.verts = _vertex_cells(actual_count)
+            else:
+                self._uav_cloud.points = points
+            self._uav_cloud["rgb"] = colors
+            self._uav_point_count = actual_count
+
         if not snapshot.uavs:
-            self._uav_cloud.points = np.zeros((1, 3), dtype=float)
-            self._uav_cloud["rgb"] = np.zeros((1, 3), dtype=np.uint8)
+            update_cloud(
+                np.zeros((1, 3), dtype=float),
+                np.zeros((1, 3), dtype=np.uint8),
+                0,
+            )
+            self._displayed_uav_positions = {}
             if self._uav_actor is not None:
                 self._uav_actor.SetVisibility(False)
-            self._plotter.remove_actor("uav-labels", render=False)
-            self._plotter.remove_actor("uav-alert-labels-emergency", render=False)
-            self._plotter.remove_actor("uav-alert-labels-low_soc", render=False)
+            self._update_label_group(
+                "uav-labels", (), (), font_size=10, text_color="black", uids=(),
+            )
+            self._update_label_group(
+                "uav-alert-labels-emergency", (), (), font_size=10, text_color="red", uids=(),
+            )
+            self._update_label_group(
+                "uav-alert-labels-low_soc", (), (), font_size=10, text_color="darkorange", uids=(),
+            )
             return
         if self._uav_actor is not None:
             self._uav_actor.SetVisibility(True)
@@ -542,9 +710,13 @@ class Terminal3DViewer:
         colors = np.empty((len(snapshot.uavs), 3), dtype=np.uint8)
         normal_points: list[tuple[float, float, float]] = []
         normal_labels: list[str] = []
-        alert_points: list[tuple[float, float, float]] = []
-        alert_labels: list[str] = []
-        alert_colors: list[str] = []
+        normal_uids: list[int] = []
+        emergency_points: list[tuple[float, float, float]] = []
+        emergency_labels: list[str] = []
+        emergency_uids: list[int] = []
+        low_soc_points: list[tuple[float, float, float]] = []
+        low_soc_labels: list[str] = []
+        low_soc_uids: list[int] = []
         recent_conflicts = set(getattr(snapshot, "recent_conflict_uids", ()) or ())
         for index, uav in enumerate(snapshot.uavs):
             alert = _uav_alert(uav)
@@ -555,41 +727,70 @@ class Terminal3DViewer:
                 if self._config.show_labels:
                     normal_points.append(point)
                     normal_labels.append(str(uav.uid))
+                    normal_uids.append(uav.uid)
+            elif alert == "emergency":
+                emergency_points.append(point)
+                emergency_labels.append(f"EMERGENCY UID={uav.uid} SOC={uav.soc:.0%}")
+                emergency_uids.append(uav.uid)
             else:
-                alert_points.append(point)
-                alert_labels.append(
-                    f"{'EMERGENCY' if alert == 'emergency' else 'LOW SOC'} "
-                    f"UID={uav.uid} SOC={uav.soc:.0%}"
-                )
-                alert_colors.append("red" if alert == "emergency" else "darkorange")
-        self._uav_cloud.points = points
-        self._uav_cloud["rgb"] = colors
-        self._plotter.remove_actor("uav-labels", render=False)
-        self._plotter.remove_actor("uav-alert-labels-emergency", render=False)
-        self._plotter.remove_actor("uav-alert-labels-low_soc", render=False)
-        if normal_points:
-            self._plotter.add_point_labels(
-                np.asarray(normal_points, dtype=float), normal_labels, point_size=0,
-                font_size=10, text_color="black", shape=None, always_visible=True, name="uav-labels",
-            )
-        if alert_points:
-            # PyVista's point-label helper accepts one colour per actor.  Keep
-            # emergency and low-SOC warnings separate so the visual cue cannot
-            # be lost when both classes are on screen.
-            for alert_name, alert_color in (("emergency", "red"), ("low_soc", "darkorange")):
-                selected = [
-                    (point, label)
-                    for point, label, color in zip(alert_points, alert_labels, alert_colors)
-                    if color == alert_color
-                ]
-                if not selected:
-                    continue
-                self._plotter.add_point_labels(
-                    np.asarray([item[0] for item in selected], dtype=float),
-                    [item[1] for item in selected], point_size=0,
-                    font_size=10, text_color=alert_color, shape=None,
-                    always_visible=True, name=f"uav-alert-labels-{alert_name}",
-                )
+                low_soc_points.append(point)
+                low_soc_labels.append(f"LOW SOC UID={uav.uid} SOC={uav.soc:.0%}")
+                low_soc_uids.append(uav.uid)
+        update_cloud(points, colors, len(snapshot.uavs))
+        self._displayed_uav_positions = {
+            uav.uid: tuple(float(value) for value in points[index])
+            for index, uav in enumerate(snapshot.uavs)
+        }
+        self._update_label_group(
+            "uav-labels", normal_points, normal_labels, font_size=10, text_color="black",
+            uids=tuple(normal_uids),
+        )
+        self._update_label_group(
+            "uav-alert-labels-emergency", emergency_points, emergency_labels,
+            font_size=10, text_color="red", uids=tuple(emergency_uids),
+        )
+        self._update_label_group(
+            "uav-alert-labels-low_soc", low_soc_points, low_soc_labels,
+            font_size=10, text_color="darkorange", uids=tuple(low_soc_uids),
+        )
+
+    def _update_uav_positions_only(
+        self,
+        snapshot: WorldRenderSnapshot,
+        positions: tuple[tuple[float, float, float], ...],
+    ) -> None:
+        """Move existing UAV points/labels without rebuilding their content."""
+        if len(positions) != len(snapshot.uavs):
+            raise ValueError("positions must contain one point per UAV in snapshot order")
+        if not snapshot.uavs:
+            points = np.zeros((1, 3), dtype=float)
+            actual_count = 0
+            self._displayed_uav_positions = {}
+            if self._uav_actor is not None:
+                self._uav_actor.SetVisibility(False)
+        else:
+            points = np.asarray(positions, dtype=float)
+            actual_count = len(snapshot.uavs)
+            if self._uav_actor is not None:
+                self._uav_actor.SetVisibility(True)
+            self._displayed_uav_positions = {
+                uav.uid: tuple(float(value) for value in points[index])
+                for index, uav in enumerate(snapshot.uavs)
+            }
+        previous_count = getattr(self, "_uav_point_count", None)
+        if previous_count != actual_count:
+            self._uav_cloud.points = points
+            self._uav_cloud.verts = _vertex_cells(actual_count)
+        else:
+            self._uav_cloud.points = points
+        self._uav_point_count = actual_count
+
+        by_uid = self._displayed_uav_positions
+        for name, uids in getattr(self, "_label_uids", {}).items():
+            dataset = getattr(self, "_label_datasets", {}).get(name)
+            if dataset is None or not uids or not all(uid in by_uid for uid in uids):
+                continue
+            dataset.points = np.asarray([by_uid[uid] for uid in uids], dtype=float)
 
     def _update_trajectories(self, snapshot: WorldRenderSnapshot) -> None:
         if not self._config.show_trajectories:
@@ -607,6 +808,10 @@ class Terminal3DViewer:
             name = f"trajectory-{uav.uid}"
             visible.add(name)
             points = np.asarray(uav.trajectory_points, dtype=float)
+            displayed = self._displayed_uav_positions.get(uav.uid)
+            if displayed is not None and len(points) > 0:
+                points = points.copy()
+                points[0] = np.asarray(displayed, dtype=float)
             signature = _trajectory_signature(uav)
             if self._trajectory_signatures.get(name) != signature:
                 if name in self._trajectory_meshes:
@@ -616,9 +821,10 @@ class Terminal3DViewer:
                 self._trajectory_actors[name] = self._plotter.add_mesh(
                     mesh,
                     color=_identity_color(uav.uid),
-                    line_width=2,
+                    line_width=1.5,
                     opacity=0.58,
                     pickable=False,
+                    render=False,
                     name=name,
                 )
                 self._trajectory_signatures[name] = signature
@@ -632,11 +838,25 @@ class Terminal3DViewer:
         self._trajectory_names = visible
         self._update_trajectory_styles()
 
+    def _update_trajectory_heads(self, snapshot: WorldRenderSnapshot) -> None:
+        """Move only the displayed endpoint during an interpolation frame."""
+        if not self._config.show_trajectories:
+            return
+        for uav in snapshot.uavs:
+            name = f"trajectory-{uav.uid}"
+            mesh = self._trajectory_meshes.get(name)
+            displayed = self._displayed_uav_positions.get(uav.uid)
+            if mesh is None or displayed is None or mesh.n_points < 1:
+                continue
+            points = mesh.points.copy()
+            points[0] = np.asarray(displayed, dtype=float)
+            mesh.points = points
+
     def _update_trajectory_styles(self) -> None:
         for name, actor in self._trajectory_actors.items():
             uid = int(name.rsplit("-", 1)[-1])
             selected = uid == self._selected_uid
-            actor.GetProperty().SetLineWidth(5 if selected else 2)
+            actor.GetProperty().SetLineWidth(3.0 if selected else 1.5)
             actor.GetProperty().SetOpacity(0.95 if selected else 0.58)
 
     def _update_hud(self, snapshot: WorldRenderSnapshot) -> None:
@@ -664,7 +884,12 @@ class Terminal3DViewer:
             f"emergency = {emergency_count}  low_soc = {low_soc_count}  failed_energy = {failed_energy_count}\n"
             f"{occupancy}\n{conflict}{gap}"
         )
+        text_cache = getattr(self, "_text_cache", {})
+        self._text_cache = text_cache
+        if text_cache.get("hud") == text:
+            return
         self._plotter.add_text(text, position="upper_right", font_size=11, color="black", name="hud")
+        text_cache["hud"] = text
 
     @property
     def paused(self) -> bool:
@@ -722,7 +947,6 @@ class Terminal3DViewer:
             if not self._shown:
                 self._plotter.show(auto_close=False, interactive_update=True)
                 self._shown = True
-            self._plotter.render()
             self._plotter.update()
         except RuntimeError:  # PyVista raises this after a user closes the window.
             self._closed = True
@@ -741,9 +965,9 @@ class Terminal3DViewer:
         """
         if self.closed:
             return False
-        self._update_uavs(snapshot, positions)
+        self._update_uav_positions_only(snapshot, positions)
+        self._update_trajectory_heads(snapshot)
         try:
-            self._plotter.render()
             self._plotter.update()
         except RuntimeError:
             self._closed = True
@@ -779,7 +1003,6 @@ class Terminal3DViewer:
         if not render:
             return not self.closed
         try:
-            self._plotter.render()
             self._plotter.update()
         except RuntimeError:
             self._closed = True
