@@ -106,6 +106,80 @@ def test_p3_scenario_configs_preserve_schedule_horizon_and_execution_migration()
     assert diagnostic.build_scenario_config("dense30").total_requested_uavs == 30
 
 
+def test_reconcile_late_merge_slots_flag_only_changes_config_field():
+    for name in diagnostic.SCENARIOS:
+        default = diagnostic.build_scenario_config(name)
+        enabled = diagnostic.build_scenario_config(
+            name,
+            reconcile_late_merge_slots=True,
+        )
+        assert default.reconcile_late_merge_slots_enabled is False
+        assert enabled.reconcile_late_merge_slots_enabled is True
+        default_fields = {
+            key: value for key, value in vars(default).items()
+            if key != "reconcile_late_merge_slots_enabled"
+        }
+        enabled_fields = {
+            key: value for key, value in vars(enabled).items()
+            if key != "reconcile_late_merge_slots_enabled"
+        }
+        assert enabled_fields == default_fields
+
+
+def test_scenario_checkpoint_metadata_matches_dense30_with_late_flag_without_reset():
+    reference = checkpoint_metadata(diagnostic.build_scenario_config("dense30"))
+    for name in diagnostic.SCENARIOS:
+        for enabled in (False, True):
+            candidate = checkpoint_metadata(
+                diagnostic.build_scenario_config(
+                    name,
+                    reconcile_late_merge_slots=enabled,
+                )
+            )
+            if candidate != reference:
+                keys = sorted(set(reference) | set(candidate))
+                differences = {
+                    key: {"dense30": reference.get(key), "candidate": candidate.get(key)}
+                    for key in keys
+                    if reference.get(key) != candidate.get(key)
+                }
+                pytest.fail(
+                    f"checkpoint metadata differs for scenario={name}, "
+                    f"reconcile_late_merge_slots={enabled}: {differences}"
+                )
+
+
+def test_run_passes_selected_config_to_loader_without_loading_or_rollout(monkeypatch, tmp_path):
+    loaded_configs = []
+    rollout_configs = []
+
+    def fake_load(_checkpoint, config):
+        loaded_configs.append(config)
+        return None, {"mocked": True}
+
+    def fake_rollout(_policy, config, **_kwargs):
+        rollout_configs.append(config)
+        return {"mocked": True}
+
+    monkeypatch.setattr(diagnostic, "load_trained_checkpoint", fake_load)
+    monkeypatch.setattr(diagnostic, "run_rollout", fake_rollout)
+    for index, name in enumerate(diagnostic.SCENARIOS):
+        for enabled in (False, True):
+            diagnostic.run(
+                checkpoint=tmp_path / "unused.pt",
+                output=tmp_path / f"output_{index}_{int(enabled)}",
+                seed=3,
+                max_steps=1,
+                controller="nominal_rule",
+                scenario=name,
+                reconcile_late_merge_slots=enabled,
+            )
+
+    assert len(loaded_configs) == len(rollout_configs) == 2 * len(diagnostic.SCENARIOS)
+    for loaded, rollout in zip(loaded_configs, rollout_configs):
+        assert loaded is rollout
+
+
 def test_trained_release_only_forces_eligible_gate_and_keeps_policy_proposals(monkeypatch):
     env = TerminalParallelEnv(_tiny_config())
     observations, _ = env.reset(seed=3)

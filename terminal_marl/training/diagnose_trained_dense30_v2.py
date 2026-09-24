@@ -542,23 +542,32 @@ def _migrate_p3_execution_config(config):
     return migrated
 
 
-def build_scenario_config(scenario: str = "dense30"):
+def build_scenario_config(
+    scenario: str = "dense30",
+    *,
+    reconcile_late_merge_slots: bool = False,
+):
     """Build one bounded diagnostic scenario without protocol authorization."""
 
     scenario = _validate_scenario(scenario)
     if scenario == "dense30":
-        return build_dense30_config()
-    if not P3_SCENARIO_PROTOCOL.is_file():
-        raise DiagnosticInputError(
-            f"P3 scenario protocol YAML not found: {P3_SCENARIO_PROTOCOL}"
+        config = build_dense30_config()
+    else:
+        if not P3_SCENARIO_PROTOCOL.is_file():
+            raise DiagnosticInputError(
+                f"P3 scenario protocol YAML not found: {P3_SCENARIO_PROTOCOL}"
+            )
+        raw_protocol = yaml.safe_load(
+            P3_SCENARIO_PROTOCOL.read_text(encoding="utf-8-sig")
         )
-    raw_protocol = yaml.safe_load(
-        P3_SCENARIO_PROTOCOL.read_text(encoding="utf-8-sig")
-    )
-    if not isinstance(raw_protocol, Mapping):
-        raise DiagnosticInputError("P3 scenario protocol YAML must be a mapping")
-    return _migrate_p3_execution_config(
-        p3_training_v4.scenario_config(scenario, raw_protocol)
+        if not isinstance(raw_protocol, Mapping):
+            raise DiagnosticInputError("P3 scenario protocol YAML must be a mapping")
+        config = _migrate_p3_execution_config(
+            p3_training_v4.scenario_config(scenario, raw_protocol)
+        )
+    return replace(
+        config,
+        reconcile_late_merge_slots_enabled=bool(reconcile_late_merge_slots),
     )
 
 
@@ -872,6 +881,9 @@ def run_rollout(
         "checkpoint_promotable": False,
         "teacher_enabled": bool(config.teacher_enabled),
         "scheduler_mode": config.scheduler_mode,
+        "reconcile_late_merge_slots_enabled": bool(
+            config.reconcile_late_merge_slots_enabled
+        ),
         "scenario": scenario,
         "controller": controller,
         "neural_policy_used": controller in {"trained", "trained_release_only"},
@@ -1098,6 +1110,9 @@ def run_rollout(
         "wait_decisions": int(wait_decisions),
         "release_decisions": int(release_decisions),
         "release_vetoes": int(release_vetoes),
+        "reconcile_late_merge_slots_enabled": bool(
+            config.reconcile_late_merge_slots_enabled
+        ),
         "action_rows": 0,
         "config": _config_payload(config),
         "checkpoint": checkpoint_info,
@@ -1156,14 +1171,16 @@ def run_rollout(
 
 def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int,
         controller: str = "trained", probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES,
-        scenario: str = "dense30") -> dict[str, Any]:
+        scenario: str = "dense30",
+        reconcile_late_merge_slots: bool = False) -> dict[str, Any]:
     controller = _validate_controller(controller)
     scenario = _validate_scenario(scenario)
-    config = build_scenario_config(scenario)
-    # Checkpoint metadata is bound to the original dense30 diagnostic
-    # contract; the selected P3 scenario changes only the execution config.
+    config = build_scenario_config(
+        scenario,
+        reconcile_late_merge_slots=reconcile_late_merge_slots,
+    )
     policy, checkpoint_info = load_trained_checkpoint(
-        checkpoint, build_dense30_config()
+        checkpoint, config
     )
     return run_rollout(
         policy,
@@ -1204,6 +1221,8 @@ def main() -> None:
     parser.add_argument("--scenario", choices=SCENARIOS, default="dense30")
     parser.add_argument("--probe-times", type=_parse_probe_times, default=DEFAULT_PROBE_TIMES,
                         help="comma-separated simulation times for trained-controller shadow probes")
+    parser.add_argument("--reconcile-late-merge-slots", action="store_true", default=False,
+                        help="enable the existing late-merge slot reconciliation path")
     args = parser.parse_args()
     result = run(
         checkpoint=args.checkpoint,
@@ -1213,6 +1232,7 @@ def main() -> None:
         controller=args.controller,
         probe_times=args.probe_times,
         scenario=args.scenario,
+        reconcile_late_merge_slots=args.reconcile_late_merge_slots,
     )
     print(json.dumps(_jsonable(result), indent=2, sort_keys=True), flush=True)
 
