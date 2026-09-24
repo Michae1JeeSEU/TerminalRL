@@ -26,17 +26,19 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    RELEASE 为 `3/3/3/9` 且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察
    `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved
    `8`。这些是 controller 与 execution feasibility 诊断的既有观察，不写入新的 PASS 或结果结论。
-3. 已预注册新的 fresh random-SOC development comparison，详见
-   [development protocol](evidence/v4_2/random_soc_repair_development_20260924.md)：`843000` 为
-   工具实现与本地 smoke validation 已完成：`tests/test_trained_dense30_v2.py` 的 `10` 项测试通过；
-   smoke 已完成 `2` steps、`60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`），`6` 条 probe
-   均 original unchanged，其中 `UID27 WAIT → nominal` 同一步为 `approved`，其余 `5` 条为阴性。
-   该证据仅为 same-step，不能推断长程。`843101` 为同一 fresh seed 的一次性 `trained`/
-   `nominal_rule` 配对回放，两个 arm 仍未运行。`nominal_rule` 使用零基 proposal `12`（V4.1 joint
-   index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册 protocol 条件保持不变。
-4. `842101` 历史证据保持 immutable，`842102` 保持 unused。当前目标仍是先区分 controller behavior
-   与 execution feasibility，再按证据推进 targeted repair 或 eligible qualification；不写入 false
-   PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，继续保持 `80/40/10 m` 安全阈值、
+3. fresh random-SOC development comparison 已完成，详见
+   [protocol](evidence/v4_2/random_soc_repair_development_20260924.md) 与
+   [result](evidence/v4_2/random_soc_repair_development_result_20260924.md)。`843000` smoke
+   通过正确 repo cwd 的 `10 passed` 预检；`843101` trained 为 `9 normal / 18 emergency /
+   3 failed-energy / 0 unresolved`，nominal_rule 为 `17 / 13 / 0 / 0`，两者均 terminal。两者
+   均无 collision/NMAC/hard-separation/fail-closed；trained/nominal safety intervention 与 joint
+   correction 为 `481/30`、`213/0`，不写作 all-safety-zero。trained 19 probes 全部 original
+   unchanged、4 个 approved witness；trained exit numeric unknown，nominal exit `0`。
+4. `842101` 历史证据保持 immutable，`842102` 保持 unused；`829001–829006` heldout untouched。
+   配对结果显示 controller behavior 差异与已有 safety-feasible WAIT 反例，但同时改变 gate 与
+   proposal，不能独断归因于 gate；trained 仍有 13 emergency。当前只准备 fresh P3
+   `flow6`/`flow12`/`dense24` development 与 dense24 forced-gate/frozen-proposal 消融；代码与新
+   protocol pending，不训练、不 qualification。`PPO_ALLOWED=false`，继续保持 `80/40/10 m`、
    `min_landing_soc=.10` 和 `soc_reserve=.25`。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格

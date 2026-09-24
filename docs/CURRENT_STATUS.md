@@ -2,7 +2,7 @@
 
 > **状态日期**：2026-09-24
 >
-> **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
+> **代码快照**：当前提交为 `b7687ae6a51413575658fa3d041714ccea451b27`；已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更。Git 无 remote，未 push。
 >
 > **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
@@ -21,18 +21,25 @@ blocker 为 `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority +
 approved `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准
 imitation-only fix。详见[诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
 
-**当前授权的下一阶段（2026-09-24）：** 为区分 controller behavior 与 execution feasibility，已
-预注册新的 fresh random-SOC development comparison：[protocol](evidence/v4_2/random_soc_repair_development_20260924.md)。
-工具实现与本地验证已完成：`tests/test_trained_dense30_v2.py` 的 `10` 项测试通过；`843000`
-trained smoke 已完成 `2` steps、`60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`）。
-该 smoke 的 `6` 条 shadow probe 均保持 original state unchanged，其中 `UID27` 的 `WAIT → nominal`
-同一步 decision 为 `approved`，其余 `5` 条为阴性。该证据只覆盖 same-step counterfactual，不能推断
-长程结果。`843101` 的 trained 与 nominal_rule 两个 arm 仍未运行。`nominal_rule` 使用零基 proposal
-`12`（V4.1 joint index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册
-protocol 条件不变。旧 `842101` 证据保持 immutable，`842102` 保持 unused。当前目标仍是先诊断
-controller request 与 execution feasibility，再按证据决定 targeted repair 或 eligible qualification；
-不写入 false PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，保持 `80/40/10 m` 安全阈值、
-`min_landing_soc=.10` 与 `soc_reserve=.25`。
+**当前 random-SOC comparison 结果（2026-09-24）：** 配对 development comparison 已完成，详见
+[结果页](evidence/v4_2/random_soc_repair_development_result_20260924.md)。`843000` trained smoke
+先完成 `2` steps、`60` rows、`47 WAIT / 12 RELEASE`，6/6 shadow probe 保持 original state
+unchanged，其中 `UID27 WAIT → nominal RELEASE` 同一步 `approved`。正确 repo cwd 下
+`tests/test_trained_dense30_v2.py` 为 `10 passed`；首次从 server home 执行的 `9 passed, 1 failed`
+相对路径错误保留为执行事实。`843101` trained arm 为 `9 normal / 18 emergency / 3 failed-energy /
+0 unresolved`，terminal `1036` steps、wall `66.700964 s`；nominal_rule arm 为
+`17 / 13 / 0 / 0`，terminal `865` steps、wall `40.186961 s`。两者均无 collision/NMAC/
+hard-separation/fail-closed，且 weights unchanged、无 Teacher/训练/PPO；safety intervention 与
+joint correction 分别为 trained `481/30`、nominal `213/0`，不写作 all-safety-zero。trained
+19 probes 全部 original unchanged，4 个 approved witness。trained 的数值 exit status unknown
+（完整 terminal summary 存在）；nominal wrapper exit `0`。该配对表明 controller behavior 存在差异并
+观察到已有 safety-feasible WAIT 反例；由于配对同时改变 gate 与 proposal，不能独断归因于 gate，且
+13 次 emergency 仍待修复。旧 `842102` unused、`829001–829006` heldout untouched；raw server/local
+mirror 路径与完整证据见结果页。`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
+
+**当前授权的下一步（2026-09-24）：** 准备 fresh P3 `flow6`/`flow12`/`dense24` development，以及
+dense24 forced-gate/frozen-proposal 消融；代码与新 protocol 尚 pending。该配对结果不授权训练或
+qualification，继续保持 `80/40/10 m`、`min_landing_soc=.10` 与 `soc_reserve=.25`。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3
@@ -721,18 +728,17 @@ staged authorization 推进，不把历史 fixed-rule evidence 写成 learned-po
    统计见结果页。该证据用于区分 controller request 与 execution feasibility，不能将 WAIT 全部判错，
    也不能写入 imitation-only fix 或新的 PASS。`842101` 历史证据保持 immutable，`842102` 保持
    unused。
-3. 已预注册新的 fresh random-SOC development comparison，详见
-   [development protocol](evidence/v4_2/random_soc_repair_development_20260924.md)：允许的阶段只包括
-   工具实现与本地 smoke validation 已完成：`10` 项 targeted tests PASS；`843000` 已完成 `2` steps、
-   `60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`），`6` 条 probe 均 original unchanged，
-   `UID27 WAIT → nominal` 同一步 `approved`，其余 `5` 条为阴性。该证据仅为 same-step，不能推断
-   长程。`843101` 的 `trained`/`nominal_rule` 两个 arm 仍未运行。`nominal_rule` 使用零基 proposal
-   `12`（V4.1 joint index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册
-   protocol 条件保持不变。
-4. 当前目标仍是先完成 controller behavior 与 execution feasibility 的诊断，再按证据推进 targeted
-   repair 或 eligible qualification；不写入 false PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，
-   保持 `80/40/10 m` 安全阈值、`min_landing_soc=.10` 与 `soc_reserve=.25`；低层 static
-   qualification 完成后才进入高层 A6。
+3. fresh random-SOC development comparison 已完成，详见
+   [protocol](evidence/v4_2/random_soc_repair_development_20260924.md) 与
+   [result](evidence/v4_2/random_soc_repair_development_result_20260924.md)。`843000` smoke 与
+   `843101` trained/nominal_rule 配对均已记录；trained `9/18/3/0`、nominal `17/13/0/0`
+   （normal/emergency/failed-energy/unresolved），两者均 terminal 且无 collision/NMAC/
+   hard-separation/fail-closed。该结果包含 19 条 trained probe、4 个 approved witness，不能写成
+   gate-only 归因或 qualification。
+4. 当前目标转为准备 fresh P3 `flow6`/`flow12`/`dense24` development 与 dense24 forced-gate/
+   frozen-proposal 消融；代码与新 protocol pending。配对结果不授权 targeted repair 训练或
+   qualification，`PPO_ALLOWED=false`，保持 `80/40/10 m`、`min_landing_soc=.10` 与
+   `soc_reserve=.25`；低层 static qualification 完成后才进入高层 A6。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、场景
    为 `flow6`/`flow12`/`dense24`。dense30 pressure 诊断不能单独构成 qualification；后续资格证据
    仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、safety、
