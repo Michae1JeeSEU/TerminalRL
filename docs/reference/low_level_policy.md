@@ -7,7 +7,8 @@
 > **适用范围**：Phase A / A5 fixed-airspace low-level learning
 >
 > **状态**：schema 已冻结；新的 I1、DAgger、PPO 当前仍受
-> [项目状态页](../CURRENT_STATUS.md) 的 gate 约束。
+> [项目状态页](../CURRENT_STATUS.md) 的 gate 约束。下一步目标是完成受控应急语义下的
+> P3 PPO entry/pilot readiness；entry 与正式大规模训练仍需分别通过 V5 协议。
 
 本文件给出低层策略的当前唯一语义。旧 V3/V4/V4.1 设计、迁移原因和逐次实验记录分别保留在
 `../history/` 与 `../evidence/`，不再作为实现依据。
@@ -221,7 +222,39 @@ S0  schema / semantics qualification
 
 PPO 之前至少必须证明：schema/replay/safety PASS、WAIT 与 RELEASE 均可学习、student-only
 闭环不崩溃、queue 不发散、throughput/completion 健康、shield burden 可接受，以及数据和
-checkpoint lineage 可复现。任一核心 gate 为 FAIL 时 `PPO_ALLOWED = false`。
+checkpoint lineage 可复现。受控应急不再被默认当作零容忍性能失败，但安全认证、能量未耗尽
+且完成着陆的 `emergency_landed` 必须单独计数；`failed_energy`、unsafe/formal-evaluation
+unresolved、finite、replay/likelihood、restore 和 frozen-proposal 仍是硬 gate。普通 shield
+correction/intervention 可非零，但 actor takeover fraction 须 `<=.05` 且 shield/joint
+fail-closed 为零。任一核心 gate 为 FAIL 时
+`PPO_ENTRY_ALLOWED = false`，且在 pilot 完成前 `FORMAL_P3_ALLOWED = false`。
+
+### 6.1 P3 V5 controlled-emergency entry and pilot
+
+P3 V5 保持 V4.2 的低层定义不变：策略仍只请求 `WAIT` 或 `RELEASE + conditional
+speed×timing proposal`，由 ExecutionScheduler、CanonicalTrajectoryGenerator、SafetyFilter
+和 PredictiveSafetyShield 认证并执行。应急着陆是执行层的安全降级结果，不是新增的 policy action，
+也不能把 shield 或 emergency action 伪装成 actor action 进入 PPO likelihood。
+
+V5 的学习路线保留 priority `1/3/5`、SOC `.55–.90`、mission/资源混合和
+`downstream_priority`。不启用 SOC-only ordering。gate-adapter-only 是监督修复或 PPO pilot
+的 trainable-scope 选择，不改变 V4.2 的策略架构与动作定义。历史课程已学能力通过 mixed old
+anchors 做回归检查，不从 I0 重新训练。
+
+结果账本必须区分 `completed`、安全认证且能量未耗尽的 `emergency_landed`、
+`failed_energy`、unsafe 和 formal/evaluation `unresolved`。`emergency_landed` 进入事件代价、
+priority、low-SOC 和全请求等待的报告；它本身不阻止 PPO entry，但不追溯改写旧 formal 结果
+中的 `completed`。pilot 训练中的自然 horizon 截断另行报告，不自动写成普遍安全失败。
+后续 independent qualification 可报告 provisional dense `<=10%`、sparse `<=5%` 的研究目标；
+它们不是 V5 admission threshold，也不能为既有结果追溯制造 PASS。
+
+V5 首先运行不更新的 stochastic entry cohort，再运行总计 6 次 update 的 PPO pilot（每个
+registered pilot arm 一次）。所有 6 次 update 都必须有效；pilot 至少需要一次真实 accepted
+update、exact restore、proposal/temperature/actor freeze 核对，以及 pilot 前后
+完整请求分母的安全与结果回归。当前 rollout info 中的 reward component 只作为配置权重与 total
+return 的初始记录；若 pilot 需要 component magnitude，先补最小采集字段再启动，不声称已有
+持久化 component sums。只有 V5 pilot 和 paired development 均通过，才可把
+`FORMAL_P3_ALLOWED` 置为 true。
 
 P3 的 priority/SOC 时间奖励是**默认关闭的可选 shaping**：仅显式启用时根据活动 UAV 的
 `base_priority` 和 SOC 低于阈值的幅度增加每步时间代价，不能替代完成率/安全 gate。

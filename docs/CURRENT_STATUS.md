@@ -6,9 +6,15 @@
 >
 > **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
+**当前目标（2026-09-25，用户已恢复）：** 本轮目标已从“把 emergency 降到零”调整为“完成受控应急语义下的 P3 PPO 正式大规模训练准入准备”。高密度下安全认证、能量未耗尽并完成着陆的 `emergency_landed` 是一种带代价的降级结果，不单独阻止 PPO 学习；`failed_energy`、未认证/安全失败和 formal/evaluation `unresolved` 仍是硬失败。pilot 训练中的自然 horizon 截断单独报告，不把它自动写成普遍安全失败。P3 仍不应收敛为 SOC 单因素排序：保留 priority `1/3/5`、SOC `.55–.90`、任务/资源混合和 `downstream_priority`，继续报告 priority、low-SOC 与全请求等待的权衡。该目标只授权完成准入检查、受限 pilot 和正式大规模训练前的文档/证据准备；当前仍为 `PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。
+
+新的准入边界见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。旧 P3 formal、Q3、canonical comparison 和 heldout 记录保持历史含义，不追溯替换为新语义；`829001–829006` 继续 untouched。V5 首先以不更新的随机策略 entry cohort 验证闭环，再以小规模真实 PPO pilot 验证至少一次被接受的更新、restore 和配对回归，之后才允许正式大规模 P3。该过程不重训 I0/I1/P1/P2；使用 mixed old anchors 做回归保护，避免从 I0 重新开始。
+
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
-**用户暂停点（2026-09-25）：** 当前代码迭代已完成：canonical strict loader 为 `29a4dba`，其 `32` 个定向测试通过；evaluator 的 `27` 个定向测试通过；只读服务器 checkpoint/hash/profile-load preflight 通过。`848000/848101/848102` 尚未 reset 或 rollout，heldout 未消费。恢复入口为执行已注册的 canonical smoke/full pair，随后再由主代理决定 repair 与独立 qualification；暂停期间不启动新的算法实验。`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
+**此前暂停点（2026-09-25，已解除）：** 当前代码迭代已完成：canonical strict loader 为 `29a4dba`，其 `32` 个定向测试通过；evaluator 的 `27` 个定向测试通过；只读服务器 checkpoint/hash/profile-load preflight 通过。暂停时 `848000/848101/848102` 尚未 reset 或 rollout，heldout 未消费；恢复后 `848000` smoke 已完成，`848101/848102` full pair 已注册执行，结果仍只用于历史基线与修复候选的开发比较，不自动放宽新 V5 准入，也不消费 heldout。`P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`。
+
+**P3 V5 当前路线：** 固定 `80/40/10 m`、`energy_capacity=1500`、`min_landing_soc=.10`、`soc_reserve=.25`、`emergency_trigger=.40`、`late-slot OFF`、`K=3`、`Observation V2.1=88D`、`Teacher=false`、`downstream_priority`。先运行 `849000` smoke，再运行不更新的 stochastic entry `849101/849102/849103`，然后按顺序运行总计 6 次 update 的 pilot `849201–849206`（每个 registered arm 一次），最后做同初始状态的 paired development `849301/849302/849303`。这些新种子在协议冻结后才可消费；任何安全/软件硬失败停止后续注册 arm，普通性能结果继续保留并报告。正式大规模 P3 在 V5 pilot 和配对回归完成前不启动。
 
 **当前 trained dense30 V2 bounded diagnostic（2026-09-24）：** 已完成首个有界训练策略诊断
 `842101`：`1173` simulated steps、wall `64.53536491142586 s`，`8 normal / 18 emergency /

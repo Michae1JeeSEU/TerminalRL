@@ -65,14 +65,17 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)。
    canonical strict loader 为 `29a4dba` 且 `32` 个定向测试通过，evaluator 的 `27` 个定向测试通过，
    只读服务器 checkpoint/hash/profile-load preflight 通过；尚未消费 `848000/848101/848102`，也未消费
-   heldout。用户已于 2026-09-25 请求在本轮修改结束后暂停目标；恢复后先执行已注册 canonical smoke/full pair，
-   再由主代理决定 repair 与独立 qualification；暂停期间不启动新的算法实验。`P3_QUALIFIED=false`、
-   `PPO_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched，不放宽既有 gate。
+   heldout。暂停点已于 2026-09-25 解除，恢复后先执行已注册 canonical smoke/full pair，结果只作历史
+   基线与修复候选的开发比较，不自动授权 PPO。`P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、
+   `FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
-   `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
-   证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、
-   safety、exact replay、K3 shortlist、low-SOC wait non-worse 和 priority-weighted wait improvement；
-   本轮不新增 completion threshold。预留 `829001–829006` heldout 保持 untouched，不改作本轮开发集。
+    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
+    证据仍需 train/dev/heldout 独立性。旧 P3 formal 与 canonical comparison 继续使用其冻结的
+    all-complete/`no_failed_outcomes` 历史 gate；新的 V5 PPO entry/学习路线允许安全认证且能量未耗尽
+    的 `emergency_landed` 作为带代价结果，但 `failed_energy`、unsafe、formal/evaluation
+    `unresolved`、replay/likelihood 和 finite/restore/frozen-proposal 仍是硬失败；pilot 训练中的
+    自然 horizon 截断单独报告。预留 `829001–829006` heldout 保持 untouched，
+    不改作本轮开发集。详见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。
 
 ---
 
@@ -513,6 +516,19 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 
 #### 2026-09-17：PPO 场景课程审查与阶段边界
 
+#### 2026-09-25：受控应急语义下的 P3 PPO 准入边界
+
+此前 V3/Q3 的全完成与 `no_failed_outcomes` 判据继续作为历史 checkpoint 选择和
+qualification 证据，不能被新规则追溯改写。恢复后的 P3 V5 将 `emergency_landed` 定义为
+安全认证、能量未耗尽且完成应急着陆的降级结果：它进入性能和学习反馈，并单独报告事件数、
+priority、low-SOC 与全请求等待；`failed_energy`、未认证/安全失败和 formal/evaluation
+`unresolved` 仍是硬失败。pilot 训练中的自然 horizon 截断单独报告，不自动写成普遍安全
+失败。V5 不用事后比例门槛制造历史 PASS。
+
+后续独立 qualification 可把 dense `<=10%`、sparse `<=5%` 作为 provisional 研究目标；
+这些目标尚未验证，也不是当前 PPO admission threshold。P3 训练仍保留 priority `1/3/5`、
+SOC `.55–.90`、mission/资源混合和 `downstream_priority`，避免把 SOC 变成唯一决策因素。
+
 当前只有下表 P1 配置已经实现并获得 88D 准入。P2–P5 是后续执行顺序，
 不是可直接切换的已授权配置；每阶段先冻结实际参数、seed、预算并作小样本验证。
 旧 `low_v4/`、87D 课程文件不作为当前训练入口。
@@ -522,7 +538,7 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 | P1 初始 PPO（已准入） | 12 episodes 内循环 warm3、flow3、flow6，各4次；自然流10秒首到达、60秒间隔，900秒上限 | SOC=.8；常规 priority=1，emergency仍提升至5；保留原四种 mission/service分布、6个LZ、final容量1 | 先验证真实 PPO 更新下低层意图与闭环稳定，不宣称容量或收敛；warm-start是训练辅助 |
 | P2 自然流与 variable-N | 以flow3/6为锚点，先扩到总请求8/12；逐步降低warm-start占比；先保持到达强度，再单独引入间隔扰动 | 先保留P1属性，避免同时改变负荷与任务属性 | 900秒不能照搬：按末次到达与rule基线清空时间预设观察/排空窗口；正式评估只用自然流 |
 | P2R 密集资源桥接 | warm12（6/4/2）+ 12 架按15秒继续到达；保留旧自然流回归，后续训练应混合 warm 与 flow-from-empty，而非只用 warm-start | 6个LZ；`nearest_available`；downstream-first；final容量3；每条轨迹仍逐条认证 | 暴露跨环同一步竞争、LZ分配和并发final；报告吞吐、touchdown间隔、并发final、LZ距离后悔、反事实安全机会与全部hard-safety计数；不得改写旧P2结果 |
-| P3 任务与资源异质性 | 保持已验证负荷和入口分布 | 恢复需求规定的priority 1/3/5分布，再引入可完成任务的SOC分布；mission混合本已启用；覆盖长service占用和reservation/retry压力 | 能耗与优先级机制始终存在，此处增加状态覆盖；不以不可能完成的低SOC训练案例制造“能力不足” |
+| P3 任务与资源异质性 | 保持已验证负荷和入口分布 | 保留 priority 1/3/5、SOC `.55–.90`、mission 混合、长 service、reservation/retry 压力；允许安全认证且能量未耗尽的 `emergency_landed` 作为带代价结果 | 目标是学习能耗、优先级、资源占用的权衡，避免 SOC 单因素排序；`failed_energy`、unsafe、formal/evaluation `unresolved` 仍为硬失败。pilot 训练截断单独报告；高密度应急比例只作后续独立资格报告，不追溯改写历史 gate |
 | P4 终端区交通压力 | finite cohort总请求20/40/60；continuous low/medium/high/bursty，overload单列；根据本机型/布局rule基线容量选择强度 | 保持真实任务/资源分布，逐步加入入口偏斜和突发流 | 总请求数不等于同时在空数；报告active峰值、队列、请求完成/未完成/转降与延误。过载不要求队列稳定或全部成功，不能套用P1全完成gate |
 | P5 静态几何泛化 | 在已经验证的流量与N范围内，每episode冻结一种合法布局 | 分阶段改变合法半径/高度/速度与headway组合；仍执行完整可执行性检查 | 先静态泛化并冻结低层，再进入A6高层动态空域；不同时引入高负荷、几何变化和新任务分布 |
 
