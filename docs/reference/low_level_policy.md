@@ -251,9 +251,11 @@ priority、low-SOC 和全请求等待的报告；它本身不阻止 PPO entry，
 V5 首先运行不更新的 stochastic entry cohort，再运行总计 6 次 update 的 PPO pilot（每个
 registered pilot arm 一次）。所有 6 次 update 都必须有效；pilot 至少需要一次真实 accepted
 update、exact restore、proposal/temperature/actor freeze 核对，以及 pilot 前后
-完整请求分母的安全与结果回归。当前 rollout info 中的 reward component 只作为配置权重与 total
-return 的初始记录；若 pilot 需要 component magnitude，先补最小采集字段再启动，不声称已有
-持久化 component sums。只有 V5 pilot 和 paired development 均通过，才可把
+完整请求分母的安全与结果回归。学生 rollout summary 已记录 `reward_component_totals` 与
+`reward_total`，并检查组件和与总回报一致；实际累计项为
+`time/progress/release/touchdown/failure/teacher/shield/urgency/emergency`，排除每个 UAV 的
+`total` 避免重复计算。`urgency` 是 priority 与 SOC 的合并项，当前不声称存在独立的
+priority/SOC 分解。实现提交为 `4d34672`，定向测试 `9 passed`。只有 V5 pilot 和 paired development 均通过，才可把
 `FORMAL_P3_ALLOWED` 置为 true。
 
 P3 的 priority/SOC 时间奖励是**默认关闭的可选 shaping**：仅显式启用时根据活动 UAV 的

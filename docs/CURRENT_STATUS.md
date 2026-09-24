@@ -12,9 +12,16 @@
 
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
-**此前暂停点（2026-09-25，已解除）：** 当前代码迭代已完成：canonical strict loader 为 `29a4dba`，其 `32` 个定向测试通过；evaluator 的 `27` 个定向测试通过；只读服务器 checkpoint/hash/profile-load preflight 通过。暂停时 `848000/848101/848102` 尚未 reset 或 rollout，heldout 未消费；恢复后 `848000` smoke 已完成，`848101/848102` full pair 已注册执行，结果仍只用于历史基线与修复候选的开发比较，不自动放宽新 V5 准入，也不消费 heldout。`P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`。
+**此前暂停点（2026-09-25，已解除）：** 当前代码迭代已完成：canonical strict loader 为 `29a4dba`，其 `32` 个定向测试通过；evaluator 的 `27` 个定向测试通过；只读服务器 checkpoint/hash/profile-load preflight 通过。暂停时 `848000/848101/848102` 尚未 reset 或 rollout；该句只记录暂停时状态。恢复后 `848000` smoke 与 `848101/848102` full pair 均已完成，结果仍只用于历史基线与修复候选的开发比较，不自动放宽新 V5 准入，也不消费 heldout。`P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`。
 
-**P3 V5 当前路线：** 固定 `80/40/10 m`、`energy_capacity=1500`、`min_landing_soc=.10`、`soc_reserve=.25`、`emergency_trigger=.40`、`late-slot OFF`、`K=3`、`Observation V2.1=88D`、`Teacher=false`、`downstream_priority`。先运行 `849000` smoke，再运行不更新的 stochastic entry `849101/849102/849103`，然后按顺序运行总计 6 次 update 的 pilot `849201–849206`（每个 registered arm 一次），最后做同初始状态的 paired development `849301/849302/849303`。这些新种子在协议冻结后才可消费；任何安全/软件硬失败停止后续注册 arm，普通性能结果继续保留并报告。正式大规模 P3 在 V5 pilot 和配对回归完成前不启动。
+**canonical pair 冻结结果（2026-09-25）：** `848101/848102` 的 canonical 与 repair 四个 arm 均 exit `0`、full-resolved、zero-energy 且安全硬计数为零；aggregate 为 canonical `31 normal + 17 emergency`、repair `40 normal + 8 emergency`。repair 在两组 priority-weighted wait 与 low-SOC wait 上均更优，因此 V5 entry/pilot 的冻结初始化来源选择 repair candidate E04：SHA256 `e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353`，路径 `/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/fit846401/random_soc_gate_repair_v1.pt`。旧 canonical `no_failed_outcomes` gate 的历史 false 保持不变；该开发选择不构成 P3 qualification。
+
+**P3 V5 当前路线：** 固定 `80/40/10 m`、`energy_capacity=1500`、`min_landing_soc=.10`、`soc_reserve=.25`、`emergency_trigger=.40`、`late-slot OFF`、`K=3`、`Observation V2.1=88D`、`Teacher=false`、`downstream_priority`。先运行 `849000` smoke，再运行不更新的 stochastic entry `849101/849102/849103`，然后按顺序运行总计 6 次 update 的 pilot `849201–849206`（每个 registered arm 一次），最后做同初始状态的 paired development `849301/849302/849303`；paired development 的 before 是 pilot 前 baseline，after 是全部 6 次 update 后的结果。每个 paired record 内复用同一初始状态，不消费历史 heldout。这些新种子在协议冻结后才可消费；任何安全/软件硬失败停止后续注册 arm，普通性能结果继续保留并报告。正式大规模 P3 在 V5 pilot 和配对回归完成前不启动。
+
+学生 rollout summary 已记录 `reward_component_totals` 与 `reward_total`，并验证组件和一致；
+累计实际 `time/progress/release/touchdown/failure/teacher/shield/urgency/emergency` 字段，
+排除 per-UAV `total` 避免重复计算。`urgency` 仍是 priority 与 SOC 的合并项，不虚构独立
+分解；实现提交为 `4d34672`，定向测试 `9 passed`。
 
 **当前 trained dense30 V2 bounded diagnostic（2026-09-24）：** 已完成首个有界训练策略诊断
 `842101`：`1173` simulated steps、wall `64.53536491142586 s`，`8 normal / 18 emergency /
@@ -70,8 +77,8 @@ replay、state unchanged、无 safety error、approved `0`，其中 `safety_wait
 均降低 low-SOC wait 但提高 priority-weighted wait，因此不采纳，默认 `downstream_priority`
 保持。详见[arbitration result](evidence/v4_2/random_soc_arbitration_repair_v1_result_20260925.md)。
 本轮 repair 来源是 `714d141f...`；历史 P3 canonical initial 是独立的
-`4b8be66c...`，不静默替换基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)，
-代码实现与只读 preflight 已完成；canonical smoke/full rollout 仍 pending，`848000/848101/848102` 尚未消费，旧
+`4b8be66c...`，不静默替换基线。canonical strict loader、只读 preflight 与 `848000/848101/848102`
+smoke/full rollout 已完成；pair 结果与冻结 E04 初始化来源见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。旧
 `829001–829006` 保持 untouched。
 `P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`，不放宽既有安全与 P3 gate。
 

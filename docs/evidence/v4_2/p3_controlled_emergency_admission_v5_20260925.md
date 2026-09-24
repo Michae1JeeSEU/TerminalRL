@@ -62,6 +62,20 @@ PPO。选择后续训练 checkpoint 时，先按安全与完整请求闭合筛�
 再选 priority-weighted wait 更低者；完全相同才使用 canonical tie-break。该开发选择规则不
 使用 heldout 作调参。
 
+`848101/848102` 的 canonical 与 repair 四个 arm 均 exit `0`、full-resolved、zero-energy 且
+安全硬计数为零；aggregate 为 canonical `31 normal + 17 emergency`、repair
+`40 normal + 8 emergency`。repair 在两组 priority-weighted wait 与 low-SOC wait 上均更优，
+因此 V5 stochastic entry 与 pilot 的冻结初始化来源为 repair candidate E04：
+
+```text
+SHA256: e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353
+path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/fit846401/random_soc_gate_repair_v1.pt
+```
+
+旧 canonical `no_failed_outcomes` gate 的历史 false 保持不变；该 development selection 不构成
+P3 qualification。V5 entry/pilot 从上述 E04 开始，仍须按本协议的技术 gate 与后续主代理 review
+执行。
+
 ## 4. Fresh seed registry and execution order
 
 所有 V5 seeds 在本协议冻结后消费一次；不得 reset、rerun、替换或追加未登记 seed。输出写入
@@ -113,9 +127,11 @@ clip `=.1`、entropy coefficient `=.001`、target KL `=.01`、maximum KL `=.05`�
 log-probability。
 
 沿用既有 priority time weight `1.0`、SOC urgency weight `2.0`、threshold `.65`，先不混入
-新的奖励权重或 SOC 排序。初始记录至少保存配置权重和 total return；当前 rollout `info`
-并不声称已经持久化 component sums。若 pilot 需要 component magnitude，必须先加入最小
-采集字段并通过 smoke/测试验证，再启动 pilot。
+新的奖励权重或 SOC 排序。学生 rollout summary 已持久化 `reward_component_totals` 和
+`reward_total`，并校验组件和与总回报一致；累计字段使用实际的
+`time/progress/release/touchdown/failure/teacher/shield/urgency/emergency` keys，排除每个
+UAV 的 `total` 避免重复计算。`urgency` 仍是 priority 与 SOC 的合并项，当前不虚构独立的
+priority/SOC 分解。对应实现为 `4d34672`，定向测试 `9 passed`。
 
 ### 4.4 Same-initial-state paired development
 

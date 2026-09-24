@@ -64,10 +64,14 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    repair 来源为 `714d141f...`，历史 P3 canonical initial 为独立的 `4b8be66c...`，不静默替换
    基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)。
    canonical strict loader 为 `29a4dba` 且 `32` 个定向测试通过，evaluator 的 `27` 个定向测试通过，
-   只读服务器 checkpoint/hash/profile-load preflight 通过；尚未消费 `848000/848101/848102`，也未消费
-   heldout。暂停点已于 2026-09-25 解除，恢复后先执行已注册 canonical smoke/full pair，结果只作历史
-   基线与修复候选的开发比较，不自动授权 PPO。`P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、
-   `FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched。
+   只读服务器 checkpoint/hash/profile-load preflight 通过；暂停时 `848000/848101/848102` 尚未消费，
+   heldout 未消费。暂停点已于 2026-09-25 解除；恢复后 smoke/full pair 均已完成，四个 arm 均
+   exit `0`、full-resolved、zero-energy 且安全硬计数为零，canonical aggregate 为 `31 normal +
+   17 emergency`、repair aggregate 为 `40 normal + 8 emergency`。repair 两组 priority-weighted
+   wait 与 low-SOC wait 均更优，V5 entry/pilot 冻结从 repair candidate E04 开始：SHA256
+   `e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353`，路径见[受控应急协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。该开发比较不自动授权 PPO；
+   `P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`；
+   旧 formal/heldout 保持 untouched。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
     `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
     证据仍需 train/dev/heldout 独立性。旧 P3 formal 与 canonical comparison 继续使用其冻结的
@@ -528,6 +532,10 @@ priority、low-SOC 与全请求等待；`failed_energy`、未认证/安全失败
 后续独立 qualification 可把 dense `<=10%`、sparse `<=5%` 作为 provisional 研究目标；
 这些目标尚未验证，也不是当前 PPO admission threshold。P3 训练仍保留 priority `1/3/5`、
 SOC `.55–.90`、mission/资源混合和 `downstream_priority`，避免把 SOC 变成唯一决策因素。
+学生 rollout 已在 summary 中记录 `reward_component_totals` 与 `reward_total`，并验证组件和
+一致；使用实际 `time/progress/release/touchdown/failure/teacher/shield/urgency/emergency`
+字段，排除 per-UAV `total`。`urgency` 仍是 priority 与 SOC 的合并项，不虚构独立分解；实现
+提交 `4d34672`，对应定向测试 `9 passed`。
 
 当前只有下表 P1 配置已经实现并获得 88D 准入。P2–P5 是后续执行顺序，
 不是可直接切换的已授权配置；每阶段先冻结实际参数、seed、预算并作小样本验证。
