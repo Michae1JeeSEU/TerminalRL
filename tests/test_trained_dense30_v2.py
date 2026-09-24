@@ -38,6 +38,17 @@ def _release_policy():
     return policy
 
 
+def _wait_policy_with_ordered_proposals():
+    policy = TemperatureCalibratedGateResidualAdapterStudentPPOV42(88)
+    with torch.no_grad():
+        for parameter in policy.model.parameters():
+            parameter.zero_()
+        policy.model.gate_head.bias.copy_(torch.tensor([1.0, -1.0]))
+        policy.model.proposal_head.bias.copy_(torch.arange(25, dtype=torch.float32))
+    policy.model.eval()
+    return policy
+
+
 def test_dense30_config_and_controller_identity():
     config = diagnostic.build_dense30_config()
     policy = _release_policy()
@@ -59,6 +70,115 @@ def test_dense30_config_and_controller_identity():
     assert expected["high_level_action_dim"] == 10
     assert expected["high_level_enabled"] is False
     assert expected["policy_kind"] == "low_level"
+
+
+def test_p3_scenario_configs_preserve_schedule_horizon_and_execution_migration():
+    expected = {
+        "flow6": (6, 0, (10.0, 70.0, 130.0, 190.0, 250.0, 310.0), 1210.0, 1),
+        "flow12": (12, 0, tuple(10.0 + 60.0 * i for i in range(12)), 1570.0, 1),
+        "dense24": (24, 12, (0.0,) * 12 + tuple(15.0 * i for i in range(1, 13)), 1800.0, 3),
+    }
+    for name, (total, warm, schedule, horizon, final_capacity) in expected.items():
+        config = diagnostic.build_scenario_config(name)
+        assert config.total_requested_uavs == total
+        assert config.warm_start_uavs == warm
+        assert config.fixed_arrival_schedule == schedule
+        assert config.max_simulation_seconds == horizon
+        assert config.final_queue_capacity == final_capacity
+        assert config.vehicle_profile.profile_version == diagnostic.TARGET_VEHICLE_PROFILE_VERSION
+        assert config.energy_model_mode == "phase_motion_v2"
+        assert config.emergency_landing_enabled is True
+        assert config.emergency_priority_guard_enabled is True
+        assert config.energy_reachability_guard_enabled is True
+        assert config.warm_start_energy_reachability_check_enabled is (warm > 0)
+        assert config.emergency_trigger_soc == pytest.approx(0.4)
+        assert config.emergency_energy_margin_seconds == pytest.approx(15.0)
+        assert (config.safe_distance, config.nmac_distance, config.collision_distance) == (80.0, 40.0, 10.0)
+        assert config.experiment_mode == "fixed_low_student"
+        assert config.teacher_enabled is False
+        assert config.teacher_release_label_enabled is False
+        assert config.scheduler_mode == "execution"
+        assert config.high_level_enabled is False
+        assert config.shield_enabled is True
+        assert config.neighbor_comm_range_m is None
+        assert config.runtime_proposal_shortlist_k == 3
+        assert config.rule_flow_coordination_enabled is False
+    assert diagnostic.build_scenario_config("dense30").total_requested_uavs == 30
+
+
+def test_trained_release_only_forces_eligible_gate_and_keeps_policy_proposals(monkeypatch):
+    env = TerminalParallelEnv(_tiny_config())
+    observations, _ = env.reset(seed=3)
+    env.active[1].committed_plan = object()
+    policy = _wait_policy_with_ordered_proposals()
+    original_distributions = policy.model.distributions
+    forward_calls = []
+
+    def counted_distributions(values):
+        forward_calls.append(values.shape)
+        return original_distributions(values)
+
+    monkeypatch.setattr(policy.model, "distributions", counted_distributions)
+
+    details = diagnostic._trained_release_only_request_details(
+        policy, env, observations, shortlist_k=3, deterministic=True,
+    )
+    uids, _, actor_mask, actions, gates, proposals, _, _, likelihoods, shortlists = details
+
+    assert uids == ["0", "1"]
+    assert actor_mask.tolist() == [True, False]
+    assert gates.tolist() == [1, 0]
+    assert proposals.tolist() == [24, -1]
+    assert hierarchical_from_normalized_v4_2(actions["0"]).proposal == 24
+    assert hierarchical_from_normalized_v4_2(actions["1"]).gate == 0
+    assert [hierarchical_from_normalized_v4_2(action).proposal for action in shortlists["0"]] == [24, 23, 22]
+    assert likelihoods["0"]["proposal"] is not None
+    assert len(forward_calls) == 1
+
+
+def test_trained_release_only_tiny_rollout_metadata_and_base_priority(tmp_path):
+    output = tmp_path / "forced"
+    summary = diagnostic.run_rollout(
+        _wait_policy_with_ordered_proposals(),
+        _tiny_config(),
+        output=output,
+        seed=3,
+        max_steps=1,
+        controller="trained_release_only",
+    )
+
+    assert summary["scenario"] == "dense30"
+    assert summary["controller"] == "trained_release_only"
+    assert summary["gate_override"] is True
+    assert summary["neural_policy_used"] is True
+    assert summary["neural_proposal_used"] is True
+    assert summary["gate_selected_by_model"] is False
+    assert summary["recorded_likelihood_source"] == "original_policy_scores_for_intervened_actions"
+    assert summary["recorded_likelihood_is_behavior_logprob"] is False
+    assert summary["total_requested_uavs"] == 2
+    rows = [json.loads(line) for line in (output / "actor_steps.jsonl").read_text().splitlines()]
+    assert rows and all(row["base_priority"] in {1, 3, 5} for row in rows)
+    assert all(row["gate"] == 1 for row in rows if row["actor_mask"])
+    metadata = json.loads((output / "metadata.json").read_text())
+    assert metadata["gate_override"] is True
+
+
+def test_trained_release_only_empty_flow_rollout_does_not_crash(tmp_path):
+    config = diagnostic.build_scenario_config("flow6")
+    summary = diagnostic.run_rollout(
+        _wait_policy_with_ordered_proposals(),
+        config,
+        output=tmp_path / "flow_empty",
+        seed=3,
+        max_steps=2,
+        controller="trained_release_only",
+        scenario="flow6",
+    )
+
+    assert summary["scenario"] == "flow6"
+    assert summary["total_requested_uavs"] == 6
+    assert summary["steps_executed"] == 2
+    assert summary["action_rows"] == 0
 
 
 def test_metadata_rejects_schema_hash_and_unapproved_profile_changes():

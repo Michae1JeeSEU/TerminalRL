@@ -22,11 +22,13 @@ from typing import Any
 
 import numpy as np
 import torch
+import yaml
 
 from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
     CALIBRATION_TEMPERATURE,
     TemperatureCalibratedGateResidualAdapterStudentPPOV42,
 )
+from terminal_marl.algo.joint_ppo_v4_2 import hierarchical_joint_logprob
 from terminal_marl.core.checkpoints import checkpoint_metadata
 from terminal_marl.core.low_level_joint_action_v4_2 import (
     HierarchicalActionV42,
@@ -42,6 +44,7 @@ from terminal_marl.training.diagnose_energy_reachability_guard_smoke import (
 from terminal_marl.training.evaluate_v4_2_p2_runtime_shortlist_heldout_v1 import (
     protocol as p2_heldout_protocol,
 )
+from terminal_marl.training import run_v4_2_p3_mixed_priority_soc_training_v4 as p3_training_v4
 from terminal_marl.training.student_rollout_v4_2 import (
     _student_request_details,
     validate_student_config,
@@ -62,7 +65,9 @@ SOURCE_VEHICLE_PROFILE_VERSION = "eh216s_research_v1"
 TARGET_VEHICLE_PROFILE_VERSION = "eh216s_research_v2"
 MAX_STEPS = 1800
 RUNTIME_SHORTLIST_K = 3
-CONTROLLERS = ("trained", "nominal_rule")
+CONTROLLERS = ("trained", "nominal_rule", "trained_release_only")
+SCENARIOS = ("dense30", "flow6", "flow12", "dense24")
+P3_SCENARIO_PROTOCOL = p3_training_v4.PROTOCOL
 NOMINAL_RELEASE_PROPOSAL = 12  # zero-based proposal12 RELEASE
 DEFAULT_PROBE_TIMES: tuple[float, ...] = ()
 SAFETY_DECISION_ACCEPTED = {
@@ -89,6 +94,13 @@ def _validate_controller(controller: str) -> str:
     value = str(controller)
     if value not in CONTROLLERS:
         raise ValueError(f"controller must be one of {CONTROLLERS}, got {controller!r}")
+    return value
+
+
+def _validate_scenario(scenario: str) -> str:
+    value = str(scenario)
+    if value not in SCENARIOS:
+        raise ValueError(f"scenario must be one of {SCENARIOS}, got {scenario!r}")
     return value
 
 
@@ -151,6 +163,116 @@ def _nominal_request_details(env, observations: dict[str, np.ndarray], *, shortl
         proposals,
         zeros.copy(),
         zeros.copy(),
+        likelihoods,
+        shortlists,
+    )
+
+
+def _trained_release_only_request_details(
+    policy,
+    env,
+    observations: dict[str, np.ndarray],
+    *,
+    shortlist_k: int,
+    deterministic: bool = True,
+):
+    """Run one policy forward while intervening only on eligible gate values.
+
+    Proposal logits, proposal selection, stable shortlist ordering, and the
+    recorded likelihoods remain those of the original policy forward.  The
+    gate is forced to RELEASE for eligible actors and WAIT for masked actors;
+    this is an intervened controller comparison and is not PPO likelihood
+    provenance.
+    """
+
+    if shortlist_k not in {1, 3}:
+        raise ValueError("student runtime shortlist must have K=1 or K=3")
+    uids = sorted(observations)
+    world = np.asarray(
+        [observations[uid] for uid in uids], dtype=np.float32
+    ).reshape(-1, policy.observation_dim)
+    actor_mask = _actor_eligibility(env, uids)
+    if not uids:
+        return (
+            uids,
+            world,
+            actor_mask,
+            {},
+            np.zeros(0, dtype=int),
+            np.zeros(0, dtype=int),
+            np.zeros(0),
+            np.zeros(0),
+            {},
+            {},
+        )
+    tensor = torch.as_tensor(world, device=policy.device)
+    with torch.no_grad():
+        gate_dist, proposal_dist = policy.model.distributions(tensor)
+        mask = torch.as_tensor(actor_mask, device=policy.device)
+        gates = torch.zeros(len(uids), dtype=torch.long, device=policy.device)
+        gates[mask] = RELEASE_GATE
+        proposals = torch.full(
+            (len(uids),), -1, dtype=torch.long, device=policy.device
+        )
+        release = gates == RELEASE_GATE
+        if release.any():
+            logits = proposal_dist.logits[release]
+            if deterministic:
+                proposals[release] = logits.argmax(-1)
+            else:
+                proposals[release] = torch.distributions.Categorical(
+                    logits=logits
+                ).sample()
+        gate_lp, proposal_lp, joint_lp = hierarchical_joint_logprob(
+            gate_dist, proposal_dist, gates, proposals
+        )
+    gate_np = gates.cpu().numpy()
+    proposal_np = proposals.cpu().numpy()
+    decoded = np.asarray([
+        HierarchicalActionV42(
+            int(gate),
+            None if int(proposal) < 0 else int(proposal),
+        ).normalized
+        for gate, proposal in zip(gate_np, proposal_np)
+    ], dtype=np.float32).reshape((len(uids), 3))
+    actions = {uid: decoded[index] for index, uid in enumerate(uids)}
+    likelihoods = {
+        uid: {
+            "gate": float(gate_lp[index]),
+            "proposal": (
+                None if int(proposal_np[index]) < 0
+                else float(proposal_lp[index])
+            ),
+            "joint": float(joint_lp[index]),
+        }
+        for index, uid in enumerate(uids)
+    }
+    shortlists: dict[str, tuple[np.ndarray, ...]] = {}
+    if shortlist_k > 1:
+        proposal_logits = proposal_dist.logits.detach().cpu()
+        for index, uid in enumerate(uids):
+            if not actor_mask[index] or int(gate_np[index]) != RELEASE_GATE:
+                continue
+            selected = int(proposal_np[index])
+            ranked = torch.argsort(
+                proposal_logits[index], descending=True, stable=True
+            ).tolist()
+            ordered = [selected] + [
+                int(value) for value in ranked if int(value) != selected
+            ]
+            shortlists[uid] = tuple(
+                HierarchicalActionV42(RELEASE_GATE, proposal).normalized.copy()
+                for proposal in ordered[:shortlist_k]
+            )
+    return (
+        uids,
+        world,
+        actor_mask,
+        actions,
+        gate_np,
+        proposal_np,
+        gate_lp.cpu().numpy(),
+        proposal_lp.cpu().numpy(),
         likelihoods,
         shortlists,
     )
@@ -382,6 +504,62 @@ def build_dense30_config():
     )
     validate_student_config(config)
     return config
+
+
+def _migrate_p3_execution_config(config):
+    """Apply the current V2.1 execution contract to a frozen P3 scenario."""
+
+    migrated = replace(
+        config,
+        vehicle_profile_id="research_evtol",
+        action_schema_version=ACTION_SCHEMA,
+        observation_schema_version=OBSERVATION_SCHEMA,
+        energy_model_mode="phase_motion_v2",
+        final_approach_geometry_mode="continuous_inward_v1",
+        reconcile_late_merge_slots_enabled=False,
+        emergency_landing_enabled=True,
+        emergency_priority_guard_enabled=True,
+        energy_reachability_guard_enabled=True,
+        warm_start_energy_reachability_check_enabled=(
+            config.reset_mode == "warm_start_rings"
+        ),
+        emergency_trigger_soc=0.40,
+        emergency_energy_margin_seconds=15.0,
+        safe_distance=80.0,
+        nmac_distance=40.0,
+        collision_distance=10.0,
+        experiment_mode="fixed_low_student",
+        high_level_enabled=False,
+        teacher_enabled=False,
+        teacher_release_label_enabled=False,
+        scheduler_mode="execution",
+        shield_enabled=True,
+        neighbor_comm_range_m=None,
+        runtime_proposal_shortlist_k=RUNTIME_SHORTLIST_K,
+        rule_flow_coordination_enabled=False,
+    )
+    validate_student_config(migrated)
+    return migrated
+
+
+def build_scenario_config(scenario: str = "dense30"):
+    """Build one bounded diagnostic scenario without protocol authorization."""
+
+    scenario = _validate_scenario(scenario)
+    if scenario == "dense30":
+        return build_dense30_config()
+    if not P3_SCENARIO_PROTOCOL.is_file():
+        raise DiagnosticInputError(
+            f"P3 scenario protocol YAML not found: {P3_SCENARIO_PROTOCOL}"
+        )
+    raw_protocol = yaml.safe_load(
+        P3_SCENARIO_PROTOCOL.read_text(encoding="utf-8-sig")
+    )
+    if not isinstance(raw_protocol, Mapping):
+        raise DiagnosticInputError("P3 scenario protocol YAML must be a mapping")
+    return _migrate_p3_execution_config(
+        p3_training_v4.scenario_config(scenario, raw_protocol)
+    )
 
 
 def _checkpoint_bindings() -> dict[str, Any]:
@@ -650,10 +828,12 @@ def run_rollout(
     checkpoint_info: Mapping[str, Any] | None = None,
     controller: str = "trained",
     probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES,
+    scenario: str = "dense30",
 ) -> dict[str, Any]:
     """Run a deterministic, inference-only diagnostic with a supplied controller."""
 
     controller = _validate_controller(controller)
+    scenario = _validate_scenario(scenario)
     output = Path(output)
     if output.exists():
         raise FileExistsError(f"refusing to overwrite existing output: {output}")
@@ -662,8 +842,14 @@ def run_rollout(
     max_steps = int(max_steps)
     output.mkdir(parents=True, exist_ok=False)
     validate_student_config(config)
-    if controller == "trained" and int(getattr(policy, "observation_dim", -1)) != OBSERVATION_DIM:
+    if controller in {"trained", "trained_release_only"} and int(
+        getattr(policy, "observation_dim", -1)
+    ) != OBSERVATION_DIM:
         raise DiagnosticInputError("diagnostic policy must have 88D observations")
+    if controller == "trained_release_only" and policy is None:
+        raise DiagnosticInputError(
+            "trained_release_only controller requires a policy"
+        )
     weight_digest_before = None
     if policy is not None:
         try:
@@ -674,6 +860,7 @@ def run_rollout(
     started = time.perf_counter()
     _write_json_atomic(output / "config.json", {
         "diagnostic_only": True,
+        "scenario": scenario,
         "config": _config_payload(config),
     })
     _write_json_atomic(output / "metadata.json", {
@@ -685,8 +872,27 @@ def run_rollout(
         "checkpoint_promotable": False,
         "teacher_enabled": bool(config.teacher_enabled),
         "scheduler_mode": config.scheduler_mode,
+        "scenario": scenario,
         "controller": controller,
-        "neural_policy_used": controller == "trained",
+        "neural_policy_used": controller in {"trained", "trained_release_only"},
+        "neural_proposal_used": controller in {"trained", "trained_release_only"},
+        "gate_override": controller == "trained_release_only",
+        "gate_selected_by_model": controller == "trained",
+        "likelihood_semantics": (
+            "original_policy_scores_for_intervened_actions_not_behavior_logprobs"
+            if controller == "trained_release_only"
+            else "trained_policy"
+            if controller == "trained"
+            else "none"
+        ),
+        "recorded_likelihood_source": (
+            "original_policy_scores_for_intervened_actions"
+            if controller == "trained_release_only"
+            else "trained_policy"
+            if controller == "trained"
+            else "none"
+        ),
+        "recorded_likelihood_is_behavior_logprob": controller == "trained",
         "probe_times": [float(value) for value in probe_times],
         "shadow_probe_labels_written": False,
         "checkpoint": checkpoint_info,
@@ -728,6 +934,14 @@ def run_rollout(
                         deterministic=True,
                         shortlist_k=RUNTIME_SHORTLIST_K,
                     )
+                elif controller == "trained_release_only":
+                    details = _trained_release_only_request_details(
+                        policy,
+                        env,
+                        observations,
+                        deterministic=True,
+                        shortlist_k=RUNTIME_SHORTLIST_K,
+                    )
                 else:
                     details = _nominal_request_details(
                         env,
@@ -742,6 +956,7 @@ def run_rollout(
                         "time": float(env.now),
                         "phase": env.active[int(uid)].phase.value,
                         "soc": float(env.active[int(uid)].soc),
+                        "base_priority": int(env.active[int(uid)].base_priority),
                         "actor_mask": bool(actor_mask[index]),
                         "gate": int(gates[index]),
                         "proposal": None if int(proposals[index]) < 0 else int(proposals[index]),
@@ -857,6 +1072,10 @@ def run_rollout(
         "PPO_ALLOWED": False,
         "checkpoint_promotable": False,
         "seed": int(seed),
+        "scenario": scenario,
+        "total_requested_uavs": int(config.total_requested_uavs or 0),
+        "requested_uavs": int(config.total_requested_uavs or 0),
+        "total": int(config.total_requested_uavs or 0),
         "max_steps": max_steps,
         "steps_executed": int(steps),
         "sim_time_seconds": float(env.now),
@@ -896,7 +1115,25 @@ def run_rollout(
             None if weight_digest_before is None else weight_digest_before == weight_digest_after
         ),
         "controller": controller,
-        "neural_policy_used": controller == "trained",
+        "neural_policy_used": controller in {"trained", "trained_release_only"},
+        "neural_proposal_used": controller in {"trained", "trained_release_only"},
+        "gate_override": controller == "trained_release_only",
+        "gate_selected_by_model": controller == "trained",
+        "likelihood_semantics": (
+            "original_policy_scores_for_intervened_actions_not_behavior_logprobs"
+            if controller == "trained_release_only"
+            else "trained_policy"
+            if controller == "trained"
+            else "none"
+        ),
+        "recorded_likelihood_source": (
+            "original_policy_scores_for_intervened_actions"
+            if controller == "trained_release_only"
+            else "trained_policy"
+            if controller == "trained"
+            else "none"
+        ),
+        "recorded_likelihood_is_behavior_logprob": controller == "trained",
         "probe_times": [float(value) for value in probe_times],
         "shadow_probes_path": str(shadow_probes_path),
         "shadow_probe_labels_written": False,
@@ -918,10 +1155,16 @@ def run_rollout(
 
 
 def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int,
-        controller: str = "trained", probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES) -> dict[str, Any]:
+        controller: str = "trained", probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES,
+        scenario: str = "dense30") -> dict[str, Any]:
     controller = _validate_controller(controller)
-    config = build_dense30_config()
-    policy, checkpoint_info = load_trained_checkpoint(checkpoint, config)
+    scenario = _validate_scenario(scenario)
+    config = build_scenario_config(scenario)
+    # Checkpoint metadata is bound to the original dense30 diagnostic
+    # contract; the selected P3 scenario changes only the execution config.
+    policy, checkpoint_info = load_trained_checkpoint(
+        checkpoint, build_dense30_config()
+    )
     return run_rollout(
         policy,
         config,
@@ -931,6 +1174,7 @@ def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int
         checkpoint_info=checkpoint_info,
         controller=controller,
         probe_times=probe_times,
+        scenario=scenario,
     )
 
 
@@ -957,6 +1201,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-steps", type=int, required=True)
     parser.add_argument("--controller", choices=CONTROLLERS, default="trained")
+    parser.add_argument("--scenario", choices=SCENARIOS, default="dense30")
     parser.add_argument("--probe-times", type=_parse_probe_times, default=DEFAULT_PROBE_TIMES,
                         help="comma-separated simulation times for trained-controller shadow probes")
     args = parser.parse_args()
@@ -967,6 +1212,7 @@ def main() -> None:
         max_steps=args.max_steps,
         controller=args.controller,
         probe_times=args.probe_times,
+        scenario=args.scenario,
     )
     print(json.dumps(_jsonable(result), indent=2, sort_keys=True), flush=True)
 
