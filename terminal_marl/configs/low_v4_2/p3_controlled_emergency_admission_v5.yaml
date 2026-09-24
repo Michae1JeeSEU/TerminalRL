@@ -1,0 +1,97 @@
+protocol: V4_2_P3_CONTROLLED_EMERGENCY_ADMISSION_V5
+status: PREREGISTERED_BOUNDED_ADMISSION
+scope: fixed_geometry_random_soc_controlled_emergency_admission
+
+bindings:
+  canonical_initial_checkpoint_sha256: 4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c
+  repair_candidate_checkpoint_sha256: e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353
+  action_schema_version: low_action_schema_v4_2_hierarchical
+  observation_schema_version: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  vehicle_profile_version: eh216s_research_v2
+  no_heldout_seeds: true
+  no_historical_source_hashes: true
+
+reward:
+  low_level_priority_time_weight: 1.0
+  low_level_soc_urgency_time_weight: 2.0
+  low_level_soc_urgency_threshold: 0.65
+  urgency_reward_config_exact: true
+
+smoke:
+  seed: 849000
+  scenario: dense24
+  steps: 2
+  full_horizon_seconds: 1800
+
+entry:
+  seeds: [849101, 849102, 849103]
+  scenarios: [flow6, flow12, dense24]
+  stochastic: true
+  full_scenario_horizon: true
+  updates: false
+
+pilot:
+  seeds: [849201, 849202, 849203, 849204, 849205, 849206]
+  scenarios: [flow6, dense24, flow12, dense24, flow6, dense24]
+  stochastic: true
+  full_scenario_horizon: true
+  sequential_updates: true
+  updates: 6
+
+dev:
+  seeds: [849301, 849302, 849303]
+  scenarios: [flow6, flow12, dense24]
+  deterministic: true
+  full_scenario_horizon: true
+  paired_same_seed_before_after: true
+  updates: false
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+
+hard_gates:
+  initial_ratio_error_max: 0.00001
+  shield_actor_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  student_only: true
+  actor_decisions_nonzero: true
+  runtime_shortlist_contract: true
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+  urgency_reward_config_exact: true
+  zero_failed_energy: true
+  zero_other_failures: true
+  accepted_emergency_is_report_only: true
+
+authorization:
+  entry_pass_authorizes_bounded_pilot: true
+  pilot_technical_pass_requires_primary_review: true
+  performance_review_required: true
+  FORMAL_P3_ALLOWED: false
+  P3_QUALIFIED: false
+  P4_ALLOWED: false
+  checkpoint_promotable: false
+
+reservation:
+  heldout: []
+  reserve_before_first_reset: true
