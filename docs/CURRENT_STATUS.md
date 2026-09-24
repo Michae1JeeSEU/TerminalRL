@@ -21,25 +21,23 @@ blocker 为 `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority +
 approved `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准
 imitation-only fix。详见[诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
 
-**当前 random-SOC comparison 结果（2026-09-24）：** 配对 development comparison 已完成，详见
-[结果页](evidence/v4_2/random_soc_repair_development_result_20260924.md)。`843000` trained smoke
-先完成 `2` steps、`60` rows、`47 WAIT / 12 RELEASE`，6/6 shadow probe 保持 original state
-unchanged，其中 `UID27 WAIT → nominal RELEASE` 同一步 `approved`。正确 repo cwd 下
-`tests/test_trained_dense30_v2.py` 为 `10 passed`；首次从 server home 执行的 `9 passed, 1 failed`
-相对路径错误保留为执行事实。`843101` trained arm 为 `9 normal / 18 emergency / 3 failed-energy /
-0 unresolved`，terminal `1036` steps、wall `66.700964 s`；nominal_rule arm 为
-`17 / 13 / 0 / 0`，terminal `865` steps、wall `40.186961 s`。两者均无 collision/NMAC/
-hard-separation/fail-closed，且 weights unchanged、无 Teacher/训练/PPO；safety intervention 与
-joint correction 分别为 trained `481/30`、nominal `213/0`，不写作 all-safety-zero。trained
-19 probes 全部 original unchanged，4 个 approved witness。trained 的数值 exit status unknown
-（完整 terminal summary 存在）；nominal wrapper exit `0`。该配对表明 controller behavior 存在差异并
-观察到已有 safety-feasible WAIT 反例；由于配对同时改变 gate 与 proposal，不能独断归因于 gate，且
-13 次 emergency 仍待修复。旧 `842102` unused、`829001–829006` heldout untouched；raw server/local
-mirror 路径与完整证据见结果页。`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
+**当前 random-SOC P3 development 结果（2026-09-24）：** `844000` 两步 dense24 smoke 已完成，
+server/local `14` 项测试 PASS；7 个 full arms 的原始结果见[结果页](evidence/v4_2/random_soc_repair_development_result_20260924.md)。
+`flow6/844101` trained 与 nominal_rule 分别为 `6/0/0`、`6/0/0`；`flow12/844102` 分别为
+`11/1/0`、`12/0/0`；`dense24/844103` trained、nominal_rule、trained_release_only 分别为
+`19/5/0`、`19/5/0`、`22/2/0`（normal/emergency/failed-energy）。7 个 full arms 均
+`unresolved=0`、`terminal=true`，`SafetyInvariantError`、collision/NMAC/hard-separation、
+fail-closed 与 executed-plan hash mismatch 均为零；weights unchanged、无 Teacher、未调用 PPO。
+forced-gate arm 保留 neural proposal Top3，不能作为 trained policy 结果。旧 `842101/842102` 与
+`829001–829006` heldout 保持原状；`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
 
-**当前授权的下一步（2026-09-24）：** 准备 fresh P3 `flow6`/`flow12`/`dense24` development，以及
-dense24 forced-gate/frozen-proposal 消融；代码与新 protocol 尚 pending。该配对结果不授权训练或
-qualification，继续保持 `80/40/10 m`、`min_landing_soc=.10` 与 `soc_reserve=.25`。
+**当前授权/工作状态（2026-09-24）：** 主代理优先审阅 gate 学习修复；dense24
+`trained_release_only` 仍有 `2` 次 emergency，不能把 forced 干预写成 learned 成果。正在检查
+剩余 emergency；V4.1 joint Teacher 标签器与 K3 执行在 final-pad 搜索和 emergency-pad 优先规则上
+已完成对齐，12 项定向测试通过；尚未收集新数据、训练或进行资格验证。P3 strict
+`no_failed_outcomes` 要求完整 ledger 全部为 `completed`，`emergency_landed` 也不通过该 gate；
+conditional wait 统计不能掩盖失败。保持 `80/40/10 m`、`min_landing_soc=.10`、`soc_reserve=.25`，
+不新增 protocol/seed，不放宽既有 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3
