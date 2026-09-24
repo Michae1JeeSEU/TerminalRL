@@ -10,7 +10,9 @@ from ..envs.parallel_env import TerminalParallelEnv, WorldSnapshot
 
 
 def _release_context(env: TerminalParallelEnv, uav) -> tuple[RingRole | str, str] | None:
-    if uav.committed_plan is not None or env.now < uav.safety_retry_after:
+    if (uav.committed_plan is not None
+            or env.now < uav.safety_retry_after
+            or int(uav.uid) in env.future_release_reservations):
         return None
     if uav.phase is FlightPhase.RING_OUTER:
         return RingRole.MIDDLE, "o2m"
@@ -45,6 +47,7 @@ def teacher_joint_expert_v4_1(env: TerminalParallelEnv, uav, *, audit_catalogue:
     selected: JointActionV41 | None = None
     for rank, candidate in enumerate(env.teacher_scheduler.joint_catalogue()):
         feasible, reason = False, ""
+        audit_fields: dict[str, object] = {}
         if candidate.release_request <= 0.0:
             feasible, reason = True, "wait_legal"
         elif context is None:
@@ -53,24 +56,65 @@ def teacher_joint_expert_v4_1(env: TerminalParallelEnv, uav, *, audit_catalogue:
             target, interface = context
             if interface in env.airspace.affected_interfaces():
                 reason = "geometry_frozen"
+            elif uav.soc <= 0.0:
+                reason = "soc"
             else:
                 lz_id = None
+                continuous_final_lz_search = (
+                    target == "final"
+                    and env.config.final_approach_geometry_mode == "continuous_inward_v1"
+                )
+                final_lz_ids: tuple[int | None, ...] = ()
                 if target == "final":
                     if sum(item.phase is FlightPhase.FINAL for item in env.active.values()) >= env.config.final_queue_capacity:
                         reason = "final_capacity"
+                    elif env._emergency_lz_priority_blocks(uav):
+                        reason = "emergency_lz_priority"
+                    elif continuous_final_lz_search:
+                        final_lz_ids = tuple(env.lz_manager.rank_available_zones(uav, env.now))
+                        if not final_lz_ids:
+                            reason = "lz_unavailable"
                     else:
                         lz_id = env.lz_manager.choose_rule_zone(uav, env.now)
                         if lz_id is None:
                             reason = "lz_unavailable"
                 if not reason:
-                    proposal, plan, reason = env._candidate_plan(
-                        uav, RepairCandidate("v4_1_joint_teacher", LowLevelIntent(*candidate.normalized), 0.0),
-                        target, snapshot, lz_id)
-                    feasible = proposal is not None and plan is not None and reason is None
-                    reason = "certified" if feasible else str(reason or "candidate_rejected")
-        audit.append({"rank": rank, "joint_index": candidate.index, "decoded": candidate.as_dict(),
-                      "candidate_score": _candidate_score(candidate), "feasible": feasible, "reason": reason,
-                      "tie_break": "catalogue_rank_release_then_abs_residual_then_index" if candidate.release_request > 0 else "canonical_wait"})
+                    repair_candidate = RepairCandidate(
+                        "v4_1_joint_teacher", LowLevelIntent(*candidate.normalized), 0.0,
+                    )
+                    final_lz_checks: list[dict[str, object]] = []
+                    for candidate_lz_id in (final_lz_ids or (lz_id,)):
+                        proposal, plan, candidate_reason = env._candidate_plan(
+                            uav, repair_candidate, target, snapshot, candidate_lz_id,
+                        )
+                        candidate_ok = proposal is not None and plan is not None and candidate_reason is None
+                        if continuous_final_lz_search:
+                            final_lz_checks.append({
+                                "lz_id": int(candidate_lz_id),
+                                "feasible": bool(candidate_ok),
+                                "reason": "certified" if candidate_ok else str(candidate_reason or "candidate_rejected"),
+                            })
+                        if candidate_ok:
+                            feasible = True
+                            reason = "certified"
+                            lz_id = candidate_lz_id
+                            break
+                        reason = str(candidate_reason or "candidate_rejected")
+                    if continuous_final_lz_search:
+                        audit_fields = {
+                            "final_lz_pairs_checked": final_lz_checks,
+                            "final_lz_selected_id": None if not feasible else int(lz_id),
+                        }
+                    else:
+                        audit_fields = {}
+                else:
+                    audit_fields = {}
+        audit_row = {"rank": rank, "joint_index": candidate.index, "decoded": candidate.as_dict(),
+                     "candidate_score": _candidate_score(candidate), "feasible": feasible, "reason": reason,
+                     "tie_break": "catalogue_rank_release_then_abs_residual_then_index" if candidate.release_request > 0 else "canonical_wait"}
+        if context is not None and candidate.release_request > 0.0 and target == "final":
+            audit_row.update(audit_fields)
+        audit.append(audit_row)
         if feasible and selected is None:
             selected = candidate
             if not audit_catalogue:
