@@ -166,6 +166,16 @@ def _teacher_label(
     return teacher_joint_expert_v4_1(env, uav, audit_catalogue=audit_catalogue)
 
 
+def _accumulate_reward_components(totals: dict[str, float], reward_components: dict) -> None:
+    """Accumulate post-step component values without double-counting ``total``."""
+
+    for components in reward_components.values():
+        for name, value in components.items():
+            if name == "total":
+                continue
+            totals[name] = totals.get(name, 0.0) + float(value)
+
+
 def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             output: Path, deterministic: bool = False, collect_labels: bool = False,
             collect_diagnostics: bool = False,
@@ -204,6 +214,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     tape = SafetyTraceRecorder(output / "action_tapes", dt=config.dt)
     tape.start_episode(env, episode_seed=seed, policy_rng_state={"seed": seed, "mode": "student_only_v2_1"})
     steps, events, queues = [], [], []
+    reward_component_totals: dict[str, float] = {}
     safety_error = None
     counts = {"WAIT": 0, "RELEASE": 0, "shield": 0, "shield_actor": 0, "actor_decisions": 0}
     previous_actor_mask: dict[str, bool] = {}
@@ -303,6 +314,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             tape.record_safety_invariant(record, exc)
             break
         tape.record_post_step(env, record, info)
+        _accumulate_reward_components(reward_component_totals, info["reward_components"])
         if collect_labels:
             tape.record_teacher_labels(record, labels)
         if any(trace.get("teacher_used") for trace in info["action_traces"].values()):
@@ -355,11 +367,19 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         "runtime_shortlist_candidates_checked", "runtime_shortlist_fallback_selected",
         "runtime_shortlist_exhausted",
     )}
+    reward_total = float(sum(step.reward for step in steps))
+    reward_component_totals = {key: float(value) for key, value in reward_component_totals.items()}
     result = {"seed": seed, "steps": len(steps), "seconds": env.now, "counts": counts,
               "safety": safety, "safety_error": safety_error, "completed": len(env.completed_uavs),
               "outcomes": dict(env.ledger.outcomes), "queue": queues,
               "terminal": bool(steps and steps[-1].terminated), "action_tape": str(tape_path),
               "label_rows": len(events), "runtime_shortlist": runtime_shortlist,
+              "reward_component_totals": reward_component_totals,
+              "reward_total": reward_total,
+              "reward_components_consistent": bool(np.isclose(
+                  sum(reward_component_totals.values()), reward_total,
+                  rtol=1e-6, atol=1e-6,
+              )),
               "label_stride_steps": int(label_stride_steps),
               "state_only_labels": bool(state_only_labels),
               "PPO_ALLOWED": False}
