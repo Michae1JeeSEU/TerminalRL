@@ -1,7 +1,7 @@
 # 执行计划
 
-> **当前工程目标**：只完成 Phase A — Landing-only。  
-> Phase B（departure-only）和 Phase C（arrival + departure）只保留在研究路线中，不进入本轮 Codex 修改。  
+> **当前工程目标**：只完成 Phase A — Landing-only。
+> Phase B（departure-only）和 Phase C（arrival + departure）只保留在研究路线中，不进入本轮 Codex 修改。
 > 本执行计划按“先修正环境语义，再训练低层，再训练高层”的依赖顺序推进。
 
 ## 0.1 2026-09-24 当前集成与顺序
@@ -70,16 +70,34 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    17 emergency`、repair aggregate 为 `40 normal + 8 emergency`。repair 两组 priority-weighted
    wait 与 low-SOC wait 均更优，V5 entry/pilot 冻结从 repair candidate E04 开始：SHA256
    `e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353`，路径见[受控应急协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。该开发比较不自动授权 PPO；
-   `P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false`；
+   该开发比较在当时不自动授权 PPO；当时的 `P3_QUALIFIED=false`、`PPO_ENTRY_ALLOWED=false`、
+   `FORMAL_P3_ALLOWED=false`、`P4_ALLOWED=false` 状态由后续 V5 entry/pilot admission 更新，
    旧 formal/heldout 保持 untouched。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
     `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
     证据仍需 train/dev/heldout 独立性。旧 P3 formal 与 canonical comparison 继续使用其冻结的
     all-complete/`no_failed_outcomes` 历史 gate；新的 V5 PPO entry/学习路线允许安全认证且能量未耗尽
-    的 `emergency_landed` 作为带代价结果，但 `failed_energy`、unsafe、formal/evaluation
+    的 `emergency_landed` 作为带代价结果，但 `failed_energy`、unsafe、entry/development/evaluation
     `unresolved`、replay/likelihood 和 finite/restore/frozen-proposal 仍是硬失败；pilot 训练中的
     自然 horizon 截断单独报告。预留 `829001–829006` heldout 保持 untouched，
     不改作本轮开发集。详见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。
+
+## 0.2 2026-09-25 P3 V5 formal admission 状态
+
+`849000` smoke、`849101/849102/849103` stochastic no-update entry、`849201–849206` 六个
+registered PPO arm 和 `849301/849302/849303` paired development 均已完成。六个 pilot arm
+共 `296` accepted minibatches、`0` rejected，update/restore/safety/energy/integrity gates
+全部通过；paired dense24 的 emergency `4→3`、low-SOC wait `-44.036s`、priority-weighted
+wait `+2.763s`，作为 report-only tradeoff 保留，不构成 qualification 或自动晋级。
+
+当前 formal YAML 已冻结为 `READY_FOR_FORMAL_TRAINING`，SHA256 为
+`e3f88e52a327c64621226631c1575cd48ffec4d93b98d505c561fe55b33b22b1`；其 admission 状态为
+`PPO_ENTRY_ALLOWED=true`、`FORMAL_P3_ALLOWED=true`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。
+Formal runner 与定向测试实现为 `be50cde`。`P3_FORMAL_ADMISSION_DECISION_V5` 已绑定 E04
+source SHA、pilot manifest/protocol SHA、实际 config snapshots 和 exact optimizer boundary；
+服务器 admission-bound `--check-only` 已通过，exit `0`、status `CHECK_ONLY_OK`，且 run0 目录
+未创建。正式 campaign 尚未启动；通过后按注册顺序首次消费 `850001..850240`、`851001..851240`、
+`852001..852240`，不自动重跑或替换失败 seed。
 
 ---
 
@@ -525,7 +543,7 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 此前 V3/Q3 的全完成与 `no_failed_outcomes` 判据继续作为历史 checkpoint 选择和
 qualification 证据，不能被新规则追溯改写。恢复后的 P3 V5 将 `emergency_landed` 定义为
 安全认证、能量未耗尽且完成应急着陆的降级结果：它进入性能和学习反馈，并单独报告事件数、
-priority、low-SOC 与全请求等待；`failed_energy`、未认证/安全失败和 formal/evaluation
+priority、low-SOC 与全请求等待；`failed_energy`、未认证/安全失败和 entry/development/evaluation
 `unresolved` 仍是硬失败。pilot 训练中的自然 horizon 截断单独报告，不自动写成普遍安全
 失败。V5 不用事后比例门槛制造历史 PASS。
 
@@ -546,7 +564,7 @@ SOC `.55–.90`、mission/资源混合和 `downstream_priority`，避免把 SOC 
 | P1 初始 PPO（已准入） | 12 episodes 内循环 warm3、flow3、flow6，各4次；自然流10秒首到达、60秒间隔，900秒上限 | SOC=.8；常规 priority=1，emergency仍提升至5；保留原四种 mission/service分布、6个LZ、final容量1 | 先验证真实 PPO 更新下低层意图与闭环稳定，不宣称容量或收敛；warm-start是训练辅助 |
 | P2 自然流与 variable-N | 以flow3/6为锚点，先扩到总请求8/12；逐步降低warm-start占比；先保持到达强度，再单独引入间隔扰动 | 先保留P1属性，避免同时改变负荷与任务属性 | 900秒不能照搬：按末次到达与rule基线清空时间预设观察/排空窗口；正式评估只用自然流 |
 | P2R 密集资源桥接 | warm12（6/4/2）+ 12 架按15秒继续到达；保留旧自然流回归，后续训练应混合 warm 与 flow-from-empty，而非只用 warm-start | 6个LZ；`nearest_available`；downstream-first；final容量3；每条轨迹仍逐条认证 | 暴露跨环同一步竞争、LZ分配和并发final；报告吞吐、touchdown间隔、并发final、LZ距离后悔、反事实安全机会与全部hard-safety计数；不得改写旧P2结果 |
-| P3 任务与资源异质性 | 保持已验证负荷和入口分布 | 保留 priority 1/3/5、SOC `.55–.90`、mission 混合、长 service、reservation/retry 压力；允许安全认证且能量未耗尽的 `emergency_landed` 作为带代价结果 | 目标是学习能耗、优先级、资源占用的权衡，避免 SOC 单因素排序；`failed_energy`、unsafe、formal/evaluation `unresolved` 仍为硬失败。pilot 训练截断单独报告；高密度应急比例只作后续独立资格报告，不追溯改写历史 gate |
+| P3 任务与资源异质性 | 保持已验证负荷和入口分布 | 保留 priority 1/3/5、SOC `.55–.90`、mission 混合、长 service、reservation/retry 压力；允许安全认证且能量未耗尽的 `emergency_landed` 作为带代价结果 | 目标是学习能耗、优先级、资源占用的权衡，避免 SOC 单因素排序；`failed_energy`、unsafe、entry/development/evaluation `unresolved` 仍为硬失败。pilot 训练截断单独报告；高密度应急比例只作后续独立资格报告，不追溯改写历史 gate |
 | P4 终端区交通压力 | finite cohort总请求20/40/60；continuous low/medium/high/bursty，overload单列；根据本机型/布局rule基线容量选择强度 | 保持真实任务/资源分布，逐步加入入口偏斜和突发流 | 总请求数不等于同时在空数；报告active峰值、队列、请求完成/未完成/转降与延误。过载不要求队列稳定或全部成功，不能套用P1全完成gate |
 | P5 静态几何泛化 | 在已经验证的流量与N范围内，每episode冻结一种合法布局 | 分阶段改变合法半径/高度/速度与headway组合；仍执行完整可执行性检查 | 先静态泛化并冻结低层，再进入A6高层动态空域；不同时引入高负荷、几何变化和新任务分布 |
 

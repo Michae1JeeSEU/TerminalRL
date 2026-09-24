@@ -2,13 +2,13 @@
 
 > **状态日期**：2026-09-25
 >
-> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`，本轮 SOC gate 代码提交为 `a8ea93bf0e41f316fc161c1c9d1d7576395a8850`；本次状态/证据文档为后续文档提交。Git 无 remote，未 push。
+> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`，本轮 SOC gate 修复为 `a8ea93bf0e41f316fc161c1c9d1d7576395a8850`；P3 admission runner 为 `25131e7`，formal runner 与定向测试为 `be50cde`。本次状态/证据文档为后续文档提交。Git 无 remote，未 push。
 >
 > **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
-**当前目标（2026-09-25，用户已恢复）：** 本轮目标已从“把 emergency 降到零”调整为“完成受控应急语义下的 P3 PPO 正式大规模训练准入准备”。高密度下安全认证、能量未耗尽并完成着陆的 `emergency_landed` 是一种带代价的降级结果，不单独阻止 PPO 学习；`failed_energy`、未认证/安全失败和 formal/evaluation `unresolved` 仍是硬失败。pilot 训练中的自然 horizon 截断单独报告，不把它自动写成普遍安全失败。P3 仍不应收敛为 SOC 单因素排序：保留 priority `1/3/5`、SOC `.55–.90`、任务/资源混合和 `downstream_priority`，继续报告 priority、low-SOC 与全请求等待的权衡。该目标只授权完成准入检查、受限 pilot 和正式大规模训练前的文档/证据准备；当前仍为 `PPO_ENTRY_ALLOWED=false`、`FORMAL_P3_ALLOWED=false`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。
+**当前目标（2026-09-25，用户已恢复）：** 本轮目标已从“把 emergency 降到零”调整为“完成受控应急语义下的 P3 PPO 正式大规模训练准入准备”。高密度下安全认证、能量未耗尽并完成着陆的 `emergency_landed` 是一种带代价的降级结果，不单独阻止 PPO 学习；`failed_energy`、未认证/安全失败和 entry/development/evaluation `unresolved` 仍是硬失败。training episode 的自然 horizon 截断单独报告；development/evaluation 的 `unresolved` 或 full-resolution failure 仍是硬失败。P3 仍不应收敛为 SOC 单因素排序：保留 priority `1/3/5`、SOC `.55–.90`、任务/资源混合和 `downstream_priority`，继续报告 priority、low-SOC 与全请求等待的权衡。bounded pilot 已完成并通过技术准入，当前已进入 `FORMAL_ADMITTED` / `READY_FOR_FORMAL_TRAINING`：`PPO_ENTRY_ALLOWED=true`、`FORMAL_P3_ALLOWED=true`、`P3_QUALIFIED=false`、`P4_ALLOWED=false`。正式 campaign 尚未启动。
 
-新的准入边界见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)。旧 P3 formal、Q3、canonical comparison 和 heldout 记录保持历史含义，不追溯替换为新语义；`829001–829006` 继续 untouched。V5 首先以不更新的随机策略 entry cohort 验证闭环，再以小规模真实 PPO pilot 验证至少一次被接受的更新、restore 和配对回归，之后才允许正式大规模 P3。该过程不重训 I0/I1/P1/P2；使用 mixed old anchors 做回归保护，避免从 I0 重新开始。
+新的准入边界见[受控应急 P3 V5 协议](evidence/v4_2/p3_controlled_emergency_admission_v5_20260925.md)，正式规格见[formal V5 plan](evidence/v4_2/p3_controlled_emergency_formal_plan_v5_20260925.md)。旧 P3 formal、Q3、canonical comparison 和 heldout 记录保持历史含义，不追溯替换为新语义；`829001–829006` 继续 untouched。V5 entry 与 bounded pilot 已完成：6 个 registered PPO episode 的 `296` 个 accepted minibatches 全部无拒绝，checkpoint restore 全部 exact，安全、能量、完整性 gate 通过；paired dense24 的 `emergency_landed` 为 `4→3`，low-SOC wait 改善 `44.036s`，priority-weighted wait 增加 `2.763s`，该权衡只作性能审查报告，不构成 P3 qualification。该过程不重训 I0/I1/P1/P2；使用 mixed old anchors 做回归保护，避免从 I0 重新开始。
 
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
@@ -16,7 +16,22 @@
 
 **canonical pair 冻结结果（2026-09-25）：** `848101/848102` 的 canonical 与 repair 四个 arm 均 exit `0`、full-resolved、zero-energy 且安全硬计数为零；aggregate 为 canonical `31 normal + 17 emergency`、repair `40 normal + 8 emergency`。repair 在两组 priority-weighted wait 与 low-SOC wait 上均更优，因此 V5 entry/pilot 的冻结初始化来源选择 repair candidate E04：SHA256 `e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353`，路径 `/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/fit846401/random_soc_gate_repair_v1.pt`。旧 canonical `no_failed_outcomes` gate 的历史 false 保持不变；该开发选择不构成 P3 qualification。
 
-**P3 V5 当前路线：** 固定 `80/40/10 m`、`energy_capacity=1500`、`min_landing_soc=.10`、`soc_reserve=.25`、`emergency_trigger=.40`、`late-slot OFF`、`K=3`、`Observation V2.1=88D`、`Teacher=false`、`downstream_priority`。先运行 `849000` smoke，再运行不更新的 stochastic entry `849101/849102/849103`，然后按顺序运行总计 6 次 update 的 pilot `849201–849206`（每个 registered arm 一次），最后做同初始状态的 paired development `849301/849302/849303`；paired development 的 before 是 pilot 前 baseline，after 是全部 6 次 update 后的结果。每个 paired record 内复用同一初始状态，不消费历史 heldout。这些新种子在协议冻结后才可消费；任何安全/软件硬失败停止后续注册 arm，普通性能结果继续保留并报告。正式大规模 P3 在 V5 pilot 和配对回归完成前不启动。
+**P3 V5 当前路线（entry/pilot 已完成）：** 固定 `80/40/10 m`、`energy_capacity=1500`、`min_landing_soc=.10`、`soc_reserve=.25`、`emergency_trigger=.40`、`late-slot OFF`、`K=3`、`Observation V2.1=88D`、`Teacher=false`、`downstream_priority`。`849000` smoke、stochastic no-update entry `849101/849102/849103`、6 个 registered pilot arm `849201–849206` 和 paired development `849301/849302/849303` 均已完成。6 个 pilot arm 共记录 `296` accepted minibatches、`0` rejected，全部 update/restore/safety/energy/integrity gates 通过；paired before/after 均 full-resolution，formal campaign 仍未启动。冻结的[formal V5 plan](evidence/v4_2/p3_controlled_emergency_formal_plan_v5_20260925.md)的 admission-bound `--check-only` preflight 已通过，正式启动时按注册的 3×240 schedule 首次消费 seeds；不自动重跑或替换失败 seed。
+
+**P3 V5 admission evidence（2026-09-25）：** entry manifest SHA256 为
+`7c3536ac2d3d977866993c2a072a251c6eac480c38955f9cd7b9da6c770ceec5c`，pilot manifest SHA256 为
+`4fc0dba78e19a8d34dd78db7ce641ec11f496d4ab87ecbfc059646467b5a651b`；两者位于服务器输出根
+`/home/user/training_outputs/terminal/p3_controlled_emergency_admission_v5_20260925/`。
+Formal runner 与定向测试实现提交为 `be50cde`；冻结 formal YAML SHA256 为
+`e3f88e52a327c64621226631c1575cd48ffec4d93b98d505c561fe55b33b22b1`。当前 decision binding
+要求 admission JSON 阶段 `P3_FORMAL_ADMISSION_DECISION_V5`，并同时绑定 E04 initial SHA、pilot
+manifest/protocol SHA、actual config snapshots 和 optimizer boundary。实际 formal check-only
+preflight 已在服务器通过：decision JSON 为
+`/home/user/training_outputs/terminal/p3_controlled_emergency_admission_v5_20260925/formal_admission_decision.json`
+（SHA256 `d4f34955bd2230e5f531ab71f451d7eb538fbd6f16cc6bf05387ff0a673d2d8d`），结果为
+`/home/user/training_outputs/terminal/p3_controlled_emergency_admission_v5_20260925/formal_check_only_run0.json`，
+CLI 使用 `/home/user/envs/terminal_env/bin/python`、cwd `/home/user/projects/terminal`，exit `0`、
+status `CHECK_ONLY_OK`，且 run0 目录未创建。正式大规模 job 仍未启动。
 
 学生 rollout summary 已记录 `reward_component_totals` 与 `reward_total`，并验证组件和一致；
 累计实际 `time/progress/release/touchdown/failure/teacher/shield/urgency/emergency` 字段，
@@ -785,6 +800,12 @@ staged authorization 推进，不把历史 fixed-rule evidence 写成 learned-po
    仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、safety、
    exact replay、K3 shortlist、low-SOC wait non-worse 和 priority-weighted wait improvement；本轮不
    新增 completion threshold。预留 `829001–829006` heldout 保持 untouched，不改作本轮开发集。
+
+**2026-09-25 最新允许的下一步：** 保持冻结 formal YAML、E04 source SHA、3×240 schedule、
+optimizer/trainable scope 和安全边界不变；formal runner 的 admission-bound `--check-only` 已验证
+通过。正式启动时按注册顺序首次消费 `850001..850240`、`851001..851240`、`852001..852240`；
+本轮尚未启动 formal run，正式训练仍不自动设置 `P3_QUALIFIED` 或 `P4_ALLOWED`，中断后不得自动
+重跑或替换 seed。
 
 **历史顺序（2026-09-23，已由上方 2026-09-24 当前顺序取代）：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 

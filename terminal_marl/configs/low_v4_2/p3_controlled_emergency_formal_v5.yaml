@@ -1,27 +1,29 @@
 protocol: V4_2_P3_CONTROLLED_EMERGENCY_FORMAL_V5
-status: PENDING_ADMISSION
-specification_only: true
+status: READY_FOR_FORMAL_TRAINING
+specification_only: false
 inherits_v5_admission_contract: true
 source_admission_config: terminal_marl/configs/low_v4_2/p3_controlled_emergency_admission_v5.yaml
 
-# This file registers the formal schedule.  The runner has passed targeted
-# implementation checks; actual admission preflight remains pending and this
-# configuration must not be passed to the existing bounded-admission runner.
+# This file binds an admitted, implementation-tested formal protocol.  The
+# formal campaign has not started; check-only admission preflight remains a
+# required launch-time verification.
 implementation:
   runner_module: terminal_marl.training.run_v4_2_p3_controlled_emergency_formal_v5
   implemented: true
   validated: true
-  launch_authorized: false
-  future_command_status: IMPLEMENTED_TARGETED_TESTS_PASSED_ACTUAL_ADMISSION_PREFLIGHT_PENDING
+  launch_authorized: true
+  readiness_authorization_only: true
+  formal_job_started: false
+  future_command_status: IMPLEMENTED_AND_TARGETED_TESTED
   future_command: >-
     python -m terminal_marl.training.run_v4_2_p3_controlled_emergency_formal_v5
     --run-index N --admission-report <path> --checkpoint <path> --output <path>
 
 authorization:
   required_before_launch: true
-  current_state: PENDING_ADMISSION
-  FORMAL_P3_ALLOWED: false
-  PPO_ENTRY_ALLOWED: false
+  current_state: FORMAL_ADMITTED
+  FORMAL_P3_ALLOWED: true
+  PPO_ENTRY_ALLOWED: true
   P3_QUALIFIED: false
   P4_ALLOWED: false
   PPO_ENTRY_ALLOWED_policy: full_stochastic_no_update_checks_only
@@ -31,6 +33,8 @@ authorization:
     - passed_bounded_pilot_report
     - current_runtime_config
     - source_checkpoint_sha256
+    - actual_config_snapshots
+    - optimizer_boundary
   admission_report_schema:
     stage: P3_FORMAL_ADMISSION_DECISION_V5
     FORMAL_P3_ALLOWED: true
@@ -255,8 +259,10 @@ checkpointing:
 outputs:
   server_root: /home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_20260925
   per_run_pattern: /home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_20260925/runN
-  runtime_wall_estimate: DEFER_UNTIL_BOUNDED_PILOT_OBSERVATIONS
-  disk_estimate: DEFER_UNTIL_BOUNDED_PILOT_OBSERVATIONS
+  runtime_wall_estimate: OBSERVED_PILOT_BASED_COARSE_REFERENCE
+  runtime_wall_estimate_reference: docs/evidence/v4_2/p3_controlled_emergency_formal_plan_v5_20260925.md#7-pilot-observed-resource-reference
+  disk_estimate: OBSERVED_PILOT_BASED_COARSE_REFERENCE
+  disk_estimate_reference: docs/evidence/v4_2/p3_controlled_emergency_formal_plan_v5_20260925.md#7-pilot-observed-resource-reference
 
 seed_collision_check:
   checked_existing_paths:
