@@ -49,6 +49,43 @@ def _wait_policy_with_ordered_proposals():
     return policy
 
 
+def _canonical_payload(config):
+    metadata = checkpoint_metadata(config)
+    metadata["vehicle_profile_version"] = diagnostic.SOURCE_VEHICLE_PROFILE_VERSION
+    source_policy = TemperatureCalibratedGateResidualAdapterStudentPPOV42(
+        diagnostic.OBSERVATION_DIM,
+        temperature=diagnostic.CANONICAL_INITIAL_TEMPERATURE,
+    )
+    model_state = {
+        name: value.detach().clone()
+        for name, value in source_policy.model.state_dict().items()
+    }
+    return {
+        "metadata": metadata,
+        "model": model_state,
+        "optimizer": {"must_not_be_loaded": True},
+        "stage": diagnostic.CANONICAL_INITIAL_STAGE,
+        "architecture_id": diagnostic.CANONICAL_INITIAL_ARCHITECTURE_ID,
+        "qualification_only": True,
+        "qualification_pass": True,
+        "STUDENT_QUALIFICATION_ALLOWED": True,
+        "checkpoint_role": "qualification_candidate",
+        "checkpoint_promotable": False,
+        "PPO_ALLOWED": False,
+        "GATE_REPAIR_ALLOWED": False,
+        "curriculum_promotion_allowed": False,
+    }
+
+
+def _mock_canonical_load(monkeypatch, payload):
+    monkeypatch.setattr(
+        diagnostic,
+        "_sha256",
+        lambda _path: diagnostic.CANONICAL_INITIAL_CHECKPOINT_SHA256,
+    )
+    monkeypatch.setattr(diagnostic.torch, "load", lambda *args, **kwargs: payload)
+
+
 def test_dense30_config_and_controller_identity():
     config = diagnostic.build_dense30_config()
     policy = _release_policy()
@@ -329,6 +366,131 @@ def test_checkpoint_hash_and_fresh_output_guards_precede_execution(tmp_path, mon
             seed=3,
             max_steps=1,
         )
+
+
+def test_canonical_loader_rejects_fixed_sha_before_torch_load(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"not the canonical checkpoint")
+    torch_load_calls = []
+    monkeypatch.setattr(diagnostic, "_sha256", lambda _path: "wrong-sha")
+    monkeypatch.setattr(
+        diagnostic.torch,
+        "load",
+        lambda *args, **kwargs: torch_load_calls.append(True),
+    )
+
+    with pytest.raises(diagnostic.DiagnosticInputError, match="SHA mismatch"):
+        diagnostic.load_canonical_initial_checkpoint(
+            checkpoint,
+            diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False),
+        )
+    assert torch_load_calls == []
+
+
+def test_canonical_loader_rejects_non_profile_metadata_change(tmp_path, monkeypatch):
+    config = diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False)
+    payload = _canonical_payload(config)
+    payload["metadata"]["observation_feature_hash"] = "changed-feature-hash"
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"mock canonical checkpoint")
+    _mock_canonical_load(monkeypatch, payload)
+
+    with pytest.raises(diagnostic.DiagnosticInputError, match="checkpoint metadata mismatch"):
+        diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("stage", "wrong-stage"),
+        ("architecture_id", "wrong-architecture"),
+        ("qualification_only", False),
+        ("qualification_pass", False),
+        ("STUDENT_QUALIFICATION_ALLOWED", False),
+        ("checkpoint_role", "wrong-role"),
+        ("checkpoint_promotable", True),
+        ("PPO_ALLOWED", True),
+        ("GATE_REPAIR_ALLOWED", True),
+        ("curriculum_promotion_allowed", True),
+    ],
+)
+def test_canonical_loader_rejects_changed_payload_bindings(
+    tmp_path, monkeypatch, field, value,
+):
+    config = diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False)
+    payload = _canonical_payload(config)
+    payload[field] = value
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"mock canonical checkpoint")
+    _mock_canonical_load(monkeypatch, payload)
+
+    with pytest.raises(diagnostic.DiagnosticInputError, match="payload binding changed"):
+        diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
+
+
+def test_canonical_loader_rejects_present_or_buffer_temperature_change(tmp_path, monkeypatch):
+    config = diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False)
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"mock canonical checkpoint")
+
+    payload = _canonical_payload(config)
+    payload["temperature"] = 3.0
+    _mock_canonical_load(monkeypatch, payload)
+    with pytest.raises(diagnostic.DiagnosticInputError, match="temperature binding changed"):
+        diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
+
+    payload = _canonical_payload(config)
+    payload["model"]["gate_temperature"] = torch.tensor(3.0)
+    _mock_canonical_load(monkeypatch, payload)
+    with pytest.raises(diagnostic.DiagnosticInputError, match="temperature buffer changed"):
+        diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
+
+
+def test_canonical_loader_strict_identity_temperature_and_source_immutability(
+    tmp_path, monkeypatch,
+):
+    config = diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False)
+    payload = _canonical_payload(config)
+    source_metadata = dict(payload["metadata"])
+    source_digest = diagnostic._state_digest(payload["model"])
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"mock canonical checkpoint")
+    _mock_canonical_load(monkeypatch, payload)
+
+    policy, info = diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
+
+    assert policy.model.architecture_id == diagnostic.CANONICAL_INITIAL_ARCHITECTURE_ID
+    assert float(policy.model.gate_temperature.detach().cpu().item()) == pytest.approx(2.5)
+    assert len(policy.optimizer.state) == 0
+    assert info["checkpoint_sha256"] == diagnostic.CANONICAL_INITIAL_CHECKPOINT_SHA256
+    assert info["checkpoint_identity"] == "canonical_initial"
+    assert info["canonical_initial"] is True
+    assert info["payload_bindings"]["temperature"] is None
+    assert info["migration"]["applied_deltas"] == [{
+        "field": "vehicle_profile_version",
+        "source": diagnostic.SOURCE_VEHICLE_PROFILE_VERSION,
+        "target": diagnostic.TARGET_VEHICLE_PROFILE_VERSION,
+    }]
+    assert info["weight_digest_matches_payload"] is True
+    assert info["weights_match"] is True
+    assert info["optimizer_restored"] is False
+    assert info["source_payload_unchanged"] is True
+    assert payload["metadata"] == source_metadata
+    assert diagnostic._state_digest(payload["model"]) == source_digest
+    assert "temperature" not in payload
+
+
+def test_canonical_loader_rejects_loaded_weight_digest_mismatch(tmp_path, monkeypatch):
+    config = diagnostic.build_scenario_config("dense24", reconcile_late_merge_slots=False)
+    payload = _canonical_payload(config)
+    checkpoint = tmp_path / "canonical.pt"
+    checkpoint.write_bytes(b"mock canonical checkpoint")
+    _mock_canonical_load(monkeypatch, payload)
+    digests = iter(("policy-before", "source", "source", "policy-after"))
+    monkeypatch.setattr(diagnostic, "_state_digest", lambda _state: next(digests))
+
+    with pytest.raises(diagnostic.DiagnosticInputError, match="weights do not match payload"):
+        diagnostic.load_canonical_initial_checkpoint(checkpoint, config)
 
 
 def test_rollout_records_actor_mask_trace_identity_and_serialized_output(tmp_path):

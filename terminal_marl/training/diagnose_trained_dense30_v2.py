@@ -25,6 +25,7 @@ import torch
 import yaml
 
 from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
+    CALIBRATED_ARCHITECTURE_ID,
     CALIBRATION_TEMPERATURE,
     TemperatureCalibratedGateResidualAdapterStudentPPOV42,
 )
@@ -58,6 +59,12 @@ ACTION_SCHEMA = "low_action_schema_v4_2_hierarchical"
 TRAINED_CHECKPOINT_SHA256 = (
     "714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e"
 )
+CANONICAL_INITIAL_CHECKPOINT_SHA256 = (
+    "4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c"
+)
+CANONICAL_INITIAL_STAGE = "V4_2_P2_GATE_RESIDUAL_ADAPTER_REPAIR_V3"
+CANONICAL_INITIAL_ARCHITECTURE_ID = CALIBRATED_ARCHITECTURE_ID
+CANONICAL_INITIAL_TEMPERATURE = float(CALIBRATION_TEMPERATURE)
 SOURCE_OBSERVATION_FEATURE_HASH = (
     "8cde32fb4d7481649aad5d01fae0e97c3bb7671c0379d1c4847915493d7beb98"
 )
@@ -636,6 +643,41 @@ def validate_checkpoint_metadata_for_diagnostic(
     }
 
 
+def _validate_canonical_initial_payload_bindings(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    expected = {
+        "stage": CANONICAL_INITIAL_STAGE,
+        "architecture_id": CANONICAL_INITIAL_ARCHITECTURE_ID,
+        "qualification_only": True,
+        "qualification_pass": True,
+        "STUDENT_QUALIFICATION_ALLOWED": True,
+        "checkpoint_role": "qualification_candidate",
+        "checkpoint_promotable": False,
+        "PPO_ALLOWED": False,
+        "GATE_REPAIR_ALLOWED": False,
+        "curriculum_promotion_allowed": False,
+    }
+    mismatches = {
+        key: {"actual": payload.get(key), "expected": value}
+        for key, value in expected.items()
+        if payload.get(key) != value
+    }
+    if mismatches:
+        raise DiagnosticInputError(
+            f"canonical initial checkpoint payload binding changed: {mismatches}"
+        )
+    missing = object()
+    temperature = payload.get("temperature", missing)
+    if temperature is not missing and temperature != CANONICAL_INITIAL_TEMPERATURE:
+        raise DiagnosticInputError(
+            "canonical initial checkpoint temperature binding changed"
+        )
+    bindings = {key: payload.get(key) for key in expected}
+    bindings["temperature"] = None if temperature is missing else temperature
+    return bindings
+
+
 def _validate_payload_bindings(payload: Mapping[str, Any], bindings: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "stage": "V4_2_P2_RUNTIME_SHORTLIST_FORMAL_V1",
@@ -699,6 +741,68 @@ def load_trained_checkpoint(checkpoint: str | Path, config):
         "weight_digest_matches_payload": after == _state_digest(model_state),
         "optimizer_restored": False,
         "source_payload_unchanged": True,
+    }
+
+
+def load_canonical_initial_checkpoint(checkpoint: str | Path, config):
+    """Strictly load the frozen canonical P2 initial checkpoint."""
+
+    checkpoint = Path(checkpoint)
+    if not checkpoint.is_file():
+        raise DiagnosticInputError(f"checkpoint not found: {checkpoint}")
+    actual_sha = _sha256(checkpoint)
+    if actual_sha != CANONICAL_INITIAL_CHECKPOINT_SHA256:
+        raise DiagnosticInputError(
+            f"canonical initial checkpoint SHA mismatch: {actual_sha}"
+        )
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    if not isinstance(payload, Mapping):
+        raise DiagnosticInputError("canonical initial checkpoint payload must be a mapping")
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, Mapping):
+        raise DiagnosticInputError("canonical initial checkpoint metadata is missing")
+    migration = validate_checkpoint_metadata_for_diagnostic(metadata, config)
+    payload_bindings = _validate_canonical_initial_payload_bindings(payload)
+    model_state = payload.get("model")
+    if not isinstance(model_state, Mapping):
+        raise DiagnosticInputError("canonical initial checkpoint model state is missing")
+    policy = TemperatureCalibratedGateResidualAdapterStudentPPOV42(
+        OBSERVATION_DIM,
+        temperature=CANONICAL_INITIAL_TEMPERATURE,
+    )
+    before = _state_digest(policy.model.state_dict())
+    source_before = _state_digest(model_state)
+    policy.model.load_state_dict(model_state, strict=True)
+    source_after = _state_digest(model_state)
+    source_payload_unchanged = source_before == source_after
+    if not source_payload_unchanged:
+        raise DiagnosticInputError("canonical initial checkpoint model state was mutated")
+    after = _state_digest(policy.model.state_dict())
+    weights_match = after == source_after
+    if not weights_match:
+        raise DiagnosticInputError("canonical initial checkpoint weights do not match payload")
+    gate_temperature = getattr(policy.model, "gate_temperature", None)
+    if not isinstance(gate_temperature, torch.Tensor) or gate_temperature.numel() != 1:
+        raise DiagnosticInputError("canonical initial checkpoint temperature buffer is missing")
+    if float(gate_temperature.detach().cpu().item()) != CANONICAL_INITIAL_TEMPERATURE:
+        raise DiagnosticInputError("canonical initial checkpoint temperature buffer changed")
+    if len(policy.optimizer.state) != 0:
+        raise DiagnosticInputError("canonical initial checkpoint optimizer state was restored")
+    policy.model.eval()
+    return policy, {
+        "checkpoint": str(checkpoint),
+        "checkpoint_sha256": actual_sha,
+        "checkpoint_identity": "canonical_initial",
+        "canonical_initial": True,
+        "payload_bindings": payload_bindings,
+        "migration": migration,
+        "weight_digest_before": before,
+        "weight_digest_after": after,
+        "weight_digest_loaded_from_payload": source_after,
+        "weight_digest_matches_payload": weights_match,
+        "weights_match": weights_match,
+        "optimizer_restored": False,
+        "source_payload_unchanged": source_payload_unchanged,
     }
 
 
