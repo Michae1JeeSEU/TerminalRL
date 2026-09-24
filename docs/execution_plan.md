@@ -17,15 +17,21 @@ policy qualification。`validate_plan` 的批量等价校验和 viewer 的 posit
 `soc_reserve=.25` 继续作为独立 queue/admission reserve，其它阈值保持不变。已有 `.25` 实验、
 checkpoint 和 seed 消费记录保留为历史事实。当前不安排 fixed-rule rerun，执行顺序为：
 
-1. 适配既有 V4.2 learned-policy diagnostic replay 到当前 30-UAV / v2 profile，检查
-   checkpoint、config、schema 与 hash 兼容性，记录 migration，不自动授予 qualification；当前
-   实现进行中。本轮已授权且已预注册的协议见
-   [trained dense30 V2 diagnostic protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md)；
-2. 完成 focused loader/runtime tests、Syncthing 源码 hash equality 和实际 checkpoint smoke
-   `842000`（最多 `5` steps）；preflight 通过后再各执行一次 bounded diagnostic-1/2，seeds
-   `842101/842102`，每次最多 `1800` simulated seconds。当前尚未运行 smoke 或 diagnostic，尚无
-   结果或训练产物；保持无 Teacher/optimizer，`PPO_ALLOWED=false`；
-3. 在 PPO 前决定 targeted imitation/Safe DAgger repair，低层 static qualification 后才进入 A6。
+1. 已完成既有 V4.2 learned-policy diagnostic replay 到当前 30-UAV / v2 profile 的
+   checkpoint/config/schema/hash preflight，以及首个 bounded diagnostic `842101`；协议与结果见
+   [protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md) 和
+   [result](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。保持无
+   Teacher/optimizer，global loader/core 不变，不自动授予 qualification。
+2. `842101` 的 read-only trace aggregation 已完成：4 个 failed-energy UAV 的 threshold 前
+   RELEASE 为 `3/3/3/9` 且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察
+   `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved
+   `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准 imitation-only fix。
+   `842102` 保持 untouched，暂停于 failed-energy review；不得 second-seed replay/reset、立即训练、
+   PPO 或重跑 rule，`PPO_ALLOWED=false`。
+3. 先补 neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation repair
+   deferred until feasible labels/evidence，不把该决定解释为 safety-solver diagnosis，不降低
+   SafetyFilter 阈值。完成证据区分后才决定 targeted imitation/Safe DAgger，不宣称其 sufficiency，
+   低层 static qualification 后才进入 A6。
 
 ---
 

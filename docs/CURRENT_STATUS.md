@@ -8,6 +8,23 @@
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
+**当前 trained dense30 V2 bounded diagnostic（2026-09-24）：** 已完成首个有界训练策略诊断
+`842101`：`1173` simulated steps、wall `64.53536491142586 s`，`8 normal / 18 emergency /
+4 failed_energy / 0 unresolved`；actor `14877 WAIT / 1055 RELEASE`，`24` approved、`1031`
+rejected。最小实际/扫掠间隔为 `80.00345665736643/80.0 m`，`safety_error=null`；collision、NMAC、
+hard separation、shield/joint fail-closed、executed-plan hash mismatch 均为 `0`。记录了 `9` 次
+shield intervention（correction，不是 failure）和 `1315` 次 safety intervention，不能概括为
+“all safety counters=0”。weights unchanged、无 Teacher/optimizer、无训练/PPO；该诊断不是 PASS 或
+qualification。`842102` 保持 untouched，暂停于 failed-energy review；terminal 后 heartbeat 已删除。
+  read-only trace aggregation 已完成：4 个 failed-energy UAV 的 threshold 前 RELEASE 为 `3/3/3/9`
+  且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察 blocker 为
+  `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved `8`。没有
+  independent feasible RELEASE witness 支持将 WAIT 全部判错或批准 imitation-only fix。下一步先补
+  neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation deferred，当前
+  不作 root-cause 或 Safe DAgger sufficiency 声明，不立即训练、降安全阈值或重跑 rule。842101 runner 已退出，
+  842102 output directory 尚不存在。详见
+  [诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
+
 > **当前阶段更新（2026-09-24）**：固定规则协调流已完成三组 development
 > regression（`841301/841501/841502`），均为 `30/30` resolved、`failed_energy=0`，
 > normal/emergency 分别为 `29/1`、`29/1`、`28/2`；最小 touchdown SOC 为
@@ -679,18 +696,19 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 reconciliation、fixed-rule dense30 development 与 viewer bounded checks 已完成；历史结果、
 已消费 seeds 和 `.25` floor 记录保持 immutable，当前不安排新的 fixed-rule rerun。
 
-1. 将现有 V4.2 learned-policy diagnostic replay 适配到当前 30-UAV 场景和 `eh216s_research_v2`
-   profile，检查 checkpoint/config/schema 兼容性；当前实现进行中，记录所有 diagnostic migration，
-   不绕过 hash，不自动授予 qualification。协议见
-   [trained dense30 V2 diagnostic protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md)。
-2. 本轮已授权；按已预注册协议先完成 focused loader/runtime tests、Syncthing 源码 hash equality 和实际 checkpoint
-   smoke：seed `842000`、最多 `5` steps；通过 preflight 后再各执行一次 bounded diagnostic-1/2，
-   seeds `842101/842102`、每次最多 `1800` simulated seconds。输出写入
-   `/home/user/training_outputs/terminal/trained_dense30_v2_diagnostic_20260924/`；当前尚未运行
-   smoke 或 diagnostic，尚无结果或训练产物。保持无 Teacher/optimizer，安全事件时暂停剩余 seed
-   并返回评估，保持 `PPO_ALLOWED=false`。
-3. 在 PPO 前决定是否需要 targeted imitation/Safe DAgger repair；低层 static qualification
-   完成后才进入高层 A6。不把 rule coordinator 当作 neural policy。
+1. 保持已冻结的 `eh216s_research_v2` profile、checkpoint/hash contract 和无 Teacher/optimizer
+   语义；首个 bounded diagnostic 的协议与结果分别见
+   [protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md) 与
+   [result](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。global loader/core
+   保持不变，不自动授予 qualification。
+2. `842101` 的 read-only trace aggregation 已完成；failed-energy trace 与 inner `LZ_RESOURCE`
+   统计见结果页。该证据同时显示 sparse early request 与 execution veto，不能将 WAIT 全部判错，
+   也不能批准 imitation-only fix。`842102` 保持 untouched，暂停于 failed-energy review；不得
+   second-seed replay/reset、重跑 rule 或立即训练，保持 `PPO_ALLOWED=false`。
+3. 先补 neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation repair
+   deferred until feasible labels/evidence，且不把该决定解释为 safety-solver diagnosis。不得降低
+   SafetyFilter 阈值；完成证据区分后才决定 targeted imitation/Safe DAgger，不宣称其 sufficiency。
+   低层 static qualification 完成后才进入高层 A6。
 
 **历史顺序（2026-09-23，已由上方 2026-09-24 当前顺序取代）：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 
