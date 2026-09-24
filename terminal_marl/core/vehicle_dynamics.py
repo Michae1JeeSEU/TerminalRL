@@ -242,6 +242,26 @@ class VehicleDynamics:
         rows = list(points)
         if len(rows) < 2:
             return ["invalid_time_parameterization"]
+
+        # Normal trajectory points already carry the complete sampled arrays
+        # needed by the vectorized predicate.  Use it as the cheap pass path;
+        # an infeasible result falls through to the scalar validator so the
+        # public diagnostic error order remains authoritative.
+        try:
+            times = np.asarray([row.t for row in rows], dtype=float)
+            positions = np.asarray([row.position for row in rows], dtype=float)
+            velocities = np.asarray([row.velocity for row in rows], dtype=float)
+            yaw_rates = np.asarray(
+                [0.0 if row.yaw_rate is None else row.yaw_rate for row in rows],
+                dtype=float,
+            )
+            if self.samples_are_feasible(times, positions, velocities, yaw_rates):
+                return []
+        except (AttributeError, IndexError, TypeError, ValueError):
+            # Preserve the existing scalar diagnostic fallback for malformed
+            # or otherwise non-standard point iterables.
+            pass
+
         errors: list[str] = []
         for previous, current in zip(rows, rows[1:]):
             errors.extend(self.validate_transition(previous, current))

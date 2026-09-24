@@ -158,6 +158,10 @@ class SimConfig:
     # Diagnostic-only route-aware candidate energy guard.  This is layered on
     # the existing priority guard and remains disabled for historical runs.
     energy_reachability_guard_enabled: bool = False
+    # Opt-in fixed-rule finite-candidate landing-flow coordinator.  The
+    # historical V4.2 release and emergency paths remain byte-for-byte
+    # selected when this flag is false.
+    rule_flow_coordination_enabled: bool = False
     emergency_trigger_soc: float = 0.35
     emergency_energy_margin_seconds: float = 15.0
     phase_motion_nominal_solo_energy: float = 240.9
@@ -413,6 +417,24 @@ class SimConfig:
             self.teacher_enabled = True
         if self.scheduler_mode != "execution":
             self.teacher_enabled = True
+        if self.rule_flow_coordination_enabled and (
+            self.experiment_mode != "fixed_rule"
+            or self.high_level_enabled
+            or self.teacher_enabled
+            or self.energy_model_mode != "phase_motion_v2"
+            or not self.energy_reachability_guard_enabled
+        ):
+            raise ValueError(
+                "rule_flow_coordination_enabled requires fixed_rule, "
+                "teacher_enabled=False, energy_model_mode='phase_motion_v2', "
+                "energy_reachability_guard_enabled=True, and no high-level dynamic mode"
+            )
+        if self.rule_flow_coordination_enabled:
+            # Fixed-rule flow uses a derived nominal holding contract.  The
+            # coordinator and runtime shield therefore share an exact zero
+            # speed-residual authority; historical configurations keep their
+            # configured default (2 m/s) when this opt-in flag is disabled.
+            self.max_speed_residual_mps = 0.0
         if self.runtime_proposal_shortlist_k not in {1, 3}:
             raise ValueError("runtime_proposal_shortlist_k must be 1 or 3")
         if self.runtime_proposal_shortlist_k > 1:

@@ -39,6 +39,7 @@ from ..core.safety_filter import SafetyFilter
 from ..core.runtime_separation import RuntimeSeparationMonitor
 from ..core.runtime_traffic_safety import PredictiveSafetyShield
 from ..core.trajectory_generator import TrajectoryGenerator
+from ..core.landing_flow import LandingFlowCoordinator
 from ..core.forecast_world import ForecastWorld
 from ..core.uav import FlightPhase, MISSION_SERVICE_SECONDS, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
@@ -135,15 +136,22 @@ class TerminalParallelEnv:
              "emergency_attempts": 0, "emergency_committed": 0,
              "emergency_blocked_safety": 0, "emergency_blocked_energy": 0,
              "emergency_blocked_lz": 0, "emergency_blocked_dynamics": 0,
+             "emergency_blocked_slack": 0,
              "emergency_touchdowns": 0,
              "emergency_energy_guard_rejections": 0,
              "emergency_lz_priority_rejections": 0,
+             "flow_emergency_redirects": 0,
              "energy_reachability_checks": 0,
              "energy_reachability_negative_budgets": 0,
         }
         self.telemetry.update(self.separation_monitor.telemetry)
         self.telemetry.update(self.runtime_traffic.telemetry)
         self.completed_uavs: list[UAVState] = []
+        self.flow_coordinator = (
+            LandingFlowCoordinator(self)
+            if self.config.rule_flow_coordination_enabled
+            else None
+        )
         if self.config.reset_mode == "warm_start_rings" and self.config.warm_start_uavs:
             self._warm_start()
         return self._observations(), {}
@@ -385,6 +393,8 @@ class TerminalParallelEnv:
         Safety certification and reservations still run for every selected
         request in this exact order.
         """
+        if self.flow_coordinator is not None:
+            return self.flow_coordinator.processing_order()
         rows = list(self.active.items())
         if self.config.release_arbitration_mode == "legacy_insertion":
             return rows
@@ -1238,6 +1248,10 @@ class TerminalParallelEnv:
 
     def _release(self, uav: UAVState, intent: LowLevelIntent,
                  shortlist: tuple[LowLevelIntent, ...] | None = None) -> str:
+        if self.flow_coordinator is not None:
+            if shortlist is not None:
+                raise ValueError("flow coordination does not accept proposal shortlists")
+            return self.flow_coordinator.release(uav, intent)
         if shortlist is not None:
             return self._runtime_shortlist_release(uav, intent, shortlist)
         # K=1 and K=3 must share the same canonical proposal construction and
@@ -1384,6 +1398,20 @@ class TerminalParallelEnv:
         }
         actions = actions or {}
         proposal_shortlists = proposal_shortlists or {}
+        if self.config.rule_flow_coordination_enabled:
+            # The fixed-rule flow branch derives a nominal holding contract
+            # (max_speed_residual_mps == 0).  Reject policy proposals that
+            # still request a non-zero normalized speed residual instead of
+            # silently coercing them into the nominal action.
+            for source_name, mapping in (("actions", actions), ("proposal_shortlists", proposal_shortlists)):
+                for uid, raw in mapping.items():
+                    candidates = (raw,) if source_name == "actions" else tuple(raw)
+                    for candidate in candidates:
+                        intent = LowLevelIntent.from_array(candidate)
+                        if abs(float(intent.speed_residual)) > 1e-8:
+                            raise ValueError(
+                                f"fixed-rule flow requires zero speed_residual in {source_name} for uid={uid}"
+                            )
         if proposal_shortlists and self.config.runtime_proposal_shortlist_k == 1:
             raise ValueError("proposal shortlists require runtime_proposal_shortlist_k=3")
         unknown_shortlist_uids = set(proposal_shortlists) - set(actions)
@@ -1450,8 +1478,9 @@ class TerminalParallelEnv:
         pre_motion_positions = {uid: uav.position.copy() for uid, uav in self.active.items()}
         # Scarce pads and certified corridors go first to the aircraft with
         # the least remaining SOC. Dynamic mission/wait priority breaks ties.
-        for uav in self._emergency_processing_order():
-            self._try_emergency_landing(uav)
+        if self.flow_coordinator is None:
+            for uav in self._emergency_processing_order():
+                self._try_emergency_landing(uav)
         teacher_probes = {
             uid: self._teacher_counterfactual_release(uav, LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0]))))
             for uid, uav in self.active.items()
@@ -1521,6 +1550,20 @@ class TerminalParallelEnv:
                 else: self.telemetry["release_rejected"] += 1
             if abs(intent.merge_time_residual) > 1e-8: self.telemetry["merge_time_modified"] += 1
             action_rows.append((intent.release_request, intent.speed_residual, intent.merge_time_residual, decision))
+        if self.flow_coordinator is not None:
+            # Normal flow releases have first claim on certified corridors.
+            # Emergency takeover is evaluated only after that pass and only
+            # for an uncommitted ring holder; route-energy and slack guards
+            # remain authoritative inside the coordinator.
+            for uav in self.flow_coordinator.emergency_processing_order():
+                if uav.uid not in self.active:
+                    continue
+                if (
+                    uav.committed_plan is None
+                    and uav.ring_role is not None
+                ):
+                    if self.flow_coordinator.try_emergency(uav):
+                        decisions[uav.uid] = "emergency_redirected"
         if self.config.shield_enabled:
             intents = self.runtime_traffic.protect(self, intents, traces)
             self.telemetry.update(self.runtime_traffic.telemetry)

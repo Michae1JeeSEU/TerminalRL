@@ -415,13 +415,64 @@ class SafetyFilter:
                 ring = snapshot.airspace.actual_ring(other_uav.ring_role)
                 if np.any(self._tube_point_distances(tube_positions, ring, lower, upper) < self.config.safe_distance):
                     return TrajectorySafetyResult(False, "predicted_holder_reachable_tube", plan.plan_id)
+                if abs(float(self.config.max_speed_residual_mps)) <= 1e-12:
+                    # The nominal fixed-rule contract has no residual-speed
+                    # envelope to certify.  Keep the reachable-tube proof,
+                    # then run the exact nominal holder track through the
+                    # same candidate samples so point and linearly swept
+                    # separation use the runtime certificate semantics.
+                    nominal_positions = np.asarray(
+                        self._holder_positions(other_uav, snapshot, samples, 0.0),
+                        dtype=float,
+                    )
+                    point_distances, swept_distances = self._track_distances(
+                        candidate_positions, nominal_positions,
+                    )
+                    if np.any(point_distances < self.config.safe_distance):
+                        return TrajectorySafetyResult(
+                            False, "nominal_holder_separation", plan.plan_id,
+                        )
+                    if np.any(swept_distances < self.config.safe_distance):
+                        return TrajectorySafetyResult(
+                            False, "nominal_holder_swept_separation", plan.plan_id,
+                        )
                 if same_target_ring:
                     post_end = plan.end_time + self.config.shield_horizon_seconds
                     post_times = np.arange(plan.end_time, post_end + 1e-9, self.config.physics_dt)
+                    if (abs(float(self.config.max_speed_residual_mps)) <= 1e-12
+                            and post_times[-1] < post_end):
+                        post_times = np.append(post_times, post_end)
                     post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_times), dtype=float)
                     lower, upper = self.holder_reachable_tube(other_uav, snapshot, post_times)
                     if np.any(self._tube_point_distances(post_positions, ring, lower, upper) < self.config.safe_distance):
                         return TrajectorySafetyResult(False, "predicted_post_plan_holder_reachable_tube", plan.plan_id)
+                    if abs(float(self.config.max_speed_residual_mps)) <= 1e-12:
+                        nominal_post_times = np.arange(
+                            plan.end_time,
+                            post_end + 1e-9,
+                            self.config.safety_sampling_dt,
+                        )
+                        if nominal_post_times[-1] < post_end:
+                            nominal_post_times = np.append(nominal_post_times, post_end)
+                        nominal_post_candidate = np.asarray(
+                            self._post_plan_positions(plan, snapshot, nominal_post_times),
+                            dtype=float,
+                        )
+                        nominal_post_positions = np.asarray(
+                            self._holder_positions(other_uav, snapshot, nominal_post_times, 0.0),
+                            dtype=float,
+                        )
+                        point_distances, swept_distances = self._track_distances(
+                            nominal_post_candidate, nominal_post_positions,
+                        )
+                        if np.any(point_distances < self.config.safe_distance):
+                            return TrajectorySafetyResult(
+                                False, "nominal_post_plan_holder_separation", plan.plan_id,
+                            )
+                        if np.any(swept_distances < self.config.safe_distance):
+                            return TrajectorySafetyResult(
+                                False, "nominal_post_plan_holder_swept_separation", plan.plan_id,
+                            )
                 continue
             # A plan ending inside the candidate's horizon becomes a holder at
             # its endpoint.  The dense canonical plan samples provide a cheap

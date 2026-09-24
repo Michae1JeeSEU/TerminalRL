@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import time
 from typing import Callable
 
@@ -12,6 +13,7 @@ from ..envs.high_level_wrapper import DynamicHighLevelWrapper, FrozenLowLevelPol
 from ..envs.parallel_env import TerminalParallelEnv
 from ..policies import DynamicRulePolicy
 from ..training.high_level_a6 import load_high_level
+from ..training.diagnose_energy_reachability_guard_smoke import build_config
 from .config import VisualizationConfig
 from .pyvista_viewer import AsyncTerminalViewerObserver, BufferedProcessTerminalViewerObserver
 from .snapshot import build_world_render_snapshot
@@ -40,11 +42,40 @@ def _fixed_rule_warm_flow_config(max_simulation_seconds: float) -> SimConfig:
     )
 
 
+def _fixed_rule_dense30_config(
+    max_simulation_seconds: float, *, coordinated: bool
+) -> SimConfig:
+    """Build the explicit 30-UAV baseline or coordinated viewer scene.
+
+    The diagnostic builder owns the frozen V4.2/V2.3 scenario parameters.  A
+    viewer-only scenario changes only the opt-in coordinator flag, so this
+    entry point cannot silently alter training or checkpoint defaults.
+    """
+    base = build_config(
+        initial_soc_min=0.55,
+        initial_soc_max=0.90,
+        route_guard_enabled=True,
+        max_simulation_seconds=max_simulation_seconds,
+        dense_warm_start_uavs=30,
+        final_approach_geometry_mode="continuous_inward_v1",
+        release_arbitration_mode="downstream_priority",
+        reconcile_late_merge_slots_enabled=False,
+    )
+    return replace(base, rule_flow_coordination_enabled=bool(coordinated))
+
+
 def _config_for_mode(mode: str, max_simulation_seconds: float, scenario: str = "default") -> SimConfig:
     if scenario == "fixed_rule_warm_flow":
         if mode != "fixed_rule":
             raise ValueError("fixed_rule_warm_flow is available only with fixed_rule")
         return _fixed_rule_warm_flow_config(max_simulation_seconds)
+    if scenario in {"fixed_rule_dense30_baseline", "fixed_rule_dense30_coordinated"}:
+        if mode != "fixed_rule":
+            raise ValueError(f"{scenario} is available only with fixed_rule")
+        return _fixed_rule_dense30_config(
+            max_simulation_seconds,
+            coordinated=scenario == "fixed_rule_dense30_coordinated",
+        )
     if scenario != "default":
         raise ValueError(f"unsupported visualization scenario: {scenario}")
     dynamic = mode in {"dynamic_rule", "learned_high_rule_low", "learned_high_frozen_low"}
@@ -202,7 +233,16 @@ def run_rollout(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a deterministic terminal-MARL rollout with an optional PyVista viewer.")
     parser.add_argument("--mode", required=True, choices=("fixed_rule", "fixed_low_rl", "dynamic_rule", "learned_high_rule_low", "learned_high_frozen_low"))
-    parser.add_argument("--scenario", choices=("default", "fixed_rule_warm_flow"), default="default")
+    parser.add_argument(
+        "--scenario",
+        choices=(
+            "default",
+            "fixed_rule_warm_flow",
+            "fixed_rule_dense30_baseline",
+            "fixed_rule_dense30_coordinated",
+        ),
+        default="default",
+    )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--gui", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--frame-stride", type=int, default=1)

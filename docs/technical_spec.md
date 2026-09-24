@@ -621,6 +621,66 @@ class RuleLowLevelPolicy:
 
 输出仍是 3D intention，与 RL 使用完全相同的 scheduler/trajectory/safety pipeline。规则策略不能绕过 pipeline 直接改 UAV state。
 
+### Opt-in finite landing-flow coordination
+
+`SimConfig.rule_flow_coordination_enabled` 默认关闭，只用于明确标记的
+fixed-rule flow 实验；关闭时保留 legacy 默认动作域
+`max_speed_residual_mps=2.0`。开启时，RELEASE 意图由固定规则产生有限的
+canonical candidates，不冒充 learned policy，并派生持速动作域
+`max_speed_residual_mps=0`；任何非零 speed residual 都拒绝执行。
+
+当前候选集合为：
+
+```text
+O -> M: 48, 60, 72, 84 s
+M -> I: 60, 72, 84, 96 s × tangential speed bias {0, -4, -8} m/s
+I -> final: 20, 28, 36, 48, 60, 90 s
+Emergency final: 28, 36, 48, 60, 90 s
+```
+
+候选使用 scheduler 实际 arrival/merge slot，最终进近先按实际可用 LZ
+reserve，再绑定生成的 executable route。能量 urgency 用于 release 排序和
+deadline fallback 判定，
+不能作为 energy、dynamics 或 safety certificate。每个候选必须通过原有
+dynamics 检查。在 coordinated flow 分支，normal release 顺序固定为
+`INNER -> MIDDLE -> OUTER`；同一环内按 remaining energy slack、dynamic
+priority、UID 排序（slack 较小者优先，再按 priority 和 UID）。全部 normal
+release 尝试完成后才进行 emergency takeover。
+
+M -> I admission 使用 inner queue capacity `6` 和额外的 inner-departure
+headway 作为 normal preference。先执行廉价的 array preview headway 检查，
+按 `12 × 16 / 200 = 0.96 rad` 的角间隔计算，并计入当前 holders 与
+committed incoming。只有第一次 normal 候选因 `inner_departure_headway`
+拒绝后，才允许第二次 normal M -> I 检查；第二次只检查第一次被拒绝的
+那些 duration/bias 候选，且必须有 fresh、finite、non-negative 的
+route-energy slack，且不超过一个 M 环周期乘当前 phase power。两次检查都
+必须满足 capacity、scheduler reservation、dynamics validation、完整的
+`80 m` SafetyFilter certification 和 `80/40/10 m` runtime monitoring；第二次成功提交时记录
+`flow_deadline_fallback` telemetry。
+
+holder 预测使用 nominal zero-residual holding domain；安全认证同时检查
+matching point distance 与 `1 s` swept distance。coordinated emergency 路径
+没有硬性的 `SOC <= 0.40` ceiling；它使用实际 emergency route 的 energy
+检查，包含 25% landing reserve 与 15 s emergency margin，并要求 route slack
+不超过 `max(29 s, 当前环一周时间) × current ring-phase power`。若排除
+geometry-infeasible 后所有 normal 候选均为 `emergency_energy_guard`，可使用显式
+normal-energy-guard override 绕过这一条 slack urgency limit；实际 emergency route
+energy、reserve、margin 与完整 SafetyFilter 仍始终必需。legacy 路径的 SOC 行为保持不变。
+normal 与 emergency 路由都保留完整的 SafetyFilter、
+dynamics validation、trajectory hash 检查和运行时 fail-closed 约束；flow
+规则仍为 opt-in。
+
+等价性能路径中，normal M -> I rejection 先使用 array preview，再决定是否
+materialize trajectory points。权威 `validate_plan` 可使用 vectorized
+`samples_are_feasible` pass predicate；predicate 失败或输入为 malformed/
+non-standard 时回退到 scalar transition diagnostics，并保留原有约束、
+sampling grids 和 error ordering。
+
+UI 必须覆盖两个明确场景：低 SOC UAV 使用橙色 `LOW SOC`，进入 emergency
+landing 后使用红色 `EMERGENCY`；`failed_energy` 终态保留真实位置的红色
+`X` 和可分页终态事件记录（含时间、SOC、剩余能量、阶段和原因），不得从
+可视化中无记录消失。
+
 ---
 
 ## 22. Shared low-level PPO

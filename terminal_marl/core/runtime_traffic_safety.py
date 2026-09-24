@@ -936,6 +936,25 @@ class PredictiveSafetyShield:
         component actions and one-holder safe-interval probes.  Every action
         still receives the complete swept-separation proof.
         """
+        # Fixed-rule flow derives a nominal holding contract with no residual
+        # speed authority.  Keep the complete joint/swept assessment, but do
+        # not enter the normalized profile/search catalogue (which divides by
+        # the residual scale).  A nominal conflict therefore remains an
+        # explicit rejected backup rather than being repaired implicitly.
+        scale = float(getattr(
+            getattr(env, "config", None),
+            "max_speed_residual_mps",
+            self.config.max_speed_residual_mps,
+        ))
+        if abs(scale) <= 1e-12:
+            zero_residuals = {uid: 0.0 for uid in residuals}
+            assessment_kwargs = {"pairs": pairs}
+            if threshold is not None:
+                assessment_kwargs["threshold"] = float(threshold)
+            assessment = self._joint_assessment(env, zero_residuals, **assessment_kwargs)
+            if assessment.approved:
+                return zero_residuals, assessment
+            return None, assessment
         baseline = self._headway_backup_request(env, residuals, pairs)
         assessment_kwargs = {"pairs": pairs}
         if threshold is not None:
@@ -1263,6 +1282,41 @@ class PredictiveSafetyShield:
         # A single H+dt proof implies current-horizon safety and proves that
         # the candidate remains a legal backup after one executor tick.
         assessment = self._recursive_safe(env, residuals, pairs)
+        if abs(float(env.config.max_speed_residual_mps)) <= 1e-12:
+            # The fixed-rule flow contract has no shield speed authority.  A
+            # nominal action is still accepted only after the complete
+            # recursive joint/swept proof above; a nominal conflict fails
+            # closed instead of entering the residual search or 40 m buffer.
+            if not assessment.approved:
+                self.unrecoverable_components = tuple(
+                    self._components(assessment.unsafe_pairs or pairs)
+                )
+                self.telemetry["shield_fail_closed"] += 1
+                self.telemetry["joint_safety_fail_closed"] += 1
+                self.telemetry["joint_unrecoverable_components"] += len(self.unrecoverable_components)
+                self.last_certification_diagnostic = {
+                    "time": float(env.now),
+                    "pairs": pairs,
+                    "unsafe_pairs": assessment.unsafe_pairs,
+                    "initial_minimum_separation": assessment.minimum_separation,
+                    "unrecoverable_components": self.unrecoverable_components,
+                    "recursive_gate": self.last_recursive_gate,
+                    "speed_residual_contract": "nominal_zero",
+                    "operational_threshold": float(self.config.safe_distance),
+                }
+                raise SafetyInvariantError(
+                    "Nominal fixed-rule holding action is not recursively safe; physics execution blocked",
+                    diagnostic=self.last_certification_diagnostic,
+                )
+            self.unrecoverable_components = ()
+            return {
+                uid: type(repaired[uid])(
+                    repaired[uid].release_request,
+                    0.0,
+                    repaired[uid].merge_time_residual,
+                ) if uid in holders else repaired[uid]
+                for uid in repaired
+            }
         if not assessment.approved:
             # Before a general component search, use the deterministic backup
             # policy at the *current* state.  It is already a swept-certified

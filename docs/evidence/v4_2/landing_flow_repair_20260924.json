@@ -1,0 +1,1672 @@
+{
+ "schema_version": "landing-flow-evidence-summary-v1",
+ "source_policy": "compact development, baseline, and fresh trial records; no full configs or all-state rows",
+ "scenario_fixed_conditions": {
+  "action_schema_version": "low_action_schema_v4_2_hierarchical",
+  "energy_model_mode": "phase_motion_v2",
+  "warm_start_uavs": 30,
+  "total_requested_uavs": 30,
+  "warm_start_steady_motion": true,
+  "initial_soc_mode": "uniform",
+  "initial_soc_min": 0.55,
+  "initial_soc_max": 0.9,
+  "energy_reachability_guard_enabled": true,
+  "emergency_priority_guard_enabled": true,
+  "emergency_trigger_soc": 0.4,
+  "emergency_energy_margin_seconds": 15.0,
+  "final_approach_geometry_mode": "continuous_inward_v1",
+  "release_arbitration_mode": "downstream_priority",
+  "reconcile_late_merge_slots_enabled": false,
+  "final_queue_capacity": 3,
+  "safe_distance": 80.0,
+  "nmac_distance": 40.0,
+  "collision_distance": 10.0,
+  "dt": 1.0,
+  "physics_dt": 0.2,
+  "safety_sampling_dt": 1.0,
+  "max_simulation_seconds": 1800.0,
+  "rule_flow_coordination_enabled": true,
+  "max_speed_residual_mps": 0.0,
+  "route_guard_enabled": true,
+  "source": "flow_dev_841301_v7.json"
+ },
+ "trials": [
+  {
+   "label": "baseline_841301",
+   "seed": 841301,
+   "coordinated": false,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 18,
+    "emergency_landed": 8,
+    "failed_energy": 4
+   },
+   "sim_time_seconds": 1364.0,
+   "wall_seconds": 96.88837209995836,
+   "minimum_landing_soc": 0.2735911325424378,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 81.3534283991422,
+    "minimum_swept_separation": 81.16912993354633,
+    "nmac": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 332,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "dev_v1_841301",
+   "seed": 841301,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 25,
+    "emergency_landed": 3,
+    "failed_energy": 2
+   },
+   "sim_time_seconds": 904.0,
+   "wall_seconds": 298.8513830997981,
+   "minimum_landing_soc": 0.2664507828346893,
+   "safety_summary": {
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "requested": 30,
+    "resolved": 30,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "dev_v2_841301",
+   "seed": 841301,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 25,
+    "emergency_landed": 2,
+    "failed_energy": 3
+   },
+   "sim_time_seconds": 984.0,
+   "wall_seconds": 358.9175406000577,
+   "minimum_landing_soc": 0.2749063877343915,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "dev_v5_841301",
+   "seed": 841301,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 23,
+    "emergency_landed": 4,
+    "failed_energy": 3
+   },
+   "sim_time_seconds": 987.0,
+   "wall_seconds": 269.8829413000494,
+   "minimum_landing_soc": 0.26002490625290736,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.13392998381686,
+    "minimum_swept_separation": 80.13392998381686,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "dev_v6_841301",
+   "seed": 841301,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 25,
+    "emergency_landed": 5
+   },
+   "sim_time_seconds": 765.0,
+   "wall_seconds": 151.29799770005047,
+   "minimum_landing_soc": 0.268751700608527,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.53418615721621,
+    "minimum_swept_separation": 80.51995092119691,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "dev_v7_841301",
+   "seed": 841301,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 26,
+    "emergency_landed": 4
+   },
+   "sim_time_seconds": 763.0,
+   "wall_seconds": 156.30827339971438,
+   "minimum_landing_soc": 0.268751700608527,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.53418615721621,
+    "minimum_swept_separation": 80.51995092119691,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "fresh_841501_baseline",
+   "seed": 841501,
+   "coordinated": false,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 12,
+    "emergency_landed": 13,
+    "failed_energy": 5
+   },
+   "sim_time_seconds": 1160.0,
+   "wall_seconds": 106.41245539998636,
+   "minimum_landing_soc": 0.2770484728245769,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.04813987043184,
+    "minimum_swept_separation": 80.04813987043184,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 267,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "fresh_841501_coordinated",
+   "seed": 841501,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 26,
+    "emergency_landed": 3,
+    "failed_energy": 1
+   },
+   "sim_time_seconds": 936.0,
+   "wall_seconds": 346.33047969965264,
+   "minimum_landing_soc": 0.27889638519947,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "fresh_841502_baseline",
+   "seed": 841502,
+   "coordinated": false,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 15,
+    "emergency_landed": 9,
+    "failed_energy": 6
+   },
+   "sim_time_seconds": 1223.0,
+   "wall_seconds": 114.8394170999527,
+   "minimum_landing_soc": 0.3038196676138032,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.67629252217722,
+    "minimum_swept_separation": 80.51421096342995,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 222,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  },
+  {
+   "label": "fresh_841502_coordinated",
+   "seed": 841502,
+   "coordinated": true,
+   "status": "terminal",
+   "outcomes": {
+    "completed": 28,
+    "emergency_landed": 2
+   },
+   "sim_time_seconds": 791.0,
+   "wall_seconds": 242.68585520004854,
+   "minimum_landing_soc": 0.2848593050455483,
+   "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+   },
+   "requested": 30,
+   "resolved": 30
+  }
+ ],
+ "v4_aborted": {
+  "label": "dev_v4_841301_aborted",
+  "status": "aborted",
+  "complete": false,
+  "reason": "primary stopped after identified I-egress queue jam",
+  "sim_time_seconds": 900.0,
+  "wall_seconds": 947.0572627997026,
+  "steps": 900,
+  "requested": 30,
+  "resolved": 19,
+  "outcomes": {
+   "completed": 17,
+   "emergency_landed": 1,
+   "failed_energy": 1
+  },
+  "observed_state_counts": {
+   "at_progress": 900,
+   "normal": 17,
+   "emergency": 1,
+   "failed": 1,
+   "active": 11
+  },
+  "failed_gates": [
+   "no_failed_energy"
+  ],
+  "incomplete_gates": [
+   "fullcycle_completion",
+   "all_uavs_resolved"
+  ],
+  "unavailable_metrics": [
+   "final_safety",
+   "minSOC"
+  ]
+ },
+ "diagnosis_552": {
+  "source": "results/landing_blockers_841301_baseline.json",
+  "time": 552.0,
+  "baseline_conditions": {
+   "dense_warm_start_uavs": 30,
+   "final_approach_geometry_mode": "continuous_inward_v1",
+   "initial_soc_max": 0.9,
+   "initial_soc_min": 0.55,
+   "max_simulation_seconds": 1800.0,
+   "reconcile_late_merge_slots_enabled": false,
+   "release_arbitration_mode": "downstream_priority",
+   "route_guard_enabled": true
+  },
+  "uid3_uid4_direct_state": {
+   "3": {},
+   "4": {
+    "uid": 4,
+    "time": 552.0,
+    "phase": "ring_inner",
+    "ring_role": "inner",
+    "soc": 0.2929007775654426,
+    "energy_remaining": 439.3511663481639,
+    "committed": false,
+    "assigned_lz": null,
+    "last_release_decision": "emergency_energy_guard",
+    "last_safety_decision": "approved"
+   }
+  },
+  "uid7_uid23_release_snapshot": {
+   "7": {
+    "release_decision": "emergency_lz_priority",
+    "latest_decision_history_entry": "emergency_lz_priority",
+    "latest_candidate_reason": [
+     "predicted_holder_reachable_tube",
+     "predicted_separation"
+    ],
+    "runtime_shortlist_candidates_checked": 0,
+    "primary_blocker": "LZ_RESOURCE",
+    "safety_decision": "approved",
+    "final_lz_pairs_checked_note": "recorded prior telemetry; not treated as same-step safety rejection"
+   },
+   "23": {
+    "release_decision": "emergency_lz_priority",
+    "latest_decision_history_entry": "emergency_lz_priority",
+    "latest_candidate_reason": [
+     "predicted_holder_reachable_tube",
+     "predicted_separation"
+    ],
+    "runtime_shortlist_candidates_checked": 0,
+    "primary_blocker": "LZ_RESOURCE",
+    "safety_decision": "approved",
+    "final_lz_pairs_checked_note": "recorded prior telemetry; not treated as same-step safety rejection"
+   }
+  },
+  "landing_zone_status": "unavailable_from_existing_trace",
+  "unavailable_from_existing_trace": [
+   "complete 552 s state rows for UIDs other than 4, 11, and 12",
+   "landing-zone status at 552 s",
+   "SOC at emergency takeover and at touchdown"
+  ]
+ },
+ "v3_pair_witness": {
+  "source": "results/flow_dev_841301_v3_original_pair_probe.json",
+  "time": 182.0,
+  "pair": [
+   19,
+   21
+  ],
+  "uid19": {
+   "uid": 19,
+   "phase": "final",
+   "assigned_lz": 2,
+   "committed": true,
+   "plan_end_time": 244.6961303992387,
+   "soc": 0.6883894748596898
+  },
+  "uid21": {
+   "uid": 21,
+   "phase": "ring_inner",
+   "ring_role": "inner",
+   "committed": false,
+   "soc": 0.5068242817052832
+  },
+  "minimum_predicted_separation": 79.92809338226441,
+  "minimum_actual_separation": 80.55763956221097,
+  "minimum_swept_separation": 80.49320204291782,
+  "old_filter_point_tube": "passed",
+  "runtime_pair_swept_check": "79.92809338226441 m"
+ },
+ "v5_missed_emergency": {
+  "source": "results/flow_v5_missed_emergency_probe.json",
+  "steps": 450,
+  "sim_time_seconds": 450.0,
+  "witnesses": [
+   {
+    "now": 330.0,
+    "uid": 3,
+    "soc": 0.37754578386941073,
+    "role": "middle",
+    "free_compatible_pads": [
+     1,
+     4
+    ],
+    "pad": 1,
+    "duration": 60.0,
+    "energy_remaining": 566.3186758041161,
+    "required": 506.0399406770562,
+    "slack": 60.27873512705986,
+    "current_limit": 29.0,
+    "route_end": 424.8342348660482,
+    "current_release_reason": {
+     "decision": "safety_wait",
+     "reason": "approved",
+     "primary_blocker": "PREDICTED_SEPARATION",
+     "secondary_constraints": [
+      "approved"
+     ]
+    }
+   }
+  ],
+  "witness_counts": {
+   "3": 1,
+   "4": 0,
+   "11": 0
+  },
+  "earliest_normal_energy_guard_rejection": {
+   "uid": 20,
+   "time": 325.0,
+   "decision": "safety_reject",
+   "reason": "emergency_energy_guard",
+   "candidate_rejection_reasons": [
+    "headway_conflict",
+    "inner_departure_headway",
+    "inner_departure_headway",
+    "emergency_energy_guard"
+   ]
+  }
+ },
+ "v7_uid3_uid4_timeline": {
+  "3": {
+   "normal": [
+    {
+     "uid": 3,
+     "time": 10.0,
+     "from_phase": "ring_outer",
+     "end_time": 94.0,
+     "pad_id": null,
+     "tangential_speed_bias_mps": 0.0,
+     "soc": 0.5825235616471903
+    },
+    {
+     "uid": 3,
+     "time": 164.0,
+     "from_phase": "ring_middle",
+     "end_time": 224.0,
+     "pad_id": null,
+     "tangential_speed_bias_mps": 0.0,
+     "soc": 0.48821245053607737
+    },
+    {
+     "uid": 3,
+     "time": 226.0,
+     "from_phase": "ring_inner",
+     "end_time": 288.69613039923854,
+     "pad_id": 4,
+     "tangential_speed_bias_mps": 0.0,
+     "soc": 0.45339763572126107
+    }
+   ],
+   "emergency": [],
+   "touchdown": [
+    {
+     "uid": 3,
+     "time": 289.0,
+     "plan_end_time": 288.69613039923854,
+     "pad_id": 4,
+     "emergency": false,
+     "soc": 0.4092784231885206
+    }
+   ]
+  },
+  "4": {
+   "normal": [
+    {
+     "uid": 4,
+     "time": 20.0,
+     "from_phase": "ring_outer",
+     "end_time": 104.0,
+     "pad_id": null,
+     "tangential_speed_bias_mps": 0.0,
+     "soc": 0.6361970281259123
+    }
+   ],
+   "emergency": [
+    {
+     "uid": 4,
+     "time": 387.0,
+     "from_phase": "ring_middle",
+     "end_time": 481.8342348660482,
+     "pad_id": 0,
+     "tangential_speed_bias_mps": 0.0,
+     "soc": 0.3998859170147993
+    }
+   ],
+   "touchdown": [
+    {
+     "uid": 4,
+     "time": 482.0,
+     "plan_end_time": 481.8342348660482,
+     "pad_id": 0,
+     "emergency": true,
+     "soc": 0.32252595656343
+    }
+   ]
+  }
+ },
+ "fresh_validation_gate": {
+  "status": "FAILED",
+  "reason": "841501 coordinated UID7 failed_energy at 935 s in ring_middle",
+  "per_seed": {
+   "841501": {
+    "coordinated_status": "FAILED",
+    "failed_energy_uid": 7,
+    "failed_energy_time_seconds": 935.0,
+    "failed_energy_phase": "ring_middle",
+    "failed_energy_soc": 0.0
+   },
+   "841502": {
+    "coordinated_status": "observed_no_failed_energy",
+    "failed_energy_count": 0,
+    "paired_gate_status": "FAILED_due_to_841501"
+   }
+  },
+  "delivery_status": "incomplete_continued_diagnosis"
+ },
+ "fresh_status": "FAILED: 841501 coordinated UID7 failed_energy at 935 s in ring_middle; continued diagnosis and incomplete delivery",
+ "spacing_ablation": {
+  "sources": [
+   "results/flow_dev_841301_spacing_ablation.json",
+   "results/flow_dev_841501_spacing_ablation.json"
+  ],
+  "method": {
+   "type": "single_factor_process_local_monkeypatch",
+   "name": "disable_inner_departure_headway_guard",
+   "patched_method": "LandingFlowCoordinator._inner_departure_headway_reason",
+   "patched_return": null,
+   "production_source_modified": false,
+   "derived_inner_departure_capacity_limit": 6
+  },
+  "trials": [
+   {
+    "seed": 841301,
+    "outcomes": {
+     "normal": 27,
+     "emergency": 3,
+     "failed_energy": 0
+    },
+    "sim_time_seconds": 790.0,
+    "wall_seconds": 65.22123249992728,
+    "requested": 30,
+    "resolved": 30,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "safety_error": null,
+    "observation": "27/3/0; insufficient alone for acceptance"
+   },
+   {
+    "seed": 841501,
+    "outcomes": {
+     "normal": 26,
+     "emergency": 2,
+     "failed_energy": 2
+    },
+    "failed_energy_uids": [
+     4,
+     2
+    ],
+    "sim_time_seconds": 869.0,
+    "wall_seconds": 166.5098309996538,
+    "requested": 30,
+    "resolved": 30,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "safety_error": null
+   }
+  ],
+  "primary_decision": "unconditional removal of I-ring angular spacing is not adopted"
+ },
+ "uid7_probe": {
+  "sources": [
+   "results/flow_v7_uid7_841501_probe.json",
+   "results/flow_v7_uid7_841501_inner_spacing.json"
+  ],
+  "status": "read_only_observational_probe",
+  "m2i_queue_guard_observations": [
+   {
+    "time_seconds": 248.0,
+    "uid": 7,
+    "soc": 0.45835602238723555,
+    "current_release_reason": "inner_departure_headway",
+    "candidate": {
+     "bias_mps": 0.0,
+     "duration_seconds": 96.0,
+     "energy_guard_reason": null,
+     "safety_approved": true,
+     "scheduler_can_reserve_at": true,
+     "inner_departure_blocker_count": 2,
+     "blockers": [
+      {
+       "uid": 11,
+       "source": "inner_holder"
+      },
+      {
+       "uid": 13,
+       "source": "committed_incoming"
+      }
+     ]
+    },
+    "queue_guard_result": "rejected"
+   },
+   {
+    "time_seconds": 300.0,
+    "uid": 7,
+    "soc": 0.4236893557205689,
+    "current_release_reason": "inner_departure_headway",
+    "candidate": {
+     "bias_mps": 0.0,
+     "duration_seconds": 84.0,
+     "energy_guard_reason": null,
+     "safety_approved": true,
+     "scheduler_can_reserve_at": true,
+     "inner_departure_blocker_count": 2,
+     "blockers": [
+      {
+       "uid": 12,
+       "source": "inner_holder"
+      },
+      {
+       "uid": 6,
+       "source": "committed_incoming"
+      }
+     ]
+    },
+    "queue_guard_result": "rejected"
+   },
+   {
+    "time_seconds": 350.0,
+    "uid": 7,
+    "soc": 0.3903560223872356,
+    "current_release_reason": "inner_departure_headway",
+    "candidate": {
+     "bias_mps": 0.0,
+     "duration_seconds": 72.0,
+     "energy_guard_reason": null,
+     "safety_approved": true,
+     "scheduler_can_reserve_at": true,
+     "inner_departure_blocker_count": 2,
+     "blockers": [
+      {
+       "uid": 8,
+       "source": "inner_holder"
+      },
+      {
+       "uid": 12,
+       "source": "inner_holder"
+      }
+     ]
+    },
+    "queue_guard_result": "rejected"
+   }
+  ],
+  "emergency_threshold_observation": {
+   "time_seconds": 300.0,
+   "uid": 7,
+   "soc": 0.4236893557205689,
+   "threshold_soc": 0.4,
+   "threshold_rejected": true,
+   "candidate": {
+    "duration_seconds": 90.0,
+    "pad_id": 2,
+    "reason": null,
+    "required_energy": 542.4532740103896,
+    "slack_energy": 93.08075957046378,
+    "slack_limit": 125.66370614359172
+   }
+  },
+  "committed_trajectory_block_observation": {
+   "time_seconds": 400.0,
+   "uid": 7,
+   "candidate": {
+    "bias_mps": -4.0,
+    "duration_seconds": 60.0,
+    "energy_guard_reason": null,
+    "safety_approved": false,
+    "safety_reason": "predicted_separation",
+    "scheduler_can_reserve_at": true,
+    "blockers": [
+     {
+      "uid": 0,
+      "source": "committed_incoming"
+     },
+     {
+      "uid": 1,
+      "source": "committed_incoming"
+     }
+    ]
+   }
+  }
+ },
+ "additional_841501_ablations": {
+  "source_policy": "compact fields read from the six completed results/flow_dev_841501_*_ablation.json records",
+  "records": [
+   {
+    "label": "soc_gate_ablation_v1",
+    "source": "results/flow_dev_841501_soc_gate_ablation.json",
+    "factor": {
+     "name": "emergency_soc_gate_only",
+     "method": "process_local_try_emergency_wrapper",
+     "temporary_emergency_trigger_soc": 1.0,
+     "outer_step_soc_gate_unchanged": 0.4,
+     "production_source_modified": false
+    },
+    "validity": "invalid_isolation_outer_gate_remained",
+    "outcomes": {
+     "normal": 26,
+     "emergency": 3,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     7
+    ],
+    "sim_time_seconds": 936.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   },
+   {
+    "label": "soc_gate_ablation_v2",
+    "source": "results/flow_dev_841501_soc_gate_ablation_v2.json",
+    "factor": {
+     "name": "emergency_soc_gate_only_v2",
+     "method": "process_local_emergency_order_and_step_wrapper",
+     "temporary_emergency_trigger_soc": 1.0,
+     "original_emergency_trigger_soc": 0.4,
+     "try_emergency_source_unchanged": true,
+     "production_source_modified": false
+    },
+    "validity": "valid_process_local_ablation",
+    "outcomes": {
+     "normal": 26,
+     "emergency": 3,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     4
+    ],
+    "sim_time_seconds": 862.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   },
+   {
+    "label": "integrated_urgency_ablation",
+    "source": "results/flow_dev_841501_integrated_urgency_ablation.json",
+    "factor": {
+     "name": "integrated_per_uav_urgency_fallback",
+     "method": "process_local_TerminalParallelEnv._release_wrapper",
+     "normal_first": true,
+     "temporary_emergency_trigger_soc": 1.0,
+     "original_emergency_trigger_soc": 0.4,
+     "safety_energy_queue_guards_unchanged": true,
+     "production_source_modified": false
+    },
+    "validity": "valid_process_local_ablation",
+    "outcomes": {
+     "normal": 26,
+     "emergency": 3,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     4
+    ],
+    "sim_time_seconds": 862.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   },
+   {
+    "label": "hold_prefix_ablation",
+    "source": "results/flow_dev_841501_hold_prefix_ablation.json",
+    "factor": {
+     "name": "m2i_hold_prefix_shape",
+     "method": "process_local_FlowTrajectoryGenerator.ring_transfer_wrapper",
+     "target_only": "ring_inner",
+     "durations_seconds": [
+      60.0,
+      72.0,
+      84.0,
+      96.0
+     ],
+     "safety_energy_queue_guards_unchanged": true,
+     "production_source_modified": false
+    },
+    "validity": "valid_process_local_ablation",
+    "outcomes": {
+     "normal": 25,
+     "emergency": 4,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     4
+    ],
+    "sim_time_seconds": 862.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   },
+   {
+    "label": "positive_bias_ablation",
+    "source": "results/flow_dev_841501_positive_bias_ablation.json",
+    "factor": {
+     "name": "positive_tangential_speed_bias_ablation",
+     "modified": "LandingFlowCoordinator.INNER_TANGENTIAL_SPEED_BIASES_MPS",
+     "baseline": [
+      0.0,
+      -4.0,
+      -8.0
+     ],
+     "ablation": [
+      0.0,
+      -4.0,
+      -8.0,
+      2.0
+     ],
+     "scope": "process-local only"
+    },
+    "validity": "completed_terminal_record",
+    "outcomes": {
+     "normal": 27,
+     "emergency": 1,
+     "failed_energy": 2
+    },
+    "failed_energy_uids": [
+     4,
+     16
+    ],
+    "sim_time_seconds": 875.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   },
+   {
+    "label": "final_capacity_ablation",
+    "source": "results/flow_dev_841501_final_capacity_ablation.json",
+    "factor": {
+     "name": "final_queue_capacity_ablation",
+     "ablation": "config.num_landing_zones",
+     "baseline": "config.final_queue_capacity",
+     "modified": "diagnostic._build_diagnostic_config (process-local wrapper)",
+     "scope": "coordinated config only; process-local only"
+    },
+    "validity": "completed_terminal_record",
+    "outcomes": {
+     "normal": 23,
+     "emergency": 3,
+     "failed_energy": 4
+    },
+    "failed_energy_uids": [
+     2,
+     4,
+     16,
+     3
+    ],
+    "sim_time_seconds": 955.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    }
+   }
+  ],
+  "primary_decision": "none of these diagnostic factors is adopted in production; delivery remains incomplete and diagnosis continues"
+ },
+ "additional_841501_trials": {
+  "source_policy": "compact fields read from completed results/flow_dev_841501_*_ablation.json records",
+  "records": [
+   {
+    "label": "current_height",
+    "source": "results/flow_dev_841501_current_height_ablation.json",
+    "factor": {
+     "name": "emergency_current_ring_height_corridor",
+     "temporary_height_max": "uav.position[2]",
+     "applies_only_when": "emergency=True and source ring is outer or middle",
+     "normal_final_approach_unchanged": true,
+     "production_source_modified": false
+    },
+    "outcomes": {
+     "normal": 27,
+     "emergency": 2,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     7
+    ],
+    "sim_time_seconds": 936.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "adoption_status": "failed_not_adopted"
+   },
+   {
+    "label": "dual_height_urgency",
+    "source": "results/flow_dev_841501_dual_height_urgency_ablation.json",
+    "factor": {
+     "name": "dual_height_urgency_fallback",
+     "temporary_emergency_trigger_soc": 1.0,
+     "original_emergency_trigger_soc": 0.4,
+     "height_order": "O/M current ring height first, then nominal 120m fallback",
+     "normal_first_unchanged": true,
+     "production_source_modified": false
+    },
+    "outcomes": {
+     "normal": 26,
+     "emergency": 3,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     4
+    ],
+    "sim_time_seconds": 862.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "adoption_status": "failed_not_adopted"
+   },
+   {
+    "label": "spiral_fallback",
+    "source": "results/flow_dev_841501_spiral_fallback_ablation.json",
+    "factor": {
+     "name": "normal_inner_final_spiral_geometry_fallback",
+     "original_cartesian_candidate_first": true,
+     "fallback_target": "final inner source",
+     "fallback_original_energy_safety_scheduler_pipeline": true,
+     "production_source_modified": false
+    },
+    "outcomes": {
+     "normal": 25,
+     "emergency": 3,
+     "failed_energy": 2
+    },
+    "failed_energy_uids": [
+     11,
+     7
+    ],
+    "sim_time_seconds": 936.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "adoption_status": "failed_not_adopted"
+   },
+   {
+    "label": "downstream_order",
+    "source": "results/flow_dev_841501_downstream_order_ablation.json",
+    "factor": {
+     "name": "downstream_order"
+    },
+    "outcomes": {
+     "normal": 29,
+     "emergency": 0,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     16
+    ],
+    "sim_time_seconds": 875.0,
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "adoption_status": "failed_not_adopted"
+   }
+  ],
+  "downstream_uid4_uid7_timeline": {
+   "source": "results/flow_dev_841501_downstream_order_ablation.json",
+   "uid4": {
+    "normal_commits": [
+     {
+      "from_phase": "ring_outer",
+      "time_seconds": 10.0,
+      "end_time_seconds": 94.0
+     },
+     {
+      "from_phase": "ring_middle",
+      "time_seconds": 154.0,
+      "end_time_seconds": 250.0
+     },
+     {
+      "from_phase": "ring_inner",
+      "time_seconds": 276.0,
+      "end_time_seconds": 350.69613039923854,
+      "pad_id": 5
+     }
+    ],
+    "touchdown_seconds": 351.0,
+    "completed_seconds": 471.0
+   },
+   "uid7": {
+    "normal_commits": [
+     {
+      "from_phase": "ring_outer",
+      "time_seconds": 20.0,
+      "end_time_seconds": 104.0
+     },
+     {
+      "from_phase": "ring_middle",
+      "time_seconds": 128.0,
+      "end_time_seconds": 200.0
+     },
+     {
+      "from_phase": "ring_inner",
+      "time_seconds": 230.0,
+      "end_time_seconds": 292.69613039923854,
+      "pad_id": 1
+     }
+    ],
+    "touchdown_seconds": 293.0,
+    "completed_seconds": 413.0
+   }
+  },
+  "adoption_status": "all_four_records_failed_zero_energy_gate_and_not_adopted"
+ },
+ "performance_evidence": {
+  "validate_plan_batch_fast_pass": {
+   "source": "results/flow_plan_validation_microbenchmark.json",
+   "equivalence_checks": 110,
+   "all_outputs_equal": true,
+   "new_median_time_as_fraction_of_scalar_old": {
+    "O2M84": 0.06758351575140382,
+    "M2I96": 0.06702216381510778,
+    "I-final50": 0.07079918190345846
+   },
+   "range_percent_of_scalar_old": "6.7-7.1%",
+   "scope": "function microbenchmark only; not whole-simulation or GUI speed"
+  },
+  "m2i_preview_prescreen": {
+   "status": "implemented",
+   "tests": 76,
+   "scope": "M2I preview pre-screen before point allocation; full authoritative validation retained",
+   "source": "terminal_marl/core/flow_trajectories.py"
+  },
+  "pending_combination": "downstream order plus SOC hard-gate cancellation validation has no result yet; no completion claim"
+ },
+ "downstream_urgency_evidence": {
+  "records": [
+   {
+    "label": "downstream_urgency_841301",
+    "source": "results/flow_dev_841301_downstream_urgency_ablation.json",
+    "seed": 841301,
+    "sim_time_seconds": 737.0,
+    "outcomes": {
+     "normal": 27,
+     "emergency": 3,
+     "failed_energy": 0
+    },
+    "failed_energy_uids": [],
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "production_status": "not_adopted"
+   },
+   {
+    "label": "downstream_urgency_841501",
+    "source": "results/flow_dev_841501_downstream_urgency_ablation.json",
+    "seed": 841501,
+    "sim_time_seconds": 875.0,
+    "outcomes": {
+     "normal": 29,
+     "emergency": 0,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     16
+    ],
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "production_status": "not_adopted"
+   },
+   {
+    "label": "downstream_dual_height_841501",
+    "source": "results/flow_dev_841501_downstream_dual_height_ablation.json",
+    "seed": 841501,
+    "sim_time_seconds": 875.0,
+    "outcomes": {
+     "normal": 29,
+     "emergency": 0,
+     "failed_energy": 1
+    },
+    "failed_energy_uids": [
+     16
+    ],
+    "safety": {
+     "requested": 30,
+     "resolved": 30,
+     "unresolved": 0,
+     "minimum_actual_separation": 80.0,
+     "minimum_swept_separation": 80.0,
+     "collisions": 0,
+     "nmac": 0,
+     "hard_separation_violations": 0,
+     "shield_fail_closed": 0,
+     "joint_safety_fail_closed": 0,
+     "safety_error": null
+    },
+    "production_status": "not_adopted"
+   }
+  ],
+  "uid16_duration_probe": {
+   "source": "results/flow_downstream_uid16_duration_probe.json",
+   "seed": 841501,
+   "probe_stop_seconds": 400.0,
+   "stop_reason": "max_probe_time",
+   "candidate_rows_checked": 478,
+   "witness": null,
+   "no_witness_at_400_seconds": true,
+   "candidate_generation_note": "The probe label m2i_72_84 refers to emergency-final candidates generated by the probe code, not normal M2I ring-transfer candidates.",
+   "gate_counts": {
+    "m2i_72_84": {
+     "energy": 3,
+     "no_free_pad": 10,
+     "safety": 34,
+     "slack": 31
+    },
+    "retry_60_90": {
+     "dynamics": 20,
+     "energy": 15,
+     "no_free_pad": 92,
+     "safety": 209,
+     "slack": 64
+    }
+   },
+   "reason_counts": {
+    "RuntimeError:flow final inward departure failed dynamics validation: [samples_are_feasible]": 20,
+    "predicted_holder_reachable_tube": 93,
+    "predicted_separation": 147,
+    "predicted_swept_separation": 3
+   },
+   "uid16_state_at_400": {
+    "phase": "ring_middle",
+    "soc": 0.3166155746916731,
+    "energy_remaining": 474.9233620375097,
+    "committed": false,
+    "emergency_retry_after": 400.0
+   }
+  },
+  "status": "variants_not_adopted; fresh_gate_remains_FAILED; no_zero_energy_claim"
+ },
+ "latest_equivalence_and_uid16_blocker_evidence": {
+  "validate_plan_equivalence": {
+   "source": "results/flow_perf_equivalent_100.json",
+   "seed": 841301,
+   "coordinated": true,
+   "steps": 100,
+   "comparison_scope": "validate_plan_fastpath_only",
+   "scalar_wall_seconds": 45.31996440002695,
+   "vectorized_wall_seconds": 36.03737800009549,
+   "normal_commits": 24,
+   "emergency_commits": 0,
+   "equivalent": true,
+   "max_abs_state_delta": 0.0,
+   "mismatches": [],
+   "scalar_trace_sha256": "38268de51261f4661edaaaa17558df4618f95fa1a24aa324aab62ded478a9351",
+   "vectorized_trace_sha256": "38268de51261f4661edaaaa17558df4618f95fa1a24aa324aab62ded478a9351",
+   "scalar_safety_trace_sha256": "9595b23914cfa4cfd1d8b9dd37e58d776e9760e12af62cf0202a0b40d09bc9b9",
+   "vectorized_safety_trace_sha256": "9595b23914cfa4cfd1d8b9dd37e58d776e9760e12af62cf0202a0b40d09bc9b9",
+   "minimum_actual_separation": 82.36346079968393,
+   "minimum_swept_separation": 82.180892081812,
+   "scope_note": "This isolates validate_plan and is not a whole-simulation or GUI-throughput measurement."
+  },
+  "uid16_blockers_v2": {
+   "source": "results/flow_uid16_blockers_v2.json",
+   "seed": 841501,
+   "sim_time_seconds": 301.0,
+   "snapshots": [
+    {
+     "time_seconds": 200.0,
+     "soc": 0.4499489080250065,
+     "candidate_count": 12,
+     "safety_approved": 3,
+     "scheduler_proposal": 6,
+     "all_energy_safety_scheduler": 1,
+     "queue_headway_pass": 0
+    },
+    {
+     "time_seconds": 250.0,
+     "soc": 0.41661557469167315,
+     "candidate_count": 12,
+     "safety_approved": 1,
+     "scheduler_proposal": 12,
+     "all_energy_safety_scheduler": 1,
+     "queue_headway_pass": 0
+    },
+    {
+     "time_seconds": 300.0,
+     "soc": 0.3832822413583398,
+     "candidate_count": 12,
+     "safety_approved": 1,
+     "scheduler_proposal": 9,
+     "all_energy_safety_scheduler": 0,
+     "queue_headway_pass": 0
+    }
+   ],
+   "t250_uid16_duration72_bias0": {
+    "energy_pass": true,
+    "required_energy": 517.8995719167109,
+    "slack_energy": 107.02379012079882,
+    "one_ring_period_seconds": 125.66370614359172,
+    "safety_approved": true,
+    "scheduler_proposal": true,
+    "inner_departure_headway_pass": false,
+    "inner_departure_headway_reason": "inner_departure_headway",
+    "minimum_swept_separation": 97.22229834485604,
+    "worst_holder_uid": 6,
+    "selected_lz_id": 0
+   },
+   "probe_note": "The t250 row records energy, safety, and scheduler proposal approval with the additional inner-queue headway check failing. This is a new repair-queue-guard observation distinct from the original legacy baseline.",
+   "pending_status": "deadline-aware queue-spacing fallback pending trial; no passed gate claim",
+   "production_status": "not_adopted"
+  }
+ },
+ "next_deadline_fallback_check": {
+  "status": "PASS",
+  "seeds": [
+   841701,
+   841702
+  ],
+  "seed_search": "No matches found in docs/training/tests at preregistration time.",
+  "condition": "Run only after unit tests and development regressions 841301, 841501, and 841502 pass for the frozen deadline-fallback candidate code.",
+  "fixed_conditions": {
+   "coordinated": true,
+   "uavs": 30,
+   "warm_start": true,
+   "soc_range": [
+    0.55,
+    0.9
+   ],
+   "route_guard": true,
+   "max_simulation_seconds": 1800,
+   "termination": "full cycle including ground service",
+   "baseline_reruns": false
+  },
+  "hard_acceptance": {
+   "resolved": "30/30",
+   "failed_energy": 0,
+   "safety_error": 0,
+   "collision": 0,
+   "nmac": 0,
+   "hard_separation": 0,
+   "shield_fail_closed": 0,
+   "joint_safety_fail_closed": 0,
+   "hash_mismatch": 0,
+   "minimum_actual_and_swept_separation": ">=80 m within 1e-6",
+   "successful_touchdown_soc": ">=0.25"
+  },
+  "report_fields": [
+   "emergency_count",
+   "emergency_times",
+   "all_hard_gate_metrics"
+  ],
+  "protocol": "No manual state edits or skipped failed UAVs; no arbitrary emergency-count/time gate. Candidate code is frozen after development with no tuning between fresh cases. Any failure makes the whole check FAILED and both seeds development before repair.",
+  "qualification_status": "Separate from the older failed fresh gate; no formal I1/PPO qualification; PPO_ALLOWED=false",
+  "development_gate": "development regressions passed; coordinated fresh runs started in parallel",
+  "outputs": [
+   "results/flow_fresh_deadline_841701.json",
+   "results/flow_fresh_deadline_841702.json"
+  ],
+  "progress": [
+   {
+    "seed": 841701,
+    "status": "COMPLETED_HARD_GATES",
+    "step": 863,
+    "sim_seconds": 863.0,
+    "resolved": 30,
+    "normal": 30,
+    "emergency": 0,
+    "failed_energy": 0,
+    "active": 0,
+    "min_touchdown_soc": 0.3451866507009634,
+    "min_actual_separation": 80.0,
+    "min_swept_separation": 80.0,
+    "wall_seconds": 265.0802417001687
+   },
+   {
+    "seed": 841702,
+    "status": "COMPLETED_HARD_GATES",
+    "step": 789,
+    "sim_seconds": 789.0,
+    "resolved": 30,
+    "normal": 27,
+    "emergency": 3,
+    "failed_energy": 0,
+    "active": 0,
+    "min_touchdown_soc": 0.2919970856931216,
+    "min_actual_separation": 80.0,
+    "min_swept_separation": 80.0,
+    "wall_seconds": 158.73896760027856
+   }
+  ],
+  "status_note": "Both completed outputs satisfy the bounded hard gates; this is a bounded fresh deadline-fallback check, not universal qualification.",
+  "completed": [
+   841701,
+   841702
+  ],
+  "pending": []
+ },
+ "integrated_development_regression": {
+  "status": "development_pass",
+  "sources": [
+   "results/flow_final_dev_841301.json",
+   "results/flow_final_dev_841501.json",
+   "results/flow_final_dev_841502.json",
+   "results/flow_repair_regression_delivery.txt"
+  ],
+  "cli": "fixed_rule_dense30_coordinated",
+  "coordinated": true,
+  "fixed_conditions": "30 warm; SOC 0.55-0.90; route_guard on; continuous_inward_v1; downstream_priority; late-slot false; rule_flow_coordination_enabled=true",
+  "records": [
+   {
+    "seed": 841301,
+    "sim_seconds": 757.0,
+    "wall_seconds": 264.76303469995037,
+    "normal": 29,
+    "emergency": 1,
+    "failed_energy": 0,
+    "resolved": "30/30",
+    "min_touchdown_soc": 0.3018781902911374,
+    "min_actual_separation": 80.1532184002751,
+    "min_swept_separation": 80.1532184002751
+   },
+   {
+    "seed": 841501,
+    "sim_seconds": 783.0,
+    "wall_seconds": 217.04460870008916,
+    "normal": 29,
+    "emergency": 1,
+    "failed_energy": 0,
+    "resolved": "30/30",
+    "min_touchdown_soc": 0.2857804017484627,
+    "min_actual_separation": 80.0,
+    "min_swept_separation": 80.0
+   },
+   {
+    "seed": 841502,
+    "sim_seconds": 840.0,
+    "wall_seconds": 255.41621090006083,
+    "normal": 28,
+    "emergency": 2,
+    "failed_energy": 0,
+    "resolved": "30/30",
+    "min_touchdown_soc": 0.2787034160630745,
+    "min_actual_separation": 80.0,
+    "min_swept_separation": 80.0
+   }
+  ],
+  "safety": "All named physical/safety counters in the three records are zero; safety_error is null.",
+  "baseline_comparison_841301": {
+   "source": "results/flow_baseline_841301.json",
+   "normal": 18,
+   "emergency": 8,
+   "failed_energy": 4
+  },
+  "uid3_uid4_841301": {
+   "uid3": {
+    "m2i_commit_seconds": 140.0,
+    "inner_arrival_seconds": 236.0,
+    "normal_touchdown_seconds": 299.0
+   },
+   "uid4": {
+    "m2i_commit_seconds": 168.0,
+    "inner_arrival_seconds": 252.0,
+    "normal_touchdown_seconds": 327.0
+   },
+   "note": "M2I commit time is distinct from inner-ring arrival time."
+  },
+  "original_baseline_observations": [
+   "early O-ring candidate records were dominated by dynamics_unreachable_merge_time",
+   "at t=552 UID7/UID23 recorded emergency_lz_priority with runtime_shortlist_candidates_checked=0 while pads 0 and 3 were free",
+   "the old emergency-before-normal ordering and forced energy guard could enter emergency at SOC 0.451690 and 0.474427"
+  ],
+  "queue_guard_scope": "The newer inner-queue guard is separate from the original baseline observations; the deadline fallback addresses that later guard record.",
+  "regression_tests": {
+   "source": "results/flow_repair_regression_delivery.txt",
+   "passed": 241,
+   "failed": 2,
+   "failure": "frozen-config source-binding failures; terminal_marl/core/config.py",
+   "focused_subset": 82,
+   "focused_subset_counting": "not added to 241/2 totals"
+  },
+  "performance_scope": "validate_plan 100-step equivalence measured scalar 45.31996440002695 s to vectorized 36.03737800009549 s with identical state/safety traces; function/prefix evidence only, no full GUI or overall throughput wall claim. Development wall times are absolute records only.",
+  "production_status": "Opt-in fixed-rule development and bounded fresh check evidence; default old route unchanged; no formal I1/PPO qualification; PPO_ALLOWED=false",
+  "fresh_deadline_check": {
+   "status": "PASS_BOUNDED_CHECK",
+   "records": [
+    {
+     "seed": 841701,
+     "source": "results/flow_fresh_deadline_841701.json",
+     "sim_seconds": 863.0,
+     "wall_seconds": 265.0802417001687,
+     "normal": 30,
+     "emergency": 0,
+     "failed_energy": 0,
+     "resolved": "30/30",
+     "min_touchdown_soc": 0.3451866507009634,
+     "min_actual_separation": 80.0,
+     "min_swept_separation": 80.0,
+     "named_safety_counters_zero": true,
+     "safety_error": null
+    },
+    {
+     "seed": 841702,
+     "source": "results/flow_fresh_deadline_841702.json",
+     "sim_seconds": 789.0,
+     "wall_seconds": 158.73896760027856,
+     "normal": 27,
+     "emergency": 3,
+     "failed_energy": 0,
+     "resolved": "30/30",
+     "min_touchdown_soc": 0.2919970856931216,
+     "min_actual_separation": 80.0,
+     "min_swept_separation": 80.0,
+     "named_safety_counters_zero": true,
+     "safety_error": null
+    }
+   ],
+   "aggregate": {
+    "scenes": 5,
+    "uavs": 150,
+    "normal": 143,
+    "emergency": 7,
+    "failed_energy": 0,
+    "overall_min_touchdown_soc": 0.2787034160630745
+   },
+   "status_note": "Both fresh outputs were read and passed the bounded hard gates; prior V7 fresh gate remains FAILED and this does not constitute universal or formal I1/PPO qualification.",
+   "fresh_pair_aggregate": {
+    "scenes": 2,
+    "uavs": 60,
+    "normal": 57,
+    "emergency": 3,
+    "failed_energy": 0,
+    "minimum_touchdown_soc": 0.2919970856931216
+   },
+   "all_five_aggregate": {
+    "scenes": 5,
+    "uavs": 150,
+    "normal": 143,
+    "emergency": 7,
+    "failed_energy": 0,
+    "minimum_touchdown_soc": 0.2787034160630745
+   }
+  },
+  "viewer_command": ".\\venv\\Scripts\\python.exe -m terminal_marl.visualization.rollout_viewer --mode fixed_rule --scenario fixed_rule_dense30_coordinated --seed 841301 --gui --labels --trajectories --playback-speed 1 --max-simulation-seconds 1800"
+ }
+}

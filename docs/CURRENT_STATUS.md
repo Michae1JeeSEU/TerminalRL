@@ -4,11 +4,67 @@
 >
 > **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
+> **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
 
-**最新可视化回放观测（2026-09-24）：** current-code 精确重放 seed `841301`、30 架全 warm、初始
+> **当前阶段更新（2026-09-24）**：固定规则协调流已完成三组 development
+> regression（`841301/841501/841502`），均为 `30/30` resolved、`failed_energy=0`，
+> normal/emergency 分别为 `29/1`、`29/1`、`28/2`；最小 touchdown SOC 为
+> `.301878/.285780/.278703`，最小实际/扫掠间隔均达到 `80 m`，命名安全计数为零。
+> 这是 opt-in fixed-rule development evidence，默认旧 route 保持不变，不构成 I1 或 PPO
+> qualification。deadline-fallback bounded fresh check 的 `841701/841702` 均已完成并通过硬门槛，
+> 两个 fresh case 合计 `60` UAV、`57 normal / 3 emergency / 0 failed-energy`；与三份 development
+> regression 合计五场、`150` UAV、`143 normal / 7 emergency / 0 failed-energy`。此前 V7 fresh gate
+> 的 FAILED 历史仍保留。`PPO_ALLOWED=false`。
+
+**最新集成 fixed-rule development 回归（2026-09-24）：** 使用
+`fixed_rule_dense30_coordinated` CLI，配置为 30 架 warm-start、初始 SOC `.55–.90`、route
+guard on、`continuous_inward_v1`、`downstream_priority`、late-slot off，并启用 opt-in
+`rule_flow_coordination_enabled=true`。三份 raw record 均 `30/30` resolved、
+`failed_energy=0`、`safety_error=null`；collision、NMAC、hard separation、shield/joint
+safety fail-closed、executed-plan hash mismatch 等命名计数均为零。
+
+| seed | sim s | wall s | normal / emergency / failed-energy | min touchdown SOC | min actual / swept m |
+|---:|---:|---:|---:|---:|---:|
+| 841301 | 757 | 264.76303469995037 | 29 / 1 / 0 | 0.3018781902911374 | 80.1532184002751 / 80.1532184002751 |
+| 841501 | 783 | 217.04460870008916 | 29 / 1 / 0 | 0.2857804017484627 | 80.0 / 80.0 |
+| 841502 | 840 | 255.41621090006083 | 28 / 2 / 0 | 0.2787034160630745 | 80.0 / 80.0 |
+
+原始 `841301` baseline 为 `18 normal / 8 emergency / 4 failed-energy`；协调回归为
+`29 / 1 / 0`。在协调回归中，UID3 的 M→I commit/进入 I 环/normal touchdown 为
+`140/236/299 s`，UID4 为 `168/252/327 s`；commit 时刻与进入 I 环时刻不同。
+此前 baseline 的三个观察点保持为：早期 O 环候选主要出现
+`dynamics_unreachable_merge_time`，552 s 时 UID7/23 在两个空闲 pad 下仍得到
+`emergency_lz_priority` 且 `runtime_shortlist_candidates_checked=0`，以及旧的
+emergency-before-normal 与 forced energy guard 可在 SOC `.451690/.474427` 触发应急。
+后续 inner-queue guard 属于独立的新观察，由 deadline fallback 处理，不改写上述 baseline
+事实。
+
+`flow_repair_regression_delivery.txt` 记录 `241 passed`、`2` 个未改变的 frozen-config
+source-binding failures（`terminal_marl/core/config.py`）；focused repair subset 的 `82`
+项不并入该计数。`validate_plan` 的 `100`-step 等价测量为 scalar `45.319964 s` 到
+vectorized `36.037378 s`，仅代表函数/prefix，不能外推为完整 GUI 或整体吞吐 wall-time
+加速；三次 development wall time 也只作绝对记录。
+
+deadline-fallback fresh check 已完成 bounded hard gates：`841701` 为
+`30 normal / 0 emergency / 0 failed-energy`、`30/30` resolved、863 s、最低 touchdown
+SOC `.3451866507009634`、最小实际/扫掠 `80/80 m`；`841702` 为
+`27 normal / 3 emergency / 0 failed-energy`、`30/30` resolved、789 s、最低 touchdown
+SOC `.2919970856931216`、最小实际/扫掠 `80/80 m`。两份 fresh 记录合计 `60` UAV、
+`57 normal / 3 emergency / 0 failed-energy`，最低 fresh touchdown SOC
+`.2919970856931216`；连同三份 development regression 的五场总计为 `150` UAV、
+`143 normal / 7 emergency / 0 failed-energy`，整体最低 touchdown SOC
+`.2787034160630745`，命名物理/安全错误计数均为零。该 bounded check 为 **PASS**，但此前
+fresh V7 paired gate 的 **FAILED** 事实保留，当前不进行正式 I1/PPO qualification。
+
+协调 30-UAV 可视化的 PowerShell 命令为：
+
+```powershell
+.\venv\Scripts\python.exe -m terminal_marl.visualization.rollout_viewer --mode fixed_rule --scenario fixed_rule_dense30_coordinated --seed 841301 --gui --labels --trajectories --playback-speed 1 --max-simulation-seconds 1800
+```
+
+**历史 baseline 可视化回放观测（2026-09-24）：** current-code 精确重放 seed `841301`、30 架全 warm、初始
 SOC `.55–.90`、`continuous_inward_v1`、route guard on、`downstream_priority`、late-slot off，使用
 `env.step()` 得到 `1364` steps、`18 completed + 8 emergency + 4 failed-energy`，与此前结果一致。
 `t=813 s` 时 6 个 LZ 均为 free；UID `4/11/12` 均处于 inner `R=200, z=40`、speed `16` 且
