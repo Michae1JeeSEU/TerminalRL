@@ -15,7 +15,7 @@ policy qualification。`validate_plan` 的批量等价校验和 viewer 的 posit
 
 后续能量口径采用 `eh216s_research_v2`、`energy_capacity=1500`、`min_landing_soc=.10`；
 `soc_reserve=.25` 继续作为独立 queue/admission reserve，其它阈值保持不变。已有 `.25` 实验、
-checkpoint 和 seed 消费记录保留为历史事实。当前不安排 fixed-rule rerun，执行顺序为：
+checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authorization 推进：
 
 1. 已完成既有 V4.2 learned-policy diagnostic replay 到当前 30-UAV / v2 profile 的
    checkpoint/config/schema/hash preflight，以及首个 bounded diagnostic `842101`；协议与结果见
@@ -25,13 +25,24 @@ checkpoint 和 seed 消费记录保留为历史事实。当前不安排 fixed-ru
 2. `842101` 的 read-only trace aggregation 已完成：4 个 failed-energy UAV 的 threshold 前
    RELEASE 为 `3/3/3/9` 且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察
    `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved
-   `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准 imitation-only fix。
-   `842102` 保持 untouched，暂停于 failed-energy review；不得 second-seed replay/reset、立即训练、
-   PPO 或重跑 rule，`PPO_ALLOWED=false`。
-3. 先补 neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation repair
-   deferred until feasible labels/evidence，不把该决定解释为 safety-solver diagnosis，不降低
-   SafetyFilter 阈值。完成证据区分后才决定 targeted imitation/Safe DAgger，不宣称其 sufficiency，
-   低层 static qualification 后才进入 A6。
+   `8`。这些是 controller 与 execution feasibility 诊断的既有观察，不写入新的 PASS 或结果结论。
+3. 已预注册新的 fresh random-SOC development comparison，详见
+   [development protocol](evidence/v4_2/random_soc_repair_development_20260924.md)：`843000` 为
+   工具实现与本地 smoke validation 已完成：`tests/test_trained_dense30_v2.py` 的 `10` 项测试通过；
+   smoke 已完成 `2` steps、`60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`），`6` 条 probe
+   均 original unchanged，其中 `UID27 WAIT → nominal` 同一步为 `approved`，其余 `5` 条为阴性。
+   该证据仅为 same-step，不能推断长程。`843101` 为同一 fresh seed 的一次性 `trained`/
+   `nominal_rule` 配对回放，两个 arm 仍未运行。`nominal_rule` 使用零基 proposal `12`（V4.1 joint
+   index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册 protocol 条件保持不变。
+4. `842101` 历史证据保持 immutable，`842102` 保持 unused。当前目标仍是先区分 controller behavior
+   与 execution feasibility，再按证据推进 targeted repair 或 eligible qualification；不写入 false
+   PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，继续保持 `80/40/10 m` 安全阈值、
+   `min_landing_soc=.10` 和 `soc_reserve=.25`。
+5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
+   `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
+   证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、
+   safety、exact replay、K3 shortlist、low-SOC wait non-worse 和 priority-weighted wait improvement；
+   本轮不新增 completion threshold。预留 `829001–829006` heldout 保持 untouched，不改作本轮开发集。
 
 ---
 

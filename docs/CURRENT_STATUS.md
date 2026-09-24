@@ -15,15 +15,31 @@ rejected。最小实际/扫掠间隔为 `80.00345665736643/80.0 m`，`safety_err
 hard separation、shield/joint fail-closed、executed-plan hash mismatch 均为 `0`。记录了 `9` 次
 shield intervention（correction，不是 failure）和 `1315` 次 safety intervention，不能概括为
 “all safety counters=0”。weights unchanged、无 Teacher/optimizer、无训练/PPO；该诊断不是 PASS 或
-qualification。`842102` 保持 untouched，暂停于 failed-energy review；terminal 后 heartbeat 已删除。
-  read-only trace aggregation 已完成：4 个 failed-energy UAV 的 threshold 前 RELEASE 为 `3/3/3/9`
-  且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察 blocker 为
-  `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved `8`。没有
-  independent feasible RELEASE witness 支持将 WAIT 全部判错或批准 imitation-only fix。下一步先补
-  neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation deferred，当前
-  不作 root-cause 或 Safe DAgger sufficiency 声明，不立即训练、降安全阈值或重跑 rule。842101 runner 已退出，
-  842102 output directory 尚不存在。详见
-  [诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
+qualification。`842101` 的 read-only trace aggregation 已完成：4 个 failed-energy UAV 的 threshold 前
+RELEASE 为 `3/3/3/9` 且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察
+blocker 为 `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），
+approved `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准
+imitation-only fix。详见[诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
+
+**当前授权的下一阶段（2026-09-24）：** 为区分 controller behavior 与 execution feasibility，已
+预注册新的 fresh random-SOC development comparison：[protocol](evidence/v4_2/random_soc_repair_development_20260924.md)。
+工具实现与本地验证已完成：`tests/test_trained_dense30_v2.py` 的 `10` 项测试通过；`843000`
+trained smoke 已完成 `2` steps、`60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`）。
+该 smoke 的 `6` 条 shadow probe 均保持 original state unchanged，其中 `UID27` 的 `WAIT → nominal`
+同一步 decision 为 `approved`，其余 `5` 条为阴性。该证据只覆盖 same-step counterfactual，不能推断
+长程结果。`843101` 的 trained 与 nominal_rule 两个 arm 仍未运行。`nominal_rule` 使用零基 proposal
+`12`（V4.1 joint index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册
+protocol 条件不变。旧 `842101` 证据保持 immutable，`842102` 保持 unused。当前目标仍是先诊断
+controller request 与 execution feasibility，再按证据决定 targeted repair 或 eligible qualification；
+不写入 false PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，保持 `80/40/10 m` 安全阈值、
+`min_landing_soc=.10` 与 `soc_reserve=.25`。
+
+**P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
+`1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3
+qualification；后续资格证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持原协议口径：
+dev/eval completion `1.0`、safety、exact replay、K3 shortlist、low-SOC wait non-worse 和
+priority-weighted wait improvement；本轮不新增 completion threshold。预留 `829001–829006` heldout
+保持 untouched，不改作本轮开发集。
 
 > **当前阶段更新（2026-09-24）**：固定规则协调流已完成三组 development
 > regression（`841301/841501/841502`），均为 `30/30` resolved、`failed_energy=0`，
@@ -692,9 +708,9 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-**2026-09-24 当前顺序（取代此前同日的 fixed-rule repair 排程）：** merge-slot timing
-reconciliation、fixed-rule dense30 development 与 viewer bounded checks 已完成；历史结果、
-已消费 seeds 和 `.25` floor 记录保持 immutable，当前不安排新的 fixed-rule rerun。
+**2026-09-24 当前顺序：** merge-slot timing reconciliation、fixed-rule dense30 development 与
+viewer bounded checks 已完成；历史结果、已消费 seeds 和 `.25` floor 记录保持 immutable。当前按
+staged authorization 推进，不把历史 fixed-rule evidence 写成 learned-policy qualification。
 
 1. 保持已冻结的 `eh216s_research_v2` profile、checkpoint/hash contract 和无 Teacher/optimizer
    语义；首个 bounded diagnostic 的协议与结果分别见
@@ -702,13 +718,26 @@ reconciliation、fixed-rule dense30 development 与 viewer bounded checks 已完
    [result](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。global loader/core
    保持不变，不自动授予 qualification。
 2. `842101` 的 read-only trace aggregation 已完成；failed-energy trace 与 inner `LZ_RESOURCE`
-   统计见结果页。该证据同时显示 sparse early request 与 execution veto，不能将 WAIT 全部判错，
-   也不能批准 imitation-only fix。`842102` 保持 untouched，暂停于 failed-energy review；不得
-   second-seed replay/reset、重跑 rule 或立即训练，保持 `PPO_ALLOWED=false`。
-3. 先补 neural execution path 的 feasible-action/energy-fallback evidence；targeted imitation repair
-   deferred until feasible labels/evidence，且不把该决定解释为 safety-solver diagnosis。不得降低
-   SafetyFilter 阈值；完成证据区分后才决定 targeted imitation/Safe DAgger，不宣称其 sufficiency。
-   低层 static qualification 完成后才进入高层 A6。
+   统计见结果页。该证据用于区分 controller request 与 execution feasibility，不能将 WAIT 全部判错，
+   也不能写入 imitation-only fix 或新的 PASS。`842101` 历史证据保持 immutable，`842102` 保持
+   unused。
+3. 已预注册新的 fresh random-SOC development comparison，详见
+   [development protocol](evidence/v4_2/random_soc_repair_development_20260924.md)：允许的阶段只包括
+   工具实现与本地 smoke validation 已完成：`10` 项 targeted tests PASS；`843000` 已完成 `2` steps、
+   `60` rows、`59` actor decisions（`47 WAIT / 12 RELEASE`），`6` 条 probe 均 original unchanged，
+   `UID27 WAIT → nominal` 同一步 `approved`，其余 `5` 条为阴性。该证据仅为 same-step，不能推断
+   长程。`843101` 的 `trained`/`nominal_rule` 两个 arm 仍未运行。`nominal_rule` 使用零基 proposal
+   `12`（V4.1 joint index `13`，decoded `[1,0,0]`），不启用 fixed-rule flow coordinator；预注册
+   protocol 条件保持不变。
+4. 当前目标仍是先完成 controller behavior 与 execution feasibility 的诊断，再按证据推进 targeted
+   repair 或 eligible qualification；不写入 false PASS/结果。`PPO_ALLOWED=false` 直至实际 admission，
+   保持 `80/40/10 m` 安全阈值、`min_landing_soc=.10` 与 `soc_reserve=.25`；低层 static
+   qualification 完成后才进入高层 A6。
+5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、场景
+   为 `flow6`/`flow12`/`dense24`。dense30 pressure 诊断不能单独构成 qualification；后续资格证据
+   仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、safety、
+   exact replay、K3 shortlist、low-SOC wait non-worse 和 priority-weighted wait improvement；本轮不
+   新增 completion threshold。预留 `829001–829006` heldout 保持 untouched，不改作本轮开发集。
 
 **历史顺序（2026-09-23，已由上方 2026-09-24 当前顺序取代）：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 

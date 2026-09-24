@@ -13,7 +13,9 @@ from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
     TemperatureCalibratedGateResidualAdapterStudentPPOV42,
 )
 from terminal_marl.core.checkpoints import checkpoint_metadata
+from terminal_marl.core.low_level_joint_action_v4_2 import hierarchical_from_normalized_v4_2
 from terminal_marl.core.runtime_traffic_safety import SafetyInvariantError
+from terminal_marl.envs.parallel_env import TerminalParallelEnv
 
 
 def _tiny_config():
@@ -216,3 +218,76 @@ def test_safety_invariant_error_keeps_usable_terminal_output(tmp_path, monkeypat
     assert json.loads((output / "progress.json").read_text())["status"] == "safety_error"
     rows = [json.loads(line) for line in (output / "actor_steps.jsonl").read_text().splitlines()]
     assert rows and all(row["status"] == "safety_invariant_error" for row in rows)
+
+
+def test_nominal_request_details_uses_canonical_proposal12_and_same_actor_mask():
+    env = TerminalParallelEnv(_tiny_config())
+    observations, _ = env.reset(seed=3)
+    env.active[1].committed_plan = object()
+
+    details = diagnostic._nominal_request_details(env, observations, shortlist_k=3)
+    uids, _, actor_mask, actions, gates, proposals, gate_lp, proposal_lp, likelihoods, shortlists = details
+
+    assert uids == ["0", "1"]
+    assert actor_mask.tolist() == [True, False]
+    assert gates.tolist() == [1, 0]
+    assert proposals.tolist() == [12, -1]
+    np.testing.assert_array_equal(actions["0"], np.asarray([1.0, 0.0, 0.0], dtype=np.float32))
+    np.testing.assert_array_equal(actions["1"], np.asarray([0.0, 0.0, 0.0], dtype=np.float32))
+    assert hierarchical_from_normalized_v4_2(actions["0"]).proposal == 12
+    assert hierarchical_from_normalized_v4_2(actions["0"]).joint_index_v4_1 == 13
+    assert list(shortlists) == ["0"]
+    assert len(shortlists["0"]) == 1
+    assert all(value == 0.0 for value in gate_lp)
+    assert all(value == 0.0 for value in proposal_lp)
+    assert likelihoods["0"] == {"gate": 0.0, "proposal": 0.0, "joint": 0.0}
+
+
+def test_shadow_probe_records_positive_witness_and_preserves_original_state():
+    env = TerminalParallelEnv(_tiny_config())
+    observations, _ = env.reset(seed=3)
+    details = diagnostic._nominal_request_details(env, observations, shortlist_k=3)
+    rows = diagnostic._shadow_probe_rows(
+        env,
+        time_value=env.now,
+        uids=details[0],
+        actor_mask=details[2],
+        gates=details[4],
+        proposals=details[5],
+        requested=details[3],
+        shortlists=details[-1],
+    )
+
+    assert rows
+    assert all(row["original_state_unchanged"] for row in rows)
+    assert all(row["shadow_decision"] == "approved" for row in rows)
+    assert all(row["approved_witness"] for row in rows)
+    assert all(row["joint_feasibility_claim"] is False for row in rows)
+    assert all(row["shadow_release_telemetry"]["secondary_constraints"] == [] for row in rows)
+    assert all(row["shadow_action_trace"]["requested_hierarchical_action"]["proposal"] == 12 for row in rows)
+
+
+def test_shadow_probe_records_negative_safety_invariant_without_witness(monkeypatch):
+    env = TerminalParallelEnv(_tiny_config())
+    observations, _ = env.reset(seed=3)
+    details = diagnostic._nominal_request_details(env, observations, shortlist_k=3)
+
+    def fail_shadow_step(self, requested, shortlists):
+        raise SafetyInvariantError("forced shadow probe failure")
+
+    monkeypatch.setattr(TerminalParallelEnv, "step", fail_shadow_step)
+    rows = diagnostic._shadow_probe_rows(
+        env,
+        time_value=env.now,
+        uids=details[0],
+        actor_mask=details[2],
+        gates=details[4],
+        proposals=details[5],
+        requested=details[3],
+        shortlists=details[-1],
+    )
+
+    assert rows
+    assert all(row["original_state_unchanged"] for row in rows)
+    assert all(row["shadow_safety_error"] == "forced shadow probe failure" for row in rows)
+    assert all(row["approved_witness"] is False for row in rows)

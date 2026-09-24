@@ -8,6 +8,7 @@ optimizer, invokes a Teacher, performs an update, or promotes a checkpoint.
 from __future__ import annotations
 
 import argparse
+import copy
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
@@ -27,7 +28,13 @@ from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
     TemperatureCalibratedGateResidualAdapterStudentPPOV42,
 )
 from terminal_marl.core.checkpoints import checkpoint_metadata
+from terminal_marl.core.low_level_joint_action_v4_2 import (
+    HierarchicalActionV42,
+    RELEASE_GATE,
+    WAIT_GATE,
+)
 from terminal_marl.core.runtime_traffic_safety import SafetyInvariantError
+from terminal_marl.core.safety_trace import SafetyTraceRecorder, _digest
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.training.diagnose_energy_reachability_guard_smoke import (
     build_config as build_rule_config,
@@ -55,6 +62,9 @@ SOURCE_VEHICLE_PROFILE_VERSION = "eh216s_research_v1"
 TARGET_VEHICLE_PROFILE_VERSION = "eh216s_research_v2"
 MAX_STEPS = 1800
 RUNTIME_SHORTLIST_K = 3
+CONTROLLERS = ("trained", "nominal_rule")
+NOMINAL_RELEASE_PROPOSAL = 12  # zero-based proposal12 RELEASE
+DEFAULT_PROBE_TIMES: tuple[float, ...] = ()
 SAFETY_DECISION_ACCEPTED = {
     "approved",
     "emergency_redirected",
@@ -73,6 +83,221 @@ FAILURE_OUTCOMES = {
 
 class DiagnosticInputError(ValueError):
     """Raised when a frozen diagnostic input is not compatible."""
+
+
+def _validate_controller(controller: str) -> str:
+    value = str(controller)
+    if value not in CONTROLLERS:
+        raise ValueError(f"controller must be one of {CONTROLLERS}, got {controller!r}")
+    return value
+
+
+def _actor_eligibility(env, uids: list[str]) -> np.ndarray:
+    """Mirror the frozen actor eligibility predicate used by the student."""
+
+    return np.asarray([
+        env.active[int(uid)].committed_plan is None
+        and env.active[int(uid)].phase.value in {"ring_outer", "ring_middle", "ring_inner"}
+        and int(uid) not in env.future_release_reservations
+        for uid in uids
+    ], dtype=bool)
+
+
+def _nominal_request_details(env, observations: dict[str, np.ndarray], *, shortlist_k: int):
+    """Build the policy-free canonical nominal-rule request tuple.
+
+    The return shape intentionally matches ``_student_request_details``.  The
+    likelihood arrays are zero because the nominal rule has no neural policy
+    distribution and no training credit is collected from this diagnostic.
+    """
+
+    if shortlist_k not in {1, 3}:
+        raise ValueError("student runtime shortlist must have K=1 or K=3")
+    uids = sorted(observations)
+    world = np.asarray([observations[uid] for uid in uids], dtype=np.float32).reshape(-1, OBSERVATION_DIM)
+    actor_mask = _actor_eligibility(env, uids)
+    gates = np.full(len(uids), WAIT_GATE, dtype=int)
+    proposals = np.full(len(uids), -1, dtype=int)
+    gates[actor_mask] = RELEASE_GATE
+    proposals[actor_mask] = NOMINAL_RELEASE_PROPOSAL
+    decoded = np.asarray([
+        HierarchicalActionV42(int(gates[index]),
+                              None if proposals[index] < 0 else int(proposals[index])).normalized
+        for index in range(len(uids))
+    ], dtype=np.float32).reshape((len(uids), 3))
+    actions = {uid: decoded[index] for index, uid in enumerate(uids)}
+    zeros = np.zeros(len(uids), dtype=np.float32)
+    likelihoods = {
+        uid: {
+            "gate": 0.0,
+            "proposal": None if proposals[index] < 0 else 0.0,
+            "joint": 0.0,
+        }
+        for index, uid in enumerate(uids)
+    }
+    shortlists: dict[str, tuple[np.ndarray, ...]] = {}
+    # A length-one shortlist is valid under the configured K=3 runtime bound.
+    if shortlist_k > 1:
+        canonical = HierarchicalActionV42(RELEASE_GATE, NOMINAL_RELEASE_PROPOSAL).normalized
+        for index, uid in enumerate(uids):
+            if actor_mask[index]:
+                shortlists[uid] = (canonical.copy(),)
+    return (
+        uids,
+        world,
+        actor_mask,
+        actions,
+        gates,
+        proposals,
+        zeros.copy(),
+        zeros.copy(),
+        likelihoods,
+        shortlists,
+    )
+
+
+def _env_state_digest(env) -> str:
+    try:
+        return _digest(SafetyTraceRecorder._state(env))
+    except Exception as exc:
+        raise DiagnosticInputError("unable to compute environment state digest") from exc
+
+
+def _target_key(mapping: Mapping[Any, Any], uid: str):
+    if uid in mapping:
+        return uid
+    integer_uid = int(uid)
+    if integer_uid in mapping:
+        return integer_uid
+    return uid
+
+
+def _uid_mapping_value(mapping: Mapping[Any, Any], uid: str):
+    integer_uid = int(uid)
+    if integer_uid in mapping:
+        return mapping[integer_uid]
+    if uid in mapping:
+        return mapping[uid]
+    return None
+
+
+def _probe_targets(env, uids: list[str], actor_mask: np.ndarray,
+                   gates: np.ndarray) -> list[tuple[str, str, int]]:
+    """Select the first eligible WAIT and RELEASE actor for each ring."""
+
+    candidates: dict[str, dict[int, str]] = {}
+    for index in np.argsort(np.asarray([int(value) for value in uids], dtype=int)):
+        uid = uids[int(index)]
+        if not bool(actor_mask[index]):
+            continue
+        uav = env.active.get(int(uid))
+        if uav is None or uav.ring_role is None:
+            continue
+        ring = str(getattr(uav.ring_role, "value", uav.ring_role))
+        candidates.setdefault(ring, {}).setdefault(int(gates[index]), uid)
+    targets: list[tuple[str, str, int]] = []
+    for ring in sorted(candidates):
+        for gate in (WAIT_GATE, RELEASE_GATE):
+            uid = candidates[ring].get(gate)
+            if uid is not None:
+                targets.append((ring, uid, gate))
+    return targets[:6]
+
+
+def _shadow_probe_rows(env, *, time_value: float, uids: list[str], actor_mask: np.ndarray,
+                       gates: np.ndarray, proposals: np.ndarray,
+                       requested: Mapping[Any, Any], shortlists: Mapping[Any, Any]) -> list[dict[str, Any]]:
+    """Run independent one-target counterfactuals without mutating ``env``."""
+
+    original_digest_before = _env_state_digest(env)
+    rows: list[dict[str, Any]] = []
+    for ring, uid, gate in _probe_targets(env, uids, actor_mask, gates):
+        target = env.active.get(int(uid))
+        row: dict[str, Any] = {
+            "probe_type": "single_target_counterfactual",
+            "joint_feasibility_claim": False,
+            "independent_alternative": True,
+            "time": float(time_value),
+            "target_uid": int(uid),
+            "target_ring": ring,
+            "actor_gate": "WAIT" if gate == WAIT_GATE else "RELEASE",
+            "actor_gate_index": int(gate),
+            "actor_proposal": None if int(proposals[uids.index(uid)]) < 0 else int(proposals[uids.index(uid)]),
+            "phase": None if target is None else target.phase.value,
+            "soc": None if target is None else float(target.soc),
+            "original_state_digest_before": original_digest_before,
+            "original_state_digest_after": None,
+            "original_state_digest_after_shadow": None,
+            "original_state_unchanged": None,
+            "shadow_decision": None,
+            "shadow_release_telemetry": None,
+            "shadow_release_intent_telemetry": None,
+            "shadow_action_trace": None,
+            "shadow_safety_error": None,
+            "approved_witness": False,
+        }
+        shadow = copy.deepcopy(env)
+        shadow_requested = copy.deepcopy(dict(requested))
+        shadow_shortlists = copy.deepcopy(dict(shortlists))
+        key = _target_key(shadow_requested, uid)
+        original_requested = copy.deepcopy(dict(requested))
+        original_shortlists = copy.deepcopy(dict(shortlists))
+        nominal = HierarchicalActionV42(RELEASE_GATE, NOMINAL_RELEASE_PROPOSAL).normalized.copy()
+        shadow_requested[key] = nominal
+        shadow_shortlists[_target_key(shadow_shortlists, uid)] = (nominal.copy(),)
+        for other_key, original_value in original_requested.items():
+            if other_key == key:
+                continue
+            if other_key not in shadow_requested or not np.array_equal(
+                np.asarray(shadow_requested[other_key]), np.asarray(original_value)
+            ):
+                raise DiagnosticInputError(
+                    f"shadow request copy mismatch for non-target uid={other_key}"
+                )
+        for other_key, original_value in original_shortlists.items():
+            if other_key == _target_key(original_shortlists, uid):
+                continue
+            copied = shadow_shortlists.get(other_key)
+            if copied is None or len(copied) != len(original_value) or any(
+                not np.array_equal(np.asarray(left), np.asarray(right))
+                for left, right in zip(copied, original_value)
+            ):
+                raise DiagnosticInputError(
+                    f"shadow shortlist copy mismatch for non-target uid={other_key}"
+                )
+        try:
+            _, _, _, _, shadow_info = shadow.step(shadow_requested, shadow_shortlists)
+            decisions = shadow_info.get("release_decisions", {})
+            decision = _uid_mapping_value(decisions, uid)
+            release_telemetry = shadow_info.get("release_intent_telemetry", {})
+            telemetry = _uid_mapping_value(release_telemetry, uid) or {}
+            traces = shadow_info.get("action_traces", {})
+            trace = _uid_mapping_value(traces, uid)
+            row.update({
+                "shadow_decision": decision,
+                "shadow_release_telemetry": _jsonable(telemetry),
+                "shadow_release_intent_telemetry": _jsonable(release_telemetry),
+                "shadow_action_trace": _jsonable(trace),
+                "approved_witness": bool(decision == "approved"),
+            })
+        except SafetyInvariantError as exc:
+            row["shadow_safety_error"] = str(exc)
+        original_digest_after = _env_state_digest(env)
+        row["original_state_digest_after"] = original_digest_after
+        row["original_state_digest_after_shadow"] = original_digest_after
+        row["original_state_unchanged"] = bool(
+            original_digest_before is not None
+            and original_digest_after is not None
+            and original_digest_before == original_digest_after
+        )
+        if not row["original_state_unchanged"]:
+            raise DiagnosticInputError(
+                f"original environment changed during shadow probe for uid={uid}"
+            )
+        if row["shadow_safety_error"] is not None:
+            row["approved_witness"] = False
+        rows.append(row)
+    return rows
 
 
 def _jsonable(value: Any) -> Any:
@@ -423,9 +648,12 @@ def run_rollout(
     seed: int,
     max_steps: int,
     checkpoint_info: Mapping[str, Any] | None = None,
+    controller: str = "trained",
+    probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES,
 ) -> dict[str, Any]:
-    """Run a deterministic, inference-only diagnostic with a supplied policy."""
+    """Run a deterministic, inference-only diagnostic with a supplied controller."""
 
+    controller = _validate_controller(controller)
     output = Path(output)
     if output.exists():
         raise FileExistsError(f"refusing to overwrite existing output: {output}")
@@ -434,9 +662,15 @@ def run_rollout(
     max_steps = int(max_steps)
     output.mkdir(parents=True, exist_ok=False)
     validate_student_config(config)
-    if int(getattr(policy, "observation_dim", -1)) != OBSERVATION_DIM:
+    if controller == "trained" and int(getattr(policy, "observation_dim", -1)) != OBSERVATION_DIM:
         raise DiagnosticInputError("diagnostic policy must have 88D observations")
-    weight_digest_before = _policy_weight_digest(policy)
+    weight_digest_before = None
+    if policy is not None:
+        try:
+            weight_digest_before = _policy_weight_digest(policy)
+        except DiagnosticInputError:
+            if controller == "trained":
+                raise
     started = time.perf_counter()
     _write_json_atomic(output / "config.json", {
         "diagnostic_only": True,
@@ -451,6 +685,10 @@ def run_rollout(
         "checkpoint_promotable": False,
         "teacher_enabled": bool(config.teacher_enabled),
         "scheduler_mode": config.scheduler_mode,
+        "controller": controller,
+        "neural_policy_used": controller == "trained",
+        "probe_times": [float(value) for value in probe_times],
+        "shadow_probe_labels_written": False,
         "checkpoint": checkpoint_info,
     })
     _write_json_atomic(output / "migration.json", {
@@ -459,6 +697,7 @@ def run_rollout(
         "checkpoint": checkpoint_info,
     })
     steps_path = output / "actor_steps.jsonl"
+    shadow_probes_path = output / "shadow_probes.jsonl"
     decision_counts: Counter[str] = Counter()
     actor_decisions = 0
     wait_decisions = 0
@@ -479,94 +718,124 @@ def run_rollout(
         safety_error=safety_error, decision_counts=decision_counts,
     ))
     with steps_path.open("w", encoding="utf-8") as handle:
-        while safety_error is None and steps < max_steps and not _terminal(env):
-            details = _student_request_details(
-                policy,
-                env,
-                observations,
-                deterministic=True,
-                shortlist_k=RUNTIME_SHORTLIST_K,
-            )
-            uids, _, actor_mask, requested, gates, proposals = details[:6]
-            shortlists = details[-1]
-            before = {
-                int(uid): {
-                    "uid": int(uid),
-                    "time": float(env.now),
-                    "phase": env.active[int(uid)].phase.value,
-                    "soc": float(env.active[int(uid)].soc),
-                    "actor_mask": bool(actor_mask[index]),
-                    "gate": int(gates[index]),
-                    "proposal": None if int(proposals[index]) < 0 else int(proposals[index]),
-                    "requested_action": _jsonable(requested.get(uid, requested.get(str(uid), {}))),
+        with shadow_probes_path.open("w", encoding="utf-8") as shadow_handle:
+            while safety_error is None and steps < max_steps and not _terminal(env):
+                if controller == "trained":
+                    details = _student_request_details(
+                        policy,
+                        env,
+                        observations,
+                        deterministic=True,
+                        shortlist_k=RUNTIME_SHORTLIST_K,
+                    )
+                else:
+                    details = _nominal_request_details(
+                        env,
+                        observations,
+                        shortlist_k=RUNTIME_SHORTLIST_K,
+                    )
+                uids, _, actor_mask, requested, gates, proposals = details[:6]
+                shortlists = details[-1]
+                before = {
+                    int(uid): {
+                        "uid": int(uid),
+                        "time": float(env.now),
+                        "phase": env.active[int(uid)].phase.value,
+                        "soc": float(env.active[int(uid)].soc),
+                        "actor_mask": bool(actor_mask[index]),
+                        "gate": int(gates[index]),
+                        "proposal": None if int(proposals[index]) < 0 else int(proposals[index]),
+                        "requested_action": _jsonable(requested.get(uid, requested.get(str(uid), {}))),
+                    }
+                    for index, uid in enumerate(uids)
                 }
-                for index, uid in enumerate(uids)
-            }
-            for index, uid in enumerate(uids):
-                if bool(actor_mask[index]):
-                    actor_decisions += 1
-                    if int(gates[index]) == 0:
-                        wait_decisions += 1
-                        decision_counts["WAIT"] += 1
-                    else:
-                        release_decisions += 1
-                        decision_counts["RELEASE"] += 1
-            try:
-                following, _, _, _, info = env.step(requested, shortlists)
-            except SafetyInvariantError as exc:
-                safety_error = str(exc)
-                steps += 1
-                for row in before.values():
+                for index, uid in enumerate(uids):
+                    if bool(actor_mask[index]):
+                        actor_decisions += 1
+                        if int(gates[index]) == 0:
+                            wait_decisions += 1
+                            decision_counts["WAIT"] += 1
+                        else:
+                            release_decisions += 1
+                            decision_counts["RELEASE"] += 1
+                selected_probe_times = tuple(float(value) for value in probe_times)
+                if (
+                    controller == "trained"
+                    and selected_probe_times
+                    and any(
+                        math.isclose(float(env.now), value, rel_tol=0.0, abs_tol=1e-6)
+                        for value in selected_probe_times
+                    )
+                ):
+                    for probe_row in _shadow_probe_rows(
+                        env,
+                        time_value=float(env.now),
+                        uids=uids,
+                        actor_mask=actor_mask,
+                        gates=gates,
+                        proposals=proposals,
+                        requested=requested,
+                        shortlists=shortlists,
+                    ):
+                        shadow_handle.write(json.dumps(_jsonable(probe_row), sort_keys=True) + "\n")
+                    shadow_handle.flush()
+                try:
+                    following, _, _, _, info = env.step(requested, shortlists)
+                except SafetyInvariantError as exc:
+                    safety_error = str(exc)
+                    steps += 1
+                    for row in before.values():
+                        row.update({
+                            "step": steps - 1,
+                            "action_trace": None,
+                            "release_decision": None,
+                            "release_telemetry": None,
+                            "current_telemetry": _jsonable(env.telemetry),
+                            "veto": None,
+                            "status": "safety_invariant_error",
+                        })
+                        handle.write(json.dumps(_jsonable(row), sort_keys=True) + "\n")
+                    handle.flush()
+                    break
+                traces = info.get("action_traces", {})
+                decisions = info.get("release_decisions", {})
+                release_telemetry = info.get("release_intent_telemetry", {})
+                current_telemetry = info.get("telemetry", dict(env.telemetry))
+                for uid, row in before.items():
+                    trace = traces.get(str(uid), traces.get(uid, {}))
+                    decision = decisions.get(str(uid), decisions.get(uid))
+                    telemetry = release_telemetry.get(str(uid), release_telemetry.get(uid, {}))
+                    if trace.get("teacher_used"):
+                        raise DiagnosticInputError("diagnostic trace unexpectedly used Teacher")
+                    trace_requested = trace.get("requested_low_action")
+                    if trace_requested is not None and not np.array_equal(
+                        np.asarray(row["requested_action"], dtype=float),
+                        np.asarray(trace_requested, dtype=float),
+                    ):
+                        raise DiagnosticInputError(
+                            f"requested action trace mismatch for uid={uid}"
+                        )
+                    veto = _release_veto(decision, trace, telemetry)
+                    release_vetoes += int(veto["vetoed"])
                     row.update({
-                        "step": steps - 1,
-                        "action_trace": None,
-                        "release_decision": None,
-                        "release_telemetry": None,
-                        "current_telemetry": _jsonable(env.telemetry),
-                        "veto": None,
-                        "status": "safety_invariant_error",
+                        "step": steps,
+                        "action_trace": trace,
+                        "release_decision": decision,
+                        "release_telemetry": telemetry,
+                        "current_telemetry": current_telemetry,
+                        "veto": veto,
+                        "status": "observed",
                     })
                     handle.write(json.dumps(_jsonable(row), sort_keys=True) + "\n")
-                break
-            traces = info.get("action_traces", {})
-            decisions = info.get("release_decisions", {})
-            release_telemetry = info.get("release_intent_telemetry", {})
-            current_telemetry = info.get("telemetry", dict(env.telemetry))
-            for uid, row in before.items():
-                trace = traces.get(str(uid), traces.get(uid, {}))
-                decision = decisions.get(str(uid), decisions.get(uid))
-                telemetry = release_telemetry.get(str(uid), release_telemetry.get(uid, {}))
-                if trace.get("teacher_used"):
-                    raise DiagnosticInputError("diagnostic trace unexpectedly used Teacher")
-                trace_requested = trace.get("requested_low_action")
-                if trace_requested is not None and not np.array_equal(
-                    np.asarray(row["requested_action"], dtype=float),
-                    np.asarray(trace_requested, dtype=float),
-                ):
-                    raise DiagnosticInputError(
-                        f"requested action trace mismatch for uid={uid}"
-                    )
-                veto = _release_veto(decision, trace, telemetry)
-                release_vetoes += int(veto["vetoed"])
-                row.update({
-                    "step": steps,
-                    "action_trace": trace,
-                    "release_decision": decision,
-                    "release_telemetry": telemetry,
-                    "current_telemetry": current_telemetry,
-                    "veto": veto,
-                    "status": "observed",
-                })
-                handle.write(json.dumps(_jsonable(row), sort_keys=True) + "\n")
-            handle.flush()
-            steps += 1
-            observations = following
-            terminal = _terminal(env)
-            if steps % 25 == 0 or terminal:
-                _write_json_atomic(progress_path, _progress_payload(
-                    env, step=steps, wall_elapsed=time.perf_counter() - started,
-                    safety_error=safety_error, decision_counts=decision_counts,
-                ))
+                handle.flush()
+                steps += 1
+                observations = following
+                terminal = _terminal(env)
+                if steps % 25 == 0 or terminal:
+                    _write_json_atomic(progress_path, _progress_payload(
+                        env, step=steps, wall_elapsed=time.perf_counter() - started,
+                        safety_error=safety_error, decision_counts=decision_counts,
+                    ))
     terminal = _terminal(env)
     _write_json_atomic(progress_path, _progress_payload(
         env, step=steps, wall_elapsed=time.perf_counter() - started,
@@ -617,19 +886,40 @@ def run_rollout(
         "actor_steps_path": str(steps_path),
         "simulation_wall_time_seconds": float(time.perf_counter() - started),
     }
-    weight_digest_after = _policy_weight_digest(policy)
+    weight_digest_after = None
+    if policy is not None and weight_digest_before is not None:
+        weight_digest_after = _policy_weight_digest(policy)
     summary.update({
         "weight_digest_before": weight_digest_before,
         "weight_digest_after": weight_digest_after,
-        "weight_digest_unchanged": weight_digest_before == weight_digest_after,
+        "weight_digest_unchanged": (
+            None if weight_digest_before is None else weight_digest_before == weight_digest_after
+        ),
+        "controller": controller,
+        "neural_policy_used": controller == "trained",
+        "probe_times": [float(value) for value in probe_times],
+        "shadow_probes_path": str(shadow_probes_path),
+        "shadow_probe_labels_written": False,
     })
     with steps_path.open("r", encoding="utf-8") as read_handle:
         summary["action_rows"] = sum(1 for _ in read_handle)
+    shadow_rows: list[dict[str, Any]] = []
+    with shadow_probes_path.open("r", encoding="utf-8") as read_handle:
+        for line in read_handle:
+            if line.strip():
+                shadow_rows.append(json.loads(line))
+    summary.update({
+        "shadow_probe_rows": int(len(shadow_rows)),
+        "shadow_approved_witnesses": int(sum(bool(row.get("approved_witness")) for row in shadow_rows)),
+        "shadow_original_state_unchanged_rows": int(sum(bool(row.get("original_state_unchanged")) for row in shadow_rows)),
+    })
     _write_json_atomic(output / "summary.json", summary)
     return summary
 
 
-def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int) -> dict[str, Any]:
+def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int,
+        controller: str = "trained", probe_times: tuple[float, ...] = DEFAULT_PROBE_TIMES) -> dict[str, Any]:
+    controller = _validate_controller(controller)
     config = build_dense30_config()
     policy, checkpoint_info = load_trained_checkpoint(checkpoint, config)
     return run_rollout(
@@ -639,7 +929,24 @@ def run(*, checkpoint: str | Path, output: str | Path, seed: int, max_steps: int
         seed=seed,
         max_steps=max_steps,
         checkpoint_info=checkpoint_info,
+        controller=controller,
+        probe_times=probe_times,
     )
+
+
+def _parse_probe_times(value: str) -> tuple[float, ...]:
+    if not value.strip():
+        return DEFAULT_PROBE_TIMES
+    parsed: list[float] = []
+    for item in value.split(","):
+        try:
+            time_value = float(item.strip())
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"invalid probe time: {item!r}") from exc
+        if not math.isfinite(time_value) or time_value < 0.0:
+            raise argparse.ArgumentTypeError(f"probe times must be finite and non-negative: {item!r}")
+        parsed.append(time_value)
+    return tuple(parsed)
 
 
 def main() -> None:
@@ -649,12 +956,17 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-steps", type=int, required=True)
+    parser.add_argument("--controller", choices=CONTROLLERS, default="trained")
+    parser.add_argument("--probe-times", type=_parse_probe_times, default=DEFAULT_PROBE_TIMES,
+                        help="comma-separated simulation times for trained-controller shadow probes")
     args = parser.parse_args()
     result = run(
         checkpoint=args.checkpoint,
         output=args.output,
         seed=args.seed,
         max_steps=args.max_steps,
+        controller=args.controller,
+        probe_times=args.probe_times,
     )
     print(json.dumps(_jsonable(result), indent=2, sort_keys=True), flush=True)
 
