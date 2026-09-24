@@ -46,6 +46,8 @@ class TrajectoryPlan:
     reservation_ids: tuple[str, ...] = field(default_factory=tuple)
     metadata: dict = field(default_factory=dict)
     _trajectory_hash: str = field(init=False, repr=False)
+    _sample_node_times: np.ndarray = field(init=False, repr=False, compare=False)
+    _sample_node_positions: np.ndarray = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "points", tuple(self.points))
@@ -60,6 +62,12 @@ class TrajectoryPlan:
         # diagnostic plans constructed directly rather than by the generator.
         self.metadata.setdefault("vehicle_profile_id", "research_evtol")
         self.metadata.setdefault("vehicle_profile_version", "eh216s_research_v1")
+        sample_node_times = np.asarray([point.t for point in self.points], dtype=float)
+        sample_node_times.setflags(write=False)
+        sample_node_positions = np.asarray([point.position for point in self.points], dtype=float)
+        sample_node_positions.setflags(write=False)
+        object.__setattr__(self, "_sample_node_times", sample_node_times)
+        object.__setattr__(self, "_sample_node_positions", sample_node_positions)
         payload = [(round(point.t, 8), np.round(point.position, 8).tolist(), np.round(point.velocity, 8).tolist(),
                     np.round(point.acceleration, 8).tolist(), point.yaw, point.yaw_rate) for point in self.points]
         object.__setattr__(self, "_trajectory_hash", hashlib.sha256(json.dumps(payload, separators=(",", ":"), default=float).encode("utf-8")).hexdigest())
@@ -112,6 +120,36 @@ class TrajectoryPlan:
         fraction = (now - left.t) / (right.t - left.t)
         return left.position + fraction * (right.position - left.position)
 
+    def sample_positions(self, times: np.ndarray | list[float] | tuple[float, ...]) -> np.ndarray:
+        """Interpolate positions for an ordered or unordered batch of times.
+
+        The endpoint handling and piecewise-linear interpolation formula are
+        the same as :meth:`sample_position`; only the node lookup and the
+        arithmetic are performed in one NumPy pass.  A scalar input returns a
+        three-element position, while an array input appends a final position
+        axis to its shape.
+        """
+        values = np.asarray(times, dtype=float)
+        flat_values = values.reshape(-1)
+        result = np.empty((flat_values.size, 3), dtype=float)
+        before = flat_values <= self.start_time
+        after = flat_values >= self.end_time
+        interior = ~(before | after)
+        if np.any(before):
+            result[before] = self._sample_node_positions[0]
+        if np.any(after):
+            result[after] = self._sample_node_positions[-1]
+        if np.any(interior):
+            interior_values = flat_values[interior]
+            right_indices = np.searchsorted(self._sample_node_times, interior_values, side="right")
+            left_indices = right_indices - 1
+            fractions = ((interior_values - self._sample_node_times[left_indices]) /
+                         (self._sample_node_times[right_indices] - self._sample_node_times[left_indices]))
+            left_positions = self._sample_node_positions[left_indices]
+            right_positions = self._sample_node_positions[right_indices]
+            result[interior] = left_positions + fractions[:, None] * (right_positions - left_positions)
+        return result.reshape(values.shape + (3,))
+
 
 class TrajectoryGenerator:
     def __init__(self, config) -> None:
@@ -157,6 +195,21 @@ class TrajectoryGenerator:
             acceleration = tangent * ((speed - previous_speed) / step) + radial * (speed * speed / radius)
             points.append(TrajectoryPoint(start + index * step, position, tangent * speed, acceleration))
         return points
+
+    def _ring_hold_endpoint(self, ring, theta: float, current_speed: float, target_speed: float,
+                            duration: float) -> tuple[np.ndarray, np.ndarray]:
+        """Return the exact endpoint state of :meth:`ring_hold_points` without allocating its prefix."""
+        samples = max(2, int(math.ceil(duration / self.config.physics_dt)) + 1)
+        step = duration / (samples - 1)
+        speed = max(0.0, current_speed)
+        angle = theta
+        radius = float(ring.radius)
+        for _ in range(1, samples):
+            previous_speed = speed
+            speed = self.dynamics.limited_tangential_speed(previous_speed, target_speed, radius, step)
+            angle += .5 * (previous_speed + speed) * step / radius
+        tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0), dtype=float)
+        return self._ring_position(ring, angle), tangent * speed
 
     def inbound(self, uav, gate, airspace, now: float) -> TrajectoryPlan:
         ring = airspace.actual_ring(RingRole.OUTER)
@@ -290,10 +343,13 @@ class TrajectoryGenerator:
         transfer_path, geometry_repaired = self._transfer_path(p0, p3, source_tangent, target_tangent)
 
         def executable_transfer(moment):
-            held = self.ring_hold_points(source_ring, initial_theta, uav.speed,
-                                         transfer_entry_speed, now, moment - now) if moment > now + 1e-9 else []
-            start_position = held[-1].position if held else current
-            velocity = held[-1].velocity if held else uav.velocity
+            if moment > now + 1e-9:
+                start_position, velocity = self._ring_hold_endpoint(
+                    source_ring, initial_theta, uav.speed, transfer_entry_speed, moment - now,
+                )
+            else:
+                start_position = current
+                velocity = uav.velocity
             angle = math.atan2(start_position[1], start_position[0])
             tangent = np.asarray((-math.sin(angle), math.cos(angle), 0.0))
             path, repaired = self._transfer_path(start_position, p3, tangent, target_tangent)
@@ -301,7 +357,7 @@ class TrajectoryGenerator:
                 initial_velocity=velocity,
                 target_horizontal_speed=max(float(np.linalg.norm(velocity)), target_speed),
                 constraints=TrajectoryConstraints(end_horizontal_speed=target_speed, tangent_yaw=False))
-            return held[:-1], result, tangent, velocity, repaired
+            return result, tangent, velocity, repaired
 
         if geometry_repaired:
             # The forward curve changes its feasible entry speed and departure.
@@ -318,12 +374,18 @@ class TrajectoryGenerator:
                     continue
                 if chosen is None:
                     chosen = (float(moment), candidate)
-                if candidate[1][-1].t <= reservation.merge_time + 1e-6:
+                if candidate[0][-1].t <= reservation.merge_time + 1e-6:
                     chosen = (float(moment), candidate)
                     break
             if chosen is None:
                 raise RuntimeError("could not time-parameterize a dynamically feasible transfer")
-            departure, (points, transfer_points, source_tangent, velocity, geometry_repaired) = chosen
+            departure, (transfer_points, source_tangent, velocity, geometry_repaired) = chosen
+            if departure > now + 1e-9:
+                held = self.ring_hold_points(source_ring, initial_theta, uav.speed,
+                                             transfer_entry_speed, now, departure - now)
+                points = held[:-1]
+            else:
+                points = []
             transfer_uav = type("State", (), {"uid": uav.uid, "velocity": velocity})()
         else:
             transfer_points = self.parameterizer.parameterize(transfer_path, start_time=departure,

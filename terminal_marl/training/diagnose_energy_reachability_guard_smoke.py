@@ -119,6 +119,7 @@ def build_config(
     mixed_arrival_interval_seconds: float = 8.0,
     final_approach_geometry_mode: str = "brake_bezier_v1",
     release_arbitration_mode: str = "downstream_priority",
+    reconcile_late_merge_slots_enabled: bool = False,
 ) -> SimConfig:
     """Construct the fixed V4.2 / V2.3 smoke scenario."""
 
@@ -181,6 +182,7 @@ def build_config(
         emergency_landing_enabled=True,
         emergency_priority_guard_enabled=True,
         energy_reachability_guard_enabled=bool(route_guard_enabled),
+        reconcile_late_merge_slots_enabled=bool(reconcile_late_merge_slots_enabled),
         emergency_trigger_soc=0.40,
         emergency_energy_margin_seconds=15.0,
         lz_assignment_mode="nearest_available",
@@ -217,6 +219,9 @@ def _config_summary(
         "neighbor_comm_range_m": float(config.neighbor_comm_range_m),
         "energy_model_mode": config.energy_model_mode,
         "final_approach_geometry_mode": config.final_approach_geometry_mode,
+        "reconcile_late_merge_slots_enabled": bool(
+            config.reconcile_late_merge_slots_enabled
+        ),
         "release_arbitration_mode": config.release_arbitration_mode,
         "reset_mode": config.reset_mode,
         "warm_start_uavs": int(config.warm_start_uavs),
@@ -269,6 +274,7 @@ def run_smoke(
     mixed_arrival_interval_seconds: float = 8.0,
     final_approach_geometry_mode: str = "brake_bezier_v1",
     release_arbitration_mode: str = "downstream_priority",
+    reconcile_late_merge_slots_enabled: bool = False,
 ) -> dict[str, Any]:
     """Run a bounded environment smoke and return one JSON record."""
 
@@ -297,6 +303,7 @@ def run_smoke(
         mixed_arrival_interval_seconds=mixed_arrival_interval_seconds,
         final_approach_geometry_mode=final_approach_geometry_mode,
         release_arbitration_mode=release_arbitration_mode,
+        reconcile_late_merge_slots_enabled=reconcile_late_merge_slots_enabled,
     )
     started = time.perf_counter()
     env = TerminalParallelEnv(config)
@@ -529,6 +536,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="downstream_priority",
         help="Center-side release arbitration order used by the diagnostic environment.",
     )
+    parser.add_argument(
+        "--reconcile-late-merge-slots",
+        action="store_true",
+        dest="reconcile_late_merge_slots_enabled",
+        help="Enable opt-in reconciliation of late canonical ring-transfer slots.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     result = run_smoke(
@@ -545,6 +558,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         mixed_arrival_interval_seconds=args.mixed_arrival_interval_seconds,
         final_approach_geometry_mode=args.final_approach_geometry_mode,
         release_arbitration_mode=args.release_arbitration_mode,
+        reconcile_late_merge_slots_enabled=bool(args.reconcile_late_merge_slots_enabled),
     )
     print(json.dumps({
         "output": str(args.output),

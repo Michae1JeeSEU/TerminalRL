@@ -115,13 +115,19 @@ class TrajectoryTimeParameterizer:
         limits = np.minimum(limits, profile.max_horizontal_speed / np.maximum(horizontal_factor, 1e-9))
         limits = np.minimum(limits, profile.max_climb_rate / np.maximum(vertical_factor, 1e-9))
         limits = np.minimum(limits, profile.max_descent_rate / np.maximum(vertical_factor, 1e-9))
-        for index, value in enumerate(curvature):
-            # Leave a tangential-acceleration margin; curvature consumes the
-            # remainder of the same finite horizontal acceleration envelope.
-            horizontal_limit = math.sqrt(.8 * self.dynamics.profile.max_lateral_accel / max(value, 1e-12))
-            if constraints.tangent_yaw:
+        # Leave a tangential-acceleration margin; curvature consumes the
+        # remainder of the same finite horizontal acceleration envelope.  The
+        # tangent-yaw branch still calls the dynamics helper per sample because
+        # it adds the yaw-rate bound.  The ordinary branch has only the scalar
+        # curvature envelope and can be evaluated in one NumPy pass.
+        if constraints.tangent_yaw:
+            for index, value in enumerate(curvature):
+                horizontal_limit = math.sqrt(.8 * profile.max_lateral_accel / max(value, 1e-12))
                 horizontal_limit = min(horizontal_limit, self.dynamics.max_feasible_speed_for_curvature(value, tangent_yaw=True))
-            limits[index] = min(limits[index], horizontal_limit / max(horizontal_factor[index], 1e-9))
+                limits[index] = min(limits[index], horizontal_limit / max(horizontal_factor[index], 1e-9))
+        else:
+            horizontal_limits = np.sqrt(.8 * profile.max_lateral_accel / np.maximum(curvature, 1e-12))
+            limits = np.minimum(limits, horizontal_limits / np.maximum(horizontal_factor, 1e-9))
         requested_path_speed = max(0.1, target_horizontal_speed / max(horizontal_factor.mean(), 1e-9))
         limits = np.minimum(limits, requested_path_speed)
         speeds = limits.copy()
@@ -143,21 +149,23 @@ class TrajectoryTimeParameterizer:
             times = [float(start_time)]
             for distance, first, second in zip(segments, speeds, speeds[1:]):
                 times.append(times[-1] + 2.0 * float(distance) / max(first + second, 1e-6))
+            times_array = np.asarray(times, dtype=float)
             velocities = tangents * speeds[:, None]
             velocities[0] = np.asarray(initial_velocity, dtype=float)
-            accelerations = np.zeros_like(velocities)
-            for index in range(1, len(points)):
-                accelerations[index] = (velocities[index] - velocities[index - 1]) / (times[index] - times[index - 1])
-            if len(points) > 1:
-                accelerations[0] = accelerations[1]
             yaw_rates = np.zeros(len(points))
             if constraints.tangent_yaw:
-                yaw_rates[1:] = np.diff(yaw) / np.diff(times)
+                yaw_rates[1:] = np.diff(yaw) / np.diff(times_array)
                 yaw_rates[0] = yaw_rates[1]
             if self.dynamics.samples_are_feasible(
-                np.asarray(times, dtype=float), points, velocities,
+                times_array, points, velocities,
                 None if not constraints.tangent_yaw else yaw_rates,
             ):
+                # Acceleration is part of the returned executable point but
+                # is not needed by the feasibility predicate.  Construct it
+                # only for the first passing refinement.
+                accelerations = np.empty_like(velocities)
+                accelerations[1:] = np.diff(velocities, axis=0) / np.diff(times_array)[:, None]
+                accelerations[0] = accelerations[1]
                 return [TrajectoryPoint(float(time), point, velocity, acceleration,
                                         None if not constraints.tangent_yaw else float(angle),
                                         None if not constraints.tangent_yaw else float(rate))

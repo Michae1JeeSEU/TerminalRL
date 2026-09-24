@@ -61,6 +61,10 @@ class SimConfig:
     # for dense inner-ring flow; it reuses the certified emergency corridor
     # geometry while retaining normal final-approach semantics.
     final_approach_geometry_mode: str = "brake_bezier_v1"
+    # Opt-in diagnostic repair for ring transfers whose generated endpoint is
+    # later than the initially requested merge slot.  Historical runs retain
+    # the original fail-closed behavior when disabled.
+    reconcile_late_merge_slots_enabled: bool = False
     max_simulation_seconds: float = 3600.0
     max_active_uavs: int = 60
     # Source-bound V2.3 uses an explicit finite communication neighborhood for

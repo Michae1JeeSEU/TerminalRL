@@ -527,6 +527,18 @@ commit
 
 Rule baseline 的 `t_base` 根据 earliest headway-safe time、queue order、priority adjustment 得到。RL 的 `Δt` 只能在有限窗口内修正 baseline，不能绕过 headway。
 
+若 target ring 只有一个 holder，target gap 取该 holder 预测位置的对径点
+（antipode）；target ring 无 holder 或存在多个 holder 时保持既有 gap 语义不变。
+该 gap 选择仍必须经过完整 trajectory generation、energy/dynamics 与
+SafetyFilter certification。
+
+`reconcile_late_merge_slots_enabled` 默认关闭。该 opt-in operational scheduling variant
+只在 scheduler 完成 headway/reservation 检查后，为 late ring-transfer 重新分配实际结束
+时隙，并在 plan metadata 中保留原始 requested time 与 lateness。重新分配后
+仍执行完整 energy、dynamics 和 SafetyFilter certification。它不改变 trajectory geometry、
+proposal shortlist 或策略接口，也不启用 PPO。该 exploratory variant 已在 fresh `.55–.90`
+late-slot pairs 中评估，aggregate `zero_energy_failure` 未通过，未晋级；默认仍为 `false`。
+
 ---
 
 ## 11. CanonicalTrajectoryGenerator
@@ -610,6 +622,10 @@ inner release
 ### 11.6 Execution
 
 环境每步从当前 committed plan 采样下一状态。不得让 VTAC 再独立计算另一套 transfer curve。
+
+实现可以使用 batch position interpolation 和 deferred waiting-prefix materialization
+减少重复计算，但必须保留原 sampling grids、trajectory checks 与 certification 顺序；
+这些是 behavior-preserving 的计算优化，不改变 trajectory geometry 或仿真步语义。
 
 ---
 

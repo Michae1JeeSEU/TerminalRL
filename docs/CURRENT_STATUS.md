@@ -4,9 +4,38 @@
 >
 > **代码快照**：在历史基线 `768b375` 上已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更；本轮提交见 Git 历史。Git 无 remote，未 push。
 >
-> **当前阶段**：Phase A / A5。P3 V4 正式 PPO 仍为 0 次更新；历史 seed `828001` 第 533 秒的 `SafetyInvariantError` 不被追溯改写。当前 MDP 的 P3 high-SOC formal all-complete gate 已失败；low-SOC stress 已完成并通过其完整性、安全与 replay gates，完成率和低 SOC 分流仍为报告结果。已完成 RESERVED LZ release ETA 生命周期修复，定向测试 `29 passed`；单机 `phase_motion_v2` 应急可达性预检生成并通过 SafetyFilter 认证 `36` 个 `3 rings × 4 angles × 6 LZ` 样本，但不含拥堵或时隙，不替代 formal qualification。当前 opt-in V2.3 source-bound 88D/320 m、warm-start solo SOC check、admission pad-ETA budget 与 candidate route/等待/reserve/margin budget 均已接入诊断链；SafetyFilter 仍保持原 `80/40/10 m`，fallback future route 尚未作未来安全认证。2026-09-24 exploratory guard 配对均 `failed_energy=0`、安全事件为0，但 route 检查没有改善终态；所有结果仍为 exploratory，`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
+> **当前阶段**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
+
+**2026-09-24 综合结论（密度、late-slot 与性能）：** fresh fixed-rule、SOC `.75` 的六个密度
+cell 已完整结束：12 机为 `24/24 normal`，20 机为 `37 normal + 3 emergency / 40`，30 机为
+`46 normal + 14 emergency / 60`；六个 cell 均 `failed_energy=0`，并且
+`safety_error`、`hard_separation_violations`、NMAC、collision、`shield_fail_closed`、
+`joint_safety_fail_closed` 均为零。这些是 fixed-rule exploratory 结果，不建立普适空域容量上限，
+也不建立零失败保证。当前证据显示静态环容量不等于 deadline service capacity；在该混合需求设置中，
+输入间隔 `8 s` 小于 final headway `12 s`，若持续则会形成持续过载；此前 mixed 场景的有限 `18` 架 burst 只观察到
+transient accumulation，不构成有限批次不可行定理。已有 future fallback energy budget
+不是 future trajectory safety certificate；在没有经过完整认证的可行替代路径前，不能据此宣称
+SafetyFilter 安全阈值过严。详见 [density efficiency evidence](evidence/v4_2/density_efficiency_20260924.md)。
+
+原始 `.55–.90` fresh late-slot 配对的 off/on 聚合分别为 `36 normal + 19 emergency + 5 failed-energy`
+与 `32 normal + 24 emergency + 4 failed-energy`；on 模式的 normal completion 下降、emergency 上升，
+且 `zero_energy_failure` 仍未通过，因此 late-slot 变体未晋级，默认保持
+`reconcile_late_merge_slots_enabled=false`。性能链四个 100-step prefix 的同语义比较为
+`28.607→23.053 s` 与 `28.875→23.501 s`，即 `19.4%/18.6%` wall-time 降低；它们仍是未完成
+`29` 架请求的 prefix diagnostic，不能作为 qualification 或容量结论，实际 GUI 也尚未视觉验收。
+详见 [trajectory-chain performance evidence](evidence/v4_2/trajectory_chain_performance_20260924.md)。
+
+singleton target-gap 修复已将同 holder point 的零 gap 改为 antipode gap；`35` 个 singleton
+定向测试和本轮 combined regression 的 `103 passed` 均已完成。fresh `.55–.90` paired full cells
+中，seed `841301` 的 fixed/legacy 分别为 `18 normal + 8 emergency + 4 failed-energy` 与
+`12/13/5`，seed `841302` 分别为 `14/9/7` 与 `14/10/6`；聚合为 fixed
+`32/17/11`、legacy `26/23/11`。该结果是描述性 paired evidence：保留几何正确性修复，aggregate
+failed-energy 未减少且一个 seed 结果更差，不能宣称 zero-energy 已解决或进入 qualification。
+该四-cell 证据使用 SOC `.55–.90`，不把固定 SOC `.75` density baseline 作为 singleton 修复验证。
+详见 [single-holder gap evidence](evidence/v4_2/single_holder_gap_20260924.md)。保持
+`PPO_ALLOWED=false`。
 
 **最新前置观测（2026-09-24，runtime timing reconciliation）：** 只读 timing audit 显示，all-warm
 seed `840626` 前 `200` steps 有 `21` 次 approved ring transfer，其中 `20/21` 的 `|end-slot|` 超过
@@ -19,7 +48,7 @@ product viewer 20-step offscreen benchmark 为 headless `2.918 steps/s`、proces
 排除 `1.63 s` startup 后 slowdown `3.37%`，`12.01 fps`，p95 gap `0.192 s`，测试 `22 passed`；
 该结果不能替代 GUI 主观验收。CPU profile 的 20-step 总耗时为 `13.18 s`，`ring_transfer` cumulative
 `5.912 s`、runtime protect `3.086 s`、SafetyFilter `1.890 s`；profile 调用嵌套，数值不可相加。
-timing reconciliation fix 仍在进行且尚未验证，`PPO_ALLOWED=false`。
+timing reconciliation fix 已完成并通过 focused integration 与 actual slot audit；`PPO_ALLOWED=false`。
 
 **最新 merge-slot reconciliation 回归（2026-09-24）：** `MergeScheduler` 现将 ring-transfer slot
 对齐到 `plan.end_time`，将 final slot 对齐到已验证的 `scheduled_departure`；integration tests 为
@@ -30,8 +59,8 @@ all-warm `840626` full-cycle 为 `17 normal + 10 emergency + 3 failed-energy`（
 `18 normal + 12 emergency + 0 failed-energy`（step `910`，最小实际/扫掠 `80.00062/80.00062 m`，
 壁钟 `42.690 s`，`61` approvals）；两者 safety events 均为 `0`。相较此前 all-warm `20/8/2`、
 mixed `23/6/1`，该修正改善了 slot timing 的安全与一致性观测，但 throughput/emergency gate 仍未
-通过，不能作为 qualification 或训练授权；`PPO_ALLOWED=false`。SOC arbitration pilot 仍在进行，
-尚未验证。
+通过，不能作为 qualification 或训练授权；`PPO_ALLOWED=false`。SOC arbitration pilot 已完成，
+但 `zero_energy_failure` 未通过，未晋级默认模式。
 
 **最新 SOC-priority opt-in pilot（2026-09-24）：** `downstream_soc_priority` 保持 downstream ring
 precedence，并在同一优先级内按自身 SOC 升序排序；不改变 observation 维度，默认仍为
@@ -541,15 +570,19 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-**2026-09-24 当前顺序：** 30 机 continuous final/LZ exploratory full-cycle 仍未通过
-`zero_energy_failure` hard gate；`PPO_ALLOWED=false`。下一步继续量化 merge-slot shortfall，并完成
-coordinated emergency corridor 的安全认证，或建立可执行的 safe admission envelope。当前扫描因
-reservation/trajectory timing 不一致，不能作为可执行安全合流时隙证书。不得将当前问题标记为单纯
-LZ 数量不足，也不得放宽现有 SafetyFilter 阈值。完成该前置后再冻结 fresh dense30
-normal/stress protocol，协议须保持 `failed_energy=0` 与安全事件为零的 hard gates，并分别报告
-measurable normal completions 与 emergency outcomes。实际 GUI 尚未视觉验收；Windows 早期
-`2.21 steps/s` 不代表 30 架全并发速率。在上述前置条件完成前不推进低层课程，也不以 12 机课程
-替代 30 机前置验证。
+**2026-09-24 当前顺序（更新）：** merge-slot timing reconciliation 已完成，mixed30 prefix audit
+为 `29/29` exact slot delta `0`；fresh fixed-rule density six-cell 也已完成，但它只提供 exploratory
+capacity/incident observations，不能建立普适容量或零失败保证。late-slot reconciliation 已完成
+fresh `.55–.90` 配对评估但 `zero_energy_failure` 未通过，未晋级，默认保持
+`reconcile_late_merge_slots_enabled=false`。singleton target-gap 修复已完成 `35` 个定向测试，
+本轮 combined regression 为 `103 passed`；四-cell paired evidence 保留几何正确性修复，但 aggregate
+failed-energy 未减少且一个 seed 结果更差，不能宣称 zero-energy 已解决或进入 qualification，详见
+[single-holder gap evidence](evidence/v4_2/single_holder_gap_20260924.md)。下一步仅允许在 fresh seeds
+预注册后开展 traffic-aware full executable fallback/admission reserve certificate：包括 low-SOC
+commitment、coordinated emergency corridor，以及覆盖等待、切环、应急与 LZ 占用的完整未来轨迹
+SafetyFilter 证书；不得把 future energy budget 当作未来安全证书，也不得放宽 `80/40/10 m` 安全阈值。
+当前 30 机 low-SOC initial condition 仍未 qualification。性能四个 100-step prefix 仍不是 qualification，
+实际 GUI 尚未视觉验收；保持 `PPO_ALLOWED=false`，不推进低层课程或 PPO。
 
 **2026-09-23 当前顺序：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 

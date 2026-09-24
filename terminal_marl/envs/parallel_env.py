@@ -795,24 +795,44 @@ class TerminalParallelEnv:
             self.telemetry["repair_candidates_checked"] += 1
             self.telemetry["trajectory_infeasible_candidates"] += 1
             return proposal, None, "trajectory_infeasible"
-        committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         self.telemetry["repair_candidates_checked"] += 1
+        slot_reconciled = False
+        if (
+            self.config.reconcile_late_merge_slots_enabled
+            and plan.mode == "ring_transfer"
+            and plan.metadata.get("dynamic_unreachable_merge_time")
+        ):
+            requested_merge_time = float(proposal.merge_time)
+            try:
+                actual_merge_time = canonical_plan_slot_time(plan)
+                proposal = self.scheduler.reconcile_proposal(proposal, actual_merge_time)
+            except (TypeError, ValueError) as error:
+                # Keep the generator's unsafe marker on failure so a rejected
+                # candidate cannot be mistaken for an executable late slot.
+                return proposal, plan, str(error)
+            plan.metadata["requested_merge_time"] = requested_merge_time
+            plan.metadata["merge_time"] = float(actual_merge_time)
+            plan.metadata["requested_merge_late_seconds"] = float(actual_merge_time - requested_merge_time)
+            plan.metadata.pop("dynamic_unreachable_merge_time", None)
+            slot_reconciled = True
+        committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         energy_reason = self._candidate_energy_guard_reason(uav, plan, target)
         if energy_reason is not None:
             return proposal, plan, energy_reason
         verdict = self.safety.filter_plan(plan, committed, snapshot)
         if not verdict.approved:
             return proposal, plan, verdict.reason
-        try:
-            actual_time = canonical_plan_slot_time(
-                plan, requested_time=proposal.merge_time,
-            )
-        except ValueError as error:
-            return proposal, plan, str(error)
-        try:
-            proposal = self.scheduler.reconcile_proposal(proposal, actual_time)
-        except ValueError:
-            return proposal, plan, "merge_slot_retime_conflict"
+        if not slot_reconciled:
+            try:
+                actual_time = canonical_plan_slot_time(
+                    plan, requested_time=proposal.merge_time,
+                )
+            except ValueError as error:
+                return proposal, plan, str(error)
+            try:
+                proposal = self.scheduler.reconcile_proposal(proposal, actual_time)
+            except ValueError:
+                return proposal, plan, "merge_slot_retime_conflict"
         return proposal, plan, None
 
     def _teacher_counterfactual_release(self, uav: UAVState, requested: LowLevelIntent) -> tuple[LowLevelIntent | None, str]:

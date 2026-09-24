@@ -498,11 +498,24 @@ class MergeScheduler:
 merge_angle = predicted feasible gap center at merge_time
 ```
 
+若 target ring 只有一个 holder，target gap 取该 holder 预测位置的对径点
+（antipode）；target ring 无 holder 或存在多个 holder 时保持既有 gap 语义不变。
+该 gap 选择仍必须经过完整 trajectory generation、energy/dynamics 与
+SafetyFilter certification。
+
 对 final target：
 
 ```text
 merge geometry = final entry + assigned LZ reservation
 ```
+
+`reconcile_late_merge_slots_enabled` 默认为 `false`。启用时，它只是一个 opt-in
+operational scheduling variant：对已经生成的 ring-transfer，在 scheduler 完成
+headway/reservation 检查后重新分配实际结束时隙；原始 requested merge time 与 lateness
+必须保留在 plan metadata 中。重分配后仍须执行完整的 energy、dynamics 和
+SafetyFilter certification。该开关不改变 trajectory geometry、proposal shortlist 或
+策略接口，也不授权 PPO。该 exploratory variant 已在 fresh `.55–.90` late-slot
+pairs 中评估，aggregate `zero_energy_failure` 未通过，未晋级；默认仍为 `false`。
 
 ---
 
@@ -987,6 +1000,10 @@ safety heading/pitch nudge as primary protection
   只读位置轨迹；`begin_prediction_step()` 必须清空该缓存；
 - 只需要位置的碰撞计算使用 `TrajectoryPlan.sample_position()`；需要速度、加速度或姿态的执行
   路径仍使用完整 `sample()`。
+
+批量 position interpolation 与 deferred waiting-prefix materialization 只用于减少重复
+计算，保持原有 sampling grids、trajectory checks 和 certification 顺序不变；它们不得
+改变轨迹几何、仿真步语义或安全对象集合。
 
 viewer是只读observer，不得反向修改环境或重新定义航迹。实时航迹显示规则为：
 

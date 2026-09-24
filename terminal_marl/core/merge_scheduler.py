@@ -253,7 +253,11 @@ class MergeScheduler:
             phase = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])
             return float(phase + source_ring.nominal_speed * horizon / source_ring.radius) % (2*math.pi)
         horizon = max(0.0, time - snapshot.now)
-        angles=sorted(((u.ring_progress or 0.)+speed*horizon/snapshot.airspace.actual_ring(target).radius)%(2*math.pi) for u in states)
+        target_radius = snapshot.airspace.actual_ring(target).radius
+        if len(states) == 1:
+            predicted = ((states[0].ring_progress or 0.) + speed * horizon / target_radius) % (2 * math.pi)
+            return (predicted + math.pi) % (2 * math.pi)
+        angles=sorted(((u.ring_progress or 0.)+speed*horizon/target_radius)%(2*math.pi) for u in states)
         gaps=[((angles[(i+1)%len(angles)]-a)%(2*math.pi),a) for i,a in enumerate(angles)]
         gap,start=max(gaps); return (start+gap/2)%(2*math.pi)
     def reserve(self,uav,proposal, *, now: float | None = None):

@@ -90,6 +90,49 @@ def test_soc_priority_arbitration_cli_option_is_parsed_and_serialized(tmp_path) 
     assert _config_summary(default, seed=840620, guard_on=False)["release_arbitration_mode"] == "downstream_priority"
 
 
+def test_late_merge_reconciliation_cli_option_is_parsed_and_serialized(tmp_path) -> None:
+    config = build_config(
+        initial_soc_min=0.55,
+        initial_soc_max=0.90,
+        route_guard_enabled=False,
+        max_simulation_seconds=1.0,
+        dense_warm_start_uavs=6,
+        reconcile_late_merge_slots_enabled=True,
+    )
+    assert config.reconcile_late_merge_slots_enabled is True
+    assert _config_summary(config, seed=840620, guard_on=False)[
+        "reconcile_late_merge_slots_enabled"
+    ] is True
+
+    output = tmp_path / "late_merge_reconciliation.json"
+    assert main(
+        [
+            "--seed", "840620",
+            "--initial-soc-min", "0.55",
+            "--initial-soc-max", "0.90",
+            "--max-steps", "1",
+            "--progress-every-steps", "1",
+            "--dense-warm-start-uavs", "6",
+            "--reconcile-late-merge-slots",
+            "--output", str(output),
+        ]
+    ) == 0
+    serialized = json.loads(output.read_text(encoding="utf-8"))
+    assert serialized["config"]["reconcile_late_merge_slots_enabled"] is True
+
+    default = build_config(
+        initial_soc_min=0.55,
+        initial_soc_max=0.90,
+        route_guard_enabled=False,
+        max_simulation_seconds=1.0,
+        dense_warm_start_uavs=6,
+    )
+    assert default.reconcile_late_merge_slots_enabled is False
+    assert _config_summary(default, seed=840620, guard_on=False)[
+        "reconcile_late_merge_slots_enabled"
+    ] is False
+
+
 def test_dense_config_uses_one_simultaneous_schedule_for_all_uavs() -> None:
     config = build_config(
         initial_soc_min=0.55,

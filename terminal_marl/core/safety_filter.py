@@ -112,18 +112,15 @@ class SafetyFilter:
         cached = self._committed_track_cache.get(key)
         if cached is not None:
             return cached
-        positions: list[np.ndarray | None] = [None] * len(times)
-        post_indices = []
-        for index, value in enumerate(times):
-            if value <= plan.end_time + 1e-9:
-                positions[index] = plan.sample_position(float(value))
-            else:
-                post_indices.append(index)
-        if post_indices:
-            post_times = np.asarray([times[index] for index in post_indices], dtype=float)
-            for index, position in zip(post_indices, self._post_plan_positions(plan, snapshot, post_times)):
-                positions[index] = position
-        result = np.asarray(positions, dtype=float)
+        values = np.asarray(times, dtype=float)
+        result = np.empty((len(values), 3), dtype=float)
+        pre_mask = values <= plan.end_time + 1e-9
+        if np.any(pre_mask):
+            result[pre_mask] = plan.sample_positions(values[pre_mask])
+        post_indices = np.flatnonzero(~pre_mask)
+        if len(post_indices):
+            post_times = values[post_indices]
+            result[post_indices] = self._post_plan_positions(plan, snapshot, post_times)
         result.setflags(write=False)
         self._committed_track_cache[key] = result
         return result
@@ -342,7 +339,7 @@ class SafetyFilter:
         # same canonical interpolation for every protected aircraft.
         samples=np.arange(plan.start_time,plan.end_time+1e-9,self.config.safety_sampling_dt)
         if samples[-1] < plan.end_time: samples=np.append(samples,plan.end_time)
-        candidate_positions = np.asarray([plan.sample_position(float(time)) for time in samples], dtype=float)
+        candidate_positions = np.asarray(plan.sample_positions(samples), dtype=float)
         tube_times = None
         tube_positions = None
         committed_tracks = {}
@@ -413,9 +410,7 @@ class SafetyFilter:
                     tube_times = np.arange(plan.start_time, plan.end_time + 1e-9, self.config.physics_dt)
                     if tube_times[-1] < plan.end_time:
                         tube_times = np.append(tube_times, plan.end_time)
-                    tube_positions = np.asarray(
-                        [plan.sample_position(float(time)) for time in tube_times], dtype=float,
-                    )
+                    tube_positions = np.asarray(plan.sample_positions(tube_times), dtype=float)
                 lower, upper = self.holder_reachable_tube(other_uav, snapshot, tube_times)
                 ring = snapshot.airspace.actual_ring(other_uav.ring_role)
                 if np.any(self._tube_point_distances(tube_positions, ring, lower, upper) < self.config.safe_distance):
