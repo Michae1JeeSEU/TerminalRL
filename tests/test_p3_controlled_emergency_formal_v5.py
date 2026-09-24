@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import torch
 
 from terminal_marl.training import (
     run_v4_2_p3_controlled_emergency_formal_v5 as runner,
@@ -59,6 +60,64 @@ def test_formal_config_binds_current_horizons_and_late_slots_off() -> None:
     assert configs["flow12"].max_simulation_seconds == 1570.0
     assert configs["dense24"].max_simulation_seconds == 1800.0
     assert all(not config.reconcile_late_merge_slots_enabled for config in configs.values())
+
+
+def test_save_and_restore_creates_nested_checkpoint_and_roundtrips_real_policy(
+    tmp_path: Path,
+) -> None:
+    protocol = runner.admission.protocol()
+    configs, _ = runner._config_context(protocol)
+    config = configs["flow6"]
+    policy = runner.p3_legacy.TemperatureCalibratedGateResidualAdapterStudentPPOV42(
+        88,
+        temperature=runner.p3_legacy.CALIBRATION_TEMPERATURE,
+        learning_rate=float(protocol["optimizer"]["learning_rate"]),
+    )
+    trainable = tuple(
+        name for name, parameter in policy.model.named_parameters()
+        if name.startswith(runner.p3_legacy.TRAINABLE_PREFIXES)
+    )
+    assert trainable
+    for name, parameter in policy.model.named_parameters():
+        parameter.requires_grad_(name.startswith(runner.p3_legacy.TRAINABLE_PREFIXES))
+    policy.optimizer = torch.optim.Adam(
+        [parameter for parameter in policy.model.parameters() if parameter.requires_grad],
+        lr=float(protocol["optimizer"]["learning_rate"]),
+    )
+    loss = sum(
+        parameter.float().pow(2).mean()
+        for parameter in policy.model.parameters()
+        if parameter.requires_grad
+    )
+    loss.backward()
+    policy.optimizer.step()
+    policy.optimizer.zero_grad(set_to_none=True)
+    assert policy.optimizer.state
+
+    checkpoint = tmp_path / "missing" / "nested" / "checkpoint.pt"
+    assert not checkpoint.parent.exists()
+    restored, exact = runner._save_and_restore(
+        policy,
+        checkpoint,
+        config,
+        protocol,
+        runner._sha256(runner.FORMAL_PROTOCOL),
+        episode_index=1,
+        timestep=7,
+        trainable=trainable,
+    )
+
+    assert checkpoint.is_file()
+    assert exact is True
+    assert runner.admission._state_equal(
+        policy.model.state_dict(), restored.model.state_dict()
+    )
+    assert runner.admission._state_equal(
+        policy.optimizer.state_dict(), restored.optimizer.state_dict()
+    )
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    assert isinstance(payload.get("rng_state"), dict)
+    assert {"torch", "numpy", "python"}.issubset(payload["rng_state"])
 
 
 def test_admission_runtime_bindings_must_match_current_configs() -> None:

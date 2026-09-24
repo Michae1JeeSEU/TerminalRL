@@ -290,6 +290,7 @@ def _rng_state() -> dict[str, Any]:
 def _save_and_restore(policy: Any, checkpoint: Path, config: Any,
                       admission_protocol: Mapping[str, Any], formal_sha: str,
                       *, episode_index: int, timestep: int, trainable: tuple[str, ...]) -> tuple[Any, bool]:
+    checkpoint.parent.mkdir(parents=True, exist_ok=True)
     save_checkpoint(
         checkpoint, policy, config, stage=STAGE, formal=True, development_only=True,
         ppo_called=True,
