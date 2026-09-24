@@ -46,10 +46,18 @@ source/checkpoint identity and output schema before collection.
 
 ## State-only label collection
 
-Collect labels with Teacher label-only execution: the Teacher proposes the
-reference gate but is not executed in the environment. For each UID, query
-when an eligible actor first appears, when its mask changes from non-actor to
-actor, or when its requested gate changes relative to the previous tick.
+Pre-reset amendment: use an external state-only labeler because the
+`SimConfig` rejects the `Teacher enabled + K3` combination; this changes no
+seed, hyperparameter, or environment setting.
+
+Run the environment with its original execution config unchanged:
+`teacher_enabled=false`, K3 preserved, and no `TeacherScheduler`. The
+external labeler sets `teacherlabeler_called=true`, queries a static
+25-proposal plus WAIT directory through the same candidate-certification
+function, and writes labels only to a sidecar; Teacher execution remains off.
+For each UID, query when an eligible actor first appears, when its mask
+changes from non-actor to actor, or when its requested gate changes relative
+to the previous tick.
 Non-actor rows are queried periodically only when `tick % 10 == 0`. A full
 cycle cannot terminate because a label-count target was reached. Compute each
 query label twice and require agreement. The physical/execution state digest
