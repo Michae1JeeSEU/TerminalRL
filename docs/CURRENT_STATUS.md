@@ -30,10 +30,16 @@ server `29` tests PASS，local diagnostic `17` 与 slot `12` PASS，Teacher `12`
 旧 protocol、2026-09-24 日期与 raw root 保持不变；`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、
 `P4_ALLOWED=false`，旧 heldout 保持 untouched。
 
-**当前授权/工作状态（2026-09-25）：** 不采纳 late-ON，默认 late-slot OFF 保持。下一步准备
-修正 labeler 后的 fresh state-only 标签收集与 gate_adapter-only 监督学习开发，proposal head 和
-proposal encoder 冻结；尚未收集新数据或开始训练/资格验证。需先冻结新的 data protocol、seeds、
-上限并完成小样本验证；不放宽既有安全与 P3 gate。
+**当前授权/工作状态（2026-09-25）：** 不采纳 late-ON，默认 late-slot OFF 保持。外置
+state-only labeler 已由 `768b191` 实现，gate_adapter-only 监督训练器已由 `b9f1077` 实现，
+对应 data protocol 为 `56b4c3`；proposal head/encoder 冻结。服务器 smoke `846000` 已以 exit `0`
+完成，`18` 条 actor labels 为 `7 WAIT + 11 RELEASE`，全部为 finite 88D 且 schema 映射正确，
+weights unchanged；服务器指定的 `5` 个模块测试为 `39 PASS`，本地 `44` 个测试属于另一组，
+不合并为同一测试总数。完整 `7` 回合 collection 已启动，输出根为
+`/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925`。启动 wrapper 曾因
+reset 前预建 output 被拒绝，归档为 `launch_failure_train_flow6_846101`；修正独立 `_control` 日志后，
+首个实际 `846101` 回合已运行，不称为重复 seed 实验。当前未 fit、`P3_QUALIFIED=false`、
+`PPO_ALLOWED=false`，原 formal/heldout 保持 untouched；不放宽既有安全与 P3 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3

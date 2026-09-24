@@ -33,10 +33,16 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    三 arm 均 terminal、exit `0`、unresolved `0`，命名安全/失败计数均为零，weights unchanged、
    Teacher/PPO off。`845000` smoke 有效；server `29`、local diagnostic `17`、slot `12`、
    Teacher `12` 分组报告，不合并为单一测试总数。
-4. late-ON 不采纳，default late-slot OFF 保持；forced arms 不作为 trained policy 成果。下一步准备
-   labeler 修正后的 fresh state-only 标签收集与 gate_adapter-only 监督学习开发，proposal head/encoder
-   冻结；尚未收集新数据、训练或资格验证。新 data protocol 需先冻结 seeds/上限并完成小样本验证；
-   旧 formal/heldout 保持 untouched，P3/PPO/P4 仍为 false，不放宽既有 gate。
+4. late-ON 不采纳，default late-slot OFF 保持；forced arms 不作为 trained policy 成果。外置
+   state-only labeler 已由 `768b191` 实现，gate_adapter-only 监督训练器已由 `b9f1077` 实现，
+   对应 data protocol 为 `56b4c3`；proposal head/encoder 冻结。服务器 smoke `846000` exit `0`，
+   已接受 `18` 条 actor labels（`7 WAIT + 11 RELEASE`），全部 finite 88D 且 schema 映射正确、
+   weights unchanged；服务器指定 `5` 个模块测试为 `39 PASS`，本地 `44` 个测试属于另一组，
+   不合并为同一测试总数。完整 `7` 回合 collection 已启动，输出根为
+   `/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925`。启动 wrapper 曾因
+   reset 前预建 output 被拒绝，归档为 `launch_failure_train_flow6_846101`；修正独立 `_control` 日志后，
+   首个实际 `846101` 回合已运行，不称为重复 seed 实验。当前未 fit、`P3_QUALIFIED=false`、
+   `PPO_ALLOWED=false`；旧 formal/heldout 保持 untouched，不放宽既有 gate。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
    证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、
