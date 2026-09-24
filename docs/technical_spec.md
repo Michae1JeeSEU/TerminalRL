@@ -96,7 +96,7 @@ arrival:
   gate_min_time_gap_seconds: 20.0
 
 vehicle:
-  profile: research_evtol/eh216s_research_v1
+  profile: research_evtol/eh216s_research_v2
   safe_distance: 80.0
   nmac_distance: 40.0
   collision_distance: 10.0
@@ -107,7 +107,7 @@ vehicle:
   max_descent_rate: 6.0
 
 energy:
-  model: legacy_phase  # new curriculum explicitly selects phase_motion_v2
+  model: legacy_phase  # phase_motion_v2 is an explicit V2 curriculum opt-in
   capacity_seconds_equivalent: 1500.0
   power_reference: 1.0
   phase_multipliers:
@@ -120,7 +120,7 @@ energy:
   soc_warning: 0.35
   soc_reserve: 0.25
   soc_emergency: 0.20
-  min_landing_soc: 0.25
+  min_landing_soc: 0.10
   emergency_landing_enabled: false
   emergency_trigger_soc: 0.35
   emergency_energy_margin_seconds: 15.0
@@ -356,7 +356,10 @@ class EnergyModel:
 保持当前高度；parameterizer 绑定真实 initial velocity，并将脱环段的 horizontal end speed
 设为 `0`，再连接现有垂直下降 leg 到已预约 LZ。该计划仍需经过原 SafetyFilter，`80/40/10 m`
 安全契约不因 SOC priority 改变。
-`phase_motion_v2` 的 uniform 默认采样仅在未显式设置 `initial_soc_min/max` 时使用 `.4106` 下限，显式 `.35–.55` 仍表示低 SOC stress。
+V2 的 `min_landing_soc=.10` 是用户选定研究 floor；`soc_reserve=.25` 仍是
+queue/admission compatibility threshold，不能互换。`phase_motion_v2` 的 uniform 默认采样仅在
+未显式设置 `initial_soc_min/max` 时使用 `max(.35, .25, .10 + 240.9/1500) = .35`
+下限；显式边界是场景协议覆盖值，不能解释为实测续航保证。
 
 ---
 
@@ -590,7 +593,7 @@ Geometry transition 中：
 3. admission decisions
 4. update geometry transition actual state
 5. update LZ service timers
-6. for eligible low-SOC ring holders, build/reserve/certify fixed emergency trajectory
+6. legacy path: for eligible low-SOC ring holders, build/reserve/certify fixed emergency trajectory
 7. build pre-action world snapshot
 8. map per-agent raw actions → intents
 9. apply action masks / intent safety
@@ -607,6 +610,12 @@ Geometry transition 中：
 20. reward computation
 21. metrics / ledger / observations
 ```
+
+当 `rule_flow_coordination_enabled=true` 时，步骤 6 的 legacy emergency pass 被跳过；
+normal release 先按 coordinated flow 顺序完成，之后才对仍为 uncommitted ring holder 的
+UAV 运行 route-energy/slack emergency pass。该分支不以 `SOC <= emergency_trigger_soc`
+单独接管；实际 emergency route、`.10` landing floor、15 s margin、route-slack window、
+完整 SafetyFilter 和 runtime fail-closed 约束仍必须通过。legacy 路径的硬 SOC 资格门保持兼容。
 
 顺序必须有 integration test，防止 reservation 与 movement 同步错误。
 
@@ -661,7 +670,7 @@ route-energy slack，且不超过一个 M 环周期乘当前 phase power。两�
 holder 预测使用 nominal zero-residual holding domain；安全认证同时检查
 matching point distance 与 `1 s` swept distance。coordinated emergency 路径
 没有硬性的 `SOC <= 0.40` ceiling；它使用实际 emergency route 的 energy
-检查，包含 25% landing reserve 与 15 s emergency margin，并要求 route slack
+检查，包含 `.10` landing floor 与 15 s emergency margin，并要求 route slack
 不超过 `max(29 s, 当前环一周时间) × current ring-phase power`。若排除
 geometry-infeasible 后所有 normal 候选均为 `emergency_energy_guard`，可使用显式
 normal-energy-guard override 绕过这一条 slack urgency limit；实际 emergency route
@@ -692,6 +701,10 @@ AgentEncoder(88 → 96 → 96)
 GateHead(96 → 2)
 ConditionalProposalHead(96 → 25)
 ```
+
+现有 trained checkpoint 尚未在 dense30 或 V2 `eh216s_research_v2` vehicle/energy
+profile 上完成 qualification。`fixed_rule` dense-flow 结果只属于规则协调和可视化诊断，
+不得作为 learned checkpoint performance 报告。
 
 Centralized critic：
 
@@ -1076,6 +1089,12 @@ low-SOC/emergency UAV color = alert color
 plan id or point topology changes = rebuild line actor
 plan completion/disappearance = remove line actor
 ```
+
+当前 PyVista/VTK viewer 以约 `30 Hz` 的展示节拍消费只读 snapshot，并缓存场景 actor。
+UAV 使用一个持久的 point-cell cloud actor；严格拾取把 `(actor, point_index)` 映射到 UID，
+未命中不回退到最近对象。只有 trajectory actor 在 plan ID 或点拓扑改变时重建。累计
+`terminal_events` 在 source frame、进程缓冲和最终窗口中保留，并继续用于
+`failed_energy` 的终态标记和面板记录。
 
 能量与终态也属于只读快照契约的一部分。正常 UAV 与其未来轨迹继续使用稳定的
 UID 身份色；`energy_alert="low_soc"` 的 UAV 使用橙色并显示 `LOW SOC`，

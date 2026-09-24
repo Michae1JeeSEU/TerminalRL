@@ -347,38 +347,47 @@ P_{phase}=k_{phase}P_{ref}
 获得 EH216-S 遥测标定前不得用于真实续航保证。
 
 `phase_motion_v2` 的 admission 下限按
-`240.9 nominal solo completion energy + 0.25 * energy_capacity touchdown reserve`
-计算；在 `energy_capacity=1500` 时对应 `.4106` SOC。`240.9` 来自当前无拥堵单机
+`240.9 nominal solo completion energy + 0.10 * energy_capacity touchdown floor`
+计算；在 `energy_capacity=1500` 时对应 `.2606` SOC。`240.9` 来自当前无拥堵单机
 4-gate × 4-mission 矩阵的最大消耗，只是当前构型的可达性基准。
-仅当 uniform 场景未显式设置 `initial_soc_min/max` 时使用该默认下限；显式 `.35–.55` 仍保留为低 SOC stress 区间。
+当 uniform 场景未显式设置 `initial_soc_min/max` 时，`ArrivalProcess` 的实际默认
+下限是 `max(.35 SOC_warning, .25 SOC_reserve, .2606 solo floor) = .35`；显式
+`initial_soc_min/max` 仍覆盖该自动下限，用于声明的 stress 或可达性场景。
 
 ### 6.3 SOC thresholds
 
-当前 `research_evtol/eh216s_research_v1` 默认：
+当前 V2 `research_evtol/eh216s_research_v2` 默认：
 
 ```text
 SOC_warning = 0.35
 SOC_reserve = 0.25
 SOC_emergency = 0.20
-min_landing_soc = 0.25
+min_landing_soc = 0.10
 emergency_trigger_soc = 0.35  # 仅在 emergency_landing_enabled=true 时生效
 ```
 
 语义：
 
 - `< warning`：进入 observation 与指标；
+- `SOC_reserve=.25` 是保留的 queue/admission compatibility threshold，不是当前 touchdown floor；
 - `< reserve`：若尚未 admission，优先 diversion，不再正常放入 terminal；
-- 开启应急课程后，`SOC <= emergency_trigger_soc` 的环上 UAV 先尝试固定应急航迹；提交前必须同时满足
-  可用 LZ 原子预约、预计航迹能耗 + touchdown reserve + margin，以及 SafetyFilter 全航迹认证；
+- `min_landing_soc=.10` 是成功 touchdown floor。它是 V2 的用户选定研究假设，不是已验证的
+  EH216-S AFM/type-certification 限值；归一化能量含义与历史 25% 文献上下文见
+  [`landing_reserve_basis_20260924.md`](evidence/v4_2/landing_reserve_basis_20260924.md)。
+- legacy 路径在启用应急课程时仍可使用 `SOC <= emergency_trigger_soc` 的硬资格门；
+  coordinated fixed-rule flow 不以该 SOC 门单独接管，而是在全部 normal release 尝试后，
+  对未提交的环上 UAV 按实际 emergency route energy、`.10` landing floor、15 s margin、
+  route-slack window 和完整 SafetyFilter 认证决定 takeover；
 - 共享策略仍以每架 UAV 自身 SOC 和 dynamic priority 为输入。同一组 actor 参数可以产生不同意图；
-  开启应急课程时，SOC urgency 从 trigger 到 reserve 连续增大，并用于同一步安全候选的仲裁优先级；
+  legacy urgency 仍可在 `emergency_trigger_soc=.35` 到 `min_landing_soc=.10` 之间连续增大，
+  并用于同一步安全候选的仲裁优先级；
 - 应急航迹无法立即认证时继续等待并重试，不终止整个 episode；能量耗尽才记为 `FAILED_ENERGY`；
 - 应急 touchdown 后正常占用 LZ 并完成地面服务，终态为 `EMERGENCY_LANDED`，且收到独立应急惩罚；
 - 未开启应急课程时，已在 terminal 且成功 touchdown 前低于 `min_landing_soc`，作为低电量
   未完成退出；开启应急课程时不得在环上静默移除，必须继续形成显式
   `EMERGENCY_LANDED` 或 `FAILED_ENERGY` 结局；
-- `< emergency`：仅作为历史或扩展配置的告警区间；当前主仿真在达到该值前已按
-  `min_landing_soc` 退出，不能据此声称仍可正常申请 final clearance；
+- `SOC_emergency=.20` 是保留的 warning/legacy threshold；它不抬高 `.10` touchdown floor，
+  也不替代 coordinated flow 的 route-energy/slack 资格检查；
 - touchdown 时 `SOC >= min_landing_soc` 才计为成功完成；
 - 在达到成功 touchdown 前低于 profile 的 `min_landing_soc`：不计为完成，按
   `DIVERTED_LOW_SOC` 或相应能量失败语义记录；
@@ -409,8 +418,11 @@ P_i(t)=P_i^{base}
 开启应急课程时：
 
 \[
-U_i(t)=\operatorname{clip}\left(\frac{SOC_{trigger}-SOC_i(t)}{SOC_{trigger}-SOC_{reserve}},0,1\right)
+U_i(t)=\operatorname{clip}\left(\frac{SOC_{trigger}-SOC_i(t)}{SOC_{trigger}-SOC_{\mathrm{min\_landing\_soc}}},0,1\right)
 \]
+
+其中 coordinated/V2 的 urgency span 是 `SOC_trigger=.35` 到
+`min_landing_soc=.10`；`.25` `soc_reserve` 仍只属于 queue/admission compatibility。
 
 `emergency_landing_enabled=false` 的历史协议继续使用原式
 `max(0,(SOC_reserve-SOC)/SOC_reserve)`，以保持旧证据可回放。
@@ -895,14 +907,14 @@ Rule baseline 排序原则：
 
 ```text
 hard safety
-> SOC emergency
-> dynamic priority
-> FCFS/request time
+> mode-specific release ordering
 ```
 
-同一 control tick 存在跨环竞争时，P2R 执行仲裁先按 `INNER → MIDDLE → OUTER` 排空下游，
-环内再按 dynamic priority、累计等待时间、UID 稳定排序。该顺序只决定候选被认证的先后，
-不得降低 hard safety、headway、LZ reservation 或轨迹可执行性门槛。
+legacy 路径保留 `SOC emergency > dynamic priority > FCFS/request time` 的兼容顺序。
+coordinated fixed-rule flow 在同一 control tick 先按 `INNER → MIDDLE → OUTER` 排空下游，
+环内按 remaining energy slack、dynamic priority、UID 稳定排序；全部
+normal release 尝试完成后才进入 route-slack emergency pass。两种顺序都只决定候选被认证的
+先后，不得降低 hard safety、headway、LZ reservation 或轨迹可执行性门槛。
 
 ---
 

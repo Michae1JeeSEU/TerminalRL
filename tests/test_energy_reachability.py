@@ -303,7 +303,7 @@ def test_first_feasible_mode_matches_default_feasibility() -> None:
 
 def test_first_feasible_mode_returns_same_infeasible_minimum() -> None:
     config, airspace, manager, generator, energy = _components()
-    uav = _ring_uav(config, airspace, RingRole.OUTER, soc=0.37)
+    uav = _ring_uav(config, airspace, RingRole.OUTER, soc=0.20)
     candidate = _transfer_candidate(uav, airspace, generator)
 
     default = compute_candidate_energy_budget(

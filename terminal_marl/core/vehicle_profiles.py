@@ -41,13 +41,15 @@ class VehiclePerformanceProfile:
     max_touchdown_vertical_speed: float = 1.0
 
 
+# User-selected research assumption for the landing-flow study; this is not
+# an aircraft certification claim or a validated operational reserve.
 RESEARCH_EVTOL = VehiclePerformanceProfile(
     profile_id="research_evtol", vehicle_model_name="EHang EH216-S",
-    profile_version="eh216s_research_v1",
+    profile_version="eh216s_research_v2",
     parameter_source="official_public_values_plus_frozen_engineering_execution_values",
     mtow_kg=620.0, max_operating_altitude_agl_m=120.0,
     max_operating_altitude_msl_m=1000.0, reference_range_m=30_000.0,
-    reference_max_flight_time_s=1_500.0, min_landing_soc=0.25,
+    reference_max_flight_time_s=1_500.0, min_landing_soc=0.10,
     max_horizontal_speed=25.0, never_exceed_speed=29.17, design_speed=36.11,
     min_horizontal_speed=8.0, max_horizontal_accel=1.5,
     max_horizontal_decel=1.5, max_climb_rate=4.0, max_descent_rate=6.0,

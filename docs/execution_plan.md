@@ -4,6 +4,25 @@
 > Phase B（departure-only）和 Phase C（arrival + departure）只保留在研究路线中，不进入本轮 Codex 修改。  
 > 本执行计划按“先修正环境语义，再训练低层，再训练高层”的依赖顺序推进。
 
+## 0.1 2026-09-24 当前集成与顺序
+
+`fixed_rule_dense30_coordinated` 是 opt-in 的 rule-flow coordinator，包含 downstream/deadline
+放行、canonical trajectory 和完整动力学/SafetyFilter 检查；最近五场 `150` UAV、
+`143 normal / 7 emergency / 0 failed-energy` 仍是规则控制器的历史 `.25` floor 证据，不是 learned
+policy qualification。`validate_plan` 的批量等价校验和 viewer 的 position-only/cache 路径已有
+受限性能记录，但 prefix/offscreen 测量不作为整体吞吐或 runtime FPS 结论。viewer 的拾取、标签和
+30 Hz 中间帧回归已通过专项测试。
+
+后续能量口径采用 `eh216s_research_v2`、归一化容量 `1500`、`min_landing_soc=.10`；
+`soc_reserve=.25` 继续作为独立 queue/admission reserve，其它阈值保持不变。已有 `.25` 实验、
+checkpoint 和 seed 消费记录保留为历史事实。当前不安排 fixed-rule rerun，执行顺序为：
+
+1. 适配既有 V4.2 learned-policy diagnostic replay 到当前 30-UAV / v2 profile，检查
+   checkpoint、config、schema 与 hash 兼容性，记录 migration，不自动授予 qualification；
+2. 预注册 bounded trained-policy diagnostic，用 `.10` floor 区分 learned WAIT/action 与
+   SafetyFilter/trajectory veto；本轮不执行该诊断；
+3. 在 PPO 前决定 targeted imitation/Safe DAgger repair，低层 static qualification 后才进入 A6。
+
 ---
 
 ## 1. 总原则

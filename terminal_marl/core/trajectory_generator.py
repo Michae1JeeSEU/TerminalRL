@@ -61,7 +61,7 @@ class TrajectoryPlan:
         # simulator.  Retain that explicit identity even for small test and
         # diagnostic plans constructed directly rather than by the generator.
         self.metadata.setdefault("vehicle_profile_id", "research_evtol")
-        self.metadata.setdefault("vehicle_profile_version", "eh216s_research_v1")
+        self.metadata.setdefault("vehicle_profile_version", "eh216s_research_v2")
         sample_node_times = np.asarray([point.t for point in self.points], dtype=float)
         sample_node_times.setflags(write=False)
         sample_node_positions = np.asarray([point.position for point in self.points], dtype=float)

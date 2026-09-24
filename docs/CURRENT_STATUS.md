@@ -22,9 +22,16 @@
 `150` UAV、`143 normal / 7 emergency / 0 failed-energy` 证据均使用规则控制器，不使用训练的
 神经低层 checkpoint；启动时会打印所选模式、低层控制器类型和实际使用的 checkpoint。训练版
 V4.2 回放位于 `ppo_checkpoint_viewer`，受冻结 profile/hash 约束；本文不宣称
-`dense30_coordinated` 已通过训练策略回放验证。`min_landing_soc=.25` 仍是工程假设，其文献依据
-是条件性的，尚未核验为 EH216-S AFM 的限制；见
+`dense30_coordinated` 已通过训练策略回放验证。上述历史回放的 `min_landing_soc=.25` 是工程假设，
+其文献依据是条件性的，尚未核验为 EH216-S AFM 的限制；见
 [landing reserve basis](evidence/v4_2/landing_reserve_basis_20260924.md)。
+
+**能量口径更新（2026-09-24，后续诊断适用）：** 归一化容量保持 `1500`，车辆 profile
+profile 已更新为 `eh216s_research_v2`，`min_landing_soc=.10`；`soc_reserve=.25` 单独保留为
+queue/admission reserve。其它安全、电量和运行阈值不变。已有 `.25` floor 的实验与 checkpoint
+均保留为历史证据，不对 `.10` floor 作性能或 qualification 声明。本轮仅运行
+profile/energy/checkpoint metadata 边界相关定向单测，全部通过；没有 fixed-rule 回合复跑或训练，
+旧统计不更新为 `.10`。
 
 **最新集成 fixed-rule development 回归（2026-09-24）：** 使用
 `fixed_rule_dense30_coordinated` CLI，配置为 30 架 warm-start、初始 SOC `.55–.90`、route
@@ -668,21 +675,19 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-**2026-09-24 当前顺序（更新）：** merge-slot timing reconciliation 已完成，mixed30 prefix audit
-为 `29/29` exact slot delta `0`；fresh fixed-rule density six-cell 也已完成，但它只提供 exploratory
-capacity/incident observations，不能建立普适容量或零失败保证。late-slot reconciliation 已完成
-fresh `.55–.90` 配对评估但 `zero_energy_failure` 未通过，未晋级，默认保持
-`reconcile_late_merge_slots_enabled=false`。singleton target-gap 修复已完成 `35` 个定向测试，
-本轮 combined regression 为 `103 passed`；四-cell paired evidence 保留几何正确性修复，但 aggregate
-failed-energy 未减少且一个 seed 结果更差，不能宣称 zero-energy 已解决或进入 qualification，详见
-[single-holder gap evidence](evidence/v4_2/single_holder_gap_20260924.md)。下一步仅允许在 fresh seeds
-预注册后开展 traffic-aware full executable fallback/admission reserve certificate：包括 low-SOC
-commitment、coordinated emergency corridor，以及覆盖等待、切环、应急与 LZ 占用的完整未来轨迹
-SafetyFilter 证书；不得把 future energy budget 当作未来安全证书，也不得放宽 `80/40/10 m` 安全阈值。
-当前 30 机 low-SOC initial condition 仍未 qualification。性能四个 100-step prefix 仍不是 qualification，
-实际 GUI 尚未视觉验收；保持 `PPO_ALLOWED=false`，不推进低层课程或 PPO。
+**2026-09-24 当前顺序（取代此前同日的 fixed-rule repair 排程）：** merge-slot timing
+reconciliation、fixed-rule dense30 development 与 viewer bounded checks 已完成；历史结果、
+已消费 seeds 和 `.25` floor 记录保持 immutable，当前不安排新的 fixed-rule rerun。
 
-**2026-09-23 当前顺序：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
+1. 将现有 V4.2 learned-policy diagnostic replay 适配到当前 30-UAV 场景和 `eh216s_research_v2`
+   profile，检查 checkpoint/config/schema 兼容性；记录所有 diagnostic migration，不绕过 hash，
+   不自动授予 qualification。
+2. 预注册 bounded trained-policy diagnostic，用当前 `.10` floor 区分 learned WAIT/action 与
+   SafetyFilter/trajectory veto；本轮尚未授权执行该诊断。
+3. 在 PPO 前决定是否需要 targeted imitation/Safe DAgger repair；低层 static qualification
+   完成后才进入高层 A6。保持 `PPO_ALLOWED=false`，不把 rule coordinator 当作 neural policy。
+
+**历史顺序（2026-09-23，已由上方 2026-09-24 当前顺序取代）：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 
 1. 保留原始失败 manifest/tape、`failure_trace_evidence.json` 与 witness 文件为 immutable evidence；不 rerun、reset 或调参。
 2. 单独冻结 fresh-seed 的最小 repair protocol，覆盖 low-SOC commitment gate/有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，该诊断不授权 PPO。

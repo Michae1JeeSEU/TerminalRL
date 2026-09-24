@@ -12,6 +12,14 @@
 本文件给出低层策略的当前唯一语义。旧 V3/V4/V4.1 设计、迁移原因和逐次实验记录分别保留在
 `../history/` 与 `../evidence/`，不再作为实现依据。
 
+当前 V2 车辆/能量边界为 `research_evtol/eh216s_research_v2`：
+`min_landing_soc=.10` 是用户选定的研究 floor，`soc_reserve=.25` 仍是独立的
+queue/admission compatibility threshold，`SOC_warning=.35`、`SOC_emergency=.20`
+和 legacy `emergency_trigger_soc=.35` 保持原语义。`phase_motion_v2` 的无显式
+SOC 边界 uniform arrival 默认从 `.35` 开始；这不是实测续航保证。现有 trained
+checkpoint 尚未在 dense30 或 V2 vehicle/energy profile 上完成 qualification，
+fixed-rule flow 诊断结果也不属于 learned performance。
+
 ## 1. 职责边界
 
 共享低层策略 `π_L` 做的是每架 UAV 的调度意图决策：等待，或请求一次带速度/时序残差的
@@ -31,6 +39,11 @@ Observation V2.1
 
 TeacherScheduler 只在训练和审计中提供 state-conditioned expert label。它不是最终部署组件，
 也不得把 policy 请求替换后仍用原请求的 log-probability 做 PPO 更新。
+
+当 `rule_flow_coordination_enabled=true` 时，fixed-rule coordinator 的 normal release
+按 `INNER → MIDDLE → OUTER`、remaining energy slack、dynamic priority、UID 处理，
+全部 normal 尝试完成后才进入 route-energy/slack emergency pass；这条 opt-in 规则路径
+不改变 learned policy 的 action schema，也不把规则诊断当作 checkpoint 结果。
 
 LZ assignment 同样不属于策略动作。历史回放使用 `lowest_id`；P2R 使用
 `nearest_available`，且 final 容量从历史 1 显式提升为 3。上述变化只扩大可被认证的资源候选，

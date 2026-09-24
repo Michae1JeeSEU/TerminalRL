@@ -5,6 +5,22 @@ Landing-only terminal-area operations**：动态三环终端空域构型、多 U
 安全过滤的可执行轨迹，以及后续 Crazyflie 缩尺验证。强化学习负责交通管理和轨迹意图，
 不直接输出姿态、电机或自由飞行动作。
 
+## 2026-09-24 当前集成摘要
+
+当前 opt-in `fixed_rule_dense30_coordinated` 使用 downstream/deadline landing-flow coordinator；
+最近五场、`150` UAV、`143 normal / 7 emergency / 0 failed-energy` 记录均为规则控制器，且沿用
+历史 `.25` landing floor，不是训练策略验证。轨迹与安全链保留完整动力学和 SafetyFilter 检查，
+`validate_plan` 的批量等价路径将 100-step 测量从 `45.319964 s` 降至 `36.037378 s`；该数字是
+函数/prefix 证据，不能外推完整仿真吞吐。viewer 已支持 30 点云拾取、30 Hz position-only 更新、
+标签缓存和离屏回归；PyVista `0.48.4` / VTK `9.6.2` 的 60-frame benchmark 为 `3.2452403 s`
+到 `0.6678959 s`，同样不代表 runtime FPS，专项合计 `35 passed`。
+
+后续诊断采用 `eh216s_research_v2`、归一化容量 `1500` 与 `min_landing_soc=.10`；
+`soc_reserve=.25` 仍是独立的 queue/admission reserve，其它阈值不变。已有 `.25` 实验和 checkpoint
+只作历史证据。研究边界仍是 landing-only：RL 输出交通管理/降落意图，不直接控制飞行动作；在低层
+当前 `PPO_ALLOWED=false`；完成必要策略修复并通过 PPO admission 后再决定 PPO，低层 static
+qualification 后才进入 A6 高层动态空域。
+
 > 当前工程与实验进度请先看 [CURRENT_STATUS.md](CURRENT_STATUS.md)。历史 handoff、
 > 单次实验报告和旧版本方案均不再作为实现入口。
 

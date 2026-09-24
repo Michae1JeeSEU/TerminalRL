@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
+from types import SimpleNamespace
 import numpy as np
 import pytest
 
@@ -9,15 +11,64 @@ from terminal_marl.core.vehicle_dynamics import DynamicsState, VehicleDynamics
 from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL, ScaleConfig, get_vehicle_profile
 from terminal_marl.core.safety_filter import SafetyFilter
 from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
+from terminal_marl.core.checkpoints import IncompatibleCheckpointError, checkpoint_metadata, validate_checkpoint_metadata
+from terminal_marl.core.energy import EnergyModel
 
 
 def test_research_evtol_profile_is_the_only_main_simulation_profile():
     profile = get_vehicle_profile("research_evtol")
     assert profile is RESEARCH_EVTOL
-    assert (profile.vehicle_model_name, profile.profile_version) == ("EHang EH216-S", "eh216s_research_v1")
+    assert (profile.vehicle_model_name, profile.profile_version) == ("EHang EH216-S", "eh216s_research_v2")
+    assert profile.min_landing_soc == pytest.approx(0.10)
     assert (profile.max_horizontal_speed, profile.never_exceed_speed, profile.design_speed) == (25.0, 29.17, 36.11)
     with pytest.raises(ValueError, match="only research_evtol"):
         get_vehicle_profile("crazyflie")
+
+
+def test_research_landing_floor_is_profile_config_yaml_consistent_and_keeps_queue_reserve():
+    config = SimConfig(energy_model_mode="phase_motion_v2")
+    assert config.min_landing_soc == pytest.approx(0.10)
+    assert config.soc_reserve == pytest.approx(0.25)
+    yaml_text = Path("terminal_marl/configs/vehicle_profiles/research_evtol.yaml").read_text(encoding="utf-8")
+    assert "profile_version: eh216s_research_v2" in yaml_text
+    assert "min_landing_soc: 0.10" in yaml_text
+
+
+def test_energy_model_floor_boundaries_and_150_over_1500_reserve_arithmetic():
+    config = SimConfig(energy_model_mode="phase_motion_v2")
+    energy = EnergyModel(config)
+    assert energy.min_landing_soc == pytest.approx(0.10)
+    assert energy.min_landing_soc * config.energy_capacity == pytest.approx(150.0)
+    state = SimpleNamespace(energy_capacity=1500.0, soc=0.0)
+    for soc, expected in ((0.099999, False), (0.10, True), (0.100001, True)):
+        state.soc = soc
+        assert energy.has_landing_reserve(state) is expected
+    request_state = SimpleNamespace(request=SimpleNamespace(energy_capacity=1500.0))
+    assert energy.admission_required_energy(request_state) == pytest.approx(
+        config.phase_motion_nominal_solo_energy + 150.0
+    )
+
+
+def test_checkpoint_metadata_binds_the_fresh_profile_version():
+    config = SimConfig()
+    fresh = checkpoint_metadata(config)
+    validate_checkpoint_metadata(fresh, config)
+    old = dict(fresh)
+    old["vehicle_profile_version"] = "eh216s_research_v1"
+    with pytest.raises(IncompatibleCheckpointError):
+        validate_checkpoint_metadata(old, config)
+
+
+def test_trajectory_plan_fallback_metadata_uses_fresh_profile_version():
+    plan = TrajectoryPlan(
+        "profile-version-test",
+        0,
+        "test",
+        (TrajectoryPoint(0.0, np.zeros(3)), TrajectoryPoint(1.0, np.ones(3))),
+        0.0,
+        1.0,
+    )
+    assert plan.metadata["vehicle_profile_version"] == "eh216s_research_v2"
 
 
 def test_config_migrates_terminal_geometry_and_performance_to_profile_views():

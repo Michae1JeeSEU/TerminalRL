@@ -5,6 +5,23 @@
 > Phase B（departure-only）与 Phase C（arrival + departure integrated operations）仅作为后续研究路线，不进入当前代码实现、训练或正式实验。  
 > 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md` 共同构成当前唯一有效的主线说明；阅读入口与文档权威关系见 `README.md`，当前进度见 `CURRENT_STATUS.md`。历史“两环版本”“直接输出自由飞行动作版本”、日期型 handoff 和旧迁移指南不再作为实现依据。
 
+## 0.1 当前实现边界（2026-09-24）
+
+当前可复现的 dense30 入口是 opt-in `fixed_rule_dense30_coordinated`：downstream/deadline
+landing-flow coordinator、canonical executable trajectory 和 SafetyFilter 共同完成规则控制器
+的放行与认证。最近五场 `150` UAV、`143 normal / 7 emergency / 0 failed-energy` 使用历史
+`.25` landing floor，不能解释为 learned-policy 或 PPO 结果。轨迹/安全链的批量 `validate_plan`
+和 viewer 的拾取、30 Hz position-only/cache 更新已有有限测试与 prefix/offscreen 测量；这些测量
+不等同于完整仿真吞吐或 runtime FPS。
+
+后续诊断采用 `eh216s_research_v2`、归一化容量 `1500`、`min_landing_soc=.10`，并保留
+`soc_reserve=.25` 作为独立 queue/admission reserve；其它阈值不变。既有 `.25` 实验和 checkpoint
+作为历史证据保留，不为 `.10` floor 提供性能声明。下一步先适配既有 V4.2 learned-policy replay
+并检查 checkpoint/config/schema/hash 兼容性，再预注册区分 learned WAIT/action 与
+SafetyFilter/trajectory veto 的 bounded diagnostic；本轮未授权执行该 diagnostic。targeted
+imitation/Safe DAgger 的必要性在 PPO 前决定；当前 `PPO_ALLOWED=false`，完成必要策略修复并通过
+PPO admission 后再决定 PPO，低层 static qualification 后才进入 A6。
+
 ---
 
 ## 1. 论文要解决的核心问题

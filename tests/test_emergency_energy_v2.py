@@ -108,7 +108,7 @@ def test_phase_motion_v2_integrates_motion_power_and_legacy_mode_remains_compati
     assert v2.estimate_plan_energy(_motion_plan()) == pytest.approx(1.0 + 28.0 / 36.0)
     request = ArrivalRequest(20, 0.0, 0, MissionType.STANDARD, 1, v2_config.energy_capacity, 0.50)
     queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
-    assert v2.admission_required_energy(queued) == pytest.approx(240.9 + 0.25 * 1500.0)
+    assert v2.admission_required_energy(queued) == pytest.approx(240.9 + 0.10 * 1500.0)
     assert legacy.admission_required_energy(queued) == pytest.approx(120.0)
 
 
@@ -129,7 +129,7 @@ def test_phase_motion_v2_default_uniform_soc_respects_solo_landing_floor() -> No
     requests = process.requests_until(0.0)
 
     assert lower == pytest.approx(expected_lower)
-    assert lower == pytest.approx(0.4106)
+    assert lower == pytest.approx(0.35)
     assert upper == pytest.approx(1.0)
     assert len(requests) == count
     assert all(expected_lower <= request.initial_soc <= 1.0 for request in requests)
@@ -139,7 +139,7 @@ def test_explicit_phase_motion_v2_soc_range_remains_low_soc_stress_range() -> No
     count = 256
     config = SimConfig(
         energy_model_mode="phase_motion_v2",
-        initial_soc_min=0.35,
+        initial_soc_min=0.20,
         initial_soc_max=0.55,
         total_requested_uavs=count,
         fixed_arrival_schedule=(0.0,) * count,
@@ -149,7 +149,7 @@ def test_explicit_phase_motion_v2_soc_range_remains_low_soc_stress_range() -> No
     requests = process.requests_until(0.0)
     solo_floor = config.min_landing_soc + config.phase_motion_nominal_solo_energy / config.energy_capacity
 
-    assert (lower, upper) == pytest.approx((0.35, 0.55))
+    assert (lower, upper) == pytest.approx((0.20, 0.55))
     assert min(request.initial_soc for request in requests) < solo_floor
 
 

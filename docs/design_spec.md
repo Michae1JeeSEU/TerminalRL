@@ -4,8 +4,8 @@
 > **核心原则**：三环终端区 + 连续到达流 + 地面服务资源 + 两层策略 + 确定性调度/轨迹/安全层。  
 > 本文档描述当前目标系统结构，不承担历史兼容说明；旧迁移过程保存在 `history/`，当前完成度见 `CURRENT_STATUS.md`。
 >
-> **当前车辆基准**：主仿真使用 `research_evtol` / EHang EH216-S /
-> `eh216s_research_v1`。安全距离和能量值是可审计的工程仿真语义，不是
+> **当前车辆基准**：V2 主仿真使用 `research_evtol` / EHang EH216-S /
+> `eh216s_research_v2`。安全距离和能量值是可审计的工程仿真语义，不是
 > EH216-S 的适航认证间隔或功耗结论。
 
 ---
@@ -378,9 +378,12 @@ class EnergyModel:
 
 当前 EH216-S 仿真的归一化基准为 `power_reference = 1.0` unit/s，
 `energy_capacity = 1500` s-equivalent；phase multiplier 只表达工程化的相对功耗，
-不能被解释为已完成的机型功耗标定。成功 touchdown 必须满足 vehicle profile 的
-`min_landing_soc = 0.25`；低于该门槛的提前降落/终止不计为成功完成，应按
-`DIVERTED_LOW_SOC` 或相应能量失败语义记录。
+不能被解释为已完成的机型功耗标定。V2 vehicle profile 的
+`min_landing_soc = 0.10` 是用户选定的研究 floor，不是已验证的 EH216-S AFM 或
+type-certification limit；在当前归一化模型中它对应 `150` normalized energy units，
+不等于真实飞行时间。`soc_reserve = 0.25` 仍是 queue/admission compatibility
+threshold。成功 touchdown 必须满足 `.10` floor；低于该门槛的提前降落/终止不计为成功完成，
+应按 `DIVERTED_LOW_SOC` 或相应能量失败语义记录。
 
 AdmissionManager 应通过：
 
@@ -388,7 +391,11 @@ AdmissionManager 应通过：
 energy_remaining >= estimated_energy_to_complete + reserve_margin
 ```
 
-决定低 SOC request 是否可以进入 terminal。
+决定低 SOC request 是否可以进入 terminal。对 `phase_motion_v2`，当前无拥堵单机
+admission reference 为 `240.9 + 0.10 * 1500 = 390.9` normalized units，
+对应 `.2606` SOC；当 uniform 场景未显式设置 `initial_soc_min/max` 时，ArrivalProcess
+仍按 `max(.35 SOC_warning, .25 SOC_reserve, .2606) = .35` 生成默认下限。显式
+`initial_soc_min/max` 仍是场景协议的覆盖值，不能被文档解释为实测续航保证。
 
 ### 7.1 固定应急迫降
 
@@ -409,6 +416,9 @@ ring holder current position/velocity
 SafetyFilter 结果。
 任何安全拒绝都不能被 SOC priority 覆盖，也不能降低 `80/40/10 m` 契约。应急航迹正在执行时，
 普通低 SOC 分流逻辑不得把它提前移出；触地后记 `EMERGENCY_LANDED` 并施加独立 reward cost。
+coordinated fixed-rule flow 先完成 normal release，再对未提交环上 UAV 按实际 route energy、
+`.10` landing floor、15 s margin 和 route-slack window 尝试 emergency takeover；legacy 路径的
+硬 SOC 资格门保持兼容。
 
 ---
 
@@ -954,6 +964,10 @@ fixed_headway
 ```
 
 旧的同义 mode 名称不得继续作为正式实验接口并存。
+
+`fixed_rule` dense-flow 场景只用于规则协调、资源和可视化诊断；它们不构成 learned
+performance。现有 trained checkpoint 尚未在 dense30 或 V2 vehicle/energy profile 上完成
+qualification，不能把 fixed-rule 诊断结果写成 learned checkpoint 结果。
 
 ---
 

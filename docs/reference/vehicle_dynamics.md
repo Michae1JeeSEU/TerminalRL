@@ -2,7 +2,7 @@
 
 Current frozen implementation facts:
 
-- Vehicle: `research_evtol` / EHang EH216-S / `eh216s_research_v1`.
+- Vehicle: V2 `research_evtol` / EHang EH216-S / `eh216s_research_v2`.
 - State semantics: position, 3-D velocity, horizontal `speed`, acceleration, yaw and yaw-rate diagnostics.
 - Operational horizontal speed is 25.0 m/s; 29.17 m/s is V_NE and 36.11 m/s is metadata only.
 - Translational constraints: 1.5 m/s² horizontal accel/decel/lateral, 4/6 m/s climb/descent, and 1.0 m/s² vertical acceleration.
@@ -15,8 +15,8 @@ Current frozen implementation facts:
 
 ## Current EH216-S safety and energy contract
 
-The main simulation uses `research_evtol` / EHang EH216-S /
-`eh216s_research_v1`. Its current safety-distance semantics are:
+The main simulation uses V2 `research_evtol` / EHang EH216-S /
+`eh216s_research_v2`. Its current safety-distance semantics are:
 
 - `80 m` desired/planning operating separation, certified first by executor-equivalent
   swept-segment checking plus recursive backup proof;
@@ -33,15 +33,16 @@ before physics execution.
 
 The normalized EH216-S energy reference is `power_reference = 1.0` unit/s with
 `energy_capacity = 1500` s-equivalent. Phase multipliers are engineering values until
-an external power calibration is available. The profile's `min_landing_soc = 0.25` is a
-frozen engineering research assumption; it is not a verified EH216-S AFM or type-
-certification limit. Under the normalized reference, this floor corresponds to 375
-normalized energy units, not necessarily 375 seconds of real flight. The conditional
-literature basis and its limits are recorded in
-[`landing_reserve_basis_20260924.md`](../evidence/v4_2/landing_reserve_basis_20260924.md).
-A successful landing requires the vehicle profile's floor; early low-SOC termination
-is not completion and is recorded as diversion or energy failure according to lifecycle
-semantics.
+an external power calibration is available. V2 sets the profile's
+`min_landing_soc = 0.10` as a user-selected research floor; it is not a verified
+EH216-S AFM or type-certification limit. Under the normalized reference, this floor
+corresponds to 150 normalized energy units, not necessarily 150 seconds of real flight.
+`soc_reserve = 0.25` remains a separate queue/admission compatibility threshold.
+The 25% literature context is retained as dated historical context in
+[`landing_reserve_basis_20260924.md`](../evidence/v4_2/landing_reserve_basis_20260924.md)
+and does not define the current V2 floor. A successful landing requires the vehicle
+profile's floor; early low-SOC termination is not completion and is recorded as diversion
+or energy failure according to lifecycle semantics.
 
 The older `20 m` collision threshold, `10000` normalized energy capacity, and historical
 qualification rule that treated any actual `80 m` separation breach as a hard failure
@@ -88,9 +89,10 @@ holder behind a later, slower candidate.  Safe distance, swept verification,
 the EH216-S envelope, `physics_dt=0.2 s`, and `safety_sampling_dt=1.0 s` are
 unchanged.
 
-Deterministic `fixed_rule_warm_flow`, seed 17, 240-second evidence changed
+Deterministic `fixed_rule_warm_flow`, seed 17, 240-second historical rule-only evidence changed
 from no outer-to-middle/middle-to-inner progress (only 2 releases approved;
 3026 `safety_wait`) to 3 completed outer-to-middle and 3 completed
 middle-to-inner transfers, with ongoing gate admissions.  Minimum actual and
 swept separation was 81.189 m and hard-separation/NMAC/collision counts were
-all zero.  Full regression after the repair: 202 passed.
+all zero.  Full regression after the repair: 202 passed. This is not learned
+checkpoint performance and does not qualify the dense30 or V2 vehicle/energy profile.

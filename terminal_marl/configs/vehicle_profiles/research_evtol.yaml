@@ -1,6 +1,6 @@
 profile_id: research_evtol
 vehicle_model_name: EHang EH216-S
-profile_version: eh216s_research_v1
+profile_version: eh216s_research_v2
 parameter_source: official_public_values_plus_frozen_engineering_execution_values
 metadata:
   configuration: multirotor_lift_only
@@ -26,4 +26,5 @@ vertical:
 orientation:
   max_yaw_rate_deg_s: 12.0
 battery:
-  min_landing_soc: 0.25
+  # User-selected research assumption, not an aircraft certification claim.
+  min_landing_soc: 0.10
