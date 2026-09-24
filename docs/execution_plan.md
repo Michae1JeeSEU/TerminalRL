@@ -54,15 +54,18 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    true；dense24 唯一 false arm gate 为 `no_failed_outcomes=false`，不称 P3 通过。整体 lifecycle
    aggregate 与自动生成的 `development_pair_aggregate.json` 一致：source priority-weighted wait
    `150.6971849500`、low-SOC wait `53.7159174128`（count `12`），candidate 为 `80.1562018040`、
-   `21.4881016766`（count `12`）；selection gates 全部 true。下一步仅做 candidate 唯一 dense24
-   emergency 的 exact replay 与 `32` 个独立单步 shadow checks 已记录：均为 exact `795`-step、
-   state unchanged、无 safety error、approved `0`，其中 `safety_wait=16`、`final_capacity=10`、
-   `safety_reject=6`。这只记录抽查状态未获批，不宣称所有 WAIT 错误或 SOC 排序有效。下一步注册
-   [arbitration repair protocol](evidence/v4_2/random_soc_arbitration_repair_v1_20260925.md)，
-   固定同一 repair candidate 权重，仅比较 `downstream_priority` 与 `downstream_soc_priority`；
-   实现和 preflight pending，尚未消费 `847xxx` reset。两 arm 均为 repair candidate，不自动采纳或
-   替换原始 source baseline；不新增 qualification/PPO，`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、
-   `P4_ALLOWED=false`；旧 formal/heldout 保持 untouched，不放宽既有 gate。
+   `21.4881016766`（count `12`）；selection gates 全部 true。exact replay 与 `32` 个 shadow checks
+   均为 exact `795`-step、state unchanged、无 safety error、approved `0`，其中 `safety_wait=16`、
+   `final_capacity=10`、`safety_reject=6`。这只记录抽查状态未获批，不宣称所有 WAIT 错误或 SOC
+   排序有效。`847101/847102` arbitration pair 已完成：baseline 与 soc-priority 各为
+   `41 normal + 7 emergency + 0 failed_energy + 0 unresolved`，两 pair 均降低 low-SOC wait 但提高
+   priority-weighted wait；因此不采纳 SOC 排序，默认 `downstream_priority` 保持。详见
+   [arbitration result](evidence/v4_2/random_soc_arbitration_repair_v1_result_20260925.md)。本轮
+   repair 来源为 `714d141f...`，历史 P3 canonical initial 为独立的 `4b8be66c...`，不静默替换
+   基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)，
+   代码和 preflight pending，尚未消费 `848000/848101/848102`；不新增 qualification/PPO，
+   `P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched，
+   不放宽既有 gate。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
    证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、

@@ -4,6 +4,8 @@ Status: registered before any `847xxx` reset. This is a development comparison
 only; it is not a P3 qualification, checkpoint promotion, or PPO admission
 protocol.
 
+Result: [random-SOC arbitration repair V1 development result](random_soc_arbitration_repair_v1_result_20260925.md)
+
 ## Purpose and frozen checkpoint
 
 This comparison tests the already fitted gate-adapter checkpoint under the
