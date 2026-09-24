@@ -492,7 +492,7 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | 研究范围 | Phase A，landing-only；Phase B/C 仅为未来路线 |
 | 代码主线 | `terminal_marl/`；`src/` 只读参考 |
 | 空域 | `three_ring_v1`：OUTER / MIDDLE / INNER |
-| 研究机型 | `eh216s_research_v1` |
+| 研究机型 | 当前为 `eh216s_research_v2`；`eh216s_research_v1` 仅保留为历史 checkpoint/provenance |
 | 动力学 | `performance_constrained_v2`；`physics_dt = 0.2 s` |
 | 低层观测 | 当前合格策略仍为 `phaseA_low_obs_v2_1_retry_state` 88D；`phaseA_low_obs_v2_2_scheduler_context_94d` 为未晋级 candidate |
 | 低层动作 | `low_action_schema_v4_2_hierarchical` |
@@ -680,12 +680,17 @@ reconciliation、fixed-rule dense30 development 与 viewer bounded checks 已完
 已消费 seeds 和 `.25` floor 记录保持 immutable，当前不安排新的 fixed-rule rerun。
 
 1. 将现有 V4.2 learned-policy diagnostic replay 适配到当前 30-UAV 场景和 `eh216s_research_v2`
-   profile，检查 checkpoint/config/schema 兼容性；记录所有 diagnostic migration，不绕过 hash，
-   不自动授予 qualification。
-2. 预注册 bounded trained-policy diagnostic，用当前 `.10` floor 区分 learned WAIT/action 与
-   SafetyFilter/trajectory veto；本轮尚未授权执行该诊断。
+   profile，检查 checkpoint/config/schema 兼容性；当前实现进行中，记录所有 diagnostic migration，
+   不绕过 hash，不自动授予 qualification。协议见
+   [trained dense30 V2 diagnostic protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md)。
+2. 本轮已授权；按已预注册协议先完成 focused loader/runtime tests、Syncthing 源码 hash equality 和实际 checkpoint
+   smoke：seed `842000`、最多 `5` steps；通过 preflight 后再各执行一次 bounded diagnostic-1/2，
+   seeds `842101/842102`、每次最多 `1800` simulated seconds。输出写入
+   `/home/user/training_outputs/terminal/trained_dense30_v2_diagnostic_20260924/`；当前尚未运行
+   smoke 或 diagnostic，尚无结果或训练产物。保持无 Teacher/optimizer，安全事件时暂停剩余 seed
+   并返回评估，保持 `PPO_ALLOWED=false`。
 3. 在 PPO 前决定是否需要 targeted imitation/Safe DAgger repair；低层 static qualification
-   完成后才进入高层 A6。保持 `PPO_ALLOWED=false`，不把 rule coordinator 当作 neural policy。
+   完成后才进入高层 A6。不把 rule coordinator 当作 neural policy。
 
 **历史顺序（2026-09-23，已由上方 2026-09-24 当前顺序取代）：** SOC-priority paired diagnostic 保持 FAIL，原因是 `3` 条 `FAILED_ENERGY`；immutable replay/witness attribution 已完成。下一步独立预注册 fresh-seed 的最小 repair，覆盖 low-SOC commitment gate 或有证书的长计划安全 preemption，以及 emergency pad/corridor capacity；保持现有 SafetyFilter 和安全阈值，先评估最小修复，再决定后续课程，repair 证据完成前不启动 PPO，`PPO_ALLOWED=false`。P3 high-SOC 与 low-SOC formal seeds 仍不得 formal 重用、reset 或用于调参。
 

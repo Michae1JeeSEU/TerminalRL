@@ -13,14 +13,18 @@ policy qualification。`validate_plan` 的批量等价校验和 viewer 的 posit
 受限性能记录，但 prefix/offscreen 测量不作为整体吞吐或 runtime FPS 结论。viewer 的拾取、标签和
 30 Hz 中间帧回归已通过专项测试。
 
-后续能量口径采用 `eh216s_research_v2`、归一化容量 `1500`、`min_landing_soc=.10`；
+后续能量口径采用 `eh216s_research_v2`、`energy_capacity=1500`、`min_landing_soc=.10`；
 `soc_reserve=.25` 继续作为独立 queue/admission reserve，其它阈值保持不变。已有 `.25` 实验、
 checkpoint 和 seed 消费记录保留为历史事实。当前不安排 fixed-rule rerun，执行顺序为：
 
 1. 适配既有 V4.2 learned-policy diagnostic replay 到当前 30-UAV / v2 profile，检查
-   checkpoint、config、schema 与 hash 兼容性，记录 migration，不自动授予 qualification；
-2. 预注册 bounded trained-policy diagnostic，用 `.10` floor 区分 learned WAIT/action 与
-   SafetyFilter/trajectory veto；本轮不执行该诊断；
+   checkpoint、config、schema 与 hash 兼容性，记录 migration，不自动授予 qualification；当前
+   实现进行中。本轮已授权且已预注册的协议见
+   [trained dense30 V2 diagnostic protocol](evidence/v4_2/trained_dense30_v2_diagnostic_protocol_20260924.md)；
+2. 完成 focused loader/runtime tests、Syncthing 源码 hash equality 和实际 checkpoint smoke
+   `842000`（最多 `5` steps）；preflight 通过后再各执行一次 bounded diagnostic-1/2，seeds
+   `842101/842102`，每次最多 `1800` simulated seconds。当前尚未运行 smoke 或 diagnostic，尚无
+   结果或训练产物；保持无 Teacher/optimizer，`PPO_ALLOWED=false`；
 3. 在 PPO 前决定 targeted imitation/Safe DAgger repair，低层 static qualification 后才进入 A6。
 
 ---
