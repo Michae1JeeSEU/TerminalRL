@@ -46,8 +46,16 @@ rows 为 `1529/812`；dev RELEASE/WAIT recall 为 `.6131687243→.7860082305` /
 `1.265022278→1.031340837`，train NLL `1.259755254→.755264521`。仅 adapter 改变，
 non-adapter/proposal logits bitwise unchanged；strict load passed、无 optimizer state、无 dev gradient/
 early stop/PPO。wrapper 最后有 CRLF shell exit error，但 Python 已完成且 control 保存 Python exit `0`，
-未重跑。846301/846302/846303 paired rollout 尚未运行；`P3_QUALIFIED=false`、
-`PPO_ALLOWED=false`、`P4_ALLOWED=false`，原 formal/heldout 保持 untouched；不放宽既有安全与 P3 gate。
+未重跑。`846301/846302/846303` paired rollout 已完成且三者 exit `0`；三场合计 `42` requests，
+source 为 `36 normal + 6 emergency + 0 failed_energy`，candidate 为 `41 normal + 1 emergency +
+0 failed_energy`。详见[collection/fit/pair result](evidence/v4_2/random_soc_gate_repair_v1_result_20260925.md)。
+六个 arm 的 replay、safety、Teacher off、no updates、weights unchanged 均为 true；dense24
+唯一 false arm gate 为 `no_failed_outcomes=false`，因此不称 P3 通过。整体 lifecycle aggregate 为
+source priority-weighted wait `150.6971849500`、low-SOC wait `53.7159174128`（count `12`），
+candidate 分别为 `80.1562018040`、`21.4881016766`（count `12`）；selection gates 全部 true。
+下一步仅做 candidate 唯一 dense24 emergency 的只读 trace；不新增实验、seed、训练或 qualification。
+`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`，原 formal/heldout 保持 untouched；
+不放宽既有安全与 P3 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3

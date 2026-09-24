@@ -75,8 +75,34 @@ Only the adapter changed; non-adapter tensors and proposal logits were
 bitwise unchanged. Strict load passed with no optimizer state; no dev
 gradients, early stopping, or PPO were used. The wrapper's final CRLF-related
 shell exit reported an error after Python completed, while control recorded
-Python exit `0`; the fit was not rerun. Paired rollouts `846301/846302/846303`
-and qualification have not started.
+Python exit `0`; the fit was not rerun.
+
+## Three paired development rollouts
+
+The authorized source/candidate pairs `flow6/846301`, `flow12/846302`, and
+`dense24/846303` completed with Python exit `0`. The table reports direct
+`Counter(summary["outcomes"].values())` values and the lifecycle values
+recomputed by `p3._lifecycle_aggregate` for each arm.
+
+| scenario / seed | source normal / emergency / failed-energy | candidate normal / emergency / failed-energy | source priority wait / low-SOC wait (count) | candidate priority wait / low-SOC wait (count) |
+|---|---:|---:|---:|---:|
+| flow6 / 846301 | 6 / 0 / 0 | 6 / 0 / 0 | 19.6343588920 / 7.4313211002 (3) | 18.8161770738 / 7.4313211002 (3) |
+| flow12 / 846302 | 12 / 0 / 0 | 12 / 0 / 0 | 34.0008513481 / 14.7380788628 (4) | 21.1418487070 / 6.3875713799 (4) |
+| dense24 / 846303 | 18 / 6 / 0 | 23 / 1 / 0 | 236.3354038969 / 112.6689460403 (5) | 122.1058086711 / 42.0025942597 (5) |
+
+Across the three scenarios there were `42` requests: source `36 normal + 6
+emergency + 0 failed_energy`, candidate `41 normal + 1 emergency + 0
+failed_energy`. The automatically generated aggregate is
+`/home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/development_pair_aggregate.json`.
+Its overall lifecycle values are source priority-weighted wait
+`150.6971849500`, low-SOC mean wait `53.7159174128` (count `12`), and
+candidate priority-weighted wait `80.1562018040`, low-SOC mean wait
+`21.4881016766` (count `12`). The recomputed selection gates are all `true`.
+
+All six arms have replay, safety, no-Teacher, no-update, and
+`weights_unchanged` true; all safety counters are zero. The only false arm
+gate is dense24 `no_failed_outcomes=false`; all other listed arm gates are
+true. This is development evidence only and does not pass P3 qualification.
 
 ## Launch record and next status
 
@@ -86,6 +112,9 @@ produced no summary, progress, or labels and was archived as
 `launch_failure_train_flow6_846101`; the subsequent real `846101` run above
 is the only counted train episode for that seed.
 
-The gate-adapter fit is recorded as development evidence; paired rollout and
-qualification reporting remain pending. No P3/PPO/P4 qualification has
-started, and the old held-out evidence remains untouched.
+The gate-adapter fit and the three paired rollouts are recorded as development
+evidence. The next action is a read-only trace of the candidate's single
+dense24 emergency outcome. No new seed, training, qualification, or PPO run
+is authorized here; `P3_QUALIFIED=false`, `PPO_ALLOWED=false`, and
+`P4_ALLOWED=false` remain unchanged, and the old held-out evidence remains
+untouched.
