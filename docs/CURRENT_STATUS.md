@@ -1,8 +1,8 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-24
+> **状态日期**：2026-09-25
 >
-> **代码快照**：当前提交为 `b7687ae6a51413575658fa3d041714ccea451b27`；已实现速度可行性、两级安全接管、10 m collision 与 EH216-S 能量变更。Git 无 remote，未 push。
+> **代码快照**：当前代码提交为 `dad8071`；本次状态/证据文档为后续文档提交。Git 无 remote，未 push。
 >
 > **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
@@ -21,23 +21,19 @@ blocker 为 `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority +
 approved `8`。没有 independent feasible RELEASE witness 支持将 WAIT 全部判错或批准
 imitation-only fix。详见[诊断结果](evidence/v4_2/trained_dense30_v2_diagnostic_result_20260924.md)。
 
-**当前 random-SOC P3 development 结果（2026-09-24）：** `844000` 两步 dense24 smoke 已完成，
-server/local `14` 项测试 PASS；7 个 full arms 的原始结果见[结果页](evidence/v4_2/random_soc_repair_development_result_20260924.md)。
-`flow6/844101` trained 与 nominal_rule 分别为 `6/0/0`、`6/0/0`；`flow12/844102` 分别为
-`11/1/0`、`12/0/0`；`dense24/844103` trained、nominal_rule、trained_release_only 分别为
-`19/5/0`、`19/5/0`、`22/2/0`（normal/emergency/failed-energy）。7 个 full arms 均
-`unresolved=0`、`terminal=true`，`SafetyInvariantError`、collision/NMAC/hard-separation、
-fail-closed 与 executed-plan hash mismatch 均为零；weights unchanged、无 Teacher、未调用 PPO。
-forced-gate arm 保留 neural proposal Top3，不能作为 trained policy 结果。旧 `842101/842102` 与
-`829001–829006` heldout 保持原状；`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
+**当前 random-SOC P3 slot-repair 结果（2026-09-25）：** 详见[结果页](evidence/v4_2/random_soc_p3_slot_repair_result_20260925.md)。
+同一 seed `845101` 的 dense24 三 arm 为：late-OFF forced `23/1/0`、late-ON forced `19/5/0`、
+late-ON trained `18/6/0`（normal/emergency/failed-energy）；三者均 `unresolved=0`、terminal、
+exit `0`。三 arm 均无 `SafetyInvariantError`，collision/NMAC/hard-separation/fail-closed/
+hash-mismatch 均为零，weights unchanged、Teacher/PPO off。`845000` late-ON 两步 smoke 有效；
+server `29` tests PASS，local diagnostic `17` 与 slot `12` PASS，Teacher `12` PASS 单独统计。
+旧 protocol、2026-09-24 日期与 raw root 保持不变；`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、
+`P4_ALLOWED=false`，旧 heldout 保持 untouched。
 
-**当前授权/工作状态（2026-09-24）：** 主代理优先审阅 gate 学习修复；dense24
-`trained_release_only` 仍有 `2` 次 emergency，不能把 forced 干预写成 learned 成果。正在检查
-剩余 emergency；V4.1 joint Teacher 标签器与 K3 执行在 final-pad 搜索和 emergency-pad 优先规则上
-已完成对齐，12 项定向测试通过；尚未收集新数据、训练或进行资格验证。P3 strict
-`no_failed_outcomes` 要求完整 ledger 全部为 `completed`，`emergency_landed` 也不通过该 gate；
-conditional wait 统计不能掩盖失败。保持 `80/40/10 m`、`min_landing_soc=.10`、`soc_reserve=.25`，
-不新增 protocol/seed，不放宽既有 gate。
+**当前授权/工作状态（2026-09-25）：** 不采纳 late-ON，默认 late-slot OFF 保持。下一步准备
+修正 labeler 后的 fresh state-only 标签收集与 gate_adapter-only 监督学习开发，proposal head 和
+proposal encoder 冻结；尚未收集新数据或开始训练/资格验证。需先冻结新的 data protocol、seeds、
+上限并完成小样本验证；不放宽既有安全与 P3 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3

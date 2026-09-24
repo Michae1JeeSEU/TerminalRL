@@ -26,19 +26,17 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    RELEASE 为 `3/3/3/9` 且全部 rejected，WAIT 为 `411/305/493/238`；inner RELEASE 的主要观察
    `primary_blocker=LZ_RESOURCE=593/615`（`510 emergency_lz_priority + 83 lz_unavailable`），approved
    `8`。这些是 controller 与 execution feasibility 诊断的既有观察，不写入新的 PASS 或结果结论。
-3. fresh random-SOC P3 development comparison 已完成，详见
-   [protocol](evidence/v4_2/random_soc_p3_repair_development_20260924.md) 与
-   [result](evidence/v4_2/random_soc_p3_repair_development_result_20260924.md)。`844000` 两步
-   smoke 的 server/local `14` 项测试 PASS；7 个 full arms 的 flow6、flow12、dense24 结果与
-   raw paths 保存在结果页。7 个 full arms 均 `unresolved=0`、`terminal=true`，命名安全、
-   fail-closed、executed-plan hash mismatch 均为零；weights unchanged、无 Teacher、未调用 PPO。
-4. `842101` 历史证据保持 immutable，`842102` 保持 unused；`829001–829006` heldout untouched。
-   当前审阅优先 gate 学习修复；`trained_release_only` 是保留 neural proposal Top3 的 forced-gate
-   消融，仍有 `2` 次 emergency，不能写成 trained policy 成果。剩余 emergency 正在检查；V4.1
-   joint Teacher 标签器与 K3 执行在 final-pad 搜索和 emergency-pad 优先规则上已完成对齐，12 项
-   定向测试通过；尚未收集新数据、训练或进行资格验证。P3 strict `no_failed_outcomes` 要求完整 ledger
-   全为 `completed`，`emergency_landed` 也不通过；conditional wait 不能掩盖该 gate。保持
-   `80/40/10 m`、`min_landing_soc=.10`、`soc_reserve=.25`，不新增 protocol/seed 或放宽 gate。
+3. fresh random-SOC P3 slot-repair comparison 已完成，详见
+   [protocol](evidence/v4_2/random_soc_p3_slot_repair_20260924.md) 与
+   [result](evidence/v4_2/random_soc_p3_slot_repair_result_20260925.md)。seed `845101` 的
+   late-OFF forced、late-ON forced、late-ON trained 分别为 `23/1/0`、`19/5/0`、`18/6/0`；
+   三 arm 均 terminal、exit `0`、unresolved `0`，命名安全/失败计数均为零，weights unchanged、
+   Teacher/PPO off。`845000` smoke 有效；server `29`、local diagnostic `17`、slot `12`、
+   Teacher `12` 分组报告，不合并为单一测试总数。
+4. late-ON 不采纳，default late-slot OFF 保持；forced arms 不作为 trained policy 成果。下一步准备
+   labeler 修正后的 fresh state-only 标签收集与 gate_adapter-only 监督学习开发，proposal head/encoder
+   冻结；尚未收集新数据、训练或资格验证。新 data protocol 需先冻结 seeds/上限并完成小样本验证；
+   旧 formal/heldout 保持 untouched，P3/PPO/P4 仍为 false，不放宽既有 gate。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
    证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、
