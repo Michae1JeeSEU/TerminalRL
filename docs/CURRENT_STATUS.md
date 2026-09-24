@@ -2,11 +2,13 @@
 
 > **状态日期**：2026-09-25
 >
-> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`；本次状态/证据文档为后续文档提交。Git 无 remote，未 push。
+> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`，本轮 SOC gate 代码提交为 `a8ea93bf0e41f316fc161c1c9d1d7576395a8850`；本次状态/证据文档为后续文档提交。Git 无 remote，未 push。
 >
 > **历史阶段背景**：Phase A / A5。fresh fixed-rule、SOC `.75` 的 density six-cell 已完成，`failed_energy=0` 且命名 incident counters 为零，但不建立普适容量或零失败保证；fresh `.55–.90` late-slot pairs 仍未通过 `zero_energy_failure`，变体默认关闭且未晋级。singleton target-gap 修复已完成 `35` 个定向测试及四-cell paired evidence：fixed 与 legacy 的聚合分别为 `32 normal + 17 emergency + 11 failed-energy` 与 `26 normal + 23 emergency + 11 failed-energy`；该结果保留几何修复，但不宣称 zero-energy 已解决或已 qualification。此前固定 SOC `.75` density baseline 不作为该修复的验证。同版本性能链语义保持一致、wall-time 下降 `19.4%/18.6%`，但 100-step prefix 不是 qualification。fallback future route 尚未作未来 SafetyFilter 认证；`P3_QUALIFIED=false`、`checkpoint_promotable=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。
 >
 > 本文是滚动状态页。规范语义以 [README.md](README.md) 中列出的主规范为准。
+
+**用户暂停点（2026-09-25）：** 当前代码迭代已完成：canonical strict loader 为 `29a4dba`，其 `32` 个定向测试通过；evaluator 的 `27` 个定向测试通过；只读服务器 checkpoint/hash/profile-load preflight 通过。`848000/848101/848102` 尚未 reset 或 rollout，heldout 未消费。恢复入口为执行已注册的 canonical smoke/full pair，随后再由主代理决定 repair 与独立 qualification；暂停期间不启动新的算法实验。`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`。
 
 **当前 trained dense30 V2 bounded diagnostic（2026-09-24）：** 已完成首个有界训练策略诊断
 `842101`：`1173` simulated steps、wall `64.53536491142586 s`，`8 normal / 18 emergency /
@@ -63,7 +65,8 @@ replay、state unchanged、无 safety error、approved `0`，其中 `safety_wait
 保持。详见[arbitration result](evidence/v4_2/random_soc_arbitration_repair_v1_result_20260925.md)。
 本轮 repair 来源是 `714d141f...`；历史 P3 canonical initial 是独立的
 `4b8be66c...`，不静默替换基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)，
-代码和 preflight pending，`848000/848101/848102` 尚未消费，旧 `829001–829006` 保持 untouched。
+代码实现与只读 preflight 已完成；canonical smoke/full rollout 仍 pending，`848000/848101/848102` 尚未消费，旧
+`829001–829006` 保持 untouched。
 `P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`，不放宽既有安全与 P3 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为

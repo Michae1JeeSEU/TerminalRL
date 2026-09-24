@@ -1,8 +1,11 @@
 # Random-SOC Canonical Reference V1 Development Protocol
 
 Status: registered. The loader implementation is commit `29a4dba` and its `32`
-tests passed; evaluator, preflight, and primary review remain pending. This is
-a development reference comparison before further training. It does not change
+tests passed; the evaluator's `27` tests passed, and the read-only server
+checkpoint/hash/profile-load preflight passed. The user requested a pause on
+2026-09-25 after the current code iteration. No `848000/848101/848102` reset or
+rollout has occurred, and no held-out seed has been consumed. This is a
+development reference comparison before further training. It does not change
 qualification thresholds, consume held-out seeds, promote a model, or
 authorize PPO.
 
@@ -44,7 +47,8 @@ Canonical checkpoint metadata may differ only by the verified
 `vehicle_profile_version` migration from `eh216s_research_v1` to
 `eh216s_research_v2`. Source files and weights are not modified. Checkpoint
 SHA256 values and every other metadata field must be verified strictly. The
-evaluator and preflight remain pending, and no run starts before those checks.
+evaluator's `27` tests and the read-only checkpoint/hash/profile-load preflight
+have passed; no run starts during the requested pause.
 
 ## Seeds, outputs, and stop rules
 
@@ -71,4 +75,6 @@ or authorize PPO. Historical seeds `829001–829006` remain untouched. The
 comparison informs a later training starting point without changing thresholds
 or selecting a model after consuming held-out evidence.
 
-Execution proceeds only after implementation, preflight, and primary review.
+On resume, execute the registered canonical smoke and full pair after the
+primary review; then decide separately whether to repair and independently
+qualify. No new algorithm experiment is authorized during the pause.

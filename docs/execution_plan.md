@@ -62,10 +62,12 @@ checkpoint 和 seed 消费记录保留为历史事实。当前按 staged authori
    priority-weighted wait；因此不采纳 SOC 排序，默认 `downstream_priority` 保持。详见
    [arbitration result](evidence/v4_2/random_soc_arbitration_repair_v1_result_20260925.md)。本轮
    repair 来源为 `714d141f...`，历史 P3 canonical initial 为独立的 `4b8be66c...`，不静默替换
-   基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)，
-   代码和 preflight pending，尚未消费 `848000/848101/848102`；不新增 qualification/PPO，
-   `P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched，
-   不放宽既有 gate。
+   基线。下一步转入[canonical reference protocol](evidence/v4_2/random_soc_canonical_reference_v1_20260925.md)。
+   canonical strict loader 为 `29a4dba` 且 `32` 个定向测试通过，evaluator 的 `27` 个定向测试通过，
+   只读服务器 checkpoint/hash/profile-load preflight 通过；尚未消费 `848000/848101/848102`，也未消费
+   heldout。用户已于 2026-09-25 请求在本轮修改结束后暂停目标；恢复后先执行已注册 canonical smoke/full pair，
+   再由主代理决定 repair 与独立 qualification；暂停期间不启动新的算法实验。`P3_QUALIFIED=false`、
+   `PPO_ALLOWED=false`、`P4_ALLOWED=false`；旧 formal/heldout 保持 untouched，不放宽既有 gate。
 5. P3 random-SOC 范围沿用现有 P3 V4：initial SOC `.55–.90` uniform、priority `1/3/5`、
    `flow6`/`flow12`/`dense24`。dense30 pressure 仅作诊断，不能单独构成 qualification；后续资格
    证据仍需 train/dev/heldout 独立性。现有 P3 hard gates 保持 `dev/eval completion=1.0`、
