@@ -1,0 +1,268 @@
+protocol: V4_2_P3_CONTROLLED_EMERGENCY_FORMAL_V5
+status: PENDING_ADMISSION
+specification_only: true
+inherits_v5_admission_contract: true
+source_admission_config: terminal_marl/configs/low_v4_2/p3_controlled_emergency_admission_v5.yaml
+
+# This file registers the formal schedule.  The runner has passed targeted
+# implementation checks; actual admission preflight remains pending and this
+# configuration must not be passed to the existing bounded-admission runner.
+implementation:
+  runner_module: terminal_marl.training.run_v4_2_p3_controlled_emergency_formal_v5
+  implemented: true
+  validated: true
+  launch_authorized: false
+  future_command_status: IMPLEMENTED_TARGETED_TESTS_PASSED_ACTUAL_ADMISSION_PREFLIGHT_PENDING
+  future_command: >-
+    python -m terminal_marl.training.run_v4_2_p3_controlled_emergency_formal_v5
+    --run-index N --admission-report <path> --checkpoint <path> --output <path>
+
+authorization:
+  required_before_launch: true
+  current_state: PENDING_ADMISSION
+  FORMAL_P3_ALLOWED: false
+  PPO_ENTRY_ALLOWED: false
+  P3_QUALIFIED: false
+  P4_ALLOWED: false
+  PPO_ENTRY_ALLOWED_policy: full_stochastic_no_update_checks_only
+  formal_authorization_policy: bounded_pilot_technical_pass_and_primary_review
+  entry_is_not_graduation: true
+  required_bindings:
+    - passed_bounded_pilot_report
+    - current_runtime_config
+    - source_checkpoint_sha256
+  admission_report_schema:
+    stage: P3_FORMAL_ADMISSION_DECISION_V5
+    FORMAL_P3_ALLOWED: true
+    initial_checkpoint_sha256: e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353
+    pilot_manifest_path: required
+    pilot_manifest_sha256: required
+    admission_protocol_sha256: required
+    formal_protocol_sha256: required
+    actual_config_snapshots: required
+    optimizer_boundary: required
+  no_automatic_model_promotion: true
+
+lineage:
+  selected_initial_checkpoint_kind: repair_candidate
+  selected_initial_checkpoint_sha256: e04e5b4a8f8365b52a41f66c96ad1f66a09a554ea64118fcab8040d64175d353
+  selected_initial_checkpoint_path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/fit846401/random_soc_gate_repair_v1.pt
+  same_initial_checkpoint_for_all_runs: true
+  fresh_optimizer_for_each_run: true
+  no_cross_run_optimizer_state: true
+  no_historical_source_hashes: true
+
+bindings:
+  action_schema_version: low_action_schema_v4_2_hierarchical
+  observation_schema_version: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  vehicle_profile_version: eh216s_research_v2
+  action_definition: WAIT_or_RELEASE_with_conditional_speed_timing_proposal
+  runtime_shortlist_k: 3
+  reconcile_late_merge_slots_enabled: false
+  teacher: false
+  scheduler_mode: execution
+  high_level_enabled: false
+  shield_enabled: true
+  algorithm: PPO
+  new_algorithm: false
+
+environment:
+  geometry: fixed
+  full_cycle: true
+  full_scenario_horizon_seconds:
+    flow6: 1210
+    flow12: 1570
+    dense24: 1800
+  initial_soc_distribution: Uniform(0.55, 0.90)
+  energy_capacity: 1500
+  minimum_landing_soc: 0.10
+  soc_reserve: 0.25
+  emergency_trigger_soc: 0.40
+  priorities: [1, 3, 5]
+  mission_mixture: existing_v5_mission_mixture
+  scenarios: [flow6, dense24, flow12]
+
+safety:
+  desired_planning_separation_m: 80
+  protected_floor_m: 40
+  collision_event_floor_m: 10
+  actor_intervention_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  shield_fail_closed_events_max: 0
+  joint_fail_closed_events_max: 0
+  collision_nmac_events_max: 0
+  safety_counters_must_be_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  frozen_proposal_subgraph: true
+  zero_failed_energy: true
+  zero_other_failures: true
+
+reward:
+  low_level_priority_time_weight: 1.0
+  low_level_soc_urgency_time_weight: 2.0
+  low_level_soc_urgency_threshold: 0.65
+  urgency_reward_config_exact: true
+  no_soc_only_ordering: true
+  reward_component_totals_required: true
+  reward_component_keys:
+    - time
+    - progress
+    - release
+    - touchdown
+    - failure
+    - teacher
+    - shield
+    - urgency
+    - emergency
+  reward_total_consistency_required: true
+  urgency_combines_priority_and_soc: true
+  separate_priority_soc_decomposition: false
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_kl: 0.01
+  maximum_approx_kl: 0.05
+  minimum_accepted_updates: 1
+  maximum_rejected_updates: 1
+  one_update_per_accepted_episode: true
+  no_algorithm_change: true
+
+hard_gates:
+  initial_ratio_error_max: 0.00001
+  shield_actor_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  safety_all_zero: true
+  exact_replay: true
+  exact_requested_likelihood: true
+  student_only: true
+  actor_decisions_nonzero: true
+  runtime_shortlist_contract: true
+  frozen_proposal_subgraph: true
+  post_update_runtime_shortlist_stability: true
+  target_kl_guard: true
+  checkpoint_restore_exact: true
+  urgency_reward_config_exact: true
+  zero_failed_energy: true
+  zero_other_failures: true
+  accepted_emergency_is_report_only: true
+
+formal_schedule:
+  independent_runs: 3
+  episodes_per_run: 240
+  total_episodes: 720
+  run_indices: [0, 1, 2]
+  episode_pattern: [flow6, dense24, flow12, dense24]
+  pattern_repetitions: 60
+  natural_flow_anchor_scenarios: [flow6, flow12]
+  natural_flow_anchor_fraction: 0.50
+  dense_fraction: 0.50
+  scenario_order_is_registered: true
+  train_seeds:
+    0: [850001, 850002, 850003, 850004, 850005, 850006, 850007, 850008, 850009, 850010, 850011, 850012, 850013, 850014, 850015, 850016, 850017, 850018, 850019, 850020, 850021, 850022, 850023, 850024, 850025, 850026, 850027, 850028, 850029, 850030, 850031, 850032, 850033, 850034, 850035, 850036, 850037, 850038, 850039, 850040, 850041, 850042, 850043, 850044, 850045, 850046, 850047, 850048, 850049, 850050, 850051, 850052, 850053, 850054, 850055, 850056, 850057, 850058, 850059, 850060, 850061, 850062, 850063, 850064, 850065, 850066, 850067, 850068, 850069, 850070, 850071, 850072, 850073, 850074, 850075, 850076, 850077, 850078, 850079, 850080, 850081, 850082, 850083, 850084, 850085, 850086, 850087, 850088, 850089, 850090, 850091, 850092, 850093, 850094, 850095, 850096, 850097, 850098, 850099, 850100, 850101, 850102, 850103, 850104, 850105, 850106, 850107, 850108, 850109, 850110, 850111, 850112, 850113, 850114, 850115, 850116, 850117, 850118, 850119, 850120, 850121, 850122, 850123, 850124, 850125, 850126, 850127, 850128, 850129, 850130, 850131, 850132, 850133, 850134, 850135, 850136, 850137, 850138, 850139, 850140, 850141, 850142, 850143, 850144, 850145, 850146, 850147, 850148, 850149, 850150, 850151, 850152, 850153, 850154, 850155, 850156, 850157, 850158, 850159, 850160, 850161, 850162, 850163, 850164, 850165, 850166, 850167, 850168, 850169, 850170, 850171, 850172, 850173, 850174, 850175, 850176, 850177, 850178, 850179, 850180, 850181, 850182, 850183, 850184, 850185, 850186, 850187, 850188, 850189, 850190, 850191, 850192, 850193, 850194, 850195, 850196, 850197, 850198, 850199, 850200, 850201, 850202, 850203, 850204, 850205, 850206, 850207, 850208, 850209, 850210, 850211, 850212, 850213, 850214, 850215, 850216, 850217, 850218, 850219, 850220, 850221, 850222, 850223, 850224, 850225, 850226, 850227, 850228, 850229, 850230, 850231, 850232, 850233, 850234, 850235, 850236, 850237, 850238, 850239, 850240]
+    1: [851001, 851002, 851003, 851004, 851005, 851006, 851007, 851008, 851009, 851010, 851011, 851012, 851013, 851014, 851015, 851016, 851017, 851018, 851019, 851020, 851021, 851022, 851023, 851024, 851025, 851026, 851027, 851028, 851029, 851030, 851031, 851032, 851033, 851034, 851035, 851036, 851037, 851038, 851039, 851040, 851041, 851042, 851043, 851044, 851045, 851046, 851047, 851048, 851049, 851050, 851051, 851052, 851053, 851054, 851055, 851056, 851057, 851058, 851059, 851060, 851061, 851062, 851063, 851064, 851065, 851066, 851067, 851068, 851069, 851070, 851071, 851072, 851073, 851074, 851075, 851076, 851077, 851078, 851079, 851080, 851081, 851082, 851083, 851084, 851085, 851086, 851087, 851088, 851089, 851090, 851091, 851092, 851093, 851094, 851095, 851096, 851097, 851098, 851099, 851100, 851101, 851102, 851103, 851104, 851105, 851106, 851107, 851108, 851109, 851110, 851111, 851112, 851113, 851114, 851115, 851116, 851117, 851118, 851119, 851120, 851121, 851122, 851123, 851124, 851125, 851126, 851127, 851128, 851129, 851130, 851131, 851132, 851133, 851134, 851135, 851136, 851137, 851138, 851139, 851140, 851141, 851142, 851143, 851144, 851145, 851146, 851147, 851148, 851149, 851150, 851151, 851152, 851153, 851154, 851155, 851156, 851157, 851158, 851159, 851160, 851161, 851162, 851163, 851164, 851165, 851166, 851167, 851168, 851169, 851170, 851171, 851172, 851173, 851174, 851175, 851176, 851177, 851178, 851179, 851180, 851181, 851182, 851183, 851184, 851185, 851186, 851187, 851188, 851189, 851190, 851191, 851192, 851193, 851194, 851195, 851196, 851197, 851198, 851199, 851200, 851201, 851202, 851203, 851204, 851205, 851206, 851207, 851208, 851209, 851210, 851211, 851212, 851213, 851214, 851215, 851216, 851217, 851218, 851219, 851220, 851221, 851222, 851223, 851224, 851225, 851226, 851227, 851228, 851229, 851230, 851231, 851232, 851233, 851234, 851235, 851236, 851237, 851238, 851239, 851240]
+    2: [852001, 852002, 852003, 852004, 852005, 852006, 852007, 852008, 852009, 852010, 852011, 852012, 852013, 852014, 852015, 852016, 852017, 852018, 852019, 852020, 852021, 852022, 852023, 852024, 852025, 852026, 852027, 852028, 852029, 852030, 852031, 852032, 852033, 852034, 852035, 852036, 852037, 852038, 852039, 852040, 852041, 852042, 852043, 852044, 852045, 852046, 852047, 852048, 852049, 852050, 852051, 852052, 852053, 852054, 852055, 852056, 852057, 852058, 852059, 852060, 852061, 852062, 852063, 852064, 852065, 852066, 852067, 852068, 852069, 852070, 852071, 852072, 852073, 852074, 852075, 852076, 852077, 852078, 852079, 852080, 852081, 852082, 852083, 852084, 852085, 852086, 852087, 852088, 852089, 852090, 852091, 852092, 852093, 852094, 852095, 852096, 852097, 852098, 852099, 852100, 852101, 852102, 852103, 852104, 852105, 852106, 852107, 852108, 852109, 852110, 852111, 852112, 852113, 852114, 852115, 852116, 852117, 852118, 852119, 852120, 852121, 852122, 852123, 852124, 852125, 852126, 852127, 852128, 852129, 852130, 852131, 852132, 852133, 852134, 852135, 852136, 852137, 852138, 852139, 852140, 852141, 852142, 852143, 852144, 852145, 852146, 852147, 852148, 852149, 852150, 852151, 852152, 852153, 852154, 852155, 852156, 852157, 852158, 852159, 852160, 852161, 852162, 852163, 852164, 852165, 852166, 852167, 852168, 852169, 852170, 852171, 852172, 852173, 852174, 852175, 852176, 852177, 852178, 852179, 852180, 852181, 852182, 852183, 852184, 852185, 852186, 852187, 852188, 852189, 852190, 852191, 852192, 852193, 852194, 852195, 852196, 852197, 852198, 852199, 852200, 852201, 852202, 852203, 852204, 852205, 852206, 852207, 852208, 852209, 852210, 852211, 852212, 852213, 852214, 852215, 852216, 852217, 852218, 852219, 852220, 852221, 852222, 852223, 852224, 852225, 852226, 852227, 852228, 852229, 852230, 852231, 852232, 852233, 852234, 852235, 852236, 852237, 852238, 852239, 852240]
+
+development:
+  seeds: [853101, 853102, 853103, 853104, 853105, 853106]
+  scenarios: [flow6, flow12, dense24, flow6, flow12, dense24]
+  baseline_before_training: true
+  compare_after_updates: [40, 80, 120, 160, 200, 240]
+  paired_same_initial_states: true
+  intentional_dev_seed_reuse: true
+  heldout: false
+  full_resolution_required: true
+  full_resolution_failure_action: PAUSE_FORMAL_RUN_FOR_PRIMARY_REVIEW
+  dev_runs_before_first_update: true
+
+heldout_reservation:
+  seed_start: 854001
+  seed_end: 854012
+  count: 12
+  reserved_only_for_later_qualification: true
+  run_in_this_task: false
+  consume_or_reset: false
+
+outcomes:
+  ledger_enum_normal: completed
+  ledger_enum_controlled_emergency: emergency_landed
+  ledger_enum_energy_failure: failed_energy
+  ledger_enum_unresolved: unresolved
+  emergency_landed_is_reportable_learning_outcome: true
+  emergency_landed_is_automatic_stop: false
+  failed_energy_is_hard_failure: true
+  unsafe_or_fail_closed_is_hard_failure: true
+  training_unresolved_policy: report_only
+  dev_full_resolution_failure_policy: pause_formal_run
+  requested_full_resolution_denominator: true
+  report_by_load_class: true
+  report_fields:
+    - completed_count
+    - emergency_landed_count
+    - emergency_landed_rate
+    - normal_rate
+    - failed_energy_count
+    - unresolved_count
+    - per_priority_wait
+    - low_soc_wait
+    - full_request_denominator
+  research_targets:
+    dense_emergency_rate_max: 0.10
+    sparse_emergency_rate_max: 0.05
+    automatic_training_stop: false
+    qualification_status: provisional_later_qualification_only
+
+hard_stop_conditions:
+  safety_failure: true
+  energy_failure: true
+  requested_likelihood_failure: true
+  nonfinite_failure: true
+  update_integrity_failure: true
+  unsafe_execution_or_fail_closed: true
+  frozen_parameter_change: true
+  proposal_or_temperature_change: true
+  unresolved_training_is_not_automatic_stop: true
+
+checkpointing:
+  save_after_each_accepted_episode: true
+  save_state:
+    - policy
+    - optimizer
+    - rng
+    - timestep
+    - episode_index
+    - protocol_digest
+    - source_checkpoint_sha256
+  resume_policy: validated_exact_last_complete_episode_only
+  current_runner_resume_support_validated: false
+  do_not_promise_resume_until_implemented: true
+  automatic_promotion: false
+  automatic_p3_pass: false
+  automatic_p4_pass: false
+
+outputs:
+  server_root: /home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_20260925
+  per_run_pattern: /home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_20260925/runN
+  runtime_wall_estimate: DEFER_UNTIL_BOUNDED_PILOT_OBSERVATIONS
+  disk_estimate: DEFER_UNTIL_BOUNDED_PILOT_OBSERVATIONS
+
+seed_collision_check:
+  checked_existing_paths:
+    - terminal_marl/configs
+    - docs/evidence
+    - docs/CURRENT_STATUS.md
+  checked_seed_ranges: [850001-850240, 851001-851240, 852001-852240, 853101-853106, 854001-854012]
+  collision_observed_in_checked_paths: false
+  global_collision_claim: false
