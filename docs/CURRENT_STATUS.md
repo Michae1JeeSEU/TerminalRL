@@ -53,9 +53,15 @@ source 为 `36 normal + 6 emergency + 0 failed_energy`，candidate 为 `41 norma
 唯一 false arm gate 为 `no_failed_outcomes=false`，因此不称 P3 通过。整体 lifecycle aggregate 为
 source priority-weighted wait `150.6971849500`、low-SOC wait `53.7159174128`（count `12`），
 candidate 分别为 `80.1562018040`、`21.4881016766`（count `12`）；selection gates 全部 true。
-下一步仅做 candidate 唯一 dense24 emergency 的只读 trace；不新增实验、seed、训练或 qualification。
-`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`，原 formal/heldout 保持 untouched；
-不放宽既有安全与 P3 gate。
+candidate 分别为 `80.1562018040`、`21.4881016766`（count `12`）；selection gates 全部 true。
+exact emergency replay 与当前 `32` 个独立单步 shadow checks 已记录：均绑定 exact `795`-step
+replay、state unchanged、无 safety error、approved `0`，其中 `safety_wait=16`、
+`final_capacity=10`、`safety_reject=6`。这只说明抽查状态未获批，不宣称所有 WAIT 错误或 SOC
+排序有效。下一步注册的[arbitration repair protocol](evidence/v4_2/random_soc_arbitration_repair_v1_20260925.md)
+固定同一 repair candidate 权重，仅比较 `downstream_priority` 与 `downstream_soc_priority`；实现和
+preflight pending，尚未消费任何 `847xxx` reset。两 arm 均为 repair candidate，不自动采纳，也不替换
+原始 source baseline；`P3_QUALIFIED=false`、`PPO_ALLOWED=false`、`P4_ALLOWED=false`，原
+formal/heldout 保持 untouched，不放宽既有安全与 P3 gate。
 
 **P3 random-SOC scope（沿用现有 P3 V4 语义）：** initial SOC 为 `.55–.90` uniform，priority 为
 `1/3/5`，场景覆盖 `flow6`、`flow12` 和 `dense24`。dense30 pressure 诊断不能单独构成 P3

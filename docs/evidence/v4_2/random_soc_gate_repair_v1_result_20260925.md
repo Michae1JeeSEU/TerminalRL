@@ -104,6 +104,31 @@ All six arms have replay, safety, no-Teacher, no-update, and
 gate is dense24 `no_failed_outcomes=false`; all other listed arm gates are
 true. This is development evidence only and does not pass P3 qualification.
 
+## Candidate dense24 emergency exact replay
+
+The local `replay_candidate_emergency846303.json` has `exact=true` and
+`steps_captured=795`. It targets `arrival_id=20`, UID `148`, with initial SOC
+`0.5538904204`. The first observed states were outer at time `202` with SOC
+`0.5112237538`, middle at `310` with `0.4446173890`, transfer m2i at `371`
+with `0.4039507223`, and inner at `437` with `0.3639134929`. The first
+SOC `<=0.40` record was time `377` in transfer m2i at `0.3999507223`.
+
+The eligible-decision records show `WAIT` at each step `437` through `442`.
+The exact event trace records `emergency_departure` at time `442` and
+touchdown at `503`; touchdown SOC was `0.3179567218`. The earlier
+`analysis_candidate_emergency846303.json` last-20 error slice included other
+UIDs and did not cover the early state sequence. The first diagnostic replay
+returned, but a post-processing `KeyError` prevented it from being written;
+the corrected diagnostic replay produced this exact artifact. It fills that
+diagnostic gap without changing the historical raw pair evidence and is not a
+new fresh evaluation or qualification. The completed bounded shadow check has
+`32` independent single-step checks with exact `795`-step replay binding,
+unchanged state, no safety error, and zero approved witnesses: `safety_wait=16`,
+`final_capacity=10`, and `safety_reject=6`. These observations only record
+that the sampled checks did not obtain approval; they do not establish that
+all WAIT decisions were incorrect or give the final cause of the emergency
+outcome.
+
 ## Launch record and next status
 
 The first wrapper attempt for `846101` pre-created the collector output and
@@ -112,9 +137,12 @@ produced no summary, progress, or labels and was archived as
 `launch_failure_train_flow6_846101`; the subsequent real `846101` run above
 is the only counted train episode for that seed.
 
-The gate-adapter fit and the three paired rollouts are recorded as development
-evidence. The next action is a read-only trace of the candidate's single
-dense24 emergency outcome. No new seed, training, qualification, or PPO run
-is authorized here; `P3_QUALIFIED=false`, `PPO_ALLOWED=false`, and
+The gate-adapter fit, three paired rollouts, exact replay, and shadow
+observations are development evidence. The next registered step is the
+[random-SOC arbitration repair protocol](random_soc_arbitration_repair_v1_20260925.md):
+both dense24 arms use the frozen repair checkpoint and differ only in
+`release_arbitration_mode`; implementation and preflight are pending before
+any `847xxx` reset. No arm is auto-adopted, and no new P3 qualification or PPO
+run is authorized here; `P3_QUALIFIED=false`, `PPO_ALLOWED=false`, and
 `P4_ALLOWED=false` remain unchanged, and the old held-out evidence remains
 untouched.
