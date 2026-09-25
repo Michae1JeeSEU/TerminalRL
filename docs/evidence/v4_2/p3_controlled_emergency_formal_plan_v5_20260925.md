@@ -1,16 +1,17 @@
 # P3 Controlled-Emergency Formal Training Plan V5
 
-状态：`FORMAL_ADMITTED / READY_FOR_FORMAL_TRAINING`；launch status：`RUNNING_PPO`。bounded
+状态：`FORMAL_ADMITTED / READY_FOR_FORMAL_TRAINING`；launch status：`FAILED`。bounded
 pilot 已完成并通过技术准入检查。首轮正式 campaign 在首次 checkpoint 前因软件保存路径错误停止，
-修复验证通过后，restart1 已启动并行运行。用户已授权按本计划启动正式训练，restart1 的 run0/run1/run2
-实际进程和首个 `dev_before_training` 进度产物均已确认。本文冻结正式大规模 P3 PPO 的训练规格、证据边界
-和启动前 check-only preflight；runner 已实现并通过定向测试，restart1 三个正式 run 当前并行运行。
+修复验证通过后，restart1 曾启动并行运行，现已终止并记录为 `FAILED`。用户已授权按本计划启动正式训练，
+restart1 的 run0/run1/run2 实际进程和首个 `dev_before_training` 进度产物均曾确认。本文冻结正式大规模
+P3 PPO 的训练规格、证据边界和启动前 check-only preflight；runner 已实现并通过定向测试，restart1 三个
+正式 run 的终态结果见 [restart1 result](p3_controlled_emergency_formal_v5_result_20260925.md)。
 `FORMAL_P3_ALLOWED=true` 表示 admission readiness，不表示 `P3_QUALIFIED` 或 `P4_ALLOWED`。
 
 `PPO_ENTRY_ALLOWED` 已在完整 stochastic no-update entry 通过后设置为 `true`，且 entry
 不等同于课程结业；`FORMAL_P3_ALLOWED` 已在 bounded pilot technical PASS 和主代理 review
 后设置为 `true`。绑定 admission JSON 的 check-only preflight 已执行并通过；用户已授权启动，
-当前 launch status 为 `RUNNING_PPO`。
+当前 launch status 为 `FAILED`。
 
 ## 1. 冻结起点与范围
 
@@ -76,7 +77,7 @@ dense 配对应急数为 `4→3`，low-SOC wait 变化为 `-44.036s`，priority-
 证明、课程结业或模型晋级；`emergency_landed` 仍是允许学习的带代价结果。
 
 当前 admission 状态为 `PPO_ENTRY_ALLOWED=true`、`FORMAL_P3_ALLOWED=true`，正式 campaign
-launch status 为 **RUNNING_PPO**，`P3_QUALIFIED=false`、`P4_ALLOWED=false`。启动前 admission JSON 已
+launch status 为 **FAILED**，`P3_QUALIFIED=false`、`P4_ALLOWED=false`。启动前 admission JSON 已
 使用 `P3_FORMAL_ADMISSION_DECISION_V5`，并绑定 pilot manifest/protocol SHA、E04 SHA、
 实际 config snapshots 和 exact optimizer boundary；admission protocol YAML SHA256 为
 `85d490dd8737b03fa59e954731b0f3446292288bec6395f4179da5e49048fa21`，本 formal YAML SHA256
@@ -104,7 +105,7 @@ restart1 输出根为
 已生成；三个首回合均 `accepted_episodes=1`、`records[0].checkpoint_restore_exact=true`、
 `stopped=false`。首 checkpoint 已验证：run0 `checkpoints/checkpoint_episode_0001.pt` 为
 `1,039,047` bytes，run1 为 `1,039,111` bytes，run2 为 `1,039,111` bytes。当前 launch status
-为 `RUNNING_PPO`。
+为 `FAILED`。
 
 ## 3. 正式训练矩阵
 
@@ -135,7 +136,8 @@ restart1 因首轮 checkpoint 保存软件故障而重复使用上述同一组 r
 digest 和 source SHA。正式 runner 已实现并通过定向测试，但尚未提供可自动续训的 resume
 路径；恢复只能在人工核验“最后一个完整 episode”后进行，不能因中断自动重跑或替换 seed。
 正式 job 启动前已执行 admission-bound check-only preflight，确认当前配置快照、optimizer
-边界、协议 SHA 和 E04 source SHA 一致；当前三个正式 run 已并行运行，硬失败保留现场且不自动重跑。
+边界、协议 SHA 和 E04 source SHA 一致；restart1 三个正式 run 已终止，终态结果见
+[restart1 result](p3_controlled_emergency_formal_v5_result_20260925.md)，硬失败保留现场且不自动重跑。
 
 ## 4. Development 与 heldout 边界
 
@@ -193,7 +195,7 @@ P4_ALLOWED=false
 ```
 
 runner 命令已实现并通过定向测试，且 admission-bound `--check-only` 已验证通过；用户已授权正式
-启动，本轮 formal campaign 当前为 **RUNNING_PPO**。以下是 restart1 registered run 0 的正式启动命令（服务器 cwd
+启动，本轮 formal campaign 当前为 **FAILED**。以下是 restart1 registered run 0 的正式启动命令（服务器 cwd
 `/home/user/projects/terminal`，Python `/home/user/envs/terminal_env/bin/python`，线程环境与
 pilot wrapper 一致）：
 
@@ -208,12 +210,12 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 ```
 
 run 1/2 使用相同的 admission/checkpoint 参数，将 `--run-index` 和末尾输出目录分别改为
-`1/run1` 或 `2/run2`。当前 restart1 三个正式 run 已并行运行：run0 PID `2497811`、run1 PID
-`2497879`、run2 PID `2497946`；输出根为
+`1/run1` 或 `2/run2`。restart1 三个正式 run 曾以 run0 PID `2497811`、run1 PID `2497879`、
+run2 PID `2497946` 启动；输出根为
 `/home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_restart1_20260925/`，各 run 的
 `dev_before_training/*/progress.json` 已生成；三个首回合均 accepted，首 checkpoint 与 exact restore
-已核验。heartbeat
-`p3-formal-v5-restart1-monitor` 每 15 分钟监控；硬失败保留现场，不自动重跑。
+曾核验。三个 run 后续均以 `FAILED` 终止，完整终态见 [restart1 result](p3_controlled_emergency_formal_v5_result_20260925.md)。
+heartbeat `p3-formal-v5-restart1-monitor` 已删除；硬失败保留现场，不自动重跑。
 
 已执行并通过的 `--check-only` 命令为（`N=0`；`--output` 保持正式 run 路径，检查结果由
 标准输出重定向到 admission 输出文件）：
@@ -254,8 +256,8 @@ pilot 输出总量直接观测为约 `288,014,792` bytes，其中 `12` 个 actio
 改变终态时间。服务器与同步本地镜像各预留约 `25–35 GB` 磁盘空间。
 
 正式 YAML 的 runtime/disk estimate 字段只引用本节，后续不因更新估算而改变冻结 protocol
-内容；formal admission-bound check-only 已通过，本节资源数据是启动前 pilot 参考，当前三个正式
-run 已并行运行。
+内容；formal admission-bound check-only 已通过，本节资源数据是启动前 pilot 参考；restart1
+正式 campaign 的终态见 [restart1 result](p3_controlled_emergency_formal_v5_result_20260925.md)。
 
 ## 8. Seed collision check
 
