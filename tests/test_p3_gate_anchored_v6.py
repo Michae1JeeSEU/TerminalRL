@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 import torch
 
+from terminal_marl.algo.student_ppo_v4_2 import StudentStepV42
 from terminal_marl.training import run_v4_2_p3_gate_anchored_v6 as runner
 
 
@@ -116,6 +117,79 @@ def test_reference_snapshot_has_fixed_source_digest() -> None:
     digest = runner._reference_digest(reference)
     assert digest == runner._reference_digest(reference)
     assert reference.max_kl == 0.05
+
+
+def test_update_runs_real_calibrated_reference_transaction(monkeypatch: pytest.MonkeyPatch) -> None:
+    torch.manual_seed(17)
+    np.random.seed(17)
+    policy = runner.TemperatureCalibratedGateResidualAdapterStudentPPOV42(
+        runner.OBSERVATION_DIM,
+        temperature=runner.CALIBRATION_TEMPERATURE,
+        learning_rate=3e-5,
+    )
+    trainable = runner._trainable_names(policy)
+    policy.optimizer = torch.optim.Adam(
+        [parameter for parameter in policy.model.parameters() if parameter.requires_grad],
+        lr=3e-5,
+    )
+    observations = np.stack([
+        np.full(runner.OBSERVATION_DIM, 0.01 * (index + 1), dtype=np.float32)
+        for index in range(8)
+    ])
+    reference = runner.GateReference.from_policy(
+        policy, observations, np.ones(len(observations), dtype=np.float32),
+    )
+    policy.gate_reference = reference
+    steps: list[StudentStepV42] = []
+    for index, observation in enumerate(observations):
+        with torch.no_grad():
+            gate_distribution, _ = policy.model.distributions(
+                torch.as_tensor(observation[None], dtype=torch.float32),
+            )
+            gate_logprob = gate_distribution.log_prob(torch.tensor([0])).cpu().numpy()
+        steps.append(StudentStepV42(
+            world=observation[None],
+            requested_gate=np.asarray([0], dtype=np.int64),
+            requested_proposal=np.asarray([-1], dtype=np.int64),
+            gate_logprob=gate_logprob,
+            proposal_logprob=np.asarray([np.nan], dtype=np.float32),
+            actor_mask=np.asarray([True], dtype=np.bool_),
+            value=0.0,
+            next_value=0.0,
+            reward=0.1 + 0.01 * index,
+            terminated=False,
+            episode_end=index == len(observations) - 1,
+        ))
+
+    # The PPO transaction and frozen-state comparison remain real; only the
+    # tape/lifecycle checks are isolated from this unit test's synthetic steps.
+    monkeypatch.setattr(runner.p3_legacy, "_policy_tape_shortlists_exact",
+                        lambda *args, **kwargs: True)
+    monkeypatch.setattr(runner, "_anchor_metrics", lambda *args, **kwargs: {"mock": True})
+    before = runner._tensor_digest(policy.model.state_dict())
+    update, gates, diagnostics = runner._update(
+        policy,
+        steps,
+        _config(),
+        "synthetic-tape.json",
+        runner._runtime_protocol(_v6()),
+        reference,
+        [],
+        [],
+    )
+
+    assert update["accepted_updates"] >= 1
+    assert update["rejected_updates"] == 0
+    assert gates["frozen_proposal_subgraph"] is True
+    assert gates["runtime_shortlist_stability"] is True
+    assert gates["proposal_temperature_frozen"] is True
+    assert gates["reference_source_fixed"] is True
+    assert gates["reference_gate_kl_cap"] is True
+    assert update["reference_gate_before"]["reference_kl"] == pytest.approx(0.0, abs=1e-7)
+    assert diagnostics["reference_gate_after"]["reference_kl"] <= reference.max_kl
+    assert policy.optimizer.state
+    assert runner._tensor_digest(policy.model.state_dict()) != before
+    assert trainable
 
 
 def test_source_sha_is_checked_before_loader(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

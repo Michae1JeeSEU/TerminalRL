@@ -480,7 +480,7 @@ def _update(policy: Any, steps: list[Any], config: Any, tape_path: str,
         and float(after_reference_metrics.get("reference_kl", np.inf)) <= float(reference.max_kl)
     )
     gates["proposal_temperature_frozen"] = bool(
-        formal_v5._frozen_state_equal(before_model, policy.model.state_dict())
+        p3_legacy._frozen_state_equal(before_model, policy.model.state_dict())
     )
     update["reference_gate_before"] = before_reference_metrics
     update["reference_gate_after"] = after_reference_metrics

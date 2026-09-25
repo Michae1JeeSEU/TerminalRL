@@ -1,11 +1,11 @@
 # P3 gate anchored V6 protocol draft（2026-09-25）
 
 状态：`READY_FOR_SMOKE_AND_PILOT`。V6 runner 已实现，外部 V6/PPO/GateReference 测试共
-`33 passed`；冻结 YAML SHA256 为
+`34 passed`；冻结 YAML SHA256 为
 `043ae7296d838e0970aadf78667621c16596c100e92992ce4e62fc2f1e7c0cf8`。本文与
 `terminal_marl/configs/low_v4_2/p3_gate_anchored_v6.yaml` 冻结下一阶段协议边界。服务器 smoke 已完成，
-但 pilot 或 formal training 尚未执行。本轮尚未消费 pilot/formal seed 或 heldout，不创建 heartbeat，
-也不修改 V5 冻结文件。
+首次 pilot 尝试已失败并保留现场，修复后的服务器定向测试已通过，pilot restart1 已获一次性软件恢复授权但尚未收到 PID；formal training
+尚未执行。本轮不消费新的 heldout，不创建 heartbeat，也不修改 V5 冻结文件。
 
 ## 1. 固定来源与目的
 
@@ -131,7 +131,9 @@ seed 未发现 exact hit；local docs/source 也未发现 exact hit。这是限�
 ## 7. 当前状态与下一步
 
 当前 V6 YAML 为 `READY_FOR_SMOKE_AND_PILOT`：runner 实现已完成，外部 V6/PPO/GateReference
-测试 `33 passed`。服务器 smoke manifest 为：
+测试 `34 passed`。修复后的真实 calibrated adapter + GateReference PPO transactional test 记录
+`accepted=2`、`rejected=0`、`rollout_KL=2.0283e-9`、`reference_KL=5.6516e-9`，Adam state 非空且冻结
+gates 全为 true。服务器 smoke manifest 为：
 
 ```text
 /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/smoke/manifest.json
@@ -139,8 +141,21 @@ seed 未发现 exact hit；local docs/source 也未发现 exact hit。这是限�
 
 `859000` smoke 使用两步、无 PPO，状态为 `SMOKE_COMPLETED PASS`；checkpoint restore exact、
 weights unchanged、安全计数为零。该局部 smoke 的 `unresolved=24` 未进行 full-scenario 终态核算，
-不作为 formal 结果。pilot 已获主审启动授权，但尚未收到 PID，因此当前不记录为 running；下一步是
-服务器 pilot 及其技术/performance 审查。formal `3×240` 仍要求 external primary admission report，
-尚未启动，不把实现测试或 smoke 写成 PPO 通过。V5 admission/formal YAML 与历史输出保持不变；启动
-后不创建 heartbeat、不持续跟进，程序自身 hard-stop、checkpoint 和 development 检查照常执行，
-失败后不自动 restart。
+不作为 formal 结果。
+
+首次 pilot 尝试 PID `2588122`，退出码 `1`，现场根为：
+
+```text
+/home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/pilot/
+```
+
+predev 的 flow6/flow12/dense24 分别为 `6/0/0`、`12/0/0`、`20/4/0`
+（normal/emergency_landed/failed_energy），均 resolved 且安全计数为零；首个训练 episode
+`859201/flow6` 为 `6 normal`、无 failed energy、完整 resolved。PPO 调用后完整性检查引用不存在的
+`formal_v5._frozen_state_equal`，因此该次 pilot 为 `0 accepted`、无 checkpoint。原 pilot 根、日志与
+现场保留。修复后的 runner 使用 `p3_legacy._frozen_state_equal`；上述服务器 `34` 项测试通过后，主审批准一次
+`pilot_restart1`，沿用 `03c0`、fresh Adam 和同一组 seeds，重复不构成新的独立样本。尚未收到 restart1 PID，
+不记录为 running。formal `3×240` 仍要求
+external primary admission report，尚未启动，不把实现测试或 smoke 写成 PPO 通过。V5 admission/formal
+YAML 与历史输出保持不变；启动后不创建 heartbeat、不持续跟进，程序自身 hard-stop、checkpoint
+和 development 检查照常执行，失败后不自动 restart。
