@@ -22,6 +22,16 @@
 
 **P3 V5 formal campaign 终态（2026-09-25）：** restart1 三个正式 run 均已终止并记录为 `FAILED`；汇总与逐 run manifest 见 [formal V5 restart1 result](evidence/v4_2/p3_controlled_emergency_formal_v5_result_20260925.md)。合计 `337` accepted episodes、`340` records、`5,604` requests，其中 `4,726` normal、`875` `emergency_landed`、`3` `failed_energy`、`0` other-failed、`0` unresolved；三条失败均为 dense24，所有 records 的安全非零计数均为 `0`。P3 formal training 未完成，`P3_QUALIFIED=false`、`P4_ALLOWED=false`；heartbeat 已删除，不自动恢复或重跑，未消费 heldout，也未启动额外 stress 评估。
 
+**P3 V5 原始策略回放可视化（2026-09-25，已完成）：** 三个 restart1 run 已通过入口 `python -m terminal_marl.visualization.p3_formal_replay --run-dir .../runN --output-dir .../runN` 完成原始 stochastic action tape 回放，三个任务均 `exit 0` 且 `exact=true`。输出根为 `/home/user/training_outputs/terminal/p3_formal_policy_visualizations_20260925/`，HTML 与 `replay_report.json` 已同步到本地：
+
+| run | checkpoint / seed | dense24 记录 | steps | HTML 大小 | 本地产物 |
+|---|---|---|---:|---:|---|
+| run0 | `217` / `850218` | `16 / 7 / 1` | `919/919` | `8,595,877` bytes | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run0/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run0/replay_report.json) |
+| run1 | `31` / `851032` | `15 / 8 / 1` | `1018/1018` | `9,028,121` bytes | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run1/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run1/replay_report.json) |
+| run2 | `89` / `852090` | `18 / 5 / 1` | `989/989` | `9,206,441` bytes | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run2/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run2/replay_report.json) |
+
+表中 dense24 记录顺序为 `normal / emergency_landed / failed_energy`，三个回放各含 `24` requests；不同 seed 不作公平性能比较。该过程使用原 stochastic 轨迹，不重新采样、不训练、不消费新 seed 或 heldout。
+
 **P3 V5 首轮保存失败与一次性恢复例外（2026-09-25）：** 首轮三个 run 的失败属于软件 checkpoint 路径错误，不是性能筛选；首轮 `850001/851001/852001` 训练 seed 和 `853` development seed 已被该失败尝试消费，restart1 对相同 seed 的重复不构成新的独立样本，不追加或隐藏 seed。原 run0/1/2 目录、manifest 和 tapes 保持 immutable；由于没有持久 checkpoint，restart1 不续训首轮更新，也不声称存在可恢复模型。其余未消费 training seeds 与 heldout 不替换。本例外只针对该具体保存故障，不建立未来自动重跑权限；冻结 YAML、admission decision、场景、策略、奖励和安全边界不变。
 
 **P3 V5 admission evidence（2026-09-25）：** entry manifest SHA256 为

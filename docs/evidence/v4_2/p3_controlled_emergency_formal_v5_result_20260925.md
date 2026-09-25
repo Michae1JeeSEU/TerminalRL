@@ -94,3 +94,25 @@ run1 没有后续 development update-40/80/120/160/200/240 记录；本 campaign
 `2026-09-25 10:57:03+0800`。后续仅保留只读审查边界：检查三个失败 lifecycle 的资源阻塞与
 actor gate，并比较训练日志与 development 退化；如需重放，先单独冻结同 seed 的 E04 与失败前
 checkpoint paired diagnostic protocol。heartbeat `p3-formal-v5-restart1-monitor` 已删除。
+
+## 6. 原始策略回放可视化（已完成）
+
+已使用现有入口对三个 restart1 run 的原始 stochastic action tape 完成可视化回放：
+
+```bash
+python -m terminal_marl.visualization.p3_formal_replay \
+  --run-dir /home/user/training_outputs/terminal/p3_controlled_emergency_formal_v5_restart1_20260925/runN \
+  --output-dir /home/user/training_outputs/terminal/p3_formal_policy_visualizations_20260925/runN
+```
+
+输出根为 `/home/user/training_outputs/terminal/p3_formal_policy_visualizations_20260925/`。三个回放任务均
+`exit 0`，三个 `replay_report.json` 均记录 `exact=true`；HTML 与 report 已同步到本地。
+
+| run | checkpoint episode | seed | dense24 requests | normal / emergency_landed / failed_energy | steps | HTML bytes | local artifacts |
+|---|---:|---:|---:|---:|---:|---:|---|
+| run0 | 217 | `850218` | 24 | `16 / 7 / 1` | `919/919` | 8,595,877 | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run0/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run0/replay_report.json) |
+| run1 | 31 | `851032` | 24 | `15 / 8 / 1` | `1018/1018` | 9,028,121 | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run1/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run1/replay_report.json) |
+| run2 | 89 | `852090` | 24 | `18 / 5 / 1` | `989/989` | 9,206,441 | [HTML](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run2/recorded_stochastic_policy_replay.html) · [report](D:/7_codespace/training_outputs/terminal/p3_formal_policy_visualizations_20260925/run2/replay_report.json) |
+
+上述三个 seed 不用于公平性能比较；回放使用原 stochastic 轨迹，不重新采样，不训练，不消费新
+seed 或 heldout。
