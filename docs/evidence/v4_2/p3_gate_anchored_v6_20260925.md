@@ -4,8 +4,9 @@
 `34 passed`；冻结 YAML SHA256 为
 `043ae7296d838e0970aadf78667621c16596c100e92992ce4e62fc2f1e7c0cf8`。本文与
 `terminal_marl/configs/low_v4_2/p3_gate_anchored_v6.yaml` 冻结下一阶段协议边界。服务器 smoke 已完成，
-首次 pilot 尝试已失败并保留现场，修复后的服务器定向测试已通过，pilot restart1 已获一次性软件恢复授权但尚未收到 PID；formal training
-尚未执行。本轮不消费新的 heldout，不创建 heartbeat，也不修改 V5 冻结文件。
+首次 pilot 尝试已失败并保留现场，修复后的服务器定向测试已通过，pilot restart1 已完成 technical pass；主审已批准并启动
+formal `3×240`，从 `03c0` 与 fresh Adam 重新开始，不使用 pilot checkpoint。三组 check-only 已通过并完成启动验证；本轮不消费新的
+heldout，不创建 heartbeat，也不修改 V5 冻结文件。
 
 ## 1. 固定来源与目的
 
@@ -154,8 +155,25 @@ predev 的 flow6/flow12/dense24 分别为 `6/0/0`、`12/0/0`、`20/4/0`
 `859201/flow6` 为 `6 normal`、无 failed energy、完整 resolved。PPO 调用后完整性检查引用不存在的
 `formal_v5._frozen_state_equal`，因此该次 pilot 为 `0 accepted`、无 checkpoint。原 pilot 根、日志与
 现场保留。修复后的 runner 使用 `p3_legacy._frozen_state_equal`；上述服务器 `34` 项测试通过后，主审批准一次
-`pilot_restart1`，沿用 `03c0`、fresh Adam 和同一组 seeds，重复不构成新的独立样本。尚未收到 restart1 PID，
-不记录为 running。formal `3×240` 仍要求
-external primary admission report，尚未启动，不把实现测试或 smoke 写成 PPO 通过。V5 admission/formal
-YAML 与历史输出保持不变；启动后不创建 heartbeat、不持续跟进，程序自身 hard-stop、checkpoint
-和 development 检查照常执行，失败后不自动 restart。
+`pilot_restart1`，沿用 `03c0`、fresh Adam 和同一组 seeds，重复不构成新的独立样本。该次 pilot 已完成
+`PILOT_TECHNICAL_PASS=true`：manifest 为
+`/home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/pilot_restart1/manifest.json`，SHA256
+为 `2545c9cb88dd86828018bc36eeee3401d894250e41278a5f40b7a86bab63634f`；12 个 episode、198 requests（181 normal、
+17 emergency_landed、0 failed_energy、0 unresolved）、622 accepted minibatches、0 rejected、12 次 restore exact，
+final reference KL `.0166467186`，第 11 个 episode 的最大值 `.0170518`，mean `Release source` `.35982→.34847`。
+paired development 的 flow6 无变化；flow12 priority wait `+1.08689s`、low-SOC wait `+1.5s`；dense24 的 emergency
+`4→7`、normal `20→17`，priority wait `114.998896→103.393995s`（`-11.6049s`），low-SOC wait
+`133.919561→135.778840s`（`+1.8593s`）。全部 development 回合 full-resolved 且 `failed_energy=0`；technical pass
+不等于性能指标全部改善或 P3 qualification。旧辅助 `priority_outcomes` 表对流入 UID 缺少完整映射，不能作为完整 priority 分母；
+本轮 priority wait 使用 lifecycle 全 `24` rows 且 replay exact。主审已批准 formal `3×240` 沿用 `03c0` 与 fresh Adam，
+不使用 pilot checkpoint。三组 check-only 通过后，于 `23:21:36/36/37 +08:00` 启动 formal run0/run1/run2；decision 为
+`/home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal_admission_decision.json`，SHA256
+`a57dcba2c98ebbd573d905feec36518728fa72459f3b65a48921ee97c17d489e`。child PID 为
+`2592623/2592625/2592627`，supervisor PID 为 `2592622/2592624/2592626`，输出根为
+`/home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/runN`；三组均已生成首个
+`checkpoint_episode_0001.pt`，大小分别为 `1,039,047/1,038,983/1,038,983` bytes，并进入 episode 2。
+启动核验时 CPU 约 `99.9%`、stderr 为空；完成启动核验后按用户要求停止观察，不创建 heartbeat 或持续监控。按 pilot 每 episode
+平均 `71.353s` 估计，240 episodes 约 `4.76h`，另加约 `42` 个 development episodes `0.49h`，含余量的参考窗口为
+`5.5–8h`，预计 `2026-09-26 04:50–07:20`；该时间不代表完成保证。formal 尚未完成，P3/P4 仍未通过，
+不把实现测试、smoke 或 pilot technical pass 写成 PPO/P3 qualification。V5 admission/formal YAML 与历史输出保持不变；程序自身
+hard-stop、checkpoint 和 development 检查照常执行，失败后不自动 restart。
