@@ -129,6 +129,7 @@ class StudentPPOV42(JointPPOV42):
                gae_lambda: float = .95, clip_ratio: float = .2,
                value_coef: float = .5, entropy_coef: float = .01,
                target_kl: float | None = None) -> dict:
+        gate_reference = getattr(self, "gate_reference", None)
         if not training_authorized:
             raise PermissionError("PPO requires student-only qualification and admission")
         if not steps or epochs < 1 or minibatch_size < 1:
@@ -139,6 +140,8 @@ class StudentPPOV42(JointPPOV42):
             if not np.isfinite(target_kl) or target_kl <= 0:
                 raise ValueError("target_kl must be finite and positive")
             target_kl = float(target_kl)
+        if gate_reference is not None and target_kl is None:
+            raise ValueError("target_kl is required when gate_reference is set")
         for row in steps:
             row.validate(self.observation_dim)
             if not row.stochastic_behavior:
@@ -155,7 +158,29 @@ class StudentPPOV42(JointPPOV42):
         stopped = False
         final_rollout_kl = 0.0
         max_accepted_rollout_kl = 0.0
+        reference_kl_before = 0.0
+        reference_kl_final = 0.0
+        reference_kl_max_accepted = 0.0
+        reference_rejected_updates = 0
+        rejection_reason = None
+        if gate_reference is not None:
+            initial_reference_metrics = gate_reference.metrics(self)
+            reference_kl_before = float(initial_reference_metrics["reference_kl"])
+            reference_kl_final = reference_kl_before
+            reference_limit = float(gate_reference.max_kl)
+            if not np.isfinite(reference_kl_before) or reference_kl_before > reference_limit:
+                attempted_updates = 1
+                rejected_updates = 1
+                reference_rejected_updates = 1
+                stopped = True
+                rejection_reason = (
+                    "reference_kl_nonfinite"
+                    if not np.isfinite(reference_kl_before)
+                    else "reference_kl_before_exceeds_max"
+                )
         for _ in range(epochs):
+            if stopped:
+                break
             permutation = np.random.permutation(len(steps))
             for start in range(0, len(steps), minibatch_size):
                 indices = permutation[start:start + minibatch_size]
@@ -194,7 +219,14 @@ class StudentPPOV42(JointPPOV42):
                     entropy = team_mean(gate_dist.entropy() + gate_dist.probs[:, 1] * proposal_dist.entropy())
                     kl = team_mean((ratio - 1) - logratio)
                     clipped = team_mean((torch.abs(ratio - 1) > clip_ratio).float())
+                reference_kl = None
+                if gate_reference is not None:
+                    reference_kl = gate_reference.weighted_kl(self.model)
+                    if not torch.isfinite(reference_kl):
+                        raise FloatingPointError("non-finite reference gate KL")
                 loss = actor + value_coef * value_loss - entropy_coef * entropy
+                if reference_kl is not None:
+                    loss = loss + float(gate_reference.coefficient) * reference_kl
                 if not torch.isfinite(loss):
                     raise FloatingPointError("non-finite PPO objective")
                 model_snapshot = copy.deepcopy(self.model.state_dict()) if target_kl is not None else None
@@ -214,6 +246,8 @@ class StudentPPOV42(JointPPOV42):
                     self.optimizer.zero_grad(set_to_none=True)
                     rejected_updates += 1
                     stopped = True
+                    if gate_reference is not None:
+                        rejection_reason = "optimizer_step_error"
                     break
                 if target_kl is not None:
                     model_finite = _state_finite(self.model.state_dict())
@@ -226,12 +260,36 @@ class StudentPPOV42(JointPPOV42):
                     else:
                         rollout_kl = float("nan")
                     finite_update = model_finite and optimizer_finite and np.isfinite(rollout_kl)
-                    if not finite_update or rollout_kl > target_kl:
+                    reference_kl_after = None
+                    reference_ok = True
+                    if gate_reference is not None:
+                        try:
+                            reference_metrics = gate_reference.metrics(self)
+                            reference_kl_after = float(reference_metrics["reference_kl"])
+                        except (FloatingPointError, RuntimeError, ValueError, KeyError, TypeError):
+                            reference_kl_after = float("nan")
+                        reference_ok = (
+                            np.isfinite(reference_kl_after)
+                            and reference_kl_after <= float(gate_reference.max_kl)
+                        )
+                    if not finite_update or rollout_kl > target_kl or not reference_ok:
                         self.model.load_state_dict(model_snapshot)
                         self.optimizer.load_state_dict(optimizer_snapshot)
                         self.optimizer.zero_grad(set_to_none=True)
                         rejected_updates += 1
                         stopped = True
+                        if gate_reference is not None:
+                            reference_rejected_updates += int(not reference_ok)
+                            if not reference_ok:
+                                rejection_reason = (
+                                    "reference_kl_nonfinite"
+                                    if not np.isfinite(reference_kl_after)
+                                    else "reference_kl_exceeds_max"
+                                )
+                            elif not finite_update:
+                                rejection_reason = "rollout_or_state_nonfinite"
+                            else:
+                                rejection_reason = "rollout_kl_exceeds_target"
                         break
                 for key, value in (("loss", loss), ("actor_loss", actor), ("value_loss", value_loss),
                                    ("entropy", entropy), ("approx_kl", kl), ("clip_fraction", clipped), ("grad_norm", norm)):
@@ -240,6 +298,9 @@ class StudentPPOV42(JointPPOV42):
                 if target_kl is not None:
                     final_rollout_kl = float(rollout_kl)
                     max_accepted_rollout_kl = max(max_accepted_rollout_kl, final_rollout_kl)
+                    if gate_reference is not None:
+                        reference_kl_final = float(reference_kl_after)
+                        reference_kl_max_accepted = max(reference_kl_max_accepted, reference_kl_final)
             if stopped:
                 break
         result = {**{key: value / updates if updates else 0.0 for key, value in totals.items()}, "updates": updates,
@@ -253,5 +314,13 @@ class StudentPPOV42(JointPPOV42):
                 "target_kl": target_kl,
                 "final_rollout_kl": final_rollout_kl,
                 "max_accepted_rollout_kl": max_accepted_rollout_kl,
+            })
+        if gate_reference is not None:
+            result.update({
+                "reference_kl_before": reference_kl_before,
+                "reference_kl_final": reference_kl_final,
+                "reference_kl_max_accepted": reference_kl_max_accepted,
+                "reference_rejected_updates": reference_rejected_updates,
+                "rejection_reason": rejection_reason,
             })
         return result
