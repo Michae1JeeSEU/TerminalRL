@@ -38,6 +38,32 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+_V4_2_REJECTED_RELEASE_HOLD_FIELD = "v4_2_rejected_release_hold_mode"
+_LEGACY_CONFIG_COMPATIBILITY = "legacy_requested_default_field"
+
+
+def _environment_config_match(config: Any, expected_hash: str) -> tuple[bool, str | None]:
+    """Match a tape config hash, allowing only the added legacy default field.
+
+    Historical tapes were written before ``v4_2_rejected_release_hold_mode``
+    existed.  The compatibility branch is deliberately narrow: it is entered
+    only for the legacy default and it compares the complete config after
+    removing that one field.  Canonical mode and every other config change
+    remain strict mismatches.
+    """
+
+    values = vars(config)
+    if _digest(values) == expected_hash:
+        return True, None
+    if getattr(config, _V4_2_REJECTED_RELEASE_HOLD_FIELD, None) != "legacy_requested":
+        return False, None
+    legacy_values = dict(values)
+    legacy_values.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
+    if _digest(legacy_values) == expected_hash:
+        return True, _LEGACY_CONFIG_COMPATIBILITY
+    return False, None
+
+
 class SafetyTraceRecorder:
     """Capture an exact requested-action tape plus a bounded diagnostic window.
 
@@ -366,7 +392,10 @@ class SafetyTraceRecorder:
                             if recipe.get("base_reset_state_hash") is not None else True)
         observations = SafetyTraceRecorder._apply_reset_recipe(env, recipe)
         reset_match = _digest(SafetyTraceRecorder._state(env)) == header["reset_state_hash"]
-        config_match = _digest(vars(env.config)) == header.get("environment_config_hash", _digest(vars(env.config)))
+        config_match, config_compatibility = _environment_config_match(
+            env.config,
+            header.get("environment_config_hash", _digest(vars(env.config))),
+        )
         steps: list[dict[str, Any]] = []
         exact = bool(reset_match and config_match and recipe_hash_match and base_reset_match)
         for row in rows:
@@ -451,6 +480,7 @@ class SafetyTraceRecorder:
             if blocked:
                 break
         return {"exact": exact, "reset_state_match": reset_match, "config_match": config_match,
+                "config_compatibility": config_compatibility,
                 "reset_recipe_match": recipe_hash_match,
                 "base_reset_state_match": base_reset_match,
                 "steps_replayed": len(steps), "steps_expected": len(rows), "steps": steps}

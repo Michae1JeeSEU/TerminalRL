@@ -35,6 +35,10 @@ class SimConfig:
     # V4 policy requests one joint categorical scheduling intention.  The
     # decoder alone maps it to the unchanged normalized execution intent.
     action_schema_version: str = "low_action_schema_v4_joint_discrete"
+    # V4.2-only execution choice for a rejected RELEASE that remains a ring
+    # holder.  Keep the historical requested-intent behavior by default;
+    # canonical WAIT is opt-in for new diagnostics and training.
+    v4_2_rejected_release_hold_mode: str = "legacy_requested"
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_low_obs_v2_topology_87d"
     experiment_mode: str = "fixed_rule"
@@ -406,6 +410,8 @@ class SimConfig:
             raise ValueError("V2.1+ retry normalization horizon must cover the configured retry/cooldown maximum")
         if self.action_schema_version not in {"low_intent_v3_factorized_discrete", "low_action_schema_v4_joint_discrete", "low_action_schema_v4_1_joint_discrete_26", "low_action_schema_v4_2_hierarchical"}:
             raise ValueError("unsupported low-level action schema")
+        if self.v4_2_rejected_release_hold_mode not in {"legacy_requested", "canonical_wait"}:
+            raise ValueError("unsupported v4_2_rejected_release_hold_mode")
         if self.scheduler_mode not in {"execution", "teacher_full", "teacher_immediate", "teacher_label_only"}:
             raise ValueError("unsupported scheduler_mode")
         if self.teacher_mode not in {"teacher_full", "teacher_immediate", "teacher_label_only"}:

@@ -43,7 +43,7 @@ from ..core.landing_flow import LandingFlowCoordinator
 from ..core.forecast_world import ForecastWorld
 from ..core.uav import FlightPhase, MISSION_SERVICE_SECONDS, TerminalOutcome, UAVState
 from ..core.uav import QueuedArrivalState
-from ..core.low_level_joint_action_v4_2 import RELEASE_GATE, hierarchical_from_normalized_v4_2
+from ..core.low_level_joint_action_v4_2 import ACTION_SCHEMA_V4_2, RELEASE_GATE, hierarchical_from_normalized_v4_2
 
 
 @dataclass
@@ -1544,6 +1544,20 @@ class TerminalParallelEnv:
                 # release, not an unmodelled temporary avoidance manoeuvre.
                 candidate = pending["candidate"]
                 intents[uid] = LowLevelIntent(0.0, candidate.intent.speed_residual, 0.0)
+            if (
+                self.config.action_schema_version == ACTION_SCHEMA_V4_2
+                and self.config.v4_2_rejected_release_hold_mode == "canonical_wait"
+                and intent.release_request > self.config.release_threshold
+                and decision not in {"approved", "future_reserved", "future_reservation_wait"}
+                and uav.committed_plan is None
+                and uav.ring_role is not None
+            ):
+                # Keep the policy request and its release reward/likelihood
+                # intact, while making the rejected holder execution a
+                # canonical WAIT before the runtime shield sees it.
+                canonical_wait = LowLevelIntent(0.0, 0.0, 0.0)
+                intents[uid] = canonical_wait
+                traces[uid].execution_applied = canonical_wait
             if intent.release_request > self.config.release_threshold:
                 rewards.setdefault(uid, LowLevelReward()).release += self.config.low_level_release_approved_reward if decision == "approved" else -self.config.low_level_release_rejected_penalty
                 if decision == "approved": self.telemetry["release_approved"] += 1
