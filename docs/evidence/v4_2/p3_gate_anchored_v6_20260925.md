@@ -1,6 +1,6 @@
 # P3 gate anchored V6 protocol draft（2026-09-25）
 
-状态：`READY_FOR_SMOKE_AND_PILOT`。V6 runner 已实现，外部 V6/PPO/GateReference 测试共
+状态：`FORMAL_COMPLETE_RECOVERY_PROBE_PENDING`。V6 runner 已实现，外部 V6/PPO/GateReference 测试共
 `34 passed`；冻结 YAML SHA256 为
 `043ae7296d838e0970aadf78667621c16596c100e92992ce4e62fc2f1e7c0cf8`。本文与
 `terminal_marl/configs/low_v4_2/p3_gate_anchored_v6.yaml` 冻结下一阶段协议边界。服务器 smoke 已完成，
@@ -194,3 +194,40 @@ seed `862049` 均在首个 minibatch 遇到 `reference_kl_exceeds_max` 并 rollb
 服务器完整复核还确认三 run `otherfailures=0`、stderr 均为 `0 bytes`、development 安全非零记录均为 `0`；run1 的 `11` 次拒绝均为
 rollout KL，未发生 reference 拒绝，accepted reference KL 最大值为 `.0444951<.05`，因此下一步聚焦两次提前停止的更新恢复语义，
 不直接判断 reference cap 普遍过紧。
+
+## 8. Bounded KL recovery probe（registered, not run）
+
+本节记录 2026-09-26 已注册、尚未执行的 bounded recovery probe。它针对 run0/run2 的两个
+`reference_kl_exceeds_max`、`accepted_updates=0` 现场，只用于记录完整 rollback 与同 rollout 的
+受限恢复行为；未运行前不产生 probe 结果、PASS 或 qualification 结论。
+
+固定边界为原始 `03c0` reference、reference weighted KL cap `.05`、rollout KL cap `.01`，以及现有
+safety/energy hard gates。只有当一次完整 update 同时满足纯 KL 拒绝、`accepted_updates=0`、model
+完整回滚和 Adam 完整回滚时，才允许对同一 rollout 按 learning-rate multiplier
+`[1,.5,.25,.125]`、同一 numpy permutation 进行顺序重试。仍被 KL 拒绝的回合记录为 `SKIPPED_KL`
+且不计入 accepted；任何其他完整性或非有限错误记录为 `HARD_FAILED`。输出必须区分
+`processed`、`updated`、`skipped`，并保留每次 checkpoint/model/Adam/RNG restore 检查。
+
+输出只写入新的根：
+
+```text
+/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run0
+/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run2
+```
+
+每个 run 处理 `4` 个 training episodes，合计最多 `8` 个 training episodes，并执行 `12` 个已有
+development 回合。恢复输入为：
+
+```text
+run0: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run0/checkpoints/checkpoint_episode_0079.pt
+run2: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run2/checkpoints/checkpoint_episode_0048.pt
+```
+
+run0 使用 `860080..860083`，场景顺序为 `dense24/flow6/dense24/flow12`；run2 使用
+`862049..862052`，场景顺序为 `flow6/dense24/flow12/dense24`。每组的首 seed 分别复现已消费的
+failure（`860080`、`862049`），其后三个为旧 formal 未使用 seed；后三个 seed 将被本诊断消费，之后
+不再标为 untouched。development 使用既有 `863101 flow6`、`863102 flow12`、`863103 dense24`
+before/after 回合，属于 development 而非 heldout。
+
+该 probe 当前未启动；旧 formal 输出不改写，不启动 full formal、heldout 或 dense30，不自动重启，
+不创建持续 heartbeat。新 recovery runner 由另一代码任务实现，本节不预写其运行结果。
