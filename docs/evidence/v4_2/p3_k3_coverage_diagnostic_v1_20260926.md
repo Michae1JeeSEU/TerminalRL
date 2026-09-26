@@ -31,7 +31,7 @@ floor((N - 1) * f),  f ∈ [0, 0.15, 0.30, 0.45, 0.60, 0.75]
 full 与 smoke 均必须拒绝已存在的 output/control，禁止覆盖既有产物。smoke 使用独立根，不能覆盖既有输出：
 
 ```text
-/home/user/training_outputs/terminal/p3_k3_coverage_diagnostic_v1_20260926/smoke
+/home/user/training_outputs/terminal/p3_k3_coverage_diagnostic_v1_20260926_smoke
 ```
 
 ## 状态抽样规则
