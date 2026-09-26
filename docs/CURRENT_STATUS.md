@@ -9,6 +9,8 @@
 > **V7 adaptive probe 与 formal 终态（2026-09-26）：** adaptive probe run0/run2 各 `8` 个回合均为 `8 UPDATED / 0 SKIPPED_KL / 0 HARD_FAILED`、`8/8` restore exact；accepted minibatches 为 `298/332`，最终 reference KL 为 `.0077864/.0133243`。formal 三 run 已终态：run0 `FAILED exit1`，`80 processed / 80 UPDATED / 0 skipped`、`3954 accepted minibatches`；run1 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11737 accepted minibatches`；run2 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11808 accepted minibatches`。训练请求合计 `9240`（`8211 normal + 1029 emergency_landed`），训练 `failed_energy/other/unresolved=0`；开发失败单独计入 development，不与训练请求混合。所有 `560` 个 update 的 gate delta 均大于零，训练 safety 计数为零，restore/RNG false 为零。主审结论为可学习性成立但三 seed 全通过不成立；无性能全面提升证据，不自动 P3/P4 晋级，也不恢复 run0。
 > **当前用户目标（2026-09-26，V7 adaptive-KL）：** 完成有效的 `3×240` formal PPO，并在训练后对同一场景集合执行冻结策略评估；adaptive probe 已完成并通过 primary 的可学习性审查，但 dense24 性能存在退化，formal 三 run 已终态但 run0 失败、run1/run2 完成；全请求 lifecycle 回放已完成，`64` episode final evaluation 的前置条件仍未满足且尚未启动。候选 reference regularization 为 `0.1*K + 400*relu(K-0.02)^2`，reference weighted-KL hard cap `.05`、rollout-KL target `.01`、03c0 source、proposal 子图冻结、安全边界保持不变；不增加 probability floor、强制 RELEASE、UID/SOC override 或 SOC 专用规则。正式计划保留三组独立 `240` episode 与同场景 development/evaluation；dense30 与同负荷随机密度评估只在正式训练完成并冻结策略后执行，当前不消费 heldout。random layout opt-in 默认 `false`，仅供后续 evaluation。V7 YAML 参数已冻结。
 >
+> **最新摘要：runtime action-credit / K3（2026-09-26）：** P3 退化与 qualification 尚未解决。本轮定位为静态 catalogue 与真实执行 context 标签失配：两批均为 `16` 状态 partial diagnostic；本轮 `816` 个 branch 已验证 exact/outcomes/state/model/RNG，两个 dense24 step0 的 `C=[2]` 更正为 `C=[]`。由 singleton `C` 推导的 runtime K3 概率与真实获批结果最大误差为 `5.03e-8`；rank loss 候选尚未 fit，WAIT/RELEASE utility 仅属分支比较。下一步补齐 source tapes 的完整 runtime 数据后做一次 bounded 小 probe 与 `6`-dev evaluation，不直接 formal/heldout。详见 [runtime action-credit / K3 labels](evidence/v4_2/p3_action_credit_runtime_labels_20260926.md)。
+
 ## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已完成）
 
 formal 输出根为 `/home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/`。三 run 均已退出：
@@ -1069,3 +1071,15 @@ hard-separation、NMAC、uncertified-execution 等安全计数均为 `0`。校�
 `P3_QUALIFIED=false`、`P4_ALLOWED=false`，且不包含 heldout。该结果将本次 proposal-only 用户授权试验记为已完成但未通过 development screen；它不表示 formal training 完成或 P3 晋级。
 
 原评估中的 `KeyError: 'hard_gates'` 属于报告阶段错误；校正报告复用了已保存的六个原始 tape/record，未重跑环境。下一步由 primary 在再次训练前安排有界的现有状态 counterfactual 检查，分别核对 WAIT/RELEASE utility/credit 与 proposal coverage；在该检查前不自动重复 fit、改变 KL 或启动新的 PPO，且不新增 protocol/seed。
+
+## V7 runtime action-credit / K3 branch labels（2026-09-26，partial diagnostic；路径已验证）
+
+已验证 runtime 输出根 `/home/user/training_outputs/terminal/p3_action_credit_runtime_labels_20260926`：`16/16 COMPLETED`，每个状态 `51` 个 branches、共 `816` 条；exact、outcomes、state、model、RNG 均为 `true`，命名 safety counters 无非零。新 `51` branches 是 branch-level singleton labels，但本轮仍是 `16` 状态 partial diagnostic。旧 `/home/user/training_outputs/terminal/p3_action_credit_20260926/manifest.json` 的 `16` 状态只含 WAIT+`25`K3，同样是 partial diagnostic，不称 singleton，也不是完整训练集。
+
+原 report 的 FP/FN 两个字段名称相反，但原始 `C` 与 branch 内容正确。代码修复后的离线更正 summary 状态为 `REPORTING_LABEL_NAMES_CORRECTED`，路径为 `/home/user/training_outputs/terminal/p3_action_credit_runtime_labels_20260926/reporting_correction/summary.json`；同组检查 `34 tests PASS`，原始报告保留，不 rerollout。
+
+两条 catalogue false positive 为：`873103/0` 与 `873106/0` 的原始 `C=[2]` 更正为 `C=[]`，对应实际 `25` 个 K3 proposal 全部 `safety_reject`。`873101/188` 的 `C=[20,21,22]` 与 `873102/311` 的 `C=[2,3,4,9]` 保持不变，其余 `12` 个 `C` 也保持不变。由 singleton `C` 推导的 runtime K3 概率与真实 `25`K3 weighted approved 的最大误差为 `5.029141902923584e-08`。详细记录见 [runtime action-credit / K3 labels](evidence/v4_2/p3_action_credit_runtime_labels_20260926.md)。
+
+本轮修复诊断与执行上下文标签路径已验证；这不表示训练完成或性能改善。静态 catalogue 可行性不等于实际 step 执行上下文可行性，两个 step0 false positive 不作为 proposal 漏覆盖训练样本。rank loss 候选尚未 fit 或接入 formal；训练退化与 P3 qualification 尚未解决。WAIT/RELEASE utility 属于分支比较的 one-step critic proxy，不是长期 advantage；它不定义 rank surrogate 的训练目标。reward、安全边界与 heldout 不变。四条 [source logit counterfactual](../results/p3_k3_logit_counterfactual_20260926.json) 只说明 logit-space 反事实，不等于 runtime 改善。
+
+下一步先从现有 source tapes 补齐完整 runtime labels，再做一次 bounded rank-aware proposal 修复与 `6` 个 development seed evaluation；不直接启动 formal 或消费 heldout。reporting correction 已完成，但训练与 P3 qualification 仍未通过，也不据此作 PPO credit 根因或同时机预约抢占结论。

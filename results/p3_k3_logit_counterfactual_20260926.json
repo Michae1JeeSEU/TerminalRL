@@ -1,0 +1,120 @@
+{
+  "stage": "P3_K3_LOGIT_COUNTERFACTUAL_20260926",
+  "input": {
+    "rows_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_proposal_head_probe_v1_20260926\\collection\\rows.json",
+    "rows_sha256": "595f644e5d7376a44fe1be98ee8bfe997d9ee4856c102050df4b8323f1004ba8",
+    "row_count": 164,
+    "low_qK3_nonempty_rows": 4
+  },
+  "scope": {
+    "logit_only": true,
+    "checkpoint_loaded": false,
+    "optimizer_used": false,
+    "training_or_fit": false,
+    "runtime_or_environment_called": false
+  },
+  "records": [
+    {
+      "split": "train",
+      "seed": 873101,
+      "step": 188,
+      "uid": "2",
+      "arrival": 2,
+      "certified": [20, 21, 22],
+      "best_certified_index": 20,
+      "original_top3": [[12, 0.0], [6, -48.11363983154297], [14, -56.436710357666016]],
+      "before": {"qK3": 1.099082577201e-25, "kl_ref_to_self": 0.0},
+      "after_third_plus_0.1": {
+        "logit_delta": 1.13345489501953,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 1.06929953118757e-25,
+        "modified_top3": [[12, 0.0], [6, -48.11363983154297], [20, -56.33671188354492]]
+      },
+      "after_second_plus_0.1": {
+        "logit_delta": 9.45652542114258,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 1.40470781365402e-21,
+        "modified_top3": [[12, 0.0], [20, -48.013641357421875], [6, -48.11363983154297]]
+      }
+    },
+    {
+      "split": "validation",
+      "seed": 873106,
+      "step": 0,
+      "uid": "0",
+      "arrival": 0,
+      "certified": [2],
+      "best_certified_index": 2,
+      "original_top3": [[13, 0.0], [6, -30.397926330566406], [11, -34.753536224365234]],
+      "before": {"qK3": 5.32974544050513e-19, "kl_ref_to_self": 0.0},
+      "after_third_plus_0.1": {
+        "logit_delta": 7.4222770690918,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 8.87091390246181e-16,
+        "modified_top3": [[13, 0.0], [6, -30.397926330566406], [2, -34.65353775024414]]
+      },
+      "after_second_plus_0.1": {
+        "logit_delta": 11.7778869628906,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 6.94600677748478e-14,
+        "modified_top3": [[13, 0.0], [2, -30.29792594909668], [6, -30.397926330566406]]
+      }
+    },
+    {
+      "split": "train",
+      "seed": 873103,
+      "step": 0,
+      "uid": "0",
+      "arrival": 0,
+      "certified": [2],
+      "best_certified_index": 2,
+      "original_top3": [[13, 0.0], [6, -30.105419158935547], [11, -34.67866516113281]],
+      "before": {"qK3": 6.35019680318117e-19, "kl_ref_to_self": 0.0},
+      "after_third_plus_0.1": {
+        "logit_delta": 7.32196578979492,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 9.55611705222324e-16,
+        "modified_top3": [[13, 0.0], [6, -30.105419158935547], [2, -34.57866668701172]]
+      },
+      "after_second_plus_0.1": {
+        "logit_delta": 11.8952117919922,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 9.30623080749084e-14,
+        "modified_top3": [[13, 0.0], [2, -30.00541877746582], [6, -30.105419158935547]]
+      }
+    },
+    {
+      "split": "train",
+      "seed": 873102,
+      "step": 311,
+      "uid": "3",
+      "arrival": 3,
+      "certified": [2, 3, 4, 9],
+      "best_certified_index": 9,
+      "original_top3": [[10, -2.09808349609375e-05], [13, -10.78901481628418], [6, -18.387041091918945]],
+      "before": {"qK3": 5.641947277207e-13, "kl_ref_to_self": 0.0},
+      "after_third_plus_0.1": {
+        "logit_delta": 10.8237644195557,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 1.14271205095651e-08,
+        "modified_top3": [[10, -2.09808349609375e-05], [13, -10.78901481628418], [9, -18.28704071044922]]
+      },
+      "after_second_plus_0.1": {
+        "logit_delta": 18.4217906951904,
+        "qK3": 1.0,
+        "kl_ref_to_modified": 2.27937071556009e-05,
+        "modified_top3": [[10, -2.09808349609375e-05], [9, -10.689014434814453], [13, -10.78901481628418]]
+      }
+    }
+  ],
+  "all_row_means": {
+    "third_plus_0.1": {
+      "train": {"kl_ref_to_modified": 1.39355139819229e-10, "qK3": 0.548780482410157},
+      "validation": {"kl_ref_to_modified": 1.0818187685929e-17, "qK3": 0.512195116251276}
+    },
+    "second_plus_0.1": {
+      "train": {"kl_ref_to_modified": 2.77972039617845e-07, "qK3": 0.548780482410157},
+      "validation": {"kl_ref_to_modified": 8.47073997254242e-16, "qK3": 0.512195116251276}
+    }
+  }
+}
