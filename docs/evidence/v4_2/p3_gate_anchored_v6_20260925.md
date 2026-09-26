@@ -174,6 +174,23 @@ paired development 的 flow6 无变化；flow12 priority wait `+1.08689s`、low-
 `checkpoint_episode_0001.pt`，大小分别为 `1,039,047/1,038,983/1,038,983` bytes，并进入 episode 2。
 启动核验时 CPU 约 `99.9%`、stderr 为空；完成启动核验后按用户要求停止观察，不创建 heartbeat 或持续监控。按 pilot 每 episode
 平均 `71.353s` 估计，240 episodes 约 `4.76h`，另加约 `42` 个 development episodes `0.49h`，含余量的参考窗口为
-`5.5–8h`，预计 `2026-09-26 04:50–07:20`；该时间不代表完成保证。formal 尚未完成，P3/P4 仍未通过，
+`5.5–8h`，预计 `2026-09-26 04:50–07:20`；该时间不代表完成保证。formal 启动记录之后的终态见下文；P3/P4 仍未通过，
 不把实现测试、smoke 或 pilot technical pass 写成 PPO/P3 qualification。V5 admission/formal YAML 与历史输出保持不变；程序自身
 hard-stop、checkpoint 和 development 检查照常执行，失败后不自动 restart。
+
+formal campaign 的终态复核如下（服务器进程与退出码已复核）：run0 为 `FAILED`，`79 accepted / 80 records`，exit code `1`；
+run1 为 `COMPLETED`，`240/240`，exit code `0`；run2 为 `FAILED`，`48 accepted / 49 records`，exit code `1`。run0 失败 seed `860080`、run2 失败
+seed `862049` 均在首个 minibatch 遇到 `reference_kl_exceeds_max` 并 rollback，且两次仅
+`accepted_updates` 为 false。三 run 的 last reference KL（run0/run1/run2）为
+`.048804771/.008465138/.049026713`。全部训练 records 的 full-request 分母合计 `6078`：`5374 normal`、
+`704 emergency_landed`、`0 failed_energy`、`0 unresolved`；accepted episodes 合计 `367/720`，records 合计 `369`，
+其中包含两条 rollout 已完成但 update 未接受的 records；`367/367` checkpoint restore exact。11 个 development 阶段均
+`hard_failure=false` 且 `full_resolution=true`。run0/run2 的 development 仅为 `0/40`，不把 episode 40 的指标称为
+最终 `79/48` checkpoint 性能。run1 的 final development 两个 dense 回合分别为 normal `19→21`、`19→19`，emergency
+`5→3`、`5→5`；priority wait `114.606→118.235s`、`127.983→141.995s`，low-SOC wait
+`152.235→101.874s`、`105.807→109.148s`。修复后本批未出现能量耗尽；三 run 计划未完成，不能宣称跨 seed 稳定、
+普遍优于 source 或 P3 通过。保留 run1 候选，不自动晋级 P4、不恢复训练，未启动 heldout 或 dense30 新实验。主审下一步记录为：
+保持安全与 reference cap，先小规模验证回退步长及允许完整回滚的零更新回合恢复语义；不直接放宽 cap，也不从 I0 重训。
+服务器完整复核还确认三 run `otherfailures=0`、stderr 均为 `0 bytes`、development 安全非零记录均为 `0`；run1 的 `11` 次拒绝均为
+rollout KL，未发生 reference 拒绝，accepted reference KL 最大值为 `.0444951<.05`，因此下一步聚焦两次提前停止的更新恢复语义，
+不直接判断 reference cap 普遍过紧。
