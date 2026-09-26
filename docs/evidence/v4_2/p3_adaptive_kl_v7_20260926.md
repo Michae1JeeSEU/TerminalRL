@@ -180,3 +180,56 @@ primary 对该诊断的限定解释是：slot 机制、少数 gate 压制和冻�
 | 合计 | 76 | 7 | 1 |
 
 因此该组 `84 = 76 + 7 + 1`，`other/unresolved=0`。文档此前的 `74 normal + 9 emergency_landed + 1 failed_energy` 汇总为勘误后的错误数字，现以 manifest 六条明细为准；不据此推断来源，run0 的退出/失败定性保持为开发能量 hard gate 触发。
+
+## V7 proposal-head probe V1（2026-09-26，fit 终态；后续评估见下节）
+
+用户已授权受限 proposal-only 适配。注册协议、collector、fit runner 的提交分别为
+`350dc1e`、`170c184`、`299d3d1`；注册协议文件未修改。实际 collection manifest 为
+`COMPLETED`，六个 source records 均 exact、outcomes/RNG/model invariant 通过且无 errors，
+共保存 `164` 行（train `82`、validation `82`；相对最多 `192` 行缺失 `28`），rows SHA256 为
+`595f644e5d7376a44fe1be98ee8bfe997d9ee4856c102050df4b8323f1004ba8`。
+
+唯一一次 fit 使用固定 03c0 source（SHA256
+`03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba`），只更新
+`proposal_head.weight/bias` 共 `2425` 个参数；gate、encoder、critic、temperature、SafetyFilter、
+energy/reward、late-slot OFF 与 K=3 语义保持冻结。fit 在第 `12/40` 个 epoch 因 train retention
+KL cap 停止：`35` accepted、`1` rejected，proposal parameter delta norm 为 `0.65643138`，
+train KL 为 `0.04770959`，validation KL 为 `0.10888803`。状态为
+`STOPPED_KL_CAP`，没有重试或自动调参。
+
+proposal-head checkpoint 为
+`/home/user/training_outputs/terminal/p3_proposal_head_probe_v1_20260926/fit/p3_proposal_head_probe_v1.pt`，
+SHA256 为 `d7a0908b30395ddaa90cb1ffe6f2f5c0d49176e946927ea9fb5a6b44bdb0bade`。fit 的 train qK3
+均值由 `0.5121951158` 变为 `0.5121951176`，validation 由 `0.4999999951` 变为
+`0.4999999959`，未见有意义的整体 coverage 改善；只读复核中 source `qK3<.01` 且 C 非空的
+4 条状态仍全部 top3 miss，164 条中 top3 改变 `30` 条，source-covered→candidate-uncovered 为
+`0` 条。该段记录 fit 完成时的状态；六个 development seed 的 corrected frozen evaluation 见下节。
+
+本结果只记录 proposal-only 开发试验，不能写成 formal training 完成、P3/P4 通过或 heldout 结果。
+旧 p3-v7 automation 已经工具核实不可用/删除，当前不声称存在 active automation；正式训练、heldout
+与后续晋级仍保持未启动/未消费状态。
+
+## V7 proposal-head probe V1 corrected development evaluation（2026-09-26，终态）
+
+校正后的离线评估产物为
+`/home/user/training_outputs/terminal/p3_proposal_head_probe_v1_20260926/eval_summary_corrected/manifest.json`，
+SHA256 为
+`f1db01557c112817b1e84501236242dfec077324702d9b4b335e366fd7e78354`，状态为
+`REPORTING_ERROR_CORRECTED`，对应六个 development records。原始评估 manifest 的 SHA256 为
+`4c0b48d1503ea70c621a9595049c73d79e1e41b6152f7ab90f1e5e57f6f2ffaa`，source 03c0 SHA256
+仍为 `03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba`；原始记录已保留。
+校正使用 evaluator 修复提交 `46c27db` 的离线汇总，未重新 rollout、fit 或调用 training/update
+（`policy_forward_executed=false`、`training_or_update_called=false`、`environment_replayed=false`）。
+
+| split | baseline normal / emergency / failed_energy / other / unresolved | proposal-head normal / emergency / failed_energy / other / unresolved | priority-weighted wait baseline → candidate | low-SOC wait baseline → candidate |
+|---|---:|---:|---:|---:|
+| overall (84) | 76 / 8 / 0 / 0 / 0 | 75 / 9 / 0 / 0 / 0 | 86.6690576161 → 92.0527228621 | 89.7792692439 → 89.6788480393 |
+| train (42) | 39 / 3 / 0 / 0 / 0 | 40 / 2 / 0 / 0 / 0 | 70.6967099479 → 81.1172039290 | 62.4444731092 → 47.3267282907 |
+| validation (42) | 37 / 5 / 0 / 0 / 0 | 35 / 7 / 0 / 0 / 0 | 102.9545885720 → 103.2026637351 | 115.0113887529 → 128.7731124226 |
+
+六个 record 均 exact/aligned，weights unchanged；SafetyInvariantError、collision、
+hard-separation、NMAC、uncertified-execution 等安全计数均为 `0`。校正报告明确
+`admission_gates_reconstructed=false`、`checkpoint_promotable=false`、`development_screen=false`、
+`P3_QUALIFIED=false`、`P4_ALLOWED=false`，且不包含 heldout。该结果将本次 proposal-only 用户授权试验记为已完成但未通过 development screen；它不表示 formal training 完成或 P3 晋级。
+
+原评估中的 `KeyError: 'hard_gates'` 属于报告阶段错误；校正报告复用了已保存的六个原始 tape/record，未重跑环境。下一步由 primary 在再次训练前安排有界的现有状态 counterfactual 检查，分别核对 WAIT/RELEASE utility/credit 与 proposal coverage；在该检查前不自动重复 fit、改变 KL 或启动新的 PPO，且不新增 protocol/seed。
