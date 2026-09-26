@@ -60,6 +60,10 @@ SPARSE_PROTOCOL = (
     Path(__file__).resolve().parents[2]
     / "docs/evidence/v4_2/p3_runtime_rank_sparse_20260926.md"
 )
+ANCHORED_PROTOCOL = (
+    Path(__file__).resolve().parents[2]
+    / "docs/evidence/v4_2/p3_runtime_rank_anchored_20260927.md"
+)
 TRAIN_SEEDS = frozenset({873101, 873102, 873103})
 VALIDATION_SEEDS = frozenset({873104, 873105, 873106})
 ALLOWED_SEEDS = TRAIN_SEEDS | VALIDATION_SEEDS
@@ -84,6 +88,8 @@ RETENTION_KL_MAX = 0.05
 MAX_OPTIMIZER_STEPS = 120
 TRAINABLE_PARAMETER_COUNT = 2425
 RUNTIME_LABEL_SCOPE = "same_prestate_fixed_other_tape_actions_runtime_singleton"
+ANCHOR_OUTPUT_ROWS = (9, 20)
+ANCHOR_COEFFICIENT = 0.01
 
 
 class RuntimeRankRepairInputError(ValueError):
@@ -542,6 +548,137 @@ def _non_target_proposal_rows_bitwise_unchanged(
     return True
 
 
+def _load_anchor_data(anchor_dir: str | Path) -> dict[str, Any]:
+    directory = Path(anchor_dir)
+    _require(directory.is_dir(), f"anchor directory missing: {directory}")
+    manifest_path = directory / "manifest.json"
+    anchors_path = directory / "anchors.npz"
+    _require(manifest_path.is_file(), f"anchor manifest missing: {manifest_path}")
+    _require(anchors_path.is_file(), f"anchor npz missing: {anchors_path}")
+    manifest = _read_json(manifest_path)
+    _require(isinstance(manifest, Mapping), "anchor manifest must be an object")
+    _require(str(manifest.get("status", "")) == "COMPLETED", "anchor manifest is not COMPLETED")
+    if "exact" in manifest:
+        _require(manifest.get("exact") is True, "anchor manifest exact flag is not true")
+    _require(
+        manifest.get("source_checkpoint_sha256") == SOURCE_CHECKPOINT_SHA256,
+        "anchor source checkpoint SHA mismatch",
+    )
+    if "seeds" in manifest:
+        _require(set(int(seed) for seed in manifest["seeds"]) == set(TRAIN_SEEDS), "anchor manifest seed set is not the train seed set")
+    if "train_seeds" in manifest:
+        _require(set(int(seed) for seed in manifest["train_seeds"]) == set(TRAIN_SEEDS), "anchor manifest train seed set is not the train seed set")
+    records = manifest.get("records")
+    _require(isinstance(records, list) and len(records) == len(TRAIN_SEEDS), "anchor manifest records are not exact")
+    record_seeds: list[int] = []
+    for index, record in enumerate(records):
+        _require(isinstance(record, Mapping), f"anchor manifest record {index} is not an object")
+        seed = record.get("seed")
+        _require(isinstance(seed, (int, np.integer)) and not isinstance(seed, bool), f"anchor manifest record {index} seed is invalid")
+        seed = int(seed)
+        _require(seed in TRAIN_SEEDS, f"anchor manifest record {index} is not a train seed")
+        _require(record.get("split") == "train", f"anchor manifest record {index} is not train")
+        _require(record.get("replay_exact") is True, f"anchor manifest record {index} replay_exact is not true")
+        _require(record.get("outcomes_match") is True, f"anchor manifest record {index} outcomes_match is not true")
+        record_seeds.append(seed)
+    _require(set(record_seeds) == set(TRAIN_SEEDS) and len(set(record_seeds)) == len(record_seeds), "anchor manifest record seed set is not exact")
+
+    try:
+        with np.load(anchors_path, allow_pickle=False) as archive:
+            _require(
+                set(archive.files) == {"observations", "seed", "step", "uid"},
+                "anchor npz fields are not exact",
+            )
+            observations = np.asarray(archive["observations"])
+            seeds = np.asarray(archive["seed"])
+            steps = np.asarray(archive["step"])
+            uids = np.asarray(archive["uid"])
+    except (OSError, ValueError, TypeError) as exc:
+        raise RuntimeRankRepairInputError(f"invalid anchor npz: {anchors_path}") from exc
+
+    _require(observations.ndim == 2 and observations.shape[1] == OBSERVATION_DIM, "anchor observations are not Nx88")
+    _require(observations.shape[0] > 0, "anchor observations are empty")
+    count = int(observations.shape[0])
+    _require(seeds.shape == (count,), "anchor seed shape mismatch")
+    _require(steps.shape == (count,), "anchor step shape mismatch")
+    _require(uids.shape == (count,), "anchor uid shape mismatch")
+    _require(np.issubdtype(seeds.dtype, np.integer), "anchor seed dtype is not integer")
+    _require(np.issubdtype(steps.dtype, np.integer), "anchor step dtype is not integer")
+    _require(bool(np.isfinite(np.asarray(observations, dtype=np.float32)).all()), "anchor observations are not finite")
+    _require(bool((steps >= 0).all()), "anchor steps are invalid")
+    seed_values = [int(seed) for seed in seeds.tolist()]
+    _require(set(seed_values) == set(TRAIN_SEEDS), "anchor rows include a validation or missing seed")
+    _require(all(seed in TRAIN_SEEDS for seed in seed_values), "anchor rows include a non-train seed")
+    _require(int(manifest.get("rows_count", -1)) == count, "anchor manifest row count mismatch")
+
+    return {
+        "observations": np.asarray(observations, dtype=np.float32).tolist(),
+        "seeds": seed_values,
+        "steps": [int(step) for step in steps.tolist()],
+        "uids": [_jsonable(uid) for uid in uids.tolist()],
+        "report": {
+            "anchor_dir": str(directory),
+            "manifest": str(manifest_path),
+            "manifest_sha256": _sha256(manifest_path),
+            "anchors": str(anchors_path),
+            "anchors_sha256": _sha256(anchors_path),
+            "rows": count,
+            "seeds": sorted(set(seed_values)),
+            "source_checkpoint_sha256": SOURCE_CHECKPOINT_SHA256,
+            "exact": True,
+        },
+    }
+
+
+def _anchor_mse(
+    model: torch.nn.Module,
+    anchor_features: torch.Tensor,
+    source_anchor_logits: torch.Tensor,
+    anchor_output_rows: Sequence[int],
+) -> torch.Tensor:
+    normalized = _normalize_sparse_target_rows(anchor_output_rows)
+    _require(normalized == list(ANCHOR_OUTPUT_ROWS), "anchor output rows must be [9, 20]")
+    _require(not anchor_features.requires_grad, "anchor features must be source-frozen")
+    _require(not source_anchor_logits.requires_grad, "source anchor logits must be frozen")
+    _require(anchor_features.ndim == 2, "anchor features must be a matrix")
+    _require(source_anchor_logits.shape == (anchor_features.shape[0], PROPOSAL_COUNT), "source anchor logits shape mismatch")
+    _require(bool(torch.isfinite(anchor_features).all().item()), "anchor features are not finite")
+    _require(bool(torch.isfinite(source_anchor_logits).all().item()), "source anchor logits are not finite")
+    candidate_logits = model.proposal_head(anchor_features)
+    indices = torch.as_tensor(normalized, dtype=torch.long, device=candidate_logits.device)
+    values = (candidate_logits.index_select(1, indices) - source_anchor_logits.index_select(1, indices)).pow(2).mean()
+    _require(bool(torch.isfinite(values).item()), "non-finite anchor MSE")
+    return values
+
+
+def _anchor_metrics(
+    model: torch.nn.Module,
+    anchor_features: torch.Tensor,
+    source_anchor_logits: torch.Tensor,
+    anchor_output_rows: Sequence[int],
+) -> dict[str, Any]:
+    normalized = _normalize_sparse_target_rows(anchor_output_rows)
+    _require(normalized == list(ANCHOR_OUTPUT_ROWS), "anchor output rows must be [9, 20]")
+    with torch.no_grad():
+        candidate_logits = model.proposal_head(anchor_features).detach()
+        anchor_mse = _anchor_mse(model, anchor_features, source_anchor_logits, normalized).detach()
+    source_rank = torch.argsort(source_anchor_logits, dim=1, descending=True, stable=True)
+    candidate_rank = torch.argsort(candidate_logits, dim=1, descending=True, stable=True)
+    order_changes = int((source_rank[:, :3] != candidate_rank[:, :3]).any(dim=1).sum().item())
+    set_changes = sum(
+        set(int(item) for item in source_rank[index, :3].tolist())
+        != set(int(item) for item in candidate_rank[index, :3].tolist())
+        for index in range(int(source_rank.shape[0]))
+    )
+    return {
+        "rows": int(anchor_features.shape[0]),
+        "output_rows": list(normalized),
+        "anchor_mse": float(anchor_mse.cpu().item()),
+        "source_candidate_top3_order_changes": order_changes,
+        "source_candidate_top3_set_changes": int(set_changes),
+    }
+
+
 def _validate_source_rows(policy: Any, rows: Sequence[Mapping[str, Any]]) -> None:
     device = policy.device
     for index, row in enumerate(rows):
@@ -664,6 +801,10 @@ def _fit_steps(
     retention_kl_max: float | None = None,
     progress_path: Path | None = None,
     sparse_target_rows: Sequence[int] | None = None,
+    anchor_features: torch.Tensor | None = None,
+    source_anchor_logits: torch.Tensor | None = None,
+    anchor_output_rows: Sequence[int] = ANCHOR_OUTPUT_ROWS,
+    anchor_coefficient: float = ANCHOR_COEFFICIENT,
 ) -> dict[str, Any]:
     """Run the bounded fit on a policy; this seam is also used by toy tests."""
     device = policy.device
@@ -682,6 +823,20 @@ def _fit_steps(
     if retention_kl_max is None:
         retention_kl_max = RETENTION_KL_MAX
     sparse_target_rows = _normalize_sparse_target_rows(sparse_target_rows)
+    anchor_enabled = anchor_features is not None or source_anchor_logits is not None
+    if anchor_enabled:
+        _require(anchor_features is not None and source_anchor_logits is not None, "anchor inputs must be provided together")
+        anchor_output_rows = _normalize_sparse_target_rows(anchor_output_rows) or []
+        _require(anchor_output_rows == list(ANCHOR_OUTPUT_ROWS), "anchor output rows must be [9, 20]")
+        _require(np.isfinite(float(anchor_coefficient)) and float(anchor_coefficient) == ANCHOR_COEFFICIENT, "anchor coefficient changed")
+        _require(not anchor_features.requires_grad, "anchor features must be source-frozen")
+        _require(anchor_features.ndim == 2, "anchor features must be a matrix")
+        _require(source_anchor_logits.ndim == 2, "source anchor logits must be a matrix")
+        _require(not source_anchor_logits.requires_grad, "source anchor logits must be frozen")
+        _require(source_anchor_logits.shape[0] == anchor_features.shape[0], "anchor row count mismatch")
+        _require(source_anchor_logits.shape[1] == PROPOSAL_COUNT, "source anchor logits must have 25 columns")
+    else:
+        anchor_output_rows = list(ANCHOR_OUTPUT_ROWS)
     policy.optimizer = optimizer
     model = policy.model
     model.eval()
@@ -692,6 +847,11 @@ def _fit_steps(
         policy, train_rows, validation_rows,
         source_train_logits=source_train_logits,
         source_validation_logits=source_validation_logits,
+    )
+    initial_anchor_metrics = (
+        _anchor_metrics(model, anchor_features, source_anchor_logits, anchor_output_rows)
+        if anchor_enabled
+        else None
     )
     history: list[dict[str, Any]] = []
     accepted_steps = 0
@@ -716,7 +876,14 @@ def _fit_steps(
         rank = k3_coverage_objective(raw_logits, train_certified)
         kl_values = _kl_from_logits(source_train_logits, raw_logits)
         kl_loss = kl_values.mean()
+        anchor_loss = (
+            _anchor_mse(model, anchor_features, source_anchor_logits, anchor_output_rows)
+            if anchor_enabled
+            else None
+        )
         loss = rank["loss"] + KL_COEFFICIENT * kl_loss
+        if anchor_loss is not None:
+            loss = loss + float(anchor_coefficient) * anchor_loss
         _require(bool(torch.isfinite(loss).item()), f"non-finite loss at step {step}")
         loss.backward()
         gradients = [parameter.grad for parameter in trainable_parameters if parameter.grad is not None]
@@ -751,6 +918,11 @@ def _fit_steps(
             source_train_logits=source_train_logits,
             source_validation_logits=source_validation_logits,
         )
+        anchor_metrics = (
+            _anchor_metrics(model, anchor_features, source_anchor_logits, anchor_output_rows)
+            if anchor_enabled
+            else None
+        )
         train_metrics = metrics["train"]
         step_state = _state_cpu(model)
         step_nonproposal_unchanged = all(
@@ -775,6 +947,7 @@ def _fit_steps(
             "loss": float(loss.detach().cpu().item()),
             "rank_loss": float(rank["loss"].detach().cpu().item()),
             "kl_loss": float(kl_loss.detach().cpu().item()),
+            "anchor_mse": float(anchor_metrics["anchor_mse"]) if anchor_metrics is not None else None,
             "train": train_metrics,
             "validation": metrics["validation"],
             "train_qK3": train_metrics["qK3_mean"],
@@ -789,7 +962,10 @@ def _fit_steps(
             "rejected_reason": stopped_reason if rejected else None,
         }
         history.append(record)
-        _require(all(np.isfinite(float(value)) for value in (record["loss"], record["rank_loss"], record["kl_loss"])), f"non-finite metrics at step {step}")
+        finite_values = (record["loss"], record["rank_loss"], record["kl_loss"])
+        if record["anchor_mse"] is not None:
+            finite_values = (*finite_values, record["anchor_mse"])
+        _require(all(np.isfinite(float(value)) for value in finite_values), f"non-finite metrics at step {step}")
         if progress_path is not None:
             _write_json(progress_path, {
                 "stage": STAGE,
@@ -841,6 +1017,20 @@ def _fit_steps(
             source_train_logits=source_train_logits,
             source_validation_logits=source_validation_logits,
         ),
+        "before_anchor_metrics": initial_anchor_metrics,
+        "after_anchor_metrics": (
+            _anchor_metrics(model, anchor_features, source_anchor_logits, anchor_output_rows)
+            if anchor_enabled
+            else None
+        ),
+        "anchor_enabled": anchor_enabled,
+        "anchor_output_rows": list(anchor_output_rows),
+        "anchor_coefficient": float(anchor_coefficient) if anchor_enabled else None,
+        "anchor_features_source_frozen": (
+            bool(anchor_features is not None and not anchor_features.requires_grad)
+            if anchor_enabled
+            else True
+        ),
         "history": history,
         "accepted_steps": accepted_steps,
         "rejected_steps": rejected_steps,
@@ -882,11 +1072,17 @@ def _metadata(
     source_payload: Mapping[str, Any],
     sparse_target_rows: Sequence[int] | None = None,
     source_initial_train_miss_rows: Sequence[Mapping[str, Any]] = (),
+    anchor_report: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     value = dict(checkpoint_metadata(config))
     sparse_target_rows = _normalize_sparse_target_rows(sparse_target_rows)
-    fit_mode = "sparse_target_rows" if sparse_target_rows is not None else "full_proposal_head"
-    protocol = SPARSE_PROTOCOL if sparse_target_rows is not None else PROTOCOL
+    anchored = anchor_report is not None
+    fit_mode = (
+        "sparse_target_rows_anchored"
+        if anchored
+        else ("sparse_target_rows" if sparse_target_rows is not None else "full_proposal_head")
+    )
+    protocol = ANCHORED_PROTOCOL if anchored else (SPARSE_PROTOCOL if sparse_target_rows is not None else PROTOCOL)
     effective_update_parameters = (
         len(sparse_target_rows) * (TRAINABLE_PARAMETER_COUNT // PROPOSAL_COUNT)
         if sparse_target_rows is not None
@@ -914,6 +1110,7 @@ def _metadata(
         "fit_mode": fit_mode,
         "sparse_target_rows": list(sparse_target_rows) if sparse_target_rows is not None else None,
         "source_initial_train_miss_rows": _jsonable(source_initial_train_miss_rows),
+        "anchor": _jsonable(anchor_report) if anchor_report is not None else None,
         "collection_dir": collection_report["collection_dir"],
         "collection_rows_sha256": collection_report["rows_sha256"],
         "collection_manifest_sha256": collection_report["manifest_sha256"],
@@ -944,6 +1141,8 @@ def _metadata(
             "sparse_target_rows": list(sparse_target_rows) if sparse_target_rows is not None else None,
             "source_initial_train_miss_rows": _jsonable(source_initial_train_miss_rows),
             "effective_update_parameters": effective_update_parameters,
+            "anchor_output_rows": list(ANCHOR_OUTPUT_ROWS) if anchored else None,
+            "anchor_coefficient": ANCHOR_COEFFICIENT if anchored else None,
         },
         "trainable_scope": ["proposal_head.weight", "proposal_head.bias"],
         "trainable_parameter_count": TRAINABLE_PARAMETER_COUNT,
@@ -999,6 +1198,7 @@ def fit_runtime_rank_repair(
     *,
     source_checkpoint: str | Path = SOURCE_CHECKPOINT,
     sparse_target_rows: bool = False,
+    anchor_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run the registered runtime-label rank-repair fit."""
     random.seed(TRAINING_SEED)
@@ -1010,6 +1210,8 @@ def fit_runtime_rank_repair(
     _validate_source_rows(policy, rows)
     train_rows = [row for row in rows if row["split"] == "train"]
     validation_rows = [row for row in rows if row["split"] == "validation"]
+    _require(anchor_dir is None or sparse_target_rows, "--anchor-dir requires --sparse-target-rows")
+    anchor_data = _load_anchor_data(anchor_dir) if anchor_dir is not None else None
     root, checkpoint_path, report_path = _output_paths(output_dir)
     progress_path = root / "progress.json"
     _write_json(progress_path, {"stage": STAGE, "status": "RUNNING", "processed_rows": len(rows), "steps_completed": 0})
@@ -1028,6 +1230,21 @@ def fit_runtime_rank_repair(
         derived_sparse_rows, source_initial_train_miss_rows = _derive_sparse_target_rows(
             source_train_logits, train_rows,
         )
+    anchor_features: torch.Tensor | None = None
+    source_anchor_logits: torch.Tensor | None = None
+    anchor_report = anchor_data["report"] if anchor_data is not None else None
+    if anchor_data is not None:
+        _require(derived_sparse_rows == list(ANCHOR_OUTPUT_ROWS), "anchor mode requires derived sparse rows [9, 20]")
+        anchor_observations = torch.as_tensor(
+            anchor_data["observations"], dtype=torch.float32, device=policy.device,
+        )
+        _require(anchor_observations.ndim == 2 and anchor_observations.shape[1] == OBSERVATION_DIM, "anchor observations are not Nx88")
+        _require(bool(torch.isfinite(anchor_observations).all().item()), "anchor observations are not finite")
+        with torch.no_grad():
+            anchor_features = model.actor_encoder(anchor_observations).detach().clone()
+            source_anchor_logits = model.proposal_head(anchor_features).detach().clone()
+        _require(bool(torch.isfinite(anchor_features).all().item()), "source anchor features are not finite")
+        _require(bool(torch.isfinite(source_anchor_logits).all().item()), "source anchor logits are not finite")
     fit = _fit_steps(
         policy,
         train_rows,
@@ -1039,6 +1256,10 @@ def fit_runtime_rank_repair(
         optimizer=policy.optimizer,
         progress_path=progress_path,
         sparse_target_rows=derived_sparse_rows,
+        anchor_features=anchor_features,
+        source_anchor_logits=source_anchor_logits,
+        anchor_output_rows=ANCHOR_OUTPUT_ROWS,
+        anchor_coefficient=ANCHOR_COEFFICIENT,
     )
     if fit["stopped_reason"] == "retention_kl_cap_exceeded":
         status = "STOPPED_KL_CAP"
@@ -1058,9 +1279,18 @@ def fit_runtime_rank_repair(
         source_payload=source_payload,
         sparse_target_rows=derived_sparse_rows,
         source_initial_train_miss_rows=source_initial_train_miss_rows,
+        anchor_report=anchor_report,
     )
-    fit_mode = "sparse_target_rows" if derived_sparse_rows is not None else "full_proposal_head"
-    protocol = SPARSE_PROTOCOL if derived_sparse_rows is not None else PROTOCOL
+    fit_mode = (
+        "sparse_target_rows_anchored"
+        if anchor_data is not None
+        else ("sparse_target_rows" if derived_sparse_rows is not None else "full_proposal_head")
+    )
+    protocol = (
+        ANCHORED_PROTOCOL
+        if anchor_data is not None
+        else (SPARSE_PROTOCOL if derived_sparse_rows is not None else PROTOCOL)
+    )
     invariants = {
         "trainable_parameter_names": fit["trainable_names"],
         "trainable_parameter_count": fit["trainable_count"],
@@ -1068,6 +1298,7 @@ def fit_runtime_rank_repair(
         "effective_update_parameters": fit["effective_update_parameters"],
         "sparse_target_rows": fit["sparse_target_rows"],
         "non_target_proposal_rows_bitwise_unchanged": fit["non_target_proposal_rows_bitwise_unchanged"],
+        "anchor_features_source_frozen": fit["anchor_features_source_frozen"],
         "nonproposal_state_bitwise_unchanged": fit["nonproposal_state_bitwise_unchanged"],
         "gate_logits_bitwise_unchanged": fit["gate_logits_bitwise_unchanged"],
         "all_nonproposal_parameters_frozen": fit["all_nonproposal_parameters_frozen"],
@@ -1089,6 +1320,9 @@ def fit_runtime_rank_repair(
         "fit_mode": fit_mode,
         "sparse_target_rows": fit["sparse_target_rows"],
         "source_initial_train_miss_rows": source_initial_train_miss_rows,
+        "anchor": anchor_report,
+        "anchor_metrics_before": fit["before_anchor_metrics"],
+        "anchor_metrics_after": fit["after_anchor_metrics"],
         "seed": TRAINING_SEED,
         "development_seed_reuse": True,
         "method": {
@@ -1106,6 +1340,8 @@ def fit_runtime_rank_repair(
             "sparse_target_rows": fit["sparse_target_rows"],
             "source_initial_train_miss_rows": source_initial_train_miss_rows,
             "effective_update_parameters": fit["effective_update_parameters"],
+            "anchor_output_rows": fit["anchor_output_rows"] if anchor_data is not None else None,
+            "anchor_coefficient": fit["anchor_coefficient"],
         },
         "train_rows": len(train_rows),
         "validation_rows": len(validation_rows),
@@ -1172,12 +1408,14 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--source-checkpoint", type=Path, default=SOURCE_CHECKPOINT)
     parser.add_argument("--sparse-target-rows", action="store_true")
+    parser.add_argument("--anchor-dir", type=Path, default=None)
     args = parser.parse_args()
     result = fit_runtime_rank_repair(
         args.collection_dir,
         args.output_dir,
         source_checkpoint=args.source_checkpoint,
         sparse_target_rows=args.sparse_target_rows,
+        anchor_dir=args.anchor_dir,
     )
     print(json.dumps(_jsonable(result), sort_keys=True), flush=True)
     return 0 if result["status"] in {"COMPLETED", "NO_EFFECTIVE_FIT", "STOPPED_KL_CAP"} else 1

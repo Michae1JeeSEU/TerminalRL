@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 from torch import nn
@@ -355,3 +356,81 @@ def test_sparse_metadata_records_mode_and_protocol() -> None:
     assert metadata["sparse_target_rows"] == [9, 20]
     assert metadata["effective_update_parameters"] == 194
     assert metadata["method"]["mode"] == "sparse_target_rows"
+
+
+def _write_anchor_fixture(tmp_path, *, seeds=None) -> None:
+    if seeds is None:
+        seeds = [873101, 873102, 873103]
+    observations = np.zeros((len(seeds), runner.OBSERVATION_DIM), dtype=np.float32)
+    np.savez(
+        tmp_path / "anchors.npz",
+        observations=observations,
+        seed=np.asarray(seeds, dtype=np.int64),
+        step=np.arange(len(seeds), dtype=np.int64),
+        uid=np.asarray([f"anchor-{index}" for index in range(len(seeds))]),
+    )
+    manifest = {
+        "status": "COMPLETED",
+        "exact": True,
+        "source_checkpoint_sha256": runner.SOURCE_CHECKPOINT_SHA256,
+        "seeds": [873101, 873102, 873103],
+        "records": [
+            {
+                "seed": int(seed),
+                "split": "train" if int(seed) in runner.TRAIN_SEEDS else "validation",
+                "replay_exact": True,
+                "outcomes_match": True,
+            }
+            for seed in seeds
+        ],
+        "rows_count": len(seeds),
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_anchor_loader_accepts_exact_train_seed_manifest(tmp_path) -> None:
+    _write_anchor_fixture(tmp_path)
+
+    result = runner._load_anchor_data(tmp_path)
+
+    assert len(result["observations"]) == 3
+    assert result["report"]["seeds"] == [873101, 873102, 873103]
+    assert result["report"]["exact"] is True
+
+
+def test_anchor_loader_rejects_validation_seed(tmp_path) -> None:
+    _write_anchor_fixture(tmp_path, seeds=[873101, 873102, 873104])
+
+    with pytest.raises(runner.RuntimeRankRepairInputError, match="not a train seed"):
+        runner._load_anchor_data(tmp_path)
+
+
+def test_anchor_mse_gradient_is_limited_to_anchor_output_rows() -> None:
+    policy = _toy_policy()
+    observations = torch.zeros((3, runner.OBSERVATION_DIM))
+    observations[:, :3] = torch.tensor([[0.2, 0.1, 0.3], [0.4, 0.2, 0.1], [0.3, 0.5, 0.2]])
+    with torch.no_grad():
+        features = policy.model.actor_encoder(observations).detach().clone()
+        source_anchor_logits = policy.model.proposal_head(features).detach().clone()
+        source_anchor_logits[:, [9, 20]] += 1.0
+
+    policy.model.zero_grad(set_to_none=True)
+    loss = runner._anchor_mse(
+        policy.model,
+        features,
+        source_anchor_logits,
+        runner.ANCHOR_OUTPUT_ROWS,
+    )
+    loss.backward()
+
+    weight_grad = policy.model.proposal_head.weight.grad
+    bias_grad = policy.model.proposal_head.bias.grad
+    assert weight_grad is not None
+    assert bias_grad is not None
+    non_target = [index for index in range(runner.PROPOSAL_COUNT) if index not in runner.ANCHOR_OUTPUT_ROWS]
+    indices = torch.as_tensor(non_target, dtype=torch.long)
+    assert torch.equal(weight_grad.index_select(0, indices), torch.zeros_like(weight_grad.index_select(0, indices)))
+    assert torch.equal(bias_grad.index_select(0, indices), torch.zeros_like(bias_grad.index_select(0, indices)))
+    assert bool(weight_grad[[9, 20]].abs().sum().item() > 0.0)
+    assert bool(bias_grad[[9, 20]].abs().sum().item() > 0.0)
+    assert policy.model.actor_encoder.weight.grad is None
