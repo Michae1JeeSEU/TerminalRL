@@ -1,6 +1,6 @@
 # P3 gate anchored V6 protocol draft（2026-09-25）
 
-状态：`FORMAL_COMPLETE_RECOVERY_PROBE_PENDING`。V6 runner 已实现，外部 V6/PPO/GateReference 测试共
+状态：`FORMAL_COMPLETE_RECOVERY_PROBE_COMPLETED_REVIEW_REQUIRED`。V6 runner 已实现，外部 V6/PPO/GateReference 测试共
 `34 passed`；冻结 YAML SHA256 为
 `043ae7296d838e0970aadf78667621c16596c100e92992ce4e62fc2f1e7c0cf8`。本文与
 `terminal_marl/configs/low_v4_2/p3_gate_anchored_v6.yaml` 冻结下一阶段协议边界。服务器 smoke 已完成，
@@ -195,39 +195,50 @@ seed `862049` 均在首个 minibatch 遇到 `reference_kl_exceeds_max` 并 rollb
 rollout KL，未发生 reference 拒绝，accepted reference KL 最大值为 `.0444951<.05`，因此下一步聚焦两次提前停止的更新恢复语义，
 不直接判断 reference cap 普遍过紧。
 
-## 8. Bounded KL recovery probe（registered, not run）
+## 8. Bounded KL recovery probe（completed, review required）
 
-本节记录 2026-09-26 已注册、尚未执行的 bounded recovery probe。它针对 run0/run2 的两个
-`reference_kl_exceeds_max`、`accepted_updates=0` 现场，只用于记录完整 rollback 与同 rollout 的
-受限恢复行为；未运行前不产生 probe 结果、PASS 或 qualification 结论。
+本节记录 2026-09-26 已完成的 bounded recovery probe。它针对 run0/run2 的两个
+`reference_kl_exceeds_max`、`accepted_updates=0` 现场，只验证完整 rollback、同一 rollout 的
+受限缩步恢复和安全 skip 行为；它不是 formal 续训、模型 promotion 或 qualification。
 
 固定边界为原始 `03c0` reference、reference weighted KL cap `.05`、rollout KL cap `.01`，以及现有
-safety/energy hard gates。只有当一次完整 update 同时满足纯 KL 拒绝、`accepted_updates=0`、model
-完整回滚和 Adam 完整回滚时，才允许对同一 rollout 按 learning-rate multiplier
-`[1,.5,.25,.125]`、同一 numpy permutation 进行顺序重试。仍被 KL 拒绝的回合记录为 `SKIPPED_KL`
-且不计入 accepted；任何其他完整性或非有限错误记录为 `HARD_FAILED`。输出必须区分
-`processed`、`updated`、`skipped`，并保留每次 checkpoint/model/Adam/RNG restore 检查。
+safety/energy hard gates。只有一次完整 update 纯 KL 拒绝、`accepted_updates=0`、model 与 Adam
+完整回滚时，才对同一 rollout 按 learning-rate multiplier `[1,.5,.25,.125]`、同一 numpy permutation
+顺序重试。仍被 KL 拒绝的回合记录为 `SKIPPED_KL` 且不计入 accepted；任何其他完整性或非有限错误
+记录为 `HARD_FAILED`。只有 model/Adam/reference 恢复一致后才计入 UPDATED 或 SKIPPED；checkpoint
+同时保存并恢复 RNG。
 
-输出只写入新的根：
-
-```text
-/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run0
-/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run2
-```
-
-每个 run 处理 `4` 个 training episodes，合计最多 `8` 个 training episodes，并执行 `12` 个已有
-development 回合。恢复输入为：
+输出根及 manifest 为：
 
 ```text
-run0: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run0/checkpoints/checkpoint_episode_0079.pt
-run2: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run2/checkpoints/checkpoint_episode_0048.pt
+/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run0/manifest.json
+/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/run2/manifest.json
 ```
 
-run0 使用 `860080..860083`，场景顺序为 `dense24/flow6/dense24/flow12`；run2 使用
-`862049..862052`，场景顺序为 `flow6/dense24/flow12/dense24`。每组的首 seed 分别复现已消费的
-failure（`860080`、`862049`），其后三个为旧 formal 未使用 seed；后三个 seed 将被本诊断消费，之后
-不再标为 untouched。development 使用既有 `863101 flow6`、`863102 flow12`、`863103 dense24`
-before/after 回合，属于 development 而非 heldout。
+恢复输入为 V6 formal run0 的 `checkpoint_episode_0079.pt` 与 run2 的
+`checkpoint_episode_0048.pt`，使用各自真实 Adam/RNG 状态；before/after development 使用既有
+`863101 flow6`、`863102 flow12`、`863103 dense24`。`860080` 与 `862049` 是已消费 failure 的
+重复诊断 seed，其余六个 recovery seed 在本轮首次消费，之后不再标为 untouched。
 
-该 probe 当前未启动；旧 formal 输出不改写，不启动 full formal、heldout 或 dense30，不自动重启，
-不创建持续 heartbeat。新 recovery runner 由另一代码任务实现，本节不预写其运行结果。
+两组均 `COMPLETED`，每组 `4 processed / 2 UPDATED / 2 SKIPPED_KL / 0 HARD_FAILED`，每组真实
+accepted minibatch 为 `2`，合计 `4`；8 个 checkpoint 均 restore exact。run0 的尝试顺序为：
+`860080` 原始 LR 与 `.5` 重试拒绝、`.25` 接受；`860081` 与 `860082` 四档 multiplier 均拒绝并安全
+skip；`860083` 在 `.125` 接受。run2 为：`862049` 在 `.5` 接受、`862050` 在 `.25` 接受，
+`862051` 与 `862052` 安全 skip。最终 reference KL 为 run0 `.0499624982`、run2 `.0499344878`，
+仍不超过 `.05`，但接近上限。两组 training diagnostics 合计 `132` requests：`117 normal`、
+`15 emergency_landed`、`0 failed_energy`、`0 unresolved`；run0 为 `58 normal / 8 emergency_landed`，
+run2 为 `59 normal / 7 emergency_landed`。8 个 rollout 的 hard gate 均通过，未出现能量耗尽。
+
+before/after development 均 full-resolved。run0 的三个场景指标相同，其中 dense24 emergency
+为 `1→1`；run2 的 flow6/flow12 指标相同，dense24 emergency 为 `3→3`，priority wait 为
+`-3.97625s`、low-SOC wait 为 `+2.51198s`。这些 development 结果仅用于该诊断的前后观察，
+不构成独立 qualification cohort。两组本轮已消费诊断 seeds，旧 formal 输出保持 immutable。
+
+本次流程验证了受限回滚、缩步重试、safe skip 和 exact restore 的执行链，但每组仅有两次有效更新，
+不足以恢复剩余长期 formal 训练。因而不恢复 formal、不改变 `03c0` source、reference cap 或
+SafetyFilter，不晋级 checkpoint，不宣称 P3/P4 通过；本轮也未启动 heldout 或 dense30。主审保留
+后续小规模验证能改变更新方向的 reference 正则/优化器处理（例如 adaptive KL regularization），
+并比较有效更新率与 priority/SOC wait 的任务指标；不以继续缩步或单纯增加回合替代该验证。
+
+本地针对性测试为 `47 passed`；服务器复核为 `47 passed`（`2.28s`），两次 check-only 均通过且未
+创建 output，8 次 rollout 的 hard gate 与 restore exact 均通过。该测试事实不改变本节的诊断性边界。
