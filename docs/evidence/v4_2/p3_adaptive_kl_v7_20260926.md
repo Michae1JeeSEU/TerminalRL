@@ -149,6 +149,22 @@ formal run1/run2 继续使用原协议。若后续研究外部 gate 适配，标
 
 正式 run 终态为 run0 `FAILED`（`80 UPDATED`、`3954 accepted minibatches`）、run1 `COMPLETED 240/240`（`11737 accepted minibatches`）、run2 `COMPLETED 240/240`（`11808 accepted minibatches`）；restore/RNG 无 false。dev200 已完成，各为 `84` requests：run1 `76 normal + 8 emergency_landed`，run2 `74 normal + 10 emergency_landed`，能量/other/unresolved 均为零，安全检查全通过。final evaluation 未启动，不宣称 P3 结业，不重启 formal。下一步由 primary 冻结与实际 K3 随机执行一致的外部标签/小 probe 协议；fit 尚未启动。
 
+## V7 reward 与 actor credit accounting（2026-09-26，代码事实）
+
+`student_rollout_v4_2.py:349` 将每个 UAV 的环境 reward 汇总为 `sum(rewards.values())` 后写入 team scalar；`StudentStepV42` 与 GAE 使用 `gamma=.99`、`lambda=.95`（`student_ppo_v4_2.py:20–33,67–75`）。每个 world step 的 advantage 复制给该步的各 actor；没有 actor step 的 UAV 不进入 actor loss，但仍保留在 GAE/critic（`student_ppo_v4_2.py:197–221`），没有额外按 actor 数加权。
+
+当前 reward 组件事实为：urgency `=-.01*dt*(clip((priority-1)/4)+2*clip((.65-currentSOC)/(.65-.25)))`，time `=-.01*dt`，approved release `+.1`、reject `-.05`，touchdown `+25`，emergency 额外 `-8`（净 `+17`），energy `-20`。后处理的 priority-weighted wait 为 `(external+internalwait)*basepriority` 的加权指标，low-SOC 按 `initialSOC<=.65` 分组；两者与 reward 不是同一目标。本段只记录实现事实，reward 本轮保持冻结，不据此单独归因性能变化。
+
+## V7 K3 proposal coverage diagnostic（2026-09-26，完成）
+
+完整诊断根为 `/home/user/training_outputs/terminal/p3_k3_coverage_diagnostic_v1_20260926`，manifest SHA256 为 `0a1d329a929bdaf0131cf052fddd918ad0695d0db7245fedf3eb61b798006690`。任务 `COMPLETED exit0`，包含 `6` 个 source report 与 `1` 个 witness report：`36` 个 source states、`6` 个 witness states，missing `0`；7 份报告均 exact、outcomes/RNG/model 一致，`policy_update=false`、`teacher_online=false`。source 的 off/on 各有 `22` 个 catalogue 可行状态；`q` 分布为 `q=0:14`、`0<q<.01:3`、`.01<=q<.5:0`、`q>=.5:19`。source 中没有同时满足 `q>=.5` 且 `P_RELEASE<.1` 的样本，因此不能据此表述为广泛 gate 抑制。
+
+三个低 q 但 catalogue 可行的 source 状态为：flow6/seed873101/step187/arrival2/outer/SOC `.719587`、priority 1、`q=1.09908e-25`；dense24/seed873103/step0/arrival0/outer/SOC `.821394`、priority 1、`q=6.3502e-19`；dense24/seed873106/step0/arrival0/outer/SOC `.832284`、priority 3、`q=5.32975e-19`。witness 单列为 off `0/6`、on `2/6` 可行；`t=250` 的 on 状态 `q=1`，四个 checkpoint 的 `P_RELEASE` 为 `.000151486/.000217653/.000386301/.000515108`；`t=297` 的 on 状态 `q=8.69337449e-10`，即使 gate 为 1 也几乎选不到 certified proposal。`42` 个状态在 `4` 个 checkpoint 上共 `168` 组 proposal logits 与 source 逐组一致。`q` 是单状态 certified 尝试概率，不是最优 RELEASE 标签或闭环成功概率。
+
+smoke_v3 位于 `/home/user/training_outputs/terminal/p3_k3_coverage_diagnostic_v1_20260926_smoke_v3`，`SMOKE_COMPLETED`、exact `69/69`，首步观测 `88D`，off/on certified 候选为 `24/25`，proposal map `0..24`，RNG/live/weights unchanged；新模块两项定向测试和编译通过。更早 v1 的 `StopAfterFirstSample` RuntimeError 被 SafetyTrace 捕获而未 exact，v2 因 proposal mapping incomplete，均保留为软件预检失败，不作为模型失败。
+
+primary 对该诊断的限定解释是：slot 机制、少数 gate 压制和冻结 proposal 覆盖共同出现在这些观测中，不能由单独训练 gate 或 probability floor 整体解决；观测状态不代表总体泛化。reward、安全/能量边界保持不变，不重启 formal、不消费 heldout，未启动 fit；受限 proposal 适配范围待用户确认，`P3_QUALIFIED=false`、`P4_ALLOWED=false`。
+
 ## V7 run0 dev_after_0080 outcome totals erratum（2026-09-26）
 
 服务器 manifest：`/home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/run0/dev_after_0080/manifest.json`。逐 record 复核的六个 dev seed 请求终态按 manifest 顺序为：
