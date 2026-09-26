@@ -56,6 +56,10 @@ PROTOCOL = (
     Path(__file__).resolve().parents[2]
     / "docs/evidence/v4_2/p3_runtime_rank_repair_20260926.md"
 )
+SPARSE_PROTOCOL = (
+    Path(__file__).resolve().parents[2]
+    / "docs/evidence/v4_2/p3_runtime_rank_sparse_20260926.md"
+)
 TRAIN_SEEDS = frozenset({873101, 873102, 873103})
 VALIDATION_SEEDS = frozenset({873104, 873105, 873106})
 ALLOWED_SEEDS = TRAIN_SEEDS | VALIDATION_SEEDS
@@ -444,6 +448,100 @@ def _source_raw_logits(model: torch.nn.Module, observations: torch.Tensor) -> to
     return values
 
 
+def _normalize_sparse_target_rows(value: Sequence[int] | None) -> list[int] | None:
+    if value is None:
+        return None
+    rows = list(value)
+    _require(
+        all(isinstance(item, (int, np.integer)) and not isinstance(item, bool) for item in rows),
+        "sparse target rows must contain integer output indices",
+    )
+    normalized = [int(item) for item in rows]
+    _require(len(set(normalized)) == len(normalized), "sparse target rows contain duplicates")
+    _require(all(0 <= item < PROPOSAL_COUNT for item in normalized), "sparse target row is out of range")
+    return sorted(normalized)
+
+
+def _derive_sparse_target_rows(
+    source_train_logits: torch.Tensor,
+    train_rows: Sequence[Mapping[str, Any]],
+) -> tuple[list[int], list[dict[str, Any]]]:
+    """Derive output rows from source train misses only.
+
+    Each source K=3 miss contributes its highest-logit certified proposal row.
+    Validation rows are intentionally not accepted by this seam.
+    """
+    _require(source_train_logits.ndim == 2, "source train logits must be a matrix")
+    _require(source_train_logits.shape == (len(train_rows), PROPOSAL_COUNT), "source train logits shape mismatch")
+    _require(bool(torch.isfinite(source_train_logits).all().item()), "source train logits are not finite")
+    target_rows: set[int] = set()
+    miss_rows: list[dict[str, Any]] = []
+    for index, (logits, row) in enumerate(zip(source_train_logits, train_rows)):
+        certified = set(int(item) for item in row["certified_proposals"])
+        ranked = [int(item) for item in torch.argsort(logits, descending=True, stable=True).tolist()]
+        if not certified or certified.intersection(ranked[:3]):
+            continue
+        certified_order = [item for item in ranked if item in certified]
+        _require(bool(certified_order), f"source train miss {index} has no certified proposal")
+        target = certified_order[0]
+        target_rows.add(target)
+        miss_rows.append({
+            "train_row_index": index,
+            "seed": int(row["seed"]) if "seed" in row else None,
+            "step": int(row["step"]) if "step" in row else None,
+            "uid": str(row.get("uid", row.get("runtime_uid"))) if row.get("uid", row.get("runtime_uid")) is not None else None,
+            "certified_proposals": sorted(certified),
+            "highest_certified_output_row": target,
+        })
+    return sorted(target_rows), miss_rows
+
+
+def _effective_update_parameter_count(model: torch.nn.Module, target_rows: Sequence[int]) -> int:
+    normalized = _normalize_sparse_target_rows(target_rows)
+    _require(normalized is not None, "target rows are required")
+    weight = getattr(model, "proposal_head", None)
+    _require(weight is not None and hasattr(weight, "weight") and hasattr(weight, "bias"), "proposal head is missing")
+    _require(weight.weight.ndim == 2 and weight.bias.ndim == 1, "proposal head dimensions are invalid")
+    _require(weight.weight.shape[0] == PROPOSAL_COUNT and weight.bias.shape[0] == PROPOSAL_COUNT, "proposal head row count changed")
+    return len(normalized) * (int(weight.weight.shape[1]) + 1)
+
+
+def _mask_proposal_gradients(model: torch.nn.Module, target_rows: Sequence[int]) -> None:
+    normalized = _normalize_sparse_target_rows(target_rows)
+    _require(normalized is not None, "target rows are required")
+    weight = getattr(model, "proposal_head", None)
+    _require(weight is not None and hasattr(weight, "weight") and hasattr(weight, "bias"), "proposal head is missing")
+    for parameter in (weight.weight, weight.bias):
+        _require(parameter.grad is not None, "missing proposal gradient for sparse mask")
+    weight_mask = torch.zeros_like(weight.weight.grad)
+    bias_mask = torch.zeros_like(weight.bias.grad)
+    if normalized:
+        indices = torch.as_tensor(normalized, dtype=torch.long, device=weight_mask.device)
+        weight_mask.index_fill_(0, indices, 1.0)
+        bias_mask.index_fill_(0, indices, 1.0)
+    weight.weight.grad.mul_(weight_mask)
+    weight.bias.grad.mul_(bias_mask)
+
+
+def _non_target_proposal_rows_bitwise_unchanged(
+    before: Mapping[str, torch.Tensor],
+    after: Mapping[str, torch.Tensor],
+    target_rows: Sequence[int],
+) -> bool:
+    normalized = _normalize_sparse_target_rows(target_rows)
+    _require(normalized is not None, "target rows are required")
+    target = set(normalized)
+    non_target = [index for index in range(PROPOSAL_COUNT) if index not in target]
+    if not non_target:
+        return True
+    indices = torch.as_tensor(non_target, dtype=torch.long)
+    for name in ("proposal_head.weight", "proposal_head.bias"):
+        _require(name in before and name in after, f"missing proposal state: {name}")
+        if not torch.equal(before[name].index_select(0, indices), after[name].index_select(0, indices)):
+            return False
+    return True
+
+
 def _validate_source_rows(policy: Any, rows: Sequence[Mapping[str, Any]]) -> None:
     device = policy.device
     for index, row in enumerate(rows):
@@ -565,6 +663,7 @@ def _fit_steps(
     max_steps: int | None = None,
     retention_kl_max: float | None = None,
     progress_path: Path | None = None,
+    sparse_target_rows: Sequence[int] | None = None,
 ) -> dict[str, Any]:
     """Run the bounded fit on a policy; this seam is also used by toy tests."""
     device = policy.device
@@ -582,6 +681,7 @@ def _fit_steps(
         max_steps = MAX_OPTIMIZER_STEPS
     if retention_kl_max is None:
         retention_kl_max = RETENTION_KL_MAX
+    sparse_target_rows = _normalize_sparse_target_rows(sparse_target_rows)
     policy.optimizer = optimizer
     model = policy.model
     model.eval()
@@ -622,6 +722,10 @@ def _fit_steps(
         gradients = [parameter.grad for parameter in trainable_parameters if parameter.grad is not None]
         _require(bool(gradients), f"missing proposal gradient at step {step}")
         _require(all(bool(torch.isfinite(gradient).all().item()) for gradient in gradients), f"non-finite proposal gradient at step {step}")
+        if sparse_target_rows is not None:
+            _mask_proposal_gradients(model, sparse_target_rows)
+            gradients = [parameter.grad for parameter in trainable_parameters if parameter.grad is not None]
+            _require(all(bool(torch.isfinite(gradient).all().item()) for gradient in gradients), f"non-finite masked proposal gradient at step {step}")
         norm = torch.nn.utils.clip_grad_norm_(list(trainable_parameters), GRADIENT_CLIP_NORM)
         _require(bool(torch.isfinite(norm).item()), f"non-finite gradient norm at step {step}")
         optimizer.step()
@@ -654,6 +758,12 @@ def _fit_steps(
             for name in before_state
             if not name.startswith(PROPOSAL_PREFIX)
         )
+        step_non_target_unchanged = (
+            True
+            if sparse_target_rows is None
+            else _non_target_proposal_rows_bitwise_unchanged(before_state, step_state, sparse_target_rows)
+        )
+        _require(step_non_target_unchanged, f"non-target proposal row changed at step {step}")
         step_gate_unchanged = torch.equal(before_gate_train, _gate_logits(model, train_x)) and torch.equal(
             before_gate_validation, _gate_logits(model, validation_x),
         )
@@ -674,6 +784,7 @@ def _fit_steps(
             "train_kl": train_metrics["kl_mean"],
             "validation_kl": metrics["validation"]["kl_mean"],
             "nonproposal_state_bitwise_unchanged": step_nonproposal_unchanged,
+            "non_target_proposal_rows_bitwise_unchanged": step_non_target_unchanged,
             "gate_logits_bitwise_unchanged": step_gate_unchanged,
             "rejected_reason": stopped_reason if rejected else None,
         }
@@ -708,6 +819,12 @@ def _fit_steps(
     gate_logits_bitwise_unchanged = torch.equal(before_gate_train, after_gate_train) and torch.equal(
         before_gate_validation, after_gate_validation,
     )
+    non_target_proposal_rows_bitwise_unchanged = (
+        True
+        if sparse_target_rows is None
+        else _non_target_proposal_rows_bitwise_unchanged(before_state, after_state, sparse_target_rows)
+    )
+    _require(non_target_proposal_rows_bitwise_unchanged, "non-target proposal row changed during fit")
     frozen_parameters = all(
         not parameter.requires_grad
         for name, parameter in model.named_parameters()
@@ -732,7 +849,15 @@ def _fit_steps(
         "effective_fit": effective_fit,
         "trainable_names": list(trainable_names),
         "trainable_count": sum(parameter.numel() for parameter in trainable_parameters),
+        "requires_grad_parameter_count": sum(parameter.numel() for parameter in trainable_parameters),
+        "sparse_target_rows": list(sparse_target_rows) if sparse_target_rows is not None else None,
+        "effective_update_parameters": (
+            _effective_update_parameter_count(model, sparse_target_rows)
+            if sparse_target_rows is not None
+            else sum(parameter.numel() for parameter in trainable_parameters)
+        ),
         "nonproposal_state_bitwise_unchanged": nonproposal_state_bitwise_unchanged,
+        "non_target_proposal_rows_bitwise_unchanged": non_target_proposal_rows_bitwise_unchanged,
         "gate_logits_bitwise_unchanged": gate_logits_bitwise_unchanged,
         "all_nonproposal_parameters_frozen": frozen_parameters,
         "train_x": train_x,
@@ -755,8 +880,18 @@ def _metadata(
     collection_report: Mapping[str, Any],
     rows: Sequence[Mapping[str, Any]],
     source_payload: Mapping[str, Any],
+    sparse_target_rows: Sequence[int] | None = None,
+    source_initial_train_miss_rows: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     value = dict(checkpoint_metadata(config))
+    sparse_target_rows = _normalize_sparse_target_rows(sparse_target_rows)
+    fit_mode = "sparse_target_rows" if sparse_target_rows is not None else "full_proposal_head"
+    protocol = SPARSE_PROTOCOL if sparse_target_rows is not None else PROTOCOL
+    effective_update_parameters = (
+        len(sparse_target_rows) * (TRAINABLE_PARAMETER_COUNT // PROPOSAL_COUNT)
+        if sparse_target_rows is not None
+        else TRAINABLE_PARAMETER_COUNT
+    )
     source_metadata = source_payload.get("metadata", {})
     if isinstance(source_metadata, Mapping):
         # Preserve source declarations that are not part of the generic
@@ -774,8 +909,11 @@ def _metadata(
         "source_metadata": _jsonable(source_metadata),
         "source_architecture_id": source_metadata.get("architecture_id", CALIBRATED_ARCHITECTURE_ID)
         if isinstance(source_metadata, Mapping) else CALIBRATED_ARCHITECTURE_ID,
-        "protocol": str(PROTOCOL),
-        "protocol_sha256": _sha256(PROTOCOL),
+        "protocol": str(protocol),
+        "protocol_sha256": _sha256(protocol),
+        "fit_mode": fit_mode,
+        "sparse_target_rows": list(sparse_target_rows) if sparse_target_rows is not None else None,
+        "source_initial_train_miss_rows": _jsonable(source_initial_train_miss_rows),
         "collection_dir": collection_report["collection_dir"],
         "collection_rows_sha256": collection_report["rows_sha256"],
         "collection_manifest_sha256": collection_report["manifest_sha256"],
@@ -792,6 +930,7 @@ def _metadata(
         "kl_coefficient": KL_COEFFICIENT,
         "rank_objective": "k3_coverage_objective(raw_proposal_logits, C)",
         "method": {
+            "mode": fit_mode,
             "rank_objective": "k3_coverage_objective(raw_proposal_logits, C)",
             "kl_coefficient": KL_COEFFICIENT,
             "full_batch_size": FULL_BATCH_SIZE,
@@ -802,9 +941,14 @@ def _metadata(
             "validation_used_for_update": False,
             "validation_used_for_selection": False,
             "early_stop": "train_miss_count_zero",
+            "sparse_target_rows": list(sparse_target_rows) if sparse_target_rows is not None else None,
+            "source_initial_train_miss_rows": _jsonable(source_initial_train_miss_rows),
+            "effective_update_parameters": effective_update_parameters,
         },
         "trainable_scope": ["proposal_head.weight", "proposal_head.bias"],
         "trainable_parameter_count": TRAINABLE_PARAMETER_COUNT,
+        "requires_grad_parameter_count": TRAINABLE_PARAMETER_COUNT,
+        "effective_update_parameters": effective_update_parameters,
         "source_optimizer_copied": False,
         "runtime_labels": True,
         "PPO_ALLOWED": False,
@@ -854,8 +998,9 @@ def fit_runtime_rank_repair(
     output_dir: str | Path,
     *,
     source_checkpoint: str | Path = SOURCE_CHECKPOINT,
+    sparse_target_rows: bool = False,
 ) -> dict[str, Any]:
-    """Run the single registered runtime-label rank-repair fit."""
+    """Run the registered runtime-label rank-repair fit."""
     random.seed(TRAINING_SEED)
     np.random.seed(TRAINING_SEED)
     torch.manual_seed(TRAINING_SEED)
@@ -877,6 +1022,12 @@ def fit_runtime_rank_repair(
     validation_x = _observations(validation_rows, policy.device)
     source_train_logits = _source_raw_logits(model, train_x)
     source_validation_logits = _source_raw_logits(model, validation_x)
+    derived_sparse_rows: list[int] | None = None
+    source_initial_train_miss_rows: list[dict[str, Any]] = []
+    if sparse_target_rows:
+        derived_sparse_rows, source_initial_train_miss_rows = _derive_sparse_target_rows(
+            source_train_logits, train_rows,
+        )
     fit = _fit_steps(
         policy,
         train_rows,
@@ -887,6 +1038,7 @@ def fit_runtime_rank_repair(
         trainable_names=trainable_names,
         optimizer=policy.optimizer,
         progress_path=progress_path,
+        sparse_target_rows=derived_sparse_rows,
     )
     if fit["stopped_reason"] == "retention_kl_cap_exceeded":
         status = "STOPPED_KL_CAP"
@@ -904,10 +1056,18 @@ def fit_runtime_rank_repair(
         collection_report=collection_report,
         rows=rows,
         source_payload=source_payload,
+        sparse_target_rows=derived_sparse_rows,
+        source_initial_train_miss_rows=source_initial_train_miss_rows,
     )
+    fit_mode = "sparse_target_rows" if derived_sparse_rows is not None else "full_proposal_head"
+    protocol = SPARSE_PROTOCOL if derived_sparse_rows is not None else PROTOCOL
     invariants = {
         "trainable_parameter_names": fit["trainable_names"],
         "trainable_parameter_count": fit["trainable_count"],
+        "requires_grad_parameter_count": fit["requires_grad_parameter_count"],
+        "effective_update_parameters": fit["effective_update_parameters"],
+        "sparse_target_rows": fit["sparse_target_rows"],
+        "non_target_proposal_rows_bitwise_unchanged": fit["non_target_proposal_rows_bitwise_unchanged"],
         "nonproposal_state_bitwise_unchanged": fit["nonproposal_state_bitwise_unchanged"],
         "gate_logits_bitwise_unchanged": fit["gate_logits_bitwise_unchanged"],
         "all_nonproposal_parameters_frozen": fit["all_nonproposal_parameters_frozen"],
@@ -915,6 +1075,7 @@ def fit_runtime_rank_repair(
         "retention_kl_max": RETENTION_KL_MAX,
     }
     _require(invariants["nonproposal_state_bitwise_unchanged"], "non-proposal state changed during fit")
+    _require(invariants["non_target_proposal_rows_bitwise_unchanged"], "non-target proposal row changed during fit")
     _require(invariants["gate_logits_bitwise_unchanged"], "gate logits changed during fit")
     _require(invariants["all_nonproposal_parameters_frozen"], "non-proposal parameters remain trainable")
     report: dict[str, Any] = {
@@ -923,11 +1084,15 @@ def fit_runtime_rank_repair(
         "source_checkpoint": str(source_checkpoint),
         "source_checkpoint_sha256": source_sha,
         "collection": collection_report,
-        "protocol": str(PROTOCOL),
-        "protocol_sha256": _sha256(PROTOCOL),
+        "protocol": str(protocol),
+        "protocol_sha256": _sha256(protocol),
+        "fit_mode": fit_mode,
+        "sparse_target_rows": fit["sparse_target_rows"],
+        "source_initial_train_miss_rows": source_initial_train_miss_rows,
         "seed": TRAINING_SEED,
         "development_seed_reuse": True,
         "method": {
+            "mode": fit_mode,
             "rank_objective": "k3_coverage_objective(raw_proposal_logits, C)",
             "kl_coefficient": KL_COEFFICIENT,
             "full_batch_size": FULL_BATCH_SIZE,
@@ -938,6 +1103,9 @@ def fit_runtime_rank_repair(
             "validation_used_for_update": False,
             "validation_used_for_selection": False,
             "early_stop": "train_miss_count_zero",
+            "sparse_target_rows": fit["sparse_target_rows"],
+            "source_initial_train_miss_rows": source_initial_train_miss_rows,
+            "effective_update_parameters": fit["effective_update_parameters"],
         },
         "train_rows": len(train_rows),
         "validation_rows": len(validation_rows),
@@ -1003,9 +1171,13 @@ def main() -> int:
     parser.add_argument("--collection-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--source-checkpoint", type=Path, default=SOURCE_CHECKPOINT)
+    parser.add_argument("--sparse-target-rows", action="store_true")
     args = parser.parse_args()
     result = fit_runtime_rank_repair(
-        args.collection_dir, args.output_dir, source_checkpoint=args.source_checkpoint,
+        args.collection_dir,
+        args.output_dir,
+        source_checkpoint=args.source_checkpoint,
+        sparse_target_rows=args.sparse_target_rows,
     )
     print(json.dumps(_jsonable(result), sort_keys=True), flush=True)
     return 0 if result["status"] in {"COMPLETED", "NO_EFFECTIVE_FIT", "STOPPED_KL_CAP"} else 1

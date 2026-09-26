@@ -88,6 +88,64 @@ def test_strict_no_regression_uses_exact_wait_limits() -> None:
     assert not runner.no_regression_strict(base, candidate)["passed"]
 
 
+def _screen_summary(*, normal: int, priority: float, low_soc: float) -> dict:
+    return {
+        "normal": normal,
+        "failed_energy": 0,
+        "other": 0,
+        "unresolved": 0,
+        "safety_nonzero_episodes": 0,
+        "safety_status_unknown_episodes": 0,
+        "full_request_complete": True,
+        "priority_weighted_wait_seconds": priority,
+        "low_soc_wait_seconds": low_soc,
+    }
+
+
+def test_compare_screen_maps_nested_train_qk3_metrics() -> None:
+    baseline = {
+        split: _screen_summary(normal=10, priority=100.0, low_soc=80.0)
+        for split in ("train", "validation", "overall")
+    }
+    candidate = {
+        split: _screen_summary(normal=11, priority=102.0, low_soc=81.0)
+        for split in ("train", "validation", "overall")
+    }
+    result = runner.compare_screen(
+        baseline,
+        candidate,
+        {
+            "metrics_before": {"train": {"qK3_mean": 0.20}},
+            "metrics_after": {"train": {"qK3_mean": 0.200001}},
+        },
+    )
+    assert result["coverage_improved"] is True
+    assert result["development_screen"] is True
+
+
+def test_nested_qk3_improvement_does_not_override_degraded_screen_gates() -> None:
+    baseline = {
+        split: _screen_summary(normal=10, priority=100.0, low_soc=80.0)
+        for split in ("train", "validation", "overall")
+    }
+    candidate = {
+        split: _screen_summary(normal=9, priority=106.0, low_soc=86.0)
+        for split in ("train", "validation", "overall")
+    }
+    result = runner.compare_screen(
+        baseline,
+        candidate,
+        {
+            "metrics_before": {"train": {"qK3_mean": 0.20}},
+            "metrics_after": {"train": {"qK3_mean": 0.30}},
+        },
+    )
+    assert result["coverage_improved"] is True
+    assert result["split_checks"]["validation"]["normal"]["passed"] is False
+    assert result["split_checks"]["validation"]["priority_wait"]["passed"] is False
+    assert result["development_screen"] is False
+
+
 def test_normalization_retains_failed_request_in_denominator() -> None:
     raw = _record(873103, "dense24", failed=True)
     normalized = runner.normalize_record(

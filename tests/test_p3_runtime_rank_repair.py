@@ -247,3 +247,111 @@ def test_runtime_collector_manifest_rejects_record_model_change(tmp_path) -> Non
     _write_runtime_collector_fixture(tmp_path, bad_model_record=True)
     with pytest.raises(runner.RuntimeRankRepairInputError, match="model_weights_unchanged"):
         runner._load_collection(tmp_path)
+
+
+def test_sparse_target_rows_derive_from_train_source_misses_only() -> None:
+    source = torch.full((3, runner.PROPOSAL_COUNT), -10.0)
+    source[0, 0:3] = torch.tensor([5.0, 4.0, 3.0])
+    source[0, 9] = 2.0
+    source[1, 0:3] = torch.tensor([5.0, 4.0, 3.0])
+    source[1, 20] = 2.0
+    source[2, 0:3] = torch.tensor([5.0, 4.0, 3.0])
+    rows = [
+        {"certified_proposals": [9], "seed": 873101, "step": 1, "uid": "a"},
+        {"certified_proposals": [20], "seed": 873102, "step": 2, "uid": "b"},
+        {"certified_proposals": [1], "seed": 873103, "step": 3, "uid": "c"},
+    ]
+
+    target_rows, miss_rows = runner._derive_sparse_target_rows(source, rows)
+
+    assert target_rows == [9, 20]
+    assert [item["train_row_index"] for item in miss_rows] == [0, 1]
+    assert [item["highest_certified_output_row"] for item in miss_rows] == [9, 20]
+
+
+def test_sparse_gradient_mask_keeps_non_target_proposal_rows_bitwise() -> None:
+    policy = _toy_policy()
+    train_rows = _rows(2)
+    validation_rows = _rows(2, offset=0.4)
+    source_train = _source_logits(policy, train_rows)
+    source_validation = _source_logits(policy, validation_rows)
+    target_rows = []
+    for row_index, row in enumerate(train_rows):
+        top3 = set(torch.argsort(source_train[row_index], descending=True, stable=True)[:3].tolist())
+        target = next(index for index in range(runner.PROPOSAL_COUNT) if index not in top3)
+        row["certified_proposals"] = [target]
+        target_rows.append(target)
+    target_rows = sorted(set(target_rows))
+    before = runner._state_cpu(policy.model)
+    parameters = [parameter for name, parameter in policy.model.named_parameters() if name.startswith("proposal_head.")]
+
+    result = runner._fit_steps(
+        policy,
+        train_rows,
+        validation_rows,
+        source_train_logits=source_train,
+        source_validation_logits=source_validation,
+        trainable_parameters=parameters,
+        max_steps=1,
+        retention_kl_max=10.0,
+        sparse_target_rows=target_rows,
+    )
+
+    after = runner._state_cpu(policy.model)
+    assert result["sparse_target_rows"] == target_rows
+    assert result["effective_update_parameters"] == len(target_rows) * 5
+    assert result["requires_grad_parameter_count"] == result["trainable_count"]
+    assert result["non_target_proposal_rows_bitwise_unchanged"] is True
+    non_target = [index for index in range(runner.PROPOSAL_COUNT) if index not in target_rows]
+    indices = torch.as_tensor(non_target, dtype=torch.long)
+    assert torch.equal(before["proposal_head.weight"].index_select(0, indices), after["proposal_head.weight"].index_select(0, indices))
+    assert torch.equal(before["proposal_head.bias"].index_select(0, indices), after["proposal_head.bias"].index_select(0, indices))
+
+
+def test_default_fit_steps_retains_full_v1_update_scope() -> None:
+    policy = _toy_policy()
+    train_rows = _rows(2)
+    validation_rows = _rows(2, offset=0.4)
+    source_train = _source_logits(policy, train_rows)
+    source_validation = _source_logits(policy, validation_rows)
+    top3 = set(torch.argsort(source_train[0], descending=True, stable=True)[:3].tolist())
+    train_rows[0]["certified_proposals"] = [next(index for index in range(runner.PROPOSAL_COUNT) if index not in top3)]
+    parameters = [parameter for name, parameter in policy.model.named_parameters() if name.startswith("proposal_head.")]
+
+    result = runner._fit_steps(
+        policy,
+        train_rows,
+        validation_rows,
+        source_train_logits=_source_logits(policy, train_rows),
+        source_validation_logits=source_validation,
+        trainable_parameters=parameters,
+        max_steps=1,
+        retention_kl_max=10.0,
+    )
+
+    assert result["sparse_target_rows"] is None
+    assert result["effective_update_parameters"] == result["trainable_count"]
+    assert result["requires_grad_parameter_count"] == result["trainable_count"]
+
+
+def test_sparse_metadata_records_mode_and_protocol() -> None:
+    metadata = runner._metadata(
+        runner._build_execution_config(),
+        source_checkpoint=runner.SOURCE_CHECKPOINT,
+        source_sha=runner.SOURCE_CHECKPOINT_SHA256,
+        collection_report={
+            "collection_dir": "collection",
+            "rows_sha256": "rows",
+            "manifest_sha256": "manifest",
+        },
+        rows=[],
+        source_payload={"metadata": {}},
+        sparse_target_rows=[9, 20],
+        source_initial_train_miss_rows=[{"highest_certified_output_row": 9}],
+    )
+
+    assert metadata["fit_mode"] == "sparse_target_rows"
+    assert metadata["protocol"] == str(runner.SPARSE_PROTOCOL)
+    assert metadata["sparse_target_rows"] == [9, 20]
+    assert metadata["effective_update_parameters"] == 194
+    assert metadata["method"]["mode"] == "sparse_target_rows"

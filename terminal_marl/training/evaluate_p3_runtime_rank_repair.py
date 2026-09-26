@@ -204,9 +204,26 @@ def compare_screen(
     candidate: Mapping[str, Mapping[str, Any]],
     fit_report: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Keep the registered development screen definition unchanged."""
+    """Keep the registered development screen definition unchanged.
 
-    return legacy_eval.compare_screen(baseline, candidate, fit_report)
+    The runtime rank-repair fit report stores qK3 metrics under the ``train``
+    split.  Adapt that nested schema to the legacy helper's flat
+    ``coverage_improved`` input without changing any of the screen gates.
+    """
+
+    fit_for_legacy = fit_report
+    metrics_before = fit_report.get("metrics_before")
+    metrics_after = fit_report.get("metrics_after")
+    if isinstance(metrics_before, Mapping) and isinstance(metrics_after, Mapping):
+        train_before = metrics_before.get("train")
+        train_after = metrics_after.get("train")
+        before_qk3 = train_before.get("qK3_mean") if isinstance(train_before, Mapping) else None
+        after_qk3 = train_after.get("qK3_mean") if isinstance(train_after, Mapping) else None
+        if isinstance(before_qk3, (int, float)) and isinstance(after_qk3, (int, float)):
+            fit_for_legacy = dict(fit_report)
+            fit_for_legacy["coverage_improved"] = float(after_qk3) - float(before_qk3) >= 1e-6
+
+    return legacy_eval.compare_screen(baseline, candidate, fit_for_legacy)
 
 
 def _strict_leq(candidate: Any, baseline: Any) -> dict[str, Any]:
