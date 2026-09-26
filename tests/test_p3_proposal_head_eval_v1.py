@@ -29,6 +29,7 @@ def _life(rows: list[dict], *, exact: bool = True, scope: str = "all_requested_t
         "scope": scope,
         "replay_exact": exact,
         "all_requests_observed": True,
+        "ledger_alignment": True,
         "missing_request_count": 0,
         "requested_count": len(rows),
         "observed_terminal_count": len(rows),
@@ -267,3 +268,152 @@ def test_fit_binding_requires_effective_fit_and_exact_invariants(tmp_path) -> No
     (false_dir / "fit_report.json").write_text(json.dumps(false_effective), encoding="utf-8")
     with pytest.raises(runner.ProposalHeadEvaluationError, match="effective_fit"):
         runner._load_fit_binding(false_dir)
+
+
+def test_runtime_protocol_adapter_supplies_hard_gates_to_episode_record(
+    tmp_path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_episode_record(**kwargs):
+        captured["runtime_protocol"] = kwargs["runtime_protocol"]
+        return _record(
+            873101,
+            "flow6",
+            [_row(index, outcome="completed") for index in range(6)],
+        )
+
+    monkeypatch.setattr(runner.adaptive_eval, "_episode_record", fake_episode_record)
+    protocol = runner.formal_v7._protocol()
+    configs, runtime_protocol = runner._build_eval_inputs(protocol)
+    runner._full_candidate_record(
+        policy=object(),
+        checkpoint=tmp_path / "candidate.pt",
+        protocol=protocol,
+        runtime_protocol=runtime_protocol,
+        config=configs["flow6"],
+        scenario="flow6",
+        seed=873101,
+        output=tmp_path / "rollout",
+    )
+    assert isinstance(captured["runtime_protocol"], dict)
+    assert isinstance(captured["runtime_protocol"].get("hard_gates"), dict)
+
+
+def _failed_existing_record(seed: int, scenario: str, rows: list[dict]) -> dict:
+    record = _record(seed, scenario, rows)
+    record.update({
+        "status": "failed",
+        "error": {"type": "KeyError", "message": "'hard_gates'"},
+        "summary": {
+            "terminal": True,
+            "safety": {
+                "collisions": 0,
+                "nmac": 0,
+                "hard_separation_violations": 0,
+                "uncertified_execution": 0,
+                "SafetyInvariantError": 0,
+            },
+        },
+        "weights_unchanged": True,
+        "unresolved": len(rows),
+        "normal": 0,
+        "emergency": 0,
+        "failed_energy": 0,
+        "action_tape": "existing-tape.json",
+    })
+    return record
+
+
+def test_summarize_existing_eval_corrects_counts_without_marking_training_pass(
+    tmp_path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "eval"
+    records_dir = source / "records"
+    records_dir.mkdir(parents=True)
+    manifest = {"status": "COMPLETED", "records_processed": 6}
+    (source / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    raw_records: list[dict] = []
+    for seed in sorted(runner.SEED_SCENARIO):
+        scenario = runner.SEED_SCENARIO[seed]
+        requests = runner.EXPECTED_REQUESTS[scenario]
+        emergency = 2 if scenario == "dense24" else 0
+        rows = [
+            _row(index, outcome="emergency_landed" if index < emergency else "completed")
+            for index in range(requests)
+        ]
+        raw = _failed_existing_record(seed, scenario, rows)
+        raw_records.append(raw)
+        (records_dir / f"{scenario}_{seed}.json").write_text(
+            json.dumps(raw), encoding="utf-8",
+        )
+
+    baseline = [
+        runner.normalize_record(
+            dict(record),
+            expected_scenario=record["scenario"],
+            expected_seed=record["seed"],
+            expected_requests=runner.EXPECTED_REQUESTS[record["scenario"]],
+        )
+        for record in raw_records
+    ]
+    monkeypatch.setattr(runner, "load_baseline_records", lambda: baseline)
+    result = runner.summarize_existing_eval(
+        input_root=source,
+        output_dir=tmp_path / "corrected",
+    )
+    candidate = result["candidate"]["overall"]
+    assert result["status"] == "REPORTING_ERROR_CORRECTED"
+    assert candidate["counts"] == {
+        "requests": 84,
+        "normal": 80,
+        "emergency": 4,
+        "failed_energy": 0,
+        "other": 0,
+        "unresolved": 0,
+    }
+    assert candidate["error_records"] == 6
+    assert candidate["safety_status_unknown_episodes"] == 0
+    assert result["development_screen"] is False
+    assert result["P3_QUALIFIED"] is False
+    corrected = json.loads(
+        (tmp_path / "corrected" / "records" / "dense24_873103.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert corrected["original_evaluation_error"] == {
+        "type": "KeyError", "message": "'hard_gates'"
+    }
+    assert corrected["reporting_error_corrected"] is True
+    assert corrected["training_pass"] is False
+
+
+def test_summarize_existing_eval_does_not_claim_missing_safety_is_zero(
+    tmp_path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "eval"
+    records_dir = source / "records"
+    records_dir.mkdir(parents=True)
+    (source / "manifest.json").write_text(json.dumps({"status": "COMPLETED"}), encoding="utf-8")
+    raw_records: list[dict] = []
+    for seed in sorted(runner.SEED_SCENARIO):
+        scenario = runner.SEED_SCENARIO[seed]
+        rows = [_row(index, outcome="completed") for index in range(runner.EXPECTED_REQUESTS[scenario])]
+        raw = _failed_existing_record(seed, scenario, rows)
+        if seed == 873101:
+            raw["summary"].pop("safety")
+        raw_records.append(raw)
+        (records_dir / f"{scenario}_{seed}.json").write_text(json.dumps(raw), encoding="utf-8")
+    baseline = [
+        runner.normalize_record(
+            dict(record), expected_scenario=record["scenario"], expected_seed=record["seed"],
+            expected_requests=runner.EXPECTED_REQUESTS[record["scenario"]],
+        )
+        for record in raw_records
+    ]
+    monkeypatch.setattr(runner, "load_baseline_records", lambda: baseline)
+    result = runner.summarize_existing_eval(input_root=source, output_dir=tmp_path / "corrected")
+    assert result["candidate"]["overall"]["safety_status_unknown_episodes"] == 1
+    assert result["comparison"]["split_checks"]["overall"][
+        "safety_energy_other_unresolved_zero"
+    ] is False

@@ -329,6 +329,7 @@ def _aggregate(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     rows: list[Mapping[str, Any]] = []
     invalid_lifecycle = 0
     safety_nonzero = 0
+    safety_unknown = 0
     errors = 0
     for record in records:
         outcome = record.get("outcome_counts") or {}
@@ -336,7 +337,9 @@ def _aggregate(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             counts[key] += int(outcome.get(key, 0) or 0)
         if record.get("lifecycle_valid") is not True:
             invalid_lifecycle += 1
-        if record.get("safety_nonzero"):
+        if "safety_nonzero" not in record or record.get("safety_nonzero") is None:
+            safety_unknown += 1
+        elif record.get("safety_nonzero"):
             safety_nonzero += 1
         if record.get("error") or record.get("validation_errors"):
             errors += 1
@@ -389,6 +392,7 @@ def _aggregate(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         ),
         "invalid_lifecycle_records": invalid_lifecycle,
         "safety_nonzero_episodes": safety_nonzero,
+        "safety_status_unknown_episodes": safety_unknown,
         "error_records": errors,
         "priority_weighted_wait_seconds": lifecycle.get("priority_weighted_wait_seconds"),
         "low_soc_wait_seconds": (lifecycle.get("low_soc") or {}).get("mean_wait_seconds"),
@@ -455,7 +459,8 @@ def compare_screen(
             "safety_energy_other_unresolved_zero": all(
                 int(cand.get(key, 0) or 0) == 0
                 for key in ("failed_energy", "other", "unresolved")
-            ) and int(cand.get("safety_nonzero_episodes", 0) or 0) == 0,
+            ) and int(cand.get("safety_nonzero_episodes", 0) or 0) == 0
+            and int(cand.get("safety_status_unknown_episodes", 0) or 0) == 0,
             "normal": normal,
             "priority_wait": priority,
             "low_soc_wait": low_soc,
@@ -666,6 +671,177 @@ def _full_candidate_record(
     )
 
 
+def _build_eval_inputs(protocol: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build configs separately from the V6 runtime protocol adapter."""
+    configs, _config_snapshots = formal_v7._build_configs(protocol)
+    runtime_protocol = adaptive_eval.v6._runtime_protocol(protocol)
+    return dict(configs), runtime_protocol
+
+
+def _lifecycle_outcome_counts(
+    lifecycle: Mapping[str, Any], *, expected_requests: int,
+) -> dict[str, int]:
+    outcomes = lifecycle.get("outcomes") or {}
+    _require(isinstance(outcomes, Mapping), "lifecycle outcomes are missing")
+    known = {"completed", "emergency_landed", "failed_energy", "unresolved"}
+    counts = {
+        "requests": int(expected_requests),
+        "normal": int(outcomes.get("completed", 0) or 0),
+        "emergency": int(outcomes.get("emergency_landed", 0) or 0),
+        "failed_energy": int(outcomes.get("failed_energy", 0) or 0),
+        "other": int(sum(int(value or 0) for key, value in outcomes.items()
+                         if str(key) not in known)),
+        "unresolved": int(outcomes.get("unresolved", 0) or 0),
+    }
+    observed = sum(counts[key] for key in (
+        "normal", "emergency", "failed_energy", "other", "unresolved"
+    ))
+    _require(observed == int(expected_requests),
+             "lifecycle outcomes do not match the requested denominator")
+    return counts
+
+
+def _safety_snapshot(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, bool | None]:
+    summary = record.get("summary")
+    safety = summary.get("safety") if isinstance(summary, Mapping) else None
+    if not isinstance(safety, Mapping):
+        return None, None
+    snapshot = {str(key): value for key, value in safety.items()}
+    return snapshot, _safety_nonzero({"summary": {"safety": snapshot}})
+
+
+def summarize_existing_eval(
+    *, input_root: str | Path, output_dir: str | Path,
+) -> dict[str, Any]:
+    """Correct only the reporting fields of one known failed evaluation.
+
+    This path reads the exact lifecycle artifacts already produced by the
+    evaluation.  It never replays tapes, loads a policy, or performs an
+    environment step, and it always retains the original evaluation error.
+    """
+    source_root = Path(input_root)
+    output = Path(output_dir)
+    _require(source_root.is_dir(), f"existing evaluation root missing: {source_root}")
+    _require(not output.exists(), f"corrected output must be fresh: {output}")
+    _require(output.resolve() != source_root.resolve(),
+             "corrected output must not overwrite the source evaluation")
+    manifest_path = source_root / "manifest.json"
+    original_manifest = _read_json(manifest_path)
+    original_manifest_sha = _sha256(manifest_path)
+    record_paths = sorted((source_root / "records").glob("*.json"))
+    _require(len(record_paths) == len(SEED_SCENARIO),
+             f"expected six original records, found {len(record_paths)}")
+    corrected_records: list[dict[str, Any]] = []
+    record_shas: dict[str, str] = {}
+    for path in record_paths:
+        raw = _read_json(path)
+        record_sha = _sha256(path)
+        record_shas[path.name] = record_sha
+        try:
+            seed = int(raw["seed"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ProposalHeadEvaluationError(f"record seed missing: {path}") from exc
+        _require(seed in SEED_SCENARIO, f"unexpected original seed: {seed}")
+        scenario = str(raw.get("scenario"))
+        _require(scenario == SEED_SCENARIO[seed],
+                 f"seed {seed} scenario mismatch: {scenario}")
+        error = raw.get("error")
+        _require(isinstance(error, Mapping)
+                 and error.get("type") == "KeyError"
+                 and error.get("message") == "'hard_gates'",
+                 f"record {seed} has an unexpected original error")
+        _require(raw.get("status") == "failed", f"record {seed} status changed")
+        _require(raw.get("weights_unchanged") is True,
+                 f"record {seed} weights_unchanged is not true")
+        summary = raw.get("summary")
+        _require(isinstance(summary, Mapping) and summary.get("terminal") is True,
+                 f"record {seed} summary is not terminal")
+        lifecycle = _full_lifecycle(raw)
+        _require(lifecycle.get("ledger_alignment") is True,
+                 f"record {seed} lifecycle ledger alignment is not true")
+        _require(int(lifecycle.get("row_count", 0) or 0)
+                 == EXPECTED_REQUESTS[scenario],
+                 f"record {seed} lifecycle row count mismatch")
+        counts = _lifecycle_outcome_counts(
+            lifecycle, expected_requests=EXPECTED_REQUESTS[scenario],
+        )
+        safety, safety_nonzero = _safety_snapshot(raw)
+        corrected = dict(raw)
+        corrected.update({
+            "original_evaluation_error": dict(error),
+            "original_record_sha256": record_sha,
+            "reporting_error_corrected": True,
+            "training_pass": False,
+            "admission_gates_reconstructed": False,
+            "admission_gate_limitation": (
+                "rollout admission gates were not reconstructed after the hard_gates error"
+            ),
+            "outcome_counts": counts,
+            "requests": counts["requests"],
+            "normal": counts["normal"],
+            "emergency": counts["emergency"],
+            "failed_energy": counts["failed_energy"],
+            "other_failures": {} if counts["other"] == 0 else {"unknown": counts["other"]},
+            "unresolved": counts["unresolved"],
+            "safety_counters": safety,
+            "safety_nonzero": safety_nonzero,
+            "lifecycle_valid": True,
+            "lifecycle_scope": "all_requested_terminal_rows",
+        })
+        corrected_records.append(corrected)
+    _require(len({int(record["seed"]) for record in corrected_records}) == len(SEED_SCENARIO),
+             "original records contain duplicate seeds")
+    corrected_records.sort(key=lambda record: int(record["seed"]))
+    split = _split_records(corrected_records)
+    baseline = _baseline_summaries(load_baseline_records())
+    candidate = {name: _aggregate(values) for name, values in split.items()}
+    comparison = compare_screen(baseline, candidate, {"coverage_improved": False})
+    comparison.update({
+        "development_screen": False,
+        "checkpoint_promotable": False,
+        "P3_QUALIFIED": False,
+        "P4_ALLOWED": False,
+        "reporting_error_corrected": True,
+        "admission_gates_reconstructed": False,
+        "screen_blocked_by_original_evaluation_errors": True,
+    })
+    output.mkdir(parents=True, exist_ok=False)
+    for record in corrected_records:
+        _write_json(output / "records" / f"{record['scenario']}_{int(record['seed'])}.json", record)
+    result = {
+        "stage": STAGE,
+        "status": "REPORTING_ERROR_CORRECTED",
+        "source_evaluation_root": str(source_root),
+        "original_manifest_sha256": original_manifest_sha,
+        "original_record_sha256": record_shas,
+        "original_manifest_status": original_manifest.get("status"),
+        "reporting_error_corrected": True,
+        "original_error": {"type": "KeyError", "message": "'hard_gates'"},
+        "admission_gates_reconstructed": False,
+        "admission_gate_limitation": (
+            "The post-rollout admission gates were not reconstructed; this report is not a training pass."
+        ),
+        "environment_replayed": False,
+        "policy_forward_executed": False,
+        "training_or_update_called": False,
+        "baseline": baseline,
+        "candidate": candidate,
+        "records_processed": len(corrected_records),
+        "records_expected": len(SEED_SCENARIO),
+        "comparison": comparison,
+        "development_screen": False,
+        "P3_QUALIFIED": False,
+        "P4_ALLOWED": False,
+        "checkpoint_promotable": False,
+    }
+    _write_json(output / "manifest.json", result)
+    _write_json(output / "progress.json", {
+        "stage": STAGE, "status": result["status"], "records_processed": len(corrected_records),
+        "reporting_error_corrected": True, "P3_QUALIFIED": False, "P4_ALLOWED": False,
+    })
+    return result
+
+
 def run(
     *,
     fit_dir: str | Path,
@@ -679,7 +855,7 @@ def run(
     baseline_records = load_baseline_records()
     baseline = _baseline_summaries(baseline_records)
     protocol = formal_v7._protocol()
-    configs, runtime_protocol = formal_v7._build_configs(protocol)
+    configs, runtime_protocol = _build_eval_inputs(protocol)
     source_config = configs["dense24"]
     _require(SOURCE_CHECKPOINT.is_file(), f"source checkpoint missing: {SOURCE_CHECKPOINT}")
     _require(_sha256(SOURCE_CHECKPOINT) == SOURCE_CHECKPOINT_SHA256,
@@ -775,7 +951,9 @@ def run(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--fit-dir", type=Path, required=True)
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--fit-dir", type=Path)
+    inputs.add_argument("--summarize-existing-eval", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--check-only", action="store_true")
     return parser
@@ -784,7 +962,14 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        result = run(fit_dir=args.fit_dir, output_dir=args.output_dir, check_only=args.check_only)
+        if args.summarize_existing_eval is not None:
+            _require(not args.check_only, "offline summary does not support --check-only")
+            result = summarize_existing_eval(
+                input_root=args.summarize_existing_eval,
+                output_dir=args.output_dir,
+            )
+        else:
+            result = run(fit_dir=args.fit_dir, output_dir=args.output_dir, check_only=args.check_only)
     except (ProposalHeadEvaluationError, FileNotFoundError, ValueError, OSError) as exc:
         print(json.dumps({"stage": STAGE, "status": "ERROR", "error": str(exc)}, sort_keys=True))
         return 2
@@ -796,7 +981,9 @@ def main(argv: list[str] | None = None) -> int:
         "P3_QUALIFIED": False,
         "P4_ALLOWED": False,
     }, sort_keys=True), flush=True)
-    return 0 if result.get("status") in {"CHECK_ONLY_OK", "COMPLETED"} else 1
+    return 0 if result.get("status") in {
+        "CHECK_ONLY_OK", "COMPLETED", "REPORTING_ERROR_CORRECTED"
+    } else 1
 
 
 if __name__ == "__main__":  # pragma: no cover
