@@ -39,6 +39,7 @@ from terminal_marl.training import (
 from terminal_marl.training import (
     run_p3_adaptive_kl_formal_v7 as formal_v7,
 )
+from terminal_marl.training import terminal_lifecycle_metrics as terminal_metrics
 
 
 STAGE = "P3_ADAPTIVE_KL_FINAL_PAIRED_EVALUATION_V7"
@@ -371,6 +372,30 @@ def _episode_record(
             raise EvaluationInputError("rollout record must be a mapping")
         record = dict(record)
         _normalize_outcome_accounting(record, requests=int(config.total_requested_uavs))
+        record["success_lifecycle"] = record.get("lifecycle")
+        tape = record.get("action_tape")
+        low_soc_threshold = float(
+            (runtime_protocol.get("attributes") or {}).get("low_soc_analysis_threshold", .65)
+            if isinstance(runtime_protocol.get("attributes"), Mapping) else .65
+        )
+        if isinstance(tape, (str, Path)) and Path(str(tape)).is_file():
+            try:
+                record["lifecycle"] = terminal_metrics.terminal_lifecycle_metrics(
+                    config,
+                    tape,
+                    low_soc_threshold,
+                )
+                record["lifecycle_scope"] = "all_requested_terminal_rows"
+            except Exception as exc:
+                # Keep the rollout's original outcome/gate fields intact when
+                # a secondary metrics replay cannot be accepted.
+                record["lifecycle_scope"] = "success_only_legacy"
+                record["lifecycle_full_request_error"] = {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                }
+        else:
+            record["lifecycle_scope"] = "success_only_legacy"
         try:
             record["dev_pass"] = bool(v6._dev_pass(record))
         except Exception as exc:
@@ -453,23 +478,66 @@ def _record_counts(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def _lifecycle_summary(records: Sequence[Mapping[str, Any]], *, threshold: float) -> dict[str, Any]:
     rows: list[Mapping[str, Any]] = []
+    legacy_rows: list[Mapping[str, Any]] = []
+    requested = 0
+    missing_requests = 0
+    full_records = 0
+    incomplete_records = 0
     for record in records:
         value = record.get("lifecycle")
-        if not isinstance(value, Mapping):
+        fallback_requests = value.get("requested_count", 0) if isinstance(value, Mapping) else 0
+        record_requests = int(record.get("requests", fallback_requests) or 0)
+        requested += record_requests
+        if not isinstance(value, Mapping) or value.get("scope") != "all_requested_terminal_rows":
+            incomplete_records += 1
+            missing_requests += record_requests
+            if isinstance(value, Mapping) and isinstance(value.get("rows"), list):
+                legacy_rows.extend(row for row in value["rows"] if isinstance(row, Mapping))
             continue
         record_rows = value.get("rows")
-        if isinstance(record_rows, list):
-            rows.extend(row for row in record_rows if isinstance(row, Mapping))
-    if not rows:
+        selected = [row for row in record_rows if isinstance(row, Mapping)] if isinstance(record_rows, list) else []
+        rows.extend(selected)
+        full_records += 1
+        record_missing = int(value.get("missing_request_count", 0) or 0)
+        missing_requests += max(record_missing, record_requests - len(selected))
+    if rows or full_records:
+        summary = terminal_metrics.summarize_terminal_rows(
+            rows,
+            low_soc_threshold=float(threshold),
+            requested_count=requested,
+            enforce_unique=False,
+        )
+        summary.update({
+            "scope": "mixed_incomplete" if incomplete_records else "all_requested_terminal_rows_aggregate",
+            "episodes": full_records,
+            "incomplete_metrics_episodes": incomplete_records,
+            "missing_request_count": missing_requests,
+            "all_requests_observed": missing_requests == 0,
+            "requested_denominator": requested,
+            "legacy_rows_excluded_from_observed_metrics": len(legacy_rows),
+        })
+        return {"available": True, **summary}
+    if not legacy_rows:
         return {
             "available": False,
             "rows": [],
             "completed": 0,
             "by_priority": {},
             "low_soc": {"threshold": float(threshold), "count": 0, "mean_wait_seconds": None},
+            "scope": "incomplete_no_lifecycle_rows",
+            "requested_denominator": requested,
+            "missing_request_count": missing_requests,
+            "all_requests_observed": False if requested else True,
         }
-    summary = lifecycle.summarize_lifecycle_rows(list(rows), low_soc_threshold=float(threshold))
-    return {"available": True, **summary}
+    summary = lifecycle.summarize_lifecycle_rows(list(legacy_rows), low_soc_threshold=float(threshold))
+    return {
+        "available": True,
+        "scope": "incomplete_success_only_legacy",
+        "requested_denominator": requested,
+        "missing_request_count": missing_requests,
+        "all_requests_observed": False if missing_requests else True,
+        **summary,
+    }
 
 
 def _wait_metric(lifecycle_value: Any, name: str) -> float | None:
