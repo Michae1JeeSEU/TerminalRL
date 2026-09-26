@@ -7,9 +7,9 @@
 > **历史 V6 与受限恢复结论（V7 之前，2026-09-26）**：V6 formal run1 完成 `240/240`，run0/run2 分别在 `79/80`、`48/49` records 后停止；合计 `6078` requests、`0 failed_energy`，P3 未通过，该轮结束时三 run 均已终止。随后针对两个停止点完成了受限 KL recovery probe：两组各处理 `4` 个诊断回合、各 `2` 次 UPDATED 与 `2` 次安全 `SKIPPED_KL`，无 HARD_FAILED；该流程验证了回滚/缩步恢复路径，但有效更新不足以恢复长期 formal 训练。
 
 > **V7 adaptive probe 与 formal 终态（2026-09-26）：** adaptive probe run0/run2 各 `8` 个回合均为 `8 UPDATED / 0 SKIPPED_KL / 0 HARD_FAILED`、`8/8` restore exact；accepted minibatches 为 `298/332`，最终 reference KL 为 `.0077864/.0133243`。formal 三 run 已终态：run0 `FAILED exit1`，`80 processed / 80 UPDATED / 0 skipped`、`3954 accepted minibatches`；run1 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11737 accepted minibatches`；run2 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11808 accepted minibatches`。训练请求合计 `9240`（`8211 normal + 1029 emergency_landed`），训练 `failed_energy/other/unresolved=0`；开发失败单独计入 development，不与训练请求混合。所有 `560` 个 update 的 gate delta 均大于零，训练 safety 计数为零，restore/RNG false 为零。主审结论为可学习性成立但三 seed 全通过不成立；无性能全面提升证据，不自动 P3/P4 晋级，也不恢复 run0。
-> **当前用户目标（2026-09-26，V7 adaptive-KL）：** 完成有效的 `3×240` formal PPO，并在训练后对同一场景集合执行冻结策略评估；adaptive probe 已完成并通过 primary 的可学习性审查，但 dense24 性能存在退化，formal 三 run 已终态但 run0 失败、run1/run2 完成；全请求 lifecycle 回放已启动，`64` episode final evaluation 的前置条件仍未满足且尚未启动。候选 reference regularization 为 `0.1*K + 400*relu(K-0.02)^2`，reference weighted-KL hard cap `.05`、rollout-KL target `.01`、03c0 source、proposal 子图冻结、安全边界保持不变；不增加 probability floor、强制 RELEASE、UID/SOC override 或 SOC 专用规则。正式计划保留三组独立 `240` episode 与同场景 development/evaluation；dense30 与同负荷随机密度评估只在正式训练完成并冻结策略后执行，当前不消费 heldout。random layout opt-in 默认 `false`，仅供后续 evaluation。V7 YAML 参数已冻结。
+> **当前用户目标（2026-09-26，V7 adaptive-KL）：** 完成有效的 `3×240` formal PPO，并在训练后对同一场景集合执行冻结策略评估；adaptive probe 已完成并通过 primary 的可学习性审查，但 dense24 性能存在退化，formal 三 run 已终态但 run0 失败、run1/run2 完成；全请求 lifecycle 回放已完成，`64` episode final evaluation 的前置条件仍未满足且尚未启动。候选 reference regularization 为 `0.1*K + 400*relu(K-0.02)^2`，reference weighted-KL hard cap `.05`、rollout-KL target `.01`、03c0 source、proposal 子图冻结、安全边界保持不变；不增加 probability floor、强制 RELEASE、UID/SOC override 或 SOC 专用规则。正式计划保留三组独立 `240` episode 与同场景 development/evaluation；dense30 与同负荷随机密度评估只在正式训练完成并冻结策略后执行，当前不消费 heldout。random layout opt-in 默认 `false`，仅供后续 evaluation。V7 YAML 参数已冻结。
 >
-## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已启动）
+## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已完成）
 
 formal 输出根为 `/home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/`。三 run 均已退出：
 
@@ -26,7 +26,19 @@ final development 各为 `84` requests：run0 在 episode `80` 为 `76 normal + 
 
 对应 checkpoint SHA256 为：run0 episode `0080` `ad42e9a72cac4943834041482e93adc34f123c851c4297f7462381fe0d52ff4e`；run1 episode `0240` `db74245759653bb61f8d17b0071cf9a04c2e3334e019a63cd99dff988cc23b3a`；run2 episode `0240` `4797ae2eea5da0e60a4b24e2fd0a60a6860c37b8efe1c77c0366a33a2d8fb5f9`。checkpoint 均位于上述 formal root 的对应 run 目录。
 
-主审结论为可学习性成立，但三 seed 全通过不成立；目前没有性能全面提升证据，`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。原 `64` episode final evaluation 的前置条件未满足，未消费 `880xxx` 或既有 heldout。全请求 lifecycle 回放已启动：服务器 PID `2670470` 为 `RUNNING`，已处理 `19/24` records、error `0`、validation error `0`、CPU `99.9%`；`smoke_v2` 已 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`，py_compile 通过；修正脚本 SHA256 为 `41e814949841fbfd01b04185260b3fa8f8cf3baccd39e84009e834af36bbc24d`。待完成的 source baseline 6 个 tape 与三个 final development 各 6 个 tape 共 `24` 个既有 tape 全请求指标仍未终态；本轮仅重放既有 tape，不是新 policy rollout。
+主审结论为可学习性成立，但三 seed 全通过不成立；目前没有性能全面提升证据，`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。原 `64` episode final evaluation 的前置条件未满足，未消费 `880xxx` 或既有 heldout。全请求 lifecycle 回放已完成：manifest `/home/user/training_outputs/terminal/p3_adaptive_kl_terminal_dev_metrics_20260926/manifest.json`，SHA256 `7188f7160511446a91cb873ed5cd607378eede3bc00d567467cf25f26496f3a1`；`24/24 COMPLETED`、exit `0`、error `0`、validation error `0`，四组均为 `84/84` terminal rows、missing `0`、exact/ledger 一致。`smoke_v2` 为 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`；首次 smoke 输出不作为本次指标证据。本轮仅重放既有 tape，不是新 policy rollout。source baseline 与三个 final development 共 `24` 个既有 tape 的全请求指标已完成。
+
+
+四组全请求 lifecycle 指标如下（等待单位为秒；low-SOC 为 25 个样本均值）：
+
+| policy / checkpoint | normal | emergency_landed | failed_energy | priority-weighted wait | low-SOC wait |
+|---|---:|---:|---:|---:|---:|
+| baseline | 76 | 8 | 0 | 86.6690576161 | 89.7792692439 |
+| run0@80 | 76 | 7 | 1 | 110.881727846 | 115.732325433 |
+| run1@240 | 76 | 8 | 0 | 90.1429896281 | 93.538322835 |
+| run2@240 | 72 | 12 | 0 | 95.8325596837 | 92.876852833 |
+
+主审结论为：run1 的 normal 数量持平但等待退化；run2 的 normal 数量减少 `4` 且等待退化；run0 保留 `1` 个 development `failed_energy`。可学习性成立，但性能全面提升不成立，P3 目标未完成。下一步先冻结与实际 K3 执行一致的可执行标签覆盖诊断/小 probe，不直接启动大规模训练，不开启 late flag 晋级；原 heldout 不消费。
 
 > **2026-09-26 bounded KL recovery probe（已完成，非 formal 续训）：** 针对上述两个 `reference_kl_exceeds_max`、零 accepted update 现场，在新根 `/home/user/training_outputs/terminal/p3_kl_recovery_probe_v1_20260926/` 完成 run0/run2 各 `4` 个 training episodes。两组均为 `4 processed / 2 UPDATED / 2 SKIPPED_KL / 0 HARD_FAILED`，每组各有 `2` 个真实 accepted minibatch，合计 `4`；共 `8` 个 checkpoint restore exact。固定原始 `03c0` reference、reference cap `.05`、rollout cap `.01` 以及安全/能量 hard gates 未改变。run0 的 `860080` 在原始 LR 与 `.5` 重试拒绝、`.25` 接受，`860081/860082` 四档均拒绝并安全 skip，`860083` 在 `.125` 接受；run2 的 `862049` 在 `.5` 接受、`862050` 在 `.25` 接受，`862051/862052` 安全 skip。最终 reference KL 为 run0 `.0499624982`、run2 `.0499344878`，均仍不超过 `.05`，但接近上限。两组训练诊断合计 `132` requests：`117 normal`、`15 emergency_landed`、`0 failed_energy`、`0 unresolved`；run0 为 `58/8`、run2 为 `59/7`（normal/emergency_landed）。before/after development 均 full-resolved；run0 的三个 development 场景指标相同（dense24 emergency `1→1`），run2 的 flow6/flow12 指标相同，dense24 emergency `3→3`，priority wait `-3.97625s`、low-SOC wait `+2.51198s`。本诊断已消费所列 seeds，旧 formal 输出保持 immutable；它验证了受限回滚/缩步恢复流程，不能据此恢复剩余长期 formal、晋级 checkpoint、通过 P3/P4 或改变 source/reference cap/SafetyFilter。下一步仅保留小规模验证能改变更新方向的 reference 正则/优化器处理（例如 adaptive KL regularization），并比较有效更新率及 priority/SOC wait；不以继续缩步或增加回合替代该验证。未启动新的大规模训练、heldout 或 dense30。详见 [V6 bounded KL recovery probe](evidence/v4_2/p3_gate_anchored_v6_20260925.md#8-bounded-kl-recovery-probe-completed-review-required)。
 >

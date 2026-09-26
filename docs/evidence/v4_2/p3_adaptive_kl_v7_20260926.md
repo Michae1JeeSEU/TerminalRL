@@ -8,10 +8,10 @@
 - 当前 adaptive probe 为 run0/run2 各 `8` 个回合，输出根为 `/home/user/training_outputs/terminal/p3_adaptive_kl_probe_v1_20260926/`，两组均 `8 UPDATED / 0 SKIPPED_KL / 0 HARD_FAILED`、`8/8` restore exact；accepted minibatches 为 run0/run2 `298/332`，最终 reference KL 为 `.0077864/.0133243`。
 - probe 训练诊断各为 `132` requests，合计 `264`：run0 `110 normal + 22 emergency_landed`，run2 `117 normal + 15 emergency_landed`，合计 `227 normal + 37 emergency_landed`，`0 failed_energy`、`0 unresolved`；before/after development 均 full-resolution 且 hard failure 为 false。dense24 paired 为 run0 emergency `1→5`、priority wait `+15.6374s`、low-SOC wait `+40.9181s`，run2 emergency `3→1`、priority wait `+5.8564s`、low-SOC wait `+2.5737s`；稀疏 flow wait 有改善。该结果支持 primary 的有效更新审查，但不表示性能全面改善，也不晋级 probe checkpoint。
 - formal campaign 已终态：run0 `FAILED exit1`，`80 processed / 80 UPDATED / 0 skipped`、`3954 accepted minibatches`；run1 `COMPLETED exit0`，`240/240 UPDATED`、`11737 accepted minibatches`；run2 `COMPLETED exit0`，`240/240 UPDATED`、`11808 accepted minibatches`。三 run 训练请求合计 `9240`（`8211 normal + 1029 emergency_landed`），训练 `failed_energy/other/unresolved=0`；development 的失败请求单独记录。全部 `560` updates 的 gate delta 均大于零，训练 safety 计数为零，restore/RNG false 为零；reference KL 最大值（run0/run1/run2）为 `.0243685003/.0255418718/.0265666898`，rollout KL 最大值为 `.0099292190/.0099943196/.0099836820`。`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。
-- formal 三 run 已终态；全请求 lifecycle 回放已启动：服务器 PID `2670470` 为 `RUNNING`，已处理 `19/24` records、error `0`、validation error `0`、CPU `99.9%`；`smoke_v2` 已 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`，py_compile 通过；修正脚本 SHA256 为 `41e814949841fbfd01b04185260b3fa8f8cf3baccd39e84009e834af36bbc24d`。本轮仅重放既有 tape，不是新 policy rollout，不自动恢复。
+- formal 三 run 已终态；全请求 lifecycle 回放已完成：manifest `/home/user/training_outputs/terminal/p3_adaptive_kl_terminal_dev_metrics_20260926/manifest.json`，SHA256 `7188f7160511446a91cb873ed5cd607378eede3bc00d567467cf25f26496f3a1`；`24/24 COMPLETED`、exit `0`、error `0`、validation error `0`，四组均为 `84/84` terminal rows、missing `0`、exact/ledger 一致。`smoke_v2` 为 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`；首次 smoke 输出不作为本次指标证据。本轮仅重放既有 tape，不是新 policy rollout，不自动恢复。
 - 冻结协议文件为 [`p3_adaptive_kl_v7.yaml`](../../../terminal_marl/configs/low_v4_2/p3_adaptive_kl_v7.yaml)，本地 SHA256 为 `d2bbd3a3361abb0589099fd2096b8f404f61c34bf94db10a958de99fc3f14a53`。
 
-## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已启动）
+## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已完成）
 
 formal 输出根为 `/home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/`。三 run 均已退出：
 
@@ -28,7 +28,19 @@ final development 各为 `84` requests：run0 在 episode `80` 为 `76 normal + 
 
 对应 checkpoint SHA256 为：run0 episode `0080` `ad42e9a72cac4943834041482e93adc34f123c851c4297f7462381fe0d52ff4e`；run1 episode `0240` `db74245759653bb61f8d17b0071cf9a04c2e3334e019a63cd99dff988cc23b3a`；run2 episode `0240` `4797ae2eea5da0e60a4b24e2fd0a60a6860c37b8efe1c77c0366a33a2d8fb5f9`。checkpoint 均位于上述 formal root 的对应 run 目录。
 
-主审结论为可学习性成立，但三 seed 全通过不成立；目前没有性能全面提升证据，`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。原 `64` episode final evaluation 的前置条件未满足，未消费 `880xxx` 或既有 heldout。全请求 lifecycle 回放已启动：服务器 PID `2670470` 为 `RUNNING`，已处理 `19/24` records、error `0`、validation error `0`、CPU `99.9%`；`smoke_v2` 已 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`，py_compile 通过；修正脚本 SHA256 为 `41e814949841fbfd01b04185260b3fa8f8cf3baccd39e84009e834af36bbc24d`。待完成的 source baseline 6 个 tape 与三个 final development 各 6 个 tape 共 `24` 个既有 tape 全请求指标仍未终态；本轮仅重放既有 tape，不是新 policy rollout。
+主审结论为可学习性成立，但三 seed 全通过不成立；目前没有性能全面提升证据，`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。原 `64` episode final evaluation 的前置条件未满足，未消费 `880xxx` 或既有 heldout。全请求 lifecycle 回放已完成：manifest `/home/user/training_outputs/terminal/p3_adaptive_kl_terminal_dev_metrics_20260926/manifest.json`，SHA256 `7188f7160511446a91cb873ed5cd607378eede3bc00d567467cf25f26496f3a1`；`24/24 COMPLETED`、exit `0`、error `0`、validation error `0`，四组均为 `84/84` terminal rows、missing `0`、exact/ledger 一致。`smoke_v2` 为 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`；首次 smoke 输出不作为本次指标证据。本轮仅重放既有 tape，不是新 policy rollout。source baseline 与三个 final development 共 `24` 个既有 tape 的全请求指标已完成。
+
+
+四组全请求 lifecycle 指标如下（等待单位为秒；low-SOC 为 25 个样本均值）：
+
+| policy / checkpoint | normal | emergency_landed | failed_energy | priority-weighted wait | low-SOC wait |
+|---|---:|---:|---:|---:|---:|
+| baseline | 76 | 8 | 0 | 86.6690576161 | 89.7792692439 |
+| run0@80 | 76 | 7 | 1 | 110.881727846 | 115.732325433 |
+| run1@240 | 76 | 8 | 0 | 90.1429896281 | 93.538322835 |
+| run2@240 | 72 | 12 | 0 | 95.8325596837 | 92.876852833 |
+
+主审结论为：run1 的 normal 数量持平但等待退化；run2 的 normal 数量减少 `4` 且等待退化；run0 保留 `1` 个 development `failed_energy`。可学习性成立，但性能全面提升不成立，P3 目标未完成。下一步先冻结与实际 K3 执行一致的可执行标签覆盖诊断/小 probe，不直接启动大规模训练，不开启 late flag 晋级；原 heldout 不消费。
 
 ## 固定边界与候选正则
 
