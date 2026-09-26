@@ -20,6 +20,7 @@ from typing import Any
 import numpy as np
 import torch
 
+from terminal_marl.algo.gate_reference_v4_2 import GateReference
 from terminal_marl.training import run_v4_2_p3_gate_anchored_v6 as v6
 
 
@@ -95,8 +96,18 @@ def _recovery_module() -> Any:
     return importlib.import_module("terminal_marl.training.p3_kl_recovery_v1")
 
 
-def _protocol_context(run_index: int) -> dict[str, Any]:
+def _protocol_context(
+    run_index: int,
+    reference_options: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     _require(run_index in RUNS, "run-index must be 0 or 2")
+    reference_options = {
+        str(key): value for key, value in (reference_options or {}).items()
+    }
+    _require(
+        set(reference_options).issubset({"soft_kl_target", "soft_kl_gain"}),
+        "unsupported reference options",
+    )
     protocol = v6._protocol()
     v6._validate_schedule(protocol)
     protocol_sha256 = v6._sha256(v6.PROTOCOL)
@@ -105,8 +116,31 @@ def _protocol_context(run_index: int) -> dict[str, Any]:
         SOURCE_CHECKPOINT, configs["dense24"], protocol,
     )
     old_rows, coverage_rows, weights, weight_report = v6._load_anchor_data(protocol)
-    reference = v6._reference(source_policy, old_rows, coverage_rows, weights, protocol)
+    legacy_reference = v6._reference(
+        source_policy, old_rows, coverage_rows, weights, protocol,
+    )
+    reference = legacy_reference
+    if reference_options:
+        # Rebuild directly from the fixed source policy and original merged
+        # rows.  This avoids a second normalization pass over q/weights that
+        # a dataclasses.replace call would perform.
+        rows = [*old_rows, *coverage_rows]
+        observations, _ = v6.coverage._rows_to_tensors(rows)
+        optimizer = protocol["optimizer"]
+        reference = GateReference.from_policy(
+            source_policy,
+            observations,
+            weights,
+            coefficient=float(optimizer["reference_gate_kl_coefficient"]),
+            max_kl=float(optimizer["cumulative_reference_weighted_kl_hard_cap"]),
+            **reference_options,
+        )
+        _require(
+            v6._reference_digest(reference) == v6._reference_digest(legacy_reference),
+            "soft reference changed the legacy q reference digest",
+        )
     reference_digest = v6._reference_digest(reference)
+    legacy_reference_digest = v6._reference_digest(legacy_reference)
     entry = RUNS[run_index]
     checkpoint = Path(entry["checkpoint"])
     _require(checkpoint.is_file(), f"stopped checkpoint missing: {checkpoint}")
@@ -155,6 +189,8 @@ def _protocol_context(run_index: int) -> dict[str, Any]:
         "weight_report": weight_report,
         "reference": reference,
         "reference_digest": reference_digest,
+        "legacy_reference_digest": legacy_reference_digest,
+        "reference_options": dict(reference_options) if reference_options else None,
         "initial_reference_metrics": initial_reference_metrics,
         "base_checkpoint": checkpoint,
         "base_checkpoint_sha256": actual_checkpoint_sha,
@@ -163,8 +199,10 @@ def _protocol_context(run_index: int) -> dict[str, Any]:
 
 
 def _check_only_payload(context: Mapping[str, Any], output: Path) -> dict[str, Any]:
+    reference = context.get("reference")
+    initial_metrics = context.get("initial_reference_metrics") or {}
     return {
-        "stage": STAGE,
+        "stage": str(context.get("stage", STAGE)),
         "status": "CHECK_ONLY_OK",
         "check_only": True,
         "run_index": int(context["run_index"]),
@@ -178,6 +216,16 @@ def _check_only_payload(context: Mapping[str, Any], output: Path) -> dict[str, A
         "base_checkpoint_sha256": context["base_checkpoint_sha256"],
         "protocol_sha256": context["protocol_sha256"],
         "reference_digest": context["reference_digest"],
+        "reference_options": dict(context.get("reference_options") or {}),
+        "reference_gate_coefficient": (
+            float(getattr(reference, "coefficient"))
+            if hasattr(reference, "coefficient") else None
+        ),
+        "reference_gate_max_kl": (
+            float(getattr(reference, "max_kl"))
+            if hasattr(reference, "max_kl") else None
+        ),
+        "effective_kl_coefficient": initial_metrics.get("effective_kl_coefficient"),
         "trainable_parameters": list(context["trainable"]),
         "fresh_adam": False,
         "restored_adam": bool(context["policy"].optimizer.state),
@@ -235,7 +283,8 @@ def _call_recover_update(context: Mapping[str, Any], record: Mapping[str, Any]) 
 
 
 def _checkpoint(context: Mapping[str, Any], output: Path, episode_index: int,
-                timestep: int, config: Any, *, ppo_called: bool) -> tuple[Any, bool, Path]:
+                timestep: int, config: Any, *, ppo_called: bool,
+                reference_options: Mapping[str, Any] | None = None) -> tuple[Any, bool, Path]:
     checkpoint = output / "checkpoints" / f"checkpoint_episode_{episode_index:04d}.pt"
     restored, exact = v6._save_and_restore(
         context["policy"], checkpoint, config, context["protocol"],
@@ -243,13 +292,58 @@ def _checkpoint(context: Mapping[str, Any], output: Path, episode_index: int,
         trainable=context["trainable"], protocol_sha256=context["protocol_sha256"],
         formal=False, ppo_called=ppo_called,
     )
+    if reference_options is not None:
+        sidecar = checkpoint.with_name(checkpoint.name + ".reference.json")
+        v6._write_json(sidecar, {
+            "stage": str(context.get("stage", STAGE)),
+            "checkpoint": str(checkpoint),
+            "checkpoint_sha256": _sha256(checkpoint) if checkpoint.is_file() else None,
+            "reference_digest": context["reference_digest"],
+            "reference_gate_coefficient": float(context["reference"].coefficient),
+            "reference_gate_max_kl": float(context["reference"].max_kl),
+            "soft_kl_target": getattr(context["reference"], "soft_kl_target", None),
+            "soft_kl_gain": float(getattr(context["reference"], "soft_kl_gain", 0.0)),
+            "reference_options": dict(reference_options),
+        })
     return restored, bool(exact), checkpoint
 
 
-def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
-    entry = RUNS[int(context["run_index"])]
+def _gate_adapter_snapshot(policy: Any, trainable: Sequence[str]) -> dict[str, torch.Tensor]:
+    state = policy.model.state_dict()
+    return {
+        str(name): state[str(name)].detach().cpu().clone()
+        for name in trainable
+        if str(name).startswith("gate_adapter.") and str(name) in state
+    }
+
+
+def _gate_adapter_delta_norm(before: Mapping[str, torch.Tensor], policy: Any) -> float:
+    state = policy.model.state_dict()
+    squared = 0.0
+    for name, previous in before.items():
+        current = state.get(name)
+        if current is None:
+            continue
+        delta = current.detach().cpu().to(dtype=torch.float64) - previous.to(dtype=torch.float64)
+        squared += float(torch.sum(delta * delta).item())
+    return float(np.sqrt(max(squared, 0.0)))
+
+
+def _run(
+    context: dict[str, Any],
+    output: Path,
+    entry: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    entry = dict(entry or RUNS[int(context["run_index"])])
     seeds = list(entry["seeds"])
     scenarios = list(entry["scenarios"])
+    _require(len(seeds) == len(scenarios), "probe seed/scenario plan length changed")
+    stage = str(context.get("stage", STAGE))
+    reference_options = context.get("reference_options")
+    report_gate_delta = bool(context.get("report_gate_adapter_delta", False))
+    diagnostic_replay_count = int(entry.get("diagnostic_replay_count", 0))
+    _require(0 <= diagnostic_replay_count <= len(seeds),
+             "diagnostic replay count is outside the episode plan")
     output.mkdir(parents=True, exist_ok=False)
     checkpoints_dir = output / "checkpoints"
     records: list[dict[str, Any]] = []
@@ -286,6 +380,25 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
         record["protocol_sha256"] = context["protocol_sha256"]
         record["old_formal_seed"] = bool(episode_index == 1)
         record["non_independent_diagnostic_replay"] = True
+        if diagnostic_replay_count:
+            record["seed_consumption"] = (
+                "diagnostic_replay_reproduction"
+                if episode_index <= diagnostic_replay_count
+                else "previously_unconsumed_planned"
+            )
+            record["diagnostic_replay_reproduction"] = bool(
+                episode_index <= diagnostic_replay_count
+            )
+            record["previously_unconsumed_planned"] = bool(
+                episode_index > diagnostic_replay_count
+            )
+        if report_gate_delta:
+            record["gate_adapter_parameter_delta_norm"] = 0.0
+            record["accepted_minibatches"] = 0
+            initial_metrics = context.get("initial_reference_metrics") or {}
+            record["effective_kl_coefficient"] = initial_metrics.get(
+                "effective_kl_coefficient"
+            )
         record["timing_rollout_wall_seconds"] = float(time.perf_counter() - episode_started)
         hard_pass = bool(v6._training_pass(record))
         record["rollout_hard_pass"] = hard_pass
@@ -295,8 +408,28 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
             record["recovery"] = {"status": "HARD_FAILED", "reason": "rollout hard gate"}
             stop_reason = "rollout hard failure"
         else:
+            gate_snapshot = (
+                _gate_adapter_snapshot(context["policy"], context["trainable"])
+                if report_gate_delta else None
+            )
             recovery_result = _call_recover_update(context, record)
             record["recovery"] = recovery_result
+            if report_gate_delta:
+                record["gate_adapter_parameter_delta_norm"] = _gate_adapter_delta_norm(
+                    gate_snapshot or {}, context["policy"]
+                )
+                update = recovery_result.get("update")
+                record["accepted_minibatches"] = int(
+                    update.get("accepted_updates", 0)
+                    if isinstance(update, Mapping) else 0
+                )
+                metrics = recovery_result.get("update", {}).get(
+                    "reference_gate_after", {}
+                ) if isinstance(recovery_result.get("update"), Mapping) else {}
+                if isinstance(metrics, Mapping):
+                    record["effective_kl_coefficient"] = metrics.get(
+                        "effective_kl_coefficient"
+                    )
             status = str(recovery_result.get("status"))
             if status not in {"UPDATED", "SKIPPED_KL"}:
                 hard_failed += 1
@@ -307,6 +440,8 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
                     restored, exact, checkpoint = _checkpoint(
                         context, output, episode_index, timestep + len(record.get("_steps", [])), config,
                         ppo_called=True,
+                        **({"reference_options": reference_options}
+                           if reference_options is not None else {}),
                     )
                     record["checkpoint_after"] = str(checkpoint)
                     record["checkpoint_after_sha256"] = _sha256(checkpoint)
@@ -345,10 +480,13 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
             "base_checkpoint_sha256", "protocol_sha256", "old_formal_seed",
             "non_independent_diagnostic_replay", "rollout_hard_pass", "checkpoint_restore_exact",
             "checkpoint_after", "checkpoint_after_sha256", "ppo_accepted",
+            "seed_consumption", "diagnostic_replay_reproduction",
+            "previously_unconsumed_planned", "gate_adapter_parameter_delta_norm",
+            "accepted_minibatches", "effective_kl_coefficient",
         ) if key in record})
         records.append(public)
         v6._write_json(output / "progress.json", {
-            "stage": STAGE, "run_index": context["run_index"], "processed_episodes": processed,
+            "stage": stage, "run_index": context["run_index"], "processed_episodes": processed,
             "updated_episodes": updated, "skipped_kl_episodes": skipped,
             "hard_failed_episodes": hard_failed, "records": records,
             "stopped": stop_reason is not None, "stop_reason": stop_reason,
@@ -363,8 +501,9 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
                          label="after", policy=after_policy, rng_state=dev_rng)
         if after["hard_failure"] or not after["full_resolution"]:
             stop_reason = "after development hard failure"
+    reference = context.get("reference")
     manifest = {
-        "stage": STAGE,
+        "stage": stage,
         "status": "COMPLETED" if stop_reason is None and processed == len(seeds) else "STOPPED",
         "run_index": context["run_index"],
         "output": str(output),
@@ -375,7 +514,34 @@ def _run(context: dict[str, Any], output: Path) -> dict[str, Any]:
         "base_checkpoint_sha256": context["base_checkpoint_sha256"],
         "protocol_sha256": context["protocol_sha256"],
         "reference_digest": context["reference_digest"],
+        "reference_options": dict(reference_options or {}),
+        "reference_gate_coefficient": (
+            float(getattr(reference, "coefficient"))
+            if hasattr(reference, "coefficient") else None
+        ),
+        "reference_gate_max_kl": (
+            float(getattr(reference, "max_kl"))
+            if hasattr(reference, "max_kl") else None
+        ),
+        "reference_soft_settings": {
+            "soft_kl_target": getattr(reference, "soft_kl_target", None),
+            "soft_kl_gain": float(getattr(reference, "soft_kl_gain", 0.0)),
+        },
         "seeds": seeds, "scenarios": scenarios,
+        "diagnostic_replay_count": diagnostic_replay_count,
+        "seed_consumption_plan": [
+            {
+                "episode_index": index,
+                "seed": int(seed),
+                "scenario": scenario,
+                "classification": (
+                    "diagnostic_replay_reproduction"
+                    if index <= diagnostic_replay_count
+                    else "previously_unconsumed_planned"
+                ) if diagnostic_replay_count else "standard_probe",
+            }
+            for index, (seed, scenario) in enumerate(zip(seeds, scenarios), start=1)
+        ],
         "diagnostic_non_independent": True, "formal_continuation": False,
         "episodes_requested": len(seeds), "processed_episodes": processed,
         "updated_episodes": updated, "skipped_kl_episodes": skipped,

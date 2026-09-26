@@ -96,6 +96,15 @@ class TerminalParallelEnv:
         self.request_times: dict[int, float] = {}
         self.resolution_times: dict[int, float] = {}
         self.arrivals = ArrivalProcess(self.config, seed)
+        self._warm_start_layout_rng = (
+            np.random.default_rng(seed)
+            if (
+                self.config.reset_mode == "warm_start_rings"
+                and self.config.warm_start_uavs
+                and self.config.warm_start_layout_randomized
+            )
+            else None
+        )
         self.admission = AdmissionManager(self.config)
         self.airspace = DynamicAirspace(self.config)
         self.lz_manager = LandingZoneManager(self.config.lz_assignment_mode)
@@ -167,7 +176,15 @@ class TerminalParallelEnv:
         requests = self.arrivals.requests_until(0.0)
         if len(requests) < self.config.warm_start_uavs:
             raise ValueError("safe warm-start schedule did not yield every requested initial UAV")
-        layout = self._safe_warm_start_layout(self.config.warm_start_uavs)
+        if self.config.warm_start_layout_randomized:
+            if self._warm_start_layout_rng is None:
+                raise RuntimeError("randomized warm-start layout RNG was not initialized")
+            layout = self._randomized_safe_warm_start_layout(
+                self.config.warm_start_uavs,
+                self._warm_start_layout_rng,
+            )
+        else:
+            layout = self._safe_warm_start_layout(self.config.warm_start_uavs)
         for request, (role, theta) in zip(requests[:self.config.warm_start_uavs], layout):
             self.ledger.request(request.arrival_id)
             gate = self.admission.gates[request.gate_id]
@@ -232,6 +249,86 @@ class TerminalParallelEnv:
         for role in RingRole:
             for index in range(assigned[role]):
                 result.append((role, 2.0 * math.pi * index / assigned[role]))
+        return result
+
+    def _randomized_safe_warm_start_layout(
+        self,
+        count: int,
+        rng: np.random.Generator,
+    ) -> list[tuple[RingRole, float]]:
+        """Build a randomized layout without changing the warm-start contract."""
+        margin = 1.2 * self.config.safe_distance
+        capacities: dict[RingRole, int] = {}
+        for role in RingRole:
+            radius = self.airspace.actual_ring(role).radius
+            maximum = 1
+            while 2.0 * radius * math.sin(math.pi / (maximum + 1)) >= margin:
+                maximum += 1
+            capacities[role] = maximum
+        if count > sum(capacities.values()):
+            raise ValueError(
+                f"safe warm-start count {count} exceeds {sum(capacities.values())} separation-safe slots"
+            )
+
+        roles = list(RingRole)
+        assigned = {role: 0 for role in roles}
+        for _ in range(count):
+            available = np.asarray(
+                [capacities[role] - assigned[role] for role in roles],
+                dtype=np.float64,
+            )
+            available_total = float(available.sum())
+            if available_total <= 0.0:
+                raise ValueError("no separation-safe warm-start ring slot remains")
+            selected = int(rng.choice(len(roles), p=available / available_total))
+            assigned[roles[selected]] += 1
+
+        result: list[tuple[RingRole, float]] = []
+        for role in roles:
+            n = assigned[role]
+            if n == 0:
+                continue
+            radius = float(self.airspace.actual_ring(role).radius)
+            if n == 1:
+                angles = [float(rng.uniform(0.0, 2.0 * math.pi))]
+            else:
+                ratio = margin / (2.0 * radius)
+                if ratio > 1.0:
+                    raise ValueError(
+                        f"random warm-start ring {role.value} cannot fit its safety margin"
+                    )
+                minimum_gap = 2.0 * math.asin(ratio)
+                remaining = 2.0 * math.pi - n * minimum_gap
+                if remaining < -1e-12:
+                    raise ValueError(
+                        f"random warm-start ring {role.value} exceeds its separation-safe capacity"
+                    )
+                shares = rng.dirichlet(np.ones(n, dtype=np.float64))
+                gaps = minimum_gap + max(0.0, remaining) * shares
+                angle = float(rng.uniform(0.0, 2.0 * math.pi))
+                angles = []
+                for gap in gaps:
+                    angles.append(angle % (2.0 * math.pi))
+                    angle += float(gap)
+            result.extend((role, theta) for theta in angles)
+
+        points = []
+        for role, theta in result:
+            ring = self.airspace.actual_ring(role)
+            points.append(
+                np.asarray(
+                    (ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height),
+                    dtype=np.float64,
+                )
+            )
+        for first in range(len(points)):
+            for second in range(first + 1, len(points)):
+                distance = float(np.linalg.norm(points[first] - points[second]))
+                if distance < margin - 1e-9:
+                    raise ValueError(
+                        "random warm-start layout violates separation margin: "
+                        f"distance={distance:.12g}, required={margin:.12g}"
+                    )
         return result
 
     def _observations(self) -> dict[str, np.ndarray]:

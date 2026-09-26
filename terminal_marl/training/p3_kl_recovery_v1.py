@@ -82,16 +82,37 @@ def _reference_snapshot(reference: Any) -> dict[str, Any]:
         if value is _MISSING:
             raise TypeError(f"reference is missing {name}")
         values[name] = float(value)
+    # GateReference gained optional soft-KL fields after the original
+    # recovery wrapper was written.  Keep the old protocol compatible with
+    # reference-like test doubles that do not expose them, while freezing the
+    # fields whenever the supplied reference does expose them.
+    for name in ("soft_kl_target", "soft_kl_gain"):
+        if hasattr(reference, name):
+            value = getattr(reference, name)
+            values[name] = None if value is None else float(value)
     return values
 
 
 def _reference_equal(reference: Any, snapshot: Mapping[str, Any]) -> bool:
     try:
-        return all(
+        equal = all(
             _exact_equal(torch.as_tensor(getattr(reference, name)).detach(), snapshot[name])
             for name in ("observations", "reference_logits", "reference_probs", "weights")
         ) and float(reference.coefficient) == float(snapshot["coefficient"]) \
             and float(reference.max_kl) == float(snapshot["max_kl"])
+        if not equal:
+            return False
+        for name in ("soft_kl_target", "soft_kl_gain"):
+            if name not in snapshot:
+                continue
+            current = getattr(reference, name, _MISSING)
+            expected = snapshot[name]
+            if current is _MISSING:
+                return False
+            current_value = None if current is None else float(current)
+            if current_value != expected:
+                return False
+        return True
     except (AttributeError, TypeError, ValueError):
         return False
 

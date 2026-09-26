@@ -34,6 +34,8 @@ class GateReference:
     weights: torch.Tensor
     coefficient: float = 0.1
     max_kl: float = 0.05
+    soft_kl_target: float | None = None
+    soft_kl_gain: float = 0.0
 
     def __post_init__(self) -> None:
         observations = torch.as_tensor(self.observations, dtype=torch.float32).detach().clone()
@@ -81,12 +83,22 @@ class GateReference:
         weights = weights / weight_sum
         coefficient = _finite_scalar(self.coefficient, name="reference coefficient", minimum=0.0)
         max_kl = _finite_scalar(self.max_kl, name="reference max_kl", minimum=0.0)
+        soft_kl_gain = _finite_scalar(self.soft_kl_gain, name="soft KL gain", minimum=0.0)
+        soft_kl_target = None
+        if self.soft_kl_target is not None:
+            soft_kl_target = _finite_scalar(self.soft_kl_target, name="soft KL target", minimum=0.0)
+        if soft_kl_gain > 0.0 and (
+            soft_kl_target is None or soft_kl_target >= max_kl
+        ):
+            raise ValueError("soft KL target must be finite and satisfy 0 <= target < max_kl when gain > 0")
         object.__setattr__(self, "observations", observations)
         object.__setattr__(self, "reference_logits", reference_logits)
         object.__setattr__(self, "reference_probs", reference_probs)
         object.__setattr__(self, "weights", weights)
         object.__setattr__(self, "coefficient", coefficient)
         object.__setattr__(self, "max_kl", max_kl)
+        object.__setattr__(self, "soft_kl_target", soft_kl_target)
+        object.__setattr__(self, "soft_kl_gain", soft_kl_gain)
 
     @classmethod
     def from_policy(
@@ -97,6 +109,8 @@ class GateReference:
         *,
         coefficient: float = 0.1,
         max_kl: float = 0.05,
+        soft_kl_target: float | None = None,
+        soft_kl_gain: float = 0.0,
     ) -> "GateReference":
         """Snapshot the current policy's gate distribution without gradients."""
 
@@ -121,6 +135,7 @@ class GateReference:
         return cls(
             tensor_observations.detach().clone(), reference_logits, reference_probs,
             weights, coefficient=coefficient, max_kl=max_kl,
+            soft_kl_target=soft_kl_target, soft_kl_gain=soft_kl_gain,
         )
 
     @property
@@ -182,6 +197,18 @@ class GateReference:
         weights = self.weights.to(device=per_sample.device, dtype=per_sample.dtype)
         return torch.sum(weights * per_sample)
 
+    def regularization_loss(self, weighted_kl_tensor: torch.Tensor) -> torch.Tensor:
+        """Return the reference penalty while preserving the KL gradient."""
+
+        weighted_kl = torch.as_tensor(weighted_kl_tensor)
+        loss = float(self.coefficient) * weighted_kl
+        if self.soft_kl_gain > 0.0:
+            target = torch.as_tensor(
+                float(self.soft_kl_target), dtype=weighted_kl.dtype, device=weighted_kl.device,
+            )
+            loss = loss + float(self.soft_kl_gain) * torch.relu(weighted_kl - target).square()
+        return loss
+
     def metrics(self, model: Any) -> dict[str, Any]:
         """Return detached reference-KL and current RELEASE-probability metrics."""
 
@@ -196,6 +223,11 @@ class GateReference:
                 for value in quantile_values
             }
             max_sample = torch.max(per_sample)
+            effective_coefficient = float(self.coefficient)
+            if self.soft_kl_gain > 0.0:
+                effective_coefficient += 2.0 * float(self.soft_kl_gain) * max(
+                    float(weighted.detach().cpu()) - float(self.soft_kl_target), 0.0,
+                )
             result = {
                 "reference_kl": float(weighted.detach().cpu()),
                 "kl": float(weighted.detach().cpu()),
@@ -205,5 +237,8 @@ class GateReference:
                 "quantiles": quantiles,
                 "max_kl": float(max_sample.detach().cpu()),
                 "max_reference_kl": float(max_sample.detach().cpu()),
+                "effective_kl_coefficient": effective_coefficient,
+                "soft_kl_target": self.soft_kl_target,
+                "soft_kl_gain": float(self.soft_kl_gain),
             }
         return result

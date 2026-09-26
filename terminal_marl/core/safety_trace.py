@@ -40,27 +40,42 @@ def _digest(value: Any) -> str:
 
 _V4_2_REJECTED_RELEASE_HOLD_FIELD = "v4_2_rejected_release_hold_mode"
 _LEGACY_CONFIG_COMPATIBILITY = "legacy_requested_default_field"
+_WARM_START_LAYOUT_RANDOMIZED_FIELD = "warm_start_layout_randomized"
+_WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY = "warm_start_layout_randomized_default_field"
+_COMBINED_LEGACY_CONFIG_COMPATIBILITY = (
+    f"{_LEGACY_CONFIG_COMPATIBILITY}+{_WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY}"
+)
 
 
 def _environment_config_match(config: Any, expected_hash: str) -> tuple[bool, str | None]:
-    """Match a tape config hash, allowing only the added legacy default field.
+    """Match a tape config hash, allowing only verified default fields.
 
-    Historical tapes were written before ``v4_2_rejected_release_hold_mode``
-    existed.  The compatibility branch is deliberately narrow: it is entered
-    only for the legacy default and it compares the complete config after
-    removing that one field.  Canonical mode and every other config change
-    remain strict mismatches.
+    Historical tapes were written before one or both of the compatibility
+    fields existed.  Each fallback compares the complete config after removing
+    exactly the absent default field(s).  Randomized layouts never accept an
+    old hash because their layout semantics are seed-dependent.
     """
 
     values = vars(config)
     if _digest(values) == expected_hash:
         return True, None
-    if getattr(config, _V4_2_REJECTED_RELEASE_HOLD_FIELD, None) != "legacy_requested":
+    if getattr(config, _WARM_START_LAYOUT_RANDOMIZED_FIELD, False) is not False:
         return False, None
-    legacy_values = dict(values)
-    legacy_values.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
-    if _digest(legacy_values) == expected_hash:
-        return True, _LEGACY_CONFIG_COMPATIBILITY
+    without_randomized_field = dict(values)
+    without_randomized_field.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
+    if _digest(without_randomized_field) == expected_hash:
+        return True, _WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY
+    if getattr(config, _V4_2_REJECTED_RELEASE_HOLD_FIELD, None) == "legacy_requested":
+        without_hold_field = dict(values)
+        without_hold_field.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
+        if _digest(without_hold_field) == expected_hash:
+            return True, _LEGACY_CONFIG_COMPATIBILITY
+
+        without_legacy_fields = dict(values)
+        without_legacy_fields.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
+        without_legacy_fields.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
+        if _digest(without_legacy_fields) == expected_hash:
+            return True, _COMBINED_LEGACY_CONFIG_COMPATIBILITY
     return False, None
 
 

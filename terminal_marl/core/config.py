@@ -52,6 +52,9 @@ class SimConfig:
     # Optional reset-time precondition for phase/motion emergency reachability.
     # The historical warm-start path remains unchanged when disabled.
     warm_start_energy_reachability_check_enabled: bool = False
+    # Evaluation-only opt-in for a randomized, separation-safe warm-start
+    # layout.  The historical deterministic layout remains the default.
+    warm_start_layout_randomized: bool = False
     # ``dt`` remains the policy/environment decision period for compatibility.
     # The physics executor samples the same authoritative plan at a smaller,
     # fixed substep in the performance-constrained mode.
@@ -385,6 +388,8 @@ class SimConfig:
             raise ValueError("high_level_enabled must agree with the selected canonical experiment mode")
         if self.reset_mode not in {"flow_from_empty", "warm_start_rings"}:
             raise ValueError("unsupported reset_mode")
+        if not isinstance(self.warm_start_layout_randomized, bool):
+            raise ValueError("warm_start_layout_randomized must be bool")
         if self.warm_start_energy_reachability_check_enabled and (
             self.reset_mode != "warm_start_rings"
             or self.energy_model_mode != "phase_motion_v2"

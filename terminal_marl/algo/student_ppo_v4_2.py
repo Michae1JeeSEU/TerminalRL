@@ -226,7 +226,11 @@ class StudentPPOV42(JointPPOV42):
                         raise FloatingPointError("non-finite reference gate KL")
                 loss = actor + value_coef * value_loss - entropy_coef * entropy
                 if reference_kl is not None:
-                    loss = loss + float(gate_reference.coefficient) * reference_kl
+                    regularization_loss = getattr(gate_reference, "regularization_loss", None)
+                    if callable(regularization_loss):
+                        loss = loss + regularization_loss(reference_kl)
+                    else:
+                        loss = loss + float(gate_reference.coefficient) * reference_kl
                 if not torch.isfinite(loss):
                     raise FloatingPointError("non-finite PPO objective")
                 model_snapshot = copy.deepcopy(self.model.state_dict()) if target_kl is not None else None

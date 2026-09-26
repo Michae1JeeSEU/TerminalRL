@@ -1,0 +1,361 @@
+protocol: V4_2_P3_ADAPTIVE_KL_V7
+status: IMPLEMENTED_PENDING_VALIDATION
+inherits_v5_runtime_contract: true
+source_protocol: terminal_marl/configs/low_v4_2/p3_controlled_emergency_formal_v5.yaml
+
+# The runner is implemented by the parallel code task.  External tests and
+# run manifests provide validation; this file makes no completion claim for
+# smoke, pilot, or formal training.
+implementation:
+  status: IMPLEMENTED_PENDING_VALIDATION
+  runner_module: terminal_marl.training.run_p3_adaptive_kl_formal_v7
+  implemented: true
+  validation_record: external_test_result_pending
+  external_test_summary: not_run
+  smoke_pilot_authorized: false
+  formal_requires_primary_admission_report: true
+
+authorization:
+  required_before_launch: true
+  current_state: PREPARED_NOT_ADMITTED
+  smoke_pilot_authorized: false
+  formal_requires_primary_admission_report: true
+  P3_QUALIFIED: false
+  P4_ALLOWED: false
+  primary_review_required: true
+  no_automatic_model_promotion: true
+
+admission:
+  required_stage: P3_ADAPTIVE_KL_FORMAL_ADMISSION_V7
+  adaptive_probe_manifests_required: 2
+  adaptive_probe_manifest_paths_bound_in_report: true
+  adaptive_probe_status_required: COMPLETED
+  reject_v5_v6_decision_reports: true
+  primary_fills_manifest_paths_after_probe_review: true
+  no_automatic_launch: true
+
+lineage:
+  source_checkpoint_kind: coverage_gate_adapter_fit
+  source_checkpoint_sha256: 03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba
+  source_checkpoint_path: /home/user/training_outputs/terminal/p3_gate_coverage_repair_v2_20260925/fit853401/p3_gate_coverage_repair_v2.pt
+  same_source_checkpoint_for_all_formal_runs: true
+  fresh_adam_for_each_run: true
+  no_pilot_checkpoint_reuse_for_formal: true
+  no_optimizer_state_transfer_between_runs: true
+
+bindings:
+  action_schema_version: low_action_schema_v4_2_hierarchical
+  observation_schema_version: phaseA_low_obs_v2_1_retry_state
+  observation_dimension: 88
+  vehicle_profile_version: eh216s_research_v2
+  action_definition: WAIT_or_RELEASE_with_conditional_speed_timing_proposal
+  runtime_shortlist_k: 3
+  reconcile_late_merge_slots_enabled: false
+  v4_2_rejected_release_hold_mode: canonical_wait
+  teacher: false
+  scheduler_mode: execution
+  high_level_enabled: false
+  shield_enabled: true
+  algorithm_family: PPO
+  architecture_change: false
+  probability_floor: false
+  online_teacher: false
+  uid_or_soc_override: false
+
+environment:
+  geometry: fixed
+  full_cycle: true
+  full_scenario_horizon_seconds:
+    flow6: 1210
+    flow12: 1570
+    dense24: 1800
+  initial_soc_distribution: Uniform(0.55, 0.90)
+  energy_capacity: 1500
+  minimum_landing_soc: 0.10
+  soc_reserve: 0.25
+  emergency_trigger_soc: 0.40
+  priorities: [1, 3, 5]
+  mission_mixture: existing_v5_mission_mixture
+  scenarios: [flow6, dense24, flow12]
+
+safety:
+  desired_planning_separation_m: 80
+  protected_floor_m: 40
+  collision_event_floor_m: 10
+  actor_intervention_fraction_max: 0.05
+  geometry_reverse_samples_max: 0
+  geometry_inner_excursion_max_m: 0.05
+  shield_fail_closed_events_max: 0
+  joint_fail_closed_events_max: 0
+  collision_nmac_events_max: 0
+  safety_counters_must_be_zero: true
+  exact_action_tape_replay: true
+  exact_requested_likelihood: true
+  frozen_proposal_subgraph: true
+  zero_failed_energy: true
+  zero_other_failures: true
+
+reward:
+  low_level_priority_time_weight: 1.0
+  low_level_soc_urgency_time_weight: 2.0
+  low_level_soc_urgency_threshold: 0.65
+  urgency_reward_config_exact: true
+  no_soc_only_ordering: true
+  reward_component_totals_required: true
+  reward_component_keys:
+    - time
+    - progress
+    - release
+    - touchdown
+    - failure
+    - teacher
+    - shield
+    - urgency
+    - emergency
+  reward_total_consistency_required: true
+  urgency_combines_priority_and_soc: true
+  separate_priority_soc_decomposition: false
+
+optimizer:
+  trainable_scope: [gate_adapter, critic_encoder, critic_head]
+  frozen_scope: [actor_encoder, gate_head, proposal_head, gate_temperature]
+  learning_rate: 0.00003
+  fresh_adam: true
+  update_epochs: 2
+  minibatch_size: 32
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.1
+  value_coef: 0.5
+  entropy_coef: 0.001
+  target_rollout_kl: 0.01
+  maximum_approx_kl: 0.05
+  reference_gate_kl_coefficient: 0.1
+  reference_gate_kl_soft_target: 0.02
+  reference_gate_kl_soft_gain: 400.0
+  cumulative_reference_weighted_kl_hard_cap: 0.05
+  reference_gate_kl_direction: q_source_to_p_current
+  reference_gate_kl_scope: gate_distribution_only
+  reference_gate_distribution: fixed_source_checkpoint_03c0
+  reference_gate_is_fixed: true
+  reference_kl_cap_uses_existing_model_optimizer_rollback: true
+  no_probability_floor: true
+  no_new_proposal_training: true
+
+anchor_data:
+  source_checkpoint_sha256: 03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba
+  groups:
+    old_train_anchor:
+      weight: 0.5
+      within_group_wait_release_balanced: true
+      combined_rows: 1529
+      files:
+        - path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/train_flow6_846101/actor_labels.jsonl
+          rows: 21
+        - path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/train_flow12_846102/actor_labels.jsonl
+          rows: 66
+        - path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/train_dense24_846103/actor_labels.jsonl
+          rows: 695
+        - path: /home/user/training_outputs/terminal/random_soc_gate_repair_v1_20260925/train_dense24_846104/actor_labels.jsonl
+          rows: 747
+    coverage_original_bounded_run0_run1:
+      weight: 0.5
+      within_group_wait_release_balanced: true
+      combined_rows: 1062
+      files:
+        - /home/user/training_outputs/terminal/p3_gate_coverage_repair_v2_20260925/collection/original_run0/labels.jsonl
+        - /home/user/training_outputs/terminal/p3_gate_coverage_repair_v2_20260925/collection/bounded_run0/labels.jsonl
+        - /home/user/training_outputs/terminal/p3_gate_coverage_repair_v2_20260925/collection/original_run1/labels.jsonl
+        - /home/user/training_outputs/terminal/p3_gate_coverage_repair_v2_20260925/collection/bounded_run1/labels.jsonl
+  dev_excluded_from_anchor: true
+  heldout_excluded_from_anchor: true
+  source_gate_distribution_is_not_online_teacher: true
+
+reference_gate_regularization:
+  enabled: true
+  q_source: fixed_gate_distribution_from_03c0_source
+  p_current: current_policy_gate_distribution
+  direction: KL(q_source || p_current)
+  coefficient: 0.1
+  soft_target: 0.02
+  soft_gain: 400.0
+  soft_penalty: coefficient*K + soft_gain*relu(K-soft_target)^2
+  cumulative_weighted_kl_hard_cap: 0.05
+  applies_to_gate_only: true
+  proposal_distribution_unchanged: true
+  base_gate_and_temperature_unchanged: true
+  cap_breach_action: rollback_model_and_optimizer_then_end_update
+  q_source_is_not_a_teacher: true
+  no_uid_or_soc_override: true
+
+adaptive_probe:
+  purpose: bounded_recovery_evidence_for_formal_admission
+  stage: P3_ADAPTIVE_KL_PROBE_V1
+  primary_admission_required: true
+  source_reference: fixed_03c0
+  reference_gate_kl_soft_target: 0.02
+  reference_gate_kl_soft_gain: 400.0
+  reference_gate_kl_coefficient: 0.1
+  reference_gate_kl_hard_cap: 0.05
+  rollout_kl_target: 0.01
+  recovery_multipliers: [1.0, 0.5, 0.25, 0.125]
+  run0:
+    source_checkpoint: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run0/checkpoints/checkpoint_episode_0079.pt
+    seeds: [860080, 860081, 860082, 860083, 860084, 860085, 860086, 860087]
+    scenarios: [dense24, flow6, dense24, flow12, dense24, flow6, dense24, flow12]
+    diagnostic_replay_count: 4
+  run2:
+    source_checkpoint: /home/user/training_outputs/terminal/p3_gate_anchored_v6_20260925/formal/run2/checkpoints/checkpoint_episode_0048.pt
+    seeds: [862049, 862050, 862051, 862052, 862053, 862054, 862055, 862056]
+    scenarios: [flow6, dense24, flow12, dense24, flow6, dense24, flow12, dense24]
+    diagnostic_replay_count: 4
+  development_seeds: [863101, 863102, 863103]
+  development_scenarios: [flow6, flow12, dense24]
+  output_root: /home/user/training_outputs/terminal/p3_adaptive_kl_probe_v1_20260926
+  runner_module: terminal_marl.training.run_p3_adaptive_kl_probe_v1
+  no_new_independent_samples: true
+  no_formal_launch: true
+
+formal_schedule:
+  requires_primary_admission_report: true
+  independent_runs: 3
+  episodes_per_run: 240
+  total_episodes: 720
+  run_indices: [0, 1, 2]
+  episode_pattern: [flow6, dense24, flow12, dense24]
+  pattern_repetitions: 60
+  fresh_adam_each_run: true
+  source_checkpoint_is_03c0_for_each_run: true
+  no_resume_checkpoint_reuse: true
+  train_seeds:
+    0: {start: 870001, end: 870240, count: 240}
+    1: {start: 871001, end: 871240, count: 240}
+    2: {start: 872001, end: 872240, count: 240}
+  development:
+    seeds: [873101, 873102, 873103, 873104, 873105, 873106]
+    scenarios: [flow6, flow12, dense24, flow6, flow12, dense24]
+    paired_before_training: true
+    compare_after_processed_episodes: [40, 80, 120, 160, 200, 240]
+    development_trigger: processed_episode_count
+    paired_same_initial_states: true
+    stochastic: true
+    full_resolution_required: true
+    unresolved_is_failure: true
+    dev_full_resolution_failure_action: PAUSE_FORMAL_RUN_FOR_PRIMARY_REVIEW
+
+heldout_reservation:
+  existing_heldout_v5: [854001, 854002, 854003, 854004, 854005, 854006, 854007, 854008, 854009, 854010, 854011, 854012]
+  historical_heldout: [829001, 829002, 829003, 829004, 829005, 829006]
+  run_in_this_task: false
+  consume_or_reset: false
+  use_for_anchor: false
+  use_for_tuning: false
+
+outcomes:
+  ledger_enum_normal: completed
+  ledger_enum_controlled_emergency: emergency_landed
+  ledger_enum_energy_failure: failed_energy
+  ledger_enum_unresolved: unresolved
+  emergency_landed_is_reportable_learning_outcome: true
+  emergency_landed_is_automatic_stop: false
+  failed_energy_is_hard_failure: true
+  unsafe_or_fail_closed_is_hard_failure: true
+  training_horizon_unresolved: report_only
+  development_unresolved: hard_failure
+  report_by_load_class: true
+  report_fields:
+    - completed_count
+    - emergency_landed_count
+    - emergency_landed_rate
+    - normal_rate
+    - failed_energy_count
+    - unresolved_count
+    - per_priority_wait
+    - low_soc_wait
+    - full_request_denominator
+    - anchor_gate_drift
+    - reference_gate_kl
+
+hard_stop_conditions:
+  safety_failure: true
+  energy_failure: true
+  requested_likelihood_failure: true
+  nonfinite_failure: true
+  update_integrity_failure: true
+  unsafe_execution_or_fail_closed: true
+  frozen_parameter_change: true
+  proposal_or_temperature_change: true
+  reference_source_change: true
+  accepted_reference_kl_cap_breach: true
+  restore_failure: true
+  training_horizon_unresolved_is_not_automatic_stop: true
+  development_unresolved_failure: true
+  accepted_emergency_is_report_only: true
+  ten_consecutive_safe_skips_learning_stalled: true
+
+checkpointing:
+  save_after_each_processed_episode: true
+  save_after_each_accepted_episode: true
+  save_state:
+    - policy
+    - optimizer
+    - rng
+    - timestep
+    - episode_index
+    - protocol_digest
+    - source_checkpoint_sha256
+    - source_reference_digest
+    - reference_gate_coefficient
+    - reference_gate_soft_target
+    - reference_gate_soft_gain
+    - reference_gate_max_kl
+    - gate_adapter_parameter_delta_norm
+    - gate_adapter_l2_delta_from_source
+    - processed_updated_skipped_counters
+  restore_exact_required: true
+  automatic_restart: false
+  automatic_promotion: false
+  automatic_p3_pass: false
+  automatic_p4_pass: false
+
+monitoring:
+  heartbeat: external_primary_optional
+  continuous_follow_up: true
+  post_start_manual_monitoring: true
+  unchanged_output_silent: true
+  notify_on_anomaly_or_terminal: true
+  program_hard_stops_and_checkpoints_remain_enabled: true
+  no_auto_restart: true
+
+post_training_evaluation:
+  run_only_after_formal_training_review_and_model_freeze: true
+  in_distribution:
+    seeds: [880101, 880102, 880103, 880104, 880105, 880106, 880107, 880108, 880109, 880110, 880111, 880112]
+    scenarios: [flow6, flow12, dense24, flow6, flow12, dense24, flow6, flow12, dense24, flow6, flow12, dense24]
+    baseline: source_03c0_and_each_final_run_checkpoint
+    same_seed_for_baseline_and_final: true
+  stress:
+    dense30_no_inflow:
+      seeds: [880201, 880202]
+      initial_vehicle_count: 30
+      inflow: none
+    random_dense24_same_load:
+      seeds: [880301, 880302]
+      initial_vehicle_count: 12
+      inflow_vehicle_count: 12
+  evaluation_runs_only_after_training: true
+  evaluation_results_do_not_flow_back_to_tuning: true
+  run_in_this_task: true
+  heldout_consumed: false
+  extra_stress_started: false
+
+seed_collision_check:
+  status: PENDING_READ_ONLY_CHECK
+  ranges_to_check: [870001-870240, 871001-871240, 872001-872240, 873101-873106, 880101-880112, 880201-880202, 880301-880302]
+  collision_action: RETURN_TO_PRIMARY_WITHOUT_SEED_REPLACEMENT
+  automatic_seed_replacement: false
+  global_collision_claim: false
+
+outputs:
+  root: /home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/
+  formal_run_pattern: /home/user/training_outputs/terminal/p3_adaptive_kl_formal_v7_20260926/runN/
