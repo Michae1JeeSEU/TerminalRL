@@ -1,22 +1,12 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-27
+> **状态日期**：2026-09-28
 >
-> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`，本轮 SOC gate 修复为 `a8ea93bf0e41f316fc161c1c9d1d7576395a8850`；V7 adaptive-KL 实现与定向测试提交为 `7b85d79`，evaluation runner/tests 为 `5292945`；runtime rank anchor 修复与证据整合为 `2097990`，指定定向套件 `61 tests passed`。V7 YAML SHA256 保持 `d2bbd3a3361abb0589099fd2096b8f404f61c34bf94db10a958de99fc3f14a53`。Git 无 remote，未 push。
+> **代码快照**：state-only 收集实现为 `768b191`，gate-adapter 训练器为 `b9f1077`，本轮 SOC gate 修复为 `a8ea93bf0e41f316fc161c1c9d1d7576395a8850`；V7 adaptive-KL 实现与定向测试提交为 `7b85d79`，evaluation runner/tests 为 `5292945`；runtime rank anchor 修复与证据整合为 `2097990`，指定定向套件 `61 tests passed`。V7 YAML SHA256 保持 `d2bbd3a3361abb0589099fd2096b8f404f61c34bf94db10a958de99fc3f14a53`。Git 无 remote，未 push；本轮 terminal credit/reward audit/pairing correction 已提交 `e0615df`、`44ec2d5`、`d44fde1`；gate-only trainer/evaluator 本轮实现完成，trainer 定向测试 `3` 项、evaluator 定向测试 `5` 项已通过，4 套组合测试共 `20 tests passed`；进程 exit `0`，出现 `1` 条 `torch.load` FutureWarning；本轮实现与本地测试已完成。
 >
-> **历史 V6 与受限恢复结论（V7 之前，2026-09-26）**：V6 formal run1 完成 `240/240`，run0/run2 分别在 `79/80`、`48/49` records 后停止；合计 `6078` requests、`0 failed_energy`，P3 未通过，该轮结束时三 run 均已终止。随后针对两个停止点完成了受限 KL recovery probe：两组各处理 `4` 个诊断回合、各 `2` 次 UPDATED 与 `2` 次安全 `SKIPPED_KL`，无 HARD_FAILED；该流程验证了回滚/缩步恢复路径，但有效更新不足以恢复长期 formal 训练。
+> **最新摘要：terminal reward-order/full-cycle credit（2026-09-28）：** 既有 `24/24` development tapes 的 reward/components/ledger/full-request replay 全部 exact，source raw/episode-start discounted return 为 `1606.131863/74.787596`；run0@80 为 `1543.186357/74.421692`，run1@240 为 `1601.928370/71.265154`，run2@240 为 `1563.341301/67.047586`。三个 candidate 的两类聚合 return 均低于 source，但 `dense24/873106` run0 存在 raw `-67.136088`、discounted `+0.206033`、normal `-1`、failed-energy `+1` 的终态排序个案；episode-start discounted return 不等于 PPO actor loss，也不构成唯一因果证明。CF terminal-credit 证据仅作已消费 development 诊断；gate-only probe 尚未完成 fit/evaluation，`P3_QUALIFIED=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`。权威配对结果见 [terminal credit result](evidence/v4_2/p3_terminal_credit_result_20260928.md) 与 [corrected summary sidecar](../../training_outputs/terminal/p3_terminal_credit_20260928/reward_order/summary_corrected.json)。
 
-> **V7 adaptive probe 与 formal 终态（2026-09-26）：** adaptive probe run0/run2 各 `8` 个回合均为 `8 UPDATED / 0 SKIPPED_KL / 0 HARD_FAILED`、`8/8` restore exact；accepted minibatches 为 `298/332`，最终 reference KL 为 `.0077864/.0133243`。formal 三 run 已终态：run0 `FAILED exit1`，`80 processed / 80 UPDATED / 0 skipped`、`3954 accepted minibatches`；run1 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11737 accepted minibatches`；run2 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11808 accepted minibatches`。训练请求合计 `9240`（`8211 normal + 1029 emergency_landed`），训练 `failed_energy/other/unresolved=0`；开发失败单独计入 development，不与训练请求混合。所有 `560` 个 update 的 gate delta 均大于零，训练 safety 计数为零，restore/RNG false 为零。主审结论为可学习性成立但三 seed 全通过不成立；无性能全面提升证据，不自动 P3/P4 晋级，也不恢复 run0。
-> **历史 V7 用户目标（2026-09-26，已终态）：** 完成有效的 `3×240` formal PPO，并在训练后对同一场景集合执行冻结策略评估；adaptive probe 已完成并通过 primary 的可学习性审查，但 dense24 性能存在退化，formal 三 run 已终态但 run0 失败、run1/run2 完成；全请求 lifecycle 回放已完成，`64` episode final evaluation 的前置条件仍未满足且尚未启动。候选 reference regularization 为 `0.1*K + 400*relu(K-0.02)^2`，reference weighted-KL hard cap `.05`、rollout-KL target `.01`、03c0 source、proposal 子图冻结、安全边界保持不变；不增加 probability floor、强制 RELEASE、UID/SOC override 或 SOC 专用规则。正式计划保留三组独立 `240` episode 与同场景 development/evaluation；dense30 与同负荷随机密度评估只在正式训练完成并冻结策略后执行，当前不消费 heldout。random layout opt-in 默认 `false`，仅供后续 evaluation。V7 YAML 参数已冻结。
->
-> **最新摘要：runtime rank repair 三候选终态（2026-09-27）：** 已完成 `164` 个 runtime-label rows、`8,364` 个 branches 与 `6/6` exact records；运行时标签失配、非目标 proposal head 漂移和报告接口已修复。source `03c0` 保持参考；V1 runtime rank、sparse rows `[9,20]` 与 anchored rows `[9,20]` 三个候选均不采用，训练退化尚未解决。`P3_QUALIFIED=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`，未消费 heldout。下一步针对终态 `normal/emergency` 与长程等待做 action-credit 目标诊断；继续调 coverage/MSE 或扩大 formal 不作为已验证解决方案。详见 [runtime rank repair result](evidence/v4_2/p3_runtime_rank_repair_result_20260926.md) 与 [anchored protocol](evidence/v4_2/p3_runtime_rank_anchored_20260927.md)。
-
-| policy | overall normal / emergency | train normal / emergency | validation normal / emergency | overall priority / low-SOC wait |
-|---|---:|---:|---:|---:|
-| source `03c0` | 76 / 8 | 39 / 3 | 37 / 5 | 86.6690576161 / 89.7792692439 |
-| V1 runtime rank | 73 / 11 | 39 / 3 | 34 / 8 | 94.5130544827 / 85.3075803003 |
-| sparse rows `[9,20]` | 74 / 10 | 39 / 3 | 35 / 7 | 83.4356842607 / 90.9519380786 |
-| anchored rows `[9,20]` | 75 / 9 | 40 / 2 | 35 / 7 | 89.7123814381 / 103.6657082349 |
+> **当前 gate-only probe 阻塞（2026-09-28）：** gate-only trainer/evaluator 实现与本地测试已完成；trainer 定向测试 `3` 项、evaluator 定向测试 `5` 项已通过，4 套组合测试共 `20 tests passed`；进程 exit `0`，出现 `1` 条 `torch.load` FutureWarning。服务器多次 SSH TCP 建立后均出现 `kex_exchange_identification: Connection closed by remote host`，因此尚未运行 `1` step smoke，尚无修复 checkpoint，尚无 candidate 评估，当前不能记为训练退化已解决。冻结配置见 [P3 terminal gate repair protocol](evidence/v4_2/p3_terminal_gate_repair_protocol_20260928.md)。
 
 
 ## V7 formal campaign 终态（2026-09-26，全请求 lifecycle 回放已完成）
@@ -37,6 +27,34 @@ final development 各为 `84` requests：run0 在 episode `80` 为 `76 normal + 
 对应 checkpoint SHA256 为：run0 episode `0080` `ad42e9a72cac4943834041482e93adc34f123c851c4297f7462381fe0d52ff4e`；run1 episode `0240` `db74245759653bb61f8d17b0071cf9a04c2e3334e019a63cd99dff988cc23b3a`；run2 episode `0240` `4797ae2eea5da0e60a4b24e2fd0a60a6860c37b8efe1c77c0366a33a2d8fb5f9`。checkpoint 均位于上述 formal root 的对应 run 目录。
 
 主审结论为可学习性成立，但三 seed 全通过不成立；目前没有性能全面提升证据，`P3_QUALIFIED=false`、`P4_ALLOWED=false`，不自动恢复 run0。原 `64` episode final evaluation 的前置条件未满足，未消费 `880xxx` 或既有 heldout。全请求 lifecycle 回放已完成：manifest `/home/user/training_outputs/terminal/p3_adaptive_kl_terminal_dev_metrics_20260926/manifest.json`，SHA256 `7188f7160511446a91cb873ed5cd607378eede3bc00d567467cf25f26496f3a1`；`24/24 COMPLETED`、exit `0`、error `0`、validation error `0`，四组均为 `84/84` terminal rows、missing `0`、exact/ledger 一致。`smoke_v2` 为 `1/1 COMPLETED`，`6` requests/`6` terminal rows、missing `0`、ledger/replay/outcome 全通过、exit `0`；首次 smoke 输出不作为本次指标证据。本轮仅重放既有 tape，不是新 policy rollout。source baseline 与三个 final development 共 `24` 个既有 tape 的全请求指标已完成。
+
+## Gate-only probe 待执行命令（服务器连接恢复后）
+
+> 待执行训练命令：
+> ```bash
+> cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.train_p3_terminal_gate_repair --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/smoke --smoke
+> cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.train_p3_terminal_gate_repair --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit
+> ```
+> 第二条命令须在 primary 查看 smoke 真实输出后执行。fit 技术通过后，evaluator 先执行 `--check-only`，再执行 full：
+> ```bash
+> cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.evaluate_p3_terminal_gate_repair --checkpoint /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/terminal_gate_repair.pt --fit-report /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/report.json --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/evaluation --check-only
+> cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.evaluate_p3_terminal_gate_repair --checkpoint /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/terminal_gate_repair.pt --fit-report /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/report.json --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/evaluation
+> ```
+
+> **历史 V6 与受限恢复结论（V7 之前，2026-09-26）**：V6 formal run1 完成 `240/240`，run0/run2 分别在 `79/80`、`48/49` records 后停止；合计 `6078` requests、`0 failed_energy`，P3 未通过，该轮结束时三 run 均已终止。随后针对两个停止点完成了受限 KL recovery probe：两组各处理 `4` 个诊断回合、各 `2` 次 UPDATED 与 `2` 次安全 `SKIPPED_KL`，无 HARD_FAILED；该流程验证了回滚/缩步恢复路径，但有效更新不足以恢复长期 formal 训练。
+
+> **V7 adaptive probe 与 formal 终态（2026-09-26）：** adaptive probe run0/run2 各 `8` 个回合均为 `8 UPDATED / 0 SKIPPED_KL / 0 HARD_FAILED`、`8/8` restore exact；accepted minibatches 为 `298/332`，最终 reference KL 为 `.0077864/.0133243`。formal 三 run 已终态：run0 `FAILED exit1`，`80 processed / 80 UPDATED / 0 skipped`、`3954 accepted minibatches`；run1 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11737 accepted minibatches`；run2 `COMPLETED exit0`，`240 processed / 240 UPDATED / 0 skipped`、`11808 accepted minibatches`。训练请求合计 `9240`（`8211 normal + 1029 emergency_landed`），训练 `failed_energy/other/unresolved=0`；开发失败单独计入 development，不与训练请求混合。所有 `560` 个 update 的 gate delta 均大于零，训练 safety 计数为零，restore/RNG false 为零。主审结论为可学习性成立但三 seed 全通过不成立；无性能全面提升证据，不自动 P3/P4 晋级，也不恢复 run0。
+> **历史 V7 用户目标（2026-09-26，已终态）：** 完成有效的 `3×240` formal PPO，并在训练后对同一场景集合执行冻结策略评估；adaptive probe 已完成并通过 primary 的可学习性审查，但 dense24 性能存在退化，formal 三 run 已终态但 run0 失败、run1/run2 完成；全请求 lifecycle 回放已完成，`64` episode final evaluation 的前置条件仍未满足且尚未启动。候选 reference regularization 为 `0.1*K + 400*relu(K-0.02)^2`，reference weighted-KL hard cap `.05`、rollout-KL target `.01`、03c0 source、proposal 子图冻结、安全边界保持不变；不增加 probability floor、强制 RELEASE、UID/SOC override 或 SOC 专用规则。正式计划保留三组独立 `240` episode 与同场景 development/evaluation；dense30 与同负荷随机密度评估只在正式训练完成并冻结策略后执行，当前不消费 heldout。random layout opt-in 默认 `false`，仅供后续 evaluation。V7 YAML 参数已冻结。
+>
+> **历史摘要：runtime rank repair 三候选终态（2026-09-27）：** 已完成 `164` 个 runtime-label rows、`8,364` 个 branches 与 `6/6` exact records；运行时标签失配、非目标 proposal head 漂移和报告接口已修复。source `03c0` 保持参考；V1 runtime rank、sparse rows `[9,20]` 与 anchored rows `[9,20]` 三个候选均不采用，训练退化尚未解决。`P3_QUALIFIED=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`，未消费 heldout。下一步针对终态 `normal/emergency` 与长程等待做 action-credit 目标诊断；继续调 coverage/MSE 或扩大 formal 不作为已验证解决方案。详见 [runtime rank repair result](evidence/v4_2/p3_runtime_rank_repair_result_20260926.md) 与 [anchored protocol](evidence/v4_2/p3_runtime_rank_anchored_20260927.md)。
+
+| policy | overall normal / emergency | train normal / emergency | validation normal / emergency | overall priority / low-SOC wait |
+|---|---:|---:|---:|---:|
+| source `03c0` | 76 / 8 | 39 / 3 | 37 / 5 | 86.6690576161 / 89.7792692439 |
+| V1 runtime rank | 73 / 11 | 39 / 3 | 34 / 8 | 94.5130544827 / 85.3075803003 |
+| sparse rows `[9,20]` | 74 / 10 | 39 / 3 | 35 / 7 | 83.4356842607 / 90.9519380786 |
+| anchored rows `[9,20]` | 75 / 9 | 40 / 2 | 35 / 7 | 89.7123814381 / 103.6657082349 |
+
 
 
 四组全请求 lifecycle 指标如下（等待单位为秒；low-SOC 为 25 个样本均值）：
