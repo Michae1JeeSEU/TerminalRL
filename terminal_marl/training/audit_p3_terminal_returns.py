@@ -465,7 +465,17 @@ def _replay_record(
 def _comparison_row(rows: Sequence[Mapping[str, Any]], *, scenario: str, seed: int) -> dict[str, Any]:
     result: dict[str, Any] = {"scenario": scenario, "seed": int(seed)}
     for arm in REQUIRED_GROUPS.values():
-        row = next(item for item in rows if item["arm"] == arm)
+        matches = [
+            item for item in rows
+            if str(item.get("arm")) == arm
+            and str(item.get("scenario")) == str(scenario)
+            and int(item.get("seed")) == int(seed)
+        ]
+        _require(
+            len(matches) == 1,
+            f"comparison identity must have one record: arm={arm}, scenario={scenario}, seed={seed}, count={len(matches)}",
+        )
+        row = matches[0]
         returns = row["returns"]
         original = row["original_summary"]
         waits = row["waits"]
@@ -479,6 +489,7 @@ def _comparison_row(rows: Sequence[Mapping[str, Any]], *, scenario: str, seed: i
             "failed_energy": outcomes.get("failed_energy"),
             "unresolved": outcomes.get("unresolved"),
             "mean_wait_seconds": waits.get("mean_wait_seconds"),
+            "low_soc_mean_wait_seconds": waits.get("low_soc_mean_wait_seconds"),
             "priority_weighted_wait_seconds": waits.get("priority_weighted_wait_seconds"),
         }
     return result
@@ -496,6 +507,67 @@ def _write_progress(output_root: Path, *, status: str, processed: int, expected:
     if error is not None:
         payload["error"] = str(error)
     _write_json(output_root / "progress.json", payload)
+
+
+def correct_summary_sidecar(summary_path: Path, sidecar_path: Path) -> dict[str, Any]:
+    """Rewrite only the paired comparison section from existing records."""
+    summary = _read_json(Path(summary_path))
+    records = summary.get("records")
+    _require(isinstance(records, list) and len(records) == 24, "summary records must contain 24 records")
+    identities = sorted({(str(row.get("scenario")), int(row.get("seed"))) for row in records})
+    _require(len(identities) == 6, "summary records must contain six paired identities")
+    comparisons = [
+        _comparison_row(records, scenario=scenario, seed=seed)
+        for scenario, seed in identities
+    ]
+    identity_counts: dict[str, dict[str, int]] = {}
+    for scenario, seed in identities:
+        key = f"{scenario}|{seed}"
+        identity_counts[key] = {
+            arm: sum(
+                1 for row in records
+                if str(row.get("arm")) == arm
+                and str(row.get("scenario")) == scenario
+                and int(row.get("seed")) == seed
+            )
+            for arm in REQUIRED_GROUPS.values()
+        }
+    checks = {
+        "record_count": len(records),
+        "pair_count": len(comparisons),
+        "pair_identity_count_matches_records": len(comparisons) == len(identities) == 6,
+        "each_pair_has_one_record_per_arm": all(
+            all(count == 1 for count in counts.values())
+            for counts in identity_counts.values()
+        ),
+        "record_identity_counts": identity_counts,
+        "exact_records": sum(bool(row["replay"]["exact"]) for row in records),
+        "components_consistent_records": sum(
+            bool(row["returns"]["raw_components_consistent"]) for row in records
+        ),
+        "ledger_aligned_records": sum(
+            bool(row["terminal_metrics"]["ledger_alignment"]) for row in records
+        ),
+        "all_requests_observed_records": sum(
+            bool(row["terminal_metrics"]["all_requests_observed"]) for row in records
+        ),
+        "unresolved_total": sum(int(row["outcomes"]["unresolved"]) for row in records),
+    }
+    _require(checks["pair_identity_count_matches_records"], "corrected pair identity count mismatch")
+    _require(checks["each_pair_has_one_record_per_arm"], "corrected pair identity arm count mismatch")
+    corrected = {
+        "stage": summary.get("stage"),
+        "status": summary.get("status"),
+        "mode": summary.get("mode"),
+        "gamma": summary.get("gamma"),
+        "record_count": len(records),
+        "source_summary": str(summary_path),
+        "groups": summary.get("groups"),
+        "paired_source_vs_candidates": comparisons,
+        "checks": checks,
+    }
+    _write_json(Path(sidecar_path), corrected)
+    return corrected
 
 
 def run(*, manifest_path: Path = DEFAULT_MANIFEST, output_root: Path = DEFAULT_OUTPUT_ROOT, smoke: bool = False) -> dict[str, Any]:
