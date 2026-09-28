@@ -77,6 +77,40 @@ def _record(seed: int, policy_seed: int, *, failed_energy: int = 0) -> dict:
     }
 
 
+def _write_reuse_root(tmp_path: Path, *, mutate: tuple[str, object] | None = None) -> Path:
+    root = tmp_path / "old_full"
+    source_dir = root / "records" / "before"
+    neutral_config = neutral._config_snapshot(neutral._neutralize_config(_Config()))
+    for item in repeats.repeat_matrix():
+        if item["arm"] != "before":
+            continue
+        record = _record(int(item["env_seed"]), int(item["policy_seed"]))
+        record.update({
+            "arm": "before",
+            "env_seed": int(item["env_seed"]),
+            "checkpoint_sha256": repeats.BEFORE_CHECKPOINT_SHA256,
+            "checkpoint_sha256_expected": repeats.BEFORE_CHECKPOINT_SHA256,
+            "config": neutral_config,
+            "task_priority_enabled": False,
+            "low_level_priority_time_weight": 0.0,
+            "technical_ok": True,
+            "model_unchanged": True,
+            "PPO_ALLOWED": False,
+        })
+        record["summary"].update({
+            "seed": int(item["env_seed"]),
+            "policy_seed": int(item["policy_seed"]),
+        })
+        if mutate and (int(item["env_seed"]), int(item["policy_seed"])) == (873103, 874301):
+            record[mutate[0]] = mutate[1]
+        path = source_dir / (
+            f"dense24_env{item['env_seed']}_policy{item['policy_seed']}.json"
+        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(record), encoding="utf-8")
+    return root
+
+
 def _patch_runtime(monkeypatch, tmp_path: Path, *, failure_at: int | None = None):
     before = tmp_path / "before.pt"
     after = tmp_path / "after.pt"
@@ -159,6 +193,8 @@ def test_full_matrix_reloads_each_arm_seed_and_keeps_performance_failure(monkeyp
     assert calls["runtime"] == 16
     assert calls["load"] == 18  # two binding loads plus one fresh load per rollout
     assert calls["updates"] == 0
+    assert result["records_reused"] == 0
+    assert result["new_rollouts"] == 16
     assert result["arms"]["before"]["failed"] == 1
     assert len(result["paired_differences"]) == 8
     assert len(list((tmp_path / "full" / "records" / "before").glob("*.json"))) == 8
@@ -168,6 +204,42 @@ def test_full_matrix_reloads_each_arm_seed_and_keeps_performance_failure(monkeyp
         "arm": "after", "scenario": "dense24", "env_seed": 873106,
         "policy_seed": repeats.POLICY_SEEDS[-1],
     }
+
+
+def test_reuse_root_copies_before_records_and_runs_after_only(monkeypatch, tmp_path):
+    calls = _patch_runtime(monkeypatch, tmp_path)
+    reuse_root = _write_reuse_root(tmp_path)
+    source_path = reuse_root / "records" / "before" / "dense24_env873103_policy874301.json"
+    source_before = source_path.read_bytes()
+    result = repeats.run(output_dir=tmp_path / "reuse", reuse_before_root=reuse_root)
+    assert result["status"] == "COMPLETED"
+    assert result["records_processed"] == 16
+    assert result["records_reused"] == 8
+    assert result["new_rollouts"] == 8
+    assert result["planned_reused_records"] == 8
+    assert result["planned_new_rollouts"] == 8
+    assert calls["runtime"] == 8
+    assert calls["load"] == 10
+    assert source_path.read_bytes() == source_before
+    copied = json.loads(next((tmp_path / "reuse" / "records" / "before").glob("*.json")).read_text())
+    assert copied["record_path"].startswith(str(tmp_path / "reuse"))
+    assert copied["source_provenance"]["kind"] == "reused_before_record"
+    assert len(result["reused_source_paths"]) == 8
+
+
+@pytest.mark.parametrize("field,value", [
+    ("policy_seed", 999),
+    ("checkpoint_sha256", "wrong-sha"),
+    ("config", {"wrong": True}),
+])
+def test_reuse_preflight_rejects_identity_sha_or_config(monkeypatch, tmp_path, field, value):
+    reuse_root = _write_reuse_root(tmp_path, mutate=(field, value))
+    calls = _patch_runtime(monkeypatch, tmp_path)
+    result = repeats.run(output_dir=tmp_path / f"bad_{field}", reuse_before_root=reuse_root, check_only=True)
+    assert result["status"] == "FAILED"
+    assert result["records_processed"] == 0
+    assert calls["runtime"] == 0
+    assert result["stop_reason"]
 
 
 def test_technical_failure_stops_matrix_and_preserves_failed_record(monkeypatch, tmp_path):
@@ -189,3 +261,33 @@ def test_cli_help_is_available(capsys):
         repeats.main(["--help"])
     assert exc.value.code == 0
     assert "--output-dir" in capsys.readouterr().out
+
+
+def test_custom_after_requires_checkpoint_and_sha_pair(tmp_path, capsys):
+    result = repeats.main([
+        "--output-dir", str(tmp_path / "pair"),
+        "--after-checkpoint", str(tmp_path / "custom.pt"),
+    ])
+    assert result == 2
+    assert "supplied together" in capsys.readouterr().out
+
+
+def test_custom_after_check_validates_pilot_payload_without_env(monkeypatch, tmp_path):
+    calls = _patch_runtime(monkeypatch, tmp_path)
+    custom = tmp_path / "custom.pt"
+    custom.write_bytes(b"custom")
+    checked = []
+    monkeypatch.setattr(
+        repeats.pilot_eval, "_validate_pilot_payload",
+        lambda payload, config: checked.append((payload, config)) or {"phase_config_match": True},
+    )
+    result = repeats.run(
+        output_dir=tmp_path / "custom_check", check_only=True,
+        after_checkpoint=custom, after_checkpoint_sha256="custom-sha",
+    )
+    assert result["status"] == "CHECK_ONLY_OK"
+    assert result["records_processed"] == 0
+    assert len(checked) == 1
+    assert result["binding"]["arms"]["after"]["declared_checkpoint"] == str(custom)
+    assert result["binding"]["arms"]["after"]["expected_checkpoint_sha256"] == "custom-sha"
+    assert calls["runtime"] == 0

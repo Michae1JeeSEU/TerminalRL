@@ -69,7 +69,11 @@
 > formal/global flags 不自动改变。输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_update_diagnosis_20260928`。
 
-> **当前先决采样诊断（2026-09-28，已授权，待代码完成）：** 新增一次
+> **当前先决采样诊断终态（2026-09-28）：** 代码提交为 `12f7873`，定向测试 `37` 项；
+> check-only 为 `CHECK_ONLY_OK`、`16`-matrix、`0` records，full report 已完成。该 sampling
+> repeats 对两臂共 `192` requests：旧 PPO 重复评估 `before` 为 `140 normal / 51 emergency /
+> 1 failed`，`after` 为 `136 / 56 / 0`，安全计数为 `0`。输出根为
+> `/home/user/training_outputs/terminal/p3_task_neutral_sampling_repeats_20260928`。
 > `16` rollouts 的 sampling-repeats 诊断，只评估已有两权重：`before=3fe7`、`after=1f7`。
 > 使用相同两个 dense env seeds `873103`、`873106`，每个各使用预定策略采样 seeds
 > `874301..874304`；只分离 torch policy sampling seed，env 的物理 seed、arrival、SOC 和 service
@@ -77,10 +81,33 @@
 > `/home/user/training_outputs/terminal/p3_task_neutral_sampling_repeats_20260928`。
 > 目的仅是区分单条采样轨迹波动与期望退化，不等于独立的新环境泛化；首请求差异在 step `56`
 > 执行相同，但 conditional proposal draws 改变后续采样链，不能仅凭相同 env seed 作强因果解释。
-> 先完成代码、定向测试和 check-only，再执行一次 16-rollout 预算，不自动重复；结果待取证，
-> 本轮安全与 heldout 边界不变。
+> 上述 full 为 `2` arms × `2` dense env seeds × `4` policy seeds 的 `16` rollouts，不自动重复。
+> mean wait `160.633→172.684 s`，p95 `369.113→445.294 s`，low-SOC wait
+> `187.337→197.268 s`，reward `3219.130→3166.920`；8 个 paired normal deltas 为
+> `[-2,0,1,0,3,-3,-3,0]`，其中 `7/8` 个 mean wait 上升。两既有 env 的 action repeats 支持
+> 继续修复，但不能归因仅一次采样，也不是独立环境泛化或显著性证明；本轮安全与 heldout 边界不变。
+> 结果见 [critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
 
-> **主审选择的下一项开发修复（待实施，2026-09-28）：** 用户继续授权仅此 task-neutral 开发修复，
+> **主审选择的下一项开发修复（warmup 终态，2026-09-28）：** 用户继续授权仅此 task-neutral
+> 开发修复；代码提交为 `92baea9`，定向测试 `37` 项、check-only 通过，已从 `6` 个既有 tapes
+> 收集 `4775` steps。第一次启动 wrapper 返回 launcher `262040` 后立即消失，未创建
+> warmup/log/pid/exit；第二次尝试在外层 compile (`launcher_code`) 暴露 `SyntaxError: unterminated
+> string literal`，原因记录为 `pid_path.write_text` 拼接换行转义错误，未 `Popen`、无 leaf/log/fit，
+> 两次均不计作实验重跑。随后唯一真实 runner PID `397550` 完成 `exit0`：`6` exact、`84`
+> requests、`4775` steps、`20` epochs；MSE `733.8008877569→104.6766084265`，MAE
+> `20.2631550239→5.6295053403`，EV `.25466145→.76812814`，actor/noncritic bitwise unchanged
+> 为 `true`，无 PPO、sampling 或 Teacher。`warmup.pt` SHA256 为
+> `b136a57a8a977b60d5ae71fe3925c8cf133433c0c5fc4e6bef9872295353844d`。这些是数据内拟合结果，
+> 不代表泛化或问题已解决。
+> 主审已通过 warmup；`pilot_check_only` report 为 `CHECK_ONLY_OK`，随后唯一 `pilot/` report
+> 为 `COMPLETED`、`technical_ok=true`。6-cell、84-request 配对为 normal `72→74`、emergency
+> `12→10`、failed/unresolved `0/0`、安全 `0`；mean wait `96.3711999828819→94.8296761036019 s`，
+> p95 `329.005735076254→349.561162932274 s`，max `503.62641472566→492.246915376754 s`，
+> low-SOC wait `119.713456075581→110.00386056458 s`，reward `1623.02810599464→1637.18852268814`。
+> checkpoint SHA256 为 `fa0e4218893f51934772e9629e507b86d51024d9f7b4664e6831e31ac135c289`。
+> 主审判定为开发 candidate：单次 6-cell 有收益与尾部 tradeoff，不称稳定修复；已有 6-cell 已被
+> critic warmup 使用，`validation` split 名称为历史保留，本轮不作独立验证。包装修复要求为
+> `write_text(str(child.pid))` 与 `str(returncode)` 不带换行，并在启动前完成本地与远端 compile 预检。
 > 输出根拟为 `/home/user/training_outputs/terminal/p3_task_neutral_critic_warmup_20260928`。
 > 固定 `3fe7...d4ab` actor，重放已有 neutral baseline 的 `6` 个 tapes 收集 world/reward；
 > critic target 使用完整终态 MC、`gamma=.99`，不使用 GAE bootstrap。只优化
@@ -88,8 +115,9 @@
 > `874501`、`gradclip=1`；actor、proposal、temperature 逐位冻结。拟合结果只说明数据内误差。
 > 通过冻结、finite、checkpoint 检查后，主审才可启动一次与旧 pilot 相同的 `3` episodes PPO
 > 和 `6`-cell evaluation，用于验证 warmup 效果；不改变 reward、gamma、lambda、安全或
-> task-neutral 配置。16-rollout sampling 评估仍待代码完成；不宣称 root cause 已证。全局
-> formal/heldout 仍为 `false`。
+> task-neutral 配置。下一项仅批准同两个 env × 四个 policy seeds 的 `8` 个新 after rollouts，并
+> 复用既有 `8` 个 before rollouts；新 repeats ROOT 待主审确定，须先完成实现、测试和 check-only，
+> 不自动启动。sampling 结果与 pilot 均不宣称 root cause 已证。全局 formal/heldout 仍为 `false`。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。
