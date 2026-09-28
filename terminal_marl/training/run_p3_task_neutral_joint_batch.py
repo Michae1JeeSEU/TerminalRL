@@ -129,11 +129,39 @@ def _stats(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def _compact_gae(steps: Sequence[StudentStepV42]) -> dict[str, Any]:
+def _credit_update_kwargs(*, full_episode_credit: bool = False) -> dict[str, Any]:
+    """Return per-run PPO kwargs without mutating the pilot defaults."""
+
+    value = dict(pilot.UPDATE_KWARGS)
+    if full_episode_credit:
+        value.update({"gamma": 1.0, "gae_lambda": 1.0})
+    return value
+
+
+def _full_episode_mc_returns(steps: Sequence[StudentStepV42]) -> np.ndarray:
+    """Compute undiscounted, non-bootstrap returns independently per episode."""
+
+    returns = np.zeros(len(steps), dtype=np.float32)
+    running = 0.0
+    for index in range(len(steps) - 1, -1, -1):
+        row = steps[index]
+        if row.episode_end:
+            running = float(row.reward)
+        else:
+            running = float(row.reward) + running
+        returns[index] = running
+    return returns
+
+
+def _compact_gae(
+    steps: Sequence[StudentStepV42],
+    update_kwargs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     diagnostic = pilot._gae_diagnostics(
         steps,
-        gamma=float(pilot.UPDATE_KWARGS["gamma"]),
-        gae_lambda=float(pilot.UPDATE_KWARGS["gae_lambda"]),
+        gamma=float(kwargs["gamma"]),
+        gae_lambda=float(kwargs["gae_lambda"]),
     )
     return {
         "gamma": diagnostic["gamma"],
@@ -188,13 +216,24 @@ def _training_stop_reason(record: Mapping[str, Any], steps: Sequence[StudentStep
     return None
 
 
-def _training_cell_record(record: Mapping[str, Any], steps: Sequence[StudentStepV42], cell: Mapping[str, Any]) -> dict[str, Any]:
+def _training_cell_record(
+    record: Mapping[str, Any], steps: Sequence[StudentStepV42], cell: Mapping[str, Any],
+    update_kwargs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     value = dict(record)
     critic_mc = pilot._critic_discounted_mc_error(
-        steps, gamma=float(pilot.UPDATE_KWARGS["gamma"]),
+        steps, gamma=float(kwargs["gamma"]),
     )
     value.update({
         "cell": dict(cell),
+        "credit_method": (
+            "full_episode_mc"
+            if float(kwargs["gamma"]) == 1.0 and float(kwargs["gae_lambda"]) == 1.0
+            else "gae_bootstrap"
+        ),
+        "credit_gamma": float(kwargs["gamma"]),
+        "credit_gae_lambda": float(kwargs["gae_lambda"]),
         "sampling": {
             "deterministic": False,
             "native_stochastic_behavior": bool(steps) and all(row.stochastic_behavior for row in steps),
@@ -204,7 +243,7 @@ def _training_cell_record(record: Mapping[str, Any], steps: Sequence[StudentStep
         "update_attempted": False,
         "training_or_update_called": False,
         "pre_batch": {
-            "gae": _compact_gae(steps),
+            "gae": _compact_gae(steps, kwargs),
             "critic_mc": critic_mc,
             "critic_discounted_mc_error": critic_mc,
         },
@@ -293,12 +332,19 @@ def _progress(output: Path, *, status: str, phase: str, training_processed: int 
     _write_json(output / "progress.json", value)
 
 
-def _base_report(output: Path, *, check_only: bool) -> dict[str, Any]:
+def _base_report(
+    output: Path, *, check_only: bool, full_episode_credit: bool = False,
+    update_kwargs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     return {
         "stage": STAGE,
         "status": "STARTING",
         "check_only": bool(check_only),
         "repair_method": REPAIR_METHOD,
+        "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
+        "full_episode_credit": bool(full_episode_credit),
+        "credit_update_kwargs": dict(kwargs),
         "training_rollouts": 0,
         "ppo_updates": 0,
         "evaluation_rollouts": 0,
@@ -331,7 +377,12 @@ def _preflight(neutral_configs: Mapping[str, Any]) -> tuple[Path, Any, dict[str,
     }, {"source_q_digest": source_q_digest}
 
 
-def _binding_report(binding: Mapping[str, Any], warmup: Mapping[str, Any]) -> dict[str, Any]:
+def _binding_report(
+    binding: Mapping[str, Any], warmup: Mapping[str, Any],
+    update_kwargs: Mapping[str, Any] | None = None,
+    *, full_episode_credit: bool = False,
+) -> dict[str, Any]:
+    kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     value = dict(binding)
     value.update({
         "candidate_checkpoint_sha256_expected": EXPECTED_CANDIDATE_SHA256,
@@ -340,7 +391,11 @@ def _binding_report(binding: Mapping[str, Any], warmup: Mapping[str, Any]) -> di
         "training_cells": [dict(cell) for cell in TRAINING_CELLS],
         "evaluation_cells": [dict(cell) for cell in EVALUATION_CELLS],
         "evaluation_requests_per_arm": EXPECTED_EVALUATION_REQUESTS,
-        "update_budget": dict(pilot.UPDATE_KWARGS),
+        "update_budget": dict(kwargs),
+        "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
+        "full_episode_credit": bool(full_episode_credit),
+        "credit_gamma": float(kwargs["gamma"]),
+        "credit_gae_lambda": float(kwargs["gae_lambda"]),
         "permutation_seed": PERMUTATION_SEED,
         "policy_profile": "dense24 neutral task-priority config",
     })
@@ -349,7 +404,9 @@ def _binding_report(binding: Mapping[str, Any], warmup: Mapping[str, Any]) -> di
 
 def _collect_training(
     *, output: Path, policy: Any, checkpoint: Path, config: Any,
+    update_kwargs: Mapping[str, Any] | None = None,
 ) -> tuple[list[StudentStepV42], list[dict[str, Any]], dict[str, Any], str | None]:
+    kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     all_steps: list[StudentStepV42] = []
     records: list[dict[str, Any]] = []
     source_digest = pilot._model_digest(policy)
@@ -369,7 +426,10 @@ def _collect_training(
         record = pilot._record_annotations(dict(raw_record), config)
         reason = _training_stop_reason(record, steps)
         if reason is None:
-            record = _training_cell_record(record, steps, cell)
+            if update_kwargs is None:
+                record = _training_cell_record(record, steps, cell)
+            else:
+                record = _training_cell_record(record, steps, cell, kwargs)
             all_steps.extend(steps)
         else:
             record.update({"cell": dict(cell), "update_attempted": False,
@@ -400,9 +460,102 @@ def _collect_training(
     }, None
 
 
+def _reuse_before_records(
+    root: Path, *, output: Path | None, neutral_configs: Mapping[str, Any],
+    evaluation_kind: str,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Validate and copy the six fixed before records without runtime calls."""
+
+    records: list[dict[str, Any]] = []
+    source_paths: list[str] = []
+    seen: set[tuple[int, str, int]] = set()
+    for cell in EVALUATION_CELLS:
+        scenario = str(cell["scenario"])
+        seed = int(cell["seed"])
+        policy_seed = int(cell["policy_seed"])
+        key = (seed, scenario, policy_seed)
+        _require(key not in seen, f"duplicate reused before identity: {key}")
+        seen.add(key)
+        source = neutral_eval._synced_path(root / f"{scenario}_{seed}.json")
+        _require(source.is_file(), f"reused before record missing: {source}")
+        record = neutral_eval._read_json(source)
+        _require(record.get("arm") == "before", f"reused before arm mismatch: {source}")
+        _require(str(record.get("scenario")) == scenario,
+                 f"reused before scenario mismatch: {source}")
+        _require(int(record.get("seed")) == seed,
+                 f"reused before environment seed mismatch: {source}")
+        _require(int(record.get("policy_seed")) == policy_seed,
+                 f"reused before policy seed mismatch: {source}")
+        cell_metadata = record.get("cell")
+        if isinstance(cell_metadata, Mapping):
+            _require(
+                str(cell_metadata.get("scenario")) == scenario
+                and int(cell_metadata.get("seed")) == seed
+                and int(cell_metadata.get("policy_seed")) == policy_seed,
+                f"reused before cell identity mismatch: {source}",
+            )
+        expected_requests = int(neutral_eval.EXPECTED_REQUESTS[scenario])
+        _require(int(record.get("requests", 0) or 0) == expected_requests,
+                 f"reused before request count mismatch: {source}")
+        checkpoint_sha = (
+            record.get("checkpoint_sha256")
+            or record.get("checkpoint_sha256_expected")
+            or record.get("candidate_checkpoint_sha256")
+        )
+        _require(checkpoint_sha == EXPECTED_CANDIDATE_SHA256,
+                 f"reused before checkpoint SHA mismatch: {source}")
+        _require(record.get("status") == "completed" and record.get("lifecycle_valid") is True,
+                 f"reused before status/lifecycle incomplete: {source}")
+        _require(record.get("technical_ok") is True and not record.get("error"),
+                 f"reused before technical fields incomplete: {source}")
+        _require(record.get("weights_unchanged") is True
+                 and record.get("model_unchanged", True) is True,
+                 f"reused before model state is not frozen: {source}")
+        _require(record.get("training_or_update_called") is False
+                 and record.get("teacher_called") is False,
+                 f"reused before update/Teacher state mismatch: {source}")
+        _require(record.get("task_priority_enabled") is False
+                 and float(record.get("low_level_priority_time_weight", 1.0)) == 0.0,
+                 f"reused before task-neutral flags mismatch: {source}")
+        config = neutral_configs[scenario]
+        _require(record.get("config") == neutral_eval._config_snapshot(config),
+                 f"reused before config mismatch: {source}")
+        metrics = neutral_eval._record_metrics(record)
+        _require(metrics.get("technical_ok") is True and not bool(metrics.get("safety_nonzero")),
+                 f"reused before safety/technical metrics mismatch: {source}")
+        _require(neutral_eval._record_fatal_reason(record, smoke=False) is None,
+                 f"reused before fatal record state: {source}")
+        summary = record.get("summary")
+        if isinstance(summary, Mapping):
+            _require(int(summary.get("seed")) == seed,
+                     f"reused before summary seed mismatch: {source}")
+            _require(int(summary.get("policy_seed")) == policy_seed,
+                     f"reused before summary policy seed mismatch: {source}")
+        destination = (
+            output / "evaluation" / "records" / "before" / f"{scenario}_{seed}.json"
+            if output is not None else source
+        )
+        copied = dict(record)
+        copied.update({
+            "arm": "before",
+            "cell": dict(cell),
+            "evaluation_kind": evaluation_kind,
+            "record_path": str(destination),
+            "source_record_path": str(source),
+            "source_provenance": {"kind": "reused_before_record", "source_path": str(source)},
+        })
+        if output is not None:
+            neutral_eval._write_json(destination, copied)
+        records.append(copied)
+        source_paths.append(str(source))
+    _require(len(records) == len(EVALUATION_CELLS) and len(seen) == len(EVALUATION_CELLS),
+             "reuse root must contain exactly six before records")
+    return records, source_paths
+
+
 def _evaluate_arm(
     *, output: Path, arm: str, checkpoint: Path, neutral_configs: Mapping[str, Any],
-    progress_offset: int = 0,
+    progress_offset: int = 0, evaluation_kind: str = "new_physical_scenes",
 ) -> tuple[list[dict[str, Any]], str | None]:
     records: list[dict[str, Any]] = []
     for index, cell in enumerate(EVALUATION_CELLS, start=1):
@@ -424,7 +577,7 @@ def _evaluate_arm(
             smoke=False,
         )
         record = pilot._record_annotations(dict(record), config)
-        record.update({"arm": arm, "cell": dict(cell), "evaluation_kind": "new_physical_scenes"})
+        record.update({"arm": arm, "cell": dict(cell), "evaluation_kind": evaluation_kind})
         path = output / "evaluation" / "records" / arm / f"{cell['scenario']}_{cell['seed']}.json"
         record["record_path"] = str(path)
         _write_json(path, record)
@@ -438,13 +591,29 @@ def _evaluate_arm(
     return records, None
 
 
-def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
+def run(
+    *, output_dir: str | Path, check_only: bool = False,
+    full_episode_credit: bool = False,
+    reuse_before_root: str | Path | None = None,
+) -> dict[str, Any]:
     output = Path(output_dir)
+    full_episode_credit = bool(full_episode_credit)
+    reuse_root = Path(reuse_before_root) if reuse_before_root is not None else None
+    update_kwargs = _credit_update_kwargs(full_episode_credit=full_episode_credit)
+    evaluation_kind = (
+        "development_existing_scenes" if full_episode_credit else "new_physical_scenes"
+    )
+    reuse_preflight_paths: list[str] = []
     _require(not output.exists(), f"joint-batch output must be fresh: {output}")
     output.mkdir(parents=True, exist_ok=False)
     _progress(output, status="STARTING", phase="preflight", check_only=check_only)
-    report = _base_report(output, check_only=check_only)
+    report = _base_report(
+        output, check_only=check_only, full_episode_credit=full_episode_credit,
+        update_kwargs=update_kwargs,
+    )
     try:
+        _require(full_episode_credit or reuse_root is None,
+                 "--reuse-before-root requires --full-episode-credit")
         configs, neutral_configs, _runtime_protocol = neutral_eval._build_neutral_inputs()
         del _runtime_protocol
         _require(all(
@@ -453,7 +622,10 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             for config in neutral_configs.values()
         ), "neutral task-priority config binding is incomplete")
         resolved, policy, binding, source_policy, warmup, source = _preflight(neutral_configs)
-        binding = _binding_report(binding, warmup)
+        binding = _binding_report(
+            binding, warmup, update_kwargs,
+            full_episode_credit=full_episode_credit,
+        )
         binding["source_q_model_digest"] = source["source_q_digest"]
         binding["config_snapshots"] = {
             scenario: {
@@ -478,7 +650,34 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "evaluation_horizon_steps_by_cell": evaluation_horizons,
             "evaluation_total_horizon_steps": int(sum(evaluation_horizons.values()) * 2),
         }
+        paired_evaluation_horizon_steps = int(sum(evaluation_horizons.values()) * 2)
+        reused_before_expected = len(EVALUATION_CELLS) if reuse_root is not None else 0
+        new_eval_expected = (
+            len(EVALUATION_CELLS)
+            if reuse_root is not None else len(EVALUATION_CELLS) * 2
+        )
+        binding["simulation_budgets"].update({
+            "paired_evaluation_total_horizon_steps": paired_evaluation_horizon_steps,
+            "reused_before_rollouts_expected": reused_before_expected,
+            "new_eval_rollouts_expected": new_eval_expected,
+            "new_evaluation_horizon_steps": int(
+                sum(evaluation_horizons.values())
+                * (1 if reuse_root is not None else 2)
+            ),
+        })
+        binding.update({
+            "reused_before_rollouts_expected": reused_before_expected,
+            "new_eval_rollouts_expected": new_eval_expected,
+            "new_evaluation_horizon_steps": binding["simulation_budgets"]["new_evaluation_horizon_steps"],
+        })
         report["binding"] = binding
+        if full_episode_credit:
+            report["scope"] = {
+                "training": "development_existing_scenes",
+                "evaluation": "development_existing_scenes",
+                "fresh_evaluation": False,
+            }
+        report["checks"]["reuse_before_requested"] = reuse_root is not None
         report["checks"].update({
             "candidate_checkpoint_sha256": binding["candidate_checkpoint_sha256_actual"],
             "warmup_checkpoint_sha256": warmup["warmup_sha256"],
@@ -488,7 +687,17 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "evaluation_rollouts_expected": len(EVALUATION_CELLS) * 2,
             "evaluation_requests_per_arm": EXPECTED_EVALUATION_REQUESTS,
             "check_only_runtime_calls": 0 if check_only else None,
+            "reused_before_rollouts_expected": reused_before_expected,
+            "new_eval_rollouts_expected": new_eval_expected,
         })
+        if reuse_root is not None:
+            _require(reuse_root.exists(), f"reuse-before root missing: {reuse_root}")
+            _, reuse_preflight_paths = _reuse_before_records(
+                reuse_root, output=None, neutral_configs=neutral_configs,
+                evaluation_kind=evaluation_kind,
+            )
+            report["checks"]["reuse_before_records_validated"] = len(reuse_preflight_paths) == len(EVALUATION_CELLS)
+            report["checks"]["reuse_before_source_paths"] = list(reuse_preflight_paths)
     except (KeyboardInterrupt, SystemExit):
         raise
     except BaseException as exc:
@@ -502,7 +711,10 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
         report.update({"status": "CHECK_ONLY_OK", "full_evaluation": False,
                        "training_rollouts": 0, "ppo_updates": 0, "evaluation_rollouts": 0})
         report["checks"].update({"runtime_rollout_calls": 0, "update_calls": 0,
-                                  "env_steps": 0, "profiles_and_budgets_checked": True})
+                                  "env_steps": 0, "profiles_and_budgets_checked": True,
+                                  "credit_kwargs_explicit": True,
+                                  "reused_before_rollouts": 0,
+                                  "new_eval_rollouts": 0})
         _write_json(output / "report.json", report)
         _progress(output, status="CHECK_ONLY_OK", phase="preflight", check_only=True)
         return report
@@ -514,6 +726,7 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
         report["checks"]["trainable_scope"] = scope
         all_steps, training_records, collection, stop_reason = _collect_training(
             output=output, policy=policy, checkpoint=Path(warmup["warmup_path"]), config=dense,
+            update_kwargs=update_kwargs if full_episode_credit else None,
         )
         report["training"] = {
             "records": training_records,
@@ -532,8 +745,9 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
         observations, weights = pilot.actor_world_observation_weights(all_steps)
         policy.gate_reference = pilot._build_gate_reference(source_policy, observations, weights)
         reference_digest = pilot._gate_reference_digest(policy.gate_reference)
-        advantages, returns = team_gae(all_steps, float(pilot.UPDATE_KWARGS["gamma"]),
-                                       float(pilot.UPDATE_KWARGS["gae_lambda"]))
+        advantages, returns = team_gae(
+            all_steps, float(update_kwargs["gamma"]), float(update_kwargs["gae_lambda"]),
+        )
         pooled = {
             "steps": len(all_steps),
             "actor_steps": int(sum(bool(row.actor_mask.any()) for row in all_steps)),
@@ -544,6 +758,19 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "weight_sum": float(weights.sum()),
             "world_count": int(sum(bool(row.actor_mask.any()) for row in all_steps)),
         }
+        report["training"]["pooled"] = pooled
+        if full_episode_credit:
+            expected_mc = _full_episode_mc_returns(all_steps)
+            max_abs_error = float(np.max(np.abs(np.asarray(returns, dtype=np.float32) - expected_mc)))
+            pooled.update({
+                "full_episode_mc_returns": _stats(expected_mc),
+                "full_episode_mc_return_max_abs_error": max_abs_error,
+                "full_episode_mc_return_match": bool(
+                    np.allclose(returns, expected_mc, rtol=1e-5, atol=1e-4)
+                ),
+            })
+            _require(pooled["full_episode_mc_return_match"],
+                     "full episode MC returns do not match team GAE returns")
         p_source = pilot._actor_gate_release_mean(source_policy, all_steps)
         p_before = pilot._actor_gate_release_mean(policy, all_steps)
         report["ppo_updates"] = 1
@@ -556,7 +783,7 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
                   training_processed=len(TRAINING_CELLS), update_calls=1)
         np.random.seed(PERMUTATION_SEED)
         try:
-            stats = policy.update(list(all_steps), **pilot.UPDATE_KWARGS)
+            stats = policy.update(list(all_steps), **update_kwargs)
         except (KeyboardInterrupt, SystemExit):
             raise
         except BaseException as exc:
@@ -593,6 +820,9 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "frozen_bitwise": freeze,
             "permutation_seed": PERMUTATION_SEED,
             "update_stop_reason": update_reason,
+            "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
+            "credit_gamma": float(update_kwargs["gamma"]),
+            "credit_gae_lambda": float(update_kwargs["gae_lambda"]),
         })
         if update_reason is not None:
             raise JointBatchError(update_reason)
@@ -604,13 +834,16 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "PPO_ALLOWED": False,
             "development_pilot_authorized": True,
             "repair_method": REPAIR_METHOD,
+            "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
+            "credit_gamma": float(update_kwargs["gamma"]),
+            "credit_gae_lambda": float(update_kwargs["gae_lambda"]),
             "training_budget": {
                 "updates": 1,
                 "epochs": pilot.UPDATE_KWARGS["epochs"],
                 "minibatch_size": pilot.UPDATE_KWARGS["minibatch_size"],
                 "learning_rate": pilot.LEARNING_RATE,
                 "permutation_seed": PERMUTATION_SEED,
-                "ppo_update_kwargs": dict(pilot.UPDATE_KWARGS),
+                "ppo_update_kwargs": dict(update_kwargs),
                 "training_cells": [dict(cell) for cell in TRAINING_CELLS],
             },
         }
@@ -621,20 +854,32 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
         report["ppo_updates"] = 1
         _progress(output, status="RUNNING", phase="evaluation", training_processed=len(TRAINING_CELLS), update_calls=1)
 
-        before_records, stop_reason = _evaluate_arm(
-            output=output, arm="before", checkpoint=resolved, neutral_configs=neutral_configs,
-            progress_offset=0,
-        )
+        reused_before_paths: list[str] = []
+        if reuse_root is not None:
+            before_records, reused_before_paths = _reuse_before_records(
+                reuse_root, output=output, neutral_configs=neutral_configs,
+                evaluation_kind=evaluation_kind,
+            )
+            stop_reason = None
+            _progress(output, status="RUNNING", phase="evaluation_before_reused",
+                      training_processed=len(TRAINING_CELLS),
+                      evaluation_processed=len(before_records), update_calls=1)
+        else:
+            before_records, stop_reason = _evaluate_arm(
+                output=output, arm="before", checkpoint=resolved, neutral_configs=neutral_configs,
+                progress_offset=0, evaluation_kind=evaluation_kind,
+            )
         if stop_reason is None:
             after_records, stop_reason = _evaluate_arm(
                 output=output, arm="after", checkpoint=joint_path, neutral_configs=neutral_configs,
-                progress_offset=len(before_records),
+                progress_offset=len(before_records), evaluation_kind=evaluation_kind,
             )
         else:
             after_records = []
         report["evaluation_rollouts"] = len(before_records) + len(after_records)
         report["evaluation"] = {
-            "kind": "new_physical_scenes",
+            "kind": evaluation_kind,
+            "fresh_evaluation": not full_episode_credit,
             "before_checkpoint_sha256": EXPECTED_CANDIDATE_SHA256,
             "after_checkpoint_sha256": roundtrip["checkpoint_sha256"],
             "before": neutral_eval._aggregate_arm(before_records),
@@ -644,6 +889,9 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "paired_cells": _pair_evaluation_records(before_records, after_records) if stop_reason is None else [],
             "cells_expected": len(EVALUATION_CELLS),
             "requests_per_arm_expected": EXPECTED_EVALUATION_REQUESTS,
+            "reused_before_rollouts": len(before_records) if reuse_root is not None else 0,
+            "new_eval_rollouts": len(after_records) + (len(before_records) if reuse_root is None else 0),
+            "reused_before_source_paths": reused_before_paths,
         }
         if stop_reason is not None:
             raise JointBatchError(stop_reason)
@@ -655,6 +903,9 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
             "source_q_fixed": q_after == source_digest,
             "teacher_called": False,
             "heldout_consumed": False,
+            "credit_kwargs_explicit": True,
+            "reused_before_rollouts": len(before_records) if reuse_root is not None else 0,
+            "new_eval_rollouts": len(after_records) + (len(before_records) if reuse_root is None else 0),
         })
     except (KeyboardInterrupt, SystemExit):
         raise
@@ -675,8 +926,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--full-episode-credit", action="store_true")
+    parser.add_argument("--reuse-before-root", type=Path)
     args = parser.parse_args(argv)
-    report = run(output_dir=args.output_dir, check_only=bool(args.check_only))
+    report = run(
+        output_dir=args.output_dir,
+        check_only=bool(args.check_only),
+        full_episode_credit=bool(args.full_episode_credit),
+        reuse_before_root=args.reuse_before_root,
+    )
     print(json.dumps(_jsonable(report), sort_keys=True))
     return 0 if report.get("status") in {"CHECK_ONLY_OK", "COMPLETED"} else 1
 
