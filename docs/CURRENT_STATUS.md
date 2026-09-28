@@ -47,7 +47,39 @@
 > 不改写。协议见
 > [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
 
-> **上一阶段 Scoped task-neutral PPO pilot 终态（历史，2026-09-28）：** pilot report 为 `COMPLETED`、
+> **上一阶段 joint-batch full 终态（2026-09-28）：** 代码提交 `c38071f` 对应的服务器
+> check-only 已完成，`status=CHECK_ONLY_OK`、`exit=0`；相关 tests 为 `28`、joint-batch tests
+> 为 `6`；`training_rollouts=0`、`ppo_updates=0`、`evaluation_rollouts=0`。training 的六个 dense cells 各为 `1800` horizon，
+> 合计 `10800`；固定 evaluation 每臂为四个 dense cells 各 `1800`、flow6 `1210`、flow12
+> `1570`，合计每臂 `9980`、两臂 `19960`。主审已核对 report，core `exit=0`，已批准唯一
+> full。full PID 为 `1132703`；cmdline 模块 `run_p3_task_neutral_joint_batch` 与 cwd 已核对。
+> full report 为 `COMPLETED`、`technical_ok=true`、`full.exit=0`；六条 training rollouts 实际合计
+> `4635` steps，`1` 次 PPO update，`290` accepted、`0` rejected，KL mean/final/max 为
+> `.00053613/.00039126/.00407790`，q、freeze、roundtrip 检查正常。`joint_batch.pt` SHA256 为
+> `C961512CD5EDD5A4AE191A8F29D9D799AB971B66C8F44E53C333889F10D6EA0E`。配对 evaluation 共
+> `12` rollouts、两臂各 `114` requests，安全计数为 `0`；before `98/16/0`、after `97/17/0`
+> （normal/emergency/failed），mean/p95/max wait `107.7779/273.7358/361.1838→113.1974/306.1524/414.6886 s`，
+> low-SOC wait `98.6126→91.7405`，reward `2202.5621→2178.6727`，normal deltas
+> `[1,0,0,-2,0,0]`。heartbeat `ppo` 已删除；该阶段随后进行了只读核对奖励/折扣时间跨度与学习信号；
+> 后续当前授权见
+> [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)。
+> 协议见
+> [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)。
+
+> **当前授权：full-episode credit repair protocol（预注册，未启动，2026-09-28）：** 输出根为
+> `/home/user/training_outputs/terminal/p3_task_neutral_full_episode_credit_20260928`。恢复
+> `3fe7` actor 与 `b136` critic，作为同一 task-neutral baseline control，不从 `c961` 继续；
+> 复用 joint-batch 六个已消费 development training cells，完整 terminal、收集期间不更新，
+> `gamma=1`、`lambda=1`，return 为 episode 实际后缀 reward 和，不跨 episode bootstrap。
+> 其余 lr/epochs/minibatch/clip/value/entropy/target-KL、q 与 KL reference 保持原值，只训练
+> gate_adapter+critic，执行一次 joint update。训练上限 `144` requests/`10800` steps；配对
+> evaluation 复用旧 before 六条 records，after 六条新 rollout、最大 `9980` steps，配对共 `12`
+> 且新环境 evaluation 仅六条，全部为已消费 development 证据。先定向 tests 和 check-only，
+> 主审再放行唯一 full；当前未启动。reward、安全、proposal、task-neutral、heldout `829xxx` 和
+> `PPO_ALLOWED=false` 边界不变。时间跨度依据与完整边界见
+> [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)。
+
+> **历史阶段：Scoped task-neutral PPO pilot 终态（2026-09-28）：** pilot report 为 `COMPLETED`、
 > `technical_ok=true`，服务器 `full.exit=0`；3 次 `update()` 调用记录 `148` accepted attempts
 > （`40/62/46`）、`0` reject，roundtrip/profile/freeze/固定 `q` 均为 `true`，安全计数为 `0`。
 > 结果见 [pilot result](evidence/v4_2/p3_task_neutral_ppo_pilot_result_20260928.md)，协议边界见
@@ -58,7 +90,7 @@
 > 活动的停止条件；`PPO_ALLOWED=false`、formal/heldout/P4/static flags 保持 false，heartbeat
 > `task-neutral-ppo-pilot` 已删除。
 
-> **当前活动：task-neutral update diagnosis replay 终态（2026-09-28）：** 服务器 `b23966f`
+> **历史阶段：task-neutral update diagnosis replay 终态（2026-09-28）：** 服务器 `b23966f`
 > 对 `p3_task_neutral_ppo_pilot_20260928/full/training/episode_03` 既有 tape 完成精确 replay：
 > 同一 task-neutral `dense24/873103`，`before=episode_02/pilot_after_update.pt`、
 > `after=full/pilot.pt`；`729/729` exact、`24` requests、`621` actor steps、`2508` actor rows，
@@ -69,7 +101,7 @@
 > formal/global flags 不自动改变。输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_update_diagnosis_20260928`。
 
-> **当前先决采样诊断终态（2026-09-28）：** 代码提交为 `12f7873`，定向测试 `37` 项；
+> **历史阶段：先决采样诊断终态（2026-09-28）：** 代码提交为 `12f7873`，定向测试 `37` 项；
 > check-only 为 `CHECK_ONLY_OK`、`16`-matrix、`0` records，full report 已完成。该 sampling
 > repeats 对两臂各 `192` requests（总计 `384`）：旧 PPO 重复评估 `before` 为 `140 normal / 51 emergency /
 > 1 failed`，`after` 为 `136 / 56 / 0`，安全计数为 `0`。输出根为
@@ -88,7 +120,7 @@
 > 继续修复，但不能归因仅一次采样，也不是独立环境泛化或显著性证明；本轮安全与 heldout 边界不变。
 > 结果见 [critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
 
-> **主审选择的下一项开发修复（warmup 终态，2026-09-28）：** 用户继续授权仅此 task-neutral
+> **历史阶段：critic warmup 终态（2026-09-28）：** 用户继续授权仅此 task-neutral
 > 开发修复；代码提交为 `92baea9`，定向测试 `37` 项、check-only 通过，已从 `6` 个既有 tapes
 > 收集 `4775` steps。第一次启动 wrapper 返回 launcher `262040` 后立即消失，未创建
 > warmup/log/pid/exit；第二次尝试在外层 compile (`launcher_code`) 暴露 `SyntaxError: unterminated
@@ -125,7 +157,7 @@
 > diff 当作独立样本。主审判定采样开发总体有改善且部分 seed 退化、p95 上升，支持继续新物理场景
 > 验证，但不称已稳定解决。全局 formal/heldout 仍为 `false`。
 
-> **物理场景验证终态（候选路线关闭，2026-09-28）：** 原计划固定 candidate `fa0e`，使用
+> **历史阶段：物理场景验证终态（候选路线关闭，2026-09-28）：** 原计划固定 candidate `fa0e`，使用
 > dense24 env seeds `874601..874604`、policy seeds `874701..874704`，两臂 `3fe7/fa0e` 共
 > `8` rollouts、每臂 `96` requests。fresh runner 代码提交为 `3470e5a`，定向测试 `7` 项；
 > fresh check-only 为 `CHECK_ONLY_OK exit0`，`8`-matrix、每臂 `96` requests、`0` records、
@@ -139,9 +171,10 @@
 > 'returncode'`，wrapper 终态未知，不写 `exit0`，不重跑。结果见
 > [critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
 > 主审拒绝 `fa0e`，保留 `3fe7` 作为 actor 起点；warmup 数据内改善不足以解决泛化退化，不称
-> root cause 已证。四个新 env seeds 已评估并消费，不再称 untouched。当前下一步仅为只读检查
-> 多条同策略完整 episode 拼接后的统一 PPO update 边界，尚未授权训练；全局 formal/heldout/
-> `PPO_ALLOWED` 不变。
+> root cause 已证。四个新 env seeds 已评估并消费，不再称 untouched。该历史阶段当时的下一步仅为
+> 只读检查多条同策略完整 episode 拼接后的统一 PPO update 边界，且尚未授权训练；现行后续授权
+> 与边界由 [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)
+> 覆盖。全局 formal/heldout/`PPO_ALLOWED` 不变。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。
@@ -1022,14 +1055,14 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
    作为当前 check-only 事实；
-2. 本轮有界 task-neutral PPO pilot 已完成但 checkpoint 不保留；继续以 `3fe7...d4ab` actor
-   作为开发起点，`fa0e` 已拒绝，`03c0` 保留为对照。下一步仅按 [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)
-   做一次有界跨场景 batch fit：使用 `b136` critic 价值初始化和六次原生 on-policy 随机训练 rollout，
-   env-policy 对为 `(873103,873103)`、`(873106,873106)`、`(874601,874701)`、
-   `(874602,874702)`、`(874603,874703)`、`(874604,874704)`，旧 tapes 仅作参照、不作为 update
-   输入；episode 边界不跨步 bootstrap，之后只做一次 joint `PPO.update`。代码、定向测试和 check-only
-   通过后才由主审启动；当前无任何新 run。该 fit 不是 root-cause 证明或单变量严格消融，不增加
-   任务优先级、样本或 reward/gamma/lambda 改动；后续新物理 evaluation 按协议执行；
+2. 本轮有界 task-neutral joint-batch protocol 已完成：继续以 `3fe7...d4ab` actor 为起点，
+   `fa0e` 与新 `c961` checkpoint 均不保留，`03c0` 保留为对照；完整终态与失败证据见
+   [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)。当前
+   后续仅按 [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)
+   进行：先定向 tests 与 check-only，当前未启动；恢复 `3fe7` actor + `b136` critic，`gamma=1`、
+   `lambda=1` 的完整 episode return 对齐，一次 joint update，训练与配对 evaluation 预算按协议冻结。
+   该修复不证明 root cause，不增加任务优先级，不改变 reward、安全、proposal、task-neutral 语义；
+   `gamma=1`、`lambda=1` 仅按该协议固定，后续由主审决定；
 3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
    low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
    wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
