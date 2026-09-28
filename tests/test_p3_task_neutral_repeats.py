@@ -15,6 +15,8 @@ class _Config:
     task_priority_enabled: bool = True
     low_level_priority_time_weight: float = 1.0
     label: str = "dense24"
+    max_simulation_seconds: float = 1800.0
+    dt: float = 1.0
 
 
 def _configs():
@@ -111,6 +113,39 @@ def _write_reuse_root(tmp_path: Path, *, mutate: tuple[str, object] | None = Non
     return root
 
 
+def _write_joint_team_record_root(tmp_path: Path, *, mutate: tuple[str, object] | None = None) -> Path:
+    root = tmp_path / "joint_team_records"
+    neutral_config = neutral._config_snapshot(neutral._neutralize_config(_Config()))
+    for item in repeats.joint_team_matrix():
+        if not item["reused"]:
+            continue
+        record = _record(int(item["env_seed"]), int(item["policy_seed"]))
+        record.update({
+            "arm": str(item["arm"]),
+            "env_seed": int(item["env_seed"]),
+            "checkpoint_sha256": (
+                repeats.BEFORE_CHECKPOINT_SHA256
+                if item["arm"] == "before" else repeats.JOINT_TEAM_AFTER_CHECKPOINT_SHA256
+            ),
+            "config": neutral_config,
+            "task_priority_enabled": False,
+            "low_level_priority_time_weight": 0.0,
+            "technical_ok": True,
+            "model_unchanged": True,
+            "PPO_ALLOWED": False,
+        })
+        record["summary"].update({
+            "seed": int(item["env_seed"]),
+            "policy_seed": int(item["policy_seed"]),
+        })
+        if mutate and (str(item["arm"]), int(item["env_seed"])) == ("before", 875101):
+            record[mutate[0]] = mutate[1]
+        path = root / str(item["arm"]) / f"dense24_{item['env_seed']}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(record), encoding="utf-8")
+    return root
+
+
 def _patch_runtime(monkeypatch, tmp_path: Path, *, failure_at: int | None = None):
     before = tmp_path / "before.pt"
     after = tmp_path / "after.pt"
@@ -157,6 +192,19 @@ def _patch_runtime(monkeypatch, tmp_path: Path, *, failure_at: int | None = None
     return calls
 
 
+def _patch_joint_team_runtime(monkeypatch, tmp_path: Path, *, failure_at: int | None = None):
+    calls = _patch_runtime(monkeypatch, tmp_path, failure_at=failure_at)
+    joint_after = tmp_path / "joint_batch.pt"
+    joint_after.write_bytes(b"joint-after")
+    monkeypatch.setattr(repeats, "JOINT_TEAM_AFTER_CHECKPOINT", joint_after)
+    monkeypatch.setattr(repeats, "JOINT_TEAM_AFTER_CHECKPOINT_SHA256", "joint-after-sha")
+    monkeypatch.setattr(
+        repeats.pilot_eval, "_validate_pilot_payload",
+        lambda payload, config: {"phase_config_match": True},
+    )
+    return calls
+
+
 def test_repeat_matrix_has_two_arms_two_cells_and_four_policy_seeds():
     matrix = repeats.repeat_matrix()
     keys = {
@@ -168,6 +216,25 @@ def test_repeat_matrix_has_two_arms_two_cells_and_four_policy_seeds():
     assert {item["arm"] for item in matrix} == {"before", "after"}
     assert {item["env_seed"] for item in matrix} == {873103, 873106}
     assert {item["policy_seed"] for item in matrix} == set(repeats.POLICY_SEEDS)
+
+
+def test_joint_team_matrix_has_three_policy_seeds_per_four_environment_cells():
+    matrix = repeats.joint_team_matrix()
+    keys = {(item["arm"], item["env_seed"], item["policy_seed"]) for item in matrix}
+    assert len(matrix) == len(keys) == 24
+    assert {item["arm"] for item in matrix} == {"before", "after"}
+    assert {item["env_seed"] for item in matrix} == set(repeats.JOINT_TEAM_ENV_SEEDS)
+    assert all(
+        {item["policy_seed"] for item in matrix if item["env_seed"] == env_seed}
+        == set(repeats.JOINT_TEAM_POLICY_SEEDS[env_seed])
+        for env_seed in repeats.JOINT_TEAM_ENV_SEEDS
+    )
+    assert sum(bool(item["reused"]) for item in matrix) == 8
+    assert sum(not bool(item["reused"]) for item in matrix) == 16
+    assert all(
+        sum(1 for item in matrix if item["arm"] == arm and item["env_seed"] == env_seed) == 3
+        for arm in repeats.ARMS for env_seed in repeats.JOINT_TEAM_ENV_SEEDS
+    )
 
 
 def test_check_only_loads_both_weights_without_runtime_or_update(monkeypatch, tmp_path):
@@ -182,6 +249,93 @@ def test_check_only_loads_both_weights_without_runtime_or_update(monkeypatch, tm
     assert calls["updates"] == 0
     progress = json.loads((tmp_path / "check" / "progress.json").read_text(encoding="utf-8"))
     assert progress["full_evaluation"] is False
+
+
+def test_joint_team_check_only_validates_24_matrix_8_reuse_16_new_and_zero_runtime(monkeypatch, tmp_path):
+    calls = _patch_joint_team_runtime(monkeypatch, tmp_path)
+    record_root = _write_joint_team_record_root(tmp_path)
+    result = repeats.run(
+        output_dir=tmp_path / "joint_check", check_only=True,
+        joint_team_cohort=True, joint_team_record_root=record_root,
+    )
+    assert result["status"] == "CHECK_ONLY_OK"
+    assert result["records_expected"] == 24
+    assert result["records_processed"] == 0
+    assert result["planned_reused_records"] == 8
+    assert result["planned_new_rollouts"] == 16
+    assert result["binding"]["after_checkpoint_sha256"] == "joint-after-sha"
+    assert result["cohort"]["requests_per_arm"] == 288
+    assert result["cohort"]["horizon_steps_per_rollout"] == 1800
+    assert result["cohort"]["max_new_rollout_steps"] == 16 * repeats.JOINT_TEAM_HORIZON_STEPS
+    assert result["binding"]["horizon_steps_per_rollout"] == 1800
+    assert result["checks"]["matrix_unique"] is True
+    assert result["checks"]["reused_records_validated"] is True
+    assert result["checks"]["runtime_zero"] is True
+    assert result["checks"]["runtime_rollouts"] == 0
+    assert calls["runtime"] == 0
+    assert calls["updates"] == 0
+
+
+def test_joint_team_cohort_reuses_eight_records_and_runs_sixteen_new_rollouts(monkeypatch, tmp_path):
+    calls = _patch_joint_team_runtime(monkeypatch, tmp_path)
+    record_root = _write_joint_team_record_root(tmp_path)
+    result = repeats.run(
+        output_dir=tmp_path / "joint_full",
+        joint_team_cohort=True, joint_team_record_root=record_root,
+    )
+    assert result["status"] == "COMPLETED"
+    assert result["records_expected"] == result["records_processed"] == 24
+    assert result["records_reused"] == 8
+    assert result["new_rollouts"] == 16
+    assert result["arms"]["before"]["records"] == 12
+    assert result["arms"]["after"]["records"] == 12
+    assert result["arms"]["before"]["requests"] == 288
+    assert result["arms"]["after"]["requests"] == 288
+    assert result["new_only_arms"]["before"]["records"] == 8
+    assert result["new_only_arms"]["after"]["records"] == 8
+    assert len(result["paired_differences"]) == 12
+    assert len(result["new_only_paired_differences"]) == 8
+    assert result["new_only_records_processed"] == 16
+    assert calls["runtime"] == 16
+    assert calls["updates"] == 0
+    copied = list((tmp_path / "joint_full" / "records").glob("*/dense24_env*_policy*.json"))
+    reused_copies = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in copied
+        if "source_provenance" in json.loads(path.read_text(encoding="utf-8"))
+    ]
+    assert len(reused_copies) == 8
+    assert all(row["source_provenance"]["kind"] == "reused_joint_team_record" for row in reused_copies)
+
+
+@pytest.mark.parametrize("field,value", [("seed", 999999), ("checkpoint_sha256", "wrong-sha")])
+def test_joint_team_reuse_rejects_identity_or_checkpoint(monkeypatch, tmp_path, field, value):
+    calls = _patch_joint_team_runtime(monkeypatch, tmp_path)
+    record_root = _write_joint_team_record_root(tmp_path, mutate=(field, value))
+    result = repeats.run(
+        output_dir=tmp_path / f"joint_bad_{field}", check_only=True,
+        joint_team_cohort=True, joint_team_record_root=record_root,
+    )
+    assert result["status"] == "FAILED"
+    assert result["records_processed"] == 0
+    assert calls["runtime"] == 0
+    assert result["stop_reason"]
+
+
+def test_joint_team_cohort_rejects_legacy_after_or_reuse_arguments(tmp_path):
+    with pytest.raises(repeats.TaskNeutralRepeatsError, match="fixes the after checkpoint"):
+        repeats.run(
+            output_dir=tmp_path / "joint_custom_after",
+            joint_team_cohort=True,
+            after_checkpoint=tmp_path / "other.pt",
+            after_checkpoint_sha256="other-sha",
+        )
+    with pytest.raises(repeats.TaskNeutralRepeatsError, match="does not accept --reuse-before-root"):
+        repeats.run(
+            output_dir=tmp_path / "joint_legacy_reuse",
+            joint_team_cohort=True,
+            reuse_before_root=tmp_path / "old",
+        )
 
 
 def test_full_matrix_reloads_each_arm_seed_and_keeps_performance_failure(monkeypatch, tmp_path):
