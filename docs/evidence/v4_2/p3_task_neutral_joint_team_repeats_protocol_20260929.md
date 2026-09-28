@@ -1,6 +1,6 @@
 # P3 Task-neutral Joint-team Sampling Repeats Protocol
 
-日期：2026-09-29。状态：已预注册，尚未启动。本协议只登记一次固定模型的 sampling
+日期：2026-09-29。状态：唯一 full 已完成。本协议只登记一次固定模型的 sampling
 stability validation；先完成代码定向 tests 与 check-only，再由主审准入唯一 full。不自动
 放行 formal、heldout、P4 或全局 `PPO_ALLOWED`。
 
@@ -49,6 +49,17 @@ policy sampling：每臂共 `12` records、`288` requests，合计两臂 `24` re
 不进入 formal qualification，task-neutral、task priority、proposal、SafetyFilter 和
 `PPO_ALLOWED=false` 边界不变。
 
-先完成定向 tests 与 server check-only；主审通过后才运行唯一 full。当前尚未启动，不写 PID、
-exit 或性能结果。只有主审基于重复结果决定独立验证或继续修复；本协议不证明新物理泛化，也
-不预断稳定退化的根因。
+代码提交为 `8d67f578a32a858735712c926c98bf6b38fc0a0f`，定向 tests 为 `17`。server check-only
+为 `CHECK_ONLY_OK`、`exit=0`；验证 `24` unique records、`8` reuse records、`16` new rollouts，
+`runtime=0`，真实 horizon `1800`、new-rollout 总上限 `28800`，before=`3fe7`、after=`ac7`。
+唯一 full launcher PID 为 `2065459`，full child PID 为 `2065466`，cwd 为 `/home/user/projects/terminal`，
+cmdline 已核对包含 `--joint-team-cohort`。最终 `exit=0`、report 为 `COMPLETED`、`technical_ok=true`；
+两臂各 `288` requests：before `236 normal / 52 emergency / 0 failed`，after `230 / 58 / 0`，
+安全与 unresolved 均为 `0`；mean wait `131.8504766→135.6220302`，p95
+`315.1479841→327.7887054`，max `692.8147076→692.8147076`，low-SOC wait
+`115.4893036→125.5779790`，reward `5359.1727272→5276.9198028`。new-only 两臂各 `192`
+requests：before `156/36/0`，after `151/41/0`；mean `135.4809029→141.2362062`，p95
+`331.1184447→333.4887312`，low-SOC `113.5369283→127.2227828`，reward
+`3548.6529080→3475.6094504`。所有 freeze 与 safety/unresolved 检查通过，heartbeat `automation`
+已删除。主审拒绝 `ac7` 性能候选，但保留 joint-team 数学修正，不宣称退化已解决。
+只有主审基于重复结果决定独立验证或继续修复；本协议不证明新物理泛化，也不预断稳定退化的根因。
