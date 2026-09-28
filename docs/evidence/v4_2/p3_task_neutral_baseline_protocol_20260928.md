@@ -1,7 +1,7 @@
 # P3 Task-neutral Baseline Protocol
 
 状态：已注册；首轮 check-only 启动失败已保留，`check_only_v2` 为 `CHECK_ONLY_OK exit0`；
-smoke 已授权执行中，完整 full-cycle 评估尚未运行。
+smoke 已完成启动/输出链路核对，full-cycle paired baseline 为 `COMPLETED`。
 
 本协议冻结一轮低层 task-neutral course 的最小实现核对、配对 baseline 和完整周期评估边界。
 它不授权 formal training、heldout evaluation、gamma 调整或 PPO promotion；baseline 完成后由
@@ -98,9 +98,9 @@ python -m terminal_marl.training.evaluate_p3_task_neutral \
   --output-dir ROOT/smoke --smoke
 ```
 
-本协议更新时 smoke 已授权并执行中：source/candidate 两臂各为 `flow6`、`2` steps。首个 arrival
-为 `10 s`，因此该 smoke 仅用于启动/输出链路核对，不据此验证真实 actor 动作；88D 与 reward
-语义由单测覆盖。smoke 尚未形成终态报告。
+本协议更新时 smoke 已完成 source/candidate 两臂各 `flow6`、`2` steps 的启动/输出链路核对。首个
+arrival 为 `10 s`、actor actions 为 `0`，因此该 smoke 不用于验证真实 actor 动作；88D 与 reward
+语义由单测覆盖。
 
 ### 3.3 Full-cycle paired baseline
 
@@ -149,3 +149,15 @@ reward
 check-only、smoke、full 的实际 exit/status、输出路径、progress、report、records、hash、请求
 分母和 replay 结果必须写入对应 run 目录。失败或缺失产物只记录事实，不改阈值、不换 seed、不重跑、不把历史
 candidate_retained 或旧失败洗成当前 PASS。
+
+## 6. Full-cycle 终态指向
+
+主审已核对本地同步的 `full/report.json`：状态为 `COMPLETED`，`12/12` paired records 的
+`technical_ok=true`，server `full.exit=0`，source/candidate 两臂各 `84` requests。两臂均为
+no Teacher、no update、no heldout；`collisions`、`hard_separation`、`NMAC`、
+`SafetyInvariantError`、`uncertified_execution` 均为 `0`，weights/model unchanged 为 `true`。
+精简 outcome、等待和 reward 指标见
+[task-neutral baseline result](p3_task_neutral_baseline_result_20260928.md)。该结果不改注册的
+seed、cell、请求数、配置或预算；`3fe7...d4ab` candidate 仅作为 task-neutral 后续开发修复起点，
+`03c0` 保留为对照。旧 `candidate_retained=false`、full 原始 pending-review 字段与历史 outputs
+均保持不变；本轮不是 formal 或全局 source 晋级，也不是 PPO 训练结果。

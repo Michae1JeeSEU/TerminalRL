@@ -19,13 +19,32 @@
 >（core `10`、evaluation `9`），直接 core regression 为 `100 passed / 1 skipped`，phase 检查为
 > `35 passed / 2 failed`，两项失败在干净旧 HEAD `8a4e1b2` 上精确重现。首轮 server check-only
 > wrapper 在 `ROOT/check_only/check_only.log` 预创建 leaf，导致 fresh output directory refusal
->（exit `2`）；未进入程序预检，也未执行 env reset/step；该失败按 wrapper 问题保留。smoke 已授权并在
-> 执行中，两臂均为 `flow6`、`2` steps；首个 arrival 为 `10 s`，仅作启动/输出链路检查，不据此验证
-> 真实 actor 动作（88D/reward 已有单测）。完整评估待运行，状态以本页为准。执行顺序为：最小实现/单测 → 同课程 source/candidate 配对 baseline →
+>（exit `2`）；未进入程序预检，也未执行 env reset/step；该失败按 wrapper 问题保留。smoke 仅作
+> 启动/输出链路检查，首个 arrival 为 `10 s`、actor actions 为 `0`，不据此验证真实 actor 动作
+>（88D/reward 已有单测）。full-cycle report 已由主审核对：`COMPLETED`、`12/12` paired records、
+> `technical_ok=true`、server `full.exit=0`，两臂各 `84` requests；no Teacher/update/heldout，
+> 两臂 `collisions`、`hard_separation`、`NMAC`、`SafetyInvariantError`、`uncertified_execution`
+> 均为 `0`，weights/model unchanged 为 `true`。完整指标见 [task-neutral baseline result](evidence/v4_2/p3_task_neutral_baseline_result_20260928.md)。
+> report overall 为 source `72 normal / 11 emergency / 1 failed_energy / 0 unresolved`、candidate
+> `72 / 12 / 0 / 0`；mean wait `111.47949744714144→96.37119998288188 s`，p95
+> `428.211635460218→329.0057350762542 s`，max `804.6897032491129→503.6264147256603 s`，
+> low-SOC wait `148.3647493634526→119.71345607558123 s`，new reward
+> `1530.4372197172681→1623.028105994644`。其余5个 cells 指标相同，唯一变化为
+> `dense24/873106`：source `14/9/1` 到 candidate `14/10/0`（normal/emergency/failed_energy），
+> mean wait `238.71178555903364→185.8327444341252 s`。
+> 唯一 source failed-energy 为 arrival `4`：`standard`、`base_priority=1`、initial SOC `.60258461984`
+> 到 `0`，在 `ring_inner` 因 `energy_depleted` 终止，wait `804.6897 s`；candidate 同 arrival 为
+> `emergency_landed`，touchdown `659`、final SOC `.1546030`、wait `503.6264 s`。其它 outcome 变化为
+> arrival `2/13` emergency→normal、`5/18` normal→emergency；normal 总数不增，candidate 减少1个
+> energy failure 但仍有 `12/84` emergency outcomes。
+> heartbeat `task-neutral-landing-baseline` 已删除。
+> 执行顺序为：最小实现/单测 → 同课程 source/candidate 配对 baseline →
 > 有界 PPO repair pilot → independent validation → static qualification → dynamic airspace。
 > 等待尾部只作 starvation 监测，不增加每个子组无退化硬 gate；新 reward 与旧课程 reward 不
 > 直接比较。source `03c0` 与已知 candidate 只作初始化/对照，candidate_retained、稳定收益、
-> formal/heldout 和 `PPO_ALLOWED` 均不因本次文档修订自动改变。协议见
+> formal/heldout 和 `PPO_ALLOWED` 均不因本次文档修订自动改变。full 结果中 candidate 仅作为后续
+> task-neutral 开发修复起点，source `03c0` 保留对照；旧 `candidate_retained=false` 与历史 outputs
+> 不改写。协议见
 > [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
@@ -903,18 +922,18 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-本轮只推进 task-neutral baseline protocol；`check_only_v2` 已通过，smoke 执行中，完整评估待运行：
+本轮 task-neutral baseline full-cycle 已完成，主审已核对 report；后续进入受限开发决策：
 
 1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
    作为当前 check-only 事实；
-2. 按 [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)
-   完成两臂 `flow6` 两步 smoke，再由主审决定是否运行两臂六 cell full-cycle baseline；当前 smoke
-   仅作启动/输出链路核对，不据此验证真实 actor 动作；
-3. 报告完整 ledger、normal/emergency/failed/unresolved、full-cycle mean/p95/max wait、low-SOC
-   wait、reward 和既有安全/replay 技术核对。新 reward 不与旧课程 reward 直接比较；不增加普通
-   priority-weighted wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
-4. baseline 完成后，主审另行决定有界 PPO repair pilot 目标与预算。`PPO_ALLOWED=false`，formal/
-   heldout、candidate retained 和 static qualification 均不因文档修订自动放行。
+2. 以 `3fe7...d4ab` candidate 作为 task-neutral 后续开发修复起点，`03c0` 保留为对照；注册
+   有限预算 on-policy PPO pilot，检查完整周期回报、critic 和实际 gate 更新。该 pilot 尚未启动，
+   不同时盲改 reward 与 discount；
+3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
+   low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
+   wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
+4. `PPO_ALLOWED=false`，formal/heldout、全局 source 晋级和 qualification 均未因本轮 baseline
+   自动放行。
 
 ## 历史允许的下一步（已由本轮 task-neutral protocol 取代）
 
