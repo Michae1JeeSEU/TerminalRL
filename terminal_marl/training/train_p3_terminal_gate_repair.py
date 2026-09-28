@@ -25,6 +25,8 @@ from terminal_marl.training import train_p3_gate_coverage_repair_v2 as coverage_
 
 STAGE = "P3_TERMINAL_GATE_REPAIR_V1"
 STAGE_V2 = "P3_TERMINAL_GATE_REPAIR_V2"
+STAGE_NORMAL_ADVANTAGE = "P3_NORMAL_ADVANTAGE_GATE_REPAIR_V1"
+NORMAL_ADVANTAGE_OBJECTIVE = "counterfactual_expected_normal_advantage"
 OBSERVATION_DIM = 88
 SOURCE_CHECKPOINT_SHA256 = collector.SOURCE_CHECKPOINT_SHA256
 FORMAL_ROOT = collector.FORMAL_ROOT
@@ -48,6 +50,10 @@ KL_MEAN_LIMIT = 0.001
 KL_MAX_LIMIT = 0.01
 ADAPTER_PREFIX = "gate_adapter."
 BACKTRACKING_SCALES = (1.0, 0.5, 0.25, 0.125, 0.0625)
+NORMAL_ADVANTAGE_IDENTITIES = tuple(
+    (873103, step, 42, 12) for step in range(100, 105)
+)
+NORMAL_ADVANTAGE_REPEAT_COUNT = 3
 
 
 class TerminalGateRepairError(ValueError):
@@ -126,6 +132,96 @@ def _priority_improvement(state: Mapping[str, Any]) -> float:
     _require(np.isfinite(improvement) and improvement > 0.0,
              f"selected state has no positive {label} priority wait improvement")
     return improvement
+
+
+def _normal_advantage_from_deltas(deltas: Sequence[float]) -> float:
+    values = np.asarray(list(deltas), dtype=np.float64)
+    _require(values.shape == (NORMAL_ADVANTAGE_REPEAT_COUNT,), "normal advantage requires three repeat deltas")
+    _require(bool(np.isfinite(values).all()), "normal advantage deltas are not finite")
+    if bool((values >= 0.0).all()) or bool((values <= 0.0).all()):
+        return float(values.mean())
+    return 0.0
+
+
+def _normal_advantage_rows(
+    selection: Mapping[str, Any],
+    summary: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    selected = selection.get("selected_rows")
+    states = summary.get("states")
+    _require(isinstance(selected, list) and isinstance(states, list), "normal-advantage inputs are incomplete")
+    selected_rows = [dict(row) for row in selected if isinstance(row, Mapping)]
+    _require(len(selected_rows) == len(NORMAL_ADVANTAGE_IDENTITIES), "normal-advantage selection must contain five rows")
+    selected_by_identity = {_identity(row): row for row in selected_rows}
+    expected = set(NORMAL_ADVANTAGE_IDENTITIES)
+    _require(set(selected_by_identity) == expected, "normal-advantage selection identities changed")
+    _require(len(states) == len(expected), "normal-advantage summary must contain five states")
+    states_by_identity: dict[tuple[int, int, int, int], Mapping[str, Any]] = {}
+    for state in states:
+        _require(isinstance(state, Mapping), "normal-advantage state is not an object")
+        identity = (
+            int(state.get("seed", -1)),
+            int(state.get("step", -1)),
+            int(state.get("uid", -1)),
+            int(state.get("arrival_id", -1)),
+        )
+        _require(identity in expected, f"unexpected normal-advantage state identity: {identity}")
+        _require(identity not in states_by_identity, f"duplicate normal-advantage state: {identity}")
+        states_by_identity[identity] = state
+    _require(set(states_by_identity) == expected, "normal-advantage summary identities changed")
+
+    rows: list[dict[str, Any]] = []
+    for identity in NORMAL_ADVANTAGE_IDENTITIES:
+        state = states_by_identity[identity]
+        _require(int(state.get("repeat_count", -1)) == NORMAL_ADVANTAGE_REPEAT_COUNT,
+                 f"state {identity} does not contain three repeats")
+        gate = state.get("gate")
+        _require(isinstance(gate, Mapping), f"state {identity} gate report is missing")
+        release = gate.get("release")
+        _require(isinstance(release, Mapping), f"state {identity} release report is missing")
+        comparisons = release.get("comparisons")
+        opportunity = release.get("normal_opportunity")
+        _require(isinstance(comparisons, list) and len(comparisons) == NORMAL_ADVANTAGE_REPEAT_COUNT,
+                 f"state {identity} release comparisons are incomplete")
+        _require(isinstance(opportunity, Mapping), f"state {identity} normal opportunity is missing")
+        _require("normal_opportunity" in opportunity, f"state {identity} opportunity status is missing")
+        normal_deltas = opportunity.get("normal_deltas")
+        _require(isinstance(normal_deltas, list) and len(normal_deltas) == NORMAL_ADVANTAGE_REPEAT_COUNT,
+                 f"state {identity} normal opportunity deltas are incomplete")
+        comparison_deltas: list[float] = []
+        for comparison in comparisons:
+            _require(isinstance(comparison, Mapping), f"state {identity} comparison is not an object")
+            for field in ("normal_delta", "failed_delta", "baseline_failed", "candidate_failed", "technical_ok"):
+                _require(field in comparison, f"state {identity} comparison field is missing: {field}")
+            _require(bool(comparison["technical_ok"]), f"state {identity} technical check failed")
+            _require(float(comparison["baseline_failed"]) == 0.0 and float(comparison["candidate_failed"]) == 0.0,
+                     f"state {identity} failed count is nonzero")
+            comparison_deltas.append(float(comparison["normal_delta"]))
+        _require(np.allclose(np.asarray(normal_deltas, dtype=np.float64), comparison_deltas),
+                 f"state {identity} opportunity deltas do not match comparisons")
+        _require(bool(opportunity.get("technical_ok")), f"state {identity} opportunity technical check failed")
+        advantage = _normal_advantage_from_deltas(comparison_deltas)
+        observation = np.asarray(selected_by_identity[identity].get("observation"), dtype=np.float32)
+        _require(observation.shape == (OBSERVATION_DIM,), f"state {identity} observation is not 88D")
+        _require(bool(np.isfinite(observation).all()), f"state {identity} observation is not finite")
+        teacher_gate = 1 if advantage > 0.0 else 0 if advantage < 0.0 else None
+        rows.append({
+            "state_index": int(state.get("state_index", -1)),
+            "seed": identity[0],
+            "step": identity[1],
+            "uid": identity[2],
+            "arrival_id": identity[3],
+            "label": "release" if advantage > 0.0 else "wait" if advantage < 0.0 else "uncertain",
+            "teacher_gate": teacher_gate,
+            "observation": observation,
+            "normal_deltas": comparison_deltas,
+            "advantage": float(advantage),
+            "weight": 1.0 / float(len(NORMAL_ADVANTAGE_IDENTITIES)),
+            "repeat_count": NORMAL_ADVANTAGE_REPEAT_COUNT,
+        })
+    _require(any(float(row["advantage"]) > 0.0 for row in rows),
+             "no positive normal advantage; refusing training")
+    return rows
 
 
 def _training_rows(
@@ -249,11 +345,69 @@ def _anchor_kl_tensor(source_logits: torch.Tensor, candidate_logits: torch.Tenso
     return F.kl_div(candidate_log_prob, source_prob, reduction="none").sum(dim=-1)
 
 
+def _gate_release_probabilities(policy: Any, observations: torch.Tensor) -> torch.Tensor:
+    return torch.softmax(_gate_logits(policy, observations), dim=-1)[:, 1]
+
+
+def _training_objective(
+    policy: Any,
+    train_observations: torch.Tensor,
+    train_labels: torch.Tensor | None,
+    train_weights: torch.Tensor | None,
+    anchor_observations: torch.Tensor,
+    source_anchor_logits: torch.Tensor,
+    *,
+    advantages: torch.Tensor | None = None,
+    source_release_probabilities: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    train_logits = _gate_logits(policy, train_observations)
+    train_anchor_logits = _gate_logits(policy, anchor_observations)
+    kl_values = _anchor_kl_tensor(source_anchor_logits, train_anchor_logits)
+    mean_kl_before = float(kl_values.mean().detach().cpu())
+    max_kl_before = float(kl_values.max().detach().cpu())
+    if advantages is None:
+        _require(train_labels is not None and train_weights is not None, "weighted CE inputs are missing")
+        per_sample_ce = F.cross_entropy(train_logits, train_labels, reduction="none")
+        primary = (per_sample_ce * train_weights).sum()
+        metrics: dict[str, Any] = {
+            "objective_name": "weighted_CE+10*mean_KL",
+            "weighted_ce": float(primary.detach().cpu()),
+            "normal_advantage_term": None,
+            "advantages": None,
+            "source_release_probabilities": None,
+            "release_probabilities": None,
+        }
+    else:
+        _require(source_release_probabilities is not None, "source release probabilities are missing")
+        _require(advantages.shape == (train_observations.shape[0],), "normal advantages shape changed")
+        _require(source_release_probabilities.shape == advantages.shape, "source release probabilities shape changed")
+        _require(bool(torch.isfinite(advantages).all().item()), "normal advantages are not finite")
+        _require(bool(torch.isfinite(source_release_probabilities).all().item()), "source release probabilities are not finite")
+        release_probabilities = torch.softmax(train_logits, dim=-1)[:, 1]
+        primary = -(advantages * (release_probabilities - source_release_probabilities.detach())).mean()
+        metrics = {
+            "objective_name": NORMAL_ADVANTAGE_OBJECTIVE,
+            "weighted_ce": None,
+            "normal_advantage_term": float(primary.detach().cpu()),
+            "advantages": advantages.detach().cpu().tolist(),
+            "source_release_probabilities": source_release_probabilities.detach().cpu().tolist(),
+            "release_probabilities": release_probabilities.detach().cpu().tolist(),
+        }
+    objective = primary + KL_WEIGHT * kl_values.mean()
+    metrics.update({
+        "mean_kl_before": mean_kl_before,
+        "max_kl_before": max_kl_before,
+        "objective": float(objective.detach().cpu()),
+        "loss": float(objective.detach().cpu()),
+    })
+    return objective, metrics
+
+
 def _run_updates(
     policy: Any,
     train_observations: torch.Tensor,
-    train_labels: torch.Tensor,
-    train_weights: torch.Tensor,
+    train_labels: torch.Tensor | None,
+    train_weights: torch.Tensor | None,
     anchor_observations: torch.Tensor,
     *,
     max_updates: int = MAX_UPDATES,
@@ -262,10 +416,23 @@ def _run_updates(
     kl_mean_limit: float = KL_MEAN_LIMIT,
     kl_max_limit: float = KL_MAX_LIMIT,
     bounded_backtracking: bool = False,
+    advantages: torch.Tensor | None = None,
+    source_release_probabilities: torch.Tensor | None = None,
 ) -> dict[str, Any]:
     trainable, names = coverage_fit._freeze_to_adapter(policy)
     policy.optimizer = torch.optim.Adam(trainable, lr=float(learning_rate))
     source_anchor_logits = _gate_logits(policy, anchor_observations).detach().clone()
+    normal_advantage_mode = advantages is not None
+    if normal_advantage_mode:
+        advantages = advantages.detach().clone()
+        if source_release_probabilities is None:
+            source_release_probabilities = _gate_release_probabilities(policy, train_observations).detach().clone()
+        else:
+            source_release_probabilities = source_release_probabilities.detach().clone()
+        _require(advantages.shape == (train_observations.shape[0],), "normal advantages shape changed")
+        _require(source_release_probabilities.shape == advantages.shape, "source release probabilities shape changed")
+    else:
+        _require(train_labels is not None and train_weights is not None, "weighted CE inputs are missing")
     history: list[dict[str, Any]] = []
     accepted_updates = 0
     attempted_updates = 0
@@ -287,14 +454,16 @@ def _run_updates(
                 for group in policy.optimizer.param_groups:
                     group["lr"] = float(learning_rate) * float(scale)
                 policy.optimizer.zero_grad(set_to_none=True)
-                train_logits = _gate_logits(policy, train_observations)
-                per_sample_ce = F.cross_entropy(train_logits, train_labels, reduction="none")
-                weighted_ce = (per_sample_ce * train_weights).sum()
-                train_anchor_logits = _gate_logits(policy, anchor_observations)
-                kl_values_before = _anchor_kl_tensor(source_anchor_logits, train_anchor_logits)
-                mean_kl_before = float(kl_values_before.mean().detach().cpu())
-                max_kl_before = float(kl_values_before.max().detach().cpu())
-                loss = weighted_ce + KL_WEIGHT * kl_values_before.mean()
+                loss, objective_metrics = _training_objective(
+                    policy,
+                    train_observations,
+                    train_labels,
+                    train_weights,
+                    anchor_observations,
+                    source_anchor_logits,
+                    advantages=advantages,
+                    source_release_probabilities=source_release_probabilities,
+                )
                 _require(bool(torch.isfinite(loss).item()), f"non-finite loss at update {update}")
                 loss.backward()
                 norm = torch.nn.utils.clip_grad_norm_(trainable, float(gradient_clip_norm))
@@ -307,15 +476,16 @@ def _run_updates(
                 trial = {
                     "scale": float(scale),
                     "learning_rate": float(learning_rate) * float(scale),
-                    "weighted_ce": float(weighted_ce.detach().cpu()),
-                    "mean_kl_before": mean_kl_before,
-                    "max_kl_before": max_kl_before,
+                    **objective_metrics,
                     "mean_kl": mean_kl,
                     "max_kl": max_kl,
-                    "loss": float(loss.detach().cpu()),
                     "accepted": accepted,
                     "rolled_back": not accepted,
                 }
+                if normal_advantage_mode:
+                    trial["release_probabilities_after_step"] = _gate_release_probabilities(
+                        policy, train_observations,
+                    ).detach().cpu().tolist()
                 trials.append(trial)
                 if accepted:
                     accepted_scale = float(scale)
@@ -326,12 +496,9 @@ def _run_updates(
                     history.append({
                         "attempt": update,
                         "update": update,
-                        "weighted_ce": trial["weighted_ce"],
-                        "mean_kl_before": trial["mean_kl_before"],
-                        "max_kl_before": trial["max_kl_before"],
+                        **trial,
                         "mean_kl": trial["mean_kl"],
                         "max_kl": trial["max_kl"],
-                        "loss": trial["loss"],
                         "accepted": True,
                         "rolled_back": False,
                         "trials": trials,
@@ -346,12 +513,7 @@ def _run_updates(
                 history.append({
                     "attempt": update,
                     "update": update,
-                    "weighted_ce": first_trial["weighted_ce"],
-                    "mean_kl_before": first_trial["mean_kl_before"],
-                    "max_kl_before": first_trial["max_kl_before"],
-                    "mean_kl": first_trial["mean_kl"],
-                    "max_kl": first_trial["max_kl"],
-                    "loss": first_trial["loss"],
+                    **first_trial,
                     "accepted": False,
                     "rolled_back": True,
                     "trials": trials,
@@ -364,14 +526,16 @@ def _run_updates(
             continue
 
         policy.optimizer.zero_grad(set_to_none=True)
-        train_logits = _gate_logits(policy, train_observations)
-        per_sample_ce = F.cross_entropy(train_logits, train_labels, reduction="none")
-        weighted_ce = (per_sample_ce * train_weights).sum()
-        train_anchor_logits = _gate_logits(policy, anchor_observations)
-        kl_values_before = _anchor_kl_tensor(source_anchor_logits, train_anchor_logits)
-        mean_kl_before = float(kl_values_before.mean().detach().cpu())
-        max_kl_before = float(kl_values_before.max().detach().cpu())
-        loss = weighted_ce + KL_WEIGHT * kl_values_before.mean()
+        loss, objective_metrics = _training_objective(
+            policy,
+            train_observations,
+            train_labels,
+            train_weights,
+            anchor_observations,
+            source_anchor_logits,
+            advantages=advantages,
+            source_release_probabilities=source_release_probabilities,
+        )
         _require(bool(torch.isfinite(loss).item()), f"non-finite loss at update {update}")
         loss.backward()
         norm = torch.nn.utils.clip_grad_norm_(trainable, float(gradient_clip_norm))
@@ -383,15 +547,16 @@ def _run_updates(
         mean_kl, max_kl = _anchor_kl(source_anchor_logits, candidate_anchor_logits)
         entry = {
             "update": update,
-            "weighted_ce": float(weighted_ce.detach().cpu()),
-            "mean_kl_before": mean_kl_before,
-            "max_kl_before": max_kl_before,
+            **objective_metrics,
             "mean_kl": mean_kl,
             "max_kl": max_kl,
-            "loss": float(loss.detach().cpu()),
             "accepted": bool(mean_kl <= kl_mean_limit and max_kl <= kl_max_limit),
             "rolled_back": False,
         }
+        if normal_advantage_mode:
+            entry["release_probabilities_after_step"] = _gate_release_probabilities(
+                policy, train_observations,
+            ).detach().cpu().tolist()
         if not entry["accepted"]:
             policy.model.load_state_dict(before_model, strict=True)
             policy.optimizer.load_state_dict(copy.deepcopy(before_optimizer))
@@ -412,6 +577,8 @@ def _run_updates(
         "rollback": rollback,
         "history": history,
         "source_anchor_logits": source_anchor_logits,
+        "normal_advantage_mode": normal_advantage_mode,
+        "source_release_probabilities": None if source_release_probabilities is None else source_release_probabilities.detach().cpu(),
     }
 
 
@@ -432,11 +599,16 @@ def _fit(
     anchor_path: Path,
     smoke: bool,
     bounded_backtracking: bool,
+    normal_advantage: bool,
 ) -> dict[str, Any]:
-    stage = STAGE_V2 if bounded_backtracking else STAGE
+    if normal_advantage:
+        _require(bounded_backtracking, "normal advantage mode requires bounded backtracking")
+        stage = STAGE_NORMAL_ADVANTAGE
+    else:
+        stage = STAGE_V2 if bounded_backtracking else STAGE
     _require(not output_dir.exists(), f"output directory must be fresh: {output_dir}")
     selection, summary = _load_terminal_credit(terminal_credit_root)
-    rows = _training_rows(selection, summary)
+    rows = _normal_advantage_rows(selection, summary) if normal_advantage else _training_rows(selection, summary)
     anchors = _load_anchors(anchor_path)
     protocol, configs, _records, source_manifest = collector._load_source_inputs(formal_root)
     source_binding = collector._load_source_policy(protocol, configs["dense24"])
@@ -449,15 +621,26 @@ def _fit(
     train_observations = torch.as_tensor(
         np.stack([row["observation"] for row in rows]), dtype=torch.float32, device=device,
     )
-    train_labels = torch.as_tensor([row["teacher_gate"] for row in rows], dtype=torch.long, device=device)
-    train_weights = torch.as_tensor([row["weight"] for row in rows], dtype=torch.float32, device=device)
-    anchor_observations = torch.as_tensor(anchors, dtype=torch.float32, device=device)
-    source_proposal_logits = _proposal_logits(source_policy, anchor_observations).detach().clone()
+    base_anchor_observations = torch.as_tensor(anchors, dtype=torch.float32, device=device)
+    if normal_advantage:
+        train_labels = None
+        train_weights = None
+        anchor_observations = torch.cat((base_anchor_observations, train_observations), dim=0)
+        advantages = torch.as_tensor([row["advantage"] for row in rows], dtype=torch.float32, device=device)
+        source_release_probabilities = _gate_release_probabilities(source_policy, train_observations).detach().clone()
+    else:
+        train_labels = torch.as_tensor([row["teacher_gate"] for row in rows], dtype=torch.long, device=device)
+        train_weights = torch.as_tensor([row["weight"] for row in rows], dtype=torch.float32, device=device)
+        anchor_observations = base_anchor_observations
+        advantages = None
+        source_release_probabilities = None
+    source_proposal_logits = _proposal_logits(source_policy, base_anchor_observations).detach().clone()
     output_dir.mkdir(parents=True, exist_ok=False)
     _write_json(output_dir / "progress.json", {
         "stage": stage, "status": "RUNNING", "accepted_updates": 0,
         "attempted_updates": 0, "optimizer_attempts": 0,
-        "bounded_backtracking": bool(bounded_backtracking), "smoke": bool(smoke),
+        "bounded_backtracking": bool(bounded_backtracking), "normal_advantage": bool(normal_advantage),
+        "smoke": bool(smoke),
     })
     updates = _run_updates(
         source_policy,
@@ -467,6 +650,8 @@ def _fit(
         anchor_observations,
         max_updates=SMOKE_UPDATES if smoke else MAX_UPDATES,
         bounded_backtracking=bounded_backtracking,
+        advantages=advantages,
+        source_release_probabilities=source_release_probabilities,
     )
     final_state = coverage_fit._state_cpu(source_policy.model)
     final_anchor_mean_kl, final_anchor_max_kl = _anchor_kl(
@@ -476,7 +661,17 @@ def _fit(
     adapter_names = [name for name in source_state if name.startswith(ADAPTER_PREFIX)]
     non_adapter_unchanged = all(torch.equal(source_state[name], final_state[name]) for name in non_adapter_names)
     adapter_changed = any(not torch.equal(source_state[name], final_state[name]) for name in adapter_names)
-    proposal_unchanged = torch.equal(source_proposal_logits, _proposal_logits(source_policy, anchor_observations).detach())
+    proposal_unchanged = torch.equal(source_proposal_logits, _proposal_logits(source_policy, base_anchor_observations).detach())
+    final_release_probabilities = None
+    source_release_values = None
+    if normal_advantage:
+        final_release_probabilities = _gate_release_probabilities(
+            source_policy, train_observations,
+        ).detach().cpu().tolist()
+        source_release_values = source_release_probabilities.detach().cpu().tolist()
+        for row, source_probability, final_probability in zip(rows, source_release_values, final_release_probabilities):
+            row["source_release_probability"] = float(source_probability)
+            row["final_release_probability"] = float(final_probability)
     _require(non_adapter_unchanged, "non-adapter state changed")
     _require(proposal_unchanged, "proposal logits changed")
     metadata = copy.deepcopy(dict(source_payload.get("metadata", {})))
@@ -521,6 +716,9 @@ def _fit(
         "checkpoint_promotable": False,
         "optimizer_saved": False,
         "bounded_backtracking": bool(bounded_backtracking),
+        "normal_advantage": bool(normal_advantage),
+        "objective": NORMAL_ADVANTAGE_OBJECTIVE if normal_advantage else "weighted_CE+10*mean_KL",
+        "teacher_gate_used_in_loss": False if normal_advantage else True,
         "smoke": bool(smoke),
     })
     report: dict[str, Any] = {
@@ -528,12 +726,13 @@ def _fit(
         "status": "COMPLETED",
         "smoke": bool(smoke),
         "bounded_backtracking": bool(bounded_backtracking),
+        "normal_advantage": bool(normal_advantage),
         "source_checkpoint": str(collector.SOURCE_CHECKPOINT),
         "source_checkpoint_sha256": source_sha,
         "terminal_credit_selection": str(terminal_credit_root / "selection.json"),
         "terminal_credit_summary": str(terminal_credit_root / "summary.json"),
         "anchor_path": str(anchor_path),
-        "anchor_observation_count": int(len(anchors)),
+        "anchor_observation_count": int(len(anchor_observations)),
         "labels": [
             {key: value for key, value in row.items() if key not in {"observation"}}
             for row in rows
@@ -543,7 +742,23 @@ def _fit(
         "batch_size": len(rows),
         "max_updates": fit_max_updates,
         "learning_rate": LEARNING_RATE,
-        "loss": {"objective": "weighted_CE+10*mean_KL", "kl_weight": KL_WEIGHT},
+        "loss": {
+            "objective": NORMAL_ADVANTAGE_OBJECTIVE if normal_advantage else "weighted_CE+10*mean_KL",
+            "formula": (
+                "-mean(A*(pRelease_new-pRelease_source_detached))+10*meanAnchorKL"
+                if normal_advantage else "weighted_CE+10*mean_KL"
+            ),
+            "kl_weight": KL_WEIGHT,
+            "teacher_gate_used_in_loss": False if normal_advantage else True,
+        },
+        "normal_advantage_report": {
+            "enabled": bool(normal_advantage),
+            "advantages": [float(row["advantage"]) for row in rows] if normal_advantage else None,
+            "normal_deltas": [list(map(float, row["normal_deltas"])) for row in rows] if normal_advantage else None,
+            "source_release_probabilities": source_release_values,
+            "final_release_probabilities": final_release_probabilities,
+            "teacher_gates_report_only": bool(normal_advantage),
+        },
         "accepted_updates": int(updates["accepted_updates"]),
         "attempted_updates": int(updates["attempted_updates"]),
         "optimizer_attempts": int(updates["optimizer_attempts"]),
@@ -587,6 +802,7 @@ def _fit(
         "attempted_updates": updates["attempted_updates"],
         "optimizer_attempts": updates["optimizer_attempts"],
         "bounded_backtracking": bool(bounded_backtracking),
+        "normal_advantage": bool(normal_advantage),
         "checkpoint": str(checkpoint_path), "smoke": bool(smoke),
     })
     return report
@@ -600,6 +816,7 @@ def run(
     anchor_path: str | Path = ANCHOR_PATH,
     smoke: bool = False,
     bounded_backtracking: bool = False,
+    normal_advantage: bool = False,
 ) -> dict[str, Any]:
     return _fit(
         output_dir=Path(output_dir),
@@ -608,6 +825,7 @@ def run(
         anchor_path=Path(anchor_path),
         smoke=bool(smoke),
         bounded_backtracking=bool(bounded_backtracking),
+        normal_advantage=bool(normal_advantage),
     )
 
 
@@ -619,6 +837,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--anchor-path", type=Path, default=ANCHOR_PATH)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--bounded-backtracking", action="store_true")
+    parser.add_argument("--normal-advantage", action="store_true")
     return parser
 
 
@@ -632,9 +851,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             anchor_path=args.anchor_path,
             smoke=args.smoke,
             bounded_backtracking=args.bounded_backtracking,
+            normal_advantage=args.normal_advantage,
         )
     except (TerminalGateRepairError, FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
-        stage = STAGE_V2 if args.bounded_backtracking else STAGE
+        stage = STAGE_NORMAL_ADVANTAGE if args.normal_advantage else STAGE_V2 if args.bounded_backtracking else STAGE
         print(json.dumps({"stage": stage, "status": "ERROR", "error": str(exc)}, sort_keys=True), flush=True)
         return 1
     print(json.dumps({
@@ -646,6 +866,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "attempted_updates": report.get("attempted_updates"),
         "optimizer_attempts": report.get("optimizer_attempts"),
         "bounded_backtracking": report.get("bounded_backtracking"),
+        "normal_advantage": report.get("normal_advantage"),
         "stop_reason": report.get("stop_reason"),
         "smoke": report.get("smoke"),
     }, sort_keys=True), flush=True)

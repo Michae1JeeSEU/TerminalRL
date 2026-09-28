@@ -57,6 +57,67 @@ def test_final_selection_is_separated_and_uses_runtime_c_only() -> None:
     assert reasons == {"max_withheld", "max_proposal_miss", "lowest_soc"}
 
 
+def test_local_window_selection_keeps_empty_c_and_non_wait_rows() -> None:
+    rows = []
+    for step in range(100, 105):
+        row = _row(12, step, certified=[] if step in {101, 103} else [step - 99])
+        row.update({"uid": 42, "scenario": "dense24", "split": "train"})
+        row["source_action_metadata"] = {
+            "executed_gate": "RELEASE" if step == 103 else "WAIT",
+            "requested_gate": 1 if step == 103 else 0,
+        }
+        rows.append(row)
+
+    selected = runner._select_final_states(rows, local_window=True)
+
+    assert [int(row["step"]) for row in selected] == [100, 101, 102, 103, 104]
+    assert selected[1]["certified_proposals"] == []
+    assert selected[3]["source_action_metadata"]["executed_gate"] == "RELEASE"
+    assert all(str(row["final_selection_reason"]).startswith("local_window_step_") for row in selected)
+
+
+def test_local_window_selection_requires_all_fixed_steps() -> None:
+    rows = [_row(12, step, certified=[]) for step in (100, 101, 102, 104)]
+    for row in rows:
+        row.update({"uid": 42, "scenario": "dense24", "split": "train"})
+
+    try:
+        runner._select_final_states(rows, local_window=True)
+    except runner.LandingOutcomeCreditError as exc:
+        assert "local window final selection" in str(exc)
+    else:
+        raise AssertionError("missing local-window step was accepted")
+
+
+def test_local_window_smoke_is_step_102_and_not_training_input() -> None:
+    rows = []
+    for step in range(100, 105):
+        row = _row(12, step, certified=[])
+        row.update({"uid": 42, "scenario": "dense24", "split": "train"})
+        rows.append(row)
+
+    selected = runner._select_final_states(rows, smoke=True, local_window=True)
+    metadata = runner._window_metadata(local_window=True, smoke=True)
+    full_metadata = runner._window_metadata(local_window=True, smoke=False)
+
+    assert [int(row["step"]) for row in selected] == [102]
+    assert metadata["local_window"] is True
+    assert metadata["window_steps"] == [102]
+    assert metadata["mode"] == runner.LOCAL_WINDOW_MODE
+    assert metadata["training_input_eligible"] is False
+    assert full_metadata["window_steps"] == [100, 101, 102, 103, 104]
+    assert full_metadata["training_input_eligible"] is True
+
+
+def test_parser_accepts_local_window_without_changing_legacy_default() -> None:
+    parser = runner.build_parser()
+    legacy = parser.parse_args(["--output-dir", "out"])
+    local = parser.parse_args(["--output-dir", "out", "--local-window"])
+
+    assert legacy.local_window is False
+    assert local.local_window is True
+
+
 def test_runtime_label_replaces_c_and_preserves_catalogue(monkeypatch) -> None:
     source = _row(12, 10, certified=[2])
     branch = {"decision": "approved", "reward": 0.0, "next_value": 0.0, "safety_counter_delta": {}}

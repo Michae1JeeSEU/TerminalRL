@@ -30,11 +30,15 @@ from terminal_marl.training import evaluate_p3_proposal_head_probe_v1 as baselin
 
 
 STAGE = "P3_LANDING_OUTCOME_CREDIT_V1"
+LOCAL_WINDOW_MODE = "P3_LANDING_OUTCOME_CREDIT_LOCAL_WINDOW_V1"
 SOURCE_SEED = 873103
 SOURCE_SCENARIO = "dense24"
 SOURCE_SPLIT = "train"
 TARGET_ARRIVAL_IDS = (12, 13, 21)
 TARGET_PHASES = frozenset({"ring_outer", "ring_middle", "ring_inner"})
+LOCAL_WINDOW_ARRIVAL_ID = 12
+LOCAL_WINDOW_UID = 42
+LOCAL_WINDOW_STEPS = (100, 101, 102, 103, 104)
 MAX_PROBE_ROWS_PER_ARRIVAL = 40
 MAX_FINAL_ROWS_PER_ARRIVAL = 3
 REPEAT_COUNT = 3
@@ -126,6 +130,23 @@ def _enum_value(value: Any) -> str:
     raw = getattr(value, "value", value)
     text = str(raw)
     return text.rsplit(".", 1)[-1].lower()
+
+
+def _window_metadata(*, local_window: bool, smoke: bool) -> dict[str, Any]:
+    if not local_window:
+        return {
+            "local_window": False,
+            "window_steps": [],
+            "mode": "legacy_selection",
+            "training_input_eligible": False,
+        }
+    steps = [LOCAL_WINDOW_STEPS[2]] if smoke else list(LOCAL_WINDOW_STEPS)
+    return {
+        "local_window": True,
+        "window_steps": steps,
+        "mode": LOCAL_WINDOW_MODE,
+        "training_input_eligible": not smoke,
+    }
 
 
 def _uid_value(value: Any, uid: int, *, required: bool = False) -> Any:
@@ -264,6 +285,7 @@ def _probe_source_tape(
     source_policy: Mapping[str, Any],
     target_arrivals: Sequence[int] = TARGET_ARRIVAL_IDS,
     smoke: bool = False,
+    local_window: bool = False,
 ) -> dict[str, Any]:
     tape = Path(str(record["action_tape"]))
     payload = _read_json(tape)
@@ -292,14 +314,31 @@ def _probe_source_tape(
             for actor in actors:
                 uid = int(actor.uid)
                 metadata = _source_action_metadata(source_tape_row, uid)
-                if not smoke and metadata["executed_gate"] != "WAIT":
-                    continue
-                if smoke and not (
-                    step == SMOKE_STEP
-                    and uid == SMOKE_UID
-                    and int(actor.arrival_id) == SMOKE_ARRIVAL_ID
-                ):
-                    continue
+                if local_window:
+                    expected_step = LOCAL_WINDOW_STEPS[2] if smoke else None
+                    if smoke:
+                        keep = (
+                            step == expected_step
+                            and uid == LOCAL_WINDOW_UID
+                            and int(actor.arrival_id) == LOCAL_WINDOW_ARRIVAL_ID
+                        )
+                    else:
+                        keep = (
+                            step in LOCAL_WINDOW_STEPS
+                            and uid == LOCAL_WINDOW_UID
+                            and int(actor.arrival_id) == LOCAL_WINDOW_ARRIVAL_ID
+                        )
+                    if not keep:
+                        continue
+                else:
+                    if not smoke and metadata["executed_gate"] != "WAIT":
+                        continue
+                    if smoke and not (
+                        step == SMOKE_STEP
+                        and uid == SMOKE_UID
+                        and int(actor.arrival_id) == SMOKE_ARRIVAL_ID
+                    ):
+                        continue
                 row = _light_probe_row(
                     env=environment,
                     actor=actor,
@@ -332,7 +371,23 @@ def _probe_source_tape(
     outcomes_match = collector._summary_outcomes(tape) == collector._replay_outcomes(environment)
     _require(outcomes_match, "source replay outcomes differ from source tape")
     rows = sorted(candidates.values(), key=lambda row: (int(row["arrival_id"]), int(row["step"]), int(row["uid"])))
-    if smoke:
+    if local_window:
+        expected_steps = {LOCAL_WINDOW_STEPS[2]} if smoke else set(LOCAL_WINDOW_STEPS)
+        actual_steps = {
+            int(row["step"])
+            for row in rows
+            if int(row["uid"]) == LOCAL_WINDOW_UID
+            and int(row["arrival_id"]) == LOCAL_WINDOW_ARRIVAL_ID
+        }
+        _require(
+            actual_steps == expected_steps and len(rows) == len(expected_steps),
+            f"local window expected steps {sorted(expected_steps)}, got {sorted(actual_steps)}",
+        )
+        _require(
+            all(str(row.get("phase")) in TARGET_PHASES for row in rows),
+            "local window selected a non-ring phase",
+        )
+    elif smoke:
         _require(len(rows) == 1, f"smoke probe expected one fixed row, got {len(rows)}")
     else:
         _require(rows, "source replay found no target WAIT prestates")
@@ -526,7 +581,31 @@ def _select_final_states(
     runtime_rows: Sequence[Mapping[str, Any]],
     *,
     smoke: bool = False,
+    local_window: bool = False,
 ) -> list[dict[str, Any]]:
+    if local_window:
+        expected_steps = {LOCAL_WINDOW_STEPS[2]} if smoke else set(LOCAL_WINDOW_STEPS)
+        selected = sorted(
+            (
+                dict(row)
+                for row in runtime_rows
+                if int(row["seed"]) == SOURCE_SEED
+                and str(row["scenario"]) == SOURCE_SCENARIO
+                and str(row["split"]) == SOURCE_SPLIT
+                and int(row["arrival_id"]) == LOCAL_WINDOW_ARRIVAL_ID
+                and int(row["uid"]) == LOCAL_WINDOW_UID
+                and int(row["step"]) in expected_steps
+            ),
+            key=lambda row: int(row["step"]),
+        )
+        actual_steps = {int(row["step"]) for row in selected}
+        _require(
+            len(selected) == len(expected_steps) and actual_steps == expected_steps,
+            f"local window final selection expected steps {sorted(expected_steps)}, got {sorted(actual_steps)}",
+        )
+        for row in selected:
+            row["final_selection_reason"] = f"local_window_step_{int(row['step'])}"
+        return selected
     if smoke:
         selected = [
             dict(row) for row in runtime_rows
@@ -779,6 +858,8 @@ def _summary(
     state_results: Sequence[Mapping[str, Any]],
     runtime_rows: Sequence[Mapping[str, Any]],
     selection_path: Path,
+    local_window: bool = False,
+    smoke: bool = False,
 ) -> dict[str, Any]:
     gate_states: list[dict[str, Any]] = []
     proposal_states: list[dict[str, Any]] = []
@@ -825,9 +906,11 @@ def _summary(
         gate_states.append(state_entry["gate"] | {"state_index": state_entry["state_index"]})
         proposal_states.append(state_entry["proposal"] | {"state_index": state_entry["state_index"]})
         state_summaries.append(state_entry)
+    metadata = _window_metadata(local_window=local_window, smoke=smoke) if local_window else {}
     return {
         "stage": STAGE,
         "status": "COMPLETED",
+        **metadata,
         "selection": str(selection_path),
         "runtime_rows_count": len(runtime_rows),
         "runtime_branch_runs": runtime_branch_runs,
@@ -849,17 +932,26 @@ def run(
     formal_root: str | Path = DEFAULT_FORMAL_ROOT,
     baseline_record_root: str | Path = DEFAULT_BASELINE_RECORD_ROOT,
     smoke: bool = False,
+    local_window: bool = False,
 ) -> dict[str, Any]:
     output = Path(output_dir)
     _require(not output.exists(), f"refusing existing output: {output}")
     output.mkdir(parents=True, exist_ok=False)
     progress_path = output / "progress.json"
+    window_metadata = _window_metadata(local_window=local_window, smoke=smoke) if local_window else {}
+    target_arrivals = (LOCAL_WINDOW_ARRIVAL_ID,) if local_window else TARGET_ARRIVAL_IDS
 
     def progress(value: Mapping[str, Any]) -> None:
         payload = {"stage": STAGE, "status": "RUNNING", **dict(value)}
         _write_json(progress_path, payload)
 
-    progress({"phase": "initial", "probe_rows_processed": 0, "runtime_rows_processed": 0, "states_processed": 0})
+    progress({
+        "phase": "initial",
+        **window_metadata,
+        "probe_rows_processed": 0,
+        "runtime_rows_processed": 0,
+        "states_processed": 0,
+    })
     reports: list[dict[str, Any]] = []
     runtime_rows: list[dict[str, Any]] = []
     state_results: list[dict[str, Any]] = []
@@ -879,21 +971,28 @@ def run(
             record=source_record,
             config=configs[SOURCE_SCENARIO],
             source_policy=source_policy,
-            target_arrivals=TARGET_ARRIVAL_IDS,
+            target_arrivals=target_arrivals,
             smoke=smoke,
+            local_window=local_window,
         )
-        probe_rows = probe["rows"] if smoke else [
-            row for arrival_id in TARGET_ARRIVAL_IDS
-            for row in _uniform_rows(
-                [candidate for candidate in probe["rows"] if int(candidate["arrival_id"]) == int(arrival_id)],
-                MAX_PROBE_ROWS_PER_ARRIVAL,
-            )
-        ]
+        if local_window:
+            probe_rows = list(probe["rows"])
+        elif smoke:
+            probe_rows = probe["rows"]
+        else:
+            probe_rows = [
+                row for arrival_id in TARGET_ARRIVAL_IDS
+                for row in _uniform_rows(
+                    [candidate for candidate in probe["rows"] if int(candidate["arrival_id"]) == int(arrival_id)],
+                    MAX_PROBE_ROWS_PER_ARRIVAL,
+                )
+            ]
         _require(probe_rows, "probe selection is empty")
         _write_json(output / "probe_selection.json", {
             "stage": STAGE,
+            **window_metadata,
             "source_seed": SOURCE_SEED,
-            "target_arrival_ids": list(TARGET_ARRIVAL_IDS),
+            "target_arrival_ids": list(target_arrivals),
             "smoke": bool(smoke),
             "fixture_not_full_selection": bool(smoke),
             "source_lifecycle_targets": source_lifecycle,
@@ -936,19 +1035,28 @@ def run(
             "processed_rows": len(runtime_rows),
             "technical_checks": runtime_report,
         })
-        final_rows = _select_final_states(runtime_rows, smoke=smoke)
+        final_rows = _select_final_states(runtime_rows, smoke=smoke, local_window=local_window)
         selection_payload = {
             "stage": STAGE,
+            **window_metadata,
             "source_seed": SOURCE_SEED,
-            "target_arrival_ids": list(TARGET_ARRIVAL_IDS),
+            "target_arrival_ids": list(target_arrivals),
             "smoke": bool(smoke),
             "fixture_not_full_selection": bool(smoke),
             "probe_selection": str(output / "probe_selection.json"),
             "runtime_rows": str(output / "runtime_rows.json"),
             "selected_rows": final_rows,
             "selected_count": len(final_rows),
-            "selection_bound": len(TARGET_ARRIVAL_IDS) * MAX_FINAL_ROWS_PER_ARRIVAL,
-            "selection_algorithm": ["max_withheld", "max_proposal_miss", "lowest_soc"],
+            "selection_bound": (
+                len(window_metadata["window_steps"])
+                if local_window
+                else len(TARGET_ARRIVAL_IDS) * MAX_FINAL_ROWS_PER_ARRIVAL
+            ),
+            "selection_algorithm": (
+                ["local_window_step_order"]
+                if local_window
+                else ["max_withheld", "max_proposal_miss", "lowest_soc"]
+            ),
         }
         _write_json(output / "selection.json", selection_payload)
         progress({
@@ -998,10 +1106,17 @@ def run(
                 "runtime_rows_processed": len(runtime_rows),
                 "states_processed": len(state_results),
             })
-        summary = _summary(state_results=state_results, runtime_rows=runtime_rows, selection_path=output / "selection.json")
+        summary = _summary(
+            state_results=state_results,
+            runtime_rows=runtime_rows,
+            selection_path=output / "selection.json",
+            local_window=local_window,
+            smoke=smoke,
+        )
         _write_json(output / "summary.json", summary)
         report = {
             "stage": STAGE,
+            **window_metadata,
             "status": "SMOKE_COMPLETED" if smoke else "COMPLETED",
             "output_dir": str(output),
             "source_seed": SOURCE_SEED,
@@ -1043,11 +1158,12 @@ def run(
     except BaseException as exc:
         failure = {
             "stage": STAGE,
+            **window_metadata,
             "status": "FAILED",
             "output_dir": str(output),
             "source_seed": SOURCE_SEED,
             "source_scenario": SOURCE_SCENARIO,
-            "target_arrival_ids": list(TARGET_ARRIVAL_IDS),
+            "target_arrival_ids": list(target_arrivals),
             "probe_rows_count": 0,
             "runtime_rows_count": len(runtime_rows),
             "states_processed": len(state_results),
@@ -1069,6 +1185,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--formal-root", type=Path, default=DEFAULT_FORMAL_ROOT)
     parser.add_argument("--baseline-record-root", type=Path, default=DEFAULT_BASELINE_RECORD_ROOT)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--local-window", action="store_true")
     return parser
 
 
@@ -1081,6 +1198,7 @@ def main(argv: list[str] | None = None) -> int:
             formal_root=args.formal_root,
             baseline_record_root=args.baseline_record_root,
             smoke=bool(args.smoke),
+            local_window=bool(args.local_window),
         )
     except BaseException as exc:
         print(json.dumps({"stage": STAGE, "status": "FAILED", "error": {"type": type(exc).__name__, "message": str(exc)}}, sort_keys=True), flush=True)

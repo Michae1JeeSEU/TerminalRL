@@ -27,6 +27,18 @@ class _ToyModel(nn.Module):
         return gate, proposal
 
 
+class _IndependentAdvantageModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.gate_adapter = nn.Linear(2, 2, bias=False)
+        nn.init.zeros_(self.gate_adapter.weight)
+
+    def distributions(self, observations: torch.Tensor) -> tuple[Categorical, Categorical]:
+        gate = Categorical(logits=self.gate_adapter(observations))
+        proposal = Categorical(logits=torch.zeros((len(observations), 2), device=observations.device))
+        return gate, proposal
+
+
 def _toy_policy() -> SimpleNamespace:
     torch.manual_seed(17)
     return SimpleNamespace(model=_ToyModel())
@@ -270,3 +282,173 @@ def test_bounded_backtracking_restores_full_model_and_optimizer_after_all_reject
         _optimizer_state_without_learning_rate(policy),
         _optimizer_state_without_learning_rate(reference),
     )
+
+
+@pytest.mark.parametrize(
+    ("deltas", "expected"),
+    [
+        ([1.0, 2.0, 3.0], 2.0),
+        ([-1.0, -2.0, -3.0], -2.0),
+        ([1.0, -1.0, 0.0], 0.0),
+        ([0.0, 0.0, 0.0], 0.0),
+    ],
+)
+def test_normal_advantage_sign_rules(deltas: list[float], expected: float) -> None:
+    assert runner._normal_advantage_from_deltas(deltas) == pytest.approx(expected)
+
+
+def _normal_advantage_fixture(*, missing_field: str | None = None) -> tuple[dict, dict]:
+    selected = [
+        {
+            "seed": 873103,
+            "step": step,
+            "uid": 42,
+            "arrival_id": 12,
+            "observation": [float(step)] + [0.0] * 87,
+        }
+        for step in range(100, 105)
+    ]
+    deltas = ([1.0, 2.0, 3.0], [-1.0, -2.0, -3.0], [1.0, -1.0, 0.0], [0.0, 0.0, 0.0], [2.0, 0.0, 1.0])
+    states = []
+    for state_index, (row, values) in enumerate(zip(selected, deltas)):
+        comparisons = [
+            {
+                "normal_delta": value,
+                "failed_delta": 0,
+                "baseline_failed": 0,
+                "candidate_failed": 0,
+                "technical_ok": True,
+            }
+            for value in values
+        ]
+        release = {
+            "comparisons": comparisons,
+            "normal_opportunity": {
+                "normal_opportunity": True,
+                "normal_deltas": list(values),
+                "technical_ok": True,
+            },
+        }
+        if missing_field is not None:
+            release["comparisons"][0].pop(missing_field, None)
+        states.append({
+            "state_index": state_index,
+            "seed": row["seed"],
+            "step": row["step"],
+            "uid": row["uid"],
+            "arrival_id": row["arrival_id"],
+            "repeat_count": 3,
+            "gate": {"release": release},
+        })
+    return {"selected_rows": selected}, {"states": states}
+
+
+def test_normal_advantage_rows_use_fixed_window_and_report_only_teacher_gate() -> None:
+    selection, summary = _normal_advantage_fixture()
+    rows = runner._normal_advantage_rows(selection, summary)
+    assert [row["step"] for row in rows] == [100, 101, 102, 103, 104]
+    assert [row["advantage"] for row in rows] == pytest.approx([2.0, -2.0, 0.0, 0.0, 1.0])
+    assert [row["teacher_gate"] for row in rows] == [1, 0, None, None, 1]
+    assert all(row["weight"] == pytest.approx(0.2) for row in rows)
+
+
+def test_normal_advantage_rows_reject_missing_comparison_field() -> None:
+    selection, summary = _normal_advantage_fixture(missing_field="technical_ok")
+    with pytest.raises(runner.TerminalGateRepairError, match="technical_ok"):
+        runner._normal_advantage_rows(selection, summary)
+
+
+def test_normal_advantage_rows_refuse_without_positive_advantage() -> None:
+    selection, summary = _normal_advantage_fixture()
+    for state in summary["states"]:
+        comparisons = state["gate"]["release"]["comparisons"]
+        for comparison in comparisons:
+            comparison["normal_delta"] = -1.0
+        state["gate"]["release"]["normal_opportunity"]["normal_deltas"] = [-1.0, -1.0, -1.0]
+    with pytest.raises(runner.TerminalGateRepairError, match="no positive normal advantage"):
+        runner._normal_advantage_rows(selection, summary)
+
+
+def test_normal_advantage_requires_bounded_backtracking(tmp_path: Path) -> None:
+    with pytest.raises(runner.TerminalGateRepairError, match="bounded backtracking"):
+        runner._fit(
+            output_dir=tmp_path / "fit",
+            terminal_credit_root=tmp_path / "credit",
+            formal_root=tmp_path / "formal",
+            anchor_path=tmp_path / "anchors.npz",
+            smoke=True,
+            bounded_backtracking=False,
+            normal_advantage=True,
+        )
+
+
+def test_normal_advantage_objective_is_linear_probability_gap(monkeypatch: pytest.MonkeyPatch) -> None:
+    policy = _toy_policy()
+    observations, _labels, _weights, anchors = _toy_batches()
+    source_probabilities = runner._gate_release_probabilities(policy, observations).detach().clone()
+    advantages = torch.tensor([0.001, -0.001, 0.0])
+    monkeypatch.setattr(runner, "_anchor_kl_tensor", lambda _source, candidate: candidate.sum(dim=-1) * 0.0)
+    objective, metrics = runner._training_objective(
+        policy,
+        observations,
+        None,
+        None,
+        anchors,
+        runner._gate_logits(policy, anchors).detach().clone(),
+        advantages=advantages,
+        source_release_probabilities=source_probabilities,
+    )
+    expected = -torch.mean(advantages * (torch.tensor(metrics["release_probabilities"]) - source_probabilities))
+    assert metrics["weighted_ce"] is None
+    assert metrics["normal_advantage_term"] == pytest.approx(float(expected))
+    assert float(objective.detach()) == pytest.approx(float(expected))
+
+
+def test_normal_advantage_small_probability_gap_is_not_inverse_probability_scaled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = _toy_policy()
+    observations = torch.zeros((1, 3))
+    source_probabilities = torch.tensor([0.990])
+    advantages = torch.tensor([0.001])
+    fixed_logits = torch.log(torch.tensor([[0.009, 0.991]]))
+    monkeypatch.setattr(runner, "_gate_logits", lambda _policy, batch: fixed_logits.repeat(len(batch), 1))
+    monkeypatch.setattr(runner, "_anchor_kl_tensor", lambda _source, candidate: candidate.sum(dim=-1) * 0.0)
+    objective, metrics = runner._training_objective(
+        policy,
+        observations,
+        None,
+        None,
+        observations,
+        fixed_logits,
+        advantages=advantages,
+        source_release_probabilities=source_probabilities,
+    )
+    expected = -0.001 * (0.991 - 0.990)
+    assert metrics["normal_advantage_term"] == pytest.approx(expected, abs=1e-9)
+    assert float(objective.detach()) == pytest.approx(expected, abs=1e-9)
+    assert abs(float(objective.detach())) < 1e-4
+
+
+def test_normal_advantage_gradient_moves_release_probability_by_sign() -> None:
+    torch.manual_seed(5)
+    policy = SimpleNamespace(model=_IndependentAdvantageModel())
+    observations = torch.eye(2)
+    source_probabilities = torch.tensor([0.5, 0.5])
+    advantages = torch.tensor([1.0, -1.0])
+    result = runner._run_updates(
+        policy,
+        observations,
+        None,
+        None,
+        observations.clone(),
+        max_updates=1,
+        kl_mean_limit=1e9,
+        kl_max_limit=1e9,
+        advantages=advantages,
+        source_release_probabilities=source_probabilities,
+    )
+    assert result["accepted_updates"] == 1
+    probabilities = runner._gate_release_probabilities(policy, observations).detach()
+    assert probabilities[0] > source_probabilities[0]
+    assert probabilities[1] < source_probabilities[1]

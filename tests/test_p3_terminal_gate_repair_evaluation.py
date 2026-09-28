@@ -51,6 +51,10 @@ def test_fit_report_rejects_unregistered_stage(tmp_path, monkeypatch) -> None:
         runner._load_fit_report(report_path, candidate)
 
 
+def test_normal_advantage_stage_is_registered() -> None:
+    assert runner.STAGE_NORMAL_ADVANTAGE in runner.SUPPORTED_STAGES
+
+
 def test_check_only_binding_and_progress_use_validated_stage(tmp_path, monkeypatch) -> None:
     stage = "P3_TERMINAL_GATE_REPAIR_V2"
     report_path, candidate, source = _fit_report_fixture(tmp_path, monkeypatch, stage=stage)
