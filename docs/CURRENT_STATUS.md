@@ -1022,10 +1022,14 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
    作为当前 check-only 事实；
-2. 本轮有界 task-neutral PPO pilot 已完成但 checkpoint 不保留；继续以 `3fe7...d4ab` candidate
-   作为开发起点，`03c0` 保留为对照。下一步先使用已保存的 training records、GAE 和 ActionTape
-   定位 normal→emergency 变化及更新信号，检查第三次 dense 更新前后的 credit allocation 与
-   critic adaptation；不直接增加训练量、重新加入任务优先级或盲改 reward/gamma；
+2. 本轮有界 task-neutral PPO pilot 已完成但 checkpoint 不保留；继续以 `3fe7...d4ab` actor
+   作为开发起点，`fa0e` 已拒绝，`03c0` 保留为对照。下一步仅按 [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)
+   做一次有界跨场景 batch fit：使用 `b136` critic 价值初始化和六次原生 on-policy 随机训练 rollout，
+   env-policy 对为 `(873103,873103)`、`(873106,873106)`、`(874601,874701)`、
+   `(874602,874702)`、`(874603,874703)`、`(874604,874704)`，旧 tapes 仅作参照、不作为 update
+   输入；episode 边界不跨步 bootstrap，之后只做一次 joint `PPO.update`。代码、定向测试和 check-only
+   通过后才由主审启动；当前无任何新 run。该 fit 不是 root-cause 证明或单变量严格消融，不增加
+   任务优先级、样本或 reward/gamma/lambda 改动；后续新物理 evaluation 按协议执行；
 3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
    low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
    wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；

@@ -66,6 +66,70 @@ def test_gate_reference_uses_fixed_source_policy_snapshot() -> None:
     assert pilot._model_digest(source) == before
 
 
+def test_training_record_policy_seed_is_optional_and_forwarded(tmp_path, monkeypatch) -> None:
+    calls = []
+
+    def fake_rollout(policy, config, **kwargs):
+        calls.append(dict(kwargs))
+        effective = int(kwargs.get("policy_seed", kwargs["seed"]))
+        return [], {"action_tape": "tape", "policy_seed": effective, "terminal": True}
+
+    monkeypatch.setattr(pilot, "_model_digest", lambda policy: "digest")
+    monkeypatch.setattr(
+        pilot.student_rollout_v4_2,
+        "rollout",
+        fake_rollout,
+    )
+    monkeypatch.setattr(
+        pilot.terminal_lifecycle_metrics,
+        "terminal_lifecycle_metrics",
+        lambda *args: {"outcomes": {"completed": 0}},
+    )
+    monkeypatch.setattr(pilot.rank_eval, "_normalize_runtime_record", lambda record, **kwargs: dict(record))
+    config = SimpleNamespace(max_simulation_seconds=2.0, dt=1.0)
+    common = {
+        "policy": object(),
+        "checkpoint": tmp_path / "candidate.pt",
+        "config": config,
+        "scenario": "flow6",
+        "output": tmp_path / "rollout",
+    }
+
+    _, default_record = pilot._training_record(**common, seed=101)
+    _, seeded_record = pilot._training_record(**common, seed=102, policy_seed=909)
+
+    assert "policy_seed" not in calls[0]
+    assert calls[1]["policy_seed"] == 909
+    assert default_record["policy_seed"] == 101
+    assert seeded_record["policy_seed"] == 909
+    assert default_record["summary"]["policy_seed"] == 101
+    assert seeded_record["summary"]["policy_seed"] == 909
+
+
+def test_training_record_failure_preserves_effective_policy_seed(tmp_path, monkeypatch) -> None:
+    def failing_rollout(*args, **kwargs):
+        raise RuntimeError("fixture rollout failure")
+
+    monkeypatch.setattr(pilot, "_model_digest", lambda policy: "digest")
+    monkeypatch.setattr(pilot.student_rollout_v4_2, "rollout", failing_rollout)
+    monkeypatch.setattr(pilot.rank_eval, "_normalize_runtime_record", lambda record, **kwargs: dict(record))
+    config = SimpleNamespace(max_simulation_seconds=2.0, dt=1.0)
+
+    steps, record = pilot._training_record(
+        policy=object(),
+        checkpoint=tmp_path / "candidate.pt",
+        config=config,
+        scenario="flow6",
+        seed=101,
+        policy_seed=909,
+        output=tmp_path / "rollout",
+    )
+
+    assert steps == []
+    assert record["status"] == "failed"
+    assert record["policy_seed"] == 909
+
+
 def test_nonterminal_training_rollout_is_rejected_before_update() -> None:
     called = []
     record = {

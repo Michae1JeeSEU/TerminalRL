@@ -332,6 +332,7 @@ def _build_gate_reference(
 
 def _training_record(
     *, policy: Any, checkpoint: Path, config: Any, scenario: str, seed: int, output: Path,
+    policy_seed: int | None = None,
 ) -> tuple[list[StudentStepV42], dict[str, Any]]:
     """Run exactly one training rollout and retain its full lifecycle record."""
 
@@ -340,16 +341,18 @@ def _training_record(
     action_tape: Any = None
     lifecycle: Mapping[str, Any] | None = None
     requests = int(neutral_eval.EXPECTED_REQUESTS[scenario])
+    effective_policy_seed = int(seed if policy_seed is None else policy_seed)
     try:
-        steps, raw_summary = student_rollout_v4_2.rollout(
-            policy,
-            config,
-            seed=int(seed),
-            max_steps=int(round(float(config.max_simulation_seconds) / float(config.dt))),
-            output=output,
-            deterministic=False,
-            collect_labels=False,
-        )
+        rollout_kwargs = {
+            "seed": int(seed),
+            "max_steps": int(round(float(config.max_simulation_seconds) / float(config.dt))),
+            "output": output,
+            "deterministic": False,
+            "collect_labels": False,
+        }
+        if policy_seed is not None:
+            rollout_kwargs["policy_seed"] = effective_policy_seed
+        steps, raw_summary = student_rollout_v4_2.rollout(policy, config, **rollout_kwargs)
         _require(isinstance(raw_summary, Mapping), "training rollout summary must be a mapping")
         summary = dict(raw_summary)
         action_tape = summary.get("action_tape")
@@ -362,6 +365,7 @@ def _training_record(
             "label": "task_neutral_pilot_training",
             "scenario": str(scenario),
             "seed": int(seed),
+            "policy_seed": effective_policy_seed,
             "status": "completed" if before == after else "failed",
             "checkpoint": str(checkpoint),
             "checkpoint_sha256": _sha256(checkpoint) if checkpoint.is_file() else None,
@@ -392,7 +396,7 @@ def _training_record(
             scenario=scenario, seed=seed, checkpoint=checkpoint, requests=requests,
             error=exc, summary=summary, weights_unchanged=(before == after),
             weights_before=before, weights_after=after, action_tape=action_tape,
-            lifecycle=lifecycle,
+            lifecycle=lifecycle, policy_seed=policy_seed,
         )
         return [], dict(rank_eval._normalize_runtime_record(
             failure, scenario=scenario, seed=seed, requests=requests,
