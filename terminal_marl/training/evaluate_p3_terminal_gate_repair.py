@@ -22,7 +22,11 @@ from terminal_marl.training import collect_p3_proposal_head_probe_v1 as collecto
 from terminal_marl.training import evaluate_p3_runtime_rank_repair as rank_eval
 
 
-STAGE = "P3_TERMINAL_GATE_REPAIR_V1"
+STAGE = "P3_TERMINAL_GATE_REPAIR_V2"
+SUPPORTED_STAGES = frozenset({
+    "P3_TERMINAL_GATE_REPAIR_V1",
+    "P3_TERMINAL_GATE_REPAIR_V2",
+})
 SOURCE_CHECKPOINT = rank_eval.SOURCE_CHECKPOINT
 SOURCE_CHECKPOINT_SHA256 = rank_eval.SOURCE_CHECKPOINT_SHA256
 FORMAL_ROOT = collector.FORMAL_ROOT
@@ -135,6 +139,7 @@ def _load_policy(checkpoint: Path, config: Any) -> tuple[Any, dict[str, Any]]:
 def _load_fit_report(fit_report_path: str | Path, checkpoint: Path) -> tuple[dict[str, Any], str]:
     report_path = Path(fit_report_path)
     report = _read_json(report_path)
+    _require(report.get("stage") in SUPPORTED_STAGES, "fit report stage must be P3_TERMINAL_GATE_REPAIR_V1 or P3_TERMINAL_GATE_REPAIR_V2")
     _require(report.get("status") == "COMPLETED", "fit report status must be COMPLETED")
     _require(
         report.get("source_checkpoint_sha256") == SOURCE_CHECKPOINT_SHA256,
@@ -372,9 +377,17 @@ def _compare_records(
     }
 
 
-def _progress(output: Path, *, status: str, processed: int, expected: int, error: str | None = None) -> None:
+def _progress(
+    output: Path,
+    *,
+    stage: str,
+    status: str,
+    processed: int,
+    expected: int,
+    error: str | None = None,
+) -> None:
     value: dict[str, Any] = {
-        "stage": STAGE,
+        "stage": stage,
         "status": status,
         "processed": int(processed),
         "expected": int(expected),
@@ -418,6 +431,7 @@ def run(
     output = Path(output_dir)
     _require(not output.exists(), f"evaluation output must be fresh: {output}")
     fit_binding, fit_report_sha = _load_fit_report(fit_report, candidate_checkpoint)
+    stage = str(fit_binding["stage"])
     cells = _evaluation_cells()
     baseline_records = load_baseline_records()
     _validate_baseline_records(baseline_records)
@@ -432,7 +446,7 @@ def run(
     freeze = _validate_freeze(source_policy, candidate_policy)
     candidate_digest_before = freeze["candidate_model_digest"]
     binding: dict[str, Any] = {
-        "stage": STAGE,
+        "stage": stage,
         "fit_report": str(Path(fit_report)),
         "fit_report_sha256": fit_report_sha,
         "fit_status": fit_binding.get("status"),
@@ -469,7 +483,7 @@ def run(
 
     output.mkdir(parents=True, exist_ok=False)
     _write_json(output / "binding_manifest.json", {**binding, "status": "RUNNING"})
-    _progress(output, status="RUNNING", processed=0, expected=len(cells))
+    _progress(output, stage=stage, status="RUNNING", processed=0, expected=len(cells))
     records: list[dict[str, Any]] = []
     fatal_error: str | None = None
     for index, cell in enumerate(cells, start=1):
@@ -499,6 +513,7 @@ def run(
         _write_json(output / "records" / f"{scenario}_{seed}.json", dict(record))
         _progress(
             output,
+            stage=stage,
             status="RUNNING",
             processed=index,
             expected=len(cells),
@@ -569,7 +584,14 @@ def run(
     }
     _write_json(output / "binding_manifest.json", {**binding, "status": status, "candidate_retained": candidate_retained})
     _write_json(output / "manifest.json", result)
-    _progress(output, status=status, processed=len(records), expected=len(cells), error=("candidate evaluation failed" if status == "FAILED" else None))
+    _progress(
+        output,
+        stage=stage,
+        status=status,
+        processed=len(records),
+        expected=len(cells),
+        error=("candidate evaluation failed" if status == "FAILED" else None),
+    )
     return result
 
 
@@ -594,8 +616,9 @@ def main(argv: list[str] | None = None) -> int:
     except (TerminalGateRepairEvaluationError, FileNotFoundError, OSError, ValueError) as exc:
         print(json.dumps({"stage": STAGE, "status": "ERROR", "error": str(exc)}, sort_keys=True), flush=True)
         return 2
+    result_stage = result.get("stage", STAGE)
     print(json.dumps({
-        "stage": STAGE,
+        "stage": result_stage,
         "status": result.get("status"),
         "candidate_retained": result.get("candidate_retained", False),
         "records_processed": result.get("records_processed", 0),

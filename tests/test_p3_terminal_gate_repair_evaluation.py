@@ -1,11 +1,102 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from types import SimpleNamespace
 
 import pytest
 import torch
 
 from terminal_marl.training import evaluate_p3_terminal_gate_repair as runner
+
+
+def _fit_report_fixture(tmp_path, monkeypatch, *, stage: str) -> tuple:
+    source = tmp_path / "source.pt"
+    source.write_bytes(b"source")
+    candidate = tmp_path / "candidate.pt"
+    candidate.write_bytes(b"candidate")
+    source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+    monkeypatch.setattr(runner, "SOURCE_CHECKPOINT_SHA256", source_sha)
+    report = {
+        "stage": stage,
+        "status": "COMPLETED",
+        "source_checkpoint_sha256": source_sha,
+        "checkpoint_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
+        "metadata": {"training_scope": "gate_adapter_only"},
+        "invariants": {
+            "trainable_parameter_names": ["gate_adapter.0.weight"],
+            "non_adapter_state_bitwise_unchanged": True,
+            "proposal_logits_bitwise_unchanged": True,
+            "checkpoint_roundtrip_model_exact": True,
+            "adapter_state_changed": True,
+        },
+    }
+    report_path = tmp_path / "report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    return report_path, candidate, source
+
+
+@pytest.mark.parametrize("stage", sorted(runner.SUPPORTED_STAGES))
+def test_fit_report_accepts_only_registered_gate_repair_stages(tmp_path, monkeypatch, stage) -> None:
+    report_path, candidate, _ = _fit_report_fixture(tmp_path, monkeypatch, stage=stage)
+    report, _report_sha = runner._load_fit_report(report_path, candidate)
+    assert report["stage"] == stage
+
+
+def test_fit_report_rejects_unregistered_stage(tmp_path, monkeypatch) -> None:
+    report_path, candidate, _ = _fit_report_fixture(
+        tmp_path, monkeypatch, stage="P3_TERMINAL_GATE_REPAIR_V3"
+    )
+    with pytest.raises(runner.TerminalGateRepairEvaluationError, match="stage"):
+        runner._load_fit_report(report_path, candidate)
+
+
+def test_check_only_binding_and_progress_use_validated_stage(tmp_path, monkeypatch) -> None:
+    stage = "P3_TERMINAL_GATE_REPAIR_V2"
+    report_path, candidate, source = _fit_report_fixture(tmp_path, monkeypatch, stage=stage)
+    monkeypatch.setattr(runner, "SOURCE_CHECKPOINT", source)
+    monkeypatch.setattr(runner, "load_baseline_records", lambda: [])
+    monkeypatch.setattr(runner, "_validate_baseline_records", lambda records: None)
+    monkeypatch.setattr(runner, "_baseline_summaries", lambda records: {"overall": {}})
+    config = SimpleNamespace()
+    monkeypatch.setattr(
+        runner.collector,
+        "_load_source_inputs",
+        lambda root: ({}, {"flow6": config, "flow12": config, "dense24": config}, [], tmp_path / "source-manifest.json"),
+    )
+    monkeypatch.setattr(runner, "_load_policy", lambda checkpoint, config: (object(), {}))
+    monkeypatch.setattr(
+        runner,
+        "_validate_freeze",
+        lambda source_policy, candidate_policy: {"candidate_model_digest": "candidate-digest"},
+    )
+
+    result = runner.run(
+        checkpoint=candidate,
+        fit_report=report_path,
+        output_dir=tmp_path / "check-only-output",
+        check_only=True,
+    )
+    assert result["stage"] == stage
+
+    progress_dir = tmp_path / "progress"
+    runner._progress(progress_dir, stage=stage, status="RUNNING", processed=0, expected=6)
+    assert json.loads((progress_dir / "progress.json").read_text(encoding="utf-8"))["stage"] == stage
+
+
+def test_main_uses_result_stage(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        runner,
+        "run",
+        lambda **kwargs: {
+            "stage": "P3_TERMINAL_GATE_REPAIR_V2",
+            "status": "CHECK_ONLY_OK",
+            "candidate_retained": False,
+            "records_processed": 0,
+        },
+    )
+    assert runner.main(["--checkpoint", "candidate.pt", "--fit-report", "report.json", "--output-dir", "out"]) == 0
+    assert json.loads(capsys.readouterr().out)["stage"] == "P3_TERMINAL_GATE_REPAIR_V2"
 
 
 def _record(cell: dict, *, normal: int | None = None, failed: int = 0,

@@ -136,3 +136,137 @@ def test_only_gate_adapter_changes_and_checkpoint_has_no_optimizer(tmp_path: Pat
     assert set(payload) == {"metadata", "model", "report"}
     assert "optimizer" not in payload
     assert torch.equal(payload["model"]["gate_adapter.weight"], after["gate_adapter.weight"])
+
+
+def _optimizer_state_without_learning_rate(policy: SimpleNamespace) -> dict[str, object]:
+    state = policy.optimizer.state_dict()
+    return {
+        "state": state["state"],
+        "param_groups": [
+            {key: value for key, value in group.items() if key != "lr"}
+            for group in state["param_groups"]
+        ],
+    }
+
+
+def _assert_nested_optimizer_state_equal(left: dict[str, object], right: dict[str, object]) -> None:
+    assert left["param_groups"] == right["param_groups"]
+    left_state = left["state"]
+    right_state = right["state"]
+    assert set(left_state) == set(right_state)
+    for key in left_state:
+        assert set(left_state[key]) == set(right_state[key])
+        for field in left_state[key]:
+            left_value = left_state[key][field]
+            right_value = right_state[key][field]
+            if isinstance(left_value, torch.Tensor):
+                assert torch.equal(left_value, right_value)
+            else:
+                assert left_value == right_value
+
+
+def test_bounded_backtracking_accepts_first_kl_safe_smaller_scale(monkeypatch: pytest.MonkeyPatch) -> None:
+    policy = _toy_policy()
+    observations, labels, weights, anchors = _toy_batches()
+    kl_values = iter(((0.002, 0.02), (0.0001, 0.005)))
+    monkeypatch.setattr(runner, "_anchor_kl", lambda *_args: next(kl_values))
+
+    result = runner._run_updates(
+        policy,
+        observations,
+        labels,
+        weights,
+        anchors,
+        max_updates=1,
+        bounded_backtracking=True,
+        kl_mean_limit=runner.KL_MEAN_LIMIT,
+        kl_max_limit=runner.KL_MAX_LIMIT,
+    )
+
+    entry = result["history"][0]
+    assert result["attempted_updates"] == 1
+    assert result["optimizer_attempts"] == 2
+    assert result["accepted_updates"] == 1
+    assert entry["accepted_scale"] == pytest.approx(0.5)
+    assert entry["rollback"] is False
+    assert [trial["scale"] for trial in entry["trials"]] == [1.0, 0.5]
+    assert [trial["accepted"] for trial in entry["trials"]] == [False, True]
+    assert result["bounded_backtracking"] is True
+
+    reference = _toy_policy()
+    monkeypatch.setattr(runner, "_anchor_kl", lambda *_args: (0.0, 0.0))
+    runner._run_updates(
+        reference,
+        observations,
+        labels,
+        weights,
+        anchors,
+        max_updates=1,
+        learning_rate=runner.LEARNING_RATE * 0.5,
+        kl_mean_limit=runner.KL_MEAN_LIMIT,
+        kl_max_limit=runner.KL_MAX_LIMIT,
+    )
+    assert runner.coverage_fit._state_equal(
+        runner.coverage_fit._state_cpu(policy.model),
+        runner.coverage_fit._state_cpu(reference.model),
+    )
+    _assert_nested_optimizer_state_equal(
+        _optimizer_state_without_learning_rate(policy),
+        _optimizer_state_without_learning_rate(reference),
+    )
+
+
+def test_bounded_backtracking_restores_full_model_and_optimizer_after_all_rejections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = _toy_policy()
+    observations, labels, weights, anchors = _toy_batches()
+    kl_values = iter(((0.0, 0.0),) + ((0.002, 0.02),) * 5)
+    monkeypatch.setattr(runner, "_anchor_kl", lambda *_args: next(kl_values))
+
+    result = runner._run_updates(
+        policy,
+        observations,
+        labels,
+        weights,
+        anchors,
+        max_updates=2,
+        bounded_backtracking=True,
+        kl_mean_limit=runner.KL_MEAN_LIMIT,
+        kl_max_limit=runner.KL_MAX_LIMIT,
+    )
+
+    entry = result["history"][1]
+    reference = _toy_policy()
+    monkeypatch.setattr(runner, "_anchor_kl", lambda *_args: (0.0, 0.0))
+    reference_result = runner._run_updates(
+        reference,
+        observations,
+        labels,
+        weights,
+        anchors,
+        max_updates=1,
+        bounded_backtracking=True,
+        kl_mean_limit=runner.KL_MEAN_LIMIT,
+        kl_max_limit=runner.KL_MAX_LIMIT,
+    )
+    assert result["attempted_updates"] == 2
+    assert result["optimizer_attempts"] == 6
+    assert result["accepted_updates"] == 1
+    assert result["stop_reason"] == "kl_cap"
+    assert result["rollback"] is True
+    assert result["history"][0]["accepted_scale"] == pytest.approx(1.0)
+    assert entry["accepted_scale"] is None
+    assert entry["rollback"] is True
+    assert len(entry["trials"]) == 5
+    assert all(trial["accepted"] is False for trial in entry["trials"])
+    assert reference_result["accepted_updates"] == 1
+    assert policy.optimizer.state_dict()["state"]
+    assert runner.coverage_fit._state_equal(
+        runner.coverage_fit._state_cpu(policy.model),
+        runner.coverage_fit._state_cpu(reference.model),
+    )
+    _assert_nested_optimizer_state_equal(
+        _optimizer_state_without_learning_rate(policy),
+        _optimizer_state_without_learning_rate(reference),
+    )

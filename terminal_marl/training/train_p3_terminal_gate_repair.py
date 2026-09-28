@@ -24,6 +24,7 @@ from terminal_marl.training import train_p3_gate_coverage_repair_v2 as coverage_
 
 
 STAGE = "P3_TERMINAL_GATE_REPAIR_V1"
+STAGE_V2 = "P3_TERMINAL_GATE_REPAIR_V2"
 OBSERVATION_DIM = 88
 SOURCE_CHECKPOINT_SHA256 = collector.SOURCE_CHECKPOINT_SHA256
 FORMAL_ROOT = collector.FORMAL_ROOT
@@ -46,6 +47,7 @@ KL_WEIGHT = 10.0
 KL_MEAN_LIMIT = 0.001
 KL_MAX_LIMIT = 0.01
 ADAPTER_PREFIX = "gate_adapter."
+BACKTRACKING_SCALES = (1.0, 0.5, 0.25, 0.125, 0.0625)
 
 
 class TerminalGateRepairError(ValueError):
@@ -259,6 +261,7 @@ def _run_updates(
     gradient_clip_norm: float = GRADIENT_CLIP_NORM,
     kl_mean_limit: float = KL_MEAN_LIMIT,
     kl_max_limit: float = KL_MAX_LIMIT,
+    bounded_backtracking: bool = False,
 ) -> dict[str, Any]:
     trainable, names = coverage_fit._freeze_to_adapter(policy)
     policy.optimizer = torch.optim.Adam(trainable, lr=float(learning_rate))
@@ -266,11 +269,100 @@ def _run_updates(
     history: list[dict[str, Any]] = []
     accepted_updates = 0
     attempted_updates = 0
+    optimizer_attempts = 0
     rollback = False
     stop_reason = "max_updates"
     for update in range(1, int(max_updates) + 1):
         before_model = coverage_fit._state_cpu(policy.model)
         before_optimizer = copy.deepcopy(policy.optimizer.state_dict())
+
+        if bounded_backtracking:
+            attempted_updates += 1
+            trials: list[dict[str, Any]] = []
+            accepted_scale: float | None = None
+            accepted_trial: dict[str, Any] | None = None
+            for scale in BACKTRACKING_SCALES:
+                policy.model.load_state_dict(before_model, strict=True)
+                policy.optimizer.load_state_dict(copy.deepcopy(before_optimizer))
+                for group in policy.optimizer.param_groups:
+                    group["lr"] = float(learning_rate) * float(scale)
+                policy.optimizer.zero_grad(set_to_none=True)
+                train_logits = _gate_logits(policy, train_observations)
+                per_sample_ce = F.cross_entropy(train_logits, train_labels, reduction="none")
+                weighted_ce = (per_sample_ce * train_weights).sum()
+                train_anchor_logits = _gate_logits(policy, anchor_observations)
+                kl_values_before = _anchor_kl_tensor(source_anchor_logits, train_anchor_logits)
+                mean_kl_before = float(kl_values_before.mean().detach().cpu())
+                max_kl_before = float(kl_values_before.max().detach().cpu())
+                loss = weighted_ce + KL_WEIGHT * kl_values_before.mean()
+                _require(bool(torch.isfinite(loss).item()), f"non-finite loss at update {update}")
+                loss.backward()
+                norm = torch.nn.utils.clip_grad_norm_(trainable, float(gradient_clip_norm))
+                _require(bool(torch.isfinite(norm).item()), f"non-finite gradient norm at update {update}")
+                policy.optimizer.step()
+                optimizer_attempts += 1
+                candidate_anchor_logits = _gate_logits(policy, anchor_observations)
+                mean_kl, max_kl = _anchor_kl(source_anchor_logits, candidate_anchor_logits)
+                accepted = bool(mean_kl <= kl_mean_limit and max_kl <= kl_max_limit)
+                trial = {
+                    "scale": float(scale),
+                    "learning_rate": float(learning_rate) * float(scale),
+                    "weighted_ce": float(weighted_ce.detach().cpu()),
+                    "mean_kl_before": mean_kl_before,
+                    "max_kl_before": max_kl_before,
+                    "mean_kl": mean_kl,
+                    "max_kl": max_kl,
+                    "loss": float(loss.detach().cpu()),
+                    "accepted": accepted,
+                    "rolled_back": not accepted,
+                }
+                trials.append(trial)
+                if accepted:
+                    accepted_scale = float(scale)
+                    accepted_trial = trial
+                    for group in policy.optimizer.param_groups:
+                        group["lr"] = float(learning_rate)
+                    accepted_updates += 1
+                    history.append({
+                        "attempt": update,
+                        "update": update,
+                        "weighted_ce": trial["weighted_ce"],
+                        "mean_kl_before": trial["mean_kl_before"],
+                        "max_kl_before": trial["max_kl_before"],
+                        "mean_kl": trial["mean_kl"],
+                        "max_kl": trial["max_kl"],
+                        "loss": trial["loss"],
+                        "accepted": True,
+                        "rolled_back": False,
+                        "trials": trials,
+                        "accepted_scale": accepted_scale,
+                        "rollback": False,
+                    })
+                    break
+            if accepted_trial is None:
+                policy.model.load_state_dict(before_model, strict=True)
+                policy.optimizer.load_state_dict(copy.deepcopy(before_optimizer))
+                first_trial = trials[0]
+                history.append({
+                    "attempt": update,
+                    "update": update,
+                    "weighted_ce": first_trial["weighted_ce"],
+                    "mean_kl_before": first_trial["mean_kl_before"],
+                    "max_kl_before": first_trial["max_kl_before"],
+                    "mean_kl": first_trial["mean_kl"],
+                    "max_kl": first_trial["max_kl"],
+                    "loss": first_trial["loss"],
+                    "accepted": False,
+                    "rolled_back": True,
+                    "trials": trials,
+                    "accepted_scale": None,
+                    "rollback": True,
+                })
+                rollback = True
+                stop_reason = "kl_cap"
+                break
+            continue
+
         policy.optimizer.zero_grad(set_to_none=True)
         train_logits = _gate_logits(policy, train_observations)
         per_sample_ce = F.cross_entropy(train_logits, train_labels, reduction="none")
@@ -286,6 +378,7 @@ def _run_updates(
         _require(bool(torch.isfinite(norm).item()), f"non-finite gradient norm at update {update}")
         policy.optimizer.step()
         attempted_updates += 1
+        optimizer_attempts += 1
         candidate_anchor_logits = _gate_logits(policy, anchor_observations)
         mean_kl, max_kl = _anchor_kl(source_anchor_logits, candidate_anchor_logits)
         entry = {
@@ -301,7 +394,7 @@ def _run_updates(
         }
         if not entry["accepted"]:
             policy.model.load_state_dict(before_model, strict=True)
-            policy.optimizer.load_state_dict(before_optimizer)
+            policy.optimizer.load_state_dict(copy.deepcopy(before_optimizer))
             entry["rolled_back"] = True
             history.append(entry)
             rollback = True
@@ -313,6 +406,8 @@ def _run_updates(
         "trainable_parameter_names": names,
         "accepted_updates": accepted_updates,
         "attempted_updates": attempted_updates,
+        "optimizer_attempts": optimizer_attempts,
+        "bounded_backtracking": bool(bounded_backtracking),
         "stop_reason": stop_reason,
         "rollback": rollback,
         "history": history,
@@ -336,7 +431,9 @@ def _fit(
     formal_root: Path,
     anchor_path: Path,
     smoke: bool,
+    bounded_backtracking: bool,
 ) -> dict[str, Any]:
+    stage = STAGE_V2 if bounded_backtracking else STAGE
     _require(not output_dir.exists(), f"output directory must be fresh: {output_dir}")
     selection, summary = _load_terminal_credit(terminal_credit_root)
     rows = _training_rows(selection, summary)
@@ -358,8 +455,9 @@ def _fit(
     source_proposal_logits = _proposal_logits(source_policy, anchor_observations).detach().clone()
     output_dir.mkdir(parents=True, exist_ok=False)
     _write_json(output_dir / "progress.json", {
-        "stage": STAGE, "status": "RUNNING", "accepted_updates": 0,
-        "attempted_updates": 0, "smoke": bool(smoke),
+        "stage": stage, "status": "RUNNING", "accepted_updates": 0,
+        "attempted_updates": 0, "optimizer_attempts": 0,
+        "bounded_backtracking": bool(bounded_backtracking), "smoke": bool(smoke),
     })
     updates = _run_updates(
         source_policy,
@@ -368,6 +466,7 @@ def _fit(
         train_weights,
         anchor_observations,
         max_updates=SMOKE_UPDATES if smoke else MAX_UPDATES,
+        bounded_backtracking=bounded_backtracking,
     )
     final_state = coverage_fit._state_cpu(source_policy.model)
     final_anchor_mean_kl, final_anchor_max_kl = _anchor_kl(
@@ -381,8 +480,26 @@ def _fit(
     _require(non_adapter_unchanged, "non-adapter state changed")
     _require(proposal_unchanged, "proposal logits changed")
     metadata = copy.deepcopy(dict(source_payload.get("metadata", {})))
+    for stale_key in (
+        "anchor_group_weight",
+        "anchor_train_paths",
+        "anchor_train_sha256",
+        "coverage_group_weight",
+        "coverage_train_paths",
+        "coverage_train_sha256",
+        "dev_gradients",
+        "dev_paths",
+        "dev_rows",
+        "dev_sha256",
+        "epochs",
+        "label_smoothing",
+        "source_sha256",
+        "source_stage",
+    ):
+        metadata.pop(stale_key, None)
+    fit_max_updates = SMOKE_UPDATES if smoke else MAX_UPDATES
     metadata.update({
-        "stage": STAGE,
+        "stage": stage,
         "source_checkpoint": str(collector.SOURCE_CHECKPOINT),
         "source_checkpoint_sha256": source_sha,
         "architecture_id": CALIBRATED_ARCHITECTURE_ID,
@@ -391,6 +508,10 @@ def _fit(
         "terminal_credit_summary": str(terminal_credit_root / "summary.json"),
         "source_manifest": str(source_manifest),
         "anchor_path": str(anchor_path),
+        "train_rows": len(rows),
+        "batch_size": len(rows),
+        "max_updates": fit_max_updates,
+        "learning_rate": LEARNING_RATE,
         "training_seed": 20260928,
         "training_scope": "gate_adapter_only",
         "training_called": True,
@@ -399,12 +520,14 @@ def _fit(
         "PPO_ALLOWED": False,
         "checkpoint_promotable": False,
         "optimizer_saved": False,
+        "bounded_backtracking": bool(bounded_backtracking),
         "smoke": bool(smoke),
     })
     report: dict[str, Any] = {
-        "stage": STAGE,
+        "stage": stage,
         "status": "COMPLETED",
         "smoke": bool(smoke),
+        "bounded_backtracking": bool(bounded_backtracking),
         "source_checkpoint": str(collector.SOURCE_CHECKPOINT),
         "source_checkpoint_sha256": source_sha,
         "terminal_credit_selection": str(terminal_credit_root / "selection.json"),
@@ -416,9 +539,14 @@ def _fit(
             for row in rows
         ],
         "weights": [float(row["weight"]) for row in rows],
+        "train_rows": len(rows),
+        "batch_size": len(rows),
+        "max_updates": fit_max_updates,
+        "learning_rate": LEARNING_RATE,
         "loss": {"objective": "weighted_CE+10*mean_KL", "kl_weight": KL_WEIGHT},
         "accepted_updates": int(updates["accepted_updates"]),
         "attempted_updates": int(updates["attempted_updates"]),
+        "optimizer_attempts": int(updates["optimizer_attempts"]),
         "stop_reason": updates["stop_reason"],
         "rollback": bool(updates["rollback"]),
         "history": updates["history"],
@@ -455,9 +583,11 @@ def _fit(
     report["metadata"] = metadata
     _write_json(report_path, report)
     _write_json(output_dir / "progress.json", {
-        "stage": STAGE, "status": "COMPLETED", "accepted_updates": updates["accepted_updates"],
-        "attempted_updates": updates["attempted_updates"], "checkpoint": str(checkpoint_path),
-        "smoke": bool(smoke),
+        "stage": stage, "status": "COMPLETED", "accepted_updates": updates["accepted_updates"],
+        "attempted_updates": updates["attempted_updates"],
+        "optimizer_attempts": updates["optimizer_attempts"],
+        "bounded_backtracking": bool(bounded_backtracking),
+        "checkpoint": str(checkpoint_path), "smoke": bool(smoke),
     })
     return report
 
@@ -469,6 +599,7 @@ def run(
     formal_root: str | Path = FORMAL_ROOT,
     anchor_path: str | Path = ANCHOR_PATH,
     smoke: bool = False,
+    bounded_backtracking: bool = False,
 ) -> dict[str, Any]:
     return _fit(
         output_dir=Path(output_dir),
@@ -476,6 +607,7 @@ def run(
         formal_root=Path(formal_root),
         anchor_path=Path(anchor_path),
         smoke=bool(smoke),
+        bounded_backtracking=bool(bounded_backtracking),
     )
 
 
@@ -486,6 +618,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--formal-root", type=Path, default=FORMAL_ROOT)
     parser.add_argument("--anchor-path", type=Path, default=ANCHOR_PATH)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--bounded-backtracking", action="store_true")
     return parser
 
 
@@ -498,17 +631,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             formal_root=args.formal_root,
             anchor_path=args.anchor_path,
             smoke=args.smoke,
+            bounded_backtracking=args.bounded_backtracking,
         )
     except (TerminalGateRepairError, FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
-        print(json.dumps({"stage": STAGE, "status": "ERROR", "error": str(exc)}, sort_keys=True), flush=True)
+        stage = STAGE_V2 if args.bounded_backtracking else STAGE
+        print(json.dumps({"stage": stage, "status": "ERROR", "error": str(exc)}, sort_keys=True), flush=True)
         return 1
     print(json.dumps({
-        "stage": STAGE,
+        "stage": report["stage"],
         "status": report["status"],
         "checkpoint": report.get("checkpoint"),
         "checkpoint_sha256": report.get("checkpoint_sha256"),
         "accepted_updates": report.get("accepted_updates"),
         "attempted_updates": report.get("attempted_updates"),
+        "optimizer_attempts": report.get("optimizer_attempts"),
+        "bounded_backtracking": report.get("bounded_backtracking"),
         "stop_reason": report.get("stop_reason"),
         "smoke": report.get("smoke"),
     }, sort_keys=True), flush=True)

@@ -26,20 +26,6 @@ CF 使用 `12` states × `2` repeats，形成 `24` reports；`72` 个逻辑 bran
 
 ## Gate-only probe 当前状态
 
-gate-only trainer/evaluator 实现与本地测试已完成；trainer 定向测试 `3` 项、evaluator 定向测试 `5` 项已通过，4 套组合测试共 `20 tests passed`；进程 exit `0`，出现 `1` 条 `torch.load` FutureWarning。服务器多次 SSH TCP 建立后均出现 `kex_exchange_identification: Connection closed by remote host`；因此尚未运行 `1` step smoke，尚无修复 checkpoint，尚无 candidate 评估，当前不能记为训练退化已解决。对应冻结协议为 [P3 terminal gate repair protocol](p3_terminal_gate_repair_protocol_20260928.md)。执行根目录为 `/home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928`；正式 fit 须先由 primary 查看 smoke 的真实输出。
+V1 `1`-step smoke 已完成：`exit0`、`COMPLETED`、`1 attempt / 0 accepted`；source-anchor mean KL 为 `0.00031149349524639547`，max KL 为 `0.014092326164245605 > 0.01`；完整 model 与 optimizer 已回滚，`nonadapter=true`、`proposal=true`、`roundtrip=true`、`adapterchanged=false`。V1 full fit/evaluation 不启动；该机械零更新尚不能判断 terminal-label 效果。原 V1 smoke 输出保持 immutable：`/home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/smoke`。
 
-待执行训练命令：
-
-```bash
-cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.train_p3_terminal_gate_repair --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/smoke --smoke
-cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.train_p3_terminal_gate_repair --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit
-```
-
-第二条命令须在 primary 查看 smoke 真实输出后执行。fit 技术通过后，evaluator 先执行 `--check-only`，再执行 full：
-
-```bash
-cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.evaluate_p3_terminal_gate_repair --checkpoint /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/terminal_gate_repair.pt --fit-report /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/report.json --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/evaluation --check-only
-cd /home/user/projects/terminal && /home/user/envs/terminal_env/bin/python -m terminal_marl.training.evaluate_p3_terminal_gate_repair --checkpoint /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/terminal_gate_repair.pt --fit-report /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/fit/report.json --output-dir /home/user/training_outputs/terminal/p3_terminal_gate_repair_20260928/evaluation
-```
-
-首两个 reward smoke 计量尝试失败后已修复，`reward_smoke_v3` 通过；旧 CF scenario smoke 失败记录保留，随后修复。`P3_QUALIFIED=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`，不消费 heldout。
+V2 bounded-backtracking protocol 待实现、测试和执行，见 [bounded-backtracking protocol](p3_terminal_gate_repair_v2_protocol_20260928.md)。V2 仍沿用 source `03c0`、五标签、`11589` anchors、`weighted_CE + 10 * mean_KL`、Adam base LR `1e-4`、clip `1.0`、最多 `120` logical updates 和 gate-only 冻结范围；尚无 V2 candidate 或评估结果。`P3_QUALIFIED=false`、`P4_ALLOWED=false`、`PPO_ALLOWED=false`，不消费 heldout。
