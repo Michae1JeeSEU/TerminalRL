@@ -58,17 +58,18 @@
 > 活动的停止条件；`PPO_ALLOWED=false`、formal/heldout/P4/static flags 保持 false，heartbeat
 > `task-neutral-ppo-pilot` 已删除。
 
-> **当前活动：task-neutral update diagnosis（2026-09-28，已授权，尚未启动）：** 本轮只做一次
-> 精确 replay：复用 `p3_task_neutral_ppo_pilot_20260928/full/training/episode_03` 的既有 tape，
+> **当前活动：task-neutral update diagnosis replay 终态（2026-09-28）：** 服务器 `b23966f`
+> 对 `p3_task_neutral_ppo_pilot_20260928/full/training/episode_03` 既有 tape 完成精确 replay：
 > 同一 task-neutral `dense24/873103`，`before=episode_02/pilot_after_update.pt`、
-> `after=full/pilot.pt`。复用既有 capture/GAE，核对同状态概率变化、原 GAE 与 MC、以及
-> arrival `20/21` 身份；不新随机 rollout、不 optimizer、不消费 heldout。输出根为
+> `after=full/pilot.pt`；`729/729` exact、`24` requests、`621` actor steps、`2508` actor rows，
+> 前后模型不变且无 optimizer。复用既有 capture/GAE，核对同状态概率变化、原 GAE 与 MC、以及
+> arrival `20/21` 身份。此前本地失配事实保留；本地 reset 数值差最大为
+> `1.136868e-13`，不能称本地 exact 通过，服务器 exact 已通过。该 replay 不预断
+> gamma/reward/critic 根因，不增加普通 priority 保护；安全与物理负荷保持不变，
+> formal/global flags 不自动改变。输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_update_diagnosis_20260928`。
-> 完成本地编译、定向测试和输出路径核验后才运行；后续训练预算由本轮主审另行确定后再启动。
-> 本轮不预断 gamma/reward/critic 根因，不增加普通 priority 保护；安全与物理负荷保持不变，
-> formal/global flags 不自动改变。
 
-> **当前先决采样诊断（2026-09-28，已授权，尚未启动）：** 在上述两个诊断均终态前，新增一次
+> **当前先决采样诊断（2026-09-28，已授权，待代码完成）：** 新增一次
 > `16` rollouts 的 sampling-repeats 诊断，只评估已有两权重：`before=3fe7`、`after=1f7`。
 > 使用相同两个 dense env seeds `873103`、`873106`，每个各使用预定策略采样 seeds
 > `874301..874304`；只分离 torch policy sampling seed，env 的物理 seed、arrival、SOC 和 service
@@ -76,8 +77,19 @@
 > `/home/user/training_outputs/terminal/p3_task_neutral_sampling_repeats_20260928`。
 > 目的仅是区分单条采样轨迹波动与期望退化，不等于独立的新环境泛化；首请求差异在 step `56`
 > 执行相同，但 conditional proposal draws 改变后续采样链，不能仅凭相同 env seed 作强因果解释。
-> 先完成代码、定向测试和 check-only，再执行一次 16-rollout 预算，不自动重复；两个诊断均终态后
-> 由主审决定针对修复。本轮安全与 heldout 边界不变。
+> 先完成代码、定向测试和 check-only，再执行一次 16-rollout 预算，不自动重复；结果待取证，
+> 本轮安全与 heldout 边界不变。
+
+> **主审选择的下一项开发修复（待实施，2026-09-28）：** 用户继续授权仅此 task-neutral 开发修复，
+> 输出根拟为 `/home/user/training_outputs/terminal/p3_task_neutral_critic_warmup_20260928`。
+> 固定 `3fe7...d4ab` actor，重放已有 neutral baseline 的 `6` 个 tapes 收集 world/reward；
+> critic target 使用完整终态 MC、`gamma=.99`，不使用 GAE bootstrap。只优化
+> `critic_encoder`/`critic_head`，fresh Adam、`lr=3e-4`、`20` epochs、minibatch `64`、seed
+> `874501`、`gradclip=1`；actor、proposal、temperature 逐位冻结。拟合结果只说明数据内误差。
+> 通过冻结、finite、checkpoint 检查后，主审才可启动一次与旧 pilot 相同的 `3` episodes PPO
+> 和 `6`-cell evaluation，用于验证 warmup 效果；不改变 reward、gamma、lambda、安全或
+> task-neutral 配置。16-rollout sampling 评估仍待代码完成；不宣称 root cause 已证。全局
+> formal/heldout 仍为 `false`。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。

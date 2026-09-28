@@ -424,7 +424,7 @@ def _request_lifecycle(env: Any, captured: Sequence[Mapping[str, Any]], first_se
         terminal_lifecycle_metrics._completed_rows(env, first_seen),
     )
     requested_count = int(getattr(config, "total_requested_uavs", EXPECTED_REQUESTS))
-    _require(requested_count == EXPECTED_REQUESTS, "dense24 lifecycle must contain exactly 24 requests")
+    _require(requested_count > 0, "request lifecycle must contain a positive request count")
     expected_ids = set(range(requested_count))
     ledger = getattr(env, "ledger", None)
     ledger_requested = {int(value) for value in getattr(ledger, "requested", set())}
@@ -470,7 +470,7 @@ def _request_lifecycle(env: Any, captured: Sequence[Mapping[str, Any]], first_se
         "ledger_unresolved_requested_ids": unresolved,
         "rows_without_ledger_outcome": rows_without_ledger,
         "outcome_mismatch_arrival_ids": mismatches,
-        "all_requests_observed": not missing_ids and not unexpected_ids and len(request_rows) == EXPECTED_REQUESTS,
+        "all_requests_observed": not missing_ids and not unexpected_ids and len(request_rows) == requested_count,
         "ledger_alignment": ledger_requested == expected_ids and not (missing_ids or unexpected_ids or unresolved or rows_without_ledger or mismatches),
         "request_rows": request_rows,
         "mission_field_present": all(row.get("mission_type") is not None for row in rows),

@@ -24,6 +24,7 @@ from terminal_marl.algo.student_ppo_v4_2 import StudentStepV42, team_gae
 from terminal_marl.core.checkpoints import load_checkpoint, save_checkpoint
 from terminal_marl.training import evaluate_p3_runtime_rank_repair as rank_eval
 from terminal_marl.training import evaluate_p3_task_neutral as neutral_eval
+from terminal_marl.training import run_p3_task_neutral_critic_warmup as critic_warmup
 from terminal_marl.training import student_rollout_v4_2
 from terminal_marl.training import terminal_lifecycle_metrics
 
@@ -617,6 +618,69 @@ def _validate_pilot_payload(payload: Mapping[str, Any], config: Any) -> dict[str
     }
 
 
+def _validate_initial_warmup_payload(
+    payload: Mapping[str, Any], policy: Any, config: Any,
+    *, expected_parent_sha256: str = EXPECTED_CANDIDATE_SHA256,
+) -> dict[str, Any]:
+    """Validate a critic-only warmup before applying its model state."""
+    _require(payload.get("stage") == critic_warmup.STAGE,
+             "warmup checkpoint stage metadata mismatch")
+    _require(payload.get("curriculum_id") == critic_warmup.CURRICULUM_ID,
+             "warmup checkpoint curriculum metadata mismatch")
+    _require(payload.get("task_priority_enabled") is False,
+             "warmup checkpoint task_priority_enabled metadata mismatch")
+    _require(float(payload.get("low_level_priority_time_weight")) == 0.0,
+             "warmup checkpoint priority weight metadata mismatch")
+    _require(payload.get("parent_checkpoint_sha256") == expected_parent_sha256,
+             "warmup parent checkpoint SHA mismatch")
+    snapshots = payload.get("neutral_config_snapshots")
+    _require(isinstance(snapshots, Mapping), "warmup neutral config snapshots are missing")
+    snapshot = snapshots.get("dense24")
+    _require(isinstance(snapshot, Mapping), "warmup dense24 config snapshot is missing")
+    _require(dict(snapshot) == _config_snapshot(config),
+             "warmup dense24 neutral config snapshot mismatch")
+    state = payload.get("model_state")
+    _require(isinstance(state, Mapping), "warmup model state is missing")
+    current = policy.model.state_dict()
+    _require(set(state) == set(current), "warmup model state keys mismatch")
+    _require(all(isinstance(state[name], torch.Tensor) and bool(torch.isfinite(state[name]).all().item())
+                 for name in state),
+             "warmup model state contains non-finite values")
+    noncritic_names = [name for name in current if not name.startswith(critic_warmup.CRITIC_PREFIXES)]
+    _require(all(torch.equal(current[name].detach().cpu(), state[name].detach().cpu())
+                 for name in noncritic_names),
+             "warmup changed non-critic state relative to candidate")
+    invariance = payload.get("actor_invariance")
+    _require(isinstance(invariance, Mapping), "warmup actor invariance metadata is missing")
+    _require(invariance.get("non_critic_state_bitwise_unchanged") is True,
+             "warmup actor invariance metadata is false")
+    return {
+        "stage": payload.get("stage"),
+        "curriculum_id": payload.get("curriculum_id"),
+        "parent_checkpoint_sha256": payload.get("parent_checkpoint_sha256"),
+        "neutral_config_match": True,
+        "non_critic_state_bitwise_unchanged": True,
+        "critic_parameter_names": list(invariance.get("critic_parameter_names", [])),
+    }
+
+
+def _load_initial_warmup(
+    path: str | Path, policy: Any, config: Any,
+) -> tuple[Path, dict[str, Any]]:
+    resolved = neutral_eval._synced_path(Path(path))
+    _require(resolved.is_file(), f"warmup checkpoint missing: {path}")
+    payload = torch.load(resolved, map_location=policy.device, weights_only=False)
+    _require(isinstance(payload, Mapping), "warmup checkpoint payload must be a mapping")
+    check = _validate_initial_warmup_payload(payload, policy, config)
+    policy.model.load_state_dict(payload["model_state"], strict=True)
+    policy.model.eval()
+    check["checkpoint"] = str(resolved)
+    check["checkpoint_sha256"] = _sha256(resolved)
+    check["model_state_loaded"] = True
+    check["model_digest_after_load"] = _model_digest(policy)
+    return resolved, check
+
+
 def _load_baseline_records(neutral_configs: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     records: list[dict[str, Any]] = []
     seen: set[tuple[int, str]] = set()
@@ -737,7 +801,8 @@ def _final_evaluation(
     return records, None
 
 
-def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
+def run(*, output_dir: str | Path, check_only: bool = False,
+        initial_checkpoint: str | Path | None = None) -> dict[str, Any]:
     output = Path(output_dir)
     _require(not output.exists(), f"pilot output must be fresh: {output}")
     output.mkdir(parents=True, exist_ok=False)
@@ -754,6 +819,7 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
     source_policy: Any = None
     resolved_checkpoint: Path | None = None
     current_checkpoint: Path | None = None
+    initial_binding: dict[str, Any] | None = None
     binding: dict[str, Any] = {}
     baseline_records: list[dict[str, Any]] = []
     baseline_binding: dict[str, Any] = {}
@@ -768,6 +834,14 @@ def run(*, output_dir: str | Path, check_only: bool = False) -> dict[str, Any]:
                  "neutral configs do not carry the required task flags")
         resolved_checkpoint, policy, binding = _load_binding(neutral_configs["dense24"])
         current_checkpoint = resolved_checkpoint
+        if initial_checkpoint is not None:
+            parent_model_digest = binding.get("model_digest")
+            current_checkpoint, initial_binding = _load_initial_warmup(
+                initial_checkpoint, policy, neutral_configs["dense24"],
+            )
+            binding["initial_checkpoint"] = dict(initial_binding)
+            binding["parent_model_digest"] = parent_model_digest
+            binding["model_digest_after_initial_checkpoint"] = initial_binding.get("model_digest_after_load")
         baseline_records, baseline_binding = _load_baseline_records(neutral_configs)
         binding["config_snapshots"] = {
             scenario: {"original": _config_snapshot(configs[scenario]),
@@ -1053,13 +1127,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--initial-checkpoint", type=Path, default=None)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        result = run(output_dir=args.output_dir, check_only=args.check_only)
+        result = run(
+            output_dir=args.output_dir,
+            check_only=args.check_only,
+            initial_checkpoint=args.initial_checkpoint,
+        )
     except (TaskNeutralPilotError, FileNotFoundError, ValueError, OSError) as exc:
         print(json.dumps({"stage": STAGE, "status": "ERROR", "error": str(exc)}, sort_keys=True), flush=True)
         return 2
