@@ -13,6 +13,7 @@ from pathlib import Path
 from types import MethodType
 from typing import Any, Mapping, Sequence
 
+from terminal_marl.core.uav import MissionType
 from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 
@@ -26,6 +27,16 @@ class LifecycleMetricsError(ValueError):
 
 def _enum_value(value: Any) -> Any:
     return getattr(value, "value", value)
+
+
+def _mission_type_value(value: Any) -> str | None:
+    value = _enum_value(value)
+    if value is None:
+        return None
+    try:
+        return MissionType(value).value
+    except (TypeError, ValueError):
+        return None
 
 
 def _number(value: Any) -> float | None:
@@ -89,6 +100,7 @@ def _row_from_uav(
         "arrival_id": arrival_id,
         "uid": getattr(uav, "uid", None),
         "base_priority": getattr(uav, "base_priority", None),
+        "mission_type": _mission_type_value(getattr(uav, "mission_type", None)),
         "initial_soc": initial_soc,
         "initial_soc_source": initial_source,
         "request_time": request_time,
@@ -210,13 +222,31 @@ def _scope_summary(rows: Sequence[Mapping[str, Any]], *, low_soc_threshold: floa
     waits = _wait_rows(rows)
     by_priority: dict[str, dict[str, Any]] = {}
     grouped: dict[int, list[Mapping[str, Any]]] = defaultdict(list)
+    by_mission_type: dict[str, dict[str, Any]] = {}
+    mission_grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+    missing_mission_type_count = 0
     for row in rows:
         priority = _number(row.get("base_priority"))
         if priority is not None:
             grouped[int(priority)].append(row)
+        mission_type = _mission_type_value(row.get("mission_type"))
+        if mission_type is None:
+            missing_mission_type_count += 1
+        else:
+            mission_grouped[mission_type].append(row)
     for priority, group in sorted(grouped.items()):
         observed = _wait_rows(group)
         by_priority[str(priority)] = {
+            "terminal_count": len(group),
+            "count": len(observed),
+            "mean_wait_seconds": (
+                None if not observed else sum(float(row["wait_seconds"]) for row in observed) / len(observed)
+            ),
+            "outcomes": dict(sorted(Counter(str(row.get("outcome")) for row in group).items())),
+        }
+    for mission_type, group in sorted(mission_grouped.items()):
+        observed = _wait_rows(group)
+        by_mission_type[mission_type] = {
             "terminal_count": len(group),
             "count": len(observed),
             "mean_wait_seconds": (
@@ -265,6 +295,8 @@ def _scope_summary(rows: Sequence[Mapping[str, Any]], *, low_soc_threshold: floa
         ),
         "priority_weighted_wait_seconds": weighted,
         "by_priority": by_priority,
+        "by_mission_type": by_mission_type,
+        "missing_mission_type_count": missing_mission_type_count,
         "initial_soc_min": None if not initial_soc else min(initial_soc),
         "initial_soc_max": None if not initial_soc else max(initial_soc),
         "low_soc": {

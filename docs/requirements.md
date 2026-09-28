@@ -290,6 +290,8 @@ base_priority = max(sampled_base_priority, 5)
 
 mission type 与 priority 不完全等价。
 
+普通 `base_priority=1/3/5` 仅表示可权衡的偏好，用于连续优化与分析；不单独要求每个 priority group 或 evaluation cell 的 `priority wait`、`low-SOC wait` 都无退化。`low-SOC wait` 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义。只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，才对同时争用同一可分配资源的可执行普通请求优先安排降落；这不是无条件最先落地，也不得突破安全约束。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 分别表示任务类型、静态基础优先级和最终结果，三者不能互换。`failed`/安全指标的既有硬要求保持不变。
+
 ---
 
 ## 6. 电量与能耗

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from terminal_marl.core.uav import MissionType
 from terminal_marl.training import evaluate_p3_adaptive_kl_v7 as evaluator
 from terminal_marl.training import terminal_lifecycle_metrics as metrics
 
@@ -26,6 +27,7 @@ class _UAV:
         completion: float | None,
         phase: str,
         emergency: bool = False,
+        mission_type: MissionType | None = MissionType.STANDARD,
     ):
         self.arrival_id = arrival_id
         self.uid = 100 + arrival_id
@@ -42,6 +44,7 @@ class _UAV:
         self.terminal_outcome = _Value(outcome)
         self.terminal_reason = "ground_service_complete"
         self.emergency_landing = emergency
+        self.mission_type = mission_type
 
     @property
     def soc(self) -> float:
@@ -142,6 +145,111 @@ def test_unobserved_request_has_explicit_missing_denominator(monkeypatch: pytest
     assert result["observed_metrics_denominator"] == 3
     assert result["ledger_alignment"] is False
     assert all(row["arrival_id"] != 3 for row in result["rows"])
+
+
+def test_mission_type_groups_are_separate_from_priority_and_outcome() -> None:
+    result = metrics.summarize_terminal_rows(
+        [
+            {
+                "arrival_id": 0,
+                "base_priority": 5,
+                "mission_type": MissionType.STANDARD,
+                "wait_seconds": 2.0,
+                "outcome": "completed",
+            },
+            {
+                "arrival_id": 1,
+                "base_priority": 5,
+                "mission_type": MissionType.EMERGENCY,
+                "wait_seconds": 4.0,
+                "outcome": "completed",
+            },
+            {
+                "arrival_id": 2,
+                "base_priority": 1,
+                "mission_type": MissionType.STANDARD,
+                "wait_seconds": 6.0,
+                "outcome": "emergency_landed",
+                "emergency_landing": True,
+            },
+        ],
+        low_soc_threshold=.65,
+    )
+
+    assert result["by_priority"]["5"]["count"] == 2
+    assert result["by_mission_type"]["standard"] == {
+        "terminal_count": 2,
+        "count": 2,
+        "mean_wait_seconds": 4.0,
+        "outcomes": {"completed": 1, "emergency_landed": 1},
+    }
+    assert result["by_mission_type"]["emergency"]["outcomes"] == {"completed": 1}
+    assert result["by_mission_type"]["emergency"]["mean_wait_seconds"] == 4.0
+
+
+def test_missing_or_unknown_mission_type_is_reported_separately() -> None:
+    result = metrics.summarize_terminal_rows(
+        [
+            {
+                "arrival_id": 0,
+                "base_priority": 5,
+                "wait_seconds": 2.0,
+                "outcome": "completed",
+            },
+            {
+                "arrival_id": 1,
+                "base_priority": 1,
+                "mission_type": "unknown_mission",
+                "wait_seconds": 4.0,
+                "outcome": "completed",
+            },
+            {
+                "arrival_id": 2,
+                "base_priority": 3,
+                "mission_type": MissionType.STANDARD,
+                "wait_seconds": 6.0,
+                "outcome": "completed",
+            },
+        ],
+        low_soc_threshold=.65,
+    )
+
+    assert result["missing_mission_type_count"] == 2
+    assert set(result["by_mission_type"]) == {"standard"}
+    assert result["by_mission_type"]["standard"]["count"] == 1
+
+
+def test_row_serializes_mission_type_value_and_missing_as_none() -> None:
+    uav = _UAV(
+        0,
+        priority=5,
+        initial_soc=.8,
+        outcome="completed",
+        touchdown=8.0,
+        completion=10.0,
+        phase="completed",
+        mission_type=MissionType.EMERGENCY,
+    )
+    row = metrics._row_from_uav(
+        uav,
+        first_seen={},
+        terminal_time=10.0,
+        outcome="completed",
+        reason="ground_service_complete",
+        source="test",
+    )
+    assert row["mission_type"] == "emergency"
+
+    del uav.mission_type
+    missing_row = metrics._row_from_uav(
+        uav,
+        first_seen={},
+        terminal_time=10.0,
+        outcome="completed",
+        reason="ground_service_complete",
+        source="test",
+    )
+    assert missing_row["mission_type"] is None
 
 
 def test_duplicate_rows_and_nonexact_replay_are_errors(monkeypatch: pytest.MonkeyPatch) -> None:
