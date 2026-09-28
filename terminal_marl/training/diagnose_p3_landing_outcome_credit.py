@@ -38,7 +38,8 @@ TARGET_ARRIVAL_IDS = (12, 13, 21)
 TARGET_PHASES = frozenset({"ring_outer", "ring_middle", "ring_inner"})
 LOCAL_WINDOW_ARRIVAL_ID = 12
 LOCAL_WINDOW_UID = 42
-LOCAL_WINDOW_STEPS = (100, 101, 102, 103, 104)
+LOCAL_WINDOW_STEPS = (102, 103, 104)
+LOCAL_WINDOW_SMOKE_STEP = 102
 MAX_PROBE_ROWS_PER_ARRIVAL = 40
 MAX_FINAL_ROWS_PER_ARRIVAL = 3
 REPEAT_COUNT = 3
@@ -140,7 +141,7 @@ def _window_metadata(*, local_window: bool, smoke: bool) -> dict[str, Any]:
             "mode": "legacy_selection",
             "training_input_eligible": False,
         }
-    steps = [LOCAL_WINDOW_STEPS[2]] if smoke else list(LOCAL_WINDOW_STEPS)
+    steps = [LOCAL_WINDOW_SMOKE_STEP] if smoke else list(LOCAL_WINDOW_STEPS)
     return {
         "local_window": True,
         "window_steps": steps,
@@ -315,7 +316,7 @@ def _probe_source_tape(
                 uid = int(actor.uid)
                 metadata = _source_action_metadata(source_tape_row, uid)
                 if local_window:
-                    expected_step = LOCAL_WINDOW_STEPS[2] if smoke else None
+                    expected_step = LOCAL_WINDOW_SMOKE_STEP if smoke else None
                     if smoke:
                         keep = (
                             step == expected_step
@@ -372,7 +373,7 @@ def _probe_source_tape(
     _require(outcomes_match, "source replay outcomes differ from source tape")
     rows = sorted(candidates.values(), key=lambda row: (int(row["arrival_id"]), int(row["step"]), int(row["uid"])))
     if local_window:
-        expected_steps = {LOCAL_WINDOW_STEPS[2]} if smoke else set(LOCAL_WINDOW_STEPS)
+        expected_steps = {LOCAL_WINDOW_SMOKE_STEP} if smoke else set(LOCAL_WINDOW_STEPS)
         actual_steps = {
             int(row["step"])
             for row in rows
@@ -584,7 +585,7 @@ def _select_final_states(
     local_window: bool = False,
 ) -> list[dict[str, Any]]:
     if local_window:
-        expected_steps = {LOCAL_WINDOW_STEPS[2]} if smoke else set(LOCAL_WINDOW_STEPS)
+        expected_steps = {LOCAL_WINDOW_SMOKE_STEP} if smoke else set(LOCAL_WINDOW_STEPS)
         selected = sorted(
             (
                 dict(row)

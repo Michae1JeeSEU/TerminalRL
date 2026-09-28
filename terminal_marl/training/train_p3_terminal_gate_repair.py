@@ -51,7 +51,7 @@ KL_MAX_LIMIT = 0.01
 ADAPTER_PREFIX = "gate_adapter."
 BACKTRACKING_SCALES = (1.0, 0.5, 0.25, 0.125, 0.0625)
 NORMAL_ADVANTAGE_IDENTITIES = tuple(
-    (873103, step, 42, 12) for step in range(100, 105)
+    (873103, step, 42, 12) for step in range(102, 105)
 )
 NORMAL_ADVANTAGE_REPEAT_COUNT = 3
 
@@ -151,11 +151,12 @@ def _normal_advantage_rows(
     states = summary.get("states")
     _require(isinstance(selected, list) and isinstance(states, list), "normal-advantage inputs are incomplete")
     selected_rows = [dict(row) for row in selected if isinstance(row, Mapping)]
-    _require(len(selected_rows) == len(NORMAL_ADVANTAGE_IDENTITIES), "normal-advantage selection must contain five rows")
+    expected_count = len(NORMAL_ADVANTAGE_IDENTITIES)
+    _require(len(selected_rows) == expected_count, f"normal-advantage selection must contain {expected_count} rows")
     selected_by_identity = {_identity(row): row for row in selected_rows}
     expected = set(NORMAL_ADVANTAGE_IDENTITIES)
     _require(set(selected_by_identity) == expected, "normal-advantage selection identities changed")
-    _require(len(states) == len(expected), "normal-advantage summary must contain five states")
+    _require(len(states) == expected_count, f"normal-advantage summary must contain {expected_count} states")
     states_by_identity: dict[tuple[int, int, int, int], Mapping[str, Any]] = {}
     for state in states:
         _require(isinstance(state, Mapping), "normal-advantage state is not an object")

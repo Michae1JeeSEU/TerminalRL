@@ -306,9 +306,9 @@ def _normal_advantage_fixture(*, missing_field: str | None = None) -> tuple[dict
             "arrival_id": 12,
             "observation": [float(step)] + [0.0] * 87,
         }
-        for step in range(100, 105)
+        for step in range(102, 105)
     ]
-    deltas = ([1.0, 2.0, 3.0], [-1.0, -2.0, -3.0], [1.0, -1.0, 0.0], [0.0, 0.0, 0.0], [2.0, 0.0, 1.0])
+    deltas = ([1.0, 2.0, 3.0], [-1.0, -2.0, -3.0], [1.0, -1.0, 0.0])
     states = []
     for state_index, (row, values) in enumerate(zip(selected, deltas)):
         comparisons = [
@@ -346,10 +346,10 @@ def _normal_advantage_fixture(*, missing_field: str | None = None) -> tuple[dict
 def test_normal_advantage_rows_use_fixed_window_and_report_only_teacher_gate() -> None:
     selection, summary = _normal_advantage_fixture()
     rows = runner._normal_advantage_rows(selection, summary)
-    assert [row["step"] for row in rows] == [100, 101, 102, 103, 104]
-    assert [row["advantage"] for row in rows] == pytest.approx([2.0, -2.0, 0.0, 0.0, 1.0])
-    assert [row["teacher_gate"] for row in rows] == [1, 0, None, None, 1]
-    assert all(row["weight"] == pytest.approx(0.2) for row in rows)
+    assert [row["step"] for row in rows] == [102, 103, 104]
+    assert [row["advantage"] for row in rows] == pytest.approx([2.0, -2.0, 0.0])
+    assert [row["teacher_gate"] for row in rows] == [1, 0, None]
+    assert all(row["weight"] == pytest.approx(1.0 / 3.0) for row in rows)
 
 
 def test_normal_advantage_rows_reject_missing_comparison_field() -> None:
