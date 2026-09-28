@@ -182,7 +182,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             collect_catalogue_diagnostics: bool = False,
             catalogue_scope: str = "requested_release",
             label_stride_steps: int = 1,
-            state_only_labels: bool = False) -> tuple[list[StudentStepV42], dict]:
+            state_only_labels: bool = False,
+            policy_seed: int | None = None) -> tuple[list[StudentStepV42], dict]:
     if state_only_labels and not collect_labels:
         raise ValueError("state_only_labels requires collect_labels")
     if collect_diagnostics and not collect_labels:
@@ -208,11 +209,21 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     if policy.observation_dim != 88 or max_steps < 1:
         raise ValueError("88D policy and positive rollout horizon required")
     output.mkdir(parents=True, exist_ok=False)
-    torch.manual_seed(seed)
+    effective_policy_seed = int(seed if policy_seed is None else policy_seed)
+    torch.manual_seed(effective_policy_seed)
     env = TerminalParallelEnv(config)
     observations, _ = env.reset(seed)
     tape = SafetyTraceRecorder(output / "action_tapes", dt=config.dt)
-    tape.start_episode(env, episode_seed=seed, policy_rng_state={"seed": seed, "mode": "student_only_v2_1"})
+    tape.start_episode(
+        env,
+        episode_seed=seed,
+        policy_rng_state={
+            "seed": effective_policy_seed,
+            "policy_seed": effective_policy_seed,
+            "episode_seed": int(seed),
+            "mode": "student_only_v2_1",
+        },
+    )
     steps, events, queues = [], [], []
     reward_component_totals: dict[str, float] = {}
     safety_error = None
@@ -369,7 +380,8 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     )}
     reward_total = float(sum(step.reward for step in steps))
     reward_component_totals = {key: float(value) for key, value in reward_component_totals.items()}
-    result = {"seed": seed, "steps": len(steps), "seconds": env.now, "counts": counts,
+    result = {"seed": seed, "policy_seed": effective_policy_seed,
+              "steps": len(steps), "seconds": env.now, "counts": counts,
               "safety": safety, "safety_error": safety_error, "completed": len(env.completed_uavs),
               "outcomes": dict(env.ledger.outcomes), "queue": queues,
               "terminal": bool(steps and steps[-1].terminated), "action_tape": str(tape_path),

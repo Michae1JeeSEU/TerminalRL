@@ -518,6 +518,7 @@ def _failure_record(
     weights_after: str | None = None,
     action_tape: Any = None,
     lifecycle: Mapping[str, Any] | None = None,
+    policy_seed: int | None = None,
 ) -> dict[str, Any]:
     error_value = {"type": type(error).__name__, "message": str(error)}
     outcomes = dict(_summary_outcomes(summary))
@@ -525,6 +526,7 @@ def _failure_record(
         "label": "runtime_rank_candidate",
         "scenario": scenario,
         "seed": int(seed),
+        "policy_seed": int(seed if policy_seed is None else policy_seed),
         "status": "failed",
         "checkpoint": str(checkpoint),
         "checkpoint_sha256": _sha256(checkpoint) if checkpoint.is_file() else None,
@@ -685,6 +687,7 @@ def _runtime_record(
     seed: int,
     output: Path,
     smoke: bool = False,
+    policy_seed: int | None = None,
 ) -> dict[str, Any]:
     """Run one direct student rollout and construct its full ledger record."""
 
@@ -697,17 +700,26 @@ def _runtime_record(
         # Keep this call explicit: no adaptive_eval._episode_record,
         # admission helper, Teacher, diagnostics, or policy update is allowed.
         rollout_horizon = 2 if smoke else _horizon(config)
+        rollout_kwargs = {
+            "seed": int(seed),
+            "max_steps": rollout_horizon,
+            "output": output,
+            "deterministic": False,
+            "collect_labels": False,
+        }
+        # Keep old monkeypatched/test rollout call signatures compatible when
+        # the optional policy-seed split is unused.
+        if policy_seed is not None:
+            rollout_kwargs["policy_seed"] = int(policy_seed)
         _steps, raw_summary = student_rollout_v4_2.rollout(
             policy,
             config,
-            seed=int(seed),
-            max_steps=rollout_horizon,
-            output=output,
-            deterministic=False,
-            collect_labels=False,
+            **rollout_kwargs,
         )
         _require(isinstance(raw_summary, Mapping), "student rollout summary must be a mapping")
         summary = dict(raw_summary)
+        effective_policy_seed = int(seed if policy_seed is None else policy_seed)
+        summary.setdefault("policy_seed", effective_policy_seed)
         action_tape = summary.get("action_tape")
         _require(action_tape is not None, "student rollout action_tape is missing")
         lifecycle = terminal_lifecycle_metrics.terminal_lifecycle_metrics(
@@ -720,6 +732,7 @@ def _runtime_record(
             "label": "runtime_rank_candidate",
             "scenario": scenario,
             "seed": int(seed),
+            "policy_seed": effective_policy_seed,
             "status": "completed" if unchanged else "failed",
             "checkpoint": str(checkpoint),
             "checkpoint_sha256": _sha256(checkpoint) if checkpoint.is_file() else None,
@@ -768,6 +781,7 @@ def _runtime_record(
                 weights_after=after,
                 action_tape=action_tape,
                 lifecycle=lifecycle,
+                policy_seed=policy_seed,
             ),
             scenario=scenario,
             seed=seed,

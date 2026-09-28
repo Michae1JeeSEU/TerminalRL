@@ -1,4 +1,6 @@
+import json
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -121,3 +123,32 @@ def test_k3_rollout_records_and_exactly_replays_runtime_shortlists(tmp_path, mon
     )
     assert replay["exact"]
     assert _policy_tape_logprob_exact(policy, runtime, result["action_tape"])
+
+
+def test_policy_seed_is_recorded_separately_from_environment_seed(tmp_path):
+    policy = StudentPPOV42(88)
+    _, result = rollout(
+        policy, config(), seed=705, policy_seed=874301, max_steps=1,
+        output=tmp_path / "policy_seed",
+    )
+    tape = json.loads(Path(result["action_tape"]).read_text(encoding="utf-8"))
+    policy_rng_state = SafetyTraceRecorder.decode_policy_rng_state(tape)
+    assert result["seed"] == 705
+    assert result["policy_seed"] == 874301
+    assert tape["episode_seed"] == 705
+    assert policy_rng_state["episode_seed"] == 705
+    assert policy_rng_state["policy_seed"] == 874301
+
+
+def test_policy_seed_none_keeps_historical_seed_path(tmp_path):
+    policy = StudentPPOV42(88)
+    _, result = rollout(
+        policy, config(), seed=706, max_steps=1,
+        output=tmp_path / "default_policy_seed",
+    )
+    tape = json.loads(Path(result["action_tape"]).read_text(encoding="utf-8"))
+    policy_rng_state = SafetyTraceRecorder.decode_policy_rng_state(tape)
+    assert result["policy_seed"] == 706
+    assert tape["episode_seed"] == 706
+    assert policy_rng_state["seed"] == 706
+    assert policy_rng_state["policy_seed"] == 706
