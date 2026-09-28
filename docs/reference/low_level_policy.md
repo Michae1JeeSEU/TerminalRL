@@ -8,8 +8,15 @@
 >
 > **状态**：schema 已冻结；新的 I1、DAgger、PPO 当前仍受
 > [项目状态页](../CURRENT_STATUS.md) 的 gate 约束。本轮低层主课程采用 task-neutral
-> 语义，完整评估待运行，状态以 [项目状态页](../CURRENT_STATUS.md) 为准；最小实现与单测已完成，
-> 配对 baseline 仍待协议执行，再决定有界 PPO repair pilot。
+> 语义，task-neutral 配对 baseline 已按协议完成。当前开发修复路径是在进入本轮有界 PPO block
+> 前做一次 critic-only warmup，用既有完整终态真实 reward 构造 `gamma=.99` 的 terminal MC
+> target。预热阶段仅训练 critic，actor、proposal、temperature 参数保持不变；经准入的有界
+> PPO 阶段沿用原 PPO/GAE（`.99`、`.95`），更新 `gate_adapter` 与 critic，
+> `actor_encoder`/`gate_head`、`proposal_head`、`gate_temperature` 和 proposal 配置保持冻结。
+> warmup 拟合数据不称为独立 validation；后续评估依据最终 normal、`failed_energy`、safety、
+> wait 与新物理场景结果，不以 loss 通过。
+> 本次 `fa0e` candidate 未在新物理场景验证中获保留；warmup 只是已评估的开发修复尝试，不是已证实解决方案，当前下一步以 [项目状态页](../CURRENT_STATUS.md) 为准，不将此流程设为所有未来 PPO 的强制规范。
+> 证据见 [critic repair result](../evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
 > `PPO_ALLOWED`、formal/heldout 和 static qualification 不因本次文档修订自动放行。
 
 本文件给出低层策略的当前唯一语义。旧 V3/V4/V4.1 设计、迁移原因和逐次实验记录分别保留在
@@ -221,23 +228,31 @@ S0  schema / semantics qualification
 → I1  fresh multi-seed hierarchical BC + untouched cohort qualification
 → I2  Safe DAgger preflight and bounded aggregation
 → I3  student-only imitation qualification
-→ paired task-neutral baseline on the new course
-→ bounded PPO repair pilot (only after admission review)
-→ independent validation
+→ completed task-neutral paired baseline on the new course
+→ one critic-only warmup before this bounded PPO block
+→ bounded PPO repair pilot (only after admission review; original PPO/GAE and frozen proposal config)
+→ final evaluation on normal / failed_energy / safety / wait and new physical scenes
 → static-geometry qualification
 → freeze low-level policy
 → A6 dynamic-airspace learning
 ```
 
-主课程的最小实现必须先通过单测，再以相同 `task_priority_enabled=false` 运行 source/candidate
-配对 baseline。课程目标是正常降落、吞吐、完整周期等待和尾部 starvation 监测；保留随机到达、
+主课程的最小实现和单测已完成，source/candidate 已在相同 `task_priority_enabled=false` 配置下
+完成配对 baseline。课程目标是正常降落、吞吐、完整周期等待和尾部 starvation 监测；保留随机到达、
 SOC 差异、能量、安全、环/路径可执行性和资源预约。任务服务时长分布保持 `30/120/10/60 s`，
 但不表示服务等级偏好。等待尾部用于监测，不增加每个子组必须无退化的硬 gate。
 
-新 baseline 按协议记录 schema/replay/safety、完整 ledger、full-cycle accounting、等待尾部和
+配对 baseline 按协议记录 schema/replay/safety、完整 ledger、full-cycle accounting、等待尾部和
 checkpoint lineage 技术核对；普通 shield intervention 可非零，既有 actor takeover fraction
 `<=.05` 与 shield/joint fail-closed 为零的安全 gate 保持不变。PPO 仍只在既有 admission
 范围内决定；本节不授权 formal/heldout 或 PPO，`PPO_ALLOWED` 仍由独立 admission 决定。
+
+当前开发修复在进入本轮有界 PPO block 前做一次 critic-only warmup，以完整终态真实 reward
+计算 `gamma=.99` terminal MC target；预热阶段仅训练 critic，所有非-critic 参数保持不变。
+若通过 admission 进入有界 PPO，继续使用原 PPO/GAE（`gamma=.99`、`gae_lambda=.95`），更新
+`gate_adapter` 与 critic，`actor_encoder`/`gate_head`、`proposal_head`、`gate_temperature`
+和 proposal 配置保持冻结。该路径不增加普通 mission priority 保护；能量应急接管和全部安全约束
+保持不变。
 
 ### 6.1 Task-neutral course semantics
 

@@ -746,6 +746,21 @@ all agent embeddings
 - PPO 仅接收随机采样 rollout；确定性评估轨迹禁止更新。DAgger 可启用显式
   `teacher_label_only`，正式 student/PPO rollout 关闭 Teacher。
 
+### 22.1 当前 task-neutral 开发修复路径
+
+task-neutral source/candidate 配对 baseline 已完成，证据见
+[critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。当前开发修复
+在进入本轮有界 PPO block 前做一次 critic-only warmup，使用既有完整终态真实 reward 构造
+`gamma=.99` 的 terminal MC target；预热阶段仅训练 critic，所有非-critic 参数保持不变。
+warmup 拟合数据不称独立 validation，也不凭 loss 通过。
+本次 `fa0e` candidate 未在新物理场景验证中获保留；warmup 只是已评估的开发修复尝试，不是已证实解决方案，当前下一步以 [CURRENT_STATUS](CURRENT_STATUS.md) 为准，不将此流程设为所有未来 PPO 的强制规范。
+
+若后续通过 [CURRENT_STATUS](CURRENT_STATUS.md) 的 admission 进入有界 PPO，沿用原 PPO/GAE
+（`gamma=.99`、`gae_lambda=.95`），更新 `gate_adapter` 与 critic，`actor_encoder`/`gate_head`、
+`proposal_head`、`gate_temperature` 和 proposal 配置保持冻结。该路径不增加普通 mission priority
+保护；能量应急接管和全部安全约束保持。后续评估依据最终 normal、`failed_energy`、safety、wait
+与新物理场景结果；formal、heldout 和全局 flags 仍由当前准入规定，不因本节自动放行。
+
 ---
 
 ## 23. High-level wrapper

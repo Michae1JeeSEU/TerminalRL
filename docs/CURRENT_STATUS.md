@@ -71,7 +71,7 @@
 
 > **当前先决采样诊断终态（2026-09-28）：** 代码提交为 `12f7873`，定向测试 `37` 项；
 > check-only 为 `CHECK_ONLY_OK`、`16`-matrix、`0` records，full report 已完成。该 sampling
-> repeats 对两臂共 `192` requests：旧 PPO 重复评估 `before` 为 `140 normal / 51 emergency /
+> repeats 对两臂各 `192` requests（总计 `384`）：旧 PPO 重复评估 `before` 为 `140 normal / 51 emergency /
 > 1 failed`，`after` 为 `136 / 56 / 0`，安全计数为 `0`。输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_sampling_repeats_20260928`。
 > `16` rollouts 的 sampling-repeats 诊断，只评估已有两权重：`before=3fe7`、`after=1f7`。
@@ -115,9 +115,33 @@
 > `874501`、`gradclip=1`；actor、proposal、temperature 逐位冻结。拟合结果只说明数据内误差。
 > 通过冻结、finite、checkpoint 检查后，主审才可启动一次与旧 pilot 相同的 `3` episodes PPO
 > 和 `6`-cell evaluation，用于验证 warmup 效果；不改变 reward、gamma、lambda、安全或
-> task-neutral 配置。下一项仅批准同两个 env × 四个 policy seeds 的 `8` 个新 after rollouts，并
-> 复用既有 `8` 个 before rollouts；新 repeats ROOT 待主审确定，须先完成实现、测试和 check-only，
-> 不自动启动。sampling 结果与 pilot 均不宣称 root cause 已证。全局 formal/heldout 仍为 `false`。
+> task-neutral 配置。repeats check-only 已 `exit0`：`8` new / `8` reuse、`16`-matrix、
+> `fa0e` checkpoint 校验正确、`0` env steps；唯一 repeats runner PID `779974` 已结束，`exit0`，
+> report 为 `COMPLETED`、`technical_ok=true`、weights frozen、安全计数为 `0`。`before` 共
+> `192` requests 为 `140 normal / 51 emergency / 1 failed`，`fa0e after` 为 `142 / 50 / 0`；
+> mean wait `160.633→157.797 s`，p95 `369.113→395.619 s`，max `725.530→496.725 s`，
+> low-SOC wait `187.337→176.742 s`，reward `3219.130→3304.646`；8 个 normal deltas 为
+> `[-1,0,2,1,2,0,-2,0]`。旧未经 warmup 的 PPO `136 normal` 对比另列，不能与本次 repeats
+> diff 当作独立样本。主审判定采样开发总体有改善且部分 seed 退化、p95 上升，支持继续新物理场景
+> 验证，但不称已稳定解决。全局 formal/heldout 仍为 `false`。
+
+> **物理场景验证终态（候选路线关闭，2026-09-28）：** 原计划固定 candidate `fa0e`，使用
+> dense24 env seeds `874601..874604`、policy seeds `874701..874704`，两臂 `3fe7/fa0e` 共
+> `8` rollouts、每臂 `96` requests。fresh runner 代码提交为 `3470e5a`，定向测试 `7` 项；
+> fresh check-only 为 `CHECK_ONLY_OK exit0`，`8`-matrix、每臂 `96` requests、`0` records、
+> `0` runtime，profile 与 neutral 检查均为 `true`。fresh report 为 `COMPLETED`、
+> `technical_ok=true`、`8/8`；before `3fe7` 为 `80 normal / 16 emergency / 0 failed`，after
+> `fa0e` 为 `73 / 23 / 0`，安全与 weights 检查正常。mean wait `129.233681726712→139.866715305331 s`，
+> p95 `308.647078911221→325.725321758148 s`，max `480.280648536374→513.415812504217 s`，
+> low-SOC wait `116.631497236334→145.221409523741 s`，reward `1798.49415586202→1708.07438156263`；
+> normal deltas 为 `[0,-3,0,-4]`。执行偏差为 PID `960446` 已结束且完整 report/log 存在，但
+> `ROOT/fresh.exit` 缺失；`fresh.launcher.log` 记录 `AttributeError: 'int' object has no attribute
+> 'returncode'`，wrapper 终态未知，不写 `exit0`，不重跑。结果见
+> [critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
+> 主审拒绝 `fa0e`，保留 `3fe7` 作为 actor 起点；warmup 数据内改善不足以解决泛化退化，不称
+> root cause 已证。四个新 env seeds 已评估并消费，不再称 untouched。当前下一步仅为只读检查
+> 多条同策略完整 episode 拼接后的统一 PPO update 边界，尚未授权训练；全局 formal/heldout/
+> `PPO_ALLOWED` 不变。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。

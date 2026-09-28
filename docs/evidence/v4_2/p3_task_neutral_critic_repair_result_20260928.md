@@ -8,7 +8,7 @@
 代码提交为 `12f7873`，定向测试 `37` 项；check-only 为 `CHECK_ONLY_OK`、`16`-matrix、
 `0` records。full report 为 `COMPLETED`、`technical_ok=true`，共 `16` rollouts、两臂各
 `2` 个 dense env seeds（`873103`、`873106`）和 `4` 个 policy sampling seeds
-（`874301..874304`），共 `192` requests。只分离 torch policy sampling seed，env 物理 seed、
+（`874301..874304`），每臂 `192` requests（总计 `384`）。只分离 torch policy sampling seed，env 物理 seed、
 arrival、SOC 和 service 不变，未更新模型。
 
 | 指标 | before (`3fe7`) | after (`1f7`) |
@@ -55,7 +55,46 @@ checkpoint SHA256 为
 
 主审判定该 checkpoint 为开发 candidate：单次 6-cell 有收益与尾部 tradeoff，不称稳定修复；
 已有 6-cell 已被 critic warmup 使用，`validation` split 名称为历史保留，本轮不作独立验证。
-下一项仅批准同两个 env × 四个 policy seeds 的 `8` 个新 after rollouts，并复用既有 `8` 个 before
-rollouts；新 repeats ROOT 待主审确定，须先完成实现、测试和 check-only，不自动启动。全局
-`PPO_ALLOWED`、formal 和 heldout 边界不变。包装修复要求为 `write_text(str(child.pid))` 与
-`str(returncode)` 不带换行，并在启动前完成本地与远端 compile 预检。
+repeats check-only 已 `exit0`：`8` new / `8` reuse、`16`-matrix、`fa0e` checkpoint 校验正确、
+`0` env steps。唯一 repeats runner PID `779974` 已结束、`exit0`；report 为 `COMPLETED`、
+`technical_ok=true`、weights frozen、安全计数为 `0`。`before` 共 `192` requests 为
+`140 normal / 51 emergency / 1 failed`，`fa0e after` 为 `142 / 50 / 0`；mean wait
+`160.633→157.797 s`，p95 `369.113→395.619 s`，max `725.530→496.725 s`，low-SOC wait
+`187.337→176.742 s`，reward `3219.130→3304.646`；8 个 normal deltas 为
+`[-1, 0, 2, 1, 2, 0, -2, 0]`。旧未经 warmup 的 PPO `136 normal` 对比另列，不能与本次
+repeats diff 当作独立样本。主审判定采样开发总体有改善且部分 seed 退化、p95 上升，支持继续
+新物理场景验证，但不称已稳定解决。全局 `PPO_ALLOWED`、formal 和 heldout 边界不变。包装修复
+要求为 `write_text(str(child.pid))` 与 `str(returncode)` 不带换行，并在启动前完成本地与远端 compile 预检。
+
+## Fresh physical scenario validation
+
+原计划固定 candidate `fa0e`，使用 dense24 env seeds `874601..874604`、policy seeds
+`874701..874704`，两臂 `3fe7/fa0e` 共 `8` rollouts、每臂 `96` requests。fresh runner 代码
+提交为 `3470e5a`，定向测试 `7` 项；fresh check-only 为 `CHECK_ONLY_OK exit0`，`8`-matrix、
+每臂 `96` requests、`0` records、`0` runtime，profile 与 neutral 检查均为 `true`。
+
+fresh report 为 `COMPLETED`、`technical_ok=true`、`8/8`。结果如下：
+
+| 指标 | before (`3fe7`) | after (`fa0e`) |
+|---|---:|---:|
+| normal | 80 | 73 |
+| emergency | 16 | 23 |
+| failed | 0 | 0 |
+| mean wait (s) | 129.233681726712 | 139.866715305331 |
+| p95 wait (s) | 308.647078911221 | 325.725321758148 |
+| max wait (s) | 480.280648536374 | 513.415812504217 |
+| low-SOC wait (s) | 116.631497236334 | 145.221409523741 |
+| reward | 1798.49415586202 | 1708.07438156263 |
+
+安全与 weights 检查正常；4 个 paired normal deltas 为 `[0, -3, 0, -4]`。执行偏差为 PID
+`960446` 已结束且完整 report/log 存在，但 `ROOT/fresh.exit` 缺失；`fresh.launcher.log` 记录
+`AttributeError: 'int' object has no attribute 'returncode'`，wrapper 终态未知，因此不写
+`exit0`，也不重跑。
+
+主审拒绝 `fa0e`，保留 `3fe7` 作为 actor 起点；warmup 的数据内改善不足以解决泛化退化，
+不称 root cause 已证。四个新 env seeds 已评估并消费，不再称 untouched。该计划不属于旧
+`829xxx` heldout，也不称 formal qualification；安全约束不变。
+
+当前下一步仅为只读检查多条同策略完整 episode 拼接后的统一 PPO update 边界，尚未授权训练。
+验收不增加逐场景或子组无退化门槛；证据不足时不宣布问题已解决。全局 `PPO_ALLOWED`、formal
+和 heldout 边界不变。

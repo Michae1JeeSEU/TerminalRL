@@ -16,22 +16,29 @@ ArrivalProcess 仍消耗历史 base 抽样的 RNG，但新课程只存储有效 
 能量应急接管始终保留在执行/安全层，与后续独立 emergency mission 鲁棒性场景分开。等待尾部
 只用于 starvation 监测，不增加每个子组必须无退化的硬门槛；新课程对照不得与旧课程报表直接
 跨任务比较。旧 source `03c0`、candidate 和 `candidate_retained` 结果只作为初始化/对照历史，
-不宣称稳定收益或已解决训练退化。
+不宣称稳定收益或已解决训练退化。task-neutral source/candidate 配对 baseline 已完成，当前
+开发修复在进入本轮有界 PPO block 前做一次 critic-only warmup，以完整终态真实 reward 的
+`gamma=.99` terminal MC target 校准 critic；预热阶段仅训练 critic，非-critic 参数保持不变。
 
 当前执行顺序冻结为：
 
 ```text
 最小新课程实现/单测
-→ 同课程 source/candidate 配对 baseline
-→ 有界 PPO repair pilot（独立 admission 后）
-→ independent validation
+→ 同课程 source/candidate 配对 baseline（已完成）
+→ 一次 critic-only warmup（进入本轮有界 PPO block 前）
+→ 有界 PPO repair pilot（独立 admission 后，原 PPO/GAE 与冻结 proposal config）
+→ final evaluation（normal / failed_energy / safety / wait 与新物理场景）
 → static qualification
 → A6 dynamic airspace
 ```
 
-本轮协议见 [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
-协议已完成 check-only_v2，smoke 正在执行，完整评估待运行；状态以 [CURRENT_STATUS](CURRENT_STATUS.md)
-为准。
+本轮协议见 [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)，
+配对 baseline 已完成。进入本轮有界 PPO block 前做一次 critic-only warmup，预热阶段仅训练
+critic；若通过 admission 进入 PPO，则沿用原 PPO/GAE（`gamma=.99`、`gae_lambda=.95`），更新
+`gate_adapter` 与 critic，`actor_encoder`/`gate_head`、`proposal_head`、`gate_temperature` 和
+proposal 配置保持冻结。后续评估依据最终 normal、`failed_energy`、safety、wait 与新物理场景，
+不以 warmup loss 通过。证据见 [critic repair result](evidence/v4_2/p3_task_neutral_critic_repair_result_20260928.md)。
+本次 `fa0e` candidate 未在新物理场景验证中获保留；warmup 只是已评估的开发修复尝试，不是已证实解决方案，当前下一步以 [CURRENT_STATUS](CURRENT_STATUS.md) 为准，不将此流程设为所有未来 PPO 的强制规范。
 formal/heldout 与 `PPO_ALLOWED` 不因文档修订自动放行。
 
 ## 历史记录：2026-09-24 至 2026-09-25
@@ -571,17 +578,21 @@ arrival flow；详细顺序与数据纪律见 `reference/low_level_policy.md`。
 ### 8.5 当前 task-neutral baseline sequence
 
 新主课程固定 `task_priority_enabled=false`。最小实现和单测通过后，先以相同新课程配置运行
-source/candidate 配对 baseline，再由主审决定有界 PPO repair pilot 的目标与预算。ArrivalProcess
+source/candidate 配对 baseline 已完成；当前开发修复在进入本轮有界 PPO block 前做一次
+critic-only warmup，使用既有完整终态真实 reward 计算 `gamma=.99` terminal MC target；预热
+阶段仅训练 critic，再由主审决定有界 PPO repair pilot 的目标与预算。ArrivalProcess
 仍消耗历史 base 抽样的 RNG，但只存储有效 `base_priority=1`；raw mission 保留为物理服务/
 兼容性 metadata，policy mission one-hot 固定 `STANDARD`，88D schema 不变。service time
 `30/120/10/60 s` 保留以维持负荷。能量应急接管始终保留，和后续独立 emergency mission
-鲁棒性场景分开。等待尾部仅作 starvation 监测，不增加每个子组无退化硬 gate。
+鲁棒性场景分开；不增加普通 mission priority 保护，所有安全约束保持。等待尾部仅作 starvation
+监测，不增加每个子组无退化硬 gate。
 
-新 baseline 报告 normal/emergency/failed/unresolved/full-cycle mean/p95/max wait、low-SOC
-wait、reward 和安全/ledger 技术核对；新 reward 与旧 reward 不直接比较。完整课程评估待运行，
-状态以 [CURRENT_STATUS](CURRENT_STATUS.md) 为准，
-不能写成 candidate retained、稳定收益或训练退化已解决。formal/heldout 与 `PPO_ALLOWED`
-仍须独立授权。
+配对 baseline 报告 normal/emergency/failed/unresolved/full-cycle mean/p95/max wait、low-SOC
+wait、reward 和安全/ledger 技术核对；新 reward 与旧 reward 不直接比较。warmup 拟合数据不称
+独立 validation，也不能凭 loss 通过；后续评估必须核对最终 normal、`failed_energy`、safety、
+wait 与新物理场景结果。不能单凭 baseline 或 warmup loss 宣称候选已保留或修复稳定；训练退化
+是否解决仍由后续证据决定。
+formal/heldout 与 `PPO_ALLOWED` 仍须独立授权。
 
 ### 8.5 历史 baseline comparison（不定义当前课程）
 
@@ -655,8 +666,8 @@ fixed_low_rl
 ```
 
 在相同 task-neutral 课程、相同负荷和安全前提下，learned low-level 若不能优于或至少不劣于
-rule baseline，不进入完整 HRL。当前 source/candidate 配对 baseline 只完成下一步核对，不能
-替代这项研究比较；旧跨任务报表不转成当前 gate。
+rule baseline，不进入完整 HRL。当前 source/candidate 配对 baseline 已完成，但不能单独
+替代这项研究比较；它不自动授权 HRL，旧跨任务报表不转成当前 gate。
 
 ### A5 gate
 
