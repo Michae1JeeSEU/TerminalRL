@@ -1,8 +1,9 @@
 # P3 Task-neutral PPO Pilot Protocol
 
-状态：已由主审授权，尚未启动。本协议只授权一次 scoped task-neutral development pilot，
-不等同于 formal/global PPO 放行；`development_pilot_authorized=true` 仅覆盖本协议明确的
-3 个 production PPO updates，`PPO_ALLOWED=false` 保持。
+状态：已由主审授权并完成一次 scoped task-neutral development pilot。本协议只授权一次
+development pilot，不等同于 formal/global PPO 放行；`development_pilot_authorized=true` 仅覆盖
+本协议明确的 3 个 production PPO updates，`PPO_ALLOWED=false` 保持。pilot 结果与取舍见
+[pilot result](p3_task_neutral_ppo_pilot_result_20260928.md)。
 
 ## 1. 固定起点、配置与输出
 
@@ -67,3 +68,22 @@ python -m terminal_marl.training.run_p3_task_neutral_pilot \
 源码执行 check-only；主审确认 check-only 后才允许 full。不得使用 `scp` 或服务器 git。
 失败产物保留，不自动重跑。formal、heldout、P4、static qualification 和全局 `PPO_ALLOWED`
 均不因本协议自动放行。
+
+## 4. Pilot 终态记录
+
+本次 full report 为 `COMPLETED`、`technical_ok=true`，服务器 `full.exit=0`；cmdline/cwd
+核对正确，进程已终态且监控已停止。3 次 `update()` 调用共记录 `148` 次 accepted optimizer
+attempts，按 episode 为 `(40, 62, 46)`，rejected 为 `0`；roundtrip、profile、freeze 和固定
+`q` 检查均为 `true`，安全计数为 `0`。这只是该有界 development pilot 的技术与配对记录，
+不表示稳定收益已解决，也不把任务优先级归为唯一原因。
+
+Pilot 产生的 checkpoint SHA256 为
+`1f7ca8ad1fa4a041b3e62017c56dc47a7c418865613a6241c86fa18763d0fb81`，主审决定不保留；继续以
+`3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab` 作为 task-neutral 开发起点，
+source `03c0` 保留为对照。6-cell/84-request 配对汇总与诊断线索见
+[pilot result](p3_task_neutral_ppo_pilot_result_20260928.md)。不再启动本协议之外的训练，
+全局 `PPO_ALLOWED`、formal、heldout 和 P4 仍为 `false`。
+
+启动事实保留如下：首次裸 Python check-only 为 exit `127` 且未启动；另一次 shell wrapper
+失败也未进入 env；绝对解释器执行的 `check_only_v2` 为 `CHECK_ONLY_OK exit0`。这些失败产物
+不删除、不重跑。heartbeat `task-neutral-ppo-pilot` 已删除。

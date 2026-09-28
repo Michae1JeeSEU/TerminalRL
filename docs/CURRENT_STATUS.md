@@ -47,12 +47,15 @@
 > 不改写。协议见
 > [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
 
-> **Scoped task-neutral PPO pilot（2026-09-28，已授权未启动）：** 主审基于 paired baseline 允许一次
-> development pilot；candidate `3fe7...d4ab` 固定为起点，source `03c0` 保留对照。pilot 只允许
-> 三个完整 on-policy training episodes、每 episode 一次 production PPO update，具体边界见
-> [pilot protocol](evidence/v4_2/p3_task_neutral_ppo_pilot_protocol_20260928.md)。
-> `development_pilot_authorized=true` 仅适用于该协议；`PPO_ALLOWED=false`、formal/heldout/P4/static
-> flags 保持 false，pilot 尚未启动。
+> **Scoped task-neutral PPO pilot 终态（2026-09-28）：** pilot report 为 `COMPLETED`、
+> `technical_ok=true`，服务器 `full.exit=0`；3 次 `update()` 调用记录 `148` accepted attempts
+> （`40/62/46`）、`0` reject，roundtrip/profile/freeze/固定 `q` 均为 `true`，安全计数为 `0`。
+> 结果见 [pilot result](evidence/v4_2/p3_task_neutral_ppo_pilot_result_20260928.md)，协议边界见
+> [pilot protocol](evidence/v4_2/p3_task_neutral_ppo_pilot_protocol_20260928.md)。pilot checkpoint
+> `1f7ca8ad1fa4a041b3e62017c56dc47a7c418865613a6241c86fa18763d0fb81` 不保留，继续以
+> `3fe7...d4ab` 作为 task-neutral 开发起点，source `03c0` 保留对照；不声称稳定收益已解决，
+> 也不把任务优先级归为唯一原因。无更多训练；`PPO_ALLOWED=false`、formal/heldout/P4/static
+> flags 保持 false，heartbeat `task-neutral-ppo-pilot` 已删除。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。
@@ -933,14 +936,15 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
    作为当前 check-only 事实；
-2. 以 `3fe7...d4ab` candidate 作为 task-neutral 后续开发修复起点，`03c0` 保留为对照；注册
-   有限预算 on-policy PPO pilot，检查完整周期回报、critic 和实际 gate 更新。该 pilot 尚未启动，
-   不同时盲改 reward 与 discount；
+2. 本轮有界 task-neutral PPO pilot 已完成但 checkpoint 不保留；继续以 `3fe7...d4ab` candidate
+   作为开发起点，`03c0` 保留为对照。下一步先使用已保存的 training records、GAE 和 ActionTape
+   定位 normal→emergency 变化及更新信号，检查第三次 dense 更新前后的 credit allocation 与
+   critic adaptation；不直接增加训练量、重新加入任务优先级或盲改 reward/gamma；
 3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
    low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
    wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
-4. `PPO_ALLOWED=false`，formal/heldout、全局 source 晋级和 qualification 均未因本轮 baseline
-   自动放行。
+4. `PPO_ALLOWED=false`，formal/heldout、P4、全局 source 晋级和 qualification 均未因本轮 pilot
+   自动放行；pilot technical completion 不等于稳定收益或全局 PPO 放行。
 
 ## 历史允许的下一步（已由本轮 task-neutral protocol 取代）
 
