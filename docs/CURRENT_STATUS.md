@@ -1,6 +1,6 @@
 # 项目当前状态
 
-> **状态日期**：2026-09-28
+> **状态日期**：2026-09-29
 >
 > **本轮用户范围修订（当前，2026-09-28）：** 当前主线是 dynamic terminal airspace、multi-UAV
 > landing-flow coordination 和 safety-filtered executable intents。低层新主课程采用
@@ -66,18 +66,45 @@
 > 协议见
 > [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)。
 
-> **当前授权：full-episode credit repair protocol（预注册，未启动，2026-09-28）：** 输出根为
+> **历史阶段：full-episode credit repair protocol 终态（2026-09-28）：** 输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_full_episode_credit_20260928`。恢复
 > `3fe7` actor 与 `b136` critic，作为同一 task-neutral baseline control，不从 `c961` 继续；
 > 复用 joint-batch 六个已消费 development training cells，完整 terminal、收集期间不更新，
 > `gamma=1`、`lambda=1`，return 为 episode 实际后缀 reward 和，不跨 episode bootstrap。
 > 其余 lr/epochs/minibatch/clip/value/entropy/target-KL、q 与 KL reference 保持原值，只训练
-> gate_adapter+critic，执行一次 joint update。训练上限 `144` requests/`10800` steps；配对
-> evaluation 复用旧 before 六条 records，after 六条新 rollout、最大 `9980` steps，配对共 `12`
-> 且新环境 evaluation 仅六条，全部为已消费 development 证据。先定向 tests 和 check-only，
-> 主审再放行唯一 full；当前未启动。reward、安全、proposal、task-neutral、heldout `829xxx` 和
-> `PPO_ALLOWED=false` 边界不变。时间跨度依据与完整边界见
+> gate_adapter+critic，执行一次 joint update。代码提交 `f8a8b53`，定向 tests `45`（joint `16`）；
+> check-only 为 `CHECK_ONLY_OK exit0`，验证 reuse6、new6 evaluation 上限 `9980`、training `10800`，
+> `env/update/runtime=0`。首次直接执行不可执行 launcher 因权限不足未启动且无产物，随后绝对 Python
+> launcher 成功，非实验重跑。唯一 full child PID `1530563`，cwd `/home/user/projects/terminal`，
+> cmdline 含 `--full-episode-credit`；最终 `exit=0`、report 为 `COMPLETED`，六个 training cells
+> 合计 `4635` steps，执行 `1` 次 update，`290` accepted/`0` rejected，KL mean/final/max 为
+> `.0004373/.0005048/.0014622`，MC match 为 `true`、最大误差 `3.0517578125e-05`，q/freeze/
+> roundtrip 通过；full checkpoint SHA256 为
+> `13a98ce2b6289126a5831f6cda5e26e857e1a49d33ab3e606edb5051542f191e`。heartbeat `automation` 已删除。
+> 配对 evaluation 为六条复用 before 与六条新 after，两臂各 `114` requests，安全与 unresolved 均为
+> `0`：before `98/16/0`、after `93/21/0`（normal/emergency/failed），mean/p95/max wait
+> `107.778/273.736/361.184→118.833/307.999/377.930 s`，low-SOC wait `98.613→111.458 s`，
+> reward `2202.562→2121.598`，normal deltas `[-1,-1,-1,-2,0,0]`。主审不保留该 checkpoint，
+> 不把 `gamma=1`、`lambda=1` 视为既定修复，继续以 `3fe7` actor 为开发起点。时间跨度依据与完整边界见
 > [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)。
+> 当前结论仍为退化未解决；reward、安全、proposal、task-neutral、heldout `829xxx` 和
+> `PPO_ALLOWED=false` 边界不变。下一步仅做本地可枚举 toy 验证，检查 actor 是否按每 world 人数取均值会改变
+> team reward 梯度方向，未授权下一次环境训练。
+
+> **当前授权：joint-team actor aggregation protocol（待定向 tests/check-only，2026-09-28）：** 输出根为
+> `/home/user/training_outputs/terminal/p3_task_neutral_joint_team_actor_20260928`。恢复 `3fe7` actor
+> 与 `b136` critic，复用 joint-batch 六个 task-neutral development training cells，预算为每 cell
+> `24` requests、六个 cells 合计 `144` requests、最多 `10800` steps，原 `gamma=.99`、`lambda=.95`，
+> 一次 joint PPO update；
+> 只训练 gate_adapter+critic，其余 proposal/actor_encoder/gate_head/temperature 冻结，q 与 KL
+> reference 保持原值。六条完整 episode 合并为一个 update batch，所有 minibatch 共用整批唯一常数
+> `C=totalactor/T`（`T` 为六条 episode 的全部 steps 总数，禁止按 episode 分别重归一），actor loss 为
+> `sum(all actor clipped losses)/(minibatch world_count*C)`，`C=0` 时 actor loss 为 `0`；critic、
+> advantage normalization、entropy、KL 与 per-agent clipped ratio 定义不变。已有 toy 证据显示
+> objective weighting 方向不一致，但不证明实际退化的全部根因。定向 tests 与 check-only 通过且
+> 主审准入后才启动唯一 full；当前尚未启动，无 PID/exit/性能结果。详情见
+> [joint-team actor aggregation protocol](evidence/v4_2/p3_task_neutral_joint_team_actor_protocol_20260928.md)。
+> 该 joint-team 预注册于 2026-09-29 继续实施，协议文件名与输出 ROOT 保持既定值。
 
 > **历史阶段：Scoped task-neutral PPO pilot 终态（2026-09-28）：** pilot report 为 `COMPLETED`、
 > `technical_ok=true`，服务器 `full.exit=0`；3 次 `update()` 调用记录 `148` accepted attempts
@@ -1058,11 +1085,14 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 2. 本轮有界 task-neutral joint-batch protocol 已完成：继续以 `3fe7...d4ab` actor 为起点，
    `fa0e` 与新 `c961` checkpoint 均不保留，`03c0` 保留为对照；完整终态与失败证据见
    [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)。当前
-   后续仅按 [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)
-   进行：先定向 tests 与 check-only，当前未启动；恢复 `3fe7` actor + `b136` critic，`gamma=1`、
-   `lambda=1` 的完整 episode return 对齐，一次 joint update，训练与配对 evaluation 预算按协议冻结。
-   该修复不证明 root cause，不增加任务优先级，不改变 reward、安全、proposal、task-neutral 语义；
-   `gamma=1`、`lambda=1` 仅按该协议固定，后续由主审决定；
+   [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)
+   已完成：代码 `f8a8b53`、定向 tests `45`（joint `16`）、check-only `CHECK_ONLY_OK exit0`，
+   child PID `1530563`，六个 training cells 合计 `4635` steps、`1` 次 update、`290` accepted/`0`
+   rejected；配对 evaluation 两臂各 `114` requests，安全/unresolved 均为 `0`。checkpoint 不保留，
+   `3fe7` actor 继续作为开发起点；`gamma=1`、`lambda=1` 未成为既定修复。full-episode 失败
+   结果保留。当前授权见
+   [joint-team actor aggregation protocol](evidence/v4_2/p3_task_neutral_joint_team_actor_protocol_20260928.md)：
+   先定向 tests/check-only，主审准入后才启动唯一 full；当前未启动。
 3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
    low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
    wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
