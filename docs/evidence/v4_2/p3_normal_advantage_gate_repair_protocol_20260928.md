@@ -18,7 +18,7 @@ smoke 只取 step102 单点、1 repeat；full 固定五点，每点 3 repeats ×
 
 exact source replay `702/702` true 且 UID42/arrival12 存在；steps `99..101` 为 inbound、`ring_role=null` 且已有入场 TrajectoryPlan，steps `102..105` 为 `ring_outer/outer/无 committed_plan`。原假设 `100/101` 为环上决策的 phase 假设错误，不是数据缺失；实际有效 steps 为 `102,103,104`，原 credit 输出保留为 FAILED。该修订是针对输入窗口检查的明确例外，不是性能筛选或超参搜索；不补窗口外样本。当前活动条款固定这 3 点，使用 `153` runtime branches（3×51）与 `3×3×3=27` logical branches；均匀使用 3 行 A，objective、KL、lr、clip、backtracking、updates 和 evaluation 条款保持不变。
 
-活动诊断输出为 `ROOT/credit_v2`；smoke 固定 step102 单点并复用已完成的 `credit_smoke` serialization/branch 验证，full 只用 steps `102,103,104`。本轮修订只改变输入步集合，不改变 serialization 或分支逻辑；先重跑 `11+28` 定向测试，再启动 v2 credit。`fit_smoke/`、`fit/`、`evaluation/` 尚未创建。活动训练使用旧 `11589` anchors 加 3 个固定点，共 `11592` 个 KL anchors；优势目标只用这 3 点，按三行均匀加权。
+活动诊断输出为 `ROOT/credit_v2`；smoke 固定 step102 单点并复用已完成的 `credit_smoke` serialization/branch 验证，full 只用 steps `102,103,104`。本轮修订只改变输入步集合，不改变 serialization 或分支逻辑；先重跑 `11+28` 定向测试，再启动 v2 credit。实际候选位于 `fit_smoke/`，`fit/` 目录未生成；evaluation 已完成，终态见结果文档。活动训练使用旧 `11589` anchors 加 3 个固定点，共 `11592` 个 KL anchors；优势目标只用这 3 点，按三行均匀加权。
 
 活动命令为：
 
@@ -60,3 +60,9 @@ python -m terminal_marl.training.evaluate_p3_terminal_gate_repair --checkpoint R
 执行顺序固定为：本地 tests → source-window smoke → full 诊断 → 主审检查 → fit smoke → 一次 full fit → matched six-cell evaluation → 主审检查。长任务先核实 PID 与预期产物，再建立 heartbeat；终态删除 heartbeat。
 
 GLOBAL RNG、三点邻域相关性和单场景 MC 样本量限制需在报告中保留；不包装为稳定收益或泛化证明。本文件记录已预注册的执行范围，不构成额外用户许可要求。
+
+## 实际执行偏差与处理（本轮终态记录）
+
+原定 `fit_smoke` 单 logical update 命令实际遗漏 `--smoke`；`16:06:04–16:06:07 (+0800)` 在 `ROOT/fit_smoke` 运行的是 `smoke=false/full120`，真实 metadata 亦为 `smoke=false`。这是命令执行偏差，不是训练器忽略参数；不将其写成单步预检通过。主审已明确：既已消耗一次 full budget，保留该目录与数据，不重复 fit；后续评估现有完整候选属于本轮明确处理例外。原 smoke-first 条款保留为预注册历史，不伪装为本次实际顺序。
+
+评估 check-only 为 `CHECK_ONLY_OK exit0`；六 cell evaluation 已 `COMPLETED exit0`、`technical_ok=true`，candidate_retained=false，保留 source `03c0`。本轮预算已消耗，不重复 fit/eval；不得据当前 loss/局部概率变化声称训练退化已解决，不启动新的训练、PPO 或 heldout。
