@@ -46,6 +46,13 @@
 > task-neutral 开发修复起点，source `03c0` 保留对照；旧 `candidate_retained=false` 与历史 outputs
 > 不改写。协议见
 > [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
+
+> **Scoped task-neutral PPO pilot（2026-09-28，已授权未启动）：** 主审基于 paired baseline 允许一次
+> development pilot；candidate `3fe7...d4ab` 固定为起点，source `03c0` 保留对照。pilot 只允许
+> 三个完整 on-policy training episodes、每 episode 一次 production PPO update，具体边界见
+> [pilot protocol](evidence/v4_2/p3_task_neutral_ppo_pilot_protocol_20260928.md)。
+> `development_pilot_authorized=true` 仅适用于该协议；`PPO_ALLOWED=false`、formal/heldout/P4/static
+> flags 保持 false，pilot 尚未启动。
 >
 > **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。
