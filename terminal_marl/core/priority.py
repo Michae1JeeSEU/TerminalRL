@@ -9,7 +9,8 @@ class PriorityEngine:
     def compute(self, item, now: float | None = None) -> float:
         capacity = item.request.energy_capacity if hasattr(item, "request") else item.energy_capacity
         remaining = item.energy_remaining
-        base = item.request.base_priority if hasattr(item, "request") else item.base_priority
+        base = (item.request.base_priority if hasattr(item, "request") else item.base_priority) \
+            if self.config.task_priority_enabled else 1
         wait = item.external_wait_time if hasattr(item, "external_wait_time") else item.external_wait_time + item.internal_wait_time
         soc = max(0.0, remaining / capacity)
         if self.config.emergency_landing_enabled:

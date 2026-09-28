@@ -49,6 +49,7 @@ class ArrivalProcess:
         base = (int(self.config.initial_priority) if self.config.priority_mode == "fixed"
                 else int(self.rng.choice([1,3,5], p=[.50,.35,.15])))
         if mission is MissionType.EMERGENCY: base=5
+        if not self.config.task_priority_enabled: base=1
         if self.config.initial_soc_mode=="fixed": soc=float(self.config.initial_soc)
         else:
             lower, upper = self._uniform_soc_bounds()

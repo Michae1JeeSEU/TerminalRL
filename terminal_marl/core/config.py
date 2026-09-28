@@ -184,6 +184,11 @@ class SimConfig:
     # random scheduling priority.
     priority_mode: str = "random_135"
     initial_priority: int | None = None
+    # Opt-in task-neutral curriculum switch.  Keep the legacy priority-aware
+    # behavior as the default; when disabled, task priority is neutralized in
+    # scheduling/reward/observation channels while mission metadata remains
+    # available to physical service and compatibility logic.
+    task_priority_enabled: bool = True
     num_landing_zones: int = 6
     final_queue_capacity: int = 1
     # Historical protocols retain the lowest-ID/single-pass behavior.  Dense
@@ -257,6 +262,8 @@ class SimConfig:
     def max_descent_rate(self) -> float: return self.vehicle_profile.max_descent_rate
 
     def __post_init__(self) -> None:
+        if not isinstance(self.task_priority_enabled, bool):
+            raise ValueError("task_priority_enabled must be bool")
         if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
             raise ValueError("unsupported energy_model_mode")
         if self.final_approach_geometry_mode not in {"brake_bezier_v1", "continuous_inward_v1"}:

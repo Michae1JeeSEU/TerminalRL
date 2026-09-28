@@ -135,6 +135,13 @@ if LOW_OBS_V2_3.dimension != 88:
     raise RuntimeError("phaseA_low_obs_v2_3_source_bound_88d must be exactly 88D")
 
 def _one(value, values):return [float(value==x) for x in values]
+
+def _mission_observation(uav, config) -> list[float]:
+    """Encode mission identity, or the neutral curriculum token."""
+    if not config.task_priority_enabled:
+        return [1.0, 0.0, 0.0, 0.0]
+    return _one(uav.mission_type, tuple(type(uav.mission_type)))
+
 def _encoded_phase(phase):
     # Preserve the qualified 8-way observation schema. Emergency landing is
     # an environment-owned committed final trajectory, so expose it through
@@ -143,7 +150,7 @@ def _encoded_phase(phase):
 def build_a5_observation(uav, env)->np.ndarray:
     phase_values=(FlightPhase.INBOUND,FlightPhase.RING_OUTER,FlightPhase.TRANSFER_O2M,FlightPhase.RING_MIDDLE,FlightPhase.TRANSFER_M2I,FlightPhase.RING_INNER,FlightPhase.FINAL,FlightPhase.LANDING)
     role=_one(uav.ring_role,tuple(RingRole));theta=uav.ring_progress or 0.
-    mission=_one(uav.mission_type,tuple(type(uav.mission_type)));gate=_one(uav.assigned_gate,range(4));lz=[float(uav.assigned_lz==i) for i in range(6)]+[float(uav.assigned_lz is None)]
+    mission=_mission_observation(uav, env.config);gate=_one(uav.assigned_gate,range(4));lz=[float(uav.assigned_lz==i) for i in range(6)]+[float(uav.assigned_lz is None)]
     c=env.config;occupancy=[env.airspace.occupancy(r)/max(1,env.airspace.capacity(r)) for r in RingRole]
     values=[*_one(_encoded_phase(uav.phase),phase_values),*role,np.sin(theta),np.cos(theta),uav.speed/c.max_speed,uav.soc,min(1.,(uav.external_wait_time+uav.internal_wait_time)/c.priority_wait_reference_seconds),min(2.,uav.dynamic_priority/5.),*mission,*gate,*lz,*occupancy,env.airspace.headways["o2m"]/c.headway_max,env.airspace.headways["m2i"]/c.headway_max,env.airspace.headways["i2f"]/c.headway_max,sum(z.status.value=="free" for z in env.lz_manager.zones)/6.,len(env.admission.queue.items)/c.max_active_uavs,float(any(u.committed_plan for u in env.active.values()))]
     vector=np.asarray(values,dtype=np.float32)
@@ -283,7 +290,7 @@ def build_low_observation_v2(uav, env, *, topology_cache: TopologyCache | None =
         float(np.clip(uav.speed/config.max_speed, 0.0, 1.0)), uav.soc,
         min(1.0,(uav.external_wait_time+uav.internal_wait_time)/config.priority_wait_reference_seconds),
         float(np.clip(uav.dynamic_priority/config.priority_feature_scale, 0.0, 1.0)), float(_release_eligible(uav, env)),
-        *_one(uav.mission_type, tuple(type(uav.mission_type))), *_one(uav.assigned_gate, range(config.gate_count)),
+        *_mission_observation(uav, config), *_one(uav.assigned_gate, range(config.gate_count)),
         float(uav.assigned_lz is not None), float(assigned_usable), final_available, free_zones/max(1,config.num_landing_zones),
     ]
     for slot in slots:
@@ -360,7 +367,7 @@ def build_low_observation_v2_3(
         min(1.0, (uav.external_wait_time + uav.internal_wait_time) / config.priority_wait_reference_seconds),
         float(np.clip(uav.dynamic_priority / config.priority_feature_scale, 0.0, 1.0)),
         float(_source_bound_release_eligible(uav, center_broadcast)),
-        *_one(uav.mission_type, tuple(type(uav.mission_type))), *_one(uav.assigned_gate, range(config.gate_count)),
+        *_mission_observation(uav, config), *_one(uav.assigned_gate, range(config.gate_count)),
         float(uav.assigned_lz is not None),
         min(1.0, urgent_count / max(1, config.max_active_uavs)),
         float(center_broadcast.final_resource_available), center_broadcast.free_lz_fraction,

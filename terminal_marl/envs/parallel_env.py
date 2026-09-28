@@ -1485,7 +1485,8 @@ class TerminalParallelEnv:
                     dt=self.config.dt,
                     base_priority=uav.base_priority,
                     soc=uav.soc,
-                    priority_weight=self.config.low_level_priority_time_weight,
+                    priority_weight=(self.config.low_level_priority_time_weight
+                                     if self.config.task_priority_enabled else 0.0),
                     soc_weight=self.config.low_level_soc_urgency_time_weight,
                     soc_urgency_threshold=self.config.low_level_soc_urgency_threshold,
                     soc_reserve=self.config.soc_reserve,
