@@ -221,6 +221,33 @@ def test_default_credit_kwargs_are_unchanged_and_full_mode_is_explicit() -> None
         assert full[key] == runner.pilot.UPDATE_KWARGS[key]
 
 
+def test_joint_team_actor_kwargs_keep_original_credit_and_set_reduction() -> None:
+    joint = runner._credit_update_kwargs(joint_team_actor=True)
+    assert joint["gamma"] == runner.pilot.UPDATE_KWARGS["gamma"] == 0.99
+    assert joint["gae_lambda"] == runner.pilot.UPDATE_KWARGS["gae_lambda"] == 0.95
+    assert joint["actor_reduction"] == "joint_team"
+
+
+def test_joint_team_actor_cli_flag_and_credit_modes_are_mutually_exclusive(monkeypatch, tmp_path, capsys) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return {"status": "CHECK_ONLY_OK"}
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    assert runner.main([
+        "--output-dir", str(tmp_path / "joint"), "--check-only", "--joint-team-actor",
+    ]) == 0
+    assert captured["joint_team_actor"] is True
+    assert captured["full_episode_credit"] is False
+    with pytest.raises(SystemExit):
+        runner.main([
+            "--output-dir", str(tmp_path / "both"), "--full-episode-credit", "--joint-team-actor",
+        ])
+    assert "not allowed with" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("mc_match", [True, False])
 def test_full_mode_passes_credit_kwargs_and_records_mc_match(monkeypatch, tmp_path, mc_match) -> None:
     config = _config()
@@ -303,7 +330,8 @@ def test_full_mode_passes_credit_kwargs_and_records_mc_match(monkeypatch, tmp_pa
         assert report["training"]["pooled"]["full_episode_mc_return_match"] is False
 
 
-def test_reuse_check_only_reports_planned_and_actual_rollouts_separately(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize("mode", ["full_episode_credit", "joint_team_actor"])
+def test_reuse_check_only_reports_planned_and_actual_rollouts_separately(monkeypatch, tmp_path, mode) -> None:
     config = _config()
     configs = {name: config for name in ("dense24", "flow6", "flow12")}
     policy = SimpleNamespace()
@@ -322,10 +350,10 @@ def test_reuse_check_only_reports_planned_and_actual_rollouts_separately(monkeyp
         [str(reuse_root / f"{cell['scenario']}_{cell['seed']}.json") for cell in runner.EVALUATION_CELLS],
     ))
     report = runner.run(
-        output_dir=tmp_path / "check",
+        output_dir=tmp_path / f"check_{mode}",
         check_only=True,
-        full_episode_credit=True,
         reuse_before_root=reuse_root,
+        **{mode: True},
     )
     budgets = report["binding"]["simulation_budgets"]
     assert report["status"] == "CHECK_ONLY_OK"
@@ -420,3 +448,13 @@ def test_reuse_before_requires_full_episode_credit(tmp_path) -> None:
     )
     assert report["status"] == "FAILED"
     assert "requires --full-episode-credit" in report["unresolved"][0]
+
+
+def test_full_and_joint_team_actor_modes_are_mutually_exclusive(tmp_path) -> None:
+    report = runner.run(
+        output_dir=tmp_path / "both",
+        full_episode_credit=True,
+        joint_team_actor=True,
+    )
+    assert report["status"] == "FAILED"
+    assert "mutually exclusive" in report["unresolved"][0]

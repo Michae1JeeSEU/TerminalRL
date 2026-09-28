@@ -128,7 +128,18 @@ class StudentPPOV42(JointPPOV42):
                epochs: int = 4, minibatch_size: int = 32, gamma: float = .99,
                gae_lambda: float = .95, clip_ratio: float = .2,
                value_coef: float = .5, entropy_coef: float = .01,
-               target_kl: float | None = None) -> dict:
+               target_kl: float | None = None,
+               actor_reduction: str = "world_mean") -> dict:
+        """Run PPO with either historical world means or joint-team scaling.
+
+        ``world_mean`` averages the clipped per-agent objective inside each
+        world and then across worlds, preserving the historical update.  The
+        opt-in ``joint_team`` mode sums the per-agent objective in each
+        minibatch and divides by one rollout-wide actor-count normalizer.  It
+        removes state-dependent 1/N weighting of the team score gradient and
+        applies a fixed rollout scaling; the per-agent PPO ratios remain
+        individually clipped and are not replaced by a product of ratios.
+        """
         gate_reference = getattr(self, "gate_reference", None)
         if not training_authorized:
             raise PermissionError("PPO requires student-only qualification and admission")
@@ -136,6 +147,8 @@ class StudentPPOV42(JointPPOV42):
             raise ValueError("nonempty rollout and positive update budget required")
         if not (0 <= gamma <= 1 and 0 <= gae_lambda <= 1 and 0 < clip_ratio < 1):
             raise ValueError("invalid PPO discount or clipping settings")
+        if actor_reduction not in ("world_mean", "joint_team"):
+            raise ValueError("actor_reduction must be 'world_mean' or 'joint_team'")
         if target_kl is not None:
             if not np.isfinite(target_kl) or target_kl <= 0:
                 raise ValueError("target_kl must be finite and positive")
@@ -148,6 +161,8 @@ class StudentPPOV42(JointPPOV42):
                 raise ValueError("deterministic evaluation is not on-policy PPO behavior")
         advantages, returns = team_gae(steps, gamma, gae_lambda)
         actor_steps = np.asarray([bool(row.actor_mask.any()) for row in steps])
+        actor_decisions = sum(int(row.actor_mask.sum()) for row in steps)
+        actor_count_normalizer = actor_decisions / len(steps)
         if actor_steps.any():
             values = advantages[actor_steps]
             advantages = (advantages - values.mean()) / (values.std() + 1e-8)
@@ -194,8 +209,9 @@ class StudentPPOV42(JointPPOV42):
                 predicted_value = self.model.critic(world, mask)
                 target = torch.as_tensor(returns[indices], device=self.device)
                 value_loss = (predicted_value - target).square().mean()
-                # Average agents inside each world, then worlds. Increasing N
-                # must not multiply the weight of a team reward or critic target.
+                # Legacy world_mean averages agents inside each world, then
+                # worlds. joint_team sums the shared team score and applies
+                # one fixed rollout-wide actor-count normalizer below.
                 active = [i for i, row in enumerate(batch) if row.actor_mask.any()]
                 actor = entropy = kl = clipped = value_loss.new_zeros(())
                 if active:
@@ -215,7 +231,11 @@ class StudentPPOV42(JointPPOV42):
                     objective = -torch.minimum(ratio * advantage, ratio.clamp(1 - clip_ratio, 1 + clip_ratio) * advantage)
                     def team_mean(values):
                         return torch.stack([chunk.mean() for chunk in torch.split(values, counts)]).mean()
-                    actor = team_mean(objective)
+                    if actor_reduction == "joint_team":
+                        actor = (objective.sum() / (len(batch) * actor_count_normalizer)
+                                 if actor_count_normalizer else value_loss.new_zeros(()))
+                    else:
+                        actor = team_mean(objective)
                     entropy = team_mean(gate_dist.entropy() + gate_dist.probs[:, 1] * proposal_dist.entropy())
                     kl = team_mean((ratio - 1) - logratio)
                     clipped = team_mean((torch.abs(ratio - 1) > clip_ratio).float())
@@ -308,7 +328,12 @@ class StudentPPOV42(JointPPOV42):
             if stopped:
                 break
         result = {**{key: value / updates if updates else 0.0 for key, value in totals.items()}, "updates": updates,
-                  "team_steps": len(steps), "actor_decisions": sum(int(s.actor_mask.sum()) for s in steps)}
+                  "team_steps": len(steps), "actor_decisions": actor_decisions}
+        if actor_reduction == "joint_team":
+            result.update({
+                "joint_team_actor": True,
+                "actor_count_normalizer": float(actor_count_normalizer),
+            })
         if target_kl is not None:
             result.update({
                 "accepted_updates": updates,

@@ -1,9 +1,11 @@
 import copy
+from itertools import product
 from dataclasses import replace
 
 import numpy as np
 import pytest
 import torch
+from torch.distributions import Categorical
 
 from terminal_marl.algo.student_ppo_v4_2 import StudentPPOV42, StudentStepV42, team_gae
 
@@ -181,3 +183,103 @@ def test_target_kl_keeps_teacher_rejection_and_disabled_output_compatibility():
                            "grad_norm", "updates", "team_steps", "actor_decisions"}
     assert "accepted_updates" not in result
     assert "final_rollout_kl" not in result
+
+
+class _ControlledActorCritic(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.theta = torch.nn.Parameter(torch.tensor(0.0))
+
+    def distributions(self, observations):
+        zeros = torch.zeros_like(self.theta).expand(observations.shape[0])
+        gate_logits = torch.stack((zeros, self.theta.expand_as(zeros)), dim=-1)
+        proposal_logits = torch.zeros(
+            (observations.shape[0], 25), dtype=observations.dtype, device=observations.device,
+        )
+        return Categorical(logits=gate_logits), Categorical(logits=proposal_logits)
+
+    def critic(self, world, mask):
+        state_b = world[:, 0, 0]
+        return torch.where(state_b < 0.5, torch.full_like(state_b, -0.5), torch.ones_like(state_b))
+
+
+def _controlled_steps() -> list[StudentStepV42]:
+    rows: list[StudentStepV42] = []
+    for action in (0, 1):
+        for _ in range(8):
+            gate = np.asarray([action], dtype=np.int64)
+            rows.append(StudentStepV42(
+                world=np.zeros((1, 1), dtype=np.float32),
+                requested_gate=gate,
+                requested_proposal=np.asarray([0 if action else -1], dtype=np.int64),
+                gate_logprob=np.asarray([np.log(0.5)], dtype=np.float32),
+                proposal_logprob=np.asarray([-np.log(25.0) if action else np.nan], dtype=np.float32),
+                actor_mask=np.ones(1, dtype=bool), value=-0.5, next_value=0.0,
+                reward=-float(action), terminated=True, episode_end=True,
+            ))
+    for bits in product((0, 1), repeat=4):
+        gates = np.asarray(bits, dtype=np.int64)
+        rows.append(StudentStepV42(
+            world=np.ones((4, 1), dtype=np.float32),
+            requested_gate=gates,
+            requested_proposal=np.where(gates == 1, 0, -1).astype(np.int64),
+            gate_logprob=np.full(4, np.log(0.5), dtype=np.float32),
+            proposal_logprob=np.where(gates == 1, -np.log(25.0), np.nan).astype(np.float32),
+            actor_mask=np.ones(4, dtype=bool), value=1.0, next_value=0.0,
+            reward=0.5 * sum(bits), terminated=True, episode_end=True,
+        ))
+    return rows
+
+
+def _controlled_update(actor_reduction: str):
+    policy = StudentPPOV42(1)
+    policy.model = _ControlledActorCritic()
+    learning_rate = 1e-5
+    policy.optimizer = torch.optim.SGD(policy.model.parameters(), lr=learning_rate)
+    before = float(policy.model.theta.detach())
+    result = policy.update(
+        _controlled_steps(), training_authorized=True, epochs=1, minibatch_size=32,
+        gamma=1.0, gae_lambda=1.0, clip_ratio=0.1, value_coef=0.0,
+        entropy_coef=0.0, target_kl=None, actor_reduction=actor_reduction,
+    )
+    after = float(policy.model.theta.detach())
+    return result, before, after, learning_rate
+
+
+def test_actor_reduction_toy_preserves_world_mean_and_opt_in_joint_team_scaling():
+    world_result, world_before, world_after, learning_rate = _controlled_update("world_mean")
+    joint_result, joint_before, joint_after, _ = _controlled_update("joint_team")
+
+    assert world_before == joint_before == 0.0
+    assert world_after < 0.0
+    assert joint_after > 0.0
+    assert joint_result["joint_team_actor"] is True
+    assert joint_result["actor_count_normalizer"] == pytest.approx(2.5)
+    assert world_result["actor_decisions"] == joint_result["actor_decisions"] == 80
+
+    expected_reward = lambda theta: 0.5 * (-(1.0 / (1.0 + np.exp(-theta)))
+                                           + 4.0 * 0.5 * (1.0 / (1.0 + np.exp(-theta))))
+    finite_difference = (expected_reward(1e-5) - expected_reward(-1e-5)) / (2e-5)
+    assert finite_difference == pytest.approx(0.125, abs=1e-9)
+    assert joint_after - joint_before == pytest.approx(learning_rate * 0.1, abs=1e-8)
+
+
+def test_joint_team_actor_normalizer_includes_no_actor_worlds_and_stays_finite():
+    policy = StudentPPOV42(88)
+    rows = [
+        replace(step(policy, reward=1.0), actor_mask=np.zeros(2, dtype=bool)),
+        step(policy, reward=2.0, n=3),
+    ]
+    result = policy.update(
+        rows, training_authorized=True, epochs=1, minibatch_size=2,
+        actor_reduction="joint_team",
+    )
+    assert result["actor_count_normalizer"] == pytest.approx(1.5)
+    assert result["actor_decisions"] == 3
+    assert all(np.isfinite(value) for value in result.values())
+
+
+def test_actor_reduction_rejects_unknown_mode():
+    policy = StudentPPOV42(88)
+    with pytest.raises(ValueError, match="actor_reduction"):
+        policy.update([step(policy)], training_authorized=True, actor_reduction="bad")

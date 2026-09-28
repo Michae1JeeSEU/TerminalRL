@@ -129,13 +129,20 @@ def _stats(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def _credit_update_kwargs(*, full_episode_credit: bool = False) -> dict[str, Any]:
+def _credit_update_kwargs(*, full_episode_credit: bool = False,
+                          joint_team_actor: bool = False) -> dict[str, Any]:
     """Return per-run PPO kwargs without mutating the pilot defaults."""
 
     value = dict(pilot.UPDATE_KWARGS)
     if full_episode_credit:
         value.update({"gamma": 1.0, "gae_lambda": 1.0})
+    if joint_team_actor:
+        value["actor_reduction"] = "joint_team"
     return value
+
+
+def _actor_reduction(*, joint_team_actor: bool = False) -> str:
+    return "joint_team" if joint_team_actor else "world_mean"
 
 
 def _full_episode_mc_returns(steps: Sequence[StudentStepV42]) -> np.ndarray:
@@ -234,6 +241,7 @@ def _training_cell_record(
         ),
         "credit_gamma": float(kwargs["gamma"]),
         "credit_gae_lambda": float(kwargs["gae_lambda"]),
+        "actor_reduction": str(kwargs.get("actor_reduction", "world_mean")),
         "sampling": {
             "deterministic": False,
             "native_stochastic_behavior": bool(steps) and all(row.stochastic_behavior for row in steps),
@@ -334,6 +342,7 @@ def _progress(output: Path, *, status: str, phase: str, training_processed: int 
 
 def _base_report(
     output: Path, *, check_only: bool, full_episode_credit: bool = False,
+    joint_team_actor: bool = False,
     update_kwargs: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
@@ -344,6 +353,7 @@ def _base_report(
         "repair_method": REPAIR_METHOD,
         "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
         "full_episode_credit": bool(full_episode_credit),
+        "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
         "credit_update_kwargs": dict(kwargs),
         "training_rollouts": 0,
         "ppo_updates": 0,
@@ -380,7 +390,7 @@ def _preflight(neutral_configs: Mapping[str, Any]) -> tuple[Path, Any, dict[str,
 def _binding_report(
     binding: Mapping[str, Any], warmup: Mapping[str, Any],
     update_kwargs: Mapping[str, Any] | None = None,
-    *, full_episode_credit: bool = False,
+    *, full_episode_credit: bool = False, joint_team_actor: bool = False,
 ) -> dict[str, Any]:
     kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
     value = dict(binding)
@@ -396,6 +406,8 @@ def _binding_report(
         "full_episode_credit": bool(full_episode_credit),
         "credit_gamma": float(kwargs["gamma"]),
         "credit_gae_lambda": float(kwargs["gae_lambda"]),
+        "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
+        "actor_count_normalizer": None,
         "permutation_seed": PERMUTATION_SEED,
         "policy_profile": "dense24 neutral task-priority config",
     })
@@ -594,14 +606,20 @@ def _evaluate_arm(
 def run(
     *, output_dir: str | Path, check_only: bool = False,
     full_episode_credit: bool = False,
+    joint_team_actor: bool = False,
     reuse_before_root: str | Path | None = None,
 ) -> dict[str, Any]:
     output = Path(output_dir)
     full_episode_credit = bool(full_episode_credit)
+    joint_team_actor = bool(joint_team_actor)
     reuse_root = Path(reuse_before_root) if reuse_before_root is not None else None
-    update_kwargs = _credit_update_kwargs(full_episode_credit=full_episode_credit)
+    update_kwargs = _credit_update_kwargs(
+        full_episode_credit=full_episode_credit,
+        joint_team_actor=joint_team_actor,
+    )
     evaluation_kind = (
-        "development_existing_scenes" if full_episode_credit else "new_physical_scenes"
+        "development_existing_scenes"
+        if full_episode_credit or joint_team_actor else "new_physical_scenes"
     )
     reuse_preflight_paths: list[str] = []
     _require(not output.exists(), f"joint-batch output must be fresh: {output}")
@@ -609,11 +627,14 @@ def run(
     _progress(output, status="STARTING", phase="preflight", check_only=check_only)
     report = _base_report(
         output, check_only=check_only, full_episode_credit=full_episode_credit,
+        joint_team_actor=joint_team_actor,
         update_kwargs=update_kwargs,
     )
     try:
-        _require(full_episode_credit or reuse_root is None,
-                 "--reuse-before-root requires --full-episode-credit")
+        _require(not (full_episode_credit and joint_team_actor),
+                 "--full-episode-credit and --joint-team-actor are mutually exclusive")
+        _require(full_episode_credit or joint_team_actor or reuse_root is None,
+                 "--reuse-before-root requires --full-episode-credit or --joint-team-actor")
         configs, neutral_configs, _runtime_protocol = neutral_eval._build_neutral_inputs()
         del _runtime_protocol
         _require(all(
@@ -625,6 +646,7 @@ def run(
         binding = _binding_report(
             binding, warmup, update_kwargs,
             full_episode_credit=full_episode_credit,
+            joint_team_actor=joint_team_actor,
         )
         binding["source_q_model_digest"] = source["source_q_digest"]
         binding["config_snapshots"] = {
@@ -671,7 +693,7 @@ def run(
             "new_evaluation_horizon_steps": binding["simulation_budgets"]["new_evaluation_horizon_steps"],
         })
         report["binding"] = binding
-        if full_episode_credit:
+        if full_episode_credit or joint_team_actor:
             report["scope"] = {
                 "training": "development_existing_scenes",
                 "evaluation": "development_existing_scenes",
@@ -713,6 +735,8 @@ def run(
         report["checks"].update({"runtime_rollout_calls": 0, "update_calls": 0,
                                   "env_steps": 0, "profiles_and_budgets_checked": True,
                                   "credit_kwargs_explicit": True,
+                                  "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
+                                  "actor_count_normalizer": None,
                                   "reused_before_rollouts": 0,
                                   "new_eval_rollouts": 0})
         _write_json(output / "report.json", report)
@@ -726,7 +750,7 @@ def run(
         report["checks"]["trainable_scope"] = scope
         all_steps, training_records, collection, stop_reason = _collect_training(
             output=output, policy=policy, checkpoint=Path(warmup["warmup_path"]), config=dense,
-            update_kwargs=update_kwargs if full_episode_credit else None,
+            update_kwargs=update_kwargs if (full_episode_credit or joint_team_actor) else None,
         )
         report["training"] = {
             "records": training_records,
@@ -735,6 +759,7 @@ def run(
             "collection": collection,
             "sampling": {"deterministic": False, "teacher": False,
                           "native_stochastic_behavior": all(bool(row.stochastic_behavior) for row in all_steps)},
+            "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
         }
         report["training_rollouts"] = len(training_records)
         if stop_reason is not None:
@@ -758,6 +783,15 @@ def run(
             "weight_sum": float(weights.sum()),
             "world_count": int(sum(bool(row.actor_mask.any()) for row in all_steps)),
         }
+        actor_count_normalizer = (
+            float(sum(int(row.actor_mask.sum()) for row in all_steps) / len(all_steps))
+            if all_steps else 0.0
+        )
+        pooled["actor_reduction"] = _actor_reduction(joint_team_actor=joint_team_actor)
+        pooled["actor_count_normalizer"] = actor_count_normalizer
+        report["binding"]["actor_count_normalizer"] = actor_count_normalizer
+        report["checks"]["actor_count_normalizer"] = actor_count_normalizer
+        report["training"]["actor_count_normalizer"] = actor_count_normalizer
         report["training"]["pooled"] = pooled
         if full_episode_credit:
             expected_mc = _full_episode_mc_returns(all_steps)
@@ -823,6 +857,8 @@ def run(
             "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
             "credit_gamma": float(update_kwargs["gamma"]),
             "credit_gae_lambda": float(update_kwargs["gae_lambda"]),
+            "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
+            "actor_count_normalizer": actor_count_normalizer,
         })
         if update_reason is not None:
             raise JointBatchError(update_reason)
@@ -837,6 +873,8 @@ def run(
             "credit_method": "full_episode_mc" if full_episode_credit else "gae_bootstrap",
             "credit_gamma": float(update_kwargs["gamma"]),
             "credit_gae_lambda": float(update_kwargs["gae_lambda"]),
+            "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
+            "actor_count_normalizer": actor_count_normalizer,
             "training_budget": {
                 "updates": 1,
                 "epochs": pilot.UPDATE_KWARGS["epochs"],
@@ -879,7 +917,7 @@ def run(
         report["evaluation_rollouts"] = len(before_records) + len(after_records)
         report["evaluation"] = {
             "kind": evaluation_kind,
-            "fresh_evaluation": not full_episode_credit,
+            "fresh_evaluation": not (full_episode_credit or joint_team_actor),
             "before_checkpoint_sha256": EXPECTED_CANDIDATE_SHA256,
             "after_checkpoint_sha256": roundtrip["checkpoint_sha256"],
             "before": neutral_eval._aggregate_arm(before_records),
@@ -904,6 +942,8 @@ def run(
             "teacher_called": False,
             "heldout_consumed": False,
             "credit_kwargs_explicit": True,
+            "actor_reduction": _actor_reduction(joint_team_actor=joint_team_actor),
+            "actor_count_normalizer": report["training"]["pooled"]["actor_count_normalizer"],
             "reused_before_rollouts": len(before_records) if reuse_root is not None else 0,
             "new_eval_rollouts": len(after_records) + (len(before_records) if reuse_root is None else 0),
         })
@@ -926,13 +966,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--check-only", action="store_true")
-    parser.add_argument("--full-episode-credit", action="store_true")
+    credit_group = parser.add_mutually_exclusive_group()
+    credit_group.add_argument("--full-episode-credit", action="store_true")
+    credit_group.add_argument("--joint-team-actor", action="store_true")
     parser.add_argument("--reuse-before-root", type=Path)
     args = parser.parse_args(argv)
     report = run(
         output_dir=args.output_dir,
         check_only=bool(args.check_only),
         full_episode_credit=bool(args.full_episode_credit),
+        joint_team_actor=bool(args.joint_team_actor),
         reuse_before_root=args.reuse_before_root,
     )
     print(json.dumps(_jsonable(report), sort_keys=True))
