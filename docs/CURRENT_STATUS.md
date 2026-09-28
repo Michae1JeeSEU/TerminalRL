@@ -91,7 +91,7 @@
 > `PPO_ALLOWED=false` 边界不变。下一步仅做本地可枚举 toy 验证，检查 actor 是否按每 world 人数取均值会改变
 > team reward 梯度方向，未授权下一次环境训练。
 
-> **当前授权：joint-team actor aggregation protocol（待定向 tests/check-only，2026-09-28）：** 输出根为
+> **历史阶段：joint-team actor aggregation protocol 终态（2026-09-29）：** 输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_joint_team_actor_20260928`。恢复 `3fe7` actor
 > 与 `b136` critic，复用 joint-batch 六个 task-neutral development training cells，预算为每 cell
 > `24` requests、六个 cells 合计 `144` requests、最多 `10800` steps，原 `gamma=.99`、`lambda=.95`，
@@ -101,10 +101,34 @@
 > `C=totalactor/T`（`T` 为六条 episode 的全部 steps 总数，禁止按 episode 分别重归一），actor loss 为
 > `sum(all actor clipped losses)/(minibatch world_count*C)`，`C=0` 时 actor loss 为 `0`；critic、
 > advantage normalization、entropy、KL 与 per-agent clipped ratio 定义不变。已有 toy 证据显示
-> objective weighting 方向不一致，但不证明实际退化的全部根因。定向 tests 与 check-only 通过且
-> 主审准入后才启动唯一 full；当前尚未启动，无 PID/exit/性能结果。详情见
+> objective weighting 方向不一致，但不证明实际退化的全部根因。代码提交
+> `fb1a9a61d0dbb524a60928f598a0ad847297a080`，定向 tests `57`；server check-only 为
+> `CHECK_ONLY_OK exit0`，源码与两个 tests 的四 SHA 已同步核对，joint-team、`gamma=.99`、
+> `lambda=.95`、reuse6、new6 evaluation 上限 `9980`、training 上限 `10800`，
+> `env/update/runtime=0`。唯一 full launcher PID `1798690`、child PID `1798697`，cwd
+> `/home/user/projects/terminal`，cmdline 含 `--joint-team-actor`；首个 rollout 曾为 seed `873103`、
+> `375` steps、`10` completed、`actor=2120`、`terminal=false`。最终 `exit=0`、report 为
+> `COMPLETED`、`technical_ok=true`，六个 training cells 合计 `4635` steps、`1` 次 update、
+> `290` accepted/`0` rejected，整批 `C=3.844012944983819`，KL mean/final/max 为
+> `.0004372743/.0001949033/.0026966119`，q/freeze/roundtrip 通过；full checkpoint SHA256 为
+> `ac7fbb5b3b506e693c6a3073c99b85cc3c0d395644755a7496cff8d48c5fd05a`。配对 evaluation 两臂各
+> `114` requests，安全/unresolved 均为 `0`：before `98/16/0`、after `97/17/0`
+> （normal/emergency/failed），mean/p95/max wait `107.778/273.736/361.184→107.613/262.942/393.551 s`，
+> low-SOC wait `98.613→100.942 s`，reward `2202.562→2193.303`，normal deltas
+> `[+1,0,0,-2,0,0]`。heartbeat `automation` 已删除；主审保留 actor aggregation 数学修正，
+> 但 `ac7` 仅待重复验证、不晋级，不宣称退化已解决。详情见
 > [joint-team actor aggregation protocol](evidence/v4_2/p3_task_neutral_joint_team_actor_protocol_20260928.md)。
-> 该 joint-team 预注册于 2026-09-29 继续实施，协议文件名与输出 ROOT 保持既定值。
+> 六条 training cells 仅为 development 证据而非 fresh cohort；问题仍未解决。
+
+> **当前授权：joint-team fixed-model sampling repeats（待定向 tests/check-only，2026-09-29）：** 输出根为
+> `/home/user/training_outputs/terminal/p3_task_neutral_joint_team_repeats_20260929`。before 固定
+> `3fe7` actor，after 固定 `ac7fbb5b3b506e693c6a3073c99b85cc3c0d395644755a7496cff8d48c5fd05a`，
+> 两臂不训练、不使用 optimizer/Teacher。四个 dense24 env seeds `875101..875104`，每个三条
+> policy sampling；每臂 `12` records/`288` requests，合计两臂 `24` records，其中每臂每场景一条
+> 复用、两条新 sampling；新 sampling 两臂共 `16` rollouts、总步数上限 `28800`。原 joint-team
+> 单 seed 仅作配对背景，不作为新的独立证据。复用根、seed 映射和报告范围见
+> [joint-team repeats protocol](evidence/v4_2/p3_task_neutral_joint_team_repeats_protocol_20260929.md)。
+> 当前尚未启动；先定向 tests/check-only，主审通过后才运行唯一 full，不因表现差早停、换 seed 或扩预算。
 
 > **历史阶段：Scoped task-neutral PPO pilot 终态（2026-09-28）：** pilot report 为 `COMPLETED`、
 > `technical_ok=true`，服务器 `full.exit=0`；3 次 `update()` 调用记录 `148` accepted attempts
@@ -1092,7 +1116,11 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
    `3fe7` actor 继续作为开发起点；`gamma=1`、`lambda=1` 未成为既定修复。full-episode 失败
    结果保留。当前授权见
    [joint-team actor aggregation protocol](evidence/v4_2/p3_task_neutral_joint_team_actor_protocol_20260928.md)：
-   先定向 tests/check-only，主审准入后才启动唯一 full；当前未启动。
+   已完成 `COMPLETED exit0 technical_ok=true`，代码 `fb1a9a61d0dbb524a60928f598a0ad847297a080`、
+   定向 tests `57`，`4635` steps/`1` update/`290` accepted/`0` rejected，checkpoint `ac7` 仅待重复
+   验证、不晋级；full-episode 失败与本终态结果均保留。当前授权见
+   [joint-team repeats protocol](evidence/v4_2/p3_task_neutral_joint_team_repeats_protocol_20260929.md)：
+   先定向 tests/check-only，主审通过后才启动唯一 full；当前未启动。
 3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
    low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
    wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；

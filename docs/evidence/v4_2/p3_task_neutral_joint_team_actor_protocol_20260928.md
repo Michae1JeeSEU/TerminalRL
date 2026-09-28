@@ -1,6 +1,6 @@
 # P3 Task-neutral Joint-team Actor Aggregation Protocol
 
-日期：2026-09-28。状态：已设计，尚未启动。本协议只登记一次有界 development actor
+日期：2026-09-28。状态：唯一 full 已完成（终态确认：2026-09-29）。本协议只登记一次有界 development actor
 aggregation validation；定向 tests 与 check-only 通过后，仍须主审准入唯一 full。它不自动
 放行 formal、heldout、P4 或全局 `PPO_ALLOWED`。
 
@@ -85,6 +85,21 @@ production default update 从 `theta=0` 到 `-1.25e-6`，方向相反；world-su
 reward，保留全部失败；不增加每 cell 或子组无退化硬门槛。只有在结果显示改善后，才由主审
 决定是否独立验证，本协议不授权扩预算或继续训练。
 
-先完成定向 tests 与 server check-only；check-only 通过且主审准入后才启动唯一 full。当前
-尚未启动，不写 full PID、exit 或性能结果。任务 priority、safety、proposal、`829xxx`
-heldout、`PPO_ALLOWED=false` 和 formal/P4 边界均不变。
+代码提交为 `fb1a9a61d0dbb524a60928f598a0ad847297a080`，定向 tests 为 `57`。server check-only
+为 `CHECK_ONLY_OK`、`exit=0`；源码与两个 tests 的四 SHA 已同步核对，配置为 joint-team、
+`gamma=.99`、`lambda=.95`，复用六条 training cells，六条新 evaluation 上限 `9980`、training
+上限 `10800`，且 `env=0`、`update=0`、`runtime=0`。唯一 full launcher PID 为 `1798690`，
+full child PID 为 `1798697`，cwd 为 `/home/user/projects/terminal`，cmdline 已核对包含
+`--joint-team-actor`；首个 rollout 曾观察 seed `873103`、`375` steps、`10` completed、`2120`
+actor、`terminal=false`。最终 `exit=0`、report 为 `COMPLETED`、`technical_ok=true`，六个 training
+cells 合计 `4635` steps，执行 `1` 次 update，`290` accepted、`0` rejected，整批 `C=`
+`3.844012944983819`；KL mean/final/max 为 `.0004372743/.0001949033/.0026966119`，q/freeze/
+roundtrip 通过。full checkpoint SHA256 为
+`ac7fbb5b3b506e693c6a3073c99b85cc3c0d395644755a7496cff8d48c5fd05a`。配对 evaluation 为六条
+复用 before 与六条新 after、两臂各 `114` requests，安全与 unresolved 均为 `0`：before
+`98 normal / 16 emergency / 0 failed`，after `97 / 17 / 0`；mean/p95/max wait 为
+`107.778/273.736/361.184→107.613/262.942/393.551 s`，low-SOC wait `98.613→100.942 s`，
+reward `2202.562→2193.303`，normal deltas 为 `[+1,0,0,-2,0,0]`。heartbeat `automation` 已删除。
+主审保留 actor aggregation 的数学修正，但 `ac7` 仅待重复验证、不晋级；不宣称退化已解决。
+六条 training cells 仅为 development 证据而非 fresh cohort。任务 priority、safety、proposal、
+`829xxx` heldout、`PPO_ALLOWED=false` 和 formal/P4 边界均不变。
