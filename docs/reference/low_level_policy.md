@@ -7,8 +7,10 @@
 > **适用范围**：Phase A / A5 fixed-airspace low-level learning
 >
 > **状态**：schema 已冻结；新的 I1、DAgger、PPO 当前仍受
-> [项目状态页](../CURRENT_STATUS.md) 的 gate 约束。下一步目标是完成受控应急语义下的
-> P3 PPO entry/pilot readiness；entry 与正式大规模训练仍需分别通过 V5 协议。
+> [项目状态页](../CURRENT_STATUS.md) 的 gate 约束。本轮低层主课程采用 task-neutral
+> 语义，完整评估待运行，状态以 [项目状态页](../CURRENT_STATUS.md) 为准；最小实现与单测已完成，
+> 配对 baseline 仍待协议执行，再决定有界 PPO repair pilot。
+> `PPO_ALLOWED`、formal/heldout 和 static qualification 不因本次文档修订自动放行。
 
 本文件给出低层策略的当前唯一语义。旧 V3/V4/V4.1 设计、迁移原因和逐次实验记录分别保留在
 `../history/` 与 `../evidence/`，不再作为实现依据。
@@ -61,10 +63,15 @@ dimension = 88
 
 | 组 | 维度 | 内容 |
 |---|---:|---|
-| self / flight | 18 | phase、ring role/progress、speed、SOC、wait、priority、release eligibility |
-| mission / resource identity | 12 | mission、gate、assigned LZ、final/LZ availability |
+| self / flight | 18 | phase、ring role/progress、speed、SOC、wait、energy/wait urgency、release eligibility |
+| mission / resource identity | 12 | 兼容保留的 mission/base 字段、gate、assigned LZ、final/LZ availability |
 | semantic topology slots | 45 | 5 个语义邻机槽 × 9D |
 | system / flow | 12 | ring occupancy、headway、queue/resource、interface/reconfiguration context |
+
+中性主课程使用 `task_priority_enabled=false`：ArrivalProcess 仍保留 raw mission；base priority
+仍按历史随机流抽样但只存储有效值 `1`，以保持 seed 与接口兼容，policy 的 mission one-hot 固定为 `STANDARD`；
+88D 宽度、字段位置和 schema hash 不变。raw `emergency` 仅是服务类别 metadata，不能解释为
+已启用 emergency mission preference。能量应急 takeover 仍由执行/安全层独立保留。
 
 5 个邻机槽固定为：same-ring leader、same-ring follower、target-ring predecessor、
 target-ring successor、nearest predicted conflict。V2.1 仅在索引 87 追加：
@@ -214,57 +221,36 @@ S0  schema / semantics qualification
 → I1  fresh multi-seed hierarchical BC + untouched cohort qualification
 → I2  Safe DAgger preflight and bounded aggregation
 → I3  student-only imitation qualification
-→ P0/P1  PPO admission and student-controlled PPO
-→ environment / geometry curriculum
+→ paired task-neutral baseline on the new course
+→ bounded PPO repair pilot (only after admission review)
+→ independent validation
 → static-geometry qualification
 → freeze low-level policy
+→ A6 dynamic-airspace learning
 ```
 
-PPO 之前至少必须证明：schema/replay/safety PASS、WAIT 与 RELEASE 均可学习、student-only
-闭环不崩溃、queue 不发散、throughput/completion 健康、shield burden 可接受，以及数据和
-checkpoint lineage 可复现。受控应急不再被默认当作零容忍性能失败，但安全认证、能量未耗尽
-且完成着陆的 `emergency_landed` 必须单独计数；`failed_energy`、unsafe/formal-evaluation
-unresolved、finite、replay/likelihood、restore 和 frozen-proposal 仍是硬 gate。普通 shield
-correction/intervention 可非零，但 actor takeover fraction 须 `<=.05` 且 shield/joint
-fail-closed 为零。任一核心 gate 为 FAIL 时
-`PPO_ENTRY_ALLOWED = false`，且在 pilot 完成前 `FORMAL_P3_ALLOWED = false`。
+主课程的最小实现必须先通过单测，再以相同 `task_priority_enabled=false` 运行 source/candidate
+配对 baseline。课程目标是正常降落、吞吐、完整周期等待和尾部 starvation 监测；保留随机到达、
+SOC 差异、能量、安全、环/路径可执行性和资源预约。任务服务时长分布保持 `30/120/10/60 s`，
+但不表示服务等级偏好。等待尾部用于监测，不增加每个子组必须无退化的硬 gate。
 
-### 6.1 P3 V5 controlled-emergency entry and pilot
+新 baseline 按协议记录 schema/replay/safety、完整 ledger、full-cycle accounting、等待尾部和
+checkpoint lineage 技术核对；普通 shield intervention 可非零，既有 actor takeover fraction
+`<=.05` 与 shield/joint fail-closed 为零的安全 gate 保持不变。PPO 仍只在既有 admission
+范围内决定；本节不授权 formal/heldout 或 PPO，`PPO_ALLOWED` 仍由独立 admission 决定。
 
-P3 V5 保持 V4.2 的低层定义不变：策略仍只请求 `WAIT` 或 `RELEASE + conditional
-speed×timing proposal`，由 ExecutionScheduler、CanonicalTrajectoryGenerator、SafetyFilter
-和 PredictiveSafetyShield 认证并执行。应急着陆是执行层的安全降级结果，不是新增的 policy action，
-也不能把 shield 或 emergency action 伪装成 actor action 进入 PPO likelihood。
+### 6.1 Task-neutral course semantics
 
-V5 的学习路线保留 priority `1/3/5`、SOC `.55–.90`、mission/资源混合和
-`downstream_priority`。不启用 SOC-only ordering。gate-adapter-only 是监督修复或 PPO pilot
-的 trainable-scope 选择，不改变 V4.2 的策略架构与动作定义。历史课程已学能力通过 mixed old
-anchors 做回归检查，不从 I0 重新训练。
+`task_priority_enabled=true` 是历史兼容模式；新主课程固定为 `false`。ArrivalProcess 仍保留 raw
+mission；base priority 仍抽样以消耗相同随机流，但新课程只存储有效值 `1`，包括 raw `emergency`
+mission，policy mission one-hot 固定为 `STANDARD`，Observation V2.1 仍为 88D。
+PriorityEngine 保留等待与 SOC/能量公式，但不执行任务等级偏好；执行排序仍使用 dynamic
+priority、waiting 和 UID，ring/path feasibility、resource reservation 与 SafetyFilter 作为独立
+约束，不能退化为 SOC 单排序。
 
-结果账本必须区分 `completed`、安全认证且能量未耗尽的 `emergency_landed`、
-`failed_energy`、unsafe 和 formal/evaluation `unresolved`。`emergency_landed` 进入事件代价、
-priority、low-SOC 和全请求等待的报告；它本身不阻止 PPO entry，但不追溯改写旧 formal 结果
-中的 `completed`。pilot 训练中的自然 horizon 截断另行报告，不自动写成普遍安全失败。
-后续 independent qualification 可报告 provisional dense `<=10%`、sparse `<=5%` 的研究目标；
-它们不是 V5 admission threshold，也不能为既有结果追溯制造 PASS。
-
-V5 首先运行不更新的 stochastic entry cohort，再运行总计 6 次 update 的 PPO pilot（每个
-registered pilot arm 一次）。所有 6 次 update 都必须有效；pilot 至少需要一次真实 accepted
-update、exact restore、proposal/temperature/actor freeze 核对，以及 pilot 前后
-完整请求分母的安全与结果回归。学生 rollout summary 已记录 `reward_component_totals` 与
-`reward_total`，并检查组件和与总回报一致；实际累计项为
-`time/progress/release/touchdown/failure/teacher/shield/urgency/emergency`，排除每个 UAV 的
-`total` 避免重复计算。`urgency` 是 priority 与 SOC 的合并项，当前不声称存在独立的
-priority/SOC 分解。实现提交为 `4d34672`，定向测试 `9 passed`。只有 V5 pilot 和 paired development 均通过，才可把
-`FORMAL_P3_ALLOWED` 置为 true。
-
-P3 的 priority/SOC 时间奖励是**默认关闭的可选 shaping**：仅显式启用时根据活动 UAV 的
-`base_priority` 和 SOC 低于阈值的幅度增加每步时间代价，不能替代完成率/安全 gate。
-2026-09-21 的 V3 使用权重 `1.0/2.0`、阈值 `.65`；虽然训练 formal 通过，最后模型在
-heldout 出现 `SafetyInvariantError`，事后早停的 checkpoint 5 又在 fresh Q3 dense24
-发生 13/24 完成。当前 P3 不合格；未来模型选择不得仅优化**已完成者**的平均等待，
-必须对全部请求报告完成/未完成、完整 horizon、未认证的 RELEASE 与安全不变量。
-详见 [P3 V3/Q3 证据](../evidence/v4_2/p3_v3_early_stop_q3_20260921.md)。
+能量应急接管始终保留在执行/安全层，与后续独立 emergency mission 鲁棒性场景分开。raw
+`emergency` 任务标签、`EMERGENCY_LANDED` 结果和能量应急接管不能互换。新课程对照与旧课程
+报表不直接跨任务比较；旧 source、candidate_retained、formal/heldout 和失败记录只按历史协议解释。
 
 ## 7. 数据与 qualification 纪律
 

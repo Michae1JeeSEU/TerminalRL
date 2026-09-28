@@ -7,6 +7,12 @@
 > **当前车辆基准**：V2 主仿真使用 `research_evtol` / EHang EH216-S /
 > `eh216s_research_v2`。安全距离和能量值是可审计的工程仿真语义，不是
 > EH216-S 的适航认证间隔或功耗结论。
+>
+> **当前低层课程**：新主课程使用 `task_priority_enabled=false`。mission/base 字段继续服务
+> seed、schema 和历史兼容；raw mission 保留为物理服务/兼容性 metadata，base priority 的
+> 随机抽样仍消耗相同 RNG 但新课程只存储有效值 `1`，policy mission one-hot 固定为
+> `STANDARD`，Observation V2.1 保持 88D。能量应急 takeover 始终属于执行/安全层，与后续
+> 独立 emergency mission 鲁棒性场景分开。
 
 ---
 
@@ -140,7 +146,7 @@ class UAVState:
     uid: int
     arrival_id: int
 
-    # immutable request attributes
+    # immutable request attributes; base_priority is the effective stored value
     request_time: float
     mission_type: MissionType
     base_priority: int
@@ -283,13 +289,15 @@ class ArrivalRequest:
     initial_soc: float
 ```
 
-随机属性在 request 创建时一次性生成。不同 policy 在同 seed 下使用同一 request stream。
+mission 和 gate 在 request 创建时一次性生成；base priority 仍按历史分布抽样以保持 RNG 消耗，
+但 `task_priority_enabled=false` 时只存储有效值 `1`。不同 policy 在同 seed 下使用同一 request
+stream，且不把 raw `emergency` mission 解释为主课程任务偏好。
 
 ### 5.2 ExternalQueue
 
 队列保存 `ArrivalRequest`，不是已经进入物理终端区的 UAV。
 
-排序 baseline：
+历史排序 baseline（仅用于兼容回放）：
 
 ```text
 SOC emergency
@@ -297,7 +305,11 @@ SOC emergency
 → request_time
 ```
 
-必须记录 FCFS 被 priority 跳过的情况，供 fairness 分析。
+新主课程仍使用既有 `SOC emergency → dynamic priority → request_time` 接口排序语义；其中
+`dynamic_priority` 在 `task_priority_enabled=false` 时只包含等待与能量紧迫度，不能简化为
+SOC 单排序。ring/path feasibility 和 resource reservation 继续作为独立可执行性约束，不能被
+排序键替代。任务 priority 仅在 `task_priority_enabled=true` 历史兼容模式参与，且必须记录
+兼容模式下 FCFS 被 priority 跳过的情况。
 
 ### 5.3 EntryGate
 
@@ -399,7 +411,8 @@ admission reference 为 `240.9 + 0.10 * 1500 = 390.9` normalized units，
 
 ### 7.1 固定应急迫降
 
-应急路线属于 trajectory generator / scheduler 的确定性后备动作，不属于 RL action：
+应急路线属于 trajectory generator / scheduler 的确定性后备动作，不属于 RL action；它是始终
+保留的能量安全后备，与 raw `emergency` mission 和 `task_priority_enabled` 独立：
 
 ```text
 ring holder current position/velocity
@@ -418,7 +431,7 @@ SafetyFilter 结果。
 普通低 SOC 分流逻辑不得把它提前移出；触地后记 `EMERGENCY_LANDED` 并施加独立 reward cost。
 coordinated fixed-rule flow 先完成 normal release，再对未提交环上 UAV 按实际 route energy、
 `.10` landing floor、15 s margin 和 route-slack window 尝试 emergency takeover；legacy 路径的
-硬 SOC 资格门保持兼容。
+硬 SOC 资格门保持兼容。安全拒绝、energy/dynamics 约束和完整 SafetyFilter 不能被任务偏好覆盖。
 
 ---
 
@@ -430,11 +443,15 @@ class PriorityEngine:
     def rank_key(self, uav, now) -> tuple: ...
 ```
 
-`compute()` 必须与 `requirements.md` 公式一致。PriorityEngine 不拥有动作，也不绕过 safety constraints。
+`compute()` 必须与 `requirements.md` 公式一致。`task_priority_enabled=false` 时使用有效
+`base_priority=1`，保留等待与 SOC/能量 urgency；PriorityEngine 不拥有动作，也不绕过 safety
+constraints。
 
-P2R 的同一步执行顺序为：先按环角色 `INNER → MIDDLE → OUTER`，再按更高 dynamic
-priority、更长累计等待、更小 UID。该顺序在每步动作认证前刷新 priority；只改变竞争候选的处理
-顺序，不改变策略请求、proposal shortlist、reservation 或 SafetyFilter 的所有权。
+P2R 的同一步执行顺序为：先按环角色 `INNER → MIDDLE → OUTER`，再按更高 dynamic priority、
+更长累计等待、更小 UID。该顺序在每步动作认证前刷新；ring/path feasibility、resource
+reservation 和 SafetyFilter 仍是独立约束，不被排序键替代。只改变竞争候选的处理顺序，不改变
+策略请求、proposal shortlist 或 reservation 的所有权。`task_priority_enabled=false` 时，
+dynamic priority 的任务等级项关闭，仅保留等待与能量紧迫度。
 
 ---
 
@@ -535,7 +552,9 @@ trajectory safety
 commit
 ```
 
-Rule baseline 的 `t_base` 根据 earliest headway-safe time、queue order、priority adjustment 得到。RL 的 `Δt` 只能在有限窗口内修正 baseline，不能绕过 headway。
+Rule baseline 的 `t_base` 根据 earliest headway-safe time、queue order、priority adjustment 得到；
+`task_priority_enabled=false` 时 priority adjustment 只来自等待/能量紧迫度。RL 的 `Δt` 只能在
+有限窗口内修正 baseline，不能绕过 headway。
 
 若 target ring 只有一个 holder，target gap 取该 holder 预测位置的对径点
 （antipode）；target ring 无 holder 或存在多个 holder 时保持既有 gap 语义不变。
@@ -809,7 +828,7 @@ all active UAV embeddings
 - **Traffic**：ring occupancy/capacity/ratio、queue age、mean/max holding、transfer queues；
 - **Demand**：recent request/admission rate、burst indicator、external queue；
 - **Resource**：free/reserved/occupied LZ、service remaining、final utilization；
-- **Energy/Priority**：SOC quantiles、warning/reserve counts、priority quantiles、oldest wait；
+- **Energy/wait**：SOC quantiles、warning/reserve counts、energy-slack quantiles、oldest wait；
 - **Event gate**：pressure score、gate state、dwell remaining。
 
 统计应基于 rolling window，而不只看单步瞬时值。
@@ -824,7 +843,7 @@ all active UAV embeddings
 R_H = w_c\Delta N_{completed}-w_dD-w_qQ-w_sS-w_eE-w_fF-w_rC_{reconfig}
 \]
 
-其中 `D` 是 priority-weighted delay，`Q` 是 queue/occupancy pressure，`S` 是 safety cost，`E` 是 energy，`F` 是 diversion/failure，`C_reconfig` 是无效或过度 reconfiguration cost。
+其中 `D` 是全请求 delay/wait，`Q` 是 queue/occupancy pressure，`S` 是 safety cost，`E` 是 energy，`F` 是 diversion/failure，`C_reconfig` 是无效或过度 reconfiguration cost。历史 `task_priority_enabled=true` 模式可以额外记录 priority-weighted delay，但不与新中性课程的报表直接比较。
 
 reward 不得直接奖励“半径更大”或“capacity 数字更大”。
 
@@ -843,7 +862,7 @@ reward 不得直接奖励“半径更大”或“capacity 数字更大”。
 - 40--80 m buffer incursion
 - shield takeover/intervention (including zero-delta takeover)
 - separation risk
-- starvation/fairness cost
+- starvation/tail-wait monitoring cost
 - failure
 ```
 
@@ -859,7 +878,7 @@ Rule policy 必须与 RL 使用完全相同的 3D intention interface 和后端 
 检查 gate corridor、outer capacity、headway、merge gap。
 
 ### 18.2 Outer→Middle / Middle→Inner
-检查最低驻留、priority、headway、target gap、interface availability。
+检查最低驻留、waiting/energy dynamic priority、headway、target gap、interface availability。
 
 ### 18.3 Inner→Final
 额外检查 LZ assignment/reservation、final resource、final headway。

@@ -5,9 +5,18 @@ Landing-only terminal-area operations**：动态三环终端空域构型、多 U
 安全过滤的可执行轨迹，以及后续 Crazyflie 缩尺验证。强化学习负责交通管理和轨迹意图，
 不直接输出姿态、电机或自由飞行动作。
 
-## 2026-09-24 当前集成摘要
+本轮低层主课程采用 task-neutral 语义：正常降落、吞吐、完整周期等待和尾部 starvation 监测，
+保留随机到达、SOC 差异、能量与安全约束、环/路径可执行性和资源预约。`mission_type` 与
+`base_priority` 接口字段继续保留；`task_priority_enabled=false` 时，base 的有效值统一为
+`1`，mission 只表示物理服务/兼容性 metadata，policy mission one-hot 固定为 `STANDARD`，
+88D schema 不变。服务时长 `30/120/10/60 s` 保持以维持负荷。能量应急 takeover 始终保留，
+与后续独立 emergency mission 鲁棒性场景分开。完整课程评估待运行，状态以
+[CURRENT_STATUS](CURRENT_STATUS.md) 为准；旧 source/candidate 与
+formal/heldout 记录均按历史协议解释，不能据此宣称稳定收益或自动放行 PPO。
 
-当前 opt-in `fixed_rule_dense30_coordinated` 使用 downstream/deadline landing-flow coordinator；
+## 2026-09-24 历史集成摘要（不定义当前课程）
+
+历史 opt-in `fixed_rule_dense30_coordinated` 使用 downstream/deadline landing-flow coordinator；
 最近五场、`150` UAV、`143 normal / 7 emergency / 0 failed-energy` 记录均为规则控制器，且沿用
 历史 `.25` landing floor，不是训练策略验证。轨迹与安全链保留完整动力学和 SafetyFilter 检查，
 `validate_plan` 的批量等价路径将 100-step 测量从 `45.319964 s` 降至 `36.037378 s`；该数字是
@@ -15,7 +24,7 @@ Landing-only terminal-area operations**：动态三环终端空域构型、多 U
 标签缓存和离屏回归；PyVista `0.48.4` / VTK `9.6.2` 的 60-frame benchmark 为 `3.2452403 s`
 到 `0.6678959 s`，同样不代表 runtime FPS，专项合计 `35 passed`。
 
-后续诊断采用 `eh216s_research_v2`、归一化容量 `1500` 与 `min_landing_soc=.10`；
+该历史诊断采用 `eh216s_research_v2`、归一化容量 `1500` 与 `min_landing_soc=.10`；
 `soc_reserve=.25` 仍是独立的 queue/admission reserve，其它阈值不变。已有 `.25` 实验和 checkpoint
 只作历史证据。研究边界仍是 landing-only：RL 输出交通管理/降落意图，不直接控制飞行动作；在低层
 当前 `PPO_ALLOWED=false`；完成必要策略修复并通过 PPO admission 后再决定 PPO，低层 static

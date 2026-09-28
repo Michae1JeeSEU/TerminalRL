@@ -1,7 +1,8 @@
 # 技术规范
 
 > **目标版本**：Phase A — Landing-only canonical implementation  
-> **用途**：用于 Codex 直接修改 `terminal_marl/`。不要求兼容旧训练 checkpoint、旧两环 schema 或旧 4 维 intention schema。
+> **用途**：用于 Codex 直接修改 `terminal_marl/`。V4.2/88D/mission/base 字段的接口兼容语义
+> 继续保留；旧 checkpoint、旧两环 schema 和旧 4 维 intention 不能直接作为新训练入口。
 
 ---
 
@@ -55,6 +56,7 @@ simulation:
   max_simulation_seconds: 3600
   max_active_uavs: 60
   reset_mode: flow_from_empty
+  task_priority_enabled: false  # new main course; omitted legacy configs default to true
 
 airspace:
   rings:
@@ -107,7 +109,7 @@ vehicle:
   max_descent_rate: 6.0
 
 energy:
-  model: legacy_phase  # phase_motion_v2 is an explicit V2 curriculum opt-in
+  model: legacy_phase  # phase_motion_v2 is an explicit V2 energy-course opt-in
   capacity_seconds_equivalent: 1500.0
   power_reference: 1.0
   phase_multipliers:
@@ -174,7 +176,8 @@ safety:
   intervention_mode: bounded_swept_recursive
 ```
 
-training/evaluation preset 必须引用相同 schema，不得复制出不同模型语义。
+training/evaluation preset 必须引用相同 schema，不得复制出不同模型语义。新主课程使用
+`task_priority_enabled=false`；历史配置省略该开关时按兼容默认 `true` 解释。
 
 `80 m` 是 desired/planning operating separation；SafetyFilter 审查提交的
 canonical trajectory，运行时 PredictiveSafetyShield 再按与 executor 等价的
@@ -322,12 +325,17 @@ mission = rng.choice(
     p=[0.45, 0.25, 0.10, 0.20],
 )
 
-base_priority = rng.choice([1, 3, 5], p=[0.50, 0.35, 0.15])
-if mission == "emergency":
-    base_priority = max(base_priority, 5)
+sampled_base_priority = rng.choice([1, 3, 5], p=[0.50, 0.35, 0.15])
+if task_priority_enabled:
+    base_priority = max(sampled_base_priority, 5) if mission == "emergency" else sampled_base_priority
+else:
+    base_priority = 1
 ```
 
-不得在 admission 时重新抽样。
+`sampled_base_priority` 在中性课程只用于保持相同 RNG 消耗，不作为 request 字段保存；request
+保留 raw `mission` 和有效 `base_priority`。不得在 admission 时重新抽样。中性课程的 policy
+mission one-hot 固定为 `STANDARD`，而 mission service/compatibility metadata 与
+`30/120/10/60 s` service time 仍保留。
 
 ---
 
@@ -351,7 +359,8 @@ class EnergyModel:
 
 当前 canonical Phase A 规定 external queue 表示 UAV 已在上游空中等待，因此按 `external_wait` power 消耗能量。未来如需地面 dispatch queue，另设状态，不复用 external queue。
 
-启用 `emergency_landing` 时，环上低 SOC UAV 的应急计划必须从真实当前位置和速度连续切向
+`emergency_landing` 是始终保留的能量安全后备开关，与 mission-level emergency preference
+和 `task_priority_enabled` 独立。启用时，环上低 SOC UAV 的应急计划必须从真实当前位置和速度连续切向
 脱环：用 cubic Bézier 进入内部 staging point，OUTER/MIDDLE staging 高度为 `120 m`，INNER
 保持当前高度；parameterizer 绑定真实 initial velocity，并将脱环段的 horizontal end speed
 设为 `0`，再连接现有垂直下降 leg 到已预约 LZ。该计划仍需经过原 SafetyFilter，`80/40/10 m`
@@ -589,7 +598,7 @@ Geometry transition 中：
 
 ```text
 1. advance arrival requests
-2. update external-queue energy / priority
+2. update external-queue energy / waiting urgency
 3. admission decisions
 4. update geometry transition actual state
 5. update LZ service timers
@@ -611,11 +620,13 @@ Geometry transition 中：
 21. metrics / ledger / observations
 ```
 
-当 `rule_flow_coordination_enabled=true` 时，步骤 6 的 legacy emergency pass 被跳过；
+当 `rule_flow_coordination_enabled=true` 时，步骤 6 的 legacy energy-emergency pass 被跳过；
 normal release 先按 coordinated flow 顺序完成，之后才对仍为 uncommitted ring holder 的
 UAV 运行 route-energy/slack emergency pass。该分支不以 `SOC <= emergency_trigger_soc`
 单独接管；实际 emergency route、`.10` landing floor、15 s margin、route-slack window、
 完整 SafetyFilter 和 runtime fail-closed 约束仍必须通过。legacy 路径的硬 SOC 资格门保持兼容。
+该 energy-emergency pass 与 raw `mission_type=emergency` 及 `task_priority_enabled` 独立，
+不得把物理服务类别当作主课程放行偏好。
 
 顺序必须有 integration test，防止 reservation 与 movement 同步错误。
 
@@ -644,7 +655,7 @@ canonical candidates，不冒充 learned policy，并派生持速动作域
 O -> M: 48, 60, 72, 84 s
 M -> I: 60, 72, 84, 96 s × tangential speed bias {0, -4, -8} m/s
 I -> final: 20, 28, 36, 48, 60, 90 s
-Emergency final: 28, 36, 48, 60, 90 s
+Energy-emergency final: 28, 36, 48, 60, 90 s
 ```
 
 候选使用 scheduler 实际 arrival/merge slot，最终进近先按实际可用 LZ
@@ -652,8 +663,10 @@ reserve，再绑定生成的 executable route。能量 urgency 用于 release �
 deadline fallback 判定，
 不能作为 energy、dynamics 或 safety certificate。每个候选必须通过原有
 dynamics 检查。在 coordinated flow 分支，normal release 顺序固定为
-`INNER -> MIDDLE -> OUTER`；同一环内按 remaining energy slack、dynamic
-priority、UID 排序（slack 较小者优先，再按 priority 和 UID）。全部 normal
+`INNER -> MIDDLE -> OUTER`；同一环内按 remaining energy slack、dynamic priority、UID 排序
+（slack 较小者优先，再按 dynamic priority 和 UID）。`task_priority_enabled=false` 时
+dynamic priority 只包含等待与能量紧迫度；ring/path feasibility、resource reservation 和完整
+SafetyFilter 仍是独立认证约束。全部 normal
 release 尝试完成后才进行 emergency takeover。
 
 M -> I admission 使用 inner queue capacity `6` 和额外的 inner-departure
@@ -811,6 +824,7 @@ components: dict[str, float]
 | energy failure | -20.00 |
 | normalized speed residual magnitude | -0.01 |
 | normalized timing residual magnitude | -0.01 |
+| task-priority shaping | 0 in new course; legacy-only when explicitly enabled |
 
 重复持续事件必须去重/cooldown。
 
@@ -820,7 +834,7 @@ components: dict[str, float]
 
 ```text
 + completed missions
-- priority-weighted request delay increment
+- full-request delay / waiting increment
 - external queue area
 - final/ring overpressure
 - NMAC/collision/failure
@@ -828,7 +842,9 @@ components: dict[str, float]
 - unnecessary reconfiguration magnitude
 ```
 
-不要为“动作非零”或“半径增大”给正奖励。
+不要为“动作非零”或“半径增大”给正奖励。新主课程 `task_priority_enabled=false` 时
+priority weight 必须为 `0`；SOC/energy urgency、energy use 和 safety terms 保留。历史
+priority-weighted reward 只在兼容模式记录，不能与新课程 reward 直接比较。
 
 ---
 
@@ -1004,8 +1020,10 @@ every concurrent final trajectory remains safety-certified
 ```
 
 ### Gate D
-固定三环 + V4.2 low-level student-only qualification 通过，N 可变化。PPO 只有在独立
-admission checklist 通过后才允许启动。
+固定三环 + V4.2 low-level student-only qualification 通过，N 可变化；新主课程还必须完成
+full-cycle outcome ledger、全请求等待均值/p95/max 与 starvation tail 监测。这里不增加每个
+mission/子组无退化门槛，也不把旧课程报表跨任务合并。PPO 只有在独立 admission checklist
+通过后才允许启动。
 
 ### Gate E
 三环动态 geometry 可运行且 reconfiguration 不破坏 committed traffic。

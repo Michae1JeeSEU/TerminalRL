@@ -5,22 +5,25 @@
 > Phase B（departure-only）与 Phase C（arrival + departure integrated operations）仅作为后续研究路线，不进入当前代码实现、训练或正式实验。  
 > 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md` 共同构成当前唯一有效的主线说明；阅读入口与文档权威关系见 `README.md`，当前进度见 `CURRENT_STATUS.md`。历史“两环版本”“直接输出自由飞行动作版本”、日期型 handoff 和旧迁移指南不再作为实现依据。
 
-## 0.1 当前实现边界（2026-09-24）
+## 0.1 本轮研究范围与文档状态（2026-09-28）
 
-当前可复现的 dense30 入口是 opt-in `fixed_rule_dense30_coordinated`：downstream/deadline
-landing-flow coordinator、canonical executable trajectory 和 SafetyFilter 共同完成规则控制器
-的放行与认证。最近五场 `150` UAV、`143 normal / 7 emergency / 0 failed-energy` 使用历史
-`.25` landing floor，不能解释为 learned-policy 或 PPO 结果。轨迹/安全链的批量 `validate_plan`
-和 viewer 的拾取、30 Hz position-only/cache 更新已有有限测试与 prefix/offscreen 测量；这些测量
-不等同于完整仿真吞吐或 runtime FPS。
+当前主线聚焦 **dynamic terminal airspace + multi-UAV landing-flow coordination +
+safety-filtered executable intents**。强化学习只输出空域调节、放行、等待、调速和轨迹意图；
+轨迹生成器、SafetyFilter、执行调度器和 Crazyflie/Crazyswarm2 负责可执行飞行。
 
-后续诊断采用 `eh216s_research_v2`、归一化容量 `1500`、`min_landing_soc=.10`，并保留
-`soc_reserve=.25` 作为独立 queue/admission reserve；其它阈值不变。既有 `.25` 实验和 checkpoint
-作为历史证据保留，不为 `.10` floor 提供性能声明。下一步先适配既有 V4.2 learned-policy replay
-并检查 checkpoint/config/schema/hash 兼容性，再预注册区分 learned WAIT/action 与
-SafetyFilter/trajectory veto 的 bounded diagnostic；本轮未授权执行该 diagnostic。targeted
-imitation/Safe DAgger 的必要性在 PPO 前决定；当前 `PPO_ALLOWED=false`，完成必要策略修复并通过
-PPO admission 后再决定 PPO，低层 static qualification 后才进入 A6。
+低层当前主课程采用中性任务语义：目标是正常降落、吞吐、完整生命周期等待和尾部等待监测，
+同时保留随机到达、SOC 差异、能量约束、安全约束、环/路径可执行性和资源预约。`mission_type`
+与 `base_priority` 字段和 88D schema 继续保留以兼容 seed、接口和历史回放；课程开关
+`task_priority_enabled=false` 时，mission 只表示物理服务/兼容性类别；base priority 仍抽样以
+消耗相同随机流，但只存储有效值 `1`，`dynamic_priority` 只编码等待与能量紧迫度，policy 的 mission one-hot 固定为
+`STANDARD` 语义。历史兼容默认仍为 `task_priority_enabled=true`。
+
+当前课程保留 service time `30/120/10/60 s` 以维持物理服务负荷。原始 `emergency` mission
+标签不等于本课程已启用紧急任务偏好；后续可单独注册紧急任务鲁棒性场景。能量不足时的安全
+应急接管始终保留，且与 emergency mission 独立。等待尾部用于 starvation 监测，不增加每个
+任务/子组必须无退化的硬 gate。旧 source、candidate、formal/heldout 和 PPO admission 记录
+均保持历史标签；本轮完整课程评估待运行，状态以 [CURRENT_STATUS](CURRENT_STATUS.md) 为准，
+不能据此宣称稳定收益或自动放行 PPO。
 
 ---
 
@@ -28,7 +31,7 @@ PPO admission 后再决定 PPO，低层 static qualification 后才进入 A6。
 
 本文研究面向城市低空垂直起降场/低空终端区的**多无人机到达与降落管理**。核心问题不是底层姿态控制，也不是任意三维路径规划，而是：
 
-> 在随机、突发且可能超出瞬时服务能力的到达需求下，如何通过**动态终端区空域构型调节**与**多 UAV 降落流协同决策**，在安全间隔、有限着陆服务资源、电量约束、任务优先级和轨迹可执行性约束下，提高终端区吞吐量、降低外部排队和内部等待延误，并保持公平、稳定和可解释的运行秩序。
+> 在随机、突发且可能超出瞬时服务能力的到达需求下，如何通过**动态终端区空域构型调节**与**多 UAV 降落流协同决策**，在安全间隔、有限着陆服务资源、能量余量、等待、环/路径可执行性和资源预约约束下，提高终端区吞吐量、降低外部排队和内部等待延误，并保持可解释的运行秩序。
 
 当前方法由四个层次组成：
 
@@ -142,7 +145,9 @@ R_O > R_M > R_I,\qquad H_O > H_M > H_I
 
 低层共享策略回答：对于某一架 UAV，现在是否应该请求进入下一阶段、应该如何微调速度、希望把 merge 时间向前或向后调整多少？
 
-两层之间通过 occupancy、queue、LZ availability、SOC、priority、headway、merge reservation 等信息耦合，而不是让两个策略分别解决互不相关的问题。
+两层之间通过 occupancy、queue、LZ availability、SOC、energy slack、waiting、headway、merge
+reservation 和路径可执行性等信息耦合；无任务偏好时不得退化为 SOC 单排序，也不得绕过环、
+路径或资源预约约束。
 
 #### 创新 3：从学习意图到安全可执行轨迹
 
@@ -205,9 +210,11 @@ intent
 
 完整 `dynamic_hrl` 应优于 `fixed_rule`、`fixed_low_rl`、`dynamic_rule`。否则不能声称高低层协同本身带来了额外收益。
 
-### H5：资源、电量和优先级机制会改变最优流量管理策略
+### H5：能量余量、等待和资源异质性会改变最优流量管理策略
 
-任务服务时间、剩余 SOC、等待时间与优先级会改变“谁应该先进入 final”和“什么时候应该扩/缩环”，因此不能从主模型中删去。
+任务服务时间、能量余量、等待时间、环/路径可执行性与资源预约会改变“谁应该先进入 final”和
+“什么时候应该扩/缩环”，因此不能从主模型中删去。任务和基础 priority 字段在中性课程中只
+保留接口/物理服务兼容语义，不构成主课程的服务等级偏好。
 
 ---
 
@@ -216,7 +223,7 @@ intent
 - **RQ1**：动态三环构型是否能在随机和突发 arrival demand 下，提高 landing throughput 并降低 delay？
 - **RQ2**：三环功能分层是否比两环结构更能缓冲突发流量并降低 inner/final 拥堵传播？
 - **RQ3**：共享的 per-UAV intention policy 是否能够在未知数量 UAV 下实现可扩展的 sequencing 和 merge decision？
-- **RQ4**：任务类型、LZ service time、动态 priority 和 SOC 约束是否会显著改变终端区运行结果与 learned policy？
+- **RQ4**：服务类别及其 LZ service time、等待尾部、能量余量和 SOC 约束是否会显著改变终端区运行结果与 learned policy？
 - **RQ5**：event-gated structural reconfiguration 是否比固定周期无条件重构更稳定、更少产生无效结构变化？
 - **RQ6**：完整 HRL 是否优于“仅低层学习”和“仅高层动态”的方法？
 
@@ -238,7 +245,7 @@ request/admission/entry times
 wait time
 base priority
 dynamic priority
-mission type
+mission type (physical service/compatibility metadata)
 assigned entry gate
 assigned LZ
 LZ reservation state
@@ -367,7 +374,7 @@ candidate target time
 
 ### 9.4 Final 与 Landing
 
-Inner→Final 的放行必须同时满足 assigned LZ reservation、final corridor 可用、headway、candidate trajectory safety、SOC/priority/queue rules。touchdown 后 UAV 从空中交通集合退出，但对应 LZ 保持 `OCCUPIED`，直到 mission-specific service time 到期。
+Inner→Final 的放行必须同时满足 assigned LZ reservation、final corridor 可用、headway、candidate trajectory safety、energy/wait/ring/path/resource rules。touchdown 后 UAV 从空中交通集合退出，但对应 LZ 保持 `OCCUPIED`，直到 mission-specific service time 到期。
 
 ---
 
@@ -384,15 +391,20 @@ Inner→Final 的放行必须同时满足 assigned LZ reservation、final corrid
 | emergency | 0.10 | 10 s |
 | surveillance | 0.20 | 60 s |
 
-任务类型主要决定服务时间与可能的资源兼容性，不直接代替 dynamic priority。
+任务类型只决定服务时间和可能的资源兼容性；当前中性课程不把 raw `emergency` 标签解释为
+紧急任务偏好，也不把 service 类别用作放行等级。服务分布仍保留以维持负荷。
 
 ### 10.2 Priority
 
-保留 `base_priority ∈ {1,3,5}`，默认概率 `0.50/0.35/0.15`；`emergency` mission 的 base priority 至少为 5。动态优先级由 base priority、等待时间和 SOC urgency 共同决定。
+接口继续保留有效 `base_priority` 字段及历史抽样概率 `0.50/0.35/0.15` 的 RNG 消耗，以保持
+seed 和历史回放兼容。`task_priority_enabled=true` 时沿用历史 priority 语义；新主课程默认
+为 `false`，只存储有效 base `1`（包括 raw `emergency` mission），动态优先级只由等待和能量
+紧迫度组成。无任务偏好时仍保留 energy slack、waiting、ring/path feasibility 和 resource
+reservation 的确定性竞争逻辑。
 
 ### 10.3 Energy / SOC
 
-使用 SOC 与 phase-dependent energy consumption，而不是所有状态统一按 elapsed time 减少 endurance。低 SOC 可提升动态优先级、触发最早可行 landing，或在尚未 admission 时触发 diversion。
+使用 SOC 与 phase-dependent energy consumption，而不是所有状态统一按 elapsed time 减少 endurance。低 SOC 可提升能量紧迫度、触发最早可行 landing，或在尚未 admission 时触发 diversion；这不等同于按 SOC 单排序。
 
 ---
 
@@ -414,13 +426,13 @@ Inner→Final 的放行必须同时满足 assigned LZ reservation、final corrid
 | `two_ring_dynamic_hrl` | 验证三环功能分层价值 |
 | `periodic_geometry_hrl` | 对比 event-gated geometry |
 | `homogeneous_service` | 去除任务服务时间异质性 |
-| `no_dynamic_priority` | 验证 wait/SOC priority |
+| `no_dynamic_priority` | 去除等待/能量紧迫度的可选消融；不把它解释为新主课程的 task priority 实验 |
 | `no_safety_filter` | simulation-only，验证安全层作用 |
 | `fixed_headway` | 验证 flow-control action |
 
 ### 11.3 Demand scenarios
 
-至少包含 low、medium、high、bursty、overload stress test。正式比较采用 common random numbers：同 seed 下，不同 policy 接收相同 arrival request times、mission types、priority classes、gate assignments 和 initial energy draws。
+至少包含 low、medium、high、bursty、overload stress test。正式比较采用 common random numbers：同 seed 下，不同 policy 接收相同 arrival request times、mission/service metadata、gate assignments 和 initial energy draws。新课程 baseline 与 candidate 必须使用同一中性任务开关；不能把新课程对照与旧 priority/emergency 课程报表直接比较。
 
 低层课程必须同时覆盖两类互补状态：`flow_from_empty` 验证真实到达与完整生命周期，
 `warm_start_rings` 主动覆盖 O/M/I 三环同时已有 UAV 的瞬时竞争。warm-start 可用于 curriculum、
@@ -443,14 +455,14 @@ Inner→Final 的放行必须同时满足 assigned LZ reservation、final corrid
 - **Dense landing flow**：nearest-LZ assignment regret、concurrent final、free-LZ-with-inner-demand、
   individually-certified-but-not-requested RELEASE opportunity；
 - **Energy**：energy consumed、SOC at landing、low-SOC diversion、reserve violation；
-- **Fairness**：priority/mission 分组 delay、starvation、分位差；
+- **Tail/fairness**：完整请求等待均值、p95/pmax、starvation 监测、服务类别分组描述；不把每个任务/子组无退化设为主课程硬 gate；
 - **Dynamic airspace**：geometry change count、transition time、gate mask ratio、headway/capacity changes。
 
 ---
 
 ## 13. 论文叙事边界
 
-当前论文可以主张：Landing-only dynamic terminal management、three-ring functional architecture、HRL airspace-flow coordination、variable-size shared low-level policy、LZ service coupling、safety-filtered executable trajectory generation。
+当前论文可以主张：Landing-only dynamic terminal management、three-ring functional architecture、HRL airspace-flow coordination、variable-size shared low-level policy、LZ service coupling、safety-filtered executable trajectory generation。当前不能把旧 candidate 的初始化/对照结果写成稳定收益，也不能把后续 emergency mission 鲁棒性场景写成主贡献或现实低概率保证。
 
 当前论文不应主张：已解决 arrival+departure integrated operations、城市级 network routing、真实动力学级飞控、任意机型直接部署，或把仿真参数当作真实法规 capacity。
 

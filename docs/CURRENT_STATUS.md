@@ -2,6 +2,33 @@
 
 > **状态日期**：2026-09-28
 >
+> **本轮用户范围修订（当前，2026-09-28）：** 当前主线是 dynamic terminal airspace、multi-UAV
+> landing-flow coordination 和 safety-filtered executable intents。低层新主课程采用
+> `task_priority_enabled=false`：目标为正常降落、吞吐、完整周期等待和等待尾部 starvation
+> 监测，保留随机到达、SOC 差异、能量/安全约束、ring/path feasibility 和 resource reservation。
+> ArrivalProcess 仍消耗历史 base 抽样的 RNG，但只存储有效 `base_priority=1`；raw `mission`
+> 保留为物理服务/兼容性 metadata，policy mission one-hot 固定 `STANDARD`，88D/mission/base
+> 接口语义兼容。service time `30/120/10/60 s` 保留以维持负荷。能量应急 takeover 始终保留，
+> 与后续独立 emergency mission 鲁棒性场景分开；raw `mission=emergency` 不表示本课程已启用
+> mission-level emergency preference。
+>
+> `check_only_v2` 已 `CHECK_ONLY_OK exit0`：6 个 cells、84 个 requests 的 arrival time、gate、SOC、
+> raw mission、service 等物理属性与 legacy 同 seed 一致，task-neutral effective base 全为 `1`；
+> changed fields 仅为 `task_priority_enabled: true→false`、`low_level_priority_time_weight: 1→0`，
+> `low_level_soc_urgency_time_weight=2` 不变；该检查为 zero env steps/records。代码 8 files 已提交 `91b1dd4`；新测试 `19 passed`
+>（core `10`、evaluation `9`），直接 core regression 为 `100 passed / 1 skipped`，phase 检查为
+> `35 passed / 2 failed`，两项失败在干净旧 HEAD `8a4e1b2` 上精确重现。首轮 server check-only
+> wrapper 在 `ROOT/check_only/check_only.log` 预创建 leaf，导致 fresh output directory refusal
+>（exit `2`）；未进入程序预检，也未执行 env reset/step；该失败按 wrapper 问题保留。smoke 已授权并在
+> 执行中，两臂均为 `flow6`、`2` steps；首个 arrival 为 `10 s`，仅作启动/输出链路检查，不据此验证
+> 真实 actor 动作（88D/reward 已有单测）。完整评估待运行，状态以本页为准。执行顺序为：最小实现/单测 → 同课程 source/candidate 配对 baseline →
+> 有界 PPO repair pilot → independent validation → static qualification → dynamic airspace。
+> 等待尾部只作 starvation 监测，不增加每个子组无退化硬 gate；新 reward 与旧课程 reward 不
+> 直接比较。source `03c0` 与已知 candidate 只作初始化/对照，candidate_retained、稳定收益、
+> formal/heldout 和 `PPO_ALLOWED` 均不因本次文档修订自动改变。协议见
+> [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)。
+>
+> **上一轮普通 soft-priority 课程段落（历史，仅保留事实）**：
 > **当前语义澄清（2026-09-28）：** 普通 `base_priority=1/3/5` 是可权衡的偏好；只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，对同时争用同一可分配资源的可执行普通请求优先安排降落。这不是无条件最先落地，也不允许突破安全。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 是不同语义。普通 priority wait 和 low-SOC wait 是连续优化/分析指标，不独立要求每组或每个 cell 均无退化；low-SOC wait 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义；`failed`/安全的既有要求保持不变。本轮未选择新的 reward 权重或修改 scheduler，不声称代码已实现紧急优先强保证。“下一步添加普通优先级硬保护”已撤回；上一轮 `candidate_retained=false` 是旧协议历史结果并保持，候选仅作为需进一步验证的 normal 收益信号，当前仍使用 source `03c0`，不自动晋级 PPO/formal/heldout。主审按上述边界只读核对 reward→GAE→PPO actor 链路及既有 counterfactual 回报、按 mission 统计；诊断结果见下方，旧准入判定不变。
 >
 > **PPO credit signal 诊断终态（2026-09-28）：** 按 [PPO credit signal protocol](evidence/v4_2/p3_ppo_credit_signal_protocol_20260928.md) 完成一次只读 replay，结果见 [PPO credit signal result](evidence/v4_2/p3_ppo_credit_signal_result_20260928.md)。代码提交为 `77a549bbc12c2dfdc7abb12f9361e325eb72b2e4`，定向测试 `32 passed`（`9` diagnostic + `11` lifecycle + `12` evaluation）；修正一次启动前远端 cwd 遗漏导致的 `ModuleNotFoundError` 后，唯一 replay 为 `COMPLETED exit0`，`702/702` exact、`24/24` ledger/all-requests、`512` actor steps、terminal step `701`，source weights unchanged、RNG restored，collision/hard-separation/NMAC 均为 `0`，无 active run/heartbeat。原预检未执行 reset/step，不计为第二次实验。
@@ -486,7 +513,7 @@ route/等待/reserve/margin budget 已在 opt-in exploratory 链中接入。fall
 
 **最新结论（2026-09-23，emergency-priority guard V1）：** opt-in guard V1 默认关闭。fresh `840401/840402` × rule/original K3 × guard off/on 的 `8/8` 条 formal records 均通过终态、请求记账、exact replay、安全、Teacher-free、无 labels/updates 和 K=3 检查；聚合为 `28 normal + 51 emergency + 16 upstream-divert + 1 failed_energy`，guard-on `zero_failed_energy` gate 失败，`PPO_ALLOWED=false`。rule `840401` 的 witness 显示固定 `.40` 能量投影切环硬阻断可能造成低 SOC UAV 长时间等待：guard-on 的 `o2m` release 连续 `647` 次被 `emergency_energy_guard` 拒绝并在 `t=647 s` 电量耗尽，而 guard-off 同一 UAV 在 `t=0` 获准切环并于 `t=274 s` 应急降落。Guard V1 不晋级，不宣称预留 LZ 或 PPO 能保证零失败；下一步只允许移除该硬阻断，设计带可达能量预算的应急替代路径，并以全新 seeds 验证，不能重跑 `840401/840402`。详见 [Emergency-priority guard V1](evidence/v4_2/emergency_priority_guard_pilot_v1_20260923.md)。
 
-## 一句话状态
+## 历史一句话状态（旧课程记录）
 
 **最新实现状态（2026-09-23，应急路线 repair）：** 应急路线已由源环有限刹停改为从真实初始位置/速度连续切向脱环的 cubic 路径；OUTER/MIDDLE 进入 `120 m` staging，INNER 保持当前高度，再经 LZ 上方垂直下降，仍使用原 SafetyFilter 和 `80/40/10 m` 契约。第一 repair 协议（`e99cb...`）在 fresh `840101/840102` 上为 `7 normal + 14 emergency + 2 upstream-divert + 1 failed_energy`，安全事件为0，因此 FAIL；同 seed forensic replay 已使目标 UAV 在 `t=118 s` 应急提交并落地。route-repair 协议（`8c13dc...`）在 fresh `840201/840202` 上为 `9 normal + 11 emergency + 4 upstream-divert`，`failed_energy=0` 且安全事件为0，但结果仍是 rule-only 诊断证据，不构成 qualification 或真实 EH216-S 标定；当前 phase_motion_v2 未显式设置初始 SOC 范围时 default uniform floor 为 `.4106`，显式 `.35–.55` 仍保留为 stress；`PPO_ALLOWED=false`。详见[应急迫降与分阶段能耗 V2](evidence/v4_2/emergency_energy_v2_20260923.md)。
 
@@ -682,7 +709,7 @@ PASS、anchored repair V3 PASS、Qualification V2 PASS；完整链条见[汇总�
 
 checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因为旧 cubic 仅约束端点切向。已完成局部修复及[固定回归验证](evidence/v4_2/transfer_geometry_repair_20260917.md)：3场景12/12完成，实际切环无逆环向、安全0、回放一致；UID6最小切向速度16.02m/s。历史 PASS/FAIL 不变，但不外推到新生成器；**修复后资格与入口复核已通过，第二个 PPO block 已完成**：24回合96/96架完成，安全/逆环向/shield全0。详见[续训结果](evidence/v4_2/ppo_block2_transfer_repair_protocol.md)。
 
-## 当前冻结的主线语义
+## 当前冻结的主线语义（基础 schema；课程语义见顶部本轮修订）
 
 | 项目 | 当前值 |
 |---|---|
@@ -698,6 +725,10 @@ checkpoint12 演示确认 m2i 中段逆环向并进入目标环内侧，根因�
 | 高层动作 | `high_airspace_v1_10d`，当前训练关闭 |
 | 安全权威 | TrajectoryGenerator → SafetyFilter → PredictiveSafetyShield |
 | Teacher 角色 | 训练期 expert labeler / auditor；不是部署控制器或 PPO behavior action |
+| 当前低层课程 | `task_priority_enabled=false`；正常降落、吞吐、完整周期等待和 tail starvation 监测 |
+| 课程兼容 | raw mission 保留为物理服务/兼容 metadata；base 抽样只消耗 RNG，新课程有效值为 `1`；policy mission one-hot=`STANDARD` |
+| 服务负荷 | mission service time `30/120/10/60 s` 保留；不表示 mission-level preference |
+| 能量应急 | energy emergency takeover 始终保留，与 raw `mission=emergency` 独立 |
 
 低层完整语义见 [reference/low_level_policy.md](reference/low_level_policy.md)。
 
@@ -772,7 +803,7 @@ aliasing 与 nominal anchors 均通过，但正式结果仍为 FAIL：
 R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3。完整数值见
 [I0-R3 collection summary](evidence/v4_2/v4_2_v2_1_i0_r3_collection_summary.md)。
 
-## 当前进度与结果
+## 历史进度与结果（旧课程记录）
 
 | 阶段 | 已核验进度 | 结论 |
 |---|---|---|
@@ -799,7 +830,7 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 | P2 proposal-conditioned feasibility | linear/MLP各3个probe，11,575/9,300 train/dev state-proposal pairs | **FAIL**：MLP 0/3；o2m、negative recall、macro-F1、AUC与state Top-1未闭合；旧closure-bank可分性未泛化到fresh flow12 |
 | P3–P5 / static qualification | P3 尝试后未合格 | Q3 dense24 吞吐失败；P4/P5 与 A6 高层动态空域均未获授权 |
 
-## 已识别的问题与处理状态
+## 历史问题与处理状态（旧课程记录）
 
 1. **奖励与等待目标冲突已修正，但效率改善仍不足。** 旧 progress 奖励计入绕环距离：外环22m/s约每秒+0.022，高于时间惩罚-0.01。P2配置将该系数置0，物理、安全及其他奖励保持不变。V4 heldout 已验证 candidate 等待相对 checkpoint24 baseline 下降9.91s，但仍比rule高38.93s；修正有效果，不足以认定收敛。
 2. **初始动作概率检查存在批次浮点差异，已局部修复。** V1 seed754024 的误差为1.1444091796875e-5，超过1e-5。原action tape只读复放表明完整world批次误差0，actor子批次复现误差。检查器现保留原采样批次再mask，阈值和PPO行为不变；后续V2/V3初始ratio检查通过。
@@ -871,6 +902,21 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 - 服务器输出根为 `~/training_outputs/terminal`，本地镜像为 `D:/7_codespace/training_outputs/terminal`。源码只在本地修改，经Syncthing同步，服务器仅运行。
 
 ## 当前允许的下一步
+
+本轮只推进 task-neutral baseline protocol；`check_only_v2` 已通过，smoke 执行中，完整评估待运行：
+
+1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
+   作为当前 check-only 事实；
+2. 按 [task-neutral baseline protocol](evidence/v4_2/p3_task_neutral_baseline_protocol_20260928.md)
+   完成两臂 `flow6` 两步 smoke，再由主审决定是否运行两臂六 cell full-cycle baseline；当前 smoke
+   仅作启动/输出链路核对，不据此验证真实 actor 动作；
+3. 报告完整 ledger、normal/emergency/failed/unresolved、full-cycle mean/p95/max wait、low-SOC
+   wait、reward 和既有安全/replay 技术核对。新 reward 不与旧课程 reward 直接比较；不增加普通
+   priority-weighted wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
+4. baseline 完成后，主审另行决定有界 PPO repair pilot 目标与预算。`PPO_ALLOWED=false`，formal/
+   heldout、candidate retained 和 static qualification 均不因文档修订自动放行。
+
+## 历史允许的下一步（已由本轮 task-neutral protocol 取代）
 
 **2026-09-24 当前顺序：** merge-slot timing reconciliation、fixed-rule dense30 development 与
 viewer bounded checks 已完成；历史结果、已消费 seeds 和 `.25` floor 记录保持 immutable。当前按

@@ -30,8 +30,8 @@ external queue
 3. 动态 arrival demand 和 external queue；
 4. 多架 UAV；
 5. phase-dependent energy / SOC；
-6. base priority 与 dynamic priority；
-7. mission type；
+6. 兼容保留的 base priority 字段与由等待/能量组成的 dynamic priority；
+7. 作为物理服务/兼容性元数据的 mission type；
 8. M 个离散 LZ；
 9. reservation 与 task-dependent service time；
 10. ring/headway/capacity constraints；
@@ -232,8 +232,8 @@ finite_cohort
 
 ```text
 external_wait_time
-energy consumption
-dynamic priority
+waiting time
+energy consumption / slack
 ```
 
 ### 4.5 Overflow / diversion
@@ -272,7 +272,10 @@ random-seed-derived identity
 | 3 | emergency | 0.10 | 10 s |
 | 4 | surveillance | 0.20 | 60 s |
 
-mission type 的主要作用是 LZ service time、可选的 LZ compatibility，以及 emergency mission 对 base priority 的最低要求。
+mission type 的主要作用是 LZ service time 和可选的 LZ compatibility。当前主课程保留
+`30/120/10/60 s` 的服务时长分布以维持物理服务负荷，但只把 mission 当作服务/兼容性元数据；
+raw `emergency` 标签不表示本课程启用了紧急任务偏好。能量应急接管是独立的安全后备语义，
+始终保留，不能与 emergency mission 混同。
 
 ### 5.2 Base priority
 
@@ -282,15 +285,22 @@ mission type 的主要作用是 LZ service time、可选的 LZ compatibility，�
 | 3 | 0.35 |
 | 5 | 0.15 |
 
-若 `mission_type == emergency`：
+历史兼容模式 `task_priority_enabled=true` 下，若 `mission_type == emergency`：
 
 ```text
 base_priority = max(sampled_base_priority, 5)
 ```
 
-mission type 与 priority 不完全等价。
+mission type 与 priority 不完全等价。`task_priority_enabled` 是课程开关：历史兼容默认值为
+`true`，新主课程为 `false`。ArrivalProcess 仍抽样 base 以保持随机流消耗一致，但新主课程只存储
+有效 `base_priority=1`；raw mission 原样保留以保持物理服务语义。包括 raw `emergency` mission
+在内，policy 的 mission one-hot 固定为 `STANDARD`。PriorityEngine 仍保留
+等待与 SOC/能量紧迫度公式，但忽略输入 base 的任务等级偏好。
 
-普通 `base_priority=1/3/5` 仅表示可权衡的偏好，用于连续优化与分析；不单独要求每个 priority group 或 evaluation cell 的 `priority wait`、`low-SOC wait` 都无退化。`low-SOC wait` 作为软统计不撤销既有 energy/admission、route-energy/slack、`min_landing_soc` 等硬边界，也不撤销既有危急 SOC 的应急接管语义。只有 `mission_type=emergency` 的紧急任务，在安全间隔、能量/轨迹可执行性及既有不可中断计划约束下，才对同时争用同一可分配资源的可执行普通请求优先安排降落；这不是无条件最先落地，也不得突破安全约束。`mission_type=emergency`、`base_priority=5` 与 `outcome=EMERGENCY_LANDED` 分别表示任务类型、静态基础优先级和最终结果，三者不能互换。`failed`/安全指标的既有硬要求保持不变。
+新主课程以正常降落、吞吐、完整周期等待和尾部等待监测为目标。等待尾部用于 starvation 监测，
+不增加每个 priority/mission 子组或 evaluation cell 必须无退化的硬门槛。放行竞争必须同时保留
+energy slack、waiting、ring/path feasibility 和 resource reservation，不能简化为 SOC 单排序。
+旧 priority/emergency 课程的结果只能按其原协议解释；新课程对照不得与旧课程报表直接跨任务比较。
 
 ---
 
@@ -322,7 +332,7 @@ E_{t+\Delta t}=E_t-P_{phase}(v,\dot z)\Delta t
 \]
 
 没有机型标定数据前，保留两种显式模式：`legacy_phase` 用于历史协议精确回放；
-`phase_motion_v2` 用于新的能量/应急课程。后者按已提交轨迹的分段时长与速度方向积分，
+`phase_motion_v2` 用于新的能量与可达性课程。后者按已提交轨迹的分段时长与速度方向积分，
 无 committed plan 的环上等待仍按 phase power 计量。两者均为 surrogate，不是 EH216-S
 实测功率曲线。
 
@@ -376,17 +386,18 @@ emergency_trigger_soc = 0.35  # 仅在 emergency_landing_enabled=true 时生效
 - `min_landing_soc=.10` 是成功 touchdown floor。它是 V2 的用户选定研究假设，不是已验证的
   EH216-S AFM/type-certification 限值；归一化能量含义与历史 25% 文献上下文见
   [`landing_reserve_basis_20260924.md`](evidence/v4_2/landing_reserve_basis_20260924.md)。
-- legacy 路径在启用应急课程时仍可使用 `SOC <= emergency_trigger_soc` 的硬资格门；
+- `emergency_landing_enabled=true` 时，legacy 路径仍可使用 `SOC <= emergency_trigger_soc` 的硬资格门；
   coordinated fixed-rule flow 不以该 SOC 门单独接管，而是在全部 normal release 尝试后，
   对未提交的环上 UAV 按实际 emergency route energy、`.10` landing floor、15 s margin、
-  route-slack window 和完整 SafetyFilter 认证决定 takeover；
+  route-slack window 和完整 SafetyFilter 认证决定 takeover；能量应急接管始终保留，
+  与 mission-level emergency preference 独立；
 - 共享策略仍以每架 UAV 自身 SOC 和 dynamic priority 为输入。同一组 actor 参数可以产生不同意图；
-  legacy urgency 仍可在 `emergency_trigger_soc=.35` 到 `min_landing_soc=.10` 之间连续增大，
-  并用于同一步安全候选的仲裁优先级；
+  `task_priority_enabled=false` 时 effective base 固定为 `1`，dynamic priority 的任务等级项
+  关闭但等待与 SOC urgency 公式保留；这不把 SOC 变成唯一决策因素；
 - 应急航迹无法立即认证时继续等待并重试，不终止整个 episode；能量耗尽才记为 `FAILED_ENERGY`；
 - 应急 touchdown 后正常占用 LZ 并完成地面服务，终态为 `EMERGENCY_LANDED`，且收到独立应急惩罚；
-- 未开启应急课程时，已在 terminal 且成功 touchdown 前低于 `min_landing_soc`，作为低电量
-  未完成退出；开启应急课程时不得在环上静默移除，必须继续形成显式
+- 当 `emergency_landing_enabled=false` 时，已在 terminal 且成功 touchdown 前低于
+  `min_landing_soc`，作为低电量未完成退出；开启该能量应急开关时不得在环上静默移除，必须继续形成显式
   `EMERGENCY_LANDED` 或 `FAILED_ENERGY` 结局；
 - `SOC_emergency=.20` 是保留的 warning/legacy threshold；它不抬高 `.10` touchdown floor，
   也不替代 coordinated flow 的 route-energy/slack 资格检查；
@@ -417,14 +428,15 @@ P_i(t)=P_i^{base}
 \left[1+\gamma U_i(t)^\delta\right]
 \]
 
-开启应急课程时：
+能量应急后备路径启用时：
 
 \[
 U_i(t)=\operatorname{clip}\left(\frac{SOC_{trigger}-SOC_i(t)}{SOC_{trigger}-SOC_{\mathrm{min\_landing\_soc}}},0,1\right)
 \]
 
-其中 coordinated/V2 的 urgency span 是 `SOC_trigger=.35` 到
-`min_landing_soc=.10`；`.25` `soc_reserve` 仍只属于 queue/admission compatibility。
+其中 urgency span 是 `SOC_trigger=.35` 到 `min_landing_soc=.10`；`.25` `soc_reserve` 仍只属于
+queue/admission compatibility。`task_priority_enabled=false` 时，PriorityEngine 忽略 raw
+`base_priority`，因此 dynamic priority 只表示等待和能量紧迫度。
 
 `emergency_landing_enabled=false` 的历史协议继续使用原式
 `max(0,(SOC_reserve-SOC)/SOC_reserve)`，以保持旧证据可回放。
@@ -439,7 +451,10 @@ delta = 2.0
 T_W = 3600 s
 ```
 
-Priority 用于 rule scheduler tie-breaking、LZ/merge conflict resolution、low-level observation、priority-weighted delay metric 与 urgency handling。高优先级永远不能绕过 hard separation。
+PriorityEngine 输出用于兼容接口、等待/能量紧迫度观测、确定性候选排序和指标记录；中性课程使用既有
+`dynamic_priority`、waiting 和 UID 排序键，energy slack、ring/path feasibility、resource reservation
+仍作为独立约束参与认证。
+任何历史 task priority 语义都不能绕过 hard separation。
 
 ---
 
@@ -541,7 +556,7 @@ P2R 密集降落流配置显式采用：
 ```text
 final_queue_capacity = 3
 lz_assignment_mode = nearest_available
-release_arbitration_mode = downstream_priority
+release_arbitration_mode = downstream_priority  # 历史兼容模式；中性课程使用 energy/wait/resource ordering
 ```
 
 `final_queue_capacity` 是并发上限，不是并发目标；每条 final trajectory 仍逐条通过 headway、
@@ -912,11 +927,12 @@ hard safety
 > mode-specific release ordering
 ```
 
-legacy 路径保留 `SOC emergency > dynamic priority > FCFS/request time` 的兼容顺序。
-coordinated fixed-rule flow 在同一 control tick 先按 `INNER → MIDDLE → OUTER` 排空下游，
-环内按 remaining energy slack、dynamic priority、UID 稳定排序；全部
-normal release 尝试完成后才进入 route-slack emergency pass。两种顺序都只决定候选被认证的
-先后，不得降低 hard safety、headway、LZ reservation 或轨迹可执行性门槛。
+历史路径保留其原有 `SOC emergency > dynamic priority > FCFS/request time` 顺序以支持回放。
+新主课程在同一 control tick 先按 `INNER → MIDDLE → OUTER` 排空下游，环内按 remaining
+energy slack、dynamic priority、UID 稳定排序；`task_priority_enabled=false` 时 dynamic
+priority 只包含等待和能量紧迫度。ring/path feasibility、resource reservation 和完整安全认证
+仍是独立约束；能量应急接管作为独立安全后备，在正常候选排序和完整认证之后尝试。两种顺序都只决定候选被认证的先后，
+不得降低 hard safety、headway、LZ reservation 或轨迹可执行性门槛。
 
 ---
 
