@@ -64,6 +64,12 @@ D:\7_codespace\venv\Scripts\python.exe -m pytest -p no:cacheprovider -q \
 
 后续 `C` 固定为 `24×4`，由 4 个进程按 modulo 分片；这只是计算调度，不增加实验 factor、不重抽样、不删除失败 branch。`C` 已启动并处于 `RUNNING`，4 个分片进程 PID 为 `2007505`、`2007601`、`2007551`、`2007650`，当前尚未完成；`PPO_ALLOWED=false`，未消费 held-out。此前 `82` 个集成测试只作为已记录 raw count，不在本节重复累计。
 
+## C 初步结果
+
+raw artifact `causal/shard_0/diagnose/state_0001.json` 当前包含同一首状态的 `104` 个分支，来自 `4` 个 continuation seeds，均为 `natural_terminal`；model、environment 和 caller RNG 均保持不变。该状态的 `C=0`、`p=0.7176065`、平均 `D=6.56333546`、平均 `m=0.06023505`；四个 seed 的 `D` 为 `[-1.41627285, -0.05, 11.62504392, 16.09457077]`。
+
+同一首状态四种续跑的符号混合，单seed pilot负值不能用于根因判定；C=0仅表示即时覆盖为零，不能据此认定全周期动作无效或直接强制WAIT。完整24状态及失败机制尚未完成，不构成性能改善证据。
+
 ## 边界
 
 pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；完整 causal paired outcomes、strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`PPO_ALLOWED=false` 保持。
