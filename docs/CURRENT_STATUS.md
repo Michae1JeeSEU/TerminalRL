@@ -134,7 +134,15 @@ before→after_legacy 的 observed delta 为 normal `-6`、wait `+733.8751996402
 
 证据边界：该 full reproduces the four-cell trained regression；proposal encoder/head、gate head、temperature bitwise frozen，允许变化范围仅为 gate adapter/critic，因此不把本结果写成 newly trained proposal-head collapse。coverage 结果不足以单独建立 fix；本轮不作 team-credit、entropy、clipping root-cause 或 P3 solved 结论。原 balanced24 的 `491/85/0` 对 `491/83/2` 结果仍是 separate preexisting cohort/source/sampler，不能与本 full 合并。
 
-full heartbeat `p3-trained-proposal-support` 已删除，无 active job。下一步仅登记 matched-state/offline training-mechanism diagnostic preparation；未批准新训练，`PPO_ALLOWED=false`，teacher/optimizer/heldout 均未使用。
+full heartbeat `p3-trained-proposal-support` 已删除，无 active job。随后 root 已授权下方 matched-state gate-shift diagnostic；该诊断仍未训练，`PPO_ALLOWED=false`，teacher/optimizer/heldout 均未使用。
+
+## 2026-10-01 P3 matched-state gate-shift diagnostic（pilot 终态；full 运行中）
+
+这是当前代码 `6f4acd0` 下的 matched-state gate-shift 只读诊断，不是训练、PPO、optimizer、Teacher、held-out 或 qualification。定向测试为 `13` 项；pilot 复用固定 cell 1，full 仅复用该 cell 加上其余 3 条既有 tape，不生成新的 policy trajectory。
+
+pilot 服务器 PID `2117546` 已自然退出，状态为 `PILOT_OK`。cell 1 的两臂均为 `689` ticks；eligible actor rows=`2655`，全部 observation rows=`7175`，proposal equal=`0`；raw team reward=`429.36157694902556`。NPZ SHA256=`b3121d0019233e97450ec6899d35768694acaf56e3d3c625e0062e1dcac0f424`。重复 state-row 的描述性均值为：inner 的 `p=.3382572144344204→.32877570660476363`、Δ=`-.009481507829656819`、KL=`.0014337947496490945`；middle Δ=`+.0010723269267593717`、KL=`.00019261295864622603`；outer Δ=`+.0001329123`、KL=`.0003650273`。这些是重复 state-row 的描述性统计，不是独立试验或 causal return。
+
+root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligible gates 和 RELEASE proposals；当前证据未显示 serialized LP counter limitation。full 已获准启动，范围固定为复用 pilot cell 1 及剩余 3 条既有 tape（`727/776/726`），无新 policy trajectory、训练或重采样。启动 proof：PID `2118294`，cwd=`/home/user/projects/terminal`，`/usr/bin/python3.12`，authorized module `--phase full`；`cell_02.json` 已生成，大小 `226277` bytes，server mtime ns=`1790803509723408467`；NPZ 大小 `2019914` bytes，server mtime ns=`1790803509703366140`；progress 已到 cell 3 tick `50`。heartbeat `p3-matched-gate-shift` active（2 min），full 尚无终态，不作 qualification 或性能结论。
 
 ## 2026-09-30 研究复核与修复更新
 
