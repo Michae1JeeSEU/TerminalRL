@@ -70,8 +70,22 @@ D:\7_codespace\venv\Scripts\python.exe -m pytest -p no:cacheprovider -q \
 
 raw artifact `causal/shard_0/diagnose/state_0001.json` 当前包含同一首状态的 `104` 个分支，来自 `4` 个 continuation seeds，均为 `natural_terminal`；model、environment 和 caller RNG 均保持不变。该状态的 `C=0`、`p=0.7176065`、平均 `D=6.56333546`、平均 `m=0.06023505`；四个 seed 的 `D` 为 `[-1.41627285, -0.05, 11.62504392, 16.09457077]`。
 
-同一首状态四种续跑的符号混合，单seed pilot负值不能用于根因判定；C=0仅表示即时覆盖为零，不能据此认定全周期动作无效或直接强制WAIT。完整24状态及失败机制尚未完成，不构成性能改善证据。
+同一首状态四种续跑的符号混合，单seed pilot负值不能用于根因判定；C=0仅表示即时覆盖为零，不能据此认定全周期动作无效或直接强制WAIT。完整24状态的 C 运行仍在进行；失败机制三状态、312 个 branch 已完成，不构成性能改善证据。
+
+## P3 energy-failure mechanism completed
+
+服务器 artifact `/home/user/training_outputs/terminal/p3_followup_20260930/failure_mechanism/diagnose.json` 已报告 `COMPLETED`：3 个状态共 `312` 个 branch，全部为 `natural_terminal` 且 uncensored；model、environment 和 caller RNG 均保持不变。
+
+| state | step | SOC | C | p | D | m | full D by continuation seed |
+|---|---:|---:|---:|---:|---:|---:|---|
+| F01 | 280 | 0.398656 | 0 | 8.28291e-5 | -0.05 | +2.7650e-8 | `[-0.05, -0.05, -0.05, -0.05]` |
+| F02 | 445 | 0.288656 | 0 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
+| F03 | 726 | 0.110987 | 0 | 2.21449e-5 | -0.05 | +1.58285e-7 | `[-0.05, -0.05, -0.05, -0.05]` |
+
+Full-return `D` is `paired.expected_release_undiscounted_return_by_repeat[i] - wait[i].undiscounted_return`; the mean check was within `1e-8`. Target arrival `14` was evaluated under WAIT and true q-weighted RELEASE. RELEASE outcomes by seed were F01: `9303201`, `9303202`, `9303204` `emergency_landed`, `9303203` `failed_energy`; F02: all four `emergency_landed`; F03: all four `failed_energy`.
+
+第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。bounded blocker telemetry 仍处于 `implementation` phase，尚未启动；one-step check 不产生 `D`。该诊断未使用 PPO 或 held-out。
 
 ## 边界
 
-pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；完整 causal paired outcomes、strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`PPO_ALLOWED=false` 保持。
+pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；完整 causal paired outcomes、strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 运行仍处于 `RUNNING`，`PPO_ALLOWED=false` 保持。
