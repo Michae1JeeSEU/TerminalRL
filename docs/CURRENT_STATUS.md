@@ -93,6 +93,22 @@ root review criterion 为 development candidate PASS only：technical/source/mod
 
 balanced full 终态后 heartbeat `p3-balanced-proposal-support` 已删除，无 active background job。下一步由 root 选择 actual trained checkpoint validation；本轮不启动训练。
 
+## 2026-10-01 P3 trained proposal-support pilot 终态（full running）
+
+这是新的 frozen trained proposal-support development comparison，不是训练、qualification、default promotion 或 PPO。`preexisting_artifact` 包含原始 2-second/3-arm fixture 的 raw proof；该 fixture 的 evaluator classification 不再作为生产终态，新的 runner 只将 nonterminal exact-replay `IncompleteLifecycle` 保留为 lifecycle qualification metadata，并生成 safety-snapshot fallback summary。修正后的 3-arm contract 为 valid/censored，`generated=12`、`admitted=12`、`pending=12`，full metrics 保持 null；没有 physical rerun。
+
+`newly_run` 代码 commit 为 `9b66049`，28 个定向测试和 compile 通过。server no-env preflight 为 `PREFLIGHT_OK`，proof SHA 前缀为 `0911e9...fe38`；范围是原始 4 cells（`875101..875104` / `875201..875204`），每 cell 3 arms，native stochastic epsilon=`0.10` only support。该 preflight 不作 perfect keyed-CRN claim；PPO、teacher、heldout 和 default promotion 均关闭。
+
+pilot 服务器 PID `2112900` 已自然退出；server pilot SHA=`b9133fdbe1c94b7e2a2d5225c052c103339bb55ca2d59d6df3e885a871a55cda`，与 preflight SHA `0911e9...fe38` 不同。3 arms 均 natural，0 censor/error，safety、source/model、caller-RNG、24-request identity、replay、ledger 和 energy checks 全通过。pilot cell 1 的 observed metrics 如下：
+
+| arm | N/E/F | wait (s) | energy | raw reward excl. rejection penalty | rejection penalty |
+|---|---|---:|---:|---:|---:|
+| before_legacy | 19/5/0 | 3327.4996213135246 | 7757.917108755452 | 451.32887937331253 | -19.55 |
+| after_legacy | 18/6/0 | 3046.1997149195568 | 7457.839771374826 | 450.31157694902555 | -20.950000000000003 |
+| after_support | 18/6/0 | 3749.379758593257 | 8176.11847746592 | 434.348464181481 | -24.700000000000003 |
+
+该 pilot 首 cell 的 before normal=`19`、after legacy/support normal=`18`，与历史首 cell 计数一致；support arm 的首 cell wait 为 `3749.379758593257 s`。这些是该 pilot cell 的 observed metrics，不形成 global acceptance 或 root-cause 结论。root 已授权 fixed full：复用 pilot cell 1，加上 3 cells/9 arms。实际 full startup proof 已确认：PID `2113754`，cwd `/home/user/projects/terminal`，module phase 为 `full`，server env/executable checks 通过；首个新 arm `cell_02_before_legacy.json` 已生成，大小 `71978` bytes，server mtime ns=`1790799508572507832`。full 仍在运行，尚无终态或 aggregate 结论；heartbeat `p3-trained-proposal-support` active（2 min），不作 qualification。
+
 ## 2026-09-30 研究复核与修复更新
 
 本轮完成“评估研究与训练”对话中 17 项不足的逐项复核，并完成已确认实现缺陷的代码修复与文档同步；新增实验性 Observation V2.4、`student_decision_mask_mode=pre_action_forced_wait` 和高层计量修正。相关实现回归、修正后的 paired helper 与 real-artifact smoke 已通过；distinct pytest cases 按 `154 = 126 + 18 + 1 + 9` 记录，重跑不重复计数。real-artifact smoke 为 `COMPLETED exit0`，因 `censored=true` 未产生 `qualified_delta_Q`，不形成 causal/performance conclusion；详见 [研究复核与修复登记](evidence/v4_2/research_review_repairs_20260930.md)。方法性贡献、qualification 与 P3 性能退化仍未证解决；`PPO_ALLOWED=false`，正式 P3 继续使用 88D，新 schema 需独立 qualification，heldout 未消费。
