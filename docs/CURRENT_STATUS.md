@@ -136,13 +136,28 @@ before→after_legacy 的 observed delta 为 normal `-6`、wait `+733.8751996402
 
 full heartbeat `p3-trained-proposal-support` 已删除，无 active job。随后 root 已授权下方 matched-state gate-shift diagnostic；该诊断仍未训练，`PPO_ALLOWED=false`，teacher/optimizer/heldout 均未使用。
 
-## 2026-10-01 P3 matched-state gate-shift diagnostic（pilot 终态；full 运行中）
+## 2026-10-01 P3 matched-state gate-shift diagnostic（pilot 与 full 终态）
 
 这是当前代码 `6f4acd0` 下的 matched-state gate-shift 只读诊断，不是训练、PPO、optimizer、Teacher、held-out 或 qualification。定向测试为 `13` 项；pilot 复用固定 cell 1，full 仅复用该 cell 加上其余 3 条既有 tape，不生成新的 policy trajectory。
 
 pilot 服务器 PID `2117546` 已自然退出，状态为 `PILOT_OK`。cell 1 的两臂均为 `689` ticks；eligible actor rows=`2655`，全部 observation rows=`7175`，proposal equal=`0`；raw team reward=`429.36157694902556`。NPZ SHA256=`b3121d0019233e97450ec6899d35768694acaf56e3d3c625e0062e1dcac0f424`。重复 state-row 的描述性均值为：inner 的 `p=.3382572144344204→.32877570660476363`、Δ=`-.009481507829656819`、KL=`.0014337947496490945`；middle Δ=`+.0010723269267593717`、KL=`.00019261295864622603`；outer Δ=`+.0001329123`、KL=`.0003650273`。这些是重复 state-row 的描述性统计，不是独立试验或 causal return。
 
-root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligible gates 和 RELEASE proposals；当前证据未显示 serialized LP counter limitation。full 已获准启动，范围固定为复用 pilot cell 1 及剩余 3 条既有 tape（`727/776/726`），无新 policy trajectory、训练或重采样。启动 proof：PID `2118294`，cwd=`/home/user/projects/terminal`，`/usr/bin/python3.12`，authorized module `--phase full`；`cell_02.json` 已生成，大小 `226277` bytes，server mtime ns=`1790803509723408467`；NPZ 大小 `2019914` bytes，server mtime ns=`1790803509703366140`；progress 已到 cell 3 tick `50`。heartbeat `p3-matched-gate-shift` active（2 min），full 尚无终态，不作 qualification 或性能结论。
+root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligible gates 和 RELEASE proposals；当前证据未显示 serialized LP counter limitation。full 已完成，full JSON SHA256=`237bc7393e0dc831204b59aaf29aa99ea55dc142ce7ab3cc9fbc4effe8c4ec3e`，PID `2118294` 已退出且无 error，heartbeat `p3-matched-gate-shift` 已删除。ALL4 的 steps=`689/727/776/726`（合计 `2918`），native output reward totals=`429.36157694902556/423.18057134288983/453.5105408998054/427.06430444374354`；model before/after、caller RNG、observer RNG 均 unchanged，instance-step hook restored，extra steps=`0`，policy sampling/optimizer 均为 false。每个 cell 的 proposal q/logit equality max abs 为 `0`，argmax proposal difference 也为 `0`。
+
+| cell | steps | matched / eligible rows | raw team reward | inner Δp / KL | middle Δp / KL | outer Δp / KL |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 689 | 7175 / 2655 | 429.36157694902556 | -0.009481507829656819 / 0.0014337947496490945 | +0.0010723269267593717 / 0.00019261295864622603 | +0.00013291226652663724 / 0.00036502730924742956 |
+| 2 | 727 | 7535 / 2920 | 423.18057134288983 | -0.014564387732508299 / 0.002288819788640633 | +0.0015276760721562412 / 0.0003872494991814025 | +0.00021801173142277483 / 0.0005416399008456102 |
+| 3 | 776 | 7764 / 3175 | 453.5105408998054 | -0.01141738188580179 / 0.001978376961868185 | +0.0007357496051711796 / 0.00019696224443501164 | +0.0019944499217231073 / 0.0005377803990094331 |
+| 4 | 726 | 7117 / 2670 | 427.06430444374354 | -0.007014479502420132 / 0.0009183402729311774 | +0.0007393442887577024 / 0.00016364977011383615 | +0.0009027146738585873 / 0.0003357394796345426 |
+
+`actual_outcomes` counts are repeated observation rows, not unique flights: cell 1 `4681 completed / 2494 emergency_landed`, cell 2 `4701/2834`, cell 3 `6443/1321`, cell 4 `4010/3107`. Inner eligible mean Δp is negative in all four tapes; middle and outer changes are small positive values in these descriptive rows. These statistics are not independent trials, action credit `D`, full value, or a global gain; no outcome-selected state claim is made.
+
+## 下一项准备：trained gate-value matched-state diagnostic（implementation preparation only）
+
+root 当前仅准备新的 trained gate-value diagnostic，尚未启动 causal server run。固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`、retry-free、native-order 的状态：C1 step `168` UID `3`/arrival `3`，C2 step `202` UID `2`/arrival `2`，C3 step `198` UID `2`/arrival `2`，C4 step `187` UID `3`/arrival `3`。这些状态按 eligibility 选择，不按 outcome 或 p-delta 选择，不替换原有 24-state 结果，也不重采样。
+
+准备中的每个状态将恢复既有 tape 的 exact prestate，其余 first requests 保持 native AFTER tape；首步比较 WAIT 与全部 25 个 RELEASE actual-q/native-K3 branches，随后使用同一冻结 BEFORE `3fe7` actor continuation。固定 policy seeds 为 `9303201..04`、cap=`1800`，每状态 `104` branches；full `D` 包含首步 reward，local `m` 不作为 global gain。当前仍是 implementation preparation only，无 PPO、Teacher、optimizer、held-out、新 performance sample 或 solution/root-cause claim。
 
 ## 2026-09-30 研究复核与修复更新
 
