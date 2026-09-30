@@ -46,6 +46,8 @@ D:\7_codespace\venv\Scripts\python.exe -m pytest -p no:cacheprovider -q \
 
 [`run_p3_followup_diagnostics.py`](../../../terminal_marl/training/run_p3_followup_diagnostics.py) 是新的独立诊断入口，配合 credit observer；其 runner tests 为 10 passed。代码登记的输入契约是 6 episodes、每 episode 24 requests、总计 4,497 steps；selection test 固定 24 个 occurrence、无放回且顺序可复现。sharding 后的 focused runner suite 为 `10 passed`，不计入上述 `82` 个已记录集成 cases。本轮只验证代码和契约，没有把 runner phase 输出写成性能结果。
 
+追加事实：此前 Python `-m` 运行时的 `__main__` entry file 被 name filter 遗漏；当前仅在 package root 内纳入该 entry file。该修复的 focused suite 为 `11 passed in 2.35s`，重复测试不计入新的总数。当前运行中的 preflight 未重跑或覆盖；修复适用于后续 preflight，既有 hash 和 startup observation 保持原边界。
+
 ## 既有 episode-gradient replay artifact
 
 实际服务器运行使用的旧模块 [`diagnose_p3_task_neutral_episode_gradients.py`](../../../terminal_marl/training/diagnose_p3_task_neutral_episode_gradients.py) 是本次 replay 的 artifact source；它不是本提交新增的自包含入口。`runtime_sources.json` 记录其 SHA256：`c5e35752f78e33698510c59aa36ed9dd714606c07a80d785aa76c49d42aa19bf`。

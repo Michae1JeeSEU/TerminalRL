@@ -190,7 +190,7 @@ def _loaded_code_manifest() -> dict[str, Any]:
     package_root = Path(__file__).resolve().parents[1]
     seen: dict[str, dict[str, Any]] = {}
     for module_name, module in sorted(sys.modules.items()):
-        if not str(module_name).startswith("terminal_marl"):
+        if module_name != "__main__" and not str(module_name).startswith("terminal_marl"):
             continue
         module_path = getattr(module, "__file__", None)
         if not module_path or not str(module_path).endswith(".py"):

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -93,6 +95,26 @@ def test_loaded_manifest_contains_this_runner() -> None:
     assert Path(runner.__file__).resolve() in paths
     own = next(item for item in manifest["files"] if Path(item["path"]).resolve() == Path(runner.__file__).resolve())
     assert len(own["sha256"]) == 64
+
+
+def test_loaded_manifest_includes_in_package_main_and_excludes_outside_main(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inside = types.ModuleType("__main__")
+    inside.__file__ = str(Path(runner.__file__).resolve())
+    monkeypatch.setitem(sys.modules, "__main__", inside)
+    included = runner._loaded_code_manifest()
+    inside_rows = [item for item in included["files"] if item["module"] == "__main__"]
+    assert len(inside_rows) == 1
+    assert len(inside_rows[0]["sha256"]) == 64
+
+    outside_path = tmp_path / "outside_main.py"
+    outside_path.write_text("# outside\n", encoding="utf-8")
+    outside = types.ModuleType("__main__")
+    outside.__file__ = str(outside_path)
+    monkeypatch.setitem(sys.modules, "__main__", outside)
+    excluded = runner._loaded_code_manifest()
+    assert not any(item["module"] == "__main__" for item in excluded["files"])
 
 
 def test_alignment_uses_one_target_row_and_optional_delta_q(
