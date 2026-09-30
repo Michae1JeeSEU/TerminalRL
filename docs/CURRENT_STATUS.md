@@ -20,7 +20,36 @@ ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 
 
 Aggregate control/reference 为 `N 190/180`、`E 25/34`、`F 1/2`、`D 0/0`、`U 0/0`，admitted `216/216`，successful completed `215/214`，resolved `216/216`；wait `25124.700815134504/29230.017251347945 s`，request elapsed `79035/82700 s`，energy `64612.22804454819/68515.23095364538`。raw reward excluding penalty 为 `4315.902567907697/4132.633739495724`，rejection penalty 为 `-1140.55/-165.8`，total reward 为 `3175.3525679076965/3966.8337394957234`。候选被拒绝，因为 pair `15` 新增 failed arrival `21`：UID `108`、cargo、初始 SOC `0.5758906587575819`、request `150`、terminal `1013`、`ring_outer`、`failed_energy`、wait `807.8147075862395 s`。pair-level N/E/F/D/U 及 wait/elapsed/energy delta 见[终态结果](evidence/v4_2/p3_followup_results_20260930.md)。
 
-下一步为 root 已批准的一次 passive exact replay：pair `15` 的 control 与 legacy 各执行一次，source、seeds、config 和 1800-step cap 保持不变，跟踪 target arrival `21`。不新增 performance sample，未选择 repair（worker 正在实现）；协议文件 `p3_gate_failure_replay_protocol_20261001.md` 尚未落盘，暂以纯文本记录。`PPO_ALLOWED=false`，未使用 heldout，也未进行 formal promotion。Gate-control tests 共 `27` 个 unique cases（6 gate-control + 11 opportunity + 10 forced-WAIT）。
+随后已完成 root 批准的 passive exact replay：pair `15` 的 control 与 legacy 各执行一次，source、seeds、config 和 1800-step cap 保持不变，target arrival `21` 的 trace exact checks 通过，结果为 `REPLAY_OK`。其后 proposal-support control full 已 `FULL_OK`：9/9 fixed scenes natural、0 error/censor，技术、source-RNG、request、ledger、energy、wait 和 hard-safety checks 全通过；aggregate control N/E/F/D/U=`183/33/0/0/0`，reference=`180/34/2/0/0`，wait/elapsed/energy 分别下降 `4.7158647%/1.0617%/1.3591%`。该结果仅为 development candidate PASS，不是 qualification、PPO/default promotion 或训练根因结论；下一项均衡 development 尚未启动，`PPO_ALLOWED=false`。
+
+## 2026-10-01 P3 pair-15 passive replay 终态
+
+服务器 PID `2097784` 于 `2026-09-30T16:54:53Z` 终止。固定 pair `15`（`env877104`、keyed `9303103`）的 legacy/control 分别为 `724/1077` ticks；request identity、outcomes、terminal rows、energy、wait、reward、model/RNG 和 hard-safety exact checks 均通过。target arrival `21` 为 cargo：legacy 在 `606` 终止为 `emergency_landed`，control 在 `1013`、`ring_outer` 终止为 `failed_energy`；legacy 为 `ring_outer→ring_middle→ring_inner`，control 为 `ring_outer` 等待 `777` 帧。legacy 有一次成功 emergency attempt（tick `438`、SOC `0.39723546555721995`）；control 有 `120` 个实际 attempt-positive emergency calls，首个 safety-block 记录为 tick `414`、SOC `0.39966843653535883`，首个 energy-block 记录为 tick `664`、SOC `0.23300176986869217`。`58` safety-block 与 `69` energy-block calls 存在重叠，不相加；native call totals 为 `336/899`，含 early-return/retry。首轮 launch proof 的 postprocessing parser 误读 release 字段路径，因而错误报告字段缺失；collector/replay 本身未变。按 `trace.steps[*].targets[str(arrival_id)].after.release_decision` 的 corrected raw field check，control target `21` 的 `ring_outer` `777` 个 release frames 为 `51` `safety_reject` + `661` `safety_wait` + `64` `emergency_energy_guard` + `1` terminal-null；legacy `15` 个 release frames 为 `10` `safety_reject` + `4` `safety_wait` + `1` `approved`，approved 为 step `312`、proposal `10`、shortlist `[10,11,12]`。旧 proof v1 保留；由于没有新的 live server hash 核验，这次修正来源于同步 mirror proof，不是新的 server hash check。`last_safety_decision` labels 保留为 stale labels，不用于推断即时 failure reason。上述均为该 pair 的 causal trace observations，不构成总体 root-cause 结论。artifact status 为 `REPLAY_OK`，proof 为 `.tmp/p3_gate_failure_replay_launch_proof.json`，`PPO_ALLOWED=false`。
+随后 server 直读 cross-check 通过：更新后的 proof SHA256 为 `914a4b235916a64f165ebf8073ea5f74828b18cf2af12f1b45e00bb414e651ac`；replay summary 为 `REPLAY_OK`、mismatch `0`、model/RNG/safety checks 为 `true`，server trace SHA 为 legacy `d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745`、control `1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b`。首次 parser 修正的 mirror 来源属于直读前历史 provenance 记录，与此次 server 直读复核不矛盾。
+
+## 2026-10-01 P3 proposal-support control development 终态
+
+冻结 proposal-support control 的 full 比较已完成。服务器 PID `2102330` 已退出，full mtime 为 `2026-10-01 01:49:36`（Asia/Shanghai）；artifact proof 为 `.tmp/p3_proposal_support_full_proof.json`，full SHA256=`0178f6cef9083babab207d1fbd0e71cc50b4ebd90ffc2e4601caaeb07a8668b5`。9/9 fixed scenes natural、0 error/censor，24 requests、source/model-caller RNG、request identity、ledger/energy/wait 和 hard-safety checks 全通过。该运行只评估冻结 off-policy proposal-support control，无训练、optimizer、teacher、PPO 或 heldout；9 个场景来自 6 个固定 profiles 和 9 个 keyed pairs，不能视作 216 个独立样本。
+
+| pair | scene | ticks | control N/E/F/D/U | reference N/E/F/D/U | Δwait | Δelapsed | Δenergy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 722 | 22/2/0/0/0 | 23/1/0/0/0 | +252.53942549349722 | +282 | +324.9373252078476 |
+| 5 | 877102/9303101 | 799 | 20/4/0/0/0 | 20/4/0/0/0 | +261.4727465143619 | +363 | +322.5319456248826 |
+| 9 | 877103/9303101 | 711 | 20/4/0/0/0 | 20/4/0/0/0 | +367.11554965350433 | +351 | +397.4807547823866 |
+| 13 | 877104/9303101 | 758 | 19/5/0/0/0 | 20/3/1/0/0 | -578.3562047072567 | -374 | -359.987016850677 |
+| 17 | 877105/9303101 | 685 | 21/3/0/0/0 | 21/3/0/0/0 | -504.171103904288 | -497 | -542.724601236105 |
+| 21 | 877106/9303101 | 836 | 19/5/0/0/0 | 20/4/0/0/0 | -176.074608448065 | -154 | -150.762815305935 |
+| 14 | 877104/9303102 | 742 | 19/5/0/0/0 | 19/5/0/0/0 | -246.58688277428746 | -274 | -276.163126016308 |
+| 15 | 877104/9303103 | 685 | 21/3/0/0/0 | 21/3/0/0/0 | -66.14638229183583 | -64 | -61.602128748916584 |
+| 16 | 877104/9303104 | 738 | 22/2/0/0/0 | 16/7/1/0/0 | -688.2406166132155 | -511 | -584.9103552780334 |
+
+聚合 control N/E/F/D/U=`183/33/0/0/0`，admitted/completed/resolved=`216/216/216`；reference N/E/F/D/U=`180/34/2/0/0`，successful completed=`214`。wait 为 `27851.56917427036` 对 `29230.017251347945`，Δ=`-1378.448077077585`（`-4.7158647%`）；elapsed 为 `81822` 对 `82700`，Δ=`-878`（`-1.0617%`）；energy 为 `67584.03093562453` 对 `68515.23095364538`，Δ=`-931.20001802085`（`-1.3591%`）。raw reward（排除 rejection penalty）为 control `4250.50923752765`、reference `4132.63373949572`；rejection penalty 分别为 `-156` 和 `-165.8`，两者分开记录。
+
+按预注册规则，该结果是 development candidate PASS only；不是 qualification、PPO 准入、默认配置晋升，也不能单独证明训练退化根因或 P3 已解决。`PPO_ALLOWED=false`，heldout 未使用。
+
+## 2026-10-01 下一项 balanced proposal-support development（已登记，未启动）
+
+下一项保持 original 固定 24 请求、epsilon=`0.1`、source/config/cap 不变，复用现有 9 个 proposal-support 场景和 24 个 legacy references，仅新增 15 个 control 运行；不新增 seed、不重抽样、不改 epsilon、不扩 cap、不使用 heldout。balanced runner/protocol 已实现，尚未启动 preflight 或运行。
 
 ## 2026-09-30 研究复核与修复更新
 

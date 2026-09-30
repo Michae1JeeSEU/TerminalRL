@@ -26,7 +26,44 @@ Aggregate control/reference values were `N=190/180`, `E=25/34`, `F=1/2`, `D=0/0`
 
 The registered acceptance review rejected the candidate: pair `15` introduced a new failed arrival `21`, despite aggregate normal increasing `180→190`, failed decreasing `2→1`, successful completed increasing `214→215`, wait decreasing to `25124.700815134504 s`, request elapsed decreasing to `79035 s`, and energy decreasing to `64612.22804454819`. The retained new failure row was UID `108`, mission `cargo`, initial SOC `0.5758906587575819`, request time `150`, terminal time `1013`, phase `ring_outer`, outcome `failed_energy`, and wait `807.8147075862395 s`. In the `env877104` cross-keyed traces, arrival `13` was `emergency_landed` under all four control keyed runs; the two previous legacy runs that failed are retained as comparison evidence, not as an all-scene feasibility claim.
 
-The control tests were `27` unique cases (`6` gate-control, `11` opportunity, `10` forced-WAIT); code/docs commit `3a3e1ba` was not pushed because no remote is configured. The `p3-gate` heartbeat was deleted after the terminal full artifact, and no active background process remains. The next root-approved status is one passive exact replay of pair `15` control and legacy, once each, with source, seeds, config, and the 1800-step cap unchanged; it will trace target arrival `21`. No new performance sample is planned and no repair has been selected; the worker is implementing the replay. The protocol filename `p3_gate_failure_replay_protocol_20261001.md` is not on disk yet, so it is recorded as plain text until it exists.
+The control tests were `27` unique cases (`6` gate-control, `11` opportunity, `10` forced-WAIT); code/docs commit `3a3e1ba` was not pushed because no remote is configured. The `p3-gate` heartbeat was deleted after the terminal full artifact, and no active background process remains.
+
+## Passive pair-15 failure replay 终态 (`REPLAY_OK`)
+
+The root-approved passive exact replay ran once for each arm of fixed pair `15` (`env877104`, keyed `9303103`) with source runner `CF8C08AC204BAFC2BFE6D8E3A661FFD779BC7ADCF4DBBFC58F7F51B6ED8F9794`, source checkpoints `3fe7+a82`, unchanged configuration, seeds, and 1800-step cap. Server PID `2097784` exited; the terminal snapshot was `2026-09-30T16:54:53Z`. Legacy ran `724` ticks and control ran `1077` ticks. Request identity, outcome counts, terminal rows, energy, wait, reward, model/RNG invariants, and hard-safety checks were exact for both arms; the replay artifact is `/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/failure_replay.json` with local proof `.tmp/p3_gate_failure_replay_launch_proof.json` and status `REPLAY_OK`. `PPO_ALLOWED=false`, held-out was unused, and no formal promotion occurred.
+
+Target arrival `21` was cargo: legacy became `emergency_landed` at terminal `606` after `ring_outer→ring_middle→ring_inner`, while control remained in `ring_outer` for `777` waiting frames and ended as `failed_energy` at terminal `1013`. Legacy had one positive emergency attempt, which succeeded at tick `438` with SOC `0.39723546555721995`; control had `120` actual attempt-positive emergency calls, with first safety-block evidence at tick `414`, SOC `0.39966843653535883`, and first energy-block evidence at tick `664`, SOC `0.23300176986869217`. The control blocker counts were `58` safety-block calls and `69` energy-block calls; these overlap and must not be summed. Native call totals were `336` legacy and `899` control, including early returns and retries; only attempt-positive deltas count as attempts. These are observations from this pair's causal traces only, not a global root-cause conclusion.
+
+The first launch proof's postprocessing parser incorrectly read the release field path and reported the fields missing; the collector and replay were unchanged. Corrected raw verification used `trace.steps[*].targets[str(arrival_id)].after.release_decision`: control target `21` in `ring_outer` has `777` release frames, `51` `safety_reject` + `661` `safety_wait` + `64` `emergency_energy_guard` + `1` terminal-null; legacy has `15` release frames, `10` `safety_reject` + `4` `safety_wait` + `1` `approved`, with the approved step `312`, proposal `10`, shortlist `[10,11,12]`. The prior proof v1 is retained. Because a new live server hash verification was not available, this correction is sourced from the synchronized mirror proof and is not a new server hash check. `last_safety_decision` labels are retained as stale labels and are not interpreted as the immediate failure reason. The final exact regression command over replay, gate-control, opportunity, and forced-WAIT tests produced `32 passed in 4.07s` (`5` new replay tests plus the original `27`), without duplicate counting; native fixture v3 also passed with no optimizer. Commits `d153f9e` and `99b6bd9` are local only, with no remote/upstream; the replay heartbeat was deleted and no background process remains.
+随后完成 server 直读 cross-check：更新后的 proof `.tmp/p3_gate_failure_replay_launch_proof.json` SHA256 为 `914a4b235916a64f165ebf8073ea5f74828b18cf2af12f1b45e00bb414e651ac`；replay summary 为 `REPLAY_OK`、mismatch `0`、model/RNG/safety checks 为 `true`，server trace SHA 为 legacy `d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745`、control `1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b`。上段关于首次 parser 的 mirror 来源是直读前的历史 provenance 记录；本次 server 直读复核与之不矛盾。
+
+## Proposal-support control full 终态 (`FULL_OK`; development candidate)
+
+冻结 proposal-support control 的 full 比较已经完成。固定 9 个场景全部自然终态，0 error、0 censor；每个 pair 的 24 个请求、source/model-caller RNG、ledger、energy、wait、request identity 和 hard-safety 检查均通过。该运行只评估冻结 off-policy proposal-support control，没有训练、optimizer、teacher、PPO 或 heldout。
+
+服务器产物为 `.tmp/p3_proposal_support_full_proof.json`、`.tmp/p3_proposal_support_full_perpair.csv`；full source SHA 为 `0178f6cef9083babab207d1fbd0e71cc50b4ebd90ffc2e4601caaeb07a8668b5`，PID 2102330 已于 2026-10-01 01:49:36（Asia/Shanghai）退出。9 个场景来自 6 个固定环境 profile 和 9 个 keyed 场景，不能视作 216 个独立样本。
+
+| pair | scene | ticks | control N/E/F/D/U | reference N/E/F/D/U | Δwait (s) | Δelapsed (s) | Δenergy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 722 | 22/2/0/0/0 | 23/1/0/0/0 | +252.53942549349722 | +282 | +324.9373252078476 |
+| 5 | 877102/9303101 | 799 | 20/4/0/0/0 | 20/4/0/0/0 | +261.4727465143619 | +363 | +322.5319456248826 |
+| 9 | 877103/9303101 | 711 | 20/4/0/0/0 | 20/4/0/0/0 | +367.11554965350433 | +351 | +397.4807547823866 |
+| 13 | 877104/9303101 | 758 | 19/5/0/0/0 | 20/3/1/0/0 | -578.3562047072567 | -374 | -359.987016850677 |
+| 17 | 877105/9303101 | 685 | 21/3/0/0/0 | 21/3/0/0/0 | -504.171103904288 | -497 | -542.724601236105 |
+| 21 | 877106/9303101 | 836 | 19/5/0/0/0 | 20/4/0/0/0 | -176.074608448065 | -154 | -150.762815305935 |
+| 14 | 877104/9303102 | 742 | 19/5/0/0/0 | 19/5/0/0/0 | -246.58688277428746 | -274 | -276.163126016308 |
+| 15 | 877104/9303103 | 685 | 21/3/0/0/0 | 21/3/0/0/0 | -66.14638229183583 | -64 | -61.602128748916584 |
+| 16 | 877104/9303104 | 738 | 22/2/0/0/0 | 16/7/1/0/0 | -688.2406166132155 | -511 | -584.9103552780334 |
+
+聚合控制侧为 N/E/F/D/U = 183/33/0/0/0，admitted/completed/resolved = 216/216/216；reference 为 180/34/2/0/0，successful completed = 214。wait 为 27851.56917427036 对 29230.017251347945，Δ = -1378.448077077585（-4.7158647%）；elapsed 为 81822 对 82700，Δ = -878（-1.0617%）；energy 为 67584.03093562453 对 68515.23095364538，Δ = -931.20001802085（-1.3591%）。
+
+raw reward（排除 rejection penalty）为 control 4250.50923752765、reference 4132.63373949572；rejection penalty 分别为 -156 和 -165.8。两类数值分开报告，不能把结果归结为 penalty 变化。
+
+按预注册规则，该结果是 development candidate PASS only。它不是 PPO 准入、默认配置晋升、formal qualification，也不能单独证明训练退化的根因或已经解决 P3。
+
+## Next registered balanced development
+
+下一项已登记为同 original 固定 24 请求、同 epsilon=0.1 的均衡 development 比较：复用现有 9 个 proposal-support 场景和 24 个 legacy reference，新增 15 个 control 运行；不新增 seed、不重抽样、不改变 epsilon、不扩 cap、不使用 heldout。balanced runner/protocol 已实现，尚未启动 preflight 或运行。PPO_ALLOWED=false。
 
 ## 可执行动作机会诊断预注册与终态
 
@@ -102,7 +139,7 @@ env `877104` 的 arrival `13` 四条实际 trace 摘要如下；trace 来自每�
 | 15/9303103 | 724 | inbound 57; ring_outer 88; transfer_o2m 62; ring_middle 1; transfer_m2i 61; ring_inner 16; emergency_landing 54 | None 385; not_requested 333; safety_reject 4; approved 2 | tick 142 reject p 0.9835757613182068 → tick 358 reject p 0.9883878827095032, qmax 0.9975574016571045 | UID 72, emergency_landed, t=446, wait 151.21199255359232, energy 374.5005100650064 |
 | 16/9303104 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 729; safety_reject 1; safety_wait 30; emergency_energy_guard 44 | tick 267 / 267, p 0.7881418466567993, qmax 0.973076581954956, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
 
-依据上述 witness，已完成同一 `9` 个 reference pairs 的单因素 frozen always-RELEASE gate control；结果已在本文顶部的终态段报告。该 control 未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用；candidate review 因 pair `15` 的新 failed arrival `21` 被拒绝。该结果记录为观察到的控制结果，不构成 P3 根因结论或 formal qualification。
+依据上述 witness，已完成同一 `9` 个 reference pairs 的单因素 frozen always-RELEASE gate control；结果已在本文顶部的终态段报告。随后已完成 pair `15` 的一次 passive exact replay，结果为 `REPLAY_OK`，但不构成 P3 根因结论或 formal qualification。该 replay 未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用。
 
 本地唯一集成命令为：
 
