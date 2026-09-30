@@ -81,3 +81,30 @@ retries a failed branch or removes a failed/censored result.
 The pilot is pair `1` and contains all three windows. The full phase reuses
 that pilot artifact and evaluates only the other eight fixed pairs. Outputs
 are written atomically and existing artifacts are never overwritten.
+
+## Digest-binding amendment (2026-09-30)
+
+The first pilot completed as `PILOT_OK`, but its pair summary contains two
+different model-digest conventions that must remain distinct. The existing
+`source_model_digest` summary field is the execution digest produced by
+`paired_gate_diagnostic._model_digest(policy)`; the canonical source binding
+is the digest produced by
+`run_p3_task_neutral_pilot._model_digest(policy)` and is stored as
+`canonical_source_model_digest` in newly written pair summaries. The summary
+also records both algorithm names explicitly. The full-phase reuse guard
+compares the pilot execution digest with the live policy using the paired
+diagnostic algorithm, and compares the live canonical source digest with the
+stored preflight source binding using the canonical algorithm. This preserves
+the existing V1 `source_model_digest` field and accepts a V1 pilot artifact
+that predates the additional algorithm-label fields when its computed values
+pass these checks.
+
+The repaired full run uses the new output root
+`/home/user/training_outputs/terminal/p3_followup_20260930/opportunity_coverage_v2`.
+Its preflight binds the repaired runner while retaining the same source,
+configuration, and existing 115 runtime-file hashes. After read-only checks
+of the V1 pilot, arm, pair, and three state artifacts, those artifacts may be
+copied into the V2 output root for reuse; the copy is an output-artifact
+operation and does not update source code. The repair does not change the
+physical environment, action, window, proposal, sampling, or score rules,
+and does not rerun failed or censored branches.

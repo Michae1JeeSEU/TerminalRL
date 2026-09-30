@@ -35,6 +35,8 @@ PPO_ALLOWED = False
 HELDOUT_USED = False
 TEACHER_USED = False
 OPTIMIZER_USED = False
+EXECUTION_MODEL_DIGEST_ALGORITHM = "paired_gate_diagnostic._model_digest(policy)"
+CANONICAL_SOURCE_DIGEST_ALGORITHM = "run_p3_task_neutral_pilot._model_digest(policy)"
 MAX_STEPS = 1800
 WINDOWS = ((100, 149), (300, 349), (500, 549))
 PROPOSAL_COUNT = 25
@@ -134,6 +136,16 @@ def _config_snapshot(config: Any) -> dict[str, Any]:
     # Keep the exact existing frozen protocol serialization, including enum
     # and nested dataclass handling (not a second config schema).
     return dict(frozen._config_snapshot(config))
+
+
+def _digest_metadata(source: Mapping[str, Any]) -> dict[str, str]:
+    """Name the two existing model-digest algorithms in pair summaries."""
+
+    return {
+        "source_model_digest_algorithm": EXECUTION_MODEL_DIGEST_ALGORITHM,
+        "canonical_source_model_digest": str(source.get("source_model_digest", "")),
+        "canonical_source_model_digest_algorithm": CANONICAL_SOURCE_DIGEST_ALGORITHM,
+    }
 
 
 def _manifest_by_relative(manifest: Mapping[str, Any]) -> dict[str, str]:
@@ -869,6 +881,7 @@ def _run_pair(source: Mapping[str, Any], config: Any, spec: Mapping[str, Any],
         "source_model_digest": arm.get("model_digest_before"),
         "config_snapshot": _config_snapshot(config),
     }
+    pair.update(_digest_metadata(source))
     _write_json(output / "pairs" / f"pair_{pair_id:04d}.json", pair, refuse_existing=True)
     return {"summary": pair, "arm": arm}
 
@@ -938,8 +951,14 @@ def _validate_pilot_reuse(pilot: Mapping[str, Any], preflight: Mapping[str, Any]
     _require(pilot_pair.get("status") == "PAIR_OK", "pilot summary pair is not PAIR_OK")
     _require(pilot_pair.get("config_snapshot") == _config_snapshot(config),
              "pilot config snapshot differs from live full-phase config")
-    _require(pilot_pair.get("source_model_digest") == source.get("source_model_digest"),
-             "pilot source model digest differs from live full-phase source")
+    source_policy = source.get("policy")
+    _require(source_policy is not None, "live source policy is missing for execution digest check")
+    execution_digest = paired._model_digest(source_policy)
+    _require(pilot_pair.get("source_model_digest") == execution_digest,
+             "pilot execution model digest differs from paired diagnostic digest")
+    stored_binding = preflight.get("source_binding", {})
+    _require(source.get("source_model_digest") == stored_binding.get("source_model_digest"),
+             "live canonical source digest differs from frozen preflight binding")
     _require(pilot.get("preflight_reference_sha256") == preflight.get("reference", {}).get("full_sha256"),
              "pilot preflight reference binding differs from current preflight")
 
@@ -952,6 +971,10 @@ def _validate_pilot_reuse(pilot: Mapping[str, Any], preflight: Mapping[str, Any]
     for key in ("selected_state_count", "reference_exact", "source_model_digest", "config_snapshot"):
         _require(stored_pair.get(key) == pilot_pair.get(key),
                  f"stored pilot pair differs from pilot summary for {key}")
+    for key, value in _digest_metadata(source).items():
+        if key in pilot_pair or key in stored_pair:
+            _require(stored_pair.get(key) == pilot_pair.get(key) == value,
+                     f"stored pilot pair differs from pilot digest metadata for {key}")
     _require(arm.get("status") == "completed" and arm.get("censored") is False,
              "stored pilot arm is not natural and complete")
     _require(arm.get("model_unchanged") is True and arm.get("caller_rng_unchanged") is True,
@@ -966,7 +989,9 @@ def run_full(output: Path, reference_root: Path = REFERENCE_ROOT) -> dict[str, A
     pilot = _read_json(output / "pilot.json")
     preflight, config, source, layout = _phase_config(output, reference_root)
     _validate_pilot_reuse(pilot, preflight, config, source, output)
-    summaries = [dict(pilot["pair"])]
+    pilot_summary = dict(pilot["pair"])
+    pilot_summary.update(_digest_metadata(source))
+    summaries = [pilot_summary]
     for spec in PAIR_SPECS[1:]:
         reference = layout["_arms"][str(spec["pair_id"])]
         reference["metadata"] = layout["arms"][str(spec["pair_id"])]

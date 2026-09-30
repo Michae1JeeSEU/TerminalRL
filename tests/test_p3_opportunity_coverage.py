@@ -15,6 +15,7 @@ from terminal_marl.core.low_level_joint_action_v4_2 import HierarchicalActionV42
 from terminal_marl.core.config import SimConfig
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 from terminal_marl.training import run_p3_opportunity_coverage_20260930 as runner
+from terminal_marl.training import run_p3_task_neutral_pilot as canonical_digest
 from terminal_marl.training import paired_gate_diagnostic as paired
 
 
@@ -288,8 +289,15 @@ def test_pilot_reuse_rejects_pair_config_source_and_preflight_tampering(tmp_path
         runtime_proposal_shortlist_k=3,
         student_decision_mask_mode="legacy",
     )
-    source = {"source_model_digest": "source-digest"}
-    preflight = {"reference": {"full_sha256": "reference-sha"}}
+    policy = SimpleNamespace(model=nn.Linear(2, 2))
+    execution_digest = paired._model_digest(policy)
+    canonical_model_digest = canonical_digest._model_digest(policy)
+    assert execution_digest != canonical_model_digest
+    source = {"policy": policy, "source_model_digest": canonical_model_digest}
+    preflight = {
+        "reference": {"full_sha256": "reference-sha"},
+        "source_binding": {"source_model_digest": canonical_model_digest},
+    }
     expected = dict(runner.PAIR_SPECS[0])
     config_snapshot = runner._config_snapshot(config)
     reference_exact = {"exact": True}
@@ -298,7 +306,7 @@ def test_pilot_reuse_rejects_pair_config_source_and_preflight_tampering(tmp_path
         "status": "PAIR_OK",
         "selected_state_count": 0,
         "reference_exact": reference_exact,
-        "source_model_digest": source["source_model_digest"],
+        "source_model_digest": execution_digest,
         "config_snapshot": config_snapshot,
     }
     arm = {
@@ -319,6 +327,11 @@ def test_pilot_reuse_rejects_pair_config_source_and_preflight_tampering(tmp_path
         "pair": pair,
     }
 
+    # A V1 pair predates the explicit algorithm labels and remains reusable.
+    runner._validate_pilot_reuse(pilot, preflight, config, source, output)
+
+    pair.update(runner._digest_metadata(source))
+    (output / "pairs" / "pair_0001.json").write_text(json.dumps(pair), encoding="utf-8")
     runner._validate_pilot_reuse(pilot, preflight, config, source, output)
 
     tampered = copy.deepcopy(pilot)
@@ -333,7 +346,17 @@ def test_pilot_reuse_rejects_pair_config_source_and_preflight_tampering(tmp_path
 
     source_bad = {"source_model_digest": "different-source"}
     with pytest.raises(runner.OpportunityProtocolError):
-        runner._validate_pilot_reuse(pilot, preflight, config, source_bad, output)
+        runner._validate_pilot_reuse(pilot, preflight, config, {**source, **source_bad}, output)
+
+    weight_bad = copy.deepcopy(policy)
+    with torch.no_grad():
+        weight_bad.model.weight[0, 0].add_(1.0)
+    with pytest.raises(runner.OpportunityProtocolError):
+        runner._validate_pilot_reuse(
+            pilot, preflight, config,
+            {"policy": weight_bad, "source_model_digest": canonical_model_digest},
+            output,
+        )
 
     preflight_bad = {"reference": {"full_sha256": "different-reference"}}
     with pytest.raises(runner.OpportunityProtocolError):

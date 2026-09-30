@@ -15,7 +15,11 @@
 - `preexisting_artifact`：既有 frozen-WAIT `full.json` 的 `FULL_OK/pair_count=24` 结果，以及该协议和 reference directory。
 - `newly_run`：local preflight 为 `PREFLIGHT_OK`，并完成 compile/diffcheck；机会 runner 的 focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`。本轮服务器只读基础快照在 `/home/user/projects/terminal` 执行并以 exit `0` 返回；115-file runtime manifest 的 SHA mismatch count 为 `0`，source `3fe7` 与 warmup `a82` checkpoint SHA 与预注册值一致。
 
-本轮新机会诊断的 server pilot/full 尚未启动。新 runner 的 small-fixture 实现及其 `11` 项 focused test、`37` 项 combined recheck 已完成；这些是实现与接口验证，不形成性能或因果结论。
+V1 server pilot 已完成：纠正项目 cwd 后，`PID 2085294` 的 `pilot.json` 为 `PILOT_OK/PAIR_OK`，env `877101`、keyed policy `9303101`，`694` ticks、`24` requests、`23 normal/1 emergency/0 failed`，自然终止且无 censor/error；source/model/caller-RNG、请求 identity、ledger、energy、wait 和 safety checks 均通过。3 个窗口共 `78` 个分支，均成功、0 error；`C=0`、`pC=0`，没有 `D`。raw reward 差异 `+2.5` 全来自 rejection penalty，排除 penalty 后差异为 `0`。该 pilot 是被动覆盖事实，不形成性能或因果结论。
+
+首个 launcher 在 phase 初始化前记录了 `NameError: name 'subproces' is not defined`，原始片段保存在 `.tmp/p3_opportunity_launcher_v1.stderr.txt`；修正后的 cwd/subprocess 启动 guard 完成了上述 V1 pilot。V1 pilot 中同时保留两种 model digest 约定：paired execution digest `20afdf4b60babc63a0a64eba6702d6f9db3891b537168a5e5346639f148b1d23`，canonical source-binding digest `a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07`；二者来自同一加载模型，只是摘要算法不同，不表示权重变化。
+
+V2 输出根 `/home/user/training_outputs/terminal/p3_followup_20260930/opportunity_coverage_v2` 已登记为后续 preflight/import 目标；V2 preflight、V1 pilot 只读导入校验和剩余 8 个 scene 的 full 尚未启动。PPO、optimizer、teacher 与 held-out 均未使用；不据 V1 pilot 选择修复或宣称根因。
 
 本地唯一集成命令为：
 
