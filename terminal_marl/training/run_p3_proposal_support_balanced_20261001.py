@@ -35,6 +35,7 @@ EXPECTED_CONTROL = {
     "sampled_first": True, "off_policy": True, "logprob_recorded": False,
     "training": False,
 }
+ENERGY_ROUNDTRIP_ABS_TOL = 1e-8
 
 
 class BalancedProposalSupportError(ValueError):
@@ -46,12 +47,31 @@ def _require(condition: bool, message: str) -> None:
         raise BalancedProposalSupportError(message)
 
 
+def _metrics_equal_with_energy_roundtrip(actual: Mapping[str, Any], expected: Mapping[str, Any]) -> bool:
+    """Compare immutable metrics, allowing only JSON energy-sum roundoff."""
+
+    if set(actual) != set(expected):
+        return False
+    for key in actual:
+        left, right = actual[key], expected[key]
+        if key == "energy_total_consumed":
+            numeric = lambda value: isinstance(value, (int, float)) and not isinstance(value, bool)
+            if numeric(left) and numeric(right) and math.isfinite(float(left)) and math.isfinite(float(right)):
+                if not math.isclose(float(left), float(right), rel_tol=0.0, abs_tol=ENERGY_ROUNDTRIP_ABS_TOL):
+                    return False
+                continue
+        if left != right:
+            return False
+    return True
+
+
 def _validate_v1_arm(summary: Mapping[str, Any], arm: Mapping[str, Any], pair_id: int) -> None:
     _require(summary.get("status") == "PAIR_OK" and arm.get("status") == "completed",
              f"proposal-support v1 pair {pair_id} is not natural and complete")
     _require(arm.get("reference_control_checks", {}).get("technical_ok") is True,
              f"proposal-support v1 pair {pair_id} technical check is not PASS")
-    _require(support.gate._business_metrics(arm) == summary.get("control_metrics"),
+    _require(_metrics_equal_with_energy_roundtrip(
+        support.gate._business_metrics(arm), summary.get("control_metrics", {})),
              f"proposal-support v1 pair {pair_id} arm metrics differ from immutable summary")
     _require(arm.get("reference_control_checks") == summary.get("reference_control_checks"),
              f"proposal-support v1 pair {pair_id} integrity checks differ from immutable summary")

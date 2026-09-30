@@ -21,6 +21,11 @@ Each imported pair and arm file, v1 preflight/pilot, source/config/runtime
 binding, and all 24 legacy reference arms are hash and seed checked before a
 new phase can run. The legacy reference arms are read from
 `forced_wait_frozen/arms/pair_NNNN_legacy.json` and are never rewritten.
+When rechecking an imported arm against its stored summary, the only numeric
+round-trip tolerance is `abs_tol=1e-8` for the finite scalar
+`energy_total_consumed`, which is recomputed as an arrival-row sum. All keys,
+other values, outcomes, flags, and hashes remain exact; reported values and
+the registered v1 full SHA are unchanged.
 
 ## Execution
 

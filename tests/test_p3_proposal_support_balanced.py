@@ -1,6 +1,7 @@
 """Contract tests for the balanced 24-pair proposal-support wrapper."""
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 
@@ -175,13 +176,34 @@ def test_v1_arm_content_must_match_immutable_summary():
         "status": "completed",
         "proposal_support_control": dict(runner.EXPECTED_CONTROL),
         "reference_control_checks": {"technical_ok": True},
+        "generated_requests": 1, "admitted_count": 1, "completed_count": 1, "resolved_count": 1,
+        "outcome_counts": {"normal": 1, "emergency": 0, "failed": 0, "diverted": 0, "unresolved": 0},
+        "ledger": {"requested_ids": [0]},
+        "energy_ledger": {
+            "rows": {"0": {"arrival_id": 0, "energy_consumed": 1.0}},
+            "unique_arrival_ids": [0], "coverage": {"requested_ids": [0], "valid": True},
+        },
+        "wait_metrics": {"request_elapsed_seconds_by_arrival": {"0": 0.0}},
+        "wait_integrity": {"elapsed_by_requested_id_observed_finite": True},
     }
+    actual = runner.support.gate._business_metrics(arm)
     summary = {
         "status": "PAIR_OK",
-        "control_metrics": runner.support.gate._business_metrics(arm),
+        "control_metrics": actual,
         "reference_control_checks": dict(arm["reference_control_checks"]),
     }
     runner._validate_v1_arm(summary, arm, 1)
+    roundtrip = copy.deepcopy(summary)
+    roundtrip["control_metrics"]["energy_total_consumed"] += 1e-12
+    runner._validate_v1_arm(roundtrip, arm, 1)
+    too_large = copy.deepcopy(summary)
+    too_large["control_metrics"]["energy_total_consumed"] += 1e-6
+    with pytest.raises(runner.BalancedProposalSupportError, match="arm metrics"):
+        runner._validate_v1_arm(too_large, arm, 1)
+    none_value = copy.deepcopy(summary)
+    none_value["control_metrics"]["energy_total_consumed"] = None
+    with pytest.raises(runner.BalancedProposalSupportError, match="arm metrics"):
+        runner._validate_v1_arm(none_value, arm, 1)
     summary["control_metrics"]["status"] = "tampered"
     with pytest.raises(runner.BalancedProposalSupportError, match="arm metrics"):
         runner._validate_v1_arm(summary, arm, 1)
