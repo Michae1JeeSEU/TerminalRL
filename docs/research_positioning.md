@@ -126,9 +126,11 @@ R_O > R_M > R_I,\qquad H_O > H_M > H_I
 - 使用 Crazyflie 或其他小型无人机验证；
 - 通过增加状态变量获得更高性能。
 
-### 3.2 当前主创新主线
+### 3.2 系统组成机制与待检验差异
 
-#### 创新 1：动态三环终端区构型与流量调节
+以下四项是实现机制，不等于独立已验证原创；第 3.3 节的两个候选是当前拟检验的论文方法贡献假设。
+
+#### 机制 1：动态三环终端区构型与流量调节
 
 高层策略根据当前与近期交通压力，调整：
 
@@ -139,7 +141,7 @@ R_O > R_M > R_I,\qquad H_O > H_M > H_I
 
 环容量不是独立动作，而是由**当前实际半径与安全间隔**派生，避免“扩大半径”和“人为增加容量阈值”重复表达同一个物理效应。
 
-#### 创新 2：空域构型与多 UAV 降落流的层次协同
+#### 机制 2：空域构型与多 UAV 降落流的层次协同
 
 高层回答：当前终端区应该提供怎样的空间结构和流量节奏？
 
@@ -149,7 +151,7 @@ R_O > R_M > R_I,\qquad H_O > H_M > H_I
 reservation 和路径可执行性等信息耦合；无任务偏好时不得退化为 SOC 单排序，也不得绕过环、
 路径或资源预约约束。
 
-#### 创新 3：从学习意图到安全可执行轨迹
+#### 机制 3：从学习意图到安全可执行轨迹
 
 低层策略不直接生成任意航向、航迹角、高度或姿态命令，而输出：
 
@@ -178,7 +180,7 @@ intent
 
 统一生成和检查轨迹。
 
-#### 创新 4：终端空域—地面服务资源耦合
+#### 机制 4：终端空域—地面服务资源耦合
 
 论文不把“成功进入 final”当成服务完成，而显式建模：
 
@@ -190,9 +192,30 @@ intent
 
 这使研究对象真正成为 terminal operation，而不是单纯的空中队列。
 
+### 3.3 方法性候选与主张边界（2026-09-30）
+
+上面的四个模块目前只构成系统组合机制，不能直接称为已验证的原创方法。当前保留两个待验证的方法性候选：
+
+1. **有重构成本的终端资源排队网络**：对几何构型 $g$ 分别定义空中存储能力 $K(g)$ 与在给定
+   rule、LZ 服务资源和安全约束下的可持续服务率 $\mu(g,\mathrm{rule},\mathrm{LZ})$。扩大
+   $K(g)$ 不保证 $\mu$ 增加；扩环决策必须同时支付 reconfiguration 与 transition 的代价。
+2. **能量 deadline 与可执行预约耦合的调度**：放行只有在 energy reachability、预约时隙、轨迹可执行性和
+   LZ serviceability 同时满足时才进入候选比较。
+
+动态构型的待研究判据是可预测的服务/延误成本节省大于 reconfiguration cost 与 transient capacity-loss cost；
+这是实验决策条件，不是定理。安全间隔、轨迹可执行性、能量可达性和资源可服务性必须分别记录，当前系统不保证
+它们的 joint recursive feasibility。当前 phase/speed/turn 能耗是归一化代理，实测功耗未完成；速度和转弯能耗
+需通过敏感性实验校准。正式主张须等待 fixed-geometry、强背压/min-slack 与滚动 MILP/MPC 小规模可行解或下界
+的公平比较。
+
+逐项判定、已有证据与待运行实验登记在
+[`research_review_repairs_20260930.md`](evidence/v4_2/research_review_repairs_20260930.md)。
+
 ---
 
 ## 4. 关键研究假设
+
+以下 H1–H5 均是待实验的研究假设；其中“应”表示待检验预测，不是已有证据。
 
 ### H1：动态构型在非平稳需求下优于固定构型
 
@@ -442,6 +465,17 @@ reservation 的确定性竞争逻辑。
 
 **Protocol A — Finite-cohort resolution**：固定请求数量 N，所有 request 必须进入终态。  
 **Protocol B — Continuous-flow capacity**：固定仿真时长，在 warm-up 后统计稳定区间 throughput、queue、utilization 与 delay。
+
+公平比较必须在相同 safety、resource pipeline 和 control authority 下调优 fixed-geometry、strong
+backpressure/min-slack、rolling MILP/MPC 以及小规模可行解/下界。`two_ring` 对照要按可比的 storage、
+airspace footprint 和 service resource 配置匹配；geometry-only、flow-only、joint 三类变化分别评估。
+episode 是配对统计单位，训练 seeds 与 evaluation seeds 独立。服务率只在长持续流中估计；动态构型的短峰值
+短峰也可用于机制和响应研究；若要观察动态重构收益及其成本，比较需覆盖持续时间跨越 geometry dwell time 的长峰场景。已有 dense24 `<47/31` 的结果不能验证 outer/middle
+storage saturation，但不能据此排除路径约束影响。rule/MPC 结果可作为机制研究与下界参照，不自动放行 A6。
+
+qualification 的正式判定顺序是：先检查 `failed`、`unresolved` 和现有 safety hard constraints，再做
+`normal/emergency` 业务 screen，最后阅读等待与吞吐。低层 raw reward 是软权衡，不是词典序，也不是全系统成本；
+尚未证实的 reward mismatch 不能单独归因于训练退化。
 
 ---
 

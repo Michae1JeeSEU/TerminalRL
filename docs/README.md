@@ -98,6 +98,10 @@ docs/
 索引见 [evidence/README.md](evidence/README.md) 与
 [history/README.md](history/README.md)。
 
+本轮研究与 P3 复核的逐项判定、文档修复状态、已存在证据与待运行实验见
+[research review repairs 2026-09-30](evidence/v4_2/research_review_repairs_20260930.md)。该页不替代
+`CURRENT_STATUS.md`，也不把待验证设计或未运行实验写成 PASS。
+
 ## 文档维护规则
 
 1. 研究范围或贡献变化：同步更新研究定位、需求、设计和技术规范；

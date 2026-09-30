@@ -1,5 +1,9 @@
 # 项目当前状态
 
+## 2026-09-30 研究复核与修复更新
+
+本轮完成“评估研究与训练”对话中 17 项不足的逐项复核，并完成已确认实现缺陷的代码修复与文档同步；新增实验性 Observation V2.4、`student_decision_mask_mode=pre_action_forced_wait` 和高层计量修正。相关实现回归、修正后的 paired helper 与 real-artifact smoke 已通过；distinct pytest cases 按 `154 = 126 + 18 + 1 + 9` 记录，重跑不重复计数。real-artifact smoke 为 `COMPLETED exit0`，因 `censored=true` 未产生 `qualified_delta_Q`，不形成 causal/performance conclusion；详见 [研究复核与修复登记](evidence/v4_2/research_review_repairs_20260930.md)。方法性贡献、qualification 与 P3 性能退化仍未证解决；`PPO_ALLOWED=false`，正式 P3 继续使用 88D，新 schema 需独立 qualification，heldout 未消费。
+
 > **状态日期**：2026-09-29
 >
 > **本轮用户范围修订（当前，2026-09-28）：** 当前主线是 dynamic terminal airspace、multi-UAV

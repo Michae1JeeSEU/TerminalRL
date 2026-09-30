@@ -89,6 +89,7 @@ class TerminalParallelEnv:
     def reset(self, seed: int | None = None):
         self.now = 0.0
         self.step_count = 0
+        self.external_queue_uav_seconds = 0.0
         self.active: dict[int, UAVState] = {}
         self.service_uavs: dict[int, UAVState] = {}
         self.uid = 0
@@ -1521,6 +1522,7 @@ class TerminalParallelEnv:
         action_rows = []
         for request in self.arrivals.requests_until(self.now):
             self.ledger.request(request.arrival_id); self.request_times[request.arrival_id] = request.request_time; self.admission.enqueue(request)
+        self.external_queue_uav_seconds += len(self.admission.queue.items) * self.config.dt
         self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
         self.execution_scheduler.expire(self.now, set(self.active))
         self._refresh_airspace_occupancy()

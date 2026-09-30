@@ -1,4 +1,4 @@
-"""88D student-only rollout shared by future DAgger and admitted PPO.
+"""V4.2 student-only rollout shared by future DAgger and admitted PPO.
 
 No CLI starts training here. DAgger labels are optional sidecars and never
 enter env.step. Empty arrival/service intervals remain in team-time GAE.
@@ -16,12 +16,17 @@ from ..algo.student_ppo_v4_2 import StudentStepV42
 from ..core.low_level_joint_action_v4_2 import (ACTION_SCHEMA_V4_2, RELEASE_GATE,
     HierarchicalActionV42, decode_hierarchical_actions_v4_2,
     hierarchical_from_joint_index_v4_1)
+from ..core.observations import observation_schema_for_version
 from ..core.runtime_traffic_safety import SafetyInvariantError
 from ..core.safety_trace import SafetyTraceRecorder, _digest
 from ..envs.parallel_env import TerminalParallelEnv
 from .v4_1_joint_teacher import teacher_joint_expert_v4_1
 
-OBS_SCHEMA = "phaseA_low_obs_v2_1_retry_state"
+OBS_SCHEMA_V2_1 = "phaseA_low_obs_v2_1_retry_state"
+OBS_SCHEMA_V2_4 = "phaseA_low_obs_v2_4_service_context_90d"
+SUPPORTED_OBS_SCHEMAS = (OBS_SCHEMA_V2_1, OBS_SCHEMA_V2_4)
+# Historical callers import OBS_SCHEMA; retain its V2.1 meaning.
+OBS_SCHEMA = OBS_SCHEMA_V2_1
 
 
 def _validate_label_stride_steps(label_stride_steps: int) -> int:
@@ -73,8 +78,11 @@ def _label_query_uids(
 
 
 def validate_student_config(config, *, collect_labels: bool = False) -> None:
-    if config.action_schema_version != ACTION_SCHEMA_V4_2 or config.observation_schema_version != OBS_SCHEMA:
-        raise ValueError("student rollout requires V4.2 / 88D V2.1")
+    if config.action_schema_version != ACTION_SCHEMA_V4_2 or config.observation_schema_version not in SUPPORTED_OBS_SCHEMAS:
+        raise ValueError("student rollout requires V4.2 with V2.1/88D or V2.4/90D observations")
+    # Resolve through the canonical registry so rollout width checks and
+    # checkpoint metadata use the same schema definition.
+    observation_schema_for_version(config.observation_schema_version)
     labeler_only = collect_labels and config.teacher_enabled and config.teacher_mode == "teacher_label_only"
     if (config.teacher_enabled and not labeler_only) or config.scheduler_mode != "execution" or config.teacher_release_label_enabled:
         raise ValueError("student execution must disable Teacher substitution")
@@ -97,11 +105,29 @@ def _student_request_details(policy: JointPPOV42, env, observations: dict, *, de
         raise ValueError("student runtime shortlist must have K=1 or K=3")
     uids = sorted(observations)
     world = np.asarray([observations[uid] for uid in uids], dtype=np.float32).reshape(-1, policy.observation_dim)
-    actor_mask = np.asarray([
-        env.active[int(uid)].committed_plan is None
-        and env.active[int(uid)].phase.value in {"ring_outer", "ring_middle", "ring_inner"}
-        and int(uid) not in env.future_release_reservations
-        for uid in uids], dtype=bool)
+    decision_mask_mode = getattr(env.config, "student_decision_mask_mode", "legacy")
+    affected_interfaces = None
+    actor_values = []
+    for uid in uids:
+        uav = env.active[int(uid)]
+        actor = (
+            uav.committed_plan is None
+            and uav.phase.value in {"ring_outer", "ring_middle", "ring_inner"}
+            and int(uid) not in env.future_release_reservations
+        )
+        if actor and decision_mask_mode == "pre_action_forced_wait":
+            if affected_interfaces is None:
+                affected_interfaces = set(env.airspace.affected_interfaces())
+            ring_role = getattr(uav.ring_role, "value", uav.ring_role)
+            interface = {"outer": "o2m", "middle": "m2i", "inner": "i2f"}.get(ring_role)
+            actor = (
+                interface is not None
+                and float(uav.soc) > 0.0
+                and float(env.now) >= float(uav.safety_retry_after)
+                and interface not in affected_interfaces
+            )
+        actor_values.append(actor)
+    actor_mask = np.asarray(actor_values, dtype=bool)
     if not uids:
         return (uids, world, actor_mask, {}, np.zeros(0, dtype=int), np.zeros(0, dtype=int),
                 np.zeros(0), np.zeros(0), {}, {})
@@ -206,8 +232,12 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         validate_student_config(config, collect_labels=False)
     else:
         validate_student_config(config, collect_labels=collect_labels)
-    if policy.observation_dim != 88 or max_steps < 1:
-        raise ValueError("88D policy and positive rollout horizon required")
+    observation_dim = observation_schema_for_version(config.observation_schema_version).dimension
+    if policy.observation_dim != observation_dim or max_steps < 1:
+        raise ValueError(
+            f"policy observation dimension must match {config.observation_schema_version} "
+            f"({observation_dim}D) and rollout horizon must be positive"
+        )
     output.mkdir(parents=True, exist_ok=False)
     effective_policy_seed = int(seed if policy_seed is None else policy_seed)
     torch.manual_seed(effective_policy_seed)
@@ -221,7 +251,11 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             "seed": effective_policy_seed,
             "policy_seed": effective_policy_seed,
             "episode_seed": int(seed),
-            "mode": "student_only_v2_1",
+            "mode": ("student_only_v2_1" if config.observation_schema_version == OBS_SCHEMA_V2_1
+                     else "student_only_v2_4"),
+            "observation_schema": config.observation_schema_version,
+            "observation_dimension": int(observation_dim),
+            "student_decision_mask_mode": config.student_decision_mask_mode,
         },
     )
     steps, events, queues = [], [], []
@@ -284,8 +318,9 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                     raise RuntimeError("nondeterministic DAgger label")
                 target = hierarchical_from_joint_index_v4_1(label.index)
                 labels[uid] = {"gate": target.gate, "proposal": target.proposal, "joint_index_v4_1": target.joint_index_v4_1}
-                pending.append({"observation_schema": OBS_SCHEMA, "action_schema": ACTION_SCHEMA_V4_2,
-                    "observation_v2_1": world[i].tolist(), "teacher_gate": target.gate,
+                label_row = {"observation_schema": config.observation_schema_version,
+                    "observation_dimension": int(observation_dim), "action_schema": ACTION_SCHEMA_V4_2,
+                    "teacher_gate": target.gate,
                     "teacher_proposal": target.proposal, "teacher_joint_index": target.joint_index_v4_1,
                     "source": "student_visited_label_only", "seed": seed,
                     "phase": env.active[int(uid)].phase.value, "step": tick,
@@ -310,7 +345,9 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                             int(item["joint_index"]) - 1 for item in catalogue
                             if bool(item.get("feasible")) and int(item.get("joint_index", 0)) > 0
                         ],
-                    } if collect_catalogue_diagnostics and actor_mask[i] else {})})
+                    } if collect_catalogue_diagnostics and actor_mask[i] else {})}
+                label_row["observation_v2_1" if config.observation_schema_version == OBS_SCHEMA_V2_1 else "observation_v2_4"] = world[i].tolist()
+                pending.append(label_row)
         if collect_labels and _digest(SafetyTraceRecorder._state(env)) != state_hash:
             raise RuntimeError("Teacher label query mutated environment state")
         record = tape.record_pre_step(
@@ -355,11 +392,11 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         queues.append(int(info["queue_size"]))
         terminal = env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs
         end = terminal or tick + 1 == max_steps or env.now >= config.max_simulation_seconds
-        next_world = np.asarray([following[uid] for uid in sorted(following)], dtype=np.float32).reshape(-1, 88)
+        next_world = np.asarray([following[uid] for uid in sorted(following)], dtype=np.float32).reshape(-1, observation_dim)
         step = StudentStepV42(world.copy(), gates.copy(), proposals.copy(), gate_lp.copy(), proposal_lp.copy(), actor_mask.copy(), value,
                              0. if terminal else world_value(policy, next_world), float(sum(rewards.values())), bool(terminal), bool(end),
                              stochastic_behavior=not deterministic)
-        step.validate(88)
+        step.validate(observation_dim)
         steps.append(step)
         observations = following
         if (tick + 1) % 25 == 0 or end:
@@ -368,7 +405,10 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
                 "queue": queues[-1], "terminal": terminal}), encoding="utf-8")
         if end:
             break
-    tape_path = tape.dump(reason="student_only_v2_1")
+    tape_path = tape.dump(
+        reason=("student_only_v2_1" if config.observation_schema_version == OBS_SCHEMA_V2_1
+                else "student_only_v2_4")
+    )
     with (output / "labels.jsonl").open("w", encoding="utf-8") as handle:
         for row in events:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
@@ -394,6 +434,9 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
               )),
               "label_stride_steps": int(label_stride_steps),
               "state_only_labels": bool(state_only_labels),
+              "observation_schema": config.observation_schema_version,
+              "observation_dimension": int(observation_dim),
+              "student_decision_mask_mode": config.student_decision_mask_mode,
               "PPO_ALLOWED": False}
     (output / "summary.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return steps, result

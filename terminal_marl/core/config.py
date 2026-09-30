@@ -39,6 +39,9 @@ class SimConfig:
     # holder.  Keep the historical requested-intent behavior by default;
     # canonical WAIT is opt-in for new diagnostics and training.
     v4_2_rejected_release_hold_mode: str = "legacy_requested"
+    # Student actor masking is deliberately opt-in so legacy V4.2 tapes and
+    # replay streams retain their historical action-selection semantics.
+    student_decision_mask_mode: str = "legacy"
     high_action_schema_version: str = "high_airspace_v1_10d"
     observation_schema_version: str = "phaseA_low_obs_v2_topology_87d"
     experiment_mode: str = "fixed_rule"
@@ -409,7 +412,7 @@ class SimConfig:
             )
         if self.reset_mode == "warm_start_rings" and self.warm_start_uavs > 0 and len(self.fixed_arrival_schedule) < self.warm_start_uavs:
             raise ValueError("safe warm-start requires an explicit fixed_arrival_schedule for every initial UAV")
-        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d"}:
+        if self.observation_schema_version not in {"phaseA_low_obs_v1_41d", "phaseA_low_obs_v2_topology_87d", "phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d", "phaseA_low_obs_v2_4_service_context_90d"}:
             raise ValueError("unsupported low-level observation schema")
         if self.observation_schema_version == "phaseA_low_obs_v2_3_source_bound_88d":
             if (self.neighbor_comm_range_m is None or isinstance(self.neighbor_comm_range_m, bool)
@@ -418,12 +421,16 @@ class SimConfig:
                 raise ValueError("V2.3 requires a finite positive neighbor_comm_range_m")
         if self.retry_norm_horizon_seconds <= 0.0:
             raise ValueError("retry_norm_horizon_seconds must be positive")
-        if self.observation_schema_version in {"phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d"} and self.retry_norm_horizon_seconds < max(5.0, self.headway_max):
+        if self.observation_schema_version in {"phaseA_low_obs_v2_1_retry_state", "phaseA_low_obs_v2_2_scheduler_context_94d", "phaseA_low_obs_v2_3_source_bound_88d", "phaseA_low_obs_v2_4_service_context_90d"} and self.retry_norm_horizon_seconds < max(5.0, self.headway_max):
             raise ValueError("V2.1+ retry normalization horizon must cover the configured retry/cooldown maximum")
         if self.action_schema_version not in {"low_intent_v3_factorized_discrete", "low_action_schema_v4_joint_discrete", "low_action_schema_v4_1_joint_discrete_26", "low_action_schema_v4_2_hierarchical"}:
             raise ValueError("unsupported low-level action schema")
         if self.v4_2_rejected_release_hold_mode not in {"legacy_requested", "canonical_wait"}:
             raise ValueError("unsupported v4_2_rejected_release_hold_mode")
+        if isinstance(self.student_decision_mask_mode, bool) or self.student_decision_mask_mode not in {
+            "legacy", "pre_action_forced_wait"
+        }:
+            raise ValueError("student_decision_mask_mode must be 'legacy' or 'pre_action_forced_wait'")
         if self.scheduler_mode not in {"execution", "teacher_full", "teacher_immediate", "teacher_label_only"}:
             raise ValueError("unsupported scheduler_mode")
         if self.teacher_mode not in {"teacher_full", "teacher_immediate", "teacher_label_only"}:

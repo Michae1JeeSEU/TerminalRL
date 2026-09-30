@@ -140,6 +140,11 @@ def _config_snapshot(config: Any) -> dict[str, Any]:
         raw = dict(config)
     else:
         raw = dict(vars(config))
+    # Preserve the historical snapshot shape for the default mask mode.  The
+    # opt-in mode remains explicit in reports so its protocol cannot be
+    # mistaken for a legacy evaluation.
+    if raw.get("student_decision_mask_mode") == "legacy":
+        raw.pop("student_decision_mask_mode", None)
     value = _jsonable(raw)
     _require(isinstance(value, dict), "config snapshot must be a mapping")
     return value

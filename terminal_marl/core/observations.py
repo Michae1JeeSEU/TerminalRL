@@ -5,7 +5,7 @@ import hashlib
 import math
 import numpy as np
 from .config import RingRole
-from .uav import FlightPhase
+from .uav import FlightPhase, MISSION_SERVICE_SECONDS
 from .topology_neighbors import NeighborSlot, TopologyCache, TopologyNeighborSelector
 
 @dataclass(frozen=True)
@@ -97,6 +97,15 @@ LOW_OBS_V2_3 = ObservationSchema((
     FeatureSpec("self_safety_retry_remaining_norm", 1),
 ))
 
+# V2.4 keeps the qualified V2.1 vector byte-for-byte as its first 88 values
+# and appends two physical service-context fields.  The task-neutral mission
+# token remains owned by ``_mission_observation``; these fields use the raw
+# mission only where it changes service duration and pad compatibility.
+LOW_OBS_V2_4 = ObservationSchema(LOW_OBS_V2_1.features + (
+    FeatureSpec("self_service_duration_norm", 1),
+    FeatureSpec("center_earliest_compatible_lz_release_wait_norm", 1),
+))
+
 
 @dataclass(frozen=True)
 class CenterLandingZoneBroadcast:
@@ -133,6 +142,8 @@ if LOW_OBS_V2_2.dimension != 94:
     raise RuntimeError("phaseA_low_obs_v2_2_scheduler_context_94d must be exactly 94D")
 if LOW_OBS_V2_3.dimension != 88:
     raise RuntimeError("phaseA_low_obs_v2_3_source_bound_88d must be exactly 88D")
+if LOW_OBS_V2_4.dimension != 90:
+    raise RuntimeError("phaseA_low_obs_v2_4_service_context_90d must be exactly 90D")
 
 def _one(value, values):return [float(value==x) for x in values]
 
@@ -332,6 +343,42 @@ def build_low_observation_v2_1(uav, env, *, topology_cache: TopologyCache | None
     return vector
 
 
+def build_low_observation_v2_4(
+    uav, env, *, topology_cache: TopologyCache | None = None,
+    center_broadcast: CenterBroadcast | None = None,
+) -> np.ndarray:
+    """Return V2.1's unchanged 88D prefix plus service context.
+
+    ``topology_cache`` and ``center_broadcast`` are optional because a direct
+    caller may not have precomputed the shared views.  When omitted, both are
+    built from the same pre-action environment state used by the V2.1 prefix.
+    """
+    prefix = build_low_observation_v2_1(uav, env, topology_cache=topology_cache)
+    if center_broadcast is None:
+        center_broadcast = build_center_broadcast(env)
+    mission_name = getattr(uav.mission_type, "value", str(uav.mission_type))
+    compatible_etas = [
+        zone.eta_seconds for zone in center_broadcast.landing_zones
+        if mission_name in zone.compatible_missions
+    ]
+    earliest_eta = min(compatible_etas, default=math.inf)
+    service_seconds = MISSION_SERVICE_SECONDS.get(uav.mission_type)
+    if service_seconds is None:
+        service_seconds = MISSION_SERVICE_SECONDS.get(mission_name)
+    if service_seconds is None:
+        raise ValueError(f"unknown mission type for V2.4 service context: {uav.mission_type!r}")
+    vector = np.concatenate((
+        prefix,
+        np.asarray([
+            float(service_seconds) / 120.0,
+            _center_wait_norm(earliest_eta, env.config),
+        ], dtype=np.float32),
+    ))
+    if vector.shape != (LOW_OBS_V2_4.dimension,):
+        raise RuntimeError(f"V2.4 observation schema mismatch: {vector.shape}")
+    return vector
+
+
 def build_low_observation_v2_3(
     uav, config, center_broadcast: CenterBroadcast,
     slots: tuple[NeighborSlot, ...],
@@ -481,6 +528,8 @@ def observation_schema_for_version(version: str) -> ObservationSchema:
         return LOW_OBS_V2_2
     if version == "phaseA_low_obs_v2_3_source_bound_88d":
         return LOW_OBS_V2_3
+    if version == "phaseA_low_obs_v2_4_service_context_90d":
+        return LOW_OBS_V2_4
     raise ValueError(f"unsupported low-level observation schema: {version}")
 
 
@@ -501,6 +550,10 @@ def build_low_observation(
             raise ValueError("V2.3 requires a filtered TopologyCache and CenterBroadcast")
         return build_low_observation_v2_3(
             uav, env.config, center_broadcast, topology_cache.slots_for(uav.uid),
+        )
+    if env.config.observation_schema_version == "phaseA_low_obs_v2_4_service_context_90d":
+        return build_low_observation_v2_4(
+            uav, env, topology_cache=topology_cache, center_broadcast=center_broadcast,
         )
     raise ValueError(f"unsupported low-level observation schema: {env.config.observation_schema_version}")
 

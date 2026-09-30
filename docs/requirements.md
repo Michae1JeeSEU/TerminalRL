@@ -1000,6 +1000,26 @@ failures
 
 ---
 
+## 19.3 研究复核后的 qualification 与比较边界（2026-09-30）
+
+正式 qualification 按以下顺序判定：先保留 `failed`、`unresolved`、collision/NMAC、protected-floor、
+uncertified-execution 等既有 hard constraints；随后做 `normal/emergency` 业务 screen；最后再比较等待、
+吞吐和资源利用。低层 raw reward 是连续的软权衡，不是词典序，也不等价于全系统成本，未证实的 reward mismatch
+不得单独作为训练退化归因。
+
+公平对照必须在相同安全、资源和控制权限下分别调优 fixed geometry、strong backpressure/min-slack、rolling
+MILP/MPC，并保留小规模可行解/下界。`two_ring` 必须按 storage、footprint、service resource 匹配；
+geometry-only、flow-only、joint 变化分别注册。episode 是配对统计单位，训练 seeds 与评估 seeds 分离。
+服务率使用长持续流估计；短峰也可用于机制和响应研究；若要观察动态重构收益及其成本，比较需覆盖持续时间跨越 geometry dwell time 的长峰场景。rule/MPC 属于机制研究
+对照，不自动授权 A6。
+
+低层课程分成三个独立条件：低并发随机 SOC、固定 SOC 的密集异质服务、两者合并。每一阶段按 energy slack
+与是否找到完整可行 schedule 分级；“未找到 schedule”只记录为观测事实，不等同于 infeasible。不得通过提高
+SOC 下限或删除失败样本制造 qualification，通过本段也不启动新训练或消费 heldout。详细逐项审查与待办实验见
+[`research_review_repairs_20260930.md`](evidence/v4_2/research_review_repairs_20260930.md)。
+
+---
+
 ## 20. 非功能需求
 
 - 所有随机过程必须 seedable；

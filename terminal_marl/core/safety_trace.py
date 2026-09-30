@@ -40,6 +40,8 @@ def _digest(value: Any) -> str:
 
 _V4_2_REJECTED_RELEASE_HOLD_FIELD = "v4_2_rejected_release_hold_mode"
 _LEGACY_CONFIG_COMPATIBILITY = "legacy_requested_default_field"
+_STUDENT_DECISION_MASK_FIELD = "student_decision_mask_mode"
+_STUDENT_DECISION_MASK_COMPATIBILITY = "student_decision_mask_legacy_default_field"
 _WARM_START_LAYOUT_RANDOMIZED_FIELD = "warm_start_layout_randomized"
 _WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY = "warm_start_layout_randomized_default_field"
 _COMBINED_LEGACY_CONFIG_COMPATIBILITY = (
@@ -59,24 +61,46 @@ def _environment_config_match(config: Any, expected_hash: str) -> tuple[bool, st
     values = vars(config)
     if _digest(values) == expected_hash:
         return True, None
-    if getattr(config, _WARM_START_LAYOUT_RANDOMIZED_FIELD, False) is not False:
-        return False, None
-    without_randomized_field = dict(values)
-    without_randomized_field.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
-    if _digest(without_randomized_field) == expected_hash:
-        return True, _WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY
-    if getattr(config, _V4_2_REJECTED_RELEASE_HOLD_FIELD, None) == "legacy_requested":
-        without_hold_field = dict(values)
-        without_hold_field.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
-        if _digest(without_hold_field) == expected_hash:
-            return True, _LEGACY_CONFIG_COMPATIBILITY
 
-        without_legacy_fields = dict(values)
-        without_legacy_fields.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
-        without_legacy_fields.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
-        if _digest(without_legacy_fields) == expected_hash:
-            return True, _COMBINED_LEGACY_CONFIG_COMPATIBILITY
-    return False, None
+    def known_default_compatibility(candidate: dict[str, Any]) -> tuple[bool, str | None]:
+        """Apply the pre-existing compatibility rules to one candidate."""
+        if getattr(config, _WARM_START_LAYOUT_RANDOMIZED_FIELD, False) is not False:
+            return False, None
+        without_randomized_field = dict(candidate)
+        without_randomized_field.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
+        if _digest(without_randomized_field) == expected_hash:
+            return True, _WARM_START_LAYOUT_RANDOMIZED_COMPATIBILITY
+        if getattr(config, _V4_2_REJECTED_RELEASE_HOLD_FIELD, None) == "legacy_requested":
+            without_hold_field = dict(candidate)
+            without_hold_field.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
+            if _digest(without_hold_field) == expected_hash:
+                return True, _LEGACY_CONFIG_COMPATIBILITY
+
+            without_legacy_fields = dict(candidate)
+            without_legacy_fields.pop(_V4_2_REJECTED_RELEASE_HOLD_FIELD, None)
+            without_legacy_fields.pop(_WARM_START_LAYOUT_RANDOMIZED_FIELD, None)
+            if _digest(without_legacy_fields) == expected_hash:
+                return True, _COMBINED_LEGACY_CONFIG_COMPATIBILITY
+        return False, None
+
+    def append_student_compatibility(marker: str | None) -> str:
+        return (_STUDENT_DECISION_MASK_COMPATIBILITY if marker is None
+                else f"{marker}+{_STUDENT_DECISION_MASK_COMPATIBILITY}")
+
+    # A pre-action forced-WAIT policy changes the actor's decision set and is
+    # never compatible with a tape whose config predates this field.  The
+    # legacy default may remove exactly this absent field, then apply the
+    # existing hold/layout compatibility checks without weakening them.
+    if getattr(config, _STUDENT_DECISION_MASK_FIELD, None) == "legacy":
+        without_mask_field = dict(values)
+        without_mask_field.pop(_STUDENT_DECISION_MASK_FIELD, None)
+        if _digest(without_mask_field) == expected_hash:
+            return True, _STUDENT_DECISION_MASK_COMPATIBILITY
+        matched, compatibility = known_default_compatibility(without_mask_field)
+        if matched:
+            return True, append_student_compatibility(compatibility)
+
+    return known_default_compatibility(values)
 
 
 class SafetyTraceRecorder:

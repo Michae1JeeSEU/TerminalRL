@@ -41,6 +41,24 @@ proposal 配置保持冻结。后续评估依据最终 normal、`failed_energy`�
 本次 `fa0e` candidate 未在新物理场景验证中获保留；warmup 只是已评估的开发修复尝试，不是已证实解决方案，当前下一步以 [CURRENT_STATUS](CURRENT_STATUS.md) 为准，不将此流程设为所有未来 PPO 的强制规范。
 formal/heldout 与 `PPO_ALLOWED` 不因文档修订自动放行。
 
+## 0.2 研究复核后的课程与比较冻结（2026-09-30）
+
+P3 修复前只做文档与小样本协议核对，不直接启动新训练或消费 heldout。课程拆成三个独立条件：
+
+1. 低并发、随机 SOC；
+2. 固定 SOC、密集到达、异质 service time；
+3. 随机 SOC 与密集异质 service 的合并条件。
+
+每阶段按 energy slack 与是否找到完整可行 schedule 分级。未找到 schedule 只作为观测结果，不能直接写成
+不可行；不得提高 SOC 下限、删掉失败样本或改变 hard safety/energy/resource 语义来制造 qualification。
+
+正式比较待补 fixed-geometry、strong backpressure/min-slack、rolling MILP/MPC 和小规模可行解/下界，
+并保持相同安全、资源和控制权限。`two_ring` 按 storage/footprint/service resource 匹配；geometry-only、
+flow-only、joint 独立评估。episode 为配对统计单位，训练 seeds 与评估 seeds 独立；service rate 用长持续流，
+短峰也可用于机制和响应研究；若要观察动态重构收益及其成本，比较需覆盖持续时间跨越 geometry dwell time 的长峰场景。rule/MPC 结果属于机制研究对照，不自动授权 A6。
+
+---
+
 ## 历史记录：2026-09-24 至 2026-09-25
 
 以下条目保留当时的实验事实和失败边界，不定义当前课程或下一步授权。

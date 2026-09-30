@@ -960,6 +960,34 @@ inner  = 0.15
 
 ---
 
+## 21.1 研究复核后的可行性与 schema 边界（2026-09-30）
+
+研究候选把终端视为带 reconfiguration cost 的资源排队网络：几何构型 $g$ 的存储能力
+$K(g)$ 与在 rule/LZ 服务资源下的可持续服务率 $\mu(g,\mathrm{rule},\mathrm{LZ})$ 分开记录，
+不得把扩大 $K(g)$ 当作服务率必然增加。能量 deadline、merge/LZ reservation、轨迹可执行性和服务占用
+共同决定可行候选；安全间隔、轨迹可执行性、energy reachability、resource serviceability 是四个独立检查轴，
+当前不声明 joint recursive feasibility。
+
+`footprint_seconds` 按每 tick 累计归一化环面积和/成本代理
+`sum(actual R²) / sum(initial R²)`；它不是实测物理占地，也不是三维体积。新输出 metadata 必须包含
+`footprint_definition`，明确记录该定义及版本。
+
+当前能耗仍是归一化代理；speed/turn 功耗标定留待敏感性实验。动态构型只有在 predictive cost saving
+大于 reconfiguration 与 transient capacity-loss cost 时才进入待验证的决策比较，该条件是研究判据，不是定理。
+
+以下实现修复状态已记录，代码回归已通过，尚未写入 qualification PASS：sustained-low wrapper 使用 `low600 + dwell`，且安全检查持续运行；
+每 tick 累计 queue UAV-seconds 与 unresolved request-seconds，并保留永久的 energy arrival ledger；
+`high_reward_v2_time_integrated` 使用新 reward/schema，旧 high-level 结果不与其等价。现有
+SharedPPO V4.2 adapter 已实施并通过 early-fail-fast 回归；这只证明不兼容时提前失败，不等于完整等价支持。
+
+动作与观测兼容边界：`student_decision_mask_mode=pre_action_forced_wait` 为 opt-in，默认保持 legacy；
+retry/SOC/interface 的动作前阻塞必须保留为环境语义，不能事后从样本中删除。本轮新增实验性 V2.4 已实现接口，
+为旧 88D 加入 `self_service_duration_norm` 与 `center_earliest_compatible_lz_release_wait_norm` 两字段，形成 90D，并使用新 schema/feature hash；旧 checkpoint 必须拒绝加载，
+代码回归已通过，尚未 qualification。
+正式 P3 在新的 qualification 之前仍保持 V4.2/88D。
+
+---
+
 ## 22. Experiment modes
 
 正式模式统一为：

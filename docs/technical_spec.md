@@ -761,6 +761,33 @@ warmup 拟合数据不称独立 validation，也不凭 loss 通过。
 保护；能量应急接管和全部安全约束保持。后续评估依据最终 normal、`failed_energy`、safety、wait
 与新物理场景结果；formal、heldout 和全局 flags 仍由当前准入规定，不因本节自动放行。
 
+### 22.2 研究复核后的训练信号与运行计量边界（2026-09-30）
+
+qualification 先核对 `failed`、`unresolved` 与 safety hard counts，再做 `normal/emergency` 业务 screen，
+最后读取 wait/throughput。raw low-level reward 是软权衡，不是词典序，也不是全系统成本；discount、batch 或
+critic 的不足都不足以单独修复或解释 pre-existing degradation。team advantage 不是天然 bug。对 factorized entropy，
+$H=H(\mathrm{gate})+p_{\mathrm{release}}H(\mathrm{proposal})$ 的驻点为
+$p^*_{\mathrm{release}}=\sigma(H(\mathrm{proposal}))$；只有均匀 25-proposal 时
+$H(\mathrm{proposal})=\log 25$，才有 $p^*=25/26$。当前 frozen proposal 通常非均匀，不能把 25/26 写成当前实际最优值。
+global joint clipping 的 actor/critic 耦合是实现事实，对退化的贡献留待 paired experiment，不在此处改算法。
+
+proposal、gate、feasibility 与长期收益必须用同一 pre-state 的 paired expected outcome 检查，不得用 25 个 proposal
+中的 best-of-25 代替实际 K=3 stochastic execution。现有 terminal counterfactual 的两次 repeat 只有 `5` 个稳定
+标签和 `7` 个 uncertain 状态；paired gate diagnostic helper 已实现并通过 9 个 focused checks。real-artifact
+smoke 在注册的 2-tick horizon 内完成 26 个分支，所有 invariance 检查通过；由于 `censored=true`，该有限 smoke
+不产生 `qualified_delta_Q`，full-cycle causal diagnosis 仍待完成。诊断的随机配对键为
+`(continuation_seed, absolute_step, uid, channel)`；snapshot selection 另按 `(step, uid, arrival)` 记录，使用
+weighted all-25 K=3，并在旧/新 checkpoint 的真实参数概率下复核。
+
+本轮运行计量边界登记如下：wrapper 的 sustained-low gate 为 `low600 + dwell` 且继续执行 safety
+checks；每 tick 累计 queue UAV-seconds、unresolved request-seconds，并在 arrival ledger 永久保留 energy；
+`high_reward_v2_time_integrated` 是新 reward/schema，旧 high-level 结果不等价。SharedPPO V4.2
+adapter 已实施并通过 early-fail-fast 回归；这只证明不兼容时提前失败，不等于完整等价支持。
+
+运行计量中，`footprint_seconds` 按每 tick 累计归一化环面积和/成本代理
+`sum(actual R²) / sum(initial R²)`；它不是实测物理占地，也不是三维体积。新输出 metadata 必须包含
+`footprint_definition`，明确记录该定义及版本。
+
 ---
 
 ## 23. High-level wrapper
@@ -1073,6 +1100,10 @@ raise IncompatibleCheckpointError
 ```
 
 旧 checkpoint 只可历史诊断，不得 resume。
+
+本轮新增实验性 Observation V2.4 已实现接口，为 V2.1/88D 加 `self_service_duration_norm` 与 `center_earliest_compatible_lz_release_wait_norm` 两字段，形成 90D，
+并使用新的 schema/feature hash；旧 checkpoint 必须拒绝加载，代码回归已通过但尚未 qualification。正式 P3 在 V2.4 qualification 完成前继续使用
+V4.2/88D，不得把 90D 实现写成当前 qualification 结果。
 
 ---
 
