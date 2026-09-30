@@ -1,12 +1,13 @@
 """Bounded replay and mechanism diagnostic for the refresh energy failure.
 
-The three phases are deliberately separate.  ``preflight`` reads the fixed
-record, tape, checkpoint metadata, and neutral configuration without creating
-an environment.  ``replay`` performs one exact source-tape replay and
-registers three deterministic eligible states.  ``diagnose`` replays the tape
-again, deep-copies only those states, and runs the existing paired WAIT/all
-RELEASE diagnostic.  This module does not train, sample an optimizer, use a
-teacher, or consume held-out data.
+The phases are deliberately separate.  ``preflight`` reads the fixed record,
+tape, checkpoint metadata, and neutral configuration without creating an
+environment.  ``replay`` performs one exact source-tape replay and registers
+three deterministic eligible states.  ``diagnose`` replays the tape again,
+deep-copies only those states, and runs the existing paired WAIT/all RELEASE
+diagnostic.  Optional ``blockers`` uses the registered states for one-step
+telemetry and a separate exact replay.  This module does not train, sample an
+optimizer, use a teacher, or consume held-out data.
 """
 from __future__ import annotations
 
@@ -39,6 +40,8 @@ TAPE = ROOT / "batch_02/training/episode_24/rollout/action_tapes/safety_trace_se
 SOURCE_CHECKPOINT = ROOT / "batch_01/policy.pt"
 AFTER_CHECKPOINT = ROOT / "batch_02/policy.pt"
 AFTER_SUMMARY = ROOT / "batch_02/summary.json"
+FAILURE_OUTPUT_DIR = Path("/home/user/training_outputs/terminal/p3_followup_20260930/failure_mechanism")
+BLOCKERS_OUTPUT_DIR = Path("/home/user/training_outputs/terminal/p3_followup_20260930/failure_blockers")
 SOURCE_SHA256 = "1637a15d73184617a1e386cd29cbcdbe29c0679b1414f5fb413ec7a9fbef3805"
 TAPE_SHA256 = "7bf68b8159e9d6038744735618067f0344a5a64218798bea2b93260c955212e3"
 RECORD_SHA256 = "34e3bff462dba2e28571804fbcb530961d805740aa1e6b90fc39508bed3d60e1"
@@ -52,6 +55,7 @@ EXPECTED_REQUESTS = 24
 CONTINUATION_SEEDS = (9303201, 9303202, 9303203, 9303204)
 BRANCH_MAX_STEPS = 1800
 QUANTILES = (0.25, 0.50, 0.75)
+REGISTERED_SELECTED_STEPS = (280, 445, 726)
 
 
 class FailureMechanismError(ValueError):
@@ -427,6 +431,348 @@ def _capture_selected_states(policy: Any, config: Any, inputs: Mapping[str, Any]
     return states
 
 
+def _zone_context(env: Any, uav: Any | None = None) -> list[dict[str, Any]]:
+    now = float(getattr(env, "now", 0.0))
+    mission = getattr(uav, "mission_type", None) if uav is not None else None
+    rows: list[dict[str, Any]] = []
+    for zone in list(getattr(getattr(env, "lz_manager", None), "zones", ()) or ()):
+        compatible = sorted(
+            str(getattr(item, "value", item)) for item in getattr(zone, "compatible_missions", ())
+        )
+        try:
+            eta = float(env.lz_manager.earliest_release_time(zone.lz_id, now))
+        except (AttributeError, TypeError, ValueError):
+            eta = None
+        rows.append({
+            "lz_id": int(zone.lz_id),
+            "status": str(getattr(getattr(zone, "status", None), "value", getattr(zone, "status", None))),
+            "reserved_by": getattr(zone, "reserved_by", None),
+            "occupied_by": getattr(zone, "occupied_by", None),
+            "service_remaining": float(getattr(zone, "service_remaining", 0.0)),
+            "expected_release_at": getattr(zone, "expected_release_at", None),
+            "eta": eta,
+            "compatible_missions": compatible,
+            "compatible_with_target": mission is not None and mission in getattr(zone, "compatible_missions", ()),
+        })
+    return rows
+
+
+def _target_blocker_context(env: Any) -> dict[str, Any]:
+    actor = getattr(env, "active", {}).get(TARGET_UID)
+    if actor is None:
+        return {"uid": TARGET_UID, "active": False}
+    config = getattr(env, "config", None)
+    try:
+        available = list(env.lz_manager.rank_available_zones(actor, float(env.now)))
+    except (AttributeError, TypeError, ValueError):
+        available = []
+    return {
+        "uid": TARGET_UID,
+        "arrival_id": int(getattr(actor, "arrival_id", -1)),
+        "active": True,
+        "soc": float(getattr(actor, "soc", 0.0)),
+        "energy_remaining": float(getattr(actor, "energy_remaining", 0.0)),
+        "energy_consumed": float(getattr(actor, "energy_consumed", 0.0)),
+        "phase": str(getattr(getattr(actor, "phase", None), "value", getattr(actor, "phase", None))),
+        "ring_role": str(getattr(getattr(actor, "ring_role", None), "value", getattr(actor, "ring_role", None))),
+        "safety_retry_after": float(getattr(actor, "safety_retry_after", 0.0)),
+        "emergency_retry_after": float(getattr(actor, "emergency_retry_after", 0.0)),
+        "retry_after": float(
+            getattr(actor, "emergency_retry_after", 0.0)
+            if bool(getattr(config, "emergency_priority_guard_enabled", False))
+            else getattr(actor, "safety_retry_after", 0.0)
+        ),
+        "committed": bool(getattr(actor, "committed_plan", None) is not None),
+        "emergency_landing": bool(getattr(actor, "emergency_landing", False)),
+        "available_compatible_lz_ids": [int(value) for value in available],
+        "landing_zones": _zone_context(env, actor),
+    }
+
+
+def _blocker_context(env: Any) -> dict[str, Any]:
+    return {
+        "light_state": runner_utils._light_state_observer(env),
+        "target": _target_blocker_context(env),
+    }
+
+
+def _first_step_payload(
+    *,
+    proposal: int | None,
+    proposal_probability: float | None = None,
+    env: Any,
+    before_target: Mapping[str, Any],
+    after_target: Mapping[str, Any],
+    before_telemetry: Mapping[str, float],
+    after_telemetry: Mapping[str, float],
+    info: Mapping[str, Any] | None,
+    reward: float | None,
+    terminated: Any = None,
+    truncated: Any = None,
+    error: BaseException | None = None,
+) -> dict[str, Any]:
+    info = info if isinstance(info, Mapping) else {}
+    release_telemetry = paired_gate_diagnostic._uid_lookup(
+        info.get("release_intent_telemetry", {}), TARGET_UID, {}
+    )
+    if not isinstance(release_telemetry, Mapping):
+        release_telemetry = {}
+    safety_reason = getattr(env, "last_safety_decisions", {}).get(TARGET_UID)
+    diagnostics = getattr(env, "energy_reachability_diagnostics", {}).get(TARGET_UID)
+    emergency_delta = {
+        key: value for key, value in paired_gate_diagnostic._telemetry_delta(
+            before_telemetry, after_telemetry
+        ).items() if "emergency" in key
+    }
+    result = {
+        "proposal": None if proposal is None else int(proposal),
+        "proposal_probability": (
+            None if proposal_probability is None else float(proposal_probability)
+        ),
+        "reward": reward,
+        "decision": runner_utils._jsonable(paired_gate_diagnostic._decision_for(info, TARGET_UID)),
+        "release_intent_telemetry": runner_utils._jsonable(dict(release_telemetry)),
+        "last_safety_decision": runner_utils._jsonable(safety_reason),
+        "energy_reachability_diagnostics": runner_utils._jsonable(diagnostics),
+        "emergency_telemetry_delta": emergency_delta,
+        "before_target_context": runner_utils._jsonable(before_target),
+        "post_target_context": runner_utils._jsonable(after_target),
+        "terminated": runner_utils._jsonable(terminated),
+        "truncated": runner_utils._jsonable(truncated),
+        "error": None,
+    }
+    if error is not None:
+        result["error"] = {"type": type(error).__name__, "message": str(error)}
+    return result
+
+
+def _first_step_branch(
+    policy: Any,
+    state: Mapping[str, Any],
+    proposal: int | None,
+    logits: Sequence[float],
+    proposal_probability: float | None = None,
+) -> dict[str, Any]:
+    branch_env = copy.deepcopy(state["snapshot"])
+    paired_gate_diagnostic.restore_diagnostic_snapshot(branch_env)
+    actions, shortlists = paired_gate_diagnostic.p3_action_credit.branch_inputs(
+        state["first_actions"], state["first_shortlists"], TARGET_UID, proposal, logits, shortlist_k=3,
+    )
+    before_target = _target_blocker_context(branch_env)
+    before_telemetry = paired_gate_diagnostic._telemetry_snapshot(branch_env)
+    try:
+        _following, rewards, terminated, truncated, info = paired_gate_diagnostic._call_step(
+            branch_env, actions, shortlists
+        )
+        reward = paired_gate_diagnostic._step_reward(rewards)
+        return _first_step_payload(
+            proposal=proposal, proposal_probability=proposal_probability,
+            env=branch_env, before_target=before_target,
+            after_target=_target_blocker_context(branch_env),
+            before_telemetry=before_telemetry,
+            after_telemetry=paired_gate_diagnostic._telemetry_snapshot(branch_env),
+            info=info, reward=reward, terminated=terminated, truncated=truncated,
+        )
+    except Exception as error:
+        return _first_step_payload(
+            proposal=proposal, proposal_probability=proposal_probability,
+            env=branch_env, before_target=before_target,
+            after_target=_target_blocker_context(branch_env),
+            before_telemetry=before_telemetry,
+            after_telemetry=paired_gate_diagnostic._telemetry_snapshot(branch_env),
+            info=None, reward=None, error=error,
+        )
+
+
+def _install_emergency_trace(env: Any, calls: list[dict[str, Any]]) -> None:
+    if bool(getattr(env, "_failure_mechanism_emergency_trace_installed", False)):
+        return
+    original = env._try_emergency_landing
+
+    def audited(uav: Any, *args: Any, **kwargs: Any) -> bool:
+        if int(getattr(uav, "uid", -1)) != TARGET_UID:
+            return bool(original(uav, *args, **kwargs))
+        before = _target_blocker_context(env)
+        before_telemetry = paired_gate_diagnostic._telemetry_snapshot(env)
+        result: bool | None = None
+        error: BaseException | None = None
+        try:
+            result = bool(original(uav, *args, **kwargs))
+            return result
+        except Exception as exc:
+            error = exc
+            raise
+        finally:
+            after = _target_blocker_context(env)
+            delta = paired_gate_diagnostic._telemetry_delta(before_telemetry, paired_gate_diagnostic._telemetry_snapshot(env))
+            calls.append({
+                "time": float(getattr(env, "now", 0.0)),
+                "uid": TARGET_UID,
+                "force": bool(kwargs.get("force", False)),
+                "before": before,
+                "after": after,
+                "before_energy": {key: before.get(key) for key in ("soc", "energy_remaining", "energy_consumed")},
+                "after_energy": {key: after.get(key) for key in ("soc", "energy_remaining", "energy_consumed")},
+                "emergency_telemetry_delta": {key: value for key, value in delta.items() if "emergency" in key},
+                "last_safety_decision": runner_utils._jsonable(getattr(env, "last_safety_decisions", {}).get(TARGET_UID)),
+                "available_compatible_lz_ids_before": before.get("available_compatible_lz_ids", []),
+                "available_compatible_lz_ids_after": after.get("available_compatible_lz_ids", []),
+                "returned": result,
+                "error": None if error is None else {"type": type(error).__name__, "message": str(error)},
+            })
+
+    env._try_emergency_landing = audited
+    env._failure_mechanism_emergency_trace_installed = True
+
+
+def _fixed_selected(output: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    selected_path = _resolve(output / "selected.json")
+    selected_payload = _read_json(selected_path)
+    selected = list(selected_payload.get("selection", {}).get("selected", []))
+    _require(len(selected) == 3, "blockers requires exactly three registered states")
+    _require(tuple(int(item.get("step", -1)) for item in selected) == REGISTERED_SELECTED_STEPS,
+             "blockers selection changed; no reselection is permitted")
+    for item in selected:
+        _require(int(item.get("episode", -1)) == 24, "blockers selection episode binding changed")
+        _require(int(item.get("uid", -1)) == TARGET_UID, "blockers selection UID binding changed")
+        _require(int(item.get("arrival_id", -1)) == TARGET_ARRIVAL_ID,
+                 "blockers selection arrival binding changed")
+    return [dict(item) for item in selected], _hash_artifact(selected_path)
+
+
+def _run_blockers(output: Path) -> dict[str, Any]:
+    config, config_snapshot = _strict_config()
+    inputs = _load_fixed_inputs()
+    fixed_preflight_path = _resolve(FAILURE_OUTPUT_DIR / "preflight.json")
+    fixed_preflight = _read_json(fixed_preflight_path)
+    _require(dict(fixed_preflight.get("config_snapshot", {})) == config_snapshot,
+             "blocker config differs from registered failure preflight")
+    selected, selected_artifact = _fixed_selected(_resolve(FAILURE_OUTPUT_DIR))
+    record_artifact = _hash_artifact(inputs["record_path"], RECORD_SHA256)
+    policy, source_digest, _payload = _source_policy(config, inputs["source_path"])
+    before_digest = source_digest
+    _progress(output, "blockers_selected_replay", "RUNNING", 0, selected=3)
+    states = _capture_selected_states(policy, config, inputs, selected, output)
+    first_step_reports: list[dict[str, Any]] = []
+    for order, item in enumerate(selected, start=1):
+        state = states[int(item["step"])]
+        context = paired_gate_diagnostic._details_context(policy, state["snapshot"])
+        index, _key = paired_gate_diagnostic._context_target(context, TARGET_UID)
+        logits = np.asarray(context["proposal_logits"][index], dtype=np.float64).copy()
+        probabilities = np.asarray(context["proposal_probabilities"][index], dtype=np.float64).copy()
+        branches = [_first_step_branch(policy, state, None, logits, None)]
+        branches.extend(
+            _first_step_branch(policy, state, proposal, logits, float(probabilities[proposal]))
+            for proposal in range(25)
+        )
+        error_count = sum(1 for branch in branches if branch.get("error") is not None)
+        first_step_reports.append({
+            "selection_order": order,
+            "state": item,
+            "before_context": _blocker_context(state["snapshot"]),
+            "proposal_logit_source": "paired_gate_diagnostic._details_context frozen source logits",
+            "shortlist_k": 3,
+            "branches": branches,
+            "branch_counts": {
+                "expected": len(branches), "successful": len(branches) - error_count,
+                "errors": error_count,
+            },
+            "full_cycle_diagnostic": "omitted_first_step_only",
+        })
+        _progress(output, "blockers_first_step", "RUNNING", order, selected=3, branches=order * 26)
+    after_selected_digest = str(rank_eval._model_digest(policy))
+    _require(after_selected_digest == before_digest, "source model changed during clean blocker snapshots")
+
+    branch_errors = sum(
+        int(item["branch_counts"]["errors"]) for item in first_step_reports
+    )
+    branch_total = sum(
+        int(item["branch_counts"]["expected"]) for item in first_step_reports
+    )
+    first_step_document = {
+        "stage": STAGE, "phase": "blockers", "status": "COMPLETED",
+        "selected_states": first_step_reports, "source_model_unchanged": True,
+        "branch_counts": {
+            "expected": branch_total, "successful": branch_total - branch_errors,
+            "errors": branch_errors,
+        },
+        "original_replay_status": "PENDING",
+        "scope": {"first_step_only": True, "full_cycle_diagnostic": "omitted_first_step_only", "optimizer_calls": 0,
+                   "teacher_used": False, "heldout_used": False},
+    }
+    runner_utils._atomic_write_json(output / "firststep_blockers.json", first_step_document)
+
+    emergency_calls: list[dict[str, Any]] = []
+    installed = False
+
+    def observe(env: Any) -> dict[str, Any]:
+        nonlocal installed
+        if not installed:
+            _install_emergency_trace(env, emergency_calls)
+            installed = True
+        return _failure_observer(policy)(env)
+
+    _progress(output, "blockers_original_replay", "RUNNING", 0)
+    replay: Mapping[str, Any] = {}
+    lifecycle: dict[str, Any] | None = None
+    after_replay_digest: str | None = None
+    replay_error: BaseException | None = None
+    try:
+        replay = credit._capture_replay(
+            policy, config, inputs["tape_path"], inputs["tape_rows"],
+            progress_callback=lambda count: _progress(output, "blockers_original_replay", "RUNNING", int(count)),
+            state_observer=observe,
+        )
+        replay_meta = replay.get("replay", {}) if isinstance(replay, Mapping) else {}
+        _require(bool(replay_meta.get("exact")), "blocker original replay was not exact")
+        _require(int(replay_meta.get("steps_replayed", -1)) == EXPECTED_STEPS,
+                 "blocker original replay step count mismatch")
+        lifecycle = _validate_lifecycle(replay.get("lifecycle", {}))
+        after_replay_digest = str(rank_eval._model_digest(policy))
+        _require(after_replay_digest == before_digest, "source model changed during blocker replay")
+    except Exception as error:
+        replay_error = error
+    finally:
+        replay_meta = replay.get("replay", {}) if isinstance(replay, Mapping) else {}
+        trace_status = "COMPLETED" if replay_error is None else "FAILED"
+        runner_utils._atomic_write_json(output / "original_auto_emergency_trace.json", {
+            "stage": STAGE, "phase": "blockers", "status": trace_status,
+            "replay": {
+                "exact": bool(replay_meta.get("exact", False)),
+                "steps": replay_meta.get("steps_replayed"), "requests": EXPECTED_REQUESTS,
+            },
+            "lifecycle": lifecycle, "target_uid": TARGET_UID, "calls": emergency_calls,
+            "source_model_digest_before": before_digest,
+            "source_model_digest_after": after_replay_digest,
+            "source_model_unchanged": after_replay_digest == before_digest if after_replay_digest is not None else None,
+            "error": None if replay_error is None else {
+                "type": type(replay_error).__name__, "message": str(replay_error),
+            },
+        })
+    if replay_error is not None:
+        raise replay_error
+    first_step_document["original_replay_status"] = "COMPLETED"
+    runner_utils._atomic_write_json(output / "firststep_blockers.json", first_step_document)
+    manifest = {
+        "stage": STAGE, "phase": "blockers", "status": "COMPLETED", "PPO_ALLOWED": PPO_ALLOWED,
+        "registered_preflight": {"path": str(fixed_preflight_path), "sha256": _hash_artifact(fixed_preflight_path)["sha256"]},
+        "record": record_artifact, "selected": selected_artifact,
+        "config_snapshot": config_snapshot, "loaded_sourcefiles": runner_utils._loaded_code_manifest(),
+        "source_model_digest": before_digest,
+        "selected_steps": list(REGISTERED_SELECTED_STEPS),
+        "branch_count": branch_total,
+        "branch_counts": {
+            "expected": branch_total, "successful": branch_total - branch_errors,
+            "errors": branch_errors,
+        },
+        "original_replay": {"exact": True, "steps": EXPECTED_STEPS, "requests": EXPECTED_REQUESTS},
+        "scope": {"no_continuation": True, "no_optimizer": True, "no_teacher": True, "no_heldout": True},
+    }
+    runner_utils._atomic_write_json(output / "manifest.json", manifest)
+    _progress(output, "blockers", "COMPLETED", EXPECTED_STEPS, selected=3, branches=3 * 26)
+    return manifest
+
+
 def _run_diagnose(output: Path, preflight: Mapping[str, Any]) -> dict[str, Any]:
     config, _snapshot = _strict_config()
     inputs = _load_fixed_inputs()
@@ -500,7 +846,7 @@ def _run_diagnose(output: Path, preflight: Mapping[str, Any]) -> dict[str, Any]:
 
 def run_phase(phase: str, output_dir: Path) -> dict[str, Any]:
     output = Path(output_dir)
-    _require(phase in {"preflight", "replay", "diagnose"}, f"unknown phase: {phase}")
+    _require(phase in {"preflight", "replay", "diagnose", "blockers"}, f"unknown phase: {phase}")
     output.mkdir(parents=True, exist_ok=True)
     try:
         if phase == "preflight":
@@ -508,6 +854,8 @@ def run_phase(phase: str, output_dir: Path) -> dict[str, Any]:
             runner_utils._atomic_write_json(output / "preflight.json", report)
             runner_utils._atomic_write_json(output / "summary.json", {"stage": STAGE, "phase": phase, "status": report["status"]})
             return report
+        if phase == "blockers":
+            return _run_blockers(output)
         preflight = _load_preflight(output)
         if phase == "replay":
             return _run_replay(output, preflight)
@@ -519,7 +867,7 @@ def run_phase(phase: str, output_dir: Path) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=("preflight", "replay", "diagnose"), required=True)
+    parser.add_argument("--phase", choices=("preflight", "replay", "diagnose", "blockers"), required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     run_phase(args.phase, args.output_dir)

@@ -94,3 +94,35 @@ The after update is reported as an alignment comparison only; this protocol
 does not claim that it caused the already observed batch-02 failure. The
 source model/environment snapshot and caller RNG remain unchanged; branch
 copies evolve during simulation.
+
+## Bounded blocker telemetry preregistration
+
+This phase is registered for source validation before any server run. It fixes
+the source checkpoint to `batch_01/policy.pt`, records the SHA-256 of the
+existing registered `selected.json` and verifies the fixed selected steps and
+target identity, then uses the already selected steps `280`, `445`, and `726`
+without reselection. Each clean snapshot evaluates WAIT and the 25
+RELEASE proposals for the target actor at the first step only, for `78` total
+branches, using the actual source proposal probabilities; other actors' first
+actions and the K=3 shortlists remain frozen.
+
+The original failed episode is separately replayed for an exact `984` steps and
+`24` requests. Its native `_try_emergency_landing` is wrapped once for passive
+trace collection on that original replay only; the wrapped environment is not
+used for deepcopy branches. Planned outputs are
+`firststep_blockers.json`, `original_auto_emergency_trace.json`,
+`manifest.json`, and `progress.json`. Branch errors are retained and valid
+counts are reported. No full-cycle `D` is computed.
+
+The phase does not change physics, guards, the model, optimizer, or held-out
+inputs. Acceptance facts are exact `984` steps, `24` requests and terminal
+rows, retained failed UID `57` at time `892`, and unchanged source state.
+Binding, replay, or source-invariance failure stops the phase while retaining
+produced artifacts; individual first-step branch errors are retained, counted,
+and excluded from valid-branch counts while the phase continues. The purpose
+is to record resource, safety, energy, and retry telemetry; it does not claim a fix
+or introduce a new causal attribution. The implementation currently has `12`
+focused tests passing; the small-sample phase fixture writes and reloads all
+phase outputs and verifies the registered states and retained branches. The
+server real run has not started. No new statistic matrix or qualification gate
+is added.
