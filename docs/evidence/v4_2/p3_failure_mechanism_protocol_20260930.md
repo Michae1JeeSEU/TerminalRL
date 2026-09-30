@@ -75,7 +75,7 @@ snapshot, environment snapshot, and caller RNG were unchanged.
 | state | step | SOC | C | p | D | m | full D by continuation seed |
 |---|---:|---:|---:|---:|---:|---:|---|
 | F01 | 280 | 0.398656 | 0 | 8.28291e-5 | -0.05 | +2.7650e-8 | `[-0.05, -0.05, -0.05, -0.05]` |
-| F02 | 445 | 0.288656 | 0 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
+| F02 | 445 | 0.288656 | 1.1869090464568813e-14 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
 | F03 | 726 | 0.110987 | 0 | 2.21449e-5 | -0.05 | +1.58285e-7 | `[-0.05, -0.05, -0.05, -0.05]` |
 
 The full-return values use
@@ -84,45 +84,73 @@ the mean check was within `1e-8`. For target arrival `14`, the comparisons
 included WAIT and true q-weighted RELEASE. The RELEASE outcomes by seed were:
 F01: seeds `9303201`, `9303202`, and `9303204` `emergency_landed`, seed
 `9303203` `failed_energy`; F02: all four `emergency_landed`; F03: all four
-`failed_energy`.
+`failed_energy`. The F02 raw `C` is `1.1869090464568813e-14`; an earlier
+`C=0` display was rounded. At F02, proposals `22`, `23`, and `24` were
+approved, each with K=3 runtime rank `1`; proposal `11` carried approximately
+`99.999999986%` of the true q mass. The blocker first-step record agrees with
+the paired first-step record; this is not a 25-proposal-all-rejected result.
 
-The bounded blocker telemetry remains in the `implementation` phase and has
-not launched; no `D` is assigned from a one-step check. `PPO_ALLOWED=false`
-and held-out inputs were unused. 第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。
+The separate bounded blocker telemetry completed with `78/78` successful
+first-step branches and `0` errors; no `D` is assigned from a one-step check.
+`PPO_ALLOWED=false` and held-out inputs were unused. 第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。
 
 The after update is reported as an alignment comparison only; this protocol
 does not claim that it caused the already observed batch-02 failure. The
 source model/environment snapshot and caller RNG remain unchanged; branch
 copies evolve during simulation.
 
-## Bounded blocker telemetry preregistration
+## Bounded blocker telemetry: startup and completion
 
-This phase is registered for source validation before any server run. It fixes
-the source checkpoint to `batch_01/policy.pt`, records the SHA-256 of the
-existing registered `selected.json` and verifies the fixed selected steps and
-target identity, then uses the already selected steps `280`, `445`, and `726`
-without reselection. Each clean snapshot evaluates WAIT and the 25
-RELEASE proposals for the target actor at the first step only, for `78` total
-branches, using the actual source proposal probabilities; other actors' first
-actions and the K=3 shortlists remain frozen.
+Historical startup record: the initial launch with PID `2025086` used a
+working directory without the project package and raised
+`ModuleNotFoundError: No module named 'terminal_marl'`. That launch did not
+enter the real phase and produced no phase outputs. The retained startup error
+does not describe the later completed blocker run. After correcting the project
+working directory, the same blocker phase produced the completed artifacts
+listed below.
 
-The original failed episode is separately replayed for an exact `984` steps and
-`24` requests. Its native `_try_emergency_landing` is wrapped once for passive
-trace collection on that original replay only; the wrapped environment is not
-used for deepcopy branches. Planned outputs are
-`firststep_blockers.json`, `original_auto_emergency_trace.json`,
-`manifest.json`, and `progress.json`. Branch errors are retained and valid
-counts are reported. No full-cycle `D` is computed.
+The phase fixed the source checkpoint to `batch_01/policy.pt`, recorded the
+SHA-256 of the existing registered `selected.json`, and verified the fixed
+selected steps and target identity. It used steps `280`, `445`, and `726`
+without reselection. Each clean snapshot evaluated WAIT and the 25 RELEASE
+proposals for the target actor at the first step only, for `78` total branches,
+using the actual source proposal probabilities; other actors' first actions and
+the K=3 shortlists remained frozen.
 
-The phase does not change physics, guards, the model, optimizer, or held-out
-inputs. Acceptance facts are exact `984` steps, `24` requests and terminal
-rows, retained failed UID `57` at time `892`, and unchanged source state.
-Binding, replay, or source-invariance failure stops the phase while retaining
-produced artifacts; individual first-step branch errors are retained, counted,
-and excluded from valid-branch counts while the phase continues. The purpose
-is to record resource, safety, energy, and retry telemetry; it does not claim a fix
-or introduce a new causal attribution. The implementation currently has `12`
-focused tests passing; the small-sample phase fixture writes and reloads all
-phase outputs and verifies the registered states and retained branches. The
-server real run has not started. No new statistic matrix or qualification gate
-is added.
+The original failed episode was separately replayed for an exact `984` steps
+and `24` requests. Its native `_try_emergency_landing` was wrapped once for
+passive trace collection on that original replay only; the wrapped environment
+was not used for deepcopy branches. No full-cycle `D` was computed.
+
+The completed `firststep_blockers.json` reports `78/78` successful first-step
+branches and `0` branch errors, with `26` branches for each registered state.
+The completed `original_auto_emergency_trace.json` reports the exact replay,
+all terminal rows, retained failed UID `57` at time `892`, unchanged source
+state, `878` target calls, and `0` trace errors. `manifest.json` and
+`progress.json` also report `COMPLETED`.
+
+The source and test SHA-256 values matched between local and server copies; the
+focused suite reports `12 passed` (commit `e3e13d7`). `PPO_ALLOWED=false` and
+held-out inputs were unused. The phase did not change physics, guards, model,
+optimizer, or held-out inputs. Individual first-step errors are retained and
+counted if present; binding, replay, or source-invariance failure stops while
+retaining artifacts. This records resource, safety, energy, and retry telemetry
+without claiming a fix or introducing a new causal attribution. No new
+statistic matrix or qualification gate is added.
+
+The original trace's `878` target calls contained `102` actual attempts. The
+pad-attempt reason counts were `blocked_lz=5`, `blocked_safety=96`,
+`blocked_energy=226`, `blocked_dynamics=0`, and `committed=0`; these counts are
+reason occurrences and must not be summed as calls or interpreted as global
+return. The first attempt was at step `278`, SOC `0.399989`, energy `599.984`,
+with compatible-pad availability `4/0`; `blocked_safety=2` included reason
+`predicted_holder_reachable_tube`. The first energy rejection was at step `656`,
+SOC `0.157654`, energy `236.481`, with compatible-pad availability `5/3` and
+reason counts `energy=1`, `safety=1`. No native call succeeded; UID `57`
+remained `failed_energy` at `892`. Calls with `attempt=false` are not counted
+as rejects.
+
+The original failure replay shows a safety rejection before the later energy
+rejection; at step `445` a very low-q executable K=3 branch remained, so that
+state is not described as infeasible. This is one failure with frozen
+continuation; no training repair has been selected and P3 is unresolved.

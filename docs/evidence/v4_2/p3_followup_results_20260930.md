@@ -64,7 +64,7 @@ D:\7_codespace\venv\Scripts\python.exe -m pytest -p no:cacheprovider -q \
 
 该条件状态的一次续跑显示更新方向不利；一个状态一个seed不支持认定credit、entropy或clip为退化根因，也不构成性能修复证据。
 
-后续 `C` 固定为 `24×4`，由 4 个进程按 modulo 分片；这只是计算调度，不增加实验 factor、不重抽样、不删除失败 branch。`C` 已启动并处于 `RUNNING`，4 个分片进程 PID 为 `2007505`、`2007601`、`2007551`、`2007650`，当前尚未完成；`PPO_ALLOWED=false`，未消费 held-out。此前 `82` 个集成测试只作为已记录 raw count，不在本节重复累计。
+后续 `C` 固定为 `24×4`，由 4 个进程按 modulo 分片；这只是计算调度，不增加实验 factor、不重抽样、不删除失败 branch。`C` 仍处于 `RUNNING`，4 个分片进程 PID 为 `2007505`、`2007601`、`2007551`、`2007650`；最近一次 timestamp snapshot 显示 `14/24`，该快照不是终态。`PPO_ALLOWED=false`，未消费 held-out。此前 `82` 个集成测试只作为已记录 raw count，不在本节重复累计。
 
 ## C 初步结果
 
@@ -79,12 +79,44 @@ raw artifact `causal/shard_0/diagnose/state_0001.json` 当前包含同一首状�
 | state | step | SOC | C | p | D | m | full D by continuation seed |
 |---|---:|---:|---:|---:|---:|---:|---|
 | F01 | 280 | 0.398656 | 0 | 8.28291e-5 | -0.05 | +2.7650e-8 | `[-0.05, -0.05, -0.05, -0.05]` |
-| F02 | 445 | 0.288656 | 0 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
+| F02 | 445 | 0.288656 | 1.1869090464568813e-14 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
 | F03 | 726 | 0.110987 | 0 | 2.21449e-5 | -0.05 | +1.58285e-7 | `[-0.05, -0.05, -0.05, -0.05]` |
 
-Full-return `D` is `paired.expected_release_undiscounted_return_by_repeat[i] - wait[i].undiscounted_return`; the mean check was within `1e-8`. Target arrival `14` was evaluated under WAIT and true q-weighted RELEASE. RELEASE outcomes by seed were F01: `9303201`, `9303202`, `9303204` `emergency_landed`, `9303203` `failed_energy`; F02: all four `emergency_landed`; F03: all four `failed_energy`.
+Full-return `D` is `paired.expected_release_undiscounted_return_by_repeat[i] - wait[i].undiscounted_return`; the mean check was within `1e-8`. Target arrival `14` was evaluated under WAIT and true q-weighted RELEASE. RELEASE outcomes by seed were F01: `9303201`, `9303202`, `9303204` `emergency_landed`, `9303203` `failed_energy`; F02: all four `emergency_landed`; F03: all four `failed_energy`. The F02 raw `C` is `1.1869090464568813e-14`; the earlier `C=0` display was rounded. Proposals `22`, `23`, and `24` were approved, each with K=3 runtime rank `1`; proposal `11` carried approximately `99.999999986%` of the true q mass. The new blocker first-step record agrees with the old paired first-step record; F02 is not described as 25 proposals all rejected.
 
-第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。bounded blocker telemetry 仍处于 `implementation` phase，尚未启动；one-step check 不产生 `D`。该诊断未使用 PPO 或 held-out。
+第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。one-step check 不产生 `D`。该诊断未使用 PPO 或 held-out。
+
+## Bounded blocker telemetry completed
+
+历史启动记录：初次 PID `2025086` 因工作目录缺少项目包产生
+`ModuleNotFoundError: No module named 'terminal_marl'`；该次真实 phase 未开始，
+没有产生 phase outputs。`blockers_v1.log` 保留该旧错误；纠正 project cwd 后，
+同一 blocker phase 产生了以下完成产物，旧错误不指向当前完成结果。
+
+`firststep_blockers.json` 报告 `78/78` 首步分支成功、`0` 个错误，三个固定
+状态各 `26` 个分支。`original_auto_emergency_trace.json` 报告 exact `984`
+步、`24` requests 和 terminal rows，保留 failed UID `57`、time `892`，
+source unchanged，target calls `878`、trace errors `0`。`manifest.json` 和
+`progress.json` 均为 `COMPLETED`。
+
+原始 trace 的 `878` 个 target calls 中有 `102` 次实际 attempt。pad-attempt
+reason counts 为 `blocked_lz=5`、`blocked_safety=96`、`blocked_energy=226`、
+`blocked_dynamics=0`、`committed=0`；这些是 pad 尝试的原因次数，不能求和当作
+调用次数或全局收益。首次 attempt 在 step `278`、SOC `0.399989`、energy
+`599.984`，compatible-pad availability 为 `4/0`；其中
+`blocked_safety=2` 的 reason 包含 `predicted_holder_reachable_tube`。首次
+energy rejection 在 step `656`、SOC `0.157654`、energy `236.481`，
+compatible-pad availability 为 `5/3`，reason counts 为 `energy=1`、
+`safety=1`。所有 native calls 均未成功；UID `57` 在 `892` 仍为
+`failed_energy`。`attempt=false` 不计作 reject。
+
+源码和 tests 的本地/server SHA 一致，focused suite 为 `12 passed`（commit
+`e3e13d7`）。全局 `PPO_ALLOWED=false`，未使用 held-out；该 phase 不改变
+physics、guard、model 或 optimizer，也不宣称修复或新增因果归因。
+
+原始失败回放显示安全拒绝先发生，后期出现能量拒绝；step `445` 仍存在极低
+q 的可执行 K=3 分支，因此不将该时刻描述为不可行。这只是单次 failure 加
+frozen continuation，尚未选择训练修复，P3 仍未解决。
 
 ## 边界
 
