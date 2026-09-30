@@ -107,7 +107,34 @@ pilot 服务器 PID `2112900` 已自然退出；server pilot SHA=`b9133fdbe1c94b
 | after_legacy | 18/6/0 | 3046.1997149195568 | 7457.839771374826 | 450.31157694902555 | -20.950000000000003 |
 | after_support | 18/6/0 | 3749.379758593257 | 8176.11847746592 | 434.348464181481 | -24.700000000000003 |
 
-该 pilot 首 cell 的 before normal=`19`、after legacy/support normal=`18`，与历史首 cell 计数一致；support arm 的首 cell wait 为 `3749.379758593257 s`。这些是该 pilot cell 的 observed metrics，不形成 global acceptance 或 root-cause 结论。root 已授权 fixed full：复用 pilot cell 1，加上 3 cells/9 arms。实际 full startup proof 已确认：PID `2113754`，cwd `/home/user/projects/terminal`，module phase 为 `full`，server env/executable checks 通过；首个新 arm `cell_02_before_legacy.json` 已生成，大小 `71978` bytes，server mtime ns=`1790799508572507832`。full 仍在运行，尚无终态或 aggregate 结论；heartbeat `p3-trained-proposal-support` active（2 min），不作 qualification。
+该 pilot 首 cell 的 before normal=`19`、after legacy/support normal=`18`，与历史首 cell 计数一致；support arm 的首 cell wait 为 `3749.379758593257 s`。这些是该 pilot cell 的 observed metrics，不形成 global acceptance 或 root-cause 结论。root 已授权 fixed full：复用 pilot cell 1，加上 3 cells/9 arms。以下启动记录属于历史状态：PID `2113754`，cwd `/home/user/projects/terminal`，module phase 为 `full`，server env/executable checks 通过；首个新 arm `cell_02_before_legacy.json` 已生成，大小 `71978` bytes，server mtime ns=`1790799508572507832`。full 随后已完成，终态见下方；启动时的 heartbeat `p3-trained-proposal-support` 已在终态后删除。
+
+## 2026-10-01 P3 trained proposal-support full 终态（development candidate rejected）
+
+trained proposal-support full 已完成。服务器 PID `2113754` 已退出，full mtime ns=`1790799958139098485`；full artifact SHA=`3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919`，independent proof `.tmp/p3_trained_support_full_proof.json` SHA=`6e3cd91c472cdaf522020f39d7f8180e2802dfd035332187c21b4204a79f15b8`。4 cells × 3 arms 全部 natural、0 censor/error、hard-safety clear；每个 arm generated/admitted/resolved=`96/96/96`，source/model/caller-RNG、24-request identity、replay、ledger 和 energy checks 全通过。
+
+| cell | env | arm | N/E/F/D/U | simulation s | request elapsed s | wait s | energy | raw reward excl penalty | rejection penalty |
+|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 1 | 875101 | before_legacy | 19/5/0/0/0 | 761 | 9050 | 3327.4996213135246 | 7757.917108755452 | 451.32887937331253 | -19.55 |
+| 1 | 875101 | after_legacy | 18/6/0/0/0 | 689 | 8737 | 3046.1997149195568 | 7457.839771374826 | 450.31157694902555 | -20.950000000000003 |
+| 1 | 875101 | after_support | 18/6/0/0/0 | 755 | 9504 | 3749.379758593257 | 8176.11847746592 | 434.348464181481 | -24.700000000000003 |
+| 2 | 875102 | before_legacy | 20/4/0/0/0 | 726 | 9133 | 3234.6369068496506 | 7677.921091787695 | 465.58665490460396 | -16.75 |
+| 2 | 875102 | after_legacy | 18/6/0/0/0 | 727 | 9232 | 3292.5856932730585 | 7750.015446572095 | 443.8305713428898 | -20.650000000000002 |
+| 2 | 875102 | after_support | 20/4/0/0/0 | 726 | 9159 | 3189.316530514645 | 7679.415958554219 | 463.8215531471326 | -19.450000000000003 |
+| 3 | 875103 | before_legacy | 22/2/0/0/0 | 707 | 8369 | 2667.140927166041 | 7098.867749409129 | 497.63654049060835 | -14.3 |
+| 3 | 875103 | after_legacy | 21/3/0/0/0 | 776 | 9194 | 3521.746147520452 | 7950.49929366206 | 471.0605408998054 | -17.55 |
+| 3 | 875103 | after_support | 20/4/0/0/0 | 833 | 9186 | 3573.5243270983137 | 8005.473731383905 | 462.88896723234376 | -15.350000000000001 |
+| 4 | 875104 | before_legacy | 19/5/0/0/0 | 720 | 8712 | 2731.326453726862 | 7034.847039351723 | 460.9677443897178 | -14.4 |
+| 4 | 875104 | after_legacy | 17/7/0/0/0 | 726 | 8795 | 2833.9475529832466 | 7139.991726676687 | 442.2643044437435 | -15.200000000000001 |
+| 4 | 875104 | after_support | 17/7/0/0/0 | 757 | 9443 | 3345.4609609007143 | 7798.724737635735 | 438.3307463573676 | -14.100000000000001 |
+
+聚合 before_legacy/after_legacy/after_support 分别为 normal=`80/74/75`、emergency=`16/22/21`、failed/diverted/unresolved=`0/0/0`。wait 分别为 `11960.603909056077`、`12694.479108696314`、`13857.68157710693` s；request elapsed 分别为 `35264`、`35958`、`37292` s；energy 分别为 `29569.552989304`、`30298.346238285667`、`31659.73290503978`。raw reward（排除 rejection penalty）分别为 `1875.5198191582426`、`1807.4669936354644`、`1799.3897309183249`；rejection penalty 分别为 `-65.0`、`-74.35000000000001`、`-73.60000000000001`。
+
+before→after_legacy 的 observed delta 为 normal `-6`、wait `+733.875199640237 s`、request elapsed `+694 s`、energy `+728.7932489816667`。after_support→after_legacy 的 observed delta 为 normal `+1`，但 wait `+1163.2024684106163 s`（`+9.16305788091587%`）、request elapsed `+1334 s`、energy `+1361.3866667541115`（`+4.493270543703249%`）。按既有 aggregate criterion，trained fixed-epsilon support 被拒绝为 development candidate；不进行 epsilon retune 或 default promotion。
+
+证据边界：该 full reproduces the four-cell trained regression；proposal encoder/head、gate head、temperature bitwise frozen，允许变化范围仅为 gate adapter/critic，因此不把本结果写成 newly trained proposal-head collapse。coverage 结果不足以单独建立 fix；本轮不作 team-credit、entropy、clipping root-cause 或 P3 solved 结论。原 balanced24 的 `491/85/0` 对 `491/83/2` 结果仍是 separate preexisting cohort/source/sampler，不能与本 full 合并。
+
+full heartbeat `p3-trained-proposal-support` 已删除，无 active job。下一步仅登记 matched-state/offline training-mechanism diagnostic preparation；未批准新训练，`PPO_ALLOWED=false`，teacher/optimizer/heldout 均未使用。
 
 ## 2026-09-30 研究复核与修复更新
 
