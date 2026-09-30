@@ -4,22 +4,81 @@
 
 本页记录本轮 review scope 的实现、只读诊断 artifact 和测试事实；不把回归测试写成 qualification，也不声称 P3 性能改善。未运行训练、optimizer、held-out 或 pilot 性能评估。
 
-## 可执行动作机会诊断预注册
+## 可执行动作机会诊断预注册与终态
 
-这是下一轮冻结策略机会覆盖的预注册范围，属于被动机制诊断，不是训练、checkpoint 选择或 qualification。固定参考为 9 个 legacy arms：pair `1/5/9/13/17/21`（`env=877101..877106`、keyed policy `9303101`），以及 `pair 14/15/16`（`env=877104`、keyed policy `9303102/9303103/9303104`）。源为 `3fe7+a82`，保持 88D、K=3、legacy mask 和同一物理配置；`PPO_ALLOWED=false`，held-out 不使用。
+这是冻结策略下的被动机制诊断，不是训练、checkpoint 选择、性能 pilot 或 qualification。固定参考为 9 个 legacy arms：pair `1/5/9/13/17/21`（`env=877101..877106`、keyed policy `9303101`），以及 `pair 14/15/16`（`env=877104`、keyed policy `9303102/9303103/9303104`）。源为 `3fe7+a82`，保持 88D、K=3、legacy mask 和同一物理配置；`PPO_ALLOWED=false`，held-out、optimizer 和 teacher 均未使用。
 
-每个参考场景在 tick `100–149`、`300–349`、`500–549` 中按顺序取第一个满足预注册条件的合法状态，最多 `27` 个 state；每个 state 固定执行 `WAIT + 25` proposal 的 `26` 个 one-step 分支。分支使用真实策略 proposal 概率计算 `C` 与 `pC`，只记录 native decision 和即时 reward difference；不计算 `D` 或 global value，不取 best proposal、不删除失败分支、不重抽样。完整条件、source replay 对齐和停止规则见 [P3 executable-opportunity coverage protocol](p3_opportunity_coverage_protocol_20260930.md)。
+每个参考场景在 tick `100–149`、`300–349`、`500–549` 中按顺序取第一个满足预注册条件的合法状态，最多 `27` 个 state；每个 state 固定执行 `WAIT + 25` proposal 的 `26` 个 one-step 分支，共 `25` 个已选 state、`650` 个分支。分支使用真实策略 proposal 概率计算 `C` 与 `pC`，只记录 native decision 和即时 reward difference；不计算 `D` 或 global value，不取 best proposal、不删除失败分支、不重抽样。完整条件、source replay 对齐和停止规则见 [P3 executable-opportunity coverage protocol](p3_opportunity_coverage_protocol_20260930.md)。9 个参考 arm 对应固定场景，不把其 `216` 个请求事件当作 `216` 个独立环境 profile。
 
 证据标记如下：
 
-- `preexisting_artifact`：既有 frozen-WAIT `full.json` 的 `FULL_OK/pair_count=24` 结果，以及该协议和 reference directory。
-- `newly_run`：local preflight 为 `PREFLIGHT_OK`，并完成 compile/diffcheck；机会 runner 的 focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`。本轮服务器只读基础快照在 `/home/user/projects/terminal` 执行并以 exit `0` 返回；115-file runtime manifest 的 SHA mismatch count 为 `0`，source `3fe7` 与 warmup `a82` checkpoint SHA 与预注册值一致。
+- `preexisting_artifact`：既有 frozen-WAIT `full.json` 的 `FULL_OK/pair_count=24` 结果、reference arms 和该协议。
+- `newly_run`：local preflight 为 `PREFLIGHT_OK`，机会 runner 的 focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`；服务器只读基础快照 exit `0`，115-file runtime manifest 的 SHA mismatch count 为 `0`，source `3fe7` 与 warmup `a82` checkpoint SHA 与预注册值一致。V2 preflight、V1 pilot 只读导入 guard 和 full 均已完成，`full.json` 为 `FULL_OK`。
 
-V1 server pilot 已完成：纠正项目 cwd 后，`PID 2085294` 的 `pilot.json` 为 `PILOT_OK/PAIR_OK`，env `877101`、keyed policy `9303101`，`694` ticks、`24` requests、`23 normal/1 emergency/0 failed`，自然终止且无 censor/error；source/model/caller-RNG、请求 identity、ledger、energy、wait 和 safety checks 均通过。3 个窗口共 `78` 个分支，均成功、0 error；`C=0`、`pC=0`，没有 `D`。raw reward 差异 `+2.5` 全来自 rejection penalty，排除 penalty 后差异为 `0`。该 pilot 是被动覆盖事实，不形成性能或因果结论。
+V1 server pilot 已完成：纠正项目 cwd 后，`PID 2085294` 的 `pilot.json` 为 `PILOT_OK/PAIR_OK`，env `877101`、keyed policy `9303101`，`694` ticks、`24` requests、`23 normal/1 emergency/0 failed`，自然终止且无 censor/error；source/model/caller-RNG、请求 identity、ledger、energy、wait 和 safety checks 均通过。3 个窗口共 `78` 个分支，均成功、0 error；`C=0`、`pC=0`，没有 `D`。这个新 legacy replay 与原 legacy reference 的 `reward_total` 差和 `release_rejection_penalty` 差均为 `0`，排除 penalty 的 raw reward 差也为 `0`。该 pilot 是冻结机会覆盖事实，不形成性能或因果结论；历史 frozen-WAIT 对照中的 `+2.5` 仍只在下文自己的对照段中记录。
 
-首个 launcher 在 phase 初始化前记录了 `NameError: name 'subproces' is not defined`，原始片段保存在 `.tmp/p3_opportunity_launcher_v1.stderr.txt`；修正后的 cwd/subprocess 启动 guard 完成了上述 V1 pilot。V1 pilot 中同时保留两种 model digest 约定：paired execution digest `20afdf4b60babc63a0a64eba6702d6f9db3891b537168a5e5346639f148b1d23`，canonical source-binding digest `a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07`；二者来自同一加载模型，只是摘要算法不同，不表示权重变化。
+首个 launcher 在 phase 初始化前记录了 `NameError: name 'subproces' is not defined`，原始片段保存在 `.tmp/p3_opportunity_launcher_v1.stderr.txt`；修正后的 cwd/subprocess 启动 guard 完成了上述 V1 pilot。V1/V2 同时保留两种 model digest 约定：paired execution digest `20afdf4b60babc63a0a64eba6702d6f9db3891b537168a5e5346639f148b1d23`，canonical source-binding digest `a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07`；二者来自同一加载模型，只是摘要算法不同，不表示权重变化。V2 full artifact 为 `/home/user/training_outputs/terminal/p3_followup_20260930/opportunity_coverage_v2/full.json`，本地紧凑核对为 `.tmp/p3_opportunity_coverage_v2_evidence.json`。
 
-V2 输出根 `/home/user/training_outputs/terminal/p3_followup_20260930/opportunity_coverage_v2` 已登记为后续 preflight/import 目标；V2 preflight、V1 pilot 只读导入校验和剩余 8 个 scene 的 full 尚未启动。PPO、optimizer、teacher 与 held-out 均未使用；不据 V1 pilot 选择修复或宣称根因。
+V2 的 9/9 pair 均为 `PAIR_OK`、reference exact；25/27 registered states 有结果，缺失的是 pair `14` 与 `15` 的 window `03`（`500–549`），两行均保留为 unknown，不写成 `C=0`。650/650 selected-state branches 状态为 `ok`，branch error 与 true truncation 均为 `0`。9 个 arm 的 source/model/caller-RNG、配置绑定、request identity、ledger、energy、wait 和 safety checks 均通过：source/model digest unchanged、24 个 request identity 唯一、energy coverage 与 ledger conservation valid、wait/elapsed finite、hard-safety violation false；共同 config snapshot SHA 为 `e6e8535e65a7452cb4644c43d13d6bbf3b15cdd621d7294dfdfdeaf4b79a3b97`，preflight reference SHA 为 `fe7954aac75f9e947298ad7de8c8bdec74bc84c3bb18bb59ab7c40860d9e6267`。V2 new legacy arm 的逐 arm N/E/F/D/U、generated/admitted/completed/resolved、wait、request elapsed 和 energy 如下；`elapsed` 为 24 个请求 elapsed 的和，energy 为 24 个唯一 arrival 的累计消耗。
+
+| pair | env/keyed | ticks | N/E/F/D/U | generated/admitted/completed/resolved | wait s | elapsed s | energy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 694 | 23/1/0/0/0 | 24/24/24/24 | 2727.950535124339 | 8377 | 7069.867720034218 |
+| 5 | 877102/9303101 | 795 | 20/4/0/0/0 | 24/24/24/24 | 3181.211230903982 | 9296 | 7545.658308610789 |
+| 9 | 877103/9303101 | 668 | 20/4/0/0/0 | 24/24/24/24 | 2849.7762184481476 | 8903 | 7274.853470463249 |
+| 13 | 877104/9303101 | 863 | 20/3/1/0/0 | 24/24/23/24 | 4195.360899337695 | 9957 | 8410.643286521372 |
+| 17 | 877105/9303101 | 828 | 21/3/0/0/0 | 24/24/24/24 | 3298.552351300552 | 9332 | 7830.513734136947 |
+| 21 | 877106/9303101 | 752 | 20/4/0/0/0 | 24/24/24/24 | 3448.775915692401 | 9621 | 7845.565803633816 |
+| 14 | 877104/9303102 | 742 | 19/5/0/0/0 | 24/24/24/24 | 3028.2335629926934 | 8991 | 7427.784515825126 |
+| 15 | 877104/9303103 | 724 | 21/3/0/0/0 | 24/24/24/24 | 2464.0124355070643 | 8412 | 6793.041730387722 |
+| 16 | 877104/9303104 | 863 | 16/7/1/0/0 | 24/24/23/24 | 4036.144102041071 | 9811 | 8317.302384032148 |
+
+上述 9 个 V2 new legacy arm 的累计 wait 为 `29230.017251347945 s`，request elapsed 为 `82700 s`，energy 为 `68515.23095364538`；这是机会覆盖的 legacy arm 汇总，不是 24-pair frozen-WAIT 对照的 48-run 汇总。
+
+逐 state 结果（window `01/02/03` 分别为 `100–149/300–349/500–549`）如下。`p` 是 `p_release`；approved indices 是即时 native decision 通过的 proposal index。pair `15`, window `01` 的原始 `C=1.0000000000000053` 保留，显示为约 `1` 只是 rounding，未 clip。
+
+| pair | window | tick | C | pC | p | qmax | approved indices |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 1 | 01 | 100 | 0.0 | 0.0 | 0.0034812598023563623 | 0.9501171708106995 | `[]` |
+| 1 | 02 | 300 | 0.0 | 0.0 | 0.0008625637274235487 | 0.7396410703659058 | `[]` |
+| 1 | 03 | 500 | 0.0 | 0.0 | 0.27430734038352966 | 1.0 | `[]` |
+| 5 | 01 | 100 | 0.0 | 0.0 | 0.0010812501423060894 | 0.999981164932251 | `[]` |
+| 5 | 02 | 300 | 0.0 | 0.0 | 0.05724853277206421 | 0.9999755620956421 | `[]` |
+| 5 | 03 | 500 | 0.0 | 0.0 | 0.042119335383176804 | 1.0 | `[]` |
+| 9 | 01 | 100 | 0.0 | 0.0 | 0.025524627417325974 | 0.9999926090240479 | `[]` |
+| 9 | 02 | 300 | 2.0926044087687933e-18 | 2.078339034892979e-18 | 0.9931829571723938 | 1.0 | `[4]` |
+| 9 | 03 | 500 | 0.0 | 0.0 | 0.9081240296363831 | 0.999997615814209 | `[]` |
+| 13 | 01 | 116 | 0.0 | 0.0 | 0.0011279478203505278 | 0.837800145149231 | `[]` |
+| 13 | 02 | 300 | 0.0 | 0.0 | 0.00023066700669005513 | 0.9706255197525024 | `[]` |
+| 13 | 03 | 500 | 0.0 | 0.0 | 8.028752063182765e-07 | 0.9999547004699707 | `[]` |
+| 17 | 01 | 100 | 0.0 | 0.0 | 0.9985920786857605 | 0.9945176243782043 | `[]` |
+| 17 | 02 | 300 | 0.0 | 0.0 | 0.0014054110506549478 | 0.9165021181106567 | `[]` |
+| 17 | 03 | 500 | 0.0 | 0.0 | 0.8001037240028381 | 0.9831014275550842 | `[]` |
+| 21 | 01 | 100 | 0.0 | 0.0 | 0.0020757101010531187 | 0.9999845027923584 | `[]` |
+| 21 | 02 | 300 | 0.0 | 0.0 | 0.862338662147522 | 0.5847722291946411 | `[]` |
+| 21 | 03 | 500 | 0.0 | 0.0 | 0.969641923904419 | 0.9991999268531799 | `[]` |
+| 14 | 01 | 116 | 0.0 | 0.0 | 0.00012697969214059412 | 0.8391591310501099 | `[]` |
+| 14 | 02 | 300 | 0.0 | 0.0 | 0.009739718399941921 | 0.945147693157196 | `[]` |
+| 14 | 03 | unknown | unknown | unknown | unknown | unknown | unknown（未选出） |
+| 15 | 01 | 134 | 1.0000000000000053 | 0.0003375054511707294 | 0.0003375054511707276 | 1.0 | `[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]` |
+| 15 | 02 | 346 | 0.0 | 0.0 | 0.40018537640571594 | 0.5672844052314758 | `[]` |
+| 15 | 03 | unknown | unknown | unknown | unknown | unknown | unknown（未选出） |
+| 16 | 01 | 116 | 0.0 | 0.0 | 0.00024265077081508934 | 0.9968762397766113 | `[]` |
+| 16 | 02 | 300 | 0.0 | 0.0 | 2.664043449840392e-06 | 0.9775197505950928 | `[]` |
+| 16 | 03 | 500 | 0.0 | 0.0 | 9.466992923989892e-05 | 0.9971941709518433 | `[]` |
+
+其中 pair `9`/window `02`/tick `300` 是 q-starvation witness：`C=2.0926044087687933e-18`、`pC=2.078339034892979e-18`、`p=0.9931829571723938`、`qmax=1`，只有 proposal `[4]` 被记录为 approved。pair `15`/window `01`/tick `134` 是即时可执行但低 RELEASE 概率、当步未请求的 witness：`C≈1`（原值见表）、`p=0.0003375054511707276`、`pC=0.0003375054511707294`、`qmax=1`，25 个 proposal 均进入 approved index。这不证明等待有害；当前 WAIT 可能有未来收益，是否有害要看完整周期 gate control。多数 selected states 的 proposal 被 native safety/capacity/priority/energy guards 拒绝；这不是 PPO 归因。上述 q-starvation、低 `p` gate 和旧 source16 failure 是分开的机制观察，旧 source16 failure 未并入这 9 个 arm 的表。`C=0` 只表示该 one-step coverage 观测为零，不能推出 full-cycle 无作用；本轮没有产生 full-cycle `D` 或 `m`，也没有把结果写成 strong-oracle 不可行性。
+
+env `877104` 的 arrival `13` 四条实际 trace 摘要如下；trace 来自每个 legacy arm 的 `target13_trace`，不是独立 profile：
+
+| pair/keyed | ticks | active phase counts | actual decision counts | first/last normal release attempt | terminal row |
+|---|---:|---|---|---|---|
+| 13/9303101 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 734; safety_reject 1; safety_wait 28; emergency_energy_guard 41 | tick 161 / 161, p 0.024594346061348915, qmax 1, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
+| 14/9303102 | 742 | inbound 57; ring_outer 217; ring_middle 1; transfer_o2m 55; emergency_landing 87 | None 325; not_requested 407; safety_reject 8; approved 1; plan_active 1 | tick 164 reject p 0.17946651577949524 → tick 332 approved p 0.894378662109375, qmax 0.7798160910606384 | UID 46, emergency_landed, t=506, wait 246.0261539121092, energy 458.2358821167139 |
+| 15/9303103 | 724 | inbound 57; ring_outer 88; transfer_o2m 62; ring_middle 1; transfer_m2i 61; ring_inner 16; emergency_landing 54 | None 385; not_requested 333; safety_reject 4; approved 2 | tick 142 reject p 0.9835757613182068 → tick 358 reject p 0.9883878827095032, qmax 0.9975574016571045 | UID 72, emergency_landed, t=446, wait 151.21199255359232, energy 374.5005100650064 |
+| 16/9303104 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 729; safety_reject 1; safety_wait 30; emergency_energy_guard 44 | tick 267 / 267, p 0.7881418466567993, qmax 0.973076581954956, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
+
+依据上述 witness，已选择下一单一因素冻结实验：对同一 `9` 个 reference pairs 使用相同 source `3fe7+a82`、88D/K=3、legacy eligibility、真实 `q` 和物理配置，仅把 gate 固定为 always-RELEASE。协议与 runner 由另一 worker 准备，当前尚未 launch；未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用。该选择记录为后续执行事实，不是本节对 P3 性能或根因的结论。
 
 本地唯一集成命令为：
 
