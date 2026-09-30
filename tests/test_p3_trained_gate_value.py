@@ -179,6 +179,56 @@ def test_preflight_writer_is_no_environment_and_strict_json(tmp_path: Path, monk
     assert (output / "progress.json").is_file()
 
 
+def test_preflight_path_binding_roundtrip_and_phase_validation(tmp_path: Path,
+                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    config = SimpleNamespace()
+    binding = {
+        "matched_full_path": Path("C:/registered/matched/full.json"),
+        "matched_full_sha256": "matched-sha",
+        "native_full_path": Path("C:/registered/native/full.json"),
+        "native_full_sha256": "native-sha",
+    }
+    payload = {
+        "stage": runner.STAGE, "phase": "preflight", "status": "PREFLIGHT_OK",
+        "matched_binding": binding, "cells": [], "source": {}, "scope": {"env_created": False},
+        "config_snapshot": {"config": "fixed"},
+        "runner_sha256": runner._sha256(Path(runner.__file__)),
+        "protocol_sha256": runner._sha256(runner.PROTOCOL),
+    }
+    monkeypatch.setattr(runner, "_build_preflight", lambda: payload)
+    monkeypatch.setattr(runner, "_load_input_bundle", lambda: (binding, []))
+    monkeypatch.setattr(runner.trained_support, "_build_inputs", lambda: (config, {}))
+    monkeypatch.setattr(runner.trained_support, "_config_snapshot", lambda value: {"config": "fixed"})
+    monkeypatch.setattr(runner, "_load_policies", lambda value: (SimpleNamespace(), SimpleNamespace(), {}))
+    output = tmp_path / "roundtrip"
+    runner.run_preflight(output)
+    loaded = runner._read_json(output / "preflight.json")
+    runner._validate_preflight(loaded)
+    runner._phase_inputs(output)
+    for key, changed in (("matched_full_path", "C:/changed/full.json"),
+                         ("matched_full_sha256", "changed-sha")):
+        tampered = json.loads(json.dumps(loaded))
+        tampered["matched_binding"][key] = changed
+        with pytest.raises(runner.TrainedGateValueError, match="matched/native full binding changed"):
+            runner._validate_preflight(tampered)
+
+
+def test_pilot_preflight_failure_writes_error_without_overwriting_existing_error(tmp_path: Path,
+                                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    output = tmp_path / "pilot_failure"
+    output.mkdir()
+    (output / "preflight.json").write_text("{}", encoding="utf-8")
+    (output / "progress.json").write_text(json.dumps({"status": "PREFLIGHT_OK"}), encoding="utf-8")
+    existing = "{\"preserved\":true}\n"
+    (output / "error.json").write_text(existing, encoding="utf-8")
+    monkeypatch.setattr(runner, "_phase_inputs", lambda value: (_ for _ in ()).throw(
+        runner.TrainedGateValueError("binding changed")))
+    with pytest.raises(runner.TrainedGateValueError, match="binding changed"):
+        runner.run_pilot(output)
+    assert (output / "error.json").read_text(encoding="utf-8") == existing
+    assert json.loads((output / "progress.json").read_text(encoding="utf-8"))["status"] == "FAILED"
+
+
 def test_jsonable_nonfinite_values_are_missing() -> None:
     assert runner._jsonable({"x": float("inf"), "y": [float("nan")]}) == {"x": None, "y": [None]}
 

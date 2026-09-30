@@ -1,8 +1,9 @@
 # P3 trained gate-value diagnostic protocol (2026-10-01)
 
-This protocol registers a passive, matched-state mechanism diagnostic. It does
-not create a new performance episode and does not qualify P3, PPO, a teacher,
-or a held-out result.
+This protocol registers a passive, matched-state mechanism diagnostic. Its
+counterfactual suffix branches are simulated trajectories, but they do not
+form a new performance episode cohort or qualify P3, PPO, a teacher, or a
+held-out result.
 
 ## Registered inputs
 
@@ -71,6 +72,13 @@ branches do not receive a fabricated full energy total. Raw branch rewards are
 replay observations, with no reward scaling or advantage construction.
 
 ## Phase discipline
+
+The fresh production output root is
+`/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2`;
+an earlier failed launch directory is not reused. Preflight JSON bindings are
+compared after the same Path-to-JSON canonicalization used by the writer, while
+checkpoint hashes, paths, cells, and protocol digests remain exact validation
+inputs.
 
 `preflight` creates no environment and binds the runner, protocol, four cell
 groups, NPZs, tapes, checkpoint hashes, configuration, and continuation grid.

@@ -54,7 +54,7 @@ WARMUP_SHA256 = trained_support.WARMUP_CHECKPOINT_SHA256
 INPUT_ROOT = matched.OUTPUT_ROOT
 OUTPUT_ROOT = Path(
     "/home/user/training_outputs/terminal/"
-    "p3_followup_20260930/trained_gate_value_20261001"
+    "p3_followup_20260930/trained_gate_value_20261001_v2"
 )
 PROTOCOL = Path(__file__).resolve().parents[2] / "docs/evidence/v4_2/p3_trained_gate_value_protocol_20261001.md"
 
@@ -70,6 +70,11 @@ def _require(condition: bool, message: str) -> None:
 
 def _jsonable(value: Any) -> Any:
     return matched._jsonable(value)
+
+
+def _canonical_jsonable(value: Any) -> Any:
+    """Compare live Path-rich bindings with their JSON round-trip form."""
+    return _jsonable(value)
 
 
 def _sha256(path: str | Path) -> str:
@@ -255,7 +260,8 @@ def _validate_preflight(payload: Mapping[str, Any]) -> None:
     _require(payload.get("config_snapshot") == trained_support._config_snapshot(config), "config changed after preflight")
     bundle, cells = _load_input_bundle()
     stored_binding = payload.get("matched_binding")
-    _require(stored_binding == bundle, "matched/native full binding changed")
+    _require(_canonical_jsonable(stored_binding) == _canonical_jsonable(bundle),
+             "matched/native full binding changed")
     live = _build_preflight()
     _require(payload.get("cells") == live.get("cells"), "cell, group, NPZ, or selection binding changed")
     _require(payload.get("source") == live.get("source"), "source or continuation binding changed")
@@ -676,8 +682,10 @@ def _run_state(item: Mapping[str, Any], config: Any, before_policy: Any, after_p
 
 def _write_failure(output: Path, phase: str, error: BaseException) -> None:
     if output.exists():
-        _write_json(output / "error.json", {"stage": STAGE, "phase": phase, "status": "FAILED",
-                                             "error": {"type": type(error).__name__, "message": str(error)}})
+        error_path = output / "error.json"
+        if not error_path.exists():
+            _write_json(error_path, {"stage": STAGE, "phase": phase, "status": "FAILED",
+                                     "error": {"type": type(error).__name__, "message": str(error)}})
         _write_json(output / "progress.json", {"stage": STAGE, "phase": phase, "status": "FAILED",
                                                 "error": {"type": type(error).__name__, "message": str(error)}})
 
@@ -697,9 +705,9 @@ def run_preflight(output: Path) -> dict[str, Any]:
 
 
 def run_pilot(output: Path) -> dict[str, Any]:
-    preflight, config, cells, before, after = _phase_inputs(output)
-    _require(not (output / "pilot.json").exists(), "pilot artifact already exists")
     try:
+        preflight, config, cells, before, after = _phase_inputs(output)
+        _require(not (output / "pilot.json").exists(), "pilot artifact already exists")
         _write_json(output / "progress.json", {"stage": STAGE, "phase": "pilot", "status": "RUNNING",
                                                 "cell_id": 1, "branches_expected": 104})
         state = _run_state(cells[0], config, before, after, output, "pilot")
@@ -707,7 +715,8 @@ def run_pilot(output: Path) -> dict[str, Any]:
         payload = {"stage": STAGE, "phase": "pilot", "status": "PILOT_OK", "PPO_ALLOWED": False,
                    "preflight_sha256": _sha256(output / "preflight.json"),
                    "state_sha256": _sha256(output / "state_01.json"), "state": state,
-                   "scope": {"branch_count": 104, "mechanism_states": 1, "no_new_episode": True}}
+                   "scope": {"branch_count": 104, "mechanism_states": 1,
+                             "no_new_performance_episode": True}}
         _write_json(output / "pilot.json", payload, refuse_existing=True)
         _write_json(output / "progress.json", {"stage": STAGE, "phase": "pilot", "status": "PILOT_OK",
                                                 "cell_id": 1, "branches_completed": 104, "branches_expected": 104})
@@ -729,10 +738,10 @@ def _validate_pilot(output: Path, preflight: Mapping[str, Any]) -> dict[str, Any
 
 
 def run_full(output: Path) -> dict[str, Any]:
-    preflight, config, cells, before, after = _phase_inputs(output)
-    pilot = _validate_pilot(output, preflight)
-    _require(not (output / "full.json").exists(), "full artifact already exists")
     try:
+        preflight, config, cells, before, after = _phase_inputs(output)
+        pilot = _validate_pilot(output, preflight)
+        _require(not (output / "full.json").exists(), "full artifact already exists")
         states = [dict(pilot["state"])]
         for item in cells[1:]:
             cell_id = int(item["cell"]["cell_id"])
@@ -744,7 +753,7 @@ def run_full(output: Path) -> dict[str, Any]:
         payload = {"stage": STAGE, "phase": "full", "status": "FULL_OK", "PPO_ALLOWED": False,
                    "pilot_reused": True, "state_count": len(states), "states": states,
                    "scope": {"branch_count": len(states) * 104, "mechanism_states": 4,
-                             "no_new_episode": True, "population_estimate": False},
+                             "no_new_performance_episode": True, "population_estimate": False},
                    "qualification": "mechanism_state_diagnostic; no performance or PPO qualification"}
         _write_json(output / "full.json", payload, refuse_existing=True)
         _write_json(output / "progress.json", {"stage": STAGE, "phase": "full", "status": "FULL_OK",
