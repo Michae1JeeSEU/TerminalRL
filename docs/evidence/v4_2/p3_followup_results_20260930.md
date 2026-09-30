@@ -2,7 +2,31 @@
 
 ## 范围与集成检查
 
-本页记录本轮 review scope 的实现、只读诊断 artifact 和测试事实；不把回归测试写成 qualification，也不声称 P3 性能改善。未运行训练、optimizer、held-out 或 pilot 性能评估。
+本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
+
+## Frozen always-RELEASE gate control 终态
+
+这是 `newly_run` 的冻结、离策略 gate-control full，不是训练、PPO、Teacher、optimizer、held-out 或 formal qualification。它复用 `9` 个 `preexisting_artifact` reference scenes（`6` 个环境 profile、`9` 个 fixed keyed pairs），不是 `216` 个独立请求实验；source `3fe7+a82`、88D、K=3、legacy eligibility、真实 proposal `q`、物理配置和 native safety 保持不变，仅将 legacy `actor_mask=true` 的 gate 固定为 RELEASE，其他行保持 canonical WAIT。artifact 为 `.tmp/p3_gate_control_full_proof.json`，server full SHA256 为 `fa856f3980be848c8cb2fd5971115188a9e2f5303c37d8699b44631e57a58403`，`FULL_OK`、`9/9 PAIR_OK`、9/9 natural、technical/safety/source-RNG checks 均通过；`PPO_ALLOWED=false`，held-out 未使用。
+
+逐 pair 的控制结果与相对既有 legacy reference 的 delta 如下。`N/E/F/D/U` 依次为 normal/emergency/failed/diverted/unresolved；括号内为 `control/reference`。wait、request elapsed 和 energy 均为 control 减 reference，unknown 不填零。
+
+| pair | N/E/F/D/U control/reference | Δwait s | Δelapsed s | Δenergy |
+|---:|---|---:|---:|---:|
+| 1 | 22/2/0/0/0 / 23/1/0/0/0 | -239.352168125554 | -98 | -100.978648204367 |
+| 5 | 22/2/0/0/0 / 20/4/0/0/0 | +18.339647352861 | +143 | +40.892863295369 |
+| 9 | 22/2/0/0/0 / 20/4/0/0/0 | -66.722642900639 | -11 | -26.622650716003 |
+| 13 | 20/4/0/0/0 / 20/3/1/0/0 | -1873.686726820392 | -1683 | -1724.690972830649 |
+| 17 | 23/1/0/0/0 / 21/3/0/0/0 | -433.175318573591 | -507 | -564.411033581651 |
+| 21 | 22/2/0/0/0 / 20/4/0/0/0 | -345.431682372297 | -270 | -285.375711314852 |
+| 14 | 19/5/0/0/0 / 19/5/0/0/0 | -526.172317326245 | -574 | -621.337151864353 |
+| 15 | 19/4/1/0/0 / 21/3/0/0/0 | +951.717922176038 | +650 | +815.757062620658 |
+| 16 | 21/3/0/0/0 / 16/7/1/0/0 | -1590.833149623624 | -1315 | -1436.236666501356 |
+
+Aggregate control/reference values were `N=190/180`, `E=25/34`, `F=1/2`, `D=0/0`, `U=0/0`; admitted was `216/216`, successful completed was `215/214`, and resolved was `216/216`. Wait was `25124.700815134504 / 29230.017251347945 s`, request elapsed was `79035 / 82700 s`, and energy was `64612.22804454819 / 68515.23095364538`. Raw reward excluding rejection penalty was `4315.902567907697 / 4132.633739495724` (delta `+183.26882841197312`); the rejection penalty was `-1140.55 / -165.8` (delta `-974.75`), so total reward was `3175.3525679076965 / 3966.8337394957234` (delta `-791.4811715880269`). These are observed return and business tradeoffs, not a root-cause attribution.
+
+The registered acceptance review rejected the candidate: pair `15` introduced a new failed arrival `21`, despite aggregate normal increasing `180→190`, failed decreasing `2→1`, successful completed increasing `214→215`, wait decreasing to `25124.700815134504 s`, request elapsed decreasing to `79035 s`, and energy decreasing to `64612.22804454819`. The retained new failure row was UID `108`, mission `cargo`, initial SOC `0.5758906587575819`, request time `150`, terminal time `1013`, phase `ring_outer`, outcome `failed_energy`, and wait `807.8147075862395 s`. In the `env877104` cross-keyed traces, arrival `13` was `emergency_landed` under all four control keyed runs; the two previous legacy runs that failed are retained as comparison evidence, not as an all-scene feasibility claim.
+
+The control tests were `27` unique cases (`6` gate-control, `11` opportunity, `10` forced-WAIT); code/docs commit `3a3e1ba` was not pushed because no remote is configured. The `p3-gate` heartbeat was deleted after the terminal full artifact, and no active background process remains. The next root-approved status is one passive exact replay of pair `15` control and legacy, once each, with source, seeds, config, and the 1800-step cap unchanged; it will trace target arrival `21`. No new performance sample is planned and no repair has been selected; the worker is implementing the replay. The protocol filename `p3_gate_failure_replay_protocol_20261001.md` is not on disk yet, so it is recorded as plain text until it exists.
 
 ## 可执行动作机会诊断预注册与终态
 
@@ -78,7 +102,7 @@ env `877104` 的 arrival `13` 四条实际 trace 摘要如下；trace 来自每�
 | 15/9303103 | 724 | inbound 57; ring_outer 88; transfer_o2m 62; ring_middle 1; transfer_m2i 61; ring_inner 16; emergency_landing 54 | None 385; not_requested 333; safety_reject 4; approved 2 | tick 142 reject p 0.9835757613182068 → tick 358 reject p 0.9883878827095032, qmax 0.9975574016571045 | UID 72, emergency_landed, t=446, wait 151.21199255359232, energy 374.5005100650064 |
 | 16/9303104 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 729; safety_reject 1; safety_wait 30; emergency_energy_guard 44 | tick 267 / 267, p 0.7881418466567993, qmax 0.973076581954956, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
 
-依据上述 witness，已选择下一单一因素冻结实验：对同一 `9` 个 reference pairs 使用相同 source `3fe7+a82`、88D/K=3、legacy eligibility、真实 `q` 和物理配置，仅把 gate 固定为 always-RELEASE。协议与 runner 由另一 worker 准备，当前尚未 launch；未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用。该选择记录为后续执行事实，不是本节对 P3 性能或根因的结论。
+依据上述 witness，已完成同一 `9` 个 reference pairs 的单因素 frozen always-RELEASE gate control；结果已在本文顶部的终态段报告。该 control 未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用；candidate review 因 pair `15` 的新 failed arrival `21` 被拒绝。该结果记录为观察到的控制结果，不构成 P3 根因结论或 formal qualification。
 
 本地唯一集成命令为：
 
