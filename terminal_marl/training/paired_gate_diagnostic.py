@@ -15,7 +15,7 @@ import pickle
 import random
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import torch
@@ -114,6 +114,40 @@ def _ensure_cpu(policy: Any) -> None:
                 raise ValueError("paired gate diagnostic supports CPU policies only; CUDA is not supported")
 
 
+def _model_digest(policy: Any) -> str:
+    """Return a stable digest for the frozen model used by the diagnostic."""
+
+    digest = hashlib.sha256()
+    state = _state_snapshot(_policy_model(policy))
+    for name in sorted(state):
+        tensor = state[name].contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(tensor.shape)).encode("ascii"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(tensor.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def _schema_contract(policy: Any, env: Any) -> dict[str, Any]:
+    config = getattr(env, "config", None)
+    observation_schema = (
+        getattr(policy, "observation_schema_version", None)
+        or getattr(config, "observation_schema_version", None)
+    )
+    action_schema = (
+        getattr(policy, "action_schema_version", None)
+        or getattr(config, "action_schema_version", None)
+        or "low_action_schema_v4_2_hierarchical"
+    )
+    return {
+        "observation_schema": None if observation_schema is None else str(observation_schema),
+        "action_schema": str(action_schema),
+        "actor_mask_source": "_student_request_details deterministic pre_action actor_mask",
+        "actor_mask_contract": "inactive actors receive WAIT and do not consume gate/proposal keyed draws",
+        "paired_value_composition": "same_frozen_policy_for_first_q_and_all_continuations",
+    }
+
+
 def _seed_from_env(env: Any) -> int:
     for name in ("_paired_seed", "paired_seed", "policy_seed", "episode_seed", "seed"):
         value = getattr(env, name, None)
@@ -184,6 +218,7 @@ def _details_context(policy: Any, env: Any) -> dict[str, Any]:
             "proposal_probabilities": np.empty((0, PROPOSAL_COUNT), dtype=np.float64),
             "step": _step_from_env(env),
             "seed": _seed_from_env(env),
+            "schema_contract": _schema_contract(policy, env),
         }
     model = _policy_model(policy)
     distributions = getattr(model, "distributions", None)
@@ -212,6 +247,7 @@ def _details_context(policy: Any, env: Any) -> dict[str, Any]:
         "proposal_probabilities": proposal_probabilities,
         "step": _step_from_env(env),
         "seed": _seed_from_env(env),
+        "schema_contract": _schema_contract(policy, env),
     }
 
 
@@ -353,6 +389,45 @@ def _install_request_capture(env: Any) -> tuple[list[dict[str, Any]], list[list[
     return flat, []
 
 
+def restore_diagnostic_snapshot(env: Any) -> Any:
+    """Restore only known passive diagnostic hooks on a real terminal copy.
+
+    Passive replay helpers install closures on ``step``, ``_resolve`` and
+    ``arrivals.requests_until``.  ``deepcopy`` preserves those closures and
+    therefore does not retarget them to the copied environment.  This helper
+    rebinds only the existing shadow methods plus the two known hook points;
+    fake test environments keep their existing behavior.
+    """
+
+    try:
+        from terminal_marl.envs.parallel_env import TerminalParallelEnv
+    except (ImportError, ModuleNotFoundError):
+        return env
+    if not isinstance(env, TerminalParallelEnv):
+        return env
+    try:
+        from terminal_marl.training import diagnose_p3_k3_coverage_v1 as coverage
+
+        coverage._restore_shadow_methods(env)
+    except (AttributeError, ImportError, TypeError):
+        pass
+    env_cls = type(env)
+    native_resolve = getattr(env_cls, "_resolve", None)
+    if callable(native_resolve):
+        env._resolve = native_resolve.__get__(env, env_cls)
+    arrivals = getattr(env, "arrivals", None)
+    arrivals_cls = type(arrivals) if arrivals is not None else None
+    native_requests_until = (
+        getattr(arrivals_cls, "requests_until", None)
+        if arrivals_cls is not None else None
+    )
+    if arrivals is not None and callable(native_requests_until):
+        arrivals.requests_until = native_requests_until.__get__(arrivals, arrivals_cls)
+    if hasattr(env, "_step_observer"):
+        env._step_observer = None
+    return env
+
+
 def _capture_tick_requests(flat: list[dict[str, Any]], before: int) -> list[dict[str, Any]]:
     return [copy.deepcopy(item) for item in flat[before:]]
 
@@ -428,8 +503,12 @@ def _call_step(env: Any, actions: Mapping[Any, Any], shortlists: Mapping[Any, An
 
 def _step_reward(rewards: Any) -> float:
     if isinstance(rewards, Mapping):
-        return float(sum(float(value) for value in rewards.values()))
-    return float(rewards)
+        value = float(sum(float(value) for value in rewards.values()))
+    else:
+        value = float(rewards)
+    if not math.isfinite(value):
+        raise ValueError(f"nonfinite reward: {value!r}")
+    return value
 
 
 def _decision_for(info: Any, uid: Any) -> Any:
@@ -446,6 +525,28 @@ def _runtime_rank_for(info: Any, uid: Any) -> Any:
     if isinstance(telemetry, Mapping):
         return telemetry.get("runtime_shortlist_rank")
     return None
+
+
+def _decision_name(decision: Any) -> str | None:
+    if decision is None:
+        return None
+    value = getattr(decision, "value", decision)
+    return str(value).lower()
+
+
+def _is_actual_immediate_approval(decision: Any) -> bool:
+    """Use the runtime decision, independent of shortlist rank, for C_i."""
+
+    return _decision_name(decision) in {
+        "approved",
+        "emergency_approved",
+        "emergency_redirected",
+    }
+
+
+def _is_future_reservation(decision: Any) -> bool:
+    name = _decision_name(decision) or ""
+    return "future" in name and "reserv" in name
 
 
 def _telemetry_snapshot(env: Any) -> dict[str, float]:
@@ -485,7 +586,8 @@ def _outcome_counts(env: Any) -> dict[str, int]:
                 counts["diverted"] += 1
     requested = getattr(ledger, "requested", set())
     if isinstance(requested, (set, frozenset, list, tuple)):
-        counts["unresolved"] = max(0, len(requested) - len(outcomes))
+        resolved = len(outcomes) if isinstance(outcomes, Mapping) else 0
+        counts["unresolved"] = max(0, len(requested) - resolved)
     return counts
 
 
@@ -504,6 +606,124 @@ def _request_elapsed_integral(env: Any) -> float:
         except (TypeError, ValueError):
             continue
     return float(total)
+
+
+def _request_elapsed_by_arrival(env: Any) -> dict[str, float]:
+    request_times = getattr(env, "request_times", {})
+    resolution_times = getattr(env, "resolution_times", {})
+    now = float(getattr(env, "now", 0.0))
+    if not isinstance(request_times, Mapping):
+        return {}
+    elapsed: dict[str, float] = {}
+    for arrival_id, request_time in request_times.items():
+        try:
+            start = float(request_time)
+            end = float(resolution_times.get(arrival_id, now))
+            elapsed[str(arrival_id)] = max(0.0, end - start)
+        except (TypeError, ValueError):
+            continue
+    return elapsed
+
+
+def _remaining_soc_by_location(env: Any) -> dict[str, dict[str, float]]:
+    """Capture remaining SOC for active and external queue entities."""
+
+    active_soc: dict[str, float] = {}
+    for uid, uav in getattr(env, "active", {}).items():
+        try:
+            active_soc[str(uid)] = float(getattr(uav, "soc"))
+        except (AttributeError, TypeError, ValueError):
+            try:
+                active_soc[str(uid)] = float(getattr(uav, "energy_remaining")) / float(getattr(uav, "energy_capacity"))
+            except (AttributeError, TypeError, ValueError, ZeroDivisionError):
+                active_soc[str(uid)] = None
+    queue_soc: dict[str, float] = {}
+    items = getattr(getattr(getattr(env, "admission", None), "queue", None), "items", [])
+    for index, item in enumerate(items):
+        request = getattr(item, "request", item)
+        arrival_id = getattr(request, "arrival_id", getattr(item, "arrival_id", index))
+        try:
+            queue_soc[str(arrival_id)] = float(getattr(item, "soc"))
+        except (AttributeError, TypeError, ValueError):
+            try:
+                queue_soc[str(arrival_id)] = float(getattr(item, "energy_remaining")) / float(getattr(request, "energy_capacity"))
+            except (AttributeError, TypeError, ValueError, ZeroDivisionError):
+                queue_soc[str(arrival_id)] = None
+    return {"active": active_soc, "queue": queue_soc}
+
+
+def _safety_violation_details(
+    telemetry_delta: Mapping[str, float],
+    conflict_events: Sequence[Any],
+) -> dict[str, Any]:
+    """Classify safety violations separately from ordinary interventions."""
+
+    counter_keys = {
+        "hard_separation_violations",
+        "nmac",
+        "collisions",
+        "protected_floor_violations",
+        "protected_floor_events",
+    }
+    counter_hits = {
+        key: float(value)
+        for key, value in telemetry_delta.items()
+        if key in counter_keys and float(value) > 0.0
+    }
+    event_rows = [item for item in conflict_events if isinstance(item, Mapping)]
+    event_kinds = [str(item.get("kind", "")).lower() for item in event_rows]
+    collision_events = [item for item, kind in zip(event_rows, event_kinds) if "collision" in kind]
+    nmac_events = [item for item, kind in zip(event_rows, event_kinds) if "nmac" in kind]
+    protected_floor_events = [
+        item for item, kind in zip(event_rows, event_kinds)
+        if "protected" in kind and "floor" in kind
+    ]
+    hard_events = [
+        item for item, kind in zip(event_rows, event_kinds)
+        if "hard_separation" in kind or "hard separation" in kind
+    ]
+    violation = bool(counter_hits or collision_events or nmac_events or protected_floor_events or hard_events)
+    return {
+        "safety_violation_status": "violation" if violation else "none",
+        "safety_violation": violation,
+        "collision_events": collision_events,
+        "nmac_events": nmac_events,
+        "protected_floor_events": protected_floor_events,
+        "hard_separation_events": hard_events,
+    }
+
+
+def _branch_metrics(
+    env: Any,
+    safety_before: Mapping[str, float],
+    elapsed_before: float,
+) -> dict[str, Any]:
+    telemetry_delta = _telemetry_delta(safety_before, _telemetry_snapshot(env))
+    conflict_events = list(getattr(env, "conflict_events", []) or [])
+    elapsed = _request_elapsed_integral(env)
+    counts = _outcome_counts(env)
+    remaining_soc = _remaining_soc_by_location(env)
+    return {
+        "outcome_counts": counts,
+        "unresolved": int(counts.get("unresolved", 0)),
+        "queue_count": int(len(getattr(getattr(getattr(env, "admission", None), "queue", None), "items", []) or [])),
+        "service_count": int(len(getattr(env, "service_uavs", {}) or {})),
+        "remaining_soc": remaining_soc,
+        "remaining_soc_by_active": remaining_soc["active"],
+        "remaining_soc_by_queue": remaining_soc["queue"],
+        "request_elapsed_integral_seconds": elapsed,
+        "request_elapsed_integral": elapsed,
+        "request_elapsed_integral_delta_seconds": max(0.0, elapsed - elapsed_before),
+        "request_elapsed_time_seconds": elapsed,
+        "elapsed_request_time_seconds": elapsed,
+        "request_elapsed_by_arrival": _request_elapsed_by_arrival(env),
+        "safety_counter_delta": telemetry_delta,
+        "safety_counter_deltas": telemetry_delta,
+        "conflict_events": _jsonable(conflict_events),
+        "energy_outcomes": _jsonable(getattr(env, "energy_outcomes", [])),
+        "ledger_outcomes": _jsonable(getattr(getattr(env, "ledger", None), "outcomes", {})),
+        **_safety_violation_details(telemetry_delta, conflict_events),
+    }
 
 
 def _state_fingerprint(value: Any) -> tuple[str, str]:
@@ -589,23 +809,45 @@ def _branch_outcome(
         "first_step": {},
         "terminal": False,
         "censored": False,
+        "termination_classification": "implementation_error",
         "suffix_undiscounted_reward": 0.0,
         "undiscounted_return": 0.0,
         "steps": 0,
         "external_request_signature": [],
         "external_requests_by_tick": [],
+        "outcome_counts": {"normal": 0, "emergency": 0, "failed": 0, "diverted": 0, "unresolved": 0},
+        "unresolved": 0,
+        "queue_count": 0,
+        "service_count": 0,
+        "remaining_soc": {"active": {}, "queue": {}},
+        "remaining_soc_by_active": {},
+        "remaining_soc_by_queue": {},
+        "request_elapsed_integral_seconds": 0.0,
+        "request_elapsed_integral": 0.0,
+        "request_elapsed_integral_delta_seconds": 0.0,
+        "request_elapsed_time_seconds": 0.0,
+        "elapsed_request_time_seconds": 0.0,
+        "request_elapsed_by_arrival": {},
+        "safety_counter_delta": {},
+        "safety_counter_deltas": {},
+        "conflict_events": [],
+        "safety_violation_status": "none",
+        "safety_violation": False,
+        "collision_events": [],
+        "nmac_events": [],
+        "protected_floor_events": [],
+        "hard_separation_events": [],
+        "safety_invariant_error": False,
+        "safety_invariant_error_status": None,
+        "energy_outcomes": [],
+        "ledger_outcomes": {},
     }
     branch_env = None
+    safety_before: dict[str, float] = {}
+    elapsed_before = 0.0
     try:
         branch_env = copy.deepcopy(env_snapshot)
-        # Copied bound methods can retain a source instance in diagnostics;
-        # use the existing repair hook when it is available.
-        try:
-            from terminal_marl.training import diagnose_p3_k3_coverage_v1 as coverage
-
-            coverage._restore_shadow_methods(branch_env)
-        except (AttributeError, ImportError, TypeError):
-            pass
+        restore_diagnostic_snapshot(branch_env)
         setattr(branch_env, "_paired_seed", int(seed))
         flat, _ = _install_request_capture(branch_env)
         branch_actions, branch_shortlists = p3_action_credit.branch_inputs(
@@ -625,6 +867,8 @@ def _branch_outcome(
         result["first_step"] = {
             "decision": _decision_for(info, target_uid),
             "runtime_shortlist_rank": _runtime_rank_for(info, target_uid),
+            "actual_immediate_approval": _is_actual_immediate_approval(_decision_for(info, target_uid)),
+            "future_reservation": _is_future_reservation(_decision_for(info, target_uid)),
             "reward": first_reward,
             "terminated": _jsonable(terminated),
             "truncated": _jsonable(truncated),
@@ -659,17 +903,30 @@ def _branch_outcome(
         result["censored"] = not result["terminal"]
         if result["censored"] and stop_reason is not None:
             result["censor_reason"] = stop_reason
-        result["outcome_counts"] = _outcome_counts(branch_env)
-        result["request_elapsed_integral_seconds"] = _request_elapsed_integral(branch_env)
-        result["request_elapsed_integral"] = result["request_elapsed_integral_seconds"]
-        result["request_elapsed_integral_delta_seconds"] = max(
-            0.0, result["request_elapsed_integral_seconds"] - elapsed_before,
-        )
-        result["safety_counter_delta"] = _telemetry_delta(safety_before, _telemetry_snapshot(branch_env))
-    except BaseException as exc:
+        if result["terminal"]:
+            result["termination_classification"] = "natural_terminal"
+        elif stop_reason == "max_steps":
+            result["termination_classification"] = "computation_budget_censored"
+        elif stop_reason in {"environment_time_limit", "environment_truncated"}:
+            result["termination_classification"] = "environment_time_limit"
+        else:
+            result["termination_classification"] = "implementation_error"
+        result.update(_branch_metrics(branch_env, safety_before, elapsed_before))
+    except Exception as exc:
         result["error"] = {"type": type(exc).__name__, "message": str(exc)}
+        safety_invariant_error = type(exc).__name__ == "SafetyInvariantError"
+        if safety_invariant_error and hasattr(exc, "diagnostic"):
+            result["error"]["diagnostic"] = _jsonable(getattr(exc, "diagnostic", {}))
         result["censored"] = True
-        result.setdefault("outcome_counts", {"normal": 0, "emergency": 0, "failed": 0, "diverted": 0, "unresolved": 0})
+        result["termination_classification"] = "implementation_error"
+        if branch_env is not None:
+            try:
+                result.update(_branch_metrics(branch_env, safety_before, elapsed_before))
+            except Exception as metrics_exc:
+                result["metrics_error"] = {"type": type(metrics_exc).__name__, "message": str(metrics_exc)}
+        if safety_invariant_error:
+            result["safety_invariant_error"] = True
+            result["safety_invariant_error_status"] = "safety_invariant_error"
     return result
 
 
@@ -709,6 +966,8 @@ def paired_gate_value(
     target_uid: Any,
     continuation_seeds: Sequence[int],
     max_steps: int,
+    *,
+    branch_callback: Callable[[dict[str, Any], int, int], None] | None = None,
 ) -> dict[str, Any]:
     """Evaluate WAIT and all 25 RELEASE counterfactuals on paired copies."""
 
@@ -723,12 +982,7 @@ def paired_gate_value(
     env_before, fingerprint_method = _state_fingerprint(env_snapshot)
     try:
         context_env = copy.deepcopy(env_snapshot)
-        try:
-            from terminal_marl.training import diagnose_p3_k3_coverage_v1 as coverage
-
-            coverage._restore_shadow_methods(context_env)
-        except (AttributeError, ImportError, TypeError):
-            pass
+        restore_diagnostic_snapshot(context_env)
         context = _details_context(policy, context_env)
     except BaseException:
         _restore_rng(caller_rng)
@@ -741,23 +995,25 @@ def paired_gate_value(
     logits = context["proposal_logits"][target_index]
     probabilities = context["proposal_probabilities"][target_index]
     reports: list[dict[str, Any]] = []
+    total_branches = 26 * len(seeds)
     try:
         for seed in seeds:
             for proposal, name in [(None, "wait"), *[(index, f"release_{index}") for index in range(PROPOSAL_COUNT)]]:
-                reports.append(
-                    _branch_outcome(
-                        policy=policy,
-                        env_snapshot=env_snapshot,
-                        first_actions=first_actions,
-                        first_shortlists=first_shortlists,
-                        target_uid=target_uid,
-                        proposal=proposal,
-                        logits=logits,
-                        seed=seed,
-                        max_steps=int(max_steps),
-                        branch_name=name,
-                    )
+                report = _branch_outcome(
+                    policy=policy,
+                    env_snapshot=env_snapshot,
+                    first_actions=first_actions,
+                    first_shortlists=first_shortlists,
+                    target_uid=target_uid,
+                    proposal=proposal,
+                    logits=logits,
+                    seed=seed,
+                    max_steps=int(max_steps),
+                    branch_name=name,
                 )
+                reports.append(report)
+                if branch_callback is not None:
+                    branch_callback(copy.deepcopy(report), len(reports), total_branches)
     finally:
         _restore_rng(caller_rng)
     grouped: dict[str, list[dict[str, Any]]] = {"wait": [], "releases": []}
@@ -772,17 +1028,40 @@ def paired_gate_value(
     release_weights /= float(release_weights.sum())
     expected_per_repeat = []
     expected_full_per_repeat = []
+    partial_expected_suffix_by_repeat = []
+    partial_expected_full_by_repeat = []
+    release_coverage_by_repeat = []
+    p_release = float(context["gate_probabilities"][target_index, RELEASE_GATE])
     for repeat_index in range(len(seeds)):
-        values = [
-            float(grouped["releases"][repeat_index * PROPOSAL_COUNT + proposal]["suffix_undiscounted_reward"])
+        rows = [
+            grouped["releases"][repeat_index * PROPOSAL_COUNT + proposal]
             for proposal in range(PROPOSAL_COUNT)
         ]
-        full_values = [
-            float(grouped["releases"][repeat_index * PROPOSAL_COUNT + proposal]["undiscounted_return"])
-            for proposal in range(PROPOSAL_COUNT)
-        ]
-        expected_per_repeat.append(_weighted(values, release_weights))
-        expected_full_per_repeat.append(_weighted(full_values, release_weights))
+        values = [float(row["suffix_undiscounted_reward"]) for row in rows]
+        full_values = [float(row["undiscounted_return"]) for row in rows]
+        partial_suffix = _weighted(values, release_weights)
+        partial_full = _weighted(full_values, release_weights)
+        partial_expected_suffix_by_repeat.append(partial_suffix)
+        partial_expected_full_by_repeat.append(partial_full)
+        immediate_approval = [bool(row["first_step"].get("actual_immediate_approval", False)) for row in rows]
+        future_reservation = [bool(row["first_step"].get("future_reservation", False)) for row in rows]
+        decisions = [row["first_step"].get("decision") for row in rows]
+        runtime_ranks = [row["first_step"].get("runtime_shortlist_rank") for row in rows]
+        p_times_c = [float(weight) * float(approved) for weight, approved in zip(release_weights, immediate_approval)]
+        coverage_value = float(sum(p_times_c))
+        release_coverage_by_repeat.append({
+            "C_i": coverage_value,
+            "p_release": p_release,
+            "p_times_C": float(p_release * coverage_value),
+            "proposal_weighted_approval_terms": p_times_c,
+            "proposal_probabilities": [float(value) for value in release_weights],
+            "actual_immediate_approval": immediate_approval,
+            "future_reservation": future_reservation,
+            "decision": decisions,
+            "runtime_shortlist_rank": runtime_ranks,
+        })
+        expected_per_repeat.append(partial_suffix)
+        expected_full_per_repeat.append(partial_full)
     all_branches = reports
     prefix = _common_external_prefix(all_branches)
     model_unchanged = _state_unchanged(model_before, _policy_model(policy))
@@ -799,8 +1078,24 @@ def paired_gate_value(
         and rng_unchanged
     )
     release_full_values = [float(item["undiscounted_return"]) for item in grouped["releases"]]
+    full_return_available = bool(complete)
+    partial_expected_suffix = float(np.mean(partial_expected_suffix_by_repeat))
+    partial_expected_full = float(np.mean(partial_expected_full_by_repeat))
+    full_expected_suffix = float(np.mean(expected_per_repeat)) if full_return_available else None
+    full_expected_return = float(np.mean(expected_full_per_repeat)) if full_return_available else None
+    coverage_mean = float(np.mean([row["C_i"] for row in release_coverage_by_repeat]))
+    schema_contract = context.get("schema_contract", _schema_contract(policy, context_env))
+    model_digest = _model_digest(policy)
     result: dict[str, Any] = {
         "schema": DIAGNOSTIC_SCHEMA,
+        "model_digest": model_digest,
+        "model_state_digest": model_digest,
+        "continuation_policy_contract": "same_frozen_policy_for_first_q_and_all_continuations",
+        "observation_schema": schema_contract.get("observation_schema"),
+        "action_schema": schema_contract.get("action_schema"),
+        "actor_mask": [bool(value) for value in np.asarray(context["actor_mask"], dtype=bool).tolist()],
+        "actor_mask_contract": schema_contract.get("actor_mask_contract"),
+        "mask_schema_contract": schema_contract,
         "target_uid": str(target_key),
         "continuation_seeds": seeds,
         "max_steps": int(max_steps),
@@ -808,17 +1103,32 @@ def paired_gate_value(
         "snapshot_start_step": _step_from_env(env_snapshot),
         "first_action_other_uids_fixed": True,
         "proposal_probabilities": [float(value) for value in release_weights],
+        "proposal_q": [float(value) for value in release_weights],
+        "p_release": p_release,
         "wait": grouped["wait"],
         "releases": grouped["releases"],
         "branches": reports,
-        "expected_release_suffix_undiscounted_reward": float(np.mean(expected_per_repeat)),
-        "expected_release_suffix_by_repeat": expected_per_repeat,
-        "expected_release_undiscounted_return": float(np.mean(expected_full_per_repeat)),
-        "expected_release_undiscounted_return_by_repeat": expected_full_per_repeat,
-        "weighted_release_is_max": bool(
-            expected_full_per_repeat
-            and math.isclose(float(np.mean(expected_full_per_repeat)), max(release_full_values), rel_tol=0.0, abs_tol=1e-12)
+        "partial_expected_release_accumulated_suffix_reward": partial_expected_suffix,
+        "partial_expected_release_accumulated_suffix_by_repeat": partial_expected_suffix_by_repeat,
+        "partial_expected_release_accumulated_return": partial_expected_full,
+        "partial_expected_release_accumulated_return_by_repeat": partial_expected_full_by_repeat,
+        "expected_release_suffix_undiscounted_reward": full_expected_suffix,
+        "expected_release_suffix_by_repeat": expected_per_repeat if full_return_available else None,
+        "expected_release_undiscounted_return": full_expected_return,
+        "expected_release_undiscounted_return_by_repeat": expected_full_per_repeat if full_return_available else None,
+        "full_return_available": full_return_available,
+        "weighted_release_is_max": (
+            bool(
+                expected_full_per_repeat
+                and math.isclose(float(np.mean(expected_full_per_repeat)), max(release_full_values), rel_tol=0.0, abs_tol=1e-12)
+            )
+            if full_return_available else None
         ),
+        "release_coverage_by_repeat": release_coverage_by_repeat,
+        "C_i_by_repeat": [float(row["C_i"]) for row in release_coverage_by_repeat],
+        "C_i": coverage_mean,
+        "p_times_C_by_repeat": [float(row["p_times_C"]) for row in release_coverage_by_repeat],
+        "p_times_C": float(p_release * coverage_mean),
         "external_common_prefix": prefix,
         "terminal_complete": complete,
         "censored": not complete,
@@ -827,6 +1137,7 @@ def paired_gate_value(
         "fingerprint_method": fingerprint_method,
         "env_snapshot_fingerprint_reliable": fingerprint_reliable,
         "rng_unchanged": rng_unchanged,
+        "qualified_delta_Q": None,
     }
     if complete:
         wait_full_mean = float(np.mean([float(item["undiscounted_return"]) for item in grouped["wait"]]))
@@ -861,6 +1172,8 @@ def gate_update_alignment(
 ) -> dict[str, Any]:
     """Compare a policy update with its local gate probability prediction."""
 
+    if delta_q is not None and not math.isfinite(float(delta_q)):
+        raise ValueError("delta_q must be finite when supplied")
     _ensure_cpu(before_policy)
     _ensure_cpu(after_policy)
     before_model = _policy_model(before_policy)
@@ -884,6 +1197,14 @@ def gate_update_alignment(
             "proposal_probabilities_after": [],
             "linear_approximation": [],
             "actual_probability_delta": [],
+            "exact_linear_residual": [],
+            "local_m": [] if delta_q is not None else None,
+            "proposal_probability_unchanged": None,
+            "proposal_unchanged": None,
+            "mask_schema_contract": {
+                "actor_mask_source": "_student_request_details deterministic pre_action actor_mask",
+                "paired_value_composition": "same_frozen_policy_for_first_q_and_all_continuations",
+            },
             "sign_match": [],
             "changed_parameter_names": [key for key in before_state if not torch.equal(before_state[key], after_state[key])],
             "delta_q": delta_q,
@@ -933,6 +1254,9 @@ def gate_update_alignment(
     finally:
         _restore_rng(caller_rng)
     actual_delta = (after_gate - before_gate).tolist()
+    residual = [float(actual - linear) for actual, linear in zip(actual_delta, linear_values)]
+    local_m = None if delta_q is None else [float(actual * float(delta_q)) for actual in actual_delta]
+    proposal_unchanged = bool(torch.equal(before_proposal, after_proposal))
     sign_match = [
         bool((abs(linear) <= 1e-12 and abs(actual) <= 1e-12) or (linear * actual > 0.0))
         for linear, actual in zip(linear_values, actual_delta)
@@ -947,6 +1271,14 @@ def gate_update_alignment(
         "proposal_probabilities_after": after_proposal.tolist(),
         "linear_approximation": linear_values,
         "actual_probability_delta": [float(value) for value in actual_delta],
+        "exact_linear_residual": residual,
+        "local_m": local_m,
+        "proposal_probability_unchanged": proposal_unchanged,
+        "proposal_unchanged": proposal_unchanged,
+        "mask_schema_contract": {
+            "actor_mask_source": "_student_request_details deterministic pre_action actor_mask",
+            "paired_value_composition": "same_frozen_policy_for_first_q_and_all_continuations",
+        },
         "sign_match": sign_match,
         "changed_parameter_names": changed,
         "delta_q": None if delta_q is None else float(delta_q),
@@ -963,4 +1295,5 @@ __all__ = [
     "keyed_request",
     "keyed_uniform",
     "paired_gate_value",
+    "restore_diagnostic_snapshot",
 ]

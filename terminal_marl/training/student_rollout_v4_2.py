@@ -144,6 +144,13 @@ def _student_request_details(policy: JointPPOV42, env, observations: dict, *, de
             logits = proposal_dist.logits[release]
             proposals[release] = logits.argmax(-1) if deterministic else torch.distributions.Categorical(logits=logits).sample()
         gate_lp, proposal_lp, joint_lp = hierarchical_joint_logprob(gate_dist, proposal_dist, gates, proposals)
+        if decision_mask_mode == "pre_action_forced_wait":
+            # A row excluded before action selection has a canonical WAIT
+            # gate/joint record.  Keep the existing WAIT proposal sentinel
+            # and NaN conditional likelihood contract unchanged.
+            forced_wait = ~mask
+            gate_lp = torch.where(forced_wait, torch.zeros_like(gate_lp), gate_lp)
+            joint_lp = torch.where(forced_wait, torch.zeros_like(joint_lp), joint_lp)
     gate_np, proposal_np = gates.cpu().numpy(), proposals.cpu().numpy()
     decoded = decode_hierarchical_actions_v4_2(gate_np, np.asarray([None if p == -1 else int(p) for p in proposal_np], dtype=object))
     actions = {uid: decoded[i] for i, uid in enumerate(uids)}

@@ -16,6 +16,34 @@ from .parallel_env import TerminalParallelEnv
 
 HIGH_LEVEL_OBSERVATION_DIM = 29
 
+# The high-level accounting fields are deliberately reported in their own
+# experimental schema.  Queue occupancy is an additional congestion weight;
+# it overlaps the all-request delay integral by definition.
+HIGH_LEVEL_COST_DEFINITION = {
+    "schema": "high_reward_v2_time_integrated",
+    "unresolved_request_seconds": (
+        "Per-tick integral over every requested arrival that has not yet been "
+        "resolved, including external queue, airborne, and ground-service states."
+    ),
+    "external_queue_uav_seconds": (
+        "Additional per-tick external-queue occupancy integral; it intentionally "
+        "overlaps unresolved_request_seconds and is not a disjoint delay term."
+    ),
+    "energy_consumed": (
+        "Arrival-ledger maximum of observed energy consumption, retained after an "
+        "object leaves active, queue, service, or completed collections."
+    ),
+    "footprint_seconds": (
+        "Per-tick normalized sum of actual ring-radius squares divided by the "
+        "initial sum, used as a ring-area cost proxy."
+    ),
+    "service_completion": "Count of newly resolved completed outcomes in the macro-step.",
+    "coefficient_units": (
+        "Experimental high_reward_v2_time_integrated units; coefficients are not "
+        "calibrated to be equivalent to the legacy reward."
+    ),
+}
+
 class LowLevelPolicy(Protocol):
     def act(self, observations: dict[str, np.ndarray]) -> dict[str, np.ndarray]: ...
 
@@ -77,6 +105,10 @@ class DynamicHighLevelWrapper:
         self._energy_ledger: dict[int, float] = {}
     def _energy_total(self) -> float:
         return float(sum(self._energy_ledger.values()))
+
+    @staticmethod
+    def _cost_definition_metadata() -> dict[str, str]:
+        return dict(HIGH_LEVEL_COST_DEFINITION)
 
     @staticmethod
     def _energy_arrival_id(state) -> int:
@@ -212,7 +244,8 @@ class DynamicHighLevelWrapper:
         reward=HighLevelReward(service_completion=8.*(completed-before_completed),external_queue=-.05*external_queue_seconds,delay=-.002*unresolved_request_seconds,safety=-2.*(self.base.telemetry["safety_interventions"]-before["safety_interventions"])-25.*(self.base.telemetry["collisions"]-before["collisions"])-shield_cost,energy=-.0005*max(0.,energy-before_energy),reconfiguration=-.05*float(update.structural_applied),footprint=-.0001*footprint_seconds)
         self._previous_completed,self._previous_energy=completed,energy
         raw_cost_integrals={"external_queue_uav_seconds":float(external_queue_seconds),"unresolved_request_seconds":float(unresolved_request_seconds),"footprint_seconds":float(footprint_seconds)}
-        record={"time":start_time,"requested_action":list(shield.requested_action),"applied_action":list(shield.applied_action),"structural_mask":list(update.structural_mask),"geometry_gate":gate,"geometry_gate_reason":gate_reason,"actual_geometry":self.base.airspace.state_vector()[:6].tolist(),"target_geometry":[self.base.airspace.target_ring(role).radius for role in RingRole]+[self.base.airspace.target_ring(role).height for role in RingRole],"capacity":self._context()["capacity"],"headways":dict(self.base.airspace.headways),"transition_active":self.base.airspace.transition is not None,"shield_outcome":shield.outcome,"execution_outcome":shield.execution_outcome,"request_id":shield.request_id,"original_request_time":shield.original_request_time,"actual_application_time":shield.actual_application_time,"application_delay_seconds":shield.application_delay_seconds,"operational_effective":shield.operational_effective,"structural_effective":shield.structural_effective,"capacity_effective":shield.capacity_effective,"shield_reason_code":shield.reason_code,"traffic_repair":shield.repair_speed_residuals,"traffic_repair_magnitude":shield.repair_magnitude,"geometry_projection_magnitude":shield.projection_magnitude,"deferred_until":shield.deferred_until,"safety_reason":shield.safety_reason,"requested_radius_delta":list(update.requested_radius_delta),"projected_radius_delta":list(update.projected_radius_delta),"applied_radius_delta":list(update.applied_radius_delta),"capacity_before":list(update.capacity_before),"capacity_after":list(update.capacity_after),"structural_reason_codes":list(update.structural_reason_codes),"high_policy_decisions":len(self.action_history)+1,"coordinator_attempts":self.coordinator.telemetry["coordinator_attempts"],"pending_retries":self.coordinator.telemetry["pending_retries"],"effective_updates":self.coordinator.telemetry["effective_updates"],"pending_state":self.coordinator.pending_state.value,"reward_schema":"high_reward_v2_time_integrated","footprint_definition":"normalized_sum_ring_disk_area_proxy","raw_cost_integrals":raw_cost_integrals}
+        cost_definition = self._cost_definition_metadata()
+        record={"time":start_time,"requested_action":list(shield.requested_action),"applied_action":list(shield.applied_action),"structural_mask":list(update.structural_mask),"geometry_gate":gate,"geometry_gate_reason":gate_reason,"actual_geometry":self.base.airspace.state_vector()[:6].tolist(),"target_geometry":[self.base.airspace.target_ring(role).radius for role in RingRole]+[self.base.airspace.target_ring(role).height for role in RingRole],"capacity":self._context()["capacity"],"headways":dict(self.base.airspace.headways),"transition_active":self.base.airspace.transition is not None,"shield_outcome":shield.outcome,"execution_outcome":shield.execution_outcome,"request_id":shield.request_id,"original_request_time":shield.original_request_time,"actual_application_time":shield.actual_application_time,"application_delay_seconds":shield.application_delay_seconds,"operational_effective":shield.operational_effective,"structural_effective":shield.structural_effective,"capacity_effective":shield.capacity_effective,"shield_reason_code":shield.reason_code,"traffic_repair":shield.repair_speed_residuals,"traffic_repair_magnitude":shield.repair_magnitude,"geometry_projection_magnitude":shield.projection_magnitude,"deferred_until":shield.deferred_until,"safety_reason":shield.safety_reason,"requested_radius_delta":list(update.requested_radius_delta),"projected_radius_delta":list(update.projected_radius_delta),"applied_radius_delta":list(update.applied_radius_delta),"capacity_before":list(update.capacity_before),"capacity_after":list(update.capacity_after),"structural_reason_codes":list(update.structural_reason_codes),"high_policy_decisions":len(self.action_history)+1,"coordinator_attempts":self.coordinator.telemetry["coordinator_attempts"],"pending_retries":self.coordinator.telemetry["pending_retries"],"effective_updates":self.coordinator.telemetry["effective_updates"],"pending_state":self.coordinator.pending_state.value,"reward_schema":"high_reward_v2_time_integrated","footprint_definition":"normalized_sum_ring_disk_area_proxy","cost_definition":cost_definition,"raw_cost_integrals":raw_cost_integrals}
         self.action_history.append(record); terminated=self._done(); truncated=self.base.now>=self.config.max_simulation_seconds and not terminated
-        info={"reward_components":reward.as_dict(),"low_level_reward":low_reward,"high_action":record,"context":self._context(),"telemetry":dict(self.base.telemetry)|dict(self.coordinator.telemetry),"outcomes":dict(self.base.ledger.outcomes),"conflict_events":list(self.base.conflict_events),"low_level_checkpoint_hash":getattr(self.low_level,"checkpoint_hash",None),"latest_low_info":latest_info,"reward_schema":"high_reward_v2_time_integrated","footprint_definition":"normalized_sum_ring_disk_area_proxy","raw_cost_integrals":raw_cost_integrals}
+        info={"reward_components":reward.as_dict(),"low_level_reward":low_reward,"high_action":record,"context":self._context(),"telemetry":dict(self.base.telemetry)|dict(self.coordinator.telemetry),"outcomes":dict(self.base.ledger.outcomes),"conflict_events":list(self.base.conflict_events),"low_level_checkpoint_hash":getattr(self.low_level,"checkpoint_hash",None),"latest_low_info":latest_info,"reward_schema":"high_reward_v2_time_integrated","footprint_definition":"normalized_sum_ring_disk_area_proxy","cost_definition":cost_definition,"raw_cost_integrals":raw_cost_integrals}
         return self.observation(),reward.total,terminated,truncated,info

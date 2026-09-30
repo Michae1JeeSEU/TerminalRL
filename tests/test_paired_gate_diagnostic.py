@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import pickle
 import random
 from dataclasses import replace
 from types import SimpleNamespace
@@ -107,6 +108,7 @@ class _FakeEnv:
         self.request_times = {}
         self.resolution_times = {}
         self.telemetry = {"collisions": 0.0, "nmac": 0.0}
+        self.conflict_events = []
         self.selected_proposal = None
 
     def _observations(self):
@@ -183,6 +185,31 @@ class _FirstStepRewardEnv(_FakeEnv):
         }
 
 
+class _NaturalFailureEnv(_FirstStepRewardEnv):
+    def step(self, actions, proposal_shortlists=None):
+        following, rewards, terminated, truncated, info = super().step(actions, proposal_shortlists)
+        for arrival_id in list(self.ledger.outcomes):
+            self.ledger.outcomes[arrival_id] = "failed_energy"
+        self.energy_outcomes = [{"arrival_id": arrival_id, "outcome": "failed_energy"}
+                                for arrival_id in self.ledger.outcomes]
+        return following, rewards, terminated, truncated, info
+
+
+class _FallbackDecisionEnv(_FakeEnv):
+    def step(self, actions, proposal_shortlists=None):
+        following, rewards, terminated, truncated, info = super().step(actions, proposal_shortlists)
+        if self.step_count == 1:
+            target = actions.get("1", actions.get(1))
+            decoded = hierarchical_from_normalized_v4_2(target)
+            if decoded.proposal == 4:
+                info["release_decisions"]["1"] = "approved"
+                info["release_intent_telemetry"]["1"]["runtime_shortlist_rank"] = 2
+            elif decoded.proposal == 5:
+                info["release_decisions"]["1"] = "future_reserved"
+                info["release_intent_telemetry"]["1"]["runtime_shortlist_rank"] = 1
+        return following, rewards, terminated, truncated, info
+
+
 def _rng_state():
     return random.getstate(), np.random.get_state(), torch.random.get_rng_state().clone()
 
@@ -249,10 +276,22 @@ def test_paired_gate_weights_all_proposals_and_preserves_other_first_action(monk
     assert report["expected_release_suffix_undiscounted_reward"] == pytest.approx(24.0)
     assert report["expected_release_undiscounted_return"] == pytest.approx(24.0)
     assert report["expected_release_suffix_undiscounted_reward"] != max(values)
+    assert all(row["first_step"]["reward"] == pytest.approx(0.0) for row in report["releases"])
+    assert next(row for row in report["releases"] if row["proposal"] == 24)["undiscounted_return"] > next(
+        row for row in report["releases"] if row["proposal"] == 1
+    )["undiscounted_return"]
     other = [row["first_step"]["actions"]["2"] for row in report["releases"]]
     assert all(np.array_equal(value, other[0]) for value in other)
     assert report["terminal_complete"] is True
     assert "qualified_delta_Q" in report
+    assert report["qualified_delta_Q"] is not None
+    assert report["full_return_available"] is True
+    assert report["model_digest"]
+    assert report["continuation_policy_contract"] == "same_frozen_policy_for_first_q_and_all_continuations"
+    assert report["mask_schema_contract"]["paired_value_composition"] == "same_frozen_policy_for_first_q_and_all_continuations"
+    assert len(report["release_coverage_by_repeat"]) == 1
+    assert np.isscalar(report["release_coverage_by_repeat"][0]["p_release"])
+    assert len(report["release_coverage_by_repeat"][0]["proposal_probabilities"]) == 25
     json.dumps(report, allow_nan=False)
 
 
@@ -298,7 +337,192 @@ def test_paired_gate_retains_branch_errors_and_censors_qualified_value(monkeypat
     failed = next(row for row in report["releases"] if row["proposal"] == 3)
     assert failed["error"]["type"] == "RuntimeError"
     assert report["censored"] is True
-    assert "qualified_delta_Q" not in report
+    assert report["qualified_delta_Q"] is None
+    assert report["expected_release_undiscounted_return"] is None
+    assert report["expected_release_suffix_undiscounted_reward"] is None
+    assert report["expected_release_suffix_by_repeat"] is None
+    assert report["partial_expected_release_accumulated_return"] is not None
+    expected_partial = sum(
+        float(row["undiscounted_return"]) * float(weight)
+        for row, weight in zip(report["releases"], report["proposal_q"])
+    )
+    assert report["partial_expected_release_accumulated_return"] == pytest.approx(expected_partial)
+    assert failed["termination_classification"] == "implementation_error"
+    assert "unresolved" in failed
+    assert "queue_count" in failed
+    assert "service_count" in failed
+    assert "remaining_soc" in failed
+    assert "conflict_events" in failed
+
+
+def test_paired_gate_natural_energy_failure_is_terminal_and_budget_is_censored(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+    policy = _TinyPolicy(np.zeros(25, dtype=np.float32))
+    natural = diagnostic.paired_gate_value(
+        policy,
+        _NaturalFailureEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [107],
+        2,
+    )
+    assert all(row["termination_classification"] == "natural_terminal" for row in natural["branches"])
+    assert all(row["censored"] is False for row in natural["branches"])
+    assert all(row["outcome_counts"]["failed"] == 1 for row in natural["branches"])
+    budget = diagnostic.paired_gate_value(
+        policy,
+        _FakeEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [108],
+        1,
+    )
+    assert all(row["termination_classification"] == "computation_budget_censored" for row in budget["branches"])
+    assert budget["expected_release_undiscounted_return"] is None
+    assert budget["qualified_delta_Q"] is None
+
+
+def test_paired_gate_coverage_uses_approved_decision_even_with_fallback_rank(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+    policy = _TinyPolicy(np.zeros(25, dtype=np.float32))
+    report = diagnostic.paired_gate_value(
+        policy,
+        _FallbackDecisionEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [109],
+        5,
+    )
+    coverage = report["release_coverage_by_repeat"][0]
+    row4 = next(row for row in report["releases"] if row["proposal"] == 4)
+    row5 = next(row for row in report["releases"] if row["proposal"] == 5)
+    assert row4["first_step"]["runtime_shortlist_rank"] == 2
+    assert row4["first_step"]["actual_immediate_approval"] is True
+    assert coverage["actual_immediate_approval"][4] is True
+    assert np.isscalar(coverage["p_release"])
+    assert coverage["p_times_C"] == pytest.approx(report["p_release"] * coverage["C_i"])
+    assert coverage["proposal_weighted_approval_terms"][4] == pytest.approx(coverage["proposal_probabilities"][4])
+    assert row5["first_step"]["future_reservation"] is True
+    assert coverage["actual_immediate_approval"][5] is False
+
+
+def test_paired_gate_preserves_safety_invariant_diagnostic_and_metrics(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+    from terminal_marl.core.runtime_traffic_safety import SafetyInvariantError
+
+    def fail_with_safety(self, actions, proposal_shortlists=None):
+        del actions, proposal_shortlists
+        self.telemetry["safety_interventions"] = self.telemetry.get("safety_interventions", 0.0) + 1.0
+        self.telemetry["collisions"] += 1
+        self.conflict_events.append({"kind": "collision", "time": self.now})
+        raise SafetyInvariantError("blocked", diagnostic={"reason": "no certified action"})
+
+    monkeypatch.setattr(_FakeEnv, "step", fail_with_safety)
+    report = diagnostic.paired_gate_value(
+        _TinyPolicy(np.zeros(25, dtype=np.float32)),
+        _FakeEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [110],
+        2,
+    )
+    failed = report["releases"][0]
+    assert failed["error"]["type"] == "SafetyInvariantError", failed
+    assert failed["error"]["diagnostic"]["reason"] == "no certified action"
+    assert failed["safety_counter_delta"]["collisions"] == pytest.approx(1.0)
+    assert failed["safety_counter_delta"]["safety_interventions"] == pytest.approx(1.0)
+    assert failed["safety_violation_status"] == "violation"
+    assert failed["safety_invariant_error"] is True
+    assert failed["conflict_events"][0]["kind"] == "collision"
+    assert report["qualified_delta_Q"] is None
+
+
+def test_paired_gate_rejects_nonfinite_rewards(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+
+    def nan_reward(self, actions, proposal_shortlists=None):
+        del actions, proposal_shortlists
+        self.step_count += 1
+        self.now = float(self.step_count)
+        return self._observations(), {"1": float("nan")}, {"1": False}, {"1": False}, {}
+
+    monkeypatch.setattr(_FakeEnv, "step", nan_reward)
+    report = diagnostic.paired_gate_value(
+        _TinyPolicy(np.zeros(25, dtype=np.float32)),
+        _FakeEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [111],
+        2,
+    )
+    assert all(row["error"]["type"] == "ValueError" for row in report["branches"])
+    assert all("nonfinite reward" in row["error"]["message"] for row in report["branches"])
+    assert report["qualified_delta_Q"] is None
+
+
+def test_paired_gate_branch_callback_isolated_and_complete_across_natural_and_error_branches(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+    original = _FakeEnv.step
+
+    def fail_selected(self, actions, proposal_shortlists=None):
+        if self.step_count == 0:
+            selected = hierarchical_from_normalized_v4_2(actions["1"])
+            if selected.proposal == 3:
+                raise RuntimeError("callback branch fixture failure")
+        return original(self, actions, proposal_shortlists)
+
+    monkeypatch.setattr(_FakeEnv, "step", fail_selected)
+    callback_rows = []
+
+    def callback(row, completed, total):
+        row["callback_mutated"] = True
+        row["first_step"]["callback_mutated"] = True
+        callback_rows.append((row, completed, total))
+
+    report = diagnostic.paired_gate_value(
+        _TinyPolicy(np.zeros(25, dtype=np.float32)),
+        _FakeEnv(),
+        {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+        {},
+        1,
+        [114],
+        5,
+        branch_callback=callback,
+    )
+    assert len(callback_rows) == 26
+    assert [completed for _, completed, _ in callback_rows] == list(range(1, 27))
+    assert all(total == 26 for _, _, total in callback_rows)
+    assert any(row.get("error", {}).get("type") == "RuntimeError" for row, _, _ in callback_rows)
+    assert any(row["termination_classification"] == "natural_terminal" for row, _, _ in callback_rows)
+    assert all("callback_mutated" not in row for row in report["branches"])
+    assert all("callback_mutated" not in row["first_step"] for row in report["branches"])
+
+
+def test_paired_gate_branch_callback_error_propagates_and_restores_rng(monkeypatch):
+    monkeypatch.setattr(student_rollout_v4_2, "_student_request_details", _details)
+    policy = _TinyPolicy(np.zeros(25, dtype=np.float32))
+    before = _rng_state()
+
+    def callback(_row, _completed, _total):
+        raise RuntimeError("branch writer failed")
+
+    with pytest.raises(RuntimeError, match="branch writer failed"):
+        diagnostic.paired_gate_value(
+            policy,
+            _FakeEnv(),
+            {"1": np.zeros(3, dtype=np.float32), "2": np.zeros(3, dtype=np.float32)},
+            {},
+            1,
+            [115],
+            2,
+            branch_callback=callback,
+        )
+    assert _same_rng(before, _rng_state())
 
 
 def test_gate_update_alignment_reports_finite_local_prediction_and_no_mutation():
@@ -323,6 +547,11 @@ def test_gate_update_alignment_reports_finite_local_prediction_and_no_mutation()
     assert all(np.isfinite(report["linear_approximation"]))
     assert len(report["sign_match"]) == 2
     assert report["delta_q"] == pytest.approx(0.25)
+    assert len(report["exact_linear_residual"]) == 2
+    assert report["local_m"] == pytest.approx([value * 0.25 for value in report["actual_probability_delta"]])
+    assert report["proposal_unchanged"] is True
+    assert report["proposal_probability_unchanged"] is True
+    assert report["mask_schema_contract"]["paired_value_composition"] == "same_frozen_policy_for_first_q_and_all_continuations"
     assert report["model_unchanged"] is True
     assert report["rng_unchanged"] is True
     assert _same_rng(rng_before, _rng_state())
@@ -346,6 +575,7 @@ def test_gate_update_alignment_handles_frozen_before_parameters():
     )
     assert report["model_unchanged"] is True
     assert np.isfinite(report["linear_approximation"]).all()
+    assert np.isfinite(report["exact_linear_residual"]).all()
     assert all(not parameter.requires_grad for parameter in before.model.parameters())
 
 
@@ -375,6 +605,59 @@ def test_real_terminal_parallel_env_keyed_request_two_tick_smoke():
     assert isinstance(terminated, dict)
     assert isinstance(truncated, dict)
     json.dumps(diagnostic._jsonable({"request": request.details, "info": info}), allow_nan=False)
+
+
+def test_restore_diagnostic_snapshot_rebinds_real_terminal_hooks_and_isolates_copy():
+    from terminal_marl.core.uav import TerminalOutcome
+    from terminal_marl.training import diagnose_p3_terminal_credit as terminal_credit
+    from terminal_marl.training import terminal_lifecycle_metrics
+
+    config = replace(
+        _config(),
+        experiment_mode="fixed_low_student",
+        teacher_enabled=False,
+        teacher_mode="teacher_label_only",
+        observation_schema_version="phaseA_low_obs_v2_1_retry_state",
+        warm_start_uavs=1,
+        total_requested_uavs=3,
+        fixed_arrival_schedule=(0.0, 10.0, 20.0),
+        max_simulation_seconds=30.0,
+        runtime_proposal_shortlist_k=3,
+    )
+    source = TerminalParallelEnv(config)
+    source.reset(112)
+    terminal_lifecycle_metrics._capture_terminal_rows(source)
+    terminal_credit._request_capture(source)
+    source_requested = set(source.ledger.requested)
+    source_outcomes = copy.deepcopy(source.ledger.outcomes)
+    source_active = set(source.active)
+    source_generated = int(source.arrivals.generated)
+    source_index = int(source.arrivals.index)
+    source_next_time = float(source.arrivals.next_time)
+    source_rng = pickle.dumps(source.arrivals.rng.bit_generator.state)
+
+    branch = copy.deepcopy(source)
+    diagnostic.restore_diagnostic_snapshot(branch)
+    assert branch._step_observer is None
+    assert branch._resolve.__self__ is branch
+    assert branch.arrivals.requests_until.__self__ is branch.arrivals
+
+    future = branch.arrivals.requests_until(20.0)
+    signatures = [diagnostic._request_signature(request) for request in future]
+    assert [row["arrival_id"] for row in signatures] == [1, 2]
+    assert [row["request_time"] for row in signatures] == pytest.approx([10.0, 20.0])
+    assert all({"arrival_id", "request_time", "initial_soc", "base_priority", "gate_id", "mission"} <= set(row) for row in signatures)
+    assert source.arrivals.generated == source_generated
+    assert source.arrivals.index == source_index
+    assert source.arrivals.next_time == pytest.approx(source_next_time)
+    assert pickle.dumps(source.arrivals.rng.bit_generator.state) == source_rng
+
+    branch_uav = next(iter(branch.active.values()))
+    branch._resolve(branch_uav, TerminalOutcome.FAILED_ENERGY, "diagnostic")
+    assert source.ledger.requested == source_requested
+    assert source.ledger.outcomes == source_outcomes
+    assert set(source.active) == source_active
+    assert branch.ledger.outcomes[branch_uav.arrival_id] is TerminalOutcome.FAILED_ENERGY
 
 
 def test_real_paired_gate_respects_environment_time_limit():
@@ -407,5 +690,5 @@ def test_real_paired_gate_respects_environment_time_limit():
     assert all(branch["steps"] == 2 for branch in report["branches"])
     assert all(branch["censor_reason"] == "environment_time_limit" for branch in report["branches"])
     assert report["censored"] is True
-    assert "qualified_delta_Q" not in report
+    assert report["qualified_delta_Q"] is None
     json.dumps(report, allow_nan=False)

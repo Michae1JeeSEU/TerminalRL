@@ -485,6 +485,7 @@ def _capture_replay(
     tape_rows: Sequence[Mapping[str, Any]],
     *,
     progress_callback: Callable[[int], None] | None = None,
+    state_observer: Callable[[Any], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     env = TerminalParallelEnv(config)
     captured_terminal, first_seen = terminal_lifecycle_metrics._capture_terminal_rows(env)
@@ -507,6 +508,11 @@ def _capture_replay(
         actor_mask = actor_mask_for_env(env, uids)
         release_probabilities = _policy_release_probabilities(policy, world)
         value = float(student_rollout_v4_2.world_value(policy, world))
+        state_context = None
+        if state_observer is not None:
+            state_context = state_observer(env)
+            _require(isinstance(state_context, Mapping), "state_observer must return a mapping")
+            state_context = dict(state_context)
         raw_actions = args[0] if args else kwargs.get("actions", {})
         raw_actions = raw_actions or {}
         gates: list[int] = []
@@ -568,6 +574,8 @@ def _capture_replay(
             "terminated": terminal,
             "episode_end": episode_end,
         })
+        if state_context is not None:
+            captures[-1]["state_context"] = state_context
         if progress_callback is not None and (len(captures) % 25 == 0 or len(captures) == len(tape_rows)):
             progress_callback(len(captures))
         return following, rewards, _terminated, _truncated, info

@@ -1,5 +1,9 @@
 # 项目当前状态
 
+## 2026-09-30 P3 follow-up 修复
+
+最新对话要求的 full/partial return、被动 hook 场景复制隔离、forced WAIT probability-one 元数据及 V2.1→V2.4 等价初始化迁移已修正；82 个唯一集成测试通过。原 6 个完整场景共 4,497 步、144 请求 exact replay、生命周期与账本闭合、模型未变。完整周期 pilot 已完成，26 分支全部自然终止且无安全违规；首状态出现 D<0 而 RELEASE 概率上升的不利更新，24 状态×4 continuation seeds 已预注册但尚未完成；P3 退化仍未证明解决，PPO_ALLOWED=false、heldout 未使用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md) 和 [预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md)。
+
 ## 2026-09-30 研究复核与修复更新
 
 本轮完成“评估研究与训练”对话中 17 项不足的逐项复核，并完成已确认实现缺陷的代码修复与文档同步；新增实验性 Observation V2.4、`student_decision_mask_mode=pre_action_forced_wait` 和高层计量修正。相关实现回归、修正后的 paired helper 与 real-artifact smoke 已通过；distinct pytest cases 按 `154 = 126 + 18 + 1 + 9` 记录，重跑不重复计数。real-artifact smoke 为 `COMPLETED exit0`，因 `censored=true` 未产生 `qualified_delta_Q`，不形成 causal/performance conclusion；详见 [研究复核与修复登记](evidence/v4_2/research_review_repairs_20260930.md)。方法性贡献、qualification 与 P3 性能退化仍未证解决；`PPO_ALLOWED=false`，正式 P3 继续使用 88D，新 schema 需独立 qualification，heldout 未消费。
