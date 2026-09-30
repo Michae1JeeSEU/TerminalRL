@@ -1,5 +1,8 @@
 # 项目当前状态
 
+> **LATEST ROLLING STATUS（2026-10-01）：** 当前 trained regression 已复现；uniform-q floor candidate 已拒绝；matched-state gate-shift causal diagnostic 已完成 `2918` steps；causal tool tests `18` 项通过。trained gate-value V2 server no-env preflight=`PREFLIGHT_OK exit0`，real-JSON roundtrip phase validation=`PHASE_VALIDATION_OK exit0`，replay/model-update checks 通过；exactly one V2 pilot 已授权，实际 launch PID/artifact proof 尚待确认。`PPO_ALLOWED=false`。
+
+
 ## 2026-09-30 P3 follow-up 修复
 
 ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 4 continuation seeds × 26 branches = 2,496 个 branch，均为 `natural_terminal`，0 error/censor；model、environment、caller RNG unchanged checks 均通过。前置诊断中有 14 个 retry-guaranteed states。首状态 4 个 continuation seed 的 D 符号混合；不据单个 seed 的 D<0 作归因。
@@ -153,11 +156,15 @@ root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligi
 
 `actual_outcomes` counts are repeated observation rows, not unique flights: cell 1 `4681 completed / 2494 emergency_landed`, cell 2 `4701/2834`, cell 3 `6443/1321`, cell 4 `4010/3107`. Inner eligible mean Δp is negative in all four tapes; middle and outer changes are small positive values in these descriptive rows. These statistics are not independent trials, action credit `D`, full value, or a global gain; no outcome-selected state claim is made.
 
-## 下一项准备：trained gate-value matched-state diagnostic（implementation preparation only）
+## Trained gate-value matched-state diagnostic：V1 事实与 V2 准备
 
-root 当前仅准备新的 trained gate-value diagnostic，尚未启动 causal server run。固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`、retry-free、native-order 的状态：C1 step `168` UID `3`/arrival `3`，C2 step `202` UID `2`/arrival `2`，C3 step `198` UID `2`/arrival `2`，C4 step `187` UID `3`/arrival `3`。这些状态按 eligibility 选择，不按 outcome 或 p-delta 选择，不替换原有 24-state 结果，也不重采样。
+协议已写入 [trained gate-value protocol](evidence/v4_2/p3_trained_gate_value_protocol_20261001.md)。代码先后为 `d849b2` 与 serialization fix `c5d3d900970dc036a05fb2dd8f4b1cd552cc0564`；18 个 focused tests、compile/diffcheck 和 local no-env preflight 通过。估计器固定四个 states、policy seeds=`9303201..04`、cap=`1800`，使用 common native K=3 q，并沿 `arrival_id|tick|stream` 复用同一 frozen BEFORE `3fe7` continuation。target-only exact Δp、full `D` 和 local `m` 均待实际运行；local `m` 不求和为 global gain。counterfactual suffix 是新的模拟轨迹，不能表述为“没有 simulation”。
 
-准备中的每个状态将恢复既有 tape 的 exact prestate，其余 first requests 保持 native AFTER tape；首步比较 WAIT 与全部 25 个 RELEASE actual-q/native-K3 branches，随后使用同一冻结 BEFORE `3fe7` actor continuation。固定 policy seeds 为 `9303201..04`、cap=`1800`，每状态 `104` branches；full `D` 包含首步 reward，local `m` 不作为 global gain。当前仍是 implementation preparation only，无 PPO、Teacher、optimizer、held-out、新 performance sample 或 solution/root-cause claim。
+server V1 preflight SHA=`fc05db44044615c329cfa34147c49df4e5cf50630002f137427d3c95c505ccc2`，状态为 `PREFLIGHT_OK`、no-env；wrapper malformed invocation 在 AFTER module 后返回 `1`，module exit unknown。V1 pilot 的真实 PID=`2121108`、argv/cwd 已核对，但在 environment/branch 之前因 `matched/native full binding changed` 退出；`pilot_v1.log` 为 `115` bytes，没有 pilot/error/branch outputs，preflight progress 保持不变。root 已核对 cause JSON 中保存的 string paths 与 runtime paths 的 raw comparison；inputs SHA checks 未变化。serialization fix 统一 canonical paths/SHA，并保留 prevalidation error artifact；V1 failed output root 保留为 `/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001`。
+
+V2 output root 为 `/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2`；server V2 no-env preflight proof SHA=`9dd8b463d61086c0c76e02db582b6a3b105f2bb4c4352b4da95358493eb05a0f`，`PREFLIGHT_OK exit0`；actual readJSON→`_validate_preflight` phase validation=`PHASE_VALIDATION_OK exit0`，no-env/replay/model-update checks 通过，stored source/runtime/runner/protocol bindings 与四个 locked-state bindings 匹配。root 已授权 exactly one V2 pilot，实际 launch PID/artifact proof 尚待确认；尚无 V2 physical pilot/full 的终态结果，`D` 与 `m` 均未知；没有新 performance episode、PPO、Teacher、optimizer 或 held-out。
+
+V2 固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`、retry-free、native-order 的 states：C1 step `168` UID `3`/arrival `3`，C2 step `202` UID `2`/arrival `2`，C3 step `198` UID `2`/arrival `2`，C4 step `187` UID `3`/arrival `3`。这些 states 按 eligibility 选择，不按 outcome 或 p-delta 选择，不替换原有 24-state 结果，也不重采样；exact prestate 恢复、其余 first requests 保持 native AFTER tape，首步比较 WAIT 与全部 25 个 RELEASE actual-q/native-K3 branches，full `D` 包含首步 reward。gate probability 的下降或上升仍需 `D` 验证；当前不作 root-cause 或 solution 结论，`PPO_ALLOWED=false`。
 
 ## 2026-09-30 研究复核与修复更新
 
