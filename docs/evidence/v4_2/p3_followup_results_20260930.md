@@ -155,6 +155,30 @@ physics、guard、model 或 optimizer，也不宣称修复或新增因果归因�
 q 的可执行 K=3 分支，因此不将该时刻描述为不可行。这只是单次 failure 加
 frozen continuation，尚未选择训练修复，P3 仍未解决。
 
+## Frozen-WAIT 对照 pilot 与完整运行状态
+
+本轮 frozen-WAIT 对照的代码版本为 `9aa7970`，配套文档提交为
+`b2aa6f8`。新增 focused tests 为 `10` 个；既有相关 `36` 个测试和
+forced-WAIT `6` 个测试保持通过，不重复累计。服务器源码 SHA 与 preflight
+校验通过；本轮没有新增环境改动。`preflight_v1.log` 保留了初始工作目录错误：
+phase 开始前出现 `ModuleNotFoundError` 且没有 phase outputs；纠正项目 cwd 后，
+`preflight_v2` 报告 `PREFLIGHT_OK`，两份记录均保留。
+
+固定 pilot pair 为 environment seed `877101` 与 keyed policy seed `9303101`，
+状态为 `PILOT_OK/PAIR_OK`：两臂均运行 `694` ticks、自然终止且未 censor；两臂
+的 `24` 个请求一致，ledger 全部 resolved，model、caller RNG、source、safety、
+energy 和 wait checks 均通过。两臂 outcome 均为 `23 normal / 1 emergency /
+0 failed / 0 diverted / 0 unresolved`；wait 为 `2727.950535124339 s`，
+external 为 `335 s`，internal 为 `2392.950535124339 s`，full-scene time 为
+`694 s`。raw reward 的差值为 `+2.5`，全部来自 rejection penalty；排除该
+penalty 后差值为 `0`。该 pilot 没有观测到 business gain，不形成 performance claim。
+
+完整运行已用显式项目 cwd 启动，PID 为 `2063491`；argv、progress 和新 pair
+`2/3/4` 的 legacy 记录均已通过启动检查。固定范围为 `24` 个 complete-scene
+seed pairs，复用 pilot pair 1，仅运行其余 `23` 个 pair，每臂上限为 `1800` ticks。
+日志和输出位于 `full_v1.log` 及其 output root。记录时完整运行仍在进行，等待
+全部 `24` 个 pair；当前不作为 qualification solved 结论。
+
 ## 边界
 
-pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 诊断已 `COMPLETED`：24/24 state、2,496/2,496 branch，自然终止且无 error/censor；`PPO_ALLOWED=false` 保持。已观测到 14 个纯 `safety_wait` state，root 已选择独立的 frozen `legacy`/`pre_action_forced_wait` 对照，范围为 24 个 complete-scene seed pairs；readiness review corrections 进行中，尚未启动 server，PPO 保持 false。
+pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 诊断已 `COMPLETED`：24/24 state、2,496/2,496 branch，自然终止且无 error/censor；`PPO_ALLOWED=false` 保持。已观测到 14 个纯 `safety_wait` state，root 已选择独立的 frozen `legacy`/`pre_action_forced_wait` 对照，pilot 已通过，完整运行仍在进行中，尚不形成 qualification 结论，PPO 保持 false。
