@@ -52,6 +52,35 @@ the single default schedule. The four runs use `OMP_NUM_THREADS=1` and
 `MKL_NUM_THREADS=1`; this is scheduling only and does not add an experimental
 factor or change the estimator.
 
+## Recorded four-shard completion
+
+The final named group reports under `causal/shard_0` through `causal/shard_3`
+all report `COMPLETED`. Each shard contains six selected states and 624 branch
+rows; together they contain 24 states and 2,496 WAIT/RELEASE branch rows. The
+four `diagnose.json` modification times were `19:12:51`, `18:23:26`,
+`19:19:08`, and `18:14:25` for shards 0 through 3 respectively. All 24 state
+reports have complete `D` and `m`; all 2,496 branches are
+`natural_terminal`, with zero errors and zero censored branches. The state
+reports mark model, environment, and caller RNG unchanged as `true`.
+
+The reports bind source checkpoint SHA256
+`3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab`, warmup
+SHA256 `a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710`,
+and the after batch-01 checkpoint SHA256
+`a7bcf3d1e6f4bda82d0d051ec25966a18f267309f1d6030689b52d90e63aa366`.
+`PPO_ALLOWED=false`, held-out input is false, optimizer calls are zero, and
+teacher use is false in every shard. The maximum absolute difference between a
+state `D` and the mean of its four seed differences is
+`7.1054273576010019e-14`; the exact per-state table is recorded in the results
+document.
+
+This completion record is a bounded conditional diagnostic. Fourteen states are
+recorded as pure `safety_wait`; root selected the separate frozen mask
+comparison described in [the forced-WAIT protocol](p3_forced_wait_frozen_protocol_20260930.md).
+This diagnostic changes no mask or PPO. The `3fe7+a82` representative and the
+independent source16 / batch-02 episode-24 failure-mechanism record remain
+separate from this 24-state group.
+
 For every paired diagnostic, the target actor's first action is varied while
 the other actors' first actions and the recorded
 `runtime_proposal_shortlists` remain fixed to that tape row. The continuation

@@ -2,7 +2,9 @@
 
 ## 2026-09-30 P3 follow-up 修复
 
-最新对话要求的 full/partial return、被动 hook 场景复制隔离、forced WAIT probability-one 元数据及 V2.1→V2.4 等价初始化迁移已修正；82 个唯一集成测试通过。原 6 个完整场景共 4,497 步、144 请求 exact replay、生命周期与账本闭合、模型未变。完整周期 pilot 已完成，26 分支全部自然终止且无安全违规；首状态出现 D<0 而 RELEASE 概率上升的不利更新，24 状态×4 continuation seeds 已预注册但尚未完成；P3 退化仍未证明解决，PPO_ALLOWED=false、heldout 未使用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md) 和 [预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md)。
+ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 4 continuation seeds × 26 branches = 2,496 个 branch，均为 `natural_terminal`，0 error/censor；model、environment、caller RNG unchanged checks 均通过。前置诊断中有 14 个 retry-guaranteed states。首状态 4 个 continuation seed 的 D 符号混合；不据单个 seed 的 D<0 作归因。
+
+已选择 source `3fe7+a82`、88D/K3、同一 `dense24` 物理配置的 `legacy` vs `pre_action_forced_wait` 对照，范围为 24 个 complete-scene seed pairs；readiness review corrections 进行中，尚未 server launch。P3 退化仍未证解决，`PPO_ALLOWED=false`、heldout 未用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md)、[预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md) 和 [forced-WAIT frozen comparison protocol](evidence/v4_2/p3_forced_wait_frozen_protocol_20260930.md)。
 
 ## 2026-09-30 研究复核与修复更新
 
