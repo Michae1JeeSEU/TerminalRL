@@ -4,6 +4,19 @@
 
 本页记录本轮 review scope 的实现、只读诊断 artifact 和测试事实；不把回归测试写成 qualification，也不声称 P3 性能改善。未运行训练、optimizer、held-out 或 pilot 性能评估。
 
+## 可执行动作机会诊断预注册
+
+这是下一轮冻结策略机会覆盖的预注册范围，属于被动机制诊断，不是训练、checkpoint 选择或 qualification。固定参考为 9 个 legacy arms：pair `1/5/9/13/17/21`（`env=877101..877106`、keyed policy `9303101`），以及 `pair 14/15/16`（`env=877104`、keyed policy `9303102/9303103/9303104`）。源为 `3fe7+a82`，保持 88D、K=3、legacy mask 和同一物理配置；`PPO_ALLOWED=false`，held-out 不使用。
+
+每个参考场景在 tick `100–149`、`300–349`、`500–549` 中按顺序取第一个满足预注册条件的合法状态，最多 `27` 个 state；每个 state 固定执行 `WAIT + 25` proposal 的 `26` 个 one-step 分支。分支使用真实策略 proposal 概率计算 `C` 与 `pC`，只记录 native decision 和即时 reward difference；不计算 `D` 或 global value，不取 best proposal、不删除失败分支、不重抽样。完整条件、source replay 对齐和停止规则见 [P3 executable-opportunity coverage protocol](p3_opportunity_coverage_protocol_20260930.md)。
+
+证据标记如下：
+
+- `preexisting_artifact`：既有 frozen-WAIT `full.json` 的 `FULL_OK/pair_count=24` 结果，以及该协议和 reference directory。
+- `newly_run`：local preflight 为 `PREFLIGHT_OK`，并完成 compile/diffcheck；机会 runner 的 focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`。本轮服务器只读基础快照在 `/home/user/projects/terminal` 执行并以 exit `0` 返回；115-file runtime manifest 的 SHA mismatch count 为 `0`，source `3fe7` 与 warmup `a82` checkpoint SHA 与预注册值一致。
+
+本轮新机会诊断的 server pilot/full 尚未启动。新 runner 的 small-fixture 实现及其 `11` 项 focused test、`37` 项 combined recheck 已完成；这些是实现与接口验证，不形成性能或因果结论。
+
 本地唯一集成命令为：
 
 ```text

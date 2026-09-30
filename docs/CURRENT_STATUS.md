@@ -6,6 +6,12 @@ ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 
 
 已选择 source `3fe7+a82`、88D/K3、同一 `dense24` 物理配置的 `legacy` vs `pre_action_forced_wait` 对照，范围为 24 个 complete-scene seed pairs。固定 pilot pair `env877101/keyed9303101` 已 `PILOT_OK/PAIR_OK`；完整运行已 `FULL_OK/pilot_reused`，PID `2063491` 已退出，24 pairs/48 runs 自然终止且 0 censor/error，安全、source/model/caller-RNG、配置/runtime、请求 identity、ledger/energy/wait checks 均通过。forced-WAIT mechanical/probability semantics 已验证，但不提升为 formal/default；P3 仍未解决，后台长任务已结束，`PPO_ALLOWED=false`、heldout 未用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md)、[预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md) 和 [forced-WAIT frozen comparison protocol](evidence/v4_2/p3_forced_wait_frozen_protocol_20260930.md)。
 
+## 2026-09-30 P3 executable-opportunity 预注册准备
+
+已登记 9 个参考 arms：`1/5/9/13/17/21` 对应 `env877101..877106 + keyed9303101`，以及 `14/15/16` 对应 `env877104 + keyed9303102/9303103/9303104`。保持 source `3fe7+a82`、88D、K=3、legacy mask 与同一物理配置；每个场景在 `100–149`、`300–349`、`500–549` 首个合法窗口最多取一个 state，最多 `27×26` 个 one-step `WAIT + 25 proposal` 分支。诊断只使用真实 `q` 计算 `C/pC`，不使用 `D/global value`，不取 best、不删除失败、不重抽样。详见 [executable-opportunity coverage protocol](evidence/v4_2/p3_opportunity_coverage_protocol_20260930.md)。
+
+本轮 `newly_run` local preflight 为 `PREFLIGHT_OK`，compile/diffcheck exit `0`，机会 runner focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`；服务器只读快照 exit `0`，115-file runtime manifest mismatch `0`，source/warmup checkpoint SHA 与预注册值匹配。`preexisting_artifact` 为既有 forced-WAIT `full.json` 的 `FULL_OK`/24 pairs。新机会诊断 server pilot/full 尚未启动；`PPO_ALLOWED=false`、held-out 未使用。上述 small-fixture 与接口检查不形成性能或因果结论。
+
 ## 2026-09-30 研究复核与修复更新
 
 本轮完成“评估研究与训练”对话中 17 项不足的逐项复核，并完成已确认实现缺陷的代码修复与文档同步；新增实验性 Observation V2.4、`student_decision_mask_mode=pre_action_forced_wait` 和高层计量修正。相关实现回归、修正后的 paired helper 与 real-artifact smoke 已通过；distinct pytest cases 按 `154 = 126 + 18 + 1 + 9` 记录，重跑不重复计数。real-artifact smoke 为 `COMPLETED exit0`，因 `censored=true` 未产生 `qualified_delta_Q`，不形成 causal/performance conclusion；详见 [研究复核与修复登记](evidence/v4_2/research_review_repairs_20260930.md)。方法性贡献、qualification 与 P3 性能退化仍未证解决；`PPO_ALLOWED=false`，正式 P3 继续使用 88D，新 schema 需独立 qualification，heldout 未消费。
