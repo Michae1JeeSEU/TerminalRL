@@ -173,12 +173,77 @@ external 为 `335 s`，internal 为 `2392.950535124339 s`，full-scene time 为
 `694 s`。raw reward 的差值为 `+2.5`，全部来自 rejection penalty；排除该
 penalty 后差值为 `0`。该 pilot 没有观测到 business gain，不形成 performance claim。
 
-完整运行已用显式项目 cwd 启动，PID 为 `2063491`；argv、progress 和新 pair
-`2/3/4` 的 legacy 记录均已通过启动检查。固定范围为 `24` 个 complete-scene
-seed pairs，复用 pilot pair 1，仅运行其余 `23` 个 pair，每臂上限为 `1800` ticks。
-日志和输出位于 `full_v1.log` 及其 output root。记录时完整运行仍在进行，等待
-全部 `24` 个 pair；当前不作为 qualification solved 结论。
+完整运行使用显式项目 cwd 启动，`full.json` 完成时间为 `20:50:31`；PID
+`2063491` 已退出，状态为
+`FULL_OK/pilot_reused`。固定的 `24` 个 complete-scene pairs 全部为
+`PAIR_OK`；两臂共 `48` 个 run 均自然终止，censor 与 error 均为 `0`。
+safety、source/model/caller-RNG、config/runtime、preflight、24 个请求的
+identity、ledger、energy 和 wait checks 均通过。P3 heartbeat 已删除，授权的
+后台终端已无继续运行的长任务。
+
+这些是 `6` 个 environment seeds × `4` 个 keyed policy seeds 的 `24` 个 scene
+events，合计每臂 `576` 个 request events，不是 `576` 个 distinct environment
+ profiles。每臂在 24 个场景中的累计 generated/admitted 均为 `576`，successful
+completion 为 `574`，resolved 为 `576`；单场景 generated/admitted 均为 `24`。
+business outcomes 汇总为 `491 normal / 83 emergency / 2 failed_energy / 0 diverted /
+0 unresolved`。两臂每个 pair 的
+request identity、business outcome、wait、elapsed 和 energy 均一致；全体 request
+wait 为 `79582.65016586734 s`（每 request `138.1643232046308 s`），elapsed
+为 `223350 s`（每 request `387.7604166666667 s`），model energy 为
+`185263.64932818164`（每 request `321.6382800836487`）。
+
+| pair | env | keyed policy | outcome N/E/F/D/U | request wait (s) | Δ reward | Δ raw reward excluding penalty |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 877101 | 9303101 | 23/1/0/0/0 | 2727.950535124339 | 2.5 | 0 |
+| 2 | 877101 | 9303102 | 23/1/0/0/0 | 2971.032914830321 | 2.24999999999989 | -1.13686837721616e-13 |
+| 3 | 877101 | 9303103 | 23/1/0/0/0 | 2389.289311552574 | 2.5 | 0 |
+| 4 | 877101 | 9303104 | 23/1/0/0/0 | 2973.392271431140 | 2.85000000000002 | 5.6843418860808e-14 |
+| 5 | 877102 | 9303101 | 20/4/0/0/0 | 3181.211230903982 | 2.79999999999995 | -5.6843418860808e-14 |
+| 6 | 877102 | 9303102 | 19/5/0/0/0 | 4085.035316034269 | 3.10000000000014 | 1.70530256582424e-13 |
+| 7 | 877102 | 9303103 | 20/4/0/0/0 | 3209.871293396141 | 2.00000000000017 | 1.70530256582424e-13 |
+| 8 | 877102 | 9303104 | 19/5/0/0/0 | 3860.159914917639 | 3.0999999999998 | -2.27373675443232e-13 |
+| 9 | 877103 | 9303101 | 20/4/0/0/0 | 2849.776218448148 | 2.75 | 0 |
+| 10 | 877103 | 9303102 | 21/3/0/0/0 | 3072.733442276747 | 2.19999999999999 | 0 |
+| 11 | 877103 | 9303103 | 20/4/0/0/0 | 3611.372152201485 | 2.69999999999993 | -5.6843418860808e-14 |
+| 12 | 877103 | 9303104 | 19/5/0/0/0 | 4007.885506863763 | 3.24999999999989 | -1.13686837721616e-13 |
+| 13 | 877104 | 9303101 | 20/3/1/0/0 | 4195.360899337695 | 3.80000000000018 | 1.70530256582424e-13 |
+| 14 | 877104 | 9303102 | 19/5/0/0/0 | 3028.233562992693 | 2 | 0 |
+| 15 | 877104 | 9303103 | 21/3/0/0/0 | 2464.012435507064 | 2.5 | 0 |
+| 16 | 877104 | 9303104 | 16/7/1/0/0 | 4036.144102041071 | 3.65000000000032 | 2.8421709430404e-13 |
+| 17 | 877105 | 9303101 | 21/3/0/0/0 | 3298.552351300552 | 3.55000000000007 | 1.13686837721616e-13 |
+| 18 | 877105 | 9303102 | 22/2/0/0/0 | 3055.202866579842 | 2.50000000000011 | 1.13686837721616e-13 |
+| 19 | 877105 | 9303103 | 19/5/0/0/0 | 4149.664203967385 | 2.69999999999993 | -5.6843418860808e-14 |
+| 20 | 877105 | 9303104 | 22/2/0/0/0 | 3475.689252696497 | 2.04999999999995 | -5.6843418860808e-14 |
+| 21 | 877106 | 9303101 | 20/4/0/0/0 | 3448.775915692401 | 3.15000000000009 | 5.6843418860808e-14 |
+| 22 | 877106 | 9303102 | 20/4/0/0/0 | 3312.577657439126 | 2.44999999999993 | -5.6843418860808e-14 |
+| 23 | 877106 | 9303103 | 20/4/0/0/0 | 2977.679794638645 | 2.60000000000002 | 5.6843418860808e-14 |
+| 24 | 877106 | 9303104 | 21/3/0/0/0 | 3201.047015693814 | 2.65000000000009 | 1.13686837721616e-13 |
+
+Legacy total reward was `10825.398813678652` with release rejection penalty
+`-426.05`; forced-WAIT total reward was `10890.998813678656` with penalty
+`-360.45`. Excluding the penalty, both arms were `11251.448813678655`; the total
+reward gain `65.6` came entirely from the rejection penalty. The maximum per-pair
+absolute difference after excluding that penalty was
+`2.8421709430404007e-13`, treated as floating-point noise. Physical wait, elapsed,
+energy and outcome deltas were all `0`.
+
+Failure pairs `13` and `16` are the same request event under environment `877104`
+and keyed policy seeds `9303101`/`9303104`: request `13`, UID `46`, `standard`,
+initial SOC `0.5549178989494378`, final SOC `0`, request time `30`, terminal time
+`862`, `ring_outer`, `energy_depleted`, external wait `29 s`, internal wait
+`747.8147075862394 s`, total wait `776.8147075862394 s`, consumed energy
+`833.1666666666666`. The event is identical in both arms. These are repeated
+request events in the 24-scene comparison, not evidence that the scene is
+infeasible or a root-cause attribution for P3. The source before update was
+`3fe7+a82`; the separate old source16 true failure with UID `57` is not mixed into
+this result.
+
+The frozen-WAIT mechanical and probability semantics passed this protocol. The
+mode is not promoted to formal/default behavior, and the result does not verify
+learning efficacy or qualification. Joint resource-energy reachability and
+executable-candidate coverage evidence, followed by qualification, remain required
+before PPO; no new training was approved or launched.
 
 ## 边界
 
-pilot 测量已完成，尚无性能改善结论。P3 退化是否解决仍未由本轮回归测试和 replay 证明；strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 诊断已 `COMPLETED`：24/24 state、2,496/2,496 branch，自然终止且无 error/censor；`PPO_ALLOWED=false` 保持。已观测到 14 个纯 `safety_wait` state，root 已选择独立的 frozen `legacy`/`pre_action_forced_wait` 对照，pilot 已通过，完整运行仍在进行中，尚不形成 qualification 结论，PPO 保持 false。
+pilot 与完整 frozen-WAIT 对照均已完成；尚无学习 efficacy 或 qualification 结论。P3 退化仍未证解决；strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 诊断已 `COMPLETED`：24/24 state、2,496/2,496 branch，自然终止且无 error/censor；`PPO_ALLOWED=false` 保持。forced-WAIT 仅作为已完成的实验性 mechanical/probability 对照，不提升为 formal/default，也未批准或启动新训练。下一步需补 joint resource-energy reachability、executable-candidate coverage 和 qualification 证据。

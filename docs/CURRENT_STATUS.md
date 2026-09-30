@@ -4,7 +4,7 @@
 
 ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 4 continuation seeds × 26 branches = 2,496 个 branch，均为 `natural_terminal`，0 error/censor；model、environment、caller RNG unchanged checks 均通过。前置诊断中有 14 个 retry-guaranteed states。首状态 4 个 continuation seed 的 D 符号混合；不据单个 seed 的 D<0 作归因。
 
-已选择 source `3fe7+a82`、88D/K3、同一 `dense24` 物理配置的 `legacy` vs `pre_action_forced_wait` 对照，范围为 24 个 complete-scene seed pairs。固定 pilot pair `env877101/keyed9303101` 已 `PILOT_OK/PAIR_OK`，两臂 694 ticks 自然终止且未 censor；完整 24-pair run 已启动并仍在运行，当前不形成 qualification 结论。P3 退化仍未证解决，`PPO_ALLOWED=false`、heldout 未用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md)、[预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md) 和 [forced-WAIT frozen comparison protocol](evidence/v4_2/p3_forced_wait_frozen_protocol_20260930.md)。
+已选择 source `3fe7+a82`、88D/K3、同一 `dense24` 物理配置的 `legacy` vs `pre_action_forced_wait` 对照，范围为 24 个 complete-scene seed pairs。固定 pilot pair `env877101/keyed9303101` 已 `PILOT_OK/PAIR_OK`；完整运行已 `FULL_OK/pilot_reused`，PID `2063491` 已退出，24 pairs/48 runs 自然终止且 0 censor/error，安全、source/model/caller-RNG、配置/runtime、请求 identity、ledger/energy/wait checks 均通过。forced-WAIT mechanical/probability semantics 已验证，但不提升为 formal/default；P3 仍未解决，后台长任务已结束，`PPO_ALLOWED=false`、heldout 未用。详见 [follow-up 修复与结果](evidence/v4_2/p3_followup_results_20260930.md)、[预注册诊断协议](evidence/v4_2/p3_followup_protocol_20260930.md) 和 [forced-WAIT frozen comparison protocol](evidence/v4_2/p3_forced_wait_frozen_protocol_20260930.md)。
 
 ## 2026-09-30 研究复核与修复更新
 
