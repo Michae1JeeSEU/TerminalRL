@@ -47,9 +47,9 @@ Aggregate control/reference 为 `N 190/180`、`E 25/34`、`F 1/2`、`D 0/0`、`U
 
 按预注册规则，该结果是 development candidate PASS only；不是 qualification、PPO 准入、默认配置晋升，也不能单独证明训练退化根因或 P3 已解决。`PPO_ALLOWED=false`，heldout 未使用。
 
-## 2026-10-01 下一项 balanced proposal-support development（已登记，未启动）
+## 2026-10-01 Balanced proposal-support full running（terminal proof pending）
 
-下一项保持 original 固定 24 请求、epsilon=`0.1`、source/config/cap 不变，复用现有 9 个 proposal-support 场景和 24 个 legacy references，仅新增 15 个 control 运行；不新增 seed、不重抽样、不改 epsilon、不扩 cap、不使用 heldout。balanced runner/protocol 已实现，尚未启动 preflight 或运行。
+下一项保持 original 固定 24 请求、epsilon=`0.1`、source/config/cap 不变，复用现有 9 个 proposal-support 场景和 24 个 legacy references，仅新增 15 个 control 运行；不新增 seed、不重抽样、不改 epsilon、不扩 cap、不使用 heldout。balanced runner/protocol 已实现，20 个本地唯一测试通过（balanced 9 + proposal-support 11，未与此前 38 重复计数）。server no-env preflight v2 已通过，proof 为 `.tmp/p3_proposal_support_balanced_preflight_proof.json`，SHA256=`080623f6e94a891ae1f2abb83ecb7b8e9a7326e0e93533f20865de465576e5da`；source 3 files SHA 同步，server/local preflight SHA 相等。v1 FAILED 记录保留在 `preflight_v1.failed_progress.json`，输入未修改；roundtrip fix commit 为 `70db382`。root 已准入首次 balanced full，仅运行新增 15 个 control、复用既有 9 个 control 和 24 个 legacy references。实际服务器 full 已启动：proof 为 `.tmp/p3_proposal_support_balanced_launch_proof.json`，PID `2105971`，cwd `/home/user/projects/terminal`，argv 为项目 venv 的 `run_p3_proposal_support_balanced_20261001 --phase full`，executable `/usr/bin/python3.12`，3 个环境 flags 为 `1`；`2026-10-01 02:30:53+0800` 时 pair `2` 为 tick `275`/24 requests、`RUNNING`，log 为 0 bytes，full 终态未知。仅 15 new/reuse 9 fixed，未记录 launch 偏差；heartbeat `p3-balanced-proposal-support` 已创建（2 min）。9-pair prior result remains development candidate only，`PPO_ALLOWED=false`。
 
 ## 2026-09-30 研究复核与修复更新
 
