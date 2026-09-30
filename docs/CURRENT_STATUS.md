@@ -20,7 +20,7 @@ ALL24 causal paired diagnostic 已完成：24 个 selected pre-action states × 
 
 Aggregate control/reference 为 `N 190/180`、`E 25/34`、`F 1/2`、`D 0/0`、`U 0/0`，admitted `216/216`，successful completed `215/214`，resolved `216/216`；wait `25124.700815134504/29230.017251347945 s`，request elapsed `79035/82700 s`，energy `64612.22804454819/68515.23095364538`。raw reward excluding penalty 为 `4315.902567907697/4132.633739495724`，rejection penalty 为 `-1140.55/-165.8`，total reward 为 `3175.3525679076965/3966.8337394957234`。候选被拒绝，因为 pair `15` 新增 failed arrival `21`：UID `108`、cargo、初始 SOC `0.5758906587575819`、request `150`、terminal `1013`、`ring_outer`、`failed_energy`、wait `807.8147075862395 s`。pair-level N/E/F/D/U 及 wait/elapsed/energy delta 见[终态结果](evidence/v4_2/p3_followup_results_20260930.md)。
 
-随后已完成 root 批准的 passive exact replay：pair `15` 的 control 与 legacy 各执行一次，source、seeds、config 和 1800-step cap 保持不变，target arrival `21` 的 trace exact checks 通过，结果为 `REPLAY_OK`。其后 proposal-support control full 已 `FULL_OK`：9/9 fixed scenes natural、0 error/censor，技术、source-RNG、request、ledger、energy、wait 和 hard-safety checks 全通过；aggregate control N/E/F/D/U=`183/33/0/0/0`，reference=`180/34/2/0/0`，wait/elapsed/energy 分别下降 `4.7158647%/1.0617%/1.3591%`。该结果仅为 development candidate PASS，不是 qualification、PPO/default promotion 或训练根因结论；下一项均衡 development 尚未启动，`PPO_ALLOWED=false`。
+随后已完成 root 批准的 passive exact replay：pair `15` 的 control 与 legacy 各执行一次，source、seeds、config 和 1800-step cap 保持不变，target arrival `21` 的 trace exact checks 通过，结果为 `REPLAY_OK`。其后 proposal-support control full 已 `FULL_OK`：9/9 fixed scenes natural、0 error/censor，技术、source-RNG、request、ledger、energy、wait 和 hard-safety checks 全通过；aggregate control N/E/F/D/U=`183/33/0/0/0`，reference=`180/34/2/0/0`，wait/elapsed/energy 分别下降 `4.7158647%/1.0617%/1.3591%`。随后 balanced proposal-support full 也已 `FULL_OK`：24/24 pair natural、0 error/censor，aggregate control/reference normal=`491/491`、emergency=`85/83`、failed=`0/2`，wait/elapsed/energy 均满足 development review。两项结果均为 development candidate only，不是 qualification、PPO/default promotion 或训练根因结论；`PPO_ALLOWED=false`。
 
 ## 2026-10-01 P3 pair-15 passive replay 终态
 
@@ -47,9 +47,51 @@ Aggregate control/reference 为 `N 190/180`、`E 25/34`、`F 1/2`、`D 0/0`、`U
 
 按预注册规则，该结果是 development candidate PASS only；不是 qualification、PPO 准入、默认配置晋升，也不能单独证明训练退化根因或 P3 已解决。`PPO_ALLOWED=false`，heldout 未使用。
 
-## 2026-10-01 Balanced proposal-support full running（terminal proof pending）
+## 2026-10-01 Balanced proposal-support full 终态 (`FULL_OK`; development candidate)
 
-下一项保持 original 固定 24 请求、epsilon=`0.1`、source/config/cap 不变，复用现有 9 个 proposal-support 场景和 24 个 legacy references，仅新增 15 个 control 运行；不新增 seed、不重抽样、不改 epsilon、不扩 cap、不使用 heldout。balanced runner/protocol 已实现，20 个本地唯一测试通过（balanced 9 + proposal-support 11，未与此前 38 重复计数）。server no-env preflight v2 已通过，proof 为 `.tmp/p3_proposal_support_balanced_preflight_proof.json`，SHA256=`080623f6e94a891ae1f2abb83ecb7b8e9a7326e0e93533f20865de465576e5da`；source 3 files SHA 同步，server/local preflight SHA 相等。v1 FAILED 记录保留在 `preflight_v1.failed_progress.json`，输入未修改；roundtrip fix commit 为 `70db382`。root 已准入首次 balanced full，仅运行新增 15 个 control、复用既有 9 个 control 和 24 个 legacy references。实际服务器 full 已启动：proof 为 `.tmp/p3_proposal_support_balanced_launch_proof.json`，PID `2105971`，cwd `/home/user/projects/terminal`，argv 为项目 venv 的 `run_p3_proposal_support_balanced_20261001 --phase full`，executable `/usr/bin/python3.12`，3 个环境 flags 为 `1`；`2026-10-01 02:30:53+0800` 时 pair `2` 为 tick `275`/24 requests、`RUNNING`，log 为 0 bytes，full 终态未知。仅 15 new/reuse 9 fixed，未记录 launch 偏差；heartbeat `p3-balanced-proposal-support` 已创建（2 min）。9-pair prior result remains development candidate only，`PPO_ALLOWED=false`。
+balanced proposal-support control full 已完成。服务器 PID `2105971` 已退出，full mtime 为 `2026-10-01 02:37:12`（Asia/Shanghai）；artifact proof 为 `.tmp/p3_proposal_support_balanced_full_proof.json`，同步 full JSON 为 `D:/7_codespace/training_outputs/terminal/p3_followup_20260930/proposal_support_balanced_20261001/full.json`，SHA256=`f5cd9041f14c86f3b2e6ebde504a4e98f0eafcc4ee4c404db0939db38b2bb48d`。独立核对 proof 为 `.tmp/p3_proposal_support_balanced_full_proof.json`（SHA256=`02ad0f032a369fc412121e887830da71618092150ffbd08481333a7c05ae8634`），per-pair CSV 为 `.tmp/p3_proposal_support_balanced_full_perpair.csv`（SHA256=`dfdfe17476b01eda3ae3c8c96000fcb60572fabf35fc038878937e01ca3fae8f`）；ALL24 与六 profile 汇总均在 `1e-8` 内，24 control/reference 匹配、reference hashes、reuse9/new15 IDs 和 all checks 均通过。固定 24 个 pair 全部自然终态，0 censor/error；source/model RNG、request identity、ledger、energy、hard-safety checks 全通过，未出现 new failed/unresolved/diverted arrival IDs。范围为复用 9 个既有 control/reference 场景并新增 15 个 control 场景，不能视作 576 个独立样本。
+
+| pair | scene | ticks C/R | C N/E/F/D/U | R N/E/F/D/U | Δwait | Δelapsed | Δenergy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 722/694 | 22/2/0/0/0 | 23/1/0/0/0 | 252.53942549349722 | 282 | 324.9373252078476 |
+| 2 | 877101/9303102 | 713/713 | 23/1/0/0/0 | 23/1/0/0/0 | 0 | 0 | 9.094947017729282E-13 |
+| 3 | 877101/9303103 | 768/655 | 20/4/0/0/0 | 23/1/0/0/0 | 685.5275409802998 | 642 | 646.8438997043531 |
+| 4 | 877101/9303104 | 698/725 | 21/3/0/0/0 | 23/1/0/0/0 | 260.5767619747626 | 302 | 339.0913124511708 |
+| 5 | 877102/9303101 | 799/795 | 20/4/0/0/0 | 20/4/0/0/0 | 261.4727465143619 | 363 | 322.5319456248826 |
+| 6 | 877102/9303102 | 801/791 | 18/6/0/0/0 | 19/5/0/0/0 | -202.24211122579618 | -251 | -247.63182639344632 |
+| 7 | 877102/9303103 | 735/786 | 20/4/0/0/0 | 20/4/0/0/0 | -169.61955018254366 | -121 | -173.83825824859105 |
+| 8 | 877102/9303104 | 809/824 | 22/2/0/0/0 | 19/5/0/0/0 | -465.464473863537 | -397 | -443.5336065149195 |
+| 9 | 877103/9303101 | 711/668 | 20/4/0/0/0 | 20/4/0/0/0 | 367.11554965350433 | 351 | 397.4807547823866 |
+| 10 | 877103/9303102 | 831/713 | 18/6/0/0/0 | 21/3/0/0/0 | 241.61708810662867 | 113 | 197.95249503380546 |
+| 11 | 877103/9303103 | 702/770 | 21/3/0/0/0 | 20/4/0/0/0 | -428.18800897632354 | -440 | -399.874432841023 |
+| 12 | 877103/9303104 | 751/797 | 19/5/0/0/0 | 19/5/0/0/0 | -478.6270830262347 | -570 | -532.4805304688753 |
+| 13 | 877104/9303101 | 758/863 | 19/5/0/0/0 | 20/3/1/0/0 | -578.3562047072569 | -374 | -359.9870170506765 |
+| 14 | 877104/9303102 | 742/742 | 19/5/0/0/0 | 19/5/0/0/0 | -246.58688277428746 | -274 | -276.1631260163076 |
+| 15 | 877104/9303103 | 685/724 | 21/3/0/0/0 | 21/3/0/0/0 | -66.14638229183583 | -64 | -61.602128748916584 |
+| 16 | 877104/9303104 | 738/863 | 22/2/0/0/0 | 16/7/1/0/0 | -688.2406166132155 | -511 | -584.9103552780334 |
+| 17 | 877105/9303101 | 685/828 | 21/3/0/0/0 | 21/3/0/0/0 | -504.171103904288 | -497 | -542.7246012361056 |
+| 18 | 877105/9303102 | 706/706 | 22/2/0/0/0 | 22/2/0/0/0 | 0 | 0 | -9.094947017729282E-13 |
+| 19 | 877105/9303103 | 742/865 | 22/2/0/0/0 | 19/5/0/0/0 | -944.2728093343212 | -802 | -886.4363900023491 |
+| 20 | 877105/9303104 | 818/776 | 22/2/0/0/0 | 22/2/0/0/0 | -148.2594080823701 | -223 | -245.13615725234376 |
+| 21 | 877106/9303101 | 836/752 | 19/5/0/0/0 | 20/4/0/0/0 | -176.0746084480652 | -154 | -150.76281530593496 |
+| 22 | 877106/9303102 | 748/748 | 20/4/0/0/0 | 20/4/0/0/0 | 0 | 0 | 9.094947017729282E-13 |
+| 23 | 877106/9303103 | 759/755 | 19/5/0/0/0 | 20/4/0/0/0 | 476.3792891837884 | 485 | 469.0832526346667 |
+| 24 | 877106/9303104 | 799/757 | 21/3/0/0/0 | 21/3/0/0/0 | 276.4580103747421 | 151 | 211.86047995051922 |
+
+| profile | pair IDs | C normal | R normal | C wait (s) | R wait (s) | Δwait (s) |
+|---:|---|---:|---:|---:|---:|---:|
+| 877101 | 1,2,3,4 | 86 | 92 | 12260.308761386932 | 11061.665032938374 | 1198.6437284485582 |
+| 877102 | 5,6,7,8 | 80 | 78 | 13760.424366494517 | 14336.277755252031 | -575.853388757514 |
+| 877103 | 9,10,11,12 | 78 | 80 | 13243.684865547717 | 13541.767319790142 | -298.08245424242523 |
+| 877104 | 13,14,15,16 | 81 | 76 | 12144.420913491927 | 13723.750999878524 | -1579.330086386597 |
+| 877105 | 17,18,19,20 | 87 | 84 | 12382.405353223297 | 13979.108674544275 | -1596.703321320978 |
+| 877106 | 21,22,23,24 | 79 | 81 | 13516.843074574452 | 12940.080383463985 | 576.7626911104671 |
+
+聚合 control N/E/F/D/U=`491/85/0/0/0`，reference=`491/83/2/0/0`；generated/admitted/resolved 均为 `576/576/576`，completed 为 control/reference=`576/574`。wait 为 `77308.08733471885` 对 `79582.65016586734`，Δ=`-2274.5628311484907`；request elapsed 为 `221361` 对 `223350`，Δ=`-1989`；energy 为 `183268.3495482137` 对 `185263.6493281816`，Δ=`-1995.2997799678997`。raw reward（排除 rejection penalty）为 control `11371.746812675045`、reference `11251.448813678655`；rejection penalty 分别为 `-403.90000000000003` 和 `-426.05`。
+
+root review criterion 为 development candidate PASS only：technical/source/model-RNG/request identity/ledger/energy/hard-safety checks 全通过，normal 不低于 reference、wait 不高于 reference、successful completed 不低于 reference，strict business gain 为 true。该结果不是 formal qualification、默认配置晋升、PPO 准入或训练 remedy；`PPO_ALLOWED=false`，未使用 heldout。六个 profile 中 `877101` 的 normal 为 `86/92` 且 wait 增加 `1198.6437284485582 s`，`877106` 的 normal 为 `79/81` 且 wait 增加 `576.7626911104671 s`，因此不记录为普遍收益。
+
+balanced full 终态后 heartbeat `p3-balanced-proposal-support` 已删除，无 active background job。下一步由 root 选择 actual trained checkpoint validation；本轮不启动训练。
 
 ## 2026-09-30 研究复核与修复更新
 
