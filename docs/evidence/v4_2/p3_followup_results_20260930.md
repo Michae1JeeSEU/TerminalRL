@@ -4,6 +4,16 @@
 
 本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
 
+## 2026-10-01 P3 prefix-feasible-gate preregistration
+
+Fresh V4 six-scene screen 为 FAIL，P3 仍未解决；旧 trained gate-value 四个状态均为 `C=0`。沿用现有 AP/BP 标签，AP=`132N/12E`、BP=`134N/10E`，两者 `F/D/U=0`；AP 相对 BP 的三项成本差为 `+2.9843324913833236%`、`+0.5281622267627961%`、`+0.7351975729166904%`。same-prefix 扣除 rejection 后的 raw return 为 AP `2967.1651355245745`、BP `2987.9587313050633`，不能只解释为 rejection 处罚；prefix 修复业务差异不作为训练修复证据。
+
+Batch-04 larger-batch 协议与 metadata 一致：`gamma=lambda=1`、`full_episode_mc`、joint-team actor aggregation、minibatch `128`。此前与 learning-curve 协议的错误关联已由 `.tmp/p3_prefix_objective_protocol_correction.json` 纠正，未发现折扣参数误用。scalar team reward 没有单独 gate-outcome 通道，normal、emergency、failed 信号经环境 scalar reward 进入；不据此称 team credit 或 energy absence 为根因。
+
+已预注册 [prefix-feasible-gate protocol](p3_prefix_feasible_gate_protocol_20261001.md)：只对四个固定既有 BEFORE-prefix scenes 各做一次 full-cycle exact replay，按原始 `(step, numeric UID)` 顺序确认 actual approved、rank `>3` 的 `ring_inner`、`0.4<SOC<=0.65`、retry-free、`actor_mask=true`、`committed_plan=None` 窗口，在保存的 88D world 上以 no-grad 比较 BEFORE/AFTER 的 `p` 与全 25-way `q`；`D/local_m` 保持 unknown，物理排除计数和原因保留，不替换缺失 scene。full input SHA=`30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195`。
+
+`19` 个 target tests、compile、local serialized preflight 已 PASS；server/local 3-file SHA equality 已确认（代码 commit `afa9bfaab1e9e8f2ae43f661b8f24d890eb79cd5`），server preflight=`PREFLIGHT_OK`、phase validation=`PHASE_VALIDATION_OK`。ROOT 仅准入 cell 1 pilot；pilot PID `2178083` 已退出，pilot=`PILOT_OK`，cell 1=`COMPLETED_MISSING`，pilot summary SHA=`2c18148d719c4ad7ad60a2ca28f270ec886293d9068ac447d1dd5aa3ecb302c2`；exact replay `708/708` steps，model/config/reset/caller-RNG/controller checks 通过；`20` 个 candidate 因 physical window 排除，selected=`null`，未生成 selected NPZ，`p/q/D/m` 保持 unknown。ROOT 已准入 FULL：复用 immutable cell 1，FULL PID `2179064` 正在运行（server time `17:44:29+0800`，cwd `/home/user/projects/terminal`，exe `/usr/bin/python3.12`，argv 为 `/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_feasible_gate_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001`，三个环境 flag 均为 `1`）；当前 cell 2、step `1`、potential candidates `22`、selected=`null`，cell 1 pilot artifact 已复用，FULL/error/partial artifact 尚未出现；startup proof=`.tmp/p3_prefix_feasible_gate_full_startup_or_terminal_proof.json`。未启动训练、PPO 或 held-out，`PPO_ALLOWED=false`。
+
 ## 2026-10-01 被动 profile 与 fresh validation preregistration / preflight
 
 Passive profile protocol 与 runner 已固定在 commits `2ba8f83` 和 `5fd7f5a`，profile 定向测试为 `10` 项；fresh validation runner commit `0ddf8b7` 的 selected suite 为 `38` 个 distinct tests，与 profile suite 有重叠，不将两者相加。Profile server no-env preflight SHA=`7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d`，serialized validator 通过 `16` tapes、`8` sidecars、`3` full artifacts。Fresh no-env preflight SHA=`e25cde37af2da6ac1988e7c36dd1097d8bebb956be807441a8837c68046e2b92`，通过 `6` scenes×`4` arms，scene/env 为 `886101..886106`，native policy seed 为 `886201..886206`，cap=`1800`；pilot 预注册为 cell 1 四 arms，经 root review 后再处理其余 `20` arms。
