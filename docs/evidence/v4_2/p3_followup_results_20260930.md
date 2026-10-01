@@ -28,6 +28,21 @@ pilot candidate/reference 的 wait 为 `2813.5406783660765/3046.1997149195568 s`
 
 root 已准入 FULL，仅运行原 cells 2–4、复用 immutable pilot、cap=`1800`。FULL 已由 PID `2139795`（launcher `2139794`）启动；startup proof `.tmp/p3_prefix_fallback_v2_full_startup_proof.json` SHA256=`e6094b5f53e367c5ec44c2d8d9d6bbf4f73d9d77fe1df2649589c958dc1e7551`，cell2 快照为 step `250`、`24` generated、`16` active、`251` native forwards，log 为 `0` bytes 且无当前错误。`freshguards/_phase_inputs/_validate_pilot_reuse` 均为 `FULL_GUARD_OK`，pilot 复用未重跑；cells 2–4 结果仍 unknown。pilot wall time 为 `177.28967501968145 s`（含 replay），baseline wall time 未暴露，FULL 预估 `9–12 min`。heartbeat `p3-prefix-fallback` 已更新为 FULL 监控。`PPO_ALLOWED=false`，无 optimizer/PPO/held-out，V1 failure 保持不变。
 
+V2 FULL 已完成：server mtime=`2026-10-01 10:01:53+0800`，PID `2139795` 已退出，4 个 cell 全部 natural，0 censor/error；full JSON SHA256=`020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50`，corrected terminal proof `.tmp/p3_prefix_fallback_v2_full_terminalproof.json` SHA256=`daf83439a3d007f0cf50bcc94fb2781be794be51e0cafe300b2e937ef4066ca7`。model/caller/observer RNG、configuration dependencies、aliases、q immutability、24-request identity、replay、ledger、energy 和 hard-safety checks 全通过；每 cell 的 new failed/diverted/unresolved arrival-ID 集合为空。之前因读取 sidecar 错层及 glob 文件名造成的 proof 问题已更正，V1 proof 保留；四个实际 order sidecar 的 server/mirror/metadata SHA 均通过。
+
+| cell | candidate N/E/F/D/U | reference N/E/F/D/U | Δwait s | Δelapsed s | Δenergy |
+|---:|---|---|---:|---:|---:|
+| 1 | 21/3/0/0/0 | 18/6/0/0/0 | -232.6590365534803 | -106 | -149.25083407896545 |
+| 2 | 23/1/0/0/0 | 18/6/0/0/0 | -951.1555657216227 | -765 | -880.4334896140444 |
+| 3 | 22/2/0/0/0 | 21/3/0/0/0 | -678.3272158045793 | -675 | -707.5583376474897 |
+| 4 | 22/2/0/0/0 | 17/7/0/0/0 | -2.8214014478126046 | +103 | +35.67359789283546 |
+
+聚合 candidate/reference 为 `N/E/F/D/U=88/8/0/0/0` 对 `74/22/0/0/0`；四场景的 generated/admitted/successful/resolved 均为 `96`，这是每 cell 的完整请求分母，不是 `96` 个独立样本。wait 为 `10829.515889168819/12694.479108696314 s`（Δ=`-14.691136229842689%`），request elapsed 为 `34515/35958 s`（Δ=`-4.0130151843817785%`），energy 为 `28596.777174838004/30298.346238285667`（Δ=`-5.616046004839429%`）。raw reward 为 `1957.2813049300375/1807.4669936354644`；rejection penalty 为 `-49.65/-74.35`，两者分列，不能把 penalty 减少单独当作业务改善。
+
+按既有 development business screen，AFTER-prefix candidate 通过 development screen only；不构成 qualification、default promotion 或 PPO admission。cell 4 的 elapsed `+103 s`、energy `+35.67359789283546` 是局部退步，必须保留。candidate wall time=`721.0561337517574 s`（含 replay），baseline wall time 与累计 fallback 检查次数未暴露，保留为测量缺口。该结果不单独证明训练根因或 P3 已解决；`PPO_ALLOWED=false`。
+
+下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除，无后台任务；BEFORE-prefix panel 正在准备，尚未启动。
+
 ## Frozen always-RELEASE gate control 终态
 
 这是 `newly_run` 的冻结、离策略 gate-control full，不是训练、PPO、Teacher、optimizer、held-out 或 formal qualification。它复用 `9` 个 `preexisting_artifact` reference scenes（`6` 个环境 profile、`9` 个 fixed keyed pairs），不是 `216` 个独立请求实验；source `3fe7+a82`、88D、K=3、legacy eligibility、真实 proposal `q`、物理配置和 native safety 保持不变，仅将 legacy `actor_mask=true` 的 gate 固定为 RELEASE，其他行保持 canonical WAIT。artifact 为 `.tmp/p3_gate_control_full_proof.json`，server full SHA256 为 `fa856f3980be848c8cb2fd5971115188a9e2f5303c37d8699b44631e57a58403`，`FULL_OK`、`9/9 PAIR_OK`、9/9 natural、technical/safety/source-RNG checks 均通过；`PPO_ALLOWED=false`，held-out 未使用。
