@@ -4,6 +4,20 @@
 
 本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
 
+## 2026-10-01 P3 prefix fallback V1 技术恢复记录与 V2 准入附录
+
+本项属于已授权的实现调试，不是科学重采样、训练、PPO、held-out、teacher、optimizer 或默认配置晋升。V1 与后续 V2 的执行尝试和证据分开保存；V1 不计为性能成功，也不覆盖或重跑其中选定的 business failure。
+
+V1 no-env preflight 为 `PREFLIGHT_OK`，proof SHA256=`c82a5a749bc4afa92468a9f7c6e2ddbf28748afa6568e3766a80501ca44cab46`。服务器 pilot PID `2136806` 以 `technical_error` 退出。先前“pilot 缺失”的报告只对应较早的启动快照；之后保留的 pilot/arm/pair/sidecar/failure proof 存在，SHA 前缀为 `39cd0d...`，pilot artifact SHA256=`1cf74aa3ee3369ad0da4604d7a9e8b64e04e31b465f25ef8aca8b1b8ab554b10`。该 V1 记录实际包含 `31` 次 native forward、`33` 次 registration，`generated=14`、`admitted=13`、observed unresolved=`14`，outcome 计数 `N/E/F/D=0/0/0/0`；full metrics 仍为 unknown，不能作为 performance 结果。model-caller RNG、alias 和 distribution checks 通过；`technical/hard_safety_clear=false` 表示证书不完整，本记录不据此声称实际 unsafe，也不声称 verified violation 为零。
+
+V1 暴露的最小实现恢复已落实在 helper：`_release` 同时处理 native canonical singleton request（包括 policy map 未观察到的新 admission，如 UID `28` 的 `calls=0` 记录），singleton 直接委托原始函数，不请求 order provider、不采样、不扩展；已注册的 native K=3 request 仍执行原 prefix checks；其他 malformed shortlist 长度 fail closed。该修复保留原始 native 调用语义。定向测试共 `21 passed`，compile 和 diff check 通过；这些检查不改变 V1 的 unknown/performance 状态。
+
+### V2 technical-recovery admission（预注册）
+
+V2 输出目录固定为 `p3_followup_20260930/prefix_fallback_20261001_v2`。V1 failed version 保留为 ineligible/unknown；V2 不覆盖 V1，不自动重启，不重采样 seed，不扩展 population 或 budget。V2 使用同一组原始四 cells、checkpoint、policy seeds、1800-step cap、thresholds，以及 prefix fallback protocol `29aa458a81e50aba4d0249cb1fe3b856829a1261feac3a3ad507c68fcfbdbc0c`；新的 preflight 另外绑定上述 singleton helper 修复。
+
+只有新 preflight 通过并经 root review 后才可运行 pilot cell 1；FULL 的 cells 2–4 仍需 root 对 pilot 结果单独 review。`PPO_ALLOWED=false`，不使用 PPO、optimizer、teacher 或 held-out，也不自动把 V2 结果晋升为默认运行配置。V1 的技术状态、V2 的准入状态和任何后续 performance 结果必须分别报告。
+
 ## Frozen always-RELEASE gate control 终态
 
 这是 `newly_run` 的冻结、离策略 gate-control full，不是训练、PPO、Teacher、optimizer、held-out 或 formal qualification。它复用 `9` 个 `preexisting_artifact` reference scenes（`6` 个环境 profile、`9` 个 fixed keyed pairs），不是 `216` 个独立请求实验；source `3fe7+a82`、88D、K=3、legacy eligibility、真实 proposal `q`、物理配置和 native safety 保持不变，仅将 legacy `actor_mask=true` 的 gate 固定为 RELEASE，其他行保持 canonical WAIT。artifact 为 `.tmp/p3_gate_control_full_proof.json`，server full SHA256 为 `fa856f3980be848c8cb2fd5971115188a9e2f5303c37d8699b44631e57a58403`，`FULL_OK`、`9/9 PAIR_OK`、9/9 natural、technical/safety/source-RNG checks 均通过；`PPO_ALLOWED=false`，held-out 未使用。

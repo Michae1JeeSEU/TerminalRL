@@ -100,6 +100,9 @@ class PrefixFallbackRecord:
     controller_max: int = CONTROLLER_MAX_PROPOSALS
     calls: int = 0
     extended: bool = False
+    native_singleton_passthrough: bool = False
+    request_source: str | None = None
+    off_policy_request: bool | None = None
     prefix_proposals: tuple[int, ...] = ()
     full_proposals: tuple[int, ...] = ()
     runtime_shortlist_candidates_checked: int | None = None
@@ -114,6 +117,9 @@ class PrefixFallbackRecord:
             "controller_max": self.controller_max,
             "calls": self.calls,
             "extended": self.extended,
+            "native_singleton_passthrough": self.native_singleton_passthrough,
+            "request_source": self.request_source,
+            "off_policy_request": self.off_policy_request,
             "prefix_proposals": list(self.prefix_proposals),
             "full_proposals": list(self.full_proposals),
             "runtime_shortlist_candidates_checked": self.runtime_shortlist_candidates_checked,
@@ -304,10 +310,29 @@ class PrefixFallbackController:
         if float(intent.release_request) <= float(getattr(self.env.config, "release_threshold", 0.0)):
             # WAIT is outside the RELEASE prefix scope and is passed through
             # with the exact original tuple.
+            record.request_source = "native_wait"
+            record.off_policy_request = False
             return self._call_original(record, uav, intent, shortlist, extended=False)
+        if len(shortlist) == 1:
+            # Newly admitted/unranked aircraft can reach the private seam with
+            # a canonical singleton RELEASE before a native K=3 policy prefix
+            # exists.  Preserve that native request verbatim and do not ask a
+            # provider for an order or source-forward metadata.
+            proposal = _decode_intent_proposal(shortlist[0])
+            record.native_singleton_passthrough = True
+            record.request_source = "native_unranked_singleton_release"
+            record.off_policy_request = False
+            record.prefix_proposals = (proposal,)
+            return self._call_original(record, uav, intent, shortlist, extended=False)
+        if len(shortlist) != POLICY_REQUESTED_K:
+            raise PrefixFallbackContractError(
+                "RELEASE fallback entry must contain either native singleton or exactly the native K=3 prefix"
+            )
         expanded, full_order = self._expanded_shortlist(uid, uav, intent, shortlist)
         record.prefix_proposals = tuple(_decode_intent_proposal(item) for item in shortlist)
         record.full_proposals = full_order
+        record.request_source = "native_k3_prefix_then_fallback"
+        record.off_policy_request = True
         return self._call_original(record, uav, intent, expanded, extended=True)
 
     def _call_original(

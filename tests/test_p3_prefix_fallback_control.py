@@ -188,6 +188,50 @@ def test_dynamic_provider_is_read_at_release_time_and_wait_is_untouched() -> Non
     assert current_env.calls == [(), order]
 
 
+def test_unranked_singleton_release_passthrough_skips_order_provider() -> None:
+    order, metadata = _registration()
+    env = _FakeEnv(accepted={5})
+    provider_calls = {"order": 0, "metadata": 0}
+
+    def forbidden_order(*_args: object) -> tuple[int, ...]:
+        provider_calls["order"] += 1
+        raise AssertionError("singleton passthrough must not request an order")
+
+    def forbidden_metadata(*_args: object) -> dict[str, object]:
+        provider_calls["metadata"] += 1
+        raise AssertionError("singleton passthrough must not request source metadata")
+
+    with prefix_fallback_controller(
+        env,
+        forbidden_order,
+        source_metadata=forbidden_metadata,
+    ) as controller:
+        singleton = _intent(5)
+        result = env._runtime_shortlist_release(_Uav(28), singleton, (singleton,))
+
+    assert result == "approved"
+    assert env.calls == [(5,)]
+    assert provider_calls == {"order": 0, "metadata": 0}
+    record = controller.records[28]
+    assert record.calls == 1
+    assert record.extended is False
+    assert record.native_singleton_passthrough is True
+    assert record.request_source == "native_unranked_singleton_release"
+    assert record.off_policy_request is False
+    assert record.prefix_proposals == (5,)
+    assert record.full_proposals == ()
+
+    strict_env = _FakeEnv(accepted={5})
+    with prefix_fallback_controller(strict_env, {UID: order}, source_metadata=metadata):
+        with pytest.raises(PrefixFallbackContractError, match="either native singleton"):
+            strict_env._runtime_shortlist_release(
+                _Uav(28),
+                _intent(5),
+                (_intent(5), _intent(6)),
+            )
+    assert strict_env.calls == []
+
+
 def test_mutable_mapping_is_validated_again_at_each_release() -> None:
     order, metadata = _registration()
     live_order = {UID: order}

@@ -2,6 +2,18 @@
 
 > **LATEST ROLLING STATUS（2026-10-01）：** 当前 trained regression 已复现；uniform-q floor candidate 已拒绝；matched-state gate-shift causal diagnostic 已完成 `2918` steps；causal tool tests `18` 项通过。trained gate-value V2 FULL 已 `FULL_OK`：4 states、416 branches 全部 natural，0 censor/error/hardsafety，pilot reused，full SHA=`056bbc9d4f4949c7c932b1b21c49204b2533d1fe1f7b1fe44b48a2e845ee5a5a`。C1/C2/C3/C4 full `D` 均值分别为 `-0.049999999999926104`、`+0.2713038294623118`、`-0.049999999999954525` 与 `-1.2160576541882904`；该机制诊断不支持 universal increased-RELEASE 或 causal training blame，下一候选仍只在 implementation/test 阶段。`PPO_ALLOWED=false`。
 
+> **Prefix fallback rolling status（2026-10-01）：** V1 no-env preflight 为 `PREFLIGHT_OK`（SHA=`c82a5a749bc4afa92468a9f7c6e2ddbf28748afa6568e3766a80501ca44cab46`），pilot PID `2136806` 以 `technical_error` 退出；保留的后续 pilot artifact SHA=`1cf74aa3ee3369ad0da4604d7a9e8b64e04e31b465f25ef8aca8b1b8ab554b10`，V1 full metrics unknown，未计性能。singleton helper 修复已通过 `21` 项定向测试、compile 和 diff check；V2 输出目录及技术恢复准入已预注册，等待新 preflight 与 root review。`PPO_ALLOWED=false`，不自动 relaunch、不重采样、不使用 PPO/held-out/teacher/optimizer。
+
+## 2026-10-01 P3 prefix fallback V1 技术恢复与 V2 准入
+
+本项是已授权的实现调试记录，不是科学重采样或性能评估。V1 与 V2 的尝试、artifact 和状态分开保存；V1 不覆盖、不重跑，也不计为性能成功。
+
+V1 preflight 为 `PREFLIGHT_OK`，SHA=`c82a5a749bc4afa92468a9f7c6e2ddbf28748afa6568e3766a80501ca44cab46`。PID `2136806` 的 pilot 终态为 `technical_error`；较早的“缺少 pilot”只对应早期快照，后续 pilot artifact SHA=`1cf74aa3ee3369ad0da4604d7a9e8b64e04e31b465f25ef8aca8b1b8ab554b10` 已保留。V1 观察到 `31` native forwards、`33` registrations、`generated/admitted/observed_unresolved=14/13/14`，`N/E/F/D=0/0/0/0`，full metrics unknown。model-caller RNG、alias、distribution checks 通过；`technical/hard_safety_clear=false` 仅表示 incomplete certificate，不能据此宣称 actual unsafe 或 verified violation 为零。
+
+当前最小 helper 修复使 native canonical singleton RELEASE 直接委托原始函数，不请求 order provider、不采样、不扩展；已注册的 native K=3 保持 prefix checks，malformed lengths fail closed。该修复处理了包括 policy map 未观察到的新 admission（UID `28`、`calls=0`）的路径；21 项定向测试、compile 和 diff check 已通过。
+
+V2 预注册输出为 `p3_followup_20260930/prefix_fallback_20261001_v2`：保持原四 cells、checkpoint、policy seeds、1800-step cap、thresholds 和 protocol SHA=`29aa458a81e50aba4d0249cb1fe3b856829a1261feac3a3ad507c68fcfbdbc0c`，新 preflight 绑定 helper 修复。只有新 preflight 通过并经 root review 后运行 pilot cell 1；cells 2–4 需另行 root review。无自动 relaunch、seed resample、population expansion、PPO、held-out、teacher、optimizer 或 default promotion，`PPO_ALLOWED=false`。
+
 
 ## 2026-09-30 P3 follow-up 修复
 
