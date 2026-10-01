@@ -4,6 +4,23 @@
 
 本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
 
+## 2026-10-01 normal-inner gate-value FULL terminal
+
+The normal-inner gate-value run reached FULL_OK; PID 2191437 exited. Direct server binding recorded full SHA=1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba, pilot SHA=b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332, and preflight SHA=a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8. The immutable pilot was reused; cells 2–4 contributed 312 new branches. All four cells completed 104 natural branches each, with zero censor/error/hardsafety outcomes, over 2749 exact-replay ticks. Source/model/config/controller/caller-RNG/replay checks passed. D was computed from full-cycle returns including the first reward. wait and linear_residual were not exposed and remain None.
+
+All four selected states had immediate coverage C=1:
+
+| cell | selected (step, UID, arrival, SOC) | p_before | p_after | delta p | D seeds | mean D | local_m |
+|---|---|---:|---:|---:|---|---:|---:|
+| C1 | (307, 15, 15, 0.7262173226131179) | 0.9952911138534546 | 0.9953116774559021 | 2.0563602447509766e-05 | -17.633685634105575, -0.03883038093772484, 16.457156780716787, -9.668157336944148 | -2.7208791428176653 | -5.595107700062362e-05 |
+| C2 | (321, 25, 15, 0.6731115455491892) | 0.06313349306583405 | 0.054939594119787216 | -0.00819389894604683 | 8.923167075767708, -13.078767221640362, 16.823774088948483, 0.32785041685423266 | 3.2490060899825153 | -0.026622027576407463 |
+| C3 | (303, 20, 15, 0.6404768921709051) | 0.15514136850833893 | 0.14121808111667633 | -0.013923287391662598 | 12.306142033410083, 4.107853647160425, 11.396477786987532, -0.6990076360662556 | 6.777866457872946 | -0.09437018259527523 |
+| C4 | (365, 46, 15, 0.47479269296572224) | 0.9949211478233337 | 0.9941213726997375 | -0.0007997751235961914 | 0.1476743613766871, 0.020493698685015715, -7.043622299281537, 0.08259313843001337 | -1.6982152751974553 | 0.001358190331613985 |
+
+Every state has mixed signs across its four continuation-seed D values. local_m is a local state quantity and is not summed as a global gain. The separate event diagnostic's 249 normal events retain embedded 88D worlds rather than NPZ paths; those records are future anchor inputs only and were not fitted. The earlier normal-inner startup/progress entries in this document are historical snapshots.
+
+The prior six-scene AP/BP screen remains failed and P3 remains unresolved. These four state-local measurements do not establish a team-credit, entropy, clipping, or universal training cause. ROOT's recorded next preparation is a pure-Python soft-target tool with p0=BEFORE, mu=mean(D), sampleSE=std(ddof=1)/sqrt(4), w=mu^2/(mu^2+SE^2), heuristic D_eff=w*mu, fixed eta=0.02, per-state KL<=0.001, up to 60-step bisection, no new floor, and endpoint retention. This is not a sign-confidence rule and does not fit weights or use optimizer, teacher, PPO, held-out data, or new training. ROOT accepted the pure target preparation. Server code commit 3852587 completed 16 distinct tests with exit code 0 and CLI status TARGETS_READY (4 known, 0 unknown). The server output is /home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_targets_20261001/targets_v1.json, SHA=4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473; maximum per-state KL is 0.0008676730314016359, with server/local parity. This remains target preparation only: no pilot/full phase, optimizer, teacher, PPO, held-out data, weight change, or P3 resolution claim. ROOT's next preparation is full actor anchor collection over the existing four BEFORE-prefix tapes and 2749 exact-replay ticks, retaining every tick's all-UID rows with WAIT/RELEASE/masked/unknown states and an explicit UID-to-row mapping. The scope is motivated only by incomplete coverage of actor rows in the 249 normal requested_gate=1 records; it is not a new root-cause or training-repair claim. No background job or monitor is running; PPO_ALLOWED=false. The p3-normal-inner-gate-value heartbeat was deleted after terminal completion.
+
 ## 2026-10-01 P3 prefix-feasible-gate preregistration
 
 Fresh V4 six-scene screen 为 FAIL，P3 仍未解决；旧 trained gate-value 四个状态均为 `C=0`。沿用现有 AP/BP 标签，AP=`132N/12E`、BP=`134N/10E`，两者 `F/D/U=0`；AP 相对 BP 的三项成本差为 `+2.9843324913833236%`、`+0.5281622267627961%`、`+0.7351975729166904%`。same-prefix 扣除 rejection 后的 raw return 为 AP `2967.1651355245745`、BP `2987.9587313050633`，不能只解释为 rejection 处罚；prefix 修复业务差异不作为训练修复证据。
