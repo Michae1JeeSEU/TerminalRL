@@ -4,6 +4,12 @@
 
 本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
 
+## 2026-10-01 被动 profile 与 fresh validation preregistration / preflight
+
+Passive profile protocol 与 runner 已固定在 commits `2ba8f83` 和 `5fd7f5a`，profile 定向测试为 `10` 项；fresh validation runner commit `0ddf8b7` 的 selected suite 为 `38` 个 distinct tests，与 profile suite 有重叠，不将两者相加。Profile server no-env preflight SHA=`7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d`，serialized validator 通过 `16` tapes、`8` sidecars、`3` full artifacts。Fresh no-env preflight SHA=`e25cde37af2da6ac1988e7c36dd1097d8bebb956be807441a8837c68046e2b92`，通过 `6` scenes×`4` arms，scene/env 为 `886101..886106`，native policy seed 为 `886201..886206`，cap=`1800`；pilot 预注册为 cell 1 四 arms，经 root review 后再处理其余 `20` arms。
+
+本轮首要顺序是先从 `16` 个 existing tapes 取得 passive timing/counts，再用六个 fresh development scenes 检查冻结 2×2 的 executor×policy interaction 与可迁移性。该设计不声称 unique optimizer cause 或 P3 已解决；`PPO_ALLOWED=false`，held-out 未使用，不做 default promotion。Local profiler preflight v1 的 directory-vs-file mirror map failure 已保留为历史 artifact，v2 已修正并返回 `PREFLIGHT_OK`。profile pilot 已由 PID `2155873` 启动并运行中，cwd `/home/user/projects/terminal`、phase=`pilot`、输出目录为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001`，startup proof 为 `.tmp/p3_prefix_profile_pilot_startup_proof.json`。`05:16:20Z` 快照为 cell 1 `before_legacy`、step `250`、`24` generated、`18` active、`250` native forwards、`3794` actual release calls；argv、exe 和三个环境 flag 均通过，尚无 error artifact 或 pilot terminal artifact。该 profile 只回放既有 tape，不是新 flight sample；当前仅记录运行状态与 preregistration，不作 performance claim。heartbeat `p3-prefix-repair-validation` 已创建，间隔 `3` 分钟。
+
 ## 2026-10-01 P3 prefix fallback V1 技术恢复记录与 V2 准入附录
 
 本项属于已授权的实现调试，不是科学重采样、训练、PPO、held-out、teacher、optimizer 或默认配置晋升。V1 与后续 V2 的执行尝试和证据分开保存；V1 不计为性能成功，也不覆盖或重跑其中选定的 business failure。
