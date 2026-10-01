@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import copy
+import contextlib
 import json
+import random
 from pathlib import Path
 
+import numpy as np
 import pytest
+import torch
 
 from terminal_marl.training import validate_p3_prefix_fallback_20261001 as runner
 
@@ -93,6 +97,82 @@ def _summary(cell_id: int, *, after_prefix: dict | None = None) -> dict:
 
 def _compact(arm: str, metrics: dict | None = None) -> dict:
     return {"arm": arm, "metrics": metrics or _metrics()}
+
+
+def _stub_native_arm(monkeypatch, tmp_path: Path, *, raise_runtime: bool = False):
+    """Patch only native runtime boundaries while exercising the validator path."""
+
+    captured: dict = {}
+    checkpoint = tmp_path / "native-checkpoint.pt"
+    checkpoint.write_bytes(b"native-fixture")
+    policy = object()
+    original_capture_class = type("OriginalCapturedTerminalEnv", (), {})
+
+    monkeypatch.setattr(runner.support, "_CapturedTerminalEnv", original_capture_class)
+    monkeypatch.setattr(runner, "_resolve_checkpoint", lambda _path, _expected: checkpoint)
+    monkeypatch.setattr(runner.rank_eval, "_load_policy", lambda _path, _config: (policy, {}))
+    monkeypatch.setattr(runner.rank_eval, "_model_digest", lambda _policy: "fixture-model-digest")
+    monkeypatch.setattr(runner, "_config_snapshot", lambda _config: {})
+    monkeypatch.setattr(runner, "_runtime_dependency_shas", lambda: {})
+    monkeypatch.setattr(runner.support, "_reclassify_incomplete_lifecycle", lambda value: dict(value))
+    monkeypatch.setattr(
+        runner.support,
+        "_live_runtime_snapshot",
+        lambda _capture, _config: {"available": True, "factory_calls": 1, "replay_factory_calls": 1},
+    )
+
+    @contextlib.contextmanager
+    def fake_capture(capture):
+        capture["factory_calls"] = 1
+        try:
+            yield
+        finally:
+            capture["factory_calls"] = 1
+
+    monkeypatch.setattr(runner.support, "_capture_runtime_env", fake_capture)
+
+    def fake_runtime(**_kwargs):
+        # Exercise all caller RNG streams that the validator snapshots.
+        random.random()
+        np.random.random()
+        torch.rand(1)
+        if raise_runtime:
+            raise RuntimeError("native fixture runtime failure")
+        return {
+            "status": "completed",
+            "summary": {"terminal": True, "steps": 1},
+            "weights_unchanged": True,
+            "model_unchanged": True,
+            "teacher_called": False,
+            "training_or_update_called": False,
+            "safety_nonzero": False,
+        }
+
+    monkeypatch.setattr(runner.rank_eval, "_runtime_record", fake_runtime)
+
+    def fake_failure(**kwargs):
+        return {
+            "status": "failed",
+            "error": {"type": type(kwargs["error"]).__name__, "message": str(kwargs["error"])},
+            "summary": None,
+            "weights_unchanged": kwargs.get("weights_unchanged"),
+            "model_unchanged": kwargs.get("weights_unchanged"),
+            "teacher_called": False,
+            "training_or_update_called": False,
+            "safety_nonzero": False,
+        }
+
+    monkeypatch.setattr(runner.rank_eval, "_failure_record", fake_failure)
+
+    def fake_record_common(record, **kwargs):
+        captured["record"] = dict(record)
+        captured["kwargs"] = dict(kwargs)
+        result = dict(record)
+        result["caller_rng_unchanged"] = bool(kwargs["caller_rng_unchanged"])
+        return result
+
+    monkeypatch.setattr(runner, "_record_common", fake_record_common)
+    return captured, original_capture_class, checkpoint
 
 
 def test_fresh_grid_and_schema_contract_are_independent_of_old_cells():
@@ -205,3 +285,66 @@ def test_parser_exposes_only_registered_phases():
     assert parser.parse_args(["--phase", "preflight"]).phase == "preflight"
     with pytest.raises(SystemExit):
         parser.parse_args(["--phase", "train"])
+
+
+def test_native_arm_records_pre_restore_mutation_but_post_restore_caller_rng(monkeypatch, tmp_path: Path):
+    captured, original_capture_class, _checkpoint = _stub_native_arm(monkeypatch, tmp_path)
+    caller_before = runner._rng_snapshot()
+    try:
+        result = runner._native_arm_record(
+            config=object(), cell=dict(runner.CELL_SPECS[0]), arm="before_legacy", output=tmp_path,
+        )
+    finally:
+        runner._restore_rng(caller_before)
+
+    assert captured["record"]["caller_rng_unchanged_before_restore"] is False
+    assert captured["record"]["caller_rng_restored"] is True
+    assert captured["record"]["caller_rng_restore_error"] is None
+    assert captured["kwargs"]["caller_rng_unchanged"] is True
+    assert result["caller_rng_unchanged"] is True
+    assert runner.support._CapturedTerminalEnv is original_capture_class
+
+
+def test_native_arm_restore_corruption_keeps_caller_gate_false(monkeypatch, tmp_path: Path):
+    captured, original_capture_class, _checkpoint = _stub_native_arm(monkeypatch, tmp_path)
+    caller_before = runner._rng_snapshot()
+    real_restore = runner._restore_rng
+    monkeypatch.setattr(runner, "_restore_rng", lambda _snapshot: None)
+    try:
+        result = runner._native_arm_record(
+            config=object(), cell=dict(runner.CELL_SPECS[0]), arm="before_legacy", output=tmp_path,
+        )
+    finally:
+        real_restore(caller_before)
+
+    assert captured["record"]["caller_rng_unchanged_before_restore"] is False
+    assert captured["record"]["caller_rng_restored"] is False
+    assert captured["kwargs"]["caller_rng_unchanged"] is False
+    assert result["caller_rng_unchanged"] is False
+    assert runner._technical_failure_arm({
+        "model_unchanged": True,
+        "weights_unchanged": True,
+        "caller_rng_unchanged": result["caller_rng_unchanged"],
+    }) == (
+        "caller_rng_unchanged is not true"
+    )
+    assert runner.support._CapturedTerminalEnv is original_capture_class
+
+
+def test_native_arm_exception_restores_rng_and_passive_capture_alias(monkeypatch, tmp_path: Path):
+    captured, original_capture_class, _checkpoint = _stub_native_arm(
+        monkeypatch, tmp_path, raise_runtime=True,
+    )
+    caller_before = runner._rng_snapshot()
+    try:
+        result = runner._native_arm_record(
+            config=object(), cell=dict(runner.CELL_SPECS[0]), arm="before_legacy", output=tmp_path,
+        )
+    finally:
+        runner._restore_rng(caller_before)
+
+    assert result["status"] == "failed"
+    assert captured["record"]["caller_rng_unchanged_before_restore"] is False
+    assert captured["record"]["caller_rng_restored"] is True
+    assert captured["kwargs"]["caller_rng_unchanged"] is True
+    assert runner.support._CapturedTerminalEnv is original_capture_class

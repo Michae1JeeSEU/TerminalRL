@@ -404,7 +404,7 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
         if arm == "before_legacy" else (AFTER_CHECKPOINT, AFTER_CHECKPOINT_SHA256)
     )
     caller_before = _rng_snapshot()
-    caller_after = None
+    caller_rng_restore_error = None
     policy = None
     before_digest = None
     resolved = checkpoint
@@ -472,9 +472,19 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
         )
     finally:
         support._CapturedTerminalEnv = original_capture_class
-        caller_after = _rng_snapshot()
-        caller_unchanged = _rng_equal(caller_before, caller_after)
-        _restore_rng(caller_before)
+        caller_after_before_restore = _rng_snapshot()
+        caller_rng_unchanged_before_restore = _rng_equal(caller_before, caller_after_before_restore)
+        try:
+            _restore_rng(caller_before)
+            caller_after_restore = _rng_snapshot()
+            caller_rng_restored = _rng_equal(caller_before, caller_after_restore)
+        except Exception as exc:
+            caller_rng_restored = False
+            caller_rng_restore_error = {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            }
+        caller_unchanged = caller_rng_restored
     record = support._reclassify_incomplete_lifecycle(record)
     after_digest = None if policy is None else rank_eval._model_digest(policy)
     try:
@@ -503,6 +513,9 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
         "runtime_dependency_shas": _runtime_dependency_shas(),
         "wall_time_seconds": float(time.monotonic() - wall_start),
         "safety_nonzero": bool(record.get("safety_nonzero", False)),
+        "caller_rng_unchanged_before_restore": bool(caller_rng_unchanged_before_restore),
+        "caller_rng_restored": bool(caller_rng_restored),
+        "caller_rng_restore_error": caller_rng_restore_error,
     })
     return _record_common(
         record, arm=arm, cell=cell, checkpoint=resolved, expected_sha=expected_sha,
