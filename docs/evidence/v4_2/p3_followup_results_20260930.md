@@ -41,7 +41,7 @@ V2 FULL 已完成：server mtime=`2026-10-01 10:01:53+0800`，PID `2139795` 已�
 
 按既有 development business screen，AFTER-prefix candidate 通过 development screen only；不构成 qualification、default promotion 或 PPO admission。cell 4 的 elapsed `+103 s`、energy `+35.67359789283546` 是局部退步，必须保留。candidate wall time=`721.0561337517574 s`（含 replay），baseline wall time 与累计 fallback 检查次数未暴露，保留为测量缺口。该结果不单独证明训练根因或 P3 已解决；`PPO_ALLOWED=false`。
 
-下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除；BEFORE-prefix pilot 已获 root 准入并正在运行，FULL 尚未启动。
+下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除；BEFORE-prefix pilot 已 `PILOT_OK/PAIR_OK` 退出，root 已准入 FULL 仅复用 immutable pilot 并运行其余 cells 2–4。
 
 ### BEFORE-prefix pilot startup（运行中）
 
@@ -49,7 +49,17 @@ The BEFORE-prefix preflight returned `PREFLIGHT_OK`, fresh JSON phase validation
 
 The single authorized pilot uses Python PID `2144374` (shell parent `2144372`), cwd `/home/user/projects/terminal`, the exact `run_p3_before_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv, and all three environment flags set to `1`. Startup proof is `.tmp/p3_before_prefix_fallback_pilot_startup_proof.json` with SHA256=`182cfb5aafa4f68a7ad321a054d44cfafc774e9582013766abbc4fdafa4693e2`.
 
-The startup snapshot reports absolute step `200`, `24` generated request rows, `16` active observations, and `201` native forwards for cell 1; cwd, argv, progress, and no-duplicate checks pass. The pilot log is `0` bytes, and pilot/error JSON artifacts do not yet exist. This is the single authorized pilot launch; no FULL phase has started, and the pilot terminal metrics remain unknown pending root review.
+The startup snapshot reports absolute step `200`, `24` generated request rows, `16` active observations, and `201` native forwards for cell 1; cwd, argv, progress, and no-duplicate checks pass. The pilot log is `0` bytes, and pilot/error JSON artifacts did not yet exist at that snapshot. This was the single authorized pilot launch; the pilot later reached its natural terminal state and FULL was admitted only after root review.
+
+The pilot terminal proof `.tmp/p3_before_prefix_fallback_pilot_terminal_proof.json` has SHA256=`ec414af63e9c633e4b999d6e5c4e364b0b50556b786e0942804bcbaac0502d1b`. PID `2144374` exited `PILOT_OK/PAIR_OK`; the 24-request identity, natural termination, zero censor/error, model/caller/observer RNG, configuration dependency, q, alias, replay, ledger, energy, and safety checks passed, and the new failed/diverted/unresolved arrival-ID sets are empty. The actual order sidecar server/mirror/metadata SHA is `1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d`. Pilot artifact SHA prefixes are pilot=`c3c34adf1f76180aba712248cb65a453eb07d6d755b4905b1822ec4b0a70ec1d`, pair=`9000f7d36cb20a0675891960104971fbc59cbf1d3fb9c682bf8d7f1c32fdc11b`, and arm=`4ed5e1276cf1e44facaa4417e67157985cff67c830c0f9abcae198d9c31e9d7f`.
+
+Pilot candidate/reference metrics were `N/E/F/D/U=19/5/0/0/0` for BEFORE-prefix, `19/5/0/0/0` for native BEFORE legacy, and `21/3/0/0/0` for existing AFTER-prefix. BEFORE-prefix wait/elapsed/energy/raw reward/rejection penalty were `3123.9868663533725/8878/7513.164788008758/453.66623681012584/-19.8`; relative to BEFORE legacy, the deltas were wait `-203.51275496015205`, elapsed `-172`, energy `-244.75232074669475`, raw reward `+2.33735743681331`, and rejection penalty `-0.25`. Relative to AFTER-prefix, the deltas were wait `+310.446187987296`, elapsed `+247`, energy `+204.575850712897`, raw reward `-26.04464048159991`, and rejection penalty `-8.65`. Wall time was `188.37618574872613 s` including replay. These are single-pilot observed metrics and do not establish a general performance or training conclusion.
+
+### BEFORE-prefix FULL startup（运行中）
+
+The single authorized FULL launch uses PID `2145833` (shell parent `2145832`), cwd `/home/user/projects/terminal`, and the exact `run_p3_before_prefix_fallback_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv with all three environment flags set to `1`. Fresh `_phase_inputs` and `_validate_pilot_reuse` guards exited successfully; the immutable pilot was reused without rerunning cell 1 and no duplicate process was detected. Startup proof `.tmp/p3_before_prefix_fallback_full_startup_proof.json` has SHA256=`3a7c7f1525b57be37004a886b372d00cacac9b080c216ff0b71d5b085554b173`.
+
+The cell 2 startup snapshot reports step `50`, `15` generated rows, `15` active observations, and `51` native forwards; the `15` generated rows are an early progress value, not a missing 24-request scope. The FULL log is `0` bytes and no cell-2 completion, full terminal, or error artifact exists yet. Remaining cells and full-cycle metrics are unknown; `PPO_ALLOWED=false`, with no training, teacher, optimizer, or held-out use.
 
 ## Frozen always-RELEASE gate control 终态
 
