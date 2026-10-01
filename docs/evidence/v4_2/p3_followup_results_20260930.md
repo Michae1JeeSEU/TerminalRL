@@ -43,6 +43,52 @@ V4 pilot PID `2168258` 已 `PILOT_OK/PAIR_OK` 退出；四臂均 natural、techn
 low-audit native exact comparison proof=`.tmp/p3_prefix_fresh_v4_native_exact_comparison_proof.json` 报告 V1–V4 的 native action/replay 对齐，包含 `778` action rows、`120` request records、`24` lifecycle records 和 `24` generated/admitted/full-metric checks；tape SHA=`c4e836a1d0a1aeaacd6f361ae58080ba715725bd22ec25afdae9b1089030c130`。validation-only fixes 未改变 baseline。V4 pilot proof=`.tmp/p3_prefix_fresh_v4_pilot_final_proof.json`，SHA=`c37c68f63355676520501085d4681d691e2037c701669144821722034e2b8b6d`。
 
 ROOT 已准入 FULL 的 fixed remaining cells `2..6`、`20` arms，复用 immutable pilot，不重采样、不扩 cap、不换 seed。FULL PID `2169812` 已启动，cwd `/home/user/projects/terminal`，输出根为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4`；startup=`2026-10-01 15:34:03+0800`，cell 2 `before_legacy` 为 step `250`、`24` generated、`14` active，argv、exe 和三个 env flags 通过，尚无 full/error artifact。startup proof=`.tmp/p3_prefix_fresh_v4_full_startup_proof.json`，SHA=`d5c6b099097bc12296f7bccaabedcb86c2293a1b1b6cc97dd8b3db3d51295c57`；pilot SHA=`7739659777a84de11f15b9aadb9d99d4698dd338467b09216ad16b38a239f3e6`。heartbeat `p3-prefix-repair-validation` 已更新为 `5` 分钟间隔。`PPO_ALLOWED=false`，无 optimizer、teacher、held-out、default promotion 或 qualification。
+
+### Fresh validation V4 FULL terminal（development screen rejected）
+
+V4 FULL PID `2169812` 已退出 `FULL_OK`，error artifact 不存在且 log 为 `0` bytes；六个 scenes×四 arms 共 `24` natural arms，0 censor/error/hardsafety，technical、model/source/RNG、config、ledger、replay、safety 与 `12` 个 sidecar checks 全部通过。每个 arm 的 generated/admitted/successful/resolved 均为 `144`；这是六场景 panel，不是 `576` 个独立 population samples。full proof=`.tmp/p3_prefix_fresh_v4_full_final_proof.json`，SHA=`cc866810108bbab2b262c130df7ed62045f763c5dbc88d57400707c353170598`；independent aggregate helper 最大差=`7.275957614183426e-12`。
+
+下表为 proof 中全部 `24` 个 arm 的完整 cost 与 reward 分解；`N/E/F/D/U`、wait、request elapsed、energy、raw reward 和 rejection penalty 均保留。
+
+| cell | arm | N/E/F/D/U | wait s | elapsed s | energy | raw reward | rejection penalty | total reward |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 01 | BEFORE legacy | 22/2/0/0/0 | 2919.6693286099626 | 9168.0 | 7399.92322140943 | 493.1366835700943 | -13.5 | 479.6366835700943 |
+| 01 | AFTER legacy | 20/4/0/0/0 | 3458.227091374416 | 9633.0 | 7899.6508009200315 | 467.4572292214967 | -16.150000000000002 | 451.3072292214967 |
+| 01 | BEFORE prefix | 22/2/0/0/0 | 2656.9762761413117 | 9005.0 | 7184.872304893263 | 492.7467457263946 | -13.200000000000001 | 479.5467457263946 |
+| 01 | AFTER prefix | 23/1/0/0/0 | 2807.4185620180106 | 9041.0 | 7228.822137876213 | 501.08577846942217 | -14.450000000000001 | 486.6357784694222 |
+| 02 | BEFORE legacy | 18/6/0/0/0 | 4266.17076193046 | 10172.0 | 8656.863483145795 | 438.9403011874092 | -28.25 | 410.6903011874092 |
+| 02 | AFTER legacy | 22/2/0/0/0 | 3307.265844347862 | 9279.0 | 7695.952069083928 | 491.29246218237785 | -15.700000000000001 | 475.59246218237786 |
+| 02 | BEFORE prefix | 23/1/0/0/0 | 2261.200522026176 | 8571.0 | 6878.929441174629 | 508.4636303261074 | -10.8 | 497.6636303261074 |
+| 02 | AFTER prefix | 22/2/0/0/0 | 3115.5600470158242 | 9288.0 | 7607.660403507502 | 490.0309700552905 | -13.8 | 476.23097005529047 |
+| 03 | BEFORE legacy | 23/1/0/0/0 | 3174.9559298850254 | 8958.0 | 7601.9361718936125 | 502.18911860457985 | -13.950000000000001 | 488.23911860457986 |
+| 03 | AFTER legacy | 23/1/0/0/0 | 3015.609345739306 | 8885.0 | 7532.0718134327035 | 503.38491032941613 | -14.5 | 488.88491032941613 |
+| 03 | BEFORE prefix | 23/1/0/0/0 | 2383.749844360826 | 8331.0 | 6903.584356099301 | 509.85594524594313 | -11.950000000000001 | 497.90594524594314 |
+| 03 | AFTER prefix | 23/1/0/0/0 | 2410.6353297436963 | 8310.0 | 6887.979820672347 | 508.74019953993997 | -13.0 | 495.74019953993997 |
+| 04 | BEFORE legacy | 20/4/0/0/0 | 3033.466903898602 | 8879.0 | 7377.364268500799 | 474.189002055687 | -17.3 | 456.889002055687 |
+| 04 | AFTER legacy | 21/3/0/0/0 | 2898.624307190733 | 8781.0 | 7304.866188388237 | 484.2229169596477 | -18.75 | 465.4729169596477 |
+| 04 | BEFORE prefix | 22/2/0/0/0 | 2541.5645411838295 | 8702.0 | 7136.644529351648 | 495.9756528385031 | -11.200000000000001 | 484.7756528385031 |
+| 04 | AFTER prefix | 21/3/0/0/0 | 2300.4786701382777 | 8318.0 | 6780.564268184143 | 493.42421128384325 | -11.450000000000001 | 481.97421128384326 |
+| 05 | BEFORE legacy | 21/3/0/0/0 | 2831.714915546975 | 8877.0 | 7226.2010726350645 | 484.6935885149977 | -17.150000000000002 | 467.54358851499774 |
+| 05 | AFTER legacy | 22/2/0/0/0 | 3325.1994978543767 | 9377.0 | 7782.96284336841 | 484.22852901460556 | -17.5 | 466.72852901460556 |
+| 05 | BEFORE prefix | 23/1/0/0/0 | 3195.0248025513906 | 9279.0 | 7582.248345039119 | 493.94536188407056 | -12.65 | 481.2953618840706 |
+| 05 | AFTER prefix | 23/1/0/0/0 | 2623.0957402778245 | 8904.0 | 7183.38396030209 | 500.5420632585533 | -10.950000000000001 | 489.5920632585533 |
+| 06 | BEFORE legacy | 21/3/0/0/0 | 2690.1509303975567 | 8410.0 | 7130.985416874106 | 484.6280115660109 | -12.5 | 472.1280115660109 |
+| 06 | AFTER legacy | 19/5/0/0/0 | 3781.6106716041218 | 9389.0 | 8212.56933347565 | 449.48621119070333 | -26.700000000000003 | 422.78621119070334 |
+| 06 | BEFORE prefix | 21/3/0/0/0 | 2288.2917809373976 | 7990.0 | 6628.222865751552 | 486.9713952840443 | -13.450000000000001 | 473.52139528404433 |
+| 06 | AFTER prefix | 20/4/0/0/0 | 2527.02232209574 | 8291.0 | 6937.186442303664 | 473.34191291752546 | -18.0 | 455.34191291752546 |
+
+四个 aggregate（每个 `6` scenes、`144` generated/admitted/successful/resolved）为：
+
+| aggregate | N/E/F/D/U | wait s | elapsed s | energy | raw reward | rejection penalty | total reward |
+|---|---|---:|---:|---:|---:|---:|---:|
+| BEFORE legacy | 125/19/0/0/0 | 18916.128770268584 | 54464.0 | 45393.27363445881 | 2877.7767054987794 | -102.65 | 2775.1267054987793 |
+| AFTER legacy | 127/17/0/0/0 | 19786.536758110815 | 55344.0 | 46428.073048668964 | 2880.072258898247 | -109.3 | 2770.7722588982474 |
+| BEFORE prefix | 134/10/0/0/0 | 15326.807767200931 | 51878.0 | 42314.50184230952 | 2987.958731305063 | -73.25 | 2914.7087313050633 |
+| AFTER prefix | 132/12/0/0/0 | 15784.210671289373 | 52152.0 | 42625.59703284595 | 2967.165135524575 | -81.65 | 2885.515135524575 |
+
+AFTER-prefix 相对 AFTER-legacy 为 N `+5`、wait `-20.22752205577778%`、elapsed `-5.76756287944492%`、energy `-8.190036256376597%`；相对 BEFORE-prefix 为 N `-2`、wait `+2.9843324913833236%`、elapsed `+0.5281622267627961%`、energy `+0.7351975729166904%`，因此同时未通过 normal 与 cost nondegradation gates，`criterion_pass=false`、`development_candidate=false`、`qualification=not_a_qualification`。AFTER-legacy 相对 BEFORE-legacy 虽 N `+2`，但 wait/elapsed/energy 分别增加约 `4.60140655%`、`1.61574618%`、`2.27963161%`；不将旧四-cell 的 `80→74` 与新六-cell 的 `125→127` 合并成统一 population 结论。所有 local regressions 与 raw reward/penalty 分解保留，不作 single-cell root-cause 或 P3 solved claim。
+
+native observer-RNG field 在 `12` 个 native arms 未暴露，相关 component 为 unknown；controller-specific fields 对 native arms 为 N/A，不写成 `0`。low-audit proof=`.tmp/p3_prefix_fresh_v4_native_exact_comparison_proof.json` 报告 V1–V4 native action/replay 对齐，tape SHA=`c4e836a1d0a1aeaacd6f361ae58080ba715725bd22ec25afdae9b1089030c130`；validation-only fixes 未改变 baseline。heartbeat `p3-prefix-repair-validation` 已删除，当前无后台任务；无 rerun、新 seed 或 budget change。Existing `12` tests 为此前已通过的代码证据，本轮仅为 docs check，不新增测试或训练。
 ### Profile pilot technical stop（PILOT_FAILED）
 
 PID `2155873` 在首个 arm 后以 `PILOT_FAILED` 终止，未运行第二个 arm 或 FULL。`.tmp/p3_prefix_profile_pilot_snapshot_proof.json` 与实际 arm artifact 显示 `761/761` replay、24-request identity、model-caller RNG、reward、ledger 和 outcome `19N/5E/0F` 均与原始 tape 一致；成本字段也一致。native runtime 不发出 `uncertified_execution` 字段，profiler 读取缺失值 `None`，而 shared-metrics 要求该字段已知，因此 `hard_safety_clear=false`，原始 tape 为 `true`。这是 technical certificate incomplete 的观察，不是 observed unsafe 或 verified violation。raw positive violations 为零，其余记录字段为零；timings/counters 虽已产生，但该 pilot 不计入 accepted timing result。heartbeat `p3-prefix-repair-validation` 已删除，无第二 arm、FULL 或后台任务。root 仅准备一个显式版本化的 safety-provenance technical-recovery，保留原 output/input，不改变 runtime；不作 performance 或 P3 solved claim。
