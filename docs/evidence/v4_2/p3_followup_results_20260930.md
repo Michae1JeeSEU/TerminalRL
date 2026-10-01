@@ -55,11 +55,39 @@ The pilot terminal proof `.tmp/p3_before_prefix_fallback_pilot_terminal_proof.js
 
 Pilot candidate/reference metrics were `N/E/F/D/U=19/5/0/0/0` for BEFORE-prefix, `19/5/0/0/0` for native BEFORE legacy, and `21/3/0/0/0` for existing AFTER-prefix. BEFORE-prefix wait/elapsed/energy/raw reward/rejection penalty were `3123.9868663533725/8878/7513.164788008758/453.66623681012584/-19.8`; relative to BEFORE legacy, the deltas were wait `-203.51275496015205`, elapsed `-172`, energy `-244.75232074669475`, raw reward `+2.33735743681331`, and rejection penalty `-0.25`. Relative to AFTER-prefix, the deltas were wait `+310.446187987296`, elapsed `+247`, energy `+204.575850712897`, raw reward `-26.04464048159991`, and rejection penalty `-8.65`. Wall time was `188.37618574872613 s` including replay. These are single-pilot observed metrics and do not establish a general performance or training conclusion.
 
-### BEFORE-prefix FULL startup（运行中）
+### BEFORE-prefix FULL startup and terminal（FULL_OK）
 
 The single authorized FULL launch uses PID `2145833` (shell parent `2145832`), cwd `/home/user/projects/terminal`, and the exact `run_p3_before_prefix_fallback_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv with all three environment flags set to `1`. Fresh `_phase_inputs` and `_validate_pilot_reuse` guards exited successfully; the immutable pilot was reused without rerunning cell 1 and no duplicate process was detected. Startup proof `.tmp/p3_before_prefix_fallback_full_startup_proof.json` has SHA256=`3a7c7f1525b57be37004a886b372d00cacac9b080c216ff0b71d5b085554b173`.
 
-The cell 2 startup snapshot reports step `50`, `15` generated rows, `15` active observations, and `51` native forwards; the `15` generated rows are an early progress value, not a missing 24-request scope. The FULL log is `0` bytes and no cell-2 completion, full terminal, or error artifact exists yet. Remaining cells and full-cycle metrics are unknown; `PPO_ALLOWED=false`, with no training, teacher, optimizer, or held-out use.
+The cell 2 startup snapshot reports step `50`, `15` generated rows, `15` active observations, and `51` native forwards; the `15` generated rows are an early progress value, not a missing 24-request scope. The FULL log is `0` bytes and no cell-2 completion, full terminal, or error artifact existed at that snapshot. `PPO_ALLOWED=false`, with no training, teacher, optimizer, or held-out use.
+
+The corrected terminal proof `.tmp/p3_before_prefix_fallback_full_terminal_proof.json` has SHA256=`9027b2071f434ad7093ff1a27720996f80b163e547f554781590899b6080396a`. PID `2145833` exited with `FULL_OK`; the full JSON SHA is `b4ee3a191c26911edf94fd24e1da4077bd2a0962e10cd5507174b52a8af73028`. All four scenes are natural with zero censor/error/new failed/diverted/unresolved IDs; exact 24-request identity, model/RNG/configuration/dependency/alias/source-q/replay/ledger/energy/safety checks and all order-sidecar server/mirror/metadata hashes passed. The immutable cell-1 pilot was reused. The fixed development screen passed (`development_candidate=true`, `qualification=not_a_qualification`), with no qualification, default promotion, or PPO admission.
+
+| arm | aggregate N/E/F/D/U | generated/admitted/successful/resolved | wait s | request elapsed s | energy | raw reward excluding penalty | rejection penalty |
+|---|---|---:|---:|---:|---:|---:|---:|
+| native BEFORE legacy | 80/16/0/0/0 | 96/96/96/96 | 11960.603909056079 | 35264 | 29569.552989304 | 1875.5198191582429 | -65.0 |
+| BEFORE-prefix | 84/12/0/0/0 | 96/96/96/96 | 11026.483499761933 | 34876 | 28895.644581442906 | 1913.77995418683 | -59.6 |
+| native AFTER legacy | 74/22/0/0/0 | 96/96/96/96 | 12694.479108696314 | 35958 | 30298.346238285667 | 1807.4669936354644 | -74.35000000000001 |
+| AFTER-prefix | 88/8/0/0/0 | 96/96/96/96 | 10829.515889168819 | 34515 | 28596.777174838007 | 1957.2813049300375 | -49.65 |
+
+Relative aggregate percentages are BEFORE-prefix versus native BEFORE: wait `-7.80997695765904%`, request elapsed `-1.1002722323049001%`, energy `-2.27906187186821%`; repaired same-controller AFTER-prefix versus BEFORE-prefix: wait `-1.786313928618916%`, elapsed `-1.035095767863287%`, energy `-1.0342991510797954%`; native AFTER legacy versus native BEFORE: wait `+6.1357704445389665%`, elapsed `+1.9680127041742286%`, energy `+2.464674556444219%`. Raw reward and rejection penalty remain separate; no performance claim is based on penalty alone.
+
+All per-cell F/D/U values are zero and every cell has no new failed/diverted/unresolved IDs. The following deltas are candidate minus the named reference; cost order is `wait / request elapsed / energy`.
+
+| cell | BEFORE-prefix N/E vs native BEFORE N/E; cost delta | AFTER-prefix N/E vs BEFORE-prefix N/E; cost delta | native AFTER N/E vs native BEFORE N/E; cost delta |
+|---:|---|---|---|
+| 1 | 19/5 vs 19/5; `-203.51275496015205 / -172 / -244.75232074669475` | 21/3 vs 19/5; `-310.44618798729607 / -247 / -204.57585071289668` | 18/6 vs 19/5; `-281.29990639396783 / -313 / -300.077337380626` |
+| 2 | 21/3 vs 20/4; `-1007.9074811448918 / -876 / -993.3610109648716` | 23/1 vs 21/3; `+114.70070184667702 / +210 / +185.0218761352271` | 18/6 vs 20/4; `+57.94878642340791 / +99 / +72.09435478439991` |
+| 3 | 23/1 vs 22/2; `+57.244417168697055 / +170 / +131.559097721969` | 22/2 vs 23/1; `+119.03358738113457 / -20 / +12.514108883472545` | 21/3 vs 22/2; `+854.6052203544109 / +825 / +851.6315442529312` |
+| 4 | 21/3 vs 19/5; `+220.05540964220245 / +490 / +432.64582612850427` | 22/2 vs 21/3; `-120.25571183363036 / -304 / -291.82754091070456` | 17/7 vs 19/5; `+102.6210992563847 / +83 / +105.14468732496425` |
+
+The panel retains the local regressions: BEFORE-prefix cells 3 and 4 have higher wait/elapsed/energy than native BEFORE, repaired AFTER-prefix cell 2 has higher wait/elapsed/energy than BEFORE-prefix, and repaired cell 3 has one fewer normal outcome with higher wait and energy. Candidate wall times including replay were `706.19361034967 s` (BEFORE-prefix) and `721.0561337517574 s` (AFTER-prefix); native baseline wall times and cumulative fallback check counts remain unknown.
+
+In this fixed panel, the native normal-outcome decline `80→74` was not observed under the same repaired executor (`84→88`), alongside lower aggregate wait/elapsed/energy; this supports a learned-policy/execution-rule interaction and a development execution fix, rather than a unique universal training root cause.
+
+This is a fixed development panel result. Native initial Torch policy seeds were retained but are not an exact keyed-CRN sampler, and expanding all-energy exhaustion from three to as many as 25 candidates can change induced emergency behavior. The panel does not provide an exact-CRN difference-in-differences or a unique universal training root-cause claim, and it does not establish that P3 is solved. The `p3-before-prefix-fallback` heartbeat was deleted after terminal completion; no background job remains. The next documented work is to measure cumulative fallback checks and actual inference latency, then separately review this opt-in executor and existing admission before any PPO/default-promotion decision; no new job was admitted or launched.
+
+The earlier `31` focused tests, compile, native BEFORE guard, and diff check are historical code validation; this documentation round performed only document/numeric checks and did not retest code.
 
 ## Frozen always-RELEASE gate control 终态
 
