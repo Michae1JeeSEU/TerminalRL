@@ -1,6 +1,6 @@
 # 项目当前状态
 
-> **LATEST ROLLING STATUS（2026-10-01）：** 当前 trained regression 已复现；uniform-q floor candidate 已拒绝；matched-state gate-shift causal diagnostic 已完成 `2918` steps；causal tool tests `18` 项通过。trained gate-value V2 no-env preflight 与 real-JSON phase validation 均通过。Pilot 已 `PILOT_OK`：`104` branches natural、0 censor/error/hardsafety；C1/C2/C3 full `D` 均值分别为 `-0.049999999999926104`、`+0.2713038294623118` 与 `-0.049999999999954525`。FULL PID=`2127202` 仍运行，08:04:36 progress=`6/104`，C4 step `187`；C3 state 已完成且 proof SHA=`0a84549c5313d0149aef845ceb1636f0c73c78896730bba3f1913074bdf54699`。C4 完整 `D/m` 与 full terminal result 仍未知；`PPO_ALLOWED=false`。
+> **LATEST ROLLING STATUS（2026-10-01）：** 当前 trained regression 已复现；uniform-q floor candidate 已拒绝；matched-state gate-shift causal diagnostic 已完成 `2918` steps；causal tool tests `18` 项通过。trained gate-value V2 FULL 已 `FULL_OK`：4 states、416 branches 全部 natural，0 censor/error/hardsafety，pilot reused，full SHA=`056bbc9d4f4949c7c932b1b21c49204b2533d1fe1f7b1fe44b48a2e845ee5a5a`。C1/C2/C3/C4 full `D` 均值分别为 `-0.049999999999926104`、`+0.2713038294623118`、`-0.049999999999954525` 与 `-1.2160576541882904`；该机制诊断不支持 universal increased-RELEASE 或 causal training blame，下一候选仍只在 implementation/test 阶段。`PPO_ALLOWED=false`。
 
 
 ## 2026-09-30 P3 follow-up 修复
@@ -158,7 +158,7 @@ root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligi
 
 ## Trained gate-value matched-state diagnostic：V1、V2 pilot 终态与 FULL 运行
 
-协议已写入 [trained gate-value protocol](evidence/v4_2/p3_trained_gate_value_protocol_20261001.md)。代码先后为 `d849b2` 与 serialization fix `c5d3d900970dc036a05fb2dd8f4b1cd552cc0564`；18 个 focused tests、compile/diffcheck 和 local no-env preflight 通过。估计器固定四个 states、policy seeds=`9303201..04`、cap=`1800`，使用 common native K=3 q，并沿 `arrival_id|tick|stream` 复用同一 frozen BEFORE `3fe7` continuation。C1/C2/C3 的 target-only exact Δp 与 full `D` 已取得；C4 的完整值仍未知。local `m` 不求和为 global gain。counterfactual suffix 是新的模拟轨迹，不能表述为“没有 simulation”。
+协议已写入 [trained gate-value protocol](evidence/v4_2/p3_trained_gate_value_protocol_20261001.md)。代码先后为 `d849b2` 与 serialization fix `c5d3d900970dc036a05fb2dd8f4b1cd552cc0564`；18 个 focused tests、compile/diffcheck 和 local no-env preflight 通过。估计器固定四个 states、policy seeds=`9303201..04`、cap=`1800`，使用 common native K=3 q，并沿 `arrival_id|tick|stream` 复用同一 frozen BEFORE `3fe7` continuation。C1/C2/C3/C4 的 target-only exact Δp 与 full `D` 均已取得；local `m` 不求和为 global gain。counterfactual suffix 是新的模拟轨迹，不能表述为“没有 simulation”。
 
 server V1 preflight SHA=`fc05db44044615c329cfa34147c49df4e5cf50630002f137427d3c95c505ccc2`，状态为 `PREFLIGHT_OK`、no-env；wrapper malformed invocation 在 AFTER module 后返回 `1`，module exit unknown。V1 pilot 的真实 PID=`2121108`、argv/cwd 已核对，但在 environment/branch 之前因 `matched/native full binding changed` 退出；`pilot_v1.log` 为 `115` bytes，没有 pilot/error/branch outputs，preflight progress 保持不变。root 已核对 cause JSON 中保存的 string paths 与 runtime paths 的 raw comparison；inputs SHA checks 未变化。serialization fix 统一 canonical paths/SHA，并保留 prevalidation error artifact；V1 failed output root 保留为 `/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001`。
 
@@ -182,7 +182,20 @@ C3 state proof `state_03.json` SHA=`0a84549c5313d0149aef845ceb1636f0c73c78896730
 | 9303203 | 20/4/0/0/0 | 20/4/0/0/0 | 6005 | 6005.000000000001 | 8015.881079010222 | 8015.8810790102225 | 334.21445937453444 | 334.16445937453443 |
 | 9303204 | 22/2/0/0/0 | 22/2/0/0/0 | 6341 | 6341.000000000001 | 8292.364322081408 | 8292.364322081408 | 344.0289732407352 | 343.9789732407352 |
 
-root 已准入 FULL，复用 immutable pilot，仅新增其余 3 states 的 `312` branches，总计 `416` branches；readonly_validate_preflight/`_validate_pilot` 均 exit `0`。FULL PID=`2127202`，exact module `--phase full`、同一 V2 output/cwd/envflags；server `08:04:36` progress=`6/104`，C4 step `187`、continuation_seed=`9303201`、proposal=`4`。C3 state 已完成，proof 为 `state_03.json` SHA=`0a84549c5313d0149aef845ceb1636f0c73c78896730bba3f1913074bdf54699`；C4 state/error artifact 尚不存在，log 为 `0` bytes。heartbeat `p3-trained-gate-value` 继续 10 分钟监控；预计剩余约 `98` branches、25–30 分钟。C4 完整 `D/m` 与 FULL 终态尚未取得，未来 branch 的 `D/m` 保持 unknown，不从局部分支计算。没有 PPO、Teacher、optimizer、held-out 或 default promotion。
+FULL terminal evidence：server `08:25:35`（Asia/Shanghai）PID=`2127202` 已退出，`FULL_OK`；exact module/cwd/envflags 匹配，pilot immutable reused，`4` mechanism states、`416` branches 全部 natural，invalid/censor/error/hardsafety 均为 `0`。source/model/environment/caller RNG、外生 CRN、non-target first actions、exact replay 与 model/env invariants 全部通过；artifact proof 为 `.tmp/p3_trained_gate_value_v2_full_proof.json`，full SHA=`056bbc9d4f4949c7c932b1b21c49204b2533d1fe1f7b1fe44b48a2e845ee5a5a`。该运行是 mechanism-state diagnostic，不是 performance population、qualification 或 PPO 结果；alternate-world outcome counts 不视为独立人口绩效。
+
+| state | C | per-seed D | mean D | Δp | local m |
+|---|---:|---|---:|---:|---:|
+| C1 / step168 | 0 | `[-0.04999999999989768,-0.049999999999954525,-0.04999999999989768,-0.049999999999954525]` | `-0.049999999999926104` | `-6.555688742082566e-6` | `+3.2778443710364384e-7` |
+| C2 / step202 | 0 | `[-8.109680200730281,-22.35170231001115,-8.058118334540154,39.60471616313083]` | `+0.2713038294623118` | `-0.0041106343269348145` | `-0.0011152308344166478` |
+| C3 / step198 | 0 | `[-0.049999999999954525,-0.04999999999989768,-0.049999999999954525,-0.05000000000001137]` | `-0.049999999999954525` | `-0.0006189860869199038` | `+0.00003094930434596704` |
+| C4 / step187 | 1 | `[5.684341886080802e-14,-4.864230616753275,5.684341886080802e-14,0.0]` | `-1.2160576541882904` | `+5.9545040130615234e-5` | `-7.241020181978357e-5` |
+
+C4 state proof `state_04.json` SHA=`b1ca9eba9d05dde6487f941e4d503737d5530176a307ec309e23d45d6cdae6e6`（step `187`、UID `3`/arrival `3`）为 `C=1`，四 repeats 各 `25` 个 RELEASE branches 均 `approved`；104 branches natural、invalid/censor/error/hardsafety=`0`。C4 的 wait_seconds 四 seed 均为 `null`。其中 seed `9303202` WAIT/RELEASE outcome 均 `20/4/0/0/0`，elapsed=`5410→5670`，energy=`6737.448645086157→6975.869534481303`，D=`-4.864230616753275`；其余 seed 的 D 为 `5.684341886080802e-14/5.684341886080802e-14/0.0`，对应 return 差为数值近零。不要把 local m 求和为 global gain。
+
+ALL4 结果不支持 universal increased RELEASE，也不支持把训练退化归因于 causal mechanism；entropy、team-credit、gradient clipping 等仍未由本诊断证明。只读运行契约显示：`parallel_env.py:880–883` 的 safety reject 会设置 `safety_retry_after`，`student_rollout_v4_2.py:111–153` 的 WAIT/not_requested 不设置，因此即时 `C=0` 不意味着 future trajectory 相同。实际 cfg 为 `v4_2_rejected_release_hold_mode=canonical_wait`、`emergency_priority_guard_enabled=true`、`rule_flow_coordination_enabled=false`；本运行不按 `legacy_requested` 解释，也未修改 retry 规则。
+
+ROOT 选择的下一项仍是 experimental candidate 的 implementation/test：保持 original sampled-first K3 的 prefix，再仅在需要时加入 remaining raw-source-logit ranked-25；gate/q/first3/checkpoint/safety/retry 保持不变。选择依据是 source16 step445 中 proposals22/23 的 q-starved 但 complete G-WAIT 对四 seed 为正的局部 witness；single failure witness 不作为总体 root cause。该 candidate 尚未 launch/admit 为 performance experiment，也未进入 default/PPO；`PPO_ALLOWED=false`。
 文档 erratum：现有 protocol 文本仍残留句子 “keyed by UID and absolute tick”。实际冻结源码的 scoped hook 按 `arrival_id|absolute_tick|stream` 续跑，action-map 才使用 UID；该实现与 source SHA 前缀 `6e06f837` 及 preflight 绑定一致。本轮只记录该文字差异，不修改 protocol 文件或其 digest。
 
 V2 固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`、retry-free、native-order 的 states：C1 step `168` UID `3`/arrival `3`，C2 step `202` UID `2`/arrival `2`，C3 step `198` UID `2`/arrival `2`，C4 step `187` UID `3`/arrival `3`。这些 states 按 eligibility 选择，不按 outcome 或 p-delta 选择，不替换原有 24-state 结果，也不重采样；exact prestate 恢复、其余 first requests 保持 native AFTER tape，首步比较 WAIT 与全部 25 个 RELEASE actual-q/native-K3 branches，full `D` 包含首步 reward。gate probability 的下降或上升仍需 `D` 验证；当前不作 root-cause 或 solution 结论，`PPO_ALLOWED=false`。
