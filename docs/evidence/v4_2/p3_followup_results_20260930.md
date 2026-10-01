@@ -26,6 +26,16 @@ The fixed states are cell steps `(307, 321, 303, 365)` with `arrival_id=15`; cel
 
 At the subsequent `2026-10-01T19:44:54+08:00` snapshot, PID `2187800` was still running after `00:10:57`; progress was `32/104` pilot branches, cell 1, continuation seed `9303402`, proposal `4`. `pilot.json`, `cell_01.json`, `error.json`, and `partial.json` were absent and `pilot_v1.log` was `0` bytes. Full phase and group metrics were unavailable; progress proof=`.tmp/p3_prefix_normal_gate_value_pilot_snapshot_194454.json`. Monitor `p3-normal-inner-gate-value` remained active; no PPO/training phase was admitted (`PPO_ALLOWED=false`).
 
+## 2026-10-01 normal-inner pilot terminal and FULL startup
+
+Pilot terminal proof=`.tmp/p3_prefix_normal_gate_value_pilot_terminal_proof.json` reports `PILOT_OK`; PID `2187800` exited. Pilot SHA=`b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332`, cell 1 SHA=`ace3e81b49a05011497fd5a3f6cb3a3c90790d6b114a67d41a325c77f509605c`; all `104` branches were natural with zero censor/error/hardsafety, exact replay used `708` steps, and model/RNG/source checks passed.
+
+Cell 1 was step `307`, UID/arrival `15`, `ring_inner`, actor mask true, committed plan false, retry-free. It had `C=1.0`, `p_before=0.9952911138534546`, `p_after=0.9953116774559021`, Δp=`2.0563602447509766e-05`, `D=-2.7208791428176653`, and `local_m=-5.595107700062362e-05`. Per-seed D was `[-17.633685634105575, -0.03883038093772484, 16.457156780716787, -9.668157336944148]`; wait and linear-residual fields were unavailable. This is a single selected-state measurement, not a global gain.
+
+ROOT admitted FULL with `FULL_GUARD_OK`, reusing immutable cell 1 and running only cells 2–4 (`312` new branches, `max_steps=1800`); cell 1 was not rerun. Full startup proofs are `.tmp/p3_prefix_normal_gate_value_full_startup_proof.json` and `.tmp/p3_prefix_normal_gate_value_full_first_output_proof.json`. At `2026-10-01T20:16:04+08:00`, PID `2191437` (parent `2191436`) was running from `/home/user/projects/terminal` with the registered module, `/usr/bin/python3.12`, and all three runtime flags set to `1`; `PPO_ALLOWED=false`.
+
+The first new FULL branch was `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/branches/cell_02_001.json`: WAIT, seed `9303401`, proposal `null`, `419` steps, natural terminal, `23N/1E/0F/0D/0U`, safety violation false, return `281.56366903465454`, request elapsed `5608.0` seconds, branch wall `18.729321520775557` seconds. Progress was cell 2 `2/104`; full/error/partial and cell 2–4 summary artifacts were absent at that snapshot. C/D/local_m for new cells were not yet available.
+
 ## 2026-10-01 被动 profile 与 fresh validation preregistration / preflight
 
 Passive profile protocol 与 runner 已固定在 commits `2ba8f83` 和 `5fd7f5a`，profile 定向测试为 `10` 项；fresh validation runner commit `0ddf8b7` 的 selected suite 为 `38` 个 distinct tests，与 profile suite 有重叠，不将两者相加。Profile server no-env preflight SHA=`7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d`，serialized validator 通过 `16` tapes、`8` sidecars、`3` full artifacts。Fresh no-env preflight SHA=`e25cde37af2da6ac1988e7c36dd1097d8bebb956be807441a8837c68046e2b92`，通过 `6` scenes×`4` arms，scene/env 为 `886101..886106`，native policy seed 为 `886201..886206`，cap=`1800`；pilot 预注册为 cell 1 四 arms，经 root review 后再处理其余 `20` arms。
