@@ -229,3 +229,93 @@ def test_arm_sequence_stops_after_first_failed_arm(monkeypatch: pytest.MonkeyPat
     rows = profile._run_arm_sequence(tmp_path, object(), [{"id": 1}, {"id": 2}], "pilot")
     assert len(rows) == 1
     assert len(calls) == 1
+
+
+def _safety_fixture(**overrides):
+    arm_record = {
+        "summary": {"safety": {
+            "collisions": 0, "nmac": 0, "hard_separation_violations": 0,
+            "SafetyInvariantError": 0, "uncertified_execution": 0,
+        }},
+        "metrics": {"hard_safety_clear": True},
+    }
+    replay = {
+        "exact": True, "config_match": True, "reset_state_match": True,
+        "steps_expected": 2, "steps_replayed": 2,
+        "steps": [{"blocked": False}, {"blocked": False}],
+    }
+    runtime = {"telemetry": {
+        "collisions": 0, "nmac": 0, "hard_separation_violations": 0,
+        "uncertified_execution": None,
+    }}
+    manifest = {"action_tape_sha256": "tape"}
+    spec = {"checkpoint_sha256": "checkpoint"}
+    for target, values in overrides.items():
+        if target == "source":
+            arm_record["summary"]["safety"].update(values)
+        elif target == "replay":
+            replay.update(values)
+        elif target == "runtime":
+            runtime["telemetry"].update(values)
+        elif target == "manifest":
+            manifest.update(values)
+    return arm_record, replay, runtime, manifest, spec
+
+
+def test_safety_provenance_derives_only_the_frozen_certified_missing_counter() -> None:
+    args = _safety_fixture()
+    provenance = profile._safety_provenance(*args, "tape", "checkpoint")
+    assert provenance["raw"]["uncertified_execution"] is None
+    assert provenance["derived_uncertified_execution"] is True
+    assert provenance["derivation_label"] == "exact_replay_of_frozen_certified_source"
+    assert provenance["shared"]["uncertified_execution"] == 0
+    assert provenance["provenance_valid"] is True
+    assert provenance["observed_positive"] is False
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"replay": {"config_match": False}},
+        {"replay": {"steps": [{"blocked": True}, {"blocked": False}]}},
+        {"runtime": {"collisions": None}},
+        {"runtime": {"collisions": 1}},
+        {"source": {"uncertified_execution": 1}},
+        {"manifest": {"action_tape_sha256": "changed"}},
+    ],
+)
+def test_safety_provenance_failures_do_not_derive_missing_counter(overrides) -> None:
+    args = _safety_fixture(**overrides)
+    provenance = profile._safety_provenance(*args, "tape", "checkpoint")
+    assert provenance["derived_uncertified_execution"] is False
+    assert provenance["shared"]["uncertified_execution"] is None
+    assert provenance["provenance_valid"] is False
+    if overrides.get("runtime", {}).get("collisions") == 1:
+        assert provenance["observed_positive"] is True
+
+
+def test_present_runtime_uncertified_zero_is_retained_without_derivation() -> None:
+    args = _safety_fixture(runtime={"uncertified_execution": 0})
+    provenance = profile._safety_provenance(*args, "tape", "checkpoint")
+    assert provenance["derived_uncertified_execution"] is False
+    assert provenance["derivation_label"] is None
+    assert provenance["raw"]["uncertified_execution"] == 0
+    assert provenance["shared"]["uncertified_execution"] == 0
+    assert provenance["provenance_valid"] is True
+
+
+def test_positive_runtime_uncertified_counter_is_retained_and_blocks_clear_status() -> None:
+    args = _safety_fixture(runtime={"uncertified_execution": 1})
+    provenance = profile._safety_provenance(*args, "tape", "checkpoint")
+    assert provenance["derived_uncertified_execution"] is False
+    assert provenance["raw"]["uncertified_execution"] == 1
+    assert provenance["shared"]["uncertified_execution"] == 1
+    assert provenance["observed_positive"] is True
+
+
+def test_inconsistent_source_primitive_blocks_missing_counter_derivation() -> None:
+    args = _safety_fixture(source={"collisions": 1})
+    provenance = profile._safety_provenance(*args, "tape", "checkpoint")
+    assert provenance["derived_uncertified_execution"] is False
+    assert provenance["shared"]["uncertified_execution"] is None
+    assert provenance["provenance_valid"] is False

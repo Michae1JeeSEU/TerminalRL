@@ -795,6 +795,97 @@ def _safety_nonzero_value(snapshot: Mapping[str, Any]) -> bool | None:
         return None
 
 
+def _exact_zero(value: Any) -> bool:
+    try:
+        return math.isfinite(float(value)) and float(value) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
+def _safety_provenance(
+    arm_record: Mapping[str, Any],
+    replay: Mapping[str, Any],
+    runtime: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    spec: Mapping[str, Any],
+    tape_sha256: str | None,
+    checkpoint_sha256: str | None,
+) -> dict[str, Any]:
+    """Keep raw safety fields separate from a narrowly derived replay value."""
+    raw = _safety_from_runtime(runtime, replay)
+    summary = arm_record.get("summary") if isinstance(arm_record.get("summary"), Mapping) else {}
+    source_safety = summary.get("safety") if isinstance(summary.get("safety"), Mapping) else {}
+    source_metrics = arm_record.get("metrics") if isinstance(arm_record.get("metrics"), Mapping) else {}
+    source_hard_clear = source_metrics.get("hard_safety_clear") is True
+    steps = replay.get("steps") if isinstance(replay, Mapping) else None
+    blocked_count = (
+        sum(bool(row.get("blocked")) for row in steps if isinstance(row, Mapping))
+        if isinstance(steps, Sequence) else None
+    )
+    exact_steps = bool(
+        isinstance(replay, Mapping)
+        and replay.get("steps_expected") is not None
+        and replay.get("steps_expected") == replay.get("steps_replayed")
+        and int(replay.get("steps_expected", 0) or 0) > 0
+    )
+    source_certified = bool(
+        source_hard_clear
+        and all(_exact_zero(source_safety.get(key)) for key in (
+            "collisions", "nmac", "hard_separation_violations",
+            "SafetyInvariantError", "uncertified_execution",
+        ))
+    )
+    replay_primitives_zero = all(
+        _exact_zero(raw.get(key))
+        for key in ("collisions", "nmac", "hard_separation_violations")
+    )
+    replay_error_zero = blocked_count == 0
+    input_hashes_match = bool(
+        tape_sha256 is not None
+        and tape_sha256 == manifest.get("action_tape_sha256")
+        and checkpoint_sha256 is not None
+        and checkpoint_sha256 == str(spec.get("checkpoint_sha256"))
+    )
+    conditions = {
+        "source_uncertified_execution_zero": _exact_zero(source_safety.get("uncertified_execution")),
+        "source_certified": source_certified,
+        "runtime_uncertified_execution_missing": raw.get("uncertified_execution") is None,
+        "source_hard_safety_clear": source_hard_clear,
+        "replay_exact": replay.get("exact") is True,
+        "replay_config_match": replay.get("config_match") is True,
+        "replay_reset_state_match": replay.get("reset_state_match") is True,
+        "replay_steps_exact": exact_steps,
+        "replay_steps_unblocked": replay_error_zero,
+        "replay_safety_invariant_error_zero": replay_error_zero,
+        "replay_collision_nmac_separation_zero": replay_primitives_zero,
+        "input_hashes_match": input_hashes_match,
+    }
+    derived = all(conditions.values())
+    shared = dict(raw)
+    if derived:
+        shared["uncertified_execution"] = 0
+    positive = any(
+        _exact_zero(value) is False and value is not None
+        for value in (raw.get("collisions"), raw.get("nmac"), raw.get("hard_separation_violations"), raw.get("SafetyInvariantError"), raw.get("uncertified_execution"))
+    )
+    provenance_valid = all(shared.get(key) is not None for key in (
+        "collisions", "nmac", "hard_separation_violations", "SafetyInvariantError", "uncertified_execution",
+    ))
+    return {
+        "raw": raw,
+        "shared": shared,
+        "derived_uncertified_execution": bool(derived),
+        "derivation_label": "exact_replay_of_frozen_certified_source" if derived else None,
+        "derived_field": "uncertified_execution" if derived else None,
+        "derived_value": 0 if derived else None,
+        "observed_positive": bool(positive),
+        "provenance_valid": bool(provenance_valid),
+        "blocked_count": blocked_count,
+        "source_safety": dict(source_safety),
+        "conditions": conditions,
+    }
+
+
 def _install_profile_observers(env: Any, observer: _PassiveObserver, controller: Any | None) -> tuple[list[tuple[Any, str, bool, Any]], Any | None]:
     restores: list[tuple[Any, str, bool, Any]] = []
     for name, function in (
@@ -831,6 +922,8 @@ def _profile_arm(config: Any, item: Mapping[str, Any], output: Path) -> dict[str
     arm_record = item["record"]
     tape = Path(str(manifest["action_tape"]))
     checkpoint = _checkpoint(Path(spec["checkpoint"]), str(spec["checkpoint_sha256"]))
+    input_tape_sha256 = _sha256(tape) if tape.is_file() else None
+    checkpoint_sha256 = _sha256(checkpoint) if checkpoint.is_file() else None
     caller_before = _rng_snapshot()
     policy = None
     model_before = None
@@ -898,9 +991,12 @@ def _profile_arm(config: Any, item: Mapping[str, Any], output: Path) -> dict[str
     caller_rng_unchanged = _rng_equal(caller_before, caller_after)
     if error is None and observer is not None and not observer.rng_restored:
         error = {"type": "RNGRestorationError", "message": "actor probe RNG restoration check failed"}
+    safety_provenance = _safety_provenance(
+        arm_record, replay, runtime, manifest, spec, input_tape_sha256, checkpoint_sha256,
+    )
     replay_metrics: dict[str, Any] = {}
     if error is None and observer is not None:
-        replay_safety = _safety_from_runtime(runtime, replay)
+        replay_safety = safety_provenance["shared"]
         replay_safety_nonzero = _safety_nonzero_value(replay_safety)
         replay_record = {
             "status": arm_record.get("status"),
@@ -975,8 +1071,6 @@ def _profile_arm(config: Any, item: Mapping[str, Any], output: Path) -> dict[str
     }
     original_metrics = arm_record.get("metrics") if isinstance(arm_record.get("metrics"), Mapping) else {}
     comparison = _compare_metrics(original_metrics, replay_metrics) if replay_metrics else {"all_match": False, "fields": {}}
-    input_tape_sha256 = _sha256(tape) if tape.is_file() else None
-    checkpoint_sha256 = _sha256(checkpoint) if checkpoint.is_file() else None
     binding = {
         "model_unchanged": model_before is not None and model_before == model_after,
         "caller_rng_unchanged": caller_rng_unchanged,
@@ -994,6 +1088,11 @@ def _profile_arm(config: Any, item: Mapping[str, Any], output: Path) -> dict[str
         "reward_binding_match": (
             not reward_comparison.get("requires_match", False)
             or reward_comparison.get("all_match") is True
+        ),
+        "safety_provenance_valid": bool(safety_provenance.get("provenance_valid")),
+        "safety_observed_or_derived_clear": bool(
+            safety_provenance.get("provenance_valid")
+            and not safety_provenance.get("observed_positive")
         ),
     }
     reward_ok = (
@@ -1022,6 +1121,7 @@ def _profile_arm(config: Any, item: Mapping[str, Any], output: Path) -> dict[str
         "original_metrics": dict(original_metrics),
         "comparison": comparison,
         "reward_comparison": reward_comparison,
+        "safety_provenance": safety_provenance,
         "reward_stream": None if observer is None else {
             "step_count": len(observer.step_reward_totals),
             "reward_total_observed": float(sum(observer.step_reward_totals)) if observer.step_reward_totals else None,
