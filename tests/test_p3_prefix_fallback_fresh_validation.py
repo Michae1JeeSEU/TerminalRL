@@ -253,6 +253,18 @@ def _stub_native_arm(monkeypatch, tmp_path: Path, *, raise_runtime: bool = False
     return captured, original_capture_class, checkpoint
 
 
+def _prefix_gate_fixture() -> dict:
+    record = _record("before_prefix")
+    record.pop("config")
+    snapshot = {
+        "action_schema_version": runner.ACTION_SCHEMA,
+        "observation_schema_version": runner.OBSERVATION_SCHEMA,
+    }
+    record["config_snapshot"] = copy.deepcopy(snapshot)
+    record["config_snapshot_before"] = copy.deepcopy(snapshot)
+    return record
+
+
 def test_fresh_grid_and_schema_contract_are_independent_of_old_cells():
     assert [cell["env_seed"] for cell in runner.CELL_SPECS] == [886101, 886102, 886103, 886104, 886105, 886106]
     assert [cell["policy_seed"] for cell in runner.CELL_SPECS] == [886201, 886202, 886203, 886204, 886205, 886206]
@@ -363,6 +375,61 @@ def test_parser_exposes_only_registered_phases():
     assert parser.parse_args(["--phase", "preflight"]).phase == "preflight"
     with pytest.raises(SystemExit):
         parser.parse_args(["--phase", "train"])
+
+
+def test_prefix_wrapper_config_snapshots_pass_the_canonical_technical_gate(monkeypatch, tmp_path: Path):
+    fixture = _prefix_gate_fixture()
+    monkeypatch.setattr(runner.prefix, "_arm_record", lambda **_kwargs: copy.deepcopy(fixture))
+    monkeypatch.setattr(runner.before_prefix, "_before_base_scope", lambda: contextlib.nullcontext())
+    monkeypatch.setattr(runner.support, "_record_metrics", lambda _record: _metrics())
+
+    result = runner._prefix_arm_record(
+        config=object(), cell=dict(runner.CELL_SPECS[0]), arm="before_prefix", output=tmp_path,
+    )
+
+    assert "config" not in result
+    assert result["config_snapshot"] == result["config_snapshot_before"]
+    assert runner._technical_failure_arm(result) is None
+
+    for field, expected in (
+        ("caller_rng_unchanged", "caller_rng_unchanged is not true"),
+        ("weights_unchanged", "weights_unchanged is not true"),
+        ("teacher_called", "training/Teacher flag changed"),
+    ):
+        mutated = copy.deepcopy(result)
+        mutated[field] = True if field == "teacher_called" else False
+        assert runner._technical_failure_arm(mutated) == expected
+
+    mutated_runtime = copy.deepcopy(result)
+    mutated_runtime["runtime_capture"]["factory_calls"] = 0
+    assert runner._technical_failure_arm(mutated_runtime) == "environment factory counts are incomplete"
+    mutated_control = copy.deepcopy(result)
+    mutated_control["prefix_fallback_control"]["source_distributions_immutable"] = False
+    assert runner._technical_failure_arm(mutated_control) == (
+        "prefix controller binding source_distributions_immutable is not true"
+    )
+
+
+def test_technical_gate_rejects_missing_schema_and_config_snapshot_mismatches():
+    valid = _prefix_gate_fixture()
+    missing = copy.deepcopy(valid)
+    missing.pop("config_snapshot")
+    missing.pop("config_snapshot_before")
+    assert runner._technical_failure_arm(missing) == "config snapshot is missing"
+
+    wrong_schema = copy.deepcopy(valid)
+    wrong_schema["config_snapshot"]["action_schema_version"] = "wrong"
+    wrong_schema["config_snapshot_before"]["action_schema_version"] = "wrong"
+    assert runner._technical_failure_arm(wrong_schema) == "schema binding changed"
+
+    before_after_mismatch = copy.deepcopy(valid)
+    before_after_mismatch["config_snapshot_before"]["dt"] = 2.0
+    assert runner._technical_failure_arm(before_after_mismatch) == "config snapshots differ"
+
+    both_fields_mismatch = copy.deepcopy(valid)
+    both_fields_mismatch["config"] = copy.deepcopy(valid["config_snapshot"])
+    both_fields_mismatch["config"]["dt"] = 2.0
+    assert runner._technical_failure_arm(both_fields_mismatch) == "config snapshots differ"
 
 
 def test_native_arm_records_pre_restore_mutation_but_post_restore_caller_rng(monkeypatch, tmp_path: Path):

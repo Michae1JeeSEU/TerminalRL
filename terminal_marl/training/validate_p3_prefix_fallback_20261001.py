@@ -707,6 +707,41 @@ def _pair_summary(
     return result
 
 
+def _technical_config_snapshot(record: Mapping[str, Any]) -> tuple[Mapping[str, Any] | None, str | None]:
+    """Resolve the serialized config field used by native and prefix arms.
+
+    Native arms serialize ``config`` while the prefix runner serializes the
+    before/after snapshots.  Compare every field that is present through the
+    canonical JSON representation and keep the original record unchanged.
+    """
+
+    snapshots: dict[str, tuple[Mapping[str, Any], str]] = {}
+    for field in ("config", "config_snapshot", "config_snapshot_before"):
+        if field not in record:
+            continue
+        value = record.get(field)
+        if not isinstance(value, Mapping):
+            return None, f"{field} snapshot is missing or invalid"
+        try:
+            canonical = json.dumps(
+                _jsonable(value), sort_keys=True, separators=(",", ":"), allow_nan=False,
+            )
+        except (TypeError, ValueError) as exc:
+            return None, f"{field} snapshot is not canonical JSON: {exc}"
+        snapshots[field] = (value, canonical)
+
+    if not snapshots:
+        return None, "config snapshot is missing"
+    if "config" in snapshots and "config_snapshot" in snapshots:
+        if snapshots["config"][1] != snapshots["config_snapshot"][1]:
+            return None, "config snapshots differ"
+    after = snapshots.get("config_snapshot") or snapshots.get("config")
+    before = snapshots.get("config_snapshot_before")
+    if before is not None and after is not None and before[1] != after[1]:
+        return None, "config snapshots differ"
+    return after[0] if after is not None else None, None
+
+
 def _technical_failure_arm(record: Mapping[str, Any]) -> str | None:
     metrics = record.get("metrics") if isinstance(record.get("metrics"), Mapping) else {}
     if record.get("error") or metrics.get("error"):
@@ -728,8 +763,10 @@ def _technical_failure_arm(record: Mapping[str, Any]) -> str | None:
     )
     if record.get("checkpoint_sha256") != expected_checkpoint:
         return "checkpoint binding changed"
-    config = record.get("config")
-    if not isinstance(config, Mapping):
+    config, config_error = _technical_config_snapshot(record)
+    if config_error is not None:
+        return config_error
+    if config is None:
         return "config snapshot is missing"
     if config.get("action_schema_version") != ACTION_SCHEMA or config.get("observation_schema_version") != OBSERVATION_SCHEMA:
         return "schema binding changed"
