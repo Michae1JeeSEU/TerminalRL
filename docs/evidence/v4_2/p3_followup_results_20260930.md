@@ -26,6 +26,12 @@ The fixed states are cell steps `(307, 321, 303, 365)` with `arrival_id=15`; cel
 
 At the subsequent `2026-10-01T19:44:54+08:00` snapshot, PID `2187800` was still running after `00:10:57`; progress was `32/104` pilot branches, cell 1, continuation seed `9303402`, proposal `4`. `pilot.json`, `cell_01.json`, `error.json`, and `partial.json` were absent and `pilot_v1.log` was `0` bytes. Full phase and group metrics were unavailable; progress proof=`.tmp/p3_prefix_normal_gate_value_pilot_snapshot_194454.json`. Monitor `p3-normal-inner-gate-value` remained active; no PPO/training phase was admitted (`PPO_ALLOWED=false`).
 
+## 2026-10-01 normal-inner FULL progress: C2 completed, C3 running
+
+Proof=`.tmp/p3_prefix_normal_gate_value_full_cell02_proof.json` records the same PID `2191437` and runtime bindings. Cell 2 completed exact `674`-step replay with `104` natural branches and zero censor/error/hardsafety. Its selected state is step `321`, UID `25`, arrival `15`, SOC `0.6731115455491892`, `ring_inner`, actor mask true, retry-free, and no committed plan. Cell 2 has `C=1.0`, `p_before=0.06313349306583405`, `p_after=0.054939594119787216`, Δp=`-0.00819389894604683`, `D=+3.2490060899825153`, and `local_m=-0.026622027576407463`; wait and linear-residual fields are unavailable. Per-seed D is `[8.923167075767708, -13.078767221640362, 16.823774088948483, 0.32785041685423266]`; the q-weighted recomputation matched within `5.7e-14` per seed and mean `+3.249006089982558`. This is a state-local measurement; C3/C4 D and local_m remain unknown.
+
+The same snapshot showed C3 running at `2/104` branches (seed `9303401`, proposal `0`), with full/error/partial and C3/C4 summaries absent. Cell 1 remained immutable and was not rerun; `PPO_ALLOWED=false`; monitor `p3-normal-inner-gate-value` remained active. C2/C3 branch and cost fields remain descriptive counterfactual results, not a global conclusion.
+
 ## 2026-10-01 normal-inner pilot terminal and FULL startup
 
 Pilot terminal proof=`.tmp/p3_prefix_normal_gate_value_pilot_terminal_proof.json` reports `PILOT_OK`; PID `2187800` exited. Pilot SHA=`b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332`, cell 1 SHA=`ace3e81b49a05011497fd5a3f6cb3a3c90790d6b114a67d41a325c77f509605c`; all `104` branches were natural with zero censor/error/hardsafety, exact replay used `708` steps, and model/RNG/source checks passed.
