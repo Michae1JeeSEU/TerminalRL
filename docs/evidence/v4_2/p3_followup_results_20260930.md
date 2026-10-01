@@ -41,7 +41,15 @@ V2 FULL 已完成：server mtime=`2026-10-01 10:01:53+0800`，PID `2139795` 已�
 
 按既有 development business screen，AFTER-prefix candidate 通过 development screen only；不构成 qualification、default promotion 或 PPO admission。cell 4 的 elapsed `+103 s`、energy `+35.67359789283546` 是局部退步，必须保留。candidate wall time=`721.0561337517574 s`（含 replay），baseline wall time 与累计 fallback 检查次数未暴露，保留为测量缺口。该结果不单独证明训练根因或 P3 已解决；`PPO_ALLOWED=false`。
 
-下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除，无后台任务；BEFORE-prefix panel 正在准备，尚未启动。
+下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除；BEFORE-prefix pilot 已获 root 准入并正在运行，FULL 尚未启动。
+
+### BEFORE-prefix pilot startup（运行中）
+
+The BEFORE-prefix preflight returned `PREFLIGHT_OK`, fresh JSON phase validation returned `PHASE_VALIDATION_OK`, and the server/mirror serialized preflight SHA is `255abac8e9a6c61bc7fa0bce082d5233665bf978847a3144861c642c5f2c8591`; the local proof `.tmp/p3_before_prefix_fallback_preflight_proof.json` SHA256 is `6eed9f45e568f2e69c90b0f27e38c9d25a29ab212c2bc9318a89445c8ff74fc7`. The candidate checkpoint is `3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab` with model digest `3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0`; the warmup is historical input only, the completed AFTER-prefix SHA `020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50` is comparison-only, and normal checkpoint critic loading is unchanged. The bound runtime is 88D/native K=3/public max25/controller temperature 2.5/1800-step cap with the original four-cell grid and nine dependency files; `PPO_ALLOWED=false`, teacher/optimizer/held-out are disabled.
+
+The single authorized pilot uses Python PID `2144374` (shell parent `2144372`), cwd `/home/user/projects/terminal`, the exact `run_p3_before_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv, and all three environment flags set to `1`. Startup proof is `.tmp/p3_before_prefix_fallback_pilot_startup_proof.json` with SHA256=`182cfb5aafa4f68a7ad321a054d44cfafc774e9582013766abbc4fdafa4693e2`.
+
+The startup snapshot reports absolute step `200`, `24` generated request rows, `16` active observations, and `201` native forwards for cell 1; cwd, argv, progress, and no-duplicate checks pass. The pilot log is `0` bytes, and pilot/error JSON artifacts do not yet exist. This is the single authorized pilot launch; no FULL phase has started, and the pilot terminal metrics remain unknown pending root review.
 
 ## Frozen always-RELEASE gate control 终态
 
