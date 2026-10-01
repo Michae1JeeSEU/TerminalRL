@@ -46,7 +46,7 @@ ROOT 已准入 FULL 的 fixed remaining cells `2..6`、`20` arms，复用 immuta
 
 ### Fresh validation V4 FULL terminal（development screen rejected）
 
-V4 FULL PID `2169812` 已退出 `FULL_OK`，error artifact 不存在且 log 为 `0` bytes；六个 scenes×四 arms 共 `24` natural arms，0 censor/error/hardsafety，technical、model/source/RNG、config、ledger、replay、safety 与 `12` 个 sidecar checks 全部通过。每个 arm 的 generated/admitted/successful/resolved 均为 `144`；这是六场景 panel，不是 `576` 个独立 population samples。full proof=`.tmp/p3_prefix_fresh_v4_full_final_proof.json`，SHA=`cc866810108bbab2b262c130df7ed62045f763c5dbc88d57400707c353170598`；independent aggregate helper 最大差=`7.275957614183426e-12`。
+V4 FULL PID `2169812` 已退出 `FULL_OK`，error artifact 不存在且 log 为 `0` bytes；六个 scenes×四 arms 共 `24` natural arms，0 censor/error/hardsafety，technical、model/source/RNG、config、ledger、replay、safety 与 `12` 个 sidecar checks 全部通过。每个场景的每个运行臂为 `24`；每种策略×执行器组合跨六场景汇总 generated/admitted/successful/resolved 各为 `144`；这是六场景 panel，不是 `576` 个独立 population samples。full proof=`.tmp/p3_prefix_fresh_v4_full_final_proof.json`，SHA=`cc866810108bbab2b262c130df7ed62045f763c5dbc88d57400707c353170598`；full artifact SHA(schema facts local/server equal)=`30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195`；independent aggregate helper 最大差=`7.275957614183426e-12`。
 
 下表为 proof 中全部 `24` 个 arm 的完整 cost 与 reward 分解；`N/E/F/D/U`、wait、request elapsed、energy、raw reward 和 rejection penalty 均保留。
 
