@@ -125,6 +125,49 @@ def test_private_candidate_counters_use_actual_plan_and_approved_rank(monkeypatc
     assert observer.release_records[0]["runtime_candidates_checked_delta"] == 4
 
 
+@pytest.mark.parametrize(
+    "arm,delta,rank,decision,plan_calls,expected_suffix",
+    [
+        ("before_prefix_fallback", 25, None, "safety_reject", 0, 22),
+        ("before_prefix_fallback", 5, 5, "approved", 0, 2),
+        ("before_prefix_fallback", 0, 5, "approved", 0, 0),
+        ("before_prefix_fallback", 5, None, "safety_reject", 3, 2),
+        ("before_legacy", 25, 25, "approved", 3, 0),
+    ],
+)
+def test_suffix_proposal_checks_use_per_call_delta_not_rank_or_plan_count(
+    arm: str, delta: int, rank: int | None, decision: str, plan_calls: int, expected_suffix: int,
+) -> None:
+    env = SimpleNamespace(
+        telemetry={"runtime_shortlist_candidates_checked": 0},
+        last_release_telemetry={}, step_count=3, now=3.0,
+    )
+    observer = profile._PassiveObserver(env, _Policy(), arm)
+    candidate = SimpleNamespace(kind="runtime_shortlist_rank_4")
+
+    def native_plan(*_args, **_kwargs):
+        return (True, None, "checked")
+
+    plan = observer.wrap_candidate_plan(native_plan)
+
+    def original_release(uav, intent, shortlist):
+        for _ in range(plan_calls):
+            plan(env, "uav", candidate, "final", object(), "LZ-1")
+        env.telemetry["runtime_shortlist_candidates_checked"] = delta
+        env.last_release_telemetry[uav.uid] = {
+            "runtime_shortlist_candidates_checked": delta,
+            "runtime_shortlist_rank": rank,
+            "decision_history": [decision],
+        }
+        return decision
+
+    class Uav:
+        uid = 7
+
+    observer.wrap_release(original_release)(env, Uav(), object(), (object(),))
+    assert observer.suffix_proposal_checks == expected_suffix
+
+
 def test_reward_comparison_requires_known_fields_to_be_observed() -> None:
     observer = SimpleNamespace(
         step_reward_totals=[-3.0],

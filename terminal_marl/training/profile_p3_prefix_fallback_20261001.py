@@ -592,8 +592,15 @@ class _PassiveObserver:
                 decision_value = getattr(row.get("decision"), "value", row.get("decision"))
                 if isinstance(rank, int) and rank > 3 and str(decision_value).lower() == "approved" and int(row.get("runtime_candidates_checked_delta", 0) or 0) > 0:
                     observer.approvals_rank_gt3 += 1
-                if isinstance(rank, int) and rank > 3:
-                    observer.suffix_proposal_checks += 1
+                # The suffix proposal count is the number of candidates
+                # actually checked beyond the native K=3 prefix.  It is a
+                # per-release telemetry delta, independent of the final rank
+                # (which may be stale on an early return).
+                if observer.arm in PREFIX_ARMS:
+                    observer.suffix_proposal_checks += max(
+                        int(row.get("runtime_candidates_checked_delta", 0) or 0) - 3,
+                        0,
+                    )
                 observer.release_records.append(row)
                 observer._current_release = None
 
