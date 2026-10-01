@@ -408,7 +408,7 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
     policy = None
     before_digest = None
     resolved = checkpoint
-    capture: dict[str, Any] = {}
+    capture: dict[str, Any] = {"replay_factory_calls": 0}
     record: dict[str, Any]
     record_output = output / "rollouts" / f"cell_{int(cell['cell_id']):02d}_{arm}"
     wall_start = time.monotonic()
@@ -444,6 +444,15 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
     # time.  A scoped subclass adds progress observation while preserving the
     # native constructor, step arguments, and returned transition unchanged.
     support._CapturedTerminalEnv = _ProgressCapturedTerminalEnv
+    original_replay_factory = rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv
+
+    def _replay_factory(*args: Any, **kwargs: Any) -> Any:
+        capture["replay_factory_calls"] = int(capture.get("replay_factory_calls", 0) or 0) + 1
+        env = original_replay_factory(*args, **kwargs)
+        capture["replay_env"] = env
+        return env
+
+    rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv = _replay_factory
     try:
         resolved = _resolve_checkpoint(checkpoint, expected_sha)
         policy, _payload = rank_eval._load_policy(resolved, config)
@@ -472,6 +481,11 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
         )
     finally:
         support._CapturedTerminalEnv = original_capture_class
+        rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv = original_replay_factory
+        capture["aliases_restored"] = bool(
+            support._CapturedTerminalEnv is original_capture_class
+            and rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv is original_replay_factory
+        )
         caller_after_before_restore = _rng_snapshot()
         caller_rng_unchanged_before_restore = _rng_equal(caller_before, caller_after_before_restore)
         try:
@@ -496,6 +510,7 @@ def _native_arm_record(*, config: Any, cell: Mapping[str, Any], arm: str, output
             "error": {"type": type(exc).__name__, "message": str(exc)},
         }
     runtime_snapshot["replay_factory_calls"] = int(capture.get("replay_factory_calls", 0) or 0)
+    runtime_snapshot["aliases_restored"] = bool(capture.get("aliases_restored", False))
     runtime_snapshot["native_step_observer"] = {
         "available": True,
         "first_step_observed": bool(capture.get("first_step_observed", False)),

@@ -107,23 +107,42 @@ def _stub_native_arm(monkeypatch, tmp_path: Path, *, raise_runtime: bool = False
     checkpoint.write_bytes(b"native-fixture")
     policy = object()
     original_capture_class = type("OriginalCapturedTerminalEnv", (), {})
+    replay_constructor_calls: list[tuple[tuple, dict]] = []
+
+    class OriginalLifecycleEnv:
+        def __init__(self, *args, **kwargs):
+            replay_constructor_calls.append((args, kwargs))
+
+    monkeypatch.setattr(
+        runner.rank_eval.terminal_lifecycle_metrics,
+        "TerminalParallelEnv",
+        OriginalLifecycleEnv,
+    )
 
     monkeypatch.setattr(runner.support, "_CapturedTerminalEnv", original_capture_class)
     monkeypatch.setattr(runner, "_resolve_checkpoint", lambda _path, _expected: checkpoint)
     monkeypatch.setattr(runner.rank_eval, "_load_policy", lambda _path, _config: (policy, {}))
     monkeypatch.setattr(runner.rank_eval, "_model_digest", lambda _policy: "fixture-model-digest")
-    monkeypatch.setattr(runner, "_config_snapshot", lambda _config: {})
+    monkeypatch.setattr(
+        runner,
+        "_config_snapshot",
+        lambda _config: {
+            "action_schema_version": runner.ACTION_SCHEMA,
+            "observation_schema_version": runner.OBSERVATION_SCHEMA,
+        },
+    )
     monkeypatch.setattr(runner, "_runtime_dependency_shas", lambda: {})
     monkeypatch.setattr(runner.support, "_reclassify_incomplete_lifecycle", lambda value: dict(value))
     monkeypatch.setattr(
         runner.support,
         "_live_runtime_snapshot",
-        lambda _capture, _config: {"available": True, "factory_calls": 1, "replay_factory_calls": 1},
+        lambda capture, _config: dict(capture.get("runtime_payload", {})),
     )
 
     @contextlib.contextmanager
     def fake_capture(capture):
         capture["factory_calls"] = 1
+        captured["capture"] = capture
         try:
             yield
         finally:
@@ -136,11 +155,63 @@ def _stub_native_arm(monkeypatch, tmp_path: Path, *, raise_runtime: bool = False
         random.random()
         np.random.random()
         torch.rand(1)
+        replay_env = runner.rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv(
+            "replay-config", exact=True,
+        )
+        captured["replay_env"] = replay_env
+        ids = list(range(24))
+        rows = [
+            {
+                "arrival_id": arrival_id,
+                "outcome": "completed",
+                "wait_seconds": 1.0,
+                "request_time": 0.0,
+                "terminal_time": 1.0,
+                "energy_consumed": 1.0,
+            }
+            for arrival_id in ids
+        ]
+        safety = {
+            "collisions": 0,
+            "nmac": 0,
+            "hard_separation_violations": 0,
+            "uncertified_execution": 0,
+            "SafetyInvariantError": 0,
+        }
+        runtime_payload = {
+            "available": True,
+            "factory_calls": 1,
+            "generated_requests": 24,
+            "admitted_count": 24,
+            "requested_arrival_ids": ids,
+            "captured_request_ids": ids,
+            "outcome_arrival_ids": ids,
+            "energy_outcome_arrival_ids": ids,
+            "captured_request_rows": rows,
+            "ledger_alignment": True,
+            "energy_duplicate_arrival_ids": [],
+            "energy_total_consumed": 24.0,
+            "release_rejection_penalty": 0.0,
+        }
+        captured["capture"]["runtime_payload"] = runtime_payload
         if raise_runtime:
             raise RuntimeError("native fixture runtime failure")
         return {
             "status": "completed",
-            "summary": {"terminal": True, "steps": 1},
+            "requests": 24,
+            "summary": {"terminal": True, "steps": 1, "seconds": 24.0, "reward_total": 0.0, "safety": safety},
+            "lifecycle": {
+                "scope": "all_requested_terminal_rows",
+                "replay_exact": True,
+                "all_requests_observed": True,
+                "ledger_alignment": True,
+                "missing_request_count": 0,
+                "row_count": 24,
+                "requested_count": 24,
+                "requested_arrival_ids": ids,
+                "observed_arrival_ids": ids,
+                "rows": rows,
+            },
             "weights_unchanged": True,
             "model_unchanged": True,
             "teacher_called": False,
@@ -167,11 +238,18 @@ def _stub_native_arm(monkeypatch, tmp_path: Path, *, raise_runtime: bool = False
     def fake_record_common(record, **kwargs):
         captured["record"] = dict(record)
         captured["kwargs"] = dict(kwargs)
-        result = dict(record)
-        result["caller_rng_unchanged"] = bool(kwargs["caller_rng_unchanged"])
-        return result
+        return original_record_common(record, **kwargs)
 
+    original_record_common = runner._record_common
     monkeypatch.setattr(runner, "_record_common", fake_record_common)
+    real_sha256 = runner._sha256
+    monkeypatch.setattr(
+        runner,
+        "_sha256",
+        lambda path: runner.BEFORE_CHECKPOINT_SHA256 if Path(path) == checkpoint else real_sha256(path),
+    )
+    captured["replay_constructor_calls"] = replay_constructor_calls
+    captured["original_replay_factory"] = OriginalLifecycleEnv
     return captured, original_capture_class, checkpoint
 
 
@@ -302,7 +380,16 @@ def test_native_arm_records_pre_restore_mutation_but_post_restore_caller_rng(mon
     assert captured["record"]["caller_rng_restore_error"] is None
     assert captured["kwargs"]["caller_rng_unchanged"] is True
     assert result["caller_rng_unchanged"] is True
+    assert captured["replay_constructor_calls"] == [(('replay-config',), {"exact": True})]
+    assert result["runtime_capture"]["factory_calls"] == 1
+    assert result["runtime_capture"]["replay_factory_calls"] == 1
+    assert result["runtime_capture"]["aliases_restored"] is True
+    assert runner._technical_failure_arm(result) is None
+    missing_replay = dict(result)
+    missing_replay["runtime_capture"] = dict(result["runtime_capture"], replay_factory_calls=0)
+    assert runner._technical_failure_arm(missing_replay) == "environment factory counts are incomplete"
     assert runner.support._CapturedTerminalEnv is original_capture_class
+    assert runner.rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv is captured["original_replay_factory"]
 
 
 def test_native_arm_restore_corruption_keeps_caller_gate_false(monkeypatch, tmp_path: Path):
@@ -347,4 +434,8 @@ def test_native_arm_exception_restores_rng_and_passive_capture_alias(monkeypatch
     assert captured["record"]["caller_rng_unchanged_before_restore"] is False
     assert captured["record"]["caller_rng_restored"] is True
     assert captured["kwargs"]["caller_rng_unchanged"] is True
+    assert captured["replay_constructor_calls"] == [(('replay-config',), {"exact": True})]
+    assert result["runtime_capture"]["replay_factory_calls"] == 1
+    assert result["runtime_capture"]["aliases_restored"] is True
     assert runner.support._CapturedTerminalEnv is original_capture_class
+    assert runner.rank_eval.terminal_lifecycle_metrics.TerminalParallelEnv is captured["original_replay_factory"]
