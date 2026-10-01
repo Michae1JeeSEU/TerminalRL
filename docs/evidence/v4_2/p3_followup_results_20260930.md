@@ -18,6 +18,42 @@ PID `2155873` 在首个 arm 后以 `PILOT_FAILED` 终止，未运行第二个 ar
 
 安全 provenance fix 已由 commit `b5be014` 接受；profile focused tests 最新为 `20` 项，替代此前 `10` 项记录，不与旧测试累计。该修复保留 raw `uncertified_execution=None`，只在 immutable source、exact config、full replay、无 blocked、known primitive 全为零且 input-hash conditions 全通过时使用 derived certificate label；任何 observed positive value 都保留，不被 derived value 覆盖。V2 server no-env preflight SHA=`e0022ca5b1648eacb96fded39a515d9b2c6128dd92ae2f1d1a078210ff884506`，`.tmp/p3_prefix_profile_v2_server_preflight_proof.json` 中 previous replay with original-source summary 的 derivation conditions 全通过。root 已准入 V2 technical-recovery pilot，固定使用原始 `2` 个 existing tapes，输出根为 `prefix_fallback_profile_20261001_v2`。PID `2157928` 已 `PILOT_OK` 退出；`.tmp/p3_prefix_profile_v2_pilot_snapshot_proof.json` 显示两臂均通过 bindings、metrics、reward、safety provenance、model RNG 与 exact 24-request checks，BEFORE-legacy 与 BEFORE-prefix 均为 `19N/5E/0F/0D/0U`，steps=`761/723`、wait=`3327.4996213/3123.9868664`、elapsed=`9050/8878`、energy=`7757.9171088/7513.1647880`。profile mean env-step timing 为 `34.064494 ms` 对 `122.657395 ms`，p95 为 `108.204271` 对 `717.991315 ms`，max 为 `461.213835` 对 `3472.175239 ms`，actor timing 约为 `.4586` 对 `.4833 ms`；这些是 instrumented offline simulation wall measurements，不是 hardware deadline proof。`.tmp/p3_prefix_profile_v2_pilot_counter_proof.json` 记录 total proposal=`4865`、approvals=`15`、correct distinct suffix count=`4206`，由 `sum(max(delta-3,0))` 与 distinct `reason_rank>3` 两种聚合一致；raw `suffix_proposal_checks=15` 保留为 semantic erratum，不作为 accepted count。`.tmp/p3_prefix_profile_v2_pilot_energy_reason_proof.json` 进一步从实际 per-call reasons 提取：两臂 first-three-all-energy 计数为 `0`，prefix-suffix mixed 为 `202`，同一 call 同时满足 first-three-all-energy 与 suffix-mixed 的计数为 `0`；reason maps 覆盖全部 records，但 rank 1–3 对许多 early returns/early approvals 没有记录。这里仅报告 observed reason counts，不推断 counterfactual emergency 行为或总体根因。FULL 已准入，PID `2158963` 在启动快照中运行，cwd `/home/user/projects/terminal`，exact module `--phase full`，三个环境 flag 为 `1`；cell 1 `after_legacy` 为 step `250`、`24` generated、`17` active、`250` native probes、`3692` release calls，immutable pilot 两臂复用并运行剩余 `14` tapes，无新 trajectories，FULL metrics unknown。heartbeat `p3-prefix-repair-validation` 已更新，间隔 `3` 分钟；V1 output 保留且不计为 accepted profile。该阶段不改变 runtime/source，不作 performance、physics root-cause 或 P3 solved claim。
 
+### Profile V2 FULL terminal（FULL_OK）
+
+Profile FULL proof `.tmp/p3_prefix_profile_v2_full_terminal_proof.json` reports `FULL_OK`, full JSON SHA=`d0434e370199a7ce990be4b5b6305d07f383a3c8cea591e42ce463b252d0b1db`，pilot SHA=`ddbe49caa1121f14e47f404b01c32fd409056ba1face3ec14215d77e01b72d7f`。16 arms 全部 natural、0 censor/error；exact 24-request identity、binding、replay、model/caller RNG、reward、ledger、safety provenance checks 全通过。该轮复用既有四-cell tapes，不是新的 performance population。不可变业务结果为 native legacy BEFORE `80N/16E`、AFTER `74N/22E`，prefix BEFORE `84N/12E`、AFTER `88N/8E`；这些是既有四-cell evidence 的重放汇总。
+
+四组 passive counter 汇总如下；`suffix` 使用修正后的 per-release candidate delta，raw `suffix_proposal_checks` 字段单独保留为语义 erratum。
+
+| group | proposals | suffix | late approvals | first3 all-energy | suffix-mixed |
+|---|---:|---:|---:|---:|---:|
+| BEFORE legacy (BL) | 2576 | 0 | 0 | 0 | 0 |
+| BEFORE prefix (BP) | 17970 | 15485 | 85 | 0 | 762 |
+| AFTER legacy (AL) | 2618 | 0 | 0 | 0 | 0 |
+| AFTER prefix (AP) | 17682 | 15250 | 83 | 0 | 750 |
+
+| cell | arm | env-step count | mean ms | p95 ms | max ms |
+|---:|---|---:|---:|---:|---:|
+| 1 | AFTER legacy | 689 | 34.065654022 | 107.979994400 | 473.060233 |
+| 1 | AFTER prefix | 752 | 110.881645148 | 733.874281000 | 3458.026948 |
+| 1 | BEFORE legacy | 761 | 34.064494330 | 108.204271000 | 461.213835 |
+| 1 | BEFORE prefix | 723 | 122.657394851 | 717.991314900 | 3472.175239 |
+| 2 | AFTER legacy | 727 | 34.570286757 | 111.182845100 | 552.446649 |
+| 2 | AFTER prefix | 728 | 99.712144449 | 661.602866350 | 3210.229465 |
+| 2 | BEFORE legacy | 726 | 34.280482697 | 114.505178500 | 441.097184 |
+| 2 | BEFORE prefix | 679 | 97.083102763 | 641.672342400 | 3198.779094 |
+| 3 | AFTER legacy | 776 | 33.741928911 | 118.941182500 | 563.263103 |
+| 3 | AFTER prefix | 739 | 112.277522890 | 714.302463000 | 3036.093269 |
+| 3 | BEFORE legacy | 707 | 29.447700208 | 98.306413400 | 550.970514 |
+| 3 | BEFORE prefix | 743 | 121.642978728 | 744.987549400 | 3035.529014 |
+| 4 | AFTER legacy | 726 | 30.340472351 | 104.290376250 | 447.662577 |
+| 4 | AFTER prefix | 758 | 124.715159538 | 716.222617650 | 3278.912854 |
+| 4 | BEFORE legacy | 720 | 29.713395229 | 100.326083250 | 607.608539 |
+| 4 | BEFORE prefix | 806 | 107.918946138 | 679.163612250 | 3273.932029 |
+
+按四组 arm rows 的 timing count 加权平均为：BL env-step `2914` 次、`31.923088276 ms`，actor-request `2652` 次、`0.463665043 ms`；BP 分别为 `2951` 次、`112.492079646 ms`，以及 `2608` 次、`0.482085743 ms`；AL 分别为 `2918` 次、`33.178462596 ms`，以及 `2738` 次、`0.463933798 ms`；AP 分别为 `2977` 次、`112.019018695 ms`，以及 `2593` 次、`0.475801933 ms`。p95 不跨 arm 聚合，保留上表的 per-arm 值；对应 env-step 最大值为 `607.608539 / 3472.175239 / 563.263103 / 3458.026948 ms`（BL/BP/AL/AP）。observer overhead 未测得；记录 count=`0` 表示没有累计 measurement，不表示零开销；actor outputs 未执行，actor-probe RNG 已恢复。所有 timing 都是 instrumented offline simulation wall measurements，最大 env-step `3472.175239 ms` 不构成 hardware deadline 或 latency gate。
+
+所有 16 arms 的 first-three-all-energy 与 suffix-mixed 同时发生计数均为 `0`；BP/AP 的 suffix-mixed 分别为 `762/750`。这些是实际 reason maps 的 observed counts，不是 counterfactual emergency 行为，也不支持 unique training root-cause claim。profile FULL 结束后的未来代码修正只作用于新执行，保留本轮 raw JSON 与 source commit `b5be014`，不重放旧数据。root 已准入 fresh six-scene validation 的 cell 1 四 arms；PID `2160913` 的 startup proof 为 `.tmp/p3_prefix_fresh_pilot_startup_proof.json`，随后于 `2026-10-01 14:21:26+0800` 退出，终态为 `PILOT_TECHNICAL_ERROR`，技术错误为 `caller_rng_unchanged is not true`。仅 `before_legacy` 首臂完成：`778` steps、`24` requests、`22N/2E/0F/0D/0U`；request identity、ledger、replay、safety 和该臂业务字段已观测，但 fresh pilot 证书未接受，`FULL` 不存在。该次启动的 cwd/argv/envflags 与预注册匹配，heartbeat 已删除且当前无后台任务；不自动重试或把首臂计作 fresh performance。V2 技术恢复准备使用独立输出根 `prefix_fallback_fresh_validation_20261001_v2`，固定同一 `6` scenes×`4` arms、policy seeds、cap=`1800`；保留 V1 error 和首臂，不改变业务门槛，不选择 seed/权重、不扩展 population。V2 pilot 只有在实际 preflight JSON PASS 后由 root 明确准入，FULL 仍需 root review pilot；修复 tests=`10` 已通过，代码提交由 low_audit 单独处理。本轮结果不构成 formal qualification、PPO admission 或 P3 solved claim，`PPO_ALLOWED=false`。
+
 ## 2026-10-01 P3 prefix fallback V1 技术恢复记录与 V2 准入附录
 
 本项属于已授权的实现调试，不是科学重采样、训练、PPO、held-out、teacher、optimizer 或默认配置晋升。V1 与后续 V2 的执行尝试和证据分开保存；V1 不计为性能成功，也不覆盖或重跑其中选定的 business failure。
