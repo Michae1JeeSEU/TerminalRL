@@ -61,8 +61,13 @@ SOURCE_CHECKPOINT_SHA256 = (
     "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
 )
 OUTPUT_ROOT = Path(
-    "/home/user/training_outputs/terminal/p3_foundation_repair_20261002"
+    "/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002"
 )
+
+TRAJECTORY_SCHEMA_V2 = "executable_trajectory_v2"
+TRAJECTORY_SCHEMA_V3 = "executable_trajectory_v3"
+FROZEN_INFERENCE_TRANSFER = "frozen_v2_source_checkpoint_to_v3_runtime"
+UNCERTIFIED_COUNTER_SOURCE = "joint_safety_fail_closed"
 
 OBSERVATION_SCHEMA_88 = "phaseA_low_obs_v2_1_retry_state"
 OBSERVATION_SCHEMA_90 = "phaseA_low_obs_v2_4_service_context_90d"
@@ -172,6 +177,15 @@ def _base_config() -> Any:
     _configs, neutral_configs, _runtime = neutral_eval._build_neutral_inputs()
     _require("dense24" in neutral_configs, "neutral dense24 config is missing")
     config = neutral_configs["dense24"]
+    try:
+        config = dataclasses.replace(config, trajectory_schema_version=TRAJECTORY_SCHEMA_V3)
+    except TypeError:
+        config = copy.copy(config)
+        setattr(config, "trajectory_schema_version", TRAJECTORY_SCHEMA_V3)
+    _require(str(getattr(config, "trajectory_schema_version", "")) == TRAJECTORY_SCHEMA_V3,
+             "base config is not common executable trajectory V3")
+    _require(str(getattr(config, "vehicle_execution_mode", "")) == "performance_constrained",
+             "V3 comparison requires performance-constrained execution")
     _require(str(getattr(config, "action_schema_version", "")) == ACTION_SCHEMA_V4_2,
              "base config is not V4.2 hierarchical")
     _require(str(getattr(config, "student_decision_mask_mode", "legacy")) == "legacy",
@@ -202,6 +216,8 @@ def _variant_config(base: Any, *, schema: str, execution: str) -> Any:
              "observation schema override was not applied")
     _require(str(getattr(config, "final_approach_execution_mode", "")) == execution,
              "final execution override was not applied")
+    _require(str(getattr(config, "trajectory_schema_version", "")) == TRAJECTORY_SCHEMA_V3,
+             "arm does not preserve common executable trajectory V3")
     return config
 
 
@@ -234,16 +250,37 @@ def _validate_source_metadata(metadata: Mapping[str, Any]) -> None:
 
 
 def _load_source_policy(config: Any) -> tuple[Any, dict[str, Any], Path]:
+    _require(
+        str(getattr(config, "trajectory_schema_version", "")) == TRAJECTORY_SCHEMA_V3,
+        "source policy runtime config must target executable trajectory V3",
+    )
+    try:
+        checkpoint_load_config = dataclasses.replace(
+            config,
+            trajectory_schema_version=TRAJECTORY_SCHEMA_V2,
+        )
+    except TypeError:
+        checkpoint_load_config = copy.copy(config)
+        setattr(checkpoint_load_config, "trajectory_schema_version", TRAJECTORY_SCHEMA_V2)
+    _require(
+        str(getattr(checkpoint_load_config, "trajectory_schema_version", ""))
+        == TRAJECTORY_SCHEMA_V2,
+        "source checkpoint load config is not executable trajectory V2",
+    )
     checkpoint = _local_checkpoint_path()
     _require(checkpoint.is_file(), f"source checkpoint missing: {SOURCE_CHECKPOINT}")
     observed_sha = _sha256(checkpoint)
     _require(observed_sha.lower() == SOURCE_CHECKPOINT_SHA256.lower(),
              f"source checkpoint SHA mismatch: {observed_sha}")
-    policy, payload = probe._load_policy(checkpoint, config)
+    policy, payload = probe._load_policy(checkpoint, checkpoint_load_config)
     payload = dict(payload)
     metadata = payload.get("metadata")
     _require(isinstance(metadata, Mapping), "source checkpoint metadata missing")
     _validate_source_metadata(metadata)
+    _require(
+        metadata.get("trajectory_schema_version") == TRAJECTORY_SCHEMA_V2,
+        "source checkpoint trajectory schema must be executable_trajectory_v2",
+    )
     _require(int(getattr(policy, "observation_dim", -1)) == OBSERVATION_DIM_88,
              "loaded source policy is not 88D")
     return policy, payload, checkpoint
@@ -254,11 +291,20 @@ def _load_policy_for_arm(config: Any, schema: str) -> tuple[Any, dict[str, Any],
     source_policy, payload, checkpoint = _load_source_policy(source_config)
     metadata = payload.get("metadata")
     _require(isinstance(metadata, Mapping), "source metadata missing after load")
+    source_binding = {
+        "source_checkpoint_trajectory_schema_version": TRAJECTORY_SCHEMA_V2,
+        "source_load_trajectory_schema_version": TRAJECTORY_SCHEMA_V2,
+        "runtime_environment_trajectory_schema_version": str(
+            getattr(config, "trajectory_schema_version", "")
+        ),
+        "inference_transfer": FROZEN_INFERENCE_TRANSFER,
+    }
     if schema == "88":
         return source_policy, payload, checkpoint, {
             "schema": OBSERVATION_SCHEMA_88,
             "dimension": OBSERVATION_DIM_88,
             "migration": None,
+            **source_binding,
         }
     migrated, migration = initialize_service_context_policy(
         source_policy,
@@ -270,6 +316,7 @@ def _load_policy_for_arm(config: Any, schema: str) -> tuple[Any, dict[str, Any],
         "schema": OBSERVATION_SCHEMA_90,
         "dimension": OBSERVATION_DIM_90,
         "migration": _jsonable(migration),
+        **source_binding,
     }
 
 
@@ -520,10 +567,11 @@ def _safety_report(env: Any, before: Mapping[str, Any]) -> dict[str, Any]:
     try:
         report = dict(paired._safety_violation_details(delta, events))
         report["uncertified"] = (
-            int(delta["uncertified_joint_safety_action"])
-            if "uncertified_joint_safety_action" in delta
+            int(delta[UNCERTIFIED_COUNTER_SOURCE])
+            if UNCERTIFIED_COUNTER_SOURCE in delta
             else None
         )
+        report["uncertified_counter_source"] = UNCERTIFIED_COUNTER_SOURCE
         report["SafetyInvariantError"] = 0
         report["telemetry_delta"] = delta
         report["conflict_events"] = _jsonable(events)
@@ -533,6 +581,7 @@ def _safety_report(env: Any, before: Mapping[str, Any]) -> dict[str, Any]:
             "safety_violation_status": "unavailable",
             "safety_violation": None,
             "uncertified": None,
+            "uncertified_counter_source": UNCERTIFIED_COUNTER_SOURCE,
             "SafetyInvariantError": 0,
             "telemetry_delta": delta,
             "conflict_events": _jsonable(events),
@@ -906,6 +955,13 @@ def _not_run_arm(spec: Mapping[str, Any], base_config: Any, reason: str) -> dict
         "policy_seed": int(spec["policy_seed"]),
         "observation_schema": getattr(config, "observation_schema_version", None),
         "observation_dimension": OBSERVATION_DIM_88 if str(spec["schema"]) == "88" else OBSERVATION_DIM_90,
+        "trajectory_schema_version": getattr(config, "trajectory_schema_version", None),
+        "source_checkpoint_trajectory_schema_version": None,
+        "source_load_trajectory_schema_version": None,
+        "runtime_environment_trajectory_schema_version": getattr(
+            config, "trajectory_schema_version", None
+        ),
+        "inference_transfer": "not_run",
         "final_approach_execution_mode": str(spec["execution"]),
         "status": "not_run",
         "stop_reason": reason,
@@ -947,6 +1003,12 @@ def _run_arm(
         "schema": OBSERVATION_SCHEMA_88 if schema == "88" else OBSERVATION_SCHEMA_90,
         "dimension": OBSERVATION_DIM_88 if schema == "88" else OBSERVATION_DIM_90,
         "migration": None,
+        "source_checkpoint_trajectory_schema_version": None,
+        "source_load_trajectory_schema_version": None,
+        "runtime_environment_trajectory_schema_version": str(
+            getattr(config, "trajectory_schema_version", "")
+        ),
+        "inference_transfer": "rule_or_unloaded_arm",
     }
     if str(spec["kind"]) == "source":
         policy, payload, checkpoint, binding = _load_policy_for_arm(config, schema)
@@ -1101,6 +1163,17 @@ def _run_arm(
         "policy_seed": None if spec.get("policy_seed") is None else int(spec["policy_seed"]),
         "observation_schema": binding.get("schema"),
         "observation_dimension": binding.get("dimension"),
+        "trajectory_schema_version": getattr(config, "trajectory_schema_version", None),
+        "source_checkpoint_trajectory_schema_version": binding.get(
+            "source_checkpoint_trajectory_schema_version"
+        ),
+        "source_load_trajectory_schema_version": binding.get(
+            "source_load_trajectory_schema_version"
+        ),
+        "runtime_environment_trajectory_schema_version": binding.get(
+            "runtime_environment_trajectory_schema_version"
+        ),
+        "inference_transfer": binding.get("inference_transfer"),
         "final_approach_execution_mode": execution,
         "status": status,
         "stop_reason": stop_reason,
@@ -1177,6 +1250,21 @@ def _check_only() -> dict[str, Any]:
     return {
         "stage": STAGE,
         "status": "CHECK_ONLY_OK",
+        "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+        "common_physics_basis": {
+            "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+            "vehicle_execution_mode": getattr(base, "vehicle_execution_mode", None),
+            "vehicle_dynamics_schema_version": getattr(base, "vehicle_dynamics_schema_version", None),
+            "physics_dt": getattr(base, "physics_dt", None),
+            "safety_sampling_dt": getattr(base, "safety_sampling_dt", None),
+        },
+        "checkpoint_inference_binding": {
+            "source_checkpoint_trajectory_schema_version": TRAJECTORY_SCHEMA_V2,
+            "source_load_trajectory_schema_version": TRAJECTORY_SCHEMA_V2,
+            "runtime_environment_trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+            "inference_transfer": FROZEN_INFERENCE_TRANSFER,
+            "source_checkpoint_is_v3_trained": False,
+        },
         "source_checkpoint": str(checkpoint),
         "source_checkpoint_sha256": _sha256(checkpoint),
         "source_metadata": _jsonable(payload.get("metadata", {})),
@@ -1202,17 +1290,62 @@ def _smoke() -> dict[str, Any]:
     specs = [spec for spec in _arm_specs() if spec["cell_id"] == "cell_1"][:3]
     arms = [_run_arm(spec, base, max_steps=2) for spec in specs]
     for arm in arms:
+        _require(arm.get("status") == "censored", "two-tick smoke arm must be censored")
         _require(arm.get("censored") is True, "two-tick smoke must be censored")
+        _require(arm.get("error") is None, "two-tick smoke arm has an error")
+        _require(arm.get("lifecycle_error") is None,
+                 "two-tick smoke arm has a lifecycle error")
+        validity = arm.get("validity")
+        _require(
+            isinstance(validity, Mapping) and validity.get("status") == "valid",
+            "two-tick smoke arm validity is not valid",
+        )
+        if _hard_safety_issue(arm):
+            raise FoundationRepairProtocolError(
+                "two-tick smoke arm has a hard safety issue: "
+                f"arm_id={arm.get('arm_id')}; "
+                f"safety={json.dumps(_jsonable(arm.get('safety')), sort_keys=True)}"
+            )
         _require(int(arm.get("observation_dimension", -1)) in {OBSERVATION_DIM_88, OBSERVATION_DIM_90},
                  "smoke observation dimension is missing")
         _require(isinstance(arm.get("progress"), list) and len(arm["progress"]) == 2,
                  "smoke must contain exactly two progress ticks")
+        _require(_finite_number(arm.get("elapsed_wall_seconds")),
+                 "smoke elapsed wall time is missing")
+        _require(arm.get("trajectory_schema_version") == TRAJECTORY_SCHEMA_V3,
+                 "smoke runtime trajectory schema is missing")
+        _require(
+            arm.get("source_checkpoint_trajectory_schema_version") == TRAJECTORY_SCHEMA_V2
+            and arm.get("source_load_trajectory_schema_version") == TRAJECTORY_SCHEMA_V2,
+            "smoke source/load trajectory schema binding is missing",
+        )
+        _require(
+            arm.get("runtime_environment_trajectory_schema_version") == TRAJECTORY_SCHEMA_V3,
+            "smoke runtime trajectory schema binding is missing",
+        )
+        _require(arm.get("inference_transfer") == FROZEN_INFERENCE_TRANSFER,
+                 "smoke frozen inference transfer binding is missing")
+        _require(arm.get("checkpoint_sha256") == SOURCE_CHECKPOINT_SHA256,
+                 "smoke source checkpoint SHA is missing or changed")
+        checkpoint_metadata = arm.get("checkpoint_metadata")
+        _require(
+            isinstance(checkpoint_metadata, Mapping)
+            and checkpoint_metadata.get("trajectory_schema_version") == TRAJECTORY_SCHEMA_V2,
+            "smoke source checkpoint metadata schema is missing",
+        )
         _require(isinstance(arm.get("energy_ledger"), Mapping), "smoke energy ledger is missing")
         coverage = arm["energy_ledger"].get("coverage")
         _require(isinstance(coverage, Mapping) and {
             "requested_ids", "missing_requested_ids", "unexpected_energy_ids", "valid"
         }.issubset(coverage),
                  "smoke energy coverage is missing")
+        _require(coverage.get("valid") is True, "smoke energy coverage is invalid")
+        summary = arm.get("summary")
+        _require(
+            isinstance(summary, Mapping)
+            and {"total_wait_seconds", "total_elapsed_seconds", "total_energy_consumed"}.issubset(summary),
+            "smoke wait/elapsed/energy summary is missing",
+        )
         trace = arm.get("final_requested_accepted_actual_trace")
         _require(isinstance(trace, list),
                  "smoke final-plan trace is missing")
@@ -1231,6 +1364,14 @@ def _smoke() -> dict[str, Any]:
     return {
         "stage": STAGE,
         "status": "SMOKE_OK",
+        "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+        "common_physics_basis": {
+            "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+            "vehicle_execution_mode": getattr(base, "vehicle_execution_mode", None),
+            "vehicle_dynamics_schema_version": getattr(base, "vehicle_dynamics_schema_version", None),
+            "physics_dt": getattr(base, "physics_dt", None),
+            "safety_sampling_dt": getattr(base, "safety_sampling_dt", None),
+        },
         "smoke_only": True,
         "performance_interpretation": "not_available",
         "arm_count": len(arms),
@@ -1241,8 +1382,31 @@ def _smoke() -> dict[str, Any]:
                 "censored": arm.get("censored"),
                 "observation_schema": arm.get("observation_schema"),
                 "observation_dimension": arm.get("observation_dimension"),
+                "trajectory_schema_version": arm.get("trajectory_schema_version"),
+                "source_checkpoint_trajectory_schema_version": arm.get(
+                    "source_checkpoint_trajectory_schema_version"
+                ),
+                "source_load_trajectory_schema_version": arm.get(
+                    "source_load_trajectory_schema_version"
+                ),
+                "runtime_environment_trajectory_schema_version": arm.get(
+                    "runtime_environment_trajectory_schema_version"
+                ),
+                "inference_transfer": arm.get("inference_transfer"),
+                "checkpoint_sha256": arm.get("checkpoint_sha256"),
                 "ticks": len(arm.get("progress", [])),
                 "energy_coverage": arm.get("energy_ledger", {}).get("coverage"),
+                "safety": arm.get("safety"),
+                "validity": arm.get("validity"),
+                "error": arm.get("error"),
+                "lifecycle_error": arm.get("lifecycle_error"),
+                "elapsed_wall_seconds": arm.get("elapsed_wall_seconds"),
+                "wait_elapsed_energy": {
+                    "total_wait_seconds": arm.get("summary", {}).get("total_wait_seconds"),
+                    "total_elapsed_seconds": arm.get("summary", {}).get("total_elapsed_seconds"),
+                    "total_energy_consumed": arm.get("summary", {}).get("total_energy_consumed"),
+                },
+                "final_trace": arm.get("final_requested_accepted_actual_trace"),
                 "final_trace_count": len(arm.get("final_requested_accepted_actual_trace", [])),
             }
             for arm in arms
@@ -1400,6 +1564,14 @@ def _run_matrix() -> dict[str, Any]:
     comparison = {
         "stage": STAGE,
         "status": matrix_status,
+        "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+        "common_physics_basis": {
+            "trajectory_schema_version": TRAJECTORY_SCHEMA_V3,
+            "vehicle_execution_mode": getattr(base, "vehicle_execution_mode", None),
+            "vehicle_dynamics_schema_version": getattr(base, "vehicle_dynamics_schema_version", None),
+            "physics_dt": getattr(base, "physics_dt", None),
+            "safety_sampling_dt": getattr(base, "safety_sampling_dt", None),
+        },
         "arm_count": len(arms),
         "executed_arm_count": sum(arm.get("status") != "not_run" for arm in arms),
         "stopped_early": stopped_early,

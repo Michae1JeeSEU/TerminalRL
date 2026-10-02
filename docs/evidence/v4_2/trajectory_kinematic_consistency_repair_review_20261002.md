@@ -1,6 +1,6 @@
 # 轨迹运动学一致性修复审核方案（2026-10-02；已实施部分）
 
-状态：用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。统一 p/v/a quintic、全曲线解析 bounds、live initial/ring-handoff guard 已落地，check-only preflight 已通过。首个 compact smoke 为三 source 各 2 tick 的 `SMOKE_OK`，但输出缺少 arm validity、safety/error 与 load/runtime binding 字段，尚未接受为 complete smoke；evaluator strengthening 与 retry pending。八臂业务矩阵尚未启动，P3 未解决，`PPO_ALLOWED=false`。
+状态：用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。统一 p/v/a quintic、全曲线解析 bounds、live initial/ring-handoff guard 已落地，check-only preflight 已通过。此前 compact/strengthened smoke 失败 provenance 保留；最终 corrected V3 smoke 已接受为 `SMOKE_OK`，三臂各 2 tick、validity valid、technical errors 为空、safety none、uncertified/invariant 为 `0`，energy coverage valid，V2/V2/V3 bindings 与 action/metrics/hash checks 通过。counter mapping 已修正，evaluator tests `16 passed`；八臂业务矩阵尚未启动，下一步先做相同两 tick 性能剖析，核对计算热点，再启动已登记八臂无训练对照。P3 未解决，`PPO_ALLOWED=false`。
 
 ## 已确认事实
 

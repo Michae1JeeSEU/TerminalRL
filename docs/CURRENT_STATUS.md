@@ -2,15 +2,15 @@
 
 ## 2026-10-02 V3 修复审核状态（最新）
 
-用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。
-
-四 fixture 的 corrected V3 diagnostic 为 `KINEMATIC_CONSISTENCY_PASS`、`finding_count=0`、`technical_error_count=0`；position/velocity/acceleration 使用同一 quintic 曲线，并已加入全曲线解析 bounds、live initial-state 与 ring-handoff guard。same-curve Safety/runtime error budgets 保留当前 thresholds、SOC、reward 与 authority。相关 artifact SHA=`380da099c4595a4370d979f7d9730b782267a48c6de8cb53aa70e11c88e72305`。
-
-本轮 newly-run C regression 为 `123 passed / 1 skipped`（`89.26 s`，持久化 log SHA `3272f8…7010`）。初始 preflight 日志 SHA=`9df70d920006af0879e48355995e5c518b03a176239006014eb1ffc51ed286a5`；retry 为 `CHECK_ONLY_OK`、exit `0`、`arm_count=8`，artifact `/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002/preflight.json` SHA=`8f21a8203efbdefcdbb88e9e820ce8c1a7a096179e7244f8cce52eddefc6fc40`。
-
-该 preflight 绑定 source/load=`executable_trajectory_v2`、runtime=`executable_trajectory_v3`、transfer=`frozen_v2_source_checkpoint_to_v3_runtime`、`source_checkpoint_is_v3_trained=false`，source SHA=`3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab`。loader-specific tests 为 `12 passed`、`0.78 s`，log SHA=`f7ffb14763b8aedeb310e1f3b397d195656f6d09f825197e8efb5aa698bc959b`；unified 首次运行 `297 passed / 1 failed / 1 skipped` 的 altitude exact assertion provenance 保留（actual=`1.9999999999999911`、expected=`2.0`）。focused diagnostic `6 passed / 0.17 s`，仅两处 assertion 使用 `np.testing.assert_allclose(atol=1e-12, rtol=0)`；最终 retry exit `0`，`298 passed / 1 skipped / 99.21 s`，日志 SHA=`606b5cc5278da7ff3a2637f28099e945c9080b2e5a826e9faa91a8643e94e485`。首个 compact smoke 为三 source 各 `2 ticks` 的 `SMOKE_OK`，runtime V3、energy coverage valid、repaired88/90 action tape 与 metrics/hash 相等；log/JSON SHA=`5560975f3039b9308097eb3adcb7e1586e07fa18cf43834b2ea67878bfafcab6`，wall=`162.1 s`，但输出缺少 arm validity、safety/error 与 load/runtime binding 字段，尚未接受为 complete smoke；evaluator strengthening/retry pending，frozen flags 保持 false。
-
-注册的八臂 zero-training matrix 尚未启动；没有 held-out、training、optimizer step、checkpoint write 或 default promotion，`PPO_ALLOWED=false`。P3 尚未解决或准入，dynamic geometry 与真实 hardware adapter 仍未 qualification。详见 [V3 修复结果](evidence/v4_2/trajectory_v3_repair_results_20261002.md)、[运动学修复审核方案](evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md) 与 [基础修复协议](evidence/v4_2/p3_foundation_repair_protocol_20261002.md)。
+- 用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。
+- 四 fixture corrected V3 diagnostic 为 `KINEMATIC_CONSISTENCY_PASS`、`finding_count=0`、`technical_error_count=0`；同一 quintic 曲线、全曲线 bounds、live initial/ring-handoff guard 与既有 Safety/runtime budgets 已保留。
+- 当前 core implementation commit 为 `f1dfb1034d6517fb1b5197035dc92e3eabe482ba`（24 files）；remote-v 为空，未 push。Safety/dynamics regression 为 `123 passed / 1 skipped`，`89.26 s`。
+- V3 check-only preflight 已通过，source/load 为 V2、runtime 为 V3，使用 frozen source-to-runtime transfer；unified retry 为 `298 passed / 1 skipped`，focused diagnostic `6 passed`。
+- Corrected V3 smoke 已接受：三 source 各 `2 ticks`、`SMOKE_OK`、`censored=true`，validity valid、technical errors 为空，safety none、uncertified/invariant 为 `0`，energy coverage valid，V2/V2/V3 bindings 与 fixed source 一致，repaired88/90 actions、metrics、hashes、outcomes、request identity 相等。
+- 此前 compact/strengthened smoke 失败 provenance 保留；counter mapping 已修正为 runtime `joint_safety_fail_closed`，缺失字段保持 `None/reject`，不弱化安全规则。
+- Corrected evaluator tests `16 passed`；当前 core implementation commit 为 `f1dfb1034d6517fb1b5197035dc92e3eabe482ba`，remote-v 为空，未 push。
+- 注册的八臂 zero-training matrix 尚未启动；下一步先做相同两 tick 性能剖析，核对计算热点，再启动已登记八臂无训练对照。没有 held-out、training、optimizer step、checkpoint write 或 default promotion，`PPO_ALLOWED=false`。
+- P3 尚未解决或准入，dynamic geometry 与真实 hardware adapter 仍未 qualification。详见 [V3 修复结果](evidence/v4_2/trajectory_v3_repair_results_20261002.md)、[运动学修复审核方案](evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md) 与 [基础修复协议](evidence/v4_2/p3_foundation_repair_protocol_20261002.md)。
 
 ## 2026-10-02 已批准首阶段修复与新增运动学阻塞（独立块）
 

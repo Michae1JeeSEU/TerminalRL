@@ -12,7 +12,9 @@
   `3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab`
 - 基础配置：`evaluate_p3_task_neutral._build_neutral_inputs()[1]["dense24"]`。
   保留该配置的安全、能量、动作权限、reward、mask 和 arrival 设置；对照只改变
-  `final_approach_execution_mode` 和观察 schema。
+  `final_approach_execution_mode`、观察 schema，并将 runtime environment 显式绑定到
+  `trajectory_schema_version=executable_trajectory_v3`；source checkpoint 的严格 load
+  boundary 单独使用 `trajectory_schema_version=executable_trajectory_v2`。
 - 开发 cell 与 keyed policy seed：
 
   | cell | env seed | policy seed |
@@ -65,8 +67,10 @@
   `COMPLETED_WITH_ISSUES`，业务 failed/emergency 计数本身不触发技术 issue。发生
   `SafetyInvariantError` 或硬安全 violation 时保留已完成 arm 输出并停止余臂，CLI 返回
   nonzero。
-- 输出根目录（仅 `--run`）：
+- 历史 V2 输出根目录（仅记录旧版 `--run`）：
   `/home/user/training_outputs/terminal/p3_foundation_repair_20261002`。
+- 当前 V3 对照输出根目录：
+  `/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002`。
 
 ## 命令边界
 
@@ -78,13 +82,15 @@ python -m terminal_marl.scripts.evaluate_p3_foundation_repair_20261002 --run
 
 `--check-only` 只验证固定 checkpoint、SHA、metadata、88D/90D schema、迁移元数据和
 八臂登记；`--smoke` 执行 `cell_1` 的三个 source arms 各两 tick，检查 serialized
-schema dimension、progress、energy coverage、final-plan trace 字段及 repaired88 与
+schema dimension、progress、energy coverage、validity、error/lifecycle_error、硬安全
+状态、final-plan trace 字段、V2 source/load→V3 runtime binding，以及 repaired88 与
 zero-initialized repaired90 的初始 requested action tape，三臂预期均为 `censored`，不计
 入业务性能；`--run` 才执行固定八臂开发对照。
 
-## 首阶段批准与实际执行记录
+## 首阶段批准与历史 V2 实际执行记录
 
-用户已批准本轮首阶段的小样本、无训练闭环验证。实际执行结果如下：
+用户已批准本轮首阶段的小样本、无训练闭环验证。以下记录属于历史 V2 输出根目录，
+不作为当前 V3 对照结果：
 
 - `--check-only` exit `0`，JSON 状态为 `CHECK_ONLY_OK`，登记 `8` 个 arms；输出
   `/home/user/training_outputs/terminal/p3_foundation_repair_20261002/preflight.json`，
@@ -114,3 +120,70 @@ zero-initialized repaired90 的初始 requested action tape，三臂预期均为
 energy coverage 或 wait 字段只能造成 validity/error 记录，不得把这些技术问题吞成
 `failed` outcome。source arm 的 checkpoint metadata、SHA 和 90D migration metadata
 随结果保存；nominal rule arm 不声称使用了已学习的 service context。
+
+## 注册对照的 V3 共同物理基准修订（2026-10-02）
+
+用户已批准首阶段的无训练小样本闭环验证；注册对照的共同物理基准现改为
+`trajectory_schema_version=executable_trajectory_v3`，并要求
+`vehicle_execution_mode=performance_constrained`。八个 arm 均使用这一共同轨迹
+schema；`legacy88` 仅表示旧 final intent mapping，观察 schema、动作权限、安全、
+能量、reward、mask、arrival 设置以及两 cell 的 seeds、每臂 24 requests 和 1800
+ticks 上限保持登记值不变。V3 轨迹在执行边界复核起点状态、时间和 ring endpoint
+的几何/切向速度/向心加速度；诊断同时保留 V2 的 chord/trapezoid 行作为
+`v2_only_nonbinding` 观测，并以 V3 多项式解析导数、三点 Gauss-Legendre 积分和
+physics-grid 指标作为对应 schema 的检查字段。
+
+本修订使用新的输出根目录：
+`/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002`。
+旧 V2 预检和 smoke 产物仍保留在
+`/home/user/training_outputs/terminal/p3_foundation_repair_20261002`，不覆盖历史记录。
+source checkpoint 路径、SHA、90D migration 入口、规则臂、无训练/无 held-out/无
+checkpoint 写入边界均保持不变。source checkpoint 必须使用显式的
+`trajectory_schema_version=executable_trajectory_v2` load config 经过严格 metadata
+校验；随后以同一份冻结权重在 `trajectory_schema_version=executable_trajectory_v3`
+的 runtime environment 中只做 inference。这是登记的 V2-source → V3-runtime frozen
+inference transfer，不表示 checkpoint 已用 V3 训练，也不构成 promotion。
+V3 `--check-only` 已完成：exit `0`，状态 `CHECK_ONLY_OK`，登记 `8` 个 arms；
+JSON 为
+`/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002/preflight.json`，
+SHA256 为
+`8f21a8203efbdefcdbb88e9e820ce8c1a7a096179e7244f8cce52eddefc6fc40`。其
+`checkpoint_inference_binding` 明确记录 source/load 为 V2、runtime 为 V3，且
+`source_checkpoint_is_v3_trained=false`；frozen flags 全部为 `false`。
+
+V3 两 tick smoke 的第一次加强校验在发现 safety counter 映射缺失时以 exit `2`
+结束；原始日志为
+`/home/user/training_outputs/terminal/trajectory_v3_repair_20261002/v3_smoke_verified_retry.log`，
+SHA256 为
+`ad384d78593bfe95d289fa4be39b1fef7ecad5499d2f1c39943496b71b3e4885`，原始错误为
+`two-tick smoke arm has a hard safety issue`。
+
+随后将 smoke reporter 的 uncertified counter 明确绑定到 runtime telemetry
+`joint_safety_fail_closed`；缺失时仍保留 `None` 并 fail-closed，不使用 trace dump
+reason 替代。最终 retry exit `0`，状态 `SMOKE_OK`，日志为
+`/home/user/training_outputs/terminal/trajectory_v3_repair_20261002/v3_smoke_counter_mapping_retry.log`，
+JSON 为
+`/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002/smoke_verified.json`，
+两者 SHA256 均为
+`967426e3fa6bc24e85847ea3e1da9352ef1e473e01197a2aeda26689a8ec3710`。三个 source arms
+各运行 `2` ticks 且 `censored=true`，validity 均为 `valid`、technical errors 为空、
+error/lifecycle error 为 `null`；三个 arm 的 `uncertified=0`、counter source 均为
+`joint_safety_fail_closed`、`SafetyInvariantError=0`，collision/NMAC/protected-floor/
+hard-separation 事件均为空。repaired88 与 zero-initialized repaired90 的 requested
+action tape、wait/elapsed/energy 和 final trajectory hashes 均相等。
+
+完整八臂 `--run` 仍未启动。
+
+预检与每个 arm 输出同时记录 source checkpoint schema、source load schema、runtime
+environment schema 和 frozen transfer 标识，便于区分 checkpoint load boundary 与
+实际执行环境；全局 checkpoint loader 的严格兼容性规则保持不变。
+
+V3 轨迹一致性诊断已在生成器与参数化器 SHA 对齐后以四条 fixture 运行：exit `0`，状态
+`KINEMATIC_CONSISTENCY_PASS`，`finding_count=0`，`technical_error_count=0`，四条的
+V3 analytic derivative/integral checks 均通过，旧 node rows 均标记为
+`v2_only_nonbinding`。旧产物保留；修正 altitude aggregation 后的产物为
+`/home/user/training_outputs/terminal/p3_foundation_trajectory_diagnostic_v3_corrected_20261002.json`，
+SHA256 为 `380da099c4595a4370d979f7d9730b782267a48c6de8cb53aa70e11c88e72305`。
+四条 fixture 的 analytic altitude bounds 均为
+`min_altitude=4.440892098500626e-16`、`max_altitude=40.0`；状态仍为
+`KINEMATIC_CONSISTENCY_PASS`，`finding_count=0`，`technical_error_count=0`。
