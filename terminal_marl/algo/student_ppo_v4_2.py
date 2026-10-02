@@ -129,7 +129,7 @@ class StudentPPOV42(JointPPOV42):
                gae_lambda: float = .95, clip_ratio: float = .2,
                value_coef: float = .5, entropy_coef: float = .01,
                target_kl: float | None = None,
-               actor_reduction: str = "world_mean") -> dict:
+               actor_reduction: str = "world_mean", entropy_mode: str = "joint") -> dict:
         """Run PPO with either historical world means or joint-team scaling.
 
         ``world_mean`` averages the clipped per-agent objective inside each
@@ -149,6 +149,8 @@ class StudentPPOV42(JointPPOV42):
             raise ValueError("invalid PPO discount or clipping settings")
         if actor_reduction not in ("world_mean", "joint_team"):
             raise ValueError("actor_reduction must be 'world_mean' or 'joint_team'")
+        if entropy_mode not in {"joint", "gate_only"}:
+            raise ValueError("entropy_mode must be joint or gate_only")
         if target_kl is not None:
             if not np.isfinite(target_kl) or target_kl <= 0:
                 raise ValueError("target_kl must be finite and positive")
@@ -236,7 +238,10 @@ class StudentPPOV42(JointPPOV42):
                                  if actor_count_normalizer else value_loss.new_zeros(()))
                     else:
                         actor = team_mean(objective)
-                    entropy = team_mean(gate_dist.entropy() + gate_dist.probs[:, 1] * proposal_dist.entropy())
+                    entropy_values = gate_dist.entropy()
+                    if entropy_mode == "joint":
+                        entropy_values = entropy_values + gate_dist.probs[:, 1] * proposal_dist.entropy()
+                    entropy = team_mean(entropy_values)
                     kl = team_mean((ratio - 1) - logratio)
                     clipped = team_mean((torch.abs(ratio - 1) > clip_ratio).float())
                 reference_kl = None

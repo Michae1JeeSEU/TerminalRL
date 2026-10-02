@@ -390,18 +390,13 @@ class TrajectoryGenerator:
             raise RuntimeError("ring_hold_ease_state_invalid")
         v_after_ease = max(0.0, v_after_ease)
         delta = target - v_after_ease
-        limiting_acceleration = .97 * min(
-            float(self.dynamics.profile.max_horizontal_accel),
-            float(self.dynamics.profile.max_horizontal_decel),
-            float(self.dynamics.profile.max_lateral_accel),
-        )
-        peak_speed = max(current, v_after_ease, target)
-        radial_load = peak_speed * peak_speed / radius
-        available_squared = limiting_acceleration ** 2 - radial_load ** 2
-        if abs(delta) > 1e-8 and available_squared <= 1e-12:
-            raise RuntimeError("ring_hold_tangential_budget_unavailable")
-        available = math.sqrt(max(0.0, available_squared))
-        ramp = 0.0 if abs(delta) <= 1e-8 else 1.5 * abs(delta) / available
+        # Use the same boundary-recoverable speed ramp as the holder executor.
+        # Radial and tangential peaks do not occur at the same time; charging
+        # both at the initial peak speed falsely rejects valid deceleration.
+        try:
+            ramp = self.dynamics.ring_transition_duration(v_after_ease, target, radius)
+        except ValueError as exc:
+            raise TrajectoryInfeasibleError("ring_hold_tangential_budget_unavailable") from exc
         return ease, ramp, v_after_ease, alpha0, p0, v0, a0
 
     def _v3_ring_hold_points_for_ramp(
@@ -550,8 +545,8 @@ class TrajectoryGenerator:
             except (RuntimeError, ValueError, FloatingPointError, np.linalg.LinAlgError) as exc:
                 last_error = exc
         if last_error is not None:
-            raise RuntimeError("ring_hold_interpolation_infeasible") from last_error
-        raise RuntimeError("ring_hold_interpolation_infeasible")
+            raise TrajectoryInfeasibleError("ring_hold_interpolation_infeasible") from last_error
+        raise TrajectoryInfeasibleError("ring_hold_interpolation_infeasible")
 
     def ring_hold_points(self, ring, theta: float, current_speed: float, target_speed: float, start: float,
                          duration: float, *, initial_acceleration: np.ndarray | None = None) -> list[TrajectoryPoint]:
@@ -761,6 +756,7 @@ class TrajectoryGenerator:
             target_ring.nominal_speed + airspace.speed_profile_bias + residual,
             self.config.speed_min, self.config.max_speed,
         ))
+        target_speed = min(target_speed, self.dynamics.ring_speed_limit(float(target_ring.radius)))
         target_position = self._ring_position(target_ring, target_theta)
         target_tangent = np.asarray((-math.sin(target_theta), math.cos(target_theta), 0.0), dtype=float)
         target_radial = np.asarray((math.cos(target_theta), math.sin(target_theta), 0.0), dtype=float)
@@ -867,7 +863,7 @@ class TrajectoryGenerator:
                 break
             entry_cap *= .8
         if chosen is None:
-            raise RuntimeError("could not time-parameterize a dynamically feasible transfer")
+            raise TrajectoryInfeasibleError("could not time-parameterize a dynamically feasible transfer")
 
         departure, result = chosen
         prefix, transfer_points, source_tangent, entry_velocity, geometry_repaired = result

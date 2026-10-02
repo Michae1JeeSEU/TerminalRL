@@ -1118,7 +1118,7 @@ class PredictiveSafetyShield:
             "max_speed_residual_mps",
             self.config.max_speed_residual_mps,
         ))
-        if abs(scale) <= 1e-12:
+        if self.config.holding_speed_contract == "nominal_until_release" or abs(scale) <= 1e-12:
             zero_residuals = {uid: 0.0 for uid in residuals}
             assessment_kwargs = {"pairs": pairs}
             if threshold is not None:
@@ -1446,6 +1446,9 @@ class PredictiveSafetyShield:
             uid: float(np.clip(repaired[uid].speed_residual, -1.0, 1.0)) * self.config.max_speed_residual_mps
             for uid in holders
         }
+        nominal_contract = self.config.holding_speed_contract == "nominal_until_release"
+        if nominal_contract:
+            residuals = {uid: 0.0 for uid in holders}
         requested = dict(residuals)
         pairs = self._joint_pairs(env)
         component_records: list[dict[str, object]] = []
@@ -1454,7 +1457,7 @@ class PredictiveSafetyShield:
         # A single H+dt proof implies current-horizon safety and proves that
         # the candidate remains a legal backup after one executor tick.
         assessment = self._recursive_safe(env, residuals, pairs)
-        if abs(float(env.config.max_speed_residual_mps)) <= 1e-12:
+        if nominal_contract or abs(float(env.config.max_speed_residual_mps)) <= 1e-12:
             # The fixed-rule flow contract has no shield speed authority.  A
             # nominal action is still accepted only after the complete
             # recursive joint/swept proof above; a nominal conflict fails
@@ -1477,7 +1480,9 @@ class PredictiveSafetyShield:
                     "operational_threshold": float(self.config.safe_distance),
                 }
                 raise SafetyInvariantError(
-                    "Nominal fixed-rule holding action is not recursively safe; physics execution blocked",
+                    ("Nominal holding contract is not recursively safe; physics execution blocked"
+                     if nominal_contract else
+                     "Nominal fixed-rule holding action is not recursively safe; physics execution blocked"),
                     diagnostic=self.last_certification_diagnostic,
                 )
             self.unrecoverable_components = ()

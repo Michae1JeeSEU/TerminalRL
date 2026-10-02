@@ -1254,3 +1254,10 @@ GUI 正常结束时会先提交并消费带终态事件的最终 source frame，
 `trajectory_max_points=12`。两者只控制渲染采样，不改变仿真步、策略输入或安全认证；命令行可用
 `--frame-stride`、`--trajectory-max-points`、`--[no-]trajectories` 与
 `--[no-]labels` 调整。
+
+
+## 2026-10-03 P3 repair interface
+
+新profile入口 `terminal_marl.configs.p3_integrated_repair.build_config`；新选项holding_speed_contract、emergency_priority_mode、route_aware_emergency_enabled、executable_admission_energy_enabled、low_level_queue_cost_enabled均保留历史默认。启用队列成本时env.step info追加team_reward/team_reward_components，student_rollout使用该团队总量而不添加虚构agent。StudentPPOV42.update新增entropy_mode=joint/gate_only；默认joint。新检查入口 `python -m terminal_marl.scripts.diagnose_p3_integrated_repair --check-only --output <new-dir>`，效果验证前必须先完成定向回归和smoke。
+
+新profile显式选择 `external_queue_step_mode=post_admission`：在now安全提交入场后，只对剩余队列推进dt并计算队列成本；成功入场者推进dt飞行、获得首tick time/urgency reward。失败commit退回队列者只计算一次队列区间。旧默认pre_admission仅用于历史重放。

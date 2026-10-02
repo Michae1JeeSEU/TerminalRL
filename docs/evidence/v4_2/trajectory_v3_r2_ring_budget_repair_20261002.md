@@ -1,5 +1,7 @@
 # V3 R2 ring-budget exception repair (pending application)
 
+> 2026-10-03 状态更新：用户随后授权停止无必要的旧诊断并统一修复。R2 已主动停止；此单行异常补丁由[统一实现修复](p3_integrated_repair_20261003.md)取代，旧 patch 不再直接应用。新实现同时恢复合法高速边界的可减速性，原测试中“合法高速必须拒绝”的断言不再适用；历史 patch/日志保留供追溯。以下 pending/application order 是当时记录，不是当前执行指令。
+
 ## Scope and observed failure
 
 The user requested preparing this repair while the frozen R2 matrix continues, then analysing the complete comparison. Primary wrote the patch, tests and diagnostic runner. Workers only executed specified tests and collected observations.

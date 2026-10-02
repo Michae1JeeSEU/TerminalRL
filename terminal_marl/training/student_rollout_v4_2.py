@@ -248,8 +248,12 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
     output.mkdir(parents=True, exist_ok=False)
     effective_policy_seed = int(seed if policy_seed is None else policy_seed)
     torch.manual_seed(effective_policy_seed)
-    env = TerminalParallelEnv(config)
-    observations, _ = env.reset(seed)
+    if config.holding_speed_contract == "nominal_until_release":
+        env = TerminalParallelEnv(config, seed=seed)
+        observations = env._observations()
+    else:
+        env = TerminalParallelEnv(config)
+        observations, _ = env.reset(seed)
     tape = SafetyTraceRecorder(output / "action_tapes", dt=config.dt)
     tape.start_episode(
         env,
@@ -370,6 +374,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
             break
         tape.record_post_step(env, record, info)
         _accumulate_reward_components(reward_component_totals, info["reward_components"])
+        _accumulate_reward_components(reward_component_totals, {"team": info.get("team_reward_components", {})})
         if collect_labels:
             tape.record_teacher_labels(record, labels)
         if any(trace.get("teacher_used") for trace in info["action_traces"].values()):
@@ -401,7 +406,7 @@ def rollout(policy: JointPPOV42, config, *, seed: int, max_steps: int,
         end = terminal or tick + 1 == max_steps or env.now >= config.max_simulation_seconds
         next_world = np.asarray([following[uid] for uid in sorted(following)], dtype=np.float32).reshape(-1, observation_dim)
         step = StudentStepV42(world.copy(), gates.copy(), proposals.copy(), gate_lp.copy(), proposal_lp.copy(), actor_mask.copy(), value,
-                             0. if terminal else world_value(policy, next_world), float(sum(rewards.values())), bool(terminal), bool(end),
+                             0. if terminal else world_value(policy, next_world), float(info.get("team_reward", sum(rewards.values()))), bool(terminal), bool(end),
                              stochastic_behavior=not deterministic)
         step.validate(observation_dim)
         steps.append(step)

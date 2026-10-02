@@ -89,6 +89,8 @@ class ForecastWorld:
             return
         ring = self.airspace.actual_ring(uav.ring_role)
         residual = subject_speed_residual if uav.uid == subject_uid else 0.0
+        if self.config.holding_speed_contract == "nominal_until_release":
+            residual = 0.0
         target_speed = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias + residual * self.config.max_speed_residual_mps,
                                      self.config.speed_min, self.config.max_speed))
         theta = uav.ring_progress if uav.ring_progress is not None else math.atan2(uav.position[1], uav.position[0])

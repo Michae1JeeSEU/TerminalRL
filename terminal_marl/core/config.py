@@ -170,6 +170,17 @@ class SimConfig:
     # aircraft approaching the emergency SOC threshold.  Historical
     # configurations retain their runtime behavior when this is disabled.
     emergency_priority_guard_enabled: bool = False
+    # New P3 profile: urgent routes are attempted before ordinary releases;
+    # only successfully reserved routes withhold a pad from normal traffic.
+    emergency_priority_mode: str = "at_risk_count"
+    route_aware_emergency_enabled: bool = False
+    executable_admission_energy_enabled: bool = False
+    # A nominal holder contract does NOT remove ±2 m/s RELEASE proposals.
+    # It constrains uncommitted WAIT execution and the shield to the same
+    # nominal continuation certified by SafetyFilter, for rule and RL alike.
+    holding_speed_contract: str = "bounded_residual"
+    low_level_queue_cost_enabled: bool = False
+    external_queue_step_mode: str = "pre_admission"
     # Diagnostic-only route-aware candidate energy guard.  This is layered on
     # the existing priority guard and remains disabled for historical runs.
     energy_reachability_guard_enabled: bool = False
@@ -492,6 +503,23 @@ class SimConfig:
             # speed-residual authority; historical configurations keep their
             # configured default (2 m/s) when this opt-in flag is disabled.
             self.max_speed_residual_mps = 0.0
+        if self.emergency_priority_mode not in {"at_risk_count", "committed_route"}:
+            raise ValueError("unsupported emergency_priority_mode")
+        if self.holding_speed_contract not in {"bounded_residual", "nominal_until_release"}:
+            raise ValueError("unsupported holding_speed_contract")
+        if self.external_queue_step_mode not in {"pre_admission", "post_admission"}:
+            raise ValueError("unsupported external_queue_step_mode")
+        for name in ("route_aware_emergency_enabled", "executable_admission_energy_enabled", "low_level_queue_cost_enabled"):
+            if not isinstance(getattr(self, name), bool):
+                raise ValueError(f"{name} must be bool")
+        if (self.holding_speed_contract == "nominal_until_release"
+                or self.route_aware_emergency_enabled or self.executable_admission_energy_enabled):
+            if self.trajectory_schema_version != "executable_trajectory_v3" or self.high_level_enabled:
+                raise ValueError("integrated P3 repair requires static executable_trajectory_v3")
+        if self.route_aware_emergency_enabled and not (
+                self.emergency_landing_enabled and self.energy_reachability_guard_enabled
+                and self.emergency_priority_guard_enabled):
+            raise ValueError("route-aware emergency requires emergency and energy guards")
         if self.runtime_proposal_shortlist_k not in {1, 3}:
             raise ValueError("runtime_proposal_shortlist_k must be 1 or 3")
         if self.runtime_proposal_shortlist_k > 1:

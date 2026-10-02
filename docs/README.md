@@ -113,3 +113,8 @@ docs/
 4. 单次诊断、预注册 protocol、run summary、manifest 不放在 `docs/` 根目录；
 5. 已被替代的方案移动到 `history/`，并在历史索引中注明替代它的当前文档；
 6. 所有文档链接使用仓库相对路径，移动文件后必须运行链接检查。
+
+
+## 2026-10-03 当前修复入口
+
+新P3实现修复及旧R2主动停止见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。上方88D叙述保留为历史课程；新开发profile使用90D并等待重新qualification，当前不允许PPO。

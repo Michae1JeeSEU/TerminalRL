@@ -317,6 +317,13 @@ class SafetyFilter:
                                    self.config.speed_min, self.config.max_speed))
         target_high = float(np.clip(ring.nominal_speed + snapshot.airspace.speed_profile_bias + self.config.max_speed_residual_mps,
                                     self.config.speed_min, self.config.max_speed))
+        if self.config.holding_speed_contract == "nominal_until_release":
+            # This is an execution contract, not an optimistic prediction:
+            # WAIT and the runtime shield are both bound to nominal speed.
+            target_low = target_high = float(np.clip(
+                ring.nominal_speed + snapshot.airspace.speed_profile_bias,
+                self.config.speed_min, self.config.max_speed))
+        key = (*key, target_low, target_high)
         # Cache one authoritative physics-dt envelope per immutable state
         # tick, then extend it only when a later candidate needs a longer
         # horizon.  Candidate plans commonly differ in merge timing but share

@@ -75,6 +75,22 @@ class VehicleDynamics:
         target = min(max(float(target_speed), 0.0), self.ring_speed_limit(radius))
         if abs(target - current) <= 1e-12:
             return current
+        if self.continuous_curve_limits:
+            # Complete a C2 circular step: v=v0+(v1-v0)*(3s²-2s³).
+            # The tangential acceleration is zero at BOTH step boundaries.
+            # Unlike a constant acceleration step, this can leave the exact
+            # centripetal limit without violating the continuous envelope.
+            if self.ring_transition_duration(current, target, radius) <= dt:
+                return target
+            fraction_low, fraction_high = 0.0, 1.0
+            for _ in range(20):
+                fraction = .5 * (fraction_low + fraction_high)
+                candidate = current + fraction * (target - current)
+                if self.ring_transition_duration(current, candidate, radius) <= dt:
+                    fraction_low = fraction
+                else:
+                    fraction_high = fraction
+            return current + fraction_low * (target - current)
         direction = 1.0 if target >= current else -1.0
         nominal_limit = self.profile.max_horizontal_accel if direction > 0.0 else self.profile.max_horizontal_decel
         preliminary = min(target, current + nominal_limit * dt) if direction > 0.0 else max(target, current - nominal_limit * dt)
@@ -124,6 +140,36 @@ class VehicleDynamics:
                 lo = middle
         return hi
 
+    def ring_transition_duration(self, current: float, target: float, radius: float) -> float:
+        """Sufficient duration of a zero-end-acceleration smoothstep speed ramp.
+
+        This bound remains finite at v²/r=A. Let M=max(v0,v1), m=min(v0,v1),
+        d=M-m, C=M³+M²m+Mm²+m³. Then M⁴-v(s)⁴ >= C*(M-v(s)), and
+        max(h'(s)/sqrt(h(s)))=sqrt(12), h=3s²-2s³ (symmetric for acceleration).
+        T >= sqrt(12)*r*sqrt(d/C) therefore bounds the combined radial and
+        tangential acceleration by A whenever M²/r<=A. The second bound
+        reserves a constant radial load; taking the smaller of two sufficient
+        durations is safe. Planning and ring execution use this same law.
+        """
+        values = (float(current), float(target), float(radius))
+        if not all(math.isfinite(x) for x in values) or radius <= 0 or min(current, target) < 0:
+            raise ValueError("invalid ring transition state")
+        maximum, minimum = max(current, target), min(current, target)
+        if maximum > self.ring_speed_limit(radius) + 1e-9:
+            raise ValueError("ring transition speed exceeds physical limit")
+        delta = maximum - minimum
+        if delta <= 1e-12:
+            return 0.0
+        limit = min(self.profile.max_lateral_accel, self.profile.max_horizontal_accel,
+                    self.profile.max_horizontal_decel)
+        if maximum * maximum / radius > limit + 1e-9:
+            raise ValueError("ring transition radial acceleration exceeds limit")
+        factor = maximum**3 + maximum**2*minimum + maximum*minimum**2 + minimum**3
+        boundary = math.sqrt(12.0) * radius * math.sqrt(delta / factor)
+        reserved = (.97 * limit)**2 - (maximum * maximum / radius)**2
+        constant = 1.5 * delta / math.sqrt(reserved) if reserved > 0 else math.inf
+        return max(1.5 * delta / limit, min(1.03 * boundary, constant))
+
     def ring_motion_step(self, ring, theta: float, current_speed: float, target_speed: float, dt: float) -> RingMotion:
         """Integrate a bounded holder step shared by execution and prediction.
 
@@ -140,7 +186,7 @@ class VehicleDynamics:
         theta1 = float(theta) + .5 * (speed0 + speed1) * dt / radius
         tangent = np.asarray((-math.sin(theta1), math.cos(theta1), 0.0), dtype=float)
         radial = np.asarray((-math.cos(theta1), -math.sin(theta1), 0.0), dtype=float)
-        tangential_acceleration = (speed1 - speed0) / dt
+        tangential_acceleration = 0.0 if self.continuous_curve_limits else (speed1 - speed0) / dt
         return RingMotion(
             theta=theta1,
             position=np.asarray((radius * math.cos(theta1), radius * math.sin(theta1), float(ring.height)), dtype=float),

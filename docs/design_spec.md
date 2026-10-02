@@ -1072,3 +1072,8 @@ qualification，不能把 fixed-rule 诊断结果写成 learned checkpoint 结�
 ## 23. Phase B/C 接口边界
 
 当前代码可预留 `OperationDirection.ARRIVAL`，但不实现 departure state/action。Phase B 后再增加 `DEPARTURE`，不得为了未来 departure 让当前 observation/action 膨胀。
+
+
+## 2026-10-03 P3 integrated repair
+
+静态V3新profile明确区分RELEASE轨迹意图权限与nominal holder等待约定。SafetyFilter、shield递归备份和执行必须遵守同一约定；应急先尝试并实际预约后占用LZ，纯at-risk计数不虚占资源。路线能量/服务日历为调度估计，不是未来安全证书。详见 [实现记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

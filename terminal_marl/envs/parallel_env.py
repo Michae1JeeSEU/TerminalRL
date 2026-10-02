@@ -18,6 +18,7 @@ from ..core.arrival_process import ArrivalProcess
 from ..core.config import RingRole, SimConfig
 from ..core.dynamic_airspace import DynamicAirspace
 from ..core.energy import EnergyModel
+from ..core.executable_landing_budget import ExecutableLandingBudget
 from ..core.energy_reachability import (
     compute_candidate_energy_budget,
     minimum_immediate_emergency_soc,
@@ -54,7 +55,7 @@ class WorldSnapshot:
 
 
 class TerminalParallelEnv:
-    def __init__(self, config: SimConfig | None = None) -> None:
+    def __init__(self, config: SimConfig | None = None, *, seed: int | None = None) -> None:
         self.config = config or SimConfig()
         # Deliberately generic: the core environment must not know about any
         # visualization backend or construct render data on the normal path.
@@ -62,7 +63,7 @@ class TerminalParallelEnv:
         self.energy = EnergyModel(self.config)
         self.priority = PriorityEngine(self.config)
         self.generator = TrajectoryGenerator(self.config)
-        self.reset()
+        self.reset(seed=seed)
 
     @property
     def agents(self) -> list[str]:
@@ -109,6 +110,8 @@ class TerminalParallelEnv:
         self.admission = AdmissionManager(self.config)
         self.airspace = DynamicAirspace(self.config)
         self.lz_manager = LandingZoneManager(self.config.lz_assignment_mode)
+        self.landing_budget = ExecutableLandingBudget(self.config, self.generator, self.energy, self.airspace, self.lz_manager)
+        self._landing_deadline_cache = {}
         self.scheduler = MergeScheduler(self.config)
         self.execution_scheduler = ExecutionScheduler(self.config, self.scheduler)
         self.teacher_scheduler = TeacherScheduler(self.config, self.scheduler) if self.config.teacher_enabled else None
@@ -408,10 +411,34 @@ class TerminalParallelEnv:
         self.resolution_times[uav.arrival_id] = self.now
         self.active.pop(uav.uid, None)
 
+    def _route_deadline_due(self, uav: UAVState) -> bool:
+        if not self.config.route_aware_emergency_enabled:
+            return False
+        key = (uav.uid, uav.ring_role)
+        cached = self._landing_deadline_cache.get(key)
+        if cached is None or self.now >= cached[0]:
+            required = self.landing_budget.holder_budget(uav, self.now)
+            power = max(1e-9, self.energy.phase_power(uav.phase))
+            wait_slack = (uav.energy_remaining-required)/power
+            # This is a route/resource estimate, NOT future safety approval.
+            deadline = self.now+wait_slack-self.config.shield_horizon_seconds
+            self._landing_deadline_cache[key] = (self.now+5.0, deadline)
+            self.energy_reachability_diagnostics.setdefault(uav.uid, {}).update(
+                wait_route_required_energy=required, wait_route_slack_seconds=wait_slack,
+                wait_route_check_time=self.now, wait_route_takeover_at=deadline)
+        return self.now >= self._landing_deadline_cache[key][1]
+
+    def _admission_energy_budget(self, queued, pending):
+        gate = self.admission.gates[queued.request.gate_id]
+        return self.landing_budget.admission_budget(queued, gate, self.now, self.active, pending)
+
     def _try_emergency_landing(self, uav: UAVState, *, force: bool = False) -> bool:
         retry_after = (uav.emergency_retry_after
                        if self.config.emergency_priority_guard_enabled
                        else uav.safety_retry_after)
+        if (self.config.route_aware_emergency_enabled and uav.ring_role is not None
+                and uav.committed_plan is None and self.now >= retry_after):
+            force = force or self._route_deadline_due(uav)
         if (not self.config.emergency_landing_enabled or (not force and uav.soc > self.config.emergency_trigger_soc)
                 or uav.ring_role is None or uav.committed_plan is not None
                 or self.now < retry_after):
@@ -690,6 +717,12 @@ class TerminalParallelEnv:
     def _emergency_lz_priority_blocks(self, requester: UAVState) -> bool:
         """Reserve a free compatible pad for an already urgent aircraft."""
         if not self.config.emergency_priority_guard_enabled:
+            return False
+        if self.config.emergency_priority_mode == "committed_route":
+            # The emergency pass runs first and atomically reserves pads only
+            # for certified routes. Those pads are already absent from the
+            # ordinary available list. An unsuccessful attempt must not claim
+            # every free pad merely by remaining below a SOC threshold.
             return False
         if requester.soc <= self.config.emergency_trigger_soc:
             return False
@@ -1236,6 +1269,8 @@ class TerminalParallelEnv:
             target = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias +
                                    intent.speed_residual * self.config.max_speed_residual_mps,
                                    self.config.speed_min, self.config.max_speed))
+            if self.config.holding_speed_contract == "nominal_until_release":
+                target = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias, self.config.speed_min, self.config.max_speed))
             elapsed = 0.0
             position = uav.position.copy()
             while elapsed < self.config.dt - 1e-9:
@@ -1349,6 +1384,9 @@ class TerminalParallelEnv:
             ring.nominal_speed + self.airspace.speed_profile_bias + intent.speed_residual * self.config.max_speed_residual_mps,
             self.config.speed_min, self.config.max_speed,
         ))
+        if self.config.holding_speed_contract == "nominal_until_release":
+            target_speed = float(np.clip(ring.nominal_speed + self.airspace.speed_profile_bias,
+                                        self.config.speed_min, self.config.max_speed))
         duration = self.config.dt if duration is None else float(duration)
         theta, speed = theta0, max(0.0, uav.speed)
         elapsed, distance = 0.0, 0.0
@@ -1607,8 +1645,23 @@ class TerminalParallelEnv:
         action_rows = []
         for request in self.arrivals.requests_until(self.now):
             self.ledger.request(request.arrival_id); self.request_times[request.arrival_id] = request.request_time; self.admission.enqueue(request)
-        self.external_queue_uav_seconds += len(self.admission.queue.items) * self.config.dt
-        self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
+        team_reward_components = {}
+        def advance_external_queue():
+            if self.config.low_level_queue_cost_enabled:
+                # Only requests spending this interval upstream pay queue cost.
+                team_reward_components["external_queue"] = float(sum(
+                    -self.config.low_level_time_penalty_per_second*self.config.dt
+                    + low_level_urgency_penalty(
+                        self.config.low_level_time_penalty_per_second, self.config.dt,
+                        q.request.base_priority, q.soc,
+                        self.config.low_level_priority_time_weight if self.config.task_priority_enabled else 0.0,
+                        self.config.low_level_soc_urgency_time_weight,
+                        self.config.low_level_soc_urgency_threshold, self.config.soc_reserve)
+                    for q in self.admission.queue.items))
+            self.external_queue_uav_seconds += len(self.admission.queue.items)*self.config.dt
+            self.admission.queue.step(self.config.dt, self.energy, self.priority, self.now)
+        if self.config.external_queue_step_mode == "pre_admission":
+            advance_external_queue()
         self.execution_scheduler.expire(self.now, set(self.active))
         self._refresh_airspace_occupancy()
         self.airspace.step_transition(self.now)
@@ -1619,9 +1672,12 @@ class TerminalParallelEnv:
             self.energy,
             self.priority,
             lz_manager=self.lz_manager,
+            executable_energy_budget=self._admission_energy_budget,
         )
         for record in records:
             if record.decision.value == "divert":
+                if self.config.low_level_queue_cost_enabled:
+                    team_reward_components["external_diversion"] = team_reward_components.get("external_diversion", 0.0)-self.config.low_level_energy_failure_penalty
                 outcome = (
                     TerminalOutcome.DIVERTED_LOW_SOC
                     if record.reason_code in {"low_soc", "low_soc_slot"}
@@ -1646,6 +1702,22 @@ class TerminalParallelEnv:
                 gate.last_admission_time = min(gate.last_admission_time, self.now - self.config.gate_min_time_gap_seconds)
             else:
                 self.telemetry["arrivals_admitted"] += 1
+                if self.config.external_queue_step_mode == "post_admission":
+                    # This aircraft flies for this interval; it never waited
+                    # upstream during the same interval. Charge its first
+                    # airborne tick here, since it was absent from previous.
+                    rewards[uav.uid] = LowLevelReward(
+                        time=-self.config.low_level_time_penalty_per_second*self.config.dt,
+                        urgency=low_level_urgency_penalty(
+                            self.config.low_level_time_penalty_per_second, self.config.dt,
+                            uav.base_priority, uav.soc,
+                            self.config.low_level_priority_time_weight if self.config.task_priority_enabled else 0.0,
+                            self.config.low_level_soc_urgency_time_weight,
+                            self.config.low_level_soc_urgency_threshold, self.config.soc_reserve))
+        if self.config.external_queue_step_mode == "post_admission":
+            # Include failed inbound commits returned to the queue; admitted
+            # and diverted requests no longer accrue upstream time or energy.
+            advance_external_queue()
         # Service is global only; it does not resurrect terminated low-level agents.
         for uid in self.lz_manager.step(self.config.dt):
             uav = self.service_uavs.pop(uid)
@@ -1842,6 +1914,8 @@ class TerminalParallelEnv:
             self._step_observer(self)
         return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
+            **({"team_reward": float(sum(r.total for r in rewards.values())+sum(team_reward_components.values())),
+                "team_reward_components": team_reward_components} if self.config.low_level_queue_cost_enabled else {}),
             "reward_components": {str(uid): r.as_dict() for uid, r in rewards.items()}, "release_decisions": {str(uid): x for uid, x in decisions.items()},
             "release_intent_telemetry": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
             "actions": action_rows, "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},

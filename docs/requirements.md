@@ -1039,3 +1039,10 @@ SOC 下限或删除失败样本制造 qualification，通过本段也不启动�
 Phase A 当前不实现：departure traffic、shared arrival/departure corridor、network-level route assignment、weather avoidance、wind field、communications outage、arbitrary free-flight RL control、full rotor/aerodynamic dynamics。
 
 风、噪声、通信延迟等只在核心 Phase A 稳定后作为 robustness 扩展。
+
+
+## 2026-10-03 P3 foundation repair requirements
+
+合法圆周速度边界必须能在不超合加速度的条件下恢复；安全预测的holder控制范围必须由执行器和shield兑现；入场批次不得越过active/outer容量；未兑现的应急路线不得无限虚占全部兼容LZ；新课程显式表达服务上下文并计入外部队列团队成本。旧qualification不自动跨V3物理/动作映射继承，PPO仍禁止。
+
+新环境中同一请求在同一控制区间只能处于外部等待或已入场飞行之一；入场、备降和安全提交失败回退须保持能量、延误和奖励的时间区间一致。
