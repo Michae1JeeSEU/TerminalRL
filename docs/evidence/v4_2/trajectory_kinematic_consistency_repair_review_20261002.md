@@ -1,6 +1,6 @@
-# 轨迹运动学一致性修复审核方案（2026-10-02）
+# 轨迹运动学一致性修复审核方案（2026-10-02；已实施部分）
 
-状态：待用户审核，尚未实施。已完成批准的 final speed/timing opt-in 与 90D 推理初始化；全面动力学复核发现额外缺陷，八臂业务矩阵尚未启动，`PPO_ALLOWED=false`。
+状态：用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。统一 p/v/a quintic、全曲线解析 bounds、live initial/ring-handoff guard 已落地，check-only preflight 已通过。首个 compact smoke 为三 source 各 2 tick 的 `SMOKE_OK`，但输出缺少 arm validity、safety/error 与 load/runtime binding 字段，尚未接受为 complete smoke；evaluator strengthening 与 retry pending。八臂业务矩阵尚未启动，P3 未解决，`PPO_ALLOWED=false`。
 
 ## 已确认事实
 
@@ -21,7 +21,7 @@ legacy 首段中点 position 差分速度与 reported velocity 差的 norm 为 `
 
 这确认了可执行性检查盲区，尚未测定其对历史 P3 学习退化的因果份额，不能据此宣称全局 P3 根因已唯一确定。当前 `terminal_marl/hardware` 不存在，不能声称真实 Crazyflie/Crazyswarm2 执行路径已经核验。
 
-## 拟修改范围（需要本次审核）
+## 原拟修改范围（用户已批准的实施范围；本节保留历史提案）
 
 1. `core/trajectory_generator.py`：新增显式 version 的可微执行轨迹表示（`executable_trajectory_v3`）。位置、速度、加速度从同一段多项式及其解析导数获得；优先五次 Hermite 段保留节点 p/v/a 和 C2 连续性，scalar/batch position 采样共用该表示。legacy 回放版本继续独立保留。
 2. `core/trajectory_time_parameterization.py` 及必要的生成器 prefix：从 live p/v/a 形成连续轨迹；在几何/初速度不兼容时生成有限制动 prefix 或明确 reject，不以独立覆盖 velocity 字段表示满足初态。重新求时序，随后验证完整曲线。

@@ -6,7 +6,7 @@
 
 ## 本轮状态（2026-10-02）
 
-用户已批准首阶段；核心实现、88→90D migration 与预检已完成。全面复核新增轨迹运动学一致性 blocker，修复方案待本次用户审核，详见 [轨迹运动学一致性修复审核方案](trajectory_kinematic_consistency_repair_review_20261002.md)。完整八臂业务矩阵尚未运行；`PPO_ALLOWED=false`。
+用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，统一 p/v/a quintic、全曲线解析 bounds、live initial/ring-handoff guard 已落地，V2 默认路径与 50 条历史 hash 回放保留。最新四 fixture 诊断 artifact 已为 `KINEMATIC_CONSISTENCY_PASS`，check-only preflight 已通过。首个 compact smoke 为三 source 各 2 tick 的 `SMOKE_OK`，energy coverage valid、repaired88/90 action tape 与 metrics/hash 相等；但输出缺少 arm validity、safety/error 与 load/runtime binding 字段，尚未接受为 complete smoke，evaluator strengthening 与 retry pending。完整八臂业务矩阵尚未运行；P3 尚未解决；`PPO_ALLOWED=false`。
 
 ## 当前终态锚点
 

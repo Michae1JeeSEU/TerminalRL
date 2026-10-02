@@ -531,7 +531,92 @@ class TerminalParallelEnv:
         self.telemetry["lz_nearest_distance_sum"] += nearest
         self.telemetry["lz_assignment_regret_sum"] += max(0.0, selected - nearest)
 
+    def _validate_v3_execution_boundary(self, uav: UAVState, plan) -> tuple[bool, str]:
+        """Check the live boundary state before approving an executable V3 plan."""
+        if plan.metadata.get("trajectory_schema_version") != "executable_trajectory_v3":
+            return True, ""
+
+        try:
+            plan_start_time = float(plan.start_time)
+            now = float(self.now)
+        except (TypeError, ValueError):
+            return False, "v3_initial_state_time_invalid"
+        if not np.isclose(plan_start_time, now, rtol=0.0, atol=1e-6):
+            return False, "v3_initial_state_time_mismatch"
+        try:
+            start = plan.sample(plan_start_time)
+        except Exception:
+            return False, "v3_initial_state_sample_error"
+        live_position = np.asarray(uav.position, dtype=float)
+        live_velocity = np.asarray(uav.velocity, dtype=float)
+        live_acceleration = np.asarray(uav.acceleration, dtype=float)
+        for name, observed, expected in (
+            ("position", np.asarray(start.position, dtype=float), live_position),
+            ("velocity", np.asarray(start.velocity, dtype=float), live_velocity),
+            ("acceleration", np.asarray(start.acceleration, dtype=float), live_acceleration),
+        ):
+            if (
+                observed.shape != (3,)
+                or expected.shape != (3,)
+                or not np.all(np.isfinite(observed))
+                or not np.all(np.isfinite(expected))
+                or not np.allclose(observed, expected, rtol=0.0, atol=1e-6)
+            ):
+                return False, f"v3_initial_state_{name}_mismatch"
+
+        target_phase = plan.metadata.get("target_phase")
+        target_name = {
+            "ring_outer": "outer",
+            "ring_middle": "middle",
+            "ring_inner": "inner",
+        }.get(target_phase)
+        if target_name is None:
+            return True, ""
+        role = next((item for item in RingRole if item.value == target_name), None)
+        if role is None:
+            return False, "v3_ring_endpoint_role_invalid"
+        ring = self.airspace.actual_ring(role)
+        try:
+            endpoint = plan.sample(float(plan.end_time))
+            position = np.asarray(endpoint.position, dtype=float)
+            velocity = np.asarray(endpoint.velocity, dtype=float)
+            acceleration = np.asarray(endpoint.acceleration, dtype=float)
+        except Exception:
+            return False, "v3_ring_endpoint_sample_error"
+        if (
+            position.shape != (3,)
+            or velocity.shape != (3,)
+            or acceleration.shape != (3,)
+            or not np.all(np.isfinite(position))
+            or not np.all(np.isfinite(velocity))
+            or not np.all(np.isfinite(acceleration))
+        ):
+            return False, "v3_ring_endpoint_nonfinite"
+        geometry_tolerance = 0.05
+        radius = float(np.linalg.norm(position[:2]))
+        if (
+            abs(radius - float(ring.radius)) > geometry_tolerance
+            or abs(float(position[2]) - float(ring.height)) > geometry_tolerance
+        ):
+            return False, "v3_ring_endpoint_geometry_mismatch"
+        theta = math.atan2(float(position[1]), float(position[0]))
+        speed = float(np.linalg.norm(velocity[:2]))
+        tangent = np.asarray((-math.sin(theta), math.cos(theta), 0.0), dtype=float)
+        radial = np.asarray((-math.cos(theta), -math.sin(theta), 0.0), dtype=float)
+        expected_velocity = tangent * speed
+        expected_acceleration = radial * (speed * speed / float(ring.radius))
+        if not np.allclose(velocity, expected_velocity, rtol=0.0, atol=1e-6):
+            return False, "v3_ring_endpoint_velocity_mismatch"
+        if not np.allclose(acceleration, expected_acceleration, rtol=0.0, atol=1e-6):
+            return False, "v3_ring_endpoint_acceleration_mismatch"
+        return True, ""
+
     def _commit(self, uav: UAVState, plan) -> bool:
+        boundary_valid, boundary_reason = self._validate_v3_execution_boundary(uav, plan)
+        if not boundary_valid:
+            self.last_safety_decisions[uav.uid] = boundary_reason
+            self.telemetry["safety_interventions"] += 1
+            return False
         committed = {uid: other.committed_plan for uid, other in self.active.items() if other.committed_plan is not None}
         result = self.safety.filter_plan(plan, committed, WorldSnapshot(self.now, self.active, self.airspace))
         self.last_safety_decisions[uav.uid] = result.reason or "approved"

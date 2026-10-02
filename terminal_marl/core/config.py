@@ -317,10 +317,24 @@ class SimConfig:
             raise ValueError("emergency energy margin and landing penalty must be non-negative")
         if self.schema_version != "phaseA_landing_v1":
             raise ValueError("only phaseA_landing_v1 is supported")
-        if self.vehicle_dynamics_schema_version != "performance_constrained_v2" or self.trajectory_schema_version != "executable_trajectory_v2":
-            raise ValueError("only the performance-constrained dynamics-v2 schemas are supported")
+        if self.vehicle_dynamics_schema_version != "performance_constrained_v2":
+            raise ValueError("only the performance-constrained dynamics-v2 schema is supported")
+        if self.trajectory_schema_version not in {
+            "executable_trajectory_v2",
+            "executable_trajectory_v3",
+        }:
+            raise ValueError("unsupported trajectory_schema_version")
         if self.vehicle_execution_mode not in {"performance_constrained", "legacy_kinematic"}:
             raise ValueError("unsupported vehicle_execution_mode")
+        if (self.trajectory_schema_version == "executable_trajectory_v3"
+                and self.vehicle_execution_mode != "performance_constrained"):
+            raise ValueError(
+                "trajectory_schema_version='executable_trajectory_v3' requires "
+                "vehicle_execution_mode='performance_constrained'"
+            )
+        if (self.trajectory_schema_version == "executable_trajectory_v3"
+                and self.high_level_enabled):
+            raise ValueError("V3 dynamic geometry execution is not qualified")
         profile = self.vehicle_profile
         if tuple(self.rings) != (RingRole.OUTER, RingRole.MIDDLE, RingRole.INNER):
             raise ValueError("rings must be OUTER, MIDDLE, INNER in canonical order")

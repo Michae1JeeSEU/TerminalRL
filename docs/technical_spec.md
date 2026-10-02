@@ -586,6 +586,28 @@ class TrajectoryGenerator:
 语义。`speed_timing_v1` 只改变 opt-in final approach 的目标速度/时序参数化；不得改变
 emergency route、SafetyFilter certification 顺序或 execution takeover 语义。
 
+### 17.1 Executable trajectory V3 contract
+
+`trajectory_schema_version="executable_trajectory_v3"` 必须显式 opt-in，并使用
+`vehicle_execution_mode="performance_constrained"`。V3 `TrajectoryPlan` 的 position、
+velocity、acceleration 来自同一条 quintic curve；parameterizer 必须提供整段 analytic
+bounds，覆盖 horizontal/vertical speed、acceleration 与 altitude。V3 commit 前检查
+`start_time≈env.now`，并以 `1e-6` 比较起点 position/velocity/acceleration 与 live state；
+ring handoff endpoint 以当前 ring 的 radius/height 几何容差和 `1e-6` 的切向 velocity、
+centripetal acceleration 检查。失败必须 fail-closed 并记录 intervention，executor 不得
+在 startup teleport 或依靠 endpoint rewrite 修正计划。
+
+V3 当前仅支持静态 geometry；`tangent_yaw=True` 必须返回明确的 unsupported error。
+V2 是默认和 historical replay 路径，旧 schema 不因 V3 opt-in 而改变。物理资格检查与
+业务收益评估分开：V3 先检查解析导数/积分、动力学、执行边界和 SafetyFilter，再单独
+报告 waiting、throughput、energy 与 outcome；历史 V2 的不安全 duration 不作为性能基线。
+
+注册的 zero-training common-V3 comparison 固定使用 env seeds `877101/877102`、policy
+seeds `878201/878202`、8 arms、每臂最多 24 requests 和 1800 ticks，输出根目录为
+`/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002`，并保持
+`PPO_ALLOWED=false`。该登记矩阵用于共同物理/schema 对照，不等同于 qualification 或
+business-benefit PASS。
+
 ---
 
 ## 18. SafetyFilter API
@@ -603,6 +625,9 @@ class SafetyFilter:
 ```
 
 `filter_plan` 至少在未来 horizon 内离散采样 pairwise distance。reject 后保持 holding 或继续当前 committed plan，不临时注入未计划的 heading offset。
+
+对 holder 的 bounded proxy 预测必须复用 V3 continuous ring limits，并把 curve-error margin
+显式加入距离/可达性检查；proxy 不能替代真实 committed curve 或放宽 protected-floor。
 
 `emergency_landing` 计划与普通计划使用相同的 `filter_plan` 和运行时 swept + recursive 证明；
 安全拒绝继续保持/重试，不能通过降低 `80 m` desired separation 或 `40 m` protected floor

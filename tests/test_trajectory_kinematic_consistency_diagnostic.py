@@ -6,8 +6,10 @@ import json
 
 import numpy as np
 
+from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
 from terminal_marl.core.vehicle_profiles import RESEARCH_EVTOL
 from terminal_marl.scripts.diagnose_trajectory_kinematic_consistency_20261002 import (
+    _v3_analytic_consistency,
     main,
     make_linear_plan,
     run_diagnostic,
@@ -49,6 +51,47 @@ def test_reported_velocity_mismatch_is_detected() -> None:
     assert row["max_chord_minus_average_velocity"]["norm"] == 1.0
     assert row["max_displacement_integral_residual"]["norm"] == 1.0
     assert row["execution_sample_metrics"]["max_horizontal_speed"]["value"] == 1.0
+
+
+def test_v3_uses_analytic_derivative_and_integral_checks() -> None:
+    row = diagnose_plan(
+        make_linear_plan(trajectory_schema="executable_trajectory_v3"),
+        profile=RESEARCH_EVTOL,
+        physics_dt=0.2,
+        mode="synthetic",
+        reservation_slot=0.0,
+        trajectory_schema="executable_trajectory_v3",
+    )
+
+    assert row["consistent"] is True
+    assert row["v3_analytic_consistency"]["consistent"] is True
+    assert row["legacy_node_diagnostics"]["applicability"] == "v2_only_nonbinding"
+    assert row["findings"] == []
+
+
+def test_v3_analytic_altitude_bounds_aggregate_across_segments() -> None:
+    points = tuple(
+        TrajectoryPoint(
+            float(index),
+            np.asarray(position, dtype=float),
+            np.zeros(3, dtype=float),
+            np.zeros(3, dtype=float),
+        )
+        for index, position in enumerate(((0.0, 0.0, 5.0), (1.0, 0.0, 10.0), (2.0, 0.0, 2.0)))
+    )
+    plan = TrajectoryPlan(
+        "v3-altitude-aggregate",
+        1,
+        "diagnostic",
+        points,
+        0.0,
+        2.0,
+        metadata={"trajectory_schema_version": "executable_trajectory_v3"},
+    )
+
+    analytic = _v3_analytic_consistency(plan)
+    np.testing.assert_allclose(analytic["analytic_bounds"]["min_altitude"], 2.0, atol=1.0e-12, rtol=0.0)
+    np.testing.assert_allclose(analytic["analytic_bounds"]["max_altitude"], 10.0, atol=1.0e-12, rtol=0.0)
 
 
 def test_four_fixture_report_serializes_checks_and_sampled_results(tmp_path) -> None:

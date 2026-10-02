@@ -678,6 +678,26 @@ final-approach speed/timing 语义不得改变 emergency route 的路线、认�
 减少重复计算，但必须保留原 sampling grids、trajectory checks 与 certification 顺序；
 这些是 behavior-preserving 的计算优化，不改变 trajectory geometry 或仿真步语义。
 
+### 11.7 Executable trajectory schema boundary
+
+`executable_trajectory_v3` 是 opt-in 的执行 schema。它用同一条 quintic curve 同时
+提供 position、velocity 和 acceleration，并以整段曲线的 analytic bounds 检查水平/垂直
+速度、加速度和 altitude。V3 commit 前必须检查 `plan.start_time` 与当前时间一致，且
+`plan.sample(start_time)` 的 position/velocity/acceleration 与 live UAV state 一致；ring
+handoff endpoint 还必须满足当前 ring 的 radius/height、水平切向 velocity 与按终点速度
+计算的 centripetal acceleration。V3 的 boundary state mismatch 必须拒绝并记录
+safety intervention，不能由 executor 在启动时 teleport 或重写 endpoint。
+
+V3 只覆盖当前静态几何执行契约；`TrajectoryConstraints.tangent_yaw=True` 尚未有合格的
+V3 yaw parameterization，必须显式拒绝。V2 是默认和 historical replay schema，V2 的
+legacy geometry、sampling 与兼容路径保持不变。V3 的 physical qualification（曲线解析
+一致性、动力学、handoff 和安全认证）与后续业务 benefit（吞吐、等待、energy/outcome）
+分开报告；旧 V2 中已知不安全或未通过动力学的 duration 不作为业务性能 baseline。
+
+holder proxy 只有在有界、可审计时才可用于预测：使用与 V3 相同的 continuous ring limits，
+并显式计入 curve-error margin。proxy 不能替代真实 committed V3 curve，也不能降低
+protected-floor 或其他安全契约。
+
 ---
 
 ## 12. SafetyFilter

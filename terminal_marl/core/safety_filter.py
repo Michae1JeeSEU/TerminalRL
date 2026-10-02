@@ -12,7 +12,10 @@ class TrajectorySafetyResult:
     approved:bool;reason:str="";checked_plan_id:str|None=None;checked_trajectory_hash:str|None=None
 class SafetyFilter:
     def __init__(self,config):
-        self.config=config;self.dynamics=VehicleDynamics(config.vehicle_profile);self.checked_plan_ids=[];self.checked_trajectory_hashes={}
+        self.config=config
+        self._v3_enabled = config.trajectory_schema_version == "executable_trajectory_v3"
+        self.dynamics=VehicleDynamics(config.vehicle_profile, continuous_curve_limits=self._v3_enabled)
+        self.checked_plan_ids=[];self.checked_trajectory_hashes={}
         self._holder_track_cache={}
         self._holder_tube_cache={}
         self._committed_track_cache={}
@@ -20,6 +23,132 @@ class SafetyFilter:
         # distinct from a safe infinite separation so callers cannot turn a
         # missing prediction into a passing safety metric.
         self.last_predicted_track_audit={"minimum_separation": None, "checked_pairs": 0, "reason": "not_run"}
+
+    @property
+    def _horizontal_acceleration_bound(self) -> float:
+        return min(
+            float(self.config.vehicle_profile.max_horizontal_accel),
+            float(self.config.vehicle_profile.max_horizontal_decel),
+            float(self.config.vehicle_profile.max_lateral_accel),
+        ) + 1.0e-3
+
+    @property
+    def _flight_acceleration_bound(self) -> float:
+        profile = self.config.vehicle_profile
+        vertical_bound = max(
+            float(profile.max_vertical_accel_up),
+            float(profile.max_vertical_accel_down),
+        ) + 1.0e-3
+        return math.sqrt(self._horizontal_acceleration_bound ** 2 + vertical_bound ** 2)
+
+    @property
+    def _flight_speed_bound(self) -> float:
+        profile = self.config.vehicle_profile
+        return math.sqrt((float(profile.max_horizontal_speed) + 1.0e-3) ** 2 + max(
+            float(profile.max_climb_rate),
+            float(profile.max_descent_rate),
+        ) ** 2 + 2.0e-3 * max(float(profile.max_climb_rate), float(profile.max_descent_rate)) + 1.0e-6)
+
+    @property
+    def _holder_speed_bound(self) -> float:
+        return float(self.config.vehicle_profile.max_horizontal_speed) + 1.0e-3
+
+    @property
+    def _holder_acceleration_bound(self) -> float:
+        return self._horizontal_acceleration_bound
+
+    def _track_descriptor(self, track):
+        """Return the bounded source kind used by the V3 separation margin."""
+        if not self._v3_enabled:
+            return "legacy"
+        metadata = getattr(track, "metadata", {})
+        if not isinstance(metadata, dict):
+            return None
+        if metadata.get("runtime_executor_equivalent", False):
+            return {"kind": "holder_proxy", "resampled": True}
+        if metadata.get("trajectory_schema_version") == "executable_trajectory_v3":
+            try:
+                if bool(track.verify_trajectory_integrity()):
+                    return "flight_v3"
+            except (AttributeError, TypeError, ValueError):
+                return None
+            return None
+        if metadata.get("trajectory_schema_version", "executable_trajectory_v2") == "executable_trajectory_v2":
+            return "legacy" if not self._v3_enabled else None
+        return None
+
+    def _track_error_budget(self, descriptor: str | None, dt: float) -> float | None:
+        if not self._v3_enabled or descriptor == "legacy":
+            return 0.0
+        if descriptor == "flight_v3":
+            return self._flight_acceleration_bound * float(dt) ** 2 / 8.0
+        if descriptor == "holder_proxy" or (
+                isinstance(descriptor, dict) and descriptor.get("kind") == "holder_proxy"):
+            resampled = isinstance(descriptor, dict) and bool(descriptor.get("resampled", False))
+            source_error = float(self.config.physics_dt) ** 2 if resampled else 0.0
+            return self._holder_acceleration_bound * (float(dt) ** 2 + source_error) / 8.0
+        if isinstance(descriptor, dict) and descriptor.get("kind") == "flight_v3":
+            return self._flight_acceleration_bound * float(dt) ** 2 / 8.0
+        return None
+
+    def _pair_curve_error(self, left_descriptor: str | None, right_descriptor: str | None, dt: float) -> float | None:
+        left = self._track_error_budget(left_descriptor, dt)
+        right = self._track_error_budget(right_descriptor, dt)
+        if left is None or right is None:
+            return None
+        return left + right
+
+    def _track_point_error(self, descriptor) -> float | None:
+        if not self._v3_enabled or descriptor == "legacy":
+            return 0.0
+        if descriptor == "holder_proxy":
+            return 0.0
+        if isinstance(descriptor, dict) and descriptor.get("kind") == "holder_proxy":
+            if descriptor.get("resampled", False):
+                return self._holder_acceleration_bound * float(self.config.physics_dt) ** 2 / 8.0
+            return 0.0
+        if descriptor == "flight_v3" or (isinstance(descriptor, dict) and descriptor.get("kind") == "flight_v3"):
+            return 0.0
+        return None
+
+    def _track_distances_with_margin(self, left, right, times, left_descriptor, right_descriptor):
+        point, swept = self._track_distances(left, right)
+        if not self._v3_enabled:
+            return point, swept
+        left_point_error = self._track_point_error(left_descriptor)
+        right_point_error = self._track_point_error(right_descriptor)
+        if left_point_error is None or right_point_error is None:
+            point = np.full_like(point, -np.inf)
+        else:
+            point = point - left_point_error - right_point_error
+        if len(swept) == 0:
+            return point, swept
+        values = np.asarray(times, dtype=float)
+        if len(values) != len(left) or len(values) != len(right):
+            return point, np.full_like(swept, -np.inf)
+        corrections = []
+        for dt in np.diff(values):
+            correction = self._pair_curve_error(left_descriptor, right_descriptor, float(dt))
+            corrections.append(np.inf if correction is None else correction)
+        return point, np.maximum(0.0, swept - np.asarray(corrections, dtype=float))
+
+    def _tube_distances_with_margin(self, points, ring, lower, upper, times, candidate_descriptor):
+        point = self._tube_point_distances(points, ring, lower, upper)
+        if not self._v3_enabled or len(point) < 2:
+            return point
+        values = np.asarray(times, dtype=float)
+        if len(values) != len(point):
+            return np.full(len(point), -np.inf, dtype=float)
+        interval_distances = np.minimum(point[:-1], point[1:])
+        corrections = []
+        for dt in np.diff(values):
+            correction = self._pair_curve_error(candidate_descriptor, "holder_proxy", float(dt))
+            if correction is None:
+                corrections.append(np.inf)
+            else:
+                speed_margin = (self._flight_speed_bound + self._holder_speed_bound) * float(dt) / 2.0
+                corrections.append(correction + speed_margin)
+        return np.concatenate((point, interval_distances - np.asarray(corrections, dtype=float)))
     def begin_prediction_step(self):
         """Invalidate reusable holder tracks after an authoritative state tick."""
         self._holder_track_cache.clear()
@@ -301,6 +430,8 @@ class SafetyFilter:
 
     def _holder_broad_phase_safe(self, uav, snapshot, candidate_positions: np.ndarray) -> bool:
         """Conservatively reject an obviously-safe full-circle holder pair."""
+        if self._v3_enabled:
+            return False
         if uav.ring_role is None or len(candidate_positions) == 0:
             return False
         ring = snapshot.airspace.actual_ring(uav.ring_role)
@@ -329,9 +460,22 @@ class SafetyFilter:
             return TrajectorySafetyResult(False,"trajectory_schema_mismatch",plan.plan_id)
         if plan.metadata.get("vehicle_profile_id") != self.config.vehicle_profile_id:
             return TrajectorySafetyResult(False,"vehicle_profile_mismatch",plan.plan_id)
-        dynamics_errors = self.dynamics.validate_plan(plan.points)
+        if self._v3_enabled:
+            try:
+                if not plan.verify_trajectory_integrity():
+                    return TrajectorySafetyResult(False,"trajectory_integrity_mismatch",plan.plan_id)
+            except (AttributeError, TypeError, ValueError):
+                return TrajectorySafetyResult(False,"trajectory_integrity_mismatch",plan.plan_id)
+        dynamics_errors = self.dynamics.validate_trajectory(plan)
         if dynamics_errors:
             return TrajectorySafetyResult(False,f"dynamics_{dynamics_errors[0]}",plan.plan_id,plan.trajectory_hash)
+        if self._v3_enabled:
+            try:
+                max_altitude = max(float(segment.bounds()["max_altitude"]) for segment in plan.polynomial_segments)
+            except (AttributeError, KeyError, TypeError, ValueError, FloatingPointError):
+                return TrajectorySafetyResult(False, "dynamics_altitude_limit", plan.plan_id, plan.trajectory_hash)
+            if max_altitude > float(self.config.height_max) + 1.0e-3:
+                return TrajectorySafetyResult(False, "dynamics_altitude_limit", plan.plan_id, plan.trajectory_hash)
         if plan.metadata.get("dynamic_unreachable_merge_time"):
             return TrajectorySafetyResult(False,"dynamics_unreachable_merge_time",plan.plan_id,plan.trajectory_hash)
         # Both committed-trajectory and holder checks use this exact candidate
@@ -350,7 +494,13 @@ class SafetyFilter:
             # horizon rather than silently dropping it at ``other.end_time``.
             committed_positions = np.asarray(self._committed_positions(other, snapshot, samples), dtype=float)
             committed_tracks[other_id] = committed_positions
-            point_distances, swept_distances = self._track_distances(candidate_positions, committed_positions)
+            other_descriptor = self._track_descriptor(other)
+            if self._v3_enabled and other_descriptor is None:
+                return TrajectorySafetyResult(False,"trajectory_uncertified",plan.plan_id)
+            point_distances, swept_distances = self._track_distances_with_margin(
+                candidate_positions, committed_positions, samples,
+                self._track_descriptor(plan), other_descriptor,
+            )
             if np.any(point_distances < self.config.safe_distance):
                 return TrajectorySafetyResult(False,"predicted_separation",plan.plan_id)
             if np.any(swept_distances < self.config.safe_distance):
@@ -370,7 +520,10 @@ class SafetyFilter:
                 if post_samples[-1] < post_end: post_samples=np.append(post_samples,post_end)
                 candidate_post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
                 other_positions = np.asarray(self._committed_positions(other, snapshot, post_samples), dtype=float)
-                point_distances, swept_distances = self._track_distances(candidate_post_positions, other_positions)
+                point_distances, swept_distances = self._track_distances_with_margin(
+                    candidate_post_positions, other_positions, post_samples,
+                    "holder_proxy", other_descriptor,
+                )
                 if np.any(point_distances < self.config.safe_distance):
                     return TrajectorySafetyResult(False,"predicted_post_plan_holder_separation",plan.plan_id)
                 if np.any(swept_distances < self.config.safe_distance):
@@ -413,7 +566,10 @@ class SafetyFilter:
                     tube_positions = np.asarray(plan.sample_positions(tube_times), dtype=float)
                 lower, upper = self.holder_reachable_tube(other_uav, snapshot, tube_times)
                 ring = snapshot.airspace.actual_ring(other_uav.ring_role)
-                if np.any(self._tube_point_distances(tube_positions, ring, lower, upper) < self.config.safe_distance):
+                if np.any(self._tube_distances_with_margin(
+                        tube_positions, ring, lower, upper, tube_times,
+                        self._track_descriptor(plan),
+                    ) < self.config.safe_distance):
                     return TrajectorySafetyResult(False, "predicted_holder_reachable_tube", plan.plan_id)
                 if abs(float(self.config.max_speed_residual_mps)) <= 1e-12:
                     # The nominal fixed-rule contract has no residual-speed
@@ -425,8 +581,9 @@ class SafetyFilter:
                         self._holder_positions(other_uav, snapshot, samples, 0.0),
                         dtype=float,
                     )
-                    point_distances, swept_distances = self._track_distances(
-                        candidate_positions, nominal_positions,
+                    point_distances, swept_distances = self._track_distances_with_margin(
+                        candidate_positions, nominal_positions, samples,
+                        self._track_descriptor(plan), "holder_proxy",
                     )
                     if np.any(point_distances < self.config.safe_distance):
                         return TrajectorySafetyResult(
@@ -444,7 +601,10 @@ class SafetyFilter:
                         post_times = np.append(post_times, post_end)
                     post_positions = np.asarray(self._post_plan_positions(plan, snapshot, post_times), dtype=float)
                     lower, upper = self.holder_reachable_tube(other_uav, snapshot, post_times)
-                    if np.any(self._tube_point_distances(post_positions, ring, lower, upper) < self.config.safe_distance):
+                    if np.any(self._tube_distances_with_margin(
+                            post_positions, ring, lower, upper, post_times,
+                            "holder_proxy",
+                        ) < self.config.safe_distance):
                         return TrajectorySafetyResult(False, "predicted_post_plan_holder_reachable_tube", plan.plan_id)
                     if abs(float(self.config.max_speed_residual_mps)) <= 1e-12:
                         nominal_post_times = np.arange(
@@ -462,8 +622,9 @@ class SafetyFilter:
                             self._holder_positions(other_uav, snapshot, nominal_post_times, 0.0),
                             dtype=float,
                         )
-                        point_distances, swept_distances = self._track_distances(
-                            nominal_post_candidate, nominal_post_positions,
+                        point_distances, swept_distances = self._track_distances_with_margin(
+                            nominal_post_candidate, nominal_post_positions, nominal_post_times,
+                            "holder_proxy", "holder_proxy",
                         )
                         if np.any(point_distances < self.config.safe_distance):
                             return TrajectorySafetyResult(
@@ -489,7 +650,13 @@ class SafetyFilter:
             for residual in (0.0,):
                 other_positions = self._committed_positions(other_plan, snapshot, samples)
                 other_positions = np.asarray(other_positions, dtype=float)
-                point_distances, swept_distances = self._track_distances(candidate_positions, other_positions)
+                other_descriptor = self._track_descriptor(other_plan)
+                if self._v3_enabled and other_descriptor is None:
+                    return TrajectorySafetyResult(False, "trajectory_uncertified", plan.plan_id)
+                point_distances, swept_distances = self._track_distances_with_margin(
+                    candidate_positions, other_positions, samples,
+                    self._track_descriptor(plan), other_descriptor,
+                )
                 if np.any(point_distances < required):
                     return TrajectorySafetyResult(False, "predicted_holder_speed_envelope", plan.plan_id)
                 if np.any(swept_distances < self.config.safe_distance):
@@ -504,7 +671,10 @@ class SafetyFilter:
                 candidate_post = np.asarray(self._post_plan_positions(plan, snapshot, post_samples), dtype=float)
                 for residual in (0.0, self.config.max_speed_residual_mps, -self.config.max_speed_residual_mps):
                     other_post = np.asarray(self._holder_positions(other_uav, snapshot, post_samples, residual), dtype=float)
-                    point_distances, swept_distances = self._track_distances(candidate_post, other_post)
+                    point_distances, swept_distances = self._track_distances_with_margin(
+                        candidate_post, other_post, post_samples,
+                        "holder_proxy", "holder_proxy",
+                    )
                     if np.any(point_distances < self.config.safe_distance):
                         return TrajectorySafetyResult(False, "predicted_post_plan_holder_speed_envelope", plan.plan_id)
                     if np.any(swept_distances < self.config.safe_distance):
@@ -521,12 +691,27 @@ class SafetyFilter:
             self.last_predicted_track_audit={"minimum_separation": None if not np.isfinite(minimum) else float(minimum),
                                              "checked_pairs": checked_pairs, "reason": reason}
             return TrajectorySafetyResult(approved, reason, plan_id)
+        descriptors = {}
         # Committed trajectories have already passed ``filter_plan``.  New
         # holder repair tracks are sampled from bounded ring-speed guidance;
         # validate only those kinematics here rather than reinterpreting a
         # previously checked transfer through a one-second approximation.
-        for _, plan in ordered:
+        for uid, plan in ordered:
+            descriptor = self._track_descriptor(plan)
+            descriptors[uid] = descriptor
+            if self._v3_enabled and descriptor is None:
+                return finish(False, "trajectory_uncertified", plan.plan_id)
             if plan.metadata.get("committed", False):
+                if self._v3_enabled and plan.metadata.get("trajectory_schema_version") == "executable_trajectory_v3":
+                    try:
+                        if not plan.verify_trajectory_integrity():
+                            return finish(False, "trajectory_integrity_mismatch", plan.plan_id)
+                    except (AttributeError, TypeError, ValueError):
+                        return finish(False, "trajectory_integrity_mismatch", plan.plan_id)
+                    checked_hash = self.checked_trajectory_hashes.get(plan.plan_id)
+                    if checked_hash != plan.trajectory_hash:
+                        if self.dynamics.validate_trajectory(plan):
+                            return finish(False, "repair_dynamics", plan.plan_id)
                 continue
             if plan.metadata.get("runtime_executor_equivalent", False):
                 # Runtime holder tracks are not arbitrary plans.  They were
@@ -536,7 +721,7 @@ class SafetyFilter:
                 # executor will actually fly.  Separation is still verified
                 # below with the canonical sampled track.
                 continue
-            if self.dynamics.validate_plan(plan.points):
+            if self.dynamics.validate_trajectory(plan):
                 return finish(False, "repair_dynamics", plan.plan_id)
         if len(ordered) < 2:
             return finish(True, "approved", "reconfiguration_tracks")
@@ -565,6 +750,16 @@ class SafetyFilter:
                 continue
             deltas = positions[:, sample_index, None, :] - positions[None, :, sample_index, :]
             distances = np.linalg.norm(deltas[upper], axis=1)
+            if self._v3_enabled:
+                adjusted = distances.copy()
+                for pair_index, (left_index, right_index) in enumerate(zip(upper[0], upper[1])):
+                    left_error = self._track_point_error(descriptors[ordered[int(left_index)][0]])
+                    right_error = self._track_point_error(descriptors[ordered[int(right_index)][0]])
+                    adjusted[pair_index] = (
+                        -np.inf if left_error is None or right_error is None
+                        else distances[pair_index] - left_error - right_error
+                    )
+                distances = adjusted
             checked_pairs += int(np.count_nonzero(eligible))
             current_minimum = float(np.min(distances[eligible]))
             minimum = min(minimum, current_minimum)
@@ -592,9 +787,26 @@ class SafetyFilter:
             swept = relative_start + projection[..., None] * relative_velocity
             distances = np.linalg.norm(swept[upper], axis=1)
             checked_pairs += int(np.count_nonzero(eligible))
-            current_minimum = float(np.min(distances[eligible]))
+            if not self._v3_enabled:
+                current_minimum = float(np.min(distances[eligible]))
+                minimum = min(minimum, current_minimum)
+                bad = np.flatnonzero(eligible & (distances < self.config.safe_distance))
+                if len(bad):
+                    index = int(bad[0]); left_index, right_index = int(upper[0][index]), int(upper[1][index])
+                    uid, plan = ordered[left_index]; other_uid, _ = ordered[right_index]
+                    return finish(False, f"repair_swept_separation:{uid}:{other_uid}", plan.plan_id)
+                continue
+            adjusted = distances.copy()
+            for pair_index, (left_index, right_index) in enumerate(zip(upper[0], upper[1])):
+                correction = self._pair_curve_error(
+                    descriptors[ordered[int(left_index)][0]],
+                    descriptors[ordered[int(right_index)][0]],
+                    float(samples[sample_index + 1] - samples[sample_index]),
+                )
+                adjusted[pair_index] = -np.inf if correction is None else max(0.0, adjusted[pair_index] - correction)
+            current_minimum = float(np.min(adjusted[eligible]))
             minimum = min(minimum, current_minimum)
-            bad = np.flatnonzero(eligible & (distances < self.config.safe_distance))
+            bad = np.flatnonzero(eligible & (adjusted < self.config.safe_distance))
             if len(bad):
                 index = int(bad[0]); left_index, right_index = int(upper[0][index]), int(upper[1][index])
                 uid, plan = ordered[left_index]; other_uid, _ = ordered[right_index]

@@ -79,7 +79,8 @@ class PredictiveSafetyShield:
 
     def __init__(self, config) -> None:
         self.config = config
-        self.dynamics = VehicleDynamics(config.vehicle_profile)
+        self._v3_enabled = config.trajectory_schema_version == "executable_trajectory_v3"
+        self.dynamics = VehicleDynamics(config.vehicle_profile, continuous_curve_limits=self._v3_enabled)
         self.overrides: dict[int, tuple[float, float]] = {}
         self.telemetry = {"shield_interventions": 0, "shield_correction_magnitude": 0.0,
                           "runtime_traffic_interventions": 0, "runtime_traffic_repair_magnitude": 0.0,
@@ -99,6 +100,8 @@ class PredictiveSafetyShield:
         self.last_certification_diagnostic: dict[str, object] = {}
         self.last_recursive_gate = "not_run"
         self._joint_track_cache: dict[tuple, np.ndarray] = {}
+        self._joint_track_info: dict[int, dict[str, object]] = {}
+        self._joint_assessment_times: np.ndarray | None = None
         # Speed integration for holders depends on the ring geometry, target
         # speed and per-step durations, but not on the holder's phase angle.
         # Keep this cache scoped to one protect tick; position tracks still
@@ -153,6 +156,95 @@ class PredictiveSafetyShield:
             theta, speed, remaining = motion.theta, motion.speed, remaining - step
         return np.asarray((ring.radius * math.cos(theta), ring.radius * math.sin(theta), ring.height), dtype=float)
 
+    @property
+    def _horizontal_acceleration_bound(self) -> float:
+        profile = self.config.vehicle_profile
+        return min(
+            float(profile.max_horizontal_accel),
+            float(profile.max_horizontal_decel),
+            float(profile.max_lateral_accel),
+        ) + 1.0e-3
+
+    @property
+    def _flight_acceleration_bound(self) -> float:
+        profile = self.config.vehicle_profile
+        vertical_bound = max(
+            float(profile.max_vertical_accel_up),
+            float(profile.max_vertical_accel_down),
+        ) + 1.0e-3
+        return math.sqrt(self._horizontal_acceleration_bound ** 2 + vertical_bound ** 2)
+
+    @property
+    def _holder_acceleration_bound(self) -> float:
+        return self._horizontal_acceleration_bound
+
+    def _track_descriptor(self, plan):
+        if not self._v3_enabled:
+            return "legacy"
+        metadata = getattr(plan, "metadata", {})
+        if not isinstance(metadata, dict):
+            return None
+        if metadata.get("runtime_executor_equivalent", False):
+            return {"kind": "holder_proxy", "resampled": False}
+        if metadata.get("trajectory_schema_version") == "executable_trajectory_v3":
+            try:
+                if bool(plan.verify_trajectory_integrity()):
+                    return {"kind": "flight_v3", "resampled": False}
+            except (AttributeError, TypeError, ValueError):
+                return None
+            return None
+        return None
+
+    def _track_error_budget(self, descriptor, dt: float) -> float | None:
+        if not self._v3_enabled:
+            return 0.0
+        kind = descriptor.get("kind") if isinstance(descriptor, dict) else descriptor
+        if kind == "flight_v3":
+            return self._flight_acceleration_bound * float(dt) ** 2 / 8.0
+        if kind == "holder_proxy":
+            resampled = isinstance(descriptor, dict) and bool(descriptor.get("resampled", False))
+            source_error = float(self.config.physics_dt) ** 2 if resampled else 0.0
+            return self._holder_acceleration_bound * (float(dt) ** 2 + source_error) / 8.0
+        if kind == "mixed":
+            return (self._flight_acceleration_bound + self._holder_acceleration_bound) * float(dt) ** 2 / 8.0
+        if kind == "legacy":
+            return 0.0
+        return None
+
+    def _pair_curve_error(self, left_descriptor, right_descriptor, dt: float) -> float | None:
+        left = self._track_error_budget(left_descriptor, dt)
+        right = self._track_error_budget(right_descriptor, dt)
+        if left is None or right is None:
+            return None
+        return left + right
+
+    def _interval_descriptor(self, info, start: float, end: float):
+        if not self._v3_enabled:
+            return "legacy"
+        if not isinstance(info, dict):
+            return None
+        kind = info.get("kind")
+        if kind != "mixed_committed":
+            return info
+        plan_end = float(info.get("plan_end", end))
+        if end <= plan_end + 1.0e-9:
+            return {"kind": "flight_v3", "resampled": False}
+        if start >= plan_end - 1.0e-9:
+            return {"kind": "holder_proxy", "resampled": False}
+        return {"kind": "mixed", "resampled": False}
+
+    def _point_error(self, info) -> float | None:
+        if not self._v3_enabled:
+            return 0.0
+        if not isinstance(info, dict):
+            return None
+        kind = info.get("kind")
+        if kind == "holder_proxy" and info.get("resampled", False):
+            return self._holder_acceleration_bound * float(self.config.physics_dt) ** 2 / 8.0
+        if kind in {"holder_proxy", "flight_v3", "mixed_committed"}:
+            return 0.0
+        return None
+
     def _holder_positions(self, uav, airspace, origin: float, times: np.ndarray, residual: float) -> list[np.ndarray]:
         """Return ordered executor-equivalent holder positions without replays.
 
@@ -185,6 +277,8 @@ class PredictiveSafetyShield:
     def _minimum_to_plan(self, holder, plan, airspace, now: float, residual: float, cache: PredictionCache | None = None) -> float:
         start = max(now, plan.start_time); horizon = min(plan.end_time, now + 30.0)
         times = np.arange(start, horizon + 1e-9, self.config.safety_sampling_dt)
+        if self._v3_enabled and len(times) and times[-1] < horizon:
+            times = np.append(times, horizon)
         if len(times) < 2: return float("inf")
         time_key = PredictionCache._time_key(times)
         holder_key = (holder.uid, round(float(residual), 8), round(float(now), 8), time_key)
@@ -211,7 +305,16 @@ class PredictiveSafetyShield:
             "ij,ij->i", relative_start[moving], relative_delta[moving]
         ) / denominator[moving]
         closest = relative_start + np.clip(projection, 0.0, 1.0)[:, None] * relative_delta
-        return float(np.min(np.linalg.norm(closest, axis=1)))
+        swept = np.linalg.norm(closest, axis=1)
+        plan_descriptor = self._track_descriptor(plan)
+        if self._v3_enabled and plan_descriptor is None:
+            return float("-inf")
+        holder_descriptor = {"kind": "holder_proxy", "resampled": False}
+        corrections = []
+        for dt in np.diff(times):
+            correction = self._pair_curve_error(holder_descriptor, plan_descriptor, float(dt))
+            corrections.append(np.inf if correction is None else correction)
+        return float(np.min(np.maximum(0.0, swept - np.asarray(corrections, dtype=float))))
 
     def _broad_phase_reject(self, holder, plan, airspace, now: float, cache: PredictionCache | None = None) -> bool:
         """Reject only pairs with a geometric proof of no shield interaction.
@@ -222,6 +325,8 @@ class PredictiveSafetyShield:
         limited to a conservative vertical envelope that cannot intersect the
         holder's constant ring altitude even under linear plan interpolation.
         """
+        if self._v3_enabled:
+            return False
         start, end = max(now, plan.start_time), min(plan.end_time, now + self.config.shield_horizon_seconds)
         if end <= start:
             return True
@@ -531,21 +636,49 @@ class PredictiveSafetyShield:
             samples = np.append(samples, end)
         snapshot = SimpleNamespace(now=start, active=env.active, airspace=env.airspace)
         tracks: dict[int, np.ndarray] = {}
+        self._joint_track_info = {}
+        self._joint_assessment_times = samples
         for uid, uav in sorted(env.active.items()):
             if uid not in uids:
                 continue
+            direct_v3 = False
             if uav.committed_plan is not None:
                 key = (
                     "committed", uav.committed_plan.plan_id, start, end,
                     float(env.airspace.speed_profile_bias),
                 )
-                positions = self._joint_track_cache.get(key)
-                if positions is None:
-                    positions = np.asarray(
-                        env.safety._committed_positions(uav.committed_plan, snapshot, times),
-                        dtype=float,
-                    )
-                    self._joint_track_cache[key] = positions
+                plan = uav.committed_plan
+                plan_schema = plan.metadata.get("trajectory_schema_version", "executable_trajectory_v2")
+                certified_v3 = False
+                if self._v3_enabled and plan_schema == "executable_trajectory_v3":
+                    try:
+                        certified_v3 = bool(plan.verify_trajectory_integrity())
+                    except (AttributeError, TypeError, ValueError):
+                        certified_v3 = False
+                direct_v3 = self._v3_enabled and certified_v3
+                if direct_v3:
+                    direct_key = ("committed-v3-direct", plan.plan_id, plan.trajectory_hash, start, end,
+                                  float(env.airspace.speed_profile_bias), tuple(np.round(samples, 8)))
+                    positions = self._joint_sampled_track_cache.get(direct_key)
+                    if positions is None:
+                        positions = np.asarray(
+                            env.safety._committed_positions(plan, snapshot, samples),
+                            dtype=float,
+                        )
+                        self._joint_sampled_track_cache[direct_key] = positions
+                    if plan.end_time < end - 1e-9:
+                        track_info = {"kind": "mixed_committed", "plan_end": float(plan.end_time)}
+                    else:
+                        track_info = {"kind": "flight_v3", "resampled": False}
+                else:
+                    positions = self._joint_track_cache.get(key)
+                    if positions is None:
+                        positions = np.asarray(
+                            env.safety._committed_positions(plan, snapshot, times),
+                            dtype=float,
+                        )
+                        self._joint_track_cache[key] = positions
+                    track_info = {"kind": "legacy" if not self._v3_enabled else "unknown", "resampled": True}
             elif uav.ring_role is not None:
                 ring = env.airspace.actual_ring(uav.ring_role)
                 theta = (
@@ -603,6 +736,7 @@ class PredictiveSafetyShield:
                         ), dtype=float))
                     positions = np.asarray(values, dtype=float)
                     self._joint_track_cache[key] = positions
+                track_info = {"kind": "holder_proxy", "resampled": True}
             else:
                 continue
             sampled_key = (
@@ -611,10 +745,14 @@ class PredictiveSafetyShield:
                 float(self.config.safety_sampling_dt),
             )
             sampled = self._joint_sampled_track_cache.get(sampled_key)
-            if sampled is None:
-                sampled = self._resample_position_track(times, positions, samples)
-                self._joint_sampled_track_cache[sampled_key] = sampled
+            if direct_v3:
+                sampled = positions
+            else:
+                if sampled is None:
+                    sampled = self._resample_position_track(times, positions, samples)
+                    self._joint_sampled_track_cache[sampled_key] = sampled
             tracks[uid] = sampled
+            self._joint_track_info[uid] = track_info
         return samples, tracks
 
     @staticmethod
@@ -640,10 +778,33 @@ class PredictiveSafetyShield:
 
     def _assess_position_pair(
         self, left: np.ndarray, right: np.ndarray, threshold: float | None = None,
+        *, times: np.ndarray | None = None, left_info: dict | None = None,
+        right_info: dict | None = None,
     ) -> tuple[bool, float]:
         """Reproduce the pairwise order and threshold semantics of the arbiter."""
         threshold = self.config.safe_distance if threshold is None else float(threshold)
         point, swept = self._position_track_distances(left, right)
+        if self._v3_enabled and times is None:
+            return False, float("-inf")
+        if self._v3_enabled and times is not None:
+            values = np.asarray(times, dtype=float)
+            if len(values) != len(point) or len(values) != len(left) or len(values) != len(right):
+                point = np.full_like(point, -np.inf)
+                swept = np.full_like(swept, -np.inf)
+            else:
+                left_point_error = self._point_error(left_info)
+                right_point_error = self._point_error(right_info)
+                if left_point_error is None or right_point_error is None:
+                    point = np.full_like(point, -np.inf)
+                else:
+                    point = point - left_point_error - right_point_error
+                adjusted = []
+                for index, dt in enumerate(np.diff(values)):
+                    left_descriptor = self._interval_descriptor(left_info, values[index], values[index + 1])
+                    right_descriptor = self._interval_descriptor(right_info, values[index], values[index + 1])
+                    correction = self._pair_curve_error(left_descriptor, right_descriptor, float(dt))
+                    adjusted.append(-np.inf if correction is None else max(0.0, swept[index] - correction))
+                swept = np.asarray(adjusted, dtype=float)
         bad_point = np.flatnonzero(point < threshold)
         if len(bad_point):
             index = int(bad_point[0])
@@ -685,6 +846,11 @@ class PredictiveSafetyShield:
             endpoint_residuals,
             float(effective_horizon),
             float(threshold),
+            bool(self._v3_enabled),
+            float(self.config.physics_dt),
+            float(self.config.safety_sampling_dt),
+            round(float(self._flight_acceleration_bound), 8),
+            round(float(self._holder_acceleration_bound), 8),
         )
 
     def _joint_assessment(self, env, residuals: dict[int, float], *, pairs: tuple[tuple[int, int], ...] | None = None,
@@ -722,9 +888,15 @@ class PredictiveSafetyShield:
         for pair, key, verdict in pair_records:
             left, right = pair
             if verdict is None:
-                verdict = self._assess_position_pair(
-                    tracks[left], tracks[right], threshold,
-                )
+                if self._v3_enabled:
+                    verdict = self._assess_position_pair(
+                        tracks[left], tracks[right], threshold,
+                        times=self._joint_assessment_times,
+                        left_info=self._joint_track_info.get(left),
+                        right_info=self._joint_track_info.get(right),
+                    )
+                else:
+                    verdict = self._assess_position_pair(tracks[left], tracks[right], threshold)
                 if cache is not None and key is not None:
                     cache[key] = verdict
             approved, pair_minimum = verdict

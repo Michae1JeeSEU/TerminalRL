@@ -123,7 +123,10 @@ class ReconfigurationSafetyCoordinator:
                 # airborne set on their executor handoff; it has no phantom
                 # static continuation after touchdown.
                 active_end = min(float(times[-1]), now + math.ceil((plan.end_time - now) / self.env.config.dt - 1e-9) * self.env.config.dt)
-        dynamics = VehicleDynamics(self.env.config.vehicle_profile)
+        dynamics = VehicleDynamics(
+            self.env.config.vehicle_profile,
+            continuous_curve_limits=(self.env.config.trajectory_schema_version == "executable_trajectory_v3"),
+        )
         speed = max(0.0, uav.speed)
         points = [TrajectoryPoint(float(times[0]), np.asarray(uav.position, dtype=float),
                                   np.asarray(uav.velocity, dtype=float), np.asarray(uav.acceleration, dtype=float))]
@@ -164,7 +167,8 @@ class ReconfigurationSafetyCoordinator:
             points.append(TrajectoryPoint(moment, np.asarray(position, dtype=float), velocity, acceleration))
         return TrajectoryPlan(f"reconfig-{uuid.uuid4()}", uid, "reconfiguration_prediction", points,
                               now, float(times[-1]), metadata={"target_phase": "prediction", "committed": plan is not None,
-                                                                 "active_end": active_end, "source_plan_id": None if plan is None else plan.plan_id})
+                                                                  "active_end": active_end, "source_plan_id": None if plan is None else plan.plan_id,
+                                                                  "runtime_executor_equivalent": True})
 
     def _tracks(self, airspace, speed_repairs: dict[int, float], end: float) -> dict[int, TrajectoryPlan]:
         now = self.env.now

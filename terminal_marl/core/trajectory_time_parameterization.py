@@ -42,13 +42,18 @@ class GeometricPath:
 class TrajectoryConstraints:
     end_horizontal_speed: float | None = None
     tangent_yaw: bool = False
+    end_direction: np.ndarray | None = None
+    end_curvature_vector: np.ndarray | None = None
 
 
 class TrajectoryTimeParameterizer:
     """Forward/backward speed profiles with curvature and vertical limits."""
 
-    def __init__(self, dynamics: VehicleDynamics) -> None:
+    def __init__(self, dynamics: VehicleDynamics, *, schema_version: str = "executable_trajectory_v2") -> None:
+        if schema_version not in {"executable_trajectory_v2", "executable_trajectory_v3"}:
+            raise ValueError(f"unsupported trajectory schema version {schema_version!r}")
         self.dynamics = dynamics
+        self.schema_version = schema_version
 
     @staticmethod
     def _tangents(points: np.ndarray) -> np.ndarray:
@@ -88,7 +93,8 @@ class TrajectoryTimeParameterizer:
         horizontal_factor = max(float(np.linalg.norm(tangents[0, :2])), 1e-9)
         vertical_factor = max(abs(float(tangents[0, 2])), 1e-9)
         profile = self.dynamics.profile
-        curvature_limit = math.sqrt(.8 * profile.max_lateral_accel / max(float(curvature[0]), 1e-12))
+        curvature_reserve = .25 if self.schema_version == "executable_trajectory_v3" else .8
+        curvature_limit = math.sqrt(curvature_reserve * profile.max_lateral_accel / max(float(curvature[0]), 1e-12))
         return float(min(
             profile.max_horizontal_speed / horizontal_factor,
             profile.max_climb_rate / vertical_factor,
@@ -96,9 +102,306 @@ class TrajectoryTimeParameterizer:
             curvature_limit / horizontal_factor,
         ))
 
+    @staticmethod
+    def _v3_vector(value: np.ndarray | None, name: str, *, default_zero: bool = False) -> np.ndarray:
+        if value is None:
+            if default_zero:
+                return np.zeros(3, dtype=float)
+            raise ValueError(f"{name} is required")
+        result = np.asarray(value, dtype=float)
+        if result.shape != (3,) or not np.all(np.isfinite(result)):
+            raise ValueError(f"{name} must have finite shape (3,)")
+        return np.array(result, dtype=float, copy=True)
+
+    def _v3_speed_caps(
+        self,
+        tangents: np.ndarray,
+        curvature: np.ndarray,
+        target_horizontal_speed: float,
+    ) -> np.ndarray:
+        """Return scalar path-speed caps from the existing vehicle bounds."""
+        target = float(target_horizontal_speed)
+        if not np.isfinite(target):
+            raise ValueError("target_horizontal_speed must be finite")
+        profile = self.dynamics.profile
+        horizontal_factor = np.linalg.norm(tangents[:, :2], axis=1)
+        vertical_factor = np.abs(tangents[:, 2])
+        caps = np.full(len(tangents), np.inf, dtype=float)
+        caps = np.minimum(
+            caps,
+            profile.max_horizontal_speed / np.maximum(horizontal_factor, 1e-9),
+        )
+        climb_caps = profile.max_climb_rate / np.maximum(vertical_factor, 1e-9)
+        descent_caps = profile.max_descent_rate / np.maximum(vertical_factor, 1e-9)
+        caps = np.minimum(caps, np.where(tangents[:, 2] >= 0.0, climb_caps, descent_caps))
+        curvature_caps = np.sqrt(
+            .8 * profile.max_lateral_accel / np.maximum(curvature, 1e-12)
+        ) / np.maximum(horizontal_factor, 1e-9)
+        caps = np.minimum(caps, curvature_caps)
+        requested_path_speed = max(0.1, target / max(float(np.mean(horizontal_factor)), 1e-9))
+        caps = np.minimum(caps, requested_path_speed)
+        return caps
+
+    def _v3_direction_speed_cap(self, direction: np.ndarray, curvature: float) -> float:
+        profile = self.dynamics.profile
+        horizontal_factor = max(float(np.linalg.norm(direction[:2])), 1e-9)
+        vertical_factor = abs(float(direction[2]))
+        cap = profile.max_horizontal_speed / horizontal_factor
+        if vertical_factor > 1e-9:
+            cap = min(
+                cap,
+                (profile.max_climb_rate if direction[2] >= 0.0 else profile.max_descent_rate)
+                / vertical_factor,
+            )
+        curvature_cap = math.sqrt(.8 * profile.max_lateral_accel / max(float(curvature), 1e-12))
+        return float(min(cap, curvature_cap / horizontal_factor))
+
+    def _v3_speed_profile(
+        self,
+        caps: np.ndarray,
+        segments: np.ndarray,
+        start_speed: float,
+        end_speed_cap: float | None,
+        acceleration_reserve: float,
+    ) -> np.ndarray | None:
+        """Run bounded forward/backward scalar planning for one V3 trial."""
+        profile = self.dynamics.profile
+        tolerance = 1e-3
+        acceleration = float(acceleration_reserve) * profile.max_horizontal_accel
+        deceleration = float(acceleration_reserve) * profile.max_horizontal_decel
+        speeds = np.asarray(caps, dtype=float).copy()
+        if not np.all(np.isfinite(speeds)) or np.any(speeds < 0.0):
+            return None
+        if start_speed > speeds[0] + tolerance:
+            return None
+        speeds[0] = start_speed
+        for index, distance in enumerate(segments):
+            reachable = math.sqrt(max(0.0, speeds[index] ** 2 + 2.0 * acceleration * float(distance)))
+            speeds[index + 1] = min(speeds[index + 1], reachable)
+        if end_speed_cap is not None:
+            speeds[-1] = min(speeds[-1], max(0.0, float(end_speed_cap)))
+        for index in range(len(segments) - 1, -1, -1):
+            reachable = math.sqrt(max(0.0, speeds[index + 1] ** 2 + 2.0 * deceleration * float(segments[index])))
+            if index == 0 and reachable + tolerance < start_speed:
+                return None
+            speeds[index] = min(speeds[index], reachable)
+        if speeds[0] + tolerance < start_speed:
+            return None
+        speeds[0] = start_speed
+        return speeds
+
+    def _v3_segments_feasible(self, segments) -> bool:
+        """Check analytic segment bounds and a small finite-state sanity set."""
+        profile = self.dynamics.profile
+        tolerance = 1e-3
+        required_bounds = (
+            "max_horizontal_speed",
+            "max_horizontal_accel",
+            "max_climb_rate",
+            "max_descent_rate",
+            "max_vertical_accel_up",
+            "max_vertical_accel_down",
+            "min_altitude",
+            "max_altitude",
+        )
+        horizontal_accel_limit = min(
+            float(profile.max_horizontal_accel),
+            float(profile.max_horizontal_decel),
+            float(profile.max_lateral_accel),
+        )
+        for segment in segments:
+            bounds = segment.bounds()
+            if any(name not in bounds for name in required_bounds):
+                return False
+            if any(not np.isfinite(float(bounds[name])) for name in required_bounds):
+                return False
+            if (
+                bounds["max_horizontal_speed"] > profile.max_horizontal_speed + tolerance
+                or bounds["max_climb_rate"] > profile.max_climb_rate + tolerance
+                or bounds["max_descent_rate"] > profile.max_descent_rate + tolerance
+                or bounds["max_horizontal_accel"] > horizontal_accel_limit + tolerance
+                or bounds["max_vertical_accel_up"] > profile.max_vertical_accel_up + tolerance
+                or bounds["max_vertical_accel_down"] > profile.max_vertical_accel_down + tolerance
+                or bounds["min_altitude"] < -tolerance
+                or bounds["max_altitude"]
+                > float(profile.max_operating_altitude_agl_m) + tolerance
+            ):
+                return False
+            sample_times = (
+                float(segment.start_time),
+                (float(segment.start_time) + float(segment.end_time)) / 2.0,
+                float(segment.end_time),
+            )
+            for sample_time in sample_times:
+                position, velocity, acceleration = segment.sample(float(sample_time))
+                if not (
+                    np.all(np.isfinite(position))
+                    and np.all(np.isfinite(velocity))
+                    and np.all(np.isfinite(acceleration))
+                ):
+                    return False
+                if (
+                    np.linalg.norm(velocity[:2]) > profile.max_horizontal_speed + tolerance
+                    or velocity[2] > profile.max_climb_rate + tolerance
+                    or -velocity[2] > profile.max_descent_rate + tolerance
+                    or np.linalg.norm(acceleration[:2]) > horizontal_accel_limit + tolerance
+                    or acceleration[2] > profile.max_vertical_accel_up + tolerance
+                    or -acceleration[2] > profile.max_vertical_accel_down + tolerance
+                    or position[2] < -tolerance
+                    or position[2] > float(profile.max_operating_altitude_agl_m) + tolerance
+                ):
+                    return False
+        return True
+
+    def _v3_candidate(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints,
+        caps: np.ndarray,
+        acceleration_reserve: float,
+        speed_cap_scale: float,
+    ):
+        from .polynomial_trajectory import QuinticSegment
+        from .trajectory_generator import TrajectoryPoint
+
+        points = path.points
+        segments = path.segment_lengths
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        start_speed = float(np.linalg.norm(initial_velocity))
+        scaled_caps = np.asarray(caps, dtype=float) * float(speed_cap_scale)
+        end_direction = None
+        if constraints.end_direction is not None:
+            end_direction = self._v3_vector(constraints.end_direction, "end_direction")
+            direction_norm = float(np.linalg.norm(end_direction))
+            if direction_norm <= 1e-12:
+                raise ValueError("end_direction must be nonzero")
+            end_direction /= direction_norm
+            scaled_caps[-1] = min(
+                scaled_caps[-1], self._v3_direction_speed_cap(end_direction, curvature[-1])
+            )
+        end_speed_cap = None
+        if constraints.end_horizontal_speed is not None:
+            end_horizontal_speed = float(constraints.end_horizontal_speed)
+            if not np.isfinite(end_horizontal_speed) or end_horizontal_speed < 0.0:
+                raise ValueError("end_horizontal_speed must be finite and nonnegative")
+            end_horizontal_factor = (
+                float(np.linalg.norm(end_direction[:2])) if end_direction is not None
+                else float(np.linalg.norm(tangents[-1, :2]))
+            )
+            end_speed_cap = end_horizontal_speed / max(end_horizontal_factor, 1e-9)
+        speeds = self._v3_speed_profile(
+            scaled_caps, segments, start_speed, end_speed_cap, acceleration_reserve,
+        )
+        if speeds is None:
+            return None
+        durations = 2.0 * segments / np.maximum(speeds[:-1] + speeds[1:], 1e-6)
+        times = float(start_time) + np.concatenate(([0.0], np.cumsum(durations)))
+        velocities = tangents * speeds[:, None]
+        velocities[0] = initial_velocity
+        if end_direction is not None:
+            velocities[-1] = end_direction * speeds[-1]
+        if len(velocities) > 2:
+            accelerations = np.gradient(velocities, times, axis=0)
+        else:
+            accelerations = np.zeros_like(velocities)
+        accelerations[0] = initial_acceleration
+        if speeds[-1] <= 1e-9:
+            accelerations[-1] = 0.0
+        elif constraints.end_curvature_vector is not None:
+            end_curvature = self._v3_vector(constraints.end_curvature_vector, "end_curvature_vector")
+            accelerations[-1] = end_curvature * speeds[-1] ** 2
+        else:
+            accelerations[-1] = (velocities[-1] - velocities[-2]) / max(durations[-1], 1e-9)
+        polynomial_segments = tuple(
+            QuinticSegment.from_boundary(
+                times[index], times[index + 1], points[index], velocities[index], accelerations[index],
+                points[index + 1], velocities[index + 1], accelerations[index + 1],
+            )
+            for index in range(len(points) - 1)
+        )
+        if not self._v3_segments_feasible(polynomial_segments):
+            return None
+        first_state = polynomial_segments[0].sample(times[0])
+        last_state = polynomial_segments[-1].sample(times[-1])
+        if not (
+            np.allclose(first_state[0], points[0], atol=1e-9, rtol=0.0)
+            and np.allclose(first_state[1], initial_velocity, atol=1e-9, rtol=0.0)
+            and np.allclose(first_state[2], initial_acceleration, atol=1e-9, rtol=0.0)
+            and np.allclose(last_state[0], points[-1], atol=1e-9, rtol=0.0)
+            and np.allclose(last_state[1], velocities[-1], atol=1e-9, rtol=0.0)
+            and np.allclose(last_state[2], accelerations[-1], atol=1e-9, rtol=0.0)
+        ):
+            return None
+        return [
+            TrajectoryPoint(float(time), point, velocity, acceleration)
+            for time, point, velocity, acceleration in zip(times, points, velocities, accelerations)
+        ]
+
+    def _parameterize_v3(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray | None,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints | None,
+    ):
+        points = path.points
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        initial = self._v3_vector(initial_velocity, "initial_velocity")
+        initial_acceleration_value = self._v3_vector(
+            initial_acceleration, "initial_acceleration", default_zero=True,
+        )
+        constraints = constraints or TrajectoryConstraints()
+        if constraints.tangent_yaw:
+            raise ValueError(
+                "V3 tangent_yaw is unsupported; V3 yaw parameterization is not qualified"
+            )
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        caps = self._v3_speed_caps(tangents, curvature, target_horizontal_speed)
+        for acceleration_reserve in (.4, .25, .15, .08):
+            for speed_cap_scale in (1.0, .8, .6, .4):
+                candidate = self._v3_candidate(
+                    path,
+                    start_time=float(start_time),
+                    initial_velocity=initial,
+                    initial_acceleration=initial_acceleration_value,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=constraints,
+                    caps=caps,
+                    acceleration_reserve=acceleration_reserve,
+                    speed_cap_scale=speed_cap_scale,
+                )
+                if candidate is not None:
+                    return candidate
+        raise RuntimeError(
+            "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
+            "the boundary state and vehicle dynamics"
+        )
+
     def parameterize(self, path: GeometricPath, *, start_time: float, initial_velocity: np.ndarray,
-                     target_horizontal_speed: float, constraints: TrajectoryConstraints | None = None):
+                     target_horizontal_speed: float, constraints: TrajectoryConstraints | None = None,
+                     initial_acceleration: np.ndarray | None = None):
         """Return rich ``TrajectoryPoint`` objects; import avoids a cycle."""
+        if self.schema_version == "executable_trajectory_v3":
+            return self._parameterize_v3(
+                path,
+                start_time=start_time,
+                initial_velocity=initial_velocity,
+                initial_acceleration=initial_acceleration,
+                target_horizontal_speed=target_horizontal_speed,
+                constraints=constraints,
+            )
         from .trajectory_generator import TrajectoryPoint
 
         constraints = constraints or TrajectoryConstraints()
@@ -175,13 +478,24 @@ class TrajectoryTimeParameterizer:
         raise RuntimeError("could not time-parameterize a dynamically feasible trajectory")
 
     def estimate_duration(self, path: GeometricPath, *, initial_velocity: np.ndarray, target_horizontal_speed: float,
-                          constraints: TrajectoryConstraints | None = None) -> float:
+                          constraints: TrajectoryConstraints | None = None,
+                          initial_acceleration: np.ndarray | None = None) -> float:
         """Fast conservative duration estimate for candidate scheduling.
 
         This deliberately does not allocate trajectory points or call the
         expensive discrete-plan validator.  The canonical ``parameterize``
         path remains mandatory when a candidate is actually committed.
         """
+        if self.schema_version == "executable_trajectory_v3":
+            points = self.parameterize(
+                path,
+                start_time=0.0,
+                initial_velocity=initial_velocity,
+                initial_acceleration=initial_acceleration,
+                target_horizontal_speed=target_horizontal_speed,
+                constraints=constraints,
+            )
+            return float(points[-1].t - points[0].t)
         constraints = constraints or TrajectoryConstraints()
         points = path.points
         tangents = self._tangents(points)
