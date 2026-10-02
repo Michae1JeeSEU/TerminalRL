@@ -1,0 +1,16 @@
+# Pinned runtime dependencies for the isolated Waltz/TUD_RL environment.
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.11.4
+matplotlib==3.8.4
+seaborn==0.13.2
+opencv-python-headless==4.10.0.84
+gym==0.26.2
+utm==0.7.0
+bluesky-simulator==1.1.1
+mycolorpy==1.5.3
+
+# Actor inference is CPU-compatible; install torch from the approved CPU
+# index when needed. No training dependency is required for inference.
+torch>=2.6,<2.14
+pytest>=7.4

@@ -1,0 +1,20 @@
+# Downloaded source snapshots and runtime data stay local and are reproducible
+# through bootstrap.ps1; do not bundle them in the repository.
+upstream/
+upstream_dev/
+assets/
+
+# Local environments and caches.
+.venv/
+.python/
+.uv-cache/
+__pycache__/
+*.pyc
+
+# Weights and generated outputs are supplied/acquired separately.
+weights/
+outputs/
+
+# bootstrap.ps1 temporary directories are safe to remove only when created by
+# that script inside this baseline directory.
+.bootstrap-tmp-*
