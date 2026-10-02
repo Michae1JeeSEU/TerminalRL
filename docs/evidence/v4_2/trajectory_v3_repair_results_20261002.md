@@ -110,6 +110,27 @@ primary 的 frozen old-source/current-source probe 确认三个前提在修复�
 
 primary 将 nominal solo energy fixture 设置为 capacity（加 reserve 后超过 `1`），两个不足 SOC fixture 设置为 `.5 * min_landing_soc`。生产门槛未改变；之后只重跑修改的 emergency-energy 文件及 warm-start / 新 V3 regression files，不重复已通过的其他 30 个文件。focused retry 为 `27 passed in .31 s`、exit `0`，日志=`energy_numeric_repair_emergency_retry.log`，SHA=`14406e8063484cccb15dc872f1057585b369b748b59f511ad27f39f31c1e74df`。本轮 33-file 集合的三处失败均已闭合；该结论综合初次回归与 focused retry，不声称重新运行完整集合。唯一 skip 仍为旧 V2 `diagnostic_snapshot` API 已移除。
 
-R2 preflight=`CHECK_ONLY_OK`、exit `0`、8 arms；artifact=`/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002/preflight.json`，SHA=`9bd34d9217d19ff0d2555d7219858dc235db9a579b808df91391c993534d8ad2`。新 manifest SHA=`ddaf93ecdf774224b3fd2cd1a4c2a69fb8dde8745a3b44791475bb33bd0914e1` 绑定 15 个 source hashes（增加 energy_reachability），local/server 全相同；checkpoint SHA 与 V2/V2/V3 binding 保持固定，frozen flags 全 false，compile exit `0`。launcher dry-run 正确指向 R2 root，未启动 full matrix。
+R2 preflight=`CHECK_ONLY_OK`、exit `0`、8 arms；artifact=`/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002/preflight.json`，SHA=`9bd34d9217d19ff0d2555d7219858dc235db9a579b808df91391c993534d8ad2`。新 manifest SHA=`ddaf93ecdf774224b3fd2cd1a4c2a69fb8dde8745a3b44791475bb33bd0914e1` 绑定 15 个 source hashes（增加 energy_reachability），local/server 全相同；checkpoint SHA 与 V2/V2/V3 binding 保持固定，frozen flags 全 false，compile exit `0`。launcher dry-run 正确指向 R2 root；本预检阶段未启动 full matrix，随后启动记录见下方。
+
+本轮 primary 亲自修改的 tracked 文件清单（code/tests=`5bd9b62`，protocol/evaluator=`592d975`）：
+
+| 范围 | 文件 |
+|---|---|
+| Core | `terminal_marl/core/energy_reachability.py`、`terminal_marl/core/trajectory_generator.py`、`terminal_marl/core/trajectory_time_parameterization.py` |
+| Tests | `tests/test_v3_energy_reachability_failures.py`、`tests/test_warm_start_energy_reachability.py`、`tests/test_emergency_energy_v2.py` |
+| Evaluator | `terminal_marl/scripts/evaluate_p3_foundation_repair_20261002.py` |
+| Docs | `docs/CURRENT_STATUS.md`（仅本轮顶部块）、`docs/evidence/v4_2/trajectory_v3_repair_results_20261002.md`、`docs/evidence/v4_2/p3_foundation_repair_protocol_20261002.md`、`docs/evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md`、`docs/evidence/v4_2/p3_foundation_review_20261002.md` |
+
+诊断与 launcher 临时脚本也由 primary 亲自编写，保留在 `.tmp/`，不提交整个临时目录。workers 本轮只执行指定检查、Git 操作与运行/日志读取；未经 primary review 不修改代码。用户原 `CURRENT_STATUS` 的未暂存差异仍为 `179 additions / 31 deletions`；其他既有 dirty/untracked 文件保留。远程未配置，以上本地提交未推送。
+
+## R2 launch snapshot（运行中，非终态）
+
+exact-one launch UTC=`2026-10-02T13:28:22.462494+00:00`，PID=`2323277`，argv=`/home/user/envs/terminal_env/bin/python -u -m terminal_marl.scripts.evaluate_p3_foundation_repair_20261002 --run`，cwd=`/home/user/projects/terminal`，output root=`/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002`。launch metadata SHA=`6147d250111f373a268b18ac7499618980da5adc0258fe911b08de7d7376a6e1`，绑定 execution commit=`592d9758469130062540793c699964c198249eca`、15 source hashes 和固定 checkpoint SHA。
+
+启动后进程/argv/cwd 与真实 progress 已核对，初 tick=`1`、simulation=`1 s`、active/requests=`12/12`、queue=`0`、safety none、wall=`37.7435825 s`；log 已存在但 `0 bytes`。该观察后约 `60 s` 的快照仍为 alive，progress reporter 每 `25` ticks 才更新。随后 primary 读取的本地同步 root progress 为 `running`、C1 legacy88=`75 ticks`、`0/8` arms complete、wall=`222.0047496696934 s`。这证明已越过旧首臂 exception 的 `13` successful ticks，不代表全周期或全八臂通过。
+
+最新服务器只读 snapshot UTC=`2026-10-02T13:33:48Z`：PID alive、state=`Rsl`、elapsed=`05:26`、CPU=`106%`，exact argv/cwd 相同；root=`running`、C1 legacy88=`100 ticks`、wall=`257.63565345853567 s`、completed arms=`0/8`。arm tick index=`99`、simulation=`100 s`、requests/active/queue/service=`18/16/1/1`、reward total=`7.77644979572814`、safety none。result/comparison 仍无，matrix.log=`0 bytes`。这是运行进度，不据此推断 normal/emergency outcome 或学习改善。
+
+heartbeat=`p3-v3-r2` 已创建 ACTIVE、每 `10 min`，正常进度静默，完成/新异常/缺少预期输出/需要用户决定时通知，终态删除。第一次创建调用缺少 thread destination，被参数校验拒绝且未创建；指定 `destination=thread` 后成功。运行中 sources 保持不变，无训练、held-out、optimizer 或 checkpoint 写入，`PPO_ALLOWED=false`。后续 business/error/censor 与资格结论待完整 comparison。
 
 上述结果区分 `newly_run` 与 `preexisting_artifact`，不构成完整 audit 或业务性能结论。相关协议见 [P3 foundation repair protocol](p3_foundation_repair_protocol_20261002.md)；基础链路记录见 [P3 foundation review](p3_foundation_review_20261002.md)。
