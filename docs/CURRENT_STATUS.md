@@ -3,7 +3,7 @@
 ## 2026-10-03 P3修复效果逐步验证（最新）
 
 - 用户要求继续验证能否解决训练退化，按中等高SOC负载→密集高SOC→随机SOC→适配及有界学习的顺序推进。预先确定的场景、种子和停止条件见 [分阶段验证](evidence/v4_2/p3_integrated_validation_20261003.md)。
-- 当前先检查A：12请求/warm6、高SOC、seed890501/890601。warm-start的request_times漏登记已补齐，定向回归30 passed、两步smoke正常且初始请求数为6；下一步规则完整周期，再配对冻结source。当前没有训练或held-out，PPO仍未准入。
+- 当前先检查A：12请求/warm6、高SOC、seed890501/890601。warm-start的request_times漏登记已补齐，定向回归30 passed、两步smoke正常且初始请求数为6；规则与冻结source完整周期已启动：规则625ticks为5正常/7活跃，source400ticks为4正常/8活跃，均未终态。设置当前任务自动续查，先分析A完整结果再决定B/C或阻塞复现。当前没有训练或held-out，PPO仍未准入。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
