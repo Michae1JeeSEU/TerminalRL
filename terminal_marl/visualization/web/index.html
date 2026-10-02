@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>TERMINAL / AIRSPACE LAB</title>
+  <link rel="stylesheet" href="./console.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <div class="brand-title">TERMINAL <b>/</b> AIRSPACE LAB</div>
+          <div class="brand-subtitle">动态终端区 · 多 UAV 降落流工作台</div>
+        </div>
+      </div>
+      <div class="session-status" id="sessionStatus" data-state="offline">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="sessionStatusText">连接中</span>
+        <span class="status-divider"></span>
+        <span id="simStatusText">等待数据</span>
+      </div>
+      <div class="top-actions">
+        <button class="top-action" id="importButton" type="button" title="导入 JSON 或旧 snapshot_playback HTML 文件" aria-label="导入回放文件">导入</button>
+        <button class="top-action" id="importReferenceButton" type="button" title="导入独立参考回放用于时间对齐比较" aria-label="导入参考回放">参考</button>
+        <button class="top-action" id="exportButton" type="button" title="导出当前回放 JSON" aria-label="导出当前回放 JSON">导出 JSON</button>
+        <button class="top-action subtle" id="exportPngButton" type="button" title="导出当前场景 PNG" aria-label="导出当前场景 PNG">场景 PNG</button>
+        <input id="importFile" type="file" accept=".json,.html,.htm,application/json,text/html" hidden>
+        <input id="importReferenceFile" type="file" accept=".json,.html,.htm,application/json,text/html" hidden>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="left-rail panel" aria-label="场景设置">
+        <div class="rail-heading">
+          <div>
+            <span class="eyebrow">CONFIGURATION</span>
+            <h1>场景设置</h1>
+          </div>
+          <span class="live-led" id="connectionLed" title="服务器连接状态"></span>
+        </div>
+        <div class="field-grid">
+          <label class="field-label" for="scenarioSelect">场景
+            <select id="scenarioSelect" class="control-select" aria-label="选择仿真场景"></select>
+          </label>
+          <label class="field-label" for="modeSelect">控制模式
+            <select id="modeSelect" class="control-select" aria-label="选择控制模式"></select>
+          </label>
+          <label class="field-label" for="profileSelect">策略 / Profile
+            <select id="profileSelect" class="control-select" aria-label="选择训练策略 profile"></select>
+          </label>
+          <label class="field-label" for="lowCheckpointInput">低层 checkpoint 路径
+            <input id="lowCheckpointInput" class="control-input" type="text" placeholder="checkpoint 路径（checkpoint 模式必填）" aria-label="低层 checkpoint 路径">
+          </label>
+          <label class="field-label" for="highCheckpointInput">高层 checkpoint 路径
+            <input id="highCheckpointInput" class="control-input" type="text" placeholder="learned high 模式可选" aria-label="高层 checkpoint 路径">
+          </label>
+          <label class="field-label" for="seedInput">随机种子
+            <input id="seedInput" class="control-input" inputmode="numeric" type="number" value="0" step="1" aria-label="随机种子">
+          </label>
+          <label class="field-label" for="maxSecondsInput">仿真上限（秒）
+            <input id="maxSecondsInput" class="control-input" inputmode="numeric" type="number" value="600" min="1" step="1" aria-label="仿真上限秒数">
+          </label>
+          <label class="toggle-row deterministic-row" for="deterministicInput"><input id="deterministicInput" type="checkbox"><span class="check-box"></span><span>确定性动作</span><span class="small-note" title="P2/12 固定确定性；P3/Checkpoint 可手动切换">deterministic</span></label>
+        </div>
+        <button id="rebuildButton" class="primary-button wide" type="button" title="使用当前场景和控制模式重新启动仿真" aria-label="重建场景">
+          <span class="button-icon" aria-hidden="true">↻</span> 重建场景
+        </button>
+        <button id="stopButton" class="tool-button wide stop-button" type="button" title="停止服务器仿真进程" aria-label="停止服务器仿真进程">停止运行</button>
+        <div id="rebuildNotice" class="inline-notice" hidden></div>
+        <div id="runConfigSummary" class="run-config-summary">controller — · profile — · seed 0</div>
+
+        <section class="rail-section">
+          <div class="section-title-row"><h2>图层</h2><button id="resetLayersButton" class="text-button" type="button" title="恢复默认图层" aria-label="恢复默认图层">重置</button></div>
+          <div class="layer-list">
+            <label class="toggle-row"><input id="layerRings" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch ring-swatch"></span><span>盘旋环</span></label>
+            <label class="toggle-row"><input id="layerTargetRings" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch target-ring-swatch"></span><span>目标环</span></label>
+            <label class="toggle-row"><input id="layerGates" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch gate-swatch"></span><span>入口 Gate</span></label>
+            <label class="toggle-row"><input id="layerLandingZones" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch lz-swatch"></span><span>降落区</span></label>
+            <label class="toggle-row"><input id="layerGrid" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch grid-swatch"></span><span>地面网格</span></label>
+            <label class="toggle-row"><input id="layerLabels" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch label-swatch"></span><span>标签</span></label>
+            <label class="toggle-row"><input id="layerTrails" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch trail-swatch"></span><span>历史尾迹</span></label>
+            <label class="toggle-row"><input id="layerCommitted" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch committed-swatch"></span><span>已承诺轨迹</span></label>
+            <label class="toggle-row"><input id="layerConflicts" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch conflict-swatch"></span><span>冲突高亮</span></label>
+          </div>
+        </section>
+
+        <section class="rail-section visual-section">
+          <div class="section-title-row"><h2>显示</h2><span class="small-note">仅视觉倍率</span></div>
+          <label class="range-row" for="heightScaleInput"><span>高度显示倍率</span><output id="heightScaleOutput">1.6×</output><input id="heightScaleInput" type="range" min="0.6" max="3.0" value="1.6" step="0.1" aria-label="高度显示倍率"></label>
+          <div class="data-note"><span class="data-note-icon">i</span><span>坐标、速度、SOC 和状态均来自 WorldRenderSnapshot；高度倍率不会改动物理量。</span></div>
+        </section>
+      </aside>
+
+      <section class="center-stage" aria-label="终端区场景">
+        <div class="kpi-strip panel" id="kpiStrip">
+          <div class="kpi"><span class="kpi-label">在空 UAV</span><strong id="kpiActive">—</strong><span class="kpi-sub" id="kpiQueue">队列 —</span></div>
+          <div class="kpi"><span class="kpi-label">服务中</span><strong id="kpiService">—</strong><span class="kpi-sub">当前降落区</span></div>
+          <div class="kpi"><span class="kpi-label">已完成</span><strong id="kpiCompleted">—</strong><span class="kpi-sub">累计完成服务</span></div>
+          <div class="kpi"><span class="kpi-label">环占用</span><strong id="kpiOccupancy">—</strong><span class="kpi-sub">实际 / 容量</span></div>
+          <div class="kpi kpi-alert"><span class="kpi-label">冲突关注</span><strong id="kpiConflict">—</strong><span class="kpi-sub" id="kpiConflictSub">近期冲突飞机</span></div>
+          <div class="kpi kpi-meta"><span class="kpi-label">仿真时间</span><strong id="kpiTime">—</strong><span class="kpi-sub" id="kpiStep">step —</span></div>
+        </div>
+
+        <div class="scene-panel panel" id="scenePanel">
+          <div class="scene-head">
+            <div class="scene-heading">
+              <span class="eyebrow">LIVE TELEMETRY / WORLD VIEW</span>
+              <div class="scene-title-row"><h2 id="sceneTitle">终端区场景</h2><span class="view-mode-pill" id="viewModePill">实时跟随</span></div>
+              <p id="sceneSubtitle">等待服务器发送第一帧 WorldRenderSnapshot</p>
+            </div>
+            <div class="scene-head-actions">
+              <button id="viewLiveButton" class="mode-button active" type="button" title="回到服务器实时帧并跟随最新数据" aria-label="实时视图">实时</button>
+              <button id="viewReplayButton" class="mode-button" type="button" title="查看当前缓冲或导入数据" aria-label="历史回放视图">历史</button>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="sceneCanvas" role="img" aria-label="终端区无人机三维场景，可拖动旋转，Shift 加拖动平移，滚轮缩放"></canvas>
+            <div class="scene-empty" id="sceneEmpty">
+              <div class="empty-orbit" aria-hidden="true"><span></span><span></span></div>
+              <strong id="sceneEmptyTitle">等待场景数据</strong>
+              <span id="sceneEmptyText">服务器连接后，WorldRenderSnapshot 将显示在这里。</span>
+            </div>
+            <div class="scene-loading" id="sceneLoading" hidden><span class="spinner"></span><span id="sceneLoadingText">正在重建场景…</span></div>
+            <div class="canvas-hud hud-top-left"><span class="hud-chip" id="projectionChip">PERSPECTIVE</span><span class="hud-chip" id="bufferChip">BUFFER —</span></div>
+            <div class="canvas-hud hud-top-right"><span class="fps-chip" id="fpsChip">FPS —</span></div>
+            <div class="canvas-hud hud-bottom-left"><span class="height-chip" id="heightChip">Z 显示 ×1.6</span><span class="scale-bar" id="scaleBar"><i></i><b id="scaleBarText">— m</b></span></div>
+            <div class="canvas-hud hud-bottom-right"><span class="legend-dot uav-dot"></span><span>UAV</span><span class="legend-dot ring-dot"></span><span>实际环</span><span class="legend-dot committed-dot"></span><span>承诺轨迹</span></div>
+            <div class="reference-compare" id="referenceCompare" hidden aria-live="polite">
+              <div class="reference-compare-head"><span>REFERENCE COMPARE</span><button id="removeReferenceButton" type="button" title="移除参考回放" aria-label="移除参考回放">×</button></div>
+              <div class="compare-grid"><span>指标</span><span>当前</span><span>参考</span><span>Δ</span><b>active</b><strong id="compareActive">—</strong><em id="compareActiveRef">—</em><i id="compareActiveDelta">—</i><b>queue</b><strong id="compareQueue">—</strong><em id="compareQueueRef">—</em><i id="compareQueueDelta">—</i><b>completed</b><strong id="compareCompleted">—</strong><em id="compareCompletedRef">—</em><i id="compareCompletedDelta">—</i><b>最低 SOC</b><strong id="compareSoc">—</strong><em id="compareSocRef">—</em><i id="compareSocDelta">—</i></div>
+              <div class="reference-coverage" id="referenceCoverage">按绝对 simulation time 对齐</div>
+            </div>
+            <div class="north-compass" id="northCompass" aria-label="北向罗盘"><span>N</span><i></i></div>
+          </div>
+          <div class="camera-toolbar" aria-label="相机工具">
+            <button id="perspectiveButton" class="tool-button active" type="button" title="透视投影" aria-label="透视投影">透视</button>
+            <button id="topButton" class="tool-button" type="button" title="切换到俯视正交投影" aria-label="俯视图">俯视</button>
+            <button id="resetCameraButton" class="tool-button" type="button" title="重置相机方向和缩放" aria-label="重置相机">重置相机</button>
+            <button id="followCameraButton" class="tool-button" type="button" title="跟随选中的 UAV" aria-label="跟随选中的 UAV">F 跟随</button>
+            <span class="toolbar-separator"></span>
+            <span class="camera-hint">拖拽旋转 · Shift+拖拽平移 · 滚轮缩放 · 空格播放 · ←/→ 步进</span>
+          </div>
+        </div>
+
+        <section class="bottom-drawer panel" id="bottomDrawer" aria-label="航班与事件">
+          <div class="drawer-tabs">
+            <button class="drawer-tab active" data-panel="flightsPanel" type="button">航班表 <span id="flightCountBadge" class="tab-badge">0</span></button>
+            <button class="drawer-tab" data-panel="eventsPanel" type="button">事件 <span id="eventCountBadge" class="tab-badge">0</span></button>
+            <button class="drawer-tab" data-panel="telemetryPanel" type="button">遥测</button>
+            <button id="drawerToggleButton" class="drawer-toggle" type="button" title="收起或展开底部面板" aria-label="收起或展开底部面板">⌄</button>
+          </div>
+          <div class="drawer-content" id="drawerContent">
+            <div class="drawer-panel active" id="flightsPanel">
+              <div class="table-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input id="flightSearch" type="search" placeholder="搜索 UID" aria-label="搜索 UAV UID"></label><select id="phaseFilter" class="compact-select" aria-label="按 phase 过滤"><option value="">全部 phase</option></select><select id="flightSort" class="compact-select" aria-label="航班表排序"><option value="uid">按 UID</option><option value="soc">按 SOC</option></select><span class="table-note" id="flightTableNote">—</span></div>
+              <div class="table-scroll"><table class="data-table" id="flightTable"><thead><tr><th>UID</th><th>PHASE</th><th>环</th><th>SOC</th><th>速度</th><th>目标 LZ</th><th>状态</th></tr></thead><tbody></tbody></table></div>
+              <div class="table-empty" id="flightTableEmpty">暂无 UAV 数据</div>
+            </div>
+            <div class="drawer-panel" id="eventsPanel">
+              <div class="table-tools"><span class="small-note">终态事件来自 snapshot.terminal_events；冲突仅来自 recent_conflict_uids。</span><span class="table-note" id="eventTableNote">—</span></div>
+              <div class="table-scroll"><table class="data-table" id="eventsTable"><thead><tr><th>TIME</th><th>UID</th><th>OUTCOME</th><th>原因</th><th>PHASE</th><th>SOC</th></tr></thead><tbody></tbody></table></div>
+              <div class="table-empty" id="eventTableEmpty">暂无终态事件</div>
+            </div>
+            <div class="drawer-panel" id="telemetryPanel">
+              <div class="telemetry-grid" id="telemetryGrid"><div class="table-empty">暂无遥测数据</div></div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-rail panel" aria-label="选中飞机详情">
+        <div class="detail-heading"><div><span class="eyebrow">SELECTED AIRCRAFT</span><h2 id="selectedTitle">未选择 UAV</h2></div><span class="selection-pulse" id="selectionPulse"></span></div>
+        <div class="selected-state" id="selectedState">点击场景中的 UAV 或航班表行查看详情。</div>
+        <div class="selected-actions">
+          <button id="followSelectedButton" class="primary-button compact" type="button" title="让相机跟随选中的 UAV" aria-label="跟随选中的 UAV" disabled>跟随飞机</button>
+          <button id="clearSelectedButton" class="tool-button compact" type="button" title="清除当前选择" aria-label="清除当前选择">清除</button>
+        </div>
+        <div class="metric-grid" id="selectedMetrics">
+          <div class="metric-card"><span>PHASE</span><strong id="detailPhase">—</strong></div>
+          <div class="metric-card"><span>SOC</span><strong id="detailSoc">—</strong></div>
+          <div class="metric-card"><span>速度</span><strong id="detailSpeed">—</strong><em>m/s</em></div>
+          <div class="metric-card"><span>高度</span><strong id="detailAltitude">—</strong><em>m</em></div>
+        </div>
+        <section class="detail-section">
+          <div class="section-title-row"><h3>位置</h3><span class="small-note" id="detailPositionState">—</span></div>
+          <dl class="detail-list"><div><dt>X</dt><dd id="detailX">—</dd></div><div><dt>Y</dt><dd id="detailY">—</dd></div><div><dt>Z</dt><dd id="detailZ">—</dd></div></dl>
+        </section>
+        <section class="detail-section trajectory-summary">
+          <div class="section-title-row"><h3>轨迹与决策</h3><span class="status-pill" id="detailCommitted">—</span></div>
+          <dl class="detail-list"><div><dt>轨迹计划</dt><dd id="detailPlan">—</dd></div><div><dt>Release</dt><dd id="detailRelease">—</dd></div><div><dt>Safety</dt><dd id="detailSafety">—</dd></div><div><dt>目标 LZ</dt><dd id="detailLz">—</dd></div></dl>
+          <div class="trajectory-bar"><span id="detailTrajectoryCount">0 点</span><span>安全链承诺轨迹</span></div>
+        </section>
+        <section class="detail-section history-section">
+          <div class="section-title-row"><h3>历史表现</h3><span class="small-note">真实帧采样</span></div>
+          <canvas id="detailHistoryCanvas" class="detail-history-canvas" width="240" height="72" aria-label="选中飞机历史 SOC 与高度"></canvas>
+          <div class="history-legend"><span><i class="soc-line"></i>SOC</span><span><i class="alt-line"></i>高度</span></div>
+        </section>
+        <section class="detail-section ring-section">
+          <div class="section-title-row"><h3>环占用</h3><span class="small-note">实际 / 容量</span></div>
+          <div class="ring-occupancy-list" id="ringOccupancyList"><div class="table-empty">暂无环数据</div></div>
+        </section>
+        <div class="right-rail-footer"><span class="legend-dot selection-dot"></span><span>选中状态</span><span class="legend-dot conflict-dot"></span><span>冲突关注</span></div>
+      </aside>
+    </main>
+
+    <footer class="timeline-bar panel" aria-label="时间轴">
+      <div class="transport-controls">
+        <button id="stepBackButton" class="transport-button" type="button" title="上一帧" aria-label="上一帧">‹</button>
+        <button id="playButton" class="play-button" type="button" title="播放或暂停本地回放" aria-label="播放">▶</button>
+        <button id="stepForwardButton" class="transport-button" type="button" title="下一帧" aria-label="下一帧">›</button>
+        <span class="transport-divider"></span>
+        <label class="speed-select-label">回放 <select id="playbackSpeed" class="speed-select" aria-label="回放速度"><option value="0.25">0.25×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option><option value="10">10×</option><option value="20">20×</option></select></label>
+      </div>
+      <div class="timeline-main"><div class="timeline-labels"><span id="timelineCurrent">—</span><span id="timelineState">计算状态 · —</span><span id="timelineEnd">—</span></div><input id="timelineInput" type="range" min="0" max="0" value="0" step="1" aria-label="场景时间轴"><div class="timeline-meta"><span id="timelineFrame">帧 — / —</span><span id="timelineFollowState">实时跟随</span></div></div>
+      <div class="buffer-status" id="bufferStatus"><span id="bufferStatusText">缓冲 0</span><span class="buffer-dot" id="bufferStatusDot"></span></div>
+    </footer>
+  </div>
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="./console.js"></script>
+</body>
+</html>

@@ -72,6 +72,7 @@ qualification 后才进入 A6 高层动态空域。
 | [reference/low_level_policy.md](reference/low_level_policy.md) | V4.2 hierarchical action、88D Observation V2.1、Teacher/Execution/Safety 边界与训练 gate |
 | [reference/reconfiguration_high_level.md](reference/reconfiguration_high_level.md) | 动态重构状态机、affected-set freeze、高层 reward 与 qualification |
 | [reference/vehicle_dynamics.md](reference/vehicle_dynamics.md) | EH216-S 性能约束动力学与可执行轨迹 |
+| [reference/visualization_console.md](reference/visualization_console.md) | 本地可视化 console、实时/暂停控制、snapshot 回放与单文件离线导出 |
 | [literature_and_baseline_review_20261002.md](baselines/literature_and_baseline_review_20261002.md) / [waltz2024_comparison.md](baselines/waltz2024_comparison.md) | 文献与 Waltz 2024 对比基线参考；用于研究基线设计，不代表当前 qualification 状态 |
 | [common_arrival_execution_20261003.md](baselines/common_arrival_execution_20261003.md) | 外部基线共同执行桥接、运行与指标说明；三环/自由航向公平性协议及正式实验边界 |
 

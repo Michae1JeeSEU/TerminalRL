@@ -6,6 +6,7 @@ same K=3 runtime proposal shortlist used by P2 qualification/evaluation into
 ``TerminalParallelEnv.step``.
 """
 import argparse
+import math
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -100,8 +101,18 @@ def run(
     checkpoint, *, profile="checkpoint12", scenario="flow6", seed=690003,
     gui=True, playback_speed=10., max_steps=None, frame_stride=2,
     show_trajectories=True, show_labels=True, trajectory_max_points=12,
+    max_simulation_seconds=None, observer_factory=None,
 ):
     checkpoint = Path(checkpoint)
+    if gui and observer_factory is not None:
+        raise ValueError("gui and observer_factory are mutually exclusive")
+    if max_steps is not None:
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps <= 0:
+            raise ValueError("max_steps must be a positive integer")
+    if max_simulation_seconds is not None:
+        max_simulation_seconds = float(max_simulation_seconds)
+        if not math.isfinite(max_simulation_seconds) or not max_simulation_seconds > 0.0:
+            raise ValueError("max_simulation_seconds must be a finite positive number")
     config = (
         scenario_config(scenario, protocol())
         if profile == "checkpoint12"
@@ -114,22 +125,45 @@ def run(
     torch.manual_seed(seed)
     env = TerminalParallelEnv(config)
     observations, _ = env.reset(seed)
+    limits = [int(config.max_simulation_seconds / config.dt)]
+    if max_simulation_seconds is not None:
+        limits.append(int(max_simulation_seconds / config.dt))
+    if max_steps is not None:
+        limits.append(max_steps)
+    step_limit = min(limits)
+    if observer_factory is not None:
+        # ConsoleStepObserver reads this before construction so the final
+        # post-step frame does not wait for another UI permit.
+        env._console_step_limit = int(step_limit)
     observer = None
+    render_config = VisualizationConfig(
+        enabled=bool(gui or observer_factory is not None),
+        frame_stride=frame_stride,
+        playback_speed=playback_speed,
+        show_trajectories=show_trajectories,
+        show_labels=show_labels,
+        trajectory_max_points=trajectory_max_points,
+    )
     try:
         if gui:
-            _, observer = _attach_viewer(env, VisualizationConfig(
-                enabled=True,
-                frame_stride=frame_stride,
-                playback_speed=playback_speed,
-                show_trajectories=show_trajectories,
-                show_labels=show_labels,
-                trajectory_max_points=trajectory_max_points,
-            ))
+            _, observer = _attach_viewer(env, render_config)
             if not observer.wait_ready():
                 raise RuntimeError(f"viewer failed: {observer.error}")
+        elif observer_factory is not None:
+            observer = observer_factory(env, render_config)
+            if observer is None:
+                raise TypeError("observer_factory must return an observer")
+            env.set_step_observer(observer)
+            wait_ready = getattr(observer, "wait_ready", None)
+            if callable(wait_ready) and not wait_ready():
+                raise RuntimeError(f"viewer failed: {getattr(observer, 'error', None)!r}")
         tick = time.perf_counter()
-        for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
-            if observer and observer.stop_requested:
+
+        def stopped() -> bool:
+            return observer is not None and bool(getattr(observer, "stop_requested", False))
+
+        for _ in range(step_limit):
+            if stopped():
                 break
             details = _student_request_details(
                 policy, env, observations, deterministic=True,
@@ -139,14 +173,31 @@ def run(
             observations, *_ = env.step(requested, proposal_shortlists)
             if env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs:
                 break
-            tick = _pace_live_rollout(observer, config.dt, tick)
+            if observer is not None and all(
+                hasattr(observer, attribute) for attribute in ("paused", "stop_requested", "playback_speed")
+            ):
+                tick = _pace_live_rollout(observer, config.dt, tick)
+            else:
+                tick = time.perf_counter()
         return {"profile": profile, "scenario": scenario, "seed": seed, "seconds": env.now,
                 "completed": len(env.completed_uavs), "telemetry": dict(env.telemetry),
                 "teacher_enabled": config.teacher_enabled, "observation_dim": policy.observation_dim,
-                "runtime_proposal_shortlist_k": config.runtime_proposal_shortlist_k}
+                "runtime_proposal_shortlist_k": config.runtime_proposal_shortlist_k,
+                "deterministic": True,
+                "diagnostic_max_simulation_seconds": max_simulation_seconds}
     finally:
-        if observer:
-            observer.close()
+        if observer is not None:
+            try:
+                finish = getattr(observer, "finish", None)
+                if callable(finish):
+                    try:
+                        finish(env, wait_for_close=bool(gui))
+                    except TypeError:
+                        finish(env)
+            finally:
+                close = getattr(observer, "close", None)
+                if callable(close):
+                    close()
 
 
 if __name__ == "__main__":

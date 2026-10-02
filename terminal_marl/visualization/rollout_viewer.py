@@ -104,10 +104,14 @@ def _controller_identity(
 def _attach_viewer(
     env: TerminalParallelEnv,
     config: VisualizationConfig,
-) -> tuple[None, BufferedProcessTerminalViewerObserver]:
-    observer = BufferedProcessTerminalViewerObserver(
-        build_world_render_snapshot(env, trajectory_max_points=config.trajectory_max_points), config
-    )
+    observer_factory: Callable[[TerminalParallelEnv, VisualizationConfig], object] | None = None,
+) -> tuple[None, object]:
+    if observer_factory is None:
+        observer = BufferedProcessTerminalViewerObserver(
+            build_world_render_snapshot(env, trajectory_max_points=config.trajectory_max_points), config
+        )
+    else:
+        observer = observer_factory(env, config)
     env.set_step_observer(observer)
     return None, observer
 
@@ -141,8 +145,13 @@ def run_rollout(
     playback_speed: float = 0.0, show_trajectories: bool = False, show_labels: bool = False,
     low_checkpoint: str | None = None, high_checkpoint: str | None = None,
     max_simulation_seconds: float = 3600.0, max_steps: int | None = None, scenario: str = "default",
+    observer_factory: Callable[[TerminalParallelEnv, VisualizationConfig], object] | None = None,
 ) -> TerminalParallelEnv:
     """Run one deterministic policy rollout, optionally with an interactive viewer."""
+    if gui and observer_factory is not None:
+        raise ValueError("gui and observer_factory cannot be used together")
+    if max_steps is not None and (isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps <= 0):
+        raise ValueError("max_steps must be a positive integer")
     if mode == "fixed_low_rl" and low_checkpoint is None:
         raise ValueError("--low-checkpoint is required for fixed_low_rl")
     if mode == "learned_high_rule_low" and high_checkpoint is None:
@@ -155,25 +164,30 @@ def run_rollout(
         flush=True,
     )
     render_config = VisualizationConfig(
-        enabled=gui, frame_stride=frame_stride, playback_speed=playback_speed,
+        enabled=gui or observer_factory is not None, frame_stride=frame_stride, playback_speed=playback_speed,
         show_trajectories=show_trajectories, show_labels=show_labels,
     )
-    observer: AsyncTerminalViewerObserver | BufferedProcessTerminalViewerObserver | None = None
+    observer: object | None = None
     completed_normally = False
     rollout_env: TerminalParallelEnv | None = None
 
     def stopped() -> bool:
-        return observer is not None and observer.stop_requested
+        return observer is not None and bool(getattr(observer, "stop_requested", False))
+
+    def attach(env: TerminalParallelEnv) -> object:
+        if observer_factory is None:
+            return _attach_viewer(env, render_config)[1]
+        return _attach_viewer(env, render_config, observer_factory)[1]
 
     try:
         if mode in {"fixed_rule", "fixed_low_rl"}:
             env = TerminalParallelEnv(config)
             rollout_env = env
             observations, _ = env.reset(seed)
-            if gui:
-                _, observer = _attach_viewer(env, render_config)
-                if not observer.wait_ready():
-                    raise RuntimeError(f"viewer failed to start: {observer.error!r}")
+            if gui or observer_factory is not None:
+                observer = attach(env)
+                if hasattr(observer, "wait_ready") and not observer.wait_ready():
+                    raise RuntimeError(f"viewer failed to start: {getattr(observer, 'error', None)!r}")
             if mode == "fixed_rule":
                 tick_started = time.perf_counter()
                 for _ in range(max_steps or int(config.max_simulation_seconds / config.dt)):
@@ -225,10 +239,10 @@ def run_rollout(
         wrapper = DynamicHighLevelWrapper(config, low_level)
         observation, _ = wrapper.reset(seed)
         rollout_env = wrapper.base
-        if gui:
-            _, observer = _attach_viewer(wrapper.base, render_config)
-            if not observer.wait_ready():
-                raise RuntimeError(f"viewer failed to start: {observer.error!r}")
+        if gui or observer_factory is not None:
+            observer = attach(wrapper.base)
+            if hasattr(observer, "wait_ready") and not observer.wait_ready():
+                raise RuntimeError(f"viewer failed to start: {getattr(observer, 'error', None)!r}")
         macro_limit = max_steps or int(np.ceil(config.max_simulation_seconds / config.high_level_decision_interval_seconds))
         tick_started = time.perf_counter()
         for _ in range(macro_limit):
@@ -247,10 +261,16 @@ def run_rollout(
     finally:
         if observer is not None:
             try:
-                if gui and completed_normally and rollout_env is not None and not observer.stop_requested:
+                if (
+                    rollout_env is not None
+                    and not bool(getattr(observer, "stop_requested", False))
+                    and (observer_factory is not None or (gui and completed_normally))
+                    and hasattr(observer, "finish")
+                ):
                     observer.finish(rollout_env)
             finally:
-                observer.close()
+                if hasattr(observer, "close"):
+                    observer.close()
 
 
 def _parser() -> argparse.ArgumentParser:

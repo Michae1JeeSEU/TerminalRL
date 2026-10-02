@@ -1,2 +1,3 @@
-# Optional live 3D diagnostic viewer.  Not required for training or headless evaluation.
+# Optional legacy PyVista/VTK live 3D diagnostic viewer.  The local web console,
+# static HTTP service, and JSON/HTML replay do not require this dependency.
 pyvista>=0.43

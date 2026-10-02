@@ -1261,3 +1261,41 @@ GUI 正常结束时会先提交并消费带终态事件的最终 source frame，
 新profile入口 `terminal_marl.configs.p3_integrated_repair.build_config`；新选项holding_speed_contract、emergency_priority_mode、route_aware_emergency_enabled、executable_admission_energy_enabled、low_level_queue_cost_enabled均保留历史默认。启用队列成本时env.step info追加team_reward/team_reward_components，student_rollout使用该团队总量而不添加虚构agent。StudentPPOV42.update新增entropy_mode=joint/gate_only；默认joint。新检查入口 `python -m terminal_marl.scripts.diagnose_p3_integrated_repair --check-only --output <new-dir>`，效果验证前必须先完成定向回归和smoke。
 
 新profile显式选择 `external_queue_step_mode=post_admission`：在now安全提交入场后，只对剩余队列推进dt并计算队列成本；成功入场者推进dt飞行、获得首tick time/urgency reward。失败commit退回队列者只计算一次队列区间。旧默认pre_admission仅用于历史重放。
+
+### 33.1 Local visualization console and offline replay
+
+`terminal_marl.visualization.console_server` 提供本地标准库 HTTP 工作台。Windows 入口为
+`.\venv\Scripts\python.exe -m terminal_marl.visualization.console_server`，跨平台入口为
+`python -m terminal_marl.visualization.console_server`；默认只绑定 `127.0.0.1:8787`。启动器
+`scripts/start_terminal_console.ps1` 只选择仓库 venv 或 PATH 中的 Python，不安装依赖、不修改
+系统配置，也不隐藏用户主动启动的终端。
+
+服务的静态文件白名单为 `index.html`、`console.css`、`console.js` 和 `scene.js`。仿真在独立
+进程运行，父进程收集 plain `WorldRenderSnapshot` 并向 HTTP 客户端提供 session、frames、control
+和 export 接口；实时缓存最多 6000 帧。初始帧默认暂停，暂停时单步只放行一个环境 tick；停止、重建、
+子进程异常和退出都产生可见终态。HTTP 只接受 loopback Host/Origin 与有效 token，非法输入返回
+普通 JSON 错误并保留当前运行。
+
+P3 checkpoint adapter 沿用原 formal environment config；用户提交的 `max_steps` 和秒数只限制本次
+执行的有效 tick 数，不改写 checkpoint 的环境配置。`checkpoint12`、P2 与 P3 profile 的场景、SHA
+和 schema 约束继续由各自 profile 校验。
+
+`write_playback(path, frames, title)` 保持原 API，但新文件从当前 web 工作台内联 CSS、Scene 和
+console 脚本，并写入 `window.__TERMINAL_REPLAY__`。导出文件是 snapshot-only 单文件 HTML，可以
+设计为在 `file://` 下运行，不依赖服务、Node、CDN 或外部资源；当前只完成离线文件生成、读回、无外部资源和 inline 脚本语法检查，未在本环境实测 `file://` 浏览器打开。空帧以及几何、时间和计数等关键字段的非有限数值必须拒绝，reset telemetry 的不可用非有限值转为 JSON `null`，旧
+`snapshot_playback.html` 继续用于兼容历史记录。JSON/旧 HTML/新单文件 HTML 的导入验证 `time`、
+`step_count`、三维点和有限值；`time` 使用绝对 simulation time，`arrival_id` 用于参考回放对齐。
+
+工作台提供实时/历史时间轴、paused/current metrics、UAV 详情、终态事件、遥测、参考比较、图层和
+相机控制。键盘 `Space` 播放/暂停，`←`/`→` 历史步进，`F` 跟随选中 UAV。缓存发生截断时必须在
+状态和 export metadata 中保留 truncation 信息。
+
+浏览器本地导入上限为 `50 MiB`、`100000` 帧；命令行 `--replay`/`load_replay` 上限为 `256 MiB`、
+`6000` 帧，实时父进程的有界缓存也是 `6000` 帧。参考回放只按相同 absolute simulation time 的
+sample 查找，并在该 sample 内按 `arrival_id` 匹配；采样时间不一致时保持未对齐，不自动重采样或外推。
+
+可视化最低项目依赖为 `numpy`、`gymnasium`、`torch` 和 `PyYAML`；静态 HTTP 与回放读取不要求
+torch。PyVista/VTK 只作为旧 live 3D diagnostic viewer 的可选依赖，见
+`requirements-visualization.txt`。console 不提供 ROS/Crazyflie 实机控制，不训练模型，不改变
+既有 checkpoint、action/observation 或 snapshot metadata schema，也不宣称实现 SUMO 的全部功能
+或未经测量的浏览器性能。
