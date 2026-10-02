@@ -245,3 +245,25 @@ def test_warm_start_requests_are_registered_for_complete_cycle_accounting():
     assert set(env.request_times)==set(range(6))
     assert all(t==0. for t in env.request_times.values())
     assert len(env.request_times)==env.arrivals.generated==len(env.active)==6
+
+
+def test_blocker_trace_snapshot_preserves_next_tick(tmp_path):
+    import json
+    import pickle
+    from terminal_marl.scripts.diagnose_p3_integrated_repair import record_blockers
+    env = TerminalParallelEnv(build_config(requests=1, warm_start=0, high_soc=True), seed=890301)
+    env.step({})
+    record_blockers(env, tmp_path, 1, (1,))
+    row = json.loads((tmp_path/'blockers.jsonl').read_text())
+    assert row['ticks'] == 1 and row['time'] == env.now
+    assert len(row['active']) == len(env.active) == 1
+    with (tmp_path/'snapshot_1.pkl').open('rb') as stream:
+        restored = pickle.load(stream)
+    original_step = env.step({})
+    restored_step = restored.step({})
+    for uid, observation in original_step[0].items():
+        np.testing.assert_array_equal(observation, restored_step[0][uid])
+    assert original_step[1] == restored_step[1]
+    assert env.telemetry == restored.telemetry
+    assert env.ledger.outcomes == restored.ledger.outcomes
+    assert all(env.active[uid].soc == restored.active[uid].soc for uid in env.active)

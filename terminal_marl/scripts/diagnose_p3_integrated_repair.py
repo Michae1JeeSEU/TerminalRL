@@ -8,6 +8,7 @@ import argparse
 from collections import Counter
 from dataclasses import asdict
 import json
+import pickle
 from pathlib import Path
 import time
 import traceback
@@ -26,6 +27,42 @@ def write_json(path, value):
         if isinstance(obj, Path): return str(obj)
         raise TypeError(type(obj).__name__)
     path.write_text(json.dumps(value, default=convert, indent=2, ensure_ascii=False), encoding='utf-8')
+
+
+
+def record_blockers(env, output, ticks, snapshot_ticks=()):
+    """Observe the completed tick without querying candidates or changing state.
+
+    Pickles are local development snapshots from this trusted run, for bounded
+    same-state diagnostics. They are not checkpoints or evaluation results.
+    """
+    def uav_state(u):
+        plan = u.committed_plan
+        return dict(uid=u.uid, arrival_id=u.arrival_id, phase=u.phase.value,
+            ring_role=getattr(u.ring_role, 'value', None), soc=float(u.soc),
+            energy_remaining=float(u.energy_remaining), speed=float(u.speed),
+            position=np.asarray(u.position).tolist(), retry_after=float(u.safety_retry_after),
+            emergency_retry_after=float(u.emergency_retry_after), assigned_lz=u.assigned_lz,
+            plan_mode=None if plan is None else plan.mode,
+            plan_end=None if plan is None else float(plan.end_time))
+    rows = []
+    for uid, row in env.last_release_telemetry.items():
+        rows.append(dict(uid=uid, arrival_id=row['arrival_id'], interface=row['interface'],
+            decision=row['decision_history'][-1], primary_blocker=row['primary_blocker'],
+            secondary_constraints=row['secondary_constraints'],
+            final_lz_pairs_checked=row.get('final_lz_pairs_checked', [])))
+    record = dict(ticks=ticks, time=env.now, releases=rows,
+        last_safety_decisions=dict(env.last_safety_decisions),
+        emergency={k:v for k,v in env.telemetry.items() if k.startswith('emergency_')},
+        outcomes=dict(env.ledger.outcomes))
+    if ticks == 1 or ticks % 25 == 0 or ticks in snapshot_ticks:
+        record.update(active=[uav_state(u) for u in env.active.values()],
+            energy_diagnostics=env.energy_reachability_diagnostics)
+    with (output/'blockers.jsonl').open('a', encoding='utf8') as stream:
+        stream.write(json.dumps(record, ensure_ascii=False)+'\n')
+    if ticks in snapshot_ticks:
+        with (output/f'snapshot_{ticks}.pkl').open('xb') as stream:
+            pickle.dump(env, stream, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run(args):
@@ -64,6 +101,8 @@ def run(args):
                     actions, shortlists = details[3], details[9]
                 observations, rewards, _, _, info = env.step(actions, shortlists)
                 ticks = tick+1
+                if getattr(args, 'trace_blockers', False):
+                    record_blockers(env, args.output, ticks, getattr(args, 'snapshot_ticks', ()))
                 total_reward += float(info.get('team_reward', sum(rewards.values())))
                 terminal = env.arrivals.exhausted() and not env.active and not env.admission.queue.items and not env.service_uavs
                 if ticks == 1 or ticks % 25 == 0 or terminal:
@@ -95,8 +134,13 @@ def main():
     p.add_argument('--requests',type=int,default=3); p.add_argument('--warm-start',type=int,default=0)
     p.add_argument('--high-soc',action='store_true'); p.add_argument('--seed',type=int,default=890301)
     p.add_argument('--policy-seed',type=int,default=890401); p.add_argument('--max-steps',type=int,default=1800)
+    p.add_argument('--trace-blockers',action='store_true')
+    p.add_argument('--snapshot-ticks',type=int,nargs='*',default=[])
     args=p.parse_args()
     if args.max_steps < 1: p.error('--max-steps must be positive')
+    if args.snapshot_ticks and not args.trace_blockers: p.error('--snapshot-ticks requires --trace-blockers')
+    if any(t < 1 or t > (2 if args.smoke else args.max_steps) for t in args.snapshot_ticks):
+        p.error('snapshot ticks must be within the selected run limit')
     if args.output.exists(): p.error('output already exists; preserve earlier evidence')
     args.output.mkdir(parents=True)
     result=run(args); write_json(args.output/'result.json',result)
