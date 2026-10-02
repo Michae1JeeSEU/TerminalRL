@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -169,10 +171,10 @@ def test_legacy_default_uniform_soc_range_remains_point_three_five_to_one() -> N
 
 
 def test_phase_motion_v2_default_soc_floor_above_one_is_rejected() -> None:
-    config = SimConfig(
-        energy_model_mode="phase_motion_v2",
-        phase_motion_nominal_solo_energy=1200.0,
-    )
+    reference = SimConfig(energy_model_mode="phase_motion_v2")
+    # Route energy equal to capacity, plus the landing reserve, exceeds 1.0.
+    # The former 1200 / 1500 + .1 fixture was only .9 and was feasible.
+    config = replace(reference, phase_motion_nominal_solo_energy=reference.energy_capacity)
     with pytest.raises(ValueError, match="default initial SOC lower bound exceeds 1.0"):
         ArrivalProcess(config, seed=840000)
 
@@ -205,7 +207,7 @@ def test_emergency_route_from_each_ring_is_kinematically_feasible_and_safety_app
 
 def test_insufficient_energy_does_not_commit_emergency_route_or_reserve_pad() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, RingRole.MIDDLE, soc=0.30)
+    uav = _ring_uav(env, RingRole.MIDDLE, soc=0.5 * env.config.min_landing_soc)
 
     assert not env._try_emergency_landing(uav)
     assert uav.committed_plan is None
@@ -236,7 +238,7 @@ def test_queue_diversion_records_actual_energy_snapshot() -> None:
 
 def test_emergency_mode_keeps_under_reserve_aircraft_active_until_explicit_energy_outcome() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, RingRole.INNER, soc=0.249)
+    uav = _ring_uav(env, RingRole.INNER, soc=0.5 * env.config.min_landing_soc)
     env.step({str(uav.uid): np.zeros(3, dtype=float)})
     assert uav.uid in env.active
     assert uav.arrival_id not in env.ledger.outcomes

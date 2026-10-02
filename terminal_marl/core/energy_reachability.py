@@ -17,6 +17,7 @@ from .config import RingRole, SimConfig
 from .energy import EnergyModel
 from .landing_zone import LZStatus, LandingZone, LandingZoneManager
 from .trajectory_generator import TrajectoryGenerator, TrajectoryPlan
+from .trajectory_time_parameterization import TrajectoryInfeasibleError
 from .uav import FlightPhase, UAVState
 
 
@@ -137,6 +138,25 @@ def _advance_ring_holder(
     target_speed = float(
         np.clip(target_speed, generator.config.speed_min, generator.config.speed_max)
     )
+    if generator.config.trajectory_schema_version == "executable_trajectory_v3":
+        # A pad ETA is a prediction horizon, not a promise to finish a speed
+        # transition.  Reuse the execution integrator and retain its partial
+        # speed/PVA at the exact ETA, even when the wait is shorter than a ramp.
+        theta, speed = float(holder.ring_progress), float(holder.speed)
+        elapsed = 0.0
+        motion = None
+        while elapsed < duration - 1e-9:
+            step = min(float(generator.config.physics_dt), duration - elapsed)
+            motion = generator.dynamics.ring_motion_step(ring, theta, speed, target_speed, step)
+            theta, speed = motion.theta, motion.speed
+            elapsed += step
+        if motion is None:
+            return _copy_state_at_ring(holder, role, until)
+        return _copy_state_at_ring(
+            holder, role, until,
+            position=motion.position, velocity=motion.velocity, acceleration=motion.acceleration,
+            ring_progress=theta % (2.0 * math.pi),
+        )
     points = generator.ring_hold_points(
         ring,
         float(holder.ring_progress),
@@ -286,12 +306,18 @@ def compute_candidate_energy_budget(
             airspace,
             trajectory_generator,
         )
-        fallback_plan = trajectory_generator.emergency_landing(
-            holder_at_release,
-            zone,
-            airspace,
-            release_at,
-        )
+        try:
+            fallback_plan = trajectory_generator.emergency_landing(
+                holder_at_release,
+                zone,
+                airspace,
+                release_at,
+            )
+        except TrajectoryInfeasibleError:
+            # This zone has no executable fallback witness.  Scan the other
+            # compatible zones; if none succeeds, return the existing infinite
+            # budget rather than aborting the environment or approving a path.
+            continue
         fallback_energy = float(
             energy_model.estimate_plan_energy(
                 fallback_plan,
@@ -358,7 +384,10 @@ def minimum_immediate_emergency_soc(
     for zone in lz_manager.zones:
         if uav.mission_type not in zone.compatible_missions:
             continue
-        route = trajectory_generator.emergency_landing(holder, zone, airspace, now)
+        try:
+            route = trajectory_generator.emergency_landing(holder, zone, airspace, now)
+        except TrajectoryInfeasibleError:
+            continue
         route_energy = float(
             energy_model.estimate_plan_energy(
                 route,

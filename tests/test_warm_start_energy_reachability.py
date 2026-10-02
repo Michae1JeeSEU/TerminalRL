@@ -26,9 +26,11 @@ def _warm_config(**overrides) -> SimConfig:
 
 
 def test_low_soc_outer_warm_start_is_rejected_with_required_soc() -> None:
-    config = _warm_config(warm_start_uavs=1, fixed_arrival_schedule=(0.0,), total_requested_uavs=1, initial_soc=0.35)
+    # The unchanged V2 solo-route minimum is about 0.20608 in this fixture;
+    # 0.35 is feasible and cannot exercise the rejection precondition.
+    config = _warm_config(warm_start_uavs=1, fixed_arrival_schedule=(0.0,), total_requested_uavs=1, initial_soc=0.15)
 
-    with pytest.raises(ValueError, match=r"uid=0, ring=outer.*initial_soc=0\.350000000.*required_soc="):
+    with pytest.raises(ValueError, match=r"uid=0, ring=outer.*initial_soc=0\.150000000.*required_soc="):
         TerminalParallelEnv(config)
 
 

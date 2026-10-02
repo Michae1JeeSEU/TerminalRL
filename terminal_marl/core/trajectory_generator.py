@@ -12,7 +12,9 @@ import numpy as np
 
 from .config import RingRole
 from .polynomial_trajectory import QuinticSegment, prime_quintic_bounds
-from .trajectory_time_parameterization import GeometricPath, TrajectoryConstraints, TrajectoryTimeParameterizer
+from .trajectory_time_parameterization import (
+    GeometricPath, TrajectoryConstraints, TrajectoryInfeasibleError, TrajectoryTimeParameterizer,
+)
 from .vehicle_dynamics import VehicleDynamics
 
 
@@ -1388,7 +1390,7 @@ class TrajectoryGenerator:
                 entry_cap *= .8
                 if entry_cap < 0.1:
                     break
-        raise RuntimeError("could not time-parameterize a dynamically feasible continuous landing")
+        raise TrajectoryInfeasibleError("could not time-parameterize a dynamically feasible continuous landing")
 
     def _final_approach_v3(
         self,

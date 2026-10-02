@@ -10,6 +10,14 @@ from .vehicle_dynamics import VehicleDynamics
 from .polynomial_trajectory import prime_quintic_bounds
 
 
+class TrajectoryInfeasibleError(RuntimeError):
+    """A bounded trajectory search found no executable candidate.
+
+    Callers may reject this candidate without concealing unrelated runtime
+    errors or invalid input contracts.
+    """
+
+
 @dataclass(frozen=True)
 class GeometricPath:
     points: np.ndarray
@@ -332,7 +340,34 @@ class TrajectoryTimeParameterizer:
             for index in range(len(points) - 1)
         )
         if not self._v3_segments_feasible(polynomial_segments):
-            return None
+            # Slowing every node cannot remove a normalized interpolation
+            # overshoot.  Keep the geometric nodes, times, horizontal state,
+            # and both live boundary states fixed; repair only an interior
+            # vertical velocity when the original curve violates altitude.
+            tolerance = 1e-3
+            ceiling = float(self.dynamics.profile.max_operating_altitude_agl_m)
+            altitude_violation = any(
+                segment.bounds()["min_altitude"] < -tolerance
+                or segment.bounds()["max_altitude"] > ceiling + tolerance
+                for segment in polynomial_segments
+            )
+            if not altitude_violation:
+                return None
+            bounded_velocities = self._v3_altitude_bounded_velocities(
+                points, times, velocities, accelerations,
+            )
+            if bounded_velocities is None:
+                return None
+            velocities = bounded_velocities
+            polynomial_segments = tuple(
+                QuinticSegment.from_boundary(
+                    times[index], times[index + 1], points[index], velocities[index], accelerations[index],
+                    points[index + 1], velocities[index + 1], accelerations[index + 1],
+                )
+                for index in range(len(points) - 1)
+            )
+            if not self._v3_segments_feasible(polynomial_segments):
+                return None
         first_state = polynomial_segments[0].sample(times[0])
         last_state = polynomial_segments[-1].sample(times[-1])
         if not (
@@ -348,6 +383,56 @@ class TrajectoryTimeParameterizer:
             TrajectoryPoint(float(time), point, velocity, acceleration)
             for time, point, velocity, acceleration in zip(times, points, velocities, accelerations)
         ]
+
+    def _v3_altitude_bounded_velocities(self, points, times, velocities, accelerations):
+        """Project interior vertical slopes into a quintic altitude hull.
+
+        Quintic Hermite height has Bernstein controls z0, z0+v0*T/5,
+        z0+2*v0*T/5+a0*T²/20, z1-2*v1*T/5+a1*T²/20,
+        z1-v1*T/5, z1.  Keeping these controls inside the vehicle altitude
+        envelope bounds the entire curve.  Accelerations and endpoint
+        velocities stay fixed; an empty slope interval rejects the trial.
+        Full analytic dynamics validation remains authoritative afterwards.
+        """
+        ceiling = float(self.dynamics.profile.max_operating_altitude_agl_m)
+        durations = np.diff(times)
+        result = np.array(velocities, dtype=float, copy=True)
+        for index in range(1, len(points) - 1):
+            z = float(points[index, 2])
+            a = float(accelerations[index, 2])
+            previous, following = float(durations[index - 1]), float(durations[index])
+            previous_shift = a * previous ** 2 / 20.0
+            following_shift = a * following ** 2 / 20.0
+            lower = max(
+                -float(self.dynamics.profile.max_descent_rate),
+                (z - ceiling) * 5.0 / previous,
+                (z + previous_shift - ceiling) * 5.0 / (2.0 * previous),
+                -z * 5.0 / following,
+                (-z - following_shift) * 5.0 / (2.0 * following),
+            )
+            upper = min(
+                float(self.dynamics.profile.max_climb_rate),
+                z * 5.0 / previous,
+                (z + previous_shift) * 5.0 / (2.0 * previous),
+                (ceiling - z) * 5.0 / following,
+                (ceiling - z - following_shift) * 5.0 / (2.0 * following),
+            )
+            if not np.isfinite(lower) or not np.isfinite(upper) or lower > upper:
+                return None
+            result[index, 2] = np.clip(result[index, 2], lower, upper)
+        for index, duration in enumerate(durations):
+            left, right = float(points[index, 2]), float(points[index + 1, 2])
+            vl, vr = float(result[index, 2]), float(result[index + 1, 2])
+            al, ar = float(accelerations[index, 2]), float(accelerations[index + 1, 2])
+            controls = np.asarray((
+                left, left + vl * duration / 5.0,
+                left + 2.0 * vl * duration / 5.0 + al * duration ** 2 / 20.0,
+                right - 2.0 * vr * duration / 5.0 + ar * duration ** 2 / 20.0,
+                right - vr * duration / 5.0, right,
+            ))
+            if not np.isfinite(controls).all() or np.min(controls) < -1e-9 or np.max(controls) > ceiling + 1e-9:
+                return None
+        return result
 
     def _parameterize_v3(
         self,
@@ -390,7 +475,7 @@ class TrajectoryTimeParameterizer:
                 )
                 if candidate is not None:
                     return candidate
-        raise RuntimeError(
+        raise TrajectoryInfeasibleError(
             "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
             "the boundary state and vehicle dynamics"
         )
