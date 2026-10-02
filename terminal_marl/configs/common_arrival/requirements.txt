@@ -1,0 +1,5 @@
+# Verified common execution environment: CPython 3.12.14 (Windows x64).
+# Waltz inference additionally requires baselines/waltz2024 dependencies.
+numpy==2.3.5
+scipy==1.16.2
+pytest==8.4.2

@@ -73,6 +73,7 @@ qualification 后才进入 A6 高层动态空域。
 | [reference/reconfiguration_high_level.md](reference/reconfiguration_high_level.md) | 动态重构状态机、affected-set freeze、高层 reward 与 qualification |
 | [reference/vehicle_dynamics.md](reference/vehicle_dynamics.md) | EH216-S 性能约束动力学与可执行轨迹 |
 | [literature_and_baseline_review_20261002.md](baselines/literature_and_baseline_review_20261002.md) / [waltz2024_comparison.md](baselines/waltz2024_comparison.md) | 文献与 Waltz 2024 对比基线参考；用于研究基线设计，不代表当前 qualification 状态 |
+| [common_arrival_execution_20261003.md](baselines/common_arrival_execution_20261003.md) | 外部基线共同执行桥接、运行与指标说明；三环/自由航向公平性协议及正式实验边界 |
 
 专项参考必须服从根目录主规范。它们用于补充细节，不建立第二套项目语义。
 
