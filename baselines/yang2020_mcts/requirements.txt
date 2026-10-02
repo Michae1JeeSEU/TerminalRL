@@ -1,0 +1,9 @@
+# Headless runtime requirements for the acquired simulator.
+# gym is retained because the upstream environments subclass gym.Env and use
+# gym.spaces; no rendering entry point is imported by the wrapper.
+numpy==1.26.4
+gym==0.26.2
+matplotlib==3.8.4
+shapely==2.0.6
+colour==0.1.5
+ipdb==0.13.13
