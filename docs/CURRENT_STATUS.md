@@ -1,5 +1,13 @@
 # 项目当前状态
 
+## 2026-10-02 已批准首阶段修复与新增运动学阻塞（独立块）
+
+已批准 opt-in final proposal 执行与显式 88→90D 推理 initializer；core commit `aff605e4f74a560853ef111d6f8c7c4900d12c1c`、runner/protocol commit `848b2d8570f8ae9b680b98273a45e4e34fd93bec`。`116` 项 core、`10` 项 runner/protocol 与 `4` 项运动学诊断测试通过；legacy 50 条历史 hash、duration、departure 保持相同。
+
+真实 preflight 为 `CHECK_ONLY_OK`，三臂各 2 tick smoke 为 `SMOKE_OK`；repaired88/90 requested action tape 最大 diff `0`，metrics/hash 一致。新运行的四 fixture 旧 `validate_kinematics=[]`，但 actual-position-derived 水平加速度为 `22.3043–28.0235 > 1.5`、垂直加速度为 `5.8505–6.5178 > 1.0`，compact CLI 为 `KINEMATIC_CONSISTENCY_FAIL`，`technical_errors=0`。
+
+完整八臂 `NOT_RUN`。新曲线/动力学方案待本次用户审核；`PPO_ALLOWED=false`，新 mode 未 default promotion，未执行 training、held-out、optimizer step 或 checkpoint 写入。边界事实：当前没有真实 Crazyflie/Crazyswarm2 hardware adapter；这不作为 bug 结论。详见 [运动学修复审核方案](evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md)、[P3 基础复核报告](evidence/v4_2/p3_foundation_review_20261002.md) 与 [基础修复协议](evidence/v4_2/p3_foundation_repair_protocol_20261002.md)。
+
 ## 2026-10-02 基础实现复核更新（独立块）
 
 本块只补充本轮基础实现核查，不改写下方历史状态段。详细证据见 [P3 基础实现复核与修复审核方案](evidence/v4_2/p3_foundation_review_20261002.md)。

@@ -4,6 +4,10 @@
 
 本文件是主审结论的证据草稿，保留既有 artifact 的 cohort 边界与失败记录。`PPO_ALLOWED=false`；本轮没有启动完整训练、held-out、new fit 或 checkpoint 写入。
 
+## 本轮状态（2026-10-02）
+
+用户已批准首阶段；核心实现、88→90D migration 与预检已完成。全面复核新增轨迹运动学一致性 blocker，修复方案待本次用户审核，详见 [轨迹运动学一致性修复审核方案](trajectory_kinematic_consistency_repair_review_20261002.md)。完整八臂业务矩阵尚未运行；`PPO_ALLOWED=false`。
+
 ## 当前终态锚点
 
 最新 `CURRENT_STATUS` 顶部记录的 fresh V4 six-scene screen 为 `FAIL`，与后续 normal-inner C1–C4 属于不同 cohort。四个旧 trained gate-value states 均为 `C=0`；AP=`132N/12E`、BP=`134N/10E`，两者 `F/D/U=0`。AP 相对 BP 的三项成本差分别为 `+2.9843324913833236%`、`+0.5281622267627961%`、`+0.7351975729166904%`。same-prefix 扣除 rejection 后 raw return 为 AP `2967.1651355245745`、BP `2987.9587313050633`。来源：`docs/CURRENT_STATUS.md`（历史块：`LATEST FRESH VALIDATION STATUS（2026-10-01）`）、`docs/evidence/v4_2/p3_followup_results_20260930.md:22`。
@@ -119,3 +123,30 @@ normal-inner FULL 是另一组四状态描述性证据：四个状态均 `C=1`�
 首阶段只采用 opt-in final speed/timing execution、既有 90D 显式 schema/权重迁移，以及小样本无训练 complete-cycle 对照。对照必须使用相同 action authority、safety、energy 与 arrival 场景，避免旧 rule-flow `±0` 与 RL `±2` 的不公平比较。energy deadline/resource 与 safety tube 先做量化诊断，再决定是否提出 production 修改；当前不把任何一项写成已确认根因，也不承诺立即改变规则。
 
 新 curriculum 的低并发随机 SOC、dense 固定 SOC 异构 service、组合难度应分开控制以隔离贡献。本阶段不授权 training 或 held-out。
+
+## 2026-10-02 轨迹运动学一致性复核结果
+
+用户已批准首阶段接口与迁移工作；本轮新增的统一轨迹/动力学修复仍待用户审核，尚未实施。原“首轮修复草案（DRAFT，等待用户审核）”段保留为历史记录，其等待同一首阶段审批的表述已由本段及[轨迹运动学一致性修复审核方案](trajectory_kinematic_consistency_repair_review_20261002.md)取代。新 mode 仍为 opt-in，未 promotion；P3 尚未解决；`PPO_ALLOWED=false`。
+
+四个固定 fixture 的 position 采样差分结果如下。`duration` 来源于 `end_time-start_time`；只有最大实际水平/垂直加速度来自按 `physics_dt=.2` 的 position 采样差分，末段短 interval 使用实际 `dt`。旧 `validate_kinematics=[]` 并不等于下表的执行曲线满足 profile 上限。
+
+| mode | slot | duration | max actual horizontal accel | max actual vertical accel |
+|---|---:|---:|---:|---:|
+| `legacy` | `0` | `65.4561997898406` | `28.0235052431024` | `6.51781141164899` |
+| `legacy` | `30` | `65.4561997898406` | `28.0235052431024` | `6.51781141164899` |
+| `speed_timing_v1` | `0` | `70.1783200237381` | `22.3042676892213` | `5.85048370097321` |
+| `speed_timing_v1` | `30` | `86.5132317122911` | `23.3341765134967` | `6.01783603351056` |
+
+现有 profile 的水平与垂直加速度上限分别为 `1.5` 与 `1.0`。legacy 首段中点 position 差分速度与 reported velocity 差的 norm 为 `3.887695799217562`；新模式曲线段的最大 chord-vavg residual 为 `1.0742706573` 与 `0.7061464605`。这些是统一轨迹采样复核的直接数值，尚未测定其对历史 P3 学习退化的因果份额。
+
+首阶段证据锚点：core commit `aff605e4f74a560853ef111d6f8c7c4900d12c1c`，14 文件 `116 tests PASS`；runner/protocol commit `848b2d8570f8ae9b680b98273a45e4e34fd93bec`，`10 tests PASS`；`preflight.json` SHA256 `751baf2e44e8ccc050ed99804ae07a2f16bedb09b84e9bc143c5a859abb61e85`，状态 `CHECK_ONLY_OK`、耗时 `2.065 s`，只验证 metadata/schema/config 与八臂登记；`smoke.json` SHA256 `e0c9d23984c158f29ba8dc36151f118fd88e5c7aba2ca93fc3e09da345c5edac`，状态 `SMOKE_OK`、三 source 各 `2 ticks`、耗时 `3.701 s`。仅 `smoke.json` 记录 88/88/90D energy coverage valid、repaired88/90 requested action tape 最大 diff `0`、metrics/hash 一致与 frozen flags false；smoke 只验证接口与输出，不代表性能提升或可执行性 qualification。foundation repair protocol 绑定的 source checkpoint SHA256 为 `3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab`。
+
+诊断脚本及 4 项 diagnostic tests 已 PASS（commit `d67597aec27b7f703d952759647b9a974e0f7aa1`；server/local 指定文件 SHA 一致），日志 SHA256 为 `ff9f6c40d73d36f40389303ff64d302f2ef8f04bb289ec72ce3cb10439f18a78`。compact CLI 状态为 `KINEMATIC_CONSISTENCY_FAIL`、`technical_errors=0`、`finding_count=20`；`finding_count` 是重复检查项数量，不是 20 个独立缺陷。compact artifact `.tmp/p3_trajectory_kinematic_consistency_compact_20261002.json` 的 SHA256 为 `FC4FC02E98600174EBD9EC1DA18F725EEAC3C57D31478F1CC2AFA754E95111CA`。相关入口：[基础修复协议](p3_foundation_repair_protocol_20261002.md)、[运动学一致性审核方案](trajectory_kinematic_consistency_repair_review_20261002.md)、[运动学诊断脚本](../../../terminal_marl/scripts/diagnose_trajectory_kinematic_consistency_20261002.py)。完整八臂零训练对照尚未运行；本轮未启动 training、held-out、optimizer step、checkpoint 写入或 default promotion。
+
+## 本轮交付文件清单（16 distinct files）
+
+- **core**：`terminal_marl/core/config.py`、`terminal_marl/core/trajectory_generator.py`（`aff605e`）。
+- **runtime**：`terminal_marl/algo/service_context_runtime_v4_2.py`（`aff605e`）。
+- **scripts**：`terminal_marl/scripts/evaluate_p3_foundation_repair_20261002.py`（`848b2d8`）、`terminal_marl/scripts/diagnose_trajectory_kinematic_consistency_20261002.py`（`d67597a`）。
+- **tests**：`tests/test_final_approach_proposal_execution.py`、`tests/test_phase_a_landing.py`、`tests/test_service_context_runtime_v4_2.py`（`aff605e`）；`tests/test_p3_foundation_repair_evaluator.py`（`848b2d8`）；`tests/test_trajectory_kinematic_consistency_diagnostic.py`（`d67597a`）。
+- **docs**：`docs/design_spec.md`、`docs/technical_spec.md`（`aff605e`）；`docs/evidence/v4_2/p3_foundation_repair_protocol_20261002.md`（`848b2d8`）；本轮文档 `docs/evidence/v4_2/p3_foundation_review_20261002.md`、`docs/evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md`、`docs/CURRENT_STATUS.md`。
