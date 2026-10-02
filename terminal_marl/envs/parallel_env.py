@@ -191,6 +191,7 @@ class TerminalParallelEnv:
             layout = self._safe_warm_start_layout(self.config.warm_start_uavs)
         for request, (role, theta) in zip(requests[:self.config.warm_start_uavs], layout):
             self.ledger.request(request.arrival_id)
+            self.request_times[request.arrival_id] = request.request_time
             gate = self.admission.gates[request.gate_id]
             queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
             uav = UAVState.from_request(self.uid, request, queued, gate.spawn_point, self.now)

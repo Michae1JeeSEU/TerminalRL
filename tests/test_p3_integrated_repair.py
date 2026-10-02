@@ -238,3 +238,10 @@ def test_legacy_low_soc_diversion_precedence_is_preserved():
     accepted,records=env.admission.step(1.,{},env.airspace,env.energy,env.priority,
                                       lz_manager=env.lz_manager)
     assert not accepted and records[0].reason_code=='low_soc'
+
+
+def test_warm_start_requests_are_registered_for_complete_cycle_accounting():
+    env=TerminalParallelEnv(build_config(requests=12,warm_start=6,high_soc=True),seed=890501)
+    assert set(env.request_times)==set(range(6))
+    assert all(t==0. for t in env.request_times.values())
+    assert len(env.request_times)==env.arrivals.generated==len(env.active)==6
