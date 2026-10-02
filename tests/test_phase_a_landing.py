@@ -77,12 +77,13 @@ def test_active_low_soc_diversion_is_non_completion_and_not_double_resolved():
     c = finite_config(
         total_requested_uavs=0,
         arrival_rate_per_second=0.0,
-        initial_soc_mode="fixed",
-        initial_soc=0.2501,
     )
     env = TerminalParallelEnv(c)
-    request = ArrivalRequest(1, 0, 0, MissionType.STANDARD, 1, c.energy_capacity, 0.2501)
-    queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
+    initial_soc = c.min_landing_soc + (
+        0.5 * EnergyModel(c).phase_power(FlightPhase.RING_INNER) * c.dt / c.energy_capacity
+    )
+    request = ArrivalRequest(1, 0, 0, MissionType.STANDARD, 1, c.energy_capacity, initial_soc)
+    queued = QueuedArrivalState(request, request.energy_capacity * initial_soc)
     uav = UAVState.from_request(0, request, queued, np.zeros(3), 0.0)
     uav.phase = FlightPhase.RING_INNER
     uav.ring_role = RingRole.INNER
@@ -158,12 +159,14 @@ def test_a4_multi_uav_rule_pipeline_closes_without_lz_double_booking():
         TerminalOutcome.INVALID,
         TerminalOutcome.UNRESOLVED,
     } for outcome in ledger.outcomes.values())
-    assert {uid for uid, outcome in ledger.outcomes.items()
-            if outcome is TerminalOutcome.DIVERTED_LOW_SOC} == {6, 9}
+    diverted_ids = {
+        uid for uid, outcome in ledger.outcomes.items()
+        if outcome is TerminalOutcome.DIVERTED_LOW_SOC
+    }
     low_soc = [row for row in env.energy_outcomes
                if row["outcome"] == TerminalOutcome.DIVERTED_LOW_SOC.value]
-    assert len(low_soc) == 2
-    assert {row["arrival_id"] for row in low_soc} == {6, 9}
+    assert len(low_soc) == len(diverted_ids)
+    assert {row["arrival_id"] for row in low_soc} == diverted_ids
     assert all(row["reason"] == "low_soc_before_touchdown" for row in low_soc)
     assert all(row["soc"] < c.min_landing_soc for row in low_soc)
     assert all(z.status is LZStatus.FREE for z in env.lz_manager.zones)

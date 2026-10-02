@@ -71,6 +71,11 @@ class SimConfig:
     # for dense inner-ring flow; it reuses the certified emergency corridor
     # geometry while retaining normal final-approach semantics.
     final_approach_geometry_mode: str = "brake_bezier_v1"
+    # Optional execution binding for the continuous final-approach geometry.
+    # ``legacy`` preserves the historical brake/continuous behavior.  The
+    # speed/timing path is deliberately gated to the supported V4.2,
+    # performance-constrained continuous configuration.
+    final_approach_execution_mode: str = "legacy"
     # Opt-in diagnostic repair for ring transfers whose generated endpoint is
     # later than the initially requested merge slot.  Historical runs retain
     # the original fail-closed behavior when disabled.
@@ -271,6 +276,19 @@ class SimConfig:
             raise ValueError("unsupported energy_model_mode")
         if self.final_approach_geometry_mode not in {"brake_bezier_v1", "continuous_inward_v1"}:
             raise ValueError("unsupported final_approach_geometry_mode")
+        if self.final_approach_execution_mode not in {"legacy", "speed_timing_v1"}:
+            raise ValueError("unsupported final_approach_execution_mode")
+        if self.final_approach_execution_mode == "speed_timing_v1" and (
+            self.action_schema_version != "low_action_schema_v4_2_hierarchical"
+            or self.vehicle_execution_mode != "performance_constrained"
+            or self.final_approach_geometry_mode != "continuous_inward_v1"
+        ):
+            raise ValueError(
+                "final_approach_execution_mode='speed_timing_v1' requires "
+                "action_schema_version='low_action_schema_v4_2_hierarchical', "
+                "vehicle_execution_mode='performance_constrained', and "
+                "final_approach_geometry_mode='continuous_inward_v1'"
+            )
         if self.energy_reachability_guard_enabled and (
             not self.emergency_priority_guard_enabled
             or not self.emergency_landing_enabled

@@ -414,6 +414,13 @@ delta_t = raw[2] * max_merge_time_residual_seconds
 
 任何 code/doc/test 都不得出现不同顺序。
 
+最终进近由 `SimConfig.final_approach_execution_mode` 选择：`legacy` 是默认值并保留既有
+geometry/execution；`speed_timing_v1` 为 opt-in，只能用于
+`low_action_schema_v4_2_hierarchical` + `vehicle_execution_mode=performance_constrained`
+以及 `final_approach_geometry_mode=continuous_inward_v1`。其速度意图是
+`10 m/s + physical_speed_residual` 的目标速度，由 vehicle profile 与 parameterizer
+施加速度、加速度和减速度边界；该目标不表示整段 final approach 恒速。
+
 `SimConfig.runtime_proposal_shortlist_k` 只允许 `1` 或 `3`。`1` 保留历史单请求消融；冻结部署值 `3` 仅适用于
 V4.2、`scheduler_mode=execution`、Teacher disabled。K=3 rollout 必须在一次 distribution forward
 中形成 request-first unique Top-3，调用
@@ -477,6 +484,14 @@ class ObservationBuilder:
 当前正式 schema 是 `phaseA_low_obs_v2_1_retry_state`（88D）。它保留 V2 的 87D prefix，
 仅追加 `safety_retry_remaining_norm`；详细分组见 `reference/low_level_policy.md`。
 
+实验性 90D schema 的准确值为 `phaseA_low_obs_v2_4_service_context_90d`：前 88D 与 V2.1
+保持一致，追加 `self_service_duration_norm` 和
+`center_earliest_compatible_lz_release_wait_norm`。`initialize_service_context_policy`
+只对已通过 V2.1 schema/hash 与 V4.2 action metadata 校验的 loaded source policy 做
+in-memory zero-column initialization，返回只含 `model`、`observation_dim=90`、`device`
+的 inference wrapper；source weights 不变且不创建/迁移 optimizer。该 helper 不产生
+qualified 90D checkpoint。
+
 ---
 
 ## 15. Topological neighbor utilities
@@ -521,6 +536,17 @@ SafetyFilter certification。
 merge geometry = final entry + assigned LZ reservation
 ```
 
+在 opt-in `speed_timing_v1` final-approach contract 中，`MergeReservation.merge_time`
+是 scheduler 的 requested reservation departure。候选 delay 与有限减速 prefix 的
+earliest-feasible lower bound 必须在接受前检查；可行边界内可 clamp，越界或无法形成可执行
+prefix 时 reject。该 contract 的 plan/action trace 可收集
+`requested_reservation_departure`（scheduler 请求）、`accepted_reservation_departure`
+（solver 接受的 slot）、`scheduled_departure`（canonical plan 的计划 departure）、
+`timing_clamped`、`timing_clamp_reason`、`requested_target_speed_mps`、
+`accepted_target_speed_mps`、`actual_entry_speed_mps`。`scheduled_departure` 与
+`actual_entry_speed_mps` 是仿真/计划执行记录，不宣称硬件实测 departure；legacy 路径和普通 ring-transfer 不要求
+这些新增字段。
+
 `reconcile_late_merge_slots_enabled` 默认为 `false`。启用时，它只是一个 opt-in
 operational scheduling variant：对已经生成的 ring-transfer，在 scheduler 完成
 headway/reservation 检查后重新分配实际结束时隙；原始 requested merge time 与 lateness
@@ -555,6 +581,10 @@ class TrajectoryGenerator:
 ```
 
 删除/废弃任何第二套独立 transfer path generator。
+
+`final_approach_execution_mode="legacy"` 与固定 `emergency_landing` route 是默认兼容
+语义。`speed_timing_v1` 只改变 opt-in final approach 的目标速度/时序参数化；不得改变
+emergency route、SafetyFilter certification 顺序或 execution takeover 语义。
 
 ---
 
@@ -1104,6 +1134,15 @@ raise IncompatibleCheckpointError
 本轮新增实验性 Observation V2.4 已实现接口，为 V2.1/88D 加 `self_service_duration_norm` 与 `center_earliest_compatible_lz_release_wait_norm` 两字段，形成 90D，
 并使用新的 schema/feature hash；旧 checkpoint 必须拒绝加载，代码回归已通过但尚未 qualification。正式 P3 在 V2.4 qualification 完成前继续使用
 V4.2/88D，不得把 90D 实现写成当前 qualification 结果。
+
+本次 88D source 到 90D 的 in-memory inference initialization 采用
+`initialize_service_context_policy(loaded_source_policy,
+source_checkpoint_metadata=payload_metadata)`。该 helper 必须严格验证 source 的 V2.1
+schema、88D dimension、feature hash、V4.2 action schema 与 action distribution，新增两列
+为 zero，source weights 不变且不创建/迁移 optimizer；返回 wrapper 不是 qualified 90D
+policy。原生且 metadata/schema/dimension/feature hash 相符的 90D checkpoint 仍通过常规
+strict loader 加载；`core.load_checkpoint` 不允许把 88D checkpoint 直接加载到 90D policy。
+本接口规范不改变训练流程、safety/energy thresholds 或 reward 定义。
 
 ---
 

@@ -568,6 +568,17 @@ SafetyFilter certification。
 proposal shortlist 或策略接口，也不启用 PPO。该 exploratory variant 已在 fresh `.55–.90`
 late-slot pairs 中评估，aggregate `zero_energy_failure` 未通过，未晋级；默认仍为 `false`。
 
+在 opt-in `speed_timing_v1` final-approach contract 中，`reservation.merge_time` 是
+scheduler 的 requested reservation departure。候选 delay 与有限减速 prefix 的最早可行
+边界共同决定 accepted slot；边界内可 clamp，无法满足时 reject。该 contract 的
+`TrajectoryPlan.metadata` 或 action/diagnostic trace 可收集以下字段：
+`requested_reservation_departure`（scheduler 请求）、`accepted_reservation_departure`
+（solver 接受的 slot）、`scheduled_departure`（canonical plan 的计划 departure）、
+`timing_clamped`、`timing_clamp_reason`、`requested_target_speed_mps`、
+`accepted_target_speed_mps`、`actual_entry_speed_mps`。`scheduled_departure` 与
+`actual_entry_speed_mps` 是仿真/计划执行记录，不宣称硬件实测 departure；legacy 路径和
+普通 ring-transfer 不要求这些新增字段。
+
 ---
 
 ## 11. CanonicalTrajectoryGenerator
@@ -640,6 +651,14 @@ inner release
 
 可以用 composite spline 实现，但日志中保留分段语义。
 
+最终进近执行模式由 `SimConfig.final_approach_execution_mode` 选择：`legacy` 为默认值，
+保留既有 final geometry/execution；`speed_timing_v1` 是 opt-in，只允许与
+`action_schema_version=low_action_schema_v4_2_hierarchical`、
+`vehicle_execution_mode=performance_constrained` 和
+`final_approach_geometry_mode=continuous_inward_v1` 同时使用。该模式中的速度意图是
+`v_target = 10 m/s + physical_speed_residual`，再由 vehicle profile 与 trajectory
+parameterizer 施加速度、加速度和减速度约束；它是目标速度意图，不能解释为全程恒速。
+
 ### 11.5 emergency_landing
 
 `emergency_landing` 使用同一个 authoritative trajectory generator。源环脱离段从真实
@@ -647,6 +666,9 @@ inner release
 `P2` 使曲线接近 staging point；parameterizer 绑定真实 initial velocity，并将
 `end_horizontal_speed` 设为零。OUTER/MIDDLE 的 staging 高度为 `120 m`，INNER 保持当前高度，
 之后复用现有垂直下降段到已预约 LZ。
+
+`legacy` geometry/execution 和上述固定 emergency route 继续是默认兼容路径；opt-in 的
+final-approach speed/timing 语义不得改变 emergency route 的路线、认证顺序或 takeover 规则。
 
 ### 11.6 Execution
 
@@ -756,6 +778,15 @@ ObservationSchema(
 当前 schema 固定为 `phaseA_low_obs_v2_1_retry_state`（88D）：V2 的 87D topology-aware
 prefix 保持不变，索引 87 追加 `safety_retry_remaining_norm`。任何字段顺序变化都必须升级
 schema version，并拒绝不兼容 checkpoint。
+
+实验性 90D schema 的准确值为 `phaseA_low_obs_v2_4_service_context_90d`：它逐字节保留
+V2.1 的前 88D，并追加 `self_service_duration_norm` 与
+`center_earliest_compatible_lz_release_wait_norm`。`initialize_service_context_policy`
+只接收已按 V2.1/V4.2 metadata 加载的 source policy，在内存中零初始化新增列并返回
+仅用于推理的 `model`、`observation_dim=90`、`device` 薄 wrapper；source weights 不变、
+不创建或迁移 optimizer。这是 initialization helper，不是 qualified 90D checkpoint；
+`core.load_checkpoint` 仍按 schema/dimension/feature hash 严格校验，88D checkpoint 不能
+直接装入 90D policy。该接口边界不改变训练流程、safety/energy thresholds 或 reward 定义。
 
 2026-09-20 已冻结待验证候选 `phaseA_low_obs_v2_2_scheduler_context_94d`：它保持前 88 维
 不变，在索引 88–93 追加当前接口 active/future reservation、committed transfer、reservation

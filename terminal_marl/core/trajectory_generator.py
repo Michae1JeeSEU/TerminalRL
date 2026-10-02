@@ -406,6 +406,90 @@ class TrajectoryGenerator:
             transfer.metadata["dynamic_unreachable_merge_time"] = True
         return transfer
 
+    def _required_ring_braking_duration(
+        self,
+        ring,
+        theta: float,
+        current_speed: float,
+        target_speed: float,
+    ) -> float:
+        """Return a bounded discrete duration for one-way ring braking.
+
+        The endpoint is evaluated through the same ``ring_hold_points``
+        integration grid used by the executable prefix.  A bounded bracket
+        and binary search avoid replacing the live velocity with a target
+        value at the departure instant.
+        """
+        current = float(current_speed)
+        target = float(target_speed)
+        if not math.isfinite(current) or not math.isfinite(target):
+            raise RuntimeError("final_approach_initial_speed_nonfinite")
+        if current < -1e-9 or target < -1e-9:
+            raise RuntimeError("final_approach_initial_speed_invalid")
+        current = max(0.0, current)
+        target = max(0.0, target)
+        if current <= target + 1e-8:
+            return 0.0
+        physics_dt = float(self.config.physics_dt)
+        max_decel = float(self.dynamics.profile.max_horizontal_decel)
+        if not math.isfinite(physics_dt) or physics_dt <= 0.0 or max_decel <= 0.0:
+            raise RuntimeError("final_approach_braking_bounds_invalid")
+
+        def endpoint_speed(duration: float) -> float:
+            _position, velocity = self._ring_hold_endpoint(
+                ring, theta, current, target, float(duration),
+            )
+            speed = float(np.linalg.norm(np.asarray(velocity, dtype=float)[:2]))
+            if not math.isfinite(speed):
+                raise RuntimeError("final_approach_braking_endpoint_nonfinite")
+            return speed
+
+        # The upper bracket is deliberately bounded.  The normal profile
+        # reaches the target well before this cap; failure is explicit when
+        # the shared finite-step dynamics cannot make progress.
+        upper = max(physics_dt, (current - target) / max_decel)
+        for _ in range(10):
+            if endpoint_speed(upper) <= target + 1e-7:
+                break
+            upper *= 2.0
+        else:
+            raise RuntimeError("final_approach_braking_target_unreachable")
+        if upper > 120.0:
+            raise RuntimeError("final_approach_braking_duration_unbounded")
+
+        lower = 0.0
+        for _ in range(32):
+            middle = 0.5 * (lower + upper)
+            if middle <= 1e-12:
+                lower = middle
+                continue
+            if endpoint_speed(middle) <= target + 1e-7:
+                upper = middle
+            else:
+                lower = middle
+        if endpoint_speed(upper) > target + 1e-6:
+            raise RuntimeError("final_approach_braking_target_unreachable")
+        return float(upper)
+
+    @staticmethod
+    def _replace_ring_hold_initial_state(hold_points: list[TrajectoryPoint], uav, now: float) -> None:
+        """Preserve the serialized live state at the start of a new-mode hold."""
+        position = np.asarray(uav.position, dtype=float)
+        velocity = np.asarray(uav.velocity, dtype=float)
+        acceleration = np.asarray(getattr(uav, "acceleration", np.zeros(3)), dtype=float)
+        if (position.shape != (3,) or velocity.shape != (3,) or acceleration.shape != (3,)
+                or not np.isfinite(position).all()
+                or not np.isfinite(velocity).all()
+                or not np.isfinite(acceleration).all()):
+            raise RuntimeError("final_approach_initial_state_invalid")
+        if not hold_points:
+            raise RuntimeError("final_approach_braking_prefix_empty")
+        first = hold_points[0]
+        hold_points[0] = TrajectoryPoint(
+            float(now), position, velocity, acceleration,
+            first.yaw, first.yaw_rate,
+        )
+
     def _continuous_inward_landing_points(
         self,
         uav,
@@ -414,6 +498,8 @@ class TrajectoryGenerator:
         now: float,
         *,
         scheduled_delay: float = 0.0,
+        target_horizontal_speed: float = 10.0,
+        holding_target_speed: float | None = None,
     ) -> tuple[tuple[TrajectoryPoint, ...], float, float, np.ndarray, float, bool]:
         """Build the shared tangent departure, staging and vertical-leg route.
 
@@ -440,10 +526,15 @@ class TrajectoryGenerator:
         if scheduled_delay > 1e-9:
             ring = airspace.actual_ring(uav.ring_role)
             current_ring_speed = max(0.0, float(uav.speed))
+            hold_target_speed = current_ring_speed if holding_target_speed is None else min(
+                current_ring_speed, max(0.0, float(holding_target_speed))
+            )
             hold_points = self.ring_hold_points(
-                ring, departure_theta, current_ring_speed, current_ring_speed,
+                ring, departure_theta, current_ring_speed, hold_target_speed,
                 now, float(scheduled_delay),
             )
+            if holding_target_speed is not None:
+                self._replace_ring_hold_initial_state(hold_points, uav, now)
             prefix = hold_points[:-1]
             start_state = hold_points[-1]
             p0, initial_velocity = start_state.position, start_state.velocity
@@ -476,7 +567,7 @@ class TrajectoryGenerator:
             departure_path,
             start_time=departure_start,
             initial_velocity=initial_velocity,
-            target_horizontal_speed=10.0,
+            target_horizontal_speed=float(target_horizontal_speed),
             constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
         )
 
@@ -495,8 +586,198 @@ class TrajectoryGenerator:
         moment = float(leg[-1].t)
         return tuple(points), departure_start, moment, staging, cruise_height, bool(prefix)
 
+    def _final_approach_speed_timing_v1(
+        self,
+        uav,
+        lz,
+        reservation,
+        now: float,
+        *,
+        scheduled_delay: float,
+        speed_residual_mps: float,
+        airspace,
+    ) -> TrajectoryPlan:
+        """Build the opt-in continuous final approach with executable timing."""
+        if uav.ring_role is not RingRole.INNER or airspace is None:
+            raise RuntimeError(
+                "speed_timing_v1 final approach requires inner-ring airspace context"
+            )
+        if self.config.final_approach_geometry_mode != "continuous_inward_v1":
+            raise RuntimeError(
+                "speed_timing_v1 final approach requires continuous_inward_v1 geometry"
+            )
+        try:
+            moment_now = float(now)
+            residual = float(speed_residual_mps)
+            requested_departure = float(reservation.merge_time)
+            candidate_delay = float(scheduled_delay)
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise RuntimeError("final_approach_timing_inputs_invalid") from exc
+        if not all(math.isfinite(value) for value in (
+            moment_now, residual, requested_departure, candidate_delay,
+        )):
+            raise RuntimeError("final_approach_timing_inputs_nonfinite")
+        candidate_delay = max(0.0, candidate_delay)
+
+        requested_target = 10.0 + residual
+        if not math.isfinite(requested_target):
+            raise RuntimeError("final_approach_target_speed_nonfinite")
+        accepted_target = float(np.clip(requested_target, 0.1, self.config.max_speed))
+        if requested_target < 0.1:
+            speed_clamp_reason = "minimum_target_speed"
+        elif requested_target > self.config.max_speed:
+            speed_clamp_reason = "maximum_target_speed"
+        else:
+            speed_clamp_reason = "none"
+
+        position = np.asarray(uav.position, dtype=float)
+        velocity = np.asarray(uav.velocity, dtype=float)
+        acceleration = np.asarray(getattr(uav, "acceleration", np.zeros(3)), dtype=float)
+        if (position.shape != (3,) or velocity.shape != (3,) or acceleration.shape != (3,)
+                or not np.isfinite(position).all()
+                or not np.isfinite(velocity).all()
+                or not np.isfinite(acceleration).all()):
+            raise RuntimeError("final_approach_initial_state_invalid")
+        if abs(float(velocity[2])) > 1e-6:
+            raise RuntimeError("final_approach_initial_velocity_not_horizontal")
+        current_speed = float(np.linalg.norm(velocity[:2]))
+        stored_speed = float(uav.speed)
+        if not math.isfinite(stored_speed) or stored_speed < -1e-9:
+            raise RuntimeError("final_approach_initial_speed_invalid")
+        if abs(current_speed - max(0.0, stored_speed)) > 1e-5:
+            raise RuntimeError("final_approach_initial_speed_mismatch")
+        current_speed = max(0.0, stored_speed)
+        ring = airspace.actual_ring(RingRole.INNER)
+        if current_speed > self.dynamics.ring_speed_limit(ring.radius) + 1e-6:
+            raise RuntimeError("final_approach_initial_speed_exceeds_ring_limit")
+        theta = (
+            float(uav.ring_progress)
+            if uav.ring_progress is not None
+            else math.atan2(float(position[1]), float(position[0]))
+        )
+        if not math.isfinite(theta):
+            raise RuntimeError("final_approach_initial_ring_phase_invalid")
+
+        required_braking = self._required_ring_braking_duration(
+            ring, theta, current_speed, accepted_target,
+        )
+        requested_delay = max(0.0, requested_departure - moment_now)
+        actual_delay = max(candidate_delay, requested_delay, required_braking)
+        actual_departure = moment_now + actual_delay
+        timing_constraints = {
+            "now_floor": moment_now,
+            "candidate_delay_departure": moment_now + candidate_delay,
+            "requested_reservation_departure": requested_departure,
+            "finite_ring_braking_departure": moment_now + required_braking,
+        }
+        timing_clamped = actual_departure > requested_departure + 1e-9
+        timing_reasons: list[str] = []
+        if timing_clamped:
+            for reason, bound in timing_constraints.items():
+                if reason == "requested_reservation_departure":
+                    continue
+                if (bound > requested_departure + 1e-9
+                        and abs(actual_departure - bound) <= 1e-7):
+                    timing_reasons.append(reason)
+        timing_clamp_reason = ",".join(timing_reasons) if timing_reasons else "none"
+
+        # Holding at a lower current speed is intentional: a proposal whose
+        # accepted target is above the live speed does not force an initial
+        # acceleration on the ring.  The curve parameterizer may accelerate
+        # later under its own finite dynamics limits.
+        holding_target = min(current_speed, accepted_target)
+        points, departure_start, moment, staging, cruise_height, has_prefix = (
+            self._continuous_inward_landing_points(
+                uav,
+                lz,
+                airspace,
+                moment_now,
+                scheduled_delay=actual_delay,
+                target_horizontal_speed=accepted_target,
+                holding_target_speed=holding_target,
+            )
+        )
+        # The authoritative executable plan must begin with the complete
+        # serialized live state, including acceleration, even when no ring
+        # prefix was needed.  The parameterizer owns subsequent derivative
+        # samples; this first node is the handoff boundary.
+        if not points:
+            raise RuntimeError("final_approach_initial_state_missing")
+        initial_point = points[0]
+        points = (
+            TrajectoryPoint(
+                initial_point.t,
+                position,
+                velocity,
+                acceleration,
+                initial_point.yaw,
+                initial_point.yaw_rate,
+            ),
+            *points[1:],
+        )
+        if abs(float(departure_start) - actual_departure) > 1e-7:
+            raise RuntimeError("final_approach_departure_timing_mismatch")
+        entry_point = next(
+            (point for point in points if abs(float(point.t) - float(departure_start)) <= 1e-7),
+            None,
+        )
+        if entry_point is None:
+            raise RuntimeError("final_approach_entry_state_missing")
+        actual_entry_speed = float(np.linalg.norm(np.asarray(entry_point.velocity, dtype=float)[:2]))
+        if not math.isfinite(actual_entry_speed):
+            raise RuntimeError("final_approach_entry_speed_nonfinite")
+        if current_speed > accepted_target + 1e-7 and actual_entry_speed > accepted_target + 1e-5:
+            raise RuntimeError("final_approach_braking_prefix_target_missed")
+
+        details = {
+            "target_phase": "landing",
+            "scheduled_departure": float(departure_start),
+            "scheduled_delay": candidate_delay,
+            "speed_residual_mps": residual,
+            "final_approach_geometry": "continuous_inward_v1",
+            "final_approach_execution_mode": "speed_timing_v1",
+            "lz_id": lz.lz_id,
+            "corridor_height": cruise_height,
+            "source_ring_role": uav.ring_role.value,
+            "staging_point": staging.tolist(),
+            "requested_target_speed_mps": requested_target,
+            "accepted_target_speed_mps": accepted_target,
+            "requested_reservation_departure": requested_departure,
+            "accepted_reservation_departure": float(actual_departure),
+            "actual_entry_speed_mps": actual_entry_speed,
+            "speed_clamp_reason": speed_clamp_reason,
+            "timing_clamped": timing_clamped,
+            "timing_clamp_reason": timing_clamp_reason,
+            "timing_constraints": timing_constraints,
+            "candidate_delay_seconds": candidate_delay,
+            "required_braking_duration_seconds": required_braking,
+            "effective_delay_seconds": actual_delay,
+            "vehicle_profile_id": self.config.vehicle_profile_id,
+            "vehicle_profile_version": self.config.vehicle_profile.profile_version,
+        }
+        return TrajectoryPlan(
+            str(uuid.uuid4()),
+            uav.uid,
+            "final_approach",
+            points,
+            moment_now if has_prefix else departure_start,
+            moment,
+            (reservation.reservation_id,),
+            details,
+        )
+
     def final_approach(self, uav, lz, reservation, now: float, *, scheduled_delay: float = 0.0,
                        speed_residual_mps: float = 0.0, airspace=None) -> TrajectoryPlan:
+        if self.config.final_approach_execution_mode == "speed_timing_v1":
+            return self._final_approach_speed_timing_v1(
+                uav,
+                lz,
+                reservation,
+                now,
+                scheduled_delay=scheduled_delay,
+                speed_residual_mps=speed_residual_mps,
+                airspace=airspace,
+            )
         if (self.config.final_approach_geometry_mode == "continuous_inward_v1"
                 and uav.ring_role is RingRole.INNER and airspace is not None):
             points, departure_start, moment, staging, cruise_height, has_prefix = (
