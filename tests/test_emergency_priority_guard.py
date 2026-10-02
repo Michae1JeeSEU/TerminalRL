@@ -85,7 +85,14 @@ def test_guard_defaults_off_and_rejects_incompatible_enablement() -> None:
 
 def test_low_soc_ring_transfer_guard_rejects_below_landing_plus_margin_reserve() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, RingRole.OUTER, soc=0.259, uid=1)
+    # Below the landing floor plus margin while remaining above the profile floor.
+    soc = env.config.min_landing_soc + (
+        0.9
+        * env.config.emergency_energy_margin_seconds
+        * env.config.power_reference
+        / env.config.energy_capacity
+    )
+    uav = _ring_uav(env, RingRole.OUTER, soc=soc, uid=1)
     intent = LowLevelIntent(1.0, 0.0, 0.0)
 
     decision = env._runtime_shortlist_release(uav, intent, (intent,))
@@ -126,7 +133,14 @@ def test_nonfinal_guard_allows_projected_soc_below_trigger_above_emergency_reser
 
 def test_final_guard_keeps_touchdown_floor() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, RingRole.INNER, soc=0.259, uid=1)
+    # Below the landing floor plus margin while remaining above the profile floor.
+    soc = env.config.min_landing_soc + (
+        0.9
+        * env.config.emergency_energy_margin_seconds
+        * env.config.power_reference
+        / env.config.energy_capacity
+    )
+    uav = _ring_uav(env, RingRole.INNER, soc=soc, uid=1)
     candidate = RepairCandidate("requested", LowLevelIntent(1.0, 0.0, 0.0))
     lz_id = env.lz_manager.choose_rule_zone(uav, env.now)
     _, plan, _ = env._candidate_plan(

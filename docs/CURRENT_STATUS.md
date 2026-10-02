@@ -1,5 +1,16 @@
 # 项目当前状态
 
+## 2026-10-02 基础实现复核更新（独立块）
+
+本块只补充本轮基础实现核查，不改写下方历史状态段。详细证据见 [P3 基础实现复核与修复审核方案](evidence/v4_2/p3_foundation_review_20261002.md)。
+
+- 已确认两个 isolated implementation defects：① final speed/timing proposal 在当前 final-approach generator fixture 中未形成不同 physical trajectory/hash（两种 geometry 各 25 rows 均为单一 hash）；② 最近 task-neutral、`task_priority_enabled=false` 的 88D observation 中 STANDARD/CARGO/EMERGENCY/SURVEILLANCE 在同一 physical fixture 下 byte-equal；显式 own service duration 与 earliest compatible-LZ release wait 两个新增字段在 90D append 中提供。priority-enabled 88D raw mission token 可区分 mission；因此该 alias 不泛化为全项目 88D 问题，也不回溯解释最早 priority-aware P3 的全部退化。两项均为 isolated contract 事实，不是 closed-loop performance 或全局根因结论，因果份额尚未测定。
+- `diagnose_p3_foundation_contracts_20261002.py` v3 正常 CLI 在 Windows 11、CPython `3.12.14`、NumPy `2.3.5` 上为 `CONTRACTS_READY`、exit `0`、`technical_errors=[]`；最新本地 artifact 为 `.tmp/p3_foundation_review_20261002_contracts_v3_local.json`，v1/v2 保留。
+- 初始基础 suite 为 `67 passed / 4 failed`；主审复核 numerical fixture 后确认旧 SOC `.37` 的 negative 断言不成立，`.25` fixture 才产生负 route slack，而立即应急 required SOC `.2060807` 仍可行。修复仅涉及两个测试文件，生产规则未改；targeted `16 passed`，原 9-file suite `71 passed`、exit `0`，SHA parity 已核验。P3 foundation report 保留初始失败表及修复依据。
+- 最新 task-neutral dense24 的 `_build_neutral_inputs()` builder-only runtime verification 已在服务器 `/home/user/envs/terminal_env/bin/python` 执行并 exit `0`；无 environment reset/step、模型或训练。实际 `neutral[dense24]` 确认 energy/emergency priority guards=true、trigger `.40`、`continuous_inward_v1`、final capacity `3`、nearest-available、downstream-priority、canonical WAIT、legacy student decision mask、SOC urgency time weight `2`，以及 `observation_schema_version=phaseA_low_obs_v2_1_retry_state`（88D）。这确认两个 guard 已打开；不是 runtime rollout 或 performance result。
+- V4.2 gate/proposal decode、WAIT zeroing、sampled requested proposal + K3 fallback、requested PPO likelihood 保存、scalar team reward、actor-mask 和 complete-cycle aggregation 已核查。`gamma=lambda=1`/full-MC 旧证据排除了已记录的折扣误用，但不能据此确立 team-credit、entropy 或 clipping 根因；queue/service business cost 在当前 scalar reward 中的错位贡献尚未量化。
+- P3 仍 unresolved，`PPO_ALLOWED=false`；无 training、held-out 或新 checkpoint。首阶段生产修改与 90D schema/权重迁移仍待用户审核，先做 opt-in 小样本无训练闭环验证。
+
 > **LATEST P3 STATUS — 2026-10-01 normal-inner gate-value FULL terminal:** The mechanical run is terminal FULL_OK; PID 2191437 exited. Full artifact SHA=1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba. The immutable pilot was reused and 312 new branches were run, for 416 natural branches over 2749 exact-replay ticks; censor/error/hardsafety counts were zero. Source/model/config/controller/caller-RNG and replay checks passed. PPO_ALLOWED=false; no background job remains.
 
 All four selected states have C=1. The exact full-cycle values are:

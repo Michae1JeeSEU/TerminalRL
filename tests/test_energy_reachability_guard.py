@@ -145,7 +145,8 @@ def test_route_guard_requests_first_feasible_budget_shortcut(monkeypatch) -> Non
 
 def test_route_aware_guard_rejects_negative_budget_without_resource_side_effects() -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, 0.37)
+    # Valid negative transfer budget with an immediately feasible emergency witness.
+    uav = _ring_uav(env, env.config.min_landing_soc + 0.15)
     plan = _transfer_plan(env, uav)
     lz_before = tuple(
         (zone.status, zone.reserved_by, zone.expected_release_at)
@@ -207,7 +208,14 @@ def _patch_route_blocked_candidate(monkeypatch, env: TerminalParallelEnv, plan):
 
     def fake_candidate_plan(uav, _candidate, target, _snapshot, _lz_id):
         calls.append(uav.uid)
-        return object(), plan, env._candidate_energy_guard_reason(uav, plan, target)
+        proposal = env.scheduler.propose(
+            uav,
+            _candidate.intent,
+            _snapshot,
+            target,
+            delay_seconds=_candidate.delay_seconds,
+        )
+        return proposal, plan, env._candidate_energy_guard_reason(uav, plan, target)
 
     monkeypatch.setattr(env, "_candidate_plan", fake_candidate_plan)
     return calls
@@ -215,7 +223,8 @@ def _patch_route_blocked_candidate(monkeypatch, env: TerminalParallelEnv, plan):
 
 def test_negative_transfer_budget_redirects_to_certified_emergency_route(monkeypatch) -> None:
     env = TerminalParallelEnv(_config())
-    uav = _ring_uav(env, 0.37)
+    # Valid negative transfer budget with an immediately feasible emergency witness.
+    uav = _ring_uav(env, env.config.min_landing_soc + 0.15)
     env.active[uav.uid] = uav
     plan = _transfer_plan(env, uav)
     calls = _patch_route_blocked_candidate(monkeypatch, env, plan)
