@@ -134,3 +134,9 @@ exact-one launch UTC=`2026-10-02T13:28:22.462494+00:00`，PID=`2323277`，argv=`
 heartbeat=`p3-v3-r2` 已创建 ACTIVE、每 `10 min`，正常进度静默，完成/新异常/缺少预期输出/需要用户决定时通知，终态删除。第一次创建调用缺少 thread destination，被参数校验拒绝且未创建；指定 `destination=thread` 后成功。运行中 sources 保持不变，无训练、held-out、optimizer 或 checkpoint 写入，`PPO_ALLOWED=false`。后续 business/error/censor 与资格结论待完整 comparison。
 
 上述结果区分 `newly_run` 与 `preexisting_artifact`，不构成完整 audit 或业务性能结论。相关协议见 [P3 foundation repair protocol](p3_foundation_repair_protocol_20261002.md)；基础链路记录见 [P3 foundation review](p3_foundation_review_20261002.md)。
+
+## R2 新 ring-budget 异常：已准备隔离修复，等待终态应用
+
+C1 legacy88 的 `1017` successful ticks 后出现 `RuntimeError: ring_hold_tangential_budget_unavailable`；result SHA=`4f1bf7d52d448572fc0f524bc2513be61cfc0ff689d01a41b903d89709854199`，partial requests/resolved=`24/8`、normal/failed/unresolved=`6/2/16`，safety none、invariant/uncertified=0。R2 继续运行下一臂，未修改 frozen sources。异常结果未保存 failing PVA 或 traceback，不能声称精确回放了 tick 1017。
+
+用户随后要求等待期间先修复异常。primary 已准备将该 bounded-generator rejection 改为既有 `TrajectoryInfeasibleError`，并用真实高负载 ring boundary / energy-query 调用复现：原代码 `4 failed / 4 passed`，隔离候选 `8 passed`；扩大精确候选与 canonical tests 回归为 `50 passed in 3.23 s`、exit `0`，15 个 frozen source hashes 前后相同。能量查询可保守跳过不可行 pad，全部不可行时保留 `inf/-inf`；非法状态错误仍暴露，已有可行 V3/V2 曲线相同。安全/动力学/energy/reward 门槛不变。准确补丁、hash、回归与终态后的 primary application 顺序见 [R2 ring-budget 修复记录](trajectory_v3_r2_ring_budget_repair_20261002.md)；该修复尚未应用到运行中 R2，不能据此重解释其结果或认定 P3 已解决。
