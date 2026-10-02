@@ -65,6 +65,51 @@ server NumPy `2.5.1` 的 `256`-segment 对照中，scalar 为 `0.0893419 s`、ba
 
 启动时初始 root progress snapshot 为 `running`、`ticks=1`、`completed_arms=0/8`、`cell=1 legacy88`、wall=`37.6963 s`。对应 arm1 为 `ticks=1`、`simulation_seconds=1`、`active=12`、`generated_requests=12`、`queue=0`、`service=0`、reward=`-0.1778916698542347`、`safety_violation_status=none`。该启动快照中 PID correct alive；`matrix.log` 已存在但为 `0` bytes，未见 warnings。 最新只读快照（UTC `12:18:33`）显示 PID alive、`Rsl`、CPU=`105%`，root progress 仍为 `running`、`1/8` 臂完成，cell=`1/repaired88` 已到 `25 ticks`、safety=`none`；legacy88 `result.json` 已存在，comparison 尚无。该快照仅为运行进度，不代表 legacy 首臂 qualification。 cell1 legacy88 result SHA=`cb1cae6bab957f2af1ceb34ada7bb0dbc921e8881a8c854e9a98274acdffbdb1`，status=`error`、stop_reason=`exception`，RuntimeError 为 `could not time-parameterize a dynamically feasible continuous landing`；记录 `13` successful ticks（last tick=`12`、simulation=`13`），hard/invariant/uncertified=`0`、safety=`none`，ledger-only validity=`valid` 但 arm error 存在，`12` requests、`0` resolved、`12` unresolved，expected cohort `24` 未达到、`censored=null`。这是 technical trajectory failure，不作 business performance 或 learning 结论。primary 正在 bounded replay exact failed first `14` ticks 以获取 traceback，matrix source 保持 immutable。
 
-root 已创建 heartbeat automation `p3-v3`：`ACTIVE`、每 `10 min`、normal runs 静默；终态删除。当前仅记录 launch 与初始健康检查，未宣称全臂完成或 qualification；没有 held-out、training、optimizer step、checkpoint write 或 default promotion，`PPO_ALLOWED=false`。
+上述 launch 段记录启动时与中途快照；后续终态见下方 registered matrix terminal snapshot。heartbeat automation `p3-v3` 已在终态由 primary 删除。此前 held-out、training、optimizer step、checkpoint write、default promotion 均未执行，`PPO_ALLOWED=false`。
+
+## Registered matrix terminal snapshot（`newly_run`）
+
+comparison artifact SHA=`d7cee7a34092cf885aa213961fa86ceba68d5dfb3b125607164d4e126183381b`，status=`COMPLETED_WITH_ISSUES`，`executed_arms=8/8`、`stopped_early=false`、wall=`1542.282646 s`。UTC `12:44:37` 时 PID=`2303790` 已 absent，OS exit code 尚未观测到。八臂均为 `status=error`、`stop_reason=exception`、`censored=null`、`resolved=0`；ledger-only validity 均为 `valid`、`errors=[]`，但 arm error 使其不构成 arm qualification。
+
+| cell / arm | successful ticks / requests | observed error |
+|---|---:|---|
+| C1 `legacy88` | `13 / 12` | continuous landing time-parameterization error |
+| C1 `repaired88`、`repaired90_zero_initialized` | `84 / 17` each | `ring_hold_duration_shorter_than_required` |
+| C1 `nominal_rule_legacy88` | `45 / 15` | continuous landing time-parameterization error |
+| C1 `nominal_rule_repaired90` | `9 / 12` | `ring_hold_duration_shorter_than_required` |
+| C2 `legacy88` | `2 / 12` | continuous landing time-parameterization error |
+| C2 `repaired88`、`repaired90_zero_initialized` | `118 / 19` each | `ring_hold_duration_shorter_than_required` |
+
+八臂 hard/invariant/uncertified 均为 `0`，event lists 均为空，frozen flags 均为 false。两 cell 的 zero-initialized comparison 中 requested tape 最大 diff=`0`，wait/elapsed/energy metrics 最大 diff=`0`，trajectory hashes、request identity、outcomes 相等；这些记录均只到 error 为止，属于 partial evidence，不是 performance qualification。
+
+root 已确认 isolated legacy 14-tick probe JSON SHA=`dabeed4586a932d5468651340d1e6280f094516a7ee18f4f51112a2fd605c0dc`；caller stack 路径为 `envs/parallel_env.py:709 → core/energy_reachability.py:289 → core/trajectory_generator.py:1862 → core/trajectory_time_parameterization.py:1391`。该 probe 记录 uncaught fallback candidate error 的 caller defect；参数化的后续数值复核见下方。
+
+旧 matrix 的 artifact 与 source binding 保留，不覆盖失败记录。当前修复与重试状态见下方，`PPO_ALLOWED=false`。
+
+## Energy-query 与 altitude numeric repair（primary 实施）
+
+新运行的 isolated bounds probe（`numeric_probe/bounds.json`，SHA=`20f3d7433bea72d0de9d3cfbe1466c46f3377eb147e21232b9ba129212195fae`）复用首臂最后失败的七节点 departure。原有限搜索的 16 个 profile 均在末段达到 `120.00617783094059 m`，超出 `120 m + .001 m` 的既有 altitude tolerance；水平加速度与速度均在上限内。四档 speed scale 均保留相同高度 overshoot，说明单纯继续降速不能消除这个几何插值反例。这是该捕获 fixture 的数值原因，不泛化为所有不可行轨迹的原因。
+
+另一个 registered C1 rule-repaired 10-tick probe（`numeric_probe/ring.json`，SHA=`78dd57f6bc840261fad65e9109f323217d38d244b142509c26092f9eae97f58c`）在 9 个 successful ticks 后复现能量预算的短 pad wait：等待 `0.21230663739135025 s`，current/target speed=`18/20 m/s`，而完整 smooth speed ramp 至少需要 `2.8385059450509385 s`。预算使用完整-ramp API，实际环上执行使用 partial finite-step integrator，二者合同不一致。
+
+primary 亲自修改三个 core 文件，并编写 `tests/test_v3_energy_reachability_failures.py`（含旧 fixture 修正的 code/tests commit=`5bd9b62e218d71640deb8bd73a9c691af454052b`，6 files，remote 未配置、未 push）：
+
+- V3 原曲线通过时继续使用原曲线；仅对 altitude 越界的未通过候选，约束内部节点的 vertical slope，使 quintic Bernstein controls 在既有高度包络内。保持 live/terminal p/v/a、节点、时序、XY 与 acceleration；之后仍需原全曲线 dynamics validator 通过。
+- V3 energy-query 的未来 holder 使用与环境执行相同的 `ring_motion_step` 和 `physics_dt`，在 pad ETA 保留尚未完成的 speed transition。
+- 明确耗尽有限搜索的轨迹使用 `TrajectoryInfeasibleError`；能量查询跳过无可执行 witness 的兼容 pad，全部不可行时返回原 `inf/-inf` 拒绝预算。其他 RuntimeError 继续暴露。安全间隔、高度上限、SOC/energy 门槛、reward、authority 和 V2 默认路径未调整。
+
+首轮扩大 targeted suite 为 `56 passed / 1 failed`（日志 `energy_numeric_repair_targeted.log`，SHA=`6bf2ac10aec1d066c65d1a99a73946a61390d532abf626a9c95b5e4e49624e9a`），所有新增 cases 已通过。唯一失败是旧 warm-start fixture 假定 `.35` SOC 必须拒绝。冻结 pre-repair helper 与当前 helper 的 V2 numerical comparison 都为 required SOC=`0.2060807011022114`；artifact=`warm_start_soc_probe.json`，SHA=`8f434049537e830f4ca5a5559e44e6a79d0f39cfb11708c1b7b1dd720644e6a0`。因此 primary 仅将拒绝测试的 SOC 改为明确不足的 `.15`，未改变生产 energy 规则。targeted retry 为 `57 passed in 3.38 s`、exit `0`，日志 SHA=`65813bbb49b79be2e83ad6367ba7214d50319a8160e021b9f3e479336b2d2296`。
+
+既有四条 V3 reference 的新 capture（`energy_numeric_reference_after.json`，SHA=`b834bcd91029e386084bcb95111f062bf341c9275cf206be3a65cab29c9bdfcf`）exit `0`、所有 validation errors 为空；除 UUID plan_id 与 source hashes 外，与 `batch_reference_after.json` 的全部 field、point p/v/a/time、segments、bounds 和 trajectory hashes 完全相同。
+
+两个原异常 prefix replay 已完成为 `PREFIX_SMOKE_OK`、exit `0`；artifact=`energy_numeric_repair_smoke/result.json`，SHA=`033492a6396bf942c706153a3ed92e1432ab9417b94342d1f9c09bbd900f1403`。C1 legacy88=`14 ticks`、rule-repaired90=`10 ticks`，均越过各自原 exception 位置；两臂 error=null、technical errors=[]、safety none、uncertified/invariant=0、source hashes before/after 相等。两臂均 censored、resolved=0，仍是接口/异常修复证据，不能作为完整性能 qualification。预编译首次因未使用正确 cwd 返回 ENOENT，指定 cwd 后 exit 0；诊断没有生成 launch metadata 或持久化 stdout log，实际 JSON 保留，PID=`2315795` 已退出。扩大 unified suite 尚待执行。
+
+扩大回归采用本轮明确列出的 `33` 个 test files；之前 `38`-file 命令清单未保存，本轮不声称重复原清单。首轮为 `280 passed / 3 failed / 1 skipped in 167.42 s`、exit `1`，日志=`energy_numeric_repair_unified.log`，SHA=`36900b80bc5824a42d4eb5d2ba9b773d2ad870d640ec6921eabddcc50bee373e`。三个失败均在旧 `test_emergency_energy_v2.py`：solo energy `1200/1500+.1=.9` 并没有超过 `1`；middle `.30` 和 inner `.249` SOC 高于各 pad 立即应急所需 SOC，不能作为 insufficient/under-reserve fixture。
+
+primary 的 frozen old-source/current-source probe 确认三个前提在修复前后相同；verified artifacts 为 `emergency_fixture_binding_verified_baseline.json`（SHA=`e77b94af71240388e5ee59d33788f58fcc9d64f16f84e0a57ab7b2c667b3666b`）及 `emergency_fixture_binding_verified_current.json`（SHA=`649c6ec962467722d2aea392c7137550b107dc0d8af85ab591da86a4863f92ff`）。baseline 的实际 generator / parameterizer definition files 明确绑定 `.tmp/*pre_numeric_repair*`，current 绑定 core 文件；除路径外输出相同，middle required SOC=`.1829324892–.2095224883`、inner=`.1465957755–.1552703699`，均 accepted。初次 probe 只替换模块但未重绑预先导入的 env globals，因此其 baseline artifact 不接受为旧执行证据，两个初始 artifacts 仍保留。
+
+primary 将 nominal solo energy fixture 设置为 capacity（加 reserve 后超过 `1`），两个不足 SOC fixture 设置为 `.5 * min_landing_soc`。生产门槛未改变；之后只重跑修改的 emergency-energy 文件及 warm-start / 新 V3 regression files，不重复已通过的其他 30 个文件。focused retry 为 `27 passed in .31 s`、exit `0`，日志=`energy_numeric_repair_emergency_retry.log`，SHA=`14406e8063484cccb15dc872f1057585b369b748b59f511ad27f39f31c1e74df`。本轮 33-file 集合的三处失败均已闭合；该结论综合初次回归与 focused retry，不声称重新运行完整集合。唯一 skip 仍为旧 V2 `diagnostic_snapshot` API 已移除。
+
+R2 preflight=`CHECK_ONLY_OK`、exit `0`、8 arms；artifact=`/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002/preflight.json`，SHA=`9bd34d9217d19ff0d2555d7219858dc235db9a579b808df91391c993534d8ad2`。新 manifest SHA=`ddaf93ecdf774224b3fd2cd1a4c2a69fb8dde8745a3b44791475bb33bd0914e1` 绑定 15 个 source hashes（增加 energy_reachability），local/server 全相同；checkpoint SHA 与 V2/V2/V3 binding 保持固定，frozen flags 全 false，compile exit `0`。launcher dry-run 正确指向 R2 root，未启动 full matrix。
 
 上述结果区分 `newly_run` 与 `preexisting_artifact`，不构成完整 audit 或业务性能结论。相关协议见 [P3 foundation repair protocol](p3_foundation_repair_protocol_20261002.md)；基础链路记录见 [P3 foundation review](p3_foundation_review_20261002.md)。

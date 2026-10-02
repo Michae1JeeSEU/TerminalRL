@@ -172,7 +172,7 @@ error/lifecycle error 为 `null`；三个 arm 的 `uncertified=0`、counter sour
 hard-separation 事件均为空。repaired88 与 zero-initialized repaired90 的 requested
 action tape、wait/elapsed/energy 和 final trajectory hashes 均相等。
 
-完整八臂 `--run` 仍未启动。
+本节为 V3 初始预检时的历史记录；完整八臂后来已运行并发生 technical errors，重试登记见下方。
 
 预检与每个 arm 输出同时记录 source checkpoint schema、source load schema、runtime
 environment schema 和 frozen transfer 标识，便于区分 checkpoint load boundary 与
@@ -187,3 +187,11 @@ SHA256 为 `380da099c4595a4370d979f7d9730b782267a48c6de8cb53aa70e11c88e72305`。
 四条 fixture 的 analytic altitude bounds 均为
 `min_altitude=4.440892098500626e-16`、`max_altitude=40.0`；状态仍为
 `KINEMATIC_CONSISTENCY_PASS`，`finding_count=0`，`technical_error_count=0`。
+
+## V3 R2：相同八臂协议的基础实现重试
+
+初次 V3 八臂 comparison 为 `COMPLETED_WITH_ISSUES`，八臂均因 energy-query 的 uncaught fallback failure 或短 pad-wait 的 complete-ramp 合同错误而停止；artifact 与旧 source binding 保留在原输出根目录。数值原因、修复与测试 provenance 见 [V3 修复结果](trajectory_v3_repair_results_20261002.md)。
+
+R2 只修复 altitude 插值约束、V3 partial ring-wait prediction，以及明确不可行 fallback 的保守返回；继续使用同一 checkpoint、两组 env/policy seeds、八臂、24 requests、1800 ticks、action authority、energy/reward 和 hard-safety 停止规则。新输出根目录固定为 `/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002`，不复用或覆盖失败 arm。仍是 frozen V2-source → V3-runtime inference，无训练、held-out、optimizer 或 checkpoint 写入，不自动 promotion 或准入 PPO。
+
+启动前需通过 targeted / unified regression、既有四条已通过曲线的逐字段比较，以及原 C1 legacy 前 14 ticks / rule-repaired 前 10 ticks 的异常位置回放。回放只验证已知技术失败 prefix，达到 tick cap 标 censored；它不能替代完整业务闭环。R2 启动时绑定本地 execution commit 和 15 个 execution/evaluation source hashes（增加 `core/energy_reachability.py`），验证服务器 Syncthing parity 后仅启动一次。运行中保持 sources 不变，真实进程、日志和初始 progress 确认后创建 heartbeat，终态删除。

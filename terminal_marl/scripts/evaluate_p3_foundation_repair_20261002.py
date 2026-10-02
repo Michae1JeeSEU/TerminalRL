@@ -46,7 +46,7 @@ from terminal_marl.training import run_p3_forced_wait_frozen_20260930 as forced
 from terminal_marl.training import terminal_lifecycle_metrics as lifecycle
 
 
-STAGE = "P3_FOUNDATION_REPAIR_COMPARISON_20261002"
+STAGE = "P3_FOUNDATION_REPAIR_COMPARISON_V3_R2_20261002"
 PPO_ALLOWED = False
 HELDOUT_USED = False
 TEACHER_USED = False
@@ -61,7 +61,7 @@ SOURCE_CHECKPOINT_SHA256 = (
     "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
 )
 OUTPUT_ROOT = Path(
-    "/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002"
+    "/home/user/training_outputs/terminal/p3_foundation_repair_v3_r2_20261002"
 )
 
 TRAJECTORY_SCHEMA_V2 = "executable_trajectory_v2"
