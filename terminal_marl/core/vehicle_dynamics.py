@@ -8,6 +8,7 @@ from typing import Iterable
 import numpy as np
 
 from .vehicle_profiles import VehiclePerformanceProfile
+from .polynomial_trajectory import QuinticSegment, prime_quintic_bounds
 
 
 @dataclass(frozen=True)
@@ -359,6 +360,15 @@ class VehicleDynamics:
         except (AttributeError, TypeError, ValueError):
             return ["invalid_time_parameterization"]
         if not all(np.isfinite(value) and value >= 0.0 for value in limits.values()):
+            return ["invalid_time_parameterization"]
+
+        try:
+            real_quintic_segments = tuple(
+                segment for segment in segments if type(segment) is QuinticSegment
+            )
+            if real_quintic_segments:
+                prime_quintic_bounds(real_quintic_segments)
+        except (AttributeError, TypeError, ValueError, RuntimeError, FloatingPointError, OverflowError, np.linalg.LinAlgError):
             return ["invalid_time_parameterization"]
 
         yaw_rate_limit = math.radians(float(self.profile.max_yaw_rate_deg_s))

@@ -258,3 +258,213 @@ class QuinticSegment:
         }
         object.__setattr__(self, "_bounds_cache", tuple((key, float(value)) for key, value in bounds.items()))
         return dict(bounds)
+
+
+def _batch_real_roots_in_unit_interval(
+    coefficients: Iterable[Iterable[float]],
+) -> list[list[float]]:
+    """Return the scalar root-filtering result for a batch of polynomials.
+
+    The trimming and root acceptance rules intentionally mirror
+    :func:`_real_roots_in_unit_interval`.  Polynomials are grouped only by
+    their exact trimmed degree.  Coefficients are not rounded or used as a
+    cache key; each group receives its own companion matrix and eigensolve.
+    """
+    trimmed = [_trim_polynomial(values) for values in coefficients]
+    result: list[list[float]] = [[] for _ in trimmed]
+    groups: dict[int, list[int]] = {}
+    for index, values in enumerate(trimmed):
+        if values.size <= 1 or not np.any(np.abs(values) > 0.0):
+            continue
+        groups.setdefault(values.size - 1, []).append(index)
+
+    for degree, indices in groups.items():
+        # The installed scalar ``polyroots`` source calls
+        # ``m = polycompanion(c)`` directly.  ``polycompanion`` itself builds
+        # the power-series companion matrix with its subdiagonal and final
+        # column in the same ascending-coefficient convention, so the batch
+        # eigensolve uses that exact matrix orientation.
+        if degree == 1:
+            roots = np.asarray(
+                [[-trimmed[index][0] / trimmed[index][1]] for index in indices],
+                dtype=float,
+            )
+        else:
+            matrices = np.stack(
+                [np.polynomial.polynomial.polycompanion(trimmed[index]) for index in indices],
+                axis=0,
+            )
+            roots = np.linalg.eigvals(matrices)
+        if roots.shape != (len(indices), degree):
+            raise RuntimeError("batched companion eigensolve returned an invalid shape")
+        for row, index in enumerate(indices):
+            accepted: list[float] = []
+            for root in roots[row]:
+                complex_root = complex(root)
+                if abs(complex_root.imag) > _IMAG_TOLERANCE:
+                    continue
+                real_root = float(complex_root.real)
+                if -_ROOT_TOLERANCE <= real_root <= 1.0 + _ROOT_TOLERANCE:
+                    accepted.append(float(np.clip(real_root, 0.0, 1.0)))
+            result[index] = accepted
+    return result
+
+
+def _batch_points(roots: Iterable[Iterable[float]]) -> np.ndarray:
+    """Build a padded candidate-point matrix with scalar point semantics."""
+    points = [_unique_unit_points((0.0, 1.0, *values)) for values in roots]
+    if not points:
+        return np.empty((0, 0), dtype=float)
+    width = max(values.size for values in points)
+    result = np.zeros((len(points), width), dtype=float)
+    for index, values in enumerate(points):
+        result[index, : values.size] = values
+    return result
+
+
+def _evaluate_polynomial_batch(coefficients: np.ndarray, points: np.ndarray) -> np.ndarray:
+    """Evaluate one vector polynomial per batch row using Horner's rule."""
+    values = np.asarray(coefficients, dtype=float)
+    if values.ndim != 3 or points.ndim != 2 or values.shape[0] != points.shape[0]:
+        raise ValueError("batched vector polynomial shapes are incompatible")
+    result = np.zeros((values.shape[0], points.shape[1], values.shape[2]), dtype=float)
+    for coefficient_index in range(values.shape[1] - 1, -1, -1):
+        coefficient = values[:, coefficient_index, :]
+        result = result * points[:, :, None] + coefficient[:, None, :]
+    return result
+
+
+def _evaluate_scalar_polynomial_batch(coefficients: np.ndarray, points: np.ndarray) -> np.ndarray:
+    """Evaluate one scalar polynomial per batch row using Horner's rule."""
+    values = np.asarray(coefficients, dtype=float)
+    if values.ndim != 2 or points.ndim != 2 or values.shape[0] != points.shape[0]:
+        raise ValueError("batched scalar polynomial shapes are incompatible")
+    result = np.zeros((values.shape[0], points.shape[1]), dtype=float)
+    for coefficient_index in range(values.shape[1] - 1, -1, -1):
+        coefficient = values[:, coefficient_index]
+        result = result * points + coefficient[:, None]
+    return result
+
+
+def prime_quintic_bounds(segments: Iterable[QuinticSegment]) -> tuple[dict[str, float], ...]:
+    """Prime analytic bounds caches for a batch of quintic segments.
+
+    The scalar :meth:`QuinticSegment.bounds` implementation remains the
+    reference path.  This helper applies the same coefficient trimming,
+    companion-matrix root filtering, candidate endpoints, and Horner
+    evaluation in batches, then stores the resulting immutable cache tuple on
+    each uncached segment.  A tuple of fresh public dictionaries is returned
+    in input order; repeated or already-cached segments retain their scalar
+    cache semantics.
+    """
+    batch = tuple(segments)
+    if not batch:
+        return ()
+    if any(not isinstance(segment, QuinticSegment) for segment in batch):
+        raise TypeError("segments must contain only QuinticSegment objects")
+
+    uncached_indices = [
+        index for index, segment in enumerate(batch) if segment._bounds_cache is None
+    ]
+    if not uncached_indices:
+        return tuple(
+            {key: float(value) for key, value in segment._bounds_cache or ()}
+            for segment in batch
+        )
+
+    uncached = [batch[index] for index in uncached_indices]
+    durations = np.asarray([segment.duration for segment in uncached], dtype=float)
+    coefficients = np.stack([segment.coefficients for segment in uncached], axis=0)
+    velocity_u = np.stack(
+        [_derivative_coefficients(segment.coefficients, 1) for segment in uncached], axis=0
+    )
+    acceleration_u = np.stack(
+        [_derivative_coefficients(segment.coefficients, 2) for segment in uncached], axis=0
+    )
+    jerk_u = np.stack(
+        [_derivative_coefficients(segment.coefficients, 3) for segment in uncached], axis=0
+    )
+
+    horizontal_speed_coefficients = [
+        _dot_polynomial(velocity_u[index], acceleration_u[index], (0, 1))
+        for index in range(len(uncached))
+    ]
+    horizontal_acceleration_coefficients = [
+        _dot_polynomial(acceleration_u[index], jerk_u[index], (0, 1))
+        for index in range(len(uncached))
+    ]
+    vertical_speed_coefficients = [acceleration_u[index, :, 2] for index in range(len(uncached))]
+    vertical_acceleration_coefficients = [jerk_u[index, :, 2] for index in range(len(uncached))]
+    altitude_root_coefficients = [velocity_u[index, :, 2] for index in range(len(uncached))]
+    altitude_coefficients = [coefficients[index, :, 2] for index in range(len(uncached))]
+
+    horizontal_speed_roots = _batch_real_roots_in_unit_interval(horizontal_speed_coefficients)
+    horizontal_acceleration_roots = _batch_real_roots_in_unit_interval(
+        horizontal_acceleration_coefficients
+    )
+    vertical_speed_roots = _batch_real_roots_in_unit_interval(vertical_speed_coefficients)
+    vertical_acceleration_roots = _batch_real_roots_in_unit_interval(
+        vertical_acceleration_coefficients
+    )
+    altitude_roots = _batch_real_roots_in_unit_interval(altitude_root_coefficients)
+
+    horizontal_speed_points = _batch_points(horizontal_speed_roots)
+    horizontal_acceleration_points = _batch_points(horizontal_acceleration_roots)
+    vertical_speed_points = _batch_points(vertical_speed_roots)
+    vertical_acceleration_points = _batch_points(vertical_acceleration_roots)
+    altitude_points = _batch_points(altitude_roots)
+
+    horizontal_velocity = _evaluate_polynomial_batch(
+        velocity_u, horizontal_speed_points
+    )[:, :, :2] / durations[:, None, None]
+    horizontal_acceleration = _evaluate_polynomial_batch(
+        acceleration_u, horizontal_acceleration_points
+    )[:, :, :2] / durations[:, None, None] ** 2
+    vertical_velocity = _evaluate_polynomial_batch(
+        velocity_u, vertical_speed_points
+    )[:, :, 2] / durations[:, None]
+    vertical_acceleration = _evaluate_polynomial_batch(
+        acceleration_u, vertical_acceleration_points
+    )[:, :, 2] / durations[:, None] ** 2
+    altitude = _evaluate_scalar_polynomial_batch(coefficients[:, :, 2], altitude_points)
+
+    scalar_bounds: list[dict[str, float]] = []
+    for index in range(len(uncached)):
+        bounds = {
+            "max_horizontal_speed": float(
+                np.max(np.linalg.norm(horizontal_velocity[index], axis=1))
+            ),
+            "max_horizontal_accel": float(
+                np.max(np.linalg.norm(horizontal_acceleration[index], axis=1))
+            ),
+            "max_climb_rate": float(max(0.0, np.max(vertical_velocity[index]))),
+            "max_descent_rate": float(max(0.0, -np.min(vertical_velocity[index]))),
+            "max_vertical_accel_up": float(
+                max(0.0, np.max(vertical_acceleration[index]))
+            ),
+            "max_vertical_accel_down": float(
+                max(0.0, -np.min(vertical_acceleration[index]))
+            ),
+            "min_altitude": float(np.min(altitude[index])),
+            "max_altitude": float(np.max(altitude[index])),
+        }
+        if not all(np.isfinite(value) for value in bounds.values()):
+            raise ValueError("batched quintic bounds must be finite")
+        scalar_bounds.append(bounds)
+
+    for segment, bounds in zip(uncached, scalar_bounds):
+        object.__setattr__(
+            segment,
+            "_bounds_cache",
+            tuple((key, float(value)) for key, value in bounds.items()),
+        )
+
+    result: list[dict[str, float]] = []
+    for segment in batch:
+        if segment._bounds_cache is None:
+            # This branch is unreachable after the cache writes above, but
+            # retaining the guard makes an unexpected cache mutation fail
+            # closed rather than fabricating a public result.
+            raise RuntimeError("quintic bounds cache was not populated")
+        result.append({key: float(value) for key, value in segment._bounds_cache})
+    return tuple(result)

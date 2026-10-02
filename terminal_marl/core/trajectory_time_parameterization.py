@@ -7,6 +7,7 @@ import math
 import numpy as np
 
 from .vehicle_dynamics import VehicleDynamics
+from .polynomial_trajectory import prime_quintic_bounds
 
 
 @dataclass(frozen=True)
@@ -192,6 +193,11 @@ class TrajectoryTimeParameterizer:
 
     def _v3_segments_feasible(self, segments) -> bool:
         """Check analytic segment bounds and a small finite-state sanity set."""
+        segments = tuple(segments)
+        try:
+            prime_quintic_bounds(segments)
+        except (TypeError, ValueError, RuntimeError, FloatingPointError, OverflowError, np.linalg.LinAlgError):
+            return False
         profile = self.dynamics.profile
         tolerance = 1e-3
         required_bounds = (

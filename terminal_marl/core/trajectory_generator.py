@@ -11,7 +11,7 @@ import uuid
 import numpy as np
 
 from .config import RingRole
-from .polynomial_trajectory import QuinticSegment
+from .polynomial_trajectory import QuinticSegment, prime_quintic_bounds
 from .trajectory_time_parameterization import GeometricPath, TrajectoryConstraints, TrajectoryTimeParameterizer
 from .vehicle_dynamics import VehicleDynamics
 
@@ -538,6 +538,7 @@ class TrajectoryGenerator:
                     )
                     for left, right in zip(points, points[1:])
                 )
+                prime_quintic_bounds(segments)
                 if all(
                     segment.bounds()["max_horizontal_speed"] <= profile.max_horizontal_speed + 1e-3
                     and segment.bounds()["max_horizontal_accel"] <= profile.max_horizontal_accel + 1e-3

@@ -8,8 +8,11 @@
 - V3 check-only preflight 已通过，source/load 为 V2、runtime 为 V3，使用 frozen source-to-runtime transfer；unified retry 为 `298 passed / 1 skipped`，focused diagnostic `6 passed`。
 - Corrected V3 smoke 已接受：三 source 各 `2 ticks`、`SMOKE_OK`、`censored=true`，validity valid、technical errors 为空，safety none、uncertified/invariant 为 `0`，energy coverage valid，V2/V2/V3 bindings 与 fixed source 一致，repaired88/90 actions、metrics、hashes、outcomes、request identity 相等。
 - 此前 compact/strengthened smoke 失败 provenance 保留；counter mapping 已修正为 runtime `joint_safety_fail_closed`，缺失字段保持 `None/reject`，不弱化安全规则。
-- Corrected evaluator tests `16 passed`；当前 core implementation commit 为 `f1dfb1034d6517fb1b5197035dc92e3eabe482ba`，remote-v 为空，未 push。
-- 注册的八臂 zero-training matrix 尚未启动；下一步先做相同两 tick 性能剖析，核对计算热点，再启动已登记八臂无训练对照。没有 held-out、training、optimizer step、checkpoint write 或 default promotion，`PPO_ALLOWED=false`。
+- Corrected evaluator tests `16 passed`；evaluator/docs commit 为 `9b0d13cdd85a7c59170b68a25f8e12a1dfbad22e`，index empty，remote-v 为空，未 push。
+- Batch bounds helper targeted qualification 已完成：server NumPy `2.5.1`、`256` segments 为 scalar `0.0893419 s` / batch `0.0448305 s`（约 `1.9929×`），`max bounds diff=0`；local NumPy `2.3.5`、`64` segments 亦为 `max diff=0`，focused `19 passed`、caller integration `55 passed`。
+- True batch smoke 已接受：三臂各 `2 ticks`、`SMOKE_OK`、V2/V2/V3 source/load/runtime bindings、fixed source、frozen flags 全 false；除 UUID plan id 外 requested/accepted/actual metadata、hashes、safety、validity、wait/elapsed/energy 非计时字段与 corrected smoke 相等。
+- Final `38`-file unified regression 已完成：`319 passed / 1 skipped`、`99.25 s`、exit `0`；四个既有 before/after JSON compare 的 field/PVA-time/segment/bounds diff count 均为 `0`，max bounds diff `0`，validation errors 为空。
+- 注册的八臂 zero-training matrix 尚未启动；下一步为 commit → registered 8-arm matrix；没有 held-out、training、optimizer step、checkpoint write 或 default promotion，`PPO_ALLOWED=false`。
 - P3 尚未解决或准入，dynamic geometry 与真实 hardware adapter 仍未 qualification。详见 [V3 修复结果](evidence/v4_2/trajectory_v3_repair_results_20261002.md)、[运动学修复审核方案](evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md) 与 [基础修复协议](evidence/v4_2/p3_foundation_repair_protocol_20261002.md)。
 
 ## 2026-10-02 已批准首阶段修复与新增运动学阻塞（独立块）
