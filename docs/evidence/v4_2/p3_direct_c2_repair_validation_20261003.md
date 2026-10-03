@@ -55,7 +55,7 @@ checkpoint SHA256 = 3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27
 
 ## 执行记录
 
-实施完成；Syncthing四个改动源码/测试SHA一致，六个定向测试文件 **66 passed / 48.86s / exit0**，日志`targeted_tests.log`。正在执行规则/source两步smoke。完整周期尚未启动、尚无新A结果。执行结果、提交、进程及监控信息在到达后追加。
+实施后首先核对Syncthing四个改动源码/测试SHA一致，六个定向测试文件 **66 passed / 48.86s / exit0**，日志`targeted_tests.log`。随后按下列时间顺序记录smoke、完整周期及监控结果；最新状态以末尾阶段及CURRENT_STATUS为准。
 
 
 两臂smoke完成：各2ticks、预定CENSORED、error=null、exit0；各2行blockers与snapshot_2存在，config确认direct_c2。rule/source checked samples=60/25、hash mismatch=0/0，碰撞/NMAC/硬间隔/joint fail-closed均0；原6个transfer数值失配未再出现。source迁移记录checkpoint_weights_unchanged=true、source_policy_weights_unchanged=true、optimizer_created=false、NOT_QUALIFIED，固定checkpoint SHA与上述一致。两步不能证明完整周期，primary据此仅放行预定A完整对照。
@@ -83,3 +83,24 @@ A终态核对：两exit=0、两个原PID均退出且无重复Python诊断进程�
 
 
 B已实际启动，Python PID rule2446805/source2446806，primary已核对完整argv与预定B一致。约运行3分52秒时，两臂progress分别150/175ticks、正常完成2/3、活跃18/18、队列0/1，尚未终态；不能以中间状态作通过结论。heartbeat `p3`已经切换到B及其后续条件C，每5分钟，正常推进静默；预计B比A墙钟更长，维持当前间隔。A证据文档提交`964e6a4`，无remote、未推送。运行期间核心保持`a7096fb`版本。
+
+
+### B完整周期结果与C准入（newly_run，UTC 2026-10-03 09:50后核对）
+
+| 臂 | N/E/F/D/U | ticks / 墙钟s | min swept m | checked samples / hash mismatch | 最低终态SOC |
+|---|---|---:|---:|---:|---:|
+| B_rule | 24/0/0/0/0 | 881 / 1287.926 | 81.7378 | 33668 / 0 | .447194 |
+| B_source | 24/0/0/0/0 | 857 / 860.268 | 84.5822 | 31128 / 0 | .501018 |
+
+两臂均natural terminal、error=null、censored=false、exit0，generated=24且active/queue/service=0，原PID均退出。碰撞/NMAC/硬间隔/operational buffer/joint fail-closed为0，checked plan matches各76。emergency attempts/committed、energy negative budget均0。规则/source总能耗=9158.089/9168.071，每请求均值381.587/382.003（模型单位）；外部队列累计124/97 UAV-s。source此单seed完成时间较短，但能耗没有同时更低，不据此宣称学习优势。
+
+高密度候选筛选仍会拒绝动作：release rejected=422/231，inbound等提交路径safety_interventions=96/61，trajectory_infeasible_candidates=15/6；这些不是实际安全违规。primary检查完整trace：出现的trajectory_infeasible关联o2m/m2i；未见segment_mismatch/continuity错误，最终所有请求完成，未形成技术终止或持续业务阻塞。规则trace有21条该secondary标签，包含已批准decision保留的此前原因，不能当成15个新增候选失败以外的独立事件。原始RuntimeError详细文本没有被该既有聚合字段保留，不能声称逐个失败原因已完全归因；当前证据足以继续同负载能量测试，不据此放行训练或扩大新矩阵。
+
+result SHA本地/服务器一致：rule=`ffce2cefe9bdbf9f1145c29563a7dcce4bb82ca94dcfb532bb67eefa207b5ff3`；source=`de4dd72e4b88c28063b88b974f591914eaf68411c2a899098e0cfb6c2881abc0`。log各108bytes、blockers行数881/857；progress仍保留running标签，终态以result/exit/进程共同确认。
+
+primary据完整结果继续预定C，生产核心冻结a7096fb：24请求/warm12、env890502/policy890602、max1800ticks，去掉`--high-soc`（config明确initial_soc_min=.55、max=.90），其余与B一致；固定source 3fe7、trace-blockers和400/600/850快照，独立新目录`C_rule`/`C_source`，最多两个进程。沿用已经验证的CLI，不新增脚本、不重跑A/B。C需继续检查完整outcomes、应急提交与能量、实际安全和执行一致性；任何技术/安全/耗尽/未决阻塞先诊断，不训练。预计墙钟约15–25分钟，监控每5分钟；当前PPO_ALLOWED=false。
+
+
+C启动核对：rule PID2449638、source PID2449639，完整argv与上述一致且无`--high-soc`；四个源码SHA本地/服务器一致、checkpoint仍3fe7。两臂首progress和trace已出现，约60秒内分别到75/50ticks，仍运行且result/exit尚未生成。heartbeat `p3`已切换到C，每5分钟；不重启A/B/C，不改运行中核心。
+
+当前资格边界：A/B通过的是两个固定开发流量的环境业务闭环与冻结source运行检查。按`docs/reference/low_level_policy.md`第6–7节及`p3_integrated_repair_20261003.md`，V3/90D与新proposal物理映射不能继承旧V2/88D资格；本次没有fresh I0/I1/I2/I3，也没有完整requested-action likelihood/replay资格证据。source仍NOT_QUALIFIED；C终态前能量压力闭环待定，当前不建立PPO更新方案、不启动任何学习。C返回后先完成环境和student-only证据缺口判断，再记录与结果匹配的最小后续方案，不能用开发对照代替正式资格。
