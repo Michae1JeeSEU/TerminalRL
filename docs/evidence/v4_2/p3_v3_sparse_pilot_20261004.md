@@ -67,3 +67,36 @@ smoke result为4135bytes，SHA`106284862aa5385dd0bd6f847dd28c24ca31c9be469cbadb2
 primary随后读取同步产物：progress200ticks/1821行/3selected、completed3、elapsed118.8665s；这只是正在运行的前缀，尚无完整N/E/F/D/U或标注结论。首tick规则6请求均执行RELEASE，UID2/4实际选择rank2速度-1，其余rank1；原请求仍为名义[1,0,0]，teacher_used=false。这是rule K3的实际分支记录，不回溯升级冻结source或fresh student资格。
 
 heartbeat `p3-v3-sparse-pilot`已创建并回读确认ACTIVE、每小时一次，目标为当前thread；按用户要求正常推进静默、重要失败/终态才报告。不再额外频繁轮询。high与其标注完整结果由primary分析后才继续mixed；运行中核心冻结，mixed尚未启动，所有学习仍禁止。
+
+### High终态及mixed继续判断（2026-10-04，newly_run）
+
+小时heartbeat读取时high已自然结束，原Python2479355及所有query child均退出，high.log为PILOT_OK/605ticks/6labels，exit0；mixed路径/进程尚不存在。环境阶段193.9813s、605ticks，N/E/F/D/U=12/0/0/0/0，generated=requested=12，active/queue/service=0，error=null、censored=false。标注阶段70.0351s，6/6已选状态均OK；两个阶段合计264.0164s（约4.4min，不含进程初始化）。本轮流程在这一个开发场景中完成，但其rule occupancy与原expert采集不同，不能据此报告同分布加速比。
+
+实际安全：collision/NMAC/hard separation/buffer/runtime takeover/shield fail-closed/joint fail-closed/hash mismatch均0；checked/executed samples14339、匹配计划38，最小actual/swept separation=84.04323/83.82647m。`safety_interventions=35`是候选处理计数，实际shield_interventions=0，不将两者混写。12个ground_service_complete终态SOC范围.645182–.905261，最低剩余能量967.7737；应急尝试/提交/耗尽全0。
+
+primary亲自检查全部3204行/605steps与6条label：decision_id唯一，90D有限，原始teacher_label全null，rule request/shortlist和step tape一致，row/step pre-state hash一致，执行trace保持原请求、teacher_used=false，所有实际rank对应原K3项。逐tick按预注册窗口重新构造的选择与selected完全相同；各选中快照SHA、90D、pre-state和label join一致，teacher joint/gate/proposal及audit末项一致，两个RELEASE certificate均checked/content hash相同。first_live/replay完全相同，无技术或标注截断。
+
+64条actor行、3140 forced WAIT。64次规则RELEASE请求中32执行RELEASE、32执行WAIT；批准rank1/2/3分别26/5/1，32条原active被拒请求的主要原因PREDICTED_SEPARATION28/NO_MERGE_GAP3/HEADWAY1。此为pre-action active行口径，与包含本tick新入场trace的环境总计分开。6条标注的RELEASE2/WAIT4与这6个状态的实际gate一致，但不外推单机标签与批量执行总能一致，也不把这些行当训练数据。
+
+| window | tick/UID | 接口 | teacher | 意图/plan调用 |
+|---|---|---|---|---:|
+| 0 | 0/0 | o2m | RELEASE proposal12 | 1/1 |
+| 1 | 75/3 | i2f | RELEASE proposal12 | 1/1 |
+| 2 | 151/8 | o2m | WAIT，25 predicted_separation | 25/25 |
+| 3 | 230/8 | m2i | WAIT，25 predicted_separation | 25/25 |
+| 4 | 314/8 | i2f | WAIT，25 predicted_swept_separation | 25/75 |
+| 5 | 392/46 | i2f | WAIT，16 swept/9 predicted separation | 25/50 |
+
+合计102个RELEASE意图、177次plan调用，验证了“意图数≠多LZ计划数”的计数区别。窗口6–8在自然终态前没有actor eligible，不补样；后续窗口不产生虚构行。6条标注只支持proposal12，数据规模/支持度远不足以宣布I0覆盖通过。
+
+raw fast_inner/busyLZ/retry/lowSOC=165/3198/295/0；actor行相应23/58/0/0；被标注状态相应3/5/0/0，均为相关状态行数而非独立episode。规则请求WAIT→RELEASE58次，其中前一行处于retry的恢复32次；这是behavior请求恢复，不是teacher标签恢复证据。high无低SOC覆盖是预期，下一步使用已登记mixed892403检验，不临时更改high采样。
+
+本地/server主产物SHA一致：result9832bytes `fcf5d73b88f7d87bc321259626656a2e917804fdc946c93716516978ea360ca7`；rows4397300bytes `0d35fc171d90a86327c7f988f15932b38dc9a2a79e8438d1dd9cf98de51d9728`；steps6040262bytes `c219db9f8e539b13697888268cdc47d72eb6ecbe96c685bfc1de689e7263c32a`；selected16161bytes `5b52864fccfa5fcb01bce0b8f6572ab099eb4f370a9b42f8fbdc6da97bd77583`；annotation_result2079bytes `d6177a8659e2f8d771cf49e41168d8e0a756b89e06ed5030a4def38113aa49fc`。
+
+判断：high没有阻止既定mixed开发验证的技术/安全/耗尽/未决/业务问题。primary接受high流程验证，继续原协议mixed，核心不改、不重新运行high。17tests/smoke证据仍适用，文档追加以diff检查验证。任何学习、I0/student qualification及PPO仍未开始。
+
+### Mixed已启动，终态待查
+
+启动前collector/config/polynomial core与预注册SHA保持一致，mixed输出与相邻pid/log/exit原先均不存在；确认无high或query child残留后只启动一次mixed。真实Python2483247、wrapper2483246，argv为既定`--case mixed`命令，输出`.../p3_v3_sparse_pilot_20261004/mixed`，活动seed892403。初次核对进程R、elapsed00:57、CPU99.9%、RSS516240KB；progress为rollout75ticks/579行/1selected、54.7125s，文件实际已80steps/637raw行，result/exit尚不存在。这些均为运行前缀，不报告完整成功率或耗尽结论。
+
+当前唯一活动臂是mixed；接续先读mixed.pid及实际argv、progress/rollout_result/annotation_result与相邻log/exit，禁止重复启动high/mixed。heartbeat保留60分钟，正常推进静默；mixed终态由primary亲自核对全部raw/label/选样/执行/能量安全后形成两臂结论和有界后续方案，再提交文档并删除监控。运行中不修改核心。
