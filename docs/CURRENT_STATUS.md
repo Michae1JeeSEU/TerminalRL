@@ -4,7 +4,7 @@
 
 - 用户要求继续验证能否解决训练退化，场景、证据和停止条件见 [分阶段验证](evidence/v4_2/p3_integrated_validation_20261003.md)。warm-start请求漏计已修复，前置30测试及两控制器smoke通过。
 - A完整配对已终态：12请求/warm6、高SOC、seed890501/890601；规则1534ticks=5N/0E/7F/0D/0U，冻结source1537ticks=4N/0E/8F/0D/0U。error/censor为null/false，安全违规与checked/executed hash mismatch均0；所有失败均内环耗尽，应急提交均0。原PID已退出，原结果保留。
-- A业务闭环未通过，当前修复不足以声称解决P3。B/C与学习继续禁止；下一步是同A规则900ticks有界重放，补充拒绝原因和400/600/850环境快照以定位持续内环阻塞。先做输出smoke与快照一致性测试。核心判断与代码由primary负责，PPO_ALLOWED=false，无训练或held-out。
+- A业务闭环未通过，当前修复不足以声称解决P3。B/C与学习继续禁止；同A规则900ticks有界重放已启动（PID2425127，A_blocker_replay），补充拒绝原因和400/600/850快照；首tick及trace已核对。25测试和trace smoke通过，commit17f89e1。每10分钟自动续查并由primary分析；运行中不改核心源码。核心判断与代码由primary负责，PPO_ALLOWED=false，无训练或held-out。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 

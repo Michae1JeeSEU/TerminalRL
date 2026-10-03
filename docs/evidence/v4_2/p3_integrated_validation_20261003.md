@@ -70,3 +70,6 @@ result SHA256：A_rule=`0201732e9ebb5ca98d63f6493118c47a8d131ed6a0bc3e70420cd76b
 
 
 阻塞重放前置检查：定向25 passed（39.38s），含环境pickle恢复后下一tick观测、奖励、遥测、outcome和SOC逐项一致；4个本地/服务器源码SHA一致。`A_blocker_smoke`为2ticks、error=null、6请求/6活跃，2条JSONL可解析，snapshot_2.pkl存在（621332bytes）；与原A_rule_smoke的业务、reward和全部telemetry相同。主代理核对了逐候选输出：首tick已经可见部分transfer候选`dynamics_trajectory_segment_mismatch`，以及正常headway拒绝。该拒绝不造成脚本异常，但需要与后续内环主阻塞分别识别，不能默认都是预测间隔。继续既定900ticks单臂重放。
+
+
+重放已启动：worker后续任务因额度限制未完整返回，primary核对实际状态后确认代码/文档commit已完成（`17f89e1`，4files），但服务器尚无重放进程或输出，故由primary执行一次启动。三个生产相关文件本地/服务器SHA再核对一致。`A_blocker_replay`实际Python PID2425127、bash2425126、SSH session85425，完整argv为上述900ticks协议；首tick=1、elapsed19.216s、6活跃/0queue，随后blockers.jsonl已有15行，log为空、exit未出现。未重复运行A原臂。当前heartbeat `p3`已更新为监控此诊断及后续primary分析，每10分钟；core source保持不变。
