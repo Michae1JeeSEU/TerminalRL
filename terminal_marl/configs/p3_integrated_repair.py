@@ -7,7 +7,7 @@ from dataclasses import replace
 
 from terminal_marl.core.config import SimConfig
 
-PROFILE = 'p3_integrated_repair_v1_20261003'
+PROFILE = 'p3_integrated_repair_direct_c2_v2_20261003'
 PPO_ALLOWED = False
 # Used only AFTER a separately approved student-only qualification.
 PPO_UPDATE_OPTIONS = {'actor_reduction': 'joint_team', 'entropy_mode': 'gate_only'}
@@ -38,6 +38,7 @@ def build_config(*, requests=24, warm_start=12, high_soc=False):
         holding_speed_contract='nominal_until_release',
         final_approach_geometry_mode='continuous_inward_v1',
         final_approach_execution_mode='speed_timing_v1',
+        v3_landing_path_mode='direct_c2',
         reconcile_late_merge_slots_enabled=True,
         runtime_proposal_shortlist_k=3, scheduler_mode='execution', teacher_enabled=False,
         v4_2_rejected_release_hold_mode='canonical_wait',
@@ -57,7 +58,8 @@ def initialize_legacy_source(checkpoint, config):
     from terminal_marl.algo.service_context_runtime_v4_2 import initialize_service_context_policy
     source_config = replace(config, trajectory_schema_version='executable_trajectory_v2',
         observation_schema_version='phaseA_low_obs_v2_1_retry_state',
-        final_approach_execution_mode='legacy', holding_speed_contract='bounded_residual',
+        final_approach_execution_mode='legacy', v3_landing_path_mode='brake_then_curve',
+        holding_speed_contract='bounded_residual',
         route_aware_emergency_enabled=False, executable_admission_energy_enabled=False,
         emergency_priority_mode='at_risk_count', low_level_queue_cost_enabled=False,
         external_queue_step_mode='pre_admission')

@@ -2,9 +2,9 @@
 
 ## 2026-10-03 P3修复效果逐步验证（最新）
 
-- 统一修复尚未解决P3：A完整高SOC配对（12请求/warm6）规则=5N/0E/7F/0D/0U，冻结source=4N/0E/8F/0D/0U；均无error/censor/安全违规/hash mismatch，但所有F均内环耗尽。原结果保留，详见 [分阶段验证](evidence/v4_2/p3_integrated_validation_20261003.md)。
-- 同A规则900tick诊断已结束；126个正常退出/42个应急候选均存在真实邻机间隔冲突，单机校验与能量通过。V3先在占用内环制动22–29s，而后机维持16m/s，是已定位的直接阻塞。另有近重复时间节点导致transfer数值失配。
-- 同状态一个“先向内收缩再减速”的诊断候选通过原SafetyFilter，最小间隔136.97m（原约.30m），证明可行修改方向；尚未接入生产、未验证完整周期。详细发现与后续实施/验证顺序见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。本轮26项测试及探针复现通过，相关进程全部退出，heartbeat已删除。B/C与学习仍禁止，PPO_ALLOWED=false；无训练、held-out或checkpoint覆盖。
+- 原统一修复A完整高SOC配对（12请求/warm6）规则=5N/0E/7F/0D/0U、冻结source=4N/0E/8F/0D/0U，F均内环耗尽。126正常/42应急候选同状态诊断确认真实邻机冲突：原V3先在占用内环制动22–29s，后机仍16m/s；另有近重复时间节点造成transfer数值失配。原证据保留，见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。
+- 用户要求比较并继续修复后，primary选择直接C²进近至pad上方、途中连续调速，再接原垂直下降段；不强制独立200→100m收缩或环上先减速。同600s状态直接staging方案11/42通过原安全层，原126候选0通过；不同范围不作成功率统计比较，尚不证明完整疏通。
+- 生产核心与近零段修复已完成，66项相关回归通过；规则/source两步smoke均error=null、安全/hash为0，正在准备原A完整配对。新输出根`p3_direct_c2_validation_20261003`。方案、实现、边界及有界验证见 [直接离环修复](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。A通过前不扩大B/C，PPO_ALLOWED=false；无full training、held-out、硬件或checkpoint覆盖。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 

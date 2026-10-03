@@ -421,17 +421,16 @@ class TrajectoryGenerator:
         ramp_end = ease + ramp_duration
         if duration <= 0.0 or duration + 1e-9 < ramp_end:
             raise RuntimeError("ring_hold_duration_shorter_than_required")
-        if ramp_end > duration:
-            # Required duration is computed independently and can differ from
-            # the caller's subtraction by a few ulps.  Keep the requested
-            # endpoint time authoritative instead of emitting a node beyond
-            # it, while retaining the same bounded ramp law.
+        if abs(ramp_end - duration) <= 1e-9:
+            # Independent duration arithmetic can differ on EITHER side by
+            # a few ulps. Coalesce these markers at the requested endpoint;
+            # a near-zero tail makes quintic acceleration ill-conditioned.
             ramp_end = duration
 
         boundaries = [0.0, duration]
-        if ease > 1e-9:
+        if 1e-9 < ease < duration - 1e-9:
             boundaries.append(ease)
-        if ramp_duration > 1e-9:
+        if ramp_duration > 1e-9 and 1e-9 < ramp_end < duration - 1e-9:
             boundaries.append(ramp_end)
         boundaries = sorted(set(float(value) for value in boundaries))
         times_relative = [boundaries[0]]
@@ -1235,6 +1234,80 @@ class TrajectoryGenerator:
         moment = float(leg[-1].t)
         return tuple(points), departure_start, moment, staging, cruise_height, bool(prefix)
 
+    def _v3_direct_landing_points(
+        self, ring, theta, p_live, v_live, a_live, staging, pad, now,
+        *, delay, target_horizontal_speed,
+    ) -> dict:
+        """One C2 entry-to-staging curve followed by the vertical landing leg.
+
+        The timed curve starts from the actual flight state. There is no
+        on-ring braking prerequisite. A requested departure delay is flown
+        at the current ring speed, then the curve itself changes speed.
+        The bounded duration search enforces kinematics only; it never
+        searches traffic states or substitutes a safety-rejected route.
+        """
+        target = float(target_horizontal_speed)
+        if not math.isfinite(target) or target <= 0.0:
+            raise ValueError("direct_landing_target_speed_invalid")
+        current = float(np.linalg.norm(v_live[:2]))
+        prefix = []
+        departure = float(now) + float(delay)
+        if delay > 1e-9:
+            hold = self.ring_hold_points(
+                ring, theta, current, current, float(now), float(delay),
+                initial_acceleration=a_live,
+            )
+            prefix = hold[:-1]
+            entry = hold[-1]
+        else:
+            entry = TrajectoryPoint(float(now), p_live, v_live, a_live)
+            departure = float(now)
+        profile = self.dynamics.profile
+        horizontal_limit = min(profile.max_horizontal_accel, profile.max_horizontal_decel,
+                               profile.max_lateral_accel)
+        distance = float(np.linalg.norm(staging - entry.position))
+        dz = float(staging[2] - entry.position[2])
+        vertical_rate = profile.max_climb_rate if dz >= 0.0 else profile.max_descent_rate
+        vertical_accel = min(profile.max_vertical_accel_up, profile.max_vertical_accel_down)
+        # The target is a duration/speed reference, not an instantaneous cap
+        # on a faster live boundary. Physical clamping is recorded below.
+        reference = max(float(self.config.physics_dt), 2.0 * current / horizontal_limit,
+                        1.875 * distance / 10.0,
+                        1.875 * abs(dz) / vertical_rate,
+                        math.sqrt(5.8 * abs(dz) / vertical_accel))
+        requested_duration = reference * 10.0 / target
+        chosen = None
+        for index in range(20):
+            duration = requested_duration * 1.1 ** index
+            endpoint = TrajectoryPoint(departure + duration, staging, np.zeros(3), np.zeros(3))
+            candidate = TrajectoryPlan(
+                'direct-entry-kinematics', -1, 'final_approach', (entry, endpoint),
+                departure, endpoint.t, metadata=self._schema_metadata({}),
+            )
+            if not self.dynamics.validate_trajectory(candidate):
+                chosen = (endpoint, duration, index)
+                break
+        if chosen is None:
+            raise TrajectoryInfeasibleError('direct_landing_duration_unavailable')
+        endpoint, duration, search_index = chosen
+        leg = self.parameterizer.parameterize(
+            GeometricPath.line(staging, pad, samples=17),
+            start_time=endpoint.t, initial_velocity=endpoint.velocity,
+            initial_acceleration=endpoint.acceleration, target_horizontal_speed=5.0,
+            constraints=TrajectoryConstraints(
+                end_horizontal_speed=0.0, tangent_yaw=False,
+                end_direction=np.asarray((0.0, 0.0, -1.0)),
+                end_curvature_vector=np.zeros(3),
+            ),
+        )
+        return dict(points=tuple([*prefix, entry, *leg]), departure_start=departure,
+                    moment=float(leg[-1].t), staging=staging,
+                    cruise_height=float(staging[2]), has_prefix=bool(prefix),
+                    entry_speed=current, entry_cap=current, required_prefix=0.0,
+                    actual_delay=float(delay), path_mode='direct_c2',
+                    requested_entry_duration=requested_duration,
+                    actual_entry_duration=duration, duration_clamped=search_index > 0)
+
     def _v3_continuous_inward_landing_points(
         self,
         uav,
@@ -1286,6 +1359,11 @@ class TrajectoryGenerator:
         cruise_height = high if uav.ring_role is not RingRole.INNER else float(p_live[2])
         staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
         pad = np.asarray(lz.position, dtype=float)
+        if self.config.v3_landing_path_mode == "direct_c2":
+            return self._v3_direct_landing_points(
+                ring, theta, p_live, v_live, a_live, staging, pad, now,
+                delay=base_delay, target_horizontal_speed=target_horizontal_speed,
+            )
 
         def geometry(p0: np.ndarray, entry_velocity: np.ndarray, entry_acceleration: np.ndarray):
             departure_theta = math.atan2(float(p0[1]), float(p0[0]))
@@ -1461,6 +1539,10 @@ class TrajectoryGenerator:
             "requested_reservation_departure": reservation_departure,
             "accepted_reservation_departure": actual_departure,
             "actual_entry_speed_mps": result["entry_speed"],
+            "v3_landing_path_mode": result.get("path_mode", "brake_then_curve"),
+            "requested_entry_duration_seconds": result.get("requested_entry_duration"),
+            "actual_entry_duration_seconds": result.get("actual_entry_duration"),
+            "entry_duration_clamped": result.get("duration_clamped", False),
             "speed_clamp_reason": speed_clamp_reason,
             "timing_clamped": timing_clamped,
             "timing_clamp_reason": ",".join(timing_reasons) if timing_reasons else "none",
@@ -1872,6 +1954,10 @@ class TrajectoryGenerator:
                 "scheduled_departure": result["departure_start"],
                 "accepted_reservation_departure": result["departure_start"],
                 "actual_entry_speed_mps": result["entry_speed"],
+                "v3_landing_path_mode": result.get("path_mode", "brake_then_curve"),
+                "requested_entry_duration_seconds": result.get("requested_entry_duration"),
+                "actual_entry_duration_seconds": result.get("actual_entry_duration"),
+                "entry_duration_clamped": result.get("duration_clamped", False),
                 "vehicle_profile_id": self.config.vehicle_profile_id,
                 "vehicle_profile_version": self.config.vehicle_profile.profile_version,
             })

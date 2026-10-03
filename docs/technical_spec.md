@@ -602,6 +602,16 @@ V2 是默认和 historical replay 路径，旧 schema 不因 V3 opt-in 而改变
 业务收益评估分开：V3 先检查解析导数/积分、动力学、执行边界和 SafetyFilter，再单独
 报告 waiting、throughput、energy 与 outcome；历史 V2 的不安全 duration 不作为性能基线。
 
+2026-10-03开发修复新增 `v3_landing_path_mode=direct_c2`（历史默认
+`brake_then_curve`），仅允许V3与`continuous_inward_v1`组合。正常/应急共用从真实
+p/v/a到pad上方零v/a的quintic，再接原垂直下降段；不要求离环前在占用环上制动。
+预约等待保持当前环速，speed proposal映射为进近时长参考，不能瞬时重置入口速度。
+最多20次、每次时长×1.1的搜索只满足单机动力学；交通Safety和资源约束仍独立拒绝候选。
+metadata记录 `v3_landing_path_mode`、`requested_entry_duration_seconds`、
+`actual_entry_duration_seconds`、`entry_duration_clamped`，并保留实际departure与entry speed。
+该实现只在统一开发profile启用，未获训练或硬件资格。固定状态比较、回归与完整-cycle
+重跑记录见 [直接C²离环修复](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。
+
 注册的 zero-training common-V3 comparison 固定使用 env seeds `877101/877102`、policy
 seeds `878201/878202`、8 arms、每臂最多 24 requests 和 1800 ticks，输出根目录为
 `/home/user/training_outputs/terminal/p3_foundation_repair_v3_20261002`，并保持

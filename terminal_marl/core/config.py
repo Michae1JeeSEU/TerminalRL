@@ -76,6 +76,9 @@ class SimConfig:
     # speed/timing path is deliberately gated to the supported V4.2,
     # performance-constrained continuous configuration.
     final_approach_execution_mode: str = "legacy"
+    # V3 direct entry preserves live p/v/a and adjusts speed on the landing
+    # curve instead of braking on the occupied holding ring first.
+    v3_landing_path_mode: str = "brake_then_curve"
     # Opt-in diagnostic repair for ring transfers whose generated endpoint is
     # later than the initially requested merge slot.  Historical runs retain
     # the original fail-closed behavior when disabled.
@@ -287,6 +290,13 @@ class SimConfig:
             raise ValueError("unsupported energy_model_mode")
         if self.final_approach_geometry_mode not in {"brake_bezier_v1", "continuous_inward_v1"}:
             raise ValueError("unsupported final_approach_geometry_mode")
+        if self.v3_landing_path_mode not in {"brake_then_curve", "direct_c2"}:
+            raise ValueError("unsupported v3_landing_path_mode")
+        if self.v3_landing_path_mode == "direct_c2" and (
+            self.trajectory_schema_version != "executable_trajectory_v3"
+            or self.final_approach_geometry_mode != "continuous_inward_v1"
+        ):
+            raise ValueError("direct_c2 requires V3 continuous landing geometry")
         if self.final_approach_execution_mode not in {"legacy", "speed_timing_v1"}:
             raise ValueError("unsupported final_approach_execution_mode")
         if self.final_approach_execution_mode == "speed_timing_v1" and (
