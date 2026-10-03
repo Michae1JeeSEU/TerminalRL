@@ -7,7 +7,7 @@
 - 结论边界：A/B/C无参数更新，尚不能证明P3训练退化已解决。审查发现旧source loader曾创建空Adam，90D推理容器自身无优化器；本轮已改为纯模型加载，纠正此前“全过程无优化器”的表述，不将空对象创建归因为退化。V3/90D环境开发闭环通过，冻结source仍NOT_QUALIFIED，PPO_ALLOWED=false。C仍有4/5次应急兜底，不称低SOC全正常或业务最优。
 - 用户授权的3个source snapshot_400预检已完成：每态1次固定请求、两副本各1step，总3个逻辑tick/6次step；59 tests通过，A/B/C均exit0、迁移输出差0、重放相同、权重/checkpoint不变、安全/hash无异常。[详细协议及结果](evidence/v4_2/p3_direct_c2_contract_preflight_20261003.md)。30行中28 forced WAIT、2 actor WAIT、0 RELEASE：已观察契约通过，但真实RELEASE条件概率/K3执行分支覆盖未建立，不能称完整接口资格通过；无参数更新，P3训练退化仍未验证解决。
 - primary已亲自核查旧mask原因，未发现误屏蔽。用户授权的[真实RELEASE/K3事件预检](evidence/v4_2/p3_release_event_contract_20261003.md)已完成：18 tests通过，独立2tick smoke通过；固定12/warm6高SOC、seed891901/891902的run在第1主tick自然覆盖o2m/m2i/i2f三接口首次请求/批准，4 RELEASE+2 actor WAIT、3个rank1批准、1个HEADWAY拒绝后canonical WAIT。1主step+1副本step，完整重放相同、实际安全/hash无异常、权重未更新。被拒RELEASE的原动作及likelihood保留，没有被执行WAIT替换；成功选中rank2/3未出现，不声称覆盖。
-- 当前已测环境闭环与source请求接口未见新阻塞，不再重复扩大环境预检。下一步按新V3/90D配置检查现有expert collector，再登记fresh I0数据及I1/I2/I3 student-only协议；fresh actor资格前不恢复PPO。本轮没有新数据训练或优化器更新，仍不能宣称P3训练退化已解决。run按覆盖规则提前结束，非完整周期完成率结果；原heartbeat已删除，无full training、held-out、硬件或checkpoint覆盖。
+- 当前已测环境闭环与source请求接口未见新阻塞，不再重复扩大环境预检。primary检查发现历史R4 collector硬编码88D/旧配置，已另写[V3/90D expert pilot](evidence/v4_2/p3_v3_i0_pilot_20261003.md)：复用state-only teacher，在私有副本用当前direct_c2生成标签，原始行、forced-WAIT mask、请求/执行拒绝全部保留。预登记smoke892101与两回合pilot892201/892202，以及互斥future train/audit/Q seed范围；目前待定向测试及smoke后按有界方案执行。fresh actor资格前不恢复PPO，本轮无训练或optimizer更新，不能宣称退化已解决。原heartbeat已删除，无full training、held-out、硬件或checkpoint覆盖。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
