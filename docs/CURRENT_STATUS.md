@@ -4,8 +4,9 @@
 
 - 本轮A/B/C完整结束：新A两臂均12N，B两臂均24N，C规则19N5E、冻结source20N4E；共120请求111N9E、0F/D/U。所有臂自然终态、error/censor/实际安全违规/hash mismatch均无异常。C的5/4个应急提交全部完成，无耗尽；两个原C进程已退出，无本轮评估进程。详见 [完整验证记录与后续方案](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。
 - 已定位的原内环退出阻塞在已测开发场景中消失：原A为5N7F/4N8F。primary实现直接C²进近、途中平滑调速再接垂直下降，并修复近零时长切环段；不强制独立200→100m收缩或占用环上先减速。核心commit a7096fb，66项相关回归通过；机制证据见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。
-- 结论边界：本轮无优化器/参数更新，尚不能证明P3训练退化已解决。V3/90D环境开发闭环通过，冻结source仍NOT_QUALIFIED，fresh student-only资格与学习前后证据缺失，PPO_ALLOWED=false。C仍有4/5次应急兜底，不称低SOC全正常或业务最优。
-- 下一步最小计划已记录：仅3个已有source snapshot_400状态、最多各1tick的无梯度动作/likelihood/replay契约预检；未执行。通过后另立fresh I0/I1/I2/I3协议，再评审有界PPO。无full training、held-out、硬件或checkpoint覆盖；保留无关dirty和全部旧产物。本轮heartbeat p3已由工具确认删除。
+- 结论边界：A/B/C无参数更新，尚不能证明P3训练退化已解决。审查发现旧source loader曾创建空Adam，90D推理容器自身无优化器；本轮已改为纯模型加载，纠正此前“全过程无优化器”的表述，不将空对象创建归因为退化。V3/90D环境开发闭环通过，冻结source仍NOT_QUALIFIED，PPO_ALLOWED=false。C仍有4/5次应急兜底，不称低SOC全正常或业务最优。
+- 用户授权的3个source snapshot_400预检已完成：每态1次固定请求、两副本各1step，总3个逻辑tick/6次step；59 tests通过，A/B/C均exit0、迁移输出差0、重放相同、权重/checkpoint不变、安全/hash无异常。[详细协议及结果](evidence/v4_2/p3_direct_c2_contract_preflight_20261003.md)。30行中28 forced WAIT、2 actor WAIT、0 RELEASE：已观察契约通过，但真实RELEASE条件概率/K3执行分支覆盖未建立，不能称完整接口资格通过；无参数更新，P3训练退化仍未验证解决。
+- primary已亲自核查mask原因，未发现误屏蔽：A三架已commit，B九架commit加四架retry，C十一架commit加一架retry、另外两架主动WAIT。下一步先独立登记按实际决策事件采样的有界RELEASE预检，再立fresh I0/I1/I2/I3协议，不换原seed凑PASS、不恢复PPO。当前无评估进程，原heartbeat已删除；无full training、held-out、硬件或checkpoint覆盖。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 

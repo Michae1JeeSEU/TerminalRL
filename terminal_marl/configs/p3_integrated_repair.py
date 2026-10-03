@@ -52,18 +52,40 @@ def build_config(*, requests=24, warm_start=12, high_soc=False):
     )
 
 
-def initialize_legacy_source(checkpoint, config):
-    """Explicit V2/88D -> V3/90D frozen initializer; NOT a qualified V3 policy."""
-    from terminal_marl.training.evaluate_p3_proposal_head_probe_v1 import _load_policy
-    from terminal_marl.algo.service_context_runtime_v4_2 import initialize_service_context_policy
-    source_config = replace(config, trajectory_schema_version='executable_trajectory_v2',
+def _legacy_source_config(config):
+    return replace(config, trajectory_schema_version='executable_trajectory_v2',
         observation_schema_version='phaseA_low_obs_v2_1_retry_state',
         final_approach_execution_mode='legacy', v3_landing_path_mode='brake_then_curve',
         holding_speed_contract='bounded_residual',
         route_aware_emergency_enabled=False, executable_admission_energy_enabled=False,
         emergency_priority_mode='at_risk_count', low_level_queue_cost_enabled=False,
         external_queue_step_mode='pre_admission')
-    source, payload = _load_policy(checkpoint, source_config)
+def load_legacy_source(checkpoint, config):
+    """Load the calibrated 88D model without constructing an optimizer."""
+    import torch
+    from terminal_marl.algo.gate_calibrated_adapter_v4_2 import (
+        CALIBRATION_TEMPERATURE,
+        TemperatureCalibratedGateResidualAdapterActorCentralCriticV42,
+    )
+    from terminal_marl.algo.service_context_runtime_v4_2 import ServiceContextInferencePolicyV42
+    from terminal_marl.core.checkpoints import load_checkpoint
+
+    with torch.random.fork_rng(devices=[]):
+        model = TemperatureCalibratedGateResidualAdapterActorCentralCriticV42(88)
+    source = ServiceContextInferencePolicyV42(model, 88, torch.device('cpu'))
+    payload = load_checkpoint(checkpoint, source, _legacy_source_config(config), load_optimizer=False)
+    if float(model.gate_temperature.item()) != CALIBRATION_TEMPERATURE:
+        raise ValueError('candidate temperature changed')
+    model.eval()
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    return source, payload
+
+
+def initialize_legacy_source(checkpoint, config):
+    """Explicit V2/88D -> V3/90D frozen initializer; NOT a qualified V3 policy."""
+    from terminal_marl.algo.service_context_runtime_v4_2 import initialize_service_context_policy
+    source, payload = load_legacy_source(checkpoint, config)
     policy, metadata = initialize_service_context_policy(source,
         source_checkpoint_metadata=payload['metadata'])
     policy.model.eval()
