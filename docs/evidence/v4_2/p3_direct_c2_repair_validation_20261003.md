@@ -104,3 +104,43 @@ primary据完整结果继续预定C，生产核心冻结a7096fb：24请求/warm1
 C启动核对：rule PID2449638、source PID2449639，完整argv与上述一致且无`--high-soc`；四个源码SHA本地/服务器一致、checkpoint仍3fe7。两臂首progress和trace已出现，约60秒内分别到75/50ticks，仍运行且result/exit尚未生成。heartbeat `p3`已切换到C，每5分钟；不重启A/B/C，不改运行中核心。
 
 当前资格边界：A/B通过的是两个固定开发流量的环境业务闭环与冻结source运行检查。按`docs/reference/low_level_policy.md`第6–7节及`p3_integrated_repair_20261003.md`，V3/90D与新proposal物理映射不能继承旧V2/88D资格；本次没有fresh I0/I1/I2/I3，也没有完整requested-action likelihood/replay资格证据。source仍NOT_QUALIFIED；C终态前能量压力闭环待定，当前不建立PPO更新方案、不启动任何学习。C返回后先完成环境和student-only证据缺口判断，再记录与结果匹配的最小后续方案，不能用开发对照代替正式资格。
+
+
+### C完整周期结果（newly_run，UTC 2026-10-03 10:51后终态核对）
+
+| 臂 | N/E/F/D/U | ticks / 墙钟s | min swept m | checked samples / hash mismatch | 最低终态SOC |
+|---|---|---:|---:|---:|---:|
+| C_rule | 19/5/0/0/0 | 871 / 1182.369 | 81.0852 | 33734 / 0 | .244965 |
+| C_source | 20/4/0/0/0 | 806 / 924.495 | 83.4973 | 32614 / 0 | .301994 |
+
+两臂均COMPLETED、natural terminal、error=null、censored=false、exit0，generated=24且active/queue/service=0。规则/source碰撞、NMAC、硬间隔、operational buffer、shield/joint fail-closed、运行时安全接管均0；checked plan matches=75/76，final overcapacity=0。实际SOC范围配置确认.55–.90，direct_c2与nominal holder契约生效；source迁移记录权重不变、optimizer_created=false、NOT_QUALIFIED。无训练或checkpoint写入。
+
+规则/source总能耗=8972.381/8813.830、每请求均值373.849/367.243（模型单位），外部队列累计124/50 UAV-s。最低终态SOC均高于research_evtol真实降落下限.10；.25是另一个历史queue/admission reserve，不能把规则最小.244965误判为降落能量违规。
+
+应急链闭环：规则25次attempt、5次commit、5次touchdown；source47/4/4。按pad候选累计的safety拒绝52/92，energy/lz/dynamics/slack拒绝均0，energy negative budget均0。规则首次尝试及提交为395s；source首次尝试406s、首次提交471s。最后应急touchdown分别841/683s，随后完成地面服务并记入E类。每次attempt并非不同飞机；某架触发过应急尝试后仍可能及时正常提交，不能由47与4的比值计算独立应急成功率。实际9个已提交应急全部安全完成，没有再次陷入原“应急提交0、最终耗尽”的链条。
+
+候选层trajectory_infeasible计数15/7；完整trace未见mismatch/continuity标签。安全候选拒绝与实际违规继续分别报告，不能隐去失败候选或把开发闭环通过解释成每个proposal都可行。source的正常完成率20/24、规则19/24；本场景仍依赖4/5次应急兜底，不能称低SOC全正常通过或策略业务最优。
+
+两个原PID2449638/2449639已退出，无匹配的本轮诊断Python进程；log各131bytes，trace行数871/806。result SHA本地/服务器一致：rule=`476a2fbae41acf9527764acad2918baa13af3d6cd5f5ec9e7b0887493ed13f12`，source=`0bdd150e8b8af2ba53ef306b96c79380cf4d6dbcb4611e01d4b1a9d0e432f1f6`。实际墙钟约19.7/15.4分钟，在预估15–25分钟内；不再启动评估。
+
+## 本轮结论与qualification判断
+
+1. **已复现的环境阻塞得到修复，限于已测开发场景。** 原A规则/source为5N7F/4N8F，新A两臂均12N；B两臂均24N；C为19N5E/20N4E。共120请求111N9E、0F/D/U，所有臂完整终态且实际安全/hash/error/censor无异常。三种条件来自两个环境seed且B/C共享seed，不是120个独立泛化样本，也没有旧C直接对照。
+2. **选直接C²进近有实测支持。** 同状态几何证据解释了为什么占用环上先制动会被后机追近，而完整周期证明新组合可持续疏通。近零段数值修复同时生效；不把所有收益仅归于某一个改动，也不声称任意流量下全局最优。
+3. **P3训练退化尚未被验证解决。** 本轮没有优化器或更新前后配对，无法测量“训练之后是否又退化”。当前环境开发闭环通过；冻结source仅完成新MDP上的开发运行检查，V3/90D student-only imitation qualification仍未取得，PPO_ALLOWED=false。旧V2/88D的成功不能替代新schema/物理映射的资格。
+4. **剩余工作有明确边界。** 首要缺口转为新轨迹语义下的动作/likelihood/replay契约、fresh数据与student覆盖，再是有界学习前后效果。C中的应急比例是后续减少等待/提升正常降落的目标，但本次证据不能判定这9次应急全部可避免。无需再扩大环境矩阵来重复证明A的旧耗尽现象已消失，也不继续盲调PPO超参数。
+
+## 最小有界后续方案（计划，未执行，不构成学习准入）
+
+下一轮先做无梯度接口预检，固定使用已有可信`A_source/B_source/C_source`各自的`snapshot_400.pkl`，3个状态、不新增人群或seed搜索。源文件分别481119/2401799/2816488bytes，固定3fe7 checkpoint与a7096fb生产映射。旧记录仅作开发诊断，不作为fresh训练或untouched qualification数据。
+
+- 每个状态只构造一次固定source请求及K3 shortlist，覆盖该状态全部实际UID；显式检查90D观测、UID顺序、forced-WAIT mask、requested gate/proposal、rank-1 log-probability与proposal条件分布的绑定。检查零扩展后的88D前缀输出保持性质，但不把数值相等解释成跨MDP业务资格。
+- 每个状态最多记录并重放1个决策tick：在两个独立副本上使用同一已记录动作/shortlist，比较下一步观测、reward、ledger、实际rank、checked/executed轨迹与安全；总上限3个tick。不是重建原第400tick的随机动作（原pickle没有保存原policy RNG tape），使用单独固定诊断RNG并如实标记。
+- 不反传、不创建optimizer、不改权重、不评价held-out、输出新目录；先单个状态小样本验证字段/序列化，再完成其余两个固定状态。任何契约失配立即停止并用该状态定位；不改阈值、不换状态重试来凑通过。
+- 预检通过后，依研究规范另立V3/90D fresh I0/I1/I2/I3协议，冻结数据/seed/上限和正式资格集后才采集/学习；新schema使用fresh actor，旧source保留为对照。数据需覆盖高速内环、busy LZ、低SOC、retry与拥堵恢复，不能把本轮快照直接并入训练或把metadata改名当资格。
+- 新student资格完成后才评审一个有限PPO pilot及同场景更新前后完整周期配对；需事先固定可训练参数、proposal冻结状态、rollout/update预算、seed、停止条件和保留规则。当前没有足够依据填写或自动准入这个训练预算，后续不得沿用旧V2 admission直接启动。full training、held-out和硬件均不在本轮执行范围。
+
+本轮已经按原顺序完成A/B/C、必要机制诊断及核心修复回归。以上是后续最小任务的可审查边界，不是已经执行的资格结果。所有失败、旧A结果和可信快照保留；正常/应急业务类别不合并。本轮终态清理不停止其他用户任务，只删除本线程的P3验证heartbeat。
+
+
+终态清理已完成：automation工具确认heartbeat `p3`删除成功。删除返回的调度快照间隔为40分钟，早先创建/更新请求为5分钟；此处保留实际返回值，不将heartbeat触发时间用作服务器耗时证据。C墙钟时长仍以result中的1182.369/924.495秒为准。本轮无后台评估或新训练任务，后续预检仅登记为未执行计划。

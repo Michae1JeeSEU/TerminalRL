@@ -2,9 +2,10 @@
 
 ## 2026-10-03 P3修复效果逐步验证（最新）
 
-- 原统一修复A完整高SOC配对（12请求/warm6）规则=5N/0E/7F/0D/0U、冻结source=4N/0E/8F/0D/0U，F均内环耗尽。126正常/42应急候选同状态诊断确认真实邻机冲突：原V3先在占用内环制动22–29s，后机仍16m/s；另有近重复时间节点造成transfer数值失配。原证据保留，见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。
-- 用户要求比较并继续修复后，primary选择直接C²进近至pad上方、途中连续调速，再接原垂直下降段；不强制独立200→100m收缩或环上先减速。同600s状态直接staging方案11/42通过原安全层，原126候选0通过；不同范围不作成功率统计比较，尚不证明完整疏通。
-- 生产核心与近零段修复已完成，66项相关回归通过；规则/source两步smoke通过，A完整周期两臂均12N/0E/0F/0D/0U，660/611ticks、安全/hash/error/censor均无异常；原内环耗尽在该场景消失，B完整配对也均24N/0E/0F/0D/0U，881/857ticks、无技术/censor/实际安全/hash异常；原PID已退出，已启动同负载SOC.55–.90的C配对（PID2449638/2449639），首progress/trace正常，heartbeat p3每5分钟。新输出根`p3_direct_c2_validation_20261003`。方案、实现、边界及有界验证见 [直接离环修复](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。C结果完整前不作环境/student资格结论，PPO_ALLOWED=false；无full training、held-out、硬件或checkpoint覆盖。
+- 本轮A/B/C完整结束：新A两臂均12N，B两臂均24N，C规则19N5E、冻结source20N4E；共120请求111N9E、0F/D/U。所有臂自然终态、error/censor/实际安全违规/hash mismatch均无异常。C的5/4个应急提交全部完成，无耗尽；两个原C进程已退出，无本轮评估进程。详见 [完整验证记录与后续方案](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。
+- 已定位的原内环退出阻塞在已测开发场景中消失：原A为5N7F/4N8F。primary实现直接C²进近、途中平滑调速再接垂直下降，并修复近零时长切环段；不强制独立200→100m收缩或占用环上先减速。核心commit a7096fb，66项相关回归通过；机制证据见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。
+- 结论边界：本轮无优化器/参数更新，尚不能证明P3训练退化已解决。V3/90D环境开发闭环通过，冻结source仍NOT_QUALIFIED，fresh student-only资格与学习前后证据缺失，PPO_ALLOWED=false。C仍有4/5次应急兜底，不称低SOC全正常或业务最优。
+- 下一步最小计划已记录：仅3个已有source snapshot_400状态、最多各1tick的无梯度动作/likelihood/replay契约预检；未执行。通过后另立fresh I0/I1/I2/I3协议，再评审有界PPO。无full training、held-out、硬件或checkpoint覆盖；保留无关dirty和全部旧产物。本轮heartbeat p3已由工具确认删除。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
