@@ -2,9 +2,9 @@
 
 ## 2026-10-03 P3修复效果逐步验证（最新）
 
-- 用户要求继续验证能否解决训练退化，场景、证据和停止条件见 [分阶段验证](evidence/v4_2/p3_integrated_validation_20261003.md)。warm-start请求漏计已修复，前置30测试及两控制器smoke通过。
-- A完整配对已终态：12请求/warm6、高SOC、seed890501/890601；规则1534ticks=5N/0E/7F/0D/0U，冻结source1537ticks=4N/0E/8F/0D/0U。error/censor为null/false，安全违规与checked/executed hash mismatch均0；所有失败均内环耗尽，应急提交均0。原PID已退出，原结果保留。
-- A业务闭环未通过，当前修复不足以声称解决P3。B/C与学习继续禁止；同A规则900ticks有界重放已启动（PID2425127，A_blocker_replay），补充拒绝原因和400/600/850快照；首tick及trace已核对。25测试和trace smoke通过，commit17f89e1。每10分钟自动续查并由primary分析；运行中不改核心源码。核心判断与代码由primary负责，PPO_ALLOWED=false，无训练或held-out。
+- 统一修复尚未解决P3：A完整高SOC配对（12请求/warm6）规则=5N/0E/7F/0D/0U，冻结source=4N/0E/8F/0D/0U；均无error/censor/安全违规/hash mismatch，但所有F均内环耗尽。原结果保留，详见 [分阶段验证](evidence/v4_2/p3_integrated_validation_20261003.md)。
+- 同A规则900tick诊断已结束；126个正常退出/42个应急候选均存在真实邻机间隔冲突，单机校验与能量通过。V3先在占用内环制动22–29s，而后机维持16m/s，是已定位的直接阻塞。另有近重复时间节点导致transfer数值失配。
+- 同状态一个“先向内收缩再减速”的诊断候选通过原SafetyFilter，最小间隔136.97m（原约.30m），证明可行修改方向；尚未接入生产、未验证完整周期。详细发现与后续实施/验证顺序见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。本轮26项测试及探针复现通过，相关进程全部退出，heartbeat已删除。B/C与学习仍禁止，PPO_ALLOWED=false；无训练、held-out或checkpoint覆盖。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 

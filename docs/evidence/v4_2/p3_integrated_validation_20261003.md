@@ -73,3 +73,12 @@ result SHA256：A_rule=`0201732e9ebb5ca98d63f6493118c47a8d131ed6a0bc3e70420cd76b
 
 
 重放已启动：worker后续任务因额度限制未完整返回，primary核对实际状态后确认代码/文档commit已完成（`17f89e1`，4files），但服务器尚无重放进程或输出，故由primary执行一次启动。三个生产相关文件本地/服务器SHA再核对一致。`A_blocker_replay`实际Python PID2425127、bash2425126、SSH session85425，完整argv为上述900ticks协议；首tick=1、elapsed19.216s、6活跃/0queue，随后blockers.jsonl已有15行，log为空、exit未出现。未重复运行A原臂。当前heartbeat `p3`已更新为监控此诊断及后续primary分析，每10分钟；core source保持不变。
+
+
+### 本轮最终判断：尚未解决，已定位具体退出阻塞
+
+900tick重放正常到上限（主动CENSORED、error=null、exit0），原PID2425127已退出。600s原规则126个正常退出候选与850s的42个应急候选全被真实邻机间隔冲突拒绝；所有候选单机校验通过、能量仍足。名义holder解析参考与Safety预测偏差<4.9e-10m，tube宽度为0。主要问题是V3离环前在占用内环大幅减速22–29s，后机仍以16m/s运行；不是可以通过弱化SafetyFilter修好的误拒绝。
+
+同600s/uid6/最近pad1的静态向内收缩prototype使最小间隔从.3031m变为136.9663m，并通过原全世界SafetyFilter、动力学与执行入口检查；仅是修改方向证据，尚未接入生产或做新完整周期。另复现了约1e-13s近重复时间节点导致的transfer加速度边界失配。详细证据、代码入口、限制和六步修改/验证方案见 [内环退出阻塞诊断](p3_inner_exit_blocker_findings_20261003.md)。当前生产修复未通过A，B/C和学习保持禁止；本轮验证及必要诊断已形成结论，最终检查完成后删除heartbeat。
+
+最终检查：26 tests passed；合并后的两个固定探针与原结果逐字段相等。服务器已无相关诊断进程；heartbeat `p3`已确认删除。本轮以“A未通过，具体阻塞已定位”结束；下一轮修改方案详见上述报告。

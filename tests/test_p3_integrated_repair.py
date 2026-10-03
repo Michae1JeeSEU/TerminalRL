@@ -267,3 +267,12 @@ def test_blocker_trace_snapshot_preserves_next_tick(tmp_path):
     assert env.telemetry == restored.telemetry
     assert env.ledger.outcomes == restored.ledger.outcomes
     assert all(env.active[uid].soc == restored.active[uid].soc for uid in env.active)
+
+
+def test_inner_exit_analytic_reference_uses_elapsed_time():
+    from terminal_marl.scripts.diagnose_p3_inner_exit import steady_holder_positions
+    ring=SimpleNamespace(radius=200.,height=40.)
+    u=SimpleNamespace(ring_progress=0.,speed=16.)
+    times=np.asarray([600.,600.+math.pi*200./(2.*16.)])
+    positions=steady_holder_positions(u,ring,times,600.)
+    np.testing.assert_allclose(positions,[[200.,0.,40.],[0.,200.,40.]],atol=1e-10)
