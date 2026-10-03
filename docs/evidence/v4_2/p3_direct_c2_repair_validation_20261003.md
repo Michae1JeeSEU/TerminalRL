@@ -59,3 +59,24 @@ checkpoint SHA256 = 3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27
 
 
 两臂smoke完成：各2ticks、预定CENSORED、error=null、exit0；各2行blockers与snapshot_2存在，config确认direct_c2。rule/source checked samples=60/25、hash mismatch=0/0，碰撞/NMAC/硬间隔/joint fail-closed均0；原6个transfer数值失配未再出现。source迁移记录checkpoint_weights_unchanged=true、source_policy_weights_unchanged=true、optimizer_created=false、NOT_QUALIFIED，固定checkpoint SHA与上述一致。两步不能证明完整周期，primary据此仅放行预定A完整对照。
+
+
+### A完整周期结果（newly_run）
+
+核心提交`a7096fb66efc50401db3db267fa1f22ce55f6137`；无Git remote，未推送。两个实际Python PID为rule2445800/source2445799，argv与协议一致，初始progress与trace确认后创建heartbeat `p3`。本轮运行速度显著快于原失败A（新约2–3分钟墙钟），监控设为5分钟，并在当前任务继续后续阶段。
+
+| 臂 | N/E/F/D/U | ticks / 墙钟s | min swept m | checked samples / hash mismatch | 最低终态SOC |
+|---|---|---:|---:|---:|---:|
+| A_rule | 12/0/0/0/0 | 660 / 128.290 | 81.4774 | 15506 / 0 | .662702 |
+| A_source | 12/0/0/0/0 | 611 / 169.842 | 82.3455 | 13475 / 0 | .691173 |
+
+两臂natural terminal、error=null、censored=false，generated=12，active/queue/service=0；碰撞、NMAC、硬间隔、operational buffer、joint fail-closed、trajectory_infeasible均0。应急attempts/committed与energy negative budgets均0，外部队列累计各20 UAV-s。规则/source全过程已检查plan matches各38；最大同时final=2/3，无overcapacity。正常release仍有36/49次拒绝，不能将需要等待的安全拒绝本身认定为bug。
+
+原同场景5N7F / 4N8F的持续内环耗尽，在新A完整配对中消失；支持本次组合修复对已定位环境阻塞有效。这里同时修复直接进近和transfer近零段，完整周期改善不能被分摊成两项各自的独立因果效应；同状态几何探针与数值复现提供各自的机制证据。此结果仍不是PPO更新前后比较或普遍liveness证明。
+
+primary据完整业务/安全/能量结果批准进入预定B：保持生产commit、checkpoint、max1800、trace和400/600/850快照，改为24请求/warm12、高SOC、env890502/policy890602，独立输出`B_rule`/`B_source`。新脚本已在两步smoke与A验证输出，不重复构造新验证矩阵；运行前仍核对实际进程及Syncthing，最多两臂。B结果返回后才决定C。
+
+
+A终态核对：两exit=0、两个原PID均退出且无重复Python诊断进程；相邻log各108bytes，仅终态摘要。result SHA本地/服务器一致：rule=`9b5a390bfe971e84cb3d97f4071175dc493f88dd845a83e678e4f8d56054c289`，source=`f72e18c20c504d2baaeb76e59a833c57e75c8ab8853bdb81a9738db2d3802ac0`。400/600快照存在，850因提前自然终态未生成，符合输出条件。progress保留running标签，终态以result+exit+实际进程为准。
+
+规则/source总能耗=3236.017/3056.491（模型能量单位），每请求均值=269.668/254.708；只作当前两臂描述，不把单个seed差异称为学习优势。
