@@ -57,3 +57,13 @@ python -u -m terminal_marl.scripts.collect_p3_v3_sparse_expert --case mixed --ou
 独立CLI smoke892401已SMOKE_OK/exit0结束，原PID2478893退出。primary亲自读取全部6行/2steps/1selected/1label：6个decision_id唯一，90D及原始teacher_label=null、规则request与tape、row/step pre-state hash均相同；3 actor行/3 forced WAIT，选中tick0 UID0。单机teacher joint13/proposal12、request[1,0,0]，1个意图/1次plan检查，ring_transfer checked/content hash相同。first_live/replay完整相同；live规则批准3次，checked/executed samples30，所有实际安全/hash异常计数0，查询未计入live候选统计。环境阶段4.9541s、标注阶段2.8732s（child query2.1093s）。terminal=false/censored=true仅为规定2tick smoke，不是完整业务结果。
 
 smoke result为4135bytes，SHA`106284862aa5385dd0bd6f847dd28c24ca31c9be469cbadb2b1e8b0ae965fab8`；目录`.../p3_v3_sparse_pilot_20261004/smoke`及其相邻log/pid/exit保留。primary据此接受新输出路径检查，只准许接着启动预注册high一臂；mixed仍待high终态分析。
+
+### High启动核对，完整结果未定
+
+代码/测试/协议与CURRENT_STATUS最新块已本地提交`411c4019540e55a2cd54ff117a59ce9e0a4b4035`，index空，其他dirty保留；无remote，未推送。启动前collector、config、polynomial core本地/server SHA一致，旧cache仍未采纳；high路径及进程无重复。
+
+唯一high Python PID2479355，wrapper2479354；actual argv为本报告`--case high`命令，相邻high.pid保存真实Python PID，high.log/high.exit记录输出与退出。初次核对elapsed1:03、CPU99.9%、RSS521096KB；真实progress为rollout75ticks/588行/1selected，elapsed53.741s。rows当时597行、steps75行，是下一tick原始行先写入的正常顺序，不是额外完成9行的step。
+
+primary随后读取同步产物：progress200ticks/1821行/3selected、completed3、elapsed118.8665s；这只是正在运行的前缀，尚无完整N/E/F/D/U或标注结论。首tick规则6请求均执行RELEASE，UID2/4实际选择rank2速度-1，其余rank1；原请求仍为名义[1,0,0]，teacher_used=false。这是rule K3的实际分支记录，不回溯升级冻结source或fresh student资格。
+
+heartbeat `p3-v3-sparse-pilot`已创建并回读确认ACTIVE、每小时一次，目标为当前thread；按用户要求正常推进静默、重要失败/终态才报告。不再额外频繁轮询。high与其标注完整结果由primary分析后才继续mixed；运行中核心冻结，mixed尚未启动，所有学习仍禁止。
