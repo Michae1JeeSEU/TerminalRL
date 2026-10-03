@@ -100,3 +100,48 @@ raw fast_inner/busyLZ/retry/lowSOC=165/3198/295/0；actor行相应23/58/0/0；�
 启动前collector/config/polynomial core与预注册SHA保持一致，mixed输出与相邻pid/log/exit原先均不存在；确认无high或query child残留后只启动一次mixed。真实Python2483247、wrapper2483246，argv为既定`--case mixed`命令，输出`.../p3_v3_sparse_pilot_20261004/mixed`，活动seed892403。初次核对进程R、elapsed00:57、CPU99.9%、RSS516240KB；progress为rollout75ticks/579行/1selected、54.7125s，文件实际已80steps/637raw行，result/exit尚不存在。这些均为运行前缀，不报告完整成功率或耗尽结论。
 
 当前唯一活动臂是mixed；接续先读mixed.pid及实际argv、progress/rollout_result/annotation_result与相邻log/exit，禁止重复启动high/mixed。heartbeat保留60分钟，正常推进静默；mixed终态由primary亲自核对全部raw/label/选样/执行/能量安全后形成两臂结论和有界后续方案，再提交文档并删除监控。运行中不修改核心。
+
+### Mixed终态（2026-10-04，newly_run）
+
+下一次小时heartbeat确认mixed自然结束：根PILOT_OK，rollout COMPLETED，error=null、censored=false，mixed.log为572ticks/7labels，exit0。Python2483247/wrapper2483246及所有本轮collector/query child均退出，high也无残留。12请求全部正常完成，N/E/F/D/U=12/0/0/0/0，active/queue/service=0；环境阶段124.6635s，7/7标注阶段42.1199s，两阶段合计166.7834s（约2.8min，不含初始化）。
+
+实际安全异常及checked/executed hash mismatch全部0，checked/executed samples15448、匹配计划38；最小actual/swept separation=84.56070/84.54101m。12个ground_service_complete终态SOC范围.320021–.649963，最低剩余能量480.0313，无耗尽。应急attempts=8、blocked_safety=16、committed/touchdown=0；primary核查实现，attempts在进入应急尝试时加1、blocked_safety在每个被拒LZ计划上加1，因此二者计数单位不同。该回合最终全部走正常完成；不能写成“从未触发应急判断”，也不以候选安全拒绝冒充实际违规或据此放宽安全层。safety_interventions=31是候选处理计数，实际shield_interventions=0。
+
+primary运行自己的逐行分析并检查实际label原文：3383个decision_id唯一，57 actor/3326 forced WAIT，全部90D有限、raw标签为null、rule请求/shortlist与tape和执行trace一致，teacher_used=false。窗口/UID从全部raw独立重建与7个selected一致；所选快照SHA、pre-state、90D与label join正确，joint/gate/proposal/audit末项、5条RELEASE证书正确；first_live/replay相同。原active规则57 RELEASE请求中32执行RELEASE、25执行WAIT，实际rank1/2/3为21/10/1，拒绝原因PREDICTED_SEPARATION23、HEADWAY2。此口径仍不把同tick新入场trace当作pre-action actor行。
+
+| window | tick/UID | 接口 | teacher标签 | 意图/plan调用 |
+|---|---|---|---|---:|
+| 0 | 0/0 | o2m | RELEASE proposal12 | 1/1 |
+| 1 | 75/4 | i2f | RELEASE proposal12 | 1/1 |
+| 2 | 152/6 | m2i | RELEASE proposal20 | 24/24 |
+| 3 | 228/8 | m2i | RELEASE proposal12 | 1/1 |
+| 4 | 302/8 | i2f | WAIT | 25/75 |
+| 5 | 377/24 | i2f | WAIT | 25/25 |
+| 6 | 451/26 | i2f | RELEASE proposal13 | 3/11 |
+
+合计80个RELEASE意图、138次plan调用。5 RELEASE/2 WAIT，proposal12/20/13分别3/1/1。tick152 UID6的teacher proposal20为`[1,1,-1]`，存在checked轨迹；规则实际请求`[1,0,0]`，K3仅含timing=0的三个速度，最终执行WAIT。**该teacher动作没有送入执行层，不能把此处写成“专家RELEASE被拒绝”或标签错误**；它只显示本单机查询找到规则固定K3之外的候选，尚未证明将它加入联合批次必获批准。tick451 UID26的teacher proposal13为`[1,0,.5]`，而规则实际执行rank2的`[1,-1,0]`；两个不同意图均保留，不按实际行为改teacher标签。
+
+raw fast_inner/busyLZ/retry/lowSOC=249/3377/263/1352，actor行28/51/0/28，被标注状态4/6/0/2。两个低SOC标注分别为SOC .504364的WAIT和.411558的proposal13 RELEASE；这些仍是两个相关开发状态，不是低SOC泛化资格。规则请求WAIT→RELEASE51次、前一行retry后的恢复25次；都是behavior请求统计。结合high逐行检查，有3个selected状态紧随同UID retry行之后：high151/8为teacher WAIT，mixed377/24为WAIT，mixed451/26为RELEASE。当前retry=true行被actor mask排除是预期，不能把“0个retry中的actor标签”当作缺陷；实际需要保留并检查的是retry结束后的决策。
+
+本地/server主产物大小及SHA一致：result10172bytes `ec803095a6355b51c167fcdbd15f6e20906675d930f8989814736ed6038a693a`；rows4617158bytes `0e70955e9508261326ed832021fee2b81fb9b038f6c8b369ba25964dc3c0e4de`；steps6347175bytes `5d4224482035d909b94f9dd5c4b87b53088afb0952a6f99052921c869d80a5b1`；selected18523bytes `44462d030fc17456a4edf8c3f016fb2378b5eb4d7fe9c3d696a89f2c2f5c950a`；annotation_result2395bytes `0d096f75171ac3851e54d1e2644342a9edd0629783ade4167920ed056533c9cd`。
+
+## 两臂结论与后续有界工作
+
+| 开发场景 | N/E/F/D/U | 环境终态 | 环境/标注秒数 | raw/actor/有效标签 |
+|---|---|---|---|---|
+| high892402 | 12/0/0/0/0 | 完整、无censor/error | 193.98 / 70.04 | 3204 / 64 / 6 |
+| mixed892403 | 12/0/0/0/0 | 完整、无censor/error | 124.66 / 42.12 | 3383 / 57 / 7 |
+
+**接受本轮稀疏采集流程验证。** 两个完整开发回合共24N、0E/F/D/U，13/13预选标注完成，无真实安全/hash异常。把完整环境推进与有界专家查询分开后，这两个场景没有再因专家扫描成本丢失完整业务终态；没有通过改物理、安全、标签或停止规则获得PASS。此前旧expert-on-policy失败仍为CENSORED。新旧行为分布/seed不同，不给“快了多少倍”或优于原策略的因果性能结论，也不为已闭合的开发采集流程再扩大诊断矩阵。
+
+**仍未解决的任务是新MDP下的数据充分性及训练后表现验证。** 6587条raw中只有121条actor eligible，6466条forced WAIT占98.163%；采样取得13条有效label，只占eligible行10.744%，绝不能把6587行当作6587个监督样本。13标签为7 RELEASE/6 WAIT，RELEASE proposal12/20/13为5/1/1；各接口均出现，但仅有2个独立episode、2个低SOC标注、1个retry恢复后的RELEASE标注。规模、时序恢复覆盖和proposal支持都不能据此宣称I0通过。低SOC场景本轮正常结束也不能覆盖此前24请求低SOC场景中的应急兜底需求。
+
+当前边界：环境开发闭环及数据语义检查通过；fresh90D student尚未训练、student-only未qualified、PPO_ALLOWED=false。要回答“P3训练后是否仍退化”，仍需在新MDP上完成fresh BC及Safe DAgger/student-only资格，随后才可按另行批准的有界PPO协议做更新前后配对；本轮无optimizer、checkpoint更新、held-out或硬件。
+
+下一项工作限定如下（记录方案，本轮不执行）：
+
+1. **先实现V3/90D数据接入，不开始学习。** 使用独立V3 loader/adaptor，保留历史88D入口。明确按decision_id关联status=OK的原teacher label，校验90D有限值/索引/seed与partition，gate loss只选有效label且actor_mask=true；proposal loss只选teacher RELEASE。null、TIMEOUT、ERROR、NOT_ATTEMPTED不能转换为WAIT，behavior/actual不能覆盖teacher target。训练入口必须拒绝development/audit/Q partition；本pilot只能用于只读字段检查，不能进入优化器。该项预算为一个loader及定向测试/序列化检查，0个环境reset、0个optimizer step、0个checkpoint写入。测试覆盖以上具体错误路径及actor样本计数，随后再决定数据采集。
+2. **正式I0在首次reset前另冻协议。** 既有reserved train893001–893024/audit894001–894006/Q895001–895012继续未消费。候选采集上限仍为24train+6audit、每回合1800ticks，三种预定负载/高低SOC场景；这些是预算上限，不是要求立即跑满。pilot的每75tick仅一条已表现为数据过薄，不直接把这一采样密度升级成正式训练方案。先根据121个eligible行的时序分布制定固定、与标签无关的更充分选样和query预算，明确各接口、低SOC及retry结束后决策的记录口径、异常/截断留存规则与I0判定；必须在收集新分区前确定，不能看到正式标签后挑seed、补成功样本或改阈值。先执行协议中首个固定三场景cycle检查实际数据完整性/成本，再按同一冻结协议继续其余上限，不自动进入BC。不能把“每类都出现过一次”当作可学习性证明，也不沿用旧88D特定proposal计数当新90D门槛。
+3. **学习证据独立建立。** I0达到预注册要求后，另冻fresh90D多seed BC/内部audit与一次性untouched资格协议，再按研究规范I1→Safe DAgger→student-only推进。学习曲线、WAIT/RELEASE与proposal条件指标、无teacher替代的完整N/E/F/D/U和安全能量需要同时观察；此时才能判断是否存在退化，不能从当前规则回合推断优化器更新后的行为。
+
+本轮没有发现需要再改物理或安全核心的具体失败，因此不新增修复或额外仿真。collector/test/core SHA仍与411c401版本一致，既有17tests及smoke结果适用；本次只更新结论文档，diff检查通过。全部源代码/文档判断由primary负责，worker仅执行指定命令。本地显式提交本报告与CURRENT_STATUS最新块，保留其他dirty；仓库无remote，不推送。两臂及必要检查已完成，提交后删除`p3-v3-sparse-pilot` heartbeat。
