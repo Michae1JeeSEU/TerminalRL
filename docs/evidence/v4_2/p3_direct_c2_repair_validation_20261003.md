@@ -80,3 +80,6 @@ primary据完整业务/安全/能量结果批准进入预定B：保持生产comm
 A终态核对：两exit=0、两个原PID均退出且无重复Python诊断进程；相邻log各108bytes，仅终态摘要。result SHA本地/服务器一致：rule=`9b5a390bfe971e84cb3d97f4071175dc493f88dd845a83e678e4f8d56054c289`，source=`f72e18c20c504d2baaeb76e59a833c57e75c8ab8853bdb81a9738db2d3802ac0`。400/600快照存在，850因提前自然终态未生成，符合输出条件。progress保留running标签，终态以result+exit+实际进程为准。
 
 规则/source总能耗=3236.017/3056.491（模型能量单位），每请求均值=269.668/254.708；只作当前两臂描述，不把单个seed差异称为学习优势。
+
+
+B已实际启动，Python PID rule2446805/source2446806，primary已核对完整argv与预定B一致。约运行3分52秒时，两臂progress分别150/175ticks、正常完成2/3、活跃18/18、队列0/1，尚未终态；不能以中间状态作通过结论。heartbeat `p3`已经切换到B及其后续条件C，每5分钟，正常推进静默；预计B比A墙钟更长，维持当前间隔。A证据文档提交`964e6a4`，无remote、未推送。运行期间核心保持`a7096fb`版本。

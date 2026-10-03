@@ -4,7 +4,7 @@
 
 - 原统一修复A完整高SOC配对（12请求/warm6）规则=5N/0E/7F/0D/0U、冻结source=4N/0E/8F/0D/0U，F均内环耗尽。126正常/42应急候选同状态诊断确认真实邻机冲突：原V3先在占用内环制动22–29s，后机仍16m/s；另有近重复时间节点造成transfer数值失配。原证据保留，见 [退出阻塞报告](evidence/v4_2/p3_inner_exit_blocker_findings_20261003.md)。
 - 用户要求比较并继续修复后，primary选择直接C²进近至pad上方、途中连续调速，再接原垂直下降段；不强制独立200→100m收缩或环上先减速。同600s状态直接staging方案11/42通过原安全层，原126候选0通过；不同范围不作成功率统计比较，尚不证明完整疏通。
-- 生产核心与近零段修复已完成，66项相关回归通过；规则/source两步smoke通过，A完整周期两臂均12N/0E/0F/0D/0U，660/611ticks、安全/hash/error/censor均无异常；原内环耗尽在该场景消失，正在继续预定24请求/warm12的B配对。新输出根`p3_direct_c2_validation_20261003`。方案、实现、边界及有界验证见 [直接离环修复](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。B通过前不升C，PPO_ALLOWED=false；无full training、held-out、硬件或checkpoint覆盖。
+- 生产核心与近零段修复已完成，66项相关回归通过；规则/source两步smoke通过，A完整周期两臂均12N/0E/0F/0D/0U，660/611ticks、安全/hash/error/censor均无异常；原内环耗尽在该场景消失，已启动预定24请求/warm12的B配对（PID2446805/2446806，heartbeat p3每5分钟）。新输出根`p3_direct_c2_validation_20261003`。方案、实现、边界及有界验证见 [直接离环修复](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。B通过前不升C，PPO_ALLOWED=false；无full training、held-out、硬件或checkpoint覆盖。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
