@@ -58,7 +58,7 @@ smoke完整产物在新根`smoke/`，相邻`smoke.log`198bytes、`smoke.exit`为
 
 UID1/3自主WAIT的gate/joint logprob分别-.011477232/-1.682053089，proposal缺省。特别是UID4自然采到了一个较低概率的RELEASE，说明本轮不是把gate改成argmax或人为强制放行。proposal logprob=0是当前float32分布的饱和输出，仍保存真实原值；不伪造小负值或以执行动作重算请求概率。
 
-primary亲自核对UID0的拒绝链：主blocker=HEADWAY，三个候选均为`merge_slot_retime_conflict`，K3检查数3、actual rank=null。请求trace仍为`[1,0,.5]` / RELEASE proposal13；执行trace为`[0,0,0]` / WAIT，teacher/shield_used均false，requested joint index仍14。**被拒后的canonical WAIT没有覆盖原RELEASE或其likelihood**。这是合法的放行间隔拒绝，不是实际安全违规，也不是“本次仍然卡住”的证据。保留原请求和拒绝记录，不删掉该行计算全通过。
+primary亲自核对UID0的拒绝链：主blocker=HEADWAY，三个候选均为`merge_slot_retime_conflict`，K3检查数3、actual rank=null。请求trace仍为`[1,0,.5]` / RELEASE proposal13；执行trace为`[0,0,0]` / WAIT，teacher/shield_used均false，requested joint index仍14。**被拒后的canonical WAIT没有覆盖原RELEASE或其likelihood**。这是执行层记录的放行间隔拒绝，实际安全统计为0；单条reason不能证明所有替代路线物理不可行，也不能证明环境仍有死锁。保留原请求和拒绝记录，不删掉该行计算全通过。
 
 三条新commit的checked hash与trajectory content hash全部相同；两条ring_transfer及一条direct_c2 final_approach均按相同物理状态重放。live/replay完整JSON逐字节SHA相同：`14a969234cceef5d1f68b4c62445436354f75065f7f7d34f2bda508959c4649f`。next observation/reward/ledger/执行rank/能量/PVA/轨迹hash一致，reward=.24；88→90迁移三个输出差均0，模型权重及3fe7 checkpoint不变。
 
