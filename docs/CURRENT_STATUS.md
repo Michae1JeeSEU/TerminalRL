@@ -8,7 +8,7 @@
 - 用户授权的3个source snapshot_400预检已完成：每态1次固定请求、两副本各1step，总3个逻辑tick/6次step；59 tests通过，A/B/C均exit0、迁移输出差0、重放相同、权重/checkpoint不变、安全/hash无异常。[详细协议及结果](evidence/v4_2/p3_direct_c2_contract_preflight_20261003.md)。30行中28 forced WAIT、2 actor WAIT、0 RELEASE：已观察契约通过，但真实RELEASE条件概率/K3执行分支覆盖未建立，不能称完整接口资格通过；无参数更新，P3训练退化仍未验证解决。
 - primary已亲自核查旧mask原因，未发现误屏蔽。用户授权的[真实RELEASE/K3事件预检](evidence/v4_2/p3_release_event_contract_20261003.md)已完成：18 tests通过，独立2tick smoke通过；固定12/warm6高SOC、seed891901/891902的run在第1主tick自然覆盖o2m/m2i/i2f三接口首次请求/批准，4 RELEASE+2 actor WAIT、3个rank1批准、1个HEADWAY拒绝后canonical WAIT。1主step+1副本step，完整重放相同、实际安全/hash无异常、权重未更新。被拒RELEASE的原动作及likelihood保留，没有被执行WAIT替换；成功选中rank2/3未出现，不声称覆盖。
 - 当前已测环境闭环与source请求接口未见新阻塞，不再重复扩大环境预检。primary检查发现历史R4 collector硬编码88D/旧配置，已另写[V3/90D expert pilot](evidence/v4_2/p3_v3_i0_pilot_20261003.md)：复用state-only teacher，在私有副本用当前direct_c2生成标签，原始行、forced-WAIT mask、请求/执行拒绝全部保留。9项tests通过；独立smoke892101的2tick/6行通过90D、标签、checked hash、重放和实际安全检查。代码/预注册commit13a65b7，已准许按既定上限运行两回合pilot892201/892202；future train/audit/Q仅保留互斥seed范围，未采集。fresh actor资格前不恢复PPO，本轮无训练或optimizer更新，不能宣称退化已解决。无full training、held-out、硬件或checkpoint覆盖。
-- V3专家pilot唯一Python PID2469251已核对argv和初始输出：892201到25ticks/159行，首tick重放相同，6个RELEASE标签中3批准/3仲裁后WAIT，原请求和label保留；892202尚未开始，两回合结果未定。输出`.../p3_v3_i0_pilot_20261003/pilot`，5分钟heartbeat `p3-v3-expert-pilot`跟进。运行中冻结核心，禁止重复启动，终态后primary分析完整数据、更新docs并删除监控。
+- V3专家pilot唯一Python PID2469251仍为原argv；UTC15:20约运行28分钟，最新steps已完成tick166（167step），progress每25ticks写一次而停留150ticks。当前892201未终态，892202尚未开始。最新帧两架actor WAIT各25候选被预测间隔拒绝，另外8架forced WAIT；该前缀不能证明死锁或完整周期失败。采集成本高于初估，保持3600s上限和核心冻结；heartbeat `p3-v3-expert-pilot`实际保存20分钟，工具更新后已回读确认。输出`.../p3_v3_i0_pilot_20261003/pilot`，禁止重复启动，终态后primary分析或进行最小耗时诊断，更新docs并删除监控。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
