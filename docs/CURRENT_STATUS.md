@@ -11,6 +11,7 @@
 - V3专家pilot已按wall_limit截断：892201为298ticks/2757行/3625.746s，N/E/F/D/U=3/0/0/0/9，error=null、安全/hash无异常，status=CENSORED、根INCOMPLETE/exit1。原Python2469251及wrapper已退出，892202未启动，禁止重启补PASS。primary逐行核对全部90D/mask/索引/请求/state hash通过；2643 forced WAIT，真正actor行114（26 RELEASE/88 WAIT），专家RELEASE22批准/4拒绝。9U不是能量失败或不可达证据。
 - [采集成本诊断及下一步方案](evidence/v4_2/p3_v3_i0_pilot_20261003.md)已完成：原tape150步逐步重放相同，同tick150/UID10一次25候选查询带profiler耗时84.8986s，其中轨迹生成77.8834s。完全相同多项式bounds复用试验虽69tests及重放/全部25候选/label等价检查通过，query仍82.0386s，不足以解决瓶颈；primary已撤回cache，核心SHA恢复832a88f，保留全部试验输出与新诊断脚本。最终保留代码相关12tests通过（31.85s），所有本轮采集/诊断进程均退出。
 - 下一步为有界的“完整rule回合→事先固定pre-state稀疏离线专家标注”开发collector，最多24次query/600候选，不按标签或成功结果选样，不把未标注或forced WAIT行塞入actor监督；完整业务终态与标注预算分别判断。新seed须先查重预注册；旧88D BC loader不能直接接90D/mask，fresh student尚未训练或qualified。future train/audit/Q与所有学习均未启动，PPO_ALLOWED=false；本轮结果/必要诊断已收束，heartbeat `p3-v3-expert-pilot`将在提交后删除。
+- 用户2026-10-04继续授权后，primary已实现[稀疏专家开发pilot](evidence/v4_2/p3_v3_sparse_pilot_20261004.md)，新seed892401 smoke、892402 high、892403 mixed已完成元数据查重并预注册；旧expert heartbeat已删除。17 tests通过39.23s；独立smoke为2ticks/6raw行/1label，90D/mask/null、原请求、checked hash及完整重放通过，实际安全/hash无异常。primary准许下一步仅启动high，完整结果无阻塞再mixed。75tick窗口最多一条、全回合最多24次query；600是RELEASE意图数，final多LZ计划调用另行记录。环境与离线标注解耦、原始未标注行保留null，行为请求/teacher标签/执行严格分开。长任务按用户偏好60分钟heartbeat；无训练，PPO_ALLOWED=false。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
