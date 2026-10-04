@@ -61,7 +61,8 @@ def contexts(row):
                 busy_lz=row['busy_lz'] > 0, retry=row['retry_active'], low_soc=row['soc'] < .55)
 
 
-def raw_rows(env, observations, tape, *, seed, tick, pre_hash):
+def raw_rows(env, observations, tape, *, seed, tick, pre_hash, schema=SCHEMA,
+             partition='development_pilot_never_train'):
     require(set(observations) == {str(uid) for uid in env.active}, 'observation UID mismatch')
     rows = []
     for uid in sorted(observations, key=int):
@@ -70,9 +71,9 @@ def raw_rows(env, observations, tape, *, seed, tick, pre_hash):
         require(obs.shape == (90,) and np.isfinite(obs).all(), 'invalid 90D observation')
         require(np.array_equal(obs, build_low_observation_v2_4(uav, env)),
                 '90D observation reconstruction differs')
-        rows.append(dict(schema=SCHEMA, partition='development_pilot_never_train',
+        rows.append(dict(schema=schema, partition=partition,
             seed=seed, tick=tick, time=env.now, uid=uid, arrival_id=uav.arrival_id,
-            decision_id=f'{SCHEMA}:{seed}:{tick}:{uid}',
+            decision_id=f'{schema}:{seed}:{tick}:{uid}',
             observation=obs.tolist(), observation_dim=90,
             observation_schema=env.config.observation_schema_version,
             actor_mask=actor_eligible(env, uav), teacher_label=None,
@@ -85,14 +86,17 @@ def raw_rows(env, observations, tape, *, seed, tick, pre_hash):
     return rows
 
 
-def rollout(env, output, *, seed, max_steps=1800, wall_seconds=3600, smoke=False):
+def rollout(env, output, *, seed, max_steps=1800, wall_seconds=3600, smoke=False,
+            all_actor=False, max_selected=256, schema=SCHEMA,
+            partition='development_pilot_never_train'):
+    require(max_selected > 0, 'max_selected must be positive')
     output.mkdir(parents=True, exist_ok=False)
     (output/'snapshots').mkdir()
     (output/'labels').mkdir()
     write_json(output/'config.json', asdict(env.config))
     start = time.monotonic()
     selected, counts, coverage = [], Counter(), Counter()
-    ticks = total_rows = 0
+    ticks = total_rows = selection_overflow = 0
     error, stop, data, tape = None, 'tick_limit', None, None
     replay_equal = False
     try:
@@ -106,16 +110,28 @@ def rollout(env, output, *, seed, max_steps=1800, wall_seconds=3600, smoke=False
                 data = pickle.dumps(env, protocol=pickle.HIGHEST_PROTOCOL)
                 pre_hash = _digest(canonical(state_record(env)))
                 tape = rule_tape(env)
-                rows = raw_rows(env, observations, tape, seed=seed, tick=tick, pre_hash=pre_hash)
-                chosen = selected_uid(tick, [r['uid'] for r in rows if r['actor_mask']],
-                                      {entry['window'] for entry in selected})
-                if chosen is not None:
-                    row = next(r for r in rows if r['uid'] == chosen)
-                    window = tick // WINDOW_TICKS
-                    snapshot = output/'snapshots'/f'window_{window:02d}.pkl'
+                rows = raw_rows(env, observations, tape, seed=seed, tick=tick, pre_hash=pre_hash,
+                                schema=schema, partition=partition)
+                if all_actor:
+                    eligible = [row for row in rows if row['actor_mask']]
+                    chosen_rows = eligible[:max(0, max_selected-len(selected))]
+                    selection_overflow += len(eligible)-len(chosen_rows)
+                else:
+                    chosen = selected_uid(tick, [r['uid'] for r in rows if r['actor_mask']],
+                                          {entry['window'] for entry in selected})
+                    chosen_rows = [r for r in rows if r['uid'] == chosen]
+                # All UIDs at a tick use the same immutable pre-state, but each
+                # query loads it into a fresh private environment.
+                if chosen_rows:
+                    name = f'tick_{tick:05d}.pkl' if all_actor else f'window_{tick // WINDOW_TICKS:02d}.pkl'
+                    snapshot = output/'snapshots'/name
                     snapshot.write_bytes(data)
+                    snapshot_hash = sha256(snapshot)
+                for row in chosen_rows:
+                    # Legacy wire name "window" is a query slot for all_actor.
+                    window = len(selected) if all_actor else tick // WINDOW_TICKS
                     entry = dict(row=row, window=window, snapshot=snapshot.name,
-                                 snapshot_sha256=sha256(snapshot))
+                                 snapshot_sha256=snapshot_hash)
                     write_json(output/'snapshots'/f'window_{window:02d}.json', entry)
                     selected.append(entry)
                     write_json(output/'selected.json', selected)
@@ -165,6 +181,8 @@ def rollout(env, output, *, seed, max_steps=1800, wall_seconds=3600, smoke=False
         ticks=ticks, rows=total_rows, row_counts=dict(counts), raw_contexts=dict(coverage),
         terminal=terminal, censored=not terminal, elapsed_seconds=time.monotonic()-start,
         selected_count=len(selected), selected_windows=[e['window'] for e in selected],
+        selection_mode='all_actor' if all_actor else 'sparse_75tick',
+        selection_overflow=selection_overflow,
         requested=len(env.ledger.requested), generated_requests=len(env.request_times),
         outcome_counts=dict(outcomes), unresolved=len(env.ledger.unresolved),
         active=len(env.active), queue=len(env.admission.queue.items), service=len(env.service_uavs),

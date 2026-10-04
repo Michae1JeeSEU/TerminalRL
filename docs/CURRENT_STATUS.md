@@ -18,6 +18,8 @@
 
 - 用户2026-10-04授权下一步后，primary已完成[独立V3/90D数据接入](evidence/v4_2/p3_v3_loader_validation_20261004.md)，旧88D入口和collector/物理安全核心保持原实现。新loader按decision_id关联OK标签，gate仅取有效标签且actor_mask=true，proposal仅取teacher RELEASE；null/超时/错误不变成WAIT，behavior/actual不改teacher target，训练接口拒绝development/audit/Q。33项数据专用tests通过（0.22s），无环境reset。两臂真实文件只读CLI均exit0，重得3204/3383raw、64/57actor、6/7标签、2/5proposal监督计数，与原分析相同；真实开发分区训练入口均拒绝。0reset/0teacher query/0optimizer/0checkpoint写入，所有reserved train/audit/Q未消费。数据接口检查完成，下一步冻结正式I0更充分的固定选样、场景与query预算，然后运行其首个三场景cycle；不把接口通过当I0/student资格或训练退化解决。没有活动任务/heartbeat，PPO_ALLOWED=false，无remote未推送。
 
+- 用户继续授权后，primary已冻结[V3 fresh I0完整决策采集协议](evidence/v4_2/p3_v3_i0_protocol_20261004.md)：所有actor pre-state按tick/数值UID顺序离线标注，最多256 query/6400 RELEASE意图，完整周期1800ticks/3600s与标注7200s分别封顶；溢出/失败/截断保留且阻止后续臂，不选标签或补成功seed。此前121 actor只留13标签的数据过薄问题由取消第二次稀疏采样处理，forced仍排除。新runner、旧sparse回归及loader共47tests通过29.65s；独立smoke892501为2ticks/6raw/3actor/3OK标签，primary核对90D/全部UID/label join/checked hash/重放通过，无实际安全/hash异常。协议和代码提交后先启动train01（893001，12/warm6高SOC），其完整无阻塞后依次train02/03（893002/3，24/warm12高/混合SOC）；首cycle不运行audit/Q或学习。I0_QUALIFIED=false/PPO_ALLOWED=false，长任务按用户偏好60分钟静默heartbeat。此条记录时正式seed仍未reset，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
