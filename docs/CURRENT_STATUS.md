@@ -22,6 +22,10 @@
 
 - I0代码/冻结协议已提交`2931e4c`；首正式臂train01已启动，Python2521016/wrapper2521015，输出`/home/user/training_outputs/terminal/p3_v3_i0_20261004/train_01`。primary读回环境阶段COMPLETED：893001、504ticks/145.7804s、12N/0E/F/D/U、无技术/censor/实际安全/hash异常，3184raw中59actor全部选中、无overflow；根status仍为ANNOTATING，59个独立专家查询尚待完整结果，不称COLLECTION_OK。heartbeat `p3-v3-i0-first-cycle`已确认ACTIVE/每60分钟/正常静默；禁止重复启动train01或smoke。完整无阻塞后primary继续预注册train02→03；首cycle以外train/audit/Q不自动启动，任何学习仍禁止。893001已消费，其余正式seed未reset。代码冻结、docs本地提交，其他dirty保留，无remote不推送。
 
+- I0 train01已COLLECTION_OK/exit0自然结束，Python2521016/wrapper及child退出。primary亲自核对3184raw/504steps/59selected-label与快照、全部90D/索引/mask/行为/原teacher/执行、coverage和重放通过：12N/0E/F/D/U，无error/censor/安全/hash/能量异常，59/59有效标签=37 RELEASE+22 WAIT，8类proposal、25次retry结束后标注与8次同UID同接口teacher WAIT→RELEASE。环境145.7804s、标注468.6766s，合计约10.24min。5次teacher RELEASE/实际WAIT均为rule K3外的timing意图，未提交给执行层，不改标、不误称专家动作被拒绝。primary接受单臂完整采集，继续预注册train02（893002，24/warm12高SOC）；保持60分钟heartbeat、核心冻结、无学习/I0资格/PPO结论。详见[I0记录](evidence/v4_2/p3_v3_i0_protocol_20261004.md)，无remote不推送。
+
+- 当前唯一臂为I0 train02：Python2524958/wrapper2524957，`.../p3_v3_i0_20261004/train_02`，893002/24请求/warm12高SOC；首次57s确认真实argv及12raw/1step，完整结果未定。启动前冻结源码SHA同步且无重复输出/进程。60分钟heartbeat已更新当前PID，正常静默；不重启train01/smoke，不改运行中核心，train02完整无阻塞才继续train03。其余train/audit/Q及任何学习不自动启动。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
