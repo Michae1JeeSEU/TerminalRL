@@ -20,6 +20,8 @@
 
 - 用户继续授权后，primary已冻结[V3 fresh I0完整决策采集协议](evidence/v4_2/p3_v3_i0_protocol_20261004.md)：所有actor pre-state按tick/数值UID顺序离线标注，最多256 query/6400 RELEASE意图，完整周期1800ticks/3600s与标注7200s分别封顶；溢出/失败/截断保留且阻止后续臂，不选标签或补成功seed。此前121 actor只留13标签的数据过薄问题由取消第二次稀疏采样处理，forced仍排除。新runner、旧sparse回归及loader共47tests通过29.65s；独立smoke892501为2ticks/6raw/3actor/3OK标签，primary核对90D/全部UID/label join/checked hash/重放通过，无实际安全/hash异常。协议和代码提交后先启动train01（893001，12/warm6高SOC），其完整无阻塞后依次train02/03（893002/3，24/warm12高/混合SOC）；首cycle不运行audit/Q或学习。I0_QUALIFIED=false/PPO_ALLOWED=false，长任务按用户偏好60分钟静默heartbeat。此条记录时正式seed仍未reset，无remote不推送。
 
+- I0代码/冻结协议已提交`2931e4c`；首正式臂train01已启动，Python2521016/wrapper2521015，输出`/home/user/training_outputs/terminal/p3_v3_i0_20261004/train_01`。primary读回环境阶段COMPLETED：893001、504ticks/145.7804s、12N/0E/F/D/U、无技术/censor/实际安全/hash异常，3184raw中59actor全部选中、无overflow；根status仍为ANNOTATING，59个独立专家查询尚待完整结果，不称COLLECTION_OK。heartbeat `p3-v3-i0-first-cycle`已确认ACTIVE/每60分钟/正常静默；禁止重复启动train01或smoke。完整无阻塞后primary继续预注册train02→03；首cycle以外train/audit/Q不自动启动，任何学习仍禁止。893001已消费，其余正式seed未reset。代码冻结、docs本地提交，其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
