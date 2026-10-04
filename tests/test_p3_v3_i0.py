@@ -112,3 +112,64 @@ def test_rollout_blocker_prevents_annotation(tmp_path, monkeypatch):
     assert result['status'] == 'INCOMPLETE'
     assert result['annotation']['status'] == 'NOT_RUN'
     assert result['blockers'] == ['actor_query_budget_exceeded']
+
+
+def test_v2_uses_fresh_dense_cases_without_reinterpreting_v1():
+    assert i0.protocol_settings('v1')['max_selected'] == 256
+    assert i0.protocol_settings('v2') == dict(protocol=i0.PROTOCOL_V2,
+        max_selected=2048, smoke_seed=892601)
+    assert [i0.case_definition('train', n, protocol_version='v2') for n in (1, 2)] == [
+        dict(partition='train', index=1, seed=893101, requests=24, warm_start=12, high_soc=True),
+        dict(partition='train', index=2, seed=893102, requests=24, warm_start=12, high_soc=False)]
+    for partition, index in [('audit', 1), ('Q', 1), ('train', 0), ('train', 3)]:
+        with pytest.raises(ValueError):
+            i0.case_definition(partition, index, protocol_version='v2')
+    with pytest.raises(ValueError, match='unknown I0 protocol'):
+        i0.protocol_settings('unknown')
+
+
+def test_v2_forwards_larger_count_but_keeps_wall_budget_and_stop_rule(tmp_path, monkeypatch):
+    # Constructor is replaced: no formal seed is reset by this contract test.
+    def constructor(config, *, seed):
+        protocol = json.loads((tmp_path/'case/protocol.json').read_text())
+        assert seed == protocol['seed'] == 893101
+        assert protocol['protocol'] == i0.PROTOCOL_V2
+        assert protocol['max_selected'] == 2048 and protocol['max_release_intents'] == 51200
+        assert protocol['annotation_wall_seconds'] == 7200
+        return object()
+    def rollout(env, output, **kwargs):
+        assert kwargs['max_selected'] == 2048 and kwargs['all_actor']
+        assert kwargs['max_steps'] == 1800 and kwargs['wall_seconds'] == 3600
+        return dict(completed_flow(), selection_overflow=1), []
+    def forbidden(*args, **kwargs):
+        raise AssertionError('overflow still prevents annotation in V2')
+    monkeypatch.setattr(i0, 'TerminalParallelEnv', constructor)
+    monkeypatch.setattr(sparse, 'rollout', rollout)
+    monkeypatch.setattr(sparse, 'annotate', forbidden)
+    result = i0.run(tmp_path/'case', protocol_version='v2')
+    assert result['status'] == 'INCOMPLETE'
+    assert result['blockers'] == ['actor_query_budget_exceeded']
+    assert result['annotation']['status'] == 'NOT_RUN'
+
+
+def test_all_actor_serializes_queries_past_old_256_boundary(tmp_path, monkeypatch):
+    # Hold a known development fixture still to generate 300 distinct tick/UID
+    # records cheaply. This tests storage/selection, not a business trajectory.
+    def no_advance(env, tape):
+        return dict(outputs=[None, None, None, None, {'action_traces': {}}],
+                    after=sparse.canonical(sparse.state_record(env)))
+    monkeypatch.setattr(sparse, 'execute_tape', no_advance)
+    flow, selected = sparse.rollout(environment(), tmp_path/'episode', seed=892901,
+        max_steps=100, wall_seconds=120, smoke=True, all_actor=True,
+        max_selected=i0.protocol_settings('v2')['max_selected'])
+    assert flow['rows'] == flow['row_counts']['actor'] == len(selected) == 300
+    assert flow['selection_overflow'] == 0
+    assert [e['window'] for e in selected] == list(range(300))
+    assert len({e['row']['decision_id'] for e in selected}) == 300
+    assert selected[256]['row']['tick'] == 85 and selected[256]['row']['uid'] == '1'
+    entry = tmp_path/'episode/snapshots/window_256.json'
+    assert json.loads(entry.read_text()) == selected[256]
+    label = sparse.query_snapshot(entry)
+    assert label['status'] == 'OK' and label['decision_id'] == selected[256]['row']['decision_id']
+    assert label['window'] == 256 and label['actor_mask']
+    assert all(e['row']['teacher_label'] is None for e in selected)

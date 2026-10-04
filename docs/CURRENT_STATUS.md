@@ -28,6 +28,8 @@
 
 - **当前终态：I0 train02为INCOMPLETE/exit1，首cycle因查询数超限停止。** 环境943ticks/1553.7767s自然完成23N/1E/0F/D/U，无error/censor/实际安全/hash/耗尽，原父/child均退出；772actor超过256上限，overflow516，annotation按协议NOT_RUN/0labels。primary逐行核对10769raw/943steps/256selected、177快照SHA、90D/mask/null/请求执行分离通过。435个资源拒绝pre-state均已有3架final；最早此类可信快照的一次独立诊断得到原teacher WAIT、25个final_capacity拒绝、0plan调用/0.05498s，保持diagnostic NEVER_TRAIN。前256条位于tick443及以前，遗漏全部108个低SOC actor，不能作为完整I0。具体是采集数量预算不足，未发现应削弱容量、安全或actor mask的依据。[完整结果、必要诊断及有界后续方案](evidence/v4_2/p3_v3_i0_protocol_20261004.md)：另冻新协议后建议2048query但保留7200s标注墙钟，先一臂fresh 24请求；本轮未实施、未补标/复跑或启动train03。train01仍59个有效标签，其余train/audit/Q未消费；I0_QUALIFIED=false/PPO_ALLOWED=false，无学习或P3退化解决结论。heartbeat `p3-v3-i0-first-cycle`已删除，无遗留任务；冻结源码未改，47tests/smoke为已有通过证据，本轮全量产物断言和单点query通过。仅本地文档提交，保留其他dirty，无remote不推送。
 
+- 用户要求“解决第二臂问题，然后继续”后，primary实现独立`--protocol-version v2`与[新查询预算协议](evidence/v4_2/p3_v3_i0_v2_budget_20261004.md)：2048 query/51200 RELEASE意图，保留1800ticks/3600s环境与7200s标注上限；原v1/256默认、已失败train02、mask/安全/物理/teacher均不改。fresh smoke892601、dense_high893101及条件后续dense_mixed893102已在首次reset前冻结，原v1其余seed/audit/Q不挪用。51tests通过36.76s；独立smoke已SMOKE_OK/exit0，2ticks/6raw/3actor/3有效RELEASE标签，primary亲自核对真实V2 cap、90D/快照/请求执行/label join和完整重放通过，实际安全/hash无异常。代码与协议提交后准许只启动dense_high，完整无阻塞后primary继续唯一mixed；暂无学习/I0/student/PPO资格结论，长任务保持60分钟静默监控，其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

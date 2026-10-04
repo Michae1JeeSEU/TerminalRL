@@ -93,6 +93,20 @@ def test_only_valid_actor_labels_enter_gate_and_release_enters_proposal(tmp_path
     np.testing.assert_array_equal(batch.observations[0], np.arange(90, dtype=np.float32) / 100)
 
 
+def test_four_digit_query_slots_keep_the_full_label_join(tmp_path):
+    # Exercise the full new count limit without creating an environment.
+    episode = fixture_episode(tmp_path, joints=(13,)*1024 + (0,)*1024)
+    batch = dataset.load_sparse_training_episode(episode, allowed_train_seeds={101})
+    assert (episode/'labels/window_2047.json').is_file()
+    assert batch.summary['valid_labels'] == 2048
+    assert batch.summary['ignored_forced_labels'] == 1
+    assert batch.summary['gate_supervision_rows'] == len(batch.decision_ids) == 2047
+    assert batch.summary['teacher_release_rows'] == 1023
+    assert batch.summary['teacher_wait_rows'] == 1024
+    assert len(set(batch.decision_ids)) == 2047
+    assert batch.joint_target[-1] == 0 and batch.proposal_target[-1] == -1
+
+
 @pytest.mark.parametrize('status', ['TIMEOUT', 'ERROR', 'NOT_ATTEMPTED'])
 def test_invalid_status_never_uses_stale_label_as_wait_or_release(tmp_path, status):
     episode = fixture_episode(tmp_path, joints=(13,))
