@@ -16,6 +16,8 @@
 - mixed892403已PILOT_OK/exit0自然结束，572ticks、12N/0E/F/D/U，error/censor/实际安全/hash无异常；环境124.6635s、7/7标注42.1199s，primary逐行核对3383raw/572steps/7labels及选样通过。末SOC最低.320021；8次应急尝试/16次LZ计划安全拒绝、0应急提交，最终均正常完成。真实Python2483247/wrapper及所有child均退出，禁止重启两臂。
 - [稀疏pilot两臂结论](evidence/v4_2/p3_v3_sparse_pilot_20261004.md)：共24N、0E/F/D/U，13/13标注完成，接受开发采集流程验证。6587raw只有121 actor/13有效label，标签7 RELEASE/6 WAIT，proposal12/20/13为5/1/1，不能宣称I0充分或训练退化解决。mixed存在teacher动作不在rule K3中的案例，原teacher/behavior/execution均分开保留，不能误报为专家标签被执行拒绝。下一项仅为独立90D loader与mask/partition/空标签定向检查（0reset/0optimizer），再在fresh分区首次reset前冻结更充分的正式I0选样及预算；不直接把75tick一条的密度升级成正式训练协议。所有reserved train/audit/Q仍未消费，无新训练/PPO。核心不变，17tests及smoke证据保持；本轮仅文档检查/提交，之后删除已完成的heartbeat，无remote未推送。
 
+- 用户2026-10-04授权下一步后，primary已完成[独立V3/90D数据接入](evidence/v4_2/p3_v3_loader_validation_20261004.md)，旧88D入口和collector/物理安全核心保持原实现。新loader按decision_id关联OK标签，gate仅取有效标签且actor_mask=true，proposal仅取teacher RELEASE；null/超时/错误不变成WAIT，behavior/actual不改teacher target，训练接口拒绝development/audit/Q。33项数据专用tests通过（0.22s），无环境reset。两臂真实文件只读CLI均exit0，重得3204/3383raw、64/57actor、6/7标签、2/5proposal监督计数，与原分析相同；真实开发分区训练入口均拒绝。0reset/0teacher query/0optimizer/0checkpoint写入，所有reserved train/audit/Q未消费。数据接口检查完成，下一步冻结正式I0更充分的固定选样、场景与query预算，然后运行其首个三场景cycle；不把接口通过当I0/student资格或训练退化解决。没有活动任务/heartbeat，PPO_ALLOWED=false，无remote未推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

@@ -1179,6 +1179,29 @@ policy。原生且 metadata/schema/dimension/feature hash 相符的 90D checkpoi
 strict loader 加载；`core.load_checkpoint` 不允许把 88D checkpoint 直接加载到 90D policy。
 本接口规范不改变训练流程、safety/energy thresholds 或 reward 定义。
 
+### V3/90D 稀疏专家数据接入（实验性，2026-10-04）
+
+`terminal_marl.training.p3_v3_expert_dataset` 是独立数据入口，不调用历史88D BC入口。
+输入为case的`protocol.json`与episode内的`config.json`、`rows.jsonl`、
+`annotation_result.json`和其中status=OK引用的`labels/window_XX.json`。
+按decision_id关联原teacher标签，核对seed/partition、V2.4的90D有限观测、
+pre-state、actor mask及V4.2的joint/gate/proposal/request映射。未标注、TIMEOUT、
+ERROR和NOT_ATTEMPTED没有监督目标；forced-WAIT行不参与actor监督。
+teacher请求与behavior/actual独立，不能用执行WAIT覆盖teacher RELEASE。
+
+- `inspect_sparse_episode(episode, expected_seed=..., expected_partition=...)`只返回计数，
+  默认分区为`development_pilot_never_train`，不导出开发数据训练数组。
+- `load_sparse_training_episode(episode, allowed_train_seeds=...)`只接受显式train种子集合、
+  `train`分区与数据契约`p3_v3_90d_sparse_expert_v1`。开发schema
+  `p3_v3_90d_sparse_expert_development_v1`及audit/Q分区均不得进入此入口。
+- 返回`V3ExpertBatch`仅含有效teacher标签且actor_mask=true的行，全部用于gate监督；
+  `proposal_loss_mask`仅含teacher RELEASE。内部WAIT proposal为-1，不作为proposal类别。
+  summary保留raw/actor/有效标签/排除行数，不能把原始行数当监督样本数。
+
+新非开发schema只是字段契约，尚未产生正式数据或I0资格；允许种子与采样、场景、
+上限须在正式采集前另行冻结。模块不创建环境、策略、优化器或checkpoint；CLI只输出
+只读JSON检查结果。详细验证与使用方式见[数据接入记录](evidence/v4_2/p3_v3_loader_validation_20261004.md)。
+
 ---
 
 ## 32. 主路径必须删除/替换的逻辑
