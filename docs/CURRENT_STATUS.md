@@ -30,6 +30,8 @@
 
 - 用户要求“解决第二臂问题，然后继续”后，primary实现独立`--protocol-version v2`与[新查询预算协议](evidence/v4_2/p3_v3_i0_v2_budget_20261004.md)：2048 query/51200 RELEASE意图，保留1800ticks/3600s环境与7200s标注上限；原v1/256默认、已失败train02、mask/安全/物理/teacher均不改。fresh smoke892601、dense_high893101及条件后续dense_mixed893102已在首次reset前冻结，原v1其余seed/audit/Q不挪用。51tests通过36.76s；独立smoke已SMOKE_OK/exit0，2ticks/6raw/3actor/3有效RELEASE标签，primary亲自核对真实V2 cap、90D/快照/请求执行/label join和完整重放通过，实际安全/hash无异常。代码与协议提交后准许只启动dense_high，完整无阻塞后primary继续唯一mixed；暂无学习/I0/student/PPO资格结论，长任务保持60分钟静默监控，其他dirty保留，无remote不推送。
 
+- **当前运行：V2 dense_high_launch2，Python2534121/wrapper2534120。** 核心/协议commit`6863caa`，51tests及smoke通过。首次dense_high启动因worker漏cd在module导入前exit1，没有reset；原失败保留，primary准备显式cwd/源码SHA/无重复检查的启动器，解决默认沙箱无法读取SSH配置后在新目录启动同一未消费seed893101。真实argv/cwd已核对，24/warm12高SOC、2048query/51200意图/1800ticks/3600s/7200s，primary确认首tick重放一致，初读75ticks/1035raw/13selected仅运行前缀。heartbeat `p3-v3-i0-v2-budget`已确认ACTIVE/每60分钟/正常静默；禁止重跑旧臂或改运行中核心。完整high无阻塞且全部actor标注完成后primary继续唯一预登记mixed893102，出现阻塞则先完成最小必要诊断。当前无学习/I0/student资格或P3解决结论，其余train/audit/Q不自动执行。详见[V2执行记录](evidence/v4_2/p3_v3_i0_v2_budget_20261004.md)，无remote未推送、其他dirty保留。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
