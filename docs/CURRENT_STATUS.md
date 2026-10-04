@@ -24,7 +24,9 @@
 
 - I0 train01已COLLECTION_OK/exit0自然结束，Python2521016/wrapper及child退出。primary亲自核对3184raw/504steps/59selected-label与快照、全部90D/索引/mask/行为/原teacher/执行、coverage和重放通过：12N/0E/F/D/U，无error/censor/安全/hash/能量异常，59/59有效标签=37 RELEASE+22 WAIT，8类proposal、25次retry结束后标注与8次同UID同接口teacher WAIT→RELEASE。环境145.7804s、标注468.6766s，合计约10.24min。5次teacher RELEASE/实际WAIT均为rule K3外的timing意图，未提交给执行层，不改标、不误称专家动作被拒绝。primary接受单臂完整采集，继续预注册train02（893002，24/warm12高SOC）；保持60分钟heartbeat、核心冻结、无学习/I0资格/PPO结论。详见[I0记录](evidence/v4_2/p3_v3_i0_protocol_20261004.md)，无remote不推送。
 
-- 当前唯一臂为I0 train02：Python2524958/wrapper2524957，`.../p3_v3_i0_20261004/train_02`，893002/24请求/warm12高SOC；首次57s确认真实argv及12raw/1step，完整结果未定。启动前冻结源码SHA同步且无重复输出/进程。60分钟heartbeat已更新当前PID，正常静默；不重启train01/smoke，不改运行中核心，train02完整无阻塞才继续train03。其余train/audit/Q及任何学习不自动启动。
+- I0 train02启动记录：Python2524958/wrapper2524957，`.../p3_v3_i0_20261004/train_02`，893002/24请求/warm12高SOC；首次57s确认真实argv及12raw/1step。启动前冻结源码SHA同步且无重复输出/进程，按60分钟heartbeat检查。完整终态及当前判断见下一条，不再视为运行中。
+
+- **当前终态：I0 train02为INCOMPLETE/exit1，首cycle因查询数超限停止。** 环境943ticks/1553.7767s自然完成23N/1E/0F/D/U，无error/censor/实际安全/hash/耗尽，原父/child均退出；772actor超过256上限，overflow516，annotation按协议NOT_RUN/0labels。primary逐行核对10769raw/943steps/256selected、177快照SHA、90D/mask/null/请求执行分离通过。435个资源拒绝pre-state均已有3架final；最早此类可信快照的一次独立诊断得到原teacher WAIT、25个final_capacity拒绝、0plan调用/0.05498s，保持diagnostic NEVER_TRAIN。前256条位于tick443及以前，遗漏全部108个低SOC actor，不能作为完整I0。具体是采集数量预算不足，未发现应削弱容量、安全或actor mask的依据。[完整结果、必要诊断及有界后续方案](evidence/v4_2/p3_v3_i0_protocol_20261004.md)：另冻新协议后建议2048query但保留7200s标注墙钟，先一臂fresh 24请求；本轮未实施、未补标/复跑或启动train03。train01仍59个有效标签，其余train/audit/Q未消费；I0_QUALIFIED=false/PPO_ALLOWED=false，无学习或P3退化解决结论。heartbeat `p3-v3-i0-first-cycle`已删除，无遗留任务；冻结源码未改，47tests/smoke为已有通过证据，本轮全量产物断言和单点query通过。仅本地文档提交，保留其他dirty，无remote不推送。
 
 ## 2026-10-03 P3 统一实现修复（最新）
 
