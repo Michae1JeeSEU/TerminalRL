@@ -41,6 +41,9 @@
 - [V2终态与成本诊断](evidence/v4_2/p3_v3_i0_v2_budget_20261004.md)：已完成query总6937.7360s，o2m/m2i的156个WAIT穷举25候选占约93.80%。primary机械选择最早耗时>=30s的已完成slot19/tick100/UID13，先slot0 smoke后一个私有副本profile（合计2query、0reset/0step）；原完整audit/label/输入均不变。profile中切环轨迹生成57.8502/63.8815s约90.56%，450次出发时刻build、520次parameterize、1175次prime_quintic_bounds；主要成本在轨迹数值计算，不是提高query数量就能解决。cProfile增加耗时，不能把64s对原33.5s当成退化。worker预建目录及外层CR退出错误均另行留证，实际slow结果PROFILE_OK/.exit0，未重复query或改原失败。
 - 两臂环境共48请求=45N/3E、0F/D/U，无原inner耗尽复现；1095actor中913有效标签（148R/765W）但mixed缺182条，不能称完整两臂训练集。已有直接C²环境改善证据继续成立，尚无fresh student-only或训练退化解决证据，I0_QUALIFIED=false/PPO_ALLOWED=false。下一步建议只优化批量多项式bounds中点积/标量裁剪去重的精确计算开销，保留所有候选、搜索顺序、容差和安全判据；先4个既有固定状态原/新实现最多8query及4step等价/成本验证，再决定新正式采集协议。此方案尚未执行，不自动扩展train/audit或学习。所有本轮collector/profile已退出，heartbeat `p3-v3-i0-v2-budget`已删除。仅文档本地提交，保留其他dirty，无remote不推送。
 
+- **2026-10-05当前阻塞与数值优化候选：** 用户继续授权后，primary准备了[多项式bounds优化及验证记录](evidence/v4_2/p3_numeric_bounds_optimization_20261005.md)和[待应用补丁](evidence/v4_2/p3_numeric_bounds_candidate_20261005.patch)。优化仅减少数组装箱、标量clip、通用polymul/pad和重复逐段求导开销；候选/搜索顺序、容差、安全/容量/mask不变。正确加载候选的64项回归全部通过（7.76s）；512合成段×4轮的bounds全部精确相同，纯bounds中位速度约1.83倍，不能外推完整query。首个加载器混用新旧模块导致7失败的日志和原版7项对照均保留，修正的是测试加载器，未掩盖失败。
+- 服务器三次SSH均在建连时关闭（exit1，连pwd未执行）；不能确认当前服务器进程/同步。本地原版固定mixed slot0只执行1query/1RELEASE意图/1plan、0reset/0step，即因轨迹证书hash不同于服务器原产物而失败；动作及完整audit等其余字段一致，自己的checked hash与trajectory hash相同。候选query、其余状态、4step及所有正式采集/训练未执行，失败目录保留。该差异发生在候选之前，不能归因优化，也不能在缺少证据时唯一归因某个平台因素。生产polynomial源码仍为832a88f原版；候选603a299保存为未应用补丁。连接恢复后须在原服务器先验证原版/候选smoke，再复用其结果完成既定4状态/8query/4step等价和同机耗时验证，历史本地失败1query另计。通过前不启用优化或重启I0；I0_QUALIFIED=false/PPO_ALLOWED=false，P3训练退化未解决。本轮未启动后台任务/heartbeat，无remote不推送，其他dirty保留。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
