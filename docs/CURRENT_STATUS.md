@@ -44,6 +44,8 @@
 - **2026-10-05当前阻塞与数值优化候选：** 用户继续授权后，primary准备了[多项式bounds优化及验证记录](evidence/v4_2/p3_numeric_bounds_optimization_20261005.md)和[待应用补丁](evidence/v4_2/p3_numeric_bounds_candidate_20261005.patch)。优化仅减少数组装箱、标量clip、通用polymul/pad和重复逐段求导开销；候选/搜索顺序、容差、安全/容量/mask不变。正确加载候选的64项回归全部通过（7.76s）；512合成段×4轮的bounds全部精确相同，纯bounds中位速度约1.83倍，不能外推完整query。首个加载器混用新旧模块导致7失败的日志和原版7项对照均保留，修正的是测试加载器，未掩盖失败。
 - 服务器三次SSH均在建连时关闭（exit1，连pwd未执行）；不能确认当前服务器进程/同步。本地原版固定mixed slot0只执行1query/1RELEASE意图/1plan、0reset/0step，即因轨迹证书hash不同于服务器原产物而失败；动作及完整audit等其余字段一致，自己的checked hash与trajectory hash相同。候选query、其余状态、4step及所有正式采集/训练未执行，失败目录保留。该差异发生在候选之前，不能归因优化，也不能在缺少证据时唯一归因某个平台因素。生产polynomial源码仍为832a88f原版；候选603a299保存为未应用补丁。连接恢复后须在原服务器先验证原版/候选smoke，再复用其结果完成既定4状态/8query/4step等价和同机耗时验证，历史本地失败1query另计。通过前不启用优化或重启I0；I0_QUALIFIED=false/PPO_ALLOWED=false，P3训练退化未解决。本轮未启动后台任务/heartbeat，无remote不推送，其他dirty保留。
 
+- **2026-10-06连接复查：** SSH仍不可用。普通连接及一次verbose诊断确认TCP22连接成功，但SSH标识交换阶段收到`kex_exchange_identification: Connection closed by remote host`（verbose进程exit255），远程命令未执行。不能据此唯一归因sshd/网络，也未取得实际进程或同步SHA。详见[数值优化记录的连接复查](evidence/v4_2/p3_numeric_bounds_optimization_20261005.md)。本次没有应用候选、启动查询/采集/训练或新增性能结果；保留原服务器验证计划，待SSH恢复后继续。只更新文档，无新heartbeat，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

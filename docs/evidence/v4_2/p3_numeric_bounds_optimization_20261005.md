@@ -64,3 +64,9 @@ primary逐字段比较原label与新query：动作、90D、完整teacher audit�
 4. 有真实查询收益后才决定fresh采集预算与新seed；不能从合成bounds基准推断mixed完整标注一定落在7200s内。监督pre-state与服务推进/顺序批准的语义限制仍须在学习前处理。无BC/PPO/full training、held-out、硬件、optimizer或checkpoint写入。
 
 本轮交付为待应用补丁、17个数值等价测试和本记录/CURRENT_STATUS最新块；生产优化未启用。新测试在未改动的原版上也为17 passed/0.39s，证明提交后不会要求提前启用候选。本轮没有启动后台长任务或heartbeat。补丁可应用性/文档diff检查后显式本地提交，保留用户/并行dirty；当前仓库无remote，不能推送。
+
+## 2026-10-06连接恢复检查（newly_run）
+
+用户要求检查服务器是否恢复并继续。一次普通`ssh -o ConnectTimeout=15 lab-server 'pwd'`仍在执行远程命令前关闭；随后一次限定的verbose连接诊断记录了`Connection established`、本地SSH版本发送和`kex_exchange_identification: Connection closed by remote host`，进程exit255。没有收到可用远端SSH会话，不能读取实际进程、源码SHA或运行环境版本。该证据说明TCP22可连接、SSH标识交换阶段连接被对端关闭；不足以确定是sshd、连接限制或其他服务器/网络配置，也不等同于服务器整机不可达。
+
+日志保留在`.tmp/p3_ssh_recovery_20261006.log`，未把包含客户端配置细节的完整verbose日志纳入Git。没有启动或重跑查询、采集、训练，也未应用候选或改动生产核心。原64tests与bounds基准仅沿用既有结果，本次没有新增性能证据。下一步仍是恢复SSH后核对真实进程/Syncthing，再执行上方既定原服务器smoke及有界对照；当前无法通过SSH执行服务器侧恢复操作。仅更新本文和CURRENT_STATUS最新块，作文档diff检查后本地提交；无remote不推送。
