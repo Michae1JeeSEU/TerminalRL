@@ -43,3 +43,13 @@
 这里仅追加已发生结果。此协议写入时新smoke/train/Q未reset，无新的BC/PPO，I0_QUALIFIED=false/PPO_ALLOWED=false。
 
 任务profile/数据入口/旧接口定向28项local/server tests全部通过（66.43s/34.20s），四个新文件两端SHA一致。覆盖真实priority影响观测/仲裁/reward、dense 6/4/2分配、空启动12tick延迟入场与首tick重放、新任务标签→105+N×50重建、原始null与partition隔离，以及旧forecast/Q接口回归。两个test fixture仅development用途，不消费正式seed。下一步提交此版本后仅启动独立892808 smoke；尚无真实train或Q结果。
+
+代码/协议已提交a8c821be。独立smoke892808为SMOKE_OK/exit0，2ticks/6raw/3actor，3/3原teacher RELEASE proposal12均获证/执行；三接口各1，priority1两行/3一行、三行SOC均<.65。原null/forced mask、90D→105+2×50/标签join及首tick重放全部通过，无实际安全/hash/能量异常。此随机小样本没有priority5或非standard mission，不声称覆盖充分；真实属性由配置、定向tests及后续完整回合共同检查。result SHAd076f4197c7d2e2ed64095a7b5af35c33b7a9f8418f08a4e1da8ca3d4cf53057，context SHAd1f9341594650a6c029cae624d4d683ef2b34b3c7b75444edc3cf81ae5815199，终态已同步/无残余进程。primary全量分析器输出SHA fd90fdd7af95ed8f80cb722dac6634748e530ee50387f3eec0ec4dfa3bf4331f。接受仅启动train_flow6，禁止重跑smoke。
+
+primary另建`training/p3_v25_task_imitation.py`，仅为后续入口准备：fit只能读三个真实P3 train，固定final/全部三seed，完全不打开Q；Q需在候选冻结后由独立evaluation-only loader读取，一次性标记消费，评分0参数更新，保持student/PPO未准入。旧I1文件和未消费895301–3不动。3项本地/服务器合成测试通过3.03s/1.20s，包括无Q访问、冻结checkpoint字节和重复Q拒绝；测试没有实际train fit、正式Q采集或环境reset。所有真实学习仍等待三个train完整分析后再执行。
+
+### train_flow6终态（newly_run）
+
+893401已COLLECTION_OK/exit0，692ticks、6N/0E/F/D/U，所有到达/服务结束，技术/censor/实际安全/hash/负能量异常0；1896raw=20actor+1876forced，20/20标签=19R1W，五种proposal12/22/13/7/14，三接口7/7/6。actor中priority1/3/5为11/3/6，standard/emergency/cargo为9/3/8（任务名emergency不等于应急落地）；SOC<.65为14行，<.55为6行，32条基础臂retry统计不混入本臂，本臂after-retry2次、WAIT→RELEASE1次。最小实际/扫掠81.089035/81.053866m、最低完成SOC .401436、应急提交0。环境48.583s/标注78.668s。
+
+primary全量行/teacher证书/原候选与执行/selected快照hash/105+N×50 join断言通过；一条teacher proposal13对规则nominal的执行WAIT差异保留，另有teacher proposal7（速度残差−.5）而规则实际速度残差−1的候选差异，不改标。result SHA165fb4f0d4f8eb3dbde4b05b713b758500408ae7a3f82017383af589ad21f608，context SHA39e77e92ed97938d25d3a7068feaf9deb76da1cfcea17880e06469bdc9f22180，终态两端已同步；Python2819036/timeout2819035及child退出。分析文件SHA b713d9cf44afe99332cd2e6c7606646d3c13523fcdaee6328cad9351b9be61b4。接受继续唯一train_dense24；flow6禁止重跑。仍未实际BC/Q/PPO。
