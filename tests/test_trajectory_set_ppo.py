@@ -139,3 +139,36 @@ def test_critic_keeps_service_context_when_no_active_agents():
     value=policy.model.value(*tensors(row),torch.from_numpy(context))
     value.backward()
     assert any(p.grad is not None for p in policy.model.critic_head.parameters())
+
+
+def test_tensor_records_roundtrip_and_critic_terminal_targets(tmp_path):
+    from terminal_marl.training.p3_v25_rollout import save_steps,load_steps,critic_warmup
+    policy=TrajectorySetPPO(TrajectorySetActor())
+    rows=[step(policy,reward=1.),step(policy,0,0,reward=2.),step(policy,0,0,reward=8.,terminated=True)]
+    path=tmp_path/'steps.pt';save_steps(path,rows);loaded=load_steps(path)
+    assert len(loaded)==3 and all(np.array_equal(a.ego,b.ego) for a,b in zip(rows,loaded))
+    actor=copy.deepcopy(policy.model.actor.state_dict());adapter=copy.deepcopy(policy.model.gate_adapter.state_dict())
+    result=critic_warmup(policy.model,[loaded],updates=100,batch_size=3,seed=17,learning_rate=3e-3)
+    assert result['targets']==pytest.approx([1+.99*2+.99**2*8,2+.99*8,8])
+    # Two empty synthetic states deliberately share identical context but
+    # have different remaining returns. Check learning, not impossible exact
+    # interpolation or an arbitrary convergence rate in this small budget.
+    assert result['final_mse']<result['initial_mse']*.5
+    assert all(torch.equal(v,policy.model.actor.state_dict()[k]) for k,v in actor.items())
+    assert all(torch.equal(v,policy.model.gate_adapter.state_dict()[k]) for k,v in adapter.items())
+    with pytest.raises(ValueError,match='whole natural'): critic_warmup(policy.model,[loaded[:-1]],updates=1)
+
+
+def test_training_rollout_smoke_records_requested_behavior_and_full_replay(tmp_path):
+    from terminal_marl.configs.p3_integrated_repair import build_config
+    from terminal_marl.training.p3_v25_rollout import collect_episode,load_steps
+    policy=TrajectorySetPPO(TrajectorySetActor())
+    rows,result=collect_episode(policy.model,build_config(requests=3,warm_start=3,high_soc=True),
+        seed=112233,policy_seed=713,output=tmp_path/'rollout',max_steps=2)
+    assert result['status']=='CENSORED' and result['error'] is None and result['replay_exact']
+    loaded=load_steps(tmp_path/'rollout'/'steps.pt')
+    assert len(rows)==len(loaded)==2 and loaded[-1].episode_end and not loaded[-1].terminated
+    assert all(np.array_equal(a.ego,b.ego) for a,b in zip(rows,loaded))
+    assert result['reward']==pytest.approx(sum(r.reward for r in loaded))
+    assert result['telemetry']['checked_executed_plan_hash_mismatches']==0
+    assert policy.rollout_gate_kl(loaded)==pytest.approx(0.,abs=1e-7)

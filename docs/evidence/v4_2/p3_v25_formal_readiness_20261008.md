@@ -63,3 +63,7 @@ A_sto随后COMPLETED/exit0：585ticks/239.224s，12N/0E/F/D/U、完整重放相�
 critic使用全active set及26维当前全局上下文：时间、到达余量/下一到达延迟/是否耗尽、队列数量/等待/最低SOC、LZ占用与服务/预约剩余时间、active/unresolved计数与三环几何。即使active为空，队列/服务上下文仍存在；不调用teacher、不读未来随机抽样或终态结果。每条record保存原gate/proposal分布和条件likelihood，更新前检查行为概率一致；真实terminal无bootstrap，时间截断bootstrap但不串下一episode。每次更新后检查全rollout的精确categorical gate KL，超限恢复模型和Adam状态；冻结proposal使该KL覆盖可学习策略变化。实现仍显式要求training_authorized，单测不授予PPO准入，正式优化预算/协议尚未执行。
 
 新增构件与旧PPO回归共28项local/server tests通过（3.21s/1.39s），三文件SHA一致。检查零residual初始分布相同、ragged neighbor/forced mask、原请求概率校验、空tick晚到reward/截断bootstrap、只更新adapter+critic，以及空/非空Adam状态的KL超限回滚。这里只发生合成单测中的更新；没有读取真实训练rollout作PPO，没有产生可部署PPO checkpoint。
+
+上述构件已提交`86e3182`。进一步新增未被当前评估import的`p3_v25_rollout.py`，让完整team tick、26D critic context、原请求分布与实际reward进入可安全读取的纯tensor records；记录终态/截断bootstrap，使用相同scheduler请求tape并支持完整重放。critic-only warmup只接收完整自然终态的stochastic episodes，以真实reward计算gamma=.99 MC target，冻结base和gate adapter。新增的两步环境单测通过；首次合成MC测试的90%降误差断言未满足（92.691→12.076，约87%），MC target/参数冻结均正确。该断言把100步合成检查误当指定收敛率，primary改为只要求明显学习进展（50%降误差）；模型/优化器/测试预算不变，正在重跑。此处不是实景critic warmup结果，也不改变任何研究准入阈值。
+
+重跑完成30项local/server tests全通过（10.31s/5.41s），新增rollout与test SHA一致，未做实景PPO。当前B_det真实Python2805535/timeout2805534、cwd与24/warm12/892803/928803高SOC参数已核对。progress到982ticks、24个completed、actor1808=293R+1515W、0actor shield、rollout耗时870.575s，但root result及exit尚无；完整重放及终态报告完成之前不启动下一臂。此前当前A的monitor信息已过期，以本条与实际进程为准。
