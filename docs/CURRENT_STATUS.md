@@ -98,6 +98,8 @@
 - **2026-10-08用户继续后：V2.5同网络旧/新信息比较准备中。** primary实现独立gate/proposal的集合actor（全邻机共享编码、mask mean/max/count），原默认90D/teacher/物理不变；两臂同架构/同初始权重/同batch顺序，只切换原90D或V2.5新信息。冻结原1046标签、91701–3各两臂1000更新/300s、未加权CE/Adam3e-4/clip.5，先tests及0更新prepare/独立synthetic smoke，再核对提交后fit；新建诊断checkpoint，不覆盖旧模型。详细[运行前方案](evidence/v4_2/p3_v25_set_fit_20261008.md)已记录，尚无拟合结果；I0/student/PPO仍false，无audit/Q/环境/teacher调用。
 - 集合actor比较准备通过：local/server51tests、真实1046行0更新prepare、16行合成两臂各2更新smoke均exit0；59451参数、old信息逐位恢复/新增信息全零、mask/置换/批处理、初始state/batch序列一致及四模块更新均通过。primary亲自核对后接受本地提交冻结实现，再执行唯一91701–3×两臂×1000更新。尚无真实fit结果，I0/student/PPO仍false，无环境/teacher/audit/Q。
 
+- **2026-10-08最新终态：V2.5同网络信息对照六臂完成，输入修复改善拟合，proposal仍有具体阻塞。** 核心4d85c46，51项local/server tests及prepare/smoke通过后91701–3×两臂×1000更新均FIT_COMPLETE/exit0，每臂约3s，初始参数/batch序列严格配对；Python2799702已退出。三seed均值旧→新：gate AUC .87157→.96569、RELEASE召回44.10→81.37%、WAIT误放6.65→4.16%、proposal top1 53.57→62.01%、joint78.36→86.33%；m2i AUC .70073→.94988/joint52.02→70.15%。支持观测缺失确实妨碍模仿，但不是闭环/PPO证据。
+- primary全量重算1046预测与原标签，并只读匹配原teacher前缀。tick152三seed均从错proposal12改成13；tick92/101仅一个seed同时正确，tick0 proposal14仍未学对。新臂仍有82/88/99次拟请求命中原已拒绝候选（不是实际执行），proposal及少数gate是剩余问题；i2f WAIT误放和部分top3有局部退步，不隐去。详细[结果/边界/有界下一步](evidence/v4_2/p3_v25_set_fit_20261008.md)已记录：先固定网络/输入/loss预登记拟合曲线，分辨1000步未收敛与持续残差，再考虑原teacher前缀masked监督；本轮未扩预算/未开始下一实验。终态与6predictions SHA两端一致，所有产物保留，无运行任务/heartbeat；I0/student/PPO仍false，无新数据/audit/Q/环境/teacher调用/旧checkpoint覆盖，其他dirty保留，无remote不推送。
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
