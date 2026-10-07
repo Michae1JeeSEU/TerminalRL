@@ -77,3 +77,7 @@ rollout/MC接口已提交`4fad802`。PPO侧另补齐固定train-state reference 
 实际最小间隔81.826m、swept81.684m，buffer/protected/NMAC/collision/physical shield/hash异常均0，930energy checks/0negative、24个ground_service_complete/0应急、最低完成SOC .406903，合计能耗10636.4304。117次_commit过滤干预和8个不可行候选单独保留，不当作实际违规。293R中64批准/229拒绝；拒绝PREDICTED_SEPARATION145、NO_MERGE_GAP55、HEADWAY14、FINAL_RESOURCE15，批准rank1/2/3=49/14/1。候选批准率偏低说明尚有放行时机/排序优化空间，不能仅凭24N称学到了最优决策；也没有依据降低安全过滤。当前完整性/安全/业务无阻塞，接受继续唯一B_sto，随后仍依结果决定C。
 
 B_sto已启动Python2807712/timeout2807711，SSH session28812，已出现first_before/protocol/steps，cwd确认。primary核对本地产物protocol的checkpoint为原固定`p3_v25_set_curve_20261008/curve/seed_91701/diagnostic_final.pt`、SHA c28949a8...，892803/928803、高SOC、stochastic；一份worker文字报告将日期写为202608，不能据此替换真实protocol参数，原样/proc复核正在进行。后续统一使用primary准备的`.tmp/snapshot_p3_v25_student.py`原样JSON读取进程与相邻产物，减少人工摘录错误。
+
+### 并行准备独立imitation资格（尚未启动）
+
+primary在不被当前评估import的新文件中实现[三完整周期Q与fresh多seed I1协议](p3_v25_i1_qualification_20261008.md)。所有开发臂通过及独立smoke后才允许首次Q reset；Q先完整冻结，再以原1046 train fresh91801–3各5000更新，全部final写完后一次评估。895301–3覆盖12高SOC/24高SOC/24混合SOC，原始Q永不进入train；沿用既有I1准确率门槛，Safe DAgger/student/PPO后续资格仍分开判断。精确seed搜索无历史代码记录，服务器新根未存在，真正采集前另查历史产物身份。新增30个不同local/server定向用例通过（29项加新增1项，新文件15项复跑），首轮Windows清单路径错误已修复并留证；当前没有真实Q采集或fresh fit。

@@ -106,6 +106,8 @@
 - **A完整开发配对已通过。** det/stochastic分别555/585ticks、222.291/239.224s，均12N/0E/F/D/U、无error/censor/实际安全/hash异常、全tape重放相同、0actor shield/0应急；9/10次批准使用K3备选，仍不称决策最优。primary全量核对后接受下一项B_det（24/warm12高SOC）。另在未被当前评估import的新文件实现V2.5 PPO构件，28项local/server tests通过；只合成测试，尚无实景PPO或准入。细节及连续后续路线见[readiness记录](evidence/v4_2/p3_v25_formal_readiness_20261008.md)。持续授权目标和正式训练不设heartbeat要求不变。
 - 当前开发B_det真实Python2805535/timeout2805534，路径`p3_v25_student_dev_20261008/B_det`，argv/cwd已核对；progress已982ticks/24completed/1808actor（293R+1515W）/0actor shield、rollout870.575s，但root result/exit仍无，不当作全臂终态。新增PPO构件已86e3182提交；后续完整team rollout/critic MC接口30项local/server测试通过，仍仅单测，不是实景PPO。运行中评估核心保持冻结；持续目标不变。
 - **B_det已完整完成，当前转B_sto。** B_det为982ticks/1697.596s、24N/0E/F/D/U、完整tape重放一致，实际安全/hash/actor shield均0，无error/censor；最低完成SOC .406903、0应急。293次R中64批准/229拒绝、15次K3备选，说明仍有时机优化空间，不能称决策最优。当前唯一B_sto为Python2807712/timeout2807711、SSH session28812，路径`p3_v25_student_dev_20261008/B_sto`，protocol确认原固定91701 checkpoint/SHA、892803/928803随机策略。PPO准备最新4edee3a（rollout4fad802），31项local/server tests通过，尚无实景PPO更新。heartbeat p3-v2-5保持60min并持续后续修复/资格推进；最后formal启动后删除。
+- **持续推进：独立V2.5 I1准备完成，尚未采集/训练。** primary新增[三完整周期Q与fresh91801–3资格协议](evidence/v4_2/p3_v25_i1_qualification_20261008.md)和独立入口，当前开发六臂全部通过后才执行smoke及Q895301–3；Q先冻结再train，训练loader禁止Q，三final后只评估一次，沿用既有I1门槛。新入口/旧loader/runtime共30个不同local/server用例通过；初始Windows路径序列化错误已修复留证。当前B_sto继续，新入口不被其import；没有正式Q/fresh fit或实景PPO更新，资格仍false。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
