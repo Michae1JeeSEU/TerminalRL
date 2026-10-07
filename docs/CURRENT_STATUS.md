@@ -55,6 +55,10 @@
 - **2026-10-07 V3 mixed893201已COLLECTION_OK/exit0，无本轮运行进程。** 921ticks/1157.1544s，16N/8E/0F/D/U，error/censor/实际安全/hash/能量耗尽均无异常；374actor全部selected并取得374OK标签，overflow/缺失0，标注6248.8170s（104.15min）未超7200s。primary逐行核对11136raw/921steps/268快照/90D/mask/null/原teacher/loader集合通过，local/server七终态文件SHA一致。标签102R/272W、19类proposal；179低SOC、150高速inner、265 retry恢复及42次同接口WAIT→RELEASE均完整标注。本臂解除采集成本阻塞；不同seed不能当完整配对加速实验，8/24应急说明仍非全正常业务，P3训练退化未验证解决。
 - primary又完成唯一teacher WAIT/trace RELEASE状态slot287的一次原tape精确重放（0reset/0query/1step、EXACT_REPLAY_OK/exit0）：UID21已先被应急层接管，正常release返回plan_active；trace默认继承请求，不是策略批准。54个真实K3批准与4个无rank RELEASE trace必须分开，原teacher/raw均不改。完整结论与[有界后续方案](evidence/v4_2/p3_v3_i0_v3_numeric_20261007.md)已记录：三个完整train回合共1046标签（229R/817W，仍各保留原协议身份），下一项建议0reset/0optimizer准备90D BC清单和入口、审查I0支持范围，再另冻最多3初始化seed×1000更新的监督可学习性小试；本轮未执行或准入学习，不继续铺开采集pilot。I0_QUALIFIED=false/PPO_ALLOWED=false，audit/Q untouched。进程已退出，监控`p3-v3-soc`将在结果提交后删除；其他dirty保留，无remote不推送。
 
+- **2026-10-07用户继续后：90D监督可学习性小试准备中。** primary已亲自实现独立`p3_v3_bc_learnability`入口并冻结[有界离线协议](evidence/v4_2/p3_v3_bc_learnability_20261007.md)：仅原893001/893101/893201三个完整train回合1046标签，先0optimizer准备，再独立合成smoke，最后最多3个初始化seed91701/2/3各1000次BC更新、CPU、Adam3e-4/batch128/clip.5、每seed300s。仅actor encoder/gate/proposal学习原teacher，critic冻结，旧88D入口/物理核心/原标签不变；记录初始与固定final训练集内指标，不读audit/Q、不据loss选模型或扩展预算。现有数据支持该已知状态的可拟合性诊断，不授予完整I0、formal I1、student或PPO资格。首次本地tests为fixture包导入错误、0项执行，修正后44tests通过19.72s；服务器回归与真实prepare/synthetic smoke正在核对，真实数据学习尚未开始。无full training/held-out/硬件/旧checkpoint加载或覆盖，其他dirty保留，无remote不推送。
+
+- **90D离线BC小试准备已通过：** local/server均44tests通过，真实prepare得到1046个唯一actor（817W/229R），0model/0optimizer/0checkpoint；独立16行synthetic smoke完成2更新，actor变/critic不变，schema/序列化输出通过。primary已亲自核对，记录环境/I0支持范围与student资格边界，接受按[冻结协议](evidence/v4_2/p3_v3_bc_learnability_20261007.md)在新目录执行唯一3seed×1000更新in-sample诊断，先提交再启动。它不授予formal I1或完整I0资格，不读audit/Q或做student闭环；PPO_ALLOWED=false。全WAIT baseline78.11%不会被误当学习成功；原完整采集、失败及teacher目标均保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
