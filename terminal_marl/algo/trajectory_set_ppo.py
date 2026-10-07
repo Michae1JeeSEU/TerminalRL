@@ -141,9 +141,25 @@ def actor_batch(rows):
 
 
 class TrajectorySetPPO:
-    def __init__(self, actor, *, learning_rate=3e-5):
+    def __init__(self, actor, *, learning_rate=3e-5, reference=None,
+                 reference_limit=.02, reference_coefficient=1.):
         self.model=TrajectorySetActorCritic(actor)
         self.optimizer=torch.optim.Adam([p for p in self.model.parameters() if p.requires_grad],lr=learning_rate)
+        if not np.isfinite(reference_limit) or reference_limit<=0 or not np.isfinite(reference_coefficient) or reference_coefficient<0:
+            raise ValueError('invalid fixed-reference KL settings')
+        self.reference=None if reference is None else tuple(torch.as_tensor(a).detach().clone() for a in reference)
+        if self.reference is not None and not len(self.reference[0]):
+            raise ValueError('reference states cannot be empty')
+        self.reference_limit=float(reference_limit)
+        self.reference_coefficient=float(reference_coefficient)
+
+    def reference_kl(self):
+        if self.reference is None:
+            return self.model.gate_adapter.weight.new_zeros(())
+        with torch.no_grad():
+            base,_=self.model.actor.distributions(*self.reference)
+        current,_=self.model.distributions(*self.reference)
+        return kl_divergence(base,current).mean()
 
     @torch.no_grad()
     def rollout_gate_kl(self, steps):
@@ -184,16 +200,22 @@ class TrajectorySetPPO:
             selected=advantages[actor_steps]
             advantages=(advantages-selected.mean())/(selected.std()+1e-8)
         totals=dict(accepted_updates=0,rejected_updates=0,team_steps=len(steps),actor_decisions=count,
-                    actor_count_normalizer=normalizer,final_gate_kl=self.rollout_gate_kl(steps))
+                    actor_count_normalizer=normalizer,final_gate_kl=self.rollout_gate_kl(steps),
+                    final_reference_kl=float(self.reference_kl().detach()),rejection_reason=None)
+        metrics={k:0. for k in ('loss','actor_loss','value_loss','entropy','grad_norm','clip_fraction')}
+        def finished():
+            return {**totals,**{k:v/max(1,totals['accepted_updates']) for k,v in metrics.items()}}
         if totals['final_gate_kl']>target_kl+1e-8:
             raise ValueError('rollout is stale before PPO')
+        if not np.isfinite(totals['final_reference_kl']) or totals['final_reference_kl']>self.reference_limit:
+            raise ValueError('policy already exceeds fixed-reference KL budget')
         for _ in range(epochs):
             order=np.random.permutation(len(steps))
             for start in range(0,len(steps),minibatch_size):
                 indices=order[start:start+minibatch_size];rows=[steps[i] for i in indices]
                 predicted=torch.stack([self.model.value(*tensors(r),torch.from_numpy(r.context)) for r in rows])
                 value_loss=(predicted-torch.as_tensor(returns[indices])).square().mean()
-                actor=entropy=value_loss.new_zeros(())
+                actor=entropy=clipped=value_loss.new_zeros(())
                 batch=actor_batch(rows)
                 if batch is not None:
                     gd,pd=self.model.distributions(*batch[:3])
@@ -204,25 +226,34 @@ class TrajectorySetPPO:
                     objective=-torch.minimum(ratio*advantage,ratio.clamp(1-clip_ratio,1+clip_ratio)*advantage)
                     actor=objective.sum()/(len(rows)*normalizer)
                     entropy=torch.stack([v.mean() for v in torch.split(gd.entropy(),[c for c in counts if c])]).mean()
-                loss=actor+value_coef*value_loss-entropy_coef*entropy
+                    clipped=((ratio-1).abs()>clip_ratio).float().mean()
+                loss=actor+value_coef*value_loss-entropy_coef*entropy+self.reference_coefficient*self.reference_kl()
                 if not torch.isfinite(loss): raise FloatingPointError('nonfinite PPO loss')
                 state=copy.deepcopy(self.model.state_dict());optim=copy.deepcopy(self.optimizer.state_dict())
                 self.optimizer.zero_grad()
                 rejected=False
                 try:
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_([p for p in self.model.parameters() if p.requires_grad],1.,error_if_nonfinite=True)
+                    norm=torch.nn.utils.clip_grad_norm_([p for p in self.model.parameters() if p.requires_grad],1.,error_if_nonfinite=True)
                     self.optimizer.step()
                     kl=self.rollout_gate_kl(steps)
+                    ref_kl=float(self.reference_kl().detach())
                     rejected=(not _state_finite(self.model.state_dict())
                               or not _state_finite(self.optimizer.state_dict())
-                              or not np.isfinite(kl) or kl>target_kl)
+                              or not np.isfinite(kl) or kl>target_kl
+                              or not np.isfinite(ref_kl) or ref_kl>self.reference_limit)
+                    if rejected:
+                        totals['rejection_reason']='reference_kl' if not np.isfinite(ref_kl) or ref_kl>self.reference_limit else 'rollout_kl_or_nonfinite'
                 except (RuntimeError,FloatingPointError):
                     rejected=True
+                    totals['rejection_reason']='optimizer_error'
                 if rejected:
                     self.model.load_state_dict(state);self.optimizer.load_state_dict(optim)
                     self.optimizer.zero_grad(set_to_none=True)
                     totals['rejected_updates']+=1
-                    return totals
-                totals['accepted_updates']+=1;totals['final_gate_kl']=kl
-        return totals
+                    return finished()
+                totals['accepted_updates']+=1;totals['final_gate_kl']=kl;totals['final_reference_kl']=ref_kl
+                for name,value in (('loss',loss),('actor_loss',actor),('value_loss',value_loss),
+                                   ('entropy',entropy),('grad_norm',norm),('clip_fraction',clipped)):
+                    metrics[name]+=float(value.detach())
+        return finished()

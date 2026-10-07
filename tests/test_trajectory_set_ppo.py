@@ -113,6 +113,19 @@ def test_rollback_preserves_existing_adam_moments():
         for name,value in values.items(): assert torch.equal(value,actual['state'][key][name])
 
 
+def test_fixed_reference_guard_limits_cumulative_gate_drift():
+    reference=(np.random.randn(8,105).astype('float32'),np.zeros((8,0,50),np.float32),np.zeros((8,0),bool))
+    policy=TrajectorySetPPO(TrajectorySetActor(),learning_rate=1.,reference=reference,reference_limit=1e-10)
+    assert float(policy.reference_kl())==pytest.approx(0.,abs=1e-7)
+    before=copy.deepcopy(policy.model.state_dict())
+    rows=[step(policy,reward=1),step(policy,reward=10,terminated=True)]
+    # A permissive rollout bound isolates the independent fixed-state bound.
+    result=policy.update(rows,training_authorized=True,epochs=1,minibatch_size=2,target_kl=1e6)
+    assert result['rejected_updates']==1 and result['rejection_reason']=='reference_kl'
+    assert all(torch.equal(v,policy.model.state_dict()[k]) for k,v in before.items())
+    assert policy.optimizer.state_dict()['state']=={}
+
+
 def test_all_forced_and_empty_steps_only_update_critic():
     policy=TrajectorySetPPO(TrajectorySetActor(),learning_rate=1e-3)
     rows=[step(policy,actor=False,reward=1),step(policy,0,0,reward=10,terminated=True)]
