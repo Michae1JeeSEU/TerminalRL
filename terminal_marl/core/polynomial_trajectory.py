@@ -71,7 +71,11 @@ def _evaluate_polynomial(coefficients: np.ndarray, u: Any) -> np.ndarray:
 
 
 def _trim_polynomial(coefficients: Iterable[float]) -> np.ndarray:
-    values = np.asarray(list(coefficients), dtype=float).reshape(-1)
+    # Internal callers already provide arrays; avoid boxing every coefficient.
+    values = np.asarray(
+        coefficients if isinstance(coefficients, np.ndarray) else list(coefficients),
+        dtype=float,
+    ).reshape(-1)
     if values.size == 0:
         return np.zeros(1, dtype=float)
     scale = max(1.0, float(np.max(np.abs(values))))
@@ -79,10 +83,12 @@ def _trim_polynomial(coefficients: Iterable[float]) -> np.ndarray:
     last = values.size - 1
     while last > 0 and abs(values[last]) <= tolerance:
         last -= 1
-    trimmed = np.array(values[: last + 1], dtype=float, copy=True)
-    if not np.any(np.abs(trimmed) > tolerance):
-        return np.zeros(1, dtype=float)
-    return trimmed
+    # The last surviving finite coefficient already proves this is nonzero.
+    # Keep the original all-zero/nonfinite rule when that proof does not hold.
+    if not abs(values[last]) > tolerance:
+        if not np.any(np.abs(values[: last + 1]) > tolerance):
+            return np.zeros(1, dtype=float)
+    return np.array(values[: last + 1], dtype=float, copy=True)
 
 
 def _real_roots_in_unit_interval(coefficients: Iterable[float]) -> list[float]:
@@ -97,12 +103,12 @@ def _real_roots_in_unit_interval(coefficients: Iterable[float]) -> list[float]:
             continue
         real_root = float(complex_root.real)
         if -_ROOT_TOLERANCE <= real_root <= 1.0 + _ROOT_TOLERANCE:
-            result.append(float(np.clip(real_root, 0.0, 1.0)))
+            result.append(min(max(real_root, 0.0), 1.0))
     return result
 
 
 def _unique_unit_points(points: Iterable[float]) -> np.ndarray:
-    values = sorted(float(np.clip(point, 0.0, 1.0)) for point in points)
+    values = sorted(min(max(float(point), 0.0), 1.0) for point in points)
     unique: list[float] = []
     for value in values:
         if not unique or abs(value - unique[-1]) > _ROOT_TOLERANCE:
@@ -111,11 +117,18 @@ def _unique_unit_points(points: Iterable[float]) -> np.ndarray:
 
 
 def _dot_polynomial(left: np.ndarray, right: np.ndarray, axes: tuple[int, ...]) -> np.ndarray:
-    result = np.zeros(1, dtype=float)
+    # These internal operands are finite float derivative arrays. Match
+    # polymul's exact-zero trimming and convolution order, without its generic
+    # dtype/series conversion or repeated padding. Do not round coefficients.
+    result = np.zeros(left.shape[0] + right.shape[0] - 1, dtype=float)
     for axis in axes:
-        product = np.polynomial.polynomial.polymul(left[:, axis], right[:, axis])
-        if result.size < product.size:
-            result = np.pad(result, (0, product.size - result.size))
+        lhs, rhs = left[:, axis], right[:, axis]
+        left_last, right_last = lhs.size - 1, rhs.size - 1
+        while left_last > 0 and lhs[left_last] == 0.0:
+            left_last -= 1
+        while right_last > 0 and rhs[right_last] == 0.0:
+            right_last -= 1
+        product = np.convolve(lhs[: left_last + 1], rhs[: right_last + 1])
         result[: product.size] += product
     return _trim_polynomial(result)
 
@@ -305,7 +318,7 @@ def _batch_real_roots_in_unit_interval(
                     continue
                 real_root = float(complex_root.real)
                 if -_ROOT_TOLERANCE <= real_root <= 1.0 + _ROOT_TOLERANCE:
-                    accepted.append(float(np.clip(real_root, 0.0, 1.0)))
+                    accepted.append(min(max(real_root, 0.0), 1.0))
             result[index] = accepted
     return result
 
@@ -375,15 +388,10 @@ def prime_quintic_bounds(segments: Iterable[QuinticSegment]) -> tuple[dict[str, 
     uncached = [batch[index] for index in uncached_indices]
     durations = np.asarray([segment.duration for segment in uncached], dtype=float)
     coefficients = np.stack([segment.coefficients for segment in uncached], axis=0)
-    velocity_u = np.stack(
-        [_derivative_coefficients(segment.coefficients, 1) for segment in uncached], axis=0
-    )
-    acceleration_u = np.stack(
-        [_derivative_coefficients(segment.coefficients, 2) for segment in uncached], axis=0
-    )
-    jerk_u = np.stack(
-        [_derivative_coefficients(segment.coefficients, 3) for segment in uncached], axis=0
-    )
+    # Preserve the scalar sequence of multiplications, across all segments.
+    velocity_u = coefficients[:, 1:, :] * np.arange(1, 6, dtype=float)[None, :, None]
+    acceleration_u = velocity_u[:, 1:, :] * np.arange(1, 5, dtype=float)[None, :, None]
+    jerk_u = acceleration_u[:, 1:, :] * np.arange(1, 4, dtype=float)[None, :, None]
 
     horizontal_speed_coefficients = [
         _dot_polynomial(velocity_u[index], acceleration_u[index], (0, 1))

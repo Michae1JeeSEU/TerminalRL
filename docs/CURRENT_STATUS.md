@@ -46,6 +46,8 @@
 
 - **2026-10-06连接复查：** SSH仍不可用。普通连接及一次verbose诊断确认TCP22连接成功，但SSH标识交换阶段收到`kex_exchange_identification: Connection closed by remote host`（verbose进程exit255），远程命令未执行。不能据此唯一归因sshd/网络，也未取得实际进程或同步SHA。详见[数值优化记录的连接复查](evidence/v4_2/p3_numeric_bounds_optimization_20261005.md)。本次没有应用候选、启动查询/采集/训练或新增性能结果；保留原服务器验证计划，待SSH恢复后继续。只更新文档，无新heartbeat，无remote不推送。
 
+- **2026-10-07服务器恢复，数值优化已应用：** 原服务器固定mixed0/19/299与high177的8query/4step全部通过，0reset，136个RELEASE意图/plan；完整audit、选中证书、原tape及安全一致，4个step输出原/候选完全相同。四状态query合计146.4656→100.8492s，减少31.14%（约1.45倍）；这是固定开发状态收益，不能外推完整I0成本。此前本地不同证书hash失败保留且另计1query，原服务器slot0已复现原证书。确认诊断退出后primary本地应用冻结603a299候选，Syncthing后实际生产路径90tests通过29.85s，无遗留本轮进程。详见[原服务器验证及结果](evidence/v4_2/p3_numeric_bounds_server_validation_20261007.md)。下一步另冻一个fresh密集mixed采集，维持原2048query/7200s；不恢复旧失败、不启动学习。I0_QUALIFIED=false/PPO_ALLOWED=false，P3训练退化未验证解决，其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
