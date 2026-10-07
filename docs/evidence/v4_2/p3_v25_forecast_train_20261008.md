@@ -34,3 +34,7 @@ teacher仍是**当前pre-state单机首可行、最小干预请求**，保留完
 此处仅追加实际结果，以上准备尚无采集/学习结果。新重建公共实现保留`rebuild_q`的evaluation-only边界，train通过单独严格decoder；两个入口不被正在运行的规则对照导入。
 
 新数据入口/重建/loader定向30项local/server用例全通过（35.74s/17.85s），四文件SHA相同。涵盖旧Q wrapper拒绝train、真实开发fixture的新mode快照→标签→上下文原样重建、train拒绝Q/旧mode/不完整/被改字节及空邻机/WAIT无proposal。这里的fixture不消费正式seed；尚未运行独立892807 smoke或真实train。primary已阅读代码diff及测试输出。
+
+C_rule完整对照已由primary分析：19N5E/FDU0、技术/实际安全/hash/能量异常0，和旧rule正常/应急数相同，周期+24tick/能耗+.75%。额外同状态12步时刻细化虽消除约1.95s早到误差，仍被完整holder包络拒绝，未部署此诊断变体。环境具备当前有限场景继续采集的完整性条件，不等于业务最优或student准入；接受本入口73ef9660的独立smoke，成功核对后依原表逐臂采集，尚未开始真实学习。
+
+独立smoke892807已SMOKE_OK/exit0，两tick/6raw=3actor+3forced，3/3 selected/OK label（各接口1个nominal RELEASE），3条V2.5上下文105+2×50。原raw六行teacher_label均null、forced无监督，pre-state/90D/标签join及首tick完整重放一致。实际安全/hash/能量异常0；预定2tick censor保留，不称完整环境资格。result SHA a9ccc8cd7ada2a6fe428274d83a36f87b26f8592687945063bfde9237fb3a00e，context SHA8666c9d2a0727c65a873b8d844e23431b81d17c1cbc1f2a29583a77620f2a938，13项关键文件两端相同，无残余进程。primary读取完整root结果及全部raw/context后，接受提交记录后只启动train_A；B/C仍依逐臂完整结果，未开始真实学习。

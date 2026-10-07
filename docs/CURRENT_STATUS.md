@@ -121,6 +121,10 @@
 
 - **合流预测接入8078e3e已提交，当前唯一新C_rule为Python2814843/timeout2814842、session12338。** `p3_future_merge_gap_20261008/C_rule`，同seed混合SOC/1800ticks；实际argv/cwd和100tick前缀正常，尚无完整结论。另准备[新planner三train周期数据方案](evidence/v4_2/p3_v25_forecast_train_20261008.md)及严格分区重建/loader，30项local/server测试通过；仅未被运行评估import的新接口，真正smoke/采集须先分析本rule结果。旧Q计划仍暂缓，无Q/fresh fit/PPO更新。
 
+- **新forecast C_rule已19N5E完整终态，无技术/实际安全/hash/FDU/负能量，原进程已退出。** 相比同seed旧rule，周期939→963/能耗+约.75%，不宣称性能改善。primary私有slot二分将早到1.95s压至晚到.0007s，但仍被完整holder包络拒绝，未把此诊断变体部署或降低安全。现接受[新planner train方案](evidence/v4_2/p3_v25_forecast_train_20261008.md)73ef9660的独立smoke及后续逐臂采集；30项local/server测试已通过，旧1046数据与Q仍不混入，student/PPO未准入。
+
+- 新数据892807独立smoke已SMOKE_OK/exit0，6raw/3actor/3OK标签/3新context，首tick重放与原90D/标签join相同，实际安全/hash/能量异常0；13文件两端一致且原进程退出。primary亲自全量核对，接受记录提交后唯一train_A893301（12/warm6高SOC），尚无正式数据结果或学习更新。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

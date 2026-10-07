@@ -152,3 +152,13 @@ forecast helper已`88f970d`提交。baseline自然结束后primary才接入`merg
 独立smoke已exit0，892806/928806、3/warm3高SOC，2ticks/1.877s，forecast profile/mode正确；3次放行全部批准，30checked samples/0hash mismatch，全部实际安全计数0，3energy checks/0negative/0应急。既有CLI按预定2tick截断写CENSORED，3U/terminal=false是smoke语义，不能改写成完整回合成功。result SHA `85433c17e2e28b7c94ff021cce830647470828e396cdfc180928e77f7b9cf9b3`，result/progress/snapshot1/blockers均两端一致，无残余进程。primary核对原始输出，接受本地提交后只启动预定C_rule完整对照。
 
 合流预测接入已提交`8078e3e`。新C_rule唯一Python2814843/timeout2814842、SSH session12338，实际cwd/argv符合协议；100ticks/60.843s、blockers/progress/snapshot1正常。分析器首行smoke通过，最初worker误查旧根后已纠正为新根，不能由旧根缺文件判断本次失败。当前持续等待完整结果，核心冻结。期间primary仅准备未被此评估import的[新规划器初始train数据接口与方案](p3_v25_forecast_train_20261008.md)，30项local/server tests通过；旧1046标签不混入新数据，真正采集仍依本rule完整结果决定。
+
+### 未来合流预测完整对照及预约时刻最小诊断（newly_run）
+
+新C_rule已COMPLETED/exit0，963ticks/1069.727s，19N/5E/0F/D/U，24架均结束服务、active/queue/service=0，无error/censor/实际安全/hash或负能量。result SHA `99bf6388e2d7315857db39adcf4f9e2ab354157891d715da61309e6466830283`，blockers及四快照/相邻exit均两端一致；初次同步快照有暂时SHA不同，随后终态再核对全部匹配，进程2814843/2814842已退出。旧progress保留running字样但root result/exit/实际退出一致，不能以progress文案推翻终态。
+
+primary全量核对963条blockers和逐arrival对照：54普通批准、257safety_reject、78final_capacity；primary原因192PREDICTED_SEPARATION/52NO_MERGE_GAP/13HEADWAY/78FINAL_RESOURCE。全部物理配置仅gapmode不同，逐arrival初始能量最大差9.33e-12。新/旧正常均19，应急均5；周期939→963，reward407.275229→398.885552，能耗9648.984857→9721.172536（约+.75%），最低完成SOC .124882→.185705。最小实际/扫掠间隔81.870836/81.790764m，36162checked samples/0mismatch，1138energy checks/0negative，5E均落地；412普通/应急过滤干预及122应急尝试保留，不写成“安全干预零”。合流成员遗漏确已修正，但该一场景没有整体效率改善；arrival0/19/23由E变N，12/18/21由N变E，不能只挑改善个体。完整分析`.tmp/p3_future_merge_gap_C_rule_analysis.json` SHA cb91d120de89fca9b5e291e2a5e46104c0f1782c587cd1835cc054ae7a6b05cf。
+
+在开始新监督之前，primary进一步检查已记录B_sto400/UID114的slot疑点：私有副本保持新forecast，原生成器到达605.753829早于607.703295预约，完整SafetyFilter获证，但真实headway因此拒绝。只在诊断副本对原有有界departure区间增加12次二分参数化，并选择不早于预约的最近方案，可达到607.703998（误差+.000703s），真实slot可协调，**却被完整SafetyFilter的predicted_holder_reachable_tube拒绝**；checked hash=null。两次分别3.797/5.938s，0reset/step/teacher/学习，原快照与原tape哈希一致，生产生成器未改。先0query syntax smoke通过；逐次12个生成时刻保存在`.tmp/p3_slot_refinement_B400.json`，SHA7eccc632a2021cecd32336ef05cb21abc771f67aa6c316de1591ee12b998fb97。
+
+这个最小检查说明原粗时刻搜索有精度限制，但不能把该状态的拒绝仅归于精度，更不能由精确预约推断存在安全放行。没有证据支持将这项增加计算、仍未获证的局部搜索部署为性能修复，也不放松headway或holder安全包络。保留为后续规划优化线索；不把有限搜索拒绝写成物理无解。当前完整规则周期无技术/安全/耗尽/未决阻塞，5E明确计入业务基线，接受推进新planner数据的独立smoke及逐臂采集。新/旧student调度差距仍待后续fresh imitation与必要student分布聚合解决，不重跑旧模型来冒称已解决，也不直接启动旧Q方案或PPO。
