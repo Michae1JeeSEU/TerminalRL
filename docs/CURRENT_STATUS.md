@@ -119,6 +119,8 @@
 
 - 合流预测独立892806两tick smoke已完成exit0，3批准/0拒绝，实际安全/hash/能量异常0，预定截断保留CENSORED语义。结果SHA85433c17...两端一致，无残余进程；primary接受本地提交后仅启动同seed新C_rule完整对照，尚无性能改善结论。
 
+- **合流预测接入8078e3e已提交，当前唯一新C_rule为Python2814843/timeout2814842、session12338。** `p3_future_merge_gap_20261008/C_rule`，同seed混合SOC/1800ticks；实际argv/cwd和100tick前缀正常，尚无完整结论。另准备[新planner三train周期数据方案](evidence/v4_2/p3_v25_forecast_train_20261008.md)及严格分区重建/loader，30项local/server测试通过；仅未被运行评估import的新接口，真正smoke/采集须先分析本rule结果。旧Q计划仍暂缓，无Q/fresh fit/PPO更新。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

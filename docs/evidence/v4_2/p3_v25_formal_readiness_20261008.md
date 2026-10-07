@@ -150,3 +150,5 @@ forecast helper已`88f970d`提交。baseline自然结束后primary才接入`merg
 接入后57项local/server定向回归通过（51.94s/28.09s），8文件SHA相同，scoped diff检查通过。包括9项forecast/helper/接入、旧单holder/空gap兼容及新增forecast分支确实调用完整SafetyFilter、slot reconciliation、整体修复/runtime回归。没有降低任何已有测试阈值。编辑过程中patch工具返回局部失败，primary检查发现config重复字段/validation及部分文件未应用，已逐项修正后才运行上述测试；未在半完成版本启动任何环境。此处仍是代码与回归通过，待独立smoke和完整C_rule。
 
 独立smoke已exit0，892806/928806、3/warm3高SOC，2ticks/1.877s，forecast profile/mode正确；3次放行全部批准，30checked samples/0hash mismatch，全部实际安全计数0，3energy checks/0negative/0应急。既有CLI按预定2tick截断写CENSORED，3U/terminal=false是smoke语义，不能改写成完整回合成功。result SHA `85433c17e2e28b7c94ff021cce830647470828e396cdfc180928e77f7b9cf9b3`，result/progress/snapshot1/blockers均两端一致，无残余进程。primary核对原始输出，接受本地提交后只启动预定C_rule完整对照。
+
+合流预测接入已提交`8078e3e`。新C_rule唯一Python2814843/timeout2814842、SSH session12338，实际cwd/argv符合协议；100ticks/60.843s、blockers/progress/snapshot1正常。分析器首行smoke通过，最初worker误查旧根后已纠正为新根，不能由旧根缺文件判断本次失败。当前持续等待完整结果，核心冻结。期间primary仅准备未被此评估import的[新规划器初始train数据接口与方案](p3_v25_forecast_train_20261008.md)，30项local/server tests通过；旧1046标签不混入新数据，真正采集仍依本rule完整结果决定。

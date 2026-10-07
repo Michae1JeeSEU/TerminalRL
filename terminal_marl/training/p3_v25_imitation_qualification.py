@@ -114,7 +114,14 @@ def frozen_models(fit_directory, *, smoke=False):
 
 
 def rebuild_q(episode, *, seed, partition, wall_seconds=900):
-    """Read trusted immutable snapshots; retain the original Q labels and IDs."""
+    """Evaluation-only wrapper; never admit train through the Q decoder."""
+    require(partition in {'Q', DEVELOPMENT_PARTITION}, 'Q reconstruction partition differs')
+    return rebuild_context(episode, seed=seed, partition=partition, wall_seconds=wall_seconds)
+
+
+def rebuild_context(episode, *, seed, partition, wall_seconds=900, expected_gap_mode=None):
+    """Rebuild labelled immutable states, with distinct train/evaluation decoders."""
+    require(partition in {'train', 'Q', DEVELOPMENT_PARTITION}, 'unknown context partition')
     episode = Path(episode)
     batch = _join_episode(episode, expected_partition=partition, allowed_seeds={seed}, training=False)
     require(batch.summary['actor_eligible_rows'] == len(batch.decision_ids) > 0,
@@ -142,6 +149,9 @@ def rebuild_q(episode, *, seed, partition, wall_seconds=900):
             require(sha(path) == entry['snapshot_sha256'], 'trusted snapshot hash differs')
             if name != previous_snapshot:
                 env = pickle.loads(path.read_bytes())
+                if expected_gap_mode is not None:
+                    require(env.config.merge_gap_prediction_mode == expected_gap_mode,
+                            'snapshot planner mode differs')
                 before = canonical(state_record(env))
                 cache = TrajectoryContextCache(env)
                 previous_snapshot = name
@@ -158,7 +168,11 @@ def rebuild_q(episode, *, seed, partition, wall_seconds=900):
                 ego=value.ego.tolist(), traffic=value.traffic.tolist(), traffic_mask=value.traffic_mask.tolist(),
                 context=raw_contexts[row['decision_id']], original_observation=row['observation'],
                 original_pre_state_hash=row['pre_state_hash'], snapshot_sha256=entry['snapshot_sha256'])
-            decode_evaluation_row(record, seed=seed, partition=partition)
+            if partition == 'train':
+                from .p3_v25_context_dataset import decode_row
+                decode_row(record)
+            else:
+                decode_evaluation_row(record, seed=seed, partition=partition)
             stream.write(json.dumps(record, allow_nan=False)+'\n')
             written.append(row['decision_id'])
     require(written == list(batch.decision_ids), 'Q reconstruction label order differs')
