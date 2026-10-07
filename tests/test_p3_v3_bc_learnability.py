@@ -173,3 +173,54 @@ def test_reference_rejects_different_row_identity_and_incomplete_seed(tmp_path):
     result['seeds'][1]['updates'] = 999; write(case/'result.json',result)
     with pytest.raises(ValueError,match='incomplete'):
         bc.reference_results(tmp_path,data)
+
+
+def test_detach_preserves_forward_and_heads_but_removes_proposal_encoder_gradient():
+    torch.manual_seed(17)
+    model=bc.HierarchicalActorCentralCriticV42(90)
+    data=bc.synthetic_data()
+    g,p=bc.training_distributions(model,data.x)
+    gd,pd=bc.training_distributions(model,data.x,True)
+    assert torch.equal(g.logits,gd.logits) and torch.equal(p.logits,pd.logits)
+    original=bc.training_loss(g.logits,p.logits,data.gate,data.proposal)
+    detached=bc.training_loss(gd.logits,pd.logits,data.gate,data.proposal)
+    assert torch.equal(original,detached)
+    _,pieces=bc.hierarchical_bc_loss(gd.logits,pd.logits,data.gate,data.proposal)
+    encoder=list(model.actor_encoder.parameters())
+    absent=torch.autograd.grad(pieces['proposal'],encoder,allow_unused=True,retain_graph=True)
+    assert all(x is None for x in absent)
+    combined_grad=torch.autograd.grad(detached,encoder,retain_graph=True)
+    gate_grad=torch.autograd.grad(pieces['gate'],encoder,retain_graph=True)
+    assert all(torch.equal(a,b) for a,b in zip(combined_grad,gate_grad))
+    heads=list(model.gate_head.parameters())+list(model.proposal_head.parameters())
+    original_heads=torch.autograd.grad(original,heads,retain_graph=True)
+    detached_heads=torch.autograd.grad(detached,heads)
+    assert all(torch.equal(a,b) for a,b in zip(original_heads,detached_heads))
+    assert any(torch.count_nonzero(x)>0 for x in detached_heads[2:])
+
+
+def test_detach_smoke_keeps_proposal_head_trainable_and_original_initial_values(tmp_path):
+    original=bc.run(tmp_path/'missing',tmp_path/'original','smoke')
+    result=bc.run(tmp_path/'missing',tmp_path/'detached','smoke',detach_proposal_encoder=True)
+    assert result['status']=='SMOKE_OK' and result['protocol']==bc.DETACHED_PROTOCOL
+    seed=result['seeds'][0]
+    assert seed['initial']==original['seeds'][0]['initial']
+    assert seed['detach_proposal_encoder'] and seed['gate_weights'] is None
+    assert all(seed['actor_module_changed'].values()) and seed['critic_unchanged']
+    assert 0 <= seed['final_gate_auc']['overall'] <= 1
+    cp=torch.load(tmp_path/'detached/seed_17/final_diagnostic.pt',weights_only=True)
+    assert cp['detach_proposal_encoder'] and cp['protocol']==bc.DETACHED_PROTOCOL
+    assert not cp['qualified'] and cp['diagnostic_only']
+
+
+def test_detach_and_class_balance_cannot_be_combined(tmp_path):
+    with pytest.raises(ValueError,match='one diagnostic factor'):
+        bc.run(tmp_path,tmp_path/'invalid','smoke',gate_balance=True,detach_proposal_encoder=True)
+    assert not (tmp_path/'invalid').exists()
+
+
+def test_auc_counts_ties_and_reports_missing_class():
+    assert bc.gate_auc(torch.tensor([0.,1.]),torch.tensor([0,1]))==1
+    assert bc.gate_auc(torch.tensor([1.,0.]),torch.tensor([0,1]))==0
+    assert bc.gate_auc(torch.tensor([.5,.5]),torch.tensor([0,1]))==.5
+    assert bc.gate_auc(torch.tensor([.5,.5]),torch.tensor([0,0])) is None

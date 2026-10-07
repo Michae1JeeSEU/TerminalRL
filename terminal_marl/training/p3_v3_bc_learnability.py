@@ -20,6 +20,7 @@ from terminal_marl.training.p3_v3_expert_dataset import load_sparse_training_epi
 
 PROTOCOL = 'p3_v3_90d_bc_in_sample_20261007'
 BALANCED_PROTOCOL = 'p3_v3_90d_bc_gate_balance_20261007'
+DETACHED_PROTOCOL = 'p3_v3_90d_bc_proposal_detach_20261007'
 GATE_WEIGHTS = (1046 / (2 * 817), 1046 / (2 * 229))
 REFERENCE_CASE = 'p3_v3_bc_learnability_20261007/fit'
 CASES = (
@@ -131,11 +132,7 @@ def classification(gate_logits, proposal_logits, gate, proposal):
         proposal=conditional, joint_accuracy=float(correct.float().mean()))
 
 
-@torch.no_grad()
-def measure(model, data):
-    model.eval()
-    g, p = model.distributions(data.x)
-    loss, pieces = hierarchical_bc_loss(g.logits, p.logits, data.gate, data.proposal)
+def context_masks(data):
     groups = {'overall': torch.ones(len(data.gate), dtype=torch.bool)}
     for seed in sorted({r['seed'] for r in data.contexts}):
         groups[f'episode_{seed}'] = torch.tensor([r['seed'] == seed for r in data.contexts])
@@ -143,9 +140,41 @@ def measure(model, data):
         groups[key] = torch.tensor([r['interface'] == key for r in data.contexts])
     for key in ('low_soc', 'fast_inner', 'busy_lz', 'after_retry'):
         groups[key] = torch.tensor([r[key] for r in data.contexts])
+    return groups
+
+
+@torch.no_grad()
+def measure(model, data):
+    model.eval()
+    g, p = model.distributions(data.x)
+    loss, pieces = hierarchical_bc_loss(g.logits, p.logits, data.gate, data.proposal)
     return dict(loss=float(loss), gate_loss=float(pieces['gate']), proposal_loss=float(pieces['proposal']),
         groups={name: classification(g.logits[mask], p.logits[mask], data.gate[mask], data.proposal[mask])
-                for name, mask in groups.items()})
+                for name, mask in context_masks(data).items()})
+
+
+def gate_auc(scores, labels):
+    positive, negative = scores[labels == 1], scores[labels == 0]
+    if not len(positive) or not len(negative):
+        return None
+    difference = positive[:, None] - negative[None, :]
+    return float(((difference > 0).double() + .5 * (difference == 0).double()).mean())
+
+
+@torch.no_grad()
+def measure_auc(model, data):
+    model.eval()
+    gate, _ = model.distributions(data.x)
+    score = gate.logits[:, 1] - gate.logits[:, 0]
+    return {name: gate_auc(score[mask], data.gate[mask]) for name, mask in context_masks(data).items()}
+
+
+def training_distributions(model, observations, detach_proposal_encoder=False):
+    if not detach_proposal_encoder:
+        return model.distributions(observations)
+    encoded = model.actor_encoder(observations)
+    return (torch.distributions.Categorical(logits=model.gate_head(encoded)),
+            torch.distributions.Categorical(logits=model.proposal_head(encoded.detach())))
 
 
 def baseline(data):
@@ -190,8 +219,9 @@ def reference_results(root, data):
 
 
 def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
-        gate_weights=None, protocol=PROTOCOL, reference_initial=None):
+        gate_weights=None, protocol=PROTOCOL, reference_initial=None, detach_proposal_encoder=False):
     """CPU-only fixed-budget BC. No use of audit/Q or execution trace as targets."""
+    require(not (gate_weights is not None and detach_proposal_encoder), 'only one diagnostic factor allowed')
     out = Path(out); out.mkdir(parents=True, exist_ok=False)
     start = time.monotonic()
     torch.manual_seed(seed)
@@ -218,7 +248,7 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
             permutation, offset = torch.randperm(len(data.x), generator=generator), 0
         ids = permutation[offset:offset+BATCH_SIZE]; offset += len(ids)
         model.train(); optimizer.zero_grad(set_to_none=True)
-        g, p = model.distributions(data.x[ids])
+        g, p = training_distributions(model, data.x[ids], detach_proposal_encoder)
         loss = training_loss(g.logits, p.logits, data.gate[ids], data.proposal[ids], gate_weights)
         require(bool(torch.isfinite(loss)), 'nonfinite BC loss')
         loss.backward()
@@ -234,6 +264,11 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
     changed = any(not torch.equal(v, model.state_dict()[k]) for k,v in actor_before.items())
     result = dict(status='FIT_COMPLETE', seed=seed, updates=updates, initial=initial, final=final,
         actor_changed=changed, critic_unchanged=True, maximum_preclip_gradient_norm=maximum_grad,
+        detach_proposal_encoder=detach_proposal_encoder,
+        actor_module_changed={prefix: any(not torch.equal(v, model.state_dict()[k])
+            for k, v in actor_before.items() if k.startswith(prefix))
+            for prefix in ('actor_encoder', 'gate_head', 'proposal_head')},
+        final_gate_auc=measure_auc(model, data) if detach_proposal_encoder else None,
         gate_weights=gate_weights, initial_training_objective=initial_objective,
         final_training_objective=objective(model, data, gate_weights),
         reference_initial_equal=True if reference_initial is not None else None,
@@ -241,7 +276,8 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
         I0_QUALIFIED=False, PPO_ALLOWED=False)
     require(result['elapsed_seconds'] <= wall_seconds, 'fit wall budget exhausted')
     # Fresh diagnostic artifact only; never overwrite or select by endpoint score.
-    torch.save(dict(protocol=protocol, gate_weights=gate_weights, observation_schema=OBSERVATION_SCHEMA, observation_dim=90,
+    torch.save(dict(protocol=protocol, gate_weights=gate_weights, detach_proposal_encoder=detach_proposal_encoder,
+        observation_schema=OBSERVATION_SCHEMA, observation_dim=90,
         action_schema='low_action_schema_v4_2_hierarchical', model_class=type(model).__name__,
         model_state=model.state_dict(), model_seed=seed, train_seeds=[x['seed'] for x in data.inputs],
         diagnostic_only=True, qualified=False, PPO_ALLOWED=False), out/'final_diagnostic.pt')
@@ -259,11 +295,12 @@ def synthetic_data():
     return Data(x, gates, proposals, tuple(f'synthetic:{i}' for i in range(16)), contexts, [])
 
 
-def run(root, output, mode, *, gate_balance=False):
+def run(root, output, mode, *, gate_balance=False, detach_proposal_encoder=False):
     require(mode in {'prepare', 'smoke', 'fit'}, 'unknown mode')
+    require(not (gate_balance and detach_proposal_encoder), 'only one diagnostic factor allowed')
     output = Path(output); output.mkdir(parents=True, exist_ok=False)
     torch.set_num_threads(1)
-    protocol = BALANCED_PROTOCOL if gate_balance else PROTOCOL
+    protocol = DETACHED_PROTOCOL if detach_proposal_encoder else BALANCED_PROTOCOL if gate_balance else PROTOCOL
     weights = GATE_WEIGHTS if gate_balance else None
     settings = dict(protocol=protocol, mode=mode, model_seeds=list(MODEL_SEEDS), updates=UPDATES,
         batch_size=BATCH_SIZE, learning_rate=LEARNING_RATE, gradient_clip=.5,
@@ -276,13 +313,18 @@ def run(root, output, mode, *, gate_balance=False):
         settings.update(gate_weights=list(weights), gate_reduction='fixed-weight CE sum / batch row count',
             loss='fixed-class-weight gate CE + unchanged teacher-RELEASE conditional proposal CE',
             reported_loss='unweighted, identical definition to reference', reference=REFERENCE_CASE)
+    if detach_proposal_encoder:
+        settings.update(detach_proposal_encoder=True, gate_weights=None,
+            reference=REFERENCE_CASE, proposal_head_trainable=True,
+            gradient_clipping='unchanged joint actor norm clip .5; proposal head still included',
+            final_gate_auc='pairwise logit-score ranking; ties half; missing class null')
     if mode == 'smoke':
         settings.update(model_seeds=[17], updates=2, synthetic_only=True)
     write(output/'protocol.json', settings)
     report = dict(status='ERROR', mode=mode, protocol=protocol, I0_QUALIFIED=False, PPO_ALLOWED=False)
     try:
         data = synthetic_data() if mode == 'smoke' else load_inputs(root)
-        reference = reference_results(root, data) if gate_balance and mode != 'smoke' else None
+        reference = reference_results(root, data) if (gate_balance or detach_proposal_encoder) and mode != 'smoke' else None
         counts = dict(rows=len(data.x), WAIT=int((data.gate==0).sum()), RELEASE=int((data.gate==1).sum()))
         write(output/'inputs.json', dict(episodes=data.inputs, counts=counts, baselines=baseline(data),
             decision_ids=list(data.ids)))
@@ -294,7 +336,8 @@ def run(root, output, mode, *, gate_balance=False):
             for seed in seeds:
                 report['seeds'].append(fit(data, output/f'seed_{seed}', seed, updates=updates,
                     gate_weights=weights, protocol=protocol,
-                    reference_initial=reference[seed]['initial'] if reference else None))
+                    reference_initial=reference[seed]['initial'] if reference else None,
+                    detach_proposal_encoder=detach_proposal_encoder))
                 write(output/'progress.json', dict(completed_seeds=[r['seed'] for r in report['seeds']]))
             report.update(status='SMOKE_OK' if mode == 'smoke' else 'FIT_COMPLETE', trained=True,
                 optimizer_created=True, synthetic_only=mode=='smoke', counts=counts)
@@ -309,9 +352,12 @@ def main():
     p.add_argument('--root', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--mode', choices=('prepare','smoke','fit'), required=True)
-    p.add_argument('--gate-balance', action='store_true', help='fixed paired gate-weight diagnostic')
+    variant = p.add_mutually_exclusive_group()
+    variant.add_argument('--gate-balance', action='store_true', help='fixed paired gate-weight diagnostic')
+    variant.add_argument('--detach-proposal-encoder', action='store_true', help='stop proposal gradient into encoder only')
     args = p.parse_args()
-    result = run(args.root, args.output, args.mode, gate_balance=args.gate_balance)
+    result = run(args.root, args.output, args.mode, gate_balance=args.gate_balance,
+                 detach_proposal_encoder=args.detach_proposal_encoder)
     print(json.dumps(dict(status=result['status'], mode=args.mode)))
     return int(result['status'] == 'ERROR')
 

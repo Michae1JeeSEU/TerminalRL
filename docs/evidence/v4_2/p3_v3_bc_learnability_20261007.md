@@ -210,3 +210,27 @@ primary定位为比较实现缺陷：运行时`Counter`的proposal target_counts
 该单因素设置若在三个seed中一致改善gate拟合，将支持继续处理共享表示的任务竞争，同时须保留proposal性能代价；若未改善，则不能据此证明观测不足，后续应针对m2i的固定误判状态审查可观测量与teacher依赖，并区分有限优化/容量与缺失信息。上述对照**尚未实现或执行**，本轮不自动再训练。不得把按接口再调多组权重、增加epoch、换网络同时展开，以免无法解释变化。独立场景和student-only闭环验证仍未完成，不消费audit/Q或恢复PPO。
 
 本轮实际修改为离线诊断入口、对应tests、本报告与CURRENT_STATUS最新块。最终49项定向tests在local/server均通过；首次起始比较失败及其0更新证明完整保留，修正后3个固定seed实际训练正常完成。所有任务结束，无需heartbeat。Git仅本地，未配置remote，未推送；其他任务dirty保留。
+
+## 用户继续后的proposal共享梯度对照（2026-10-07，运行前冻结）
+
+用户在上述方案后明确要求继续下一步，本次实现并运行唯一proposal→encoder梯度阻断对照。primary继续亲自读研究文档、改重要代码、分析与决定；worker仅执行具体测试/SSH/Git。沿用research-pragmatist和academic-experiments的有界方法。已有环境/采集支持范围仍仅限三个规则访问episode，前两轮仅是训练集内诊断；不自动授予I0/student/PPO资格。
+
+本次唯一干预为训练前向中的`proposal_head(encoded.detach())`；gate仍使用`gate_head(encoded)`。两个head都训练，encoder仍受gate loss训练，critic仍冻结。推理前向保持原模型方法；detach不改变同一参数/输入下的两个head前向值。回到**原未加权gate CE + 原条件proposal CE**，不叠加gate类别权重、不移动阈值；CLI新`--detach-proposal-encoder`与`--gate-balance`互斥，默认路径不变。不改生产模型、安全、动力学、轨迹、teacher或loader。
+
+- 输入仍为893001/893101/893201三个完整train case的1046原标签（817W/229R），forced/null排除及WAIT proposal=-1纪律不变；原未加权fit和已完成只读AUC为preexisting_artifact，不重训对照。
+- 91701/2/3三个fresh初始化各一次，固定1000更新、300s/seed、CPU单线程、Adam3e-4、batch128及原不放回顺序、全actor梯度范数clip.5；不加载旧权重。完整初始指标先按统一JSON表示与原同seed**精确相等**，然后才创建optimizer。
+- 优化器仍同时包含encoder/gate head/proposal head，global clip仍包含proposal head。阻断一条梯度路径会改变总梯度范数以及裁剪行为，这是干预的一部分；即使效果改善，也不能只凭末尾结果断言发生了特定的梯度方向冲突。没有顺便改为分头裁剪、不同lr或独立网络。
+- 记录原定义的初始/固定末尾loss、gate混淆矩阵/召回/误判、proposal top1/top3、joint和原全部context；新臂在固定末尾直接记录pairwise gate ROC AUC，含overall、episode、三接口与低SOC/高速inner/busyLZ/retry，ties半分、缺类别null。原AUC对照只使用先前score_probe已保存且同定义的分组，原episode AUC未记录则不作配对比较。
+- 每个actor模块是否更新分别记录，确认proposal head没有随encoder detach一起被冻结。每seed一个新诊断checkpoint，不选中途模型、不换seed/权重/阈值或追加epoch。任何数值/数据/初始一致性失败保留ERROR并停止后续，先诊断，不用重跑掩盖结果。
+- 新协议`p3_v3_90d_bc_proposal_detach_20261007`，输出`/home/user/training_outputs/terminal/p3_v3_bc_proposal_detach_20261007/{prepare,smoke,fit}`。原module/root/Python/cwd与三个运行环境变量沿用上文，唯一新CLI标志`--detach-proposal-encoder`。先确认Syncthing/source SHA、无同项目评估进程和新输出未存在；53项预期定向tests（以实际收集数为准）验证detach梯度、前向相等、head仍训练、互斥flags及AUC统计；随后真实prepare不创建模型/optimizer，独立16行合成smoke仅2更新，primary核查后提交再执行真实fit。
+- 合成梯度断言要求：proposal→encoder梯度不存在；combined encoder梯度等于gate-only梯度；gate/proposal head梯度与原同状态相同且proposal head非零。不能仅凭detach标志存在便认定干预已正确施加。
+
+判断看三个seed的配对分组AUC和误判/召回、proposal代价，不只看总体accuracy或更多RELEASE。若gate排序改善且proposal损失明显，记录两任务表示的取舍，不能直接把detach当完整策略修复。若gate无一致改善，保留负结果，不由此推断90D必然缺信息；下一步需要把具体误判、观测内容与teacher依赖联系起来。所有指标仍是相关训练行，没有独立泛化、student-only闭环或PPO证据。
+
+前次任务已结束；新目录预检未存在、服务器无项目Python，原fit输入与score_probe两端SHA一致。预计秒级计算，无需长任务heartbeat；若异常转长按用户60分钟偏好管理。代码/docs只本地经Syncthing，不手传源码或server Git；保留其他dirty，无remote不推送。
+
+### 梯度阻断对照准备结果
+
+本地53tests通过21.28s、服务器相同53tests通过1.60s，均exit0；新梯度断言覆盖前向/loss数值一致、encoder仅有gate梯度、两head梯度保持及proposal head非零。真实prepare为PREPARED/exit0、1046行817W229R、0model/0optimizer，输入SHA与原fit相同。独立合成smoke为SMOKE_OK/exit0，只16合成行seed17、2更新；detach=true、gate_weights=null，encoder/gate/proposal三模块均变化而critic不变，新checkpoint存在、末尾overall gate AUC=.578125。该合成读数仅验证输出，不作为真实可学习性证据。primary读取协议与原始结果后接受按本节原预算执行真实fit。
+
+Syncthing核对runner SHA`e7bd169c2689868a2df476b056e9fa0fed9ecc448e05a5f5f05ff16c0b4df421`、test SHA`4b0c0548ff25895e4d5ea104d953cda1abc84c1330c495267c286597b0b72f99`及未改model/loader均一致；prepare输入与smoke结果两端SHA一致。worker辅助字段提取曾出现一条SyntaxError，实际tests/prepare/smoke全程exit0且未重跑；改用直接读取JSON获取字段，没有修改产物。以上为newly_run检查，先提交源码/协议再启动唯一fit。
