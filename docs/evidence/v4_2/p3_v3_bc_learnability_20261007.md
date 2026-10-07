@@ -68,3 +68,46 @@ PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 - 独立synthetic smoke为SMOKE_OK/exit0：只16个合成90D行（8W/8R）、seed17、2更新，无真实输入episode，actor_changed=true/critic_unchanged=true；loss3.9542682→3.8698366，内部0.4484s。primary核对schema、实际更新预算、原/末指标和新诊断checkpoint路径通过，不把这个合成loss变化当成真实学习结果。
 - 原服务器环境Python3.12.3、NumPy2.5.1、Torch2.13.0+cu130；实际使用CPU/单线程。runner SHA `260797096285cdfbba5eb463cfa74b0a58497ebdf24ee56fb6e27c937339dfe4`、test `a2839afa7291ec6f4cb2f6fcbd9c553004758728b3d28219550f1be685bbb010`；原model `abc2f3678b68de7808328ffdeccc5fa7f18d6c21527a38627fdcfc38fd173490`、loader `109df36b42576d87a2137c96b71febfd6e11876191d1be60ec44eaf3b7122d6f`两端一致，后两者本轮不改。
 - primary接受按上面的91701/2/3×1000固定设置执行一次in-sample BC诊断；先显式本地提交，再执行新`fit`目录。本次支持范围判断只准许这项诊断，`I0_QUALIFIED/STUDENT_QUALIFIED/PPO_ALLOWED`仍false，不启动其他采集或闭环，不访问audit/Q。上述准备/smoke为newly_run，原3回合为preexisting_artifact。
+
+### 固定三seed终态：学到部分信号，但RELEASE拟合仍弱
+
+代码和协议先提交为`79e114b9db699958ef263f0b8e7f9fb1290ecbab`，随后唯一执行新输出`/home/user/training_outputs/terminal/p3_v3_bc_learnability_20261007/fit`。这是本轮newly_run学习证据，不能与先前无更新的环境验证混为一谈。根result为FIT_COMPLETE、相邻fit.exit=0；Python2774158/wrapper2774156已退出。3个seed均恰好1000更新，actor_changed=true、critic_unchanged=true，分别耗时1.310/0.838/0.835s；每个只生成一个349597字节的final_diagnostic.pt，无中途选模、补seed或延长训练。短任务未创建heartbeat。
+
+primary核对根与每seed result一致、1046个输入ID及各类计数、实际预算、有限指标和诊断checkpoint存在；完整数值在原result中，本地汇总为`.tmp/p3_v3_bc_analysis_20261007.json`。全部指标仅在这三个训练episode的原1046行上计算：
+
+| 初始化seed | loss 初始→固定末尾 | gate accuracy | balanced accuracy | WAIT召回 | RELEASE召回 | proposal top1 / top3 | gate与proposal联合正确 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 91701 | 3.9475→1.8339 | 82.79% | 68.40% | 94.00% | 42.79% | 55.02% / 77.29% | 79.06% |
+| 91702 | 3.8728→1.8196 | 81.93% | 66.12% | 94.25% | 37.99% | 55.90% / 77.29% | 78.97% |
+| 91703 | 3.9506→1.8379 | 82.41% | 68.94% | 92.90% | 44.98% | 56.33% / 75.55% | 78.68% |
+| 三seed均值 | 末尾1.8304 | 82.38% | 67.82% | 93.72% | 41.92% | 55.75% / 76.71% | 78.90% |
+
+混淆矩阵按行真值WAIT/RELEASE、列预测WAIT/RELEASE分别为`[[768,49],[131,98]]`、`[[770,47],[142,87]]`、`[[759,58],[126,103]]`。没有塌缩为全WAIT，但229个原teacher RELEASE中仍漏掉126–142个。全WAIT本身就有78.11% accuracy；当前gate accuracy仅比其高3.82–4.68个百分点，联合正确率只高0.57–0.96个百分点。不能只报告约82%的accuracy便称修复成功。
+
+proposal top1是在**真值RELEASE的229行**上计算，不要求预测gate为RELEASE；它高于多数proposal12的46.29%基线，但不代表可以执行这些动作。21个有支持的proposal中，11类在全部3seed的top1召回都为0；这些类合计38个标签。数据完全没有0/6/21/23类，不对这些缺失类的学习能力作结论。安全过滤与K3执行也尚未在新模型闭环中测试。
+
+| context（重叠子集，不可相加） | actor行 / 真值RELEASE | 三seed RELEASE召回范围 |
+|---|---:|---:|
+| o2m | 181 / 61 | 45.90%–49.18% |
+| m2i | 239 / 102 | 42.16%–50.00% |
+| i2f | 626 / 66 | 24.24%–33.33% |
+| low SOC（当前SOC<.55） | 188 / 50 | 20.00%–28.00% |
+| fast inner（i2f且速度≥15） | 602 / 56 | 23.21%–32.14% |
+| busy LZ | 1011 / 198 | 28.28%–36.36% |
+| retry后首个eligible状态 | 513 / 140 | 23.57%–30.71% |
+
+低SOC、inner和恢复状态虽已采集完整，当前模型仍未充分学出这些状态上的RELEASE。这个结果将后续问题收窄到**现有监督目标、样本分布与模型学习的组合**；不能再把它简单归为采集超时缺行，也没有证据据此回改轨迹或削弱安全过滤。反过来，本试验没有独立闭环，所以也不能唯一归因原P3退化，更不能声称原PPO credit问题已经排除。
+
+三个seed的总loss、gate loss和proposal loss均下降，balanced accuracy相对各自随机初始均提高。个别随机初始化最初RELEASE召回较高，伴随大量WAIT误放行；不能把末尾RELEASE召回低于这种初始值单独称为训练退化。更准确的结论是：**更新生效且存在可学习信号，但固定预算后的训练集拟合仍偏WAIT，尚未形成可用于资格评估的充分依据。**
+
+### 原因边界与下一项有界方案
+
+primary补做一次精确输入冲突检查：按loader实际float32的完整90D值分组，1046行对应1046个不同输入，重复组、gate冲突组及RELEASE proposal冲突组均为0。合成用例先核对signed-zero相等、gate冲突和proposal冲突的统计；真实结果为`.tmp/p3_v3_exact_inputs_20261007.json`，EXACT_INPUT_CHECK_COMPLETE。第一次调用漏PYTHONPATH，在项目模块导入时exit1、未读数据；补充项目PYTHONPATH后唯一实际检查exit0，0model/0optimizer/0reset/0query。这个结果仅排除**当前样本中完全相同输入的自相矛盾监督**，不能证明90D充分可观测，不能排除近邻状态复杂边界或未编码上下文。
+
+817/1046（78.11%）的标签为WAIT，未加权CE的总体指标容易受多数类主导；低SOC及inner子集也有明显类别不平衡。这是可直接测量的事实，与当前高WAIT召回/低RELEASE召回相符，但**尚未证明类别不平衡是唯一原因**。共享encoder的两个loss、有限更新次数、观测压缩或teacher决策边界都仍可能影响拟合，本轮没有通过额外学习来挑选解释。
+
+下一项优先建议为一次**只改gate类别权重的配对诊断**，不直接扩大采集或恢复PPO：保持这1046行、原teacher、模型结构、proposal loss、91701/2/3初始化、batch顺序、1000更新及其余设置，复用本次未加权结果作对照；gate逐行CE乘固定`w_WAIT=1046/(2×817)`、`w_RELEASE=1046/(2×229)`后按batch行数平均，避免同时增加过采样、改阈值或延长预算。先用合成测试核对加权公式和WAIT proposal零梯度，再运行新目录；原结果不得替换。该方案尚未实施。
+
+对照须同时报告RELEASE召回变化、WAIT误放行数、balanced accuracy、条件proposal和上述业务context，不能只追求RELEASE更高。若召回上升但WAIT误放行同步增加、balanced无改善，只能说明代价偏好改变；若分类整体改善，也仍仅是训练集内诊断。观察结果后再判断是否有必要做共享head冲突或观测缺失诊断，不预先扩成多因素矩阵。独立episode泛化、student-only闭环以及联合执行语义的验证仍是后续工作。
+
+本轮技术执行完成，但不授予正式I0/student/PPO资格，`I0_QUALIFIED=false/STUDENT_QUALIFIED=false/PPO_ALLOWED=false`。未消费audit/Q、未启动环境或teacher、full training/硬件、未覆盖旧checkpoint；没有遗留进程或heartbeat。代码与文档仅本地修改和提交，仓库无remote，无法推送。
