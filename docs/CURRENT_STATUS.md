@@ -110,6 +110,8 @@
 
 - **持续推进：B_sto完整22N2E，无F/D/U/技术/实际安全/hash/重放阻塞。** 1166ticks、242R/1944W、0actor shield；2E均完整落地，不能写成24N。与B_det相比周期982→1166、能耗10636.43→11777.77，业务效率仍需改善。primary核对六个旧snapshot及两架trace，长切环和正确的committed mask贡献了延误，并非全部来自actor WAIT；两条长m2i为nominal提案。另两个eligible WAIT状态的原teacher也WAIT，50个RELEASE候选均拒绝，未见这两时刻直接漏放证据；该探针stdout未按约落盘，缺失已明示且未重跑。[详细证据/边界](evidence/v4_2/p3_v25_formal_readiness_20261008.md)。当前唯一C_det Python2810032/timeout2810031、session41164，混合SOC892804/928804；先完整结果再决定C_sto。I1准备commit791e709，尚无Q/fresh fit/实景PPO，资格仍false；持续授权下一步及最终formal无heartbeat要求不变。
 
+- **当前业务疑点：C_det已10N14E/0F/D/U，独立I1暂缓。** 完整958ticks及重放一致、实际安全/hash/actor shield0，但14架依赖应急，最低完成SOC .116900，不能当作正式训练就绪。primary已读完整结果；旧C_det进程退出，继续已固定C_sto后仅增加env892804/同负载SOC的`C_rule_same_seed`控制实验，区分环境容量/能量限制与策略调度问题，不修改应急阈值或削弱安全。新增规则对照的1800tick/3700s、输出和既有CLI已在[持续验证文档](evidence/v4_2/p3_v25_formal_readiness_20261008.md)运行前冻结；规则入口无全tape重放，边界单列。I1协议/代码准备保留但尚无真实Q/fresh fit，PPO仍禁止，持续诊断修复至正式就绪目标不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

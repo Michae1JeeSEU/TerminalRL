@@ -95,3 +95,17 @@ primary编写只读trace汇总及六个既有snapshot（两个臂×400/600/850�
 另用两既有eligible WAIT状态作最小teacher复核：B_sto tick400/UID114与tick600/UID38，各原快照与tape pre/post hash相等、私有副本，0reset/0step/0学习。两次均teacher WAIT、无放行证书；400的25个RELEASE意图为18个merge_slot_retime_conflict、4个predicted_holder_reachable_tube、3个predicted_separation；600的25个均predicted_separation。各耗时69.922/60.359s，共130.281s，未重试。原stdout完整存在执行工具记录，但worker遗漏约定的文件重定向，预期JSON未产生；primary发现缺文件后仅要求读取已有stdout并核对上述26项（25R+WAIT）原reason表，没有为补产物重复查询。此探针用于排除“这两个时刻模型明显漏放”的直接指控，**拒绝reason本身不证明物理绝对无解**，也不为更早的放行顺序/计划时长提供最优性证明。
 
 判断：开发安全/完整性与预定继续条件通过，但高SOC仍有应急及效率下降，不能称业务最优或student/PPO已就绪。保留安全与原teacher，继续既定C_det/C_sto，再以独立I1及student状态分布验证决定训练数据/策略是否需修复。当前C_det唯一评估Python2810032/timeout2810031，SSH session41164，892804/928804、24/warm12、SOC.55–.90、deterministic、同固定checkpoint；真实cwd/argv和protocol/first_before存在且两端一致，首报steps0行只是启动前缀。源码冻结，未启动C_sto、Q或实景PPO。
+
+### C_det终态：应急比例高，需要先区分环境与策略（newly_run）
+
+C_det已COMPLETED/exit0，958ticks/1338.105s（完整重放）、**10N/14E/0F/D/U**，error/censor无、replay_exact=true，active/queue/service/unresolved0，所有实际安全/hash/actor shield计数0。result SHA `bc757fb090b3eb52f51dc635c6f739d55b0b49fc2c061ad9824f81197afb006f`，protocol/steps/progress/first_before/log/exit两端相同，Python2810032退出。primary读完整结果并核对11360行：3293actor=212R/3081W、8067forced，原请求概率/mask/K3/trace无异常。普通批准44（rank1/2/3=26/9/9）、有普通原因的拒绝165（HEADWAY11/PREDICTED_SEPARATION97/NO_MERGE_GAP25/LZ_RESOURCE32），余下3个原R无普通release_telemetry，不混为普通拒绝。
+
+最小实际间隔84.706372m/swept84.582154m；628energy checks/0negative、14应急提交/落地全部完整，无应急能量/动力学拒绝。应急尝试125、候选安全阻塞308（不同计数口径），普通过滤interventions394，均不抹去。最低完成SOC .116900/剩余能量175.350674，属于arrival15的应急完成；没有耗尽不等于充足的运营余量。reward296.877299，正常完成比例仅10/24。
+
+此臂满足原开发“完整、安全、无F/D/U”的继续条件，可完成已固定的C_sto配对；但14E是业务层的重要异常信号，**独立I1采集/训练暂缓**。不能拿不同seed的早期规则结果直接归因学习退化，也不能改应急阈值把E变N。
+
+在C_sto自然终态并分析后，新增唯一同seed规则对照`C_rule_same_seed`，与本C的env892804/policy928804、24/warm12、SOC.55–.90、相同build_config/物理/SafetyFilter一致，仅控制器换为已验证的nominal K3 rule。使用未修改的`terminal_marl.scripts.diagnose_p3_integrated_repair --run --controller rule --requests 24 --warm-start 12 --seed 892804 --policy-seed 928804 --max-steps 1800 --trace-blockers --snapshot-ticks 1 400 600 850`，输出新`p3_v25_student_dev_20261008/C_rule_same_seed`，外部3700s硬上限；如果超时无终态report则保留为技术/截断，不延预算或覆盖。此既有rule入口不提供完整request-tape重放，明确这个证据边界；它提供N/E/F/D/U、安全/hash、能量与阻塞快照，用来定位14E究竟也出现在规则控制，还是主要出现在当前学习闭环。不得冒称它等同student runner的完整重放证据。无学习/新teacher标签/新Q数据；同seed新controller是控制实验，不重跑已完成student臂。
+
+保持最多一个本轮环境评估，先Syncthing/无重复/初产物核对。规则结果与C配对一起由primary决定必要最小轨迹/能量/监督诊断及修复；只有处理当前业务疑点后再恢复I1计划。用户持续推进到正式训练的授权不变，不在此处仅报告失败就结束。
+
+C_sto随后启动：Python2811481/timeout2811480、session32263，真实cwd/argv与892804/928804/24warm12混合SOC/stochastic相符，固定checkpoint不变。一次60s启动等待后progress50ticks（117actor=18R/99W、0shield）、steps68行、first_before/protocol均正常；protocol/first_before等两端一致，持续写入steps在快照时SHA不同是同步中的前缀，不能作为终态一致证据。root result/exit尚无，当前唯一运行臂；完成后再由primary决定上述规则对照。
