@@ -109,3 +109,28 @@ C_det已COMPLETED/exit0，958ticks/1338.105s（完整重放）、**10N/14E/0F/D/
 保持最多一个本轮环境评估，先Syncthing/无重复/初产物核对。规则结果与C配对一起由primary决定必要最小轨迹/能量/监督诊断及修复；只有处理当前业务疑点后再恢复I1计划。用户持续推进到正式训练的授权不变，不在此处仅报告失败就结束。
 
 C_sto随后启动：Python2811481/timeout2811480、session32263，真实cwd/argv与892804/928804/24warm12混合SOC/stochastic相符，固定checkpoint不变。一次60s启动等待后progress50ticks（117actor=18R/99W、0shield）、steps68行、first_before/protocol均正常；protocol/first_before等两端一致，持续写入steps在快照时SHA不同是同步中的前缀，不能作为终态一致证据。root result/exit尚无，当前唯一运行臂；完成后再由primary决定上述规则对照。
+
+### 合流点选择遗漏已承诺入环飞机（newly_run，只读诊断）
+
+primary读取`MergeScheduler._gap_center`发现其仍只选择`ring_role is target`，以目标环名义角速度外推当前holder。真实切环飞机在transfer阶段`ring_role=None`，即使其承诺轨迹早于本候选合流时间结束，也完全不参与目标gap选择。V2.5观测已能看到这些飞机，并不意味着执行调度器也已处理它们。这是独立于模型拟合的具体实现问题。
+
+primary编写`.tmp/probe_p3_v25_merge_context.py`，先独立B_sto400小样本检查输出，再读取既有B_sto400、C_det400/600/850四快照，均与已核对tape的post hash相同。0reset/step/teacher/candidate，只在私有SafetyFilter predictor中计算本次nominal proposal预计合流时刻的实际holder/承诺到达后位置。7个eligible o2m/m2i查询全部遗漏了incoming，未观察到stale departure；850没有这类eligible查询，不补样。完整JSON`.tmp/p3_v25_merge_context_full.json`，SHA `1b508885c5c40ea7803e5d1cf6823b35453c8b59bc651eb8b9bcd1aa88e3adff`。
+
+| 已有状态 | 遗漏incoming数量 | 旧合流点到预测目标邻机最小弦距 | 纳入incoming后的最大空隙中心弦距 |
+|---|---:|---:|---:|
+|B_sto400 UID29|2|58.639m|216.824m|
+|B_sto400 UID32/114|各6|36.833m|218.752m|
+|C_det400 UID70/94|各6|33.667m|425.962m|
+|C_det600 UID18/109|各1|8.609m|276.859m|
+
+这些是固定预计合流时刻的几何距离，**不是新完整轨迹获准或闭环收益**。后续最小诊断仅在两个私有旧状态分别比较原nominal与替换forecast gap的nominal候选，完整保留generator/energy/SafetyFilter；先C_det600/UID18验证脚本输出，再B_sto400/UID114。不reset/step/teacher、不改运行核心、不替换原标签。原C_sto与同seed rule baseline终态保存后，修正scheduler未来成员与相位预测，再通过定向回归和新目录闭环检查。涉及新planner语义的旧标签不能直接作为新正式监督资格，需按实际影响决定重新采集/标注；I1仍暂缓。
+
+两个状态的4次私有nominal候选已完成，0reset/step/teacher。C_det600/UID18原/forecast均被predicted_separation拒绝，生成时长116.881→73.692s；B_sto400/UID114两条轨迹都获得SafetyFilter checked hash，但均因merge_slot_retime_conflict未获scheduler批准，时长123.356→205.754s，原预约时刻为607.703，实际终点分别523.356/605.754。**改善目标终点gap不等于路径全程可行，也不能绕过真实合流时间的headway检查。** 路径长度有升有降；此处不宣称性能改善。两个输出分别`.tmp/p3_v25_merge_candidate_C600.json`（SHA d09ccaeb06c454ea6974d0511e204fdcc9628882ecf9bc4f45c6fa49adc5274e）和`..._B400.json`（SHA 2a8a84d760ed791c4b20f7967ada6e0071894eacc9b078ea512511b8d680e296），脚本逐候选直接落盘。旧last_predicted_track_audit仍not_run/null，不能把null当无穷安全距离；本诊断只使用返回reason/checked hash，没有虚构最小全程间隔。
+
+### C_sto终态及规则控制启动（newly_run）
+
+C_sto为COMPLETED/exit0，879ticks/952.600s（含全tape重放），**14N/10E/0F/D/U**，无error/censor、replay_exact=true。2918actor=174R/2744W、7527forced，全部原请求likelihood/mask/K3/trace核对通过；51普通批准（rank37/8/6）、119普通拒绝（HEADWAY9/PREDICTED_SEPARATION84/NO_MERGE_GAP15/LZ_RESOURCE11）、4原R无普通release_telemetry，不混算。0actor shield/实际安全/hash异常，最小实际/扫掠间隔80.603108/80.538428m；564energy checks/0negative，10应急提交均完成，最低完成SOC .209604。safety_interventions335保留，reward349.525168，不等于14E配对已被解决。
+
+result SHA `925d37ff350b70ceb256d85c0d94ea4060668e2fe05a0d3b590e424a30d75dff`，终态result/protocol/steps/progress/first_before/log/exit同步，原2811480/2811481退出。primary读完整结果后接受启动前述唯一C_rule_same_seed，原student六臂完成且禁止重跑；Q/实景PPO继续暂缓。等待规则baseline期间仅新建尚未被运行代码import的forecast helper及其测试，旧scheduler/generator/config保持不变。
+
+C_rule_same_seed已启动：Python2812519/timeout2812518、session84659，真实cwd/argv已核对，progress75ticks/76.126s、snapshot_1/blockers/log正常。新forecast helper的6项local/server用例通过（1.80s/.71s），两文件SHA相同，覆盖incoming到达边界、departure排除、实际有限加速度/速度偏置、空/单/多gap和不变性；尚未接入运行环境，不能当生产修复已完成。
