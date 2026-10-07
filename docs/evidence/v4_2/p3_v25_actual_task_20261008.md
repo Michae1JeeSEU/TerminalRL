@@ -59,3 +59,5 @@ primary全量行/teacher证书/原候选与执行/selected快照hash/105+N×50 j
 train_dense24已启动：Python2819670/timeout2819669，真实cwd=/home/user/projects/terminal、argv指向新task_data/index2；protocol 893402/mixedSOC/priority任务/24warm12已核对。250tick/4286raw/124selected/4N/340.869s及steps、progress、first产物仅启动前缀，尚无exit/完整标签。当前一次一臂核心冻结，不重复启动；完整分析后才继续flow12。
 
 后续teacher-free学生开发入口`training/p3_v25_task_student.py`已准备：只加载新任务fit中预定canonical91901，不挑选最好的seed；记录来源/真实profile后执行完整任务，以自然终态/实际安全/重放/无FDU为继续依据，E安全完成单列。零优化器、零teacher，保存tensor records及原请求trace，可供同一合格source后续critic初始化使用；不会自动授予student/PPO资格。6项local/server开发fixture tests通过15.33s/8.43s，包含原runtime/K3/likelihood回归、三接口smoke和禁止构建Adam。尚无真实student任务或新的模型权重。
+
+进一步核对统计定义发现：现有internal_wait仅在未承诺的ring hold推进中累加，已承诺轨迹的前段环上等待/长飞行不进入该项。因此metrics显式保留此口径，同时新增priority加权request-to-touchdown/request-to-completion与初始低SOC组request-to-touchdown，后续不能仅凭旧waiting下降宣称整体延误改善。没有修改环境计时、调度优先级、奖励或运行中采集。新增字段2项本地tests通过.23s；worker服务器实际重跑含PPO的14项通过5.38s（原指令只需2项metrics，多做的12项不重复计作新用例）。

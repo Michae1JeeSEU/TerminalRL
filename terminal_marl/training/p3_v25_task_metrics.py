@@ -12,6 +12,7 @@ def completed_metrics(env):
             emergency_landing=bool(uav.emergency_landing),request_time=float(uav.request_time),
             touchdown_time=float(uav.touchdown_time),completion_time=float(uav.completion_time),
             request_to_touchdown_seconds=float(uav.touchdown_time-uav.request_time),
+            request_to_completion_seconds=float(uav.completion_time-uav.request_time),
             external_wait_seconds=float(uav.external_wait_time),
             internal_wait_seconds=float(uav.internal_wait_time),
             wait_seconds=float(uav.external_wait_time+uav.internal_wait_time),
@@ -21,12 +22,18 @@ def completed_metrics(env):
     priorities=sorted({r['base_priority'] for r in rows})
     # Initial SOC defines the cohort, not an outcome-dependent final SOC.
     low=[r for r in rows if r['initial_soc']<=.65]
+    def priority_mean(key):
+        return (float(np.average([r[key] for r in rows],weights=[r['base_priority'] for r in rows]))
+                if rows else None)
     return dict(completed_rows=rows,completed_count=len(rows),
+        wait_definition='external queue plus uncommitted ring holding; excludes committed trajectories',
         priorities_observed=priorities,initial_soc_min=min((r['initial_soc'] for r in rows),default=None),
         initial_soc_max=max((r['initial_soc'] for r in rows),default=None),
-        priority_weighted_wait_seconds=(float(np.average([r['wait_seconds'] for r in rows],
-            weights=[r['base_priority'] for r in rows])) if rows else None),
+        priority_weighted_wait_seconds=priority_mean('wait_seconds'),
+        priority_weighted_request_to_touchdown_seconds=priority_mean('request_to_touchdown_seconds'),
+        priority_weighted_request_to_completion_seconds=priority_mean('request_to_completion_seconds'),
         low_soc_count=len(low),low_soc_wait_mean=mean(low,'wait_seconds'),
+        low_soc_request_to_touchdown_mean=mean(low,'request_to_touchdown_seconds'),
         by_priority={str(p):dict(count=sum(r['base_priority']==p for r in rows),
             wait_mean=mean([r for r in rows if r['base_priority']==p],'wait_seconds')) for p in (1,3,5)},
         normal_count=sum(r['outcome']=='completed' for r in rows),
