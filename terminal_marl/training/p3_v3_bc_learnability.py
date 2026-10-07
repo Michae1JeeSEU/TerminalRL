@@ -203,7 +203,10 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
     actor_before = {k: v.clone() for k, v in model.state_dict().items() if not k.startswith('critic_')}
     initial = measure(model, data)
     if reference_initial is not None:
-        require(initial == reference_initial, 'paired initialization metrics differ')
+        # JSON object keys are strings; Counter keys in freshly measured metrics
+        # are integers. Compare the persisted representation without float tolerances.
+        require(json.loads(json.dumps(initial, allow_nan=False)) == reference_initial,
+                'paired initialization metrics differ')
     initial_objective = objective(model, data, gate_weights)
     optimizer = torch.optim.Adam(params, lr=LEARNING_RATE)
     generator = torch.Generator().manual_seed(seed)

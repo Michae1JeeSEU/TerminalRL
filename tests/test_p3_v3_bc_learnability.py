@@ -141,6 +141,19 @@ def test_paired_initialization_mismatch_precedes_optimizer(tmp_path,monkeypatch)
             gate_weights=bc.GATE_WEIGHTS,reference_initial={})
 
 
+def test_paired_initialization_accepts_serialized_counter_keys(tmp_path):
+    import json
+    data=bc.synthetic_data()
+    torch.manual_seed(17)
+    initial=bc.measure(bc.HierarchicalActorCentralCriticV42(90),data)
+    serialized=json.loads(json.dumps(initial))
+    assert initial != serialized  # Integer Counter keys become JSON string keys.
+    result=bc.fit(data,tmp_path/'paired',17,updates=2,gate_weights=bc.GATE_WEIGHTS,
+        protocol=bc.BALANCED_PROTOCOL,reference_initial=serialized)
+    assert result['reference_initial_equal'] and result['updates'] == 2
+    assert result['critic_unchanged'] and result['actor_changed']
+
+
 def test_reference_rejects_different_row_identity_and_incomplete_seed(tmp_path):
     data = bc.synthetic_data()
     case = tmp_path/bc.REFERENCE_CASE; case.mkdir(parents=True)

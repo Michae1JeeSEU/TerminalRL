@@ -66,6 +66,8 @@
 
 - gate权重对照的48项tests在local/server均通过，新prepare确认原1046行/输入清单一致，新16行synthetic smoke两次更新通过权重/输出/critic冻结检查。primary已核对准备结果，接受提交后只执行预登记的3seed×1000更新；此刻尚无真实加权fit结果，I0/student/PPO资格不变。
 
+- 加权fit首启动ERROR/exit1，0optimizer/0参数更新：初始统计的Counter整数键与JSON字符串键被直接比较。primary只读证明完整初始指标在JSON形式下精确相同，已修正比较表示、无数值容差放宽；新增回归后local/server49tests均通过。原`fit`失败保留，下一实际执行路径为`p3_v3_bc_gate_balance_20261007/fit_serialization_fix`，原3seed×1000预算不变；尚无真实加权结果，未启动PPO或环境，原进程退出。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

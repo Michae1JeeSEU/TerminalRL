@@ -130,3 +130,13 @@ primary补做一次精确输入冲突检查：按loader实际float32的完整90D
 ### 加权对照准备结果
 
 本地48tests通过12.83s、服务器相同48tests通过1.55s，exit0；比前轮44项增加4项权重/配对相关测试，不能相加成独立92项。新prepare为PREPARED/exit0、1046行817W229R、无optimizer；inputs SHA与原未加权准备和fit完全相同。新synthetic smoke为SMOKE_OK/exit0，16合成行、seed17、2更新，实际权重`[0.6401468788249693,2.2838427947598254]`，实际加权目标4.2807636→4.1809330、actor变/critic不变，新checkpoint存在。primary亲自读取并核对协议/结果，两端关键文件SHA一致；以上是newly_run验证，不是实际数据效果。运行前冻结runner SHA`3f9f83bcf6463354cc31dd4e531095b79538300b4bc39c115396eec6d589522a`、tests SHA`27efa650c700a59def5d8ed5f65bdf09f22a7912f4fb2e58301496c7e220ddc1`，原model/loader SHA保持不变。primary接受按上面唯一设置在提交后执行三seed加权fit。
+
+### 初始比较的技术失败与修正（未发生真实训练更新）
+
+首版代码/协议commit`6ac68ee18be01211392be95fa17da4096ef56c1d`后，`.../p3_v3_bc_gate_balance_20261007/fit`唯一启动即ERROR/exit1：`paired initialization metrics differ`，seeds=[]、没有per-seed result/checkpoint；Python2777583/wrapper2777581均退出。错误发生在`measure`之后、Adam创建之前，参数更新为0。该失败目录完整保留，不能记作一个学习失败seed或覆盖成成功。
+
+primary定位为比较实现缺陷：运行时`Counter`的proposal target_counts/prediction_counts键为int，持久化JSON再读回后为str，直接比较字典必然失败。独立只读seed91701证明`initial_check.json`（newly_run，exit0）为raw_equal=false、json_form_equal=true；全部初始指标转为JSON表示后精确一致，包括loss3.9474971294、gate .6963557601、proposal3.2511413097。该证明0optimizer/0更新/0reset/0teacher query，没有读取checkpoint或重新训练。
+
+修正仅把新测初始记录转换为同一JSON表示再作**精确比较**，没有放宽浮点容差、跳过比较、变更样本/模型/权重/更新预算。新增含Counter整数键的序列化正向回归，原不一致先于optimizer拒绝的测试保留；本地49tests通过12.68s、服务器49tests通过1.56s，均exit0。新runner SHA`933b5696cbb0b818eabb789e0473df48a4e199b90ece7a4f1d698e8c1804e37d`、test SHA`a0d650f8bdcd68f30fdc230bd2ae6849f14f03ca67d9a5ebc27badd8ff94a6a7`已同步核对。
+
+用户本次授权的真实加权学习尚未执行任何更新；primary接受修复起始检查后在**新目录`fit_serialization_fix`**执行原定3seed×1000更新，旧fit和prepare/smoke/proof均不重跑。本轮唯一因子仍为gate类别权重，全部结果必须记录，包括上述技术失败；不是根据拟合结果调参、选择seed或延长训练。先提交这项修正，再启动新目录。
