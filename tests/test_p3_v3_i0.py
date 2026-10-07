@@ -152,6 +152,50 @@ def test_v2_forwards_larger_count_but_keeps_wall_budget_and_stop_rule(tmp_path, 
     assert result['annotation']['status'] == 'NOT_RUN'
 
 
+def test_v3_is_one_fresh_mixed_case_with_unchanged_v2_limits():
+    assert i0.protocol_settings('v3') == dict(protocol=i0.PROTOCOL_V3,
+        max_selected=2048, smoke_seed=892701)
+    assert i0.case_definition('train', 1, protocol_version='v3') == dict(
+        partition='train', index=1, seed=893201, requests=24, warm_start=12, high_soc=False)
+    for partition, index in [('audit', 1), ('Q', 1), ('train', 0), ('train', 2), ('train', True)]:
+        with pytest.raises(ValueError):
+            i0.case_definition(partition, index, protocol_version='v3')
+
+
+@pytest.mark.parametrize('smoke,seed,high,steps,wall', [
+    (False, 893201, False, 1800, 3600), (True, 892701, True, 2, 180)])
+def test_v3_protocol_precedes_reset_and_preserves_failure_stop(
+        tmp_path, monkeypatch, smoke, seed, high, steps, wall):
+    # No formal reset: inspect frozen metadata at the mocked constructor boundary.
+    output = tmp_path/'v3'
+    def constructor(config, *, seed: int):
+        protocol = json.loads((output/'protocol.json').read_text())
+        assert protocol['seed'] == seed
+        assert protocol['protocol'] == i0.PROTOCOL_V3
+        assert protocol['high_soc'] is high
+        assert protocol['max_selected'] == 2048
+        assert protocol['max_release_intents'] == 51200
+        assert protocol['max_steps'] == steps
+        assert protocol['rollout_wall_seconds'] == wall
+        assert protocol['annotation_wall_seconds'] == (180 if smoke else 7200)
+        return object()
+    def rollout(env, episode, **kwargs):
+        assert kwargs['seed'] == seed
+        assert kwargs['max_selected'] == 2048 and kwargs['all_actor']
+        assert kwargs['max_steps'] == steps and kwargs['wall_seconds'] == wall
+        return dict(completed_flow(), status='SMOKE_OK' if smoke else 'COMPLETED',
+                    selection_overflow=1), []
+    def forbidden(*args, **kwargs):
+        raise AssertionError('incomplete selection must not start annotation')
+    monkeypatch.setattr(i0, 'TerminalParallelEnv', constructor)
+    monkeypatch.setattr(sparse, 'rollout', rollout)
+    monkeypatch.setattr(sparse, 'annotate', forbidden)
+    result = i0.run(output, smoke=smoke, protocol_version='v3')
+    assert result['seed'] == seed and result['status'] == 'INCOMPLETE'
+    assert result['blockers'] == ['actor_query_budget_exceeded']
+    assert result['annotation']['status'] == 'NOT_RUN'
+
+
 def test_all_actor_serializes_queries_past_old_256_boundary(tmp_path, monkeypatch):
     # Hold a known development fixture still to generate 300 distinct tick/UID
     # records cheaply. This tests storage/selection, not a business trajectory.

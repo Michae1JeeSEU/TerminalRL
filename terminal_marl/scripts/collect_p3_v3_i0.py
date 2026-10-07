@@ -1,8 +1,8 @@
 """Frozen V3 I0 collection: full rule cycles and every eligible actor decision.
 
 One episode per invocation. No learner or qualification evaluation is run.
-V1 remains unchanged; opt-in V2 measures the larger all-actor query budget
-on fresh dense high/mixed-SOC episodes with the original wall-clock limits.
+V1/V2 remain unchanged. Opt-in V3 checks the same all-actor/wall budget on
+one fresh dense mixed-SOC episode after the equivalent numeric speedup.
 """
 from __future__ import annotations
 
@@ -30,10 +30,14 @@ PROTOCOL_V2 = 'p3_v3_i0_all_actor_20261004_v2_budget'
 MAX_SELECTED_V2 = 2048
 SMOKE_SEED_V2 = 892601
 SCENARIOS_V2 = ((24, 12, True), (24, 12, False))
+PROTOCOL_V3 = 'p3_v3_i0_all_actor_20261007_v3_numeric'
+SMOKE_SEED_V3 = 892701
 
 
 def protocol_settings(version):
-    sparse.require(version in {'v1', 'v2'}, 'unknown I0 protocol version')
+    sparse.require(version in {'v1', 'v2', 'v3'}, 'unknown I0 protocol version')
+    if version == 'v3':
+        return dict(protocol=PROTOCOL_V3, max_selected=MAX_SELECTED_V2, smoke_seed=SMOKE_SEED_V3)
     if version == 'v2':
         return dict(protocol=PROTOCOL_V2, max_selected=MAX_SELECTED_V2, smoke_seed=SMOKE_SEED_V2)
     return dict(protocol=PROTOCOL, max_selected=MAX_SELECTED, smoke_seed=SMOKE_SEED)
@@ -41,6 +45,11 @@ def protocol_settings(version):
 
 def case_definition(partition, index, *, protocol_version='v1'):
     protocol_settings(protocol_version)
+    if protocol_version == 'v3':
+        sparse.require(partition == 'train', 'V3 only admits one fresh mixed-SOC train case')
+        sparse.require(type(index) is int and index == 1, 'index outside frozen V3 case')
+        return dict(partition=partition, index=1, seed=893201, requests=24,
+                    warm_start=12, high_soc=False)
     if protocol_version == 'v2':
         sparse.require(partition == 'train', 'V2 only admits the two fresh train collection cases')
         sparse.require(type(index) is int and 1 <= index <= 2, 'index outside frozen V2 cases')
@@ -178,7 +187,7 @@ def main():
     parser.add_argument('--partition', choices=('train', 'audit'), default='train')
     parser.add_argument('--index', type=int, default=1)
     parser.add_argument('--smoke', action='store_true')
-    parser.add_argument('--protocol-version', choices=('v1', 'v2'), default='v1')
+    parser.add_argument('--protocol-version', choices=('v1', 'v2', 'v3'), default='v1')
     args = parser.parse_args()
     if args.smoke and (args.partition != 'train' or args.index != 1):
         parser.error('smoke cannot specify another partition/index')
