@@ -84,6 +84,9 @@
 
 - 独立encoder准备通过：local/server各58tests、真实prepare与独立16行/2更新smoke均exit0；primary核对原1046输入不变、两路初始相等/梯度分离、四actor模块更新/critic冻结、新模型checkpoint及参数计数。原actor29979→新57339，新增proposal encoder27360；容量变化与global clip耦合均保留解释边界。接受提交后只运行原定三seed×1000更新的独立encoder对照，当前尚无真实fit结果，资格不变。
 
+- **2026-10-08最新终态：独立encoder三seed×1000更新已FIT_COMPLETE/exit0，尚未验证解决整体退化。** 核心`5a67511`，local/server各58tests/prepare/smoke通过；原初始/输入精确配对、四actor模块均更新/critic冻结，实际1.663/1.201/1.202s，Python2786856/wrapper已退出。proposal首选恢复10/12/10类，top1原55.75%→56.48%（detach46.29%）、top3 76.71%→80.06%；gate AUC0.86066→0.88259，RELEASE召回41.92%→50.66%。但WAIT误放6.28%→7.75%、joint78.90%→78.84%，仅一个seed joint改善；m2i joint54.39%→52.58%。因此保留诊断实现，不晋级student/PPO，不挑最佳seed。
+- primary完成6个既有checkpoint的0更新逐状态检查，完整末尾指标精确复现/权重SHA不变。平均漏放少20，却误放多12、放行后错proposal多8.667；新错proposal中每seed79–83个已被原teacher前缀拒绝，17–21个未查询不作可行性推断。三seed共同m2i误放26、漏放33、错proposal52行。具体UID0/tick92应WAIT却p(RELEASE)=.823–.840，tick101可RELEASE却=.421–.468，单一阈值无法同时纠正；另两例nominal proposal12被邻机预测/holder包络拒绝而teacher13/14获证。[完整结果及后续4状态/6候选方案](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录，下一步仅建议查具体阻塞邻机、轨迹预测与90D可见量，尚未执行。原probe启动器把stdout写到JSON造成首断言失败、0模型加载，失败保留；固定launcher新`error_probe_fixed.json`已exit0。当前无任务/heartbeat，I0/student/PPO仍false，无audit/Q/闭环/硬件，其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

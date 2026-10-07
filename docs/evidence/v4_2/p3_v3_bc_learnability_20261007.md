@@ -324,3 +324,84 @@ gate排序改善不局限于总体混合分布：下表每个context在三个see
 local/server各58项定向tests通过（13.95s/1.60s），包括初始共同参数/完整指标/RNG一致、两encoder独立存储与梯度归属、四模块更新、critic冻结以及新checkpoint严格往返和旧共享模型拒绝新keys。真实prepare为PREPARED/exit0、1046行817W229R、0model/0optimizer，输入SHA仍`97df56e3ca06eb6c17dd2cc240b541dbdbf0cc968ba8c5e782ddda40b49b5f42`。独立合成smoke为SMOKE_OK/exit0、16行/seed17/2更新，四actor模块均变化、critic不变，实际actor参数57339、新增27360、原actor29979、critic55297，与预登记计算相同；新诊断checkpoint461249bytes。这些合成指标只验证实现和产物，不是实际数据可学习性结果。
 
 primary亲自读回prepare/smoke协议及结果后接受按本节原预算继续唯一真实fit。Syncthing runner SHA`9c62f5eb74e7afe72813601462e4ed3ea960e1ae1651585feb4bada7345b84e8`、test SHA`558b49b600a4a7ce9703a1e37dea4e908ae7045fec450570eb4ea8dfadebff31`及未改生产model/loader均一致；prepare输入和smoke结果两端SHA一致。先提交本实现及固定方案，再启动91701/2/3各1000次更新，不重跑prepare/smoke/旧臂；此刻尚无真实separate fit结果。
+
+### 真实fit完成后的最小错误分解（运行前记录）
+
+核心commit`5a67511`后的三seed已FIT_COMPLETE/exit0。primary初读发现proposal恢复多类别首选，但总体joint仍近似原基线，m2i WAIT误放行上升，因此先做一次0更新的逐状态错误分解。只加载原共享与独立encoder各3个固定末尾checkpoint，要求重新前向的完整指标与已存final精确相同、读取前后checkpoint SHA不变。将每组错误分为false RELEASE、false WAIT与gate正确但proposal错误，核对与joint分母闭合；不增加学习、阈值扫描或teacher查询。
+
+只复用原标签的teacher_audit前缀：错proposal若已在前缀被拒则记checked_rejected；未被teacher搜索到的一律记unqueried，不能当物理不可行或可行。按冻结输入顺序各取最早2个“三seed共同m2i误放行/漏放行/错proposal”状态（最多6个，类别可重叠）读原上下文与audit理由，用于定位剩余错误，不能估计独立泛化或用执行改标。primary已写`.tmp/probe_p3_separate_errors_20261007.py`，先合成5类错误及前缀状态/JSON自测，再原服务器只读运行到新`p3_v3_bc_separate_encoders_20261007/error_probe.json`，保留全部输出。这是解释本次取舍的有限诊断，不新增训练臂。
+
+### 独立encoder实际结果（2026-10-08记录）
+
+**本轮缓解了detach造成的proposal单一首选，但没有带来稳定的联合动作改善。** 核心commit`5a67511baa5544c8e2b2725425659d7c171bcda2`后，唯一`fit`三seed各1000更新均FIT_COMPLETE/exit0，耗时1.663/1.201/1.202s；Python2786856/wrapper2786854自然退出。每seed完整初始指标与原基线精确相同，四actor模块均更新、critic不变，未扩预算。每seed新`final_diagnostic.pt`为461313bytes；全部资格标志false。结果为newly_run，原共享与detach为preexisting_artifact，所有比较仍仅来自原1046个相关训练状态。
+
+`fit/inputs.json`与原输入精确相同，SHA仍`97df56e3ca06eb6c17dd2cc240b541dbdbf0cc968ba8c5e782ddda40b49b5f42`；`protocol.json` SHA`2d175ad5a1913c1dc0da0d8802b53f6033ef88b828ebb9c6e01f0b98af8f8a33`，`result.json` SHA`6860ed311581876435355d233a08c65af0a53206c36087c1f2ea75f1f6e7efb0`，均与本地同步文件一致。只读三臂汇总`.tmp/p3_separate_encoders_analysis_20261007.json`为SEPARATE_ENCODERS_ANALYSIS_COMPLETE/exit0；primary亲自读取原始逐seed/逐组/每类指标和预测分布。
+
+| seed | gate confusion（行真值W/R、列预测W/R） | RELEASE召回 | proposal top1 / top3 | joint正确率 原→独立 | gate AUC |
+|---|---|---:|---:|---:|---:|
+| 91701 | `[[778,39],[126,103]]` | 44.98% | 56.77% / 79.91% | 79.06%→80.50% | 0.88450 |
+| 91702 | `[[751,66],[114,115]]` | 50.22% | 56.33% / 81.22% | 78.97%→78.68% | 0.88271 |
+| 91703 | `[[732,85],[99,130]]` | 56.77% | 56.33% / 79.04% | 78.68%→77.34% | 0.88057 |
+
+| 三初始化seed均值 | 原共享 | detach | 独立encoder |
+|---|---:|---:|---:|
+| gate accuracy | 82.38% | 83.56% | 83.14% |
+| balanced accuracy | 67.82% | 71.45% | 71.45% |
+| RELEASE召回 | 41.92% | 49.93% | 50.66% |
+| WAIT误放行 | 6.28% | 7.02% | 7.75% |
+| gate AUC | 0.86066 | 0.89162 | 0.88259 |
+| proposal top1 / top3 | 55.75% / 76.71% | 46.29% / 66.08% | 56.48% / 80.06% |
+| joint正确率 | 78.90% | 78.14% | 78.84% |
+
+独立encoder三个seed分别首选10/12/10种proposal，proposal12占153/165/159个（共229个teacher RELEASE状态）；已解除detach的229/229全部选12。原模型则分别首选9/10/10类，12占158/167/157，因此相对原模型是小幅恢复/改善，并非全面学会21种目标。proposal1/2/4/8/14/15/18/19/20/22在三个新seed的top1召回仍全为0；其中proposal14有11个目标，不能把所有遗漏都归于单样本类别。三个seed总loss分别降到1.80322/1.77123/1.81700，gate CE为0.33452/0.33834/0.34455、proposal CE为1.46870/1.43288/1.47246；原末尾两项loss相比均有所下降，但不足以保证默认联合决策改善。
+
+| context | gate AUC 原→独立（detach） | RELEASE召回 原→独立 | WAIT误放行 原→独立 | proposal top1 原→独立 | joint 原→独立 |
+|---|---:|---:|---:|---:|---:|
+| o2m | 0.71330→0.75638（0.76954） | 48.09%→54.10% | 13.61%→14.72% | 57.38%→58.47% | 69.61%→69.80% |
+| m2i | 0.67676→0.73100（0.75810） | 46.08%→57.84% | 20.92%→28.71% | 41.83%→42.81% | 54.39%→52.58% |
+| i2f | 0.93136→0.94131（0.94554） | 29.80%→36.36% | 1.13%→1.13% | 75.76%→75.76% | 90.95%→91.48% |
+| 低SOC | 0.70150→0.72353（0.73203） | 25.33%→37.33% | 11.84%→16.18% | 53.33%→56.00% | 67.38%→66.84% |
+| 高速inner | 0.92709→0.93793（0.94268） | 28.57%→35.12% | 0.79%→0.92% | 75.00%→75.00% | 92.08%→92.47% |
+| busy LZ | 0.84231→0.86745（0.87767） | 32.83%→42.93% | 5.90%→7.38% | 51.52%→52.86% | 79.03%→79.06% |
+| retry恢复 | 0.68666→0.73510（0.75389） | 27.62%→39.52% | 11.44%→13.67% | 48.57%→51.19% | 67.90%→68.29% |
+
+原893001/893101/893201三个episode的joint均值分别`59.32%→62.15%`、`86.13%→85.26%`、`70.14%→70.94%`；无独立场景泛化测量。相对原模型，三seed总体gate AUC都提高，但仅91701的总体joint提高，另外两个下降；不挑91701晋级。相对detach，所有上述context的AUC均值较低，说明同用global clip等优化耦合仍存在；不声称架构分离保持了全部gate收益。
+
+### 逐状态诊断：收益被误放行和错误proposal抵消
+
+合成错误分解/JSON自测通过。首次人工SSH启动命令把stdout错误重定向到了`--output error_probe.json`，shell预先创建零字节JSON，程序在首个输出存在断言处退出1，尚未加载数据/模型。原零字节JSON/log/exit全部保留；这不是训练失败。primary准备固定launcher，仅更正stdout到独立`.log`并使用新`error_probe_fixed.json`，原probe源码/自测不变，没有重训。修正版为ERROR_PROBE_COMPLETE/exit0，6个已有checkpoint全部完整final指标精确复现且`unchanged=true`，0optimizer/0更新/0reset/0teacher/0checkpoint写。57181bytes JSON两端SHA`dcb519a297e560676d57a72ce8814b6218ab68d4d40eb68785f577890ec20810`。worker一次辅助summary误用list.keys及误读`final_metrics_unchanged`字段均未改变产物；primary直接核对实际`unchanged`字段和完整JSON通过。
+
+错误分解的三seed均值（每seed1046行）为：
+
+| 互斥类别 | 原共享 | 独立encoder | 变化 |
+|---|---:|---:|---:|
+| 正确WAIT | 765.667 | 753.667 | −12 |
+| 完整正确RELEASE（gate和proposal均对） | 59.667 | 71.000 | +11.333 |
+| 真WAIT却请求RELEASE | 51.333 | 63.333 | +12 |
+| 真RELEASE却WAIT | 133.000 | 113.000 | −20 |
+| gate正确RELEASE但proposal错 | 36.333 | 45.000 | +8.667 |
+
+因此更少漏放行没有转成稳定joint收益：误放行增加12、放行后错proposal增加8.667，抵消减少的20个漏放行。m2i单独为原`28.667误放/55漏放/25.333错proposal`→新`39.333/43/31`，joint平均少4.333个正确状态；这里仍是teacher单机pre-state标签，不能当实际飞行事故数。
+
+在229个真RELEASE行上，三个新seed分别有99/100/100个proposal首选不等于teacher，其中79/83/79个已被**同一原teacher审计前缀明确拒绝**，另20/17/21个未查询。即错proposal多数并非仅“没选教师的唯一偏好、但可能同样可行”，至少已有大量同状态拒绝证据；未查询部分仍不能判断可行性。只看同时预测gate=RELEASE的状态，新seed有31/34/40个被前缀拒绝的proposal，原为30/25/30。真正执行还会经历服务推进、其他机顺序批准和安全层，不能把这些数直接当闭环安全违规，也不允许移除安全检查。
+
+三seed共同的m2i误放行26行、漏放行33行、proposal首选错误52行（后一类可与漏放行重叠）。预定“输入顺序最早2个/类”共6个实例亲自检查如下；没有按最大置信度选例：
+
+| seed/tick/UID | 原teacher | 新三seed预测 | 原审计事实 |
+|---|---|---|---|
+| 893001/92/0 | WAIT | 均RELEASE，概率0.823/0.838/0.840，均proposal12 | 25个候选均predicted_separation拒绝 |
+| 893101/83/0 | WAIT | 均RELEASE，概率0.745/0.759/0.743 | 25个候选均predicted_separation拒绝 |
+| 893001/101/0 | RELEASE12 | 均WAIT，放行概率0.421/0.452/0.468 | nominal proposal12首个即certified |
+| 893001/197/9 | RELEASE12 | 均WAIT，放行概率0.300/0.364/0.392 | nominal proposal12首个即certified |
+| 893001/0/4 | RELEASE14 | 均RELEASE12 | 前4个候选含proposal12均predicted_holder_reachable_tube拒绝，proposal14获证 |
+| 893001/152/6 | RELEASE13 | 均RELEASE12 | proposal12/11被predicted_separation拒绝，proposal13获证 |
+
+同一UID0在tick92与101形成具体的反向排序：应等待的状态放行概率高于可放行状态，三个新seed都如此。对这两个已知状态，任意单一RELEASE概率阈值都无法同时分类正确；继续统一调高/调低gate阈值不能解决这个局部错误。proposal错误例也明确涉及邻机预测/holder可达包络，并非只有类别比例变化。这些原拒绝理由尚不能区分真实未来冲突与保守预测，不能据reason单独宣称物理无解或观测缺失。
+
+### 本轮处理决定及后续最小方案
+
+独立encoder保留为**诊断实现**：它使gate与proposal均有可训练表示，解除了detach引入的首选坍缩；但对原模型的joint没有一致优势，不替换正式student、不恢复PPO。继续堆网络或改全局类别权重的优先级降低，当前要解释的是具体切环状态下的安全可行性排序、错误proposal及其观测依据。增加27360参数、全actor裁剪仍耦合以及仅三原训练回合的限制完整保留，不据此认定唯一根因。
+
+下一项建议只做**4个既有状态、6个固定候选的同状态重放诊断**，不再训练或采集新回合：893001/UID0的tick92与101各检查proposal12，tick0/UID4检查proposal12与teacher14，tick152/UID6检查proposal12与teacher13。使用原可信快照，先核对state/90D/原标签身份，再记录拒绝的具体邻机、预测轨迹/holder包络、最小间隔及对应90D可见量；原有label为preexisting reference，不重标、不穷举额外候选。先一个小样本检查诊断输出，再执行其余既定候选，最多6个候选、每候选180s/总600s、0reset/0环境step/0学习，失败保留不放宽安全参数。该方案尚未实现/执行；目的是区分预测约定或过保守包络问题、90D缺少关键上下文，以及已有观测下拟合不足，证据不足时保留未决结论。不要以泛化不充分为由反复扩大数据或仅延长BC。
+
+本轮实际改动为离线runner、定向tests、本证据文档与CURRENT_STATUS最新块，primary本人负责代码/分析/docs。local/server各58tests通过，真实fit及修正启动器后的只读probe均完成，原错误输出保留，无遗留进程或heartbeat。I0/student/PPO资格仍false，没有消费audit/Q、运行闭环/full training/硬件或覆盖旧checkpoint。P3训练退化仍未验证解决；环境直接C²与采集加速的既有改善证据不被此次拟合取舍否定。Git只本地、无remote不推送，其他dirty保留。
