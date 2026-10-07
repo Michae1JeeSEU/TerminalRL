@@ -35,3 +35,17 @@ fixed .8沿用固定SOC开发值，不提高mixed下限或改变能量阈值来�
 协议写入时：新profile/入口正在定向测试；新smoke/train/Q未reset、BC/PPO未执行。I0/I1/STUDENT/PPO均未准入。
 
 定向11项local/server tests均通过40.33s/21.11s，8个代码/测试文件SHA相同，实际reset确认fixed.8、effective base1、多物理mission与STANDARD policy token；原始null/完整标注/105+N×50、严格train/Q隔离与无优化器student检查通过。恢复既有takeover<=.05检查，未新增门槛。priority dense父2819670/所属query2821768已SIGTERM，exit143，62个label文件及原ANNOTATING保留、无残余进程，行政停止单列；环境19N5E不是完整采集成功。下一步仅独立892851 smoke。
+
+实现6dd89d98后独立892851 smoke已SMOKE_OK/exit0：2ticks/6raw/3actor，三接口各一条teacher RELEASE12并实际批准；有效base全1、物理standard/cargo/surveillance各一、2行SOC<.65。原null/forced、90D→105+N×50/原label join及首tick重放通过，实际安全/hash/负能量0。环境3.479s、标注4.558s；result SHA b9a66036e8a407dad600449329470b6f4b0c0a2fe3a2f586910dc51ca1b28bd1，关键文件已同步，无残余进程。primary读完整分析后仅接受train_flow6_mixed；smoke不重跑、不进train。
+
+train_flow6_mixed/893501已COLLECTION_OK/exit0，694ticks/6N/0E/F/D/U，2026raw=19actor+2007forced，19/19原teacher均R，proposal12/13/11为17/1/1。三接口6/6/7，effective base全部1，10行SOC<.65、5行<.55；物理standard/cargo/surveillance覆盖，busyLZ13、afterretry1。没有WAIT标签是此完整低并发回合的实测分布，不补造WAIT；尚不能单独训练合格gate。规则19R获18批准，唯一teacher11对规则nominal拒绝差异保留，不改标。最小实际/扫掠111.112/111.003m，最低完成SOC.439628，应急0，技术/censor/hash/负能量0；首tick重放与全量raw/selected/labels/context检查通过。环境49.805s/标注30.168s。result SHA7edc78c9330e770a2ce01fed62ab5906c9c9c33a7682113b01bc72a2d9e39aea，context SHA1ab2df8c332c83e8efb06950e1920c82829385c6c36da8be158162fdaf026c1c；关键终态两端同步、父2822456及child退出。首个分析因Syncthing result滞后失败，确认hash后只重做读取分析，未重跑环境。primary接受下一臂dense24_fixed/893502，其他臂仍待结果。
+
+### 后续学生开发与critic入口准备（未执行）
+
+仅在三个train完整分析、固定fresh fit完成后，canonical91901先做teacher-free两tick smoke（env892852/policy929852、3warm3 mixed），再顺序三个完整随机策略周期：flow6_mixed 892853/929853、dense24_fixed 892854/929854、dense24_mixed 892855/929855。这些为development，可用于诊断/DAgger与同源critic MC，不作为untouched Q。各rollout/replay各3600s/场景完整tick上限，全量请求重放；不选最好policy seed、不直接加载旧source。业务异常时只加必要同状态/同seed规则诊断，不能靠重复抽seed掩盖失败。新helper只准备未执行；首次reset前还核对seed元数据/输出无重复和source。
+
+primary新增`p3_v25_critic_initialization`入口：只接收与同一冻结canonical源/本profile一致、三个完整随机student周期，拒绝其他课程/确定性/不完整记录；逐条核对stored原分布后，以gamma.99完整terminal MC进行500次critic-only更新（batch32/Adam3e-4/seed93001/600s），actor与零gate adapter不变，丢弃warmup optimizer。PPO必须重新采样更新后的value，不把旧critic值当on-policy新rollout。入口不授予PPO资格，真实调用仍须先完成source/student判断；warmup MSE下降也不是性能通过。当前只准备代码及合成测试，没有真实critic更新。
+
+critic入口与PPO构件16项local/server定向测试通过10.36s/5.45s，包括序列化checkpoint保留actor/零adapter、无optimizer继承、错误课程/确定性/failed-energy拒绝；一个既有test scalar warning不影响通过。4个源码/测试文件两端SHA一致。仍只有合成测试，无真实critic/PPO更新，运行中course collector所用核心未改。
+
+当前唯一dense24_fixed/893502已启动：Python2822837/timeout2822836，真实cwd与argv匹配course_data/index2；protocol确认task_priority=false、fixedSOC.8。初次snapshot仅首tick12raw/0steps，随后本地同步progress100ticks/1409raw/41selected/227.497s，属于正常推进前缀，不记终态。核心冻结，不重复启动；完整结果分析后才可继续mixed。

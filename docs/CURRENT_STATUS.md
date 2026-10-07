@@ -136,6 +136,8 @@
 
 - **primary纠正课程解释错误，正式目标继续。** README/requirements/design/technical/execution_plan0.1–0.2均规定当前task-neutral；此前从历史P3表推断必须恢复priority1/3/5是错误，证据文件不能覆盖主规范。priority flow6完整结果保留；dense24环境915ticks/19N5E/776actor，primary授权停止尚未完整标注并保留原文件，不记COLLECTION_OK，禁止继续该flow12/fit/Q。新[中性课程协议](evidence/v4_2/p3_v25_neutral_course_20261008.md)按低并发mixedSOC、dense fixed.8、dense mixedSOC三条件推进，保留服务/能量/等待/安全、directC2和forecast修复。新smoke892851/train893501–3/Q895501–3预留，代码定向测试中，尚未reset/学习。用户授权持续至正式启动有效，最终formal不设heartbeat；无remote、其他dirty保留。
 
+- **中性课程已恢复并继续验证。** 核心6dd89d98、11项local/server tests及892851 smoke通过；train_flow6_mixed893501已694ticks/6N/0E/FDU、19/19标签全R，teacher/规则请求差异及低SOC/物理服务覆盖已逐行核对，不能由全R小场景宣称gate充分。当前唯一train_dense24_fixed893502为Python2822837/timeout2822836，task_priority=false/fixedSOC.8、真实cwd/argv/首tick产物与后续100tick前缀正常。代码冻结，完整结果后再mixed893503；新Q895501–3/fit91901–3未消费。另备妥critic-only初始化入口，16项local/server合成tests通过，尚无真实BC/critic/PPO。详情见[当前中性课程](evidence/v4_2/p3_v25_neutral_course_20261008.md)；持续至正式启动目标不变，最终formal无heartbeat。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

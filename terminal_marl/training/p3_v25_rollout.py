@@ -130,8 +130,9 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
     return steps,result
 
 
-def critic_warmup(model,episodes,*,updates=500,batch_size=32,seed=1,learning_rate=3e-4,gamma=.99):
-    if not episodes or updates<1 or batch_size<1: raise ValueError('positive warmup budget and complete episodes required')
+def critic_warmup(model,episodes,*,updates=500,batch_size=32,seed=1,learning_rate=3e-4,gamma=.99,wall_seconds=600):
+    if not episodes or updates<1 or batch_size<1 or wall_seconds<=0: raise ValueError('positive warmup budget and complete episodes required')
+    started=time.monotonic()
     rows=[];targets=[]
     for episode in episodes:
         if not episode or not episode[-1].terminated or any(r.episode_end for r in episode[:-1]):
@@ -150,6 +151,7 @@ def critic_warmup(model,episodes,*,updates=500,batch_size=32,seed=1,learning_rat
         initial=torch.stack([model.value(*tensors(r),torch.from_numpy(r.context)) for r in rows])
         initial_mse=float((initial-target).square().mean())
     for _ in range(updates):
+        require(time.monotonic()-started<wall_seconds,'critic warmup wall budget exceeded')
         indices=rng.choice(len(rows),size=min(batch_size,len(rows)),replace=False)
         predicted=torch.stack([model.value(*tensors(rows[i]),torch.from_numpy(rows[i].context)) for i in indices])
         loss=(predicted-target[indices]).square().mean()
@@ -160,4 +162,5 @@ def critic_warmup(model,episodes,*,updates=500,batch_size=32,seed=1,learning_rat
         final=torch.stack([model.value(*tensors(r),torch.from_numpy(r.context)) for r in rows])
     require(all(torch.equal(v,model.state_dict()[k]) for k,v in frozen.items()),'warmup changed actor')
     return dict(updates=updates,team_steps=len(rows),initial_mse=initial_mse,
-                final_mse=float((final-target).square().mean()),targets=targets)
+                final_mse=float((final-target).square().mean()),targets=targets,
+                elapsed_seconds=time.monotonic()-started,wall_seconds=wall_seconds)
