@@ -506,8 +506,12 @@ teacher/candidate安全结果，不推测尚未承诺的动作。旧88/90D check
 `scripts/reconstruct_p3_v25_context.py`从三个已有train回合快照重建输入，原label按decision_id
 保持不变；`training/p3_v25_context_dataset.py`只接受完整full重建结果、显式允许的train seeds，
 不会将probe/ERROR/forced/null当作监督。具体验证范围见
-[V2.5修复协议](evidence/v4_2/p3_v25_observation_repair_20261008.md)。该接口尚需set-aware actor与
-后续独立训练/闭环验证，不改变student/PPO资格。
+[V2.5修复协议](evidence/v4_2/p3_v25_observation_repair_20261008.md)。实验性
+`algo/trajectory_set_actor.py`提供独立gate/proposal集合encoder：全邻机共享编码后按mask
+汇总mean/max/count，支持空集合和置换不变性；不含critic/executor，未接入默认rollout。
+`training/p3_v25_set_learnability.py`只做同网络、同初始化/数据/更新预算的旧90D信息与
+V2.5信息比较，旧臂新增信息与mask全零。[固定对照协议](evidence/v4_2/p3_v25_set_fit_20261008.md)
+限制为既有train状态离线诊断；后续独立闭环验证与student/PPO资格均未由该接口授予。
 
 ---
 

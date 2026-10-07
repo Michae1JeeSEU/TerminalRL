@@ -95,6 +95,9 @@
 
 - **2026-10-08最新终态：V2.5观测修复和原1046行重建已完成。** 4状态probe已通过：tick92 UID4/剩余0.991704s与tick152 UID1/剩余4.884610s进入target槽及完整set；tick101 UID4仍可见但已是landing承诺，gap successor由−1修至−0.598899。full645快照/1046行在46.734s完成exit0，新loader通过，原229R/817W及全部标签不变；13939邻机行/最多20邻机，原state与90D、其他72字段、全邻机覆盖逐行断言通过。local/server终态SHA相同，四probe行两次构建精确相同，无运行任务/heartbeat。新core/loader/API及63项local/server tests均已验证，[详细结果与有界下一步](evidence/v4_2/p3_v25_observation_repair_20261008.md)。下一步先set-aware actor前向/mask/置换不变性，再同网络旧信息/新信息有界配对拟合，不能把架构变化混为观测收益；本轮0训练、0teacher/step/reset、无新seed/audit/Q/旧checkpoint覆盖。I0/student/PPO仍false，不宣称P3解决；其他dirty保留、本地提交、无remote不推送。
 
+- **2026-10-08用户继续后：V2.5同网络旧/新信息比较准备中。** primary实现独立gate/proposal的集合actor（全邻机共享编码、mask mean/max/count），原默认90D/teacher/物理不变；两臂同架构/同初始权重/同batch顺序，只切换原90D或V2.5新信息。冻结原1046标签、91701–3各两臂1000更新/300s、未加权CE/Adam3e-4/clip.5，先tests及0更新prepare/独立synthetic smoke，再核对提交后fit；新建诊断checkpoint，不覆盖旧模型。详细[运行前方案](evidence/v4_2/p3_v25_set_fit_20261008.md)已记录，尚无拟合结果；I0/student/PPO仍false，无audit/Q/环境/teacher调用。
+- 集合actor比较准备通过：local/server51tests、真实1046行0更新prepare、16行合成两臂各2更新smoke均exit0；59451参数、old信息逐位恢复/新增信息全零、mask/置换/批处理、初始state/batch序列一致及四模块更新均通过。primary亲自核对后接受本地提交冻结实现，再执行唯一91701–3×两臂×1000更新。尚无真实fit结果，I0/student/PPO仍false，无环境/teacher/audit/Q。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
