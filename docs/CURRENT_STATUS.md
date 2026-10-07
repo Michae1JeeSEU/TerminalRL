@@ -68,6 +68,9 @@
 
 - 加权fit首启动ERROR/exit1，0optimizer/0参数更新：初始统计的Counter整数键与JSON字符串键被直接比较。primary只读证明完整初始指标在JSON形式下精确相同，已修正比较表示、无数值容差放宽；新增回归后local/server49tests均通过。原`fit`失败保留，下一实际执行路径为`p3_v3_bc_gate_balance_20261007/fit_serialization_fix`，原3seed×1000预算不变；尚无真实加权结果，未启动PPO或环境，原进程退出。
 
+- **2026-10-07最新终态：全局gate类别加权对照完成，不能作为完整修复。** 修正commit`08befbd`后新`fit_serialization_fix`三seed各1000更新均FIT_COMPLETE/exit0、初始完全配对/critic冻结；Python2778464及wrapper退出。三seed均值：RELEASE召回41.92%→82.53%，WAIT误判6.28%→26.76%，balanced67.82%→77.88%，proposal top1 55.75%→54.59%，joint78.90%→67.11%。分接口o2m/m2i balanced反降至59.36%/55.69%，m2i WAIT误判80.78%；整体提高掩盖切环退化。原失败fit（0更新）保留，49项local/server tests通过；终态输入/结果SHA两端一致。
+- primary完成0更新的只读评分检查：原模型仅用先验推导阈值229/1046即达到79.62% RELEASE召回、26.23% WAIT误判、76.69% balanced，接近加权结果；整体AUC仅0.86066→0.86873，m2i反为0.67676→0.67332。主要召回变化可由判定边界移动复现，不能当充分可行性学习或P3解决证据。[完整结果与下一项方案](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录：优先用唯一“proposal梯度不回传共享encoder”对照检验任务竞争，保留原未加权gate/同数据同预算；尚未实施，不直接归因梯度冲突或观测缺失。加权checkpoint均诊断用途、生产默认不切换，I0/student/PPO仍false，无audit/Q/闭环/硬件；无运行任务或heartbeat，仅本地提交，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
