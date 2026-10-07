@@ -125,6 +125,12 @@
 
 - 新数据892807独立smoke已SMOKE_OK/exit0，6raw/3actor/3OK标签/3新context，首tick重放与原90D/标签join相同，实际安全/hash/能量异常0；13文件两端一致且原进程退出。primary亲自全量核对，接受记录提交后唯一train_A893301（12/warm6高SOC），尚无正式数据结果或学习更新。
 
+- **当前唯一任务已转新train_A采集**：Python2817000/timeout2816999、session13973，`p3_v25_forecast_train_20261008/train_A`，893301/12请求/warm6高SOC。175tick初产物/cwd/argv正常，非终态；核心与rebuild模块冻结。完整结果分析后才能B/C，60min监控p3-v2-5已更新；最新证据提交2ae97e1，代码73ef9660，无Gitremote未推送。
+
+- **正式任务范围纠正：原尚未执行train_B/C暂停。** primary复核既有P3规范，当前修复builder关闭task_priority且用SOC仲裁，只有基础验证意义，不能直接作为正式P3。当前A2817000按冻结协议结束；之后先显式恢复priority1/3/5、priority+SOC reward、downstream_priority与flow6/dense24/flow12，并冻结新数据/资格方案，不能改当前运行核心或把A追认成P3。未消费893302/3、Q895301–3保留。详见readiness与forecast_train最新节，持续正式启动目标不变。
+
+- **基础forecast train_A完成，正式P3任务范围已补齐方案。** 893301/12请求为662ticks、12N/0E/F/D/U，64/64标签34R30W，技术/censor/实际安全/hash/能量异常0；全量行/证书/mask/context核对通过，原进程已退出。原中性B/C未启动，64标签不混入真实P3资格集。primary新增显式P3任务profile，恢复priority1/3/5、混合SOC、mission服务及downstream_priority，真实flow6/dense24/flow12；[新数据与衔接协议](evidence/v4_2/p3_v25_actual_task_20261008.md)在reset前冻结smoke892808、train893401–3、Q895401–3仅保留。新入口先定向测试及小样本，任何学习仍需primary分析完整证据；正式训练启动目标继续，最终formal不设heartbeat。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

@@ -38,3 +38,18 @@ teacher仍是**当前pre-state单机首可行、最小干预请求**，保留完
 C_rule完整对照已由primary分析：19N5E/FDU0、技术/实际安全/hash/能量异常0，和旧rule正常/应急数相同，周期+24tick/能耗+.75%。额外同状态12步时刻细化虽消除约1.95s早到误差，仍被完整holder包络拒绝，未部署此诊断变体。环境具备当前有限场景继续采集的完整性条件，不等于业务最优或student准入；接受本入口73ef9660的独立smoke，成功核对后依原表逐臂采集，尚未开始真实学习。
 
 独立smoke892807已SMOKE_OK/exit0，两tick/6raw=3actor+3forced，3/3 selected/OK label（各接口1个nominal RELEASE），3条V2.5上下文105+2×50。原raw六行teacher_label均null、forced无监督，pre-state/90D/标签join及首tick完整重放一致。实际安全/hash/能量异常0；预定2tick censor保留，不称完整环境资格。result SHA a9ccc8cd7ada2a6fe428274d83a36f87b26f8592687945063bfde9237fb3a00e，context SHA8666c9d2a0727c65a873b8d844e23431b81d17c1cbc1f2a29583a77620f2a938，13项关键文件两端相同，无残余进程。primary读取完整root结果及全部raw/context后，接受提交记录后只启动train_A；B/C仍依逐臂完整结果，未开始真实学习。
+
+train_A已启动：Python2817000/timeout2816999，SSHsession13973，真实cwd=/home/user/projects/terminal、argv --index1及协议seed893301/12请求/warm6高SOC已核对；175tick/1634raw/23selected/73.185s及first_before/首tick重放/steps/progress均出现，只是启动前缀。运行中核心与重建模块冻结，60min monitor p3-v2-5已更新为本臂，尚无终态或真实学习。
+
+### 正式P3范围复核与未执行步骤调整
+
+primary重新核对`docs/execution_plan.md`的P3阶段及既有`p3_controlled_emergency_formal_v5.yaml`/`p3_adaptive_kl_v7.yaml`：正式P3必须保留priority 1/3/5、SOC .55–.90、mission/资源服务异质性、downstream_priority，以及flow6/dense24/flow12；旧formal每run240周期、三run、固定pattern flow6/dense24/flow12/dense24。历史准入与checkpoint不能继承到新V2.5，但这些任务要求不能因修物理链路被静默删掉。
+
+当前integrated-repair builder明确`task_priority_enabled=False`、priority reward权重0、downstream_soc_priority，12/24 warm场景是基础阶段而不是完整正式P3。此轮此前记录也限定为基础输入，不把其完整性当全P3准入。**正在跑的train_A仍按已冻结原协议自然完成；原未启动train_B/train_C暂停，不按旧helper自动展开。** A终态后primary引入显式P3任务profile（不覆盖原基础profile），先小样本核对priority观测/仲裁/reward与真实自然入场，再以另行冻结的fresh train及Q/student周期验证。不能仅打开PPO而保持task-neutral环境。
+
+这是基于正式任务要求纠正后续范围，未改当前运行参数、未删除原计划/输出或修改任何历史结果。A标签只能作为明确task-neutral桥接数据，不把它标成真实P3；新正式数据方案和seed在首次reset前另存，不消费原未用893302/893303或Q895301–3。
+
+
+train_A已COLLECTION_OK/exit0自然完成（newly_run）：662ticks、12N/0E/F/D/U，3671raw=64actor+3607forced，64/64独立OK标签=34R/30W、6种proposal；环境172.032s、标注776.955s，无error/censor/实际安全/hash/负能量，最低完成SOC .573195。primary全量分析器逐行断言通过；三接口label12/35/17、32个retry恢复、8次同UID同接口WAIT→RELEASE。两个teacher R/实际W的原候选分别7/13，规则原请求均12，原请求/执行均保留，不按执行改标。32个实际放行rank1/2/3=29/1/2。无应急提交，最小实际/扫掠间隔88.864067/88.863011m。
+
+result SHA a66e362c658bb2c23e29730f0fe041f4b912210e5b8a97bdc090cc6cd5a51588，context SHA723c4879f05b555bcf29d6bb32034488c002a5a50f4987fd08523742d5a26c07；终态关键文件最终两端匹配，初次同步滞后已收敛。Python2817000/timeout2816999及child均退出。完整分析`.tmp/p3_forecast_train_A_analysis.json` SHA dd4bf9dec3cc2df102ced3057f358975e10943bd607d91dc8865cc0a44d30532。仅接受本基础臂的完整性，不将其等同正式P3；原B/C保持未启动。下一步已另冻[真实P3任务方案](p3_v25_actual_task_20261008.md)，先验证任务profile与smoke，再真实flow6/dense24/flow12数据。

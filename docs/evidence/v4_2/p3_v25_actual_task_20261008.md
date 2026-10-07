@@ -1,0 +1,45 @@
+# V2.5 真实P3任务数据与训练衔接（2026-10-08）
+
+## 改动依据与边界
+
+用户授权持续分析、修复、验证至新的P3正式训练就绪，并启动正式训练；最后正式训练不设heartbeat。本文衔接`p3_v25_formal_readiness_20261008.md`，不继承旧checkpoint的资格。
+
+之前direct C²及未来合流成员修复针对物理基础，`p3_integrated_repair.build_config`刻意关闭task priority；其结果支持基础完整性，不能代替P3优先级任务。primary核对execution_plan与既有P3配置后新建显式`configs/p3_v25_task.py`，保留全部已修复物理/安全/能量/应急/观测/K3契约，恢复priority 1/3/5、mission概率(.45,.25,.10,.20)、SOC uniform .55–.90、downstream_priority、priority urgency权重1和SOC urgency权重2/阈值.65。原基础profile不变。
+
+正式任务场景为flow6（空启动、10+60i秒入场、1210tick完整上限）、dense24（12架warm 6/4/2、另12架每15s到达、1800tick）和flow12（空启动、10+60i、1570tick）。这些到达计划与历史正式任务一致，不因修物理而改成全部warm或高SOC。
+
+当前105D ego保留自己的动态优先级、SOC、mission与服务信息；原五个拓扑邻机槽包含priority_delta，附加scheduler context提供同接口竞争数与执行顺序前驱数。全邻机50D提供几何与承诺轨迹。此次无需把未知未来动作/teacher标签塞入观测，也不预先宣称这些输入足以泛化；真实任务拟合与student闭环将提供判断依据。
+
+## 先验冻结的最小数据范围
+
+输出根`/home/user/training_outputs/terminal/p3_v25_task_20261008`。基础train_A893301已完整结束；其64标签只保留为task-neutral桥接证据，**不并入本真实P3 train/Q**。原893302/893303与旧Q895301–3未消费。以下新seed在首次reset前冻结；本地精确值预检无历史使用，服务器目标根不存在，无旧采集进程；每次启动仍检查源码同步、路径/协议身份。
+
+|用途|seed|场景|目录|
+|---|---:|---|---|
+|development smoke|892808|真实P3属性，3/warm3，2tick|smoke|
+|train 1|893401|flow6|train_flow6|
+|train 2|893402|dense24|train_dense24|
+|train 3|893403|flow12|train_flow12|
+|Q 1（仅保留）|895401|flow6|Q_flow6|
+|Q 2（仅保留）|895402|dense24|Q_dense24|
+|Q 3（仅保留）|895403|flow12|Q_flow12|
+
+新collector `training.p3_v25_task_data`，协议`p3_v25_actual_task_data_20261008_v1`。按表顺序一次一臂，primary完整分析再推进。环境最多各完整场景ticks/3600s，2048个全部actor pre-state（tick/数值UID顺序）/51200 RELEASE意图，标注7200s、上下文重建900s；多LZ plan调用单列。超限保留INCOMPLETE，不续标、不复跑、不挑成功前缀。smoke环境180s/标注180s，只验输出闭环，不进train。
+
+单机teacher仍逐意图完整生成/证书检查、首可行的最小干预请求，非联合批准或全局最优。原raw teacher_label保持null、forced不入actor loss，只有独立OK标签可监督；规则behavior、teacher请求与实际execution分开。原始90D与105+N×50从同可信pre-state重建。新loader严格检查profile/真实任务参数、partition/seed/完整周期/context字节，分别提供train和只读Q解码，拒绝task-neutral旧数据与Q混入train。
+
+每臂检查完整N/E/F/D/U、actual safety/checked-executed hash/能量/技术censor，原始行/mask/全部actor-selected-OK label集合和标签证书；统计三接口、priority、SOC、mission、资源、retry与WAIT→RELEASE覆盖。E须已提交并完成且单列，不新增零E门槛；F/D/U、技术/实际安全/hash或标注不全阻止后续臂，最小诊断后再改。rule访问分布和三个周期不会自动赋予student泛化资格。
+
+## 接下来的训练顺序
+
+三个train完整后先依据训练内残差做固定预算fresh imitation（预留初始化91901/91902/91903，不选最好seed；沿用5000updates/300s、Adam3e-4、batch128、clip.5），需要的student分布补充只进入新train/development。真实训练前将具体输入和有界方案写入；此处不消费Q。旧I1中先收Q才能fit的入口不直接执行，新的真实任务入口须独立命名，保留旧方案未消费状态。
+
+候选固定后才采集/一次性评估独立Q；沿用已记录的WAIT recall .90、RELEASE .70、macroF1 .80、proposal top1 .85/top3 .95、joint .85等阈值，不按Q结果降低。其后teacher-free完整任务周期决定student-only资格；有界真实critic初始化和PPO更新验证requested likelihood、冻结proposal、KL回退、安全/完成与退化表现。任何不通过均由primary分析具体证据，再修复，不直接跳到formal。Q失败保留，不加入train或重复选择。
+
+最终正式P3使用此真实任务profile、合格的新source、独立训练seed与fresh optimizer，按任务要求事先冻结周期/评估/停止规则；旧formal资格不能继承。正式协议与具体命令在这条验证链完整后落盘，不在此假装已准入。前序长任务60min heartbeat正常静默；真正formal启动、核对PID/cwd/argv/初产物后删除前序heartbeat并结束，正式运行不建heartbeat。
+
+## 实际执行证据
+
+这里仅追加已发生结果。此协议写入时新smoke/train/Q未reset，无新的BC/PPO，I0_QUALIFIED=false/PPO_ALLOWED=false。
+
+任务profile/数据入口/旧接口定向28项local/server tests全部通过（66.43s/34.20s），四个新文件两端SHA一致。覆盖真实priority影响观测/仲裁/reward、dense 6/4/2分配、空启动12tick延迟入场与首tick重放、新任务标签→105+N×50重建、原始null与partition隔离，以及旧forecast/Q接口回归。两个test fixture仅development用途，不消费正式seed。下一步提交此版本后仅启动独立892808 smoke；尚无真实train或Q结果。

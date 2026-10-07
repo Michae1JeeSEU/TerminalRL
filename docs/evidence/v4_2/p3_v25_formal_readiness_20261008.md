@@ -162,3 +162,11 @@ primary全量核对963条blockers和逐arrival对照：54普通批准、257safet
 在开始新监督之前，primary进一步检查已记录B_sto400/UID114的slot疑点：私有副本保持新forecast，原生成器到达605.753829早于607.703295预约，完整SafetyFilter获证，但真实headway因此拒绝。只在诊断副本对原有有界departure区间增加12次二分参数化，并选择不早于预约的最近方案，可达到607.703998（误差+.000703s），真实slot可协调，**却被完整SafetyFilter的predicted_holder_reachable_tube拒绝**；checked hash=null。两次分别3.797/5.938s，0reset/step/teacher/学习，原快照与原tape哈希一致，生产生成器未改。先0query syntax smoke通过；逐次12个生成时刻保存在`.tmp/p3_slot_refinement_B400.json`，SHA7eccc632a2021cecd32336ef05cb21abc771f67aa6c316de1591ee12b998fb97。
 
 这个最小检查说明原粗时刻搜索有精度限制，但不能把该状态的拒绝仅归于精度，更不能由精确预约推断存在安全放行。没有证据支持将这项增加计算、仍未获证的局部搜索部署为性能修复，也不放松headway或holder安全包络。保留为后续规划优化线索；不把有限搜索拒绝写成物理无解。当前完整规则周期无技术/安全/耗尽/未决阻塞，5E明确计入业务基线，接受推进新planner数据的独立smoke及逐臂采集。新/旧student调度差距仍待后续fresh imitation与必要student分布聚合解决，不重跑旧模型来冒称已解决，也不直接启动旧Q方案或PPO。
+
+### 正式P3范围复核与未执行步骤调整
+
+primary重新核对`docs/execution_plan.md`的P3阶段及既有`p3_controlled_emergency_formal_v5.yaml`/`p3_adaptive_kl_v7.yaml`：正式P3必须保留priority 1/3/5、SOC .55–.90、mission/资源服务异质性、downstream_priority，以及flow6/dense24/flow12；旧formal每run240周期、三run、固定pattern flow6/dense24/flow12/dense24。历史准入与checkpoint不能继承到新V2.5，但这些任务要求不能因修物理链路被静默删掉。
+
+当前integrated-repair builder明确`task_priority_enabled=False`、priority reward权重0、downstream_soc_priority，12/24 warm场景是基础阶段而不是完整正式P3。此轮此前记录也限定为基础输入，不把其完整性当全P3准入。**正在跑的train_A仍按已冻结原协议自然完成；原未启动train_B/train_C暂停，不按旧helper自动展开。** A终态后primary引入显式P3任务profile（不覆盖原基础profile），先小样本核对priority观测/仲裁/reward与真实自然入场，再以另行冻结的fresh train及Q/student周期验证。不能仅打开PPO而保持task-neutral环境。
+
+这是基于正式任务要求纠正后续范围，未改当前运行参数、未删除原计划/输出或修改任何历史结果。A标签只能作为明确task-neutral桥接数据，不把它标成真实P3；新正式数据方案和seed在首次reset前另存，不消费原未用893302/893303或Q895301–3。
