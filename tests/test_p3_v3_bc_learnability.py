@@ -224,3 +224,67 @@ def test_auc_counts_ties_and_reports_missing_class():
     assert bc.gate_auc(torch.tensor([1.,0.]),torch.tensor([0,1]))==0
     assert bc.gate_auc(torch.tensor([.5,.5]),torch.tensor([0,1]))==.5
     assert bc.gate_auc(torch.tensor([.5,.5]),torch.tensor([0,0])) is None
+
+
+def test_separate_encoders_preserve_initial_forward_rng_and_have_independent_storage():
+    torch.manual_seed(17)
+    original=bc.HierarchicalActorCentralCriticV42(90)
+    reference_rng=torch.get_rng_state()
+    torch.manual_seed(17)
+    separate=bc.SeparateEncodersDiagnosticV42(90)
+    assert torch.equal(reference_rng,torch.get_rng_state())
+    assert all(torch.equal(v,separate.state_dict()[k]) for k,v in original.state_dict().items())
+    for gate,proposal in zip(separate.actor_encoder.parameters(),separate.proposal_encoder.parameters()):
+        assert torch.equal(gate,proposal) and gate.data_ptr()!=proposal.data_ptr()
+    data=bc.synthetic_data()
+    assert bc.measure(original,data)==bc.measure(separate,data)
+    for a,b in zip(original.distributions(data.x),separate.distributions(data.x)):
+        assert torch.equal(a.logits,b.logits)
+
+
+def test_separate_losses_train_only_their_own_encoder_and_head():
+    torch.manual_seed(17)
+    model=bc.SeparateEncodersDiagnosticV42(90)
+    data=bc.synthetic_data()
+    g,p=model.distributions(data.x)
+    loss,pieces=bc.hierarchical_bc_loss(g.logits,p.logits,data.gate,data.proposal)
+    gate_params=list(model.actor_encoder.parameters())+list(model.gate_head.parameters())
+    proposal_params=list(model.proposal_encoder.parameters())+list(model.proposal_head.parameters())
+    for own,other,key in ((gate_params,proposal_params,'gate'),(proposal_params,gate_params,'proposal')):
+        assert all(v is None for v in torch.autograd.grad(pieces[key],other,allow_unused=True,retain_graph=True))
+        combined=torch.autograd.grad(loss,own,retain_graph=True)
+        individual=torch.autograd.grad(pieces[key],own,retain_graph=True)
+        assert all(torch.equal(a,b) for a,b in zip(combined,individual))
+        assert all(torch.count_nonzero(v)>0 for v in individual)
+
+
+def test_separate_smoke_updates_both_encoders_and_checkpoint_requires_correct_model(tmp_path):
+    original=bc.run(tmp_path/'missing',tmp_path/'original','smoke')
+    result=bc.run(tmp_path/'missing',tmp_path/'separate','smoke',separate_encoders=True)
+    assert result['status']=='SMOKE_OK' and result['protocol']==bc.SEPARATE_PROTOCOL
+    seed=result['seeds'][0]
+    assert seed['initial']==original['seeds'][0]['initial']
+    assert seed['separate_encoders'] and not seed['detach_proposal_encoder'] and seed['gate_weights'] is None
+    assert set(seed['actor_module_changed'])=={'actor_encoder','proposal_encoder','gate_head','proposal_head'}
+    assert all(seed['actor_module_changed'].values()) and seed['critic_unchanged']
+    cp=torch.load(tmp_path/'separate/seed_17/final_diagnostic.pt',weights_only=True)
+    assert cp['model_class']=='SeparateEncodersDiagnosticV42' and cp['separate_encoders']
+    assert cp['protocol']==bc.SEPARATE_PROTOCOL and cp['diagnostic_only'] and not cp['qualified']
+    model=bc.SeparateEncodersDiagnosticV42(90)
+    model.load_state_dict(cp['model_state'])
+    assert bc.measure(model,bc.synthetic_data())==seed['final']
+    assert bc.measure_auc(model,bc.synthetic_data())==seed['final_gate_auc']
+    counts=seed['parameter_counts']
+    assert counts==cp['parameter_counts']
+    assert counts['added_proposal_encoder']==sum(p.numel() for p in model.proposal_encoder.parameters())
+    assert counts['actor']==counts['reference_actor']+counts['added_proposal_encoder']
+    assert counts['reference_actor']==original['seeds'][0]['parameter_counts']['actor']
+    with pytest.raises(RuntimeError,match='Unexpected key'):
+        bc.HierarchicalActorCentralCriticV42(90).load_state_dict(cp['model_state'])
+
+
+@pytest.mark.parametrize('other', ['gate_balance','detach_proposal_encoder'])
+def test_separate_variant_cannot_mix_other_interventions(tmp_path,other):
+    with pytest.raises(ValueError,match='one diagnostic factor'):
+        bc.run(tmp_path,tmp_path/'invalid','smoke',separate_encoders=True,**{other:True})
+    assert not (tmp_path/'invalid').exists()

@@ -304,3 +304,23 @@ gate排序改善不局限于总体混合分布：下表每个context在三个see
 3. 先验证两head前向初始相等、两encoder梯度归属及都能更新，检查新checkpoint模型标识防止被旧共享模型加载器误读；新独立合成smoke通过后才执行下一项真实有界fit。复用本次与原基线，不重训旧臂。报告全部seed的分接口gate AUC/误判、proposal预测类别/每类召回及joint，重点判断能否保留gate收益并恢复非多数类proposal；未改善也保留结果，不追加epoch或挑最佳seed。
 
 这个下一项方案**仅记录，尚未实现或运行**；用户本轮明确批准的detach实验已全部完成。I0_QUALIFIED/student_qualified/PPO_ALLOWED仍false，audit/Q、环境闭环、PPO/full training及硬件均未触及。后续要判断P3训练退化是否解决，仍须在合适独立场景和student-only闭环中验证，不由训练集内AUC推定。所有本轮进程已退出，无需heartbeat；53项local/server tests为本核心的已有通过证据，本轮新增的是完整fit及逐组产物检查，源码未再改。文档由primary本人修改，其他dirty保留；Git仅本地，未配置remote，不推送。
+
+## 独立gate/proposal encoder对照（2026-10-07，运行前方案）
+
+用户在上述具体方案后要求“继续下一步”，本轮实施这一项有界架构对照。沿用research-pragmatist与academic-experiments方法；primary本人实现/审查/诊断，worker只做指定测试、SSH及Git执行。原未加权与detach终态为preexisting_artifact，不重训它们。开始时服务器无项目Python，新输出未存在，两原臂inputs/result本地和服务器SHA一致；本地HEAD为`9670c03`，其他dirty保留。
+
+**问题与干预：** detach已提高gate排序，但proposal首选全部成为12；需要检验给proposal独立的可训练表示能否兼顾两个任务。只在离线诊断入口增加`SeparateEncodersDiagnosticV42`，生产模型默认不改。先完整构造原模型，然后`deepcopy(actor_encoder)`得到独立`proposal_encoder`，不消耗额外随机数、不改原head/critic的初始权重。gate走原encoder/head，proposal走自己的encoder/head；两路均读相同90D，原条件proposal CE仅用teacher RELEASE。四个actor模块均须更新，critic冻结；新checkpoint记录独立model_class/flag/state keys，旧共享模型的严格加载应因额外keys失败，不用`strict=False`隐式丢弃新分支。
+
+**冻结范围：** 仍仅原893001/893101/893201三个完整train回合1046行（817W/229R），forced/null及原teacher语义不变。模型初始化91701/2/3各一次、各1000更新/300s，CPU单线程、Adam3e-4、batch128、不放回shuffle及余数batch、全actor norm clip.5均沿用原实现；不叠加gate权重或detach，不改阈值/采样/标签/超参数。真实fit每seed先与原同seed全部初始指标按JSON形式精确比较，然后才创建optimizer。新增一个原结构90→96→96→96 MLP：27360参数，actor由29979变为57339（以实际输出计数再次核对）。这是增加任务专用容量的架构试验；global clip仍包含两encoder和head，不能把收益单独归因为去除了梯度方向冲突。
+
+**运行与输出：** 协议`p3_v3_90d_bc_separate_encoders_20261007`，新输出根`/home/user/training_outputs/terminal/p3_v3_bc_separate_encoders_20261007/{prepare,smoke,fit}`，本地同名Syncthing输出根。服务器cwd `/home/user/projects/terminal`；`PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/user/envs/terminal_env/bin/python -u -m terminal_marl.training.p3_v3_bc_learnability --root /home/user/training_outputs/terminal --output <新根>/<mode> --mode <mode> --separate-encoders`。先local/server相关tests、0optimizer真实prepare及独立16行seed17/2更新synthetic smoke；primary核对新分支更新、初始相等与checkpoint输出后提交源码和方案，再唯一fit。每seed只存一个固定末尾新诊断checkpoint，不覆盖旧产物，不从旧checkpoint续训，不按结果追加更新/seed或选择最佳checkpoint。
+
+**观测与判断：** 继续报告原定义loss、gate混淆/召回/误判、条件proposal top1/top3/每类召回/预测类别与joint；配对比较original/detach/separate的原全部context与三seedgate AUC，不只看整体平均。关注m2i/o2m是否保留gate排序收益，同时恢复非多数类proposal及联合正确率；若恢复不足则保留负结果并针对具体状态诊断，不展开多种网络/采样/权重试验。old original episode AUC未记录，不编造其配对值；detach与本次可比较episode AUC。指标均为三原训练回合内的相关行，不是独立泛化、安全或P3解决证据。
+
+已有环境开发验证与I0数据只支持此已知状态可拟合性诊断；state-only单机teacher仍不等于联合批准或全局最优。I0_QUALIFIED/student_qualified/PPO_ALLOWED保持false，0环境reset/0teacher query，不触及其他train/audit/Q、PPO/full training、环境闭环或硬件。预期秒级fit，无需长任务heartbeat；若异常明显延长则按60分钟偏好监控且不扩300s预算。新脚本先合成输出检查、运行中核心冻结、源码/docs只本地Syncthing、Git只本地且无remote不推送。
+
+### 独立encoder准备结果
+
+local/server各58项定向tests通过（13.95s/1.60s），包括初始共同参数/完整指标/RNG一致、两encoder独立存储与梯度归属、四模块更新、critic冻结以及新checkpoint严格往返和旧共享模型拒绝新keys。真实prepare为PREPARED/exit0、1046行817W229R、0model/0optimizer，输入SHA仍`97df56e3ca06eb6c17dd2cc240b541dbdbf0cc968ba8c5e782ddda40b49b5f42`。独立合成smoke为SMOKE_OK/exit0、16行/seed17/2更新，四actor模块均变化、critic不变，实际actor参数57339、新增27360、原actor29979、critic55297，与预登记计算相同；新诊断checkpoint461249bytes。这些合成指标只验证实现和产物，不是实际数据可学习性结果。
+
+primary亲自读回prepare/smoke协议及结果后接受按本节原预算继续唯一真实fit。Syncthing runner SHA`9c62f5eb74e7afe72813601462e4ed3ea960e1ae1651585feb4bada7345b84e8`、test SHA`558b49b600a4a7ce9703a1e37dea4e908ae7045fec450570eb4ea8dfadebff31`及未改生产model/loader均一致；prepare输入和smoke结果两端SHA一致。先提交本实现及固定方案，再启动91701/2/3各1000次更新，不重跑prepare/smoke/旧臂；此刻尚无真实separate fit结果。

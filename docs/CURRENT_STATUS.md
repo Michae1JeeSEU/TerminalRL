@@ -80,6 +80,10 @@
 - **2026-10-07明确批准后的最新终态：proposal-detach已完成，gate改善但proposal首选坍缩，不能作为完整修复。** 用户在具体更新/产物范围披露后明确回复“批准”；重新核对冻结SHA与无重复后仅执行原定91701/2/3×1000更新。新`p3_v3_bc_proposal_detach_20261007/fit`为FIT_COMPLETE/exit0、耗时1.299/0.838/0.838s，三个初始完整指标精确配对，encoder/gate/proposal均更新、critic不变；Python2782688/wrapper2782686已退出，关键终态SHA两端一致。primary核对完整逐组结果与原始预测分布：gate AUC均值0.86066→0.89162，m2i 0.67676→0.75810，RELEASE召回41.92%→49.93%、WAIT误判6.28%→7.02%；所有可配对context在三seed中AUC均改善。但三seed在229个RELEASE状态上全部首选proposal12，top1从55.75%降至46.29%（恰多数类106/229）、top3 76.71%→66.08%，joint78.90%→78.14%。支持处理共享表示的任务取舍，不能直接归因梯度方向冲突或宣布P3解决。
 - [详细结果、原因边界及下一项方案](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录：下一项只建议同初始权重的独立gate/proposal encoder对照，保留原输入/未加权loss/三seed固定预算，恢复proposal自己的特征学习路径；明确新增参数量与global clip耦合，不同时调权重/阈值。该下一项尚未实现/运行，本轮批准的fit已收束；I0/student/PPO仍false，无audit/Q/环境闭环/硬件或旧checkpoint覆盖。53项local/server tests是本冻结核心已有通过证据，本轮fit与只读配对检查exit0；没有运行任务/heartbeat，其他dirty保留，无remote不推送。
 
+- **2026-10-07用户继续后：独立gate/proposal encoder对照准备中。** primary新增仅离线使用的`SeparateEncodersDiagnosticV42`：proposal独立encoder从原初始权重复制，两head初始输出不变，两encoder各自训练；原模型默认与物理/teacher不改。沿用1046行、91701/2/3×1000更新/300s、原未加权CE/Adam/全actor clip.5，不叠加权重或detach。[运行前方案](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录；先定向tests、真实prepare和独立合成smoke，再核对/提交后fit。服务器空闲、新根`p3_v3_bc_separate_encoders_20261007`不存在；只比较固定末尾与两既有臂，不扩大训练或消费audit/Q。I0/student/PPO仍false。
+
+- 独立encoder准备通过：local/server各58tests、真实prepare与独立16行/2更新smoke均exit0；primary核对原1046输入不变、两路初始相等/梯度分离、四actor模块更新/critic冻结、新模型checkpoint及参数计数。原actor29979→新57339，新增proposal encoder27360；容量变化与global clip耦合均保留解释边界。接受提交后只运行原定三seed×1000更新的独立encoder对照，当前尚无真实fit结果，资格不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

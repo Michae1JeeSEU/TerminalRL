@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from copy import deepcopy
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -21,6 +22,7 @@ from terminal_marl.training.p3_v3_expert_dataset import load_sparse_training_epi
 PROTOCOL = 'p3_v3_90d_bc_in_sample_20261007'
 BALANCED_PROTOCOL = 'p3_v3_90d_bc_gate_balance_20261007'
 DETACHED_PROTOCOL = 'p3_v3_90d_bc_proposal_detach_20261007'
+SEPARATE_PROTOCOL = 'p3_v3_90d_bc_separate_encoders_20261007'
 GATE_WEIGHTS = (1046 / (2 * 817), 1046 / (2 * 229))
 REFERENCE_CASE = 'p3_v3_bc_learnability_20261007/fit'
 CASES = (
@@ -31,6 +33,19 @@ CASES = (
 MODEL_SEEDS = (91701, 91702, 91703)
 UPDATES, BATCH_SIZE, LEARNING_RATE = 1000, 128, 3e-4
 FIT_WALL_SECONDS = 300
+
+
+class SeparateEncodersDiagnosticV42(HierarchicalActorCentralCriticV42):
+    """Offline diagnostic only; preserve the shared model's initial outputs/RNG."""
+
+    def __init__(self, observation_dim: int, hidden: int = 96):
+        super().__init__(observation_dim, hidden)
+        self.proposal_encoder = deepcopy(self.actor_encoder)
+
+    def distributions(self, observations):
+        gate = self.gate_head(self.actor_encoder(observations))
+        proposal = self.proposal_head(self.proposal_encoder(observations))
+        return torch.distributions.Categorical(logits=gate), torch.distributions.Categorical(logits=proposal)
 
 
 def require(condition, message):
@@ -219,16 +234,22 @@ def reference_results(root, data):
 
 
 def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
-        gate_weights=None, protocol=PROTOCOL, reference_initial=None, detach_proposal_encoder=False):
+        gate_weights=None, protocol=PROTOCOL, reference_initial=None, detach_proposal_encoder=False,
+        separate_encoders=False):
     """CPU-only fixed-budget BC. No use of audit/Q or execution trace as targets."""
-    require(not (gate_weights is not None and detach_proposal_encoder), 'only one diagnostic factor allowed')
+    require(sum((gate_weights is not None, detach_proposal_encoder, separate_encoders)) <= 1,
+            'only one diagnostic factor allowed')
     out = Path(out); out.mkdir(parents=True, exist_ok=False)
     start = time.monotonic()
     torch.manual_seed(seed)
-    model = HierarchicalActorCentralCriticV42(90)
+    model = SeparateEncodersDiagnosticV42(90) if separate_encoders else HierarchicalActorCentralCriticV42(90)
     for name, param in model.named_parameters():
         param.requires_grad_(not name.startswith('critic_'))
     params = [p for p in model.parameters() if p.requires_grad]
+    added_parameters = sum(p.numel() for p in model.proposal_encoder.parameters()) if separate_encoders else 0
+    parameter_counts = dict(actor=sum(p.numel() for p in params), added_proposal_encoder=added_parameters,
+        reference_actor=sum(p.numel() for p in params)-added_parameters,
+        critic=sum(p.numel() for p in model.parameters() if not p.requires_grad))
     critic_before = {k: v.clone() for k, v in model.state_dict().items() if k.startswith('critic_')}
     actor_before = {k: v.clone() for k, v in model.state_dict().items() if not k.startswith('critic_')}
     initial = measure(model, data)
@@ -264,11 +285,12 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
     changed = any(not torch.equal(v, model.state_dict()[k]) for k,v in actor_before.items())
     result = dict(status='FIT_COMPLETE', seed=seed, updates=updates, initial=initial, final=final,
         actor_changed=changed, critic_unchanged=True, maximum_preclip_gradient_norm=maximum_grad,
-        detach_proposal_encoder=detach_proposal_encoder,
+        detach_proposal_encoder=detach_proposal_encoder, separate_encoders=separate_encoders,
+        parameter_counts=parameter_counts,
         actor_module_changed={prefix: any(not torch.equal(v, model.state_dict()[k])
             for k, v in actor_before.items() if k.startswith(prefix))
-            for prefix in ('actor_encoder', 'gate_head', 'proposal_head')},
-        final_gate_auc=measure_auc(model, data) if detach_proposal_encoder else None,
+            for prefix in ('actor_encoder', 'gate_head', 'proposal_head') + (('proposal_encoder',) if separate_encoders else ())},
+        final_gate_auc=measure_auc(model, data) if detach_proposal_encoder or separate_encoders else None,
         gate_weights=gate_weights, initial_training_objective=initial_objective,
         final_training_objective=objective(model, data, gate_weights),
         reference_initial_equal=True if reference_initial is not None else None,
@@ -277,6 +299,7 @@ def fit(data, out, seed, *, updates=UPDATES, wall_seconds=FIT_WALL_SECONDS,
     require(result['elapsed_seconds'] <= wall_seconds, 'fit wall budget exhausted')
     # Fresh diagnostic artifact only; never overwrite or select by endpoint score.
     torch.save(dict(protocol=protocol, gate_weights=gate_weights, detach_proposal_encoder=detach_proposal_encoder,
+        separate_encoders=separate_encoders, parameter_counts=parameter_counts,
         observation_schema=OBSERVATION_SCHEMA, observation_dim=90,
         action_schema='low_action_schema_v4_2_hierarchical', model_class=type(model).__name__,
         model_state=model.state_dict(), model_seed=seed, train_seeds=[x['seed'] for x in data.inputs],
@@ -295,12 +318,13 @@ def synthetic_data():
     return Data(x, gates, proposals, tuple(f'synthetic:{i}' for i in range(16)), contexts, [])
 
 
-def run(root, output, mode, *, gate_balance=False, detach_proposal_encoder=False):
+def run(root, output, mode, *, gate_balance=False, detach_proposal_encoder=False, separate_encoders=False):
     require(mode in {'prepare', 'smoke', 'fit'}, 'unknown mode')
-    require(not (gate_balance and detach_proposal_encoder), 'only one diagnostic factor allowed')
+    require(sum((gate_balance, detach_proposal_encoder, separate_encoders)) <= 1, 'only one diagnostic factor allowed')
     output = Path(output); output.mkdir(parents=True, exist_ok=False)
     torch.set_num_threads(1)
-    protocol = DETACHED_PROTOCOL if detach_proposal_encoder else BALANCED_PROTOCOL if gate_balance else PROTOCOL
+    protocol = (SEPARATE_PROTOCOL if separate_encoders else DETACHED_PROTOCOL if detach_proposal_encoder
+                else BALANCED_PROTOCOL if gate_balance else PROTOCOL)
     weights = GATE_WEIGHTS if gate_balance else None
     settings = dict(protocol=protocol, mode=mode, model_seeds=list(MODEL_SEEDS), updates=UPDATES,
         batch_size=BATCH_SIZE, learning_rate=LEARNING_RATE, gradient_clip=.5,
@@ -318,13 +342,19 @@ def run(root, output, mode, *, gate_balance=False, detach_proposal_encoder=False
             reference=REFERENCE_CASE, proposal_head_trainable=True,
             gradient_clipping='unchanged joint actor norm clip .5; proposal head still included',
             final_gate_auc='pairwise logit-score ranking; ties half; missing class null')
+    if separate_encoders:
+        settings.update(separate_encoders=True, detach_proposal_encoder=False, gate_weights=None,
+            model='SeparateEncodersDiagnosticV42', reference=REFERENCE_CASE,
+            encoder_initialization='deep copy initial actor_encoder after original model initialization; no extra RNG',
+            gradient_clipping='joint actor norm clip .5 including both encoders and heads',
+            final_gate_auc='pairwise logit-score ranking; ties half; missing class null')
     if mode == 'smoke':
         settings.update(model_seeds=[17], updates=2, synthetic_only=True)
     write(output/'protocol.json', settings)
     report = dict(status='ERROR', mode=mode, protocol=protocol, I0_QUALIFIED=False, PPO_ALLOWED=False)
     try:
         data = synthetic_data() if mode == 'smoke' else load_inputs(root)
-        reference = reference_results(root, data) if (gate_balance or detach_proposal_encoder) and mode != 'smoke' else None
+        reference = reference_results(root, data) if (gate_balance or detach_proposal_encoder or separate_encoders) and mode != 'smoke' else None
         counts = dict(rows=len(data.x), WAIT=int((data.gate==0).sum()), RELEASE=int((data.gate==1).sum()))
         write(output/'inputs.json', dict(episodes=data.inputs, counts=counts, baselines=baseline(data),
             decision_ids=list(data.ids)))
@@ -337,7 +367,7 @@ def run(root, output, mode, *, gate_balance=False, detach_proposal_encoder=False
                 report['seeds'].append(fit(data, output/f'seed_{seed}', seed, updates=updates,
                     gate_weights=weights, protocol=protocol,
                     reference_initial=reference[seed]['initial'] if reference else None,
-                    detach_proposal_encoder=detach_proposal_encoder))
+                    detach_proposal_encoder=detach_proposal_encoder, separate_encoders=separate_encoders))
                 write(output/'progress.json', dict(completed_seeds=[r['seed'] for r in report['seeds']]))
             report.update(status='SMOKE_OK' if mode == 'smoke' else 'FIT_COMPLETE', trained=True,
                 optimizer_created=True, synthetic_only=mode=='smoke', counts=counts)
@@ -355,9 +385,10 @@ def main():
     variant = p.add_mutually_exclusive_group()
     variant.add_argument('--gate-balance', action='store_true', help='fixed paired gate-weight diagnostic')
     variant.add_argument('--detach-proposal-encoder', action='store_true', help='stop proposal gradient into encoder only')
+    variant.add_argument('--separate-encoders', action='store_true', help='independent trainable gate/proposal encoders, same initial weights')
     args = p.parse_args()
     result = run(args.root, args.output, args.mode, gate_balance=args.gate_balance,
-                 detach_proposal_encoder=args.detach_proposal_encoder)
+                 detach_proposal_encoder=args.detach_proposal_encoder, separate_encoders=args.separate_encoders)
     print(json.dumps(dict(status=result['status'], mode=args.mode)))
     return int(result['status'] == 'ERROR')
 
