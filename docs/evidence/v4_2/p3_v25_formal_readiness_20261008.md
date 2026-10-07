@@ -45,3 +45,21 @@
 固定checkpoint为`p3_v25_set_curve_20261008/curve/seed_91701/diagnostic_final.pt`。独立smoke env892801/policy928801，3请求/warm3高SOC、deterministic、2ticks；仅验证输出/执行重放。随后顺序A deterministic、A stochastic、B deterministic、B stochastic、C deterministic、C stochastic：A=12/warm6高SOC、env892802/policy928802；B=24/warm12高SOC、892803/928803；C=24/warm12混合SOC .55–.90、892804/928804。各对共用exogenous seed但从头独立rollout；不用Q/audit。代码/docs搜索未发现这些seed实际使用记录（rg no matches），服务器启动前另查无输出/进程。测试及smoke通过后才启动A；每臂完整结果由primary判断后继续，不自动铺开。输出新根`/home/user/training_outputs/terminal/p3_v25_student_dev_20261008`，最多一个本轮评估进程，所有失败保留。预计若分钟级继续当前任务；超过交互窗口再60min heartbeat，最终正式训练无heartbeat要求不变。
 
 执行桥接21项local/server tests通过（10.84s/5.53s），3源码SHA相同。独立892801 smoke已SMOKE_OK/exit0：2ticks、3actor/3RELEASE、0shield，3个正常批准；完整tape replay_exact=true，实际安全/hash异常0，checkpoint不变。primary读取steps确认likelihood和pre/post hash存在（这些字段在steps中，不是root result命名字段），3个未决是预定2tick截断。result SHA=2edd92540d8b591e7a9f270705bbcb9e999f33a5495cd484c6e9d70463446258，两端同步。接受提交后只启动A_det完整开发臂，其他臂仍依完整结果决定。
+
+runtime已提交`8423460`，Syncthing后A_det已启动：Python2804432、timeout2804431、SSH session39425，真实cwd/argv与协议相符；first_before、protocol、steps和progress均出现。启动检查50ticks/6actor/6RELEASE/0shield只是前缀。此臂完成后由primary核对，再按上述次序决定后续。持续推进目标的60min heartbeat为`p3-v2-5`，它用于正式训练之前的工作；最后正式训练启动并检查初产物后删除，不监控正式训练。无Git remote，未推送；服务器源码通过Syncthing同步。
+
+### A_det完整开发终态（newly_run）
+
+A_det为COMPLETED/exit0，555ticks，rollout+完整重放222.291s，12N/0E/F/D/U、active/queue/service/unresolved均0，error/censor无，replay_exact=true。primary逐行核对555steps/3409rows：209actor=50R+159W、3200forced，requested likelihood/forced sentinel/K3首项与实际trace全部一致，0teacher/0actor shield。root result SHA=`c0b146f0d82ce4c9899488a5c1dd9e9bc2f1bc3349c0c309432fd11e7dd43f97`；result/protocol/steps两端相同，Python2804432已退出。
+
+实际最小点间隔95.388m、swept95.244m，protected/buffer/NMAC/collision/shield fail-closed/hash mismatch均0；140energy checks、0negative，12个ground_service_complete，无应急。注意telemetry safety_interventions=10是`_commit`边界或plan过滤拒绝的累计，不能误写为0，也不等于实际安全违规或actor takeover；本臂shield_interventions/runtime_traffic_interventions均0。50个R中32批准、18最后拒绝；批准rank1/2/3=23/7/2，仍依赖9次K3备选，候选拒绝不是碰撞。root outcome_counts的Enum键被通用serializer表示成`TerminalOutcome.COMPLETED`，以完整outcomes的12个`completed`核对N，不漏计。暂无必须修物理/策略的阻塞，接受继续固定A_sto；此开发样本不作为正式资格。
+
+A_sto随后COMPLETED/exit0：585ticks/239.224s，12N/0E/F/D/U、完整重放相同、无error/censor，158actor=56R+102W、3361forced、0actor shield。实际最小间隔87.303m/swept87.166m，所有实际安全与hash计数0；211energy checks、0negative、12个正常service completion、0应急。56次R中32批准/24拒绝，rank1/2/3=22/7/3，10次K3备选；_commit层safety_interventions=10仍单列。完整逐行断言通过，result/protocol/steps两端相同，result SHA=`196baa8454ecb82799eb64bb5d7e5fce74f676c37167667b76a1499770f0c032`，无遗留进程。A配对均完整无阻塞，primary接受继续固定B_det，尚不作跨场景泛化或正式资格结论。
+
+### 并行准备后续PPO接口（尚无实景PPO更新）
+
+等待开发闭环时，primary只在新文件`algo/trajectory_set_ppo.py`、`training/p3_v25_training.py`及对应tests中补齐V2.5训练数据/算法；当前评估不import这些文件，冻结的运行核心不改。既有flat88/90D PPO不能把105+变长邻机当普通矩阵，因此新增明确的set rollout record，沿用team GAE(.99/.95)、逐请求clip、固定全rollout actor数量归一化和gate-only entropy，forced行不入actor objective；空active/服务等待tick继续保留team reward。初始base gate/proposal与BC完全相同，base冻结，仅零初始化gate residual与独立critic可更新。
+
+critic使用全active set及26维当前全局上下文：时间、到达余量/下一到达延迟/是否耗尽、队列数量/等待/最低SOC、LZ占用与服务/预约剩余时间、active/unresolved计数与三环几何。即使active为空，队列/服务上下文仍存在；不调用teacher、不读未来随机抽样或终态结果。每条record保存原gate/proposal分布和条件likelihood，更新前检查行为概率一致；真实terminal无bootstrap，时间截断bootstrap但不串下一episode。每次更新后检查全rollout的精确categorical gate KL，超限恢复模型和Adam状态；冻结proposal使该KL覆盖可学习策略变化。实现仍显式要求training_authorized，单测不授予PPO准入，正式优化预算/协议尚未执行。
+
+新增构件与旧PPO回归共28项local/server tests通过（3.21s/1.39s），三文件SHA一致。检查零residual初始分布相同、ragged neighbor/forced mask、原请求概率校验、空tick晚到reward/截断bootstrap、只更新adapter+critic，以及空/非空Adam状态的KL超限回滚。这里只发生合成单测中的更新；没有读取真实训练rollout作PPO，没有产生可部署PPO checkpoint。
