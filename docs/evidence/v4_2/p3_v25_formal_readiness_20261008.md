@@ -69,3 +69,11 @@ critic使用全active set及26维当前全局上下文：时间、到达余量/�
 重跑完成30项local/server tests全通过（10.31s/5.41s），新增rollout与test SHA一致，未做实景PPO。当前B_det真实Python2805535/timeout2805534、cwd与24/warm12/892803/928803高SOC参数已核对。progress到982ticks、24个completed、actor1808=293R+1515W、0actor shield、rollout耗时870.575s，但root result及exit尚无；完整重放及终态报告完成之前不启动下一臂。此前当前A的monitor信息已过期，以本条与实际进程为准。
 
 rollout/MC接口已提交`4fad802`。PPO侧另补齐固定train-state reference gate KL约束，防止每个rollout内的小更新在多轮后累计偏离合格模仿源；reference只来自允许的train观测，不使用audit/Q或teacher label作额外PPO奖励。gate base保持冻结，reference分布由同一base在固定状态生成；更新loss可带KL正则，接受前同时检查本rollout精确KL与固定reference平均KL，越界恢复参数及Adam。当前构件默认reference上限.02、系数1、rollout上限.01只是实现参数，实景有界协议尚未运行/批准准入，将在该阶段冻结具体数值和输入。新增独立reference guard及其他回归31项local/server tests通过（10.28s/5.45s）；未发生真实PPO更新，未修改B_det运行核心。
+
+### B_det完整终态（newly_run）
+
+固定reference构件已`4edee3a`提交。B_det已COMPLETED/exit0，982ticks、24N/0E/F/D/U，rollout+全重放1697.596s；无error/censor，replay_exact=true，0actor shield，root result SHA=`e1f7ab6358e2e57514bd9b2e05ced30b0ef489c3c4fe5b0627cd3be489695c9c`。result/protocol/steps两端相同，PID2805535已退出。primary核对10902rows=1808actor（293R/1515W）+9094forced，所有请求概率/trace/K3/mask断言通过。
+
+实际最小间隔81.826m、swept81.684m，buffer/protected/NMAC/collision/physical shield/hash异常均0，930energy checks/0negative、24个ground_service_complete/0应急、最低完成SOC .406903，合计能耗10636.4304。117次_commit过滤干预和8个不可行候选单独保留，不当作实际违规。293R中64批准/229拒绝；拒绝PREDICTED_SEPARATION145、NO_MERGE_GAP55、HEADWAY14、FINAL_RESOURCE15，批准rank1/2/3=49/14/1。候选批准率偏低说明尚有放行时机/排序优化空间，不能仅凭24N称学到了最优决策；也没有依据降低安全过滤。当前完整性/安全/业务无阻塞，接受继续唯一B_sto，随后仍依结果决定C。
+
+B_sto已启动Python2807712/timeout2807711，SSH session28812，已出现first_before/protocol/steps，cwd确认。primary核对本地产物protocol的checkpoint为原固定`p3_v25_set_curve_20261008/curve/seed_91701/diagnostic_final.pt`、SHA c28949a8...，892803/928803、高SOC、stochastic；一份worker文字报告将日期写为202608，不能据此替换真实protocol参数，原样/proc复核正在进行。后续统一使用primary准备的`.tmp/snapshot_p3_v25_student.py`原样JSON读取进程与相邻产物，减少人工摘录错误。
