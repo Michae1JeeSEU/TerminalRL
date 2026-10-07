@@ -52,6 +52,9 @@
 
 - **2026-10-07当前唯一运行：V3 dense_mixed893201。** 入口/冻结协议commit`1663600`后，经Syncthing五源码SHA和无重复检查启动Python2759659/wrapper2759657，输出`/home/user/training_outputs/terminal/p3_v3_i0_v3_20261007/dense_mixed`；真实cwd/argv已核对。primary核对protocol及首tick12个90D行与tape/state hash通过，完整first_live/first_replay相同；初始progress1tick/12rows/12selected，rows随后120行，均为运行前缀。新heartbeat `p3-v3-soc`已ACTIVE/每60分钟，正常静默，终态须本人全量核对成本/完整标签/业务安全与覆盖。仅运行此fresh混合SOC臂，原smoke/旧臂禁止重启，核心冻结，不延预算补标；I0_QUALIFIED=false/PPO_ALLOWED=false，无自动学习或额外train/audit/Q。详见[V3协议及启动记录](evidence/v4_2/p3_v3_i0_v3_numeric_20261007.md)，其他dirty保留，无remote未推送。
 
+- **2026-10-07 V3 mixed893201已COLLECTION_OK/exit0，无本轮运行进程。** 921ticks/1157.1544s，16N/8E/0F/D/U，error/censor/实际安全/hash/能量耗尽均无异常；374actor全部selected并取得374OK标签，overflow/缺失0，标注6248.8170s（104.15min）未超7200s。primary逐行核对11136raw/921steps/268快照/90D/mask/null/原teacher/loader集合通过，local/server七终态文件SHA一致。标签102R/272W、19类proposal；179低SOC、150高速inner、265 retry恢复及42次同接口WAIT→RELEASE均完整标注。本臂解除采集成本阻塞；不同seed不能当完整配对加速实验，8/24应急说明仍非全正常业务，P3训练退化未验证解决。
+- primary又完成唯一teacher WAIT/trace RELEASE状态slot287的一次原tape精确重放（0reset/0query/1step、EXACT_REPLAY_OK/exit0）：UID21已先被应急层接管，正常release返回plan_active；trace默认继承请求，不是策略批准。54个真实K3批准与4个无rank RELEASE trace必须分开，原teacher/raw均不改。完整结论与[有界后续方案](evidence/v4_2/p3_v3_i0_v3_numeric_20261007.md)已记录：三个完整train回合共1046标签（229R/817W，仍各保留原协议身份），下一项建议0reset/0optimizer准备90D BC清单和入口、审查I0支持范围，再另冻最多3初始化seed×1000更新的监督可学习性小试；本轮未执行或准入学习，不继续铺开采集pilot。I0_QUALIFIED=false/PPO_ALLOWED=false，audit/Q untouched。进程已退出，监控`p3-v3-soc`将在结果提交后删除；其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
