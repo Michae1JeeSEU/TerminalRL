@@ -242,3 +242,65 @@ Syncthing核对runner SHA`e7bd169c2689868a2df476b056e9fa0fed9ecc448e05a5f5f05ff1
 审批原由：该动作会进行实际BC优化器更新并产生持久化训练产物；审核援引此前任务中“禁止自动BC/full training”的限制，不接受代理对“继续下一步”的授权解释，要求用户在知晓这些操作后明确批准。primary遵守该边界，没有改用其他shell/前台/本地训练或间接启动绕过拒绝。已向用户明确列出3seed×1000更新、每seed300s、新建3个诊断checkpoint、不覆盖旧产物、不运行PPO或闭环，并请求确认。
 
 当前状态为**实现/53tests/prepare/synthetic smoke完成，真实proposal-detach fit等待明确批准**。此前“接受提交后执行”是primary的实验范围判断，不等于实际启动成功或绕过审批许可。若收到批准，先重新核对Syncthing SHA、无重复进程/输出，再执行这一项固定实验；不得重跑已有prepare/smoke或旧对照。当前没有本轮运行任务，不创建heartbeat，I0/student/PPO仍false。代码与docs仅本地提交，未配置remote，未推送；其他dirty保留。
+
+### 明确批准后的实际结果：gate改善，proposal首选坍缩
+
+用户在获知上述实际更新、新checkpoint和预算范围后明确回复**“批准”**。本次仅执行该已准备的3seed×1000更新对照，没有扩大授权范围。启动前重新核对Syncthing冻结SHA、无同项目进程、新fit路径不存在及已有tests/prepare/smoke；核心仍为`93ecd17`，没有重新运行准备或旧臂。新`fit`自然完成FIT_COMPLETE/exit0，Python2782688/wrapper2782686均退出。91701/2/3实际耗时分别1.299/0.838/0.838s，每seed恰好1000更新、同原基线完整初始指标精确相等，encoder/gate head/proposal head均更新、critic不变；未调阈值、权重或裁剪规则。
+
+本轮fit是**newly_run**；原未加权fit及原只读AUC是**preexisting_artifact**，原始teacher标签不改。实际目录为`/home/user/training_outputs/terminal/p3_v3_bc_proposal_detach_20261007/fit`，对应本地同步目录`D:/7_codespace/training_outputs/terminal/p3_v3_bc_proposal_detach_20261007/fit`。三个新`seed_9170{1,2,3}/final_diagnostic.pt`各349661bytes，均仅作诊断。关键文件两端SHA一致：
+
+- `inputs.json`：`97df56e3ca06eb6c17dd2cc240b541dbdbf0cc968ba8c5e782ddda40b49b5f42`，与原1046行输入完全相同。
+- `protocol.json`：`1268af24c29bba462541d0aa88a3b5996370e7a271c24b8c91dcf39368274d04`。
+- `result.json`：`c9f6ecb7f102b73c4a3d5239035d128f39f03c01158693f070671b13c5ee9bdb`。
+
+primary读取根/逐seed原始指标、全部配对context和proposal预测分布后判断。既定只读分析为PAIRED_DETACH_ANALYSIS_COMPLETE/exit0，输出`.tmp/p3_proposal_detach_analysis_20261007.json`；核对初始精确配对、输入/分母、更新数、模块变化、critic冻结、预算和资格标志均通过。这是数据汇总，不新建模型/optimizer或环境。一次辅助PowerShell显示命令因管道语法解析失败，修正显示命令后直接读取同一JSON；没有重训或改产物。
+
+以下均为原1046个相关训练状态上的测量，三个初始化seed不代表三个新独立场景。混淆矩阵行是真值WAIT/RELEASE、列是预测WAIT/RELEASE。
+
+| seed | gate confusion | gate accuracy / balanced | RELEASE召回 | proposal top1 / top3 | joint正确率 | gate AUC 原→detach |
+|---|---|---:|---:|---:|---:|---:|
+| 91701 | `[[782,35],[129,100]]` | 84.32% / 69.69% | 43.67% | 46.29% / 65.50% | 79.83% | 0.86344→0.89213 |
+| 91702 | `[[756,61],[115,114]]` | 83.17% / 71.16% | 49.78% | 46.29% / 66.38% | 77.82% | 0.85758→0.89268 |
+| 91703 | `[[741,76],[100,129]]` | 83.17% / 73.51% | 56.33% | 46.29% / 66.38% | 76.77% | 0.86097→0.89004 |
+
+| 三初始化seed均值 | 原未加权共享encoder | proposal-detach |
+|---|---:|---:|
+| gate accuracy | 82.38% | 83.56% |
+| balanced accuracy | 67.82% | 71.45% |
+| RELEASE召回 | 41.92% | 49.93% |
+| WAIT误判为RELEASE | 6.28% | 7.02% |
+| gate AUC | 0.86066 | 0.89162 |
+| 条件proposal top1 / top3 | 55.75% / 76.71% | 46.29% / 66.08% |
+| gate与proposal联合正确 | 78.90% | 78.14% |
+
+gate排序改善不局限于总体混合分布：下表每个context在三个seed中均有AUC提高，balanced也均提高；但默认判定的WAIT误判并非处处降低。分组相互重叠，不相加当独立样本。
+
+| context | gate AUC 原→detach | RELEASE召回 原→detach | WAIT误判率 原→detach | proposal top1 原→detach | joint 原→detach |
+|---|---:|---:|---:|---:|---:|
+| o2m | 0.71330→0.76954 | 48.09%→52.46% | 13.61%→13.06% | 57.38%→44.26% | 69.61%→68.51% |
+| m2i | 0.67676→0.75810 | 46.08%→56.86% | 20.92%→25.30% | 41.83%→28.43% | 54.39%→50.63% |
+| i2f | 0.93136→0.94554 | 29.80%→36.87% | 1.13%→1.25% | 75.76%→75.76% | 90.95%→91.43% |
+| 低SOC | 0.70150→0.73203 | 25.33%→36.67% | 11.84%→16.43% | 53.33%→40.00% | 67.38%→64.89% |
+| 高速inner | 0.92709→0.94268 | 28.57%→36.31% | 0.79%→0.92% | 75.00%→75.00% | 92.08%→92.58% |
+| busy LZ | 0.84231→0.87767 | 32.83%→42.09% | 5.90%→6.72% | 51.52%→41.41% | 79.03%→78.34% |
+| retry恢复 | 0.68666→0.75389 | 27.62%→38.81% | 11.44%→12.15% | 48.57%→36.43% | 67.90%→67.32% |
+
+按原episode汇总的balanced均值为893001 `72.03%→74.73%`、893101 `65.29%→67.22%`、893201 `66.48%→72.18%`；相应joint为`59.32%→60.45%`、`86.13%→84.94%`、`70.14%→69.79%`。原episode AUC未保存，本轮不补造配对值。低SOC gate accuracy实际`71.45%→71.10%`，说明balanced提高也不能替代误判代价分析。
+
+**proposal出现了明确的多数类首选坍缩。** 三个seed在全部229个teacher RELEASE状态上的`prediction_counts`都精确为`{"12":229}`；真值只有106个proposal12，故top1恰好为106/229=46.29%，其余20个已出现proposal类别的top1召回全部为0。这不是只凭top1恰等于基线作推断，也不是proposal head被误冻结：head参数确实更新，单测也验证该head梯度存在。top3仍为65.50%–66.38%，所以不能说所有概率分布完全相同；这里的坍缩专指首选动作全部相同。inner的top1看似保持，只是该组多数类本来占50/66，不代表多proposal识别维持。
+
+各seed的gate CE由原末尾`0.35825/0.36425/0.36192`降至`0.32660/0.32617/0.33154`；proposal CE从`1.47564/1.45530/1.47594`升至`2.22882/2.11020/2.15958`。同定义总loss因而由约1.82–1.84变为2.44–2.56。detach训练自身仍从随机初始约3.87–3.95下降；不能把与原臂的末尾差异写成一次训练中loss持续上升。
+
+### 本轮结论与下一项有界修复方案
+
+**共享encoder的训练方式是当前拟合不足的一个可干预因素，但直接detach不是完整修复。** 在输入/标签、初始化和预算相同的条件下，去掉proposal对encoder的更新使上述所有可配对context的gate排序一致改善，尤其m2i和retry；这比上轮只移动全局RELEASE倾向提供了更具体的表示学习证据。同时proposal失去自己的特征学习路径后，在此预算下退回多数类首选，总体joint未提高、切环joint反降。因此不把这个checkpoint替换成正式student，也不以增加RELEASE或放松安全层掩盖proposal退化。
+
+证据支持下一步处理两个任务的共享表示取舍，尚不能唯一归因“梯度方向冲突”：global actor clip.5仍耦合两head，detach也改变了总梯度范数/优化轨迹。它也不能证明90D观测充分、teacher标签是全局最优，或物理问题均已消失。此前直接C²离环修复及采集数值加速的证据仍各按其已验证范围成立；本次0reset/0teacher query，没有新的N/E/F/D/U或实际飞行安全结论。当前最直接的新阻塞是**gate与proposal尚未在同一模型中同时充分拟合**，此外原state-only teacher与联合执行上下文差异、仅规则访问三回合的数据覆盖仍需后续处理。
+
+下一项建议只做**独立gate/proposal encoder对照**，先保留生产默认，作为单独诊断模型：
+
+1. 两路均读取原90D。gate沿用原96宽encoder与gate head；proposal使用一份独立、可训练的同结构encoder及原proposal head。从同seed原模型复制初始encoder权重到proposal分支，不额外随机初始化已存在模块，要求两head初始输出/完整指标仍与原同seed精确相同。proposal CE只更新自己的encoder/head，gate CE只更新gate encoder/head；critic保持冻结。
+2. 仍仅1046行、91701/2/3、各1000更新/300s、原未加权CE、Adam3e-4/batch128/全actor clip.5、原样本顺序和固定末尾，不同时改采样、阈值、标签、teacher或proposal权重。明确记录新增encoder参数量：这是架构分离试验，参数量随之增加，不能把收益全部归于梯度冲突被消除；不再展开额外宽度/权重矩阵。
+3. 先验证两head前向初始相等、两encoder梯度归属及都能更新，检查新checkpoint模型标识防止被旧共享模型加载器误读；新独立合成smoke通过后才执行下一项真实有界fit。复用本次与原基线，不重训旧臂。报告全部seed的分接口gate AUC/误判、proposal预测类别/每类召回及joint，重点判断能否保留gate收益并恢复非多数类proposal；未改善也保留结果，不追加epoch或挑最佳seed。
+
+这个下一项方案**仅记录，尚未实现或运行**；用户本轮明确批准的detach实验已全部完成。I0_QUALIFIED/student_qualified/PPO_ALLOWED仍false，audit/Q、环境闭环、PPO/full training及硬件均未触及。后续要判断P3训练退化是否解决，仍须在合适独立场景和student-only闭环中验证，不由训练集内AUC推定。所有本轮进程已退出，无需heartbeat；53项local/server tests为本核心的已有通过证据，本轮新增的是完整fit及逐组产物检查，源码未再改。文档由primary本人修改，其他dirty保留；Git仅本地，未配置remote，不推送。
