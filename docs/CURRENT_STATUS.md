@@ -75,6 +75,8 @@
 
 - proposal梯度阻断准备通过：local/server53tests、真实prepare及独立16行/2更新smoke均exit0；primary核对原输入1046行未变、detach仅阻断指定梯度、三actor模块均训练且critic不变。接受提交后执行唯一91701/2/3×1000更新，新目录不覆盖旧臂；此时尚无真实detach结果，资格仍false。
 
+- **2026-10-07最新状态：proposal-detach真实fit等待明确批准，尚未运行。** 核心/协议commit`93ecd17`、local/server53tests、prepare/synthetic smoke均通过；实际启动请求在CreateProcess授权阶段被自动审批拒绝，未执行SSH/helper、无新fit进程/产物或真实参数更新。审核援引此前禁止自动BC的指令，要求用户知晓“3seed×1000更新、每seed300s并新建3个诊断checkpoint”后明确批准；primary已提出确认，没有绕过或改方式重试。该阻塞是执行审批，不是模型/训练失败；[详细记录](evidence/v4_2/p3_v3_bc_learnability_20261007.md)。收到批准后仅重查同步/无重复并执行原定fit，准备与旧臂不重跑。当前无任务/heartbeat，I0/student/PPO仍false。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

@@ -234,3 +234,11 @@ primary定位为比较实现缺陷：运行时`Counter`的proposal target_counts
 本地53tests通过21.28s、服务器相同53tests通过1.60s，均exit0；新梯度断言覆盖前向/loss数值一致、encoder仅有gate梯度、两head梯度保持及proposal head非零。真实prepare为PREPARED/exit0、1046行817W229R、0model/0optimizer，输入SHA与原fit相同。独立合成smoke为SMOKE_OK/exit0，只16合成行seed17、2更新；detach=true、gate_weights=null，encoder/gate/proposal三模块均变化而critic不变，新checkpoint存在、末尾overall gate AUC=.578125。该合成读数仅验证输出，不作为真实可学习性证据。primary读取协议与原始结果后接受按本节原预算执行真实fit。
 
 Syncthing核对runner SHA`e7bd169c2689868a2df476b056e9fa0fed9ecc448e05a5f5f05ff16c0b4df421`、test SHA`4b0c0548ff25895e4d5ea104d953cda1abc84c1330c495267c286597b0b72f99`及未改model/loader均一致；prepare输入与smoke结果两端SHA一致。worker辅助字段提取曾出现一条SyntaxError，实际tests/prepare/smoke全程exit0且未重跑；改用直接读取JSON获取字段，没有修改产物。以上为newly_run检查，先提交源码/协议再启动唯一fit。
+
+### 实际启动边界：自动审批拦截，真实fit尚未执行
+
+核心/协议已提交为`93ecd179c49ee17fa10b3516162fbb1e5cf65406`。提交后请求执行已准备的`run_p3_proposal_detach_20261007.py fit`，但`exec_command`在CreateProcess授权阶段被自动审批拒绝，SSH/helper均未执行。没有新的fit进程/输出，没有真实数据optimizer创建或参数更新；这不是一个训练失败seed，不能填造fit结果或把准备smoke当成真实对照。
+
+审批原由：该动作会进行实际BC优化器更新并产生持久化训练产物；审核援引此前任务中“禁止自动BC/full training”的限制，不接受代理对“继续下一步”的授权解释，要求用户在知晓这些操作后明确批准。primary遵守该边界，没有改用其他shell/前台/本地训练或间接启动绕过拒绝。已向用户明确列出3seed×1000更新、每seed300s、新建3个诊断checkpoint、不覆盖旧产物、不运行PPO或闭环，并请求确认。
+
+当前状态为**实现/53tests/prepare/synthetic smoke完成，真实proposal-detach fit等待明确批准**。此前“接受提交后执行”是primary的实验范围判断，不等于实际启动成功或绕过审批许可。若收到批准，先重新核对Syncthing SHA、无重复进程/输出，再执行这一项固定实验；不得重跑已有prepare/smoke或旧对照。当前没有本轮运行任务，不创建heartbeat，I0/student/PPO仍false。代码与docs仅本地提交，未配置remote，未推送；其他dirty保留。
