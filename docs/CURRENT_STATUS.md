@@ -50,6 +50,8 @@
 
 - **2026-10-07 V3 fresh mixed采集准备完成：** 数值核心已提交`0804d77`，原服务器固定状态与90项生产回归通过。primary另冻[单臂V3协议](evidence/v4_2/p3_v3_i0_v3_numeric_20261007.md)：fresh 893201、24/warm12、SOC.55–.90，仍2048query/51200意图、1800ticks/3600s环境和7200s标注，原v1/v2及失败产物不改。新入口/停止条件/90D loader共54tests通过27.95s；独立892701 smoke已SMOKE_OK/exit0，2ticks/6raw/3actor/3OK标签。primary亲自核对全部90D/mask/null、原请求、快照、标签join、teacher证书和首步完整重放通过，实际安全/hash无异常；预设2tick截断不称完整业务通过。smoke父子均退出，禁止重跑；提交后只启动893201一次。预计环境15–30min、标注最多2h，按60分钟heartbeat监控。没有学习、student或I0资格结论，PPO_ALLOWED=false，未消费的其他train/audit/Q保持原样；保留其他dirty，无remote不推送。
 
+- **2026-10-07当前唯一运行：V3 dense_mixed893201。** 入口/冻结协议commit`1663600`后，经Syncthing五源码SHA和无重复检查启动Python2759659/wrapper2759657，输出`/home/user/training_outputs/terminal/p3_v3_i0_v3_20261007/dense_mixed`；真实cwd/argv已核对。primary核对protocol及首tick12个90D行与tape/state hash通过，完整first_live/first_replay相同；初始progress1tick/12rows/12selected，rows随后120行，均为运行前缀。新heartbeat `p3-v3-soc`已ACTIVE/每60分钟，正常静默，终态须本人全量核对成本/完整标签/业务安全与覆盖。仅运行此fresh混合SOC臂，原smoke/旧臂禁止重启，核心冻结，不延预算补标；I0_QUALIFIED=false/PPO_ALLOWED=false，无自动学习或额外train/audit/Q。详见[V3协议及启动记录](evidence/v4_2/p3_v3_i0_v3_numeric_20261007.md)，其他dirty保留，无remote未推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
