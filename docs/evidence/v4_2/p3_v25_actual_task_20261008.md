@@ -1,5 +1,7 @@
 # V2.5 真实P3任务数据与训练衔接（2026-10-08）
 
+> **范围纠正：本文件的priority-enabled分支不再用于当前P3正式训练。** primary再次核对`docs/README.md`的权威规则及`requirements.md`5.2、`execution_plan.md`0.1/0.2后确认：当前主课程是task-neutral。此前读取历史P3表/旧formal YAML后所写“必须恢复priority1/3/5、不能用task-neutral”是primary的解释错误，不能覆盖主规范。以下原协议与执行事实保留，已完成flow6仅为兼容模式证据；dense24在完整环境结束后停止尚未完成的标注，不作COLLECTION_OK。未启动flow12/fit/Q取消本分支推进，既有文件不改标。后续见[当前中性课程](p3_v25_neutral_course_20261008.md)，用户持续至正式启动的授权不变。
+
 ## 改动依据与边界
 
 用户授权持续分析、修复、验证至新的P3正式训练就绪，并启动正式训练；最后正式训练不设heartbeat。本文衔接`p3_v25_formal_readiness_20261008.md`，不继承旧checkpoint的资格。

@@ -1,4 +1,4 @@
-"""Teacher-free actual-P3 development episodes from the frozen canonical fit.
+"""Teacher-free neutral-course P3 development episodes from the frozen canonical fit.
 
 An episode is evidence for the primary's qualification decision, not automatic
 PPO admission. The requested-action tape and tensor records remain available
@@ -12,14 +12,14 @@ from pathlib import Path
 import torch
 
 from ..algo.trajectory_set_ppo import TrajectorySetActorCritic
-from ..configs.p3_v25_task import build_config, PROFILE, SCENARIOS
+from ..configs.p3_v25_course import build_config, PROFILE, SCENARIOS
 from ..scripts.diagnose_p3_direct_contract import SAFETY_KEYS
 from .p3_v25_runtime import load_actor
 from .p3_v25_rollout import collect_episode
 from .p3_v25_task_imitation import frozen_models, SEEDS
 from .p3_v3_bc_learnability import require, write
 
-PROTOCOL = 'p3_v25_actual_task_student_development_20261008_v1'
+PROTOCOL = 'p3_v25_neutral_course_student_development_20261008_v1'
 
 
 def blockers(result, *, smoke=False):
@@ -28,6 +28,7 @@ def blockers(result, *, smoke=False):
     if not result['replay_exact']:issues.append('replay_incomplete')
     if any(result.get('telemetry',{}).get(key)!=0 for key in SAFETY_KEYS):
         issues.append('actual_safety_or_hash')
+    if result.get('shield_actor_fraction',0.)>.05:issues.append('actor_takeover_fraction')
     if not smoke:
         outcomes=result.get('outcome_counts',{})
         count=outcomes.get('completed',0)+outcomes.get('emergency_landed',0)
@@ -47,7 +48,7 @@ def run(fit_directory,output,*,scenario,seed,policy_seed,deterministic=False,smo
     require(canonical['seed']==SEEDS[0],'canonical source is fixed by seed order')
     config=build_config(scenario)
     if smoke:
-        require(scenario=='dense24','smoke requires three interface holders')
+        require(scenario=='dense24_mixed','smoke requires three interface holders')
         config=replace(config,total_requested_uavs=3,warm_start_uavs=3,fixed_arrival_schedule=(0.,)*3)
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     write(output/'protocol.json',dict(protocol=PROTOCOL,profile=PROFILE,scenario=scenario,

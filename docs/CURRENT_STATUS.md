@@ -134,6 +134,8 @@
 
 - **真实P3 flow6已完成，当前唯一dense24采集运行中。** 新profile/collector commit a8c821be，28项local/server检查及892808 smoke通过；新imitation入口8fb74731仅做了3项合成检查，没有真实fit/Q/PPO。flow6 seed893401为692ticks、6N/FDU0、20/20标签19R1W，priority1/3/5与低SOC/多mission覆盖已核对，无技术/censor/实际安全/hash/能量异常。现train_dense24 seed893402在`p3_v25_task_20261008/train_dense24`，Python2819670/timeout2819669，真实cwd/argv与priority/mixedSOC/24warm12协议相同；250ticks/4286raw/124selected/4N只是前缀。核心冻结，禁止重启已完成臂，完整dense终态primary分析后才继续train_flow12；Q895401–3及fresh初始化91901–3未消费。详细结果/后续顺序见[真实P3任务记录](evidence/v4_2/p3_v25_actual_task_20261008.md)。
 
+- **primary纠正课程解释错误，正式目标继续。** README/requirements/design/technical/execution_plan0.1–0.2均规定当前task-neutral；此前从历史P3表推断必须恢复priority1/3/5是错误，证据文件不能覆盖主规范。priority flow6完整结果保留；dense24环境915ticks/19N5E/776actor，primary授权停止尚未完整标注并保留原文件，不记COLLECTION_OK，禁止继续该flow12/fit/Q。新[中性课程协议](evidence/v4_2/p3_v25_neutral_course_20261008.md)按低并发mixedSOC、dense fixed.8、dense mixedSOC三条件推进，保留服务/能量/等待/安全、directC2和forecast修复。新smoke892851/train893501–3/Q895501–3预留，代码定向测试中，尚未reset/学习。用户授权持续至正式启动有效，最终formal不设heartbeat；无remote、其他dirty保留。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

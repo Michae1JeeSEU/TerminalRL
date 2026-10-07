@@ -21,6 +21,8 @@ def test_complete_emergency_is_reported_without_inventing_zero_emergency_gate():
     assert 'failed_or_deferred_outcome' in student.blockers(result)
     result=complete();result['telemetry']['checked_executed_plan_hash_mismatches']=1
     assert 'actual_safety_or_hash' in student.blockers(result)
+    result=complete();result['shield_actor_fraction']=.051
+    assert 'actor_takeover_fraction' in student.blockers(result)
     result=complete();result.update(censored=True,terminal=False)
     assert 'cycle_incomplete' in student.blockers(result)
 
@@ -34,12 +36,13 @@ def test_student_wrapper_uses_actual_task_canonical_source_without_optimizer(tmp
     manifest=dict(checkpoints=[dict(seed=student.SEEDS[0],path='actor.pt',sha256=sha(path))])
     monkeypatch.setattr(student,'frozen_models',lambda _:manifest)
     monkeypatch.setattr(torch.optim,'Adam',lambda *a,**k:pytest.fail('inference constructed optimizer'))
-    report=student.run(fit,tmp_path/'run',scenario='dense24',seed=892909,policy_seed=392,
+    report=student.run(fit,tmp_path/'run',scenario='dense24_mixed',seed=892909,policy_seed=392,
                        smoke=True,deterministic=False)
     assert report['status']=='SMOKE_OK' and report['rollout']['replay_exact']
     assert report['parameter_updates']==0 and not report['PPO_ALLOWED']
     config=json.loads((tmp_path/'run/episode/protocol.json').read_text())['physics_config']
-    assert config['task_priority_enabled'] and config['release_arbitration_mode']=='downstream_priority'
+    assert not config['task_priority_enabled'] and config['release_arbitration_mode']=='downstream_soc_priority'
+    assert config['low_level_priority_time_weight']==0.
     assert config['merge_gap_prediction_mode']=='committed_arrivals_v1' and config['initial_soc_min']==.55
     assert sha(path)==manifest['checkpoints'][0]['sha256']
     assert report['rollout']['counts']['RELEASE']==3

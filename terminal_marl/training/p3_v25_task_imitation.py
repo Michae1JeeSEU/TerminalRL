@@ -1,4 +1,4 @@
-"""Fresh actual-P3 imitation fits and a single independent Q evaluation.
+"""Fresh neutral-course P3 imitation fits and a single independent Q evaluation.
 
 Fit only opens the declared train cycles. Q is collected after candidates are
 frozen; evaluating it cannot update weights or grant student/PPO admission.
@@ -11,14 +11,14 @@ from pathlib import Path
 import torch
 
 from ..algo.trajectory_set_actor import TrajectorySetActor
-from ..configs.p3_v25_task import PROFILE
+from ..configs.p3_v25_course import PROFILE
 from ..core.trajectory_context_observation import VERSION
-from .p3_v25_task_data import load_train, load_q_for_evaluation, Q_CASES, validated_case
+from .p3_v25_course_data import load_train, load_q_for_evaluation, Q_CASES, validated_case
 from .p3_v25_set_learnability import fit_arm, synthetic, measure
 from .p3_v25_imitation_qualification import gates, sha
 from .p3_v3_bc_learnability import require, read, write
 
-PROTOCOL = 'p3_v25_actual_task_imitation_20261008_v1'
+PROTOCOL = 'p3_v25_neutral_course_imitation_20261008_v1'
 SEEDS = (91901,91902,91903)
 
 
@@ -51,7 +51,7 @@ def fit(directories,output,*,smoke=False):
 def frozen_models(directory,*,smoke=False):
     directory=Path(directory);report=read(directory/'result.json')
     require(report['status']=='FIT_FROZEN' and report['protocol']==PROTOCOL and
-        report['profile']==PROFILE and report['smoke'] is smoke,'wrong actual-task frozen fit')
+        report['profile']==PROFILE and report['smoke'] is smoke,'wrong neutral-course frozen fit')
     require([x['seed'] for x in report['checkpoints']]==([17] if smoke else list(SEEDS)),
         'candidate seed set differs')
     for item in report['checkpoints']:
@@ -62,7 +62,7 @@ def frozen_models(directory,*,smoke=False):
 
 def evaluate(fit_directory,q_directories,output):
     manifest=frozen_models(fit_directory)
-    require(len(q_directories)==len(Q_CASES),'all actual task Q cycles required')
+    require(len(q_directories)==len(Q_CASES),'all neutral course Q cycles required')
     # Validate metadata and file bytes before recording one-use consumption.
     for directory,(seed,scenario) in zip(q_directories,Q_CASES):
         validated_case(directory,seed,scenario,'Q')
