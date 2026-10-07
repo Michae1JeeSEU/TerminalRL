@@ -25,8 +25,15 @@ def completed_metrics(env):
     def priority_mean(key):
         return (float(np.average([r[key] for r in rows],weights=[r['base_priority'] for r in rows]))
                 if rows else None)
+    def distribution(key):
+        values=[r[key] for r in rows]
+        return dict(count=len(values),mean=float(np.mean(values)) if values else None,
+            p95=float(np.percentile(values,95)) if values else None,
+            max=max(values) if values else None)
     return dict(completed_rows=rows,completed_count=len(rows),
         wait_definition='external queue plus uncommitted ring holding; excludes committed trajectories',
+        lifecycle_distributions={key:distribution(key) for key in
+            ('wait_seconds','request_to_touchdown_seconds','request_to_completion_seconds')},
         priorities_observed=priorities,initial_soc_min=min((r['initial_soc'] for r in rows),default=None),
         initial_soc_max=max((r['initial_soc'] for r in rows),default=None),
         priority_weighted_wait_seconds=priority_mean('wait_seconds'),

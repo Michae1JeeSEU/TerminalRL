@@ -25,9 +25,12 @@ def test_priority_weighted_and_initial_soc_cohorts_keep_emergencies():
     assert report['initial_soc_min']==pytest.approx(.6)
     assert report['completed_rows'][0]['arrival_id']==1
     assert report['completed_rows'][1]['request_to_touchdown_seconds']==100.
+    assert report['lifecycle_distributions']['wait_seconds']==dict(count=2,mean=25.,p95=38.5,max=40.)
+    assert report['lifecycle_distributions']['request_to_touchdown_seconds']==dict(count=2,mean=100.,p95=100.,max=100.)
     empty=completed_metrics(NS(completed_uavs=[]))
     assert empty['completed_count']==0 and empty['priority_weighted_wait_seconds'] is None
     assert empty['priority_weighted_request_to_touchdown_seconds'] is None
+    assert empty['lifecycle_distributions']['wait_seconds']==dict(count=0,mean=None,p95=None,max=None)
 
 
 def test_reward_parts_exclude_per_actor_total_and_include_queue():

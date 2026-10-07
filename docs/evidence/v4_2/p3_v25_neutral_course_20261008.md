@@ -49,3 +49,5 @@ primary新增`p3_v25_critic_initialization`入口：只接收与同一冻结cano
 critic入口与PPO构件16项local/server定向测试通过10.36s/5.45s，包括序列化checkpoint保留actor/零adapter、无optimizer继承、错误课程/确定性/failed-energy拒绝；一个既有test scalar warning不影响通过。4个源码/测试文件两端SHA一致。仍只有合成测试，无真实critic/PPO更新，运行中course collector所用核心未改。
 
 当前唯一dense24_fixed/893502已启动：Python2822837/timeout2822836，真实cwd与argv匹配course_data/index2；protocol确认task_priority=false、fixedSOC.8。初次snapshot仅首tick12raw/0steps，随后本地同步progress100ticks/1409raw/41selected/227.497s，属于正常推进前缀，不记终态。核心冻结，不重复启动；完整结果分析后才可继续mixed。
+
+为对应中性课程要求，student/后续PPO结果增加全已完成请求的holding wait、request-to-touchdown、request-to-completion的mean/p95/max；完整回合才解释为全请求，部分回合明确completed_count，不把服务完成当触地。尾部用于监测，不新增逐子组不退化门槛。2项local/server metrics测试通过.22s/.11s；只补结果字段，当前collector/teacher/物理不变。
