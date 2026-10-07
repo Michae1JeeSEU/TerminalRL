@@ -134,3 +134,19 @@ C_sto为COMPLETED/exit0，879ticks/952.600s（含全tape重放），**14N/10E/0F
 result SHA `925d37ff350b70ceb256d85c0d94ea4060668e2fe05a0d3b590e424a30d75dff`，终态result/protocol/steps/progress/first_before/log/exit同步，原2811480/2811481退出。primary读完整结果后接受启动前述唯一C_rule_same_seed，原student六臂完成且禁止重跑；Q/实景PPO继续暂缓。等待规则baseline期间仅新建尚未被运行代码import的forecast helper及其测试，旧scheduler/generator/config保持不变。
 
 C_rule_same_seed已启动：Python2812519/timeout2812518、session84659，真实cwd/argv已核对，progress75ticks/76.126s、snapshot_1/blockers/log正常。新forecast helper的6项local/server用例通过（1.80s/.71s），两文件SHA相同，覆盖incoming到达边界、departure排除、实际有限加速度/速度偏置、空/单/多gap和不变性；尚未接入运行环境，不能当生产修复已完成。
+
+### 同seed规则终态与修复实施（newly_run）
+
+C_rule_same_seed已COMPLETED/exit0，939ticks/852.145s，**19N/5E/0F/D/U**；无error/censor/实际安全/hash/耗尽，5E全部ground_service_complete，最小实际/扫掠间隔80.641802/80.622081m，1478energy checks/0negative，最低完成SOC .124882。safety_interventions162保留。result SHA `8292fd5bbb3b7881ee9af15ad715096924c12856211857ce1e6693536a67049a`，result/progress/blockers/四快照均两端一致，2812518/2812519已退出。
+
+primary核对939条blockers：57批准、305safety_reject、46final_capacity、47lz_unavailable，普通primary原因233PREDICTED_SEPARATION/20HEADWAY/52NO_MERGE_GAP/46FINAL_RESOURCE/47LZ_RESOURCE。此455条release telemetry与累计release_rejected计数不是同一个统计口径，不强行求和改原数据。规则总能耗9648.984857，C_det11106.523908、C_sto10183.666972；reward分别407.275229/296.877299/349.525168。逐arrival_id初始能量（剩余+累计消耗）24架完全匹配至6.4e-12，seed和所有物理配置一致，支持这是同外生条件控制对照。
+
+分析脚本首轮配置字典比较失败，primary检查差异只有历史两个JSON serializer对`rings`枚举键分别写`RingRole.OUTER`和`outer`等；只对三个已知key做规范化，所有数值仍精确比较。修后全量通过，结果`.tmp/p3_v25_C_rule_analysis_v2.json` SHA c3e562d2e4242f59722ee61b66a5a2b97742600a735179624abdff6faea7f0ee。没有重跑环境或修改原产物。结论：规则也有应急/尾部余量不足，但当前student在这一个配对场景中额外损失5–9个正常完成，不能全部归为环境容量；需同时修已证实的scheduler缺陷和后续student泛化/访问分布。
+
+forecast helper已`88f970d`提交。baseline自然结束后primary才接入`merge_gap_prediction_mode=committed_arrivals_v1`；历史默认`current_holders_legacy`保持旧scene/旧pickle语义。新P3 builder与两个既有评估CLI增加显式`--forecast-merge-gap`，完整config记录选择；不改generator、安全过滤、能量、应急、K3或策略参数。目标环成员按**本提案merge_time**判断，位置使用与SafetyFilter一致的承诺后续/有限加速度holder预测；空目标仍沿用原ego-phase规则。此阶段只隔离这一项修复，不把先前slot冲突假装已解决。
+
+接入定向tests后，先新目录`/home/user/training_outputs/terminal/p3_future_merge_gap_20261008/smoke`：rule、3/warm3高SOC、892806/928806、2ticks，检查配置/正常输出/实际安全/hash。再唯一`C_rule`：同892804/928804、24/warm12混合SOC、1800ticks/3700s、blockers和1/400/600/850快照，与上面旧rule保持同runner/controller，只改变预测mode。新源码SHA同步、无重复后才能启动。完整结果决定是否继续固定checkpoint的C_det/C_sto或先进一步修复轨迹slot，不预先声称提速/应急减少；所有失败保留。开发seed精确搜索无历史命中，smoke首次reset前服务器另核对新输出未存在。运行中冻结生产核心，Q与学习继续暂缓，最终正式P3启动目标不变。
+
+接入后57项local/server定向回归通过（51.94s/28.09s），8文件SHA相同，scoped diff检查通过。包括9项forecast/helper/接入、旧单holder/空gap兼容及新增forecast分支确实调用完整SafetyFilter、slot reconciliation、整体修复/runtime回归。没有降低任何已有测试阈值。编辑过程中patch工具返回局部失败，primary检查发现config重复字段/validation及部分文件未应用，已逐项修正后才运行上述测试；未在半完成版本启动任何环境。此处仍是代码与回归通过，待独立smoke和完整C_rule。
+
+独立smoke已exit0，892806/928806、3/warm3高SOC，2ticks/1.877s，forecast profile/mode正确；3次放行全部批准，30checked samples/0hash mismatch，全部实际安全计数0，3energy checks/0negative/0应急。既有CLI按预定2tick截断写CENSORED，3U/terminal=false是smoke语义，不能改写成完整回合成功。result SHA `85433c17e2e28b7c94ff021cce830647470828e396cdfc180928e77f7b9cf9b3`，result/progress/snapshot1/blockers均两端一致，无残余进程。primary核对原始输出，接受本地提交后只启动预定C_rule完整对照。

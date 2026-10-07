@@ -15,7 +15,7 @@ import traceback
 
 import numpy as np
 
-from terminal_marl.configs.p3_integrated_repair import PROFILE, build_config, initialize_legacy_source
+from terminal_marl.configs.p3_integrated_repair import PROFILE, FORECAST_PROFILE, build_config, initialize_legacy_source
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 
 
@@ -66,8 +66,10 @@ def record_blockers(env, output, ticks, snapshot_ticks=()):
 
 
 def run(args):
-    config = build_config(requests=args.requests, warm_start=args.warm_start, high_soc=args.high_soc)
-    result = dict(profile=PROFILE, config=asdict(config), controller=args.controller,
+    forecast = getattr(args, 'forecast_merge_gap', False)
+    config = build_config(requests=args.requests, warm_start=args.warm_start, high_soc=args.high_soc,
+                          forecast_merge_gap=forecast)
+    result = dict(profile=FORECAST_PROFILE if forecast else PROFILE, config=asdict(config), controller=args.controller,
                   env_seed=args.seed, policy_seed=args.policy_seed, PPO_ALLOWED=False,
                   trained=False, qualification='NOT_QUALIFIED')
     policy = None
@@ -132,6 +134,7 @@ def main():
     p.add_argument('--controller',choices=('rule','source'),default='rule')
     p.add_argument('--checkpoint',type=Path); p.add_argument('--output',type=Path,required=True)
     p.add_argument('--requests',type=int,default=3); p.add_argument('--warm-start',type=int,default=0)
+    p.add_argument('--forecast-merge-gap',action='store_true')
     p.add_argument('--high-soc',action='store_true'); p.add_argument('--seed',type=int,default=890301)
     p.add_argument('--policy-seed',type=int,default=890401); p.add_argument('--max-steps',type=int,default=1800)
     p.add_argument('--trace-blockers',action='store_true')

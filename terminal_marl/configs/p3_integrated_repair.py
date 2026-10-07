@@ -8,12 +8,13 @@ from dataclasses import replace
 from terminal_marl.core.config import SimConfig
 
 PROFILE = 'p3_integrated_repair_direct_c2_v2_20261003'
+FORECAST_PROFILE = 'p3_direct_c2_committed_merge_gap_v1_20261008'
 PPO_ALLOWED = False
 # Used only AFTER a separately approved student-only qualification.
 PPO_UPDATE_OPTIONS = {'actor_reduction': 'joint_team', 'entropy_mode': 'gate_only'}
 
 
-def build_config(*, requests=24, warm_start=12, high_soc=False):
+def build_config(*, requests=24, warm_start=12, high_soc=False, forecast_merge_gap=False):
     if not 0 <= warm_start <= requests or requests < 1:
         raise ValueError('require 0 <= warm_start <= requests and requests >= 1')
     schedule = (0.0,)*warm_start + tuple(15.0*(i+1) for i in range(requests-warm_start))
@@ -36,6 +37,7 @@ def build_config(*, requests=24, warm_start=12, high_soc=False):
         emergency_priority_mode='committed_route', emergency_trigger_soc=.40,
         route_aware_emergency_enabled=True, executable_admission_energy_enabled=True,
         holding_speed_contract='nominal_until_release',
+        merge_gap_prediction_mode='committed_arrivals_v1' if forecast_merge_gap else 'current_holders_legacy',
         final_approach_geometry_mode='continuous_inward_v1',
         final_approach_execution_mode='speed_timing_v1',
         v3_landing_path_mode='direct_c2',

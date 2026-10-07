@@ -115,6 +115,10 @@
 - **最新：C_sto已14N10E、879ticks且完整重放通过；当前运行同seed规则对照。** 六student开发臂均结束，无技术/censor/实际安全/hash/F/D/U，不能把10E记为正常完成。规则`C_rule_same_seed`真实Python2812519/timeout2812518、session84659，892804/928804、24/warm12混合SOC，已75ticks/正常初产物；3700s上限，核心冻结，不重复启动。60min heartbeat `p3-v2-5`继续，最终正式训练仍不设监控。
 - **primary已确认调度器漏算承诺incoming。** 四个已有快照的7eligible合流请求全部漏邻机，旧gap距未来邻机8.6–58.6m，纳入承诺后最大gap中心216.8–426m。两状态原/forecast私有nominal候选仍分别被全程间隔或真实slot冲突拒绝，不能凭终点几何就宣称获准/收益。[完整证据](evidence/v4_2/p3_v25_formal_readiness_20261008.md)。新增未接入生产的forecast helper及6项local测试通过；待规则baseline结束后接入修复、定向验证。旧1046标签代表旧planner语义，I1方案暂缓修订，未消费Q；无实景PPO/正式资格结论，持续推进授权有效。
 
+- **同seed规则已19N5E完成，支持还存在student调度差距。** 全939ticks、技术/实际安全/hash/F/D/U无异常，配置/24架初始能量与C_det/C_sto一致；rule/两student总能耗9648.98/11106.52/10183.67。primary在baseline退出后接入显式`committed_arrivals_v1`未来合流预测，历史默认保留；57项local/server定向tests通过，准备独立892806/928806 rule两tick smoke，随后才唯一同seed新`C_rule`。生成器/安全/能量阈值/K3/旧模型不改，先隔离此修复；I1数据语义待新planner验证后修订，不直接启动旧Q方案。详见[readiness最新部分](evidence/v4_2/p3_v25_formal_readiness_20261008.md)。
+
+- 合流预测独立892806两tick smoke已完成exit0，3批准/0拒绝，实际安全/hash/能量异常0，预定截断保留CENSORED语义。结果SHA85433c17...两端一致，无残余进程；primary接受本地提交后仅启动同seed新C_rule完整对照，尚无性能改善结论。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

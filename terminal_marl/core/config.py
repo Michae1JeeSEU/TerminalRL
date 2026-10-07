@@ -182,6 +182,9 @@ class SimConfig:
     # It constrains uncommitted WAIT execution and the shield to the same
     # nominal continuation certified by SafetyFilter, for rule and RL alike.
     holding_speed_contract: str = "bounded_residual"
+    # Historical scenes retain their old gap semantics; new P3 runs select
+    # the explicit forecast mode before reset and record it in their config.
+    merge_gap_prediction_mode: str = "current_holders_legacy"
     low_level_queue_cost_enabled: bool = False
     external_queue_step_mode: str = "pre_admission"
     # Diagnostic-only route-aware candidate energy guard.  This is layered on
@@ -517,6 +520,8 @@ class SimConfig:
             raise ValueError("unsupported emergency_priority_mode")
         if self.holding_speed_contract not in {"bounded_residual", "nominal_until_release"}:
             raise ValueError("unsupported holding_speed_contract")
+        if self.merge_gap_prediction_mode not in {"current_holders_legacy", "committed_arrivals_v1"}:
+            raise ValueError("unsupported merge_gap_prediction_mode")
         if self.external_queue_step_mode not in {"pre_admission", "post_admission"}:
             raise ValueError("unsupported external_queue_step_mode")
         for name in ("route_aware_emergency_enabled", "executable_admission_energy_enabled", "low_level_queue_cost_enabled"):

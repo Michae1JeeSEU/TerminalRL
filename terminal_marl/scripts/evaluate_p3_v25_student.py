@@ -24,7 +24,8 @@ from .collect_p3_v3_sparse_expert import natural_terminal
 def run(args):
     args.output.mkdir(parents=True,exist_ok=False)
     torch.set_num_threads(1)
-    config=build_config(requests=args.requests,warm_start=args.warm_start,high_soc=args.high_soc)
+    config=build_config(requests=args.requests,warm_start=args.warm_start,high_soc=args.high_soc,
+                        forecast_merge_gap=getattr(args,'forecast_merge_gap',False))
     write_json(args.output/'protocol.json',dict(mode='development_student_never_qualification',
         policy_observation_schema=VERSION, physics_config=asdict(config), checkpoint=str(args.checkpoint),
         checkpoint_sha256=hashlib.sha256(args.checkpoint.read_bytes()).hexdigest(),
@@ -108,6 +109,7 @@ def main():
     p.add_argument('--seed',type=int,required=True);p.add_argument('--policy-seed',type=int,required=True)
     p.add_argument('--requests',type=int,default=12);p.add_argument('--warm-start',type=int,default=6)
     p.add_argument('--high-soc',action='store_true');p.add_argument('--deterministic',action='store_true')
+    p.add_argument('--forecast-merge-gap',action='store_true')
     p.add_argument('--smoke',action='store_true')
     a=p.parse_args();r=run(a)
     print(json.dumps({k:r[k] for k in ('status','ticks','terminal','error')}))

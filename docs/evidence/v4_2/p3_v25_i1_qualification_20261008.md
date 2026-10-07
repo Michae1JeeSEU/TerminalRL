@@ -2,7 +2,7 @@
 
 ## 状态与适用范围
 
-**最新执行暂停原因：C_det出现10N14E。** 这不触发原开发F/安全硬失败，但正常完成率不足，需要先完成C_sto及同seed规则控制实验，区分环境限制和策略调度；详见[持续验证最新记录](p3_v25_formal_readiness_20261008.md)。本协议准备与测试保留，真实smoke/Q/fresh fit仍未启动，不能仅因六开发臂无F就自动进入本阶段。primary完成该业务疑点的必要分析/修复后才恢复。
+**最新执行暂停原因：原C_det10N14E、C_sto14N10E，同seed规则19N5E；已确认scheduler漏算承诺incoming并正在验证修复。** 详见[持续验证最新记录](p3_v25_formal_readiness_20261008.md)。下面旧planner/原1046标签的初始计划保留为未执行方案，**新planner的I0数据与本I1协议必须先修订，不能直接运行旧启动脚本**。真实本I1 smoke/Q/fresh fit均未启动，所有895301–3/892805/91801–3仍未消费。不是降低I1门槛，也不将旧标签改成新标签。
 
 这是用户“持续修复至新P3正式训练启动”授权下的下一项有界协议。primary亲自制定/实现/分析。**此协议尚未启动正式Q采集或fresh fit**；先完成当前V2.5开发A/B/C六臂、定向测试及独立smoke。任一开发臂技术/实际安全/hash/F/D/U/censor阻塞时暂停本协议，先按证据修复。当前只准备新增文件，不修改运行中的观测/物理/runtime核心。
 
@@ -44,4 +44,4 @@
 
 新增`training/p3_v25_imitation_qualification.py`与对应tests。首轮local为28通过/1失败：Windows相对checkpoint清单写成反斜杠而校验为POSIX路径，尚未触及实际数据或服务器正式运行。primary改为`.as_posix()`，并将测试对比明确为JSON序列化形式（指标字典整数键正常变字符串），未放宽模型/标签判据。修后local/server 29项全通过（25.84s/13.41s）；随后新增完整合成Q评估测试，仅重跑新文件15项通过（19.20s/9.57s），本轮合计30个不同用例。检查独立partition解码、完整actor重建、失败保留、固定fresh checkpoint、Q消费纪律、全三seed预测/聚合指标输出，以及原loader/runtime回归。两端module SHA `130831a0dd4c06980f822a28bd53a1382bff3803b4e29cf7addcd713a1b50a76`，test SHA `b4a721f126bcea1d5a26ba2a9c611988fb1ce23924b831979d37d2b4521300aa`。
 
-真实独立smoke/正式Q/fresh fit均尚未启动，当前B_sto开发评估继续，正式资格仍false。
+真实本I1独立smoke/正式Q/fresh fit均尚未启动。六开发臂与同seed旧规则已完成，目前是forecast合流修复验证，正式资格仍false。

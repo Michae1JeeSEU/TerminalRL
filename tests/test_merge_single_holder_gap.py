@@ -79,12 +79,14 @@ def test_multiple_holder_gap_preserves_cyclic_midpoint_behavior():
     assert actual == pytest.approx((start + gap / 2.0) % (2.0 * math.pi))
 
 
-def test_candidate_path_still_calls_full_safety_filter_with_single_target_holder(monkeypatch):
+@pytest.mark.parametrize('gap_mode', ['current_holders_legacy', 'committed_arrivals_v1'])
+def test_candidate_path_still_calls_full_safety_filter_with_single_target_holder(monkeypatch, gap_mode):
     config = SimConfig(
         reset_mode="warm_start_rings",
         warm_start_uavs=2,
         fixed_arrival_schedule=(0.0, 0.0),
         total_requested_uavs=2,
+        merge_gap_prediction_mode=gap_mode,
     )
     env = TerminalParallelEnv(config)
     env.reset(seed=841301)

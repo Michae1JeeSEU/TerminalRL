@@ -233,7 +233,16 @@ class MergeScheduler:
         )
         return reservation
     def _gap_center(self,uav,target,time,snapshot,speed):
-        states=[u for u in snapshot.active.values() if u.ring_role is target]
+        if self.config.merge_gap_prediction_mode == "committed_arrivals_v1":
+            from .merge_gap_forecast import target_ring_angles, largest_gap_center
+            angles = target_ring_angles(self.config, uav, target, time, snapshot)
+            if angles:
+                return largest_gap_center(angles)
+            # An empty future ring follows the established ego-phase rule.
+            # Do not let currently departing aircraft re-enter the old list.
+            states = []
+        else:
+            states=[u for u in snapshot.active.values() if u.ring_role is target]
         # An empty target ring has no target-holder gap to optimize.  A fixed
         # zero-angle capture made every O2M request bend through the same
         # arbitrary corridor.  With no target traffic, use the requester's
