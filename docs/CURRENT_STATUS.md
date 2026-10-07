@@ -131,6 +131,9 @@
 
 - **基础forecast train_A完成，正式P3任务范围已补齐方案。** 893301/12请求为662ticks、12N/0E/F/D/U，64/64标签34R30W，技术/censor/实际安全/hash/能量异常0；全量行/证书/mask/context核对通过，原进程已退出。原中性B/C未启动，64标签不混入真实P3资格集。primary新增显式P3任务profile，恢复priority1/3/5、混合SOC、mission服务及downstream_priority，真实flow6/dense24/flow12；[新数据与衔接协议](evidence/v4_2/p3_v25_actual_task_20261008.md)在reset前冻结smoke892808、train893401–3、Q895401–3仅保留。新入口先定向测试及小样本，任何学习仍需primary分析完整证据；正式训练启动目标继续，最终formal不设heartbeat。
 
+
+- **真实P3 flow6已完成，当前唯一dense24采集运行中。** 新profile/collector commit a8c821be，28项local/server检查及892808 smoke通过；新imitation入口8fb74731仅做了3项合成检查，没有真实fit/Q/PPO。flow6 seed893401为692ticks、6N/FDU0、20/20标签19R1W，priority1/3/5与低SOC/多mission覆盖已核对，无技术/censor/实际安全/hash/能量异常。现train_dense24 seed893402在`p3_v25_task_20261008/train_dense24`，Python2819670/timeout2819669，真实cwd/argv与priority/mixedSOC/24warm12协议相同；250ticks/4286raw/124selected/4N只是前缀。核心冻结，禁止重启已完成臂，完整dense终态primary分析后才继续train_flow12；Q895401–3及fresh初始化91901–3未消费。详细结果/后续顺序见[真实P3任务记录](evidence/v4_2/p3_v25_actual_task_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

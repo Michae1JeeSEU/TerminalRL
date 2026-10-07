@@ -3,7 +3,7 @@
 These functions expose no automatic admission or experiment entry point.
 Failed/incomplete episodes remain artifacts and cannot initialize the critic.
 """
-from dataclasses import fields
+from dataclasses import fields, asdict
 from collections import Counter
 from pathlib import Path
 import pickle
@@ -21,6 +21,7 @@ from ..scripts.collect_p3_v3_sparse_expert import natural_terminal
 from .p3_v25_runtime import request,check_request
 from .p3_v25_training import central_context,step_record
 from .p3_v25_set_learnability import digest_state
+from .p3_v25_task_metrics import completed_metrics, reward_parts
 
 
 @torch.no_grad()
@@ -56,11 +57,11 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
     import json
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     model.eval();before_weights=digest_state(model.state_dict())
-    steps=[];records=[];counts=Counter();env=None;error=None;terminal=False;replayed=False
+    steps=[];records=[];counts=Counter();components=Counter();env=None;error=None;terminal=False;replayed=False
     start=time.monotonic()
     write_json(output/'protocol.json',dict(seed=seed,policy_seed=policy_seed,max_steps=max_steps,
         wall_seconds=wall_seconds,deterministic=deterministic,teacher_enabled=False,
-        policy_initial_hash=before_weights,PPO_ALLOWED=False))
+        policy_initial_hash=before_weights,physics_config=asdict(config),PPO_ALLOWED=False))
     try:
         with torch.random.fork_rng(devices=[]):
             torch.manual_seed(policy_seed)
@@ -79,6 +80,7 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
                     live=execute_tape(env,row.tape())
                     terminal=natural_terminal(env)
                     reward=float(live['outputs'][4]['team_reward'])
+                    parts=reward_parts(live['outputs'][4]);components.update(parts)
                     new=step_record(row,context,value=value,next_value=0. if terminal else world_value(model,env),
                         reward=reward,terminated=terminal,episode_end=terminal or tick+1==max_steps,
                         stochastic_behavior=not deterministic)
@@ -89,7 +91,10 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
                     counts['actor']+=int(row.actor_mask.sum());counts['RELEASE']+=int(row.gates.sum())
                     counts['shield_actor']+=sum(bool(live['outputs'][4]['action_traces'][u]['shield_used'])
                                               for u,m in zip(row.uids,row.actor_mask) if m)
-                    record=dict(tick=tick,pre_hash=_digest(state),tape=row.tape(),post_hash=_digest(live['after']),reward=reward)
+                    record=dict(tick=tick,pre_hash=_digest(state),tape=row.tape(),post_hash=_digest(live['after']),
+                        reward=reward,reward_components=parts,actor_mask=dict(zip(row.uids,row.actor_mask.tolist())),
+                        likelihoods=row.likelihoods,action_traces=live['outputs'][4]['action_traces'],
+                        release_telemetry=canonical(env.last_release_telemetry))
                     records.append(record);stream.write(json.dumps(_json(record),allow_nan=False)+'\n');stream.flush()
                     outcomes=Counter(v.value for v in env.ledger.outcomes.values())
                     if tick==0 or (tick+1)%25==0 or terminal:
@@ -113,14 +118,14 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
     save_steps(output/'steps.pt',steps)
     result=dict(status='ERROR' if error else 'COMPLETED' if terminal else 'CENSORED',error=error,
         ticks=len(steps),terminal=terminal,censored=not terminal,replay_exact=replayed,counts=counts,
-        reward=sum(r.reward for r in steps),elapsed_seconds=time.monotonic()-start,
+        reward=sum(r.reward for r in steps),reward_components=dict(components),elapsed_seconds=time.monotonic()-start,
         PPO_ALLOWED=False,deterministic=deterministic)
     if env is not None:
         result.update(outcomes=dict(env.ledger.outcomes),outcome_counts=dict(Counter(v.value for v in env.ledger.outcomes.values())),
             requested=len(env.ledger.requested),unresolved=len(env.ledger.unresolved),active=len(env.active),
             queue=len(env.admission.queue.items),service=len(env.service_uavs),telemetry=dict(env.telemetry),
             energy_outcomes=env.energy_outcomes,external_queue_uav_seconds=env.external_queue_uav_seconds,
-            shield_actor_fraction=counts['shield_actor']/max(1,counts['actor']))
+            shield_actor_fraction=counts['shield_actor']/max(1,counts['actor']),task_metrics=completed_metrics(env))
     write_json(output/'result.json',result)
     return steps,result
 

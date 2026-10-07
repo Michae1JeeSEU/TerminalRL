@@ -53,3 +53,7 @@ primary另建`training/p3_v25_task_imitation.py`，仅为后续入口准备：fi
 893401已COLLECTION_OK/exit0，692ticks、6N/0E/F/D/U，所有到达/服务结束，技术/censor/实际安全/hash/负能量异常0；1896raw=20actor+1876forced，20/20标签=19R1W，五种proposal12/22/13/7/14，三接口7/7/6。actor中priority1/3/5为11/3/6，standard/emergency/cargo为9/3/8（任务名emergency不等于应急落地）；SOC<.65为14行，<.55为6行，32条基础臂retry统计不混入本臂，本臂after-retry2次、WAIT→RELEASE1次。最小实际/扫掠81.089035/81.053866m、最低完成SOC .401436、应急提交0。环境48.583s/标注78.668s。
 
 primary全量行/teacher证书/原候选与执行/selected快照hash/105+N×50 join断言通过；一条teacher proposal13对规则nominal的执行WAIT差异保留，另有teacher proposal7（速度残差−.5）而规则实际速度残差−1的候选差异，不改标。result SHA165fb4f0d4f8eb3dbde4b05b713b758500408ae7a3f82017383af589ad21f608，context SHA39e77e92ed97938d25d3a7068feaf9deb76da1cfcea17880e06469bdc9f22180，终态两端已同步；Python2819036/timeout2819035及child退出。分析文件SHA b713d9cf44afe99332cd2e6c7606646d3c13523fcdaee6328cad9351b9be61b4。接受继续唯一train_dense24；flow6禁止重跑。仍未实际BC/Q/PPO。
+
+后续真实PPO记录准备：primary在未被当前collector导入的`p3_v25_rollout`中保存完整physics config、每tick原requested likelihood/mask/K3执行trace和奖励分量，并核对各分量之和等于team reward。新增`p3_v25_task_metrics`只读取既有completed_uavs，统计priority加权等待、按初始SOC<=.65分组的等待以及N/E分项；不把服务完成混为触地时刻，不按终态SOC重分初始低电量组。14项local/server回归通过12.90s/5.43s（一个既有test tensor-to-scalar warning）；物理/teacher/当前采集核心未改，无真实PPO更新。这是为后续实际任务验证补齐结果口径，不是准入结果。
+
+train_dense24已启动：Python2819670/timeout2819669，真实cwd=/home/user/projects/terminal、argv指向新task_data/index2；protocol 893402/mixedSOC/priority任务/24warm12已核对。250tick/4286raw/124selected/4N/340.869s及steps、progress、first产物仅启动前缀，尚无exit/完整标签。当前一次一臂核心冻结，不重复启动；完整分析后才继续flow12。

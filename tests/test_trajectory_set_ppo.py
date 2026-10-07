@@ -183,5 +183,7 @@ def test_training_rollout_smoke_records_requested_behavior_and_full_replay(tmp_p
     assert len(rows)==len(loaded)==2 and loaded[-1].episode_end and not loaded[-1].terminated
     assert all(np.array_equal(a.ego,b.ego) for a,b in zip(rows,loaded))
     assert result['reward']==pytest.approx(sum(r.reward for r in loaded))
+    assert sum(result['reward_components'].values())==pytest.approx(result['reward'])
+    assert result['task_metrics']['completed_count']==0
     assert result['telemetry']['checked_executed_plan_hash_mismatches']==0
     assert policy.rollout_gate_kl(loaded)==pytest.approx(0.,abs=1e-7)
