@@ -62,6 +62,10 @@
 - **2026-10-07最新终态：90D固定BC小试已完成，RELEASE拟合不足，P3仍未验证解决。** 代码/协议commit`79e114b`，44项local/server tests及prepare/smoke通过后，91701/2/3各唯一1000更新均FIT_COMPLETE/exit0，actor已更新、critic冻结，进程已退出、无heartbeat。3seed训练集内平均gate accuracy82.38%、balanced67.82%、WAIT召回93.72%、RELEASE召回41.92%（37.99%–44.98%）、条件proposal top1/top3=55.75%/76.71%；联合正确78.90%，仅略高于全WAIT78.11%。低SOC RELEASE召回20%–28%、inner24.24%–33.33%、retry恢复23.57%–30.71%，完整标签已采到但尚未充分学出。loss均下降，不能凭随机初始RELEASE召回高就称训练退化；本次也不是独立闭环性能证据。
 - primary亲自核对全部末尾指标与mask/输入语义，并完成0model/0optimizer精确90D输入检查：1046行全部不同，当前样本无完全相同输入的冲突标签；不据此证明观测充分。详细[本轮结果、原因边界和下一项方案](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录。优先建议只改gate类别权重的同数据/同3seed/同1000更新配对诊断，原proposal loss不变，同时检查RELEASE召回与WAIT误放行；该下一项尚未实施。当前只确认可学习信号及偏WAIT的剩余问题，不能唯一归因类别不平衡或削弱安全/轨迹约束。I0/STUDENT_QUALIFIED及PPO_ALLOWED仍false，audit/Q未消费、未启动闭环或其他训练，无旧checkpoint覆盖。结果保留、仅本地提交，无remote不推送。
 
+- **2026-10-07用户继续授权gate权重配对诊断，准备中。** primary仅在离线入口增加固定全数据gate权重（WAIT=1046/1634、RELEASE=1046/458，按batch行数平均），proposal CE、1046行、91701/2/3、1000更新及优化器/模型不变；原未加权结果复用不重跑。新输出`p3_v3_bc_gate_balance_20261007`，先测试/prepare/synthetic smoke及同seed初始指标一致检查再fit，完整[运行前协议](evidence/v4_2/p3_v3_bc_learnability_20261007.md)已记录。服务器空闲，旧fit三文件两端SHA一致，新目录未存在；未读取audit/Q或启动PPO/闭环。资格仍false，所有重要修改与分析由primary完成。
+
+- gate权重对照的48项tests在local/server均通过，新prepare确认原1046行/输入清单一致，新16行synthetic smoke两次更新通过权重/输出/critic冻结检查。primary已核对准备结果，接受提交后只执行预登记的3seed×1000更新；此刻尚无真实加权fit结果，I0/student/PPO资格不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

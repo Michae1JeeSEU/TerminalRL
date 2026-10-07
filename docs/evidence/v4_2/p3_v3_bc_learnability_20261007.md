@@ -111,3 +111,22 @@ primary补做一次精确输入冲突检查：按loader实际float32的完整90D
 对照须同时报告RELEASE召回变化、WAIT误放行数、balanced accuracy、条件proposal和上述业务context，不能只追求RELEASE更高。若召回上升但WAIT误放行同步增加、balanced无改善，只能说明代价偏好改变；若分类整体改善，也仍仅是训练集内诊断。观察结果后再判断是否有必要做共享head冲突或观测缺失诊断，不预先扩成多因素矩阵。独立episode泛化、student-only闭环以及联合执行语义的验证仍是后续工作。
 
 本轮技术执行完成，但不授予正式I0/student/PPO资格，`I0_QUALIFIED=false/STUDENT_QUALIFIED=false/PPO_ALLOWED=false`。未消费audit/Q、未启动环境或teacher、full training/硬件、未覆盖旧checkpoint；没有遗留进程或heartbeat。代码与文档仅本地修改和提交，仓库无remote，无法推送。
+
+## 用户继续后的gate类别权重对照（2026-10-07，运行前冻结）
+
+用户在上述结论和单因素建议后明确要求继续下一步，本次授权实施该对照。继续使用research-pragmatist/academic-experiments的最小实验方式：primary亲自实现、读取和分析，worker只测试/SSH/Git。环境与数据支持范围沿用本报告前述审查；1046行只来自三个规则访问episode，前轮拟合不足，因此本次仅允许进一步解释训练集内偏WAIT现象，I0/student/PPO仍未qualified。
+
+- 唯一新因子：gate CE固定权重`[1046/(2×817),1046/(2×229)]`，先逐行相乘再按batch**行数**平均；不使用PyTorch加权CE默认的权重和分母。所有batch（包括只有WAIT或RELEASE的batch）保持该固定权重，不根据局部类别频率重算。全数据两类的总权重均为523，平均行权重为1。
+- 原proposal CE在原teacher RELEASE上平均，不加权；共享encoder、Adam3e-4、batch128、clip.5、CPU单线程、91701/2/3初始化、随机排列算法及各1000更新不变。等价训练代码默认路径仍为未加权，新增`--gate-balance`显式启用；没有修改生产PPO/model/loader或teacher。
+- 原未加权fit原样复用，不重训；新路径`p3_v3_bc_gate_balance_20261007/fit`。新协议`p3_v3_90d_bc_gate_balance_20261007`。全部参数fresh初始化，不加载旧checkpoint，每seed只存一个新诊断checkpoint。
+- 每seed optimizer创建前将完整初始指标与原同seed比较，要求精确相同；同时核对输入ID及原episode摘要。固定seed及不变的独立随机generator保持同一batch顺序，初始前向统计不消耗随机数。若不一致保留ERROR并停止，不掩盖配对失败。
+- 各seed仍1000更新/300s上限，不增加第二组超参数、不补seed或延长预算。比较指标仍为**原未加权定义**的loss/混淆矩阵/balanced/条件proposal及joint准确率，另存initial/final_training_objective以说明实际优化目标；加权目标与原未加权loss不得直接当作同一量相减。
+- 所有3seed及原分组完整报告：RELEASE召回、WAIT误判为RELEASE的数量与比例、balanced、proposal和joint；同时看低SOC/inner/retry等重叠子集。此处“误放行”仅指预测与原teacher WAIT不一致，**不是实际安全违规**；本试验没有执行环境动作。原teacher仍是pre-state单机可行标签，不变为联合批准标签。
+- 测试先核对权重公式/分母、gate梯度缩放、proposal梯度不变、WAIT无proposal梯度、相同初始化和输出、配对错误在optimizer之前停止。然后新prepare与独立16行synthetic smoke各一次，primary核查后本地提交，才执行真实加权fit。准备/合成结果不作为真实训练效果。
+- 执行命令沿用上文module/root，新增`--gate-balance`，output改为`/home/user/training_outputs/terminal/p3_v3_bc_gate_balance_20261007/{prepare,smoke,fit}`，显式cwd及原服务器Python/三个环境变量。先查Syncthing SHA及无重复进程/输出；现有未加权fit的inputs/protocol/result两端SHA已匹配，原进程已退出。预计秒级计算，无长任务heartbeat；若异常转为长任务按用户60min偏好管理。
+
+本次对照用于识别类别权重的作用，不凭结果直接部署、恢复PPO或宣称泛化。若balanced/重要子集改善且proposal没有明显损失，支持在后续训练候选中保留此设置；若仅提高RELEASE召回但整体区分能力没有改善，则记录代价偏好转移。任何后续独立episode/闭环范围另据本轮结果确定，不自动消费audit/Q。
+
+### 加权对照准备结果
+
+本地48tests通过12.83s、服务器相同48tests通过1.55s，exit0；比前轮44项增加4项权重/配对相关测试，不能相加成独立92项。新prepare为PREPARED/exit0、1046行817W229R、无optimizer；inputs SHA与原未加权准备和fit完全相同。新synthetic smoke为SMOKE_OK/exit0，16合成行、seed17、2更新，实际权重`[0.6401468788249693,2.2838427947598254]`，实际加权目标4.2807636→4.1809330、actor变/critic不变，新checkpoint存在。primary亲自读取并核对协议/结果，两端关键文件SHA一致；以上是newly_run验证，不是实际数据效果。运行前冻结runner SHA`3f9f83bcf6463354cc31dd4e531095b79538300b4bc39c115396eec6d589522a`、tests SHA`27efa650c700a59def5d8ed5f65bdf09f22a7912f4fb2e58301496c7e220ddc1`，原model/loader SHA保持不变。primary接受按上面唯一设置在提交后执行三seed加权fit。
