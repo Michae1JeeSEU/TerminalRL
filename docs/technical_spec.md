@@ -492,6 +492,23 @@ in-memory zero-column initialization，返回只含 `model`、`observation_dim=9
 的 inference wrapper；source weights 不变且不创建/迁移 optimizer。该 helper 不产生
 qualified 90D checkpoint。
 
+2026-10-08新增实验性集合观测`phaseA_low_obs_v2_5_trajectory_context_set`，通过
+`TerminalParallelEnv.trajectory_context_observations()`显式构建；不改变旧flat schema。
+返回`ego[105]`、全部活跃邻机`traffic[N,50]`及`traffic_mask[N]`，由
+`core/trajectory_context_observation.py`的两个named schema定义。ego的两个target槽使用
+相对方向模差，包含reference时刻已承诺到达的incoming；额外15值为scheduler6和实际环几何9。
+邻机集合不按CPA/top-K截断，提供当前phase/ring、承诺目标/剩余时间、相对位置/速度、
+承诺终点和5/15/30/60/90/120/150s轨迹采样。UID只用于trace，不进入模型；批处理通过
+`pad_trajectory_context`的mask处理可变N。距离/速度按1000m/25m/s缩放而不截断，
+剩余时间用`t/(t+150)`。预测只读取已承诺计划和nominal holder continuation，不查询
+teacher/candidate安全结果，不推测尚未承诺的动作。旧88/90D checkpoint不能直接用于该集合接口。
+
+`scripts/reconstruct_p3_v25_context.py`从三个已有train回合快照重建输入，原label按decision_id
+保持不变；`training/p3_v25_context_dataset.py`只接受完整full重建结果、显式允许的train seeds，
+不会将probe/ERROR/forced/null当作监督。具体验证范围见
+[V2.5修复协议](evidence/v4_2/p3_v25_observation_repair_20261008.md)。该接口尚需set-aware actor与
+后续独立训练/闭环验证，不改变student/PPO资格。
+
 ---
 
 ## 15. Topological neighbor utilities

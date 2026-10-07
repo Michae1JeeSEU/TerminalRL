@@ -354,6 +354,16 @@ class TerminalParallelEnv:
             for uid, uav in self.active.items()
         }
 
+    def trajectory_context_observations(self):
+        """Opt-in V2.5 set observations; the existing flat rollout is unchanged.
+
+        A set-aware actor must consume this explicit API. It cannot silently
+        load an 88/90D checkpoint through the old flat observation route.
+        """
+        from ..core.trajectory_context_observation import TrajectoryContextCache
+        cache = TrajectoryContextCache(self)
+        return {str(uid): cache.build(uav) for uid, uav in self.active.items()}
+
     def _refresh_airspace_occupancy(self) -> None:
         values = {role: 0 for role in RingRole}
         committed = {role: 0 for role in RingRole}

@@ -91,6 +91,10 @@
 - 核心新证据：tick92/UID0的阻塞者UID4、tick152/UID6的阻塞者UID1均在TRANSFER_M2I、即将进入inner，但未进入任何90D邻机槽；目标环selector只看当前ring_role，CPA仅恒速30s，缺完整承诺轨迹/目标/剩余时间。tick92→101的CPA d_cpa从200.1m变71.27m，与完整轨迹可行性方向相反。另确认target path_gap错误保存绝对角×半径；tick152 successor写−1249.108m/截−1，而同一baseline的相对间隔应−191.648m/−0.5989。[详细证据、teacher边界与下一项新观测修复方案](evidence/v4_2/p3_v3_teacher_safety_audit_20261008.md)已记录。先新schema修相对gap、纳入已承诺incoming与轨迹上下文，再复用原快照/原label重建观测；本轮未改生产90D或重训，不据四状态宣称唯一原因/解决P3。
 - 新诊断首样本断言误含合法query计数，exit1已保留；primary只修诊断比较范围，已新增状态不变/计数白名单与gap回归。修后6项exit0，共11.171s加失败1.569s，总12.740s；0reset/step/学习，输入和终态SHA两端一致，无残余任务/heartbeat。local/server21项通过后仅补测新增gap用例所在12项均通过，合计22个不同定向用例验证；其他dirty保留，I0/student/PPO仍false，无audit/Q/硬件/checkpoint写，本地提交、无remote不推送。
 
+- **2026-10-08用户继续后：V2.5轨迹上下文集合观测修复准备完成。** primary新增显式`phaseA_low_obs_v2_5_trajectory_context_set`和env opt-in API：ego105纠正target相对gap、纳入reference时刻已到达的committed incoming，traffic[N,50]保留全部活跃邻机并提供承诺目标/剩余时间/终点/5–150s轨迹采样，UID不入模型、不按CPA截断；旧90D/teacher/执行默认不变。新loader及原快照重建入口已实现，local/server63项tests通过。[运行前协议](evidence/v4_2/p3_v25_observation_repair_20261008.md)先4状态probe，再原1046 actor/645快照full重建，0teacher/0reset/0step/0学习、不消费新seed。probe正在检查，尚无full或训练效果结果；I0/student/PPO资格仍false，其他dirty保留。
+
+- **2026-10-08最新终态：V2.5观测修复和原1046行重建已完成。** 4状态probe已通过：tick92 UID4/剩余0.991704s与tick152 UID1/剩余4.884610s进入target槽及完整set；tick101 UID4仍可见但已是landing承诺，gap successor由−1修至−0.598899。full645快照/1046行在46.734s完成exit0，新loader通过，原229R/817W及全部标签不变；13939邻机行/最多20邻机，原state与90D、其他72字段、全邻机覆盖逐行断言通过。local/server终态SHA相同，四probe行两次构建精确相同，无运行任务/heartbeat。新core/loader/API及63项local/server tests均已验证，[详细结果与有界下一步](evidence/v4_2/p3_v25_observation_repair_20261008.md)。下一步先set-aware actor前向/mask/置换不变性，再同网络旧信息/新信息有界配对拟合，不能把架构变化混为观测收益；本轮0训练、0teacher/step/reset、无新seed/audit/Q/旧checkpoint覆盖。I0/student/PPO仍false，不宣称P3解决；其他dirty保留、本地提交、无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
