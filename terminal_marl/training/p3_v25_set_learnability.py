@@ -109,7 +109,8 @@ def forward_check(paired):
                 parameter_updates=0, old_information_exact=True, permutation_and_batch_checks=True)
 
 
-def fit_arm(paired, out, arm, seed, initial_state, *, updates=UPDATES, wall_seconds=WALL_SECONDS):
+def fit_arm(paired, out, arm, seed, initial_state, *, updates=UPDATES, wall_seconds=WALL_SECONDS,
+            measurement_updates=(), reference_prefix=None, protocol=PROTOCOL):
     out.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
     model = TrajectorySetActor()
@@ -122,6 +123,7 @@ def fit_arm(paired, out, arm, seed, initial_state, *, updates=UPDATES, wall_seco
     generator = torch.Generator().manual_seed(seed)
     permutation, offset = torch.randperm(len(data.gate), generator=generator), 0
     batch_hash = hashlib.sha256()
+    curve = []
     for update in range(1, updates+1):
         require(time.monotonic()-started < wall_seconds, 'fit wall budget exhausted')
         if offset == len(data.gate):
@@ -135,19 +137,32 @@ def fit_arm(paired, out, arm, seed, initial_state, *, updates=UPDATES, wall_seco
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), .5, error_if_nonfinite=True)
         optimizer.step()
+        if update in measurement_updates:
+            metrics, predictions = measure(model, tensors, data)
+            item = dict(update=update, metrics=metrics, state_hash=digest_state(model.state_dict()),
+                        batch_order_hash=batch_hash.hexdigest())
+            if reference_prefix is not None and update == reference_prefix['updates']:
+                require(item['state_hash'] == reference_prefix['final_state_hash']
+                        and item['batch_order_hash'] == reference_prefix['batch_order_hash']
+                        and json.loads(json.dumps(metrics)) == reference_prefix['final'],
+                        'curve prefix differs from frozen reference')
+                item['reference_prefix_exact'] = True
+            curve.append(item)
+            write(out/'curve.json', curve)
+            write(out/f'predictions_{update}.json', predictions)
         if update == 1 or update % 250 == 0:
             write(out/'progress.json', dict(update=update, loss=float(loss.detach()), elapsed_seconds=time.monotonic()-started))
     final, predictions = measure(model, tensors, data)
     changed = {prefix: any(not torch.equal(v, initial_state[k]) for k, v in model.state_dict().items()
                           if k.startswith(prefix)) for prefix in ('gate_encoder', 'proposal_encoder', 'gate_head', 'proposal_head')}
     require(all(changed.values()), 'an actor module did not update')
-    torch.save(dict(model=model.state_dict(), observation_schema=VERSION, protocol=PROTOCOL,
+    torch.save(dict(model=model.state_dict(), observation_schema=VERSION, protocol=protocol,
                     arm=arm, seed=seed, updates=updates, diagnostic_only=True), out/'diagnostic_final.pt')
     write(out/'predictions.json', predictions)
     result = dict(status='FIT_COMPLETE', arm=arm, seed=seed, updates=updates,
         initial_state_hash=initial_hash, final_state_hash=digest_state(model.state_dict()),
         batch_order_hash=batch_hash.hexdigest(), changed=changed, initial=initial, final=final,
-        elapsed_seconds=time.monotonic()-started)
+        elapsed_seconds=time.monotonic()-started, curve=curve)
     write(out/'result.json', result)
     return result
 
