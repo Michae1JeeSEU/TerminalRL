@@ -108,6 +108,8 @@
 - **B_det已完整完成，当前转B_sto。** B_det为982ticks/1697.596s、24N/0E/F/D/U、完整tape重放一致，实际安全/hash/actor shield均0，无error/censor；最低完成SOC .406903、0应急。293次R中64批准/229拒绝、15次K3备选，说明仍有时机优化空间，不能称决策最优。当前唯一B_sto为Python2807712/timeout2807711、SSH session28812，路径`p3_v25_student_dev_20261008/B_sto`，protocol确认原固定91701 checkpoint/SHA、892803/928803随机策略。PPO准备最新4edee3a（rollout4fad802），31项local/server tests通过，尚无实景PPO更新。heartbeat p3-v2-5保持60min并持续后续修复/资格推进；最后formal启动后删除。
 - **持续推进：独立V2.5 I1准备完成，尚未采集/训练。** primary新增[三完整周期Q与fresh91801–3资格协议](evidence/v4_2/p3_v25_i1_qualification_20261008.md)和独立入口，当前开发六臂全部通过后才执行smoke及Q895301–3；Q先冻结再train，训练loader禁止Q，三final后只评估一次，沿用既有I1门槛。新入口/旧loader/runtime共30个不同local/server用例通过；初始Windows路径序列化错误已修复留证。当前B_sto继续，新入口不被其import；没有正式Q/fresh fit或实景PPO更新，资格仍false。
 
+- **持续推进：B_sto完整22N2E，无F/D/U/技术/实际安全/hash/重放阻塞。** 1166ticks、242R/1944W、0actor shield；2E均完整落地，不能写成24N。与B_det相比周期982→1166、能耗10636.43→11777.77，业务效率仍需改善。primary核对六个旧snapshot及两架trace，长切环和正确的committed mask贡献了延误，并非全部来自actor WAIT；两条长m2i为nominal提案。另两个eligible WAIT状态的原teacher也WAIT，50个RELEASE候选均拒绝，未见这两时刻直接漏放证据；该探针stdout未按约落盘，缺失已明示且未重跑。[详细证据/边界](evidence/v4_2/p3_v25_formal_readiness_20261008.md)。当前唯一C_det Python2810032/timeout2810031、session41164，混合SOC892804/928804；先完整结果再决定C_sto。I1准备commit791e709，尚无Q/fresh fit/实景PPO，资格仍false；持续授权下一步及最终formal无heartbeat要求不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

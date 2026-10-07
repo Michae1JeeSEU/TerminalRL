@@ -81,3 +81,17 @@ B_sto已启动Python2807712/timeout2807711，SSH session28812，已出现first_b
 ### 并行准备独立imitation资格（尚未启动）
 
 primary在不被当前评估import的新文件中实现[三完整周期Q与fresh多seed I1协议](p3_v25_i1_qualification_20261008.md)。所有开发臂通过及独立smoke后才允许首次Q reset；Q先完整冻结，再以原1046 train fresh91801–3各5000更新，全部final写完后一次评估。895301–3覆盖12高SOC/24高SOC/24混合SOC，原始Q永不进入train；沿用既有I1准确率门槛，Safe DAgger/student/PPO后续资格仍分开判断。精确seed搜索无历史代码记录，服务器新根未存在，真正采集前另查历史产物身份。新增30个不同local/server定向用例通过（29项加新增1项，新文件15项复跑），首轮Windows清单路径错误已修复并留证；当前没有真实Q采集或fresh fit。
+
+### B_sto完整终态及应急来源的最小检查（newly_run）
+
+B_sto已COMPLETED/exit0，1166ticks/1771.421s（含完整重放）、**22N/2E/0F/D/U**，error/censor无、replay_exact=true，active/queue/service/unresolved均0。主代理核对12039行=2186actor（242R/1944W）+9853forced，likelihood/mask/K3/trace逐行检查通过。result SHA `e33a8edc09722b71f7ac963665f04fcdf342aab977234964343a3ab8058b3342`，protocol/steps/first_before/log/exit两端一致，原2807712已退出。终态checkpoint路径也确认20261008和原固定模型，前述202608文字摘录不能代表真实输入。
+
+最小实际/扫掠间隔均82.495507m，buffer/protected/NMAC/collision/physical shield/fail-closed/hash异常均0，0actor takeover；748energy checks/0negative，2次应急提交/落地均完整，最低完成SOC .292214。普通过滤safety_interventions146与8个不可行候选仍单列。242次原R中62普通批准、178有普通拒绝原因（NO_MERGE_GAP36/HEADWAY18/PREDICTED_SEPARATION123/FINAL_RESOURCE1），另2次原R所在tick由应急流程接管、没有普通release_telemetry，**不能将这两次记为普通拒绝或删除原动作/likelihood**。普通批准rank1/2/3=50/7/5，12次K3备选；应急是独立业务结果，不误写为actor physical shield。
+
+相比同环境seed的B_det：周期982→1166，reward486.063878→447.355996，合计能耗10636.430423→11777.768984。arrival17和22在det均正常，完成时刻690/704、SOC .608197/.599442；sto分别1128/1166应急完成、SOC .324148/.292214。这里只是一个配对开发场景的观测，不作统计泛化或单因素机制证明。
+
+primary编写只读trace汇总及六个既有snapshot（两个臂×400/600/850）检查；worker仅执行。所有snapshot canonical state均精确等于已核对steps的post_hash，0reset/0step/0模型/0teacher。结果：这两架sto的actor WAIT仅137/122（det113/94），forced为814/813（det411/405）。在所查forced状态中存在合法已承诺切环，checked hash全部相同，不能取消mask让策略途中换轨。sto arrival17的o2m为350→587.861，m2i为729→999.913；arrival22的o2m为437→665.446，m2i为765→1078.915。det对应o2m约139/140s、m2i约97/93s。sto两条长m2i请求/实际执行都是nominal speed0/timing0，不是简单“模型选了慢速”可以解释；arrival22的o2m是K3 rank3执行speed+.5/timing+.5，原请求speed−.5/timing0。`scheduled_delay=0`不能表示轨迹本身没有较长飞行时间。计划时长与上下游间隔/调度上下文应一起看。
+
+另用两既有eligible WAIT状态作最小teacher复核：B_sto tick400/UID114与tick600/UID38，各原快照与tape pre/post hash相等、私有副本，0reset/0step/0学习。两次均teacher WAIT、无放行证书；400的25个RELEASE意图为18个merge_slot_retime_conflict、4个predicted_holder_reachable_tube、3个predicted_separation；600的25个均predicted_separation。各耗时69.922/60.359s，共130.281s，未重试。原stdout完整存在执行工具记录，但worker遗漏约定的文件重定向，预期JSON未产生；primary发现缺文件后仅要求读取已有stdout并核对上述26项（25R+WAIT）原reason表，没有为补产物重复查询。此探针用于排除“这两个时刻模型明显漏放”的直接指控，**拒绝reason本身不证明物理绝对无解**，也不为更早的放行顺序/计划时长提供最优性证明。
+
+判断：开发安全/完整性与预定继续条件通过，但高SOC仍有应急及效率下降，不能称业务最优或student/PPO已就绪。保留安全与原teacher，继续既定C_det/C_sto，再以独立I1及student状态分布验证决定训练数据/策略是否需修复。当前C_det唯一评估Python2810032/timeout2810031，SSH session41164，892804/928804、24/warm12、SOC.55–.90、deterministic、同固定checkpoint；真实cwd/argv和protocol/first_before存在且两端一致，首报steps0行只是启动前缀。源码冻结，未启动C_sto、Q或实景PPO。
