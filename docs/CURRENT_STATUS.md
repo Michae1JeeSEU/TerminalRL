@@ -164,6 +164,8 @@
 
 - 当前唯一新dense固定893512运行于Python2859846/timeout2859845，真实cwd/argv及初产物已核对，400ticks/451selected只是前缀；60min heartbeat p3-v2-5已更新。另primary完成新`training.p3_v25_formal`入口，16项local/server合成tests通过：显式审查后续真实证据、延续pilot优化器、逐周期保留checkpoint、异常/预算停止、无teacher/Q观测/heartbeat。入口不被collector导入，核心冻结；没有实际formal manifest或启动，不构成资格，见[fresh轮记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- **新合同dense固定已完整通过采集检查，继续mixed。** 893512为1003ticks/20N4E/0FDU、11448raw/721完整标签=94R627W、14种proposal；全量原mask/null/label/105+N50、实际安全/hash/能量均通过，标注4891.094s未超21600s，关键终态SHA同步、Python2859846退出。分析报告已完整生成，执行worker重复调用触发防覆盖assert，非数据失败，原报告保留且primary已读。详见[fresh轮证据](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。下一唯一893513 mixed按既定预算；新fit/student/Q/PPO仍未执行，formal入口2c4384c仅合成测试准备，不授予资格。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

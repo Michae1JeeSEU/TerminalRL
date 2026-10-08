@@ -60,3 +60,15 @@ primary接受该完整训练周期，下一唯一train_dense24_fixed/893512，�
 本地和服务器16项合成测试通过6.09s/2.24s（含3项既有PPO block回归）：确实执行mock环境下的梯度更新并验证连续optimizer step、固定actor/source、三周期顺序、准入/profile/hash/seed拒绝、耗尽周期在更新前停止、预算截止保留checkpoint、异常保留完整rollout及重复目录不覆盖。初次测试因test helper的包导入路径错误而collection失败，改为项目已有`tests.*`方式后通过，失败日志保留；不涉及实际仿真失败。相关4文件SHA两端相同。当前collector核心与数据合同未改；入口测试不构成真实PPO效果或formal资格。
 
 当前train_dense24_fixed真实timeout2859845/Python2859846，cwd和argv已核对，新profile/893512/fixed.8与全部上限吻合；first_request/before/live/replay和raw已生成。一次启动确认时400ticks/5completed/451selected、602.47s，是运行前缀而非全臂结果。正在写入的raw与progress时间不同，不能将两者瞬时行数差当终态不一致。核心冻结、后续仅60min监控；必须完整终态核对后再mixed。
+
+### dense固定SOC已完整完成
+
+train_dense24_fixed/893512已COLLECTION_OK/exit0，1003ticks/20N4E/0F/D/U；环境851.469s、标注4891.094s（约81.5min，低于21600s）。11448raw=721actor+10727forced，721/721标签全部OK：94R/627W、14种proposal。接口o2m为25R119W、m2i44R80W、i2f25R428W；busyLZ709、高速inner450、SOC<.55为238/<.65为555、retry恢复302，37次同接口WAIT→RELEASE。16084个RELEASE意图/9968次实际plan，资源等早期拒绝不必进入plan，所以后者可以更少。
+
+全部raw90D/null/pre-mask、actor-selected-label集合、原证书与105+N50 join及快照config/effective base1检查通过。teacher/actual分别57R/R、37R/W、3W/R、624W/W，保留pre-state单机teacher与实际顺序/资源更新语义，不按执行改标；59次有rank正常K3批准（41/8/10）与1条无rank应急trace分开。原始physical mission包含emergency，并不恢复任务等级偏好，policy token仍STANDARD。
+
+最小实际/扫掠80.797069/80.768339m，最低完成SOC .298050/能量447.075；4次应急完整触地服务，27次尝试、36次安全拒绝/7次LZ拒绝、0能量拒绝。实际安全/碰撞/NMAC/hash/shield/负能量/技术/censor均无异常；146次safety_interventions为计划拒绝。20N4E与其他seed结果不作修复因果收益比较。root result SHA`347dc1315233a75db77b80c7d1baeb3aa480aab883e5fc3311f8d3a7b3bdce62`，context SHA`91acf84e9916cf30c37bf75fdb904308e81d974e349ceefa14e18eb77be43743`，关键产物两端同步，原父/child已退出。
+
+全量只读分析报告`.tmp/p3_course_v2_dense_fixed_analysis.json`已生成（SHA`174f292baab976cf7ac46182fabc559f2d648c429bfb5be9998c3b6c80b08f14`），primary亲自读回核对。执行worker未捕获首次分析的明确stdout/exit，在报告已存在后重复调用，触发第13行防覆盖assert而exit1；该错误不是数据检查失败。脚本只在全部断言后写最终报告，原报告完整、未覆盖，不重跑仿真或再次重复分析。
+
+primary接受该完整训练输入，继续唯一train_dense24_mixed/893513，24/warm12、SOC .55–.90、1800ticks/3600s环境/21600s全actor标注/900s重建，其他合同不变。当前仍无新fit/student/Q/PPO，formal入口2c4384c及16项local/server合成测试只是准备。mixed终态分析后才合并三个严格train输入开始既定fresh拟合。
