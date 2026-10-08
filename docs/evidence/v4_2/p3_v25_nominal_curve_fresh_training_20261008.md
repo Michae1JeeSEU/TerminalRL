@@ -72,3 +72,15 @@ train_dense24_fixed/893512已COLLECTION_OK/exit0，1003ticks/20N4E/0F/D/U；环�
 全量只读分析报告`.tmp/p3_course_v2_dense_fixed_analysis.json`已生成（SHA`174f292baab976cf7ac46182fabc559f2d648c429bfb5be9998c3b6c80b08f14`），primary亲自读回核对。执行worker未捕获首次分析的明确stdout/exit，在报告已存在后重复调用，触发第13行防覆盖assert而exit1；该错误不是数据检查失败。脚本只在全部断言后写最终报告，原报告完整、未覆盖，不重跑仿真或再次重复分析。
 
 primary接受该完整训练输入，继续唯一train_dense24_mixed/893513，24/warm12、SOC .55–.90、1800ticks/3600s环境/21600s全actor标注/900s重建，其他合同不变。当前仍无新fit/student/Q/PPO，formal入口2c4384c及16项local/server合成测试只是准备。mixed终态分析后才合并三个严格train输入开始既定fresh拟合。
+
+mixed已启动timeout2869692/Python2869693，实际cwd=/home/user/projects/terminal、argv/protocol确认index3/893513、uniform SOC .55–.90及新profile/全部预算；25tick/309raw/26selected、85.83s只是初始前缀。first_before/live/replay及请求步骤已生成，无exit或终态。原fixed完成后才启动该臂，最多一个环境父与其标注child；核心冻结，下一检查仍60min。完整后primary分析，再决定既定fresh fit。
+
+### 三个新训练周期完整，开始固定预算拟合
+
+train_dense24_mixed/893513已COLLECTION_OK/exit0，957ticks、14N10E/0F/D/U，原timeout2869692/Python2869693及标注child自然退出。环境817.385s、标注4546.196s、105+N50重建22.472s，均在预登记预算内。11370raw=547actor+10823forced，547/547标签全OK，87R/460W、17种proposal；o2m为27R104W、m2i42R104W、i2f18R252W。busyLZ535、高速inner263、SOC<.55为339/<.65为453、retry恢复365，40次同接口WAIT→RELEASE。11947个RELEASE意图、11613次plan调用。primary已亲自核对全量分析；null/forced mask、全部actor-selected-label集合、原pre-state证书、snapshot config、policy STANDARD/base1、105+N50 join与首tick重放通过。
+
+teacher/实际trace为48R/R、39R/W、6W/R、454W/W；52次正常K3批准rank1/2/3=35/11/6，另有2条无rank应急trace。原始单机teacher与批量执行语义继续分开，不按执行结果改标，也不把这些差异概括为错误监督。最小实际/扫掠81.238699/80.871572m，最低完成SOC .126563、能量189.844；10次应急提交/触地，151次尝试、297次候选安全拒绝、2次LZ拒绝、0能量拒绝。实际安全/hash/技术/censor/负能量无异常，506次safety_interventions是候选拒绝；应急服务占比仍高，不能据此声称业务最优或训练退化已解决。
+
+终态关键文件两端SHA相同：root result `47ee6e33a01cf4402b85369dca5e3048bdcd14491b305865a496d97eb6633338`，context `32df9fdcd37c8c3821df18e3d29c75bcf2a6f5fc2986028016a207f1157432b5`。全量分析`.tmp/p3_course_v2_mixed_analysis.json`首次执行exit0，SHA `9e2bf7ceb9a27cd6fc36324056e35f0d0b25910ea2a7146e42de5c8d78c98912`。运行中曾读到不同时刻的label数量与hash差异，终态一致；单条annotation_progress的COMPLETED不是全臂终态。中途一个监控worker因工具上下文超长退出，换成只输出紧凑字段的只读监控，服务器父/child持续正常，未重启实验。
+
+三组严格train共54请求39N15E/0F/D/U、24868raw，其中23570forced不入actor loss，1298有效标签=204R/1094W、19种proposal。没有纳入旧合同数据、开发smoke或Q。primary接受新数据作为本轮拟合输入；按既定91901–3各fresh5000updates/300s、固定final/canonical91901执行新的fit_initial，随后先核对拟合残差再逐臂student闭环。Q895501–3仍未消费，critic/PPO/formal未启动；采集完整不等于学生资格。

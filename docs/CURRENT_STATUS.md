@@ -166,6 +166,10 @@
 
 - **新合同dense固定已完整通过采集检查，继续mixed。** 893512为1003ticks/20N4E/0FDU、11448raw/721完整标签=94R627W、14种proposal；全量原mask/null/label/105+N50、实际安全/hash/能量均通过，标注4891.094s未超21600s，关键终态SHA同步、Python2859846退出。分析报告已完整生成，执行worker重复调用触发防覆盖assert，非数据失败，原报告保留且primary已读。详见[fresh轮证据](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。下一唯一893513 mixed按既定预算；新fit/student/Q/PPO仍未执行，formal入口2c4384c仅合成测试准备，不授予资格。
 
+- 当前唯一mixed893513为Python2869693/timeout2869692，index3/uniform SOC .55–.90/24warm12及真实cwd/argv已核对；25ticks/309raw/26selected为启动前缀，尚无终态。fixed结论已4a4e170提交，mixed核心冻结并由60min heartbeat继续；完整后才三train合并fresh fit，不重复已有臂，不把入口测试当正式训练启动。
+
+- 修复合同下三组新train已全部COLLECTION_OK：flow5N1E、fixed20N4E、mixed14N10E，共54请求39N15E/0F/D/U，无实际安全/hash/技术/censor阻塞。primary核对24868raw/1298有效标签（204R1094W、19种proposal），forced与null未入actor loss；随机任务等级仍关闭，保留总等待/SOC紧迫度与物理服务。mixed标注4546.196s、最低完成SOC .126563，三组全部在预算内，终态文件两端一致、原进程已退出。已准许既定fresh91901–3固定5000updates拟合，新fit后继续完整student开发闭环；尚无新学生/Q/PPO/formal结果，不能宣称训练退化解决。详见[新数据与训练记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
