@@ -107,3 +107,13 @@ primary随后接入`core/quintic_hull.py`、环等待构建充分条件、parame
 本轮证据类型：上述运行/测试/分析为newly_run；原环境与旧标签作为preexisting_artifact在新查询中只读引用；没有将user_claim当测量。两端代码SHA相同。下一运行命令为`python -u -m terminal_marl.training.p3_v25_annotation_repair --source-directory /home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_dense24_fixed --output /home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_dense24_fixed_annotation_v2`，cwd与Python环境按项目准则、外层24000s；source result SHA在启动前再次核对。源码/测试提交后才启动，初始产物确认后60min监控；主目标继续至正式P3实际启动，最终formal不设heartbeat。
 
 实现提交`dbc2dd3296522530c1fa52d9f814aa0848d557f6`后，新完整标注已启动：Python2833606/timeout2833605、SSH session33746，真实argv/cwd已核对，初始query2833639/window6；protocol记录原失败SHA、0reset/step及21600s。初始snapshot为6条已完成/500、12.630s，firstlabel为原R12；随后本地同步文件到达。root仍ANNOTATING，无annotation_result/exit，不当完成。运行中核心及重建模块冻结，60min heartbeat已更新；只有全量通过后才启动mixed，旧失败目录绝不再用于fit。新的fit/monitor/analyzer helper已显式指向修复目录；没有真实BC/Q/critic/PPO。无Git remote，源码通过Syncthing两端SHA检查，未Git推送。
+
+### 完整离线标注修复已完成，继续混合SOC
+
+UTC2026-10-08 05:08终态：新目录COLLECTION_OK/exit0，原父/child均退出；500/500标注完整，耗时8602.150s（约2.39h，预算21600s），10973个RELEASE意图/11922次plan调用。原201条全部非耗时字段及certificate精确相同，原失败result/raw哈希未变；未重置或步进环境。root result SHA`1f571c62d919ee5e478e398f6c51db33f75a3bd3a642ae10118e34bcef0a597d`，annotation SHA`7b9c3da5ed2d62d869788fecdceb211cd589e1b9293eac7583c6f9fed62c6bde`，500条105+N50重建SHA`983a06baee99d378e3558d3ac380dd4e03a5da734e352137563d3d6dc5a2fa4a`，两端终态已同步。
+
+primary逐行核对12151raw/1157steps/500actor-selected-OK及context join、pre-action mask、原始null、proposal/certificate、所有快照配置与有效base=1。全500标签为76R/424W、15种proposal；三个接口R/W分别24/266、28/96、24/62，32次同UID同接口WAIT→RELEASE；标注覆盖busyLZ488、高速inner82、SOC<.55为132、<.65为283、retry结束418。11651forced不进入actor loss。物理mission仍有四类，policy mission均STANDARD。teacher/实际gate为53 R/R、23 R/W、4 W/R、420 W/W；state-only teacher与批量执行上下文不同，不能按实际结果改标或把WAIT当物理无解。正常K3批准54（rank1/2/3为37/9/8）；trace有额外3条无rank的RELEASE，不能将其并成57次正常批准。
+
+业务结果沿用原环境16N8E/0F/D/U；8E是应急完整完成，不写成24N。actual/扫掠最小82.0455/82.0309m、最终SOC最低.212100、能量最低318.150，实际安全/hash/技术/censor/负能量无异常。该修复闭合的是全量标注计算阻塞，尚未证明学习性能。只读分析首次错误地到新离线目录寻找first_live/replay而失败；primary改为读取并校验原完整rollout证据，新旧raw SHA逐项相同，重新执行全部分析成功（`.tmp/p3_neutral_fixed_repair_analysis_v2.json`）。保留首次失败log，没有重跑环境/query或改标签。
+
+据以上证据，primary接受该臂用于后续训练输入并继续唯一预定train_dense24_mixed/893503：24请求/warm12、SOC .55–.90、中性优先级、1800ticks/3600s环境、21600s全部actor标注、900s重建、外层27000s。运行前核对冻结源码同步、seed/路径/进程无重复；完整后再分析三臂数据并执行已记录fresh fit及student开发验证。Q895501–3仍未消费；未授予I1/student/PPO或formal资格。

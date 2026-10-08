@@ -142,6 +142,8 @@
 
 - 上述计算修复已提交`dbc2dd3`，新完整离线标注现唯一Python2833606/timeout2833605、SSH session33746，输出`p3_v25_neutral_course_20261008/train_dense24_fixed_annotation_v2`。真实cwd/argv及首label、6/500初前缀已核对，root仍ANNOTATING；21600s新预算、0reset/step，不延原失败任务。60min heartbeat已更新，核心冻结；全量终态分析后继续mixed和后续学习至正式启动，不以此标注启动作为任务完成。
 
+- **完整固定SOC离线标注修复已通过，下一臂为中性dense mixed。** UTC2026-10-08 05:08新目录COLLECTION_OK/exit0，500/500标签76R424W、15种proposal，原201标签及证书精确一致，0reset/step；8602.150s内完成、105+N50及全部raw/mask/context核对通过。业务保留16N8E/0FDU，无技术/censor/实际安全/hash/负能量异常，原INCOMPLETE不变。所有500actor有效base=1；用户明确整个训练阶段暂不考虑随机优先级，继续贯穿数据/BC/student/PPO/formal。primary接受下一唯一893503 dense24_mixed（1800ticks/3600s环境、21600s全量标注），之后fresh fit与学生闭环；无新实际学习/资格结论。[完整证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
