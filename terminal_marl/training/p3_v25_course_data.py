@@ -20,10 +20,10 @@ from .p3_v3_bc_learnability import Data, require, read, write
 from .p3_v3_expert_dataset import DATA_SCHEMA, DEVELOPMENT_SCHEMA, DEVELOPMENT_PARTITION
 from ..core.trajectory_context_observation import pad_trajectory_context
 
-PROTOCOL = 'p3_v25_neutral_course_data_20261008_v1'
-TRAIN_CASES = tuple(zip((893501,893502,893503),SCENARIOS))
+PROTOCOL = 'p3_v25_neutral_course_data_20261008_v2'
+TRAIN_CASES = tuple(zip((893511,893512,893513),SCENARIOS))
 Q_CASES = tuple(zip((895501,895502,895503),SCENARIOS))
-SMOKE_SEED = 892851
+SMOKE_SEED = 892863
 GAP_MODE = 'committed_arrivals_v1'
 
 

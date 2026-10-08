@@ -158,6 +158,8 @@
 
 - **已定位并修复一处安全预测假阻塞，尚待完整周期。** 665tick原轨迹精确重放；native witness表明UID29对UID49的零宽nominal预测间隔84.408m，却被通用速度余量压到79.320m；连续curve下界84.391m。新`swept_curve_v1`保持80m与曲线误差保护，365/29和665/29 teacher可放行，反向665/49真实冲突仍拒绝。另`total_wait_v1`修复内部等待漏计；当前neutral course v2显式启用，旧pickle保持legacy。73项local/server回归通过，清理重复config定义后7项通过。下一独立892862两tick smoke→同原失败892854/929854 frozen source完整诊断；旧标签/模型不冒称新课程资格，须后续新标签/学生/Q/PPO证据。详见[中性课程记录](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
 
+- **nominal curve修复的完整同seed对照通过，继续fresh数据。** 核心55743e9、独立892862 smoke已通过；旧模型在原失败892854/929854场景新运行1045ticks/17N7E/0F/D/U、24请求完整服务与tape重放一致，实际安全/hash/shield异常0。旧18N4E1F1U保留，不把7E或部分旧周期统计称为性能已解决。两端SHA一致、Python2856414退出，详见[中性课程证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。primary已记录[fresh三条件方案](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)：新teacher合同、train893511–13/独立smoke892863、全actor标注21600s，不混旧标签；Q895501–3仍未消费。入口常量已修订，先定向测试/提交再smoke。资格仍false，持续到formal实际启动、最后formal不设heartbeat；全训练随机任务等级关闭，总等待/SOC保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

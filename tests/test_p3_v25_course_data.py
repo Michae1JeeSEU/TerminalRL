@@ -37,6 +37,8 @@ def test_neutral_course_loader_requires_full_declared_train_and_never_q(tmp_path
     assert all(i['partition']=='Q' for i in data.load_q_for_evaluation(qualification).original.inputs)
     path=train[0]/'protocol.json';original=q.read(path)
     for key,value in (('task_priority_enabled',True),('release_arbitration_mode','downstream_priority'),
+                      ('priority_wait_mode','external_only_legacy'),
+                      ('nominal_holder_separation_mode','speed_tube_legacy'),
                       ('fixed_arrival_schedule',[0,0,0,0,0,0])):
         changed=json.loads(json.dumps(original));changed['task'][key]=value;q.write(path,changed)
         with pytest.raises(ValueError,match='wrong task'): data.load_train(train)
@@ -63,7 +65,7 @@ def test_task_protocol_saved_before_reset(tmp_path,monkeypatch):
 def test_revised_annotation_budget_is_written_before_reset(tmp_path,monkeypatch):
     def stop(config, *, seed):
         protocol=q.read(tmp_path/'case/protocol.json')
-        assert protocol['seed']==seed==893503
+        assert protocol['seed']==seed==893513
         assert protocol['annotation_wall_seconds']==21600
         assert protocol['rollout_wall_seconds']==3600 and protocol['max_steps']==1800
         raise RuntimeError('before reset')

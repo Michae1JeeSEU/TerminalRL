@@ -165,3 +165,17 @@ primary修复SafetyFilter：仅V3、nominal_until_release且lower==upper时，�
 新合同单候选smoke365/29通过输出检查：SafetyFilter批准且checked==trajectory hash=`d4672f886a3024fce0191c56036c084e6f8156bfa26a7a20b884e17fac276fed`；随后真实merge_slot_retime_conflict仍拒绝nominal，不能把安全批准等同放行。完整原state-only teacher随后在365/29选择joint14（先2次slot冲突）、665/29选择nominal joint13，两者均合法批准/精确证书；665/49仍WAIT（20tube冲突/5trajectory infeasible），未绕过真实冲突。三个新result SHA依次`3130adfa7cb4736782aa3dd956ec19ae746fe2fb4658a3e3c136c5e4fedee171`、`960524edb2583e0a882e0f4dacaeee9a20b242812ca2dc76382117125fa69129`、`8b3dbb7736a07f975aa1884633485a2ab0306e632ba02ee9e1a232a76986c0b6`。由此确认至少这两个旧WAIT标签受错误保守阻塞影响；原训练集/模型保留，但不能沿用旧label宣布新课程合格。
 
 下一有界完整周期先保留原actor SHA5ca0…做**诊断迁移**：独立2tick/3warm fixed.8 smoke env892862/policy929862，输出`p3_v25_nominal_curve_validation_20261008/smoke`；通过后同原失败env892854/policy929854运行新合同dense固定SOC，输出`source_dense_fixed`，1800ticks/rollout与完整tape replay各3600s（外层7600s）。无teacher/学习、checkpoint不变；同时更改明确的两项实现，因此完整结果不能拆分为单个修复的性能因果估计。同状态证据已经单独支持安全余量问题。旧actor在新profile未获得资格，不让此诊断绕过后续重新标注/拟合、学生开发、独立Q及PPO验证。若完整周期仍失败，继续据具体trace定位；旧失败/旧标签不覆盖，Q仍未消费。
+
+该892862 smoke已SMOKE_OK/exit0，2ticks/3actor均R且批准，完整tape重放一致、实际安全/hash/shield/负能量异常0，耗时2.451s；预定截断保留3未决，不称全周期。root result SHA`4dbe62d83e8581be331519cbbbfd6010fa9250ad2a7be7f5a4d0735dc349b5dd`、protocol SHA`53e753e0d1e30141b6be84d9c3e5c20b6fbda0447c0a7d373f6c35fadf2cecb6`，primary逐行tensor/request/mask/原分布与奖励检查通过。本测试确实创建/reset环境，不沿用此前纯同状态query的0reset描述。首次launcher因输出父目录不存在在Python前失败，随后创建目录只实际运行一次，未覆盖仿真结果。
+
+完整迁移诊断已启动：wrapper2856412/timeout2856413/Python2856414，实际cwd=/home/user/projects/terminal、argv指向`.tmp/probe_p3_nominal_curve_episode.py`及旧固定source，protocol确认新profile/892854/929854。已核对初始产物，运行中核心冻结，60min heartbeat已更新，不重复启动。通过后执行的[fresh数据与训练方案](p3_v25_nominal_curve_fresh_training_20261008.md)已在新数据reset前记录；旧label不混入，Q仍untouched，最终formal未启动。
+
+### 新合同同seed完整对照已完成
+
+source_dense_fixed已COUNTERFACTUAL_COMPLETE/exit0，1045ticks/17N7E/0F/D/U，全24请求清空、完整tape重放精确，原source参数不变。全部2636 actor（206R/2430W）、逐条请求/likelihood/teacher-off与reward账本断言通过；实际安全/碰撞/NMAC/negative-energy/hash/shield均无异常。最小实际/扫掠83.085384/82.829898m，最低完成SOC .168947；24次应急尝试/7提交及7触地，0应急能量拒绝。428次safety_interventions是候选拒绝，不是实际安全违规。总耗时1116.170s，完整终态两端SHA一致、父及子进程退出。
+
+root result SHA`0dcc1970534382893aa3203ab7d04e54eaa9c01fa43a18e4c8caa18f2a0df563`；episode result、steps与requests也已逐项核对两端SHA一致。旧失败18N4E1F1U保留：新运行消除了本场景耗尽/未决，但正常数不是从18提升，且7E仍有明显业务代价。旧周期不完整，不能把已完成请求的等待或总能耗直接作为配对全请求收益。新完整请求等待mean/p95/max=181.643/471.554/508.951s、触地498.917/857.2/970s、服务完成565.583/899.35/1000s。
+
+primary据同状态安全证书与本完整对照，接受继续新teacher fresh三条件采集；这不是student/PPO或正式训练资格。入口已切换数据protocol v2/893511–13/892863，旧数据profile与模式均须被loader拒绝；新增两个legacy-mode拒绝断言。只读元数据扫描63个protocol未发现新train/smoke或895501–3 Q seed消费，新的输出根尚不存在；没有读取Q行/label。先完成定向测试和本地提交，再唯一892863入口smoke，随后逐臂分析。最终授权目标保持至formal实际启动。
+
+新入口/课程、strict train/Q loader、拟合与student及annotation修复共15项local/server测试通过29.97s/15.37s；两个新helper编译通过，源码SHA两端相同。没有真实新数据reset或训练。提交后执行新smoke验证真实序列化/标注/join输出，再按完整臂顺序推进。
