@@ -18,7 +18,7 @@ from ..core.safety_trace import _digest,_json
 from ..envs.parallel_env import TerminalParallelEnv
 from ..scripts.diagnose_p3_direct_contract import canonical,execute_tape,state_record,require,write_json
 from ..scripts.collect_p3_v3_sparse_expert import natural_terminal
-from .p3_v25_runtime import request,check_request
+from .p3_v25_runtime import request,check_request,model_observations
 from .p3_v25_training import central_context,step_record
 from .p3_v25_set_learnability import digest_state
 from .p3_v25_task_metrics import completed_metrics, reward_parts
@@ -27,12 +27,12 @@ from .p3_v25_task_metrics import completed_metrics, reward_parts
 @torch.no_grad()
 def world_value(model,env):
     from ..core.trajectory_context_observation import pad_trajectory_context
-    observations=env.trajectory_context_observations()
+    observations=model_observations(model,env)
     ordered=[observations[u] for u in sorted(observations,key=int)]
     if ordered:
         data=tuple(torch.from_numpy(a) for a in pad_trajectory_context(ordered))
     else:
-        data=(torch.empty(0,105),torch.empty(0,0,50),torch.empty(0,0,dtype=torch.bool))
+        data=(torch.empty(0,model.actor.ego_dim),torch.empty(0,0,50),torch.empty(0,0,dtype=torch.bool))
     return float(model.value(*data,torch.from_numpy(central_context(env))))
 
 
@@ -83,7 +83,7 @@ def collect_episode(model,config,*,seed,policy_seed,output,max_steps=1800,wall_s
                     parts=reward_parts(live['outputs'][4]);components.update(parts)
                     new=step_record(row,context,value=value,next_value=0. if terminal else world_value(model,env),
                         reward=reward,terminated=terminal,episode_end=terminal or tick+1==max_steps,
-                        stochastic_behavior=not deterministic)
+                        stochastic_behavior=not deterministic,ego_dim=model.actor.ego_dim)
                     # Deterministic evaluation records are intentionally not
                     # PPO data; shape/probability checks still apply.
                     if not deterministic: new.validate()

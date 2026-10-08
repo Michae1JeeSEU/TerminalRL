@@ -44,13 +44,23 @@ def collect(output, index, *, partition='train', smoke=False, annotation_wall_se
     require(annotation_wall_seconds in (7200, 21600), 'undeclared annotation budget')
     cases = TRAIN_CASES if partition=='train' else Q_CASES
     seed,scenario = (SMOKE_SEED,'dense24_mixed') if smoke else cases[index-1]
+    return collect_case(output,index=index,seed=seed,scenario=scenario,partition=partition,
+        smoke=smoke,annotation_wall_seconds=annotation_wall_seconds,protocol_name=PROTOCOL)
+
+
+def collect_case(output,*,index,seed,scenario,partition,smoke,annotation_wall_seconds,protocol_name,
+                 learning_observation_schema='phaseA_low_obs_v2_5_trajectory_context_set'):
+    """Shared mechanics; public protocol entry points own frozen seed/partition lists."""
+    require(partition in {'train','Q'}, 'unknown partition')
+    require(annotation_wall_seconds in (7200,21600), 'undeclared annotation budget')
     config = build_config(scenario)
     if smoke:
         config = replace(config,total_requested_uavs=3,warm_start_uavs=3,fixed_arrival_schedule=(0.,)*3)
     wire_partition = DEVELOPMENT_PARTITION if smoke else partition
     schema = DEVELOPMENT_SCHEMA if smoke else DATA_SCHEMA
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    protocol=dict(protocol=PROTOCOL,profile=PROFILE,index=index,seed=seed,scenario=scenario,
+    protocol=dict(protocol=protocol_name,profile=PROFILE,index=index,seed=seed,scenario=scenario,
+        learning_observation_schema=learning_observation_schema,
         partition=wire_partition,schema=schema,smoke=smoke,task=task_settings(config),
         max_steps=2 if smoke else int(config.max_simulation_seconds/config.dt),
         rollout_wall_seconds=180 if smoke else 3600,
@@ -59,7 +69,7 @@ def collect(output, index, *, partition='train', smoke=False, annotation_wall_se
         behavior='rule_nominal_k3',teacher='state-only first feasible; not joint/global optimum',
         checkpoint_loaded=False,I0_QUALIFIED=False,PPO_ALLOWED=False)
     write(output/'protocol.json',protocol)
-    report=dict(protocol=PROTOCOL,profile=PROFILE,seed=seed,scenario=scenario,partition=wire_partition,
+    report=dict(protocol=protocol_name,profile=PROFILE,seed=seed,scenario=scenario,partition=wire_partition,
         status='ERROR',error=None,I0_QUALIFIED=False,PPO_ALLOWED=False)
     try:
         env=TerminalParallelEnv(config,seed=seed)

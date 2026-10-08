@@ -13,14 +13,16 @@ def test_subset_keeps_complete_row_identity_and_inputs():
     torch.testing.assert_close(data.gate,paired.original.gate[indices])
 
 
-def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path):
+@pytest.mark.parametrize('resource_context',[False,True])
+def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path,resource_context):
     torch.set_num_threads(1)
-    root=tmp_path/'smoke';result=run([],root,smoke=True)
+    root=tmp_path/'smoke';result=run([],root,smoke=True,resource_context=resource_context)
     # The shared metric helper uses integer histogram keys; JSON preserves
     # their values while converting object keys to strings.
     assert json.loads(json.dumps(result))==json.loads((root/'result.json').read_text())
     assert result['status']=='COMPLETE' and len(result['folds'])==2
     assert not result['protocol']['Q_rows_accessed']
+    assert result['protocol']['ego_dim']==(159 if resource_context else 105)
     for fold in result['folds']:
         assert fold['train_rows']==fold['validation_rows']==8
         assert [v['update'] for v in fold['curve']]==[1,2]

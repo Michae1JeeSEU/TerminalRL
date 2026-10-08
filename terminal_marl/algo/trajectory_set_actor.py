@@ -9,11 +9,11 @@ from ..core.trajectory_context_observation import VERSION
 
 
 class SetEncoder(nn.Module):
-    def __init__(self, hidden=96, neighbor_hidden=32):
+    def __init__(self, hidden=96, neighbor_hidden=32, ego_dim=105):
         super().__init__()
         self.neighbor = nn.Sequential(nn.Linear(50, neighbor_hidden), nn.Tanh(),
                                       nn.Linear(neighbor_hidden, neighbor_hidden), nn.Tanh())
-        self.combine = nn.Sequential(nn.Linear(105 + 2 * neighbor_hidden + 1, hidden), nn.Tanh(),
+        self.combine = nn.Sequential(nn.Linear(ego_dim + 2 * neighbor_hidden + 1, hidden), nn.Tanh(),
                                      nn.Linear(hidden, hidden), nn.Tanh())
 
     def forward(self, ego, traffic, mask):
@@ -39,18 +39,24 @@ class TrajectorySetActor(nn.Module):
     """
     observation_schema = VERSION
 
-    def __init__(self, hidden=96, neighbor_hidden=32):
+    def __init__(self, hidden=96, neighbor_hidden=32, ego_dim=105):
         super().__init__()
-        self.gate_encoder = SetEncoder(hidden, neighbor_hidden)
-        self.proposal_encoder = SetEncoder(hidden, neighbor_hidden)
+        if ego_dim not in (105,159):
+            raise ValueError('unsupported trajectory-context ego schema')
+        self.ego_dim=ego_dim
+        if ego_dim==159:
+            from ..core.resource_context_observation import VERSION as RESOURCE_VERSION
+            self.observation_schema=RESOURCE_VERSION
+        self.gate_encoder = SetEncoder(hidden, neighbor_hidden,ego_dim)
+        self.proposal_encoder = SetEncoder(hidden, neighbor_hidden,ego_dim)
         self.gate_head = nn.Linear(hidden, 2)
         self.proposal_head = nn.Linear(hidden, 25)
 
     def forward(self, ego, traffic, mask):
-        if (ego.ndim != 2 or ego.shape[1] != 105 or traffic.ndim != 3
+        if (ego.ndim != 2 or ego.shape[1] != self.ego_dim or traffic.ndim != 3
                 or traffic.shape[0] != len(ego) or traffic.shape[2] != 50
                 or mask.shape != traffic.shape[:2] or mask.dtype != torch.bool):
-            raise ValueError('expected ego[B,105], traffic[B,N,50], boolean mask[B,N]')
+            raise ValueError(f'expected ego[B,{self.ego_dim}], traffic[B,N,50], boolean mask[B,N]')
         return (self.gate_head(self.gate_encoder(ego, traffic, mask)),
                 self.proposal_head(self.proposal_encoder(ego, traffic, mask)))
 

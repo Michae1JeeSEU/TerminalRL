@@ -21,8 +21,9 @@ def env():
 
 
 @pytest.mark.parametrize('deterministic',[True,False])
-def test_request_mask_likelihood_k3_and_state_unchanged(env,monkeypatch,deterministic):
-    model=TrajectorySetActor()
+@pytest.mark.parametrize('ego_dim',[105,159])
+def test_request_mask_likelihood_k3_and_state_unchanged(env,monkeypatch,deterministic,ego_dim):
+    model=TrajectorySetActor(ego_dim=ego_dim)
     with torch.no_grad():
         model.gate_head.weight.zero_();model.gate_head.bias.copy_(torch.tensor([-30.,30.]))
     env.active[0].safety_retry_after=env.now+10
@@ -30,6 +31,7 @@ def test_request_mask_likelihood_k3_and_state_unchanged(env,monkeypatch,determin
     monkeypatch.setattr(env,'_candidate_plan',lambda *a,**k:pytest.fail('policy queried candidate'))
     torch.manual_seed(41)
     row=request(model,env,deterministic=deterministic)
+    assert row.tensors[0].shape==(6,ego_dim)
     check_request(row)
     assert canonical(state_record(env))==before
     assert np.array_equal(row.actor_mask,[collection_mask(env,env.active[int(u)]) for u in row.uids])
@@ -41,12 +43,14 @@ def test_request_mask_likelihood_k3_and_state_unchanged(env,monkeypatch,determin
     assert second.tape()==row.tape() and second.likelihoods==row.likelihoods
 
 
-def test_checkpoint_explicit_schema_and_new_information(tmp_path):
-    model=TrajectorySetActor();path=tmp_path/'actor.pt'
-    torch.save(dict(model=model.state_dict(),observation_schema=VERSION,arm='new_information'),path)
+@pytest.mark.parametrize('ego_dim',[105,159])
+def test_checkpoint_explicit_schema_and_new_information(tmp_path,ego_dim):
+    model=TrajectorySetActor(ego_dim=ego_dim);path=tmp_path/'actor.pt'
+    torch.save(dict(model=model.state_dict(),observation_schema=model.observation_schema,arm='new_information'),path)
     loaded,_=load_actor(path)
     assert all(not p.requires_grad for p in loaded.parameters())
     assert all(torch.equal(v,loaded.state_dict()[k]) for k,v in model.state_dict().items())
+    assert loaded.ego_dim==ego_dim
     torch.save(dict(model=model.state_dict(),observation_schema=VERSION,arm='old_information'),path)
     with pytest.raises(ValueError): load_actor(path)
 

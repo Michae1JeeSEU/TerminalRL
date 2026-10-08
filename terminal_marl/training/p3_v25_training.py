@@ -51,12 +51,12 @@ def central_context(env):
 
 
 def step_record(request, context, *, value, next_value, reward, terminated, episode_end,
-                stochastic_behavior=True):
+                stochastic_behavior=True,ego_dim=105):
     if request.uids:
         ego,traffic,mask=(t.detach().cpu().numpy().copy() for t in request.tensors)
         gl,pl=request.logits
     else:
-        ego=np.zeros((0,105),np.float32);traffic=np.zeros((0,0,50),np.float32);mask=np.zeros((0,0),bool)
+        ego=np.zeros((0,ego_dim),np.float32);traffic=np.zeros((0,0,50),np.float32);mask=np.zeros((0,0),bool)
         gl=np.zeros((0,2),np.float32);pl=np.zeros((0,25),np.float32)
     gp=np.asarray([request.likelihoods[u]['gate'] for u in request.uids],np.float32)
     pp=np.asarray([np.nan if request.likelihoods[u]['proposal'] is None else request.likelihoods[u]['proposal']

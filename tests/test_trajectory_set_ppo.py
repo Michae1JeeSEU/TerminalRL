@@ -20,7 +20,7 @@ def fixed_seed():
 
 
 def step(policy,n=3,neighbors=2,*,reward=1.,terminated=False,actor=True):
-    ego=torch.randn(n,105);traffic=torch.randn(n,neighbors,50);mask=torch.ones(n,neighbors,dtype=torch.bool)
+    ego=torch.randn(n,policy.model.actor.ego_dim);traffic=torch.randn(n,neighbors,50);mask=torch.ones(n,neighbors,dtype=torch.bool)
     with torch.no_grad():
         gd,pd=policy.model.distributions(ego,traffic,mask) if n else (None,None)
         gates=gd.sample() if actor and n else torch.zeros(n,dtype=torch.long)
@@ -35,8 +35,9 @@ def step(policy,n=3,neighbors=2,*,reward=1.,terminated=False,actor=True):
         np.full(n,actor,bool),0.,0.,reward,terminated,terminated)
 
 
-def test_zero_adapter_preserves_base_and_proposal_exactly():
-    base=TrajectorySetActor();policy=TrajectorySetPPO(base);row=step(policy)
+@pytest.mark.parametrize('ego_dim',[105,159])
+def test_zero_adapter_preserves_base_and_proposal_exactly(ego_dim):
+    base=TrajectorySetActor(ego_dim=ego_dim);policy=TrajectorySetPPO(base);row=step(policy)
     old=base.distributions(*tensors(row));new=policy.model.distributions(*tensors(row))
     assert all(torch.equal(a.logits,b.logits) for a,b in zip(old,new))
     assert all(not p.requires_grad for p in policy.model.actor.parameters())
@@ -72,8 +73,9 @@ def test_empty_steps_retain_delayed_team_reward_and_boundary_bootstrap():
     assert team_gae(rows,.99,1.)[0][1]==pytest.approx(2+.99*7)
 
 
-def test_update_freezes_base_and_updates_only_adapter_and_critic():
-    policy=TrajectorySetPPO(TrajectorySetActor(),learning_rate=1e-3)
+@pytest.mark.parametrize('ego_dim',[105,159])
+def test_update_freezes_base_and_updates_only_adapter_and_critic(ego_dim):
+    policy=TrajectorySetPPO(TrajectorySetActor(ego_dim=ego_dim),learning_rate=1e-3)
     rows=[step(policy,reward=float(i+1)) for i in range(4)]+[step(policy,0,0,reward=8,terminated=True)]
     before=copy.deepcopy(policy.model.state_dict())
     result=policy.update(rows,training_authorized=True,epochs=1,minibatch_size=5,target_kl=.1)

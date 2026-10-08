@@ -22,14 +22,28 @@ def actor_eligible(env, uav):
 
 def load_actor(path):
     payload = torch.load(Path(path), map_location='cpu', weights_only=True)
-    if payload['observation_schema'] != VERSION or payload['arm'] != 'new_information':
-        raise ValueError('V2.5 runtime requires an explicit new-information checkpoint')
+    from ..core.resource_context_observation import VERSION as RESOURCE_VERSION
+    dimensions={VERSION:105,RESOURCE_VERSION:159}
+    if payload['observation_schema'] not in dimensions or payload['arm'] != 'new_information':
+        raise ValueError('set runtime requires an explicit supported new-information checkpoint')
     with torch.random.fork_rng(devices=[]):
-        model = TrajectorySetActor()
+        model = TrajectorySetActor(ego_dim=dimensions[payload['observation_schema']])
     model.load_state_dict(payload['model'], strict=True)
     model.eval()
     model.requires_grad_(False)
     return model, payload
+
+
+def model_observations(model,env):
+    """Select the observation contract by the actual actor, never by tensor padding."""
+    actor=getattr(model,'actor',model)
+    if actor.observation_schema==VERSION:
+        return env.trajectory_context_observations()
+    from ..core.resource_context_observation import VERSION as RESOURCE_VERSION,ResourceContextCache
+    if actor.observation_schema!=RESOURCE_VERSION:
+        raise ValueError('unsupported actor observation schema')
+    cache=ResourceContextCache(env)
+    return {str(uid):cache.build(env.active[uid]) for uid in sorted(env.active)}
 
 
 @dataclass
@@ -54,7 +68,7 @@ def request(model, env, *, deterministic=False):
     validate_student_config(env.config)
     if env.config.student_decision_mask_mode != 'pre_action_forced_wait' or env.config.runtime_proposal_shortlist_k != 3:
         raise ValueError('V2.5 bridge requires pre-action mask and frozen K3')
-    observations = env.trajectory_context_observations()
+    observations = model_observations(model,env)
     uids = tuple(sorted(observations, key=int))
     if not uids:
         return SetRequest((), (), np.zeros(0,dtype=bool), np.zeros(0,dtype=int),

@@ -42,3 +42,19 @@
 先增加显式V2.6资源观测：保留105D自身/调度及全部邻机50D，附加六个固定物理pad的相对位置、free/reserved/occupied、兼容性、ETA是否已知与有限ETA缩放，避免仅free比例/最早释放时间的多对一压缩。这些均来自决策前中心广播/资源状态，不查询teacher、候选安全结果或未来未承诺动作。旧V2.5 schema/checkpoint保持可读取，新schema需重新构建训练观测与fresh拟合，不把159D静默塞入旧105D模型。
 
 先在上述同观测异标签见证及最小单元测试证明新特征确实区分状态，再仅从原train可信snapshot重建新观测、保持所有teacher标签。依据新开发交叉验证决定独立train采集与正则化预算，当前不消费新Q、不动PPO。更多数据用于补独立回合覆盖，而非按已消费Q挑样或追分。
+
+V2.6特征及显式159D actor、CV输出测试共7项通过。真实上述train见证在0teacher/0step下新159D的indices144/146/149/153/155/158有差别，旧105prefix和全部traffic保持一致；结果`.tmp/p3_resource_context_witness.json` SHA df16265dd063611b14a0790ec02186fc075178c3410856bca87486b6eeb56174。模型默认仍105，159模型拒绝旧105权重/输入；尚未接入实际部署。
+
+首次资源CV重建在893512/t0/UID4逐位比较停止，没有发生训练，失败日志保留。primary定位到Windows/Linux矩阵旋转在理论近零分量的数值舍入：4个traffic分量约1e-16，最大绝对差1.4210854e-16，ego完全相同。重建改为数值一致性检查rtol1e-6/atol1e-7，并始终直接保留归档105prefix/traffic原字节，仅追加新54资源特征，不修改原标签或数据。新输出目录重跑一次既定CV；不是放宽物理安全阈值。
+
+资源CV已COMPLETE，三fold33.093/28.438/29.953s，result SHA 7ce2ea001d84100c61dbb5dbbee3984707078652b6a7f87105c0074b7662c1a55，路径`.tmp/p3_resource_cv_roundoff_20261009/result.json`。5000step留出flow/fixed/mixed的R recall分别.826087/.521277/.425287、proposal top1 .217391/.425532/.344828，validation loss11.844/10.372/10.684；仍显著过拟合。补资源消除了一个已证实的不可区分状态，但不能宣称已经改善总体泛化，更不能仅据训练拟合授资格。下一步需要独立回合状态，不能重复记忆三周期或消费旧Q调参。
+
+显式159D runtime/critic/record通路已实现：checkpoint schema选择观测，旧105维保持默认；新critic使用actor对应ego宽度，空场景仍有team value/奖励记录。37项local定向tests通过（包括旧105、新159、K3/likelihood、冻结actor和PPO回滚构件）；只有合成更新，没有新实景PPO或准入。
+
+## 下一项有界独立训练数据（首次reset前登记）
+
+新增协议`p3_v26_spatial_resources_independent_train_20261009_v1`，不改当前物理合同、teacher排序或标签语义。第一cycle三个独立train seed893601/893602/893603，对应flow6 mixed、dense24 fixed.8、dense24 mixed.55–.90；同现有中性课程profile。开发smoke892871为3请求/warm3/2ticks，独立新目录。后续893604–6只保留，不在本cycle自动启动；新Q尚未登记/消费。运行前查重、同步源码SHA；依次完成和primary分析后才下一臂，最多一个环境父进程加一个顺序annotation child。
+
+输出根服务器`/home/user/training_outputs/terminal/p3_v26_resources_20261009`，各臂`train_01`、`train_02`、`train_03`；入口`python -u -m terminal_marl.training.p3_v26_course_data --index 1/2/3 --output ...`，先`--index 1 --smoke --output .../smoke`。完整周期最多1800ticks（flow按既定1210tick课程上限）、环境3600s、全actor按tick/数值UID、最多2048query/51200 RELEASE意图、annotation21600s；多pad plan调用另计。超限/错误/安全/F/D/U/未完整标注均保留失败，不继续下一臂、不扩预算。流程先写不可混淆的protocol，然后原105重建与新159资源重建分别保存，逐行要求ID/mask/teacher label/105prefix/traffic不变。
+
+每臂收尾亲自核对完整N/E/F/D/U、error/censor、checked-executed hash和实际安全、能量与E、raw/actor/selected/label/resource行对应、三接口/低SOC/繁忙LZ/retry与proposal支持。完整首cycle后再决定是否第二cycle；和旧893511–13同合同train共六个独立周期可用于整回合开发验证（旧Q始终隔离）。先判断数据支持/泛化后选定fresh拟合方案，不立即登记新Q、盲目增加epochs或运行PPO。实际formal需新冻结候选、独立资格、完整student、真实有界PPO与业务审查；用户持续授权有效，最终formal实际启动并验初产物后删除heartbeat，不监控formal。

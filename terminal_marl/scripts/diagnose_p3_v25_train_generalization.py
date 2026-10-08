@@ -20,9 +20,15 @@ def subset(paired, indices):
     return result,tuple(t[indices] for t in paired.new)
 
 
-def run(directories,output,*,smoke=False):
+def run(directories,output,*,smoke=False,resource_context=False):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    paired=synthetic() if smoke else load_train(directories)
+    if resource_context and not smoke:
+        from terminal_marl.training.p3_v26_resource_inputs import load_resource_train
+        paired=load_resource_train(directories)
+    else:
+        paired=synthetic() if smoke else load_train(directories)
+        if resource_context:
+            paired.new=(torch.cat((paired.new[0],torch.zeros(len(paired.original.ids),54)),1),*paired.new[1:])
     seeds=sorted({c['seed'] for c in paired.original.contexts})
     groups=([torch.arange(8),torch.arange(8,16)] if smoke else
         [torch.tensor([i for i,c in enumerate(paired.original.contexts) if c['seed']==s]) for s in seeds])
@@ -30,6 +36,7 @@ def run(directories,output,*,smoke=False):
         assert seeds==[s for s,_ in TRAIN_CASES]
     marks=(1,2) if smoke else (0,100,500,1000,2000,5000)
     protocol=dict(mode='train_cycle_cross_validation',smoke=smoke,model_seed=91911,
+        resource_context=resource_context,ego_dim=paired.new[0].shape[1],
         input_seeds=seeds,measurements=list(marks),updates=marks[-1],learning_rate=.0003,
         batch_size=128,gradient_clip=.5,wall_seconds_per_fold=300,
         Q_rows_accessed=False,environment_steps=0,teacher_queries=0,checkpoint_written=False)
@@ -41,7 +48,7 @@ def run(directories,output,*,smoke=False):
         mask=torch.ones(len(paired.original.ids),dtype=torch.bool);mask[held]=False
         indices=torch.arange(len(mask))[mask]
         train,tx=subset(paired,indices);validation,vx=subset(paired,held)
-        torch.manual_seed(91911);model=TrajectorySetActor()
+        torch.manual_seed(91911);model=TrajectorySetActor(ego_dim=paired.new[0].shape[1])
         optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
         generator=torch.Generator().manual_seed(91911)
         permutation=torch.randperm(len(indices),generator=generator);offset=0
@@ -83,10 +90,11 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--train-directories',nargs=3,type=Path)
     parser.add_argument('--output',required=True,type=Path)
-    parser.add_argument('--smoke',action='store_true');args=parser.parse_args()
+    parser.add_argument('--smoke',action='store_true')
+    parser.add_argument('--resource-context',action='store_true');args=parser.parse_args()
     if not args.smoke and not args.train_directories:parser.error('train directories required')
     torch.set_num_threads(1)
-    result=run(args.train_directories or (),args.output,smoke=args.smoke)
+    result=run(args.train_directories or (),args.output,smoke=args.smoke,resource_context=args.resource_context)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']))))
     return 0 if result['status']=='COMPLETE' else 2
 

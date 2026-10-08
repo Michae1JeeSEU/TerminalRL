@@ -31,7 +31,7 @@ class TrajectorySetActorCritic(nn.Module):
         self.gate_adapter = nn.Linear(96, 2)
         nn.init.zeros_(self.gate_adapter.weight)
         nn.init.zeros_(self.gate_adapter.bias)
-        self.critic_encoder = SetEncoder()
+        self.critic_encoder = SetEncoder(ego_dim=actor.ego_dim)
         self.critic_head = nn.Sequential(nn.Linear(2*96+1+CENTRAL_CONTEXT_DIM,96), nn.Tanh(), nn.Linear(96,1))
 
     def distributions(self, ego, traffic, mask):
@@ -79,7 +79,7 @@ class SetStep:
 
     def validate(self):
         n=len(self.ego)
-        if (self.ego.shape!=(n,105) or self.traffic.ndim!=3
+        if (self.ego.ndim!=2 or self.ego.shape[1] not in (105,159) or self.traffic.ndim!=3
             or self.traffic.shape[0]!=n or self.traffic.shape[2]!=50
             or self.traffic_mask.shape!=self.traffic.shape[:2]
             or self.traffic_mask.dtype!=np.bool_ or self.context.shape!=(CENTRAL_CONTEXT_DIM,)
