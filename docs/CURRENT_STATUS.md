@@ -170,6 +170,8 @@
 
 - 修复合同下三组新train已全部COLLECTION_OK：flow5N1E、fixed20N4E、mixed14N10E，共54请求39N15E/0F/D/U，无实际安全/hash/技术/censor阻塞。primary核对24868raw/1298有效标签（204R1094W、19种proposal），forced与null未入actor loss；随机任务等级仍关闭，保留总等待/SOC紧迫度与物理服务。mixed标注4546.196s、最低完成SOC .126563，三组全部在预算内，终态文件两端一致、原进程已退出。已准许既定fresh91901–3固定5000updates拟合，新fit后继续完整student开发闭环；尚无新学生/Q/PPO/formal结果，不能宣称训练退化解决。详见[新数据与训练记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- 新fit_initial已FIT_FROZEN/exit0：91901–3各fresh5000updates完成，严格1298新train行；canonical91901 SHA16d3ee800263023386341cb92a6335bb63dd487a346181a0275bf4c3ecb63600，训练内18条R→W残差保留，不挑seed、不据拟合授资格。新student smoke892864通过三接口3R与2tick重放；flow892853完整667ticks/6N/0E/F/D/U、98actor/18R/0shield，实际安全/hash无异常，全请求等待mean14.893s，完整重放与逐行分析通过。primary接受下一唯一dense24_fixed892854/929854，仍为development；无新Q/critic/PPO/formal，详见[新轮记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

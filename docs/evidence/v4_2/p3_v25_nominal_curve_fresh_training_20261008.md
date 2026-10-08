@@ -84,3 +84,15 @@ teacher/实际trace为48R/R、39R/W、6W/R、454W/W；52次正常K3批准rank1/2
 终态关键文件两端SHA相同：root result `47ee6e33a01cf4402b85369dca5e3048bdcd14491b305865a496d97eb6633338`，context `32df9fdcd37c8c3821df18e3d29c75bcf2a6f5fc2986028016a207f1157432b5`。全量分析`.tmp/p3_course_v2_mixed_analysis.json`首次执行exit0，SHA `9e2bf7ceb9a27cd6fc36324056e35f0d0b25910ea2a7146e42de5c8d78c98912`。运行中曾读到不同时刻的label数量与hash差异，终态一致；单条annotation_progress的COMPLETED不是全臂终态。中途一个监控worker因工具上下文超长退出，换成只输出紧凑字段的只读监控，服务器父/child持续正常，未重启实验。
 
 三组严格train共54请求39N15E/0F/D/U、24868raw，其中23570forced不入actor loss，1298有效标签=204R/1094W、19种proposal。没有纳入旧合同数据、开发smoke或Q。primary接受新数据作为本轮拟合输入；按既定91901–3各fresh5000updates/300s、固定final/canonical91901执行新的fit_initial，随后先核对拟合残差再逐臂student闭环。Q895501–3仍未消费，critic/PPO/formal未启动；采集完整不等于学生资格。
+
+### 固定预算 fresh fit 完成，进入 student 开发闭环
+
+数据接受记录提交`56ad3cbe5f17795b10b23792e1bd52a0538db54c`后启动唯一fit_initial，入口SHA同步检查通过，exit0/FIT_FROZEN。91901/2/3各完成5000次更新，耗时15.870/15.371/15.448s；输入恰为三组1298个唯一train ID，所有actor子模块确实更新。运行很快，未捕获live argv/cwd，只记录了PID文件2887166与显式cwd启动器和完整终态，不能补称曾观察live进程。三个checkpoint实际SHA与manifest一致，canonical91901为`16d3ee800263023386341cb92a6335bb63dd487a346181a0275bf4c3ecb63600`。
+
+primary检查固定final训练内残差：91901 gate错18条（全部teacher R预测W），WAIT/RELEASE召回1.000/.911765，proposal top1/top3均1.000，joint .986133；91902 gate错4条（3W→R、1R→W），proposal top1 .990196、joint .995377；91903 gate错16条（全部W→R），proposal top1 .990196、joint .986133。没有挑选表现最好的91902，也没有延长训练、改loss或用训练内指标授予资格。canonical的18条漏放行中12条属于低SOC，需由下一步完整随机student闭环检查实际等待/能量后果，不能仅凭少量训练残差归因新的退化。
+
+继续既定新smoke892864/929864；其通过后按顺序flow892853、fixed892854、mixed892855开发闭环，每次由primary核对终态。当前Q未消费、尚无新学生资格/PPO/formal。fit只证明已产生并冻结可检验的候选，不证明泛化或业务收益。
+
+smoke已SMOKE_OK/exit0：2ticks、3actor全部RELEASE并批准，三接口覆盖，actual/hash/shield无异常，完整2tick tape精确重放，原请求/条件likelihood/mask/奖励记录全量检查通过；按2tick边界censored是预定smoke语义，不当完整周期。根result SHA`90ed34ec7e3767f44506f45daa816d529a466efff3c090e032508632ec007ae1`，终态两端一致，不重跑、不入train。
+
+flow6_mixed/892853/929853已DEVELOPMENT_COMPLETE/exit0，667ticks、6N/0E/F/D/U，63.450s（含完整重放）。98actor=18R/80W，shield0，实际安全/hash/负能量/技术/censor均无异常，最小实际/扫掠111.691875/111.627825m，最低完成SOC .437690。6个请求的全口径等待mean/p95/max=14.893084/37.672412/39.760307s，request→touchdown=294.833333/327/327s，request→service完成=359.833333/402/407s；team reward130.069398。policy任务等级仍全1，各物理服务时长保持原任务类型。primary已逐条核对667请求记录/steps与原始请求likelihood、mask、teacher-off、episode end、奖励和全请求能量；`.tmp/p3_course_v2_student_flow_analysis.json`首次exit0。根result SHA`04ef358e75525d79bf68d24d0b931954e2ee2f27f19ceccb2ebe1c138bda9dae`，全部关键文件两端一致。此开发seed复用不冒称独立Q。接受下一唯一dense24_fixed/892854/929854，再视结果继续mixed；当前不提前访问Q或启动PPO。
