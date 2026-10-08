@@ -146,3 +146,25 @@ primary据上述证据接受下一项**既有预留Q的采集和一次冻结模�
 环境32.404s、标注26.571s，29个RELEASE意图/43次plan；实际/扫掠最小95.209671/95.062213m，最低完成SOC .430094、剩余能量645.141，技术/censor/实际安全/hash/应急/耗尽均无异常。primary完整检查1836raw/683steps/19selected-label/90D null/mask/105+N50 join、可信快照及首tick重放通过，Q只用evaluation decoder，模型未加载/评分/修改。分析`.tmp/p3_course_v2_Q_flow_analysis.json`首次exit0，SHA`2ffb0791ce0afd9cdeb8e199f6b7b83197d5179b19afec7d4cdc578d23fe0ffd`。标注实际位于`labels/window_XX.json`，没有通用labels.jsonl不是缺标签。关键文件两端同步，root result SHA`05f502b625e7a14257036709007c3b26ab51291c75676da2a84c2844a85507fe`、context SHA`25a07fc9948e8200fc53b13f2e1e24be7ccb7bb4ed580a5065434954e0c65c83`。
 
 primary接受继续唯一Q_dense24_fixed/895502，原预算/固定候选/一次最终评价不变；Qmixed895503尚未消费。其他成功/失败不复跑，当前仍无真实critic/PPO/formal。Q标注预计dense约1–2小时，保持60min监控，不因为首臂快而提高轮询频率。
+
+### Q dense fixed暴露执行监测的1秒直线近似错误
+
+Qflow记录提交`cd80513cce29a3f3693d4f49961401772f12fd16`后唯一Q_dense24_fixed启动（timeout2904943/Python2904944，cwd/argv/seed初产物核对）。该臂自然INCOMPLETE/exit2：399个成功tick、6863raw/301actor，失败step执行到400s时`operational_buffer_entries=1`，collector依原零buffer约束停止并未开始标注。5N/19U、17active/2service；最小point80.144550m而policy-tick线性swept79.990849m，hard/NMAC/collision/hash均0，runtime shield未fail closed。643.073s后原父与child退出，原输出保留，不能改为成功或用于训练/资格。工具session曾报告exit1，实际相邻.exit核对为2，取后者。
+
+primary亲自同状态重放可信`failure_before.pkl`（SHA`7ca4cd7069cd14e4101da1916f948f14da3f72d334ff8e1e4b96dc6d67d81c1f`）及原请求（SHA`150a9192a4dfb5ddcc8682ec8d8981b3e7af966742aaee4ab17006e56239ea5e`），两端一致；root result SHA`d86f3ec21a314a5777b144a1c3d6ba82da807fff887a115ce0c331de1e069b34`。`.tmp/probe_p3_q_swept_monitor.py`首次exit0，0reset/teacher/学习、仅原399→400一步。唯一触发者为UID4已承诺final（plan372→437.928329s、hash`a2792426020e52fc6ca14106c41b598e884f0ca38c1b0b95c9a72f96d021f44f`）与UID8 inner16m/s holder。运行时通过；两机预测/实际端点误差≤5.9e-13m，其他机≤1.2e-12m。
+
+旧monitor只在整秒末调用一次，把399→400的弯曲飞行连成一条直线，扫掠79.990849m、fraction .698273；physics .2s轨迹点最小80.104583、扫掠80.101761m，.005s诊断轨迹最小80.102263m（holder含物理格线性插值，不能冒称解析连续极小值）。因此这里的buffer计数来自**监测路径的错误几何近似**；前一修复让runtime用正确子步连续证明通过后，暴露了仍使用整秒弦的独立测量器。没有按不同seed归因性能、没有删安全约束，也没有将旧计数直接清零。
+
+primary修复方案：V3 executor在`_advance_plan`与`_advance_ring_hold`实际执行每个physics子步时记录时间/位置，含handoff余段；monitor按两个真实执行轨迹的时间节点并集同步并逐段扫掠。它不使用planner/runtime的预测结果代替实际位置，80/40/collision阈值不变，原无track/legacy调用保持原语义。记录只在物理步生成、不改变运动/能量/策略；轨迹端点不符、缺失或瞬时跳跃直接报错。触地飞机保留至其最后空中节点，不能因为整秒末已转service就漏掉触地前冲突。遥测新的actual最小值覆盖所有同步子步点，swept最小值是实际子步折线的最小间隔；连续安全仍由V3曲线证书负责，不把折线指标说成解析连续最小值。
+
+新定向回归覆盖圆弧被整秒弦误报、整秒端点安全但中途碰撞、子步端点之间相交、异步触地前后区分、缺失/错位轨迹和executor不依赖预测位置。先定向tests及可信失败step验证，再冻结新目录重跑方案，不启动Qmixed/模型评价/学习。Q895502场景已用于环境测量诊断，不再声称环境完全未见；三候选/teacher标签/判定门槛没有据Q学习或调节，模型评分尚未发生，后续若保留此Q需明确该边界。原Qflow/train/student证据保留历史测量实现身份。
+
+首批六文件66项local测试通过157.11s；随后增加handoff余段和真实touchdown末节点两项执行器回归，八项新文件测试通过4.03s（与前66项重叠，不相加冒称独立74项）。其中handoff fixture初次仍为ring_inner，引发非法ring_inner→ring_inner自环；primary修正其起始phase为TRANSFER_M2I后通过，未放宽生产生命周期。触地测试确认只记录实际plan endpoint之前的空中轨迹，handoff与未记录版本的运动结果逐位一致。原失败日志保留。
+
+可信原399→400完整step经新monitor重放（`.tmp/p3_q_substep_monitor_verify.json`，首次exit0，newly_run）：每机实际记录六节点399/.2/.4/.6/.8/400，最小同步点80.10458347928586m、分段swept80.10176099507953m，operational/hard/NMAC/collision计数均0，runtime approved；预测执行最大端点误差1.1719432632173258e-12m。原轨迹/请求/安全阈值未改，未reset或teacher查询，原失败产物和第一次旧monitor探针仍保留。
+
+后续同seed协议在重跑前冻结：仅895502、原rule行为/24请求warm12/fixedSOC.8，输出新`Q_substep_monitor_dense24_fixed`。完整1800ticks/3600s环境、21600s全actor标注、2048query/51200 RELEASE意图、900s重建与27000s外层预算不变。启动器允许的既有seed记录必须恰为原失败`Q_dense24_fixed/protocol.json`，并核对原失败result SHA、无annotation_result和evaluation marker；不是开放任意复跑。运行前源码SHA同步、无其他P3父进程、输出不存在，启动后核实cwd/argv/初产物；修复的monitor是运行中冻结的核心之一。
+
+服务器最终六文件68项测试通过96.61s/exit0，两个生产文件和新test文件两端SHA相同。primary已审查差异及可信失败重放，接受按上述同seed协议完整重跑。临时launcher/全量analyzer/一次评价helper语法检查通过；fixed目录映射一致，其他未消费seed仍严格拒绝任何既有protocol。未启动模型评分或学习。
+
+若完整通过，后续Q895503仍按原预算首次采集；一次冻结三模型评分使用Q_flow6_mixed、新Q_substep_monitor_dense24_fixed、Q_dense24_mixed三个成功目录，不读取原失败为监督。895502只是模型未参与拟合的评价场景，已经参与环境诊断，不能声称完全untouched的环境泛化证据。模型、train标签、teacher和判定门槛均未因Q修改；后续若需要调模型须转入新开发协议，不能按Q表现反复拟合。这一修复完成与否不单独授予PPO资格。

@@ -1302,7 +1302,7 @@ class TerminalParallelEnv:
                     "reserved_uid": zone.reserved_by, "service_remaining": zone.service_remaining} for zone in self.lz_manager.zones],
                 "reservations": {key: vars(value).copy() for key, value in self.scheduler.reservations.items()}}
 
-    def _advance_plan(self, uav: UAVState) -> tuple[float, bool]:
+    def _advance_plan(self, uav: UAVState, *, position_samples: list | None = None) -> tuple[float, bool]:
         plan = uav.committed_plan
         if plan is None:
             return 0.0, False
@@ -1325,6 +1325,8 @@ class TerminalParallelEnv:
             uav.acceleration = point.acceleration
             uav.yaw_rate = 0.0 if point.yaw_rate is None else point.yaw_rate
             uav.speed = float(np.linalg.norm(uav.velocity[:2]))
+            if position_samples is not None:
+                position_samples.append((float(moment), uav.position.copy()))
             distance += float(np.linalg.norm(uav.position - before))
             self.telemetry["checked_executed_plan_samples"] += 1
         uav.path_length += distance
@@ -1381,10 +1383,12 @@ class TerminalParallelEnv:
         # the next control tick by the Shield.
         remaining = max(0.0, self.now + self.config.dt - completion_time)
         if remaining > 1e-9:
-            distance += self._advance_ring_hold(uav, LowLevelIntent(0.0, 0.0, 0.0), duration=remaining)
+            distance += self._advance_ring_hold(uav, LowLevelIntent(0.0, 0.0, 0.0), duration=remaining,
+                position_samples=position_samples, start_time=completion_time)
         return distance, False
 
-    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent, *, duration: float | None = None) -> float:
+    def _advance_ring_hold(self, uav: UAVState, intent: LowLevelIntent, *, duration: float | None = None,
+                          position_samples: list | None = None, start_time: float | None = None) -> float:
         if uav.ring_role is None or uav.committed_plan is not None:
             return 0.0
         ring = self.airspace.actual_ring(uav.ring_role)
@@ -1410,6 +1414,9 @@ class TerminalParallelEnv:
             uav.speed = speed
             distance += float(np.linalg.norm(uav.position - before))
             elapsed += step
+            if position_samples is not None:
+                position_samples.append(((self.now if start_time is None else start_time)+elapsed,
+                                         uav.position.copy()))
         uav.ring_progress = theta % (2 * math.pi)
         uav.path_length += distance
         uav.internal_wait_time += duration
@@ -1855,17 +1862,24 @@ class TerminalParallelEnv:
                 rewards.setdefault(uid, LowLevelReward()).shield -= self.config.shield_intervention_penalty + self.config.shield_correction_magnitude_penalty*magnitude
         self.last_action_traces = traces
         predicted_positions = self._next_state_prediction(intents)
+        motion_states = dict(self.active)
+        executed_tracks = {} if self.config.trajectory_schema_version == "executable_trajectory_v3" else None
         for uid, uav in list(self.active.items()):
             phase = uav.phase
             energy_plan = uav.committed_plan
             had_committed_plan = uav.committed_plan is not None
-            distance, touchdown = self._advance_plan(uav)
+            samples = None if executed_tracks is None else [(self.now, pre_motion_positions[uid].copy())]
+            distance, touchdown = self._advance_plan(uav, position_samples=samples)
             # A canonical plan already advances to its endpoint for this
             # simulation interval.  Do not append an additional full holder
             # step on the transition tick; that would execute a state which
             # was never safety-checked.
             if uid in intents and not had_committed_plan:
-                distance += self._advance_ring_hold(uav, intents[uid])
+                distance += self._advance_ring_hold(uav, intents[uid], position_samples=samples)
+            if samples is not None:
+                if len(samples) == 1:
+                    samples.append((self.now+self.config.dt, uav.position.copy()))
+                executed_tracks[uid] = samples
             # Keep accounting the full control interval even when the landing
             # reserve check above resolves the UAV before it enters service.
             # The object is no longer active in that branch, so the following
@@ -1885,7 +1899,14 @@ class TerminalParallelEnv:
                 rewards[uid].emergency -= self.config.low_level_emergency_landing_penalty
             if uav.energy_remaining <= 0 and uid in self.active:
                 self._resolve(uav, TerminalOutcome.FAILED_ENERGY, "energy_depleted")
-        encounters = self.separation_monitor.observe(self.active, pre_motion_positions)
+        if executed_tracks is None:
+            encounters = self.separation_monitor.observe(self.active, pre_motion_positions)
+        else:
+            # Retain a plane that touched down during this interval only until
+            # its last airborne knot; dropping it for the entire tick hides
+            # pre-touchdown encounters with an aircraft still in flight.
+            encounters = self.separation_monitor.observe(motion_states, pre_motion_positions,
+                                                         executed_tracks=executed_tracks)
         self.telemetry.update(self.separation_monitor.telemetry)
         prediction_execution_error = {
             str(uid): float(np.linalg.norm(prediction - self.active[uid].position))

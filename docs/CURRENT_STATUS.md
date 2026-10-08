@@ -182,6 +182,10 @@
 
 - Q首臂895501/flow6_mixed已COLLECTION_OK/exit0：683ticks6N、19/19标签全R（proposal12/13/17=16/2/1）、1836raw，完整join/首tick重放/实际安全/hash/能量无阻塞，原2903794/5退出。primary核对完毕，模型尚未读Q评价/更新；flow全R不补WAIT样本，不提前授资格。接受下一唯一Q_dense24_fixed895502，预算/模型冻结不变，mixed895503仍未消费。详见[Q采集记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)，60min监控，尚未critic/PPO/formal。
 
+- Q_dense24_fixed895502已INCOMPLETE/exit2，399成功ticks/5N19U，原2904943/4退出；失败因400s监测operational_buffer_entries=1（整秒swept79.990849m、point80.144550m，hard/NMAC/collision/hash0），没有标注。primary可信同状态一步定位UID4 final/UID8 inner，.2s轨迹扫掠80.101761m、执行/预测端点误差约1e-12，确认旧monitor将1s曲线连成直线造成误报。正修V3实际执行子步采样并按共享空中时间逐段监测，保持原安全阈值/真实相交检查；新tests与同状态验证待完成，Qmixed/评价/学习禁止。Q895502已作为环境诊断场景，原失败保留，不称完全untouched；冻结模型未改。详情在[当前证据](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)，继续修复至formal目标。
+
+- V3执行监测子步修复完成：原失败399→400同状态重放swept80.101761m、所有实际违规0，预测/执行端点误差约1e-12；local首批66项及新增文件8项（重叠）、server最终68项通过，handoff/触地/真实交叉均覆盖，生产/测试SHA同步。primary准许仅895502同seed写新`Q_substep_monitor_dense24_fixed`完整重跑，保留原失败，1800ticks/3600s环境/21600s标注与全部上限不变；成功后再首次Q895503。三个91901–3模型冻结、teacher/train/门槛未改，895502已作环境诊断不称完全untouched；一次评价将使用新fixed路径。尚无critic/PPO/formal，随机任务等级仍关闭。详见[验证和运行前协议](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
