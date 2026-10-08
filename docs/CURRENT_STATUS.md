@@ -140,6 +140,8 @@
 
 - **中性dense固定SOC原采集已INCOMPLETE，计算修复已通过定向验证。** 原893502环境完整1157ticks/16N8E/0FDU，无技术/实际安全/hash/负能量；标注7200s封顶为201OK（30R171W）/1TIMEOUT/298未尝试，原失败保留、父child均退出。primary定位等待段/parameterizer的重复解析极值开销，接入带向外余量的Bernstein凸包充分检查，不确定时走原解析fallback，不改轨迹/安全限值/teacher排序。51项local/server tests通过；两个原平台完整query及放行证书逐字复现，慢query45.594→24.618s，仅局部成本证据。接下来新`train_dense24_fixed_annotation_v2`复用完整raw/snapshots，0reset/step、重新标注全部500、21600s新上限，与旧201标签逐字段比对；不是把原失败改成功或部分补样。完整后才mixed893503，再新fit/学生/独立Q/critic/有界PPO；尚无新实际学习或正式准入。[详细协议/结果](evidence/v4_2/p3_v25_neutral_course_20261008.md)。其他dirty保留、无remote不推送，持续至正式启动目标及最终formal无heartbeat要求不变。
 
+- 上述计算修复已提交`dbc2dd3`，新完整离线标注现唯一Python2833606/timeout2833605、SSH session33746，输出`p3_v25_neutral_course_20261008/train_dense24_fixed_annotation_v2`。真实cwd/argv及首label、6/500初前缀已核对，root仍ANNOTATING；21600s新预算、0reset/step，不延原失败任务。60min heartbeat已更新，核心冻结；全量终态分析后继续mixed和后续学习至正式启动，不以此标注启动作为任务完成。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
