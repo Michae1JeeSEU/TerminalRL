@@ -51,3 +51,19 @@ critic入口与PPO构件16项local/server定向测试通过10.36s/5.45s，包括
 当前唯一dense24_fixed/893502已启动：Python2822837/timeout2822836，真实cwd与argv匹配course_data/index2；protocol确认task_priority=false、fixedSOC.8。初次snapshot仅首tick12raw/0steps，随后本地同步progress100ticks/1409raw/41selected/227.497s，属于正常推进前缀，不记终态。核心冻结，不重复启动；完整结果分析后才可继续mixed。
 
 为对应中性课程要求，student/后续PPO结果增加全已完成请求的holding wait、request-to-touchdown、request-to-completion的mean/p95/max；完整回合才解释为全请求，部分回合明确completed_count，不把服务完成当触地。尾部用于监测，不新增逐子组不退化门槛。2项local/server metrics测试通过.22s/.11s；只补结果字段，当前collector/teacher/物理不变。
+
+### dense24_fixed环境终态与标注进度
+
+一次低频检查读到环境已自然结束：1157ticks/2189.094s、16N8E、0F/D/U，24/24请求生成，active/queue/service均0。8次应急已完整触地并完成服务；最小实际/扫掠82.045532/82.030897m、最低完成SOC.212100，实际碰撞/NMAC/间隔/takeover/hash/负能量均0。391次safety_interventions是计划过滤累计，不是391次实际安全违规。固定.8仍有8E及377个LZ idle-with-inner-demand ticks，说明密集业务效率仍有代价，不能写成24N或已解决调度问题；这不触发新造的零E门槛。
+
+原始12151行=500actor+11651forced；root仍ANNOTATING，检查时23/500标注完成、350.669s，query window23在运行。annotation_progress中的单次COMPLETED不代表整臂完成；继续原7200s上限，不提前运行mixed或学习。上述为环境终态/标注前缀，不是完整采集结论。result SHA714b25a0df8936cb4611590cacb1904824901ea1d905344e58024e3f5b67e62b对应ANNOTATING快照。
+
+### 有界PPO入口准备（尚未准入/执行）
+
+primary实现`training.p3_v25_ppo_block`作为后续首个三周期block，不启动formal。它要求新fit三seed对应的独立Q判据通过、同canonical源的三个完整随机student周期及critic初始化；Q只读评价结果，优化器reference只读strict train观测，不读Q行/teacher。首次实际调用之前仍由primary审查真实source/student证据。本节预留train env896501/2/3、policy936501/2/3，分别三课程条件；首次reset前须做历史查重。
+
+从critic_initialized加载同源actor/零adapter，fresh Adam3e-5；每完整周期后epochs2、minibatch32、gamma.99/lambda.95、clip.1/valuecoef.5/gateentropy.001，exact rollout gateKL<=.01、fixed-source train-referenceKL<=.02/coefficient1、globalclip1，冻结全部actor/proposal只更新gate_adapter与critic。每次更新600s在minibatch边界检查，超限保存已接受更新的checkpoint并将block标为BLOCKED，不延预算；优化器/KL拒绝沿用原回退。保存每次update及model+Adam，不覆盖source。
+
+三个新training周期完成后，仅在相同development env/policy seeds评估候选，与原source三个完整周期按请求汇总N/E、reward、energy、holding/full-lifecycle mean/p95/max；不得把这些配对development当heldout。PILOT_COMPLETE只表示协议完整，不自动candidate_retained或formal_allowed；primary根据真实训练更新及退化/业务证据决定下一步，有需要再预注册新block，不能通过no-op更新宣称PPO修复。任何技术/实际安全/不完整/FDU/takeover超限均停止后续保留产物。
+
+此入口及PPO构件16项local/server合成测试通过10.87s/5.43s（3个新orchestration用例+13个PPO用例，和此前tests有重叠）：失败Q在optimizer前拒绝、真实测试梯度更新冻结actor/proposal、按三train→三paired-eval保存artifact、超限留checkpoint并停止、重复输出不覆盖。无真实BC/Q/critic/PPO，当前collector未导入这些新模块，物理与标注核心保持冻结。

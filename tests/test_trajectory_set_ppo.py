@@ -126,6 +126,16 @@ def test_fixed_reference_guard_limits_cumulative_gate_drift():
     assert policy.optimizer.state_dict()['state']=={}
 
 
+def test_wall_budget_stops_before_update_and_preserves_frozen_state():
+    policy=TrajectorySetPPO(TrajectorySetActor())
+    rows=[step(policy,reward=3,terminated=True)]
+    before=copy.deepcopy(policy.model.state_dict())
+    result=policy.update(rows,training_authorized=True,wall_seconds=1e-12)
+    assert result['budget_exhausted'] and result['accepted_updates']==0
+    assert all(torch.equal(v,policy.model.state_dict()[k]) for k,v in before.items())
+    assert not policy.optimizer.state
+
+
 def test_all_forced_and_empty_steps_only_update_critic():
     policy=TrajectorySetPPO(TrajectorySetActor(),learning_rate=1e-3)
     rows=[step(policy,actor=False,reward=1),step(policy,0,0,reward=10,terminated=True)]

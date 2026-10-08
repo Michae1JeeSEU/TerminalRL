@@ -9,6 +9,7 @@ objective. No environment or teacher is queried by the optimizer.
 from __future__ import annotations
 
 import copy
+import time
 from dataclasses import dataclass
 
 import numpy as np
@@ -175,13 +176,15 @@ class TrajectorySetPPO:
 
     def update(self, steps, *, training_authorized=False, epochs=4, minibatch_size=32,
                gamma=.99, gae_lambda=.95, clip_ratio=.2, value_coef=.5,
-               entropy_coef=.01, target_kl=.01):
+               entropy_coef=.01, target_kl=.01, wall_seconds=600):
         if not training_authorized:
             raise PermissionError('V2.5 PPO requires evidenced student qualification and admission')
         if (not steps or epochs<1 or minibatch_size<1 or not 0<=gamma<=1
             or not 0<=gae_lambda<=1 or not 0<clip_ratio<1
-            or not np.isfinite(target_kl) or target_kl<=0):
+            or not np.isfinite(target_kl) or target_kl<=0
+            or not np.isfinite(wall_seconds) or wall_seconds<=0):
             raise ValueError('invalid PPO budget or hyperparameters')
+        started=time.monotonic()
         for r in steps: r.validate()
         with torch.no_grad():
             for r in steps:
@@ -201,10 +204,11 @@ class TrajectorySetPPO:
             advantages=(advantages-selected.mean())/(selected.std()+1e-8)
         totals=dict(accepted_updates=0,rejected_updates=0,team_steps=len(steps),actor_decisions=count,
                     actor_count_normalizer=normalizer,final_gate_kl=self.rollout_gate_kl(steps),
-                    final_reference_kl=float(self.reference_kl().detach()),rejection_reason=None)
+                    final_reference_kl=float(self.reference_kl().detach()),rejection_reason=None,budget_exhausted=False)
         metrics={k:0. for k in ('loss','actor_loss','value_loss','entropy','grad_norm','clip_fraction')}
         def finished():
-            return {**totals,**{k:v/max(1,totals['accepted_updates']) for k,v in metrics.items()}}
+            return {**totals,'elapsed_seconds':time.monotonic()-started,
+                    **{k:v/max(1,totals['accepted_updates']) for k,v in metrics.items()}}
         if totals['final_gate_kl']>target_kl+1e-8:
             raise ValueError('rollout is stale before PPO')
         if not np.isfinite(totals['final_reference_kl']) or totals['final_reference_kl']>self.reference_limit:
@@ -212,6 +216,9 @@ class TrajectorySetPPO:
         for _ in range(epochs):
             order=np.random.permutation(len(steps))
             for start in range(0,len(steps),minibatch_size):
+                if time.monotonic()-started>=wall_seconds:
+                    totals['budget_exhausted']=True
+                    return finished()
                 indices=order[start:start+minibatch_size];rows=[steps[i] for i in indices]
                 predicted=torch.stack([self.model.value(*tensors(r),torch.from_numpy(r.context)) for r in rows])
                 value_loss=(predicted-torch.as_tensor(returns[indices])).square().mean()
