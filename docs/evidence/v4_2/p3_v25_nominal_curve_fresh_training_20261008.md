@@ -96,3 +96,13 @@ primary检查固定final训练内残差：91901 gate错18条（全部teacher R�
 smoke已SMOKE_OK/exit0：2ticks、3actor全部RELEASE并批准，三接口覆盖，actual/hash/shield无异常，完整2tick tape精确重放，原请求/条件likelihood/mask/奖励记录全量检查通过；按2tick边界censored是预定smoke语义，不当完整周期。根result SHA`90ed34ec7e3767f44506f45daa816d529a466efff3c090e032508632ec007ae1`，终态两端一致，不重跑、不入train。
 
 flow6_mixed/892853/929853已DEVELOPMENT_COMPLETE/exit0，667ticks、6N/0E/F/D/U，63.450s（含完整重放）。98actor=18R/80W，shield0，实际安全/hash/负能量/技术/censor均无异常，最小实际/扫掠111.691875/111.627825m，最低完成SOC .437690。6个请求的全口径等待mean/p95/max=14.893084/37.672412/39.760307s，request→touchdown=294.833333/327/327s，request→service完成=359.833333/402/407s；team reward130.069398。policy任务等级仍全1，各物理服务时长保持原任务类型。primary已逐条核对667请求记录/steps与原始请求likelihood、mask、teacher-off、episode end、奖励和全请求能量；`.tmp/p3_course_v2_student_flow_analysis.json`首次exit0。根result SHA`04ef358e75525d79bf68d24d0b931954e2ee2f27f19ceccb2ebe1c138bda9dae`，全部关键文件两端一致。此开发seed复用不冒称独立Q。接受下一唯一dense24_fixed/892854/929854，再视结果继续mixed；当前不提前访问Q或启动PPO。
+
+fit/smoke/flow记录已提交`a32f6dd6f59132226852a93a30050964c993e1d9`，无remote/未推送。新根`p3_v25_neutral_course_v2_20261008/student_initial/dense24_fixed`已实际启动timeout2888670/Python2888671，cwd/argv/new profile/canonical16d3ee与892854/929854核对一致；首次真实PID检查375tick、271.327s，requests已399行，无root result或exit，属于运行前缀。启动worker误读了不含`_v2_`的旧根18N4E1F1U失败，primary立即根据新根protocol/progress核对，并让另一worker检查真实新PID；这是路径识别错误，没有新失败、没有重复启动或终止新进程。核心冻结，下一监控仍按60min，完整终态后才接受mixed。
+
+### 新 student dense fixed 完整结束及业务比较
+
+新dense24_fixed/892854/929854已DEVELOPMENT_COMPLETE/exit0：1024ticks、15N9E/0F/D/U，842.401s含完整精确重放；timeout2888670/Python2888671已退出。3477actor=156R/3321W，0shield；24个完整请求的最低SOC .246556、最低能量369.834、总耗能11603.367；最小实际/扫掠均83.134983m，actual安全/hash/负能量/技术/censor均无异常。9次应急提交/触地、87次尝试、0能量拒绝；363次安全干预是候选拒绝，未当作实际违规。原请求/likelihood/mask/奖励/complete-cycle及全部能量记录已由primary核对，完整分析`.tmp/p3_course_v2_student_fixed_analysis.json`exit0；root result SHA`57eb8864d7655dbf8eadd6aa52e645c946ea1e878e1682c535081ffbc8db8efc`，7项关键产物两端一致。
+
+与同env/policy seed、同修复合同的旧5ca actor迁移诊断相比，新16d3ee不是全面改进：N/E由17/7变15/9，reward377.702031→365.351956，mean wait181.643113→189.511015s；但wait p95为471.553637→433.839169s，touchdown p95/max为857.2/970→770.8/850s，service完成p95/max899.35/1000→863.55/880s，总耗能11624.850→11603.367。mean touchdown/service完成均增加2s。保留这些方向相反的业务结果，单个开发场景不能归因或证明新拟合性能优于旧actor，更不是PPO退化恢复证据。原未修复失败18N4E1F1U没有完整24请求口径，不能拿其已完成均值作公平收益比较。
+
+当前完整周期/实际安全/能量与原有teacher-free准则无阻塞，E并非F且未预登记零应急门槛；primary接受继续唯一dense24_mixed/892855/929855。三种学生开发条件完成后再决定冻结候选并收集Q；不会凭当前业务混合结果自动准许正式PPO。Q启动/全量只读分析helper已准备并仅语法编译，尚未调用或读取Q；它要求三种学生完整、固定fit source，并沿用预留Q895501–3、每臂3600s环境/21600s标注和原数据上限。

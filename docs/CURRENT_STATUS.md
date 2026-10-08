@@ -172,6 +172,10 @@
 
 - 新fit_initial已FIT_FROZEN/exit0：91901–3各fresh5000updates完成，严格1298新train行；canonical91901 SHA16d3ee800263023386341cb92a6335bb63dd487a346181a0275bf4c3ecb63600，训练内18条R→W残差保留，不挑seed、不据拟合授资格。新student smoke892864通过三接口3R与2tick重放；flow892853完整667ticks/6N/0E/F/D/U、98actor/18R/0shield，实际安全/hash无异常，全请求等待mean14.893s，完整重放与逐行分析通过。primary接受下一唯一dense24_fixed892854/929854，仍为development；无新Q/critic/PPO/formal，详见[新轮记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- 新dense固定student当前运行于含`_v2_`的新根`p3_v25_neutral_course_v2_20261008/student_initial/dense24_fixed`，timeout2888670/Python2888671，892854/929854，canonical16d3ee，真实cwd/argv/375tick初产物已确认；旧根同名失败目录不能当本轮结果。a32f6dd已提交fit/flow证据，无remote。60min监控，新run终态前不启动mixed/Q/PPO，核心冻结。
+
+- 新student dense24_fixed已DEVELOPMENT_COMPLETE/exit0：1024ticks15N9E/0F/D/U，完整重放，3477actor/156R/0shield，actual安全/hash/能量无异常，原2888670/1退出。primary全量核对通过；相较同修复合同旧actor17N7E，新actor多2E、mean wait+7.868s、reward下降12.350，但尾部落地/服务时间缩短，不能称全面改进或PPO退化已解决。按既定非零应急准则接受下一唯一mixed892855/929855、source16d3ee；Q仍未消费、critic/PPO/formal未启动。详细数值/比较在[新轮训练记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
