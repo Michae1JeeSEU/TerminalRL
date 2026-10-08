@@ -148,6 +148,8 @@
 
 - **三课程完整采集已通过，primary接受fresh拟合。** mixed893503于UTC06:55为COLLECTION_OK/exit0、1007ticks/16N8E/0FDU，484/484标签78R406W、13proposal，技术/实际安全/hash/耗尽异常0，父child退出。三臂总1003actor标签173R830W/17proposal、全部有效base1，原始null/forced/context与终态同步全量核对通过；规则访问分布及16E总业务代价仍保留。下一唯一`fit_initial`按已定91901–3各5000updates/300s、canonical91901执行，之后teacher-free学生开发；Q未消费、无实际BC/PPO/正式准入。详见[当前证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
 
+- **fresh BC已完成，开始teacher-free学生开发。** fit_initial三seed91901–3各5000updates/exit0，三者训练内1003行gate/proposal/joint均100%，固定canonical91901 SHA5ca0c9dc…；仅训练内可学性，Q未消费、不宣称泛化或PPO准入。primary接受已登记892852/929852两tick smoke，之后再逐臂完整开发，持续至正式训练实际启动。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
