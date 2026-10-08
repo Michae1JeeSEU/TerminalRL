@@ -190,6 +190,10 @@
 
 - Qmixed895503已COLLECTION_OK/exit0：932ticks19N5E/0FDU、318标签77R241W、actual扫掠83.178005m、无安全/hash/耗尽/技术阻塞，primary全量检查及两端同步通过。三Q共54请求45N9E、975有效标签192R783W/18proposal；原父child退出。已接受一次qualification_initial评价全部91901–3冻结final，fixed指新Q_substep_monitor目录；Q不训练、不降低门槛，895502环境诊断边界仍保留。当前独立imitation评价/critic/PPO/formal尚无实际结果，详见[完整Q与评价范围](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- 一次冻结qualification_initial已EVALUATED但三个模型全部未通过：joint=.768205/.765128/.683077，RELEASE recall=.390625/.505208/.546875，proposal top1=.479167/.515625/.453125；并非类别支持缺失或纯WAIT坍缩。Q895501–3已消费，禁止用其调参/降低门槛/重评分；critic/PPO/formal未启动。primary继续仅train整回合交叉验证学习曲线及逐LZ资源观测混叠的最小诊断，分清过拟合、样本覆盖与缺上下文后修复，不在失败处结束。详见[泛化诊断新记录](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
+- train-only诊断确认两点：整回合CV的5000step训练proposal≈100%，validation仅.379–.489且loss升至10–12，过拟合/独立情境不足；另在train893512/t255/UID0保持空中状态和free pad数量、仅交换实际可行pad4与地面occupied pad5时，完整105+N50观测完全相同而teacher由joint15变WAIT。已证明逐pad空间资源被汇总丢失，原teacher不是随意改标。primary选择增加显式V2.6逐pad可观测状态（无teacher/candidate查询）、先修见证和train重建，再新开发覆盖/新候选/新Q；不修改原Q或旧标签，不降低准入门槛。详见[CV、反事实见证及修复方向](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

@@ -1,0 +1,29 @@
+import json
+import pytest
+import torch
+from terminal_marl.scripts.diagnose_p3_v25_train_generalization import run, subset
+from terminal_marl.training.p3_v25_set_learnability import synthetic
+
+
+def test_subset_keeps_complete_row_identity_and_inputs():
+    paired=synthetic();indices=torch.tensor([1,8,13])
+    data,tensors=subset(paired,indices)
+    assert data.ids==tuple(paired.original.ids[i] for i in indices)
+    torch.testing.assert_close(tensors[0],paired.new[0][indices])
+    torch.testing.assert_close(data.gate,paired.original.gate[indices])
+
+
+def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path):
+    torch.set_num_threads(1)
+    root=tmp_path/'smoke';result=run([],root,smoke=True)
+    # The shared metric helper uses integer histogram keys; JSON preserves
+    # their values while converting object keys to strings.
+    assert json.loads(json.dumps(result))==json.loads((root/'result.json').read_text())
+    assert result['status']=='COMPLETE' and len(result['folds'])==2
+    assert not result['protocol']['Q_rows_accessed']
+    for fold in result['folds']:
+        assert fold['train_rows']==fold['validation_rows']==8
+        assert [v['update'] for v in fold['curve']]==[1,2]
+        assert fold['curve'][-1]['train']['loss']!=fold['curve'][0]['train']['loss']
+    assert not list(root.glob('*.pt'))
+    with pytest.raises(FileExistsError):run([],root,smoke=True)
