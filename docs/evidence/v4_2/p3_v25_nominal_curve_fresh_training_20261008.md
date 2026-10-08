@@ -168,3 +168,17 @@ primary修复方案：V3 executor在`_advance_plan`与`_advance_ring_hold`实际
 服务器最终六文件68项测试通过96.61s/exit0，两个生产文件和新test文件两端SHA相同。primary已审查差异及可信失败重放，接受按上述同seed协议完整重跑。临时launcher/全量analyzer/一次评价helper语法检查通过；fixed目录映射一致，其他未消费seed仍严格拒绝任何既有protocol。未启动模型评分或学习。
 
 若完整通过，后续Q895503仍按原预算首次采集；一次冻结三模型评分使用Q_flow6_mixed、新Q_substep_monitor_dense24_fixed、Q_dense24_mixed三个成功目录，不读取原失败为监督。895502只是模型未参与拟合的评价场景，已经参与环境诊断，不能声称完全untouched的环境泛化证据。模型、train标签、teacher和判定门槛均未因Q修改；后续若需要调模型须转入新开发协议，不能按Q表现反复拟合。这一修复完成与否不单独授予PPO资格。
+
+修复提交`5d75d7e69d8db89d04ebff0b8047d4483643a97e`（无remote/未推送）后，同seed新臂已启动timeout2908207/Python2908208，真实cwd/argv与Q/index2/新路径一致，SSH session1059；protocol、first_before和rows已生成，尚无exit。primary读到的250ticks/4031raw/132selected/3N只是启动后前缀，不是终态。最多一环境父及顺序标注child，运行核心冻结，保持60min低频检查。另仅离线准备并编译critic/PPO启动helper，嵌入实际qualification全通过guard、严格train路径和修后student路径；没有执行它们或读取Q模型评价。
+
+### Q固定SOC修后完整通过
+
+`Q_substep_monitor_dense24_fixed`/895502已自然COLLECTION_OK/exit0，原2908207/8与child退出；967ticks、20N4E/0F/D/U，所有24请求触地并完成服务。环境906.762s、标注5265.820s（87.8min），638/638标签全部OK、96R542W、16种proposal。11503raw中10865forced不入actor loss；接口o2m30R116W、m2i36R117W、i2f30R309W。actor/label覆盖busyLZ626、高速inner322、SOC<.55为308/<.65为460、retry后347、同接口WAIT→RELEASE47次；14023RELEASE意图、11101实际plan调用，在原预算内。
+
+实际子步point/swept最小80.104583/80.101761m，operational/hard/NMAC/collision/hash/shield fail closed均0；76个计划一致执行。4应急提交/触地、56次尝试、0能量拒绝/负预算/耗尽，最低完成SOC .241345、能量362.017。原错误附近仍是完整周期的最小间隔，修复没有通过更换seed或动作绕过该状态。teacher/实际56R/R、40R/W、4W/R、538W/W，原state-only单机可行与批量执行语义仍分开，未按实际结果改标；不将拒绝次数解释为物理无解。
+
+primary检查全部raw/mask/null、actor-selected-OK集合、原证书hash、首tick重放、105+N50 evaluation decoder及snapshot task config；所有638条effective base1、policy STANDARD，原物理mission/service保留。全量分析`.tmp/p3_course_v2_Q_fixed_substep_analysis.json`首次exit0，SHA`48b142352fbcfcd782f22353496aa0ea36ba9ff5738936d50ce8757083fa83a6`。终态root result两端SHA`0891cfad2bbb18598154e521f0a39dea5e28b882aebb302d6ccce6bbd97909fb`，context SHA`12ec38ca061af2c00cef43075e527b2f8d7c153a2ba9b7a1a134757544c3a5c0`。监控worker首次终态报告误沿用了ANNOTATING时的root SHA ab478；primary发现与本地真实终态不符，重新独立读取两端后核实为上述0891cf，不能把旧报告当终态hash证据。
+
+前缀只读对照`.tmp/p3_q_monitor_prefix_comparison.json`：原399个成功step的全部tape/action_traces/release_telemetry/outcomes与新前399条相同；原6863条raw按decision_id全部匹配，除pre_state_hash外各字段全部相同。state_record把monitor遥测纳入hash，所以不能要求跨测量版本状态摘要相等；primary查首tick完整live，唯一数值差异是minimum_actual_separation由整秒端点202.342831变为包含子步202.237484（after和outputs两处）。不声称所有state hash相同，也不删原失败来掩盖差异。
+
+primary据完整业务、安全、能量及标签证据接受下一唯一Q_dense24_mixed/895503首次运行；24/warm12、SOC .55–.90及所有预算/源模型/门槛不变。fixed重跑只解除执行测量问题，未验证PPO退化已恢复；mixed未评分且独立imitation/critic/PPO/formal仍待实际完成。继续60min低频，三Q齐全才一次冻结模型评价。

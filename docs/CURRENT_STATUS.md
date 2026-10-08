@@ -186,6 +186,8 @@
 
 - V3执行监测子步修复完成：原失败399→400同状态重放swept80.101761m、所有实际违规0，预测/执行端点误差约1e-12；local首批66项及新增文件8项（重叠）、server最终68项通过，handoff/触地/真实交叉均覆盖，生产/测试SHA同步。primary准许仅895502同seed写新`Q_substep_monitor_dense24_fixed`完整重跑，保留原失败，1800ticks/3600s环境/21600s标注与全部上限不变；成功后再首次Q895503。三个91901–3模型冻结、teacher/train/门槛未改，895502已作环境诊断不称完全untouched；一次评价将使用新fixed路径。尚无critic/PPO/formal，随机任务等级仍关闭。详见[验证和运行前协议](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- Q修后fixed895502已COLLECTION_OK/exit0：967ticks20N4E/0FDU，638/638标签96R542W、16种proposal，11503raw完整检查；actual子步swept80.101761m、所有实际安全/hash/耗尽0，最低SOC .241345。原动作/执行399step前缀及6863raw除含遥测的state hash外一致，原失败保留。标注5265.820s、root终态SHA0891cfad2bbb18598154e521f0a39dea5e28b882aebb302d6ccce6bbd97909fb两端核对，旧进程已退出。primary接受下一唯一Q_dense24_mixed895503首次采集，所有预算/三模型/teacher/门槛不变；之后三Q一次冻结评价，无critic/PPO/formal。详见[修后Q完整结果](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
