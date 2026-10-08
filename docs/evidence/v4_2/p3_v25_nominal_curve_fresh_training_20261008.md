@@ -122,3 +122,19 @@ primary选择最小运行时修复：只对当前V3 nominal+swept_curve_v1合同
 验证顺序冻结：定向tests、可信完整失败状态的current+successor proof；再同892855/929855/canonical16d3ee完整重跑到新`student_runtime_refined/dense24_mixed`，原失败不覆盖。采样证明修复不修改teacher/filter或训练输入，所以沿用已冻结1298标签和三个final模型，不重新拟合或挑模型。既有flow/fixed在更粗证明下已完整通过，继续保留；mixed新证据须完整精确重放且全N/E/F/D/U、能量与业务指标核对后才判断学生资格。Q895501–3仍未消费，当前禁止Q/critic/PPO。若重跑仍有阻塞，继续具体同状态诊断；用户授权的最终目标仍是正式训练就绪并实际启动，不在本次失败处结束。
 
 修后65项local/server定向tests均通过（11.22/6.35s），8项源码/测试SHA同步，服务器无旧P3进程。primary的完整可信失败状态探针`.tmp/verify_p3_mixed_refinement.py`首次exit0：12active/42相关pair，current+successor证明全部approved，最小连续下界80.363964m，耗时.047s，原now489与应急plan hash不变。没有实际推进、改计划、改阈值或训练。该单状态结果解除本次已定位的证明矛盾，但仍须完整重跑验证后续状态；接受提交后启动新mixed路径，预算/actor/seeds不变。
+
+修复提交`e340a8947be10c0d601c73d32782514c20ce7ee3`（无remote、未推送）后新mixed已启动：timeout2901702/Python2901703，真实cwd=/home/user/projects/terminal、argv892855/929855及新student_runtime_refined目录核对一致。protocol/first_before/requests/progress均已生成，相邻exit尚无；不是终态或学生准入。Syncthing源码SHA先核对，最多一个环境父，核心冻结；原student_initial失败及其他已完成臂不重启。
+
+### 修复后mixed完整通过；冻结候选进入独立Q检查
+
+新`student_runtime_refined/dense24_mixed`已DEVELOPMENT_COMPLETE/exit0（newly_run），898ticks、17N7E/0F/D/U，24请求全部触地并完成物理service；2500actor=163R2337W，shield takeover/fail_closed均0，772.015s含完整精确tape replay。minimum actual/swept=80.413918/80.410774m，actual hard/NMAC/collision/checked-executed hash全部0，75次plan一致提交；401次safety_interventions是候选拒绝，不是物理违规。7次应急提交/触地、135次尝试、0能量拒绝/负预算/耗尽，最低完成SOC .181618。全请求wait mean/p95/max=143.906689/346.158118/359.437154s；request→touchdown=423.083333/687.45/690s；request→service完成=482.666667/759.10/793s，reward392.094247。
+
+primary亲自核对所有898条请求、tensor、actor mask、请求likelihood、teacher-off、奖励、terminal语义和24个能量结局；全量分析`.tmp/p3_runtime_refined_student_mixed_analysis.json`首次exit0（SHA`d04f9f9bcb2ab0873ed3537d1d1e785ddce5b6464411950ea73e606ad2539cf2`）。7个关键文件两端同步，root result SHA`224443220ec6d7a842acee0315b876e87354bed8d9800e8ae16570c76d7f19ca`，requests SHA`db1aa03a3a18724e8b32a03abbeeeb46547ad7ae4725ce408de14b3b4dca10fe`，steps SHA`e7f2b759b2b3c6a7a348224f1c201a2fac470e6e611cfc6e796b91e70c0bc64a`。原2901702/3已退出。运行时实际采样点最小距离高于密采样连续极小值，不能把80.413918误写成全连续时间最小值；安全依赖修后的连续下界证明。
+
+当前同canonical source的三个完整开发周期共54请求38N16E/0F/D/U：flow6N，fixed15N9E，mixed17N7E；均teacher-free随机请求且完整重放，实际安全与能量无阻塞。它们支持这些条件下的环境可执行性与学生闭环完整性；应急仍16/54，规则采样数据与学生访问分布也不同，不能称业务最优、独立泛化或P3训练退化已解决。原失败prefix与完整结果分别保留，未将失败改标。
+
+primary据上述证据接受下一项**既有预留Q的采集和一次冻结模型评价**，不授PPO资格。三模型维持fit_initial的91901/2/3固定5000step final，不再调参/挑seed，canonical仍91901。Q按895501 flow6_mixed→895502 dense24_fixed→895503 dense24_mixed顺序，输出`Q_<scenario>`；三臂此前未reset/读取。每臂rule行为、全actor原state-only teacher标签，完整周期（flow1210/dense1800ticks）/3600s环境/21600s标注/900s重建、2048query/51200RELEASE意图、outer27000s，超限保留失败不补标。原单机teacher非联合批准/非全局最优边界不变。逐臂primary先查业务/安全/完整行与独立evaluation decoder，再继续下一臂；全部齐全后仅一次`p3_v25_task_imitation --mode evaluate`评价全部三seed final，Q不进训练/阈值选择。沿用已有WAIT≥.90、RELEASE≥.70、macroF1≥.80、proposal top1≥.85/top3≥.95、joint≥.85及支持/非坍缩判据，不因结果弱而事后降低。
+
+新runtime修复不改变SafetyFilter/teacher候选或采样状态语义；原train/flow/fixed保留其核心版本身份，后续critic输入路径明确为student_initial下flow/fixed以及student_runtime_refined下mixed。Q/helper已包含runtime源码SHA并检查这三条成功路径。此时critic/PPO/formal仍未执行，只有Q完整且独立拟合资格实际通过后才进入已登记有界学习步骤。正式训练最后启动后不设heartbeat；当前长标注继续60min静默监控。
+
+附加同seed前缀检查：原失败的489个成功记录与新完整臂前489条的tape、pre_hash、post_hash、reward、actor_mask、likelihoods全部逐字段一致（各0差异）。first_before pickle bytes不同，但整个可观察状态/决策轨迹前缀精确一致，不用pickle字节相等代替语义相等。这支持本次修改确实在原执行屏障处解除阻塞，未通过改变早期动作绕开该失败状态。

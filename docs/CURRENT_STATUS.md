@@ -178,6 +178,8 @@
 
 - mixed892855原student_initial已BLOCKED/exit1：489成功ticks后11N13U，now489应急UID31/inner UID2的runtime粗采样下界79.990124m引发执行屏障；实际违规/hash/耗尽均无，但不具完整资格。primary同状态诊断确认提交.2s与runtime1s证明分辨率失配：.2s连续下界80.363964m、.005s密采样80.379696m，原轨迹正确获证，不能归因teacher误放或真实冲突。已仅对粗网格未获证pair增加物理步长连续复核，保持80m阈值/未知失败封闭/旧合同；65项local/server tests通过，原可信12active/42pair的current+successor检查通过，原失败保留。下一唯一同seed/source16d3ee新`student_runtime_refined/dense24_mixed`完整重跑，原train/fit/flow/fixed不重做；Q仍未消费、critic/PPO禁止。详见[诊断、修复与验证协议](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。用户最终目标仍是formal就绪后实际服务器启动，无remote未推送。
 
+- runtime证明细化e340a89后的mixed新臂已DEVELOPMENT_COMPLETE/exit0：898ticks17N7E/0F/D/U、2500actor163R、0shield/fail_closed、actual安全/hash/耗尽0、完整精确重放，最低SOC .181618。primary全量请求/能量/原likelihood检查通过，7文件两端一致，原2901702/3退出。三个student开发条件共54请求38N16E完整，但未验证泛化/PPO退化恢复。接受下一既有Q895501–3顺序完整采集，三个91901–3固定final/canonical16d3ee冻结，一次独立评价、不用Q调参；budgets与已有门槛不变，当前critic/PPO/formal未启动。后续mixed路径用student_runtime_refined，原失败保留。详见[完整结果与Q运行前边界](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)，60min监控，无remote/不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
