@@ -66,3 +66,9 @@ V2.6特征及显式159D actor、CV输出测试共7项通过。真实上述train�
 独立892871 server smoke自然SMOKE_OK/exit0：2ticks/6raw/3actor/3完整标签，三接口各一个nominal RELEASE，实际执行3R，均K3第1项；prefix/traffic/ID/原label与新增159行完全对应、无安全/hash异常。原始开发null与forced行仍隔离不训练。环境2.134s/标注3.656s，root SHA8d4ee29788734c8abb21abd2672f350e4f45b13ace6ec4118b0caf31e5ecaf04，资源行SHA28823a951a2b39eaa330a2b042739bd9bdb58f0b6636c471377c31e5c46587b2，两端一致；primary读全量分析`.tmp/p3_v26_smoke_analysis.json`（SHA e019db4d92081a34e705f945a34faa095a40576bf91eef68d45f428acc94589a）后接受train01。短任务结束时真实Python已退出，不能声称观测到live argv/cwd；启动器明确cd且实际产物正常，后续长臂须核对live信息。
 
 另修旧开发runner的protocol记录：先验标为未载入，模型验证载入后、reset前写入真实schema，避免159模型被记录成105。新增本地runtime9tests通过（26.38s，包含原7项）：105/159分别请求与2tick重放；159 actor-critic的12tick空场景→首次到达、存储/加载/完整reward tape形状保持159。只是接口小样本，不是student qualification/实际PPO。
+
+train01/893601已自然COLLECTION_OK/exit0：632ticks、6N/0E/F/D/U、1719raw/18actor/18完整标签和资源行，original prefix/traffic/label完全保留。三接口各6R，proposal12×16/11×1/13×1；低SOC<.55标签3、busyLZ12、高速inner5，无retry恢复/WAIT标签。本低并发情境只补独立RELEASE支持，不能称gate两类充分。环境21.625s/标注21.494s，最小actual/swept110.127264/110.127201m，最低完成SOC.409027、剩余能量613.540；所有实际安全/hash/耗尽/技术/censor均无异常，0应急。初始wrapper/timeout/Python2940176/7/8和steps/protocol已观测，结束后原PID及child均不存在；wrapper cwd正确，Python已结束后未观测到其cwd，不追称已观测。
+
+root SHA a407c3f568415c0f8ba24172c01842910f3048f8c723f45bec900f9f7f4dac5b、资源SHA365d0d54ff25b4757491dd2908a80fedf7023e1c7e91779c4b17f4c0c353b925两端一致。primary完整分析`.tmp/p3_v26_train01_analysis.json`（SHA fd0226e8b4b5c3462b8e1e3ad5d817369d819464b7c63f94eeddb63c27c8192f）后接受下一唯一train02/893602，所有冻结预算/物理/teacher/priority关闭合同不变。train01不重跑；新候选/Q/学习仍待整个cycle分析。
+
+UTC20:32左右train02已启动，wrapper2940965/timeout2940966/Python2940967，三者真实cwd均`/home/user/projects/terminal`，argv为V26 collector/index2/正确新路径，源码SHA和无重复检查通过。初progress1tick/12raw/12selected（每25tick刷新），相邻steps已有18行，root result/exit尚无，属于正常启动前缀。当前唯一环境父进程；运行中核心冻结，dense预计1–2h，继续60分钟低频监控，不把首tick或单条annotation COMPLETED当全臂终态。

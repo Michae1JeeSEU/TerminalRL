@@ -198,6 +198,10 @@
 
 - V2.6核心ea0ed80已同步，server48项定向回归通过；独立892871 smoke已SMOKE_OK/exit0，6raw/3actor/3完整159资源行，三接口3R均实际K3第1项，原label/prefix/traffic逐位保留，无安全/hash异常，两端SHA相同。primary全量检查后接受首个独立893601 flow6 mixed采集，下一dense须该臂完整结果再决定。另补159 actor-critic空场景到首次到达记录及真实schema协议，local runtime9tests通过；均非正式PPO或qualification，详见[当前证据](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
 
+- 新V2.6独立train01/893601已完整COLLECTION_OK/exit0：632ticks6N/0E/F/D/U、1719raw/18完整标签与159资源行，原标签/105prefix/traffic全部保持，三接口各6R但没有WAIT；actual/swept≥110.127m、minSOC.409027，无安全/hash/耗尽/技术/censor问题。两端SHA与全量分析核对通过，原2940177/8及child已退出。primary接受下一唯一dense fixed train02/893602（21600s标注上限不变）；train01禁止重跑。当前核心ea0ed80、bridge记录74c1dd5，无新fit/Q/PPO/formal，详见[独立回合记录](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
+- 当前唯一train02/893602已实际启动：wrapper2940965/timeout2940966/Python2940967，真实cwd/argv与Syncthing SHA均核对；初progress1tick、steps18行只是前缀，输出`p3_v26_resources_20261009/train_02`。核心冻结，60min监控；终态primary完整分析后才能train03，root ANNOTATING及单条annotation COMPLETED都不是整臂完成。formal目标与不监控最终formal要求不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
