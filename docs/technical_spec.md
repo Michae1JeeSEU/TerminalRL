@@ -1314,6 +1314,14 @@ GUI 正常结束时会先提交并消费带终态事件的最终 source frame，
 
 新profile入口 `terminal_marl.configs.p3_integrated_repair.build_config`；新选项holding_speed_contract、emergency_priority_mode、route_aware_emergency_enabled、executable_admission_energy_enabled、low_level_queue_cost_enabled均保留历史默认。启用队列成本时env.step info追加team_reward/team_reward_components，student_rollout使用该团队总量而不添加虚构agent。StudentPPOV42.update新增entropy_mode=joint/gate_only；默认joint。新检查入口 `python -m terminal_marl.scripts.diagnose_p3_integrated_repair --check-only --output <new-dir>`，效果验证前必须先完成定向回归和smoke。
 
+2026-10-08中性课程v2另显式启用`priority_wait_mode=total_wait_v1`与
+`nominal_holder_separation_mode=swept_curve_v1`。前者修复UAV内部等待漏计；后者仅在V3、
+`nominal_until_release`且可达角区间零宽时，将已知holder曲线与候选曲线的相对弦段最小距离，
+减去双方加速度界之和乘`dt²/8`，作为整个采样区间的保守下界。继续使用80m运行间隔，
+不凭点采样通过；非零宽可达管仍走原速度包络，未认证轨迹仍拒绝。
+两项SimConfig默认保留历史模式，使原pickle可回放；当前`p3_v25_course`显式采用新模式和v2 profile，
+旧profile标签/模型不得直接冒充新课程资格。具体反例与验证见[中性课程记录](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
+
 新profile显式选择 `external_queue_step_mode=post_admission`：在now安全提交入场后，只对剩余队列推进dt并计算队列成本；成功入场者推进dt飞行、获得首tick time/urgency reward。失败commit退回队列者只计算一次队列区间。旧默认pre_admission仅用于历史重放。
 
 ### 33.1 Local visualization console and offline replay

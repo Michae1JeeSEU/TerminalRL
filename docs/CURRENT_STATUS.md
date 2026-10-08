@@ -156,6 +156,8 @@
 
 - 同状态诊断smoke已SMOKE_OK/exit0，0reset/0query、前2tick状态/reward精确重放；primary接受原定early_late五query。纯公式反例确认PriorityEngine漏计UAV内部等待（internal300s仍1、external300s为1.01202813），违反保留总等待紧迫度的规范，但现排序先按SOC且另有总等待破同分，尚不能归因本次耗尽。核心冻结直到故障原tape和候选证据读取完成；具体filter_plan阻塞须查pair/距离，不能用旧joint-track audit代替。
 
+- **已定位并修复一处安全预测假阻塞，尚待完整周期。** 665tick原轨迹精确重放；native witness表明UID29对UID49的零宽nominal预测间隔84.408m，却被通用速度余量压到79.320m；连续curve下界84.391m。新`swept_curve_v1`保持80m与曲线误差保护，365/29和665/29 teacher可放行，反向665/49真实冲突仍拒绝。另`total_wait_v1`修复内部等待漏计；当前neutral course v2显式启用，旧pickle保持legacy。73项local/server回归通过，清理重复config定义后7项通过。下一独立892862两tick smoke→同原失败892854/929854 frozen source完整诊断；旧标签/模型不冒称新课程资格，须后续新标签/学生/Q/PPO证据。详见[中性课程记录](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

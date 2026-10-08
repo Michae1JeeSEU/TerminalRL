@@ -11,7 +11,9 @@ class PriorityEngine:
         remaining = item.energy_remaining
         base = (item.request.base_priority if hasattr(item, "request") else item.base_priority) \
             if self.config.task_priority_enabled else 1
-        wait = item.external_wait_time if hasattr(item, "external_wait_time") else item.external_wait_time + item.internal_wait_time
+        wait = item.external_wait_time
+        if self.config.priority_wait_mode == "total_wait_v1":
+            wait += getattr(item, "internal_wait_time", 0.0)
         soc = max(0.0, remaining / capacity)
         if self.config.emergency_landing_enabled:
             threshold = self.config.emergency_trigger_soc

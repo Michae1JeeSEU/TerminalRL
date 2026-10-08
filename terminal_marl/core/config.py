@@ -203,6 +203,13 @@ class SimConfig:
     priority_gamma: float = 1.0
     priority_delta: float = 2.0
     priority_wait_reference_seconds: float = 3600.0
+    # Historical tapes used external waiting only. New courses explicitly
+    # include airborne holding; retaining the default keeps trusted replay.
+    priority_wait_mode: str = "external_only_legacy"
+    # A fixed nominal holder has one bounded curve, not an arbitrary speed
+    # tube. Keep old evidence replayable; repaired courses opt into its
+    # continuous swept-curve certificate without changing safe_distance.
+    nominal_holder_separation_mode: str = "speed_tube_legacy"
     # Scenario-owned arrival priority protocol.  The default retains the
     # historical 1/3/5 distribution; L1-S explicitly freezes it to a
     # homogeneous baseline so a safety witness cannot be confounded by
@@ -289,6 +296,14 @@ class SimConfig:
     def __post_init__(self) -> None:
         if not isinstance(self.task_priority_enabled, bool):
             raise ValueError("task_priority_enabled must be bool")
+        if self.priority_wait_mode not in {"external_only_legacy", "total_wait_v1"}:
+            raise ValueError("unsupported priority_wait_mode")
+        if self.nominal_holder_separation_mode not in {"speed_tube_legacy", "swept_curve_v1"}:
+            raise ValueError("unsupported nominal_holder_separation_mode")
+        if self.nominal_holder_separation_mode == "swept_curve_v1" and (
+                self.holding_speed_contract != "nominal_until_release"
+                or self.trajectory_schema_version != "executable_trajectory_v3"):
+            raise ValueError("swept_curve_v1 requires nominal V3 holders")
         if self.energy_model_mode not in {"legacy_phase", "phase_motion_v2"}:
             raise ValueError("unsupported energy_model_mode")
         if self.final_approach_geometry_mode not in {"brake_bezier_v1", "continuous_inward_v1"}:

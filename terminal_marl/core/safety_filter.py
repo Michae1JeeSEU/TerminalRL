@@ -139,6 +139,24 @@ class SafetyFilter:
         values = np.asarray(times, dtype=float)
         if len(values) != len(point):
             return np.full(len(point), -np.inf, dtype=float)
+        if (self.config.nominal_holder_separation_mode == "swept_curve_v1"
+                and self.config.holding_speed_contract == "nominal_until_release"
+                and np.array_equal(lower, upper)):
+            # The execution contract fixes the holder continuation until a
+            # separately certified departure. Its reachable tube is a single
+            # curve. Relative chord distance minus (a_left+a_right)*dt^2/8
+            # bounds that entire interval; subtracting an additional v*dt/2
+            # envelope can make two legal nearby holders unable to depart.
+            # A nonzero-width tube retains the general envelope below.
+            theta = np.asarray(lower, dtype=float)
+            holder = np.column_stack((ring.radius*np.cos(theta),
+                                      ring.radius*np.sin(theta),
+                                      np.full(len(theta), ring.height)))
+            exact_point, swept = self._track_distances_with_margin(
+                np.asarray(points, dtype=float), holder, values,
+                candidate_descriptor, "holder_proxy",
+            )
+            return np.concatenate((np.minimum(point, exact_point), swept))
         interval_distances = np.minimum(point[:-1], point[1:])
         corrections = []
         for dt in np.diff(values):

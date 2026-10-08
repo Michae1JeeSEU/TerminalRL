@@ -29,6 +29,7 @@ GAP_MODE = 'committed_arrivals_v1'
 
 def task_settings(config):
     keys = ('task_priority_enabled','priority_mode','initial_priority','initial_soc_mode',
+        'priority_wait_mode','nominal_holder_separation_mode',
         'initial_soc','initial_soc_min','initial_soc_max','mission_probabilities',
         'release_arbitration_mode','low_level_priority_time_weight',
         'low_level_soc_urgency_time_weight','low_level_soc_urgency_threshold',

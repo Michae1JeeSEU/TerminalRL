@@ -136,6 +136,10 @@ class NativeWitness:
     def install(self):
         def track(left, right, times, ld, rd):
             frame = inspect.currentframe().f_back
+            if frame.f_code.co_name == '_tube_distances_with_margin':
+                # The opt-in nominal-curve certificate calls this helper
+                # inside the outer tube check; the tube event owns its UID.
+                return self.track(left, right, times, ld, rd)
             assert frame.f_code.co_name == 'filter_plan'
             local = frame.f_locals
             result = self.track(left, right, times, ld, rd)

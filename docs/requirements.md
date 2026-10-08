@@ -454,6 +454,8 @@ T_W = 3600 s
 PriorityEngine 输出用于兼容接口、等待/能量紧迫度观测、确定性候选排序和指标记录；中性课程使用既有
 `dynamic_priority`、waiting 和 UID 排序键，energy slack、ring/path feasibility、resource reservation
 仍作为独立约束参与认证。
+当前中性课程中，`W_i` 为外部等待与入场后环上等待之和（`priority_wait_mode=total_wait_v1`）；
+关闭任务等级不会删除内部等待项。`external_only_legacy` 仅用于旧快照/轨迹的原语义回放。
 任何历史 task priority 语义都不能绕过 hard separation。
 
 ---
