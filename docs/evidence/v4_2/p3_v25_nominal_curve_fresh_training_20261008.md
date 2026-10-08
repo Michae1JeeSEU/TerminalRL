@@ -138,3 +138,11 @@ primary据上述证据接受下一项**既有预留Q的采集和一次冻结模�
 新runtime修复不改变SafetyFilter/teacher候选或采样状态语义；原train/flow/fixed保留其核心版本身份，后续critic输入路径明确为student_initial下flow/fixed以及student_runtime_refined下mixed。Q/helper已包含runtime源码SHA并检查这三条成功路径。此时critic/PPO/formal仍未执行，只有Q完整且独立拟合资格实际通过后才进入已登记有界学习步骤。正式训练最后启动后不设heartbeat；当前长标注继续60min静默监控。
 
 附加同seed前缀检查：原失败的489个成功记录与新完整臂前489条的tape、pre_hash、post_hash、reward、actor_mask、likelihoods全部逐字段一致（各0差异）。first_before pickle bytes不同，但整个可观察状态/决策轨迹前缀精确一致，不用pickle字节相等代替语义相等。这支持本次修改确实在原执行屏障处解除阻塞，未通过改变早期动作绕开该失败状态。
+
+### Q第一臂完整采集（尚未评价模型）
+
+学生接受/冻结说明提交`0ee4574de9b9b2086a486bf4f7f54be1ec7133cd`后，Q_flow6_mixed/895501唯一启动；timeout2903794/Python2903795、cwd/argv/Syncthing及未消费seed检查通过，随后自然COLLECTION_OK/exit0退出。683ticks、6N/0E/F/D/U，1836raw=19actor+1817forced，19/19 OK独立标签均RELEASE，proposal12/13/17为16/2/1。flow没有WAIT标签是这一个预留场景的结果，不补样，不单凭该臂做二分类资格判定。o2m/m2i/i2f标签7/6/6；busyLZ13、SOC<.55为4/<.65为9、高速inner6、retry后1。teacher19R中1条与实际WAIT不同（tick315 UID4 teacher proposal13、行为nominal12被HEADWAY拒绝），原标签保留，未混为联合批准。
+
+环境32.404s、标注26.571s，29个RELEASE意图/43次plan；实际/扫掠最小95.209671/95.062213m，最低完成SOC .430094、剩余能量645.141，技术/censor/实际安全/hash/应急/耗尽均无异常。primary完整检查1836raw/683steps/19selected-label/90D null/mask/105+N50 join、可信快照及首tick重放通过，Q只用evaluation decoder，模型未加载/评分/修改。分析`.tmp/p3_course_v2_Q_flow_analysis.json`首次exit0，SHA`2ffb0791ce0afd9cdeb8e199f6b7b83197d5179b19afec7d4cdc578d23fe0ffd`。标注实际位于`labels/window_XX.json`，没有通用labels.jsonl不是缺标签。关键文件两端同步，root result SHA`05f502b625e7a14257036709007c3b26ab51291c75676da2a84c2844a85507fe`、context SHA`25a07fc9948e8200fc53b13f2e1e24be7ccb7bb4ed580a5065434954e0c65c83`。
+
+primary接受继续唯一Q_dense24_fixed/895502，原预算/固定候选/一次最终评价不变；Qmixed895503尚未消费。其他成功/失败不复跑，当前仍无真实critic/PPO/formal。Q标注预计dense约1–2小时，保持60min监控，不因为首臂快而提高轮询频率。

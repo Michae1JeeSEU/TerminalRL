@@ -180,6 +180,8 @@
 
 - runtime证明细化e340a89后的mixed新臂已DEVELOPMENT_COMPLETE/exit0：898ticks17N7E/0F/D/U、2500actor163R、0shield/fail_closed、actual安全/hash/耗尽0、完整精确重放，最低SOC .181618。primary全量请求/能量/原likelihood检查通过，7文件两端一致，原2901702/3退出。三个student开发条件共54请求38N16E完整，但未验证泛化/PPO退化恢复。接受下一既有Q895501–3顺序完整采集，三个91901–3固定final/canonical16d3ee冻结，一次独立评价、不用Q调参；budgets与已有门槛不变，当前critic/PPO/formal未启动。后续mixed路径用student_runtime_refined，原失败保留。详见[完整结果与Q运行前边界](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)，60min监控，无remote/不推送。
 
+- Q首臂895501/flow6_mixed已COLLECTION_OK/exit0：683ticks6N、19/19标签全R（proposal12/13/17=16/2/1）、1836raw，完整join/首tick重放/实际安全/hash/能量无阻塞，原2903794/5退出。primary核对完毕，模型尚未读Q评价/更新；flow全R不补WAIT样本，不提前授资格。接受下一唯一Q_dense24_fixed895502，预算/模型冻结不变，mixed895503仍未消费。详见[Q采集记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)，60min监控，尚未critic/PPO/formal。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
