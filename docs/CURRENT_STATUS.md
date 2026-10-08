@@ -160,6 +160,8 @@
 
 - **nominal curve修复的完整同seed对照通过，继续fresh数据。** 核心55743e9、独立892862 smoke已通过；旧模型在原失败892854/929854场景新运行1045ticks/17N7E/0F/D/U、24请求完整服务与tape重放一致，实际安全/hash/shield异常0。旧18N4E1F1U保留，不把7E或部分旧周期统计称为性能已解决。两端SHA一致、Python2856414退出，详见[中性课程证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。primary已记录[fresh三条件方案](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)：新teacher合同、train893511–13/独立smoke892863、全actor标注21600s，不混旧标签；Q895501–3仍未消费。入口常量已修订，先定向测试/提交再smoke。资格仍false，持续到formal实际启动、最后formal不设heartbeat；全训练随机任务等级关闭，总等待/SOC保留，无remote不推送。
 
+- **新合同fresh入口和flow完成，下一dense固定SOC。** 数据入口e44e76d、15项local/server tests通过；892863 smoke逐行验证通过。新train_flow6_mixed893511为702ticks/5N1E/0FDU，2050raw/30actor=23R7W、原null/label/context与三接口全量检查通过，实际安全/hash/技术无异常、终态SHA两端一致、Python2858975退出。最低SOC .354109，应急完整完成，不称6N或与不同seed比较修复收益。[新轮执行记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)已更新。primary接受下一唯一dense固定893512，1800ticks/3600s环境/21600s标注；新fit/student/Q/PPO尚未执行，60min低频监控，最终formal不监控。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
