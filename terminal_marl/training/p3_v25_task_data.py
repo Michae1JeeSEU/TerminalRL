@@ -1,4 +1,8 @@
-"""Fresh full-cycle P3 task data; train and Q stay separate at every interface."""
+"""Preserved priority-branch collector; current P3 uses p3_v25_course_data.
+
+Keep historical output identities and semantics unchanged. The priority branch
+was stopped after the current task-neutral requirement was re-established.
+"""
 from __future__ import annotations
 
 import argparse

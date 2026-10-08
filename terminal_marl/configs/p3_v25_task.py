@@ -1,7 +1,8 @@
-"""Actual P3 mission/priority/SOC task on the repaired executable physics.
+"""Historical priority-enabled compatibility profile on repaired physics.
 
-The integrated-repair profile remains task neutral for historical evidence.
-This explicit profile is shared by fresh data, qualification and P3 learning.
+The 2026-10-08 priority branch was superseded after correcting a reading of
+the current requirements. Preserve its data meaning; current P3 learning uses
+the task-neutral profile in p3_v25_course, not this compatibility profile.
 """
 from dataclasses import replace
 
