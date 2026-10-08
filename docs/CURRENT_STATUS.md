@@ -176,6 +176,8 @@
 
 - 新student dense24_fixed已DEVELOPMENT_COMPLETE/exit0：1024ticks15N9E/0F/D/U，完整重放，3477actor/156R/0shield，actual安全/hash/能量无异常，原2888670/1退出。primary全量核对通过；相较同修复合同旧actor17N7E，新actor多2E、mean wait+7.868s、reward下降12.350，但尾部落地/服务时间缩短，不能称全面改进或PPO退化已解决。按既定非零应急准则接受下一唯一mixed892855/929855、source16d3ee；Q仍未消费、critic/PPO/formal未启动。详细数值/比较在[新轮训练记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- mixed892855原student_initial已BLOCKED/exit1：489成功ticks后11N13U，now489应急UID31/inner UID2的runtime粗采样下界79.990124m引发执行屏障；实际违规/hash/耗尽均无，但不具完整资格。primary同状态诊断确认提交.2s与runtime1s证明分辨率失配：.2s连续下界80.363964m、.005s密采样80.379696m，原轨迹正确获证，不能归因teacher误放或真实冲突。已仅对粗网格未获证pair增加物理步长连续复核，保持80m阈值/未知失败封闭/旧合同；65项local/server tests通过，原可信12active/42pair的current+successor检查通过，原失败保留。下一唯一同seed/source16d3ee新`student_runtime_refined/dense24_mixed`完整重跑，原train/fit/flow/fixed不重做；Q仍未消费、critic/PPO禁止。详见[诊断、修复与验证协议](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。用户最终目标仍是formal就绪后实际服务器启动，无remote未推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

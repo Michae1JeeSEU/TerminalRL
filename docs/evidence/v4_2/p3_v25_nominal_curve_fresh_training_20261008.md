@@ -106,3 +106,19 @@ fit/smoke/flow记录已提交`a32f6dd6f59132226852a93a30050964c993e1d9`，无rem
 与同env/policy seed、同修复合同的旧5ca actor迁移诊断相比，新16d3ee不是全面改进：N/E由17/7变15/9，reward377.702031→365.351956，mean wait181.643113→189.511015s；但wait p95为471.553637→433.839169s，touchdown p95/max为857.2/970→770.8/850s，service完成p95/max899.35/1000→863.55/880s，总耗能11624.850→11603.367。mean touchdown/service完成均增加2s。保留这些方向相反的业务结果，单个开发场景不能归因或证明新拟合性能优于旧actor，更不是PPO退化恢复证据。原未修复失败18N4E1F1U没有完整24请求口径，不能拿其已完成均值作公平收益比较。
 
 当前完整周期/实际安全/能量与原有teacher-free准则无阻塞，E并非F且未预登记零应急门槛；primary接受继续唯一dense24_mixed/892855/929855。三种学生开发条件完成后再决定冻结候选并收集Q；不会凭当前业务混合结果自动准许正式PPO。Q启动/全量只读分析helper已准备并仅语法编译，尚未调用或读取Q；它要求三种学生完整、固定fit source，并沿用预留Q895501–3、每臂3600s环境/21600s标注和原数据上限。
+
+固定场景记录提交`cf445de51b32f13bc5e476fb470139541658a616`后，新mixed已启动timeout2894808/Python2894809，真实cwd/argv、892855/929855、新profile/canonical16d3ee均核对；首次progress25ticks/36.381s、requests27行，无result/exit，是启动前缀。源SHA/Syncthing与seed查重通过，没有旧根复跑。核心冻结、60min监控；mixed完整后才判断Q。无remote/未推送。
+
+### mixed运行时证明分辨率失配：失败保留、同状态诊断与修复
+
+mixed/892855已BLOCKED/exit1，489个成功tick后在now489抛出`SafetyInvariantError: Nominal holding contract is not recursively safe; physics execution blocked`，原Python2894809和timeout2894808退出。当时11N/13U、12active/1service，1548actor/152R，既有物理轨迹最小间隔81.043160m、实际违规/hash/能量耗尽均0，但完整周期与精确重放没有完成。失败不能计入学生资格。原episode telemetry是最后成功step的汇总，shield_fail_closed仍0；`failure_after.pkl`的runtime原始counter已为shield_fail_closed/joint_safety_fail_closed/unrecoverable各1，必须保留该执行屏障事实。
+
+primary亲自比较可信失败前后快照：本step自动应急层为middle UID31提交了到LZ5的direct-C²轨迹（489→581.520768s），随后runtime在其与inner holder UID2的当前30s horizon拒绝。UID2保持16m/s标称等待，提交/执行所指计划hash一致`2de9b267c60c790118908c1cda77503dcd0b6d57f4bbc89cf32b7621a8962889`。failure_before SHA`f703f5ae408010c4fe62f74f5c2e70ad7657ebd974f4787f2c3c0fba0c504b04`、after SHA`e8280556cb012bfde56d1b540708bb68f62e42a5af623a92664015c517b1c517`均两端核对；原失败root result SHA`82b77904e3b180b508f3fdfa75dabd29b56de3a56600956158e21d981f6a69d8`。这些preexisting_artifact被最小只读探针复查，不消费新reset/teacher/学习。
+
+`.tmp/probe_p3_mixed_certificate.py`首次exit0（newly_run），同一轨迹SafetyFilter仍approved。冲突区间518–519s：runtime的1s网格原始扫掠间隔80.410774m，减曲率和源插值余量.420650m后变79.990124m；physics_dt=.2s而safety_sampling_dt=1s。直接消除重复插值余量也只有79.997629m，说明不能只删该余量解决根因。提交检查的.2s连续曲线下界为80.363964m；.1/.02/.005s的下界分别80.376076/80.379553/80.379685m，.005s密采样实际最小80.379696m（518.825s）。holder两种采样坐标差最大7.1e-13m。结论为**不同证明分辨率导致的保守拒绝**，未发现这一对真实低于80m；密采样用于诊断，准入仍必须有连续曲线下界。
+
+primary选择最小运行时修复：只对当前V3 nominal+swept_curve_v1合同下粗网格未获证的pair，在原physics_dt上重建两条轨迹并重新进行相同加速度余量的point/swept检查；物理网格上的holder直接用原积分点，不再扣不存在的源插值误差。已获证pair不细化，缓存保存最终判定；未知轨迹、实际冲突仍fail closed，80m阈值/动力学/teacher候选/轨迹生成/原监督标签与优先级合同均不改。旧mode保留原行为。新回归包含该应急几何、真实冲突、样点间内凹冲突、未知轨迹、有限加速度/末尾分数步、缓存与旧合同隔离。首次65tests中64通过，1个新fixture因env构造自动生成warm holders、未清空而失败；primary修正fixture，不改生产约束，失败日志保留。
+
+验证顺序冻结：定向tests、可信完整失败状态的current+successor proof；再同892855/929855/canonical16d3ee完整重跑到新`student_runtime_refined/dense24_mixed`，原失败不覆盖。采样证明修复不修改teacher/filter或训练输入，所以沿用已冻结1298标签和三个final模型，不重新拟合或挑模型。既有flow/fixed在更粗证明下已完整通过，继续保留；mixed新证据须完整精确重放且全N/E/F/D/U、能量与业务指标核对后才判断学生资格。Q895501–3仍未消费，当前禁止Q/critic/PPO。若重跑仍有阻塞，继续具体同状态诊断；用户授权的最终目标仍是正式训练就绪并实际启动，不在本次失败处结束。
+
+修后65项local/server定向tests均通过（11.22/6.35s），8项源码/测试SHA同步，服务器无旧P3进程。primary的完整可信失败状态探针`.tmp/verify_p3_mixed_refinement.py`首次exit0：12active/42相关pair，current+successor证明全部approved，最小连续下界80.363964m，耗时.047s，原now489与应急plan hash不变。没有实际推进、改计划、改阈值或训练。该单状态结果解除本次已定位的证明矛盾，但仍须完整重跑验证后续状态；接受提交后启动新mixed路径，预算/actor/seeds不变。

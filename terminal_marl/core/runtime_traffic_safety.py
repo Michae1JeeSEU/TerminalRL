@@ -617,6 +617,7 @@ class PredictiveSafetyShield:
 
     def _joint_position_tracks(
         self, env, residuals: dict[int, float], uids: set[int], *, horizon: float | None = None,
+        sample_dt: float | None = None,
     ) -> tuple[np.ndarray, dict[int, np.ndarray]]:
         """Build one shared position array per UAV for a joint proof.
 
@@ -631,9 +632,15 @@ class PredictiveSafetyShield:
         times = np.arange(start, end + 1e-9, self.config.physics_dt)
         if times[-1] < end:
             times = np.append(times, end)
-        samples = np.arange(start, end + 1e-9, self.config.safety_sampling_dt)
+        sampling_dt = float(self.config.safety_sampling_dt if sample_dt is None else sample_dt)
+        if not math.isfinite(sampling_dt) or sampling_dt <= 0.0:
+            raise ValueError("joint sampling interval must be finite and positive")
+        samples = np.arange(start, end + 1e-9, sampling_dt)
         if samples[-1] < end:
             samples = np.append(samples, end)
+        # A refined proof on the original physics grid has no interpolation
+        # error. Keep the historical coarse descriptor for unchanged callers.
+        direct_physics_grid = sample_dt is not None and np.array_equal(times, samples)
         snapshot = SimpleNamespace(now=start, active=env.active, airspace=env.airspace)
         tracks: dict[int, np.ndarray] = {}
         self._joint_track_info = {}
@@ -736,16 +743,16 @@ class PredictiveSafetyShield:
                         ), dtype=float))
                     positions = np.asarray(values, dtype=float)
                     self._joint_track_cache[key] = positions
-                track_info = {"kind": "holder_proxy", "resampled": True}
+                track_info = {"kind": "holder_proxy", "resampled": not direct_physics_grid}
             else:
                 continue
             sampled_key = (
                 "sampled", key,
                 float(self.config.physics_dt),
-                float(self.config.safety_sampling_dt),
+                sampling_dt,
             )
             sampled = self._joint_sampled_track_cache.get(sampled_key)
-            if direct_v3:
+            if direct_v3 or direct_physics_grid:
                 sampled = positions
             else:
                 if sampled is None:
@@ -883,8 +890,7 @@ class PredictiveSafetyShield:
             )
         else:
             tracks = {}
-        minimum = float("inf")
-        unsafe: list[tuple[int, int]] = []
+        computed = {}
         for pair, key, verdict in pair_records:
             left, right = pair
             if verdict is None:
@@ -897,8 +903,34 @@ class PredictiveSafetyShield:
                     )
                 else:
                     verdict = self._assess_position_pair(tracks[left], tracks[right], threshold)
-                if cache is not None and key is not None:
-                    cache[key] = verdict
+            computed[pair] = verdict
+        # A failed coarse lower bound does not establish a real conflict.
+        # Nominal-holder admission certifies curves on the physics grid,
+        # whereas the runtime broad proof normally samples every second.
+        # Refine only inconclusive pairs to the admission resolution, retaining
+        # the same acceleration bound and operational distance. Never replace
+        # the curve proof with point-only checks or a smaller safety threshold.
+        refine = tuple(pair for pair in missing_pairs if not computed[pair][0])
+        if (refine and self._v3_enabled
+                and self.config.holding_speed_contract == "nominal_until_release"
+                and self.config.nominal_holder_separation_mode == "swept_curve_v1"
+                and self.config.physics_dt < self.config.safety_sampling_dt):
+            refined_times, refined_tracks = self._joint_position_tracks(
+                env, residuals, {uid for pair in refine for uid in pair},
+                horizon=effective_horizon, sample_dt=self.config.physics_dt,
+            )
+            for left, right in refine:
+                computed[(left, right)] = self._assess_position_pair(
+                    refined_tracks[left], refined_tracks[right], threshold,
+                    times=refined_times, left_info=self._joint_track_info.get(left),
+                    right_info=self._joint_track_info.get(right),
+                )
+        minimum = float("inf")
+        unsafe: list[tuple[int, int]] = []
+        for pair, key, _verdict in pair_records:
+            verdict = computed[pair]
+            if cache is not None and key is not None:
+                cache[key] = verdict
             approved, pair_minimum = verdict
             minimum = min(minimum, pair_minimum)
             if not approved:
