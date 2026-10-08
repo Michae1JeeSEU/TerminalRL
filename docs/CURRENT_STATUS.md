@@ -150,6 +150,12 @@
 
 - **fresh BC已完成，开始teacher-free学生开发。** fit_initial三seed91901–3各5000updates/exit0，三者训练内1003行gate/proposal/joint均100%，固定canonical91901 SHA5ca0c9dc…；仅训练内可学性，Q未消费、不宣称泛化或PPO准入。primary接受已登记892852/929852两tick smoke，之后再逐臂完整开发，持续至正式训练实际启动。
 
+- 学生smoke及独立flow6已分别SMOKE_OK、634ticks/6N完整且全量请求/likelihood/reward重放核对通过，均无技术/实际安全/hash/耗尽/源变化。当前唯一student_initial/dense24_fixed为Python2850399/timeout2850398、892854/929854/fixed.8/24warm12，UTC07:10真实50tick初产物已确认；原fit canonical5ca0…固定、teacher/optimizer off，1800ticks及rollout/replay各3600s。60min监控已更新，完整结果前不启动mixed/Q/PPO；新模型是否退化仍待密集闭环证据。
+
+- **当前阻塞：中性student dense fixed耗尽，后续学习暂停，继续诊断。** UTC07:23原892854臂BLOCKED/exit1、1265ticks/18N4E1F1U；UID29 outer耗尽、UID49 outer未完成，实际安全/hash/shield无异常。`failed_energy`保护检查主动停止，未做全tape重放，不能误称全周期成功或独立技术异常。两个UID早期actor的R概率约1e-23，后期应急有安全/能量拒绝；primary已核对完整时间线和可信故障快照。下一为原tape 2tick诊断smoke→665tick五次同状态teacher/邻机audit，0reset、不改核心/阈值；根据证据修复后再继续，mixed学生/Q/PPO/formal均未启动。详见[当前记录](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
+
+- 同状态诊断smoke已SMOKE_OK/exit0，0reset/0query、前2tick状态/reward精确重放；primary接受原定early_late五query。纯公式反例确认PriorityEngine漏计UAV内部等待（internal300s仍1、external300s为1.01202813），违反保留总等待紧迫度的规范，但现排序先按SOC且另有总等待破同分，尚不能归因本次耗尽。核心冻结直到故障原tape和候选证据读取完成；具体filter_plan阻塞须查pair/距离，不能用旧joint-track audit代替。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
