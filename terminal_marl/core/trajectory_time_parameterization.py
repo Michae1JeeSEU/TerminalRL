@@ -8,6 +8,7 @@ import numpy as np
 
 from .vehicle_dynamics import VehicleDynamics
 from .polynomial_trajectory import prime_quintic_bounds
+from .quintic_hull import quintic_hull_bounds
 
 
 class TrajectoryInfeasibleError(RuntimeError):
@@ -200,7 +201,51 @@ class TrajectoryTimeParameterizer:
         return speeds
 
     def _v3_segments_feasible(self, segments) -> bool:
-        """Check analytic segment bounds and a small finite-state sanity set."""
+        """Use sufficient hull bounds, with the original exact check as fallback."""
+        segments = tuple(segments)
+        if not segments:
+            return self._v3_segments_feasible_exact(segments)
+        try:
+            bounds = quintic_hull_bounds(segments)
+        except (TypeError, ValueError, RuntimeError, FloatingPointError, OverflowError, np.linalg.LinAlgError):
+            return self._v3_segments_feasible_exact(segments)
+        profile = self.dynamics.profile
+        tolerance = 1e-3
+        limits = dict(
+            max_horizontal_speed=profile.max_horizontal_speed,
+            max_horizontal_accel=min(profile.max_horizontal_accel, profile.max_horizontal_decel,
+                                     profile.max_lateral_accel),
+            max_climb_rate=profile.max_climb_rate, max_descent_rate=profile.max_descent_rate,
+            max_vertical_accel_up=profile.max_vertical_accel_up,
+            max_vertical_accel_down=profile.max_vertical_accel_down,
+            max_altitude=profile.max_operating_altitude_agl_m,
+        )
+        pending = []
+        for segment, bound in zip(segments, bounds):
+            certified = (all(np.isfinite(x) for x in bound.values())
+                         and bound['min_altitude'] >= -tolerance
+                         and all(bound[key] <= limit + tolerance for key, limit in limits.items()))
+            if not certified:
+                pending.append(segment)
+                continue
+            # Preserve the original finite-state sanity check for certified
+            # hulls too. The final safety/dynamics checks remain unchanged.
+            for moment in (segment.start_time, (segment.start_time + segment.end_time) / 2., segment.end_time):
+                position, velocity, acceleration = segment.sample(moment)
+                if not all(np.isfinite(x).all() for x in (position, velocity, acceleration)):
+                    return False
+                if (np.linalg.norm(velocity[:2]) > limits['max_horizontal_speed'] + tolerance
+                    or velocity[2] > limits['max_climb_rate'] + tolerance
+                    or -velocity[2] > limits['max_descent_rate'] + tolerance
+                    or np.linalg.norm(acceleration[:2]) > limits['max_horizontal_accel'] + tolerance
+                    or acceleration[2] > limits['max_vertical_accel_up'] + tolerance
+                    or -acceleration[2] > limits['max_vertical_accel_down'] + tolerance
+                    or position[2] < -tolerance or position[2] > limits['max_altitude'] + tolerance):
+                    return False
+        return not pending or self._v3_segments_feasible_exact(pending)
+
+    def _v3_segments_feasible_exact(self, segments) -> bool:
+        """Original analytic bounds and finite-state sanity fallback."""
         segments = tuple(segments)
         try:
             prime_quintic_bounds(segments)

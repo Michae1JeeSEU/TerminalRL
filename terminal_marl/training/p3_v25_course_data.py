@@ -37,9 +37,10 @@ def task_settings(config):
     return json.loads(json.dumps({key:getattr(config,key) for key in keys}))
 
 
-def collect(output, index, *, partition='train', smoke=False):
+def collect(output, index, *, partition='train', smoke=False, annotation_wall_seconds=7200):
     require(partition in {'train','Q'}, 'unknown partition')
     require(type(index) is int and 1<=index<=(1 if smoke else 3), 'unknown task case')
+    require(annotation_wall_seconds in (7200, 21600), 'undeclared annotation budget')
     cases = TRAIN_CASES if partition=='train' else Q_CASES
     seed,scenario = (SMOKE_SEED,'dense24_mixed') if smoke else cases[index-1]
     config = build_config(scenario)
@@ -51,7 +52,8 @@ def collect(output, index, *, partition='train', smoke=False):
     protocol=dict(protocol=PROTOCOL,profile=PROFILE,index=index,seed=seed,scenario=scenario,
         partition=wire_partition,schema=schema,smoke=smoke,task=task_settings(config),
         max_steps=2 if smoke else int(config.max_simulation_seconds/config.dt),
-        rollout_wall_seconds=180 if smoke else 3600,annotation_wall_seconds=180 if smoke else 7200,
+        rollout_wall_seconds=180 if smoke else 3600,
+        annotation_wall_seconds=180 if smoke else annotation_wall_seconds,
         max_selected=2048,max_release_intents=51200,selection='all actor pre-states; tick/numeric UID',
         behavior='rule_nominal_k3',teacher='state-only first feasible; not joint/global optimum',
         checkpoint_loaded=False,I0_QUALIFIED=False,PPO_ALLOWED=False)
@@ -139,8 +141,10 @@ def main():
     parser.add_argument('--index',type=int,required=True)
     parser.add_argument('--partition',choices=('train','Q'),default='train')
     parser.add_argument('--smoke',action='store_true')
+    parser.add_argument('--annotation-wall-seconds',type=int,choices=(7200,21600),default=7200)
     args=parser.parse_args()
-    report=collect(args.output,args.index,partition=args.partition,smoke=args.smoke)
+    report=collect(args.output,args.index,partition=args.partition,smoke=args.smoke,
+                   annotation_wall_seconds=args.annotation_wall_seconds)
     print(json.dumps(dict(status=report['status'],seed=report['seed'],error=report['error'])))
     return 0 if report['status'] in {'SMOKE_OK','COLLECTION_OK'} else 2
 

@@ -138,6 +138,8 @@
 
 - **中性课程已恢复并继续验证。** 核心6dd89d98、11项local/server tests及892851 smoke通过；train_flow6_mixed893501已694ticks/6N/0E/FDU、19/19标签全R，teacher/规则请求差异及低SOC/物理服务覆盖已逐行核对，不能由全R小场景宣称gate充分。当前唯一train_dense24_fixed893502为Python2822837/timeout2822836，task_priority=false/fixedSOC.8、真实cwd/argv/首tick产物与后续100tick前缀正常。代码冻结，完整结果后再mixed893503；新Q895501–3/fit91901–3未消费。另备妥critic-only初始化入口，16项local/server合成tests通过，尚无真实BC/critic/PPO。详情见[当前中性课程](evidence/v4_2/p3_v25_neutral_course_20261008.md)；持续至正式启动目标不变，最终formal无heartbeat。
 
+- **中性dense固定SOC原采集已INCOMPLETE，计算修复已通过定向验证。** 原893502环境完整1157ticks/16N8E/0FDU，无技术/实际安全/hash/负能量；标注7200s封顶为201OK（30R171W）/1TIMEOUT/298未尝试，原失败保留、父child均退出。primary定位等待段/parameterizer的重复解析极值开销，接入带向外余量的Bernstein凸包充分检查，不确定时走原解析fallback，不改轨迹/安全限值/teacher排序。51项local/server tests通过；两个原平台完整query及放行证书逐字复现，慢query45.594→24.618s，仅局部成本证据。接下来新`train_dense24_fixed_annotation_v2`复用完整raw/snapshots，0reset/step、重新标注全部500、21600s新上限，与旧201标签逐字段比对；不是把原失败改成功或部分补样。完整后才mixed893503，再新fit/学生/独立Q/critic/有界PPO；尚无新实际学习或正式准入。[详细协议/结果](evidence/v4_2/p3_v25_neutral_course_20261008.md)。其他dirty保留、无remote不推送，持续至正式启动目标及最终formal无heartbeat要求不变。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

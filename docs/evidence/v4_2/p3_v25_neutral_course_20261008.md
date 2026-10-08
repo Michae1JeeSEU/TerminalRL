@@ -67,3 +67,39 @@ primary实现`training.p3_v25_ppo_block`作为后续首个三周期block，不�
 三个新training周期完成后，仅在相同development env/policy seeds评估候选，与原source三个完整周期按请求汇总N/E、reward、energy、holding/full-lifecycle mean/p95/max；不得把这些配对development当heldout。PILOT_COMPLETE只表示协议完整，不自动candidate_retained或formal_allowed；primary根据真实训练更新及退化/业务证据决定下一步，有需要再预注册新block，不能通过no-op更新宣称PPO修复。任何技术/实际安全/不完整/FDU/takeover超限均停止后续保留产物。
 
 此入口及PPO构件16项local/server合成测试通过10.87s/5.43s（3个新orchestration用例+13个PPO用例，和此前tests有重叠）：失败Q在optimizer前拒绝、真实测试梯度更新冻结actor/proposal、按三train→三paired-eval保存artifact、超限留checkpoint并停止、重复输出不覆盖。无真实BC/Q/critic/PPO，当前collector未导入这些新模块，物理与标注核心保持冻结。
+
+### 标注成本检查（原任务不变）
+
+下一次60min检查仍为ANNOTATING，130/500个label已完成、4354.579s，正在window130；最后完整window129为tick218/UID49、25个RELEASE意图均拒绝。该前缀已显示标注成本明显高于此前低并发臂，但不能据线性外推提前宣布超时或改变本次7200s上限。原任务继续，源码/输入/标签冻结。
+
+primary使用既有`diagnose_p3_expert_cost.profile_query`，仅在本地读取已同步的可信快照，预定window0作输出smoke、window129作一次耗时profile，各最多120s，总最多2个teacher query/50 RELEASE意图，0reset/step/学习。输入selected SHA76f505d230601fc3037282aed841021f1caf421a8f0ae4e6085e4cb033531130；输出`.tmp/p3_v25_dense_cost_{smoke,profile}`，不写服务器/原采集目录。必须复现原label及逐候选audit并保持原状态/文件不变；这里只判断计算成本，不补标、不将profile结果加入train，也不影响正在运行的query child。
+
+本地smoke为SMOKE_OK/2.078s，原label/audit精确相同；完整window129 profile触及120s后停止，只有progress保留，未得到终态统计。原server该query本身45.594s，不能把跨平台且启用cProfile的120s说成原服务器query超时。下一最小诊断缩小到**同window129的第一个nominal候选joint13一次**，最多60s、新目录`.tmp/p3_v25_dense_cost_candidate`；复用已经通过的真实smoke，不重复全query、不增加原标注预算、不做reset/step。
+
+单候选已PROFILE_OK/5.578s，原`predicted_holder_reachable_tube`拒绝精确复现。4.588s（约82%）在ring_transfer，其中19次state_at/ring_hold反复构建/验证候选等待段耗时2.838s；prime_quintic_bounds累计2.966s，不能把嵌套时间重复相加。完整SafetyFilter为.887s。证据说明本状态的主要计算开销在搜索轨迹的生成/等待段验证，不是神经网络学习，也不是无根据地把SafetyFilter判成错误。
+
+primary据此只准备**未接入生产的本地候选**：对环上等待段的水平速度/加速度多项式，用Bernstein控制点凸包给出保守上界；只有带向外数值余量的上界已小于原限值时，才省去同一等待段的极值求根。不能证明时完整调用原精确求根路径；不改变任何点、候选顺序、动力学限值、安全过滤或最终计划证书，不改`segment.bounds()`语义。先做边界/随机多项式和真实等待段等价检查，再同状态单候选比较；当前正式标注仍用旧冻结源码。本候选只有通过证据检查且当前任务退出后才可能接入，不预先宣称提速或解决采集。
+
+等待段候选的7项本地检查通过：300个随机多项式保守证书、阈值/内部峰值/极端值回退，以及12组真实圆环等待点逐数值完全相同。两个既有状态各单候选的同机无profiler对照：slot0为1.174→.819s，slot129为3.220→2.147s；安全结论和两个生成轨迹hash均完全相同。该局部约30%–33%节省不能外推为全采集节省率。
+
+同一数学证书的下一项局部候选扩到parameterizer的逐段速度/加速度/高度筛选：确定满足全部原限值的段仍保留原三点finite sanity检查；不确定段完整走原解析极值检查，最终SafetyFilter/动力学与exact bounds缓存不改。先额外150个随机段和原判据逐项比对，再另目录`.tmp/p3_v25_dense_cost_hull_combined`复用同两个既有状态的4个单候选调用，总120s，0reset/step/完整teacher query。生产仍冻结；这不是新的采集臂或安全阈值修改。
+
+组合候选的8项测试全部通过（新增150段保守上下界及接受/拒绝等价），两个同机单候选为1.232→.651s、3.253→1.744s，原feasible/reason及生成轨迹hash完全一致。接下来只对新候选在原slot0/129执行各一次完整query（各120s上限、0reset/step、新`.tmp/p3_v25_hull_query_{0,129}`），逐字段对照原已完成label、audit与checked certificate；不重跑baseline全query，不据两个局部点宣称全采集通过。核心仍未改。
+
+slot0完整query的原label、proposal及audit相同，但与服务器原记录比较的certificate哈希断言失败（exit1，query.json保留，未写成功result）。本地**旧实现与候选**同为9c482a0f…，服务器原记录为e66fade2…；目前不能把跨平台不一致归因于候选，也不能宣称服务器证书等价。单次只读核对六个相关生产文件两端SHA完全一致；local Python3.12.14/NumPy2.3.5，server Python3.12.3/NumPy2.5.1。数值平台差异是待验证解释，不能据此放宽checked/executed校验。生产核心仍冻结；原任务退出后再用服务器原平台检查候选。slot129为WAIT无放行证书，继续原定独立query/audit比较，各上限不变，不重复slot0。
+
+slot129本地候选完整query已QUERY_EXACT/exit0、43.191s：25个RELEASE意图全部仍拒绝，所有audit/reason及WAIT标签与原记录逐字段相同，0reset/step。这里不把跨平台耗时当提速比。已准备原平台验证脚本，只在当前父/child全部退出后分别运行slot0、129一次、各120s；输出新`p3_v25_hull_query_20261008/query_{0,129}`，只在私有Python进程挂接候选，不改生产文件/原数据。slot0必须先通过精确原证书比较，再执行129；不放宽哈希或原安全判据。
+
+### 固定SOC标注终态与计算修复
+
+原train_dense24_fixed自然结束，服务器exit文件为2，INCOMPLETE/error=null，唯一blocker=`incomplete_annotation`。环境结论不变；annotation在7200.0135s封顶：201OK（30R/171W）、window201超时、298未尝试，合计500。原失败与所有前缀保留，未延时；关键终态两端SHA一致，原父及child均已退出。root result SHA943e18142b78d2c5f64c4299334724e4b2b257f78f4c6eaeff4cf18de53c7a8b。局部201标签不作为完整训练集、超时/null不转WAIT。
+
+退出后原平台两个候选query均QUERY_EXACT：slot0 .382s，放行certificate逐字等于原e66fade2…；slot129 24.741s，20个holder reachable tube、3个holder separation、2个predicted separation拒绝及WAIT完全相同。slot129原记录45.594s，相同服务器状态下约46%节省；两点不代表全回合提速。跨平台哈希失败不再构成候选改变轨迹的证据，原checked/executed严格相等仍保留。
+
+primary随后接入`core/quintic_hull.py`、环等待构建充分条件、parameterizer充分条件及原解析fallback。没有改轨迹点/顺序、能量/安全限值/最终certificate，也不改analytic bounds缓存。43项local/server定向tests通过9.96s/5.33s：随机保守边界、内峰值/阈值/非有限回退、12组圆环点逐值相等及已有V3生成/parameterization/dynamics/合同。下一步是已接入生产模块的同两条原平台query，各120s、新`p3_v25_hull_production_query_20261008`；不使用临时monkeypatch，原数据不改。
+
+若生产查询通过，下一项是**新协议的完整离线标注修复**：复用原已完整的893502环境全部12151raw/500actor及可信快照，0reset/step，不重复环境、不改变16N8E；在独立`train_dense24_fixed_annotation_v2`重新标注全部500条，不沿用201条已完成label作为可选样本、不只补容易/剩余状态。原采集永远保持INCOMPLETE；新产物明确引用原rollout及失败annotation。依据已观测201条耗时2h、同状态约46%节省，预设新标注上限21600s、全部actor/2048query上限不变；不声称6h必定够。所有原201个OK标签应与重算标签逐字段相同（耗时字段除外）；任何语义/证书差异须诊断，不能覆盖改标。全部完成、重建及primary分析通过后才能继续mixed。未来尚未reset的mixed也显式使用21600s标注上限，环境仍3600s；这是计算预算修订，非改变业务/标签或选择seed。Q与学习尚未执行，保持分离。
+
+生产同状态查询已全部QUERY_EXACT/exit0：slot0 .382s、slot129 24.618s，label/audit/certificate与旧记录逐字段相同。新`p3_v25_annotation_repair`仅接收annotation-only CENSORED的当前train完整rollout，独立复制raw/snapshots、全量重新标注，不复制原label，不接受Q/部分actor/有业务阻塞的环境；原标签所有非耗时字段必须相等。全部成功才重建105+N50并允许后续loader读取新目录；没有重置/步进/优化器。新入口及课程8项local/server测试通过21.69s/10.97s，包含实际文件复制/新labels与result输出路径、原失败保持、错误输入/变更label停止和21600预算在reset前落盘。连同43项生产回归，本轮51个不同测试通过；未重跑已有smoke或环境。
+
+本轮证据类型：上述运行/测试/分析为newly_run；原环境与旧标签作为preexisting_artifact在新查询中只读引用；没有将user_claim当测量。两端代码SHA相同。下一运行命令为`python -u -m terminal_marl.training.p3_v25_annotation_repair --source-directory /home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_dense24_fixed --output /home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_dense24_fixed_annotation_v2`，cwd与Python环境按项目准则、外层24000s；source result SHA在启动前再次核对。源码/测试提交后才启动，初始产物确认后60min监控；主目标继续至正式P3实际启动，最终formal不设heartbeat。

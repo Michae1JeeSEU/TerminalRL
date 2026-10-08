@@ -60,6 +60,20 @@ def test_task_protocol_saved_before_reset(tmp_path,monkeypatch):
     with pytest.raises(FileExistsError): data.collect(tmp_path/'case',1,smoke=True)
 
 
+def test_revised_annotation_budget_is_written_before_reset(tmp_path,monkeypatch):
+    def stop(config, *, seed):
+        protocol=q.read(tmp_path/'case/protocol.json')
+        assert protocol['seed']==seed==893503
+        assert protocol['annotation_wall_seconds']==21600
+        assert protocol['rollout_wall_seconds']==3600 and protocol['max_steps']==1800
+        raise RuntimeError('before reset')
+    monkeypatch.setattr(data,'TerminalParallelEnv',stop)
+    result=data.collect(tmp_path/'case',3,annotation_wall_seconds=21600)
+    assert result['status']=='ERROR' and 'before reset' in result['error']
+    with pytest.raises(ValueError,match='undeclared annotation budget'):
+        data.collect(tmp_path/'undeclared',3,annotation_wall_seconds=999999)
+
+
 def test_flow_empty_ticks_and_arrival_are_in_tape(tmp_path):
     seed=892951
     env=data.TerminalParallelEnv(data.build_config('flow6_mixed'),seed=seed)

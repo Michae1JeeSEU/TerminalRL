@@ -12,6 +12,7 @@ import numpy as np
 
 from .config import RingRole
 from .polynomial_trajectory import QuinticSegment, prime_quintic_bounds
+from .quintic_hull import horizontal_hull_certifies
 from .trajectory_time_parameterization import (
     GeometricPath, TrajectoryConstraints, TrajectoryInfeasibleError, TrajectoryTimeParameterizer,
 )
@@ -534,6 +535,11 @@ class TrajectoryGenerator:
                     )
                     for left, right in zip(points, points[1:])
                 )
+                if horizontal_hull_certifies(
+                    segments, profile.max_horizontal_speed + 1e-3,
+                    profile.max_horizontal_accel + 1e-3,
+                ):
+                    return points
                 prime_quintic_bounds(segments)
                 if all(
                     segment.bounds()["max_horizontal_speed"] <= profile.max_horizontal_speed + 1e-3
