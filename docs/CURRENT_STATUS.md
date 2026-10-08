@@ -162,6 +162,8 @@
 
 - **新合同fresh入口和flow完成，下一dense固定SOC。** 数据入口e44e76d、15项local/server tests通过；892863 smoke逐行验证通过。新train_flow6_mixed893511为702ticks/5N1E/0FDU，2050raw/30actor=23R7W、原null/label/context与三接口全量检查通过，实际安全/hash/技术无异常、终态SHA两端一致、Python2858975退出。最低SOC .354109，应急完整完成，不称6N或与不同seed比较修复收益。[新轮执行记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)已更新。primary接受下一唯一dense固定893512，1800ticks/3600s环境/21600s标注；新fit/student/Q/PPO尚未执行，60min低频监控，最终formal不监控。
 
+- 当前唯一新dense固定893512运行于Python2859846/timeout2859845，真实cwd/argv及初产物已核对，400ticks/451selected只是前缀；60min heartbeat p3-v2-5已更新。另primary完成新`training.p3_v25_formal`入口，16项local/server合成tests通过：显式审查后续真实证据、延续pilot优化器、逐周期保留checkpoint、异常/预算停止、无teacher/Q观测/heartbeat。入口不被collector导入，核心冻结；没有实际formal manifest或启动，不构成资格，见[fresh轮记录](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

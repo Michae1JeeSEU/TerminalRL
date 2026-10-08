@@ -50,3 +50,13 @@ train_flow6_mixed已COLLECTION_OK/exit0：702ticks、5N1E/0F/D/U，2050raw=30act
 最小实际/扫掠81.145833/81.133264m，最低完成SOC .354109/剩余能量531.164；应急1次尝试/提交/触地，实际安全/hash/负能量/技术/censor均无异常。环境45.167s、标注93.044s；210个RELEASE意图、386次plan调用。不同于旧flow seed的6N，不能把本5N1E差异归因修复。root result SHA`2ba05115052825fb8d105415c0a2eb15f3914cc9eb02d041c79bbd9c79ef666c`、context SHA`b3ee0bf5dfcd438bdfddee9a12120ba5ea22fed47746a64bbd2de780d92c2717`，终态两端一致；首次同步缺3个尾部文件，等待10s后齐全，未重跑环境。timeout2858974/Python2858975均已退出。
 
 primary接受该完整训练周期，下一唯一train_dense24_fixed/893512，既定24/warm12/fixed.8、1800ticks/3600s环境/21600s完整标注，所有上限不变。尚无新fit/student/Q/PPO；dense须终态分析后才继续mixed。由于可能持续数小时，保持60min监控。
+
+### 正式训练入口准备（无真实formal运行）
+
+在当前collector没有import的新模块`training.p3_v25_formal`实现正式运行入口。它先核对primary明确的候选保留/正式准入说明、冻结fit/Q评价/同源student与critic、完整三周期PPO及配对结果和指定candidate SHA；不能只凭PILOT_COMPLETE自授资格。优化器只读取strict train reference，延续pilot的同一actor、gate adapter、critic与Adam状态，沿用已有PPO超参、逐minibatch exact gate/reference KL约束及回退；全actor/proposal始终冻结。没有加载Q观测或teacher，未创建新的实际准入manifest。
+
+正式周期/seed/总墙钟预算由之后的结果审查冻结，入口要求按三条件顺序、完整循环及不与train/Q/pilot/student env seed重合。总墙钟在新episode开始前检查；每episode原rollout/replay各3600s、update600s不变。每周期独立保存完整请求/重放结果和model+Adam checkpoint；发生实际安全/hash/F/D/U/技术/超限立即保留已存结果并停止后续，不覆盖source，不自动重启/延时/选择最佳模型。正式入口不创建heartbeat或heldout评估。
+
+本地和服务器16项合成测试通过6.09s/2.24s（含3项既有PPO block回归）：确实执行mock环境下的梯度更新并验证连续optimizer step、固定actor/source、三周期顺序、准入/profile/hash/seed拒绝、耗尽周期在更新前停止、预算截止保留checkpoint、异常保留完整rollout及重复目录不覆盖。初次测试因test helper的包导入路径错误而collection失败，改为项目已有`tests.*`方式后通过，失败日志保留；不涉及实际仿真失败。相关4文件SHA两端相同。当前collector核心与数据合同未改；入口测试不构成真实PPO效果或formal资格。
+
+当前train_dense24_fixed真实timeout2859845/Python2859846，cwd和argv已核对，新profile/893512/fixed.8与全部上限吻合；first_request/before/live/replay和raw已生成。一次启动确认时400ticks/5completed/451selected、602.47s，是运行前缀而非全臂结果。正在写入的raw与progress时间不同，不能将两者瞬时行数差当终态不一致。核心冻结、后续仅60min监控；必须完整终态核对后再mixed。
