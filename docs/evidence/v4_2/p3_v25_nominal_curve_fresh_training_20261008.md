@@ -182,3 +182,15 @@ primary检查全部raw/mask/null、actor-selected-OK集合、原证书hash、首
 前缀只读对照`.tmp/p3_q_monitor_prefix_comparison.json`：原399个成功step的全部tape/action_traces/release_telemetry/outcomes与新前399条相同；原6863条raw按decision_id全部匹配，除pre_state_hash外各字段全部相同。state_record把monitor遥测纳入hash，所以不能要求跨测量版本状态摘要相等；primary查首tick完整live，唯一数值差异是minimum_actual_separation由整秒端点202.342831变为包含子步202.237484（after和outputs两处）。不声称所有state hash相同，也不删原失败来掩盖差异。
 
 primary据完整业务、安全、能量及标签证据接受下一唯一Q_dense24_mixed/895503首次运行；24/warm12、SOC .55–.90及所有预算/源模型/门槛不变。fixed重跑只解除执行测量问题，未验证PPO退化已恢复；mixed未评分且独立imitation/critic/PPO/formal仍待实际完成。继续60min低频，三Q齐全才一次冻结模型评价。
+
+fixed结果提交`12b73d42c25d9a1700bd506c6e905eecc84892d3`后，Q_dense24_mixed已启动timeout2920920/Python2920921、SSH session31912；真实cwd/argv为既定Q/index3/新目录，seed895503既有protocol查询为空，protocol/first_before/rows初产物及无exit确认。代码经Syncthing SHA验证，运行中冻结；仍最多一环境父及顺序标注child，无remote/未推送。
+
+### 三组Q完整，执行一次冻结模型评价
+
+Q_dense24_mixed/895503已COLLECTION_OK/exit0，原2920920/1及child退出。932ticks、19N5E/0F/D/U，9427raw=318actor+9109forced；318/318标签全OK，77R241W、14种proposal。o2m29R176W、m2i30R8W、i2f18R57W；actor/label含busyLZ306、高速inner73、SOC<.55为112/<.65为199、retry恢复241、同接口WAIT→RELEASE28。环境716.132s、标注4182.827s，6307RELEASE意图/7592plan，均在原预算内。
+
+最小子步point/swept83.190008/83.178005m，所有实际安全/hash/shield/技术/censor/耗尽均0；5应急提交并触地、50尝试、0能量拒绝，最低完成SOC .233547、能量350.321。teacher/实际56R/R、21R/W、1W/R、240W/W；正常K3 rank1/2/3为42/9/5，另1条无rank的应急trace单列，不误记作正常K3。318个eligible全部effective base1、policy STANDARD；原任务类型只保留物理服务。primary已审查全量raw/selected/label/证书/105+N50 evaluation decoder、首tick重放、mask/null及task config，分析`.tmp/p3_course_v2_Q_mixed_analysis.json`首次exit0，SHA`ab97800657b1a8d415af997db3ed052a0de55a55ed1edec452abbeb3f018772e`。
+
+终态root result SHA`a17492ac3993710982c796d772e7600ac03f971a555b4f461eb9a98a89b35221`，context SHA`cfda13e9bce4b0c0ed8da8cd3eaec7c0cb335530990362d79cac2fc32e3c0b6c`，两端已一致。首次终态时Syncthing尚未同步这两项，等待自动同步后才分析，未手传；中途worker使用不存在的PATH python和shell引号错误只影响一次只读状态解析，生产任务持续正常，后续使用固定绝对解释器的snapshot helper。
+
+三Q共54请求45N9E、22766raw/975有效独立标签（192R783W、18种proposal），三接口和两类gate均有支持。primary接受按运行前协议执行**一次**`qualification_initial`：fixed使用修后新目录，全部91901/2/3固定final各评价一次，不挑模型、不改训练/门槛、不加入Q梯度。该975行资格范围是这三种静态空域、rule访问分布的state-only teacher一致性；895502已作环境诊断的限制保留。此时未实际完成独立模型评价、critic/PPO/formal均未运行。

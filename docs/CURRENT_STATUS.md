@@ -188,6 +188,8 @@
 
 - Q修后fixed895502已COLLECTION_OK/exit0：967ticks20N4E/0FDU，638/638标签96R542W、16种proposal，11503raw完整检查；actual子步swept80.101761m、所有实际安全/hash/耗尽0，最低SOC .241345。原动作/执行399step前缀及6863raw除含遥测的state hash外一致，原失败保留。标注5265.820s、root终态SHA0891cfad2bbb18598154e521f0a39dea5e28b882aebb302d6ccce6bbd97909fb两端核对，旧进程已退出。primary接受下一唯一Q_dense24_mixed895503首次采集，所有预算/三模型/teacher/门槛不变；之后三Q一次冻结评价，无critic/PPO/formal。详见[修后Q完整结果](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
 
+- Qmixed895503已COLLECTION_OK/exit0：932ticks19N5E/0FDU、318标签77R241W、actual扫掠83.178005m、无安全/hash/耗尽/技术阻塞，primary全量检查及两端同步通过。三Q共54请求45N9E、975有效标签192R783W/18proposal；原父child退出。已接受一次qualification_initial评价全部91901–3冻结final，fixed指新Q_substep_monitor目录；Q不训练、不降低门槛，895502环境诊断边界仍保留。当前独立imitation评价/critic/PPO/formal尚无实际结果，详见[完整Q与评价范围](evidence/v4_2/p3_v25_nominal_curve_fresh_training_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
