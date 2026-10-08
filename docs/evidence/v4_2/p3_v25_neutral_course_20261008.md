@@ -117,3 +117,15 @@ primary逐行核对12151raw/1157steps/500actor-selected-OK及context join、pre-
 业务结果沿用原环境16N8E/0F/D/U；8E是应急完整完成，不写成24N。actual/扫掠最小82.0455/82.0309m、最终SOC最低.212100、能量最低318.150，实际安全/hash/技术/censor/负能量无异常。该修复闭合的是全量标注计算阻塞，尚未证明学习性能。只读分析首次错误地到新离线目录寻找first_live/replay而失败；primary改为读取并校验原完整rollout证据，新旧raw SHA逐项相同，重新执行全部分析成功（`.tmp/p3_neutral_fixed_repair_analysis_v2.json`）。保留首次失败log，没有重跑环境/query或改标签。
 
 据以上证据，primary接受该臂用于后续训练输入并继续唯一预定train_dense24_mixed/893503：24请求/warm12、SOC .55–.90、中性优先级、1800ticks/3600s环境、21600s全部actor标注、900s重建、外层27000s。运行前核对冻结源码同步、seed/路径/进程无重复；完整后再分析三臂数据并执行已记录fresh fit及student开发验证。Q895501–3仍未消费；未授予I1/student/PPO或formal资格。
+
+证据提交`24e36ffa`后mixed已唯一启动：Python2842255/timeout2842254、SSH session42542，真实cwd/argv及protocol（task_priority=false、uniform .55–.90、index3、21600s）相符，17文件Syncthing SHA和seed未消费检查通过。初快照125ticks/1714raw/34selected/2N、92.702s，另rows/steps已继续1778/128，属于运行前缀；动态文件暂时同步滞后不当终态错误，最终必须核对SHA。protocol SHA`2a58c1e9eea57ea409b9286d429ac5aaff6f230113ea50404a0b34c9f014297f`相同。核心冻结、60min监控已更新，不重启；全部目标继续至正式训练实际启动。
+
+### 三课程完整数据已接受，开始fresh拟合
+
+UTC2026-10-08 06:55 mixed自然终态COLLECTION_OK/exit0，父child退出：1007ticks/10595raw=484actor+10111forced，16N8E/0FDU、全部24请求完成，技术/censor/实际安全/hash/负能量异常0；最小实际/扫掠80.463374m，最终SOC最低.218194、能量327.291。环境858.396s、完整标注5189.108s、重建19.327s，10420个RELEASE意图/8966次实际plan调用（前置拒绝不一定调用plan），没有增加预算或丢行。root result SHA`6d93899e414d023b78802bf5c5c2450601db932d62505c146186491375117a14`、annotation SHA`c00803119ce0429efa507cfa122d38314cb62e09a1474ded3d70c3d9fdb0e774`、context SHA`f5d72760f756f9314c0993e5d4af89b211d6d96f3a3e09c732202a45b601ad47`两端一致。
+
+primary全量分析`.tmp/p3_neutral_mixed_analysis.json`通过：484/484标签78R406W、13种proposal，三接口R/W为29/136、25/107、24/163；有效base全1、policy mission STANDARD，物理cargo/surveillance/standard仍保留。label覆盖busyLZ472、高速inner185、SOC<.55为272/<.65为351、retry结束300、同UID同接口WAIT→RELEASE32次。正常K3批准52（rank1/2/3=38/9/5）；teacher/实际gate为52 R/R、26 R/W、3 W/R、403 W/W，保留state-only与批量执行区别，原标签不改。采集为规则访问分布，8E仍是效率代价，不算24N、不借不同seed业务差异归因计算加速。
+
+三臂共54请求/38N16E/0FDU，24772raw=1003actor+23769forced；拟合只接收1003完整actor标签=173R830W，共17种proposal。三个条件都有安全完整周期，密集场景有WAIT/RELEASE、三接口、busyLZ、低SOC及恢复覆盖，足够开展已记录的训练内可学性和后续开发闭环；未证明全局最优、student访问分布覆盖或泛化，也不宣布I0/I1/PPO正式准入。原固定SOC失败目录、开发smoke/pilot及旧priority数据均不进入fit。
+
+primary现批准执行本节先前冻结的fresh fit：`training.p3_v25_task_imitation --mode fit`，train顺序仅flow6_mixed、dense24_fixed_annotation_v2、dense24_mixed；新`fit_initial`目录，91901/2/3各5000updates/300s，固定final不挑最好seed，canonical91901。仍为unweighted gate CE + teacher RELEASE条件proposal CE、Adam3e-4/batch128/clip.5；先看训练内残差，再执行预定teacher-free smoke/三开发周期，有问题按残差修复而不触碰Q。Q895501–3仍未reset/评分，PPO/正式训练尚不允许；最终用户授权目标与formal不设heartbeat要求保持。

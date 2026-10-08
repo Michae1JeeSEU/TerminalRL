@@ -144,6 +144,10 @@
 
 - **完整固定SOC离线标注修复已通过，下一臂为中性dense mixed。** UTC2026-10-08 05:08新目录COLLECTION_OK/exit0，500/500标签76R424W、15种proposal，原201标签及证书精确一致，0reset/step；8602.150s内完成、105+N50及全部raw/mask/context核对通过。业务保留16N8E/0FDU，无技术/censor/实际安全/hash/负能量异常，原INCOMPLETE不变。所有500actor有效base=1；用户明确整个训练阶段暂不考虑随机优先级，继续贯穿数据/BC/student/PPO/formal。primary接受下一唯一893503 dense24_mixed（1800ticks/3600s环境、21600s全量标注），之后fresh fit与学生闭环；无新实际学习/资格结论。[完整证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
 
+- 上述mixed现唯一Python2842255/timeout2842254、SSH session42542，893503/index3/24warm12/SOC.55–.90；源17文件及protocol两端一致、真实cwd/argv/125tick初产物已确认，尚无终态。60min监控已切换当前臂，核心冻结；Q/新fit尚未执行，最终正式训练不设heartbeat。
+
+- **三课程完整采集已通过，primary接受fresh拟合。** mixed893503于UTC06:55为COLLECTION_OK/exit0、1007ticks/16N8E/0FDU，484/484标签78R406W、13proposal，技术/实际安全/hash/耗尽异常0，父child退出。三臂总1003actor标签173R830W/17proposal、全部有效base1，原始null/forced/context与终态同步全量核对通过；规则访问分布及16E总业务代价仍保留。下一唯一`fit_initial`按已定91901–3各5000updates/300s、canonical91901执行，之后teacher-free学生开发；Q未消费、无实际BC/PPO/正式准入。详见[当前证据](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
