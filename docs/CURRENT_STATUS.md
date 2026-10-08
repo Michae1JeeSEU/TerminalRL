@@ -196,6 +196,8 @@
 
 - V2.6逐pad资源观测已消除同观测异标签见证，显式159D actor/runtime/critic/空场景记录与旧105兼容，37项local运行构件检查通过；但train-only整回合CV仍过拟合（dense R recall .521/.425、proposal top1 .426/.345），不称泛化修复完成。新独立train首cycle893601–3/开发smoke892871已在[泛化修复记录](evidence/v4_2/p3_v25_generalization_repair_20261009.md)首次reset前登记；全actor/21600s标注、独立新目录、逐臂完整分析再继续。入口11项local检查通过，旧Q仍已消费隔离，尚无新实际fit/PPO/formal。后续893604–6只保留，新Q未登记；随机任务priority仍关闭。用户授权持续到formal实际启动有效，最后formal无heartbeat。
 
+- V2.6核心ea0ed80已同步，server48项定向回归通过；独立892871 smoke已SMOKE_OK/exit0，6raw/3actor/3完整159资源行，三接口3R均实际K3第1项，原label/prefix/traffic逐位保留，无安全/hash异常，两端SHA相同。primary全量检查后接受首个独立893601 flow6 mixed采集，下一dense须该臂完整结果再决定。另补159 actor-critic空场景到首次到达记录及真实schema协议，local runtime9tests通过；均非正式PPO或qualification，详见[当前证据](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

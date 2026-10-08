@@ -58,3 +58,11 @@ V2.6特征及显式159D actor、CV输出测试共7项通过。真实上述train�
 输出根服务器`/home/user/training_outputs/terminal/p3_v26_resources_20261009`，各臂`train_01`、`train_02`、`train_03`；入口`python -u -m terminal_marl.training.p3_v26_course_data --index 1/2/3 --output ...`，先`--index 1 --smoke --output .../smoke`。完整周期最多1800ticks（flow按既定1210tick课程上限）、环境3600s、全actor按tick/数值UID、最多2048query/51200 RELEASE意图、annotation21600s；多pad plan调用另计。超限/错误/安全/F/D/U/未完整标注均保留失败，不继续下一臂、不扩预算。流程先写不可混淆的protocol，然后原105重建与新159资源重建分别保存，逐行要求ID/mask/teacher label/105prefix/traffic不变。
 
 每臂收尾亲自核对完整N/E/F/D/U、error/censor、checked-executed hash和实际安全、能量与E、raw/actor/selected/label/resource行对应、三接口/低SOC/繁忙LZ/retry与proposal支持。完整首cycle后再决定是否第二cycle；和旧893511–13同合同train共六个独立周期可用于整回合开发验证（旧Q始终隔离）。先判断数据支持/泛化后选定fresh拟合方案，不立即登记新Q、盲目增加epochs或运行PPO。实际formal需新冻结候选、独立资格、完整student、真实有界PPO与业务审查；用户持续授权有效，最终formal实际启动并验初产物后删除heartbeat，不监控formal。
+
+## V2.6实施与独立输出验证
+
+实现提交ea0ed80，local scoped提交、index空、无remote未推送。服务器38项源码/docs/tests SHA已逐项与本地一致，8file定向回归48 passed（23.88s），包含旧105与新159接口、数据入口与输出检查；与之前local测试重叠，不累加为独立总数。
+
+独立892871 server smoke自然SMOKE_OK/exit0：2ticks/6raw/3actor/3完整标签，三接口各一个nominal RELEASE，实际执行3R，均K3第1项；prefix/traffic/ID/原label与新增159行完全对应、无安全/hash异常。原始开发null与forced行仍隔离不训练。环境2.134s/标注3.656s，root SHA8d4ee29788734c8abb21abd2672f350e4f45b13ace6ec4118b0caf31e5ecaf04，资源行SHA28823a951a2b39eaa330a2b042739bd9bdb58f0b6636c471377c31e5c46587b2，两端一致；primary读全量分析`.tmp/p3_v26_smoke_analysis.json`（SHA e019db4d92081a34e705f945a34faa095a40576bf91eef68d45f428acc94589a）后接受train01。短任务结束时真实Python已退出，不能声称观测到live argv/cwd；启动器明确cd且实际产物正常，后续长臂须核对live信息。
+
+另修旧开发runner的protocol记录：先验标为未载入，模型验证载入后、reset前写入真实schema，避免159模型被记录成105。新增本地runtime9tests通过（26.38s，包含原7项）：105/159分别请求与2tick重放；159 actor-critic的12tick空场景→首次到达、存储/加载/完整reward tape形状保持159。只是接口小样本，不是student qualification/实际PPO。

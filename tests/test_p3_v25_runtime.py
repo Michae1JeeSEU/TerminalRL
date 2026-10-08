@@ -55,13 +55,30 @@ def test_checkpoint_explicit_schema_and_new_information(tmp_path,ego_dim):
     with pytest.raises(ValueError): load_actor(path)
 
 
-def test_smoke_uses_scheduler_and_exact_request_replay(tmp_path):
+@pytest.mark.parametrize('ego_dim',[105,159])
+def test_smoke_uses_scheduler_and_exact_request_replay(tmp_path,ego_dim):
     from terminal_marl.scripts.evaluate_p3_v25_student import run
     path=tmp_path/'actor.pt'
-    torch.manual_seed(112233);model=TrajectorySetActor()
-    torch.save(dict(model=model.state_dict(),observation_schema=VERSION,arm='new_information'),path)
+    torch.manual_seed(112233);model=TrajectorySetActor(ego_dim=ego_dim)
+    torch.save(dict(model=model.state_dict(),observation_schema=model.observation_schema,arm='new_information'),path)
     result=run(SimpleNamespace(output=tmp_path/'smoke',checkpoint=path,seed=112233,policy_seed=112233,
                requests=3,warm_start=3,high_soc=True,deterministic=True,smoke=True))
     assert result['status']=='SMOKE_OK' and result['ticks']==2 and result['replay_exact']
     assert result['PPO_ALLOWED'] is False and result['error'] is None
     assert result['telemetry']['checked_executed_plan_hash_mismatches']==0
+    import json
+    assert json.loads((tmp_path/'smoke/protocol.json').read_text())['policy_observation_schema']==model.observation_schema
+
+
+def test_resource_actor_critic_preserves_empty_and_active_team_steps(tmp_path):
+    from terminal_marl.algo.trajectory_set_ppo import TrajectorySetActorCritic
+    from terminal_marl.configs.p3_v25_course import build_config as course
+    from terminal_marl.training.p3_v25_rollout import collect_episode,load_steps
+    torch.manual_seed(113355);model=TrajectorySetActorCritic(TrajectorySetActor(ego_dim=159))
+    rows,result=collect_episode(model,course('flow6_mixed'),seed=892973,policy_seed=929973,
+        output=tmp_path/'episode',max_steps=12,wall_seconds=120)
+    assert result['status']=='CENSORED' and result['replay_exact'] and result['error'] is None
+    assert any(len(r.ego)==0 for r in rows) and any(len(r.ego)>0 for r in rows)
+    assert all(r.ego.shape[1]==159 for r in rows)
+    restored=load_steps(tmp_path/'episode/steps.pt')
+    assert len(restored)==12 and sum(r.reward for r in restored)==result['reward']

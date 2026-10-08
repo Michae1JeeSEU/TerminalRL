@@ -13,7 +13,6 @@ import torch
 
 from ..configs.p3_integrated_repair import build_config
 from ..core.safety_trace import _digest, _json
-from ..core.trajectory_context_observation import VERSION
 from ..envs.parallel_env import TerminalParallelEnv
 from ..training.p3_v25_runtime import load_actor, request, check_request
 from ..training.p3_v25_set_learnability import digest_state
@@ -26,16 +25,19 @@ def run(args):
     torch.set_num_threads(1)
     config=build_config(requests=args.requests,warm_start=args.warm_start,high_soc=args.high_soc,
                         forecast_merge_gap=getattr(args,'forecast_merge_gap',False))
-    write_json(args.output/'protocol.json',dict(mode='development_student_never_qualification',
-        policy_observation_schema=VERSION, physics_config=asdict(config), checkpoint=str(args.checkpoint),
+    protocol=dict(mode='development_student_never_qualification',
+        policy_observation_schema=None, physics_config=asdict(config), checkpoint=str(args.checkpoint),
         checkpoint_sha256=hashlib.sha256(args.checkpoint.read_bytes()).hexdigest(),
         seed=args.seed,policy_seed=args.policy_seed,deterministic=args.deterministic,
         max_steps=2 if args.smoke else 1800,wall_seconds=3600,replay_wall_seconds=3600,
-        PPO_ALLOWED=False,teacher_enabled=False))
+        PPO_ALLOWED=False,teacher_enabled=False)
+    write_json(args.output/'protocol.json',protocol)
     env=None; ticks=0; total_reward=0.; terminal=False; replay_ok=False; error=None
     counts=Counter(); started=time.monotonic()
     try:
         model,_=load_actor(args.checkpoint)
+        protocol['policy_observation_schema']=model.observation_schema
+        write_json(args.output/'protocol.json',protocol)
         weights=digest_state(model.state_dict())
         with torch.random.fork_rng(devices=[]):
             torch.manual_seed(args.policy_seed)
