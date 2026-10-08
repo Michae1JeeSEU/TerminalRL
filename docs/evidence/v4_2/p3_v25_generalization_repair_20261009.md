@@ -72,3 +72,7 @@ train01/893601已自然COLLECTION_OK/exit0：632ticks、6N/0E/F/D/U、1719raw/18
 root SHA a407c3f568415c0f8ba24172c01842910f3048f8c723f45bec900f9f7f4dac5b、资源SHA365d0d54ff25b4757491dd2908a80fedf7023e1c7e91779c4b17f4c0c353b925两端一致。primary完整分析`.tmp/p3_v26_train01_analysis.json`（SHA fd0226e8b4b5c3462b8e1e3ad5d817369d819464b7c63f94eeddb63c27c8192f）后接受下一唯一train02/893602，所有冻结预算/物理/teacher/priority关闭合同不变。train01不重跑；新候选/Q/学习仍待整个cycle分析。
 
 UTC20:32左右train02已启动，wrapper2940965/timeout2940966/Python2940967，三者真实cwd均`/home/user/projects/terminal`，argv为V26 collector/index2/正确新路径，源码SHA和无重复检查通过。初progress1tick/12raw/12selected（每25tick刷新），相邻steps已有18行，root result/exit尚无，属于正常启动前缀。当前唯一环境父进程；运行中核心冻结，dense预计1–2h，继续60分钟低频监控，不把首tick或单条annotation COMPLETED当全臂终态。
+
+等待采集期间仅准备不被collector导入的新`p3_v26_train_dataset`：要求893601–3三完整train、严格profile/partition/sha、保留null/forced隔离与label、不同邻机数补mask；可与旧893511–13可信snapshot重建159的train合并，共六周期。仅新增loader的2项fixture测试已通过，尚未读取未完成cycle拟合。采集运行核心未改。
+
+首cycle无阻塞完整后的下一项开发判断固定为**六个整回合leave-one-cycle-out**（各五回合train/一回合validation），沿用单一诊断初始化91911、原未加权CE、Adam3e-4/batch128/clip.5、marks0/100/500/1000/2000/5000、300s/fold，全部159+邻机50。仅train，无Q、teacher查询或可部署checkpoint。用完整曲线检查补充独立情境后是否仍记忆训练回合，不在每新增一条数据时反复拟合；须先完成整个cycle。该步骤尚未执行；后续fresh拟合预算与新Q仍需依据结果再冻结，不能由新的loader准备推断已资格。

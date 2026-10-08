@@ -202,6 +202,8 @@
 
 - 当前唯一train02/893602已实际启动：wrapper2940965/timeout2940966/Python2940967，真实cwd/argv与Syncthing SHA均核对；初progress1tick、steps18行只是前缀，输出`p3_v26_resources_20261009/train_02`。核心冻结，60min监控；终态primary完整分析后才能train03，root ANNOTATING及单条annotation COMPLETED都不是整臂完成。formal目标与不监控最终formal要求不变。
 
+- 采集等待期间仅准备未被collector导入的V26六完整train周期loader和整回合CV入口，6项local合成检查通过；新train893601–3必须全部COLLECTION_OK后，才能结合旧893511–13同合同train做一次六fold开发曲线，固定91911/原loss/0–5000steps/300s每fold，无Q或部署checkpoint。当前dense采集核心冻结、没有实际新增CV或模型拟合，不能提前用部分cycle或smoke代替数据。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

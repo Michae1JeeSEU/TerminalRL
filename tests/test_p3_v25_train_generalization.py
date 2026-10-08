@@ -13,6 +13,13 @@ def test_subset_keeps_complete_row_identity_and_inputs():
     torch.testing.assert_close(data.gate,paired.original.gate[indices])
 
 
+def test_additional_cycles_cannot_bypass_resource_or_real_data_contract(tmp_path):
+    with pytest.raises(ValueError,match='real resource train mode'):
+        run([],tmp_path/'mixed',smoke=True,resource_context=True,additional_directories=['Q'])
+    with pytest.raises(ValueError,match='real resource train mode'):
+        run([],tmp_path/'old',additional_directories=['Q'])
+
+
 @pytest.mark.parametrize('resource_context',[False,True])
 def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path,resource_context):
     torch.set_num_threads(1)

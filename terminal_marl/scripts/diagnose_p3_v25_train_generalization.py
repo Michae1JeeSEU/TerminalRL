@@ -20,9 +20,13 @@ def subset(paired, indices):
     return result,tuple(t[indices] for t in paired.new)
 
 
-def run(directories,output,*,smoke=False,resource_context=False):
+def run(directories,output,*,smoke=False,resource_context=False,additional_directories=()):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    if resource_context and not smoke:
+    if additional_directories:
+        if smoke or not resource_context:raise ValueError('independent cycles require real resource train mode')
+        from terminal_marl.training.p3_v26_train_dataset import load_six_cycle_train
+        paired=load_six_cycle_train(directories,additional_directories)
+    elif resource_context and not smoke:
         from terminal_marl.training.p3_v26_resource_inputs import load_resource_train
         paired=load_resource_train(directories)
     else:
@@ -33,7 +37,11 @@ def run(directories,output,*,smoke=False,resource_context=False):
     groups=([torch.arange(8),torch.arange(8,16)] if smoke else
         [torch.tensor([i for i,c in enumerate(paired.original.contexts) if c['seed']==s]) for s in seeds])
     if not smoke:
-        assert seeds==[s for s,_ in TRAIN_CASES]
+        expected=[s for s,_ in TRAIN_CASES]
+        if additional_directories:
+            from terminal_marl.training.p3_v26_course_data import TRAIN_CASES as ADDITIONAL_CASES
+            expected += [s for s,_ in ADDITIONAL_CASES]
+        assert seeds==sorted(expected)
     marks=(1,2) if smoke else (0,100,500,1000,2000,5000)
     protocol=dict(mode='train_cycle_cross_validation',smoke=smoke,model_seed=91911,
         resource_context=resource_context,ego_dim=paired.new[0].shape[1],
@@ -89,12 +97,14 @@ def run(directories,output,*,smoke=False,resource_context=False):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--train-directories',nargs=3,type=Path)
+    parser.add_argument('--additional-train-directories',nargs=3,type=Path)
     parser.add_argument('--output',required=True,type=Path)
     parser.add_argument('--smoke',action='store_true')
     parser.add_argument('--resource-context',action='store_true');args=parser.parse_args()
     if not args.smoke and not args.train_directories:parser.error('train directories required')
     torch.set_num_threads(1)
-    result=run(args.train_directories or (),args.output,smoke=args.smoke,resource_context=args.resource_context)
+    result=run(args.train_directories or (),args.output,smoke=args.smoke,resource_context=args.resource_context,
+        additional_directories=args.additional_train_directories or ())
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']))))
     return 0 if result['status']=='COMPLETE' else 2
 
