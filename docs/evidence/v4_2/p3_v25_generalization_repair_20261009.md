@@ -88,3 +88,5 @@ teacher R但实际trace W为21条、teacher W但实际trace R为6条；仍是原
 9项关键终态文件本地/服务器SHA逐项一致。root SHA1eb8cdb51243a46e8bb36f62af63a3a9c8027da709c756559ce2d4abd686391d、资源SHA5a7b827963a8edb603859013d7aae4e01a0ccfc5455d7b1eec600e69e4bfd009；primary读全量分析`.tmp/p3_v26_train02_analysis.json`（SHA291102dcb0b50c33a4dffe11dae5bea1f329829c36841e122dae512ea50805c5）。首次worker文件检查误用日期/目录层级，已按正确20261009/train_02/seed_893602重新核对；不是同步失败或重跑实验，失败检查原报告保留。
 
 primary接受下一唯一train03/893603 dense24 mixed.55–.90，入口/所有上限不变、新目录`p3_v26_resources_20261009/train_03`，启动前继续Syncthing SHA和重复进程/路径检查。train02不重跑；第三臂完整后才执行上述六回合CV，没有新Q/fit/PPO/formal准入结论。
+
+train02证据提交94e2b3f后，train03已实际启动：wrapper2998136/timeout2998137/Python2998138。UTC2026-10-09 00:29核对Python实际cwd/argv、protocol seed893603/24warm12/mixed.55–.90/task_priority_enabled=false，以及15steps/192raw/18selected；progress每25tick更新，此时仍1tick，不能覆盖更近的steps事实。38项Syncthing SHA及无重复进程/路径/seed检查通过，protocol SHA89aa1107e29278eb152702bcbbc98d9c42a132c35e3e99b38ba6e4ecf506af49。仅Python cwd已实际读取，不追称wrapper/timeout cwd也已观测。当前唯一父进程运行、尚无终态，核心冻结并继续60min静默监控，预计数小时。
