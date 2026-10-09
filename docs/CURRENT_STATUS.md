@@ -1,9 +1,9 @@
 # 项目当前状态
 
-## 2026-10-09 P3 补充采集（medium12 完成，dense24 fixed 完整验收，dense24 mixed 在跑）
+## 2026-10-09 P3 补充采集（三回合完成，9-cycle 覆盖统计完成，witness 接入待准备）
 
-- **补充采集当前状态（newly_run）：** `medium12_mixed` seed `893604` 已 `COLLECTION_OK/exit0`；691 ticks/3795 raw（57 actor、3738 forced），57 selected/57 OK/resource159D，37R/20W，`12N/0E/0F/0D/0U`；无实际安全/hash/负能量异常。`dense24_fixed` seed `893605` 已完整验收为 `COLLECTION_OK/exit0/error=null`，blockers `[]`，542 actor/resource159D，`18N/6E/0F/0D/0U`，实际 hard separation/NMAC/collision/执行 hash 失配/负能量均为 0。`dense24_mixed` seed `893606` 已启动，当前 wrapper/timeout/Python 为 `3090327/3090328/3090329`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03`；已生成 first_before/request/live/replay，live/replay SHA 相同，root result/exit 尚未生成，不能假定安全全 0。
-- **边界与当前状态：** train03 protocol 创建于 `2026-10-09T14:27:43.326556838Z`（北京时间 `22:27:43.326556838`），cwd 为 `/home/user/projects/terminal`；heartbeat `p3-dense-mixed-893606`（`P3 dense mixed 893606`）为 `ACTIVE` 每小时正常静默，fixed heartbeat 已删除，`p3-v2-5` 保持 `PAUSED`。补充采集依原 teacher offline annotation 协议，当前无额外诊断 query；无学生训练、optimizer 更新或 PPO，`PPO_ALLOWED=false`。三个 supplemental 回合完成后再做 9-cycle 统一覆盖分析，不提前宣称泛化或 PPO 准入；旧 max-gate 对照结论与 support inventory 见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
+- **补充采集当前状态（newly_run）：** `medium12_mixed` seed `893604` 已 `COLLECTION_OK/exit0`；691 ticks/3795 raw（57 actor、3738 forced），57 selected/57 OK/resource159D，37R/20W，`12N/0E/0F/0D/0U`；无实际安全/hash/负能量异常。`dense24_fixed` seed `893605` 已完整验收为 `COLLECTION_OK/exit0/error=null`，blockers `[]`，542 actor/resource159D，`18N/6E/0F/0D/0U`，实际 hard separation/NMAC/collision/执行 hash 失配/负能量均为 0。`dense24_mixed` seed `893606` 已 `COLLECTION_OK/exit0/error=null`，blockers `[]`：938 ticks/9966 raw（292 actor、9674 forced），292 selected/292 OK/resource159D，79R/213W，`19N/5E/0F/0D/0U`；实际 hard separation/NMAC/collision/执行 hash 失配/负能量均为 0。三个 supplemental 回合均已完成。
+- **边界与当前状态：** `p3-dense-mixed-893606` heartbeat 已删除，当前无活动采集或学习任务；`p3-v2-5` 保持 `PAUSED`。补充采集依原 teacher offline annotation 协议，无学生训练、optimizer 更新或 PPO，`PPO_ALLOWED=false`。9-cycle coverage 汇总已完成，下一项 witness 协议仍待源码接入、定向 tests 和 launch 准备；不宣称 P3 已解决或 PPO 准入。详见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
 - **gate 对照历史（preexisting/newly_run）：** max candidate full six-cycle 已 `COMPLETE/exit0`，固定 5000 的 dense 四 fold joint 全低于 native control、WAIT false-release 全高于 control，故不采纳 max gate；该历史对照不覆盖当前 supplemental 采集阶段。
 
 ## 2026-10-03 P3修复效果逐步验证（最新）

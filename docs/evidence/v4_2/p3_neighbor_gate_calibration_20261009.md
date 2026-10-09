@@ -107,7 +107,7 @@ teacher 与 trace 行为计数为 `56 R/R`、`33 R/W`、`3 W/R`、`450 W/W`；no
 
 本地 snapshot 重建的严格 `array_equal` 对照曾见最大 `1.42e-16` 差异；resource/context JSON 精确相同，按既有官方 `atol=1e-7`/`rtol=1e-6` 的 542 条核验全部通过。未改容差、数据或源码，不将该差异写成实验错误。
 
-该回合提供完整采集证据，但不能据此宣称泛化解决或 PPO/资格准入；`dense24_mixed` seed `893606` 已按原授权流程启动，当前启动状态见下文，终态尚未生成。三个 supplemental 回合完成后统一覆盖 9-cycle 分析，再决定是否进行有界学习；无新学习/PPO，源码保持冻结，本轮未重跑既有 tests。旧 heartbeat `p3-dense-fixed-893605` 已删除。
+该回合提供完整采集证据，但不能据此宣称泛化解决或 PPO/资格准入；`dense24_mixed` seed `893606` 已按原授权流程启动，启动时点及终态见下文。三个 supplemental 回合完成后统一覆盖 9-cycle 分析，再决定是否进行有界学习；无新学习/PPO，源码保持冻结，本轮未重跑既有 tests。旧 heartbeat `p3-dense-fixed-893605` 已删除。
 
 ## supplemental `train_03` 启动记录（2026-10-09）
 
@@ -115,4 +115,48 @@ teacher 与 trace 行为计数为 `56 R/R`、`33 R/W`、`3 W/R`、`450 W/W`；no
 
 启动初读的 12 raw/0 step 仅为 pre-state。随后在 `2026-10-09T14:31:01Z` 观察到 181 steps、2833 raw；progress 为 175 ticks/2700 raw/73 selected、elapsed `188.12869s`、outcomes completed `2`。进程状态为 `S/S/R`、elapsed `3:19`；`root result`/exit 尚未生成，log 为空，终态安全/error 尚未生成，不能将该前缀写成全 0。`first_before`、`request`、`live`、`replay` 均已生成，live/replay SHA256 相同，为 `6451b65eef401ab01d2bdbc6bf9ebd61eac707824c8df1808cf92edcd59c0780`。
 
-heartbeat `p3-dense-mixed-893606`（`P3 dense mixed 893606`）为 `ACTIVE`、每小时正常静默；旧 fixed heartbeat 已删除，`p3-v2-5` 保持 `PAUSED`。该回合是数据采集及随后离线 teacher 标注，不包含新学习或 PPO；三个 supplemental 回合完成后统一覆盖 9-cycle 分析，源码保持冻结，本轮未重跑既有 tests。
+heartbeat `p3-dense-mixed-893606`（`P3 dense mixed 893606`）在启动阶段为 `ACTIVE`、每小时正常静默；旧 fixed heartbeat 已删除，`p3-v2-5` 保持 `PAUSED`。本段仅保留启动时点，train03 终态见下文。该回合是数据采集及随后离线 teacher 标注，不包含新学习或 PPO；源码保持冻结，本轮未重跑既有 tests。
+
+## supplemental `train_03` 终态（2026-10-09）
+
+`dense24_mixed` seed `893606` 的终态为 `COLLECTION_OK/exit0/error=null`，blockers `[]`；原 wrapper/timeout/Python `3090327/3090328/3090329` 与 child 均已退出。自然终态为 938 ticks、9966 raw rows（292 actor、9674 forced），292 selected/292 OK/resource159D，79R/213W；13 个 proposal 分布为 `(12:41,11:3,7:2,17:7,10:1,22:2,13:11,14:3,18:2,3:3,9:2,2:1,4:1)`。三接口 R/W 为 `o2m 25/91`、`m2i 31/25`、`i2f 23/97`；低 SOC 120、busy 280、fast-inner 115、after-retry 201，并观察到 31 次同 UID 同接口 `W→R`。
+
+本地终态为 `19N/5E/0F/0D/0U`，5 次应急提交对应 5 次 touchdowns，45 次应急尝试中有 114 次应急安全拒绝；min SOC `0.1681304216`、min energy `252.1956323`，实际 hard separation/NMAC/collision/执行 hash 失配/负能量均为 0，negative_energy_budgets 为 0，最小实际/扫掠间距为 `81.0743767503m`。9 个 trajectory infeasible candidates 与 228 次 safety interventions 作为候选过滤计数保留，不能将本回合写成所有计数为 0。环境耗时 `572.3499320s`、标注耗时 `2840.5462680s`，约 56.88min，未延长预算。
+
+teacher 与 trace 行为计数为 `57 R/R`、`22 R/W`、`3 W/R`、`210 W/W`；normal K3 ranks 1/2/3 分别为 `37/11/10`，保留 teacher、行为和执行分离。292 resource 均为 159D finite，traffic N×50 finite，N2–19 合计 4022 neighbor rows；mask/schema/decode/prefix/traffic/labels exact 与 first replay equal 均通过。两端关键文件 SHA 相同；292 labels 按文件名排序内容 manifest SHA256 为 `ffaf61a66a9decdbb545da10d5e9bcb1eefd5aaeea350c80ea76135eb985ca9d`；root SHA 为 `f529619741c1bb6ad38b6181d845d61993be3a2c0b7e947d5e080acd0950d09a`，resource SHA 为 `cd05568a2854e00d0d1ca07d55de52ed3c27b76ca78e093dca1ec92ce38de3bd`。
+
+joint checks 为 `1530`，corrections `0`，fail-closed `0`。本轮三个 supplemental 回合均已完成，heartbeat `p3-dense-mixed-893606` 已删除，`p3-v2-5` 保持 `PAUSED`；当前无新活动采集或学习。九周期覆盖统计及下一项已选定的数据扩充协议见下文；本段记录的采集没有学生训练或 optimizer 更新。这些记录仅构成数据证据，不能宣称 P3 已解决或 PPO 准入；existing helper/产物 checks 已沿用，未重跑源码 tests。
+
+## nine-cycle coverage 汇总（2026-10-09，只读聚合）
+
+汇总 artifact 为 `.tmp/p3_nine_cycle_coverage_20261009.json`，标记为 read-only aggregation（no training/query/reset）。权威输入分为 old3：`p3_v25_neutral_course_v2_20261008/train_flow6_mixed`、`train_dense24_fixed`、`train_dense24_mixed`；mid3：`p3_v26_resources_20261009/train_01/02/03`；new3：`p3_v26_supplemental_20261009/train_01/02/03`。
+
+| seed | group | actor | R/W | N/E |
+|---:|---|---:|---:|---:|
+| 893511 | old3 | 30 | 23/7 | 5/1 |
+| 893512 | old3 | 721 | 94/627 | 20/4 |
+| 893513 | old3 | 547 | 87/460 | 14/10 |
+| 893601 | mid3 | 18 | 18/0 | 6/0 |
+| 893602 | mid3 | 571 | 75/496 | 18/6 |
+| 893603 | mid3 | 371 | 75/296 | 19/5 |
+| 893604 | new3 | 57 | 37/20 | 12/0 |
+| 893605 | new3 | 542 | 89/453 | 18/6 |
+| 893606 | new3 | 292 | 79/213 | 19/5 |
+
+九个 seed 合计 `3149 actor = 577R/2572W`，全部 `F/D/U=0`；old6 为 `2258 = 372R/1886W`，new3 为 `891 = 205R/686W`。proposal 支持仍为 20 类，class12 为 `306/577`，不能称类别全覆盖。leave-one-cycle-out 中 absent 为 `3/577 = 0.52%`，rare train count `1..5` 影响 `36/577 = 6.24%`；在相同 old6 held 集合上，加入 new3 前后 absent 为 `6/372→3/372`、rare 为 `35/372→25/372`，不把不同分母的汇总误写成提升。仍 absent 的 classes 为 held `893512` 的 `6`，以及 held `893513` 的 `1/24`，均为唯一标签；其余 held 无 absent。max neighbors 为 20，新 medium max 为 10。
+
+new3 没有现有 pair witness；已有 witness 仅覆盖 old6，共 `127 states/317 queries`，因此按既定 witness 规则补 auxiliary 后才可进行相同辅助方法的数据比较。旧三组没有 resource JSONL 是原协议预期：`p3_v26_resource_inputs.load_resource_train` 从可信 snapshot 在内存重建额外 54D，并保留 105 prefix/traffic，不属于缺失标签或失败数据。新九组 loader 的真实全量接入验收仍待实现和 tests，不提前称为通过。
+
+该汇总确认新增中负载与独立 dense 情境已进入数据覆盖，但 absent/rare 类别仍不足以单独解释旧的大量 proposal errors；后续按已预登记的固定网络与步数运行九 CV 检验，不承诺加数据即可修复。三 supplemental 回合本身已完整验收，Q 保持隔离、`PPO_ALLOWED=false`，没有新学习或 query。
+
+## supplemental neighbor witness 数据扩充预登记（2026-10-09，未执行）
+
+下一项为有界的数据扩充单因素对照，协议名 `p3_supplemental_train_neighbor_witness_20261009_v1`。目标是检验补充 independent context/traffic load 后是否出现稳定 action benefit；该预登记不保证有效，不改变资格门槛。模型保持 `IntentNeighborActor` 原 `first_feasible_union` 与 `native_pair_auxiliary`，原 teacher、safety、`159+N50` 输入、model seed `91911`、aux seed `91912`、BC+pair loss 权重 `1`、scene 权重 `.25`、Adam `3e-4`、batch `128`、auxiliary batch `64`、clip `.5`、marks `0/100/500/1000/2000/5000` 和每 fold `1200s` 上限全部冻结。
+
+九个 parent cycle 只运行 native arm；既有六 fold native fixed5000 结果复用为 control，不重跑六 CV，不重复已拒绝的 max 变体。每个旧六 fold 完整比较 RELEASE recall、WAIT false-release、proposal top1/top3、joint、blocker 及 pair 安全拒绝识别；三个 new held 结果单独报告，不挑最好 mark。该阶段仅为 training development，`Q`、qualification、PPO 均禁用。
+
+为三个 new held seed 按原 witness 规则补 auxiliary：每 seed、每 interface×gate 最多 4 个状态，按 tick 与数值 UID 等距选取，最多 72 states；这些不是新增独立回合。原 joint13 以及 teacher 首个可行或 `W` 时固定 joint1，均限制在原 teacher 已查 prefix 内；按 canonical plan 做逐 pair supervision，scene unknown 保持 unknown，不回填未知后缀。full 上限为 864 plans/1800s；先做三 interface smoke（最多 36 plans/120s）。输出分别为 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/smoke` 与 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle`，outer timeout 为 180s/1900s；旧 317 queries 复用，不重跑。
+
+约束保持为 0 reset/step、原 teacher label 不改、不回填未知后缀、不新增 online input。九 CV 输出为 `/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle`，outer timeout `11400s = 9×1200+600`，仅 native 一臂。执行顺序预登记为：本地定向 tests、新增 route synthetic（9 parent×2 update）smoke、真实 loader 只读 input 检查；通过后做 Syncthing/hash/server checks，再做真实 auxiliary smoke、full auxiliary 完整验收，最后单次运行九 CV。
+
+当前源码接入由 worker 准备中，尚未完成或测试；本预登记尚未 launch 任何 query、采集或学习。若该因素仍无稳定收益，后续是否继续由 primary 根据具体结果决定，不自动扩 epoch 或 network variant。既有三回合产物、9-cycle 覆盖统计及本协议均不构成 P3 已解决或 PPO 准入证据。
