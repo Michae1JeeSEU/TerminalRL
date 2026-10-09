@@ -49,3 +49,15 @@ actor输入最多32邻机，超限直接拒绝接口，不静默按最近距离�
 9项local测试通过（4.33s，含原6项），覆盖邻机置换等变/最终动作不变、每意图保留邻机身份、辅助查询与实际policy用同一分数、NaN padding/空邻机/梯度、无可用pad/数量超限、原前缀与null、全回合辅助数据隔离，以及两step四fold-arm真实输出序列化。不是学习效果结论。
 
 下一有界比较固定为同六整回合留一、91911初始化、原未加权gate+R proposal CE、Adam3e-4/batch128/clip.5、0/100/500/1000/2000/5000 steps。两臂为同一关系网络不加辅助与增加native pair辅助；辅助batch64，blocked/safe分别BCE取均值后再平均，未知无loss，pair权重1，已知scene BCE权重.25。辅助监督与原BC都严格随parent seed划分，留出周期监督不入训练。每fold-arm最多1200s，超时保留失败不延时；单线程synthetic128×20一次前后向约.142s，12 fold-arm预计约2–3h，按60min监控。所有输入来自train，0新teacher/环境step/Q，无checkpoint保存；先核对完整loader与服务器同步/测试，再启动新输出。判断同时报告原BC泛化和held-out native pair召回/首位阻塞识别，不能只挑辅助指标或训练拟合宣称P3就绪。
+
+六周期2258原行与317辅助queries的完整loader已核对，均max20邻机；原label/159数值/traffic对应不变，2899个已知pair中260blocked，145个已知scene目标中16blocked。其余scene未知不施加loss，不能因先遇到邻机冲突就假定其所有资源/动力学检查一定能过。分析`.tmp/p3_neighbor_witness_analysis.json`。
+
+核心提交3291be0，本地index空、无remote未推送。server源码/三项witness文件SHA一致，16项定向回归1.42s通过（含原9项）。已启动唯一比较：Python3045749/timeout3045748/wrapper3045747，输出`/home/user/training_outputs/terminal/p3_neighbor_relation_cv_20261009/six_cycle`；真实Python argv/cwd已确认。初次快照仅加载输入、尚无protocol/result；第二次已见RUNNING protocol/result和held893511 without_auxiliary100updates/18.429s，属于前缀，不报告任何效果结论。首次进程过滤将自身只读探针也列入，已按真实argv token修正；实际只有上述一个CV。后续60min监控、冻结其导入源码，不重复启动。
+
+## 有限广播接收接口（准备，尚未部署）
+
+在CV运行期间独立新增`terminal_policy_packet.py`，不改CV导入代码。接收器只接受typed本机sample与终端publication，不接env；159数值拆成29个本机/本机控制接口字段和130个中心/由广播推导字段，50D邻机保持原schema，未追加真实未来或teacher信息。local release_eligible包含同一publication的interface freeze状态；需要本地控制器与该广播参考时刻一致，不能把旧相对坐标拼到新的本机位置。
+
+协议限定一个订阅终端当前登记服务范围、最多32邻机、1Hz发布意图、按接收时刻最多2s信息年龄、现有7个预测点/150s模型预测窗。任何缺报、重复/外域报告、中心声明监视不完整、时间不一致、过期、非有限数或超限，均返回`ObservationUnavailable`；接入runtime时必须留在hold/fail-safe而非静默删掉可能的阻塞邻机。UID只用于报文完整性/结果解释，不进神经网络。32邻机加159数值、时间戳/UID及固定header的数值载荷估算7504bytes，小于8192bytes声明上限；这是软件报文预算，不是实测无线吞吐。
+
+10项接收接口测试通过，覆盖逐值重建、拒绝env样对象、缺失/错误scope/接收者/时间/NaN/超容量，以及邻机年龄相对实际接收时间计算，不能把“report→publication”和“publication→receiver”两段各放2s变成4s。接口还没有替换实际policy输入，publisher实际传感误差、链路时延/失联及安全处置闭环尚未验证；不凭这组单测声称已经满足真实通信或部署资格。CV结果若支持采用新模型，下一接入必须经此有限来源边界并验证对应ideal广播假设，后续硬件仍需实测。

@@ -218,6 +218,8 @@
 
 - 2026-10-09用户要求优先修复具体阻塞邻机表示并约束观测来源，primary已开展[邻机关系与可获取观测修复](evidence/v4_2/p3_neighbor_observability_repair_20261009.md)。train893602/t0/UID6默认切环被UID11阻挡，预测最近49.210m/t52.7s，同plan移除该机后通过；旧五槽均漏它，全邻机集合含它。既定离线127状态/317计划/2899pair已COMPLETE（260阻塞/2639安全，408.313s），原标签未改。新开发关系actor沿用159+N50，逐意图/目的地/邻机出分，阻塞label不进在线输入；9tests含两step输出通过。下一固定六周期有/无辅助比较尚未启动，无新Q/PPO。有限广播范围/频率/缺失处理必须在正式接入前落实；不能把全active仿真真值默认为通信可得。supplemental服务器55tests通过但892872/893604–6尚未reset，按最新用户方向暂缓。其他dirty保留，无remote不推送。
 
+- 邻机关系核心3291be0已通过server16tests、源码/离线witness SHA同步与全量loader核对（2258BC行/317辅助queries，max20邻机）。服务器唯一六周期两臂CV已启动Python3045749/timeout3045748/wrapper3045747，输出p3_neighbor_relation_cv_20261009/six_cycle；真实argv/cwd和protocol/result及首fold100updates已确认，未有终态。按60min监控，运行导入源码冻结；不重复启动，不由前缀宣称改善。独立准备有限广播接收模块：29本机+130中心字段重建现有159、max32邻机/8192byte数值载荷预算/1Hz声明/接收时刻max2s年龄；缺报/外域/过期/超限均ObservationUnavailable，不静默丢邻机。10tests通过，尚未接runtime/publisher或验证真实链路，不能据此授部署资格。详情见邻机与可获取观测记录。补充采集仍暂缓，无新Q/PPO/正式启动，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
