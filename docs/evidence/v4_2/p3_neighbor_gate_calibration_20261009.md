@@ -75,6 +75,25 @@ smoke `892872` 已消费并为 `SMOKE_OK/exit0`，输出 `/home/user/training_ou
 
 用户已解除暂停并准许按原协议逐回合执行。`medium12_mixed` seed `893604` 的 `train_01` 于 `2026-10-09T10:11:01.823Z`（北京时间 `18:11:01.823`）启动，protocol 为 `p3_v26_medium_dense_supplemental_train_20261009_v1`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01`；配置为 12 requests、warm6、SOC `.55–.90`、`taskpriority=false`。wrapper/timeout/Python 为 `3068758/3068759/3068760`，cwd `/home/user/projects/terminal`。
 
-初核时间 `2026-10-09T10:11:17.160Z` 观察到 75 steps、572 raw rows 和首条 90D raw row；最终 159D resource 重建当时尚未输出，不将该时点的 90D raw row 写成 schema failure。`result.json`、`rollout_result`、`annotation_progress` 尚未生成，exit 文件也不存在；当前不能称完成或安全全 0。launcher full-hash、preflight、no-repeat 检查均 passed。预算固定为 1800 steps、环境墙钟 3600s、离线标注墙钟 21600s、最多 2048 queries / 51200 RELEASE intents，外层 timeout 27000s。
+初核时间 `2026-10-09T10:11:17.160Z` 当时观察到 75 steps、572 raw rows 和首条 90D raw row；最终 159D resource 重建尚未输出，不将该时点的 90D raw row 写成 schema failure。该初核时点的 `result.json`、`rollout_result`、`annotation_progress` 和 exit 文件均尚未生成；随后终态见下文。launcher full-hash、preflight、no-repeat 检查均 passed。预算固定为 1800 steps、环境墙钟 3600s、离线标注墙钟 21600s、最多 2048 queries / 51200 RELEASE intents，外层 timeout 27000s。
 
-heartbeat `p3`（`P3 补充采集逐回合监控`）已由 primary 创建并为 `ACTIVE`，每小时正常静默；旧 `p3-gate` 已删除，`p3-v2-5` 保持 `PAUSED`。seed `893604` 已消费，`893605/893606` 尚未启动；完整终态分析通过后才进入下一个，源码保持冻结。该任务是数据采集及随后离线 teacher 标注，包含采集器自身的 reset/teacher 标注流程；不写成“无 reset/teacher query”，这里只记录没有额外诊断 query。无学生训练、optimizer 更新或 PPO。
+train_01 运行及其终态记录时 heartbeat `p3`（`P3 补充采集逐回合监控`）为 `ACTIVE`、每小时正常静默；train_01 终态后该 heartbeat 已删除，旧 `p3-gate` 已删除，`p3-v2-5` 保持 `PAUSED`。seed `893604` 已消费，后续 seed 状态见下文，源码保持冻结。该任务是数据采集及随后离线 teacher 标注，包含采集器自身的 reset/teacher 标注流程；不写成“无 reset/teacher query”，这里只记录没有额外诊断 query。无学生训练、optimizer 更新或 PPO。
+
+## supplemental `train_01` 终态（2026-10-09）
+
+`train_01` seed `893604` 为 `COLLECTION_OK/exit0`；原 wrapper/timeout/Python `3068758/3068759/3068760` 及 child 均已退出。全回合为 691 ticks、3795 raw rows（57 actor、3738 forced），57 selected/57 OK/resource159D，37R/20W；7 个 proposal 分布为 `(12:26,14:3,7:1,13:3,17:2,9:1,2:1)`。三接口 R/W 为 `o2m 12/19`、`m2i 12/1`、`i2f 13/0`；低 SOC 11、busy 51、fast-inner 11、after-retry 25，并观察到 6 次同 UID 同接口 `W→R`。
+
+终态为 `12N/0E/0F/0D/0U`，无 censor/error；min SOC `0.3968737386`、min energy `595.3106078`，实际安全/hash/负能量/应急计数均为 0，最小实际/扫掠间距 `82.7146226m`。其中 3 个轨迹不可行 candidates 与 60 safety interventions 必须保留为候选过滤计数，不能将本回合写成全 0。环境耗时 `105.1907449s`、标注耗时 `380.1467585s`，未延长预算。
+
+teacher 与实际行为计数为 `32 R/R`、`5 R/W`、`20 W/W`；5 个 teacher 动作均为 non-nominal timing，保留原 label、行为和执行三者分离，不能写成标签被实际否决。105 prefix/labels/traffic exact、first replay equal，full helper 已成功；分析文件为 `.tmp/p3_v26_supplemental_train01_analysis_20261009.json`。result SHA256 为 `18c8b092a79d83ec69bf736e196c90c13cac801f3a0b520adc3f893bcee7b61f`，resource SHA256 为 `c0c59aabda9292241695ff465d0280904442b1918c0e2aaff0fa24ceb8219bf9`。
+teacher 与实际行为计数为 `32 R/R`、`5 R/W`、`20 W/W`；5 个 teacher 动作均为 non-nominal timing，保留原 label、行为和执行三者分离，不能写成标签被实际否决。105 prefix/labels/traffic exact、first replay equal，full helper 已成功；分析文件为 `.tmp/p3_v26_supplemental_train01_analysis_20261009.json`。result SHA256 为 `18c8b092a79d83ec69bf736e196c90c13cac801f3a0b520adc3f893bcee7b61f`，resource SHA256 为 `c0c59aabda9292241695ff465d0280904442b1918c0e2aaff0fa24ceb8219bf9`。
+
+全量核验还确认 train01 两端 result（完整 hash 末尾 `...7b61f`）、`annotation_result`、57 标签聚合、105 context、159 resource 与 first-replay 的 SHA 一致；57 resource 全为 159D finite，traffic N×50 全 finite，N1–10 合计 394 邻机 rows，mask 长度/hash 匹配，105 prefix/traffic/mask 不变且 57 decode 成功。JSONL 不存 UID；snapshot 为 trace-only，旧/新 UID 一致，UID 未作为输入。N50 表示每邻机 50 维，与 window50 无关；worker 早期误解已由全量复核纠正，不作为数据失败。标签聚合 SHA256 为 `4d3a4929b1d5969cf511d2c0fc75db6f37561f6089041693c081559729ca48a4`，annotation SHA256 为 `d241208db30d2a27e5b00fa4b59eec0d70593e2c2133914c44410df913bcee65`。
+
+此前一次错误参数调用为 `exit1` 且未产生训练产物变化；有效 full-analysis case 为 `train_medium12_mixed`，正确调用为 `exit0/FULL_ANALYSIS_COMPLETE`。primary 判断为原协议采集完整，可继续 `893605`；新增中负载独立支持仍 majority nominal，不能由单回合推断 student/gate 已修复，也不在单回合上拟合。既有 `55 tests/1 warning/exit0` 仍是 earlier preflight，本次未重跑。
+
+## supplemental `train_02` 启动记录（2026-10-09）
+
+一次 `train_02` launcher 已 `exit0`，preflight 的 `duplicates=[]` 与源码 hash guards 全部通过。protocol 创建于 `2026-10-09T11:12:46.973932185Z`（北京时间 `19:12:46.973932185`）。`dense24_fixed` seed `893605`（24 requests、warm12、SOC `.8`、`taskpriority=false`）输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02`；wrapper/timeout/Python 为 `3072599/3072600/3072601`，cwd `/home/user/projects/terminal`。预算固定为环境墙钟 3600s、离线标注墙钟 21600s、steps 1800、最多 2048 queries / 51200 RELEASE intents、总 timeout 27000s。
+
+初核 `2026-10-09T11:13:25Z`（elapsed 约 39s）观察到 progress buffer 的 1 tick、12 raw、12 selected、`36.627s`，实际 rows `120`、steps `9`；progress buffer 与行数刷新时间不同，不将其写成矛盾。`result.json`、`collection_result`、exit 尚未生成，log 为空；当前不能假定安全全 0。新 heartbeat `p3-dense-fixed-893605`（`P3 dense fixed 893605`）为 `ACTIVE`、每小时正常静默；medium 旧 `p3` 已删除，`p3-v2-5` 保持 `PAUSED`。stage03 尚未启动，必须待本回合完整分析通过后依原协议继续。后续有效 helper case 名为 `train_dense24_fixed` / `train_dense24_mixed`，不将其写成 `train_02` / `train_03`。
