@@ -38,8 +38,35 @@
 - marks `0/100/500/1000/2000/5000`，每 fold `1200s` 上限；
 - 仅运行 `native_pair_auxiliary` arm × 同六 fold，输出 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/six_cycle`；既有 native arm 复用为 control，不重跑旧 CV。
 
-本地 23 项定向 tests 已通过（4.10s，exit0）。server preflight 首次因 source hash mismatch 未创建输出；Syncthing 匹配后仅重试一次，完成 `23 PASS/1.45s/exit0`，日志为 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/preflight.log`。独立 synthetic smoke 已 `COMPLETE/exit0`（2 fold × 2 updates），结果为 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/smoke_synthetic/result.json`；当时尚待启动，当前启动记录见下文。评估固定 5000-step 的全部 fold，包含 WAIT false-release 与 pair metrics；不挑最好 epoch，不新增 threshold。新 protocol 不访问 Q，不 reset、teacher query、checkpoint、PPO 或 formal。补充 seeds `892872/893604–893606` 仍未消费。
+在 prelaunch 状态记录中，本地 23 项定向 tests 已通过（4.10s，exit0）。server preflight 首次因 source hash mismatch 未创建输出；Syncthing 匹配后仅重试一次，完成 `23 PASS/1.45s/exit0`，日志为 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/preflight.log`。当时 synthetic smoke 尚待启动，当前实际 supplemental smoke 见下文。评估固定 5000-step 的全部 fold，包含 WAIT false-release 与 pair metrics；不挑最好 epoch，不新增 threshold。max_candidate gate 对照不访问 Q、不 reset、teacher query 或 checkpoint；PPO/formal 仍禁。该 prelaunch 记录当时的补充 seed 尚未消费，后续授权/运行状态见下文。
 
-当前状态：**local/server 23 tests 与各自 synthetic smoke 已完成；full six_cycle launch 已启动并 RUNNING（仅首个 prefix，非 full result）**。若没有稳定 action 改善，不继续延长该 factorization，回到未解决的样本/表示证据，不自动进行 formal admission。
+此前启动阶段状态仅记录了首个 prefix；完整终态与当前状态见下文，不把该 prefix 当作 full result。
 
-full six_cycle 已 once-only 启动：`2026-10-09T07:57:29Z`（北京时间 `15:57:29`），wrapper `3059929`/timeout `3059930`/Python `3059931`，cwd `/home/user/projects/terminal`，输出 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/six_cycle`；launch `exit0`，初始 `RUNNING/error=null`。首个 held `893511` 仅到 marks `[0,100]`、elapsed `18.5478617s`，2258 total BC/317 aux，six input seeds matched，`max_candidate`/native-only/`91911`，Q/query/step/checkpoint 均为0。核心 commit `6ab112db15a34b27a31a2edd112a76fc8935d809` 冻结至终态，hourly heartbeat ACTIVE (`p3-gate`)，`PPO_ALLOWED=false`、未通过 qualification；该 prefix 不代表 full result。
+full six_cycle 曾 once-only 启动：`2026-10-09T07:57:29Z`（北京时间 `15:57:29`），wrapper `3059929`/timeout `3059930`/Python `3059931`，cwd `/home/user/projects/terminal`，输出 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/six_cycle`；启动时 `exit0`、初始 `RUNNING/error=null`。首个 held `893511` 仅到 marks `[0,100]`、elapsed `18.5478617s`，2258 total BC/317 aux，six input seeds matched，`max_candidate`/native-only/`91911`，Q/query/step/checkpoint 均为0。该 prefix 不代表 full result；后续终态见下文，原 `p3-gate` heartbeat 已删除。
+
+## 终态：max_candidate full six_cycle（2026-10-09）
+
+本次 `max_candidate` full six-cycle 为 `COMPLETE/exit0`，六个 held seed 均完成 fixed `5000` update；当前 max_candidate gate 对照无 active job。结果与 protocol 使用以下本地同步产物，且 server/local hash 已匹配：`D:\7_codespace\training_outputs\terminal\p3_neighbor_gate_max_20261009\six_cycle\result.json`（server/local SHA256 `1bdaf461e60a9c5d54ce0177ef6374066d3f87d29a1dd9d3964ad1e70cf11a45`）和 `D:\7_codespace\training_outputs\terminal\p3_neighbor_gate_max_20261009\six_cycle\protocol.json`（server/local SHA256 `5d8eb39bc31eae199a26f29d5c2f445b310832c212046975d8650c91717099df`）。此前 wrapper/timeout/Python PIDs `3059929/3059930/3059931` 当前均 absent。local 与 server 的 23 项 tests、synthetic smoke 和 preflight 是既有检查，本次 heartbeat 未重跑。
+
+固定 `5000` 结果与既有 `native_pair_auxiliary` control 并列如下；各数值由上述 `result.json` 与 control 的 `p3_neighbor_relation_cv_20261009/six_cycle/result.json` 直接读取。`WAIT false-release` 为 validation gate confusion 中实际 WAIT 行被预测为 RELEASE 的比例；实际 WAIT 行为 0 时记为 `null`。
+
+| held seed | max R recall | control R recall | max WAIT false-release | control WAIT false-release | max proposal top1/top3 | control proposal top1/top3 | max joint | control joint | max blocker top1 | control blocker top1 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 893511 | 0.913043 | 1.000000 | 0.714286 | 0.714286 | 0.652174/0.956522 | 0.695652/0.913043 | 0.566667 | 0.600000 | 0.742857 | 0.771429 |
+| 893512 | 0.404255 | 0.425532 | 0.074960 | 0.070175 | 0.287234/0.414894 | 0.372340/0.531915 | 0.834951 | 0.846047 | 0.468750 | 0.500000 |
+| 893513 | 0.643678 | 0.597701 | 0.193478 | 0.184783 | 0.379310/0.574713 | 0.344828/0.540230 | 0.727605 | 0.733090 | 0.387097 | 0.612903 |
+| 893601 | 0.944444 | 0.944444 | null | null | 0.888889/0.944444 | 0.777778/0.944444 | 0.833333 | 0.722222 | 1.000000 | 1.000000 |
+| 893602 | 0.573333 | 0.533333 | 0.161290 | 0.133065 | 0.413333/0.533333 | 0.426667/0.600000 | 0.781086 | 0.798599 | 0.333333 | 0.481481 |
+| 893603 | 0.613333 | 0.520000 | 0.206081 | 0.131757 | 0.466667/0.626667 | 0.360000/0.506667 | 0.714286 | 0.752022 | 0.526316 | 0.605263 |
+
+固定 5000 的四个 dense fold（`893512/893513/893602/893603`）中，max candidate 的 joint 均低于 control，同时 WAIT false-release 均高于 control；本表未把 `893511/893601` 的结果外推为整体均值。由此记录的结果为 max candidate 未显示稳定 action benefit，故不采纳 max gate，不继续该 factorization 或 network variant；不访问 Q、不启用 PPO、不进入 formal qualification。上述数学段的 `-2`/25-candidate 计算仍只是组合公式的 toy property，不是经验根因证明。
+
+## support inventory（2026-10-09）
+
+support inventory 本身为只读检查，未启动新训练。按 held seed 记录 train 中 absent 的受影响 RELEASE 行 / held RELEASE 总数，以及 rare `≤5` 的 supported train labels held RELEASE / 总数：`893511 0/23, 0/23`；`893512 2/94, 12/94`；`893513 4/87, 14/87`；`893601 0/18, 0/18`；`893602 0/75, 4/75`；`893603 0/75, 5/75`。六 fold 合计 absent `6/372=1.61%`、rare `35/372=9.41%`；full train 计数为 `372 R/1886 W`，class12 nominal 为 `200/372`。这些 absent/rare 类别单独不能解释大多数 proposal errors；independent context/geometry generalization 仍未解决。
+
+固定 5000 动作证据也仅是 teacher RELEASE 条件下的 proposal 分类：native control 的 class12 正确 `136/200`、non12 正确 `18/172`；max candidate 的 class12 正确 `146/200`、non12 正确 `11/172`。这些不是执行成功率；always12 reference `200/372` 不能当作策略。max 的收益集中在 nominal，不能改善 non-nominal，故拒绝该变体；类别未见率不足以单独解释错误，新的 independent traffic/midload 场景补覆盖也不保证修复。用户已授权按原协议逐回合执行：smoke `892872` → medium12_mixed `893604` → 完整终态核查 → dense24_fixed `893605` → 完整终态核查 → dense24_mixed `893606`，不增加预算或 seeds。
+
+## supplemental smoke 终态（2026-10-09）
+
+smoke `892872` 已消费并为 `SMOKE_OK/exit0`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/smoke`；该 smoke 有意截断为 2 ticks，包含 6 raw rows、3 actor rows、3 forced rows、3 labels、3 resource rows 和 159D。prefix/labels/traffic exact、first-tick replay equal，安全/hash/negative-energy 异常均为 0；PIDs `3067886/3067887` 已退出。该 smoke 不代表完整业务回合；3 个正式臂尚未启动。后续采集依原 teacher offline annotation 协议，学习、PPO 和 Q 仍禁。
