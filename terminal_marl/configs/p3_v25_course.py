@@ -12,11 +12,12 @@ SCENARIOS = ('flow6_mixed', 'dense24_fixed', 'dense24_mixed')
 
 
 def build_config(scenario):
-    if scenario not in SCENARIOS:
+    if scenario not in (*SCENARIOS,'medium12_mixed'):
         raise ValueError(f'unknown P3 course scenario: {scenario}')
     dense = scenario != 'flow6_mixed'
-    config = foundation_config(requests=24 if dense else 6,
-        warm_start=12 if dense else 0, high_soc=False, forecast_merge_gap=True)
+    medium = scenario == 'medium12_mixed'
+    config = foundation_config(requests=12 if medium else 24 if dense else 6,
+        warm_start=6 if medium else 12 if dense else 0, high_soc=False, forecast_merge_gap=True)
     schedule = config.fixed_arrival_schedule if dense else tuple(10.+60.*i for i in range(6))
     return replace(config, task_priority_enabled=False,
         priority_wait_mode='total_wait_v1', nominal_holder_separation_mode='swept_curve_v1',

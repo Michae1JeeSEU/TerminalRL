@@ -112,3 +112,15 @@ primary逐条检查六train的原teacher audit，2258行全部符合冻结first-
 下一最小表示诊断回到原两个分类头及原CE，只调整邻机编码的条件：旧`neighbor(traffic50)`先聚合后才拼ego159；新`neighbor(ego159,traffic50)`先逐邻机计算与本机的关系，然后仍用原mean/max/count聚合及96D分类头。当前target/interface/资源等ego上下文可在压缩前影响邻机表示，检验原固定压缩是否妨碍识别特定进近/切环的相关邻机；这是结构假设，不称已证明全部退化由编码器引起。输入、teacher、候选规划和安全层都不变，不加在线oracle。
 
 该`ConditionedSetActor`也仅进入开发CV，15项定向tests通过（包括原12项），覆盖ego在pooling前的依赖、集合置换、NaN padding/空邻机/梯度与两step输出。下一唯一`.tmp/p3_conditioned_six_cycle_cv_20261009`仍为同六fold/91911/原loss/0–5000steps/300s每fold，无Q或部署checkpoint，比较时完整报告各fold而不挑最好seed。未看到结果前不替换生产actor；若仍无改善，依据数据支持与原始状态证据继续判断，不自动铺开调参矩阵。
+
+该条件编码六fold也已COMPLETE/exit0，40.97–42.69s/fold、SHA5e5b3a0b8d1144b7f90a40fb0c574b50624dcf8152c724637562c04d3fa716b6。四个dense末步R recall .426/.655/.587/.560，proposal top1 .372/.368/.440/.453，WAIT recall .954/.754/.764/.838；训练proposal .989–.997。相比原基线没有稳定整体改进，仍过拟合，**同样不接入runtime/正式训练**。两个结构开发尝试均不作为已经修好的模型，原159 actor仍是后续数据判断的基线，停止继续试一串网络变体。
+
+## 下一补充数据周期（首次reset前冻结）
+
+当前仅六个独立周期，其中两个低负载flow只有48条R/W总标签；四个密集周期中多个proposal正例极少，部分留一fold出现未见类别。配置中又只有6请求与24请求，没有中等12请求。这些是已观察到的覆盖限制，但不能据此保证再加数据必然解决。primary选择一轮明确有界补充，检验补负载跨度和独立情境后的结果，不改变teacher/安全阈值、不删难样本、不降低资格门槛。
+
+协议`p3_v26_medium_dense_supplemental_train_20261009_v1`：之前只预留未消费的893604现分配为medium12_mixed（12请求/warm6，6个后续请求15/30/45/60/75/90s，SOC.55–.90）；893605为dense24_fixed(.8)，893606为dense24_mixed(.55–.90)。新开发smoke892872为3请求/warm3/2ticks，不入train。全部仍为当前nominal-curve/total-wait/priority关闭物理合同、state-only first-feasible teacher、rule nominal K3行为、159+N50资源观测。旧三个场景与seed/protocol列表保持原样；medium仅新增命名场景，未改原场景的参数。
+
+输出新根`/home/user/training_outputs/terminal/p3_v26_supplemental_20261009`，入口`python -u -m terminal_marl.training.p3_v26_supplemental_data --index 1/2/3 --output .../train_01/02/03`。逐臂完整分析后继续，最多一个父与一个顺序query child，1800ticks/3600s环境、21600s全actor标注、2048query/51200意图，多pad plan另计；不延预算/补标/覆盖失败。先12项local入口/原collector/loader检查通过（38.93s，含旧collector两tick输出），再Syncthing SHA/server检查与独立892872 smoke完整输出。每次启动先查重并核对live argv/cwd及实际step。
+
+每臂primary检查终态业务/能量/安全/hash、raw/actor/完整标签/159对应与teacher-behavior-actual分离，保留所有失败。整个补充周期后再分析九回合的类别/接口/负载支持，决定下一有界学习方案；不在每臂前缀上反复试模型。当前未消费新的Q，未部署fresh159模型或启动critic/PPO/formal，旧Q完全隔离。长任务继续60min低频监控；执行worker额度不足时primary完成必要命令，核心修改及判断始终primary负责。

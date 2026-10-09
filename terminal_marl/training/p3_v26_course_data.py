@@ -62,8 +62,13 @@ def rebuild_resources(episode,*,seed,smoke=False):
 def collect(output,index,*,smoke=False):
     require(type(index) is int and 1<=index<=(1 if smoke else len(TRAIN_CASES)),'undeclared train index')
     seed,scenario=(SMOKE_SEED,'dense24_mixed') if smoke else TRAIN_CASES[index-1]
+    return collect_resource_case(output,index=index,seed=seed,scenario=scenario,smoke=smoke,protocol_name=PROTOCOL)
+
+
+def collect_resource_case(output,*,index,seed,scenario,smoke,protocol_name):
+    """Each public entry declares its own immutable train seed list."""
     report=collect_case(output,index=index,seed=seed,scenario=scenario,partition='train',
-        smoke=smoke,annotation_wall_seconds=21600,protocol_name=PROTOCOL,learning_observation_schema=VERSION)
+        smoke=smoke,annotation_wall_seconds=21600,protocol_name=protocol_name,learning_observation_schema=VERSION)
     if report['status'] in ('SMOKE_OK','COLLECTION_OK'):
         try:
             report['resource_reconstruction']=rebuild_resources(Path(output)/f'seed_{seed}',seed=seed,smoke=smoke)
@@ -73,9 +78,14 @@ def collect(output,index,*,smoke=False):
 
 
 def validated_case(directory,index):
-    seed,scenario=TRAIN_CASES[index-1];directory=Path(directory)
+    seed,scenario=TRAIN_CASES[index-1]
+    return validated_resource_case(directory,seed=seed,scenario=scenario,protocol_name=PROTOCOL)
+
+
+def validated_resource_case(directory,*,seed,scenario,protocol_name):
+    directory=Path(directory)
     protocol,report=read(directory/'protocol.json'),read(directory/'result.json')
-    require(protocol['protocol']==report['protocol']==PROTOCOL and
+    require(protocol['protocol']==report['protocol']==protocol_name and
         protocol['profile']==report['profile']==PROFILE and
         protocol['partition']==report['partition']=='train' and
         protocol['seed']==report['seed']==seed and protocol['scenario']==report['scenario']==scenario and
