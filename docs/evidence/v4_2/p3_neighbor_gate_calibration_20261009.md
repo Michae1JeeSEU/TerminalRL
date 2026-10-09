@@ -69,4 +69,12 @@ support inventory 本身为只读检查，未启动新训练。按 held seed 记
 
 ## supplemental smoke 终态（2026-10-09）
 
-smoke `892872` 已消费并为 `SMOKE_OK/exit0`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/smoke`；该 smoke 有意截断为 2 ticks，包含 6 raw rows、3 actor rows、3 forced rows、3 labels、3 resource rows 和 159D。prefix/labels/traffic exact、first-tick replay equal，安全/hash/negative-energy 异常均为 0；PIDs `3067886/3067887` 已退出。该 smoke 不代表完整业务回合；3 个正式臂尚未启动。后续采集依原 teacher offline annotation 协议，学习、PPO 和 Q 仍禁。
+smoke `892872` 已消费并为 `SMOKE_OK/exit0`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/smoke`；该 smoke 有意截断为 2 ticks，包含 6 raw rows、3 actor rows、3 forced rows、3 labels、3 resource rows 和 159D。prefix/labels/traffic exact、first-tick replay equal，安全/hash/negative-energy 异常均为 0；PIDs `3067886/3067887` 已退出。该 smoke 不代表完整业务回合；在该 smoke 快照时 3 个正式臂尚未启动，当前首个正式臂状态见下文。后续采集依原 teacher offline annotation 协议，学习、PPO 和 Q 仍禁。
+
+## supplemental `train_01` 启动记录（2026-10-09）
+
+用户已解除暂停并准许按原协议逐回合执行。`medium12_mixed` seed `893604` 的 `train_01` 于 `2026-10-09T10:11:01.823Z`（北京时间 `18:11:01.823`）启动，protocol 为 `p3_v26_medium_dense_supplemental_train_20261009_v1`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01`；配置为 12 requests、warm6、SOC `.55–.90`、`taskpriority=false`。wrapper/timeout/Python 为 `3068758/3068759/3068760`，cwd `/home/user/projects/terminal`。
+
+初核时间 `2026-10-09T10:11:17.160Z` 观察到 75 steps、572 raw rows 和首条 90D raw row；最终 159D resource 重建当时尚未输出，不将该时点的 90D raw row 写成 schema failure。`result.json`、`rollout_result`、`annotation_progress` 尚未生成，exit 文件也不存在；当前不能称完成或安全全 0。launcher full-hash、preflight、no-repeat 检查均 passed。预算固定为 1800 steps、3600s、环境 21600s、2048 queries、51200 intents、总 timeout 27000s。
+
+heartbeat `p3`（`P3 补充采集逐回合监控`）已由 primary 创建并为 `ACTIVE`，每小时正常静默；旧 `p3-gate` 已删除，`p3-v2-5` 保持 `PAUSED`。seed `893604` 已消费，`893605/893606` 尚未启动；完整终态分析通过后才进入下一个，源码保持冻结。该任务是数据采集及随后离线 teacher 标注，包含采集器自身的 reset/teacher 标注流程；不写成“无 reset/teacher query”，这里只记录没有额外诊断 query。无学生训练、optimizer 更新或 PPO。
