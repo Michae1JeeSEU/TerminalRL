@@ -90,3 +90,19 @@ teacher R但实际trace W为21条、teacher W但实际trace R为6条；仍是原
 primary接受下一唯一train03/893603 dense24 mixed.55–.90，入口/所有上限不变、新目录`p3_v26_resources_20261009/train_03`，启动前继续Syncthing SHA和重复进程/路径检查。train02不重跑；第三臂完整后才执行上述六回合CV，没有新Q/fit/PPO/formal准入结论。
 
 train02证据提交94e2b3f后，train03已实际启动：wrapper2998136/timeout2998137/Python2998138。UTC2026-10-09 00:29核对Python实际cwd/argv、protocol seed893603/24warm12/mixed.55–.90/task_priority_enabled=false，以及15steps/192raw/18selected；progress每25tick更新，此时仍1tick，不能覆盖更近的steps事实。38项Syncthing SHA及无重复进程/路径/seed检查通过，protocol SHA89aa1107e29278eb152702bcbbc98d9c42a132c35e3e99b38ba6e4ecf506af49。仅Python cwd已实际读取，不追称wrapper/timeout cwd也已观测。当前唯一父进程运行、尚无终态，核心冻结并继续60min静默监控，预计数小时。
+
+train03/893603已自然COLLECTION_OK/exit0，原2998138及query child退出。978ticks、19N5E/0FDU、10357raw/371actor=selected=OKlabel=资源行，75R296W/11proposal；所有priority=1、原null/forced/label/prefix/traffic一致。三接口为24R210W、27R15W、24R71W，低SOC<.55/busyLZ/高速inner/retry结束后标签138/359/90/300；同UID同接口WAIT→RELEASE有33次。teacher R/实际W22条、teacher W/实际R5条，继续保留pre-state单机与顺序执行的语义区别。正常K3批准58次，rank1/2/3=38/11/9；5次应急提交全部完成，78次应急尝试及174次安全拒绝仍为业务代价，不改标掩盖。
+
+实际/扫掠最小间隔80.304940m、最低终态SOC.170930/能量256.395630；实际安全/hash/耗尽/技术/censor/未决异常均0。环境875.914s、标注5034.829s，7685意图/10127多pad plan调用，均未超冻结预算。九关键文件两端SHA一致；root fd0e0e97d790f331585ab6046fec275df09e862b85e79469fcb435a662c65004，资源cdff1875d66c6b78b8260b1aa83b9963b352c7419f969afde04863814742d0cf。执行worker因额度限制未完成分析命令，primary直接接手完成原有逐行核对并读全量`.tmp/p3_v26_train03_analysis.json`（SHA be378e9dd30014f33e95b75bd72b60f631ea6b15bcb7f794f09534f312b44606）。
+
+新三周期共54请求43N11E/0FDU，25075raw、960有效标签168R792W；同合同旧三周期合并2258有效train标签372R1886W。全部采集完成，primary接受原已登记六整回合CV，输出新`.tmp/p3_resource_six_cycle_cv_20261009`。不重跑采集、不消费新Q，按整周期留出避免把同回合相邻行当独立验证；仅诊断模型，无部署checkpoint或PPO。
+
+## 六周期开发结果与候选结构修复试验
+
+上述六fold已COMPLETE/exit0（每fold约28–31s），result SHA73c30407d08d0b795b4ec3ddbff05e342f2b11bf8c113750f960f2d4a58e0198。5000steps各fold训练proposal top1 .980–.997；四个dense留出回合893512/13/602/603的RELEASE recall .521/.644/.573/.507、proposal top1 .372/.368/.387/.467，validation loss5.810/7.447/5.644/5.494。500steps对应dense R recall仅.255/.276/.320/.400，proposal top1 .457/.379/.520/.573；早停仍不能满足要求。新flow18行全R留出表现较好（500step R .944、proposal .889），不能掩盖dense失败，也不能评价其WAIT召回。新增独立回合仍不足以让原两个独立输出头泛化，不继续盲目增加更新或立即新Q。
+
+primary逐条检查六train的原teacher audit，2258行全部符合冻结first-feasible排序：372个已检查正候选、48285个已检查负候选、7793个未查询候选；结果`.tmp/p3_six_train_teacher_prefix.json` SHA9b1a097b4a155df284592e0dec69a2021dc7835f6fa781098a93337de0daf938，0新teacher/step/Q。这些检查前缀可由原first-feasible标签与固定顺序推导，**不是额外独立样本或已查出teacher误标**；未查询候选仍未知，不能当负样本。目前独立gate/proposal头没有显式利用这种共享候选结构。
+
+选择一项有界模型表示试验：保留159+N50输入/原teacher标签/所有安全与执行逻辑，改为共享state encoder加同一候选打分网络（输入speed/timing两个数值），对25候选输出分数。按原固定teacher偏好顺序将分数分解为first-hit质量`h_k * product(1-h_j,j<k)`，WAIT为全拒绝质量；仍输出原WAIT/RELEASE与条件proposal概率，不把分数称安全证明，不在线调用teacher或候选规划器。此结构让gate与proposal共用可行意图表示，降低25分类各自记忆罕见proposal的自由度；是否有效须试验，不能预称解决。
+
+新增`OrderedProposalActor`仅接开发CV，旧actor/runtime/checkpoint没有替换。保持同六整周期划分、91911初始化、原未加权gate CE+仅R的proposal CE、Adam3e-4/batch128/clip.5、0/100/500/1000/2000/5000steps、300s/fold；不增加class权重或搜索超参数，不改变原资格门槛。输出新`.tmp/p3_ordered_six_cycle_cv_20261009`，仅与上述同数据基线比较，0Q/环境step/teacher/部署checkpoint。先验12项测试通过，覆盖概率质量、first-hit单行joint NLL与已查前缀BCE的数学等价、未知后续候选无该joint NLL梯度、极端分数/空邻机/NaN padding、顺序与teacher一致，以及两step输出序列化。注意整体训练保留原分头平均CE，不把它误称全数据简单BCE求和。正式试验尚未执行；执行后据结果继续修复。

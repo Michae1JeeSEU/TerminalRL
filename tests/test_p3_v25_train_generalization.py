@@ -18,6 +18,19 @@ def test_additional_cycles_cannot_bypass_resource_or_real_data_contract(tmp_path
         run([],tmp_path/'mixed',smoke=True,resource_context=True,additional_directories=['Q'])
     with pytest.raises(ValueError,match='real resource train mode'):
         run([],tmp_path/'old',additional_directories=['Q'])
+    with pytest.raises(ValueError,match='resource observations'):
+        run([],tmp_path/'bad_ordered',smoke=True,ordered_proposals=True)
+
+
+def test_ordered_proposal_smoke_serializes_fixed_architecture_and_complete_curves(tmp_path):
+    torch.set_num_threads(1)
+    root=tmp_path/'ordered';result=run([],root,smoke=True,resource_context=True,ordered_proposals=True)
+    assert result['status']=='COMPLETE' and len(result['folds'])==2
+    assert result['protocol']['architecture']=='ordered_candidate_set_v1'
+    assert result['protocol']['ego_dim']==159 and not result['protocol']['Q_rows_accessed']
+    assert all([v['update'] for v in f['curve']]==[1,2] for f in result['folds'])
+    assert json.loads(json.dumps(result))==json.loads((root/'result.json').read_text())
+    assert not list(root.glob('*.pt'))
 
 
 @pytest.mark.parametrize('resource_context',[False,True])

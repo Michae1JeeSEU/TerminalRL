@@ -208,6 +208,10 @@
 
 - train03现已唯一运行：wrapper2998136/timeout2998137/Python2998138，UTC2026-10-09 00:29实际Python cwd/argv、38项源SHA、protocol893603/混合SOC/priority关闭及15steps初产物通过。首progress1tick只是刷新滞后，尚非终态；核心冻结、60min监控。train02证据已94e2b3f提交，无remote未推送，详见[当前执行记录](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
 
+- V26独立train03已COLLECTION_OK/exit0、978ticks19N5E/0FDU，10357raw/371完整标签75R296W/11proposal；全部159行保留原label/prefix/traffic，actual/swept80.304940m、minSOC.170930，无实际安全/hash/耗尽/技术/censor。九文件SHA同步、原2998138及child退出。新三周期960标签168R792W，旧新同合同合并2258标签372R1886W；primary完成全量分析后接受既定六整回合train-only CV，未新fit/Q/PPO/formal。worker额度受限，primary接手必要执行，详见[三周期完整证据](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
+- 六train整回合CV已COMPLETE但dense仍泛化不足：5000step R recall .507–.644、proposal top1 .368–.467，训练内约99%；早停也未达标。原2258 teacher audit全量符合first-feasible前缀，并未发现新误标。primary已实现仅开发用共享候选打分/first-hit概率分解，保留原观测、标签、CE与资格门槛，12项数学/接口/两step输出测试通过；下一只做同六fold单一有界对照，不继续盲目采集/训练或消费新Q。旧runtime未替换，无正式准入，详见[泛化与候选结构试验](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

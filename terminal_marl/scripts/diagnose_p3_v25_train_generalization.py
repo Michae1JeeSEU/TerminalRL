@@ -20,8 +20,10 @@ def subset(paired, indices):
     return result,tuple(t[indices] for t in paired.new)
 
 
-def run(directories,output,*,smoke=False,resource_context=False,additional_directories=()):
+def run(directories,output,*,smoke=False,resource_context=False,additional_directories=(),ordered_proposals=False):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
+    if ordered_proposals and not resource_context:
+        raise ValueError('ordered proposals require resource observations')
     if additional_directories:
         if smoke or not resource_context:raise ValueError('independent cycles require real resource train mode')
         from terminal_marl.training.p3_v26_train_dataset import load_six_cycle_train
@@ -44,6 +46,7 @@ def run(directories,output,*,smoke=False,resource_context=False,additional_direc
         assert seeds==sorted(expected)
     marks=(1,2) if smoke else (0,100,500,1000,2000,5000)
     protocol=dict(mode='train_cycle_cross_validation',smoke=smoke,model_seed=91911,
+        architecture='ordered_candidate_set_v1' if ordered_proposals else 'independent_gate_proposal_set_v1',
         resource_context=resource_context,ego_dim=paired.new[0].shape[1],
         input_seeds=seeds,measurements=list(marks),updates=marks[-1],learning_rate=.0003,
         batch_size=128,gradient_clip=.5,wall_seconds_per_fold=300,
@@ -56,7 +59,12 @@ def run(directories,output,*,smoke=False,resource_context=False,additional_direc
         mask=torch.ones(len(paired.original.ids),dtype=torch.bool);mask[held]=False
         indices=torch.arange(len(mask))[mask]
         train,tx=subset(paired,indices);validation,vx=subset(paired,held)
-        torch.manual_seed(91911);model=TrajectorySetActor(ego_dim=paired.new[0].shape[1])
+        torch.manual_seed(91911)
+        if ordered_proposals:
+            from terminal_marl.algo.ordered_proposal_actor import OrderedProposalActor
+            model=OrderedProposalActor()
+        else:
+            model=TrajectorySetActor(ego_dim=paired.new[0].shape[1])
         optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
         generator=torch.Generator().manual_seed(91911)
         permutation=torch.randperm(len(indices),generator=generator);offset=0
@@ -100,11 +108,12 @@ def main():
     parser.add_argument('--additional-train-directories',nargs=3,type=Path)
     parser.add_argument('--output',required=True,type=Path)
     parser.add_argument('--smoke',action='store_true')
+    parser.add_argument('--ordered-proposals',action='store_true')
     parser.add_argument('--resource-context',action='store_true');args=parser.parse_args()
     if not args.smoke and not args.train_directories:parser.error('train directories required')
     torch.set_num_threads(1)
     result=run(args.train_directories or (),args.output,smoke=args.smoke,resource_context=args.resource_context,
-        additional_directories=args.additional_train_directories or ())
+        additional_directories=args.additional_train_directories or (),ordered_proposals=args.ordered_proposals)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']))))
     return 0 if result['status']=='COMPLETE' else 2
 
