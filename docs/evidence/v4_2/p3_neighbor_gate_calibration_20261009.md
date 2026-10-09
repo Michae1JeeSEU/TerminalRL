@@ -171,4 +171,14 @@ new3 没有现有 pair witness；已有 witness 仅覆盖 old6，共 `127 states
 
 旧 witness artifact 仍为 `127` records、`121` 个含 destination 的 target states、`317` destinations/queries；其余 6 条为 global block，原因计数 `final_capacity=5`、`lz_unavailable=1`，这些记录的原计划调用为 0。首次 checker FAIL 已保留在 `.tmp/p3_nine_cycle_loader_check_20261009_first_failure.json`；该 FAIL 仅反映计数语义混同，后续只修 checker，未改官方 `atol=1e-7`/`rtol=1e-6`，也未改数据或核心代码。
 
-当前状态仍是 development 接入完成、真实 auxiliary query/learning 未执行，`Q`、qualification 和 PPO 保持禁用。按原预登记顺序，后续运行边界为 supplemental auxiliary smoke、supplemental auxiliary full、最后一次 nine-cycle CV；不重跑旧六 fold control，不重复 max-candidate 变体，不增加 seeds 或预算。
+源码接入与只读 loader 验收已完成；supplemental auxiliary smoke/full 已完成且通过，`Q`、qualification 和 PPO 保持禁用。九-cycle CV 尚未启动；自动审批已拒绝长时新实验，SSH 未执行，无 CV 进程或输出，当前等待用户对唯一固定九 CV 的明确授权。不重跑旧六 fold control，不重复 max-candidate 变体，不增加 seeds 或预算。
+
+## supplemental neighbor witness 终态与九 CV 启动核对（2026-10-09 UTC / 2026-10-10 北京时间）
+
+已执行的 supplemental witness smoke 输出为 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/smoke`，状态 `SMOKE_OK/exit0`，包含 `3` states、`8` plans，耗时 `1.5839914884s`；witness SHA256 为 `8e42f02884332f3a7fe3537cc6372eea2691d5f71b98aa86ba0b9dff7a61c9b8`。该 smoke 已验收，禁止重跑。
+
+full 输出为 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle`，状态 `COMPLETE/exit0/error=null`，包含 `65` states、`156` plans，耗时 `130.6318327244s`。父进程、wrapper 和 child 均已退出；server/local 三个 full 文件 SHA256 一致：`protocol.json` `1b77d8f64f3dfbf4301b53f4c346d454f87607dd1c7db399d944eaca3636521f`、`result.json` `ce38c84739c1da577d2a3676d20e37417a9b718d180c86eb69bb1f86f72c991c`、`witnesses.jsonl` `e543020f06583ae98b0e44df7ee3c73507c76c3d622abc1be043e3c22e4dcc60`。
+
+旧 witness 的 `127` records、`121` 个 target states、`317` queries 与 supplemental 的 `65` selected states、`63` 有目标 records、`156` plans 合并后为 `473 queries`、`184 target states`；known pairs `4555`、blocked pairs `394`、scene blocked `27`。6 个旧 global reject 仍为 `final_capacity=5`、`lz_unavailable=1`，原计划调用为 0，不计作缺标。原 teacher/labels/UID/candidate 与官方 loader 保持一致，9-fold actor 与 auxiliary split 使用同一 parent 隔离规则；分析文件为 `.tmp/p3_nine_cycle_witness_analysis_20261009.json`，SHA256 `206f0b8c3fa74059f4c91fff1f6bc726d29927e8e107922523216e4a70a137bd`。
+
+当前九 CV 尚未启动，自动审批拒绝了长时新实验；无 SSH 执行、CV 进程或 CV 输出。获得用户对唯一固定九 CV 的明确授权并经 primary 接受后，才按冻结的 `first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`、9-fold/5000 updates/1200s per fold、outer timeout `11400s` 启动一次；不访问 Q/PPO/formal，不追加 epochs、seeds 或预算。

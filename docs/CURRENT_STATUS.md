@@ -1,12 +1,13 @@
 # 项目当前状态
 
-## 2026-10-09 UTC / 2026-10-10 北京时间 P3 九周期邻机关系接入（实现与输入验证完成，按预登记顺序待执行）
+## 2026-10-09 UTC / 2026-10-10 北京时间 P3 九周期邻机关系接入与 witness 辅助采集（实现与辅助验收完成，九 CV 未启动）
 
 - **补充采集与当前边界（newly_run）：** `medium12_mixed` seed `893604`、`dense24_fixed` seed `893605`、`dense24_mixed` seed `893606` 均已 `COLLECTION_OK/exit0`；九周期合计 `3149 actor = 577R/2572W`，`F/D/U=0`。当前无活动采集或学习任务；`p3-v2-5` 保持 `PAUSED`，`PPO_ALLOWED=false`。
 - **源码接入（newly implemented）：** 四个既有邻机关系源码模块已扩展 supplemental loader/witness route，并新增 `tests/test_p3_supplemental_neighbor_data.py`；保留旧六回合入口，新增三 supplemental 回合合并入口、witness target 合并和 CLI 参数校验。未改 physics/safety/model 核心，原预登记预算保持不变。
 - **九周期输入验收（read-only）：** `.tmp/p3_nine_cycle_loader_check_20261009.json` 为 `PASS`（SHA256 `acd7a7d7a3c3dda6c4792a5c3228432d5c73042cdc5a2a6f6bd6f91a70e3c262`）。真实 loader 保留 `159+20×50`、labels、old6 `105D` prefix/traffic/mask；supplemental 选择为 `65 = 17/24/24`，三组 ID/hash/schema 检查通过。
 - **回归与 synthetic smoke：** local supplemental 21 tests `3.94s`、actor regression 9 tests `2.60s`；server route check `28 passed/1.65s`。synthetic 9-fold×2-update native-only route 为 `COMPLETE/exit0/error=null`，server/local result SHA256 `d078ddc2395a21a7ec145cb270f49f9640d715ca647fd0c6fb8a6a5cf4ab9f08`、protocol SHA256 `3f14a36e4f02af64f3a89cd9948a517c75f0301b445d6094c4004f9f3de58187`。
-- **witness 与下一步：** 旧 witness 保留 `127` records、`121` target states、`317` destinations/queries；6 个无计划 global blocks 为 `final_capacity=5`、`lz_unavailable=1`，原计划调用为 0。首次 checker FAIL 属计数语义混同，已仅修 checker，原 FAIL artifact 保留，官方容差未改。当前仍未执行真实 auxiliary query/learning；下一步按已冻结顺序为 auxiliary smoke → full → nine-cycle CV，仍不宣称 P3 已解决或 PPO 准入。详见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
+- **witness 辅助采集终态（newly_run）：** smoke 为 `SMOKE_OK/exit0`，3 states/8 plans/`1.5839914884s`；full 为 `COMPLETE/exit0/error=null`，65 states/156 plans/`130.6318327244s`。旧 witness `127/121/317` 与 new `65/63/156` 合并为 `473 queries/184 target states`，known pairs `4555`、blocked pairs `394`、scene blocked `27`；父子进程均已退出，两端 full protocol/result/witness SHA 已核对。分析 artifact 为 `.tmp/p3_nine_cycle_witness_analysis_20261009.json`，SHA256 `206f0b8c3fa74059f4c91fff1f6bc726d29927e8e107922523216e4a70a137bd`。
+- **witness 与下一步：** 旧 witness 的 6 个无计划 global blocks 为 `final_capacity=5`、`lz_unavailable=1`，原计划调用为 0。首次 checker FAIL 属计数语义混同，已仅修 checker，原 FAIL artifact 保留，官方容差未改；原 teacher/labels/UID/candidate 与官方 loader 一致，9-fold actor+aux split 保持 parent 隔离。九 CV 尚未启动；自动审批已拒绝长时新实验，SSH 未执行，无 CV 进程或输出，当前等待用户对唯一固定九 CV 的明确授权。仍不宣称 P3 已解决或 PPO 准入。详见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
 - **gate 对照历史（preexisting/newly_run）：** max candidate full six-cycle 已 `COMPLETE/exit0`，固定 5000 的 dense 四 fold joint 全低于 native control、WAIT false-release 全高于 control，故不采纳 max gate；该历史对照不覆盖当前 supplemental 接入阶段。
 
 ## 2026-10-03 P3修复效果逐步验证（最新）
