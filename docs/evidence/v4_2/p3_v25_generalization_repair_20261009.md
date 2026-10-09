@@ -76,3 +76,15 @@ UTC20:32左右train02已启动，wrapper2940965/timeout2940966/Python2940967，�
 等待采集期间仅准备不被collector导入的新`p3_v26_train_dataset`：要求893601–3三完整train、严格profile/partition/sha、保留null/forced隔离与label、不同邻机数补mask；可与旧893511–13可信snapshot重建159的train合并，共六周期。仅新增loader的2项fixture测试已通过，尚未读取未完成cycle拟合。采集运行核心未改。
 
 首cycle无阻塞完整后的下一项开发判断固定为**六个整回合leave-one-cycle-out**（各五回合train/一回合validation），沿用单一诊断初始化91911、原未加权CE、Adam3e-4/batch128/clip.5、marks0/100/500/1000/2000/5000、300s/fold，全部159+邻机50。仅train，无Q、teacher查询或可部署checkpoint。用完整曲线检查补充独立情境后是否仍记忆训练回合，不在每新增一条数据时反复拟合；须先完成整个cycle。该步骤尚未执行；后续fresh拟合预算与新Q仍需依据结果再冻结，不能由新的loader准备推断已资格。
+
+## 独立dense fixed完整结果与下一臂
+
+train02/893602自然COLLECTION_OK/exit0，原Python2940967及query child均退出。1167ticks、24请求18N6E/0F/D/U，12999raw（12428 forced WAIT）与571actor=571selected=571完整OK标签=571资源行；75R496W、13种proposal。原90D/null/mask、teacher与behavior/actual分离、105prefix/traffic及159追加字段全量检查通过，所有actor有效priority=1。三接口o2m/m2i/i2f分别24R328W、24R71W、27R97W；144条低SOC<.55、553条busyLZ、120条高速inner、444条retry结束后标签，same-UID/same-interface WAIT→RELEASE有27次。forced retry本身不入actor loss。
+
+实际/扫掠最小间隔81.783820m，实际安全违规、checked/executed hash、技术error/censor、耗尽及未决均0；6次应急提交全部触地完成，最低终态SOC.153794、能量230.691535。16次应急尝试和36次安全阻塞计数保留，不称无应急代价。worker紧凑报告曾把emergency字典的10个字段误称“emergency count 10”；primary读取原24条终态及6 committed/6 touchdowns确认实际E=6，未采用错误汇总。
+
+teacher R但实际trace W为21条、teacher W但实际trace R为6条；仍是原pre-state单机teacher与服务推进/顺序批准/兜底执行的语义差别，不按实际执行改原标签。55次正常K3批准为rank1/2/3=34/9/12；5条未分rank的RELEASE trace及第6次应急终态不混入proposal准确率。teacher查询12710个意图、12118次实际plan调用，短路资源检查可使plan少于意图，多pad路径反之，分别保留。环境1487.460s、标注9805.817s（约2.72h），未超冻结预算；整臂约3.14h，后续仍60min监控。
+
+9项关键终态文件本地/服务器SHA逐项一致。root SHA1eb8cdb51243a46e8bb36f62af63a3a9c8027da709c756559ce2d4abd686391d、资源SHA5a7b827963a8edb603859013d7aae4e01a0ccfc5455d7b1eec600e69e4bfd009；primary读全量分析`.tmp/p3_v26_train02_analysis.json`（SHA291102dcb0b50c33a4dffe11dae5bea1f329829c36841e122dae512ea50805c5）。首次worker文件检查误用日期/目录层级，已按正确20261009/train_02/seed_893602重新核对；不是同步失败或重跑实验，失败检查原报告保留。
+
+primary接受下一唯一train03/893603 dense24 mixed.55–.90，入口/所有上限不变、新目录`p3_v26_resources_20261009/train_03`，启动前继续Syncthing SHA和重复进程/路径检查。train02不重跑；第三臂完整后才执行上述六回合CV，没有新Q/fit/PPO/formal准入结论。
