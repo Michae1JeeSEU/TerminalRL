@@ -1,9 +1,9 @@
 # 项目当前状态
 
-## 2026-10-09 P3 补充采集（medium12 完成，dense24 fixed 在跑）
+## 2026-10-09 P3 补充采集（medium12 完成，dense24 fixed 完整验收，dense24 mixed 在跑）
 
-- **补充采集当前状态（newly_run）：** `medium12_mixed` seed `893604` 已 `COLLECTION_OK/exit0`；691 ticks/3795 raw（57 actor、3738 forced），57 selected/57 OK/resource159D，37R/20W，`12N/0E/0F/0D/0U`；无实际安全/hash/负能量异常。`dense24_fixed` seed `893605` 已启动，当前 active wrapper/timeout/Python 为 `3072599/3072600/3072601`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02`；初核约 39s 为 1 tick/12 raw/12 selected progress、实际 120 rows/9 steps，result/collection_result/exit 尚未生成，log 为空，不能假定安全全 0。stage03 尚未启动，须待本回合完整分析通过后依原协议继续。
-- **边界与当前状态：** max_candidate gate 对照不访问 Q、reset、teacher query 或 checkpoint；补充采集依原 teacher offline annotation 协议，采集器可包含 reset/teacher 标注流程，当前无额外诊断 query。teacher/行为/执行保持分离，无学生训练、optimizer 更新或 PPO；`PPO_ALLOWED=false`。heartbeat `p3-dense-fixed-893605`（`P3 dense fixed 893605`）为 `ACTIVE` 每小时正常静默，medium 旧 `p3` 已删除，`p3-v2-5` 保持 `PAUSED`。旧 max-gate 对照结论与 support inventory 见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
+- **补充采集当前状态（newly_run）：** `medium12_mixed` seed `893604` 已 `COLLECTION_OK/exit0`；691 ticks/3795 raw（57 actor、3738 forced），57 selected/57 OK/resource159D，37R/20W，`12N/0E/0F/0D/0U`；无实际安全/hash/负能量异常。`dense24_fixed` seed `893605` 已完整验收为 `COLLECTION_OK/exit0/error=null`，blockers `[]`，542 actor/resource159D，`18N/6E/0F/0D/0U`，实际 hard separation/NMAC/collision/执行 hash 失配/负能量均为 0。`dense24_mixed` seed `893606` 已启动，当前 wrapper/timeout/Python 为 `3090327/3090328/3090329`，输出 `/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03`；已生成 first_before/request/live/replay，live/replay SHA 相同，root result/exit 尚未生成，不能假定安全全 0。
+- **边界与当前状态：** train03 protocol 创建于 `2026-10-09T14:27:43.326556838Z`（北京时间 `22:27:43.326556838`），cwd 为 `/home/user/projects/terminal`；heartbeat `p3-dense-mixed-893606`（`P3 dense mixed 893606`）为 `ACTIVE` 每小时正常静默，fixed heartbeat 已删除，`p3-v2-5` 保持 `PAUSED`。补充采集依原 teacher offline annotation 协议，当前无额外诊断 query；无学生训练、optimizer 更新或 PPO，`PPO_ALLOWED=false`。三个 supplemental 回合完成后再做 9-cycle 统一覆盖分析，不提前宣称泛化或 PPO 准入；旧 max-gate 对照结论与 support inventory 见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
 - **gate 对照历史（preexisting/newly_run）：** max candidate full six-cycle 已 `COMPLETE/exit0`，固定 5000 的 dense 四 fold joint 全低于 native control、WAIT false-release 全高于 control，故不采纳 max gate；该历史对照不覆盖当前 supplemental 采集阶段。
 
 ## 2026-10-03 P3修复效果逐步验证（最新）
