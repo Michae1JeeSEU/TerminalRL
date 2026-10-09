@@ -216,6 +216,8 @@
 
 - 条件邻机六fold亦COMPLETE但无稳定改善，dense R .426–.655/proposal .368–.453，训练内约99%；两种表示均不接入正式训练，停止继续网络变体试探。依据六周期/罕见proposal和6→24负载跨度的覆盖限制，primary冻结下一有界补充周期：893604 medium12/warm6 mixed、893605 dense24 fixed、893606 dense24 mixed；开发smoke892872隔离，物理/teacher/priority关闭/159合同不变，逐臂1800ticks/3600s环境/21600s标注。新入口12项local检查通过，尚待server同步/smoke；无新Q/准入，详见[补充周期预注册](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
 
+- 2026-10-09用户要求优先修复具体阻塞邻机表示并约束观测来源，primary已开展[邻机关系与可获取观测修复](evidence/v4_2/p3_neighbor_observability_repair_20261009.md)。train893602/t0/UID6默认切环被UID11阻挡，预测最近49.210m/t52.7s，同plan移除该机后通过；旧五槽均漏它，全邻机集合含它。既定离线127状态/317计划/2899pair已COMPLETE（260阻塞/2639安全，408.313s），原标签未改。新开发关系actor沿用159+N50，逐意图/目的地/邻机出分，阻塞label不进在线输入；9tests含两step输出通过。下一固定六周期有/无辅助比较尚未启动，无新Q/PPO。有限广播范围/频率/缺失处理必须在正式接入前落实；不能把全active仿真真值默认为通信可得。supplemental服务器55tests通过但892872/893604–6尚未reset，按最新用户方向暂缓。其他dirty保留，无remote不推送。
+
 ## 2026-10-03 P3 统一实现修复（最新）
 
 - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。

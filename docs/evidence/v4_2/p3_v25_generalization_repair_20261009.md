@@ -124,3 +124,7 @@ primary逐条检查六train的原teacher audit，2258行全部符合冻结first-
 输出新根`/home/user/training_outputs/terminal/p3_v26_supplemental_20261009`，入口`python -u -m terminal_marl.training.p3_v26_supplemental_data --index 1/2/3 --output .../train_01/02/03`。逐臂完整分析后继续，最多一个父与一个顺序query child，1800ticks/3600s环境、21600s全actor标注、2048query/51200意图，多pad plan另计；不延预算/补标/覆盖失败。先12项local入口/原collector/loader检查通过（38.93s，含旧collector两tick输出），再Syncthing SHA/server检查与独立892872 smoke完整输出。每次启动先查重并核对live argv/cwd及实际step。
 
 每臂primary检查终态业务/能量/安全/hash、raw/actor/完整标签/159对应与teacher-behavior-actual分离，保留所有失败。整个补充周期后再分析九回合的类别/接口/负载支持，决定下一有界学习方案；不在每臂前缀上反复试模型。当前未消费新的Q，未部署fresh159模型或启动critic/PPO/formal，旧Q完全隔离。长任务继续60min低频监控；执行worker额度不足时primary完成必要命令，核心修改及判断始终primary负责。
+
+## 用户最新方向：先处理邻机关系和可获取信息
+
+补充入口8901bfe的server preflight55 passed/1 warning/exit0；892872与893604–6没有reset，暂缓。用户明确允许改架构以反映实际阻塞邻机，并要求所有新观测有本机传感器、通信或中心广播来源，不能全知。primary按此完成第一真实训练见证和127状态的离线pair复核，详见[邻机关系与观测边界](p3_neighbor_observability_repair_20261009.md)。新开发网络保持159+N50、逐意图/目的地/邻机输出风险，阻塞监督只在训练期，不泄漏到在线观测；下一项为有/无辅助监督的六周期有界比较。旧失败、全部Q隔离和PPO禁止边界不变；正式接入前仍需落实有限通信接口与失联处理。
