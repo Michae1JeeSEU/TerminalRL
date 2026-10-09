@@ -171,7 +171,7 @@ new3 没有现有 pair witness；已有 witness 仅覆盖 old6，共 `127 states
 
 旧 witness artifact 仍为 `127` records、`121` 个含 destination 的 target states、`317` destinations/queries；其余 6 条为 global block，原因计数 `final_capacity=5`、`lz_unavailable=1`，这些记录的原计划调用为 0。首次 checker FAIL 已保留在 `.tmp/p3_nine_cycle_loader_check_20261009_first_failure.json`；该 FAIL 仅反映计数语义混同，后续只修 checker，未改官方 `atol=1e-7`/`rtol=1e-6`，也未改数据或核心代码。
 
-源码接入与只读 loader 验收已完成；supplemental auxiliary smoke/full 已完成且通过，`Q`、qualification 和 PPO 保持禁用。九-cycle CV 尚未启动；自动审批已拒绝长时新实验，SSH 未执行，无 CV 进程或输出，当前等待用户对唯一固定九 CV 的明确授权。不重跑旧六 fold control，不重复 max-candidate 变体，不增加 seeds 或预算。
+源码接入与只读 loader 验收已完成；supplemental auxiliary smoke/full 已完成且通过，`Q`、qualification 和 PPO 保持禁用。此前自动审批曾拒绝长时新实验，SSH 当时未执行；用户随后明确批准唯一固定九 CV，当前 run 已启动并仍在运行。不重跑旧六 fold control，不重复 max-candidate 变体，不增加 seeds 或预算。
 
 ## supplemental neighbor witness 终态与九 CV 启动核对（2026-10-09 UTC / 2026-10-10 北京时间）
 
@@ -181,4 +181,12 @@ full 输出为 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_wi
 
 旧 witness 的 `127` records、`121` 个 target states、`317` queries 与 supplemental 的 `65` selected states、`63` 有目标 records、`156` plans 合并后为 `473 queries`、`184 target states`；known pairs `4555`、blocked pairs `394`、scene blocked `27`。6 个旧 global reject 仍为 `final_capacity=5`、`lz_unavailable=1`，原计划调用为 0，不计作缺标。原 teacher/labels/UID/candidate 与官方 loader 保持一致，9-fold actor 与 auxiliary split 使用同一 parent 隔离规则；分析文件为 `.tmp/p3_nine_cycle_witness_analysis_20261009.json`，SHA256 `206f0b8c3fa74059f4c91fff1f6bc726d29927e8e107922523216e4a70a137bd`。
 
-当前九 CV 尚未启动，自动审批拒绝了长时新实验；无 SSH 执行、CV 进程或 CV 输出。获得用户对唯一固定九 CV 的明确授权并经 primary 接受后，才按冻结的 `first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`、9-fold/5000 updates/1200s per fold、outer timeout `11400s` 启动一次；不访问 Q/PPO/formal，不追加 epochs、seeds 或预算。
+此前九 CV 尚未启动，自动审批拒绝了长时新实验；该历史保留。用户于 2026-10-10 北京时间明确批准后，唯一 run 已启动，当前不将前缀解释为终态。后续核对固定的 `first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`、9-fold/5000 updates/1200s per fold、outer timeout `11400s`；不访问 Q/PPO/formal，不追加 epochs、seeds 或预算。
+
+## approved P3 nine-cycle comparison launch（2026-10-09 UTC / 2026-10-10 北京时间）
+
+用户于 2026-10-10 北京时间明确批准唯一固定九 CV，primary 已接受该授权。任务于 UTC `2026-10-09T16:46:37Z`（北京时间 `2026-10-10 00:46:37`）启动，输出 `/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle`；wrapper/timeout/Python 为 `3099773/3099774/3099775`，cwd 为 `/home/user/projects/terminal`。运行导入源码 commit 为 `e496bc637ca1d9e0a9a55967958115ed597e98ed`，启动前文档 HEAD 为 `26ee3ce4b42bb441424d8c3816d42cbed3560b1c`，首 protocol SHA256 为 `994882bd2909391f23becb5abf01dba319dae421e9d9ece67aa6c0e6277db4f3`。source SHA、无重复进程、输入目录和前臂验证均通过。
+
+固定输入为 9 个 whole-parent seeds `893511/893512/893513/893601/893602/893603/893604/893605/893606`，共 `3149 actor = 577R/2572W`，复用 `473` auxiliary queries。route 为 `first_feasible_union` + `native_pair_auxiliary`，model seed `91911`、aux seed `91912`，每 fold `5000` updates / `1200s`，outer timeout `11400s`，仅 native 一臂。启动时 root 为 `RUNNING/error=null`；首 fold `893511` train/held 为 `3119/30`，aux train/held 为 `414/59`。随后前缀核对中首 fold 已到 marks `[0,100,500]`，root 仍 `RUNNING/error=null`；该前缀是非终态，不作训练完成或效果解释。
+
+启动时 server 观察到 `28` logical CPU 与约 `25 GiB` 空闲 RAM。用户要求尽量使用多核 CPU 并行可并行实验；本次已启动的单次 CV 保持冻结、不重启，后续独立 fold/arm/只读检查按 CPU/RAM 资源并行，存在依赖的验收任务串行。该 development CV 不构成 qualification，`Q` 与 old control 隔离，`PPO_ALLOWED=false`；不访问新 Q、不追加 seeds/epochs/预算，不把候选安全 label 作为 online observation。
