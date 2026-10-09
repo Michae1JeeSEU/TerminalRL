@@ -1,5 +1,12 @@
 # 项目当前状态
 
+## 2026-10-09 邻机关系 gate 校准候选（server preflight complete，full six_cycle pending）
+
+- **既有邻机关系 CV 已完成（preexisting_artifact，2026-10-09 北京时间）：** server `COMPLETE/exit0`，12 个 fold-arm，完成时间记录为 `2026-10-09 14:28:52`；旧进程已退出。结果 `/home/user/training_outputs/terminal/p3_neighbor_relation_cv_20261009/six_cycle/result.json` 的 SHA256 为 `238cf0bb0742bef07d260819b54d3cd764ed6a34b34a2cf5bc4debcec2e10aa6`。`native_pair_auxiliary` 在四个 dense 留出回合提高 blocker top1，但 proposal top1 为 `.372340/.344828/.426667/.360000`、joint 为 `.846047/.733090/.798599/.752022`；这是独立 BC 的负向泛化证据，不是 P3 解决或 promotion 依据。完整逐 fold 表见 [gate 校准记录](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
+
+- **待验证 gate 假设与候选：** pair BCE rejection score 经邻机/scene `max`、destination `min` 和 25 候选 first-feasible product 汇总；每个 feasibility logit 为 `-2` 时，单项可行概率约 `.1192`，RELEASE union `1-(1-.1192)^25≈.958`，max gate 仍为 `.1192`。这只是组合公式行为观察，不是已证经验根因；仅增加 optional `max_candidate` gate `[0,max candidate_logit]`，旧 proposal/default/runtime、`159+N50` 和在线输入保持不变。local `23 PASS/4.10s/exit0` 已完成。server 首次 preflight 因 source hash mismatch 未创建输出；Syncthing 匹配后仅重试一次，`23 PASS/1.45s/exit0`，日志 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/preflight.log`；synthetic smoke `COMPLETE/exit0`、2 fold × 2 updates，结果 `/home/user/training_outputs/terminal/p3_neighbor_gate_max_20261009/smoke_synthetic/result.json`。full six_cycle launch 仍待执行。
+- 当前 protocol 不访问 Q，不 reset、teacher query、checkpoint、PPO 或 formal；有限广播接收器仍未部署，补充 seeds `892872/893604–893606` 未消费。当前状态：**server preflight complete，full six_cycle launch pending**。若无稳定 action 改善，回到未解决的样本/表示证据，不自动 formal admission。详见 [邻机关系 gate 校准候选](evidence/v4_2/p3_neighbor_gate_calibration_20261009.md)。
+
 ## 2026-10-03 P3修复效果逐步验证（最新）
 
 - 本轮A/B/C完整结束：新A两臂均12N，B两臂均24N，C规则19N5E、冻结source20N4E；共120请求111N9E、0F/D/U。所有臂自然终态、error/censor/实际安全违规/hash mismatch均无异常。C的5/4个应急提交全部完成，无耗尽；两个原C进程已退出，无本轮评估进程。详见 [完整验证记录与后续方案](evidence/v4_2/p3_direct_c2_repair_validation_20261003.md)。

@@ -68,7 +68,7 @@ def smoke_inputs():
     return paired,witness
 
 
-def run(original,additional,witness_directory,output,*,smoke=False):
+def run(original,additional,witness_directory,output,*,smoke=False,max_candidate_gate=False):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     if smoke:paired,witness=smoke_inputs()
     else:
@@ -76,21 +76,27 @@ def run(original,additional,witness_directory,output,*,smoke=False):
         witness=load_witness_targets(witness_directory,paired)
     seeds=sorted({c['seed'] for c in paired.original.contexts})
     marks=(0,1,2) if smoke else (0,100,500,1000,2000,5000)
+    gate_mode='max_candidate' if max_candidate_gate else 'first_feasible_union'
+    arms=['native_pair_auxiliary'] if max_candidate_gate else ['without_auxiliary','native_pair_auxiliary']
     protocol=dict(architecture=IntentNeighborActor.architecture,observation='existing V2.6 159+N50',
-        smoke=smoke,input_seeds=seeds,model_seed=91911,arms=['without_auxiliary','native_pair_auxiliary'],
+        architecture_variant=f'{IntentNeighborActor.architecture}__gate_{gate_mode}',gate_mode=gate_mode,
+        smoke=smoke,input_seeds=seeds,model_seed=91911,arms=arms,
         marks=marks,learning_rate=.0003,batch_size=128,auxiliary_batch_size=64,gradient_clip=.5,
         auxiliary_weight=1.,scene_auxiliary_weight=.25,wall_seconds_per_fold_arm=1200,
         original_loss='unweighted_gate_CE_plus_RELEASE_proposal_CE',
         pair_loss='mean_of_blocked_and_safe_BCE_means_ignoring_unknown',
         Q_accessed=False,teacher_queries=0,environment_steps=0,checkpoint_written=False,
         all_auxiliary_rows_follow_original_whole_cycle_split=True)
+    if max_candidate_gate:
+        protocol.update(comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
+            comparison_note='max gate tests count-amplification; no promotion')
     write(output/'protocol.json',protocol)
     result=dict(status='RUNNING',protocol=protocol,folds=[],error=None);write(output/'result.json',result)
     try:
         for seed in seeds:
             train,held,wtrain,wheld=split(paired,witness,seed)
             for arm in protocol['arms']:
-                torch.manual_seed(91911);model=IntentNeighborActor();optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
+                torch.manual_seed(91911);model=IntentNeighborActor(gate_mode=gate_mode);optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
                 generator=torch.Generator().manual_seed(91911);aux_generator=torch.Generator().manual_seed(91912)
                 permutation=torch.randperm(len(train),generator=generator);offset=0
                 record=dict(held_seed=seed,arm=arm,train_rows=len(train),held_rows=len(held),
@@ -125,10 +131,13 @@ def run(original,additional,witness_directory,output,*,smoke=False):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--train-directories',nargs=3,type=Path)
     p.add_argument('--additional-train-directories',nargs=3,type=Path);p.add_argument('--witness-directory',type=Path)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true');a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true')
+    p.add_argument('--max-candidate-gate',action='store_true',
+        help='run the bounded max-candidate gate hypothesis only');a=p.parse_args()
     if not a.smoke and not all((a.train_directories,a.additional_train_directories,a.witness_directory)):p.error('all train and witness inputs required')
     torch.set_num_threads(1)
-    result=run(a.train_directories,a.additional_train_directories,a.witness_directory,a.output,smoke=a.smoke)
+    result=run(a.train_directories,a.additional_train_directories,a.witness_directory,a.output,smoke=a.smoke,
+        max_candidate_gate=a.max_candidate_gate)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']),error=result['error'])))
     return 0 if result['status']=='COMPLETE' else 2
 

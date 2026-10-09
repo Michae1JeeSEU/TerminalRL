@@ -33,3 +33,21 @@ def test_two_step_diagnostic_serializes_both_arms(tmp_path):
     assert all(len(f['curve'])==3 for f in saved['folds'])
     assert all('blocker_top1' in f['curve'][-1]['validation_pairs'] for f in saved['folds'])
     with pytest.raises(FileExistsError):run(None,None,None,tmp_path/'cv',smoke=True)
+
+
+def test_max_candidate_smoke_serializes_one_auxiliary_arm_and_mode(tmp_path):
+    torch.set_num_threads(1)
+    root=tmp_path/'max_candidate'
+    result=run(None,None,None,root,smoke=True,max_candidate_gate=True)
+    saved=json.loads((root/'result.json').read_text())
+    assert result['status']=='COMPLETE' and len(result['folds'])==2
+    assert result['protocol']['gate_mode']=='max_candidate'
+    assert result['protocol']['architecture']=='intent_destination_neighbor_risk_v1'
+    assert result['protocol']['architecture_variant'].endswith('__gate_max_candidate')
+    assert result['protocol']['arms']==['native_pair_auxiliary']
+    assert result['protocol']['comparison_control_reference']=='p3_neighbor_relation_cv_20261009/six_cycle'
+    assert result['protocol']['comparison_note']=='max gate tests count-amplification; no promotion'
+    assert all(f['arm']=='native_pair_auxiliary' for f in result['folds'])
+    assert all([v['update'] for v in f['curve']]==[0,1,2] for f in result['folds'])
+    assert not result['protocol']['checkpoint_written'] and not result['protocol']['Q_accessed']
+    assert json.loads(json.dumps(result))==saved

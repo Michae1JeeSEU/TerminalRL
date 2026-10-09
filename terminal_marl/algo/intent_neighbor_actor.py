@@ -19,13 +19,17 @@ from ..core.resource_context_observation import VERSION
 class IntentNeighborActor(nn.Module):
     observation_schema=VERSION
     architecture='intent_destination_neighbor_risk_v1'
+    gate_modes=('first_feasible_union','max_candidate')
     ego_dim=159
     # Bounded receiving interface. Overflow is explicit, never silent nearest-N
     # truncation which could discard a distant future blocker.
     max_neighbors=32
 
-    def __init__(self,hidden=32):
+    def __init__(self,hidden=32,gate_mode='first_feasible_union'):
+        if gate_mode not in self.gate_modes:
+            raise ValueError("gate_mode must be 'first_feasible_union' or 'max_candidate'")
         super().__init__()
+        self.gate_mode=gate_mode
         self.context=SetEncoder(hidden,16,ego_dim=159)
         self.ego_pair=nn.Linear(159+hidden,hidden)
         self.traffic_pair=nn.Linear(50,hidden,bias=False)
@@ -38,6 +42,10 @@ class IntentNeighborActor(nn.Module):
         self.register_buffer('proposals',torch.tensor(proposals,dtype=torch.float32))
         nn.init.constant_(self.pair_head[-1].bias,2.)
         nn.init.constant_(self.scene_head[-1].bias,2.)
+
+    @property
+    def architecture_variant(self):
+        return f'{self.architecture}__gate_{self.gate_mode}'
 
     def validate(self,ego,traffic,mask):
         if (ego.ndim!=2 or ego.shape[1]!=159 or traffic.ndim!=3 or traffic.shape[0]!=len(ego)
@@ -93,7 +101,13 @@ class IntentNeighborActor(nn.Module):
             scene_logits=scene_risk,blocker_index=blocker,best_pad=best_pad,eligible_destinations=eligible)
 
     def forward(self,ego,traffic,mask):
-        return first_feasible_logits(self.relations(ego,traffic,mask)['candidate_logits'])
+        candidate_logits=self.relations(ego,traffic,mask)['candidate_logits']
+        if self.gate_mode=='first_feasible_union':
+            return first_feasible_logits(candidate_logits)
+        _,proposal=first_feasible_logits(candidate_logits)
+        best=candidate_logits.max(-1).values
+        gate=torch.stack((torch.zeros_like(best),best),-1)
+        return gate,proposal
 
     def distributions(self,ego,traffic,mask):
         gate,proposal=self(ego,traffic,mask)
