@@ -106,3 +106,9 @@ primary逐条检查六train的原teacher audit，2258行全部符合冻结first-
 选择一项有界模型表示试验：保留159+N50输入/原teacher标签/所有安全与执行逻辑，改为共享state encoder加同一候选打分网络（输入speed/timing两个数值），对25候选输出分数。按原固定teacher偏好顺序将分数分解为first-hit质量`h_k * product(1-h_j,j<k)`，WAIT为全拒绝质量；仍输出原WAIT/RELEASE与条件proposal概率，不把分数称安全证明，不在线调用teacher或候选规划器。此结构让gate与proposal共用可行意图表示，降低25分类各自记忆罕见proposal的自由度；是否有效须试验，不能预称解决。
 
 新增`OrderedProposalActor`仅接开发CV，旧actor/runtime/checkpoint没有替换。保持同六整周期划分、91911初始化、原未加权gate CE+仅R的proposal CE、Adam3e-4/batch128/clip.5、0/100/500/1000/2000/5000steps、300s/fold；不增加class权重或搜索超参数，不改变原资格门槛。输出新`.tmp/p3_ordered_six_cycle_cv_20261009`，仅与上述同数据基线比较，0Q/环境step/teacher/部署checkpoint。先验12项测试通过，覆盖概率质量、first-hit单行joint NLL与已查前缀BCE的数学等价、未知后续候选无该joint NLL梯度、极端分数/空邻机/NaN padding、顺序与teacher一致，以及两step输出序列化。注意整体训练保留原分头平均CE，不把它误称全数据简单BCE求和。正式试验尚未执行；执行后据结果继续修复。
+
+候选结构试验已COMPLETE/exit0，每fold32.8–34.6s，result SHAafb4ab6813698fcb397c66d7f261a3f2d8a43e3090592ef78a21f48fa6b9b6ce。dense四fold末步R recall .351/.598/.507/.467、proposal top1 .245/.287/.387/.293，训练内proposal也仅.522/.551/.512/.508。该特定共享标量分数/first-hit表示没有改善，训练拟合能力亦明显下降，**不接入runtime或后续正式训练**。保留实验代码/失败输出作为开发证据，不将它宣传为已采用的修复，也不继续给它加epoch。
+
+下一最小表示诊断回到原两个分类头及原CE，只调整邻机编码的条件：旧`neighbor(traffic50)`先聚合后才拼ego159；新`neighbor(ego159,traffic50)`先逐邻机计算与本机的关系，然后仍用原mean/max/count聚合及96D分类头。当前target/interface/资源等ego上下文可在压缩前影响邻机表示，检验原固定压缩是否妨碍识别特定进近/切环的相关邻机；这是结构假设，不称已证明全部退化由编码器引起。输入、teacher、候选规划和安全层都不变，不加在线oracle。
+
+该`ConditionedSetActor`也仅进入开发CV，15项定向tests通过（包括原12项），覆盖ego在pooling前的依赖、集合置换、NaN padding/空邻机/梯度与两step输出。下一唯一`.tmp/p3_conditioned_six_cycle_cv_20261009`仍为同六fold/91911/原loss/0–5000steps/300s每fold，无Q或部署checkpoint，比较时完整报告各fold而不挑最好seed。未看到结果前不替换生产actor；若仍无改善，依据数据支持与原始状态证据继续判断，不自动铺开调参矩阵。

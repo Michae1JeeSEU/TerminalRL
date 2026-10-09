@@ -33,6 +33,18 @@ def test_ordered_proposal_smoke_serializes_fixed_architecture_and_complete_curve
     assert not list(root.glob('*.pt'))
 
 
+def test_conditioned_neighbor_smoke_and_exclusive_architecture(tmp_path):
+    torch.set_num_threads(1)
+    root=tmp_path/'conditioned'
+    result=run([],root,smoke=True,resource_context=True,conditioned_neighbors=True)
+    assert result['status']=='COMPLETE'
+    assert result['protocol']['architecture']=='ego_conditioned_neighbor_set_v1'
+    assert all([v['update'] for v in f['curve']]==[1,2] for f in result['folds'])
+    assert json.loads(json.dumps(result))==json.loads((root/'result.json').read_text())
+    with pytest.raises(ValueError,match='single architecture'):
+        run([],tmp_path/'combined',smoke=True,resource_context=True,conditioned_neighbors=True,ordered_proposals=True)
+
+
 @pytest.mark.parametrize('resource_context',[False,True])
 def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path,resource_context):
     torch.set_num_threads(1)
