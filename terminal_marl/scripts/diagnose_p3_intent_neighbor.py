@@ -10,8 +10,9 @@ import torch
 
 from ..algo.intent_neighbor_actor import IntentNeighborActor
 from ..algo.joint_ppo_v4_2 import hierarchical_bc_loss
-from ..training.p3_neighbor_witness_dataset import WitnessTargets,load_witness_targets,auxiliary_loss
-from ..training.p3_v26_train_dataset import load_six_cycle_train
+from ..training.p3_neighbor_witness_dataset import (WitnessTargets,load_witness_targets,
+    combine_witness_targets,auxiliary_loss,SUPPLEMENTAL_PROTOCOL)
+from ..training.p3_v26_train_dataset import load_six_cycle_train,load_nine_cycle_train
 from ..training.p3_v25_set_learnability import synthetic
 from ..training.p3_v3_bc_learnability import classification,require,write
 
@@ -56,11 +57,15 @@ def measure_pairs(model,paired,target):
         auxiliary_loss=float(auxiliary_loss(pairs,scenes,target)))
 
 
-def smoke_inputs():
+def smoke_inputs(*,supplemental=False):
     paired=synthetic();n=len(paired.original.ids)
     ego=torch.cat((paired.new[0],torch.zeros(n,54)),-1);ego[:,8:11]=0;ego[:,8]=1
     paired.new=(ego,*paired.new[1:])
-    for i,context in enumerate(paired.original.contexts):context['seed']=1 if i<n//2 else 2
+    if supplemental:
+        seeds=tuple(range(1,10))
+        for i,context in enumerate(paired.original.contexts):context['seed']=seeds[i%len(seeds)]
+    else:
+        for i,context in enumerate(paired.original.contexts):context['seed']=1 if i<n//2 else 2
     known=paired.new[2].clone();blocked=torch.zeros_like(known,dtype=torch.float)
     blocked[:n//2,0]=1
     witness=WitnessTargets(torch.arange(n),torch.full((n,),12),torch.zeros(n,dtype=torch.long),blocked,known,
@@ -68,16 +73,26 @@ def smoke_inputs():
     return paired,witness
 
 
-def run(original,additional,witness_directory,output,*,smoke=False,max_candidate_gate=False):
+def run(original,additional,witness_directory,output,*,smoke=False,max_candidate_gate=False,
+        supplemental=None,supplemental_witness=None):
+    supplemental_route=supplemental is not None or supplemental_witness is not None
+    require((supplemental is None)==(supplemental_witness is None),
+        'supplemental train and witness inputs must be provided together')
+    require(not (supplemental_route and max_candidate_gate),
+        'supplemental route does not support max_candidate_gate')
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    if smoke:paired,witness=smoke_inputs()
+    if smoke:paired,witness=smoke_inputs(supplemental=supplemental_route)
+    elif supplemental_route:
+        paired=load_nine_cycle_train(original,additional,supplemental)
+        witness=combine_witness_targets((load_witness_targets(witness_directory,paired),
+            load_witness_targets(supplemental_witness,paired)))
     else:
         paired=load_six_cycle_train(original,additional)
         witness=load_witness_targets(witness_directory,paired)
     seeds=sorted({c['seed'] for c in paired.original.contexts})
     marks=(0,1,2) if smoke else (0,100,500,1000,2000,5000)
     gate_mode='max_candidate' if max_candidate_gate else 'first_feasible_union'
-    arms=['native_pair_auxiliary'] if max_candidate_gate else ['without_auxiliary','native_pair_auxiliary']
+    arms=['native_pair_auxiliary'] if (max_candidate_gate or supplemental_route) else ['without_auxiliary','native_pair_auxiliary']
     protocol=dict(architecture=IntentNeighborActor.architecture,observation='existing V2.6 159+N50',
         architecture_variant=f'{IntentNeighborActor.architecture}__gate_{gate_mode}',gate_mode=gate_mode,
         smoke=smoke,input_seeds=seeds,model_seed=91911,arms=arms,
@@ -87,6 +102,14 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
         pair_loss='mean_of_blocked_and_safe_BCE_means_ignoring_unknown',
         Q_accessed=False,teacher_queries=0,environment_steps=0,checkpoint_written=False,
         all_auxiliary_rows_follow_original_whole_cycle_split=True)
+    if supplemental_route:
+        protocol.update(source_group='old6_plus_supplemental3',
+            comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
+            comparison_note='old6 native_pair_auxiliary control reference; supplemental three train-only development cycles, not qualification',
+            supplemental_train_seeds=(seeds if smoke else [893604,893605,893606]),
+            supplemental_role='train_only_development_not_qualification',
+            supplemental_witness_protocol=SUPPLEMENTAL_PROTOCOL,
+            qualification=False)
     if max_candidate_gate:
         protocol.update(comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
             comparison_note='max gate tests count-amplification; no promotion')
@@ -131,13 +154,20 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--train-directories',nargs=3,type=Path)
     p.add_argument('--additional-train-directories',nargs=3,type=Path);p.add_argument('--witness-directory',type=Path)
+    p.add_argument('--supplemental-train-directories',nargs=3,type=Path)
+    p.add_argument('--supplemental-witness-directory',type=Path)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true')
     p.add_argument('--max-candidate-gate',action='store_true',
         help='run the bounded max-candidate gate hypothesis only');a=p.parse_args()
+    supplemental_args=(a.supplemental_train_directories,a.supplemental_witness_directory)
+    if (supplemental_args[0] is None)!=(supplemental_args[1] is None):
+        p.error('--supplemental-train-directories and --supplemental-witness-directory must be provided together')
     if not a.smoke and not all((a.train_directories,a.additional_train_directories,a.witness_directory)):p.error('all train and witness inputs required')
+    if a.max_candidate_gate and supplemental_args[0] is not None:p.error('--max-candidate-gate cannot be combined with supplemental inputs')
     torch.set_num_threads(1)
     result=run(a.train_directories,a.additional_train_directories,a.witness_directory,a.output,smoke=a.smoke,
-        max_candidate_gate=a.max_candidate_gate)
+        max_candidate_gate=a.max_candidate_gate,supplemental=a.supplemental_train_directories,
+        supplemental_witness=a.supplemental_witness_directory)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']),error=result['error'])))
     return 0 if result['status']=='COMPLETE' else 2
 

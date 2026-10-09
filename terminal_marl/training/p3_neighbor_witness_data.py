@@ -27,14 +27,21 @@ from ..scripts.diagnose_p3_direct_contract import canonical, state_record
 from ..scripts.diagnose_p3_teacher_context import NativeWitness, state_delta
 from . import p3_v25_course_data as old
 from . import p3_v26_course_data as new
+from . import p3_v26_supplemental_data as supplemental_data
 from .p3_v3_bc_learnability import read, write, require
 from .p3_v25_imitation_qualification import sha
 from .v4_1_joint_teacher import _release_context
 
 PROTOCOL='p3_train_neighbor_witness_20261009_v1'
+SUPPLEMENTAL_PROTOCOL='p3_supplemental_train_neighbor_witness_20261009_v1'
 TRAFFIC_REASONS=('predicted_', 'nominal_')
 MAX_STATES=144
 MAX_PLAN_CALLS=1728  # 144 states x 2 intents x 6 physical destinations
+SUPPLEMENTAL_MAX_STATES=72
+SUPPLEMENTAL_MAX_PLAN_CALLS=864
+SUPPLEMENTAL_SMOKE_MAX_PLAN_CALLS=36
+SUPPLEMENTAL_WALL_SECONDS=1800
+SMOKE_WALL_SECONDS=120
 
 
 def stratified(rows):
@@ -143,16 +150,24 @@ def witness_state(episode,entry,row,label,*,remaining_calls):
     return values
 
 
-def selected_inputs(directories):
-    require(len(directories)==6,'six complete train cycles required')
+def selected_inputs(directories,*,supplemental=False):
+    expected=3 if supplemental else 6
+    require(len(directories)==expected,
+        'three complete supplemental train cycles required' if supplemental else 'six complete train cycles required')
     selected=[];inputs=[]
     for index,directory in enumerate(map(Path,directories)):
-        if index<3:
+        if supplemental:
+            seed,scenario=supplemental_data.TRAIN_CASES[index]
+            path,report=supplemental_data.validated_case(directory,index+1)
+            source_group='supplemental'
+        elif index<3:
             seed,scenario=old.TRAIN_CASES[index]
             path,report=old.validated_case(directory,seed,scenario,'train')
+            source_group='original'
         else:
             seed,scenario=new.TRAIN_CASES[index-3]
             path,report=new.validated_case(directory,index-2)
+            source_group='independent'
         episode=directory/f'seed_{seed}'
         entries={e['row']['decision_id']:e for e in read(episode/'selected.json')}
         rows=[json.loads(line) for line in path.read_text(encoding='utf8').splitlines()]
@@ -163,22 +178,33 @@ def selected_inputs(directories):
             # All current context formats preserve this hash in the raw entry.
             row=dict(row,pre_state_hash=entry['row']['pre_state_hash'])
             selected.append((episode,entry,row,label))
-        inputs.append(dict(seed=seed,context_sha256=sha(path),selected=sum(x[2]['seed']==seed for x in selected)))
-    require(len(selected)<=MAX_STATES,'state budget exceeded')
+        item=dict(seed=seed,context_sha256=sha(path),selected=sum(x[2]['seed']==seed for x in selected))
+        if supplemental:item['source_group']=source_group
+        inputs.append(item)
+    require(len(selected)<=(SUPPLEMENTAL_MAX_STATES if supplemental else MAX_STATES),'state budget exceeded')
     return selected,inputs
 
 
-def collect(directories,output,*,smoke=False):
+def collect(directories,output,*,smoke=False,supplemental=False):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
-    selected,inputs=selected_inputs(directories)
+    selected,inputs=(selected_inputs(directories,supplemental=True) if supplemental
+        else selected_inputs(directories))
+    max_states=SUPPLEMENTAL_MAX_STATES if supplemental else MAX_STATES
+    max_plan_calls=(SUPPLEMENTAL_SMOKE_MAX_PLAN_CALLS if supplemental and smoke else
+        SUPPLEMENTAL_MAX_PLAN_CALLS if supplemental else MAX_PLAN_CALLS)
+    protocol_name=SUPPLEMENTAL_PROTOCOL if supplemental else PROTOCOL
     if smoke:
         # One original train state per interface, used only to validate output.
         selected=[next(x for x in selected if x[2]['context']['interface']==interface)
                   for interface in ('o2m','m2i','i2f')]
-    protocol=dict(protocol=PROTOCOL,inputs=inputs,smoke=smoke,selected_ids=[x[2]['decision_id'] for x in selected],
-        max_states=MAX_STATES,max_plan_calls=MAX_PLAN_CALLS,wall_seconds=120 if smoke else 3600,
+    protocol=dict(protocol=protocol_name,inputs=inputs,smoke=smoke,selected_ids=[x[2]['decision_id'] for x in selected],
+        max_states=max_states,max_plan_calls=max_plan_calls,
+        wall_seconds=SMOKE_WALL_SECONDS if smoke else (SUPPLEMENTAL_WALL_SECONDS if supplemental else 3600),
         resets=0,steps=0,Q_accessed=False,original_labels_unchanged=True,
         pair_semantics='same_canonical_plan_isolated_native_safety_check',unknown_is_not_safe_or_blocked=True)
+    if supplemental:
+        protocol.update(source_group='supplemental',selected_train_seeds=[seed for seed,_ in supplemental_data.TRAIN_CASES],
+            budget_scope='supplemental three train cycles only')
     write(output/'protocol.json',protocol)
     started=time.monotonic();result=dict(status='RUNNING',states=0,plan_calls=0,error=None)
     write(output/'result.json',result)
@@ -186,7 +212,8 @@ def collect(directories,output,*,smoke=False):
         with (output/'witnesses.jsonl').open('x',encoding='utf8') as stream:
             for episode,entry,row,label in selected:
                 require(time.monotonic()-started<protocol['wall_seconds'],'wall budget exhausted')
-                witness=witness_state(episode,entry,row,label,remaining_calls=MAX_PLAN_CALLS-result['plan_calls'])
+                witness=witness_state(episode,entry,row, label,
+                    remaining_calls=protocol['max_plan_calls']-result['plan_calls'])
                 stream.write(json.dumps(_json(witness),allow_nan=False)+'\n');stream.flush()
                 result['states']+=1;result['plan_calls']+=witness['plan_calls']
                 result['elapsed_seconds']=time.monotonic()-started;write(output/'result.json',result)
@@ -198,9 +225,13 @@ def collect(directories,output,*,smoke=False):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--train-directories',nargs=6,type=Path,required=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--train-directories',nargs='+',type=Path,required=True)
+    p.add_argument('--supplemental',action='store_true')
     p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true');a=p.parse_args()
-    result=collect(a.train_directories,a.output,smoke=a.smoke);print(json.dumps(result))
+    expected=3 if a.supplemental else 6
+    if len(a.train_directories)!=expected:
+        p.error(f'--train-directories requires exactly {expected} paths for this route')
+    result=collect(a.train_directories,a.output,smoke=a.smoke,supplemental=a.supplemental);print(json.dumps(result))
     return 0 if result['status'] in ('SMOKE_OK','COMPLETE') else 2
 
 

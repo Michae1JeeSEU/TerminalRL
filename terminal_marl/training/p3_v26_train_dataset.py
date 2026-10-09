@@ -12,12 +12,12 @@ from .p3_v3_expert_dataset import DATA_SCHEMA
 from .p3_v3_bc_learnability import Data,require
 
 
-def load_independent_train(directories):
-    require(len(directories)==len(TRAIN_CASES),'all three independent train cycles required')
+def _load_train_cases(directories,cases,validator,*,length_error,source_group=None):
+    require(len(directories)==len(cases),length_error)
     observations,raw,gates,proposals,ids,contexts,inputs=[],[],[],[],[],[],[]
     seen=set()
-    for index,(directory,(seed,scenario)) in enumerate(zip(directories,TRAIN_CASES),1):
-        path,report=validated_case(directory,index);count=0
+    for index,(directory,(seed,scenario)) in enumerate(zip(directories,cases),1):
+        path,report=validator(directory,index);count=0
         for line in path.read_text(encoding='utf8').splitlines():
             row=json.loads(line)
             require(row['seed']==seed and row['context']['seed']==seed and
@@ -29,12 +29,25 @@ def load_independent_train(directories):
             seen.add(row['decision_id']);count+=1
         require(count==report['resource_reconstruction']['rows']==report['reconstruction']['rows']>0,
             'incomplete resource row set')
-        inputs.append(dict(seed=seed,scenario=scenario,rows=count,partition='train',
-            sha256=report['resource_reconstruction']['sha256']))
+        item=dict(seed=seed,scenario=scenario,rows=count,partition='train',
+            sha256=report['resource_reconstruction']['sha256'])
+        if source_group is not None:item['source_group']=source_group
+        inputs.append(item)
     raw=np.asarray(raw,dtype=np.float32)
     require(raw.shape==(len(ids),90) and np.isfinite(raw).all(),'invalid original raw observations')
     original=Data(torch.from_numpy(raw),torch.tensor(gates),torch.tensor(proposals),tuple(ids),contexts,inputs)
     return PairedInputs(original,tuple(torch.from_numpy(a) for a in pad_trajectory_context(observations)))
+
+
+def load_independent_train(directories):
+    return _load_train_cases(directories,TRAIN_CASES,validated_case,
+        length_error='all three independent train cycles required')
+
+
+def load_supplemental_train(directories):
+    from . import p3_v26_supplemental_data as supplemental
+    return _load_train_cases(directories,supplemental.TRAIN_CASES,supplemental.validated_case,
+        length_error='all three supplemental train cycles required',source_group='supplemental')
 
 
 def combine_train(parts):
@@ -57,3 +70,8 @@ def combine_train(parts):
 
 def load_six_cycle_train(original_directories,independent_directories):
     return combine_train([load_resource_train(original_directories),load_independent_train(independent_directories)])
+
+
+def load_nine_cycle_train(original_directories,independent_directories,supplemental_directories):
+    return combine_train([load_resource_train(original_directories),
+        load_independent_train(independent_directories),load_supplemental_train(supplemental_directories)])

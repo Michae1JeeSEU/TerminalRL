@@ -159,4 +159,16 @@ new3 没有现有 pair witness；已有 witness 仅覆盖 old6，共 `127 states
 
 约束保持为 0 reset/step、原 teacher label 不改、不回填未知后缀、不新增 online input。九 CV 输出为 `/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle`，outer timeout `11400s = 9×1200+600`，仅 native 一臂。执行顺序预登记为：本地定向 tests、新增 route synthetic（9 parent×2 update）smoke、真实 loader 只读 input 检查；通过后做 Syncthing/hash/server checks，再做真实 auxiliary smoke、full auxiliary 完整验收，最后单次运行九 CV。
 
-当前源码接入由 worker 准备中，尚未完成或测试；本预登记尚未 launch 任何 query、采集或学习。若该因素仍无稳定收益，后续是否继续由 primary 根据具体结果决定，不自动扩 epoch 或 network variant。既有三回合产物、9-cycle 覆盖统计及本协议均不构成 P3 已解决或 PPO 准入证据。
+源码接入与定向验证已完成；本预登记尚未 launch 任何 query、采集或学习。若该因素仍无稳定收益，后续是否继续由 primary 根据具体结果决定，不自动扩 epoch 或 network variant。既有三回合产物、9-cycle 覆盖统计及本协议均不构成 P3 已解决或 PPO 准入证据。
+
+## 源码接入与验证终态（2026-10-09 UTC / 2026-10-10 北京时间）
+
+本轮完成四个既有模块和一个新增测试文件的 supplemental 接入：`terminal_marl/training/p3_v26_train_dataset.py` 增加 `load_supplemental_train` 与 `load_nine_cycle_train`；`p3_neighbor_witness_data.py` 增加 supplemental protocol、固定选择和 smoke/full budget；`p3_neighbor_witness_dataset.py` 接受双 protocol 并提供 `combine_witness_targets`；`terminal_marl/scripts/diagnose_p3_intent_neighbor.py` 增加 supplemental train/witness CLI route，固定 `first_feasible_union` 与 `native_pair_auxiliary`。旧六回合入口、159+N50、teacher labels、physics/safety/model 核心和预登记预算保持不变。
+
+本地定向回归为 supplemental data/witness 21 tests、`3.94s`、exit0；`tests/test_intent_neighbor_actor.py` 独立回归 9 tests、`2.60s`、exit0。server route check 为 `28 passed in 1.65s`、exit0。synthetic supplemental route 使用 9 个 parent seed、native-only、2 updates，结果为 `COMPLETE/exit0/error=null`；两端同步 hash 为 result `d078ddc2395a21a7ec145cb270f49f9640d715ca647fd0c6fb8a6a5cf4ab9f08`、protocol `3f14a36e4f02af64f3a89cd9948a517c75f0301b445d6094c4004f9f3de58187`。
+
+真实九周期 loader 的只读验收 artifact 为 `.tmp/p3_nine_cycle_loader_check_20261009.json`，状态 `PASS`，SHA256 `acd7a7d7a3c3dda6c4792a5c3228432d5c73042cdc5a2a6f6bd6f91a70e3c262`。九组共 `3149 actor = 577R/2572W`，`F/D/U=0`；shape 为原始 `(3149,90)`、新 ego `(3149,159)`、traffic `(3149,20,50)`、mask `(3149,20)`。labels 按 decision ID 保持，old6 的 105D prefix/traffic/mask 保持，三 supplemental 输入选中 `65` 个 state，按 seed 为 `893604:17`、`893605:24`、`893606:24`，resource/context 的 `159+N×50` 与 schema/decode 检查通过。
+
+旧 witness artifact 仍为 `127` records、`121` 个含 destination 的 target states、`317` destinations/queries；其余 6 条为 global block，原因计数 `final_capacity=5`、`lz_unavailable=1`，这些记录的原计划调用为 0。首次 checker FAIL 已保留在 `.tmp/p3_nine_cycle_loader_check_20261009_first_failure.json`；该 FAIL 仅反映计数语义混同，后续只修 checker，未改官方 `atol=1e-7`/`rtol=1e-6`，也未改数据或核心代码。
+
+当前状态仍是 development 接入完成、真实 auxiliary query/learning 未执行，`Q`、qualification 和 PPO 保持禁用。按原预登记顺序，后续运行边界为 supplemental auxiliary smoke、supplemental auxiliary full、最后一次 nine-cycle CV；不重跑旧六 fold control，不重复 max-candidate 变体，不增加 seeds 或预算。

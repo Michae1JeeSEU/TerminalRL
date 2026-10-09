@@ -8,7 +8,10 @@ from torch.nn import functional as F
 
 from .p3_v25_imitation_qualification import sha
 from .p3_v3_bc_learnability import read, require
-from .p3_neighbor_witness_data import PROTOCOL, TRAFFIC_REASONS
+from .p3_neighbor_witness_data import PROTOCOL, SUPPLEMENTAL_PROTOCOL, TRAFFIC_REASONS
+from . import p3_v25_course_data as old
+from . import p3_v26_course_data as independent
+from . import p3_v26_supplemental_data as supplemental
 
 
 @dataclass
@@ -28,10 +31,16 @@ class WitnessTargets:
 
 def load_witness_targets(directory,paired):
     directory=Path(directory);protocol=read(directory/'protocol.json');report=read(directory/'result.json')
-    require(protocol['protocol']==PROTOCOL and not protocol['smoke'] and report['status']=='COMPLETE'
+    protocol_name=protocol['protocol']
+    require(protocol_name in (PROTOCOL,SUPPLEMENTAL_PROTOCOL) and not protocol['smoke'] and report['status']=='COMPLETE'
         and sha(directory/'witnesses.jsonl')==report['witness_sha256'],'incomplete or wrong witness data')
+    expected=(set(seed for seed,_ in old.TRAIN_CASES)|set(seed for seed,_ in independent.TRAIN_CASES)
+        if protocol_name==PROTOCOL else set(seed for seed,_ in supplemental.TRAIN_CASES))
+    declared={item['seed'] for item in protocol['inputs']}
+    require(declared==expected,'witness source seed set differs')
     rows=[json.loads(s) for s in (directory/'witnesses.jsonl').read_text().splitlines()]
     require(len(rows)==report['states'] and [r['decision_id'] for r in rows]==protocol['selected_ids'],'witness row set differs')
+    require({row['seed'] for row in rows}<=expected,'witness seed outside declared source group')
     index={did:i for i,did in enumerate(paired.original.ids)};width=paired.new[1].shape[1]
     values=[]
     for row in rows:
@@ -58,6 +67,20 @@ def load_witness_targets(directory,paired):
     require(bool(values),'no native witness targets')
     return WitnessTargets(*(torch.stack([v[k] for v in values]) if k in (3,4) else
         torch.tensor([v[k] for v in values]) for k in range(8)))
+
+
+def combine_witness_targets(parts):
+    require(bool(parts),'no witness target parts')
+    require(all(isinstance(part,WitnessTargets) for part in parts),'invalid witness target part')
+    seen=set()
+    for part in parts:
+        require(len(part.state_index)==len(part.proposal)==len(part.pad)==len(part.blocked)==len(part.known)
+            ==len(part.scene_blocked)==len(part.scene_known)==len(part.seeds),'witness target lengths differ')
+        for key in zip(part.state_index.tolist(),part.proposal.tolist(),part.pad.tolist()):
+            require(tuple(key) not in seen,'duplicate witness target')
+            seen.add(tuple(key))
+    return WitnessTargets(*(torch.cat([getattr(part,key) for part in parts])
+        for key in WitnessTargets.__dataclass_fields__))
 
 
 def auxiliary_loss(pair_logits,scene_logits,target):
