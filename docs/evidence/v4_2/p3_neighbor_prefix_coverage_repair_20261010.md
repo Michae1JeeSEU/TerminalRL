@@ -68,6 +68,8 @@ protocol records 记录 `1270/14396/1469/808` eligible 与 `473/4555/394/232` el
 
 其中 dense6 的 joint 为上升 `893605/893606`、下降 `893513/893602/893603`、持平 `893512`；WAIT false-release 在 `893513/893602/893603/893606` 变差。all-9 micro joint `+0.4128 pp` 的正确数为 control `2474-2255=219`、ranking `2487-2268=219`，增加的 `13` 个全部来自 WAIT false-release 减少；正确 RELEASE gate+proposal 仍为 `219/577`，尽管 RELEASE gate hits 增加 `12`。
 
+action decomposition artifact `.tmp/p3_blocker_ranking_action_decomposition_20261010.json` SHA256 `926ba859f4f365f1648698f1246bce3abba5d0bfa5321a776e37b26af47cf2b4` 为 `PASS`；按 `terminal_marl/training/p3_v3_bc_learnability.py` 的 classification/correct-mask/joint 定义（function line 123、correct mask line 142、joint return line 147），all-9、per-seed 与 dense6 identity checks 和 expected counts 均通过。该核对只确认 `+13` joint 的算术分解，不能把 blocker top-1 改善解释为 uniform blocked-recall 或 calibration 改善；后续只按既有数据检查 action/proposal error/support 与 gate-candidate coupling，尚未启动新的 learning/CV。
+
 comparison artifact 的 `16` 个 integer-recovery residual 全部来自 `train_pairs.safe_recall`（new `9`、control `7`），最大绝对 residual 为 `0.0003160834`；仅按原始报告率恢复整数分子并披露，不新增 tolerance。该结果在 held-reference 与 expanded 两种固定支持上都显示 blocker top-1 提高，但未证明 ranking loss 是因果根因，也未形成稳定动作修复；保留为 opt-in train-only 实验结果，不升格模型、qualification 或 PPO。后续只基于既有数据检查 action/proposal error/support 与 gate-candidate coupling，尚未启动新的 learning、CV、epoch/weight scan、seed 或网络系列；Q 保持隔离，`PPO_ALLOWED=false`。
 
 ## ring-reuse 九折终态与完整对照（2026-10-10，本轮 newly_run）
