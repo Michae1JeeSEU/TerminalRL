@@ -14,6 +14,9 @@ from . import p3_v26_course_data as independent
 from . import p3_v26_supplemental_data as supplemental
 
 
+PREFIX_COVERAGE_PROTOCOL='p3_train_neighbor_prefix_coverage_20261010_v1'
+
+
 @dataclass
 class WitnessTargets:
     state_index: torch.Tensor
@@ -32,10 +35,14 @@ class WitnessTargets:
 def load_witness_targets(directory,paired):
     directory=Path(directory);protocol=read(directory/'protocol.json');report=read(directory/'result.json')
     protocol_name=protocol['protocol']
-    require(protocol_name in (PROTOCOL,SUPPLEMENTAL_PROTOCOL) and not protocol['smoke'] and report['status']=='COMPLETE'
+    require(protocol_name in (PROTOCOL,SUPPLEMENTAL_PROTOCOL,PREFIX_COVERAGE_PROTOCOL)
+        and not protocol['smoke'] and report['status']=='COMPLETE'
         and sha(directory/'witnesses.jsonl')==report['witness_sha256'],'incomplete or wrong witness data')
     expected=(set(seed for seed,_ in old.TRAIN_CASES)|set(seed for seed,_ in independent.TRAIN_CASES)
-        if protocol_name==PROTOCOL else set(seed for seed,_ in supplemental.TRAIN_CASES))
+        if protocol_name==PROTOCOL else set(seed for seed,_ in supplemental.TRAIN_CASES)
+        if protocol_name==SUPPLEMENTAL_PROTOCOL else
+        set(seed for seed,_ in old.TRAIN_CASES)|set(seed for seed,_ in independent.TRAIN_CASES)|
+        set(seed for seed,_ in supplemental.TRAIN_CASES))
     declared={item['seed'] for item in protocol['inputs']}
     require(declared==expected,'witness source seed set differs')
     rows=[json.loads(s) for s in (directory/'witnesses.jsonl').read_text().splitlines()]
@@ -43,6 +50,7 @@ def load_witness_targets(directory,paired):
     require({row['seed'] for row in rows}<=expected,'witness seed outside declared source group')
     index={did:i for i,did in enumerate(paired.original.ids)};width=paired.new[1].shape[1]
     values=[]
+    prefix_candidates=set()
     for row in rows:
         did=row['decision_id'];require(did in index,'witness outside train data')
         i=index[did];n=len(row['traffic_uids'])
@@ -52,7 +60,18 @@ def load_witness_targets(directory,paired):
             and n==int(paired.new[2][i].sum()),'witness numeric input mismatch')
         require(row['teacher_gate']==int(paired.original.gate[i]) and
             row['teacher_joint']==(int(paired.original.proposal[i])+1 if row['teacher_gate'] else 0), 'original label mismatch')
-        for candidate in row['candidates']:
+        candidates=row.get('candidates')
+        if candidates is None:
+            # Prefix coverage keeps one serialized candidate per selected
+            # (decision_id,joint) while retaining the native destination shape.
+            candidates=[row]
+        require(isinstance(candidates,list) and candidates,'witness candidates missing')
+        for candidate in candidates:
+            require(1<=int(candidate['joint'])<=25,'invalid witness candidate joint')
+            if protocol_name==PREFIX_COVERAGE_PROTOCOL:
+                key=(did,int(candidate['joint']))
+                require(key not in prefix_candidates,'duplicate prefix witness candidate')
+                prefix_candidates.add(key)
             for dest in candidate['destinations']:
                 blocked=torch.zeros(width);known=torch.zeros(width,dtype=torch.bool)
                 pairs=dest['pairs']

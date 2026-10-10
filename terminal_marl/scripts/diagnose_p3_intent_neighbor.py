@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, wait
+import multiprocessing as mp
+import os
 from pathlib import Path
 import json
 import time
@@ -11,10 +14,10 @@ import torch
 from ..algo.intent_neighbor_actor import IntentNeighborActor
 from ..algo.joint_ppo_v4_2 import hierarchical_bc_loss
 from ..training.p3_neighbor_witness_dataset import (WitnessTargets,load_witness_targets,
-    combine_witness_targets,auxiliary_loss,SUPPLEMENTAL_PROTOCOL)
+    combine_witness_targets,auxiliary_loss,SUPPLEMENTAL_PROTOCOL,PREFIX_COVERAGE_PROTOCOL)
 from ..training.p3_v26_train_dataset import load_six_cycle_train,load_nine_cycle_train
 from ..training.p3_v25_set_learnability import synthetic
-from ..training.p3_v3_bc_learnability import classification,require,write
+from ..training.p3_v3_bc_learnability import classification,read,require,write
 
 
 def split(paired,witness,held_seed):
@@ -73,19 +76,227 @@ def smoke_inputs(*,supplemental=False):
     return paired,witness
 
 
+def _atomic_write(path,value):
+    path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    temporary=path.with_name(f'{path.name}.{os.getpid()}.tmp')
+    write(temporary,value)
+    for attempt in range(200):
+        try:
+            temporary.replace(path);return
+        except PermissionError:
+            if attempt==199:raise
+            time.sleep(.01)
+
+
+def _progress_path(output,seed,arm):
+    return Path(output)/f'fold_{int(seed)}_{arm}.progress.json'
+
+
+def _progress_payload(record,*,status,stage,error=None,progress_path=None):
+    return dict(schema='p3_neighbor_fold_progress_20261010_v1',status=status,stage=stage,
+        held_seed=record['held_seed'],arm=record['arm'],curve=record['curve'],
+        elapsed_seconds=record.get('elapsed_seconds',0.),error=error,record=record,
+        progress_path=None if progress_path is None else str(progress_path))
+
+
+def _initial_fold(paired,witness,seed,arm,progress_path):
+    train,held,wtrain,wheld=split(paired,witness,seed)
+    record=dict(held_seed=seed,arm=arm,train_rows=len(train),held_rows=len(held),
+        train_auxiliary_queries=len(wtrain),held_auxiliary_queries=len(wheld),curve=[],
+        progress_path=str(progress_path))
+    _atomic_write(progress_path,_progress_payload(record,status='RUNNING',stage='initial',
+        progress_path=progress_path))
+    return record
+
+
+def train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
+               reference_witness=None):
+    """Train one deterministic seed/arm and persist independently readable progress."""
+    progress_path=Path(progress_path)
+    record=_initial_fold(paired,witness,seed,arm,progress_path)
+    try:
+        torch.set_num_threads(1)
+        torch.manual_seed(91911);model=IntentNeighborActor(gate_mode=gate_mode);optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
+        generator=torch.Generator().manual_seed(91911);aux_generator=torch.Generator().manual_seed(91912)
+        train,held,wtrain,wheld=split(paired,witness,seed)
+        reference_wheld=None
+        if reference_witness is not None:
+            _,_,_,reference_wheld=split(paired,reference_witness,seed)
+        permutation=torch.randperm(len(train),generator=generator);offset=0
+        started=time.monotonic()
+        for step in range(marks[-1]+1):
+            require(time.monotonic()-started<wall_seconds,'fold wall budget exhausted')
+            if step:
+                if offset==len(train):permutation=torch.randperm(len(train),generator=generator);offset=0
+                local=permutation[offset:offset+128];offset+=len(local);batch=train[local]
+                optimizer.zero_grad(set_to_none=True)
+                gate,proposal=model(*(t[batch] for t in paired.new))
+                loss,_=hierarchical_bc_loss(gate,proposal,paired.original.gate[batch],paired.original.proposal[batch])
+                if arm=='native_pair_auxiliary':
+                    chosen=wtrain[torch.randint(len(wtrain),(64,),generator=aux_generator)]
+                    target=witness.take(chosen)
+                    pair,scene=model.queried_scores(*(t[target.state_index] for t in paired.new),target.proposal,target.pad)
+                    loss=loss+auxiliary_loss(pair,scene,target)
+                require(bool(torch.isfinite(loss)),'nonfinite loss')
+                loss.backward();torch.nn.utils.clip_grad_norm_(model.parameters(),.5,error_if_nonfinite=True);optimizer.step()
+            if step in marks:
+                curve_item=dict(update=step,train=measure(model,paired,train),validation=measure(model,paired,held),
+                    train_pairs=measure_pairs(model,paired,witness.take(wtrain)),
+                    validation_pairs=measure_pairs(model,paired,witness.take(wheld)))
+                if reference_witness is not None:
+                    curve_item['validation_reference_pairs']=measure_pairs(
+                        model,paired,reference_witness.take(reference_wheld))
+                record['curve'].append(curve_item)
+                record['elapsed_seconds']=time.monotonic()-started
+                _atomic_write(progress_path,_progress_payload(record,status='RUNNING',stage=f'mark_{step}',
+                    progress_path=progress_path))
+        record['elapsed_seconds']=time.monotonic()-started
+        _atomic_write(progress_path,_progress_payload(record,status='COMPLETE',stage='terminal',
+            progress_path=progress_path))
+        return dict(status='COMPLETE',record=record,error=None,progress_path=str(progress_path))
+    except Exception as error:
+        record['elapsed_seconds']=time.monotonic()-locals().get('started',time.monotonic())
+        _atomic_write(progress_path,_progress_payload(record,status='INCOMPLETE',stage='terminal',
+            error=repr(error),progress_path=progress_path))
+        return dict(status='INCOMPLETE',record=record,error=repr(error),progress_path=str(progress_path))
+
+
+def _train_fold_job(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
+                    reference_witness=None):
+    torch.set_num_threads(1)
+    return train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
+        reference_witness=reference_witness)
+
+
+def _read_progress(path):
+    try:return read(path)
+    except (FileNotFoundError,PermissionError,json.JSONDecodeError):return None
+
+
+def _progress_signature(specs):
+    signature=[]
+    for spec in specs:
+        path=Path(spec['progress_path'])
+        try:
+            stat=path.stat();signature.append((str(path),stat.st_mtime_ns,stat.st_size))
+        except FileNotFoundError:
+            signature.append((str(path),None,None))
+    return tuple(signature)
+
+
+def _ordered_folds(specs):
+    folds=[]
+    for spec in specs:
+        progress=_read_progress(spec['progress_path'])
+        if progress is None:continue
+        record=dict(progress.get('record') or {})
+        if record:folds.append(record)
+    return folds
+
+
+def _write_root_result(path,protocol,specs,status,error=None):
+    payload=dict(status=status,protocol=protocol,folds=_ordered_folds(specs),error=error)
+    _atomic_write(path,payload)
+    return payload
+
+
+def _mark_progress_failure(spec,error):
+    progress=_read_progress(spec['progress_path'])
+    if progress is None:return
+    progress.update(status='INCOMPLETE',stage='terminal',error=error)
+    _atomic_write(spec['progress_path'],progress)
+
+
+def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_witness=None):
+    for spec in specs:
+        _initial_fold(paired,witness,spec['seed'],spec['arm'],spec['progress_path'])
+    _write_root_result(root_path,protocol,specs,'RUNNING')
+    root_error=None
+    if workers==1:
+        for spec in specs:
+            outcome=train_fold(paired,witness,spec['seed'],spec['arm'],spec['gate_mode'],
+                spec['marks'],spec['wall_seconds'],spec['progress_path'],
+                reference_witness=reference_witness)
+            if outcome['status']!='COMPLETE' and root_error is None:root_error=outcome['error']
+            _write_root_result(root_path,protocol,specs,'RUNNING',root_error)
+            if root_error is not None:break
+        return _write_root_result(root_path,protocol,specs,
+            'INCOMPLETE' if root_error else 'COMPLETE',root_error)
+    context=mp.get_context('spawn')
+    futures={}
+    next_index=0
+    last_root_write=time.monotonic()
+    last_signature=_progress_signature(specs)
+
+    def write_root_if_due(status,*,force=False):
+        nonlocal last_root_write,last_signature
+        now=time.monotonic();signature=_progress_signature(specs)
+        if force or now-last_root_write>=2. or signature!=last_signature:
+            _write_root_result(root_path,protocol,specs,status,root_error)
+            last_root_write=now;last_signature=signature
+
+    with ProcessPoolExecutor(max_workers=min(workers,len(specs)),mp_context=context) as pool:
+        pending=set()
+
+        def submit_next():
+            nonlocal next_index
+            if root_error is not None or next_index>=len(specs):return False
+            spec=specs[next_index];next_index+=1
+            future=pool.submit(_train_fold_job,paired,witness,spec['seed'],spec['arm'],spec['gate_mode'],
+                spec['marks'],spec['wall_seconds'],str(spec['progress_path']),reference_witness)
+            futures[future]=spec;pending.add(future)
+            return True
+
+        while len(pending)<workers and submit_next():
+            pass
+        while pending:
+            done,pending=wait(pending,timeout=.2,return_when=FIRST_COMPLETED)
+            if not done:
+                write_root_if_due('INCOMPLETE' if root_error else 'RUNNING')
+                continue
+            for future in done:
+                spec=futures[future]
+                try:outcome=future.result()
+                except Exception as error:
+                    outcome=dict(status='INCOMPLETE',error=repr(error));_mark_progress_failure(spec,repr(error))
+                if outcome['status']!='COMPLETE' and root_error is None:root_error=outcome.get('error')
+            if root_error is None:
+                while len(pending)<workers and submit_next():
+                    pass
+            else:
+                # There are never more than ``workers`` submitted futures, so
+                # no unbounded executor queue can survive a sibling failure.
+                for future in pending:
+                    future.cancel()
+            write_root_if_due('INCOMPLETE' if root_error else
+                ('RUNNING' if pending else 'COMPLETE'),force=True)
+    return _write_root_result(root_path,protocol,specs,
+        'INCOMPLETE' if root_error else 'COMPLETE',root_error)
+
+
 def run(original,additional,witness_directory,output,*,smoke=False,max_candidate_gate=False,
-        supplemental=None,supplemental_witness=None):
+        supplemental=None,supplemental_witness=None,prefix_witness=None,workers=1):
     supplemental_route=supplemental is not None or supplemental_witness is not None
+    prefix_route=prefix_witness is not None
     require((supplemental is None)==(supplemental_witness is None),
         'supplemental train and witness inputs must be provided together')
     require(not (supplemental_route and max_candidate_gate),
         'supplemental route does not support max_candidate_gate')
+    require(isinstance(workers,int) and not isinstance(workers,bool) and 1<=workers<=4,
+        'workers must be an integer in 1..4')
+    require(not prefix_route or supplemental_route and not smoke,
+        'prefix witness requires the paired nine-cycle supplemental route')
+    require(not prefix_route or not max_candidate_gate,
+        'prefix witness does not support max_candidate_gate')
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
+    reference_witness=None
     if smoke:paired,witness=smoke_inputs(supplemental=supplemental_route)
     elif supplemental_route:
         paired=load_nine_cycle_train(original,additional,supplemental)
-        witness=combine_witness_targets((load_witness_targets(witness_directory,paired),
-            load_witness_targets(supplemental_witness,paired)))
+        parts=[load_witness_targets(witness_directory,paired),load_witness_targets(supplemental_witness,paired)]
+        if prefix_route:reference_witness=combine_witness_targets(tuple(parts))
+        if prefix_route:parts.append(load_witness_targets(prefix_witness,paired))
+        witness=combine_witness_targets(tuple(parts))
     else:
         paired=load_six_cycle_train(original,additional)
         witness=load_witness_targets(witness_directory,paired)
@@ -101,7 +312,7 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
         original_loss='unweighted_gate_CE_plus_RELEASE_proposal_CE',
         pair_loss='mean_of_blocked_and_safe_BCE_means_ignoring_unknown',
         Q_accessed=False,teacher_queries=0,environment_steps=0,checkpoint_written=False,
-        all_auxiliary_rows_follow_original_whole_cycle_split=True)
+        all_auxiliary_rows_follow_original_whole_cycle_split=True,workers=workers)
     if supplemental_route:
         protocol.update(source_group='old6_plus_supplemental3',
             comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
@@ -110,45 +321,31 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
             supplemental_role='train_only_development_not_qualification',
             supplemental_witness_protocol=SUPPLEMENTAL_PROTOCOL,
             qualification=False)
+    if prefix_route:
+        protocol.update(source_group='old6_plus_supplemental3_plus_prefix',
+            comparison_control_reference='p3_neighbor_nine_cycle_cv_20261009/nine_cycle',
+            prefix_witness_protocol=PREFIX_COVERAGE_PROTOCOL,
+            prefix_witness_directory=str(prefix_witness),
+            prefix_role='new_train_decision_joint_candidates_only_not_qualification',
+            prefix_train_seeds=seeds,
+            qualification=False)
     if max_candidate_gate:
         protocol.update(comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
             comparison_note='max gate tests count-amplification; no promotion')
     write(output/'protocol.json',protocol)
-    result=dict(status='RUNNING',protocol=protocol,folds=[],error=None);write(output/'result.json',result)
+    result_path=output/'result.json';result=dict(status='RUNNING',protocol=protocol,folds=[],error=None)
+    _atomic_write(result_path,result)
     try:
+        torch.set_num_threads(1)
+        specs=[]
         for seed in seeds:
-            train,held,wtrain,wheld=split(paired,witness,seed)
             for arm in protocol['arms']:
-                torch.manual_seed(91911);model=IntentNeighborActor(gate_mode=gate_mode);optimizer=torch.optim.Adam(model.parameters(),lr=.0003)
-                generator=torch.Generator().manual_seed(91911);aux_generator=torch.Generator().manual_seed(91912)
-                permutation=torch.randperm(len(train),generator=generator);offset=0
-                record=dict(held_seed=seed,arm=arm,train_rows=len(train),held_rows=len(held),
-                    train_auxiliary_queries=len(wtrain),held_auxiliary_queries=len(wheld),curve=[])
-                result['folds'].append(record);started=time.monotonic()
-                for step in range(marks[-1]+1):
-                    require(time.monotonic()-started<1200,'fold wall budget exhausted')
-                    if step:
-                        if offset==len(train):permutation=torch.randperm(len(train),generator=generator);offset=0
-                        local=permutation[offset:offset+128];offset+=len(local);batch=train[local]
-                        optimizer.zero_grad(set_to_none=True)
-                        gate,proposal=model(*(t[batch] for t in paired.new))
-                        loss,_=hierarchical_bc_loss(gate,proposal,paired.original.gate[batch],paired.original.proposal[batch])
-                        if arm=='native_pair_auxiliary':
-                            chosen=wtrain[torch.randint(len(wtrain),(64,),generator=aux_generator)]
-                            target=witness.take(chosen)
-                            pair,scene=model.queried_scores(*(t[target.state_index] for t in paired.new),target.proposal,target.pad)
-                            loss=loss+auxiliary_loss(pair,scene,target)
-                        require(bool(torch.isfinite(loss)),'nonfinite loss')
-                        loss.backward();torch.nn.utils.clip_grad_norm_(model.parameters(),.5,error_if_nonfinite=True);optimizer.step()
-                    if step in marks:
-                        record['curve'].append(dict(update=step,train=measure(model,paired,train),validation=measure(model,paired,held),
-                            train_pairs=measure_pairs(model,paired,witness.take(wtrain)),
-                            validation_pairs=measure_pairs(model,paired,witness.take(wheld))))
-                        record['elapsed_seconds']=time.monotonic()-started;write(output/'result.json',result)
-                record['elapsed_seconds']=time.monotonic()-started
-        result['status']='COMPLETE'
+                specs.append(dict(seed=seed,arm=arm,gate_mode=gate_mode,marks=marks,wall_seconds=1200,
+                    progress_path=_progress_path(output,seed,arm)))
+        result=_execute_folds(paired,witness,specs,workers=workers,root_path=result_path,protocol=protocol,
+            reference_witness=reference_witness)
     except Exception as error:result.update(status='INCOMPLETE',error=repr(error))
-    write(output/'result.json',result);return result
+    _atomic_write(result_path,result);return result
 
 
 def main():
@@ -156,6 +353,8 @@ def main():
     p.add_argument('--additional-train-directories',nargs=3,type=Path);p.add_argument('--witness-directory',type=Path)
     p.add_argument('--supplemental-train-directories',nargs=3,type=Path)
     p.add_argument('--supplemental-witness-directory',type=Path)
+    p.add_argument('--prefix-witness-directory',type=Path)
+    p.add_argument('--workers',type=int,default=1)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true')
     p.add_argument('--max-candidate-gate',action='store_true',
         help='run the bounded max-candidate gate hypothesis only');a=p.parse_args()
@@ -164,10 +363,16 @@ def main():
         p.error('--supplemental-train-directories and --supplemental-witness-directory must be provided together')
     if not a.smoke and not all((a.train_directories,a.additional_train_directories,a.witness_directory)):p.error('all train and witness inputs required')
     if a.max_candidate_gate and supplemental_args[0] is not None:p.error('--max-candidate-gate cannot be combined with supplemental inputs')
+    if a.prefix_witness_directory is not None and supplemental_args[0] is None:
+        p.error('--prefix-witness-directory requires supplemental nine-cycle inputs')
+    if a.prefix_witness_directory is not None and a.smoke:
+        p.error('--prefix-witness-directory is not available in smoke mode')
+    if not 1<=a.workers<=4:p.error('--workers must be in 1..4')
     torch.set_num_threads(1)
     result=run(a.train_directories,a.additional_train_directories,a.witness_directory,a.output,smoke=a.smoke,
         max_candidate_gate=a.max_candidate_gate,supplemental=a.supplemental_train_directories,
-        supplemental_witness=a.supplemental_witness_directory)
+        supplemental_witness=a.supplemental_witness_directory,prefix_witness=a.prefix_witness_directory,
+        workers=a.workers)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']),error=result['error'])))
     return 0 if result['status']=='COMPLETE' else 2
 

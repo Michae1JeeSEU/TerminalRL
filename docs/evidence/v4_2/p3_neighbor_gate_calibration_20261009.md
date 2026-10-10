@@ -190,3 +190,42 @@ full 输出为 `/home/user/training_outputs/terminal/p3_neighbor_supplemental_wi
 固定输入为 9 个 whole-parent seeds `893511/893512/893513/893601/893602/893603/893604/893605/893606`，共 `3149 actor = 577R/2572W`，复用 `473` auxiliary queries。route 为 `first_feasible_union` + `native_pair_auxiliary`，model seed `91911`、aux seed `91912`，每 fold `5000` updates / `1200s`，outer timeout `11400s`，仅 native 一臂。启动时 root 为 `RUNNING/error=null`；首 fold `893511` train/held 为 `3119/30`，aux train/held 为 `414/59`。随后前缀核对中首 fold 已到 marks `[0,100,500]`，root 仍 `RUNNING/error=null`；该前缀是非终态，不作训练完成或效果解释。
 
 启动时 server 观察到 `28` logical CPU 与约 `25 GiB` 空闲 RAM。用户要求尽量使用多核 CPU 并行可并行实验；本次已启动的单次 CV 保持冻结、不重启，后续独立 fold/arm/只读检查按 CPU/RAM 资源并行，存在依赖的验收任务串行。该 development CV 不构成 qualification，`Q` 与 old control 隔离，`PPO_ALLOWED=false`；不访问新 Q、不追加 seeds/epochs/预算，不把候选安全 label 作为 online observation。
+
+## 九周期 CV 终态（2026-10-10，北京时间；newly_run）
+
+九周期 development CV 已 `COMPLETE/exit0/error=null`。输出为 `/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle`，protocol/result SHA256 分别为 `994882bd2909391f23becb5abf01dba319dae421e9d9ece67aa6c0e6277db4f3` 与 `ab1e7d7c38c52d32393d650dc389e23e77eb844eedaa760798c698036af1d76e`。固定 `first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`，9 个 fold 均完成 marks `0/100/500/1000/2000/5000`；折次耗时合计 `7225.695s`，最大 `818.867s`，均低于每 fold `1200s` 与 outer `11400s` 上限。无 Q、teacher query 或 checkpoint；父子进程已退出，monitor heartbeat 已删除，`p3-v2-5` 仍为 `PAUSED`。
+
+下表为九个 held fold 的 validation 结果。`WAIT false-release` 是实际 WAIT 行被预测为 RELEASE 的比例；`pair blocked recall` 与 `blocker top1` 来自 native pair auxiliary。`auxiliary loss` 在聚合摘要中按 query 加权，这里保留每 fold 的 validation 值。
+
+| held seed | rows | RELEASE recall | WAIT false-release | proposal top1 | proposal top3 | joint | blocker top1 | pair blocked recall | auxiliary loss |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 893511 | 30 | 1.000000 | 1.000000 | 0.695652 | 0.956522 | 0.533333 | 0.771429 | 0.418605 | 1.127700 |
+| 893512 | 721 | 0.542553 | 0.084530 | 0.414894 | 0.595745 | 0.837725 | 0.625000 | 0.660000 | 0.877909 |
+| 893513 | 547 | 0.574713 | 0.141304 | 0.321839 | 0.517241 | 0.767824 | 0.645161 | 0.580000 | 0.901225 |
+| 893601 | 18 | 1.000000 | — | 0.666667 | 0.944444 | 0.666667 | 1.000000 | 1.000000 | 0.147322 |
+| 893602 | 571 | 0.426667 | 0.116935 | 0.440000 | 0.600000 | 0.812609 | 0.555556 | 0.918919 | 0.734031 |
+| 893603 | 371 | 0.706667 | 0.202703 | 0.480000 | 0.693333 | 0.719677 | 0.631579 | 0.647887 | 0.727836 |
+| 893604 | 57 | 0.702703 | 0.450000 | 0.594595 | 0.729730 | 0.473684 | 0.714286 | 0.600000 | 1.137350 |
+| 893605 | 542 | 0.573034 | 0.165563 | 0.449438 | 0.640449 | 0.756458 | 0.666667 | 0.727273 | 0.641787 |
+| 893606 | 292 | 0.379747 | 0.061033 | 0.354430 | 0.569620 | 0.756849 | 0.794118 | 0.735849 | 0.899846 |
+
+### old6 同 held 集合的配对聚合
+
+旧六回合 native control 与九周期结果在相同 old6 held 集合上比较；支持为 `2258 rows = 372R/1886W`。右侧 delta 为 new nine-cycle result 减 old6 control。这里的 `auxiliary loss` 是 query-weighted 摘要，其他指标按各自 stored support 聚合。
+
+| validation metric | old6 native control | new nine-CV on old6 held folds | delta |
+|---|---:|---:|---:|
+| RELEASE recall | 0.567204 (56.7204%) | 0.610215 (61.0215%) | +0.043011 |
+| WAIT false-release | 0.126723 (12.6723%) | 0.128844 (12.8844%) | +0.002121 |
+| proposal top1 | 0.413978 (41.3978%) | 0.440860 (44.0860%) | +0.026882 |
+| proposal top3 | 0.586022 (58.6022%) | 0.637097 (63.7097%) | +0.051075 |
+| joint | 0.786980 (78.6980%) | 0.789637 (78.9637%) | +0.002657 |
+| blocker top1 | 0.622093 (62.2093%) | 0.668605 (66.8605%) | +0.046512 |
+| pair blocked recall | 0.592308 (59.2308%) | 0.650000 (65.0000%) | +0.057692 |
+| auxiliary loss (query-weighted) | 1.236169 | 0.798130 | −0.438039 |
+
+### new3 独立聚合与九周期总支持
+
+三个 supplemental held fold 必须单独报告，支持为 `891 rows = 205R/686W`；这些数值不并入上表的 old6 配对 delta。new3 的 micro validation 为 RELEASE recall `0.521951` (`52.1951%`)、WAIT false-release `0.141399` (`14.1399%`)、proposal top1 `0.439024` (`43.9024%`)、top3 `0.629268` (`62.9268%`)、joint `0.738496` (`73.8496%`)、blocker top1 `0.724138`、pair blocked recall `0.716418`；auxiliary loss `0.856660` 为 query-weighted 摘要。
+
+九周期全部 native fold 的描述性支持为 `3149 rows = 577R/2572W`；对应 micro RELEASE recall `0.578856`、WAIT false-release `0.132193`、proposal top1 `0.440208`、top3 `0.634315`、joint `0.775167`、blocker top1 `0.687259`、pair blocked recall `0.672589`，auxiliary loss `0.817434`（query-weighted）。该 development CV 只记录这次固定比较，不能作为资格或 PPO 准入证据。后续本轮已完成 prefix coverage 的 prepare-only 预登记，详见 [prefix coverage 修复预登记](p3_neighbor_prefix_coverage_repair_20261010.md)；真实 prefix smoke/full/CV 尚未启动。

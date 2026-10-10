@@ -57,7 +57,21 @@ def stratified(rows):
     return sorted(chosen,key=lambda r:(r['tick'],int(r['uid'])))
 
 
-def candidate_indices(label):
+def candidate_indices(label, requested_joints=None):
+    if requested_joints is not None:
+        try:
+            values=list(requested_joints)
+        except TypeError as error:
+            raise ValueError('requested_joints must be a non-empty sequence') from error
+        require(values,'requested_joints must be non-empty')
+        require(all(isinstance(value,int) and not isinstance(value,bool) for value in values),
+            'requested_joints must contain only integers')
+        require(len(set(values))==len(values),'requested_joints must be unique')
+        require(all(1<=value<=25 for value in values),'requested_joints must be in 1..25')
+        audited=[item['joint_index'] for item in label['teacher_audit']]
+        selected=[joint for joint in audited if joint in set(values)]
+        require(len(selected)==len(values),'requested joint was not in original checked prefix')
+        return selected
     # Positive states add their first feasible intent; all-WAIT states add a
     # fixed extreme intent already checked by the original teacher. Unknown
     # suffixes of RELEASE labels are never fabricated as negative examples.
@@ -92,7 +106,8 @@ def global_block_reason(env,ego,target,interface):
     return None
 
 
-def witness_state(episode,entry,row,label,*,remaining_calls):
+def witness_state(episode,entry,row,label,*,remaining_calls,requested_joints=None):
+    candidates=candidate_indices(label,requested_joints)
     name=entry['snapshot'];require(Path(name).name==name,'invalid snapshot filename')
     path=episode/'snapshots'/name
     require(sha(path)==entry['snapshot_sha256'],'snapshot hash differs')
@@ -111,7 +126,7 @@ def witness_state(episode,entry,row,label,*,remaining_calls):
         candidates=[],plan_calls=0)
     blocked=global_block_reason(env,ego,target,interface)
     snapshot=WorldSnapshot(env.now,env.active,env.airspace)
-    for joint in candidate_indices(label):
+    for joint in candidates:
         expected=next(a for a in label['teacher_audit'] if a['joint_index']==joint)
         item=dict(joint=joint,original_feasible=expected['feasible'],original_reason=expected['reason'],
             global_reason=blocked,destinations=[])
