@@ -34,9 +34,9 @@ smoke 输出为 `D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix
 
 local `72` tests/`9.29s`、server `62` tests/`1.47s`；float32 outputs max diff `0`、parameter grad `1.19e-6`、input grad `4.47e-8`，float64 outputs `4.44e-16`、parameter grad `3.55e-15`、input grad `6.94e-17`，未放宽既有 torch tolerance。当前 monitor `p3-prefix` 已删除，`p3-v2-5` 未触碰。
 
-## 后续候选登记（approval_pending/NOT_STARTED）
+## 后续候选登记（user-authorized / RUNNING）
 
-`.tmp/p3_neighbor_ring_reuse_cv_proposed_20261010.json` 仅为候选新登记，尚未启动，需用户重新授权；原冻结 prefix CV 失败后禁止重跑。候选保持相同九 train `3149` rows/`1270` targets、model/aux seeds `91911/91912`、每 fold `5000/1200s`、最多 `4` spawn、outer `4200s`，新输出 `/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle`；旧 control 不重跑，不新 Q/PPO/formal。
+用户于 `2026-10-10`（北京时间）明确授权按原候选协议执行一次新登记；合法新 CV 已确认启动。观察时间为 UTC `2026-10-10T01:55:29.5700436Z`（北京时间 `09:55`，为观察时间，不伪作精确启动秒），输出 `/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle`，cwd `/home/user/projects/terminal`；wrapper/timeout/root/tracker `3138030/3138031/3138032/3138174`，workers `3138175/3138178/3138179/3138180`。root 为 `RUNNING`、`error=null`；首四个 held fold `893511/893512/893513/893601` 已到 marks `[0,100]`，其余五个仅有初始化文件，不能写成全程完成。两端 protocol SHA256 均为 `fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451`（与旧 run 相同，不能单凭 SHA 区分；以新输出路径与 source code 区分）；合法 launcher `.tmp/launch_p3_ring_reuse_cv_20261010.py` SHA256 为 `f41e36aa43fde0e9ef86f45c042b7d4fd45213717732caf71d9de6ef0a1e403d`，pycompile、逐 token 和 6 行 wrapper 验证均 PASS，已调用一次。launch manifest `.tmp/p3_neighbor_ring_reuse_cv_launch_valid_20261010.json` SHA256 为 `0ec818e13545e02d48b028b220558af1c63d09aa82072bd1261f3834c56ec754`，其中 19 项 source hashes 匹配；source code commit 为 `1575edefe5e55bfffbef8cca8dbdf2d3ce7bb796`，记录时 docs HEAD 为 `33b9e998cf63a657765dab25ca3754601ac6166e`。首次错误 shell 的 wrapper `3136102`、server sibling `nine_cycle.argparse_failure_001.log/.exit/.pid` 与 `.tmp/p3_neighbor_ring_reuse_cv_argparse_failure.json` 均保留，未生成 protocol/marks；该解析失败与当前合法新 run 分开记录。候选仍为 `3149` rows/`1270` targets/reference `473`、model/aux seeds `91911/91912`、每 fold `5000/1200s`、最多 `4` spawn、outer `4200s`；此前 prefix CV `0/9` fixed-5000 failure/partial 与旧 control 均保留，旧 control 不重跑，不新 Q/PPO/formal。monitor `p3-ring-reuse` 当前 ACTIVE、每 `15` 分钟，终态删除；`p3-v2-5` 保持 `PAUSED`。
 
 ## coverage gain（2026-10-10，本轮 newly_run）
 
