@@ -24,13 +24,13 @@ smoke 输出为 `D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix
 
 来源 `.tmp/p3_neighbor_prefix_cv_budget_check_20261010.json`，运行终态为 `INCOMPLETE/exit2`，错误为 `ValueError('fold wall budget exhausted')`；server/local `nine_cycle.log` 内容一致，exit 内容均为 `2`，所有父子进程已退出。首四个 held fold `893511/893512/893513/893601` 分别耗时 `1200.203/1200.083/1200.012/1200.167s`，均只写入 marks `[0,100,500,1000,2000]`；这四个 progress 记录均为 `ValueError` 终态，另 `5` folds 仅有初始化 `RUNNING` 文件、无 curve，`0/9` folds 达到 fixed-5000 `COMPLETE`。13 个关键文件两端 SHA 一致；protocol SHA256 为 `fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451`，result SHA256 为 `4d4ec4dc70a08a8b2cd96370d7f22b1eb5f9e8f93c3f1b873f761e2529bea051`；budget-check manifest SHA256 为 `ab2196d57684bc148173139486901d69fe41d138d37b246caca277a8c4af64f1`（路径元数据修正，不改原数据）。无重启、延长预算、换 seed 或换 model，原九周期 control `9/9` fixed-5000 complete 未重跑；source 为 `842e4f0`。该次 CV 失败及 partial/2000 产物永久保留，不作动作效果或泛化结论。
 
-该 partial/2000 结果不用于 prefix 动作效果或泛化结论，耗时分解尚未知。后续仅预备一次 `0 optimizer/0 updates` 固定权重短性能计时，不自动重启 CV；新 Q 保持隔离，`PPO_ALLOWED=false`。
+该 partial/2000 结果不用于 prefix 动作效果或泛化结论；后续固定权重分解见下：四并发每折主要计算变慢并触及预算；CPU 频率/缓存/带宽等具体硬件机制未单独归因。后续仅预备一次 `0 optimizer/0 updates` 固定权重短性能计时，不自动重启 CV；新 Q 保持隔离，`PPO_ALLOWED=false`。
 
 ## 计算效率与纯代数复用（2026-10-10，本轮 newly_run）
 
 `.tmp/p3_neighbor_runtime_probe_summary_20261010.json` 的旧 expanded 数据为单 worker `0.161371s/pass`、四 worker `0.302928s/pass`；四 worker 的总有效吞吐为 `8.4337` passes/s，单 worker 为 `4.1712` passes/s，aux forward 约占 wall `0.55%`。该计时只表明四并发时单折耗时增加并触及既定 fold wall budget；CPU 频率、cache 或 bandwidth 等具体机制未由此 probe 单独证实。
 
-纯代数修复保持 architecture、state_dict、loss、输入和 safety 不变：`3149` 行中 `1874` 个 ring non-final 行的 six pads 已由 `bases` 置零，因此相同 query 只计算 pad0 再 expand 到 six；final 行仍计算 six。固定权重 `ring_reuse_four` 的 `64` 个 timed passes 均值为 `0.148717s/pass`，相对旧四 worker 数据降低约 `50.91%`、为 `2.037x`；该结果不能断言 `5000` 全程必过或 P3 已解决。probe model 初始/最终 SHA 均为 `398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976`，`optimizer=0/reset=0/step=0/teacher=0/Q=false`，四个 parent/child 均已退出；官方 loader 只读既有 snapshot 重建资源。protocol/result SHA256 分别为 `309fb4ebdfbb7a47faaee254387876f45e971d20b0828c795c637d80699fe8d4` / `c572e1998ad2b6ae84858504a9f733b0d609f15df079760f16c015395b533546`。
+纯代数修复保持 architecture、state_dict、loss、输入和 safety 不变：`3149` 行中 `1874` 个 ring non-final 行的 six pads 已由 `bases` 置零，因此相同 query 只计算 pad0 再 expand 到 six；final 行仍计算 six。固定权重 `ring_reuse_four` 的 `64` 个 timed passes 均值为 `0.148717s/pass`，相对旧四 worker 数据降低约 `50.91%`、为 `2.037x`；该结果不能断言 `5000` 全程必过或 P3 已解决。probe model 初始/最终 SHA 均为 `398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976`，`optimizer=0/reset=0/step=0/teacher=0/Q=false`，probe 全部父子进程均已退出；官方 loader 只读既有 snapshot 重建资源。protocol/result SHA256 分别为 `309fb4ebdfbb7a47faaee254387876f45e971d20b0828c795c637d80699fe8d4` / `c572e1998ad2b6ae84858504a9f733b0d609f15df079760f16c015395b533546`。
 
 local `72` tests/`9.29s`、server `62` tests/`1.47s`；float32 outputs max diff `0`、parameter grad `1.19e-6`、input grad `4.47e-8`，float64 outputs `4.44e-16`、parameter grad `3.55e-15`、input grad `6.94e-17`，未放宽既有 torch tolerance。当前 monitor `p3-prefix` 已删除，`p3-v2-5` 未触碰。
 
