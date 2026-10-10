@@ -1,0 +1,7 @@
+## 2026-10-03 P3 统一实现修复（最新）
+
+- 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
+- 旧 V3 R2 在完成2/8臂后主动停止：legacy88=6N/0E/2F/0D/16U并异常；repaired88自然结束=2N/1E/20F/1D/0U。repaired90为未完成分支。PID2323277于UTC2026-10-02 17:45:57确认退出；旧产物不改写。旧heartbeat确认已不存在。矩阵对照不完整，不能报全矩阵PASS。
+- 已实现边界可恢复的V3速度过渡、nominal holder执行/预测约定、实际应急路线资源优先、路线能量期限、基于V3路线的入场估计、同tick批量容量和入场/队列互斥计时修复；统一90D/pre-action forced-WAIT、队列team reward与gate-only entropy选项。旧V2动力学和历史profile保留；新组合使用 `terminal_marl/configs/p3_integrated_repair.py`。
+- 当前状态：22文件最终相关回归196 passed；check-only和规则/冻结source两步smoke通过；3请求高SOC规则完整周期475 ticks、3正常完成、无碰撞/硬间隔违规/hash mismatch。相同场景冻结source540 ticks、3正常完成、同样无安全/hash违规；两次验证监控均已删除。尚未验证dense/低SOC和训练效果。没有新训练、held-out、checkpoint写入或默认promotion，`PPO_ALLOWED=false`。
+

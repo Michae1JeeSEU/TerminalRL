@@ -1,0 +1,74 @@
+{
+  "status": "completed",
+  "snapshot_server_time": "2026-10-01T23:55:40+08:00",
+  "artifacts": {
+    "source_checkpoint": {
+      "path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+      "sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "size_bytes": 518035,
+      "mtime": "2026-09-28 16:06:06.910577204 +0800"
+    },
+    "targets": {
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_targets_20261001/targets_v1.json",
+      "sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+      "size_bytes": 73056,
+      "mtime": "2026-10-01 22:42:05.253689988 +0800"
+    },
+    "anchor_full": {
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/full.json",
+      "sha256": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+      "size_bytes": 2780,
+      "mtime": "2026-10-01 23:27:57.582418980 +0800"
+    },
+    "readiness": {
+      "expected_filename": "samefolderfit_readiness_v1.json",
+      "expected_sha256": "646f95...809a",
+      "searched_named_path": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_targets_20261001/samefolderfit_readiness_v1.json",
+      "observed": "missing; exact-name search under terminal training outputs found no file"
+    }
+  },
+  "checkpoint_payload": {
+    "top_level_keys": ["metadata", "model", "report"],
+    "model_state_key_count": 29,
+    "canonical_tensor_digest_algorithm": "sha256(sorted state name + tensor CPU contiguous raw bytes)",
+    "canonical_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "metadata": {
+      "architecture_id": "v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3",
+      "policy_kind": "low_level",
+      "schema_version": "phaseA_landing_v1",
+      "action_schema_version": "low_action_schema_v4_2_hierarchical",
+      "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+      "observation_dimension": 88,
+      "low_level_action_dim": 3,
+      "low_level_joint_action_count": 26,
+      "temperature": 2.5,
+      "training_scope": "gate_adapter_only",
+      "normal_advantage": true,
+      "diagnostic_only": true,
+      "checkpoint_promotable": false,
+      "PPO_ALLOWED": false,
+      "ppo_called": false,
+      "training_called": true,
+      "optimizer_saved": false,
+      "optimizer_restored": false,
+      "teacher_called": false,
+      "heldout_consumed": false,
+      "source_checkpoint_sha256_in_metadata": "03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba"
+    },
+    "hidden_sizes": {"actor_encoder": [96,96,96], "critic_encoder": [96,96,96], "critic_head": [96,96,1], "gate_adapter": [96,96,2]},
+    "trainable_adapter_state_keys": ["gate_adapter.0.weight","gate_adapter.0.bias","gate_adapter.2.weight","gate_adapter.2.bias","gate_adapter.4.weight","gate_adapter.4.bias"],
+    "state_keys": ["gate_temperature","actor_encoder.0.weight","actor_encoder.0.bias","actor_encoder.2.weight","actor_encoder.2.bias","actor_encoder.4.weight","actor_encoder.4.bias","gate_head.weight","gate_head.bias","proposal_head.weight","proposal_head.bias","critic_encoder.0.weight","critic_encoder.0.bias","critic_encoder.2.weight","critic_encoder.2.bias","critic_encoder.4.weight","critic_encoder.4.bias","critic_head.0.weight","critic_head.0.bias","critic_head.2.weight","critic_head.2.bias","critic_head.4.weight","critic_head.4.bias","gate_adapter.0.weight","gate_adapter.0.bias","gate_adapter.2.weight","gate_adapter.2.bias","gate_adapter.4.weight","gate_adapter.4.bias"]
+  },
+  "targets_metadata": {
+    "status": "TARGETS_READY",
+    "schema": "p3_counterfactual_gate_targets_20261001_v1",
+    "cells": 4,
+    "scope": {"PPO_ALLOWED": false,"heldout_used": false,"optimizer_used": false,"teacher_used": false,"branches_per_state":104,"total_branches":416,"seeds":[9303401,9303402,9303403,9303404],"weights_changed":false},
+    "input_binding": {"before_checkpoint_sha256":"3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab","after_checkpoint_sha256":"d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f","source_label":"BEFORE3fe"}
+  },
+  "fit_output_directory_absent": true,
+  "matching_fit_process_observed": false,
+  "model_constructed": false,
+  "optimizer_constructed": false,
+  "forward_or_fit_run": false
+}

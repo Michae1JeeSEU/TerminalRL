@@ -1,0 +1,19 @@
+{
+  "status": "SCHEMA_SMOKE_OK",
+  "rows": 1,
+  "decisions": {
+    "approved": 7,
+    "safety_reject": 5
+  },
+  "reasons": {
+    "None": 7,
+    "PREDICTED_SEPARATION": 1,
+    "HEADWAY": 3,
+    "NO_MERGE_GAP": 1
+  },
+  "interfaces": {
+    "i2f": 2,
+    "m2i": 4,
+    "o2m": 6
+  }
+}

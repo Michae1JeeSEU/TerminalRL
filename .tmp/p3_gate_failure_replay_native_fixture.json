@@ -1,0 +1,4 @@
+{
+  "status": "fixture_exception",
+  "traceback": "Traceback (most recent call last):\n  File \"D:\\7_codespace\\terminal\\.tmp\\p3_gate_failure_replay_native_fixture.py\", line 250, in main\n    payload = _run_once()\n              ^^^^^^^^^^^\n  File \"D:\\7_codespace\\terminal\\.tmp\\p3_gate_failure_replay_native_fixture.py\", line 144, in _run_once\n    config = _fixture_config()\n             ^^^^^^^^^^^^^^^^^\n  File \"D:\\7_codespace\\terminal\\.tmp\\p3_gate_failure_replay_native_fixture.py\", line 88, in _fixture_config\n    return frozen.SimConfig(\n           ^^^^^^^^^^^^^^^^\nAttributeError: module 'terminal_marl.training.run_p3_forced_wait_frozen_20260930' has no attribute 'SimConfig'\n"
+}

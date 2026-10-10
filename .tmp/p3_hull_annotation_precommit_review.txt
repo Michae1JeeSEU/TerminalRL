@@ -1,0 +1,397 @@
+HEAD
+5251f362b2a8214b6a016f1bcc39fb18478263da
+REMOTE
+STATUS
+ M docs/CURRENT_STATUS.md
+ M docs/evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md
+ M docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+ M terminal_marl/core/trajectory_generator.py
+ M terminal_marl/core/trajectory_time_parameterization.py
+ M terminal_marl/training/diagnose_p3_ppo_credit_signal.py
+ M terminal_marl/training/p3_v25_course_data.py
+ M terminal_marl/training/run_p3_task_neutral_critic_warmup.py
+ M terminal_marl/training/run_p3_task_neutral_joint_batch.py
+ M terminal_marl/training/run_p3_task_neutral_pilot.py
+ M tests/test_p3_task_neutral_critic_warmup.py
+ M tests/test_p3_task_neutral_joint_batch.py
+ M tests/test_p3_v25_course_data.py
+?? .tmp/
+?? .tmp_admit_p3_adaptive_v7.py
+?? .tmp_collect_p3_gate_anchored_v6_pilot.py
+?? .tmp_finalize_p3_admission_v5.py
+?? .tmp_launch_p3_adaptive_kl_eval_v7.py
+?? .tmp_launch_p3_adaptive_kl_formal_v7.py
+?? .tmp_launch_p3_adaptive_kl_probe_v1.py
+?? .tmp_launch_p3_evaluate_coverage_repair.py
+?? .tmp_launch_p3_gate_anchored_v6.py
+?? .tmp_launch_p3_gate_repair_run2.py
+?? .tmp_launch_p3_kl_recovery_probe_v1.py
+?? .tmp_merge_slot_reconciliation_20260924.exit
+?? .tmp_p3_coverage_anchor_eval.py
+?? .tmp_p3_coverage_policy_probe.py
+?? .tmp_p3_dense24_emergency_analysis.json
+?? .tmp_p3_evaluate_coverage_repair.py
+?? .tmp_p3_export_bounded_replays.py
+?? .tmp_p3_export_coverage_replays.py
+?? .tmp_p3_force_release_probe.py
+?? .tmp_p3_gate_repair_collect.py
+?? .tmp_p3_hold_baseline/
+?? .tmp_p3_k3_coverage_diagnostic_v1.py
+?? .tmp_p3_policy_probe.py
+?? .tmp_p3_proposal_head_postfit_analysis.py
+?? .tmp_p3_remaining_outer_diagnostic.py
+?? .tmp_p3_reward_hook_debug.py
+?? .tmp_p3_target_replay_diagnostic.py
+?? .tmp_p3_task_neutral_update_diagnostic_20260928/
+?? .tmp_p3_v7_run0_energy_forensics.py
+?? .tmp_p3_v7_slot_closed_loop.py
+?? .tmp_p3_v7_slot_lifecycle.py
+?? .tmp_p3_v7_slot_state_compare.py
+?? .tmp_p3_v7_state_witness.py
+?? .tmp_p3_v7_terminal_dev_metrics.py
+?? .tmp_probe_soc846303.py
+?? .tmp_random_soc_trained843101_analysis.json
+?? .tmp_replay_soc846303.py
+?? .tmp_run_p3_admission_v5.sh
+?? .tmp_run_p3_formal_v5.sh
+?? .tmp_run_p3_formal_v5_restart1.sh
+?? .tmp_run_soc_arbitration_v1.sh
+?? .tmp_run_soc_canonical_v1.sh
+?? .tmp_soc_repair_secondary_constraints.json
+?? .tmp_stub_test/
+?? .tmp_trained_dense30_v2_smoke/
+?? .tmp_trained_dense30_v2_smoke2/
+?? .tmp_trained_dense30_v2_smoke2_stdout.json
+?? .tmp_trained_dense30_v2_smoke3/
+?? .tmp_trained_dense30_v2_smoke3_stdout.json
+?? .tmp_window_phase_preflight.py
+?? _diagnose_collisions.py
+?? _visualize_n30_diagnostic.py
+?? dev_logs/2026-05-19.md
+?? dev_logs/inner_path_clearance_seed840626_20260924.json
+?? dev_logs/inner_path_clearance_seed840626_20260924_full.json
+?? docs/evidence/v4_2/p3_task_neutral_critic_context_probe_20260929.md
+?? docs/evidence/v4_2/p3_task_neutral_critic_refresh_comparison_20260929.md
+?? docs/evidence/v4_2/p3_task_neutral_episodic_learning_protocol_20260929.md
+?? docs/evidence/v4_2/p3_task_neutral_gate_credit_protocol_20260929.md
+?? docs/evidence/v4_2/p3_task_neutral_larger_batch_protocol_20260929.md
+?? results/_buffered_process_product_benchmark_20260924.json
+?? results/_buffered_process_product_benchmark_20260924.py
+?? results/_extract_landing_flow_repair_summary.py
+?? results/_flow_perf_compare.py
+?? results/_flow_urgent_spacing_ablation.py
+?? results/_inspect_552_841301.py
+?? results/_landing_flow_v5.py
+?? results/_landing_flow_v6.py
+?? results/_merge_reconcile_12_840620.json.progress.json
+?? results/_merge_reconcile_12_840622.json.progress.json
+?? results/_merge_reconcile_final_12_840620.json.progress.json
+?? results/_merge_reconcile_final_12_840622.json.progress.json
+?? results/_probe_flow_v4_250.py
+?? results/_probe_flow_v5_missed_emergency.py
+?? results/_probe_holder_envelope.py
+?? results/_probe_inner_final_clearance.py
+?? results/_probe_nominal_holder_swept.py
+?? results/_probe_spiral_final.py
+?? results/_probe_uid16_blockers.py
+?? results/_profile_dense30_cpu_20260924.json
+?? results/_profile_dense30_cpu_20260924.json.progress.json
+?? results/_profile_dense30_cpu_20260924.stats
+?? results/_profile_dense30_cpu_20260924.top20.txt
+?? results/_trace_flow_baseline.py
+?? results/_trace_vertical_execution_841301.py
+?? results/_trace_viewer_841301.py
+?? results/_viewer_buffer_poc_20260924.json
+?? results/_viewer_buffer_poc_20260924.py
+?? results/_viewer_buffer_variant_c3_p2_t025_20260924.json
+?? results/_viewer_buffer_variant_c4_p3_t025_20260924.json
+?? results/_viewer_buffer_variant_c4_p3_t030_20260924.json
+?? results/_viewer_process_poc_20260924.json
+?? results/_viewer_process_poc_20260924.py
+?? results/dense30_continuous_preview_20260924.html
+?? results/emergency_nominal_holder_contract_probe_20260924.json
+?? results/flow_baseline_841301.json
+?? results/flow_baseline_841301.progress2.json
+?? results/flow_dev_841301_downstream_urgency_ablation.json
+?? results/flow_dev_841301_downstream_urgency_ablation.json.progress.json
+?? results/flow_dev_841301_spacing_ablation.json
+?? results/flow_dev_841301_spacing_ablation.json.progress.json
+?? results/flow_dev_841301_v1.json
+?? results/flow_dev_841301_v1.json.progress.json
+?? results/flow_dev_841301_v2.json
+?? results/flow_dev_841301_v2.json.progress.json
+?? results/flow_dev_841301_v3.json
+?? results/flow_dev_841301_v3.json.progress.json
+?? results/flow_dev_841301_v3_failure_probe.json
+?? results/flow_dev_841301_v3_failure_probe.json.progress.json
+?? results/flow_dev_841301_v3_original_pair_probe.json
+?? results/flow_dev_841301_v3_original_pair_probe.json.progress.json
+?? results/flow_dev_841301_v3_pair_probe.json
+?? results/flow_dev_841301_v3_pair_probe.json.progress.json
+?? results/flow_dev_841301_v4.json.progress.json
+?? results/flow_dev_841301_v4_aborted.json
+?? results/flow_dev_841301_v5.json
+?? results/flow_dev_841301_v5.json.progress.json
+?? results/flow_dev_841301_v6.json
+?? results/flow_dev_841301_v6.json.progress.json
+?? results/flow_dev_841301_v7.json
+?? results/flow_dev_841301_v7.json.progress.json
+?? results/flow_dev_841501_current_height_ablation.json
+?? results/flow_dev_841501_current_height_ablation.json.progress.json
+?? results/flow_dev_841501_downstream_dual_height_ablation.json
+?? results/flow_dev_841501_downstream_dual_height_ablation.json.progress.json
+?? results/flow_dev_841501_downstream_order_ablation.json
+?? results/flow_dev_841501_downstream_order_ablation.json.progress.json
+?? results/flow_dev_841501_downstream_urgency_ablation.json
+?? results/flow_dev_841501_downstream_urgency_ablation.json.progress.json
+?? results/flow_dev_841501_dual_height_urgency_ablation.json
+?? results/flow_dev_841501_dual_height_urgency_ablation.json.progress.json
+?? results/flow_dev_841501_final_capacity_ablation.json
+?? results/flow_dev_841501_final_capacity_ablation.json.progress.json
+?? results/flow_dev_841501_hold_prefix_ablation.json
+?? results/flow_dev_841501_hold_prefix_ablation.json.progress.json
+?? results/flow_dev_841501_integrated_urgency_ablation.json
+?? results/flow_dev_841501_integrated_urgency_ablation.json.progress.json
+?? results/flow_dev_841501_positive_bias_ablation.json
+?? results/flow_dev_841501_positive_bias_ablation.json.progress.json
+?? results/flow_dev_841501_soc_gate_ablation.json
+?? results/flow_dev_841501_soc_gate_ablation.json.progress.json
+?? results/flow_dev_841501_soc_gate_ablation_v2.json
+?? results/flow_dev_841501_soc_gate_ablation_v2.json.progress.json
+?? results/flow_dev_841501_spacing_ablation.json
+?? results/flow_dev_841501_spacing_ablation.json.progress.json
+?? results/flow_dev_841501_spiral_fallback_ablation.json
+?? results/flow_dev_841501_spiral_fallback_ablation.json.progress.json
+?? results/flow_dev_841501_urgent_spacing_ablation.json
+?? results/flow_dev_841501_urgent_spacing_ablation.json.progress.json
+?? results/flow_downstream_uid16_duration_probe.json
+?? results/flow_downstream_uid16_duration_probe.json.progress.json
+?? results/flow_final_dev_841301.json
+?? results/flow_final_dev_841301.json.progress.json
+?? results/flow_final_dev_841501.json
+?? results/flow_final_dev_841501.json.progress.json
+?? results/flow_final_dev_841502.json
+?? results/flow_final_dev_841502.json.progress.json
+?? results/flow_fresh_841501_baseline.json
+?? results/flow_fresh_841501_baseline.json.progress.json
+?? results/flow_fresh_841501_coordinated.json
+?? results/flow_fresh_841501_coordinated.json.progress.json
+?? results/flow_fresh_841502_baseline.json
+?? results/flow_fresh_841502_baseline.json.progress.json
+?? results/flow_fresh_841502_coordinated.json
+?? results/flow_fresh_841502_coordinated.json.progress.json
+?? results/flow_fresh_deadline_841701.json
+?? results/flow_fresh_deadline_841701.json.progress.json
+?? results/flow_fresh_deadline_841702.json
+?? results/flow_fresh_deadline_841702.json.progress.json
+?? results/flow_perf_equivalent_100.json
+?? results/flow_plan_validation_microbenchmark.json
+?? results/flow_positive_bias_feasibility.json
+?? results/flow_profile_841301_v7_100.json
+?? results/flow_profile_841301_v7_100.json.progress.json
+?? results/flow_profile_841301_v7_100.prof
+?? results/flow_profile_841301_v7_100.txt
+?? results/flow_repair_regression.txt
+?? results/flow_repair_regression_delivery.txt
+?? results/flow_repair_regression_final.txt
+?? results/flow_repair_regression_v6.txt
+?? results/flow_spiral_final_geometry_probe.json
+?? results/flow_uid16_blockers.json.progress.json
+?? results/flow_uid16_blockers.t200.pkl
+?? results/flow_uid16_blockers.t250.pkl
+?? results/flow_uid16_blockers.t300.pkl
+?? results/flow_uid16_blockers_v2.json
+?? results/flow_uid16_blockers_v2.json.progress.json
+?? results/flow_uid16_blockers_v2.t200.pkl
+?? results/flow_uid16_blockers_v2.t250.pkl
+?? results/flow_uid16_blockers_v2.t300.pkl
+?? results/flow_v4_state250.json
+?? results/flow_v5_missed_emergency_probe.json
+?? results/flow_v7_uid4_841501_probe.json
+?? results/flow_v7_uid7_841501_inner_spacing.json
+?? results/flow_v7_uid7_841501_probe.json
+?? results/holder_envelope_probe_841301.json
+?? results/inner_final_clearance_probe.json
+?? results/inner_final_clearance_summary.json
+?? results/landing_blockers_841301_baseline.json
+?? results/nominal_holder_swept_probe.json
+?? results/performance_chain_20260924_baseline.json
+?? results/performance_chain_20260924_baseline.json.progress.json
+?? results/performance_chain_20260924_baseline_r2.json
+?? results/performance_chain_20260924_baseline_r2.json.progress.json
+?? results/performance_chain_20260924_optimized.json
+?? results/performance_chain_20260924_optimized.json.progress.json
+?? results/performance_chain_20260924_optimized_profile.prof
+?? results/performance_chain_20260924_optimized_profile_top20.txt
+?? results/performance_chain_20260924_optimized_r2.json
+?? results/performance_chain_20260924_optimized_r2.json.progress.json
+?? results/phase3b_demo_n30.gif
+?? results/phase3b_diagnostic.json
+?? results/phase3b_n30_collision_summary_seed0.json
+?? results/phase3b_n30_diagnostic_multi_seed.json
+?? results/phase3b_n30_diagnostic_seed0.gif
+?? results/viewer_energy_ui.png
+?? results/viewer_repair_20260924/
+?? results/viewer_trace_841301_full.json
+?? results/viewer_trace_841301_preflight.json
+?? results/viewer_trace_841301_probe813.json
+?? results/viewer_vertical_execution_841301.json
+?? results/viewer_vertical_execution_841301_preflight.json
+?? scripts/server/eval.sh
+?? terminal_marl/configs/low_v4_2/ppo_target_kl_guard_diagnostic_v1.yaml
+?? terminal_marl/core/quintic_hull.py
+?? terminal_marl/plot/
+?? terminal_marl/training/diagnose_p3_task_neutral_episode_gradients.py
+?? terminal_marl/training/l1_release_calibrated_migration.py
+?? terminal_marl/training/l1_s3b_feasibility.py
+?? terminal_marl/training/l1_s3b_late_witness_diagnostic.py
+?? terminal_marl/training/l1_s3b_stochastic_stress.py
+?? terminal_marl/training/p3_v25_annotation_repair.py
+?? terminal_marl/training/probe_p3_task_neutral_critic_context.py
+?? terminal_marl/training/run_p3_task_neutral_critic_refresh_comparison.py
+?? terminal_marl/training/run_p3_task_neutral_learning_curve.py
+?? tests/test_p3_task_neutral_critic_context.py
+?? tests/test_p3_task_neutral_critic_refresh_comparison.py
+?? tests/test_p3_task_neutral_episode_gradients.py
+?? tests/test_p3_task_neutral_learning_curve.py
+?? tests/test_p3_v25_annotation_repair.py
+?? tests/test_quintic_hull.py
+CACHED
+DIFF_CHECK
+DIFF_STAT
+ docs/CURRENT_STATUS.md                             | 213 ++++++++++++++++++---
+ .../v4_2/p3_v25_neutral_course_20261008.md         |  36 ++++
+ terminal_marl/core/trajectory_generator.py         |   6 +
+ .../core/trajectory_time_parameterization.py       |  47 ++++-
+ terminal_marl/training/p3_v25_course_data.py       |  10 +-
+ tests/test_p3_v25_course_data.py                   |  14 ++
+ 6 files changed, 291 insertions(+), 35 deletions(-)
+TRACKED_IMPLEMENTATION_DIFF
+diff --git a/terminal_marl/core/trajectory_generator.py b/terminal_marl/core/trajectory_generator.py
+index 9f5d9e6..09ac845 100644
+--- a/terminal_marl/core/trajectory_generator.py
++++ b/terminal_marl/core/trajectory_generator.py
+@@ -12,6 +12,7 @@ import numpy as np
+ 
+ from .config import RingRole
+ from .polynomial_trajectory import QuinticSegment, prime_quintic_bounds
++from .quintic_hull import horizontal_hull_certifies
+ from .trajectory_time_parameterization import (
+     GeometricPath, TrajectoryConstraints, TrajectoryInfeasibleError, TrajectoryTimeParameterizer,
+ )
+@@ -534,6 +535,11 @@ class TrajectoryGenerator:
+                     )
+                     for left, right in zip(points, points[1:])
+                 )
++                if horizontal_hull_certifies(
++                    segments, profile.max_horizontal_speed + 1e-3,
++                    profile.max_horizontal_accel + 1e-3,
++                ):
++                    return points
+                 prime_quintic_bounds(segments)
+                 if all(
+                     segment.bounds()["max_horizontal_speed"] <= profile.max_horizontal_speed + 1e-3
+diff --git a/terminal_marl/core/trajectory_time_parameterization.py b/terminal_marl/core/trajectory_time_parameterization.py
+index 93ca5fd..9b138d4 100644
+--- a/terminal_marl/core/trajectory_time_parameterization.py
++++ b/terminal_marl/core/trajectory_time_parameterization.py
+@@ -8,6 +8,7 @@ import numpy as np
+ 
+ from .vehicle_dynamics import VehicleDynamics
+ from .polynomial_trajectory import prime_quintic_bounds
++from .quintic_hull import quintic_hull_bounds
+ 
+ 
+ class TrajectoryInfeasibleError(RuntimeError):
+@@ -200,7 +201,51 @@ class TrajectoryTimeParameterizer:
+         return speeds
+ 
+     def _v3_segments_feasible(self, segments) -> bool:
+-        """Check analytic segment bounds and a small finite-state sanity set."""
++        """Use sufficient hull bounds, with the original exact check as fallback."""
++        segments = tuple(segments)
++        if not segments:
++            return self._v3_segments_feasible_exact(segments)
++        try:
++            bounds = quintic_hull_bounds(segments)
++        except (TypeError, ValueError, RuntimeError, FloatingPointError, OverflowError, np.linalg.LinAlgError):
++            return self._v3_segments_feasible_exact(segments)
++        profile = self.dynamics.profile
++        tolerance = 1e-3
++        limits = dict(
++            max_horizontal_speed=profile.max_horizontal_speed,
++            max_horizontal_accel=min(profile.max_horizontal_accel, profile.max_horizontal_decel,
++                                     profile.max_lateral_accel),
++            max_climb_rate=profile.max_climb_rate, max_descent_rate=profile.max_descent_rate,
++            max_vertical_accel_up=profile.max_vertical_accel_up,
++            max_vertical_accel_down=profile.max_vertical_accel_down,
++            max_altitude=profile.max_operating_altitude_agl_m,
++        )
++        pending = []
++        for segment, bound in zip(segments, bounds):
++            certified = (all(np.isfinite(x) for x in bound.values())
++                         and bound['min_altitude'] >= -tolerance
++                         and all(bound[key] <= limit + tolerance for key, limit in limits.items()))
++            if not certified:
++                pending.append(segment)
++                continue
++            # Preserve the original finite-state sanity check for certified
++            # hulls too. The final safety/dynamics checks remain unchanged.
++            for moment in (segment.start_time, (segment.start_time + segment.end_time) / 2., segment.end_time):
++                position, velocity, acceleration = segment.sample(moment)
++                if not all(np.isfinite(x).all() for x in (position, velocity, acceleration)):
++                    return False
++                if (np.linalg.norm(velocity[:2]) > limits['max_horizontal_speed'] + tolerance
++                    or velocity[2] > limits['max_climb_rate'] + tolerance
++                    or -velocity[2] > limits['max_descent_rate'] + tolerance
++                    or np.linalg.norm(acceleration[:2]) > limits['max_horizontal_accel'] + tolerance
++                    or acceleration[2] > limits['max_vertical_accel_up'] + tolerance
++                    or -acceleration[2] > limits['max_vertical_accel_down'] + tolerance
++                    or position[2] < -tolerance or position[2] > limits['max_altitude'] + tolerance):
++                    return False
++        return not pending or self._v3_segments_feasible_exact(pending)
++
++    def _v3_segments_feasible_exact(self, segments) -> bool:
++        """Original analytic bounds and finite-state sanity fallback."""
+         segments = tuple(segments)
+         try:
+             prime_quintic_bounds(segments)
+diff --git a/terminal_marl/training/p3_v25_course_data.py b/terminal_marl/training/p3_v25_course_data.py
+index a9d62a7..ba0eb5c 100644
+--- a/terminal_marl/training/p3_v25_course_data.py
++++ b/terminal_marl/training/p3_v25_course_data.py
+@@ -37,9 +37,10 @@ def task_settings(config):
+     return json.loads(json.dumps({key:getattr(config,key) for key in keys}))
+ 
+ 
+-def collect(output, index, *, partition='train', smoke=False):
++def collect(output, index, *, partition='train', smoke=False, annotation_wall_seconds=7200):
+     require(partition in {'train','Q'}, 'unknown partition')
+     require(type(index) is int and 1<=index<=(1 if smoke else 3), 'unknown task case')
++    require(annotation_wall_seconds in (7200, 21600), 'undeclared annotation budget')
+     cases = TRAIN_CASES if partition=='train' else Q_CASES
+     seed,scenario = (SMOKE_SEED,'dense24_mixed') if smoke else cases[index-1]
+     config = build_config(scenario)
+@@ -51,7 +52,8 @@ def collect(output, index, *, partition='train', smoke=False):
+     protocol=dict(protocol=PROTOCOL,profile=PROFILE,index=index,seed=seed,scenario=scenario,
+         partition=wire_partition,schema=schema,smoke=smoke,task=task_settings(config),
+         max_steps=2 if smoke else int(config.max_simulation_seconds/config.dt),
+-        rollout_wall_seconds=180 if smoke else 3600,annotation_wall_seconds=180 if smoke else 7200,
++        rollout_wall_seconds=180 if smoke else 3600,
++        annotation_wall_seconds=180 if smoke else annotation_wall_seconds,
+         max_selected=2048,max_release_intents=51200,selection='all actor pre-states; tick/numeric UID',
+         behavior='rule_nominal_k3',teacher='state-only first feasible; not joint/global optimum',
+         checkpoint_loaded=False,I0_QUALIFIED=False,PPO_ALLOWED=False)
+@@ -139,8 +141,10 @@ def main():
+     parser.add_argument('--index',type=int,required=True)
+     parser.add_argument('--partition',choices=('train','Q'),default='train')
+     parser.add_argument('--smoke',action='store_true')
++    parser.add_argument('--annotation-wall-seconds',type=int,choices=(7200,21600),default=7200)
+     args=parser.parse_args()
+-    report=collect(args.output,args.index,partition=args.partition,smoke=args.smoke)
++    report=collect(args.output,args.index,partition=args.partition,smoke=args.smoke,
++                   annotation_wall_seconds=args.annotation_wall_seconds)
+     print(json.dumps(dict(status=report['status'],seed=report['seed'],error=report['error'])))
+     return 0 if report['status'] in {'SMOKE_OK','COLLECTION_OK'} else 2
+ 
+REMOTE_LINES=0

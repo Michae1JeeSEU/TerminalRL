@@ -1,0 +1,38 @@
+{
+  "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+  "phase": "pilot",
+  "status": "RUNNING",
+  "commit": "7e5d531",
+  "server": {
+    "host": "lab-server",
+    "observed_at": "2026-10-01T19:35:06+08:00",
+    "python_pid": 2187800,
+    "parent_pid": 2187799,
+    "cwd": "/home/user/projects/terminal",
+    "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_normal_gate_value_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001",
+    "exe": "/usr/bin/python3.12",
+    "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+    "elapsed_at_snapshot": "00:01:09",
+    "state": "R"
+  },
+  "bindings": {
+    "runner_sha256": "0a300fbef347bc8b428619d158baf9c85cd0deb3343d213e6b4ca3f0f5084e4d",
+    "test_sha256": "5b1ec7bccbe4dfc3bde40202ed5db7a4d47cd3672a59b19c29d69d2ac98a7015",
+    "protocol_sha256": "086f6e5cc42941cf2e564d7cfcbb44c057d3cdeba0e2936340d6ece80dcd6be6",
+    "preflight_sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8",
+    "selected_state": {"cell_id": "cell_01", "step": 307, "numeric_uid": 15, "arrival_id": 15, "soc": 0.7262173226131179},
+    "budget": {"branches_per_seed": 26, "branches_per_state": 104, "pilot_branches": 104, "full_new_branches": 312, "total_branches": 416, "max_steps": 1800}
+  },
+  "output": {
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001",
+    "log": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/pilot_v1.log", "bytes": 0, "server_mtime_epoch": 1790854437},
+    "preflight": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/preflight.json", "bytes": 9511, "server_mtime_epoch": 1790853948},
+    "expected_artifacts": {"progress.json": "absent", "pilot.json": "absent", "cell_01.json": "absent", "error.json": "absent", "partial.json": "absent"},
+    "first_complete_branch": "not observed at bounded snapshot"
+  },
+  "observations": {
+    "preflight_validation": "SERVER_VALID",
+    "pilot_launch": "single authorized launch; no full phase",
+    "model_or_env_metrics": "not available while running"
+  }
+}

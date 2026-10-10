@@ -51,6 +51,50 @@ def _require(condition: bool, message: str) -> None:
         raise CriticWarmupError(message)
 
 
+def _validate_gamma(gamma: float) -> float:
+    try:
+        value = float(gamma)
+    except (TypeError, ValueError) as exc:
+        raise CriticWarmupError("gamma must be finite and in [0, 1]") from exc
+    _require(math.isfinite(value) and 0.0 <= value <= 1.0,
+             "gamma must be finite and in [0, 1]")
+    return value
+
+
+def _gamma_target_label(gamma: float) -> str:
+    return f"production_mc_returns_gamma_{_validate_gamma(gamma):g}_complete_terminal_zero_bootstrap"
+
+
+def _gamma_argument(value: str) -> float:
+    try:
+        gamma = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("gamma must be finite and in [0, 1]") from exc
+    if not math.isfinite(gamma) or not 0.0 <= gamma <= 1.0:
+        raise argparse.ArgumentTypeError("gamma must be finite and in [0, 1]")
+    return gamma
+
+
+def _validate_reward_scale(reward_scale: float) -> float:
+    try:
+        value = float(reward_scale)
+    except (TypeError, ValueError) as exc:
+        raise CriticWarmupError("reward_scale must be finite and positive") from exc
+    _require(math.isfinite(value) and value > 0.0,
+             "reward_scale must be finite and positive")
+    return value
+
+
+def _reward_scale_argument(value: str) -> float:
+    try:
+        reward_scale = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("reward_scale must be finite and positive") from exc
+    if not math.isfinite(reward_scale) or reward_scale <= 0.0:
+        raise argparse.ArgumentTypeError("reward_scale must be finite and positive")
+    return reward_scale
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
@@ -143,7 +187,7 @@ def _states_equal(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
 
 def mc_targets(rewards: Sequence[float] | np.ndarray,
                episode_end: Sequence[bool] | np.ndarray | None = None,
-               *, gamma: float = GAMMA) -> np.ndarray:
+               *, gamma: float = GAMMA, reward_scale: float = 1.0) -> np.ndarray:
     """Compute complete-episode targets using production MC returns.
 
     ``episode_end`` permits several trajectories to be concatenated while
@@ -151,6 +195,8 @@ def mc_targets(rewards: Sequence[float] | np.ndarray,
     episode is delegated to ``credit.mc_returns`` rather than reimplementing
     its discount arithmetic.
     """
+    gamma = _validate_gamma(gamma)
+    reward_scale = _validate_reward_scale(reward_scale)
     values = np.asarray(rewards, dtype=np.float64)
     _require(values.ndim == 1 and np.isfinite(values).all(), "rewards must be a finite vector")
     if episode_end is None:
@@ -165,7 +211,9 @@ def mc_targets(rewards: Sequence[float] | np.ndarray,
     for index, is_end in enumerate(ends):
         if not bool(is_end):
             continue
-        result[start:index + 1] = credit.mc_returns(values[start:index + 1], float(gamma))
+        result[start:index + 1] = (
+            credit.mc_returns(values[start:index + 1], float(gamma)) * reward_scale
+        )
         start = index + 1
     _require(start == values.size, "MC targets require a terminal boundary for every trajectory")
     return result
@@ -203,7 +251,29 @@ def _critic_predictions_with_grad(policy: Any, worlds: Sequence[np.ndarray]) -> 
     )
 
 
-def _metrics(policy: Any, worlds: Sequence[np.ndarray], targets: Sequence[float]) -> dict[str, Any]:
+def _critic_output_layer(policy: Any) -> Any:
+    head = getattr(getattr(policy, "model", None), "critic_head", None)
+    _require(head is not None, "critic output head is missing")
+    if isinstance(head, torch.nn.Linear):
+        return head
+    linears = [module for module in head.modules() if isinstance(module, torch.nn.Linear)]
+    _require(linears, "critic output layer is missing")
+    return linears[-1]
+
+
+def _scale_critic_output(policy: Any, reward_scale: float) -> None:
+    reward_scale = _validate_reward_scale(reward_scale)
+    layer = _critic_output_layer(policy)
+    _require(getattr(layer, "bias", None) is not None,
+             "critic output layer bias is missing")
+    with torch.no_grad():
+        layer.weight.mul_(reward_scale)
+        layer.bias.mul_(reward_scale)
+
+
+def _metrics(policy: Any, worlds: Sequence[np.ndarray], targets: Sequence[float], *,
+             reward_scale: float = 1.0) -> dict[str, Any]:
+    reward_scale = _validate_reward_scale(reward_scale)
     target_array = np.asarray(targets, dtype=np.float64)
     prediction = _critic_predictions(policy, worlds)
     _require(prediction.shape == target_array.shape, "critic predictions and targets are misaligned")
@@ -216,6 +286,10 @@ def _metrics(policy: Any, worlds: Sequence[np.ndarray], targets: Sequence[float]
         "count": int(len(target_array)),
         "mse": mse,
         "mae": mae,
+        "normalized_mse": mse,
+        "normalized_mae": mae,
+        "raw_mse": None if mse is None else float(mse / (reward_scale ** 2)),
+        "raw_mae": None if mae is None else float(mae / reward_scale),
         "explained_variance": explained,
     }
 
@@ -340,8 +414,11 @@ def _preflight() -> dict[str, Any]:
 
 
 def _collect_trajectories(
-    inputs: Mapping[str, Any], *, progress_callback: Any = None,
+    inputs: Mapping[str, Any], *, gamma: float = GAMMA, reward_scale: float = 1.0,
+    progress_callback: Any = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    gamma = _validate_gamma(gamma)
+    reward_scale = _validate_reward_scale(reward_scale)
     trajectories: list[dict[str, Any]] = []
     reports: list[dict[str, Any]] = []
     checkpoint = Path(inputs["checkpoint"])
@@ -363,7 +440,7 @@ def _collect_trajectories(
         rewards = np.asarray([float(step.reward) for step in steps], dtype=np.float64)
         ends = np.asarray([bool(step.episode_end or step.terminated) for step in steps], dtype=bool)
         _require(len(steps) > 0 and bool(ends[-1]), f"{cell['scenario']}/{cell['seed']} has no terminal step")
-        targets = mc_targets(rewards, ends, gamma=GAMMA)
+        targets = mc_targets(rewards, ends, gamma=gamma, reward_scale=reward_scale)
         after_digest = rank_eval._model_digest(policy)
         _require(before_digest == after_digest, f"{cell['scenario']}/{cell['seed']} model changed during replay")
         reports.append(_trajectory_record(
@@ -387,8 +464,11 @@ def _collect_trajectories(
 def fit_critic(policy: Any, trajectories: Sequence[Mapping[str, Any]], *, epochs: int = EPOCHS,
                minibatch_size: int = MINIBATCH_SIZE, learning_rate: float = LEARNING_RATE,
                permutation_seed: int = PERMUTATION_SEED, grad_clip: float = GRAD_CLIP,
+               gamma: float = GAMMA, reward_scale: float = 1.0,
                progress_callback: Any = None) -> dict[str, Any]:
     """Fit only critic parameters and return before/after error evidence."""
+    gamma = _validate_gamma(gamma)
+    reward_scale = _validate_reward_scale(reward_scale)
     _require(trajectories, "critic warmup requires trajectories")
     worlds = [world for trajectory in trajectories for world in trajectory["worlds"]]
     targets = np.concatenate([
@@ -396,15 +476,16 @@ def fit_critic(policy: Any, trajectories: Sequence[Mapping[str, Any]], *, epochs
     ])
     _require(len(worlds) == len(targets), "warmup worlds and targets are misaligned")
     before_state = _clone_state(policy.model.state_dict())
+    _scale_critic_output(policy, reward_scale)
     for name, parameter in policy.model.named_parameters():
         parameter.requires_grad = _is_critic_name(name)
     critic_parameters = [parameter for parameter in policy.model.parameters() if parameter.requires_grad]
     _require(critic_parameters, "critic warmup scope is empty")
     optimizer = torch.optim.Adam(critic_parameters, lr=float(learning_rate))
-    before_metrics = _metrics(policy, worlds, targets)
+    before_metrics = _metrics(policy, worlds, targets, reward_scale=reward_scale)
     before_cells = {
         f"{trajectory['scenario']}_{int(trajectory['seed'])}": _metrics(
-            policy, trajectory["worlds"], trajectory["targets"]
+            policy, trajectory["worlds"], trajectory["targets"], reward_scale=reward_scale,
         )
         for trajectory in trajectories
     }
@@ -426,10 +507,10 @@ def fit_critic(policy: Any, trajectories: Sequence[Mapping[str, Any]], *, epochs
             progress_callback(int(epoch + 1), int(epochs))
     policy.model.eval()
     after_state = _clone_state(policy.model.state_dict())
-    after_metrics = _metrics(policy, worlds, targets)
+    after_metrics = _metrics(policy, worlds, targets, reward_scale=reward_scale)
     after_cells = {
         f"{trajectory['scenario']}_{int(trajectory['seed'])}": _metrics(
-            policy, trajectory["worlds"], trajectory["targets"]
+            policy, trajectory["worlds"], trajectory["targets"], reward_scale=reward_scale,
         )
         for trajectory in trajectories
     }
@@ -450,14 +531,15 @@ def fit_critic(policy: Any, trajectories: Sequence[Mapping[str, Any]], *, epochs
         "after_per_cell": after_cells,
         "actor_invariance": actor_invariance,
         "fit_parameters": {
-            "gamma": GAMMA,
+            "gamma": gamma,
+            "reward_scale": reward_scale,
             "epochs": int(epochs),
             "minibatch_size": int(minibatch_size),
             "learning_rate": float(learning_rate),
             "permutation_seed": int(permutation_seed),
             "grad_clip": float(grad_clip),
             "loss": "MSE",
-            "target": "production_mc_returns_gamma_0.99_complete_terminal_zero_bootstrap",
+            "target": _gamma_target_label(gamma),
             "early_select": False,
             "reward_changed": False,
             "gae_lambda_changed": False,
@@ -471,10 +553,14 @@ def _warmup_payload(policy: Any, inputs: Mapping[str, Any], fit: Mapping[str, An
         for scenario, config in inputs["neutral_configs"].items()
     }
     state = _clone_state(policy.model.state_dict())
+    fit_parameters = dict(fit["fit_parameters"])
+    fit_parameters.setdefault("reward_scale", 1.0)
     return {
         "format": "p3_task_neutral_critic_warmup_v1",
         "stage": STAGE,
         "curriculum_id": CURRICULUM_ID,
+        "gamma": float(fit_parameters["gamma"]),
+        "reward_scale": float(fit_parameters["reward_scale"]),
         "task_priority_enabled": False,
         "low_level_priority_time_weight": 0.0,
         "neutral_config_snapshots": snapshots,
@@ -482,7 +568,7 @@ def _warmup_payload(policy: Any, inputs: Mapping[str, Any], fit: Mapping[str, An
         "parent_checkpoint_sha256": str(inputs["checkpoint_sha256"]),
         "model_state": state,
         "actor_invariance": dict(fit["actor_invariance"]),
-        "fit_parameters": dict(fit["fit_parameters"]),
+        "fit_parameters": fit_parameters,
         "fit_metrics": {
             "before": dict(fit["before"]),
             "after": dict(fit["after"]),
@@ -495,12 +581,17 @@ def _warmup_payload(policy: Any, inputs: Mapping[str, Any], fit: Mapping[str, An
     }
 
 
-def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
+def run(output_dir: str | Path, *, check_only: bool = False,
+        gamma: float = GAMMA, reward_scale: float = 1.0) -> dict[str, Any]:
+    gamma = _validate_gamma(gamma)
+    reward_scale = _validate_reward_scale(reward_scale)
     output = Path(output_dir)
     _require(not output.exists(), f"output directory must be fresh: {output}")
     output.mkdir(parents=True, exist_ok=False)
     progress_path = output / "progress.json"
-    _write_json(progress_path, {"stage": STAGE, "status": "STARTING", "check_only": bool(check_only), "processed_cells": 0})
+    _write_json(progress_path, {"stage": STAGE, "status": "STARTING", "check_only": bool(check_only),
+                                "gamma": gamma, "reward_scale": reward_scale,
+                                "processed_cells": 0})
     completed_cells = 0
     fit_started = False
     try:
@@ -519,12 +610,17 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
                 "stage": STAGE,
                 "status": "CHECK_ONLY_OK",
                 "check_only": True,
+                "gamma": gamma,
+                "reward_scale": reward_scale,
                 "preflight": preflight,
-                "scope": {"replay_calls": 0, "env_reset": False, "optimizer_used": False},
+                "scope": {"replay_calls": 0, "env_reset": False, "optimizer_used": False,
+                          "gamma": gamma, "reward_scale": reward_scale},
                 "artifacts": {"progress": str(progress_path), "report": str(output / "report.json")},
             }
             _write_json(output / "report.json", report)
-            _write_json(progress_path, {"stage": STAGE, "status": "CHECK_ONLY_OK", "check_only": True, "processed_cells": 0})
+            _write_json(progress_path, {"stage": STAGE, "status": "CHECK_ONLY_OK", "check_only": True,
+                                        "gamma": gamma, "reward_scale": reward_scale,
+                                        "processed_cells": 0})
             return report
 
         def replay_progress(phase: str, processed: int, expected: int) -> None:
@@ -532,14 +628,19 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
             completed_cells = int(processed)
             _write_json(progress_path, {
                 "stage": STAGE, "status": "REPLAYING", "check_only": False,
+                "gamma": gamma, "reward_scale": reward_scale,
                 "phase": phase, "processed_cells": int(processed), "expected_cells": int(expected),
                 "fit_started": False,
             })
 
         trajectories, trajectory_reports = _collect_trajectories(
-            inputs, progress_callback=replay_progress,
+            inputs, gamma=gamma, reward_scale=reward_scale,
+            progress_callback=replay_progress,
         )
-        _write_json(progress_path, {"stage": STAGE, "status": "FITTING", "check_only": False, "processed_cells": 6, "fit_started": True, "fit_epoch": 0, "fit_epochs": EPOCHS})
+        _write_json(progress_path, {"stage": STAGE, "status": "FITTING", "check_only": False,
+                                    "gamma": gamma, "reward_scale": reward_scale,
+                                    "processed_cells": 6, "fit_started": True,
+                                    "fit_epoch": 0, "fit_epochs": EPOCHS})
         policy, _payload = rank_eval._load_policy(Path(inputs["checkpoint"]), inputs["neutral_configs"]["dense24"])
         # Replay values are data only; reload the fixed candidate before the fit.
         fit_started = True
@@ -547,11 +648,13 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
         def fit_progress(epoch: int, epochs: int) -> None:
             _write_json(progress_path, {
                 "stage": STAGE, "status": "FITTING", "check_only": False,
+                "gamma": gamma, "reward_scale": reward_scale,
                 "processed_cells": 6, "fit_started": True,
                 "fit_epoch": int(epoch), "fit_epochs": int(epochs),
             })
 
-        fit = fit_critic(policy, trajectories, progress_callback=fit_progress)
+        fit = fit_critic(policy, trajectories, gamma=gamma, reward_scale=reward_scale,
+                         progress_callback=fit_progress)
         payload = _warmup_payload(policy, inputs, fit, trajectory_reports)
         warmup_path = output / "warmup.pt"
         _require(not warmup_path.exists(), f"refusing to overwrite warmup checkpoint: {warmup_path}")
@@ -560,6 +663,8 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
             "stage": STAGE,
             "status": "COMPLETED",
             "check_only": False,
+            "gamma": gamma,
+            "reward_scale": reward_scale,
             "preflight": preflight,
             "trajectory_reports": trajectory_reports,
             "fit": fit,
@@ -572,6 +677,7 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
                 "reward_changed": False,
                 "safety_changed": False,
                 "same_data_fit_not_generalization": True,
+                "gamma": gamma, "reward_scale": reward_scale,
             },
             "artifacts": {
                 "progress": str(progress_path),
@@ -589,13 +695,17 @@ def run(output_dir: str | Path, *, check_only: bool = False) -> dict[str, Any]:
             "stage": STAGE,
             "status": "FAILED",
             "check_only": bool(check_only),
+            "gamma": gamma,
+            "reward_scale": reward_scale,
             "error": {"type": type(exc).__name__, "message": str(exc)},
-            "scope": {"replay_calls": int(completed_cells), "optimizer_used": bool(fit_started), "ppo_updates": False},
+            "scope": {"replay_calls": int(completed_cells), "optimizer_used": bool(fit_started),
+                      "ppo_updates": False, "gamma": gamma, "reward_scale": reward_scale},
             "artifacts": {"progress": str(progress_path), "report": str(output / "report.json")},
         }
         _write_json(output / "report.json", report)
         _write_json(progress_path, {
             "stage": STAGE, "status": "FAILED", "check_only": bool(check_only),
+            "gamma": gamma, "reward_scale": reward_scale,
             "processed_cells": int(completed_cells), "fit_started": bool(fit_started),
             "error": str(exc),
         })
@@ -606,12 +716,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--gamma", type=_gamma_argument, default=GAMMA)
+    parser.add_argument("--reward-scale", type=_reward_scale_argument, default=1.0)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    result = run(args.output_dir, check_only=bool(args.check_only))
+    result = run(args.output_dir, check_only=bool(args.check_only), gamma=float(args.gamma),
+                 reward_scale=float(args.reward_scale))
     print(json.dumps(_jsonable({"stage": STAGE, "status": result.get("status"), "output_dir": str(args.output_dir)}), sort_keys=True), flush=True)
     return 0 if result.get("status") in {"COMPLETED", "CHECK_ONLY_OK"} else 1
 

@@ -1,0 +1,87 @@
+{
+  "schema": "p3_blocker_ranking_cv_launch_20261010_v1",
+  "observed_utc": "2026-10-10T03:01:02Z",
+  "first_process_observed_utc": "2026-10-10T02:59:04Z",
+  "source_commit": "d227b146cc2d4acdead69a56d532c858e81dfc54",
+  "manifest_sha256": "bf17d46e9168cb77b1252e74e0bcddebb66e8852e596d235b7a4b8bbaa695a39",
+  "launcher_sha256": "af1a3ff16a8ea71fcd3e84f455f07d983ba768386f676af7e7c19f15f26ccb16",
+  "dryrun_sha256": "64c5cebab24c5fced8b21800d8e3d1277bca6746160e5982d8606fb3d2019807",
+  "target": "/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle",
+  "launcher": {
+    "command": "venv\\Scripts\\python.exe .tmp/launch_p3_blocker_ranking_cv_20261010.py --execute",
+    "exit_code": 0,
+    "stdout_lines": [
+      "terminal_marl/training/p3_neighbor_prefix_coverage_data.py: 成功",
+      "terminal_marl/training/p3_v26_train_dataset.py: 成功",
+      "terminal_marl/training/p3_v25_course_data.py: 成功",
+      "terminal_marl/training/p3_v26_course_data.py: 成功",
+      "terminal_marl/training/p3_v26_supplemental_data.py: 成功",
+      "terminal_marl/training/p3_neighbor_witness_data.py: 成功",
+      "terminal_marl/training/p3_neighbor_witness_dataset.py: 成功",
+      "terminal_marl/scripts/diagnose_p3_intent_neighbor.py: 成功",
+      "terminal_marl/algo/intent_neighbor_actor.py: 成功",
+      "tests/test_p3_v26_train_dataset.py: 成功",
+      "tests/test_p3_neighbor_witness_data.py: 成功",
+      "tests/test_p3_neighbor_witness_dataset.py: 成功",
+      "tests/test_p3_supplemental_neighbor_data.py: 成功",
+      "tests/test_p3_neighbor_prefix_coverage_data.py: 成功",
+      "tests/test_p3_neighbor_prefix_parallel.py: 成功",
+      "tests/test_p3_neighbor_prefix_queries.py: 成功",
+      ".tmp/run_p3_neighbor_prefix_20261010.py: 成功",
+      ".tmp/profile_p3_neighbor_runtime_20261010.py: 成功",
+      "tests/test_intent_neighbor_ring_score_reuse.py: 成功",
+      "tests/test_p3_neighbor_blocker_ranking.py: 成功",
+      "pid=3145302"
+    ],
+    "source20_match_guard": true,
+    "no_duplicate_guard": true,
+    "target_absence_guard": true
+  },
+  "process_tree": {
+    "wrapper_pid": 3145302,
+    "timeout_pid": 3145303,
+    "root_python_pid": 3145304,
+    "resource_tracker_pid": 3145381,
+    "worker_pids": [3145382, 3145385, 3145386, 3145387],
+    "cwd": "/home/user/projects/terminal",
+    "observed_workers": 4,
+    "env": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "initial_observations": {
+    "root_status": "RUNNING",
+    "root_error": null,
+    "first_four": {
+      "893511": {"status": "RUNNING", "error": null, "latest_update": 100},
+      "893512": {"status": "RUNNING", "error": null, "latest_update": 500},
+      "893513": {"status": "RUNNING", "error": null, "latest_update": 500},
+      "893601": {"status": "RUNNING", "error": null, "latest_update": 100}
+    },
+    "other_five_progress_files_present": true,
+    "root_exit_present": false
+  },
+  "protocol": {
+    "server_sha256": "cbc50d308327f123cfb396261b4e0445bae818552227a8dbb956cbe722ca5206",
+    "local_sha256": "cbc50d308327f123cfb396261b4e0445bae818552227a8dbb956cbe722ca5206",
+    "architecture_variant": "intent_destination_neighbor_risk_v1__gate_first_feasible_union",
+    "arm": "native_pair_auxiliary",
+    "loss_variant": "native_pair_auxiliary_plus_blocker_ranking",
+    "blocker_ranking_loss_variant": "known_blocked_mass_within_known_neighbors",
+    "blocker_ranking_weight": 0.25,
+    "model_seed": 91911,
+    "auxiliary_seed_expected": 91912,
+    "auxiliary_seed_explicit_in_protocol_json": false,
+    "actor_rows": 3149,
+    "expanded_support_queries": 1270,
+    "reference_support_queries": 473,
+    "training_eligible_queries": 808,
+    "reference_eligible_queries": 232,
+    "workers": 4,
+    "fold_updates": 5000,
+    "fold_wall_seconds": 1200,
+    "outer_timeout_seconds": 4200
+  }
+}

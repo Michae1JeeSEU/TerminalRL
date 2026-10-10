@@ -1,0 +1,14 @@
+archive=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_cbb9cd9fd590ce82bbf36288897ec859d2baa0e4
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+KeyError: 'max_replay_steps'
+--- corrected archive preflight ---
+ARCHIVE_PREFLIGHT_OK
+runner_import=terminal_marl.training.run_p3_followup_diagnostics
+state_observer_default=None
+MAX_REPLAY_STEPS=1000
+episodegrad_present=False
+--- archive integration tests ---
+........................................................................ [ 87%]
+..........                                                               [100%]
+82 passed in 45.75s

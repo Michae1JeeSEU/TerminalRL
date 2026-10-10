@@ -1,0 +1,18 @@
+{
+  "train_rows": 2258,
+  "max_neighbors": 20,
+  "queries": 317,
+  "known_pairs": 2899,
+  "blocked_pairs": 260,
+  "known_scene": 145,
+  "blocked_scene": 16,
+  "by_seed": {
+    "893511": 59,
+    "893512": 52,
+    "893513": 56,
+    "893601": 33,
+    "893602": 54,
+    "893603": 63
+  },
+  "original_labels_and_inputs_consistent": true
+}

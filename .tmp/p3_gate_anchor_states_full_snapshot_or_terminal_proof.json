@@ -1,0 +1,15 @@
+{
+  "status": "RUNNING",
+  "phase": "full",
+  "snapshot_server_time": "2026-10-01T23:27:55+08:00",
+  "python_pid": 2204414,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.collect_p3_gate_anchor_states_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001",
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"cell_id": 4, "step": 449, "steps_expected": 723, "rows_recorded": 6418, "active_actor_count": 9, "empty_world_ticks": 0},
+  "completed_cells": {
+    "2": {"steps": 674, "rows": 6909, "empty_world_ticks": 30, "cell_sha256": "2d526383e57e0e5f7290f396bfb830f92861c0536fed550631e8777c9c9dda3a", "npz_sha256": "7e1671404a97e617de86ea73b20bb6b9ffd2d28301ff92ceb78b99ab2ccd7d75", "counts": {"requested_gate": {"true": 267, "false": 6642, "unknown": 0}, "actor_mask": {"true": 2062, "false": 4847, "unknown": 0}}},
+    "3": {"steps": 644, "rows": 7070, "empty_world_ticks": 41, "cell_sha256": "9d1289683476e7b7bd1f1e7259a3d2d68f1288e0c216f49288cc51eb7e1d998b", "npz_sha256": "c5cb8b954a78e8e69e0ea349121273db5af6d5671fd214800599d253bf6c4df5", "counts": {"requested_gate": {"true": 290, "false": 6780, "unknown": 0}, "actor_mask": {"true": 2289, "false": 4781, "unknown": 0}}}
+  },
+  "completed_cell_checks": {"replay_exact": true, "config_match": true, "reset_recipe_match": true, "reset_state_match": true, "base_reset_state_match": true, "controller_restored": true, "caller_rng_before_restore": true, "caller_rng_after_restore": true, "source_safety_nonzero": false, "lifecycle_valid": true, "server_mirror_sha_equal": true}
+}

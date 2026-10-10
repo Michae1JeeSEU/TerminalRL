@@ -1,0 +1,107 @@
+{
+  "status": "COMPLETE",
+  "case": "C_det",
+  "tick": 600,
+  "uid": 18,
+  "reset_calls": 0,
+  "step_calls": 0,
+  "teacher_calls": 0,
+  "candidates": [
+    {
+      "variant": "original",
+      "reason": "predicted_separation",
+      "elapsed_seconds": 2.219000000040978,
+      "proposal": {
+        "target": "inner",
+        "merge_time": 716.8810405545071,
+        "merge_angle": 4.1404190455015835,
+        "headway": 9.0
+      },
+      "plan": {
+        "start": 600.0,
+        "end": 716.8810405545071,
+        "duration": 116.88104055450708,
+        "hash": "08df1ec297ac20827fd22635b0af1ad0aa053a5915be89052bba7ef14a5b6e2b",
+        "metadata": {
+          "target_phase": "ring_inner",
+          "transfer_geometry": "forward_annular_v1",
+          "source_tangent": [
+            0.9863465285849726,
+            0.1646831064449957,
+            0.0
+          ],
+          "target_tangent": [
+            0.8408363022947505,
+            -0.5412894907009475,
+            0.0
+          ],
+          "speed_residual_mps": 0.0,
+          "scheduled_departure": 611.026725176091,
+          "accepted_reservation_departure": 611.026725176091,
+          "transfer_entry_speed_mps": 12.230613294774816,
+          "requested_entry_speed_mps": 20.0,
+          "merge_time": 716.8810405545071,
+          "vehicle_profile_id": "research_evtol",
+          "vehicle_profile_version": "eh216s_research_v2",
+          "trajectory_schema_version": "executable_trajectory_v3",
+          "trajectory_hash": "08df1ec297ac20827fd22635b0af1ad0aa053a5915be89052bba7ef14a5b6e2b",
+          "requested_merge_time": 673.75,
+          "requested_merge_late_seconds": 43.13104055450708
+        },
+        "checked_hash": null
+      },
+      "audit": {
+        "minimum_separation": null,
+        "checked_pairs": 0,
+        "reason": "not_run"
+      }
+    },
+    {
+      "variant": "forecast_gap",
+      "reason": "predicted_separation",
+      "elapsed_seconds": 1.1720000002533197,
+      "proposal": {
+        "target": "inner",
+        "merge_time": 673.75,
+        "merge_angle": 0.9988263919117948,
+        "headway": 9.0
+      },
+      "plan": {
+        "start": 600.0,
+        "end": 673.69165285012,
+        "duration": 73.69165285012002,
+        "hash": "aaff996fdf2f32212322322d9ed1906ebbf0427604c03efe68152e93a71c9e1f",
+        "metadata": {
+          "target_phase": "ring_inner",
+          "transfer_geometry": "legacy_cubic",
+          "source_tangent": [
+            0.43863008623848204,
+            0.8986677069119718,
+            0.0
+          ],
+          "target_tangent": [
+            -0.8408363022947529,
+            0.5412894907009436,
+            0.0
+          ],
+          "speed_residual_mps": 0.0,
+          "scheduled_departure": 642.484023670461,
+          "accepted_reservation_departure": 642.484023670461,
+          "transfer_entry_speed_mps": 12.095808458332233,
+          "requested_entry_speed_mps": 20.0,
+          "merge_time": 673.75,
+          "vehicle_profile_id": "research_evtol",
+          "vehicle_profile_version": "eh216s_research_v2",
+          "trajectory_schema_version": "executable_trajectory_v3",
+          "trajectory_hash": "aaff996fdf2f32212322322d9ed1906ebbf0427604c03efe68152e93a71c9e1f"
+        },
+        "checked_hash": null
+      },
+      "audit": {
+        "minimum_separation": null,
+        "checked_pairs": 0,
+        "reason": "not_run"
+      }
+    }
+  ]
+}

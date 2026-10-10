@@ -1,0 +1,29 @@
+{
+  "headless": {
+    "steps": 20,
+    "wall_seconds": 6.8531105001457036,
+    "steps_per_second": 2.9183828277064525
+  },
+  "product_observer": {
+    "steps": 20,
+    "ready": true,
+    "startup_wall_seconds": 1.6299295998178422,
+    "simulation_wall_seconds": 7.0919746002182364,
+    "sim_steps_per_second": 2.8200890622739334,
+    "headless_steps_per_second": 2.9183828277064525,
+    "sim_slowdown_fraction": 0.033680901799222784,
+    "source_frames": 20,
+    "source_rate_hz": 3.5227126992725197,
+    "interpolation": {
+      "frames": 70,
+      "effective_fps": 12.009632142374342,
+      "median_gap_seconds": 0.07688850024715066,
+      "p95_gap_seconds": 0.1919093800708651
+    },
+    "full_updates": 2,
+    "dynamic_updates": 13,
+    "process_exitcode": 0,
+    "stop_requested": true,
+    "observer_error": "None"
+  }
+}

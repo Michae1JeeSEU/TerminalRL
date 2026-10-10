@@ -1,0 +1,13 @@
+{
+  "status": "ERROR",
+  "slot": 0,
+  "partition": "diagnostic_never_train",
+  "reset_count": 0,
+  "env_steps": 0,
+  "trained": false,
+  "error": null,
+  "tick": 0,
+  "uid": "0",
+  "recorded_seconds": 0.6755374260246754,
+  "source_snapshot_sha256": "d1d7e75da079d93e91663699a999951a00976528fcc848b641f3c9199b54e759"
+}

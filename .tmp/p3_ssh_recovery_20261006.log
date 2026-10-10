@@ -1,0 +1,13 @@
+OpenSSH_for_Windows_9.5p2, LibreSSL 3.8.2
+debug1: Reading configuration data C:\\Users\\user/.ssh/config
+debug1: C:\\Users\\user/.ssh/config line 2: Applying options for lab-server
+debug2: resolve_canonicalize: hostname 192.168.30.12 is address
+debug1: Connecting to 192.168.30.12 [192.168.30.12] port 22.
+debug2: fd 3 setting O_NONBLOCK
+debug1: fd 3 clearing O_NONBLOCK
+debug1: Connection established.
+debug1: identity file C:\\Users\\user/.ssh/id_ed25519 type 3
+debug1: identity file C:\\Users\\user/.ssh/id_ed25519-cert type -1
+debug1: Local version string SSH-2.0-OpenSSH_for_Windows_9.5
+kex_exchange_identification: Connection closed by remote host
+Connection closed by 192.168.30.12 port 22

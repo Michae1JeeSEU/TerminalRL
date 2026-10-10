@@ -1,0 +1,108 @@
+{
+  "config": {
+    "dense_warm_start_uavs": 30,
+    "final_approach_geometry_mode": "continuous_inward_v1",
+    "initial_soc_max": 0.9,
+    "initial_soc_min": 0.55,
+    "max_simulation_seconds": 1800.0,
+    "reconcile_late_merge_slots_enabled": false,
+    "release_arbitration_mode": "downstream_priority",
+    "route_guard_enabled": true
+  },
+  "landing_plan_count": 1,
+  "landing_plans": [
+    {
+      "actual_height_first": null,
+      "actual_height_last": null,
+      "actual_height_monotonic_nonincreasing": true,
+      "actual_pad_xy_max_error": null,
+      "actual_vertical_sample_count": 0,
+      "mode": "final_approach",
+      "pad_position": [
+        80.0,
+        -40.0,
+        0.0
+      ],
+      "plan_duration": 56.79784688782085,
+      "plan_end_time": 56.79784688782085,
+      "plan_id": "8fe0bb8d-a367-4815-b7a1-2369d8a47a27",
+      "plan_start_time": 0.0,
+      "planned_vertical_point_count": 17,
+      "staging_point": [
+        80.0,
+        -40.0,
+        40.0
+      ],
+      "target_phase": "landing",
+      "touchdown": null,
+      "touchdown_z_zero": false,
+      "uid": 28,
+      "vertical_duration": 14.69613039923864,
+      "vertical_end_time": 56.79784688782085,
+      "vertical_samples": [],
+      "vertical_start_time": 42.10171648858221
+    }
+  ],
+  "offline_full_trace_summary": {
+    "midpoint_pair_distances": {
+      "11-12": 11.086770503397029,
+      "4-11": 9.041404150604132,
+      "4-12": 4.174155015609909
+    },
+    "midpoint_radii": {
+      "11": 5.8399044602579755,
+      "12": 5.839904460258034,
+      "4": 5.839904460258025
+    },
+    "status": "available",
+    "tracked_midpoints_from_773_to_813": {
+      "11": [
+        3.7769251419544076,
+        4.454135222129395,
+        40.0
+      ],
+      "12": [
+        -5.6895293262865145,
+        -1.3167156679660934,
+        40.0
+      ],
+      "4": [
+        -5.115160015346582,
+        2.8177335080417265,
+        40.0
+      ]
+    },
+    "uid12_at_991_993": {
+      "991": {
+        "blocker": "NO_MERGE_GAP",
+        "energy_remaining": 372.1257439666631,
+        "last_release_decision": "safety_wait",
+        "last_safety_decision": "predicted_holder_reachable_tube",
+        "phase": "ring_inner",
+        "plan_id": null,
+        "soc": 0.24808382931110873
+      },
+      "993": {
+        "blocker": "NO_MERGE_GAP",
+        "energy_remaining": 370.1257439666631,
+        "last_release_decision": "safety_wait",
+        "last_safety_decision": "predicted_holder_reachable_tube",
+        "phase": "ring_inner",
+        "plan_id": null,
+        "soc": 0.2467504959777754
+      }
+    }
+  },
+  "outcome_counts": {},
+  "run": {
+    "advance_plan_landing_calls": 5,
+    "sim_time": 5.0,
+    "steps": 5,
+    "stop_reason": "max_steps",
+    "touchdown_return_true_count": 0,
+    "wall_seconds": 1.7736651999875903
+  },
+  "schema_version": "viewer-vertical-execution-841301-v1",
+  "seed": 841301,
+  "successful_landing_plan_count": 0
+}

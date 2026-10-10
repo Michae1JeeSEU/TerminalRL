@@ -1,0 +1,13 @@
+{
+  "environment_resets": 0,
+  "environment_steps": 0,
+  "error": "TypeError(\"object of type 'WitnessTargets' has no len()\")",
+  "optimizer_updates": 0,
+  "planner_calls": 0,
+  "protocol": "p3_neighbor_runtime_profile_20261010_v1",
+  "q_accessed": false,
+  "status": "INCOMPLETE",
+  "teacher_queries": 0,
+  "updates": 0,
+  "wall_seconds": 0.012610100209712982
+}

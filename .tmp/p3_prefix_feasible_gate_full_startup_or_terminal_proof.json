@@ -1,0 +1,59 @@
+{
+  "status": "RUNNING",
+  "phase": "full",
+  "observed_at_server": "2026-10-01T17:44:29+08:00",
+  "process": {
+    "pid": 2179064,
+    "exited": false,
+    "cwd": "/home/user/projects/terminal",
+    "exe": "/usr/bin/python3.12",
+    "argv": [
+      "/home/user/envs/terminal_env/bin/python",
+      "-m",
+      "terminal_marl.training.diagnose_p3_prefix_feasible_gate_20261001",
+      "--phase",
+      "full",
+      "--output-dir",
+      "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001"
+    ],
+    "env_flags": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "bindings": {
+    "preflight_status": "PREFLIGHT_OK",
+    "preflight_sha256": "cf3346e3fd1205944081c39a8de6dc0e0e68b10f64355b59b562141ed36b2915",
+    "pilot_status": "PILOT_OK",
+    "pilot_cell_sha256": "760e09dcab5dd653eec31586e3b114d06f0a05c63fa204cc48d6416fc66e68ff",
+    "pilot_cell_status": "COMPLETED_MISSING",
+    "pilot_cell_reused": true
+  },
+  "output": {
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001",
+    "full_log": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/full_v1.log",
+    "full_log_mtime": "2026-10-01 17:43:11.760731057 +0800",
+    "full_log_bytes": 0,
+    "progress": {
+      "cell_id": 2,
+      "phase": "arm",
+      "stage": "P3_PREFIX_FEASIBLE_GATE_20261001_V1",
+      "status": "RUNNING",
+      "step": 1,
+      "potential_candidates_seen": 22,
+      "selected": null
+    },
+    "progress_mtime": "2026-10-01 17:43:18.199010939 +0800",
+    "terminal_files_present": {
+      "full": false,
+      "error": false,
+      "partial": false,
+      "cells_02_04": false,
+      "cell_02": true,
+      "cell_03": false,
+      "cell_04": false
+    }
+  },
+  "no_duplicate_observed": true
+}

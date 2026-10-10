@@ -1,0 +1,147 @@
+{
+  "aggregate_counts": {
+    "actor_mask": {
+      "false": 19250,
+      "true": 9320,
+      "unknown": 0
+    },
+    "requested_gate": {
+      "false": 27425,
+      "true": 1145,
+      "unknown": 0
+    }
+  },
+  "c4_completion_correction": {
+    "aggregate_empty_world_ticks_recomputed": 224,
+    "authoritative_completed_cell_json_empty_world_ticks": 93,
+    "authoritative_completed_cell_json_sha256": "e8b48b185235526e15b6f2c199e347a1a529929edb46742c0487b51eca266142",
+    "authoritative_completed_npz_sha256": "77cebe19ff5303eb36612102c108a712b85ceeada8aac12662bd488139160100",
+    "cell_json_npz_assertions": "C4_CELL_JSON_NPZ_OK",
+    "intermediate_progress_empty_world_ticks": 70,
+    "intermediate_progress_step": 699
+  },
+  "cells": [
+    {
+      "cell": 1,
+      "cell_json_sha256": "e4b2890596b62a7e10582569039e00bc2a6463d98c6785cf2834dfe3c585f300",
+      "checks_all_true": true,
+      "counts": {
+        "actor_mask": {
+          "false": 4763,
+          "true": 2615,
+          "unknown": 0
+        },
+        "requested_gate": {
+          "false": 7064,
+          "true": 314,
+          "unknown": 0
+        }
+      },
+      "empty_world_ticks": 60,
+      "npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+      "rows": 7378,
+      "steps": 708
+    },
+    {
+      "cell": 2,
+      "cell_json_sha256": "2d526383e57e0e5f7290f396bfb830f92861c0536fed550631e8777c9c9dda3a",
+      "checks_all_true": true,
+      "counts": {
+        "actor_mask": {
+          "false": 4847,
+          "true": 2062,
+          "unknown": 0
+        },
+        "requested_gate": {
+          "false": 6642,
+          "true": 267,
+          "unknown": 0
+        }
+      },
+      "empty_world_ticks": 30,
+      "npz_sha256": "7e1671404a97e617de86ea73b20bb6b9ffd2d28301ff92ceb78b99ab2ccd7d75",
+      "rows": 6909,
+      "steps": 674
+    },
+    {
+      "cell": 3,
+      "cell_json_sha256": "9d1289683476e7b7bd1f1e7259a3d2d68f1288e0c216f49288cc51eb7e1d998b",
+      "checks_all_true": true,
+      "counts": {
+        "actor_mask": {
+          "false": 4781,
+          "true": 2289,
+          "unknown": 0
+        },
+        "requested_gate": {
+          "false": 6780,
+          "true": 290,
+          "unknown": 0
+        }
+      },
+      "empty_world_ticks": 41,
+      "npz_sha256": "c5cb8b954a78e8e69e0ea349121273db5af6d5671fd214800599d253bf6c4df5",
+      "rows": 7070,
+      "steps": 644
+    },
+    {
+      "cell": 4,
+      "cell_json_sha256": "e8b48b185235526e15b6f2c199e347a1a529929edb46742c0487b51eca266142",
+      "checks_all_true": true,
+      "counts": {
+        "actor_mask": {
+          "false": 4859,
+          "true": 2354,
+          "unknown": 0
+        },
+        "requested_gate": {
+          "false": 6939,
+          "true": 274,
+          "unknown": 0
+        }
+      },
+      "empty_world_ticks": 93,
+      "npz_sha256": "77cebe19ff5303eb36612102c108a712b85ceeada8aac12662bd488139160100",
+      "rows": 7213,
+      "steps": 723
+    }
+  ],
+  "event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+  "full_sha256": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+  "full_status": "FULL_OK",
+  "immutable_bindings_rechecked": {
+    "event_full_sha256_unchanged": true,
+    "pilot_sha256_unchanged": true,
+    "preflight_sha256_unchanged": true,
+    "source_full_sha256_unchanged": true
+  },
+  "immutable_pilot_reuse_binding": true,
+  "npz_json_map_assertions": true,
+  "pilot_sha256": "d2594d2feed937172a70f08790755be44b3737c8a4c4169cb41bd23b93d54fc4",
+  "preflight_sha256": "2e6ce616d80ed4914f42e4f8f21b02d311dd6cc62535139e0e05c6f0f5d30861",
+  "server_mirror_sha_equal": true,
+  "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "status": "FULL_VALIDATION_OK",
+  "terminal_server_snapshot": {
+    "full_cell_ids_from_direct_cat": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "full_mtime": "2026-10-01 23:27:57.582418980 +0800",
+    "full_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/full.json",
+    "full_sha256": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+    "full_size_bytes": 2780,
+    "full_status_from_direct_cat": "FULL_OK",
+    "observed_at": "2026-10-01T23:33:04+08:00",
+    "pid": 2204414,
+    "pid_alive": false,
+    "pilot_sha256": "d2594d2feed937172a70f08790755be44b3737c8a4c4169cb41bd23b93d54fc4",
+    "preflight_sha256": "2e6ce616d80ed4914f42e4f8f21b02d311dd6cc62535139e0e05c6f0f5d30861",
+    "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195"
+  },
+  "total_empty_world_ticks": 224,
+  "total_rows": 28570,
+  "total_steps": 2749
+}

@@ -1,0 +1,4 @@
+Terminal console listening at http://127.0.0.1:8787/
+[rollout] controller_identity selected_mode=fixed_rule low_level_controller=rule low_checkpoint=none high_checkpoint=none no_trained_checkpoint=true
+[rollout] controller_identity selected_mode=fixed_rule low_level_controller=rule low_checkpoint=none high_checkpoint=none no_trained_checkpoint=true
+[rollout] controller_identity selected_mode=fixed_rule low_level_controller=rule low_checkpoint=none high_checkpoint=none no_trained_checkpoint=true

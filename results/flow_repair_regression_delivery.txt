@@ -1,0 +1,110 @@
+........................................................................ [ 29%]
+........................................................................ [ 59%]
+..........................................F.F........................... [ 88%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_____________ test_protocol_and_guard_on_off_bindings_are_frozen ______________
+
+    def test_protocol_and_guard_on_off_bindings_are_frozen() -> None:
+>       protocol = runner.load_protocol()
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_emergency_priority_guard_pilot_v2.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:97: in load_protocol
+    _require(observed == expected, f"source binding mismatch: {relative}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+condition = False
+message = 'source binding mismatch: terminal_marl/core/config.py'
+
+    def _require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise ProtocolError(message)
+E           terminal_marl.training.diagnose_emergency_priority_guard_pilot_v2.ProtocolError: source binding mismatch: terminal_marl/core/config.py
+
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:50: ProtocolError
+___ test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite ___
+
+tmp_path = WindowsPath('C:/Users/user/AppData/Local/Temp/pytest-of-user/pytest-529/test_smoke_serializes_four_gua0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000295593179B0>
+
+    def test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        checkpoint = tmp_path / "checkpoint.pt"
+        checkpoint.write_bytes(b"test checkpoint")
+        real_sha = runner._sha256
+    
+        def fake_sha(path: str | Path) -> str:
+            resolved = Path(path).resolve()
+            if resolved == runner.PROTOCOL_PATH.resolve():
+                return runner.PROTOCOL_SHA256
+            if resolved == checkpoint.resolve():
+                return runner.CHECKPOINT_SHA256
+            return real_sha(path)
+    
+        monkeypatch.setattr(runner, "_sha256", fake_sha)
+    
+        class DummyPolicy:
+            optimizer = SimpleNamespace(state={})
+    
+        monkeypatch.setattr(
+            runner.v1.paired.effectiveness,
+            "load_candidate_checkpoint",
+            lambda path, expected_sha256: (
+                DummyPolicy(),
+                {
+                    "stage": "test",
+                    "architecture_id": "test",
+                    "qualification_pass": True,
+                    "PPO_ALLOWED": False,
+                },
+            ),
+        )
+    
+        def fake_case(policy, config, seed, controller, guard_enabled, output, *, max_steps):
+            output.mkdir(parents=False, exist_ok=False)
+            return {
+                "controller": controller,
+                "seed": seed,
+                "guard_enabled": guard_enabled,
+                "failed_energy": 0,
+                "emergency_landed": 0,
+                "completed": 0,
+                "successes": 0,
+                "upstream_low_soc_diversions": 0,
+                "in_terminal_low_soc_diversions": 0,
+                "outcome_counts": {},
+                "safety": {key: 0 for key in runner.SAFETY_COUNTER_KEYS},
+                "all_request_horizon_penalized_delay": {"mean_seconds": 0.0},
+            }
+    
+        monkeypatch.setattr(runner, "_run_case", fake_case)
+        output = tmp_path / "smoke"
+>       manifest = runner.run(checkpoint=checkpoint, output=output, smoke=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_emergency_priority_guard_pilot_v2.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:219: in run
+    protocol = load_protocol()
+               ^^^^^^^^^^^^^^^
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:97: in load_protocol
+    _require(observed == expected, f"source binding mismatch: {relative}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+condition = False
+message = 'source binding mismatch: terminal_marl/core/config.py'
+
+    def _require(condition: bool, message: str) -> None:
+        if not condition:
+>           raise ProtocolError(message)
+E           terminal_marl.training.diagnose_emergency_priority_guard_pilot_v2.ProtocolError: source binding mismatch: terminal_marl/core/config.py
+
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:50: ProtocolError
+=========================== short test summary info ===========================
+FAILED tests/test_emergency_priority_guard_pilot_v2.py::test_protocol_and_guard_on_off_bindings_are_frozen
+FAILED tests/test_emergency_priority_guard_pilot_v2.py::test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite
+2 failed, 241 passed in 39.66s

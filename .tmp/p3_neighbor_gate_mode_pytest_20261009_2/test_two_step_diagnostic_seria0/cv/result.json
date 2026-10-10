@@ -1,0 +1,1501 @@
+{
+  "status": "COMPLETE",
+  "protocol": {
+    "architecture": "intent_destination_neighbor_risk_v1",
+    "observation": "existing V2.6 159+N50",
+    "architecture_variant": "intent_destination_neighbor_risk_v1__gate_first_feasible_union",
+    "gate_mode": "first_feasible_union",
+    "smoke": true,
+    "input_seeds": [
+      1,
+      2
+    ],
+    "model_seed": 91911,
+    "arms": [
+      "without_auxiliary",
+      "native_pair_auxiliary"
+    ],
+    "marks": [
+      0,
+      1,
+      2
+    ],
+    "learning_rate": 0.0003,
+    "batch_size": 128,
+    "auxiliary_batch_size": 64,
+    "gradient_clip": 0.5,
+    "auxiliary_weight": 1.0,
+    "scene_auxiliary_weight": 0.25,
+    "wall_seconds_per_fold_arm": 1200,
+    "original_loss": "unweighted_gate_CE_plus_RELEASE_proposal_CE",
+    "pair_loss": "mean_of_blocked_and_safe_BCE_means_ignoring_unknown",
+    "Q_accessed": false,
+    "teacher_queries": 0,
+    "environment_steps": 0,
+    "checkpoint_written": false,
+    "all_auxiliary_rows_follow_original_whole_cycle_split": true
+  },
+  "folds": [
+    {
+      "held_seed": 1,
+      "arm": "without_auxiliary",
+      "train_rows": 8,
+      "held_rows": 8,
+      "train_auxiliary_queries": 8,
+      "held_auxiliary_queries": 8,
+      "curve": [
+        {
+          "update": 0,
+          "train": {
+            "loss": 4.5619072914123535,
+            "gate_loss": 1.487242341041565,
+            "proposal_loss": 3.074665069580078,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.098559856414795,
+            "gate_loss": 1.2605246305465698,
+            "proposal_loss": 3.8380353450775146,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7861709594726562
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7179954051971436
+          }
+        },
+        {
+          "update": 1,
+          "train": {
+            "loss": 4.4998064041137695,
+            "gate_loss": 1.4413883686065674,
+            "proposal_loss": 3.058417797088623,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.092487335205078,
+            "gate_loss": 1.258478045463562,
+            "proposal_loss": 3.8340094089508057,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.797818660736084
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7176015377044678
+          }
+        },
+        {
+          "update": 2,
+          "train": {
+            "loss": 4.439343452453613,
+            "gate_loss": 1.3968172073364258,
+            "proposal_loss": 3.0425262451171875,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.086228370666504,
+            "gate_loss": 1.2562037706375122,
+            "proposal_loss": 3.8300247192382812,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.809549570083618
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.717231035232544
+          }
+        }
+      ],
+      "elapsed_seconds": 0.030999999959021807
+    },
+    {
+      "held_seed": 1,
+      "arm": "native_pair_auxiliary",
+      "train_rows": 8,
+      "held_rows": 8,
+      "train_auxiliary_queries": 8,
+      "held_auxiliary_queries": 8,
+      "curve": [
+        {
+          "update": 0,
+          "train": {
+            "loss": 4.5619072914123535,
+            "gate_loss": 1.487242341041565,
+            "proposal_loss": 3.074665069580078,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.098559856414795,
+            "gate_loss": 1.2605246305465698,
+            "proposal_loss": 3.8380353450775146,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7861709594726562
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7179954051971436
+          }
+        },
+        {
+          "update": 1,
+          "train": {
+            "loss": 4.50994873046875,
+            "gate_loss": 1.4534416198730469,
+            "proposal_loss": 3.056507110595703,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.094668865203857,
+            "gate_loss": 1.2606732845306396,
+            "proposal_loss": 3.8339955806732178,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7800192832946777
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.717281460762024
+          }
+        },
+        {
+          "update": 2,
+          "train": {
+            "loss": 4.459352493286133,
+            "gate_loss": 1.420363187789917,
+            "proposal_loss": 3.0389890670776367,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 5.0907721519470215,
+            "gate_loss": 1.2610821723937988,
+            "proposal_loss": 3.8296899795532227,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7745606899261475
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7165175676345825
+          }
+        }
+      ],
+      "elapsed_seconds": 0.030999999959021807
+    },
+    {
+      "held_seed": 2,
+      "arm": "without_auxiliary",
+      "train_rows": 8,
+      "held_rows": 8,
+      "train_auxiliary_queries": 8,
+      "held_auxiliary_queries": 8,
+      "curve": [
+        {
+          "update": 0,
+          "train": {
+            "loss": 5.098559856414795,
+            "gate_loss": 1.2605246305465698,
+            "proposal_loss": 3.8380353450775146,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.5619072914123535,
+            "gate_loss": 1.487242341041565,
+            "proposal_loss": 3.074665069580078,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7179954051971436
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7861709594726562
+          }
+        },
+        {
+          "update": 1,
+          "train": {
+            "loss": 5.034744739532471,
+            "gate_loss": 1.2287325859069824,
+            "proposal_loss": 3.8060121536254883,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.551596164703369,
+            "gate_loss": 1.4833780527114868,
+            "proposal_loss": 3.068218231201172,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7294257879257202
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7884697914123535
+          }
+        },
+        {
+          "update": 2,
+          "train": {
+            "loss": 4.972769737243652,
+            "gate_loss": 1.197864294052124,
+            "proposal_loss": 3.7749056816101074,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.5415873527526855,
+            "gate_loss": 1.47964608669281,
+            "proposal_loss": 3.061941385269165,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7409610748291016
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7907392978668213
+          }
+        }
+      ],
+      "elapsed_seconds": 0.030999999959021807
+    },
+    {
+      "held_seed": 2,
+      "arm": "native_pair_auxiliary",
+      "train_rows": 8,
+      "held_rows": 8,
+      "train_auxiliary_queries": 8,
+      "held_auxiliary_queries": 8,
+      "curve": [
+        {
+          "update": 0,
+          "train": {
+            "loss": 5.098559856414795,
+            "gate_loss": 1.2605246305465698,
+            "proposal_loss": 3.8380353450775146,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.5619072914123535,
+            "gate_loss": 1.487242341041565,
+            "proposal_loss": 3.074665069580078,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7179954051971436
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7861709594726562
+          }
+        },
+        {
+          "update": 1,
+          "train": {
+            "loss": 5.03875207901001,
+            "gate_loss": 1.2320364713668823,
+            "proposal_loss": 3.806715726852417,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.550183296203613,
+            "gate_loss": 1.4826472997665405,
+            "proposal_loss": 3.0675361156463623,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7226283550262451
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7886595726013184
+          }
+        },
+        {
+          "update": 2,
+          "train": {
+            "loss": 4.980752944946289,
+            "gate_loss": 1.2040987014770508,
+            "proposal_loss": 3.7766542434692383,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.0,
+                "target_counts": {
+                  "1": 1,
+                  "3": 1,
+                  "5": 1,
+                  "7": 1
+                },
+                "prediction_counts": {
+                  "12": 4
+                },
+                "per_class_recall": {
+                  "1": 0.0,
+                  "3": 0.0,
+                  "5": 0.0,
+                  "7": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "validation": {
+            "loss": 4.538686752319336,
+            "gate_loss": 1.4783189296722412,
+            "proposal_loss": 3.0603678226470947,
+            "overall": {
+              "rows": 8,
+              "gate": {
+                "accuracy": 0.5,
+                "confusion": [
+                  [
+                    0,
+                    4
+                  ],
+                  [
+                    0,
+                    4
+                  ]
+                ],
+                "WAIT_recall": 0.0,
+                "RELEASE_recall": 1.0,
+                "balanced_accuracy": 0.5,
+                "prediction_RELEASE": 8,
+                "prediction_WAIT": 0
+              },
+              "proposal": {
+                "rows": 4,
+                "top1": 0.0,
+                "top3": 0.25,
+                "target_counts": {
+                  "9": 1,
+                  "11": 1,
+                  "13": 1,
+                  "15": 1
+                },
+                "prediction_counts": {
+                  "14": 1,
+                  "12": 3
+                },
+                "per_class_recall": {
+                  "9": 0.0,
+                  "11": 0.0,
+                  "13": 0.0,
+                  "15": 0.0
+                }
+              },
+              "joint_accuracy": 0.0
+            }
+          },
+          "train_pairs": {
+            "queries": 8,
+            "known_pairs": 13,
+            "blocked_pairs": 6,
+            "blocked_recall": 1.0,
+            "safe_recall": 0.0,
+            "blocker_top1": 0.6666666865348816,
+            "blocked_queries": 6,
+            "auxiliary_loss": 1.7271673679351807
+          },
+          "validation_pairs": {
+            "queries": 8,
+            "known_pairs": 17,
+            "blocked_pairs": 0,
+            "blocked_recall": null,
+            "safe_recall": 0.0,
+            "blocker_top1": null,
+            "blocked_queries": 0,
+            "auxiliary_loss": 2.7911434173583984
+          }
+        }
+      ],
+      "elapsed_seconds": 0.030999999959021807
+    }
+  ],
+  "error": null
+}

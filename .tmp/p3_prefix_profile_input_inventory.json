@@ -1,0 +1,2173 @@
+{
+  "scope": "three accepted FULL summaries; 16 named arm JSON records; no raw tapes traversed",
+  "profiles": {
+    "before_legacy": {
+      "full": {
+        "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\full.json",
+        "sha256": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+        "status": "FULL_OK",
+        "phase": "full",
+        "pair_count": 4,
+        "local_exists": true
+      },
+      "arms": [
+        {
+          "cell": {
+            "cell_id": 1,
+            "env_seed": 875101,
+            "policy_seed": 875201,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_01_before_legacy.json",
+            "sha256": "7b2074497ed423c580bab4c5f47d7da557768866912dc7d04c17398d29505d2c",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_01_before_legacy/action_tapes/safety_trace_seed_875101_step_760.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_01_before_legacy\\action_tapes\\safety_trace_seed_875101_step_760.json",
+            "local_exists": true,
+            "local_sha256": "b753b5e8fadff5d2bd9fc751b6e6ebc134b284e28dec8608954cd83f59a2f2ac"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 19,
+            "emergency": 5,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 2,
+            "env_seed": 875102,
+            "policy_seed": 875202,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_02_before_legacy.json",
+            "sha256": "995bbc19d433a13067a9ea48480f7f2b8c3fa15e5d33440f6cd7ee82501c0bf5",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_02_before_legacy/action_tapes/safety_trace_seed_875102_step_725.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_02_before_legacy\\action_tapes\\safety_trace_seed_875102_step_725.json",
+            "local_exists": true,
+            "local_sha256": "507b43dacf7a9c6163941e061e67b01489a152acadc6e2662594d33cb6c955e7"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 20,
+            "emergency": 4,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 3,
+            "env_seed": 875103,
+            "policy_seed": 875203,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_03_before_legacy.json",
+            "sha256": "8b6e4e71e909217650d395bc569ecf2347c40428e00117b5d5d91595c18ad11b",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_03_before_legacy/action_tapes/safety_trace_seed_875103_step_706.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_03_before_legacy\\action_tapes\\safety_trace_seed_875103_step_706.json",
+            "local_exists": true,
+            "local_sha256": "2b3777051997fed0f6a1d511f6628ce1482a786dfd87609e88bae4a4f75297cb"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 22,
+            "emergency": 2,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 4,
+            "env_seed": 875104,
+            "policy_seed": 875204,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_04_before_legacy.json",
+            "sha256": "ae04857853acafe71bb273c47ef2f09ff9006a8f10e5fc3cbe1ef248ccb71044",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_04_before_legacy/action_tapes/safety_trace_seed_875104_step_719.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_04_before_legacy\\action_tapes\\safety_trace_seed_875104_step_719.json",
+            "local_exists": true,
+            "local_sha256": "b2efe0b214e041a723c94c931a2553b88e436674f5da747c754d767c4fd4b833"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 19,
+            "emergency": 5,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        }
+      ]
+    },
+    "after_legacy": {
+      "full": {
+        "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\full.json",
+        "sha256": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+        "status": "FULL_OK",
+        "phase": "full",
+        "pair_count": 4,
+        "local_exists": true
+      },
+      "arms": [
+        {
+          "cell": {
+            "cell_id": 1,
+            "env_seed": 875101,
+            "policy_seed": 875201,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_01_after_legacy.json",
+            "sha256": "41d16d7ece9f6a12eef4cac024e7508d23ce47f9a182116b5919da30fba1eb15",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_01_after_legacy/action_tapes/safety_trace_seed_875101_step_688.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_01_after_legacy\\action_tapes\\safety_trace_seed_875101_step_688.json",
+            "local_exists": true,
+            "local_sha256": "b2ed271e8af0f46d1a57523ab3ad6d96d971efff6b20713dee50111e17775a26"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 18,
+            "emergency": 6,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 2,
+            "env_seed": 875102,
+            "policy_seed": 875202,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_02_after_legacy.json",
+            "sha256": "200ca115ea718bb7505b64384128abac3d00b2bbaedcfe042f83d8c3ca12da32",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_02_after_legacy/action_tapes/safety_trace_seed_875102_step_726.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_02_after_legacy\\action_tapes\\safety_trace_seed_875102_step_726.json",
+            "local_exists": true,
+            "local_sha256": "a1c52c71fe030a3be99413d73fb9f85356ff672c74737398214146153bdb9868"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 18,
+            "emergency": 6,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 3,
+            "env_seed": 875103,
+            "policy_seed": 875203,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_03_after_legacy.json",
+            "sha256": "c2cbf8c49339df772dccd862bc0d62d3c4eb20a1ca33e3c8ee8d715d47287701",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_03_after_legacy/action_tapes/safety_trace_seed_875103_step_775.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_03_after_legacy\\action_tapes\\safety_trace_seed_875103_step_775.json",
+            "local_exists": true,
+            "local_sha256": "cc296278f42a7adb98a99de24491b71acbe5c4f9bfe57efcf5d734e3d7b389ed"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 21,
+            "emergency": 3,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        },
+        {
+          "cell": {
+            "cell_id": 4,
+            "env_seed": 875104,
+            "policy_seed": 875204,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_legacy",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_04_after_legacy.json",
+            "sha256": "2361c02b56e2f2c933df6c0c3c8ee7c4362b56fa2a4c5f37b4ab338659508437",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/rollouts/cell_04_after_legacy/action_tapes/safety_trace_seed_875104_step_725.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\rollouts\\cell_04_after_legacy\\action_tapes\\safety_trace_seed_875104_step_725.json",
+            "local_exists": true,
+            "local_sha256": "a4d0e87e430f40a8ba9f54361e1fb62f4f87a2427cf076996e36feee1d2a13c7"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": false,
+            "dependency_shas": null,
+            "dependency_shas_before": null
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 17,
+            "emergency": 7,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": null
+        }
+      ]
+    },
+    "after_prefix": {
+      "full": {
+        "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\full.json",
+        "sha256": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+        "status": "FULL_OK",
+        "phase": "full",
+        "pair_count": 4,
+        "local_exists": true
+      },
+      "arms": [
+        {
+          "cell": {
+            "cell_id": 1,
+            "env_seed": 875101,
+            "policy_seed": 875201,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\arms\\cell_01_after_prefix_fallback.json",
+            "sha256": "b69db65c7605a4d3a743d665164895b85ae20aad4b6d98f03aa3284bcbca5b0a",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/rollouts/cell_01_after_prefix_fallback/action_tapes/safety_trace_seed_875101_step_751.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\rollouts\\cell_01_after_prefix_fallback\\action_tapes\\safety_trace_seed_875101_step_751.json",
+            "local_exists": true,
+            "local_sha256": "d481e1da8f573f2eea660768b400fc71796d8dd13b9cc55f40dcebcedee9533e"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 21,
+            "emergency": 3,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_01_after_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_01_after_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 2,
+            "env_seed": 875102,
+            "policy_seed": 875202,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\arms\\cell_02_after_prefix_fallback.json",
+            "sha256": "2b6ef6b59fb8a1438b69a1ed67f0afe0ffd7184f9afaee4279f267483b9d1aca",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/rollouts/cell_02_after_prefix_fallback/action_tapes/safety_trace_seed_875102_step_727.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\rollouts\\cell_02_after_prefix_fallback\\action_tapes\\safety_trace_seed_875102_step_727.json",
+            "local_exists": true,
+            "local_sha256": "36b204295f3322649e3c3b808e2443f556476ebdb28fd7e72dde134cfad38fa8"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 23,
+            "emergency": 1,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_02_after_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_02_after_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 3,
+            "env_seed": 875103,
+            "policy_seed": 875203,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\arms\\cell_03_after_prefix_fallback.json",
+            "sha256": "8a33814ef4fc25def51524e34930faf129dd747caca38a3f060107d81f6435db",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/rollouts/cell_03_after_prefix_fallback/action_tapes/safety_trace_seed_875103_step_738.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\rollouts\\cell_03_after_prefix_fallback\\action_tapes\\safety_trace_seed_875103_step_738.json",
+            "local_exists": true,
+            "local_sha256": "9b9dae68d0cceadd0964f6d638403a4262ece2a765af142716a5a67c958351af"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 22,
+            "emergency": 2,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_03_after_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_03_after_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 4,
+            "env_seed": 875104,
+            "policy_seed": 875204,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "after_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\arms\\cell_04_after_prefix_fallback.json",
+            "sha256": "f52442736679e765bd1ce40d6e29b74936e6263bbc981ddfd9c5c05275fffb2c",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/rollouts/cell_04_after_prefix_fallback/action_tapes/safety_trace_seed_875104_step_757.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\rollouts\\cell_04_after_prefix_fallback\\action_tapes\\safety_trace_seed_875104_step_757.json",
+            "local_exists": true,
+            "local_sha256": "a058455afa2ed75f2cc887401f0cd34f586b0717b63c039bed05ec02ac325cf6"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\policy.pt",
+            "local_exists": true,
+            "local_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "declared_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+            "expected_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+          },
+          "model_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "weights_digests": {
+            "before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+            "after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 22,
+            "emergency": 2,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_04_after_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_04_after_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0"
+            }
+          }
+        }
+      ]
+    },
+    "before_prefix": {
+      "full": {
+        "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\full.json",
+        "sha256": "b4ee3a191c26911edf94fd24e1da4077bd2a0962e10cd5507174b52a8af73028",
+        "status": "FULL_OK",
+        "phase": "full",
+        "pair_count": 4,
+        "local_exists": true
+      },
+      "arms": [
+        {
+          "cell": {
+            "cell_id": 1,
+            "env_seed": 875101,
+            "policy_seed": 875201,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\arms\\cell_01_before_prefix_fallback.json",
+            "sha256": "4ed5e1276cf1e44facaa4417e67157985cff67c830c0f9abcae198d9c31e9d7f",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/rollouts/cell_01_before_prefix_fallback/action_tapes/safety_trace_seed_875101_step_722.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\rollouts\\cell_01_before_prefix_fallback\\action_tapes\\safety_trace_seed_875101_step_722.json",
+            "local_exists": true,
+            "local_sha256": "f87b3c1dddff5252371581de3e2f7c9fbf88d55c97270810ee8ca75f020486de"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 19,
+            "emergency": 5,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/sidecars/cell_01_before_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\sidecars\\cell_01_before_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 2,
+            "env_seed": 875102,
+            "policy_seed": 875202,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\arms\\cell_02_before_prefix_fallback.json",
+            "sha256": "0b75b9cfe6f7243da2da9cfcd5176e1aa9f4d7e02c27bef2398fe1ac0628c468",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/rollouts/cell_02_before_prefix_fallback/action_tapes/safety_trace_seed_875102_step_678.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\rollouts\\cell_02_before_prefix_fallback\\action_tapes\\safety_trace_seed_875102_step_678.json",
+            "local_exists": true,
+            "local_sha256": "18e8f168cc46d38b785723f38b17f3c2c67e189c197554192d2409795006ef7a"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 21,
+            "emergency": 3,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/sidecars/cell_02_before_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\sidecars\\cell_02_before_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "50d07151a27432eeec299fe00d80c5cf2e5f62dc3b04dd3cef58d03a3e2409b0"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 3,
+            "env_seed": 875103,
+            "policy_seed": 875203,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\arms\\cell_03_before_prefix_fallback.json",
+            "sha256": "b4ebc471fcf9e9e3a2498ce9981bdd3e3f721af28362eaac0da282f8a83624cb",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/rollouts/cell_03_before_prefix_fallback/action_tapes/safety_trace_seed_875103_step_742.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\rollouts\\cell_03_before_prefix_fallback\\action_tapes\\safety_trace_seed_875103_step_742.json",
+            "local_exists": true,
+            "local_sha256": "3b8ded29aa095674692d302895d7a38956c9b23c82fb436b7bc07a5286482aa3"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 23,
+            "emergency": 1,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/sidecars/cell_03_before_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\sidecars\\cell_03_before_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "039009beeda954222a04fa13c816267d49ae37624adc7420fe2d06ecc2210c97"
+            }
+          }
+        },
+        {
+          "cell": {
+            "cell_id": 4,
+            "env_seed": 875104,
+            "policy_seed": 875204,
+            "scenario": "dense24",
+            "split": "development_original_dense24"
+          },
+          "profile": "before_prefix",
+          "arm_json": {
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\arms\\cell_04_before_prefix_fallback.json",
+            "sha256": "5bfc7b0745ef3f03109acc95935f7bdfabe9cef96ed3cc6a9ef367a3d4c68d6d",
+            "local_exists": true
+          },
+          "status": "completed",
+          "label": "runtime_rank_candidate",
+          "action_tape": {
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/rollouts/cell_04_before_prefix_fallback/action_tapes/safety_trace_seed_875104_step_805.json",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\rollouts\\cell_04_before_prefix_fallback\\action_tapes\\safety_trace_seed_875104_step_805.json",
+            "local_exists": true,
+            "local_sha256": "49409578bb2dca079a1083fcde9dbdb0602a732d9830e624099aeaa896290c6b"
+          },
+          "checkpoint": {
+            "server_path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+            "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+            "local_exists": true,
+            "local_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "declared_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+            "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+          },
+          "model_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "weights_digests": {
+            "before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+            "after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0"
+          },
+          "config_binding": {
+            "action_schema_version": "low_action_schema_v4_2_hierarchical",
+            "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+            "experiment_mode": "fixed_low_student",
+            "dt": 1.0,
+            "physics_dt": 0.2,
+            "max_simulation_seconds": 1800.0,
+            "fixed_arrival_schedule": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              15.0,
+              30.0,
+              45.0,
+              60.0,
+              75.0,
+              90.0,
+              105.0,
+              120.0,
+              135.0,
+              150.0,
+              165.0,
+              180.0
+            ],
+            "high_level_enabled": false,
+            "v4_2_rejected_release_hold_mode": "canonical_wait",
+            "energy_model_mode": "phase_motion_v2",
+            "emergency_priority_guard_enabled": true,
+            "rule_flow_coordination_enabled": false,
+            "geometry_min_dwell_seconds": 600.0,
+            "num_landing_zones": 6,
+            "max_active_uavs": 60,
+            "energy_reachability_guard_enabled": true,
+            "emergency_landing_enabled": true
+          },
+          "runtime_binding": {
+            "config_snapshot_present": true,
+            "dependency_shas": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            },
+            "dependency_shas_before": {
+              "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+              "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+              "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+              "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+              "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+              "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+              "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+              "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+              "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+            }
+          },
+          "checks": {
+            "caller_rng_unchanged": true,
+            "model_unchanged": true,
+            "weights_unchanged": true,
+            "observer_rng_unchanged": true,
+            "teacher_called": false,
+            "teacher_enabled": false,
+            "training_or_update_called": false,
+            "safety_nonzero": false
+          },
+          "metrics_checks": {
+            "status": "completed",
+            "technical_ok": true,
+            "natural_terminal": true,
+            "censored": false,
+            "complete_scene_metrics_known": true,
+            "request_identity_exact_24": true,
+            "generated": 24,
+            "admitted": 24,
+            "successful": 24,
+            "resolved": 24,
+            "normal": 21,
+            "emergency": 3,
+            "failed": 0,
+            "diverted": 0,
+            "unresolved": 0,
+            "hard_safety_clear": true,
+            "error": null
+          },
+          "prefix_fallback_control": {
+            "name": "sampled_first_prefix_fallback",
+            "policy_requested_k": 3,
+            "controller_max": 25,
+            "public_k3_prefix_validated": true,
+            "source_distributions_immutable": true,
+            "runtime_aliases_restored": true,
+            "sampler_aliases_restored": true,
+            "orders_sidecar": {
+              "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/sidecars/cell_04_before_prefix_fallback_orders.json",
+              "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\before_prefix_fallback_20261001\\sidecars\\cell_04_before_prefix_fallback_orders.json",
+              "local_exists": true,
+              "local_sha256": "1914796492cf9765d21243255d4f50b08b5760f3077b11793db3376e07d2d014"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

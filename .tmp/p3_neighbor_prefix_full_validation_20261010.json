@@ -1,0 +1,1147 @@
+{
+  "checks": {
+    "input_hashes_and_protocol": {
+      "inputs": 9,
+      "manifest": "D:\\7_codespace\\terminal\\.tmp\\p3_nine_cycle_loader_check_20261009.json",
+      "manifest_status": "PASS",
+      "seeds": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603,
+        893604,
+        893605,
+        893606
+      ],
+      "status": "PASS"
+    },
+    "loader_159_N50_labels": {
+      "release_by_seed": {
+        "893511": 23,
+        "893512": 94,
+        "893513": 87,
+        "893601": 18,
+        "893602": 75,
+        "893603": 75,
+        "893604": 37,
+        "893605": 89,
+        "893606": 79
+      },
+      "rows": 3149,
+      "shape_ego": [
+        3149,
+        159
+      ],
+      "shape_mask": [
+        3149,
+        20
+      ],
+      "shape_original": [
+        3149,
+        90
+      ],
+      "shape_traffic": [
+        3149,
+        20,
+        50
+      ],
+      "status": "PASS",
+      "wait_by_seed": {
+        "893511": 7,
+        "893512": 627,
+        "893513": 460,
+        "893602": 496,
+        "893603": 296,
+        "893604": 20,
+        "893605": 453,
+        "893606": 213
+      }
+    },
+    "old_supp_witness_reference": {
+      "old_queries": 317,
+      "reference_counts_by_seed": {
+        "893511": {
+          "blocked_pairs": 43,
+          "blocker_targets": 35,
+          "known_pairs": 158,
+          "queries": 59,
+          "safe_pairs": 115,
+          "scene_blocked": 1,
+          "scene_known": 24
+        },
+        "893512": {
+          "blocked_pairs": 50,
+          "blocker_targets": 32,
+          "known_pairs": 682,
+          "queries": 52,
+          "safe_pairs": 632,
+          "scene_blocked": 3,
+          "scene_known": 20
+        },
+        "893513": {
+          "blocked_pairs": 50,
+          "blocker_targets": 31,
+          "known_pairs": 679,
+          "queries": 56,
+          "safe_pairs": 629,
+          "scene_blocked": 4,
+          "scene_known": 25
+        },
+        "893601": {
+          "blocked_pairs": 9,
+          "blocker_targets": 9,
+          "known_pairs": 78,
+          "queries": 33,
+          "safe_pairs": 69,
+          "scene_blocked": 0,
+          "scene_known": 24
+        },
+        "893602": {
+          "blocked_pairs": 37,
+          "blocker_targets": 27,
+          "known_pairs": 579,
+          "queries": 54,
+          "safe_pairs": 542,
+          "scene_blocked": 5,
+          "scene_known": 27
+        },
+        "893603": {
+          "blocked_pairs": 71,
+          "blocker_targets": 38,
+          "known_pairs": 723,
+          "queries": 63,
+          "safe_pairs": 652,
+          "scene_blocked": 3,
+          "scene_known": 25
+        },
+        "893604": {
+          "blocked_pairs": 15,
+          "blocker_targets": 14,
+          "known_pairs": 229,
+          "queries": 39,
+          "safe_pairs": 214,
+          "scene_blocked": 4,
+          "scene_known": 25
+        },
+        "893605": {
+          "blocked_pairs": 66,
+          "blocker_targets": 39,
+          "known_pairs": 767,
+          "queries": 62,
+          "safe_pairs": 701,
+          "scene_blocked": 4,
+          "scene_known": 23
+        },
+        "893606": {
+          "blocked_pairs": 53,
+          "blocker_targets": 34,
+          "known_pairs": 660,
+          "queries": 55,
+          "safe_pairs": 607,
+          "scene_blocked": 3,
+          "scene_known": 21
+        }
+      },
+      "status": "PASS",
+      "supplemental_queries": 156
+    },
+    "parents_and_child_witnesses": {
+      "new_candidates": 713,
+      "nonzero_new_plans": 9,
+      "parents": [
+        {
+          "new_candidates": 51,
+          "new_plans": 101,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893511",
+          "plan_calls": 101,
+          "seed": 893511,
+          "states": 7
+        },
+        {
+          "new_candidates": 97,
+          "new_plans": 83,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893512",
+          "plan_calls": 83,
+          "seed": 893512,
+          "states": 31
+        },
+        {
+          "new_candidates": 100,
+          "new_plans": 82,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893513",
+          "plan_calls": 82,
+          "seed": 893513,
+          "states": 35
+        },
+        {
+          "new_candidates": 5,
+          "new_plans": 8,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893601",
+          "plan_calls": 8,
+          "seed": 893601,
+          "states": 3
+        },
+        {
+          "new_candidates": 97,
+          "new_plans": 87,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893602",
+          "plan_calls": 87,
+          "seed": 893602,
+          "states": 31
+        },
+        {
+          "new_candidates": 95,
+          "new_plans": 84,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893603",
+          "plan_calls": 84,
+          "seed": 893603,
+          "states": 31
+        },
+        {
+          "new_candidates": 69,
+          "new_plans": 97,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893604",
+          "plan_calls": 97,
+          "seed": 893604,
+          "states": 13
+        },
+        {
+          "new_candidates": 102,
+          "new_plans": 145,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893605",
+          "plan_calls": 145,
+          "seed": 893605,
+          "states": 41
+        },
+        {
+          "new_candidates": 97,
+          "new_plans": 110,
+          "output": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893606",
+          "plan_calls": 110,
+          "seed": 893606,
+          "states": 31
+        }
+      ],
+      "status": "PASS"
+    },
+    "prefix_and_combined_witness": {
+      "combined_counts_by_seed": {
+        "893511": {
+          "blocked_pairs": 182,
+          "blocker_targets": 128,
+          "known_pairs": 438,
+          "queries": 160,
+          "safe_pairs": 256,
+          "scene_blocked": 1,
+          "scene_known": 32
+        },
+        "893512": {
+          "blocked_pairs": 142,
+          "blocker_targets": 87,
+          "known_pairs": 2104,
+          "queries": 135,
+          "safe_pairs": 1962,
+          "scene_blocked": 8,
+          "scene_known": 48
+        },
+        "893513": {
+          "blocked_pairs": 143,
+          "blocker_targets": 73,
+          "known_pairs": 1914,
+          "queries": 138,
+          "safe_pairs": 1771,
+          "scene_blocked": 17,
+          "scene_known": 65
+        },
+        "893601": {
+          "blocked_pairs": 12,
+          "blocker_targets": 12,
+          "known_pairs": 106,
+          "queries": 41,
+          "safe_pairs": 94,
+          "scene_blocked": 2,
+          "scene_known": 29
+        },
+        "893602": {
+          "blocked_pairs": 145,
+          "blocker_targets": 82,
+          "known_pairs": 1819,
+          "queries": 141,
+          "safe_pairs": 1674,
+          "scene_blocked": 12,
+          "scene_known": 59
+        },
+        "893603": {
+          "blocked_pairs": 195,
+          "blocker_targets": 100,
+          "known_pairs": 2053,
+          "queries": 147,
+          "safe_pairs": 1858,
+          "scene_blocked": 3,
+          "scene_known": 47
+        },
+        "893604": {
+          "blocked_pairs": 115,
+          "blocker_targets": 96,
+          "known_pairs": 763,
+          "queries": 136,
+          "safe_pairs": 648,
+          "scene_blocked": 11,
+          "scene_known": 40
+        },
+        "893605": {
+          "blocked_pairs": 349,
+          "blocker_targets": 153,
+          "known_pairs": 3065,
+          "queries": 207,
+          "safe_pairs": 2716,
+          "scene_blocked": 4,
+          "scene_known": 54
+        },
+        "893606": {
+          "blocked_pairs": 186,
+          "blocker_targets": 108,
+          "known_pairs": 2134,
+          "queries": 165,
+          "safe_pairs": 1948,
+          "scene_blocked": 17,
+          "scene_known": 57
+        }
+      },
+      "combined_queries": 1270,
+      "prefix_counts_by_seed": {
+        "893511": {
+          "blocked_pairs": 139,
+          "blocker_targets": 93,
+          "known_pairs": 280,
+          "queries": 101,
+          "safe_pairs": 141,
+          "scene_blocked": 0,
+          "scene_known": 8
+        },
+        "893512": {
+          "blocked_pairs": 92,
+          "blocker_targets": 55,
+          "known_pairs": 1422,
+          "queries": 83,
+          "safe_pairs": 1330,
+          "scene_blocked": 5,
+          "scene_known": 28
+        },
+        "893513": {
+          "blocked_pairs": 93,
+          "blocker_targets": 42,
+          "known_pairs": 1235,
+          "queries": 82,
+          "safe_pairs": 1142,
+          "scene_blocked": 13,
+          "scene_known": 40
+        },
+        "893601": {
+          "blocked_pairs": 3,
+          "blocker_targets": 3,
+          "known_pairs": 28,
+          "queries": 8,
+          "safe_pairs": 25,
+          "scene_blocked": 2,
+          "scene_known": 5
+        },
+        "893602": {
+          "blocked_pairs": 108,
+          "blocker_targets": 55,
+          "known_pairs": 1240,
+          "queries": 87,
+          "safe_pairs": 1132,
+          "scene_blocked": 7,
+          "scene_known": 32
+        },
+        "893603": {
+          "blocked_pairs": 124,
+          "blocker_targets": 62,
+          "known_pairs": 1330,
+          "queries": 84,
+          "safe_pairs": 1206,
+          "scene_blocked": 0,
+          "scene_known": 22
+        },
+        "893604": {
+          "blocked_pairs": 100,
+          "blocker_targets": 82,
+          "known_pairs": 534,
+          "queries": 97,
+          "safe_pairs": 434,
+          "scene_blocked": 7,
+          "scene_known": 15
+        },
+        "893605": {
+          "blocked_pairs": 283,
+          "blocker_targets": 114,
+          "known_pairs": 2298,
+          "queries": 145,
+          "safe_pairs": 2015,
+          "scene_blocked": 0,
+          "scene_known": 31
+        },
+        "893606": {
+          "blocked_pairs": 133,
+          "blocker_targets": 74,
+          "known_pairs": 1474,
+          "queries": 110,
+          "safe_pairs": 1341,
+          "scene_blocked": 14,
+          "scene_known": 36
+        }
+      },
+      "prefix_queries": 797,
+      "status": "PASS",
+      "witness_paths": {
+        "old": "D:\\7_codespace\\terminal\\.tmp\\p3_neighbor_witness_train_20261009",
+        "supplemental": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_supplemental_witness_20261009\\three_cycle"
+      }
+    },
+    "root_result_and_witness": {
+      "actual_new_plans": 797,
+      "actual_plan_calls": 797,
+      "new_candidates": 713,
+      "nonzero_states": 223,
+      "states": 223,
+      "status": "PASS"
+    },
+    "selection_counts": {
+      "new": 713,
+      "reuse": 20,
+      "selected": 733,
+      "status": "PASS"
+    },
+    "teacher_audit_feasibility_reason": {
+      "checked_candidates": 733,
+      "status": "PASS"
+    }
+  },
+  "coverage": {
+    "new_candidates_by_interface": {
+      "i2f": 219,
+      "m2i": 236,
+      "o2m": 258
+    },
+    "new_candidates_by_joint": {
+      "1": 19,
+      "2": 23,
+      "3": 27,
+      "4": 26,
+      "5": 29,
+      "6": 23,
+      "7": 24,
+      "8": 34,
+      "9": 27,
+      "10": 31,
+      "11": 28,
+      "12": 38,
+      "13": 46,
+      "14": 41,
+      "15": 40,
+      "16": 26,
+      "17": 23,
+      "18": 36,
+      "19": 26,
+      "20": 24,
+      "21": 22,
+      "22": 22,
+      "23": 31,
+      "24": 24,
+      "25": 23
+    }
+  },
+  "error": null,
+  "facts": {
+    "actual_new_plans": 797,
+    "actual_plan_calls": 797,
+    "new": 713,
+    "nonzero_states": 223,
+    "official_resource_tolerance": {
+      "atol": 1e-07,
+      "rtol": 1e-06,
+      "stored_prefix_traffic_preserved": true
+    },
+    "reuse": 20,
+    "selected": 733,
+    "validator_runtime_calls": {
+      "archived_snapshot_reads": "official load_nine_cycle_train/load_resource_train path; old3 SHA-verified unpickle/rebuild",
+      "environment_resets": 0,
+      "environment_steps": 0,
+      "optimizer_updates": 0,
+      "planner_calls": 0,
+      "teacher_queries": 0
+    }
+  },
+  "full_directory": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full",
+  "path_mapping": [
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed/seed_893511/context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed/seed_893511/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed/seed_893511/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed/seed_893512/context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed/seed_893512/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed/seed_893512/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed/seed_893513/context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed/seed_893513/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed/seed_893513/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01/seed_893601/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01/seed_893601/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01/seed_893601/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02/seed_893602/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02/seed_893602/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02/seed_893602/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03/seed_893603/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03/seed_893603/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03/seed_893603/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01/seed_893604/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01/seed_893604/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01/seed_893604/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02/seed_893605/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02/seed_893605/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02/seed_893605/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03/seed_893606/resource_context_observations.jsonl",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\selected.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03/seed_893606/selected.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\annotation_result.json",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03/seed_893606/annotation_result.json",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\terminal\\.tmp\\p3_neighbor_witness_train_20261009",
+      "raw": "/home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009",
+      "rule": "server_project_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_supplemental_witness_20261009\\three_cycle",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893511",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893511",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893512",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893512",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893513",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893513",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893601",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893601",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893602",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893602",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893603",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893603",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893604",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893604",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893605",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893605",
+      "rule": "server_training_output_to_local"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full\\seed_893606",
+      "raw": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full/seed_893606",
+      "rule": "server_training_output_to_local"
+    }
+  ],
+  "protocol_sha256": "e1785882cb09296de408076af379c04b4a9ad8374c1159528807946537522c7c",
+  "result_sha256": "3a33b54ecfd8fd85be1f75dea818693d798a5b3cc82e73bc22acc1a4f163dea0",
+  "schema": "p3_neighbor_prefix_validation_20261010_v1",
+  "source": "read-only validator; no collector/witness_state/planner/teacher/environment/query/reset/step/optimizer calls; official loader may read archived old3 snapshots for SHA-verified resource rebuild",
+  "status": "PASS"
+}

@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\test_p3_numeric_candidate.py", line 15, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'

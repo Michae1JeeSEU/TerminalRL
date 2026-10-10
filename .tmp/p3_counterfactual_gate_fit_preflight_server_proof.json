@@ -1,0 +1,89 @@
+{
+  "cells": {
+    "1": {
+      "binding_false": [],
+      "cell_json_sha256": "e4b2890596b62a7e10582569039e00bc2a6463d98c6785cf2834dfe3c585f300",
+      "lifecycle_valid": true,
+      "npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+      "rows": 7378,
+      "safety_nonzero": false,
+      "ticks": 708,
+      "world_shape": [
+        7378,
+        88
+      ]
+    },
+    "2": {
+      "binding_false": [],
+      "cell_json_sha256": "2d526383e57e0e5f7290f396bfb830f92861c0536fed550631e8777c9c9dda3a",
+      "lifecycle_valid": true,
+      "npz_sha256": "7e1671404a97e617de86ea73b20bb6b9ffd2d28301ff92ceb78b99ab2ccd7d75",
+      "rows": 6909,
+      "safety_nonzero": false,
+      "ticks": 674,
+      "world_shape": [
+        6909,
+        88
+      ]
+    },
+    "3": {
+      "binding_false": [],
+      "cell_json_sha256": "9d1289683476e7b7bd1f1e7259a3d2d68f1288e0c216f49288cc51eb7e1d998b",
+      "lifecycle_valid": true,
+      "npz_sha256": "c5cb8b954a78e8e69e0ea349121273db5af6d5671fd214800599d253bf6c4df5",
+      "rows": 7070,
+      "safety_nonzero": false,
+      "ticks": 644,
+      "world_shape": [
+        7070,
+        88
+      ]
+    },
+    "4": {
+      "binding_false": [],
+      "cell_json_sha256": "e8b48b185235526e15b6f2c199e347a1a529929edb46742c0487b51eca266142",
+      "lifecycle_valid": true,
+      "npz_sha256": "77cebe19ff5303eb36612102c108a712b85ceeada8aac12662bd488139160100",
+      "rows": 7213,
+      "safety_nonzero": false,
+      "ticks": 723,
+      "world_shape": [
+        7213,
+        88
+      ]
+    }
+  },
+  "checks": {
+    "server_cli_exit": 0,
+    "server_compile_exit": 0,
+    "server_pytest": "14 passed in 0.13s"
+  },
+  "event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+  "expected_ticks": 2749,
+  "local_readiness_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_targets_20261001\\fit_readiness_v1.json",
+  "local_readiness_sha256": "646f95f7d944a58ab2c6a0950b48fd4e1f5f99cc8f838d826ce8b0ca37ee809a",
+  "manifest_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/full.json",
+  "manifest_sha256": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+  "readiness_status": "READY_FOR_ROOT_REVIEW",
+  "scope_flags": {
+    "PPO_ALLOWED": false,
+    "backprop_used": false,
+    "candidate_checkpoint_writer": false,
+    "heldout_used": false,
+    "model_forward_used": false,
+    "optimizer_used": false
+  },
+  "server_protocol_sha256": "c43f53d7601d7e9ab0876f643811eebf1917016ecaf079aa60f76123a61fe29e",
+  "server_source_sha256": "46012eb4af9e48934a75fe507dc34a170c1148d8b32dd2c341577c6a59435f56",
+  "server_test_sha256": "6f0b8d313b9e90e6e514f66217dee5e42f4920cf412cb9f8d3ec7f105f13efb2",
+  "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "status": "SERVER_PREFLIGHT_AND_READINESS_OK",
+  "target_cells": [
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "total_rows": 28570,
+  "total_ticks": 2749
+}

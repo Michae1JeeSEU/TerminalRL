@@ -1,0 +1,3085 @@
+{
+  "parent_summary": {
+    "exists": false,
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\summary.json"
+  },
+  "schema": "p3_d449_training_metrics_inventory_v1",
+  "summaries": [
+    {
+      "bytes": 19468,
+      "metrics": {
+        "accepted_updates": 290,
+        "actor_count_normalizer": 3.7560883620689656,
+        "actor_decisions": 69713,
+        "anchor_observation_count": 69713,
+        "anchor_steps": 18560,
+        "anchor_weight_sum": 1.0,
+        "approx_kl": 0.00017006273474264483,
+        "batch_actor_decisions": 69713,
+        "batch_index": 1,
+        "batch_steps_for_actor_normalizer": 18560,
+        "before_model_digest": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+        "cells": [
+          {
+            "policy_seed": 879201,
+            "scenario": "dense24",
+            "seed": 879101,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879202,
+            "scenario": "dense24",
+            "seed": 879102,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879203,
+            "scenario": "dense24",
+            "seed": 879103,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879204,
+            "scenario": "dense24",
+            "seed": 879104,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879205,
+            "scenario": "dense24",
+            "seed": 879105,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879206,
+            "scenario": "dense24",
+            "seed": 879106,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879207,
+            "scenario": "dense24",
+            "seed": 879107,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879208,
+            "scenario": "dense24",
+            "seed": 879108,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879209,
+            "scenario": "dense24",
+            "seed": 879109,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879210,
+            "scenario": "dense24",
+            "seed": 879110,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879211,
+            "scenario": "dense24",
+            "seed": 879111,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879212,
+            "scenario": "dense24",
+            "seed": 879112,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879213,
+            "scenario": "dense24",
+            "seed": 879113,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879214,
+            "scenario": "dense24",
+            "seed": 879114,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879215,
+            "scenario": "dense24",
+            "seed": 879115,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879216,
+            "scenario": "dense24",
+            "seed": 879116,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879217,
+            "scenario": "dense24",
+            "seed": 879117,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879218,
+            "scenario": "dense24",
+            "seed": 879118,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879219,
+            "scenario": "dense24",
+            "seed": 879119,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879220,
+            "scenario": "dense24",
+            "seed": 879120,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879221,
+            "scenario": "dense24",
+            "seed": 879121,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879222,
+            "scenario": "dense24",
+            "seed": 879122,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879223,
+            "scenario": "dense24",
+            "seed": 879123,
+            "split": "learning_curve_batch_01"
+          },
+          {
+            "policy_seed": 879224,
+            "scenario": "dense24",
+            "seed": 879124,
+            "split": "learning_curve_batch_01"
+          }
+        ],
+        "checkpoint_roundtrip": {
+          "checkpoint_sha256": "554a1a978a152054872e20c3830bc35571135210d4acb895c23e50e29b63860f",
+          "exact": true,
+          "model_digest": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+          "model_exact": true,
+          "path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/policy.pt",
+          "payload_config_check": {
+            "curriculum_id": "task_neutral_development",
+            "low_level_priority_time_weight": 0.0,
+            "phase_config_checked": [
+              "schema_version",
+              "airspace_schema_version",
+              "vehicle_dynamics_schema_version",
+              "trajectory_schema_version",
+              "vehicle_profile_id",
+              "action_schema_version",
+              "high_action_schema_version",
+              "observation_schema_version",
+              "dt",
+              "physics_dt",
+              "safety_sampling_dt",
+              "high_level_enabled",
+              "shield_enabled",
+              "scheduler_mode",
+              "teacher_enabled",
+              "teacher_release_label_enabled",
+              "task_priority_enabled",
+              "low_level_priority_time_weight",
+              "low_level_soc_urgency_time_weight"
+            ],
+            "phase_config_match": true,
+            "stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+            "task_priority_enabled": false
+          },
+          "payload_curriculum_id": "task_neutral_development",
+          "payload_priority_weight": 0.0,
+          "payload_stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+          "payload_task_priority_enabled": false
+        },
+        "collection": {
+          "bitwise_unchanged": true,
+          "model_digest_after_collection": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+          "model_digest_before_collection": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+          "per_cell": [
+            {
+              "cell": {
+                "policy_seed": 879201,
+                "scenario": "dense24",
+                "seed": 879101,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879202,
+                "scenario": "dense24",
+                "seed": 879102,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879203,
+                "scenario": "dense24",
+                "seed": 879103,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879204,
+                "scenario": "dense24",
+                "seed": 879104,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879205,
+                "scenario": "dense24",
+                "seed": 879105,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879206,
+                "scenario": "dense24",
+                "seed": 879106,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879207,
+                "scenario": "dense24",
+                "seed": 879107,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879208,
+                "scenario": "dense24",
+                "seed": 879108,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879209,
+                "scenario": "dense24",
+                "seed": 879109,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879210,
+                "scenario": "dense24",
+                "seed": 879110,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879211,
+                "scenario": "dense24",
+                "seed": 879111,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879212,
+                "scenario": "dense24",
+                "seed": 879112,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879213,
+                "scenario": "dense24",
+                "seed": 879113,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879214,
+                "scenario": "dense24",
+                "seed": 879114,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879215,
+                "scenario": "dense24",
+                "seed": 879115,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879216,
+                "scenario": "dense24",
+                "seed": 879116,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879217,
+                "scenario": "dense24",
+                "seed": 879117,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879218,
+                "scenario": "dense24",
+                "seed": 879118,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879219,
+                "scenario": "dense24",
+                "seed": 879119,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879220,
+                "scenario": "dense24",
+                "seed": 879120,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879221,
+                "scenario": "dense24",
+                "seed": 879121,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879222,
+                "scenario": "dense24",
+                "seed": 879122,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879223,
+                "scenario": "dense24",
+                "seed": 879123,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879224,
+                "scenario": "dense24",
+                "seed": 879124,
+                "split": "learning_curve_batch_01"
+              },
+              "model_digest_after": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+              "unchanged": true
+            }
+          ]
+        },
+        "credit_gae_lambda": 1.0,
+        "credit_gamma": 1.0,
+        "credit_method": "full_episode_mc",
+        "emergency": 107,
+        "expected_learning_reward_total": 106.54670705586658,
+        "failed": 0,
+        "failed_energy": 0,
+        "final_rollout_kl": 0.00028740022103569565,
+        "frozen_bitwise": {
+          "frozen_changed_names": [],
+          "frozen_parameter_bitwise_unchanged": true,
+          "gate_temperature_bitwise_unchanged": true,
+          "proposal_bitwise_unchanged": true,
+          "proposal_changed_names": [],
+          "trainable_changed": true,
+          "trainable_changed_names": [
+            "critic_encoder.0.bias",
+            "critic_encoder.0.weight",
+            "critic_encoder.2.bias",
+            "critic_encoder.2.weight",
+            "critic_encoder.4.bias",
+            "critic_encoder.4.weight",
+            "critic_head.0.bias",
+            "critic_head.0.weight",
+            "critic_head.2.bias",
+            "critic_head.2.weight",
+            "critic_head.4.bias",
+            "critic_head.4.weight",
+            "gate_adapter.0.bias",
+            "gate_adapter.0.weight",
+            "gate_adapter.2.bias",
+            "gate_adapter.2.weight",
+            "gate_adapter.4.bias",
+            "gate_adapter.4.weight"
+          ]
+        },
+        "full_episode_mc_return_match": true,
+        "full_episode_mc_return_max_abs_error": 4.76837158203125e-07,
+        "full_episode_mc_returns": {
+          "count": 18560,
+          "max": 5.03095006942749,
+          "mean": 2.2069188464087723,
+          "min": 0.0,
+          "std": 1.4806338174707554
+        },
+        "learning_reward_total": 106.54670705586658,
+        "lowSOC_wait": 136.7043801777472,
+        "max_wait": 601.8147075862394,
+        "mean_wait": 139.9179787212562,
+        "normal": 469,
+        "optimizer_identity_unchanged": true,
+        "p95_wait": 333.16899005155807,
+        "permutation_seed": 879001,
+        "raw_environment_reward_total": 10654.670705586657,
+        "raw_record_reward_total": 10654.670705586657,
+        "raw_step_reward_total": 10654.670705586657,
+        "record_paths": [
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_01/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_02/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_03/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_04/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_05/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_06/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_07/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_08/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_09/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_10/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_11/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_12/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_13/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_14/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_15/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_16/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_17/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_18/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_19/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_20/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_21/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_22/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_23/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_01/training/episode_24/record.json"
+        ],
+        "rejected_updates": 0,
+        "requests": 576,
+        "returns": {
+          "count": 18560,
+          "max": 5.030949592590332,
+          "mean": 2.20691884615025,
+          "min": 0.0,
+          "std": 1.4806338177222191
+        },
+        "reward_scale": 0.01,
+        "reward_scale_consistent": true,
+        "reward_total": 10654.67070558666,
+        "reward_unit": "critic_learning_reward",
+        "rollouts": 24,
+        "safety_nonzero_cells": 0,
+        "source_q_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "source_q_model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "steps": 18560,
+        "technical_ok": true,
+        "update_stats": {
+          "accepted_updates": 290,
+          "actor_count_normalizer": 3.7560883620689656,
+          "actor_decisions": 69713,
+          "actor_loss": 0.02394416345993924,
+          "approx_kl": 0.00017006273474264483,
+          "attempted_updates": 290,
+          "clip_fraction": 0.00853570854704795,
+          "entropy": 0.11447237614413787,
+          "final_rollout_kl": 0.00028740022103569565,
+          "grad_norm": 1.0680401414632796,
+          "joint_team_actor": true,
+          "loss": 0.17133298898998905,
+          "max_accepted_rollout_kl": 0.0006575343462402872,
+          "reference_kl_before": 0.0,
+          "reference_kl_final": 0.00029047802672721446,
+          "reference_kl_max_accepted": 0.0006633204175159335,
+          "reference_rejected_updates": 0,
+          "rejected_updates": 0,
+          "rejection_reason": null,
+          "stopped": false,
+          "target_kl": 0.01,
+          "team_steps": 18560,
+          "updates": 290,
+          "value_loss": 0.2949717891627345
+        },
+        "update_stop_reason": null
+      },
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_01\\summary.json",
+      "requested_field_presence": {
+        "accepted_updates": true,
+        "actor_count_normalizer": true,
+        "actor_decisions": true,
+        "actor_loss": true,
+        "actor_valid_count": false,
+        "advantage_max": false,
+        "advantage_mean": false,
+        "advantage_min": false,
+        "advantage_std": false,
+        "approx_kl": true,
+        "batch_actor_decisions": true,
+        "clip_fraction": true,
+        "critic_value_loss": true,
+        "gate_entropy": false,
+        "gradient_clipping_count": false,
+        "gradient_norm": true,
+        "proposal_entropy": false,
+        "rejected_updates": true,
+        "rollout_outcomes": true,
+        "rollout_returns": true,
+        "total_entropy": true,
+        "total_loss": true,
+        "wait_metrics": true
+      },
+      "requested_field_values": {
+        "accepted_updates": {
+          "path": "update_stats.accepted_updates",
+          "value": 290
+        },
+        "actor_count_normalizer": {
+          "path": "actor_count_normalizer",
+          "value": 3.7560883620689656
+        },
+        "actor_decisions": {
+          "path": "actor_decisions",
+          "value": 69713
+        },
+        "actor_loss": {
+          "path": "update_stats.actor_loss",
+          "value": 0.02394416345993924
+        },
+        "actor_valid_count": {
+          "path": null,
+          "value": null
+        },
+        "advantage_max": {
+          "path": null,
+          "value": null
+        },
+        "advantage_mean": {
+          "path": null,
+          "value": null
+        },
+        "advantage_min": {
+          "path": null,
+          "value": null
+        },
+        "advantage_std": {
+          "path": null,
+          "value": null
+        },
+        "approx_kl": {
+          "path": "update_stats.approx_kl",
+          "value": 0.00017006273474264483
+        },
+        "batch_actor_decisions": {
+          "path": "batch_actor_decisions",
+          "value": 69713
+        },
+        "clip_fraction": {
+          "path": "update_stats.clip_fraction",
+          "value": 0.00853570854704795
+        },
+        "critic_value_loss": {
+          "path": "update_stats.value_loss",
+          "value": 0.2949717891627345
+        },
+        "gate_entropy": {
+          "path": null,
+          "value": null
+        },
+        "gradient_clipping_count": {
+          "path": null,
+          "value": null
+        },
+        "gradient_norm": {
+          "path": "update_stats.grad_norm",
+          "value": 1.0680401414632796
+        },
+        "proposal_entropy": {
+          "path": null,
+          "value": null
+        },
+        "rejected_updates": {
+          "path": "update_stats.rejected_updates",
+          "value": 0
+        },
+        "rollout_outcomes": {
+          "path": "normal",
+          "value": 469
+        },
+        "rollout_returns": {
+          "path": "returns",
+          "value": {
+            "count": 18560,
+            "max": 5.030949592590332,
+            "mean": 2.20691884615025,
+            "min": 0.0,
+            "std": 1.4806338177222191
+          }
+        },
+        "total_entropy": {
+          "path": "update_stats.entropy",
+          "value": 0.11447237614413787
+        },
+        "total_loss": {
+          "path": "update_stats.loss",
+          "value": 0.17133298898998905
+        },
+        "wait_metrics": {
+          "path": "lowSOC_wait",
+          "value": 136.7043801777472
+        }
+      },
+      "requested_fields_absent": [
+        "gate_entropy",
+        "proposal_entropy",
+        "gradient_clipping_count",
+        "advantage_mean",
+        "advantage_std",
+        "advantage_min",
+        "advantage_max",
+        "actor_valid_count"
+      ],
+      "sha256": "4a36f579bcd37b3a919ccf06f45dd210c1338dfb2866e1838a0a498465fecd4c",
+      "top_level_keys": [
+        "accepted_updates",
+        "actor_count_normalizer",
+        "actor_decisions",
+        "anchor_observation_count",
+        "anchor_steps",
+        "anchor_weight_sum",
+        "approx_kl",
+        "batch_actor_decisions",
+        "batch_index",
+        "batch_steps_for_actor_normalizer",
+        "before_model_digest",
+        "cells",
+        "checkpoint_roundtrip",
+        "collection",
+        "credit_gae_lambda",
+        "credit_gamma",
+        "credit_method",
+        "emergency",
+        "expected_learning_reward_total",
+        "failed",
+        "failed_energy",
+        "final_rollout_kl",
+        "frozen_bitwise",
+        "full_episode_mc_return_match",
+        "full_episode_mc_return_max_abs_error",
+        "full_episode_mc_returns",
+        "learning_reward_total",
+        "lowSOC_wait",
+        "max_wait",
+        "mean_wait",
+        "normal",
+        "optimizer_identity_unchanged",
+        "p95_wait",
+        "permutation_seed",
+        "raw_environment_reward_total",
+        "raw_record_reward_total",
+        "raw_reward_total_source",
+        "raw_step_reward_total",
+        "record_paths",
+        "rejected_updates",
+        "requests",
+        "returns",
+        "reward_scale",
+        "reward_scale_consistent",
+        "reward_total",
+        "reward_unit",
+        "rollouts",
+        "safety_nonzero_cells",
+        "source_q_model_digest",
+        "source_q_model_digest_after",
+        "steps",
+        "technical_ok",
+        "update_stats",
+        "update_stop_reason"
+      ]
+    },
+    {
+      "bytes": 19525,
+      "metrics": {
+        "accepted_updates": 294,
+        "actor_count_normalizer": 3.8668793195108986,
+        "actor_decisions": 72736,
+        "anchor_observation_count": 142449,
+        "anchor_steps": 37370,
+        "anchor_weight_sum": 1.0,
+        "approx_kl": 0.0001478170846280342,
+        "batch_actor_decisions": 72736,
+        "batch_index": 2,
+        "batch_steps_for_actor_normalizer": 18810,
+        "before_model_digest": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+        "cells": [
+          {
+            "policy_seed": 879225,
+            "scenario": "dense24",
+            "seed": 879125,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879226,
+            "scenario": "dense24",
+            "seed": 879126,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879227,
+            "scenario": "dense24",
+            "seed": 879127,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879228,
+            "scenario": "dense24",
+            "seed": 879128,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879229,
+            "scenario": "dense24",
+            "seed": 879129,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879230,
+            "scenario": "dense24",
+            "seed": 879130,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879231,
+            "scenario": "dense24",
+            "seed": 879131,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879232,
+            "scenario": "dense24",
+            "seed": 879132,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879233,
+            "scenario": "dense24",
+            "seed": 879133,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879234,
+            "scenario": "dense24",
+            "seed": 879134,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879235,
+            "scenario": "dense24",
+            "seed": 879135,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879236,
+            "scenario": "dense24",
+            "seed": 879136,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879237,
+            "scenario": "dense24",
+            "seed": 879137,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879238,
+            "scenario": "dense24",
+            "seed": 879138,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879239,
+            "scenario": "dense24",
+            "seed": 879139,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879240,
+            "scenario": "dense24",
+            "seed": 879140,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879241,
+            "scenario": "dense24",
+            "seed": 879141,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879242,
+            "scenario": "dense24",
+            "seed": 879142,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879243,
+            "scenario": "dense24",
+            "seed": 879143,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879244,
+            "scenario": "dense24",
+            "seed": 879144,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879245,
+            "scenario": "dense24",
+            "seed": 879145,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879246,
+            "scenario": "dense24",
+            "seed": 879146,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879247,
+            "scenario": "dense24",
+            "seed": 879147,
+            "split": "learning_curve_batch_02"
+          },
+          {
+            "policy_seed": 879248,
+            "scenario": "dense24",
+            "seed": 879148,
+            "split": "learning_curve_batch_02"
+          }
+        ],
+        "checkpoint_roundtrip": {
+          "checkpoint_sha256": "d07f963f1e9c13cba905e9d59118238e20a079aac4568b44e57b5cf5ea89a744",
+          "exact": true,
+          "model_digest": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+          "model_exact": true,
+          "path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/policy.pt",
+          "payload_config_check": {
+            "curriculum_id": "task_neutral_development",
+            "low_level_priority_time_weight": 0.0,
+            "phase_config_checked": [
+              "schema_version",
+              "airspace_schema_version",
+              "vehicle_dynamics_schema_version",
+              "trajectory_schema_version",
+              "vehicle_profile_id",
+              "action_schema_version",
+              "high_action_schema_version",
+              "observation_schema_version",
+              "dt",
+              "physics_dt",
+              "safety_sampling_dt",
+              "high_level_enabled",
+              "shield_enabled",
+              "scheduler_mode",
+              "teacher_enabled",
+              "teacher_release_label_enabled",
+              "task_priority_enabled",
+              "low_level_priority_time_weight",
+              "low_level_soc_urgency_time_weight"
+            ],
+            "phase_config_match": true,
+            "stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+            "task_priority_enabled": false
+          },
+          "payload_curriculum_id": "task_neutral_development",
+          "payload_priority_weight": 0.0,
+          "payload_stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+          "payload_task_priority_enabled": false
+        },
+        "collection": {
+          "bitwise_unchanged": true,
+          "model_digest_after_collection": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+          "model_digest_before_collection": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+          "per_cell": [
+            {
+              "cell": {
+                "policy_seed": 879225,
+                "scenario": "dense24",
+                "seed": 879125,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879226,
+                "scenario": "dense24",
+                "seed": 879126,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879227,
+                "scenario": "dense24",
+                "seed": 879127,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879228,
+                "scenario": "dense24",
+                "seed": 879128,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879229,
+                "scenario": "dense24",
+                "seed": 879129,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879230,
+                "scenario": "dense24",
+                "seed": 879130,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879231,
+                "scenario": "dense24",
+                "seed": 879131,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879232,
+                "scenario": "dense24",
+                "seed": 879132,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879233,
+                "scenario": "dense24",
+                "seed": 879133,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879234,
+                "scenario": "dense24",
+                "seed": 879134,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879235,
+                "scenario": "dense24",
+                "seed": 879135,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879236,
+                "scenario": "dense24",
+                "seed": 879136,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879237,
+                "scenario": "dense24",
+                "seed": 879137,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879238,
+                "scenario": "dense24",
+                "seed": 879138,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879239,
+                "scenario": "dense24",
+                "seed": 879139,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879240,
+                "scenario": "dense24",
+                "seed": 879140,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879241,
+                "scenario": "dense24",
+                "seed": 879141,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879242,
+                "scenario": "dense24",
+                "seed": 879142,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879243,
+                "scenario": "dense24",
+                "seed": 879143,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879244,
+                "scenario": "dense24",
+                "seed": 879144,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879245,
+                "scenario": "dense24",
+                "seed": 879145,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879246,
+                "scenario": "dense24",
+                "seed": 879146,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879247,
+                "scenario": "dense24",
+                "seed": 879147,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879248,
+                "scenario": "dense24",
+                "seed": 879148,
+                "split": "learning_curve_batch_02"
+              },
+              "model_digest_after": "fd41d8e1d12ea6cac5d45bab7bd69ac1481b04e02b56e8d2185d132daea3e60f",
+              "unchanged": true
+            }
+          ]
+        },
+        "credit_gae_lambda": 1.0,
+        "credit_gamma": 1.0,
+        "credit_method": "full_episode_mc",
+        "emergency": 102,
+        "expected_learning_reward_total": 105.86790396569947,
+        "failed": 1,
+        "failed_energy": 1,
+        "final_rollout_kl": 0.0001340259434477609,
+        "frozen_bitwise": {
+          "frozen_changed_names": [],
+          "frozen_parameter_bitwise_unchanged": true,
+          "gate_temperature_bitwise_unchanged": true,
+          "proposal_bitwise_unchanged": true,
+          "proposal_changed_names": [],
+          "trainable_changed": true,
+          "trainable_changed_names": [
+            "critic_encoder.0.bias",
+            "critic_encoder.0.weight",
+            "critic_encoder.2.bias",
+            "critic_encoder.2.weight",
+            "critic_encoder.4.bias",
+            "critic_encoder.4.weight",
+            "critic_head.0.bias",
+            "critic_head.0.weight",
+            "critic_head.2.bias",
+            "critic_head.2.weight",
+            "critic_head.4.bias",
+            "critic_head.4.weight",
+            "gate_adapter.0.bias",
+            "gate_adapter.0.weight",
+            "gate_adapter.2.bias",
+            "gate_adapter.2.weight",
+            "gate_adapter.4.bias",
+            "gate_adapter.4.weight"
+          ]
+        },
+        "full_episode_mc_return_match": true,
+        "full_episode_mc_return_max_abs_error": 4.76837158203125e-07,
+        "full_episode_mc_returns": {
+          "count": 18810,
+          "max": 4.881714820861816,
+          "mean": 2.1843050656971905,
+          "min": -0.31062906980514526,
+          "std": 1.4823180046617204
+        },
+        "learning_reward_total": 105.86790396569947,
+        "lowSOC_wait": 124.21607322909159,
+        "max_wait": 992.8147075862394,
+        "mean_wait": 144.91261389524522,
+        "normal": 473,
+        "optimizer_identity_unchanged": true,
+        "p95_wait": 351.9443887169792,
+        "permutation_seed": 879002,
+        "raw_environment_reward_total": 10586.790396569946,
+        "raw_record_reward_total": 10586.790396569946,
+        "raw_step_reward_total": 10586.790396569946,
+        "record_paths": [
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_01/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_02/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_03/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_04/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_05/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_06/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_07/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_08/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_09/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_10/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_11/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_12/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_13/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_14/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_15/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_16/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_17/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_18/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_19/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_20/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_21/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_22/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_23/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_02/training/episode_24/record.json"
+        ],
+        "rejected_updates": 0,
+        "requests": 576,
+        "returns": {
+          "count": 18810,
+          "max": 4.881714820861816,
+          "mean": 2.184305065439332,
+          "min": -0.31062912940979004,
+          "std": 1.4823180043377948
+        },
+        "reward_scale": 0.01,
+        "reward_scale_consistent": true,
+        "reward_total": 10586.790396569946,
+        "reward_unit": "critic_learning_reward",
+        "rollouts": 24,
+        "safety_nonzero_cells": 0,
+        "source_q_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "source_q_model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "steps": 18810,
+        "technical_ok": true,
+        "update_stats": {
+          "accepted_updates": 294,
+          "actor_count_normalizer": 3.8668793195108986,
+          "actor_decisions": 72736,
+          "actor_loss": -0.07984091036776429,
+          "approx_kl": 0.0001478170846280342,
+          "attempted_updates": 294,
+          "clip_fraction": 0.007047295195587474,
+          "entropy": 0.10876836670803375,
+          "final_rollout_kl": 0.0001340259434477609,
+          "grad_norm": 0.8894924614705196,
+          "joint_team_actor": true,
+          "loss": 0.024297784871315238,
+          "max_accepted_rollout_kl": 0.0005954133790773436,
+          "reference_kl_before": 0.00029160932172089815,
+          "reference_kl_final": 0.0006853035883978009,
+          "reference_kl_max_accepted": 0.0016651400364935398,
+          "reference_rejected_updates": 0,
+          "rejected_updates": 0,
+          "rejection_reason": null,
+          "stopped": false,
+          "target_kl": 0.01,
+          "team_steps": 18810,
+          "updates": 294,
+          "value_loss": 0.20840523723943705
+        },
+        "update_stop_reason": null
+      },
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_02\\summary.json",
+      "requested_field_presence": {
+        "accepted_updates": true,
+        "actor_count_normalizer": true,
+        "actor_decisions": true,
+        "actor_loss": true,
+        "actor_valid_count": false,
+        "advantage_max": false,
+        "advantage_mean": false,
+        "advantage_min": false,
+        "advantage_std": false,
+        "approx_kl": true,
+        "batch_actor_decisions": true,
+        "clip_fraction": true,
+        "critic_value_loss": true,
+        "gate_entropy": false,
+        "gradient_clipping_count": false,
+        "gradient_norm": true,
+        "proposal_entropy": false,
+        "rejected_updates": true,
+        "rollout_outcomes": true,
+        "rollout_returns": true,
+        "total_entropy": true,
+        "total_loss": true,
+        "wait_metrics": true
+      },
+      "requested_field_values": {
+        "accepted_updates": {
+          "path": "update_stats.accepted_updates",
+          "value": 294
+        },
+        "actor_count_normalizer": {
+          "path": "actor_count_normalizer",
+          "value": 3.8668793195108986
+        },
+        "actor_decisions": {
+          "path": "actor_decisions",
+          "value": 72736
+        },
+        "actor_loss": {
+          "path": "update_stats.actor_loss",
+          "value": -0.07984091036776429
+        },
+        "actor_valid_count": {
+          "path": null,
+          "value": null
+        },
+        "advantage_max": {
+          "path": null,
+          "value": null
+        },
+        "advantage_mean": {
+          "path": null,
+          "value": null
+        },
+        "advantage_min": {
+          "path": null,
+          "value": null
+        },
+        "advantage_std": {
+          "path": null,
+          "value": null
+        },
+        "approx_kl": {
+          "path": "update_stats.approx_kl",
+          "value": 0.0001478170846280342
+        },
+        "batch_actor_decisions": {
+          "path": "batch_actor_decisions",
+          "value": 72736
+        },
+        "clip_fraction": {
+          "path": "update_stats.clip_fraction",
+          "value": 0.007047295195587474
+        },
+        "critic_value_loss": {
+          "path": "update_stats.value_loss",
+          "value": 0.20840523723943705
+        },
+        "gate_entropy": {
+          "path": null,
+          "value": null
+        },
+        "gradient_clipping_count": {
+          "path": null,
+          "value": null
+        },
+        "gradient_norm": {
+          "path": "update_stats.grad_norm",
+          "value": 0.8894924614705196
+        },
+        "proposal_entropy": {
+          "path": null,
+          "value": null
+        },
+        "rejected_updates": {
+          "path": "update_stats.rejected_updates",
+          "value": 0
+        },
+        "rollout_outcomes": {
+          "path": "normal",
+          "value": 473
+        },
+        "rollout_returns": {
+          "path": "returns",
+          "value": {
+            "count": 18810,
+            "max": 4.881714820861816,
+            "mean": 2.184305065439332,
+            "min": -0.31062912940979004,
+            "std": 1.4823180043377948
+          }
+        },
+        "total_entropy": {
+          "path": "update_stats.entropy",
+          "value": 0.10876836670803375
+        },
+        "total_loss": {
+          "path": "update_stats.loss",
+          "value": 0.024297784871315238
+        },
+        "wait_metrics": {
+          "path": "lowSOC_wait",
+          "value": 124.21607322909159
+        }
+      },
+      "requested_fields_absent": [
+        "gate_entropy",
+        "proposal_entropy",
+        "gradient_clipping_count",
+        "advantage_mean",
+        "advantage_std",
+        "advantage_min",
+        "advantage_max",
+        "actor_valid_count"
+      ],
+      "sha256": "dacb643068fdced1ee9ca78ec79ab5b2f21733ec7c404aa3ff3069353e82065f",
+      "top_level_keys": [
+        "accepted_updates",
+        "actor_count_normalizer",
+        "actor_decisions",
+        "anchor_observation_count",
+        "anchor_steps",
+        "anchor_weight_sum",
+        "approx_kl",
+        "batch_actor_decisions",
+        "batch_index",
+        "batch_steps_for_actor_normalizer",
+        "before_model_digest",
+        "cells",
+        "checkpoint_roundtrip",
+        "collection",
+        "credit_gae_lambda",
+        "credit_gamma",
+        "credit_method",
+        "emergency",
+        "expected_learning_reward_total",
+        "failed",
+        "failed_energy",
+        "final_rollout_kl",
+        "frozen_bitwise",
+        "full_episode_mc_return_match",
+        "full_episode_mc_return_max_abs_error",
+        "full_episode_mc_returns",
+        "learning_reward_total",
+        "lowSOC_wait",
+        "max_wait",
+        "mean_wait",
+        "normal",
+        "optimizer_identity_unchanged",
+        "p95_wait",
+        "permutation_seed",
+        "raw_environment_reward_total",
+        "raw_record_reward_total",
+        "raw_reward_total_source",
+        "raw_step_reward_total",
+        "record_paths",
+        "rejected_updates",
+        "requests",
+        "returns",
+        "reward_scale",
+        "reward_scale_consistent",
+        "reward_total",
+        "reward_unit",
+        "rollouts",
+        "safety_nonzero_cells",
+        "source_q_model_digest",
+        "source_q_model_digest_after",
+        "steps",
+        "technical_ok",
+        "update_stats",
+        "update_stop_reason"
+      ]
+    },
+    {
+      "bytes": 19506,
+      "metrics": {
+        "accepted_updates": 284,
+        "actor_count_normalizer": 3.7933406714364337,
+        "actor_decisions": 68925,
+        "anchor_observation_count": 211374,
+        "anchor_steps": 55540,
+        "anchor_weight_sum": 0.9999998807907104,
+        "approx_kl": 0.0002325048619539368,
+        "batch_actor_decisions": 68925,
+        "batch_index": 3,
+        "batch_steps_for_actor_normalizer": 18170,
+        "before_model_digest": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+        "cells": [
+          {
+            "policy_seed": 879249,
+            "scenario": "dense24",
+            "seed": 879149,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879250,
+            "scenario": "dense24",
+            "seed": 879150,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879251,
+            "scenario": "dense24",
+            "seed": 879151,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879252,
+            "scenario": "dense24",
+            "seed": 879152,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879253,
+            "scenario": "dense24",
+            "seed": 879153,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879254,
+            "scenario": "dense24",
+            "seed": 879154,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879255,
+            "scenario": "dense24",
+            "seed": 879155,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879256,
+            "scenario": "dense24",
+            "seed": 879156,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879257,
+            "scenario": "dense24",
+            "seed": 879157,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879258,
+            "scenario": "dense24",
+            "seed": 879158,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879259,
+            "scenario": "dense24",
+            "seed": 879159,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879260,
+            "scenario": "dense24",
+            "seed": 879160,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879261,
+            "scenario": "dense24",
+            "seed": 879161,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879262,
+            "scenario": "dense24",
+            "seed": 879162,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879263,
+            "scenario": "dense24",
+            "seed": 879163,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879264,
+            "scenario": "dense24",
+            "seed": 879164,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879265,
+            "scenario": "dense24",
+            "seed": 879165,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879266,
+            "scenario": "dense24",
+            "seed": 879166,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879267,
+            "scenario": "dense24",
+            "seed": 879167,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879268,
+            "scenario": "dense24",
+            "seed": 879168,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879269,
+            "scenario": "dense24",
+            "seed": 879169,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879270,
+            "scenario": "dense24",
+            "seed": 879170,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879271,
+            "scenario": "dense24",
+            "seed": 879171,
+            "split": "learning_curve_batch_03"
+          },
+          {
+            "policy_seed": 879272,
+            "scenario": "dense24",
+            "seed": 879172,
+            "split": "learning_curve_batch_03"
+          }
+        ],
+        "checkpoint_roundtrip": {
+          "checkpoint_sha256": "dab2f83b43a7b878057d6ec15b47f7329e7f17c698778b309e5a52a20bec9a25",
+          "exact": true,
+          "model_digest": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+          "model_exact": true,
+          "path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/policy.pt",
+          "payload_config_check": {
+            "curriculum_id": "task_neutral_development",
+            "low_level_priority_time_weight": 0.0,
+            "phase_config_checked": [
+              "schema_version",
+              "airspace_schema_version",
+              "vehicle_dynamics_schema_version",
+              "trajectory_schema_version",
+              "vehicle_profile_id",
+              "action_schema_version",
+              "high_action_schema_version",
+              "observation_schema_version",
+              "dt",
+              "physics_dt",
+              "safety_sampling_dt",
+              "high_level_enabled",
+              "shield_enabled",
+              "scheduler_mode",
+              "teacher_enabled",
+              "teacher_release_label_enabled",
+              "task_priority_enabled",
+              "low_level_priority_time_weight",
+              "low_level_soc_urgency_time_weight"
+            ],
+            "phase_config_match": true,
+            "stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+            "task_priority_enabled": false
+          },
+          "payload_curriculum_id": "task_neutral_development",
+          "payload_priority_weight": 0.0,
+          "payload_stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+          "payload_task_priority_enabled": false
+        },
+        "collection": {
+          "bitwise_unchanged": true,
+          "model_digest_after_collection": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+          "model_digest_before_collection": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+          "per_cell": [
+            {
+              "cell": {
+                "policy_seed": 879249,
+                "scenario": "dense24",
+                "seed": 879149,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879250,
+                "scenario": "dense24",
+                "seed": 879150,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879251,
+                "scenario": "dense24",
+                "seed": 879151,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879252,
+                "scenario": "dense24",
+                "seed": 879152,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879253,
+                "scenario": "dense24",
+                "seed": 879153,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879254,
+                "scenario": "dense24",
+                "seed": 879154,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879255,
+                "scenario": "dense24",
+                "seed": 879155,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879256,
+                "scenario": "dense24",
+                "seed": 879156,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879257,
+                "scenario": "dense24",
+                "seed": 879157,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879258,
+                "scenario": "dense24",
+                "seed": 879158,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879259,
+                "scenario": "dense24",
+                "seed": 879159,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879260,
+                "scenario": "dense24",
+                "seed": 879160,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879261,
+                "scenario": "dense24",
+                "seed": 879161,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879262,
+                "scenario": "dense24",
+                "seed": 879162,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879263,
+                "scenario": "dense24",
+                "seed": 879163,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879264,
+                "scenario": "dense24",
+                "seed": 879164,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879265,
+                "scenario": "dense24",
+                "seed": 879165,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879266,
+                "scenario": "dense24",
+                "seed": 879166,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879267,
+                "scenario": "dense24",
+                "seed": 879167,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879268,
+                "scenario": "dense24",
+                "seed": 879168,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879269,
+                "scenario": "dense24",
+                "seed": 879169,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879270,
+                "scenario": "dense24",
+                "seed": 879170,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879271,
+                "scenario": "dense24",
+                "seed": 879171,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879272,
+                "scenario": "dense24",
+                "seed": 879172,
+                "split": "learning_curve_batch_03"
+              },
+              "model_digest_after": "666ee10e9738a8fa4e672eb96afbebca979fe2e059137be3d9b320e1a643fb76",
+              "unchanged": true
+            }
+          ]
+        },
+        "credit_gae_lambda": 1.0,
+        "credit_gamma": 1.0,
+        "credit_method": "full_episode_mc",
+        "emergency": 104,
+        "expected_learning_reward_total": 106.80378674603442,
+        "failed": 0,
+        "failed_energy": 0,
+        "final_rollout_kl": 0.00040677970104728534,
+        "frozen_bitwise": {
+          "frozen_changed_names": [],
+          "frozen_parameter_bitwise_unchanged": true,
+          "gate_temperature_bitwise_unchanged": true,
+          "proposal_bitwise_unchanged": true,
+          "proposal_changed_names": [],
+          "trainable_changed": true,
+          "trainable_changed_names": [
+            "critic_encoder.0.bias",
+            "critic_encoder.0.weight",
+            "critic_encoder.2.bias",
+            "critic_encoder.2.weight",
+            "critic_encoder.4.bias",
+            "critic_encoder.4.weight",
+            "critic_head.0.bias",
+            "critic_head.0.weight",
+            "critic_head.2.bias",
+            "critic_head.2.weight",
+            "critic_head.4.bias",
+            "critic_head.4.weight",
+            "gate_adapter.0.bias",
+            "gate_adapter.0.weight",
+            "gate_adapter.2.bias",
+            "gate_adapter.2.weight",
+            "gate_adapter.4.bias",
+            "gate_adapter.4.weight"
+          ]
+        },
+        "full_episode_mc_return_match": true,
+        "full_episode_mc_return_max_abs_error": 4.76837158203125e-07,
+        "full_episode_mc_returns": {
+          "count": 18170,
+          "max": 4.995828151702881,
+          "mean": 2.2656047431548085,
+          "min": 0.0,
+          "std": 1.4686198661897003
+        },
+        "learning_reward_total": 106.80378674603443,
+        "lowSOC_wait": 125.83640772172588,
+        "max_wait": 598.8147075862394,
+        "mean_wait": 137.4511586686889,
+        "normal": 472,
+        "optimizer_identity_unchanged": true,
+        "p95_wait": 334.23470504510186,
+        "permutation_seed": 879003,
+        "raw_environment_reward_total": 10680.378674603442,
+        "raw_record_reward_total": 10680.378674603442,
+        "raw_step_reward_total": 10680.378674603442,
+        "record_paths": [
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_01/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_02/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_03/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_04/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_05/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_06/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_07/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_08/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_09/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_10/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_11/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_12/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_13/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_14/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_15/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_16/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_17/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_18/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_19/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_20/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_21/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_22/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_23/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_03/training/episode_24/record.json"
+        ],
+        "rejected_updates": 0,
+        "requests": 576,
+        "returns": {
+          "count": 18170,
+          "max": 4.995828151702881,
+          "mean": 2.2656047429588053,
+          "min": 0.0,
+          "std": 1.468619866365841
+        },
+        "reward_scale": 0.01,
+        "reward_scale_consistent": true,
+        "reward_total": 10680.378674603442,
+        "reward_unit": "critic_learning_reward",
+        "rollouts": 24,
+        "safety_nonzero_cells": 0,
+        "source_q_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "source_q_model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "steps": 18170,
+        "technical_ok": true,
+        "update_stats": {
+          "accepted_updates": 284,
+          "actor_count_normalizer": 3.7933406714364337,
+          "actor_decisions": 68925,
+          "actor_loss": -0.03650784490894015,
+          "approx_kl": 0.0002325048619539368,
+          "attempted_updates": 284,
+          "clip_fraction": 0.012025918536507984,
+          "entropy": 0.11654325808122964,
+          "final_rollout_kl": 0.00040677970104728534,
+          "grad_norm": 0.8886658619617073,
+          "joint_team_actor": true,
+          "loss": 0.034601976471888736,
+          "max_accepted_rollout_kl": 0.0007656975748156379,
+          "reference_kl_before": 0.0007400476606562734,
+          "reference_kl_final": 0.0003421605215407908,
+          "reference_kl_max_accepted": 0.002756439847871661,
+          "reference_rejected_updates": 0,
+          "rejected_updates": 0,
+          "rejection_reason": null,
+          "stopped": false,
+          "target_kl": 0.01,
+          "team_steps": 18170,
+          "updates": 284,
+          "value_loss": 0.14227831408276526
+        },
+        "update_stop_reason": null
+      },
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_03\\summary.json",
+      "requested_field_presence": {
+        "accepted_updates": true,
+        "actor_count_normalizer": true,
+        "actor_decisions": true,
+        "actor_loss": true,
+        "actor_valid_count": false,
+        "advantage_max": false,
+        "advantage_mean": false,
+        "advantage_min": false,
+        "advantage_std": false,
+        "approx_kl": true,
+        "batch_actor_decisions": true,
+        "clip_fraction": true,
+        "critic_value_loss": true,
+        "gate_entropy": false,
+        "gradient_clipping_count": false,
+        "gradient_norm": true,
+        "proposal_entropy": false,
+        "rejected_updates": true,
+        "rollout_outcomes": true,
+        "rollout_returns": true,
+        "total_entropy": true,
+        "total_loss": true,
+        "wait_metrics": true
+      },
+      "requested_field_values": {
+        "accepted_updates": {
+          "path": "update_stats.accepted_updates",
+          "value": 284
+        },
+        "actor_count_normalizer": {
+          "path": "actor_count_normalizer",
+          "value": 3.7933406714364337
+        },
+        "actor_decisions": {
+          "path": "actor_decisions",
+          "value": 68925
+        },
+        "actor_loss": {
+          "path": "update_stats.actor_loss",
+          "value": -0.03650784490894015
+        },
+        "actor_valid_count": {
+          "path": null,
+          "value": null
+        },
+        "advantage_max": {
+          "path": null,
+          "value": null
+        },
+        "advantage_mean": {
+          "path": null,
+          "value": null
+        },
+        "advantage_min": {
+          "path": null,
+          "value": null
+        },
+        "advantage_std": {
+          "path": null,
+          "value": null
+        },
+        "approx_kl": {
+          "path": "update_stats.approx_kl",
+          "value": 0.0002325048619539368
+        },
+        "batch_actor_decisions": {
+          "path": "batch_actor_decisions",
+          "value": 68925
+        },
+        "clip_fraction": {
+          "path": "update_stats.clip_fraction",
+          "value": 0.012025918536507984
+        },
+        "critic_value_loss": {
+          "path": "update_stats.value_loss",
+          "value": 0.14227831408276526
+        },
+        "gate_entropy": {
+          "path": null,
+          "value": null
+        },
+        "gradient_clipping_count": {
+          "path": null,
+          "value": null
+        },
+        "gradient_norm": {
+          "path": "update_stats.grad_norm",
+          "value": 0.8886658619617073
+        },
+        "proposal_entropy": {
+          "path": null,
+          "value": null
+        },
+        "rejected_updates": {
+          "path": "update_stats.rejected_updates",
+          "value": 0
+        },
+        "rollout_outcomes": {
+          "path": "normal",
+          "value": 472
+        },
+        "rollout_returns": {
+          "path": "returns",
+          "value": {
+            "count": 18170,
+            "max": 4.995828151702881,
+            "mean": 2.2656047429588053,
+            "min": 0.0,
+            "std": 1.468619866365841
+          }
+        },
+        "total_entropy": {
+          "path": "update_stats.entropy",
+          "value": 0.11654325808122964
+        },
+        "total_loss": {
+          "path": "update_stats.loss",
+          "value": 0.034601976471888736
+        },
+        "wait_metrics": {
+          "path": "lowSOC_wait",
+          "value": 125.83640772172588
+        }
+      },
+      "requested_fields_absent": [
+        "gate_entropy",
+        "proposal_entropy",
+        "gradient_clipping_count",
+        "advantage_mean",
+        "advantage_std",
+        "advantage_min",
+        "advantage_max",
+        "actor_valid_count"
+      ],
+      "sha256": "585945bb8f2ba9cfad663359d33d9df1a9840225a016ce6eac2a8893c3541de0",
+      "top_level_keys": [
+        "accepted_updates",
+        "actor_count_normalizer",
+        "actor_decisions",
+        "anchor_observation_count",
+        "anchor_steps",
+        "anchor_weight_sum",
+        "approx_kl",
+        "batch_actor_decisions",
+        "batch_index",
+        "batch_steps_for_actor_normalizer",
+        "before_model_digest",
+        "cells",
+        "checkpoint_roundtrip",
+        "collection",
+        "credit_gae_lambda",
+        "credit_gamma",
+        "credit_method",
+        "emergency",
+        "expected_learning_reward_total",
+        "failed",
+        "failed_energy",
+        "final_rollout_kl",
+        "frozen_bitwise",
+        "full_episode_mc_return_match",
+        "full_episode_mc_return_max_abs_error",
+        "full_episode_mc_returns",
+        "learning_reward_total",
+        "lowSOC_wait",
+        "max_wait",
+        "mean_wait",
+        "normal",
+        "optimizer_identity_unchanged",
+        "p95_wait",
+        "permutation_seed",
+        "raw_environment_reward_total",
+        "raw_record_reward_total",
+        "raw_reward_total_source",
+        "raw_step_reward_total",
+        "record_paths",
+        "rejected_updates",
+        "requests",
+        "returns",
+        "reward_scale",
+        "reward_scale_consistent",
+        "reward_total",
+        "reward_unit",
+        "rollouts",
+        "safety_nonzero_cells",
+        "source_q_model_digest",
+        "source_q_model_digest_after",
+        "steps",
+        "technical_ok",
+        "update_stats",
+        "update_stop_reason"
+      ]
+    },
+    {
+      "bytes": 19514,
+      "metrics": {
+        "accepted_updates": 298,
+        "actor_count_normalizer": 3.727759970574326,
+        "actor_decisions": 70943,
+        "anchor_observation_count": 282317,
+        "anchor_steps": 74571,
+        "anchor_weight_sum": 1.0,
+        "approx_kl": 0.00018388372140600568,
+        "batch_actor_decisions": 70943,
+        "batch_index": 4,
+        "batch_steps_for_actor_normalizer": 19031,
+        "before_model_digest": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+        "cells": [
+          {
+            "policy_seed": 879273,
+            "scenario": "dense24",
+            "seed": 879173,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879274,
+            "scenario": "dense24",
+            "seed": 879174,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879275,
+            "scenario": "dense24",
+            "seed": 879175,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879276,
+            "scenario": "dense24",
+            "seed": 879176,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879277,
+            "scenario": "dense24",
+            "seed": 879177,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879278,
+            "scenario": "dense24",
+            "seed": 879178,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879279,
+            "scenario": "dense24",
+            "seed": 879179,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879280,
+            "scenario": "dense24",
+            "seed": 879180,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879281,
+            "scenario": "dense24",
+            "seed": 879181,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879282,
+            "scenario": "dense24",
+            "seed": 879182,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879283,
+            "scenario": "dense24",
+            "seed": 879183,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879284,
+            "scenario": "dense24",
+            "seed": 879184,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879285,
+            "scenario": "dense24",
+            "seed": 879185,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879286,
+            "scenario": "dense24",
+            "seed": 879186,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879287,
+            "scenario": "dense24",
+            "seed": 879187,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879288,
+            "scenario": "dense24",
+            "seed": 879188,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879289,
+            "scenario": "dense24",
+            "seed": 879189,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879290,
+            "scenario": "dense24",
+            "seed": 879190,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879291,
+            "scenario": "dense24",
+            "seed": 879191,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879292,
+            "scenario": "dense24",
+            "seed": 879192,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879293,
+            "scenario": "dense24",
+            "seed": 879193,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879294,
+            "scenario": "dense24",
+            "seed": 879194,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879295,
+            "scenario": "dense24",
+            "seed": 879195,
+            "split": "learning_curve_batch_04"
+          },
+          {
+            "policy_seed": 879296,
+            "scenario": "dense24",
+            "seed": 879196,
+            "split": "learning_curve_batch_04"
+          }
+        ],
+        "checkpoint_roundtrip": {
+          "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+          "exact": true,
+          "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+          "model_exact": true,
+          "path": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+          "payload_config_check": {
+            "curriculum_id": "task_neutral_development",
+            "low_level_priority_time_weight": 0.0,
+            "phase_config_checked": [
+              "schema_version",
+              "airspace_schema_version",
+              "vehicle_dynamics_schema_version",
+              "trajectory_schema_version",
+              "vehicle_profile_id",
+              "action_schema_version",
+              "high_action_schema_version",
+              "observation_schema_version",
+              "dt",
+              "physics_dt",
+              "safety_sampling_dt",
+              "high_level_enabled",
+              "shield_enabled",
+              "scheduler_mode",
+              "teacher_enabled",
+              "teacher_release_label_enabled",
+              "task_priority_enabled",
+              "low_level_priority_time_weight",
+              "low_level_soc_urgency_time_weight"
+            ],
+            "phase_config_match": true,
+            "stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+            "task_priority_enabled": false
+          },
+          "payload_curriculum_id": "task_neutral_development",
+          "payload_priority_weight": 0.0,
+          "payload_stage": "P3_TASK_NEUTRAL_DEVELOPMENT_PILOT_V1",
+          "payload_task_priority_enabled": false
+        },
+        "collection": {
+          "bitwise_unchanged": true,
+          "model_digest_after_collection": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+          "model_digest_before_collection": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+          "per_cell": [
+            {
+              "cell": {
+                "policy_seed": 879273,
+                "scenario": "dense24",
+                "seed": 879173,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879274,
+                "scenario": "dense24",
+                "seed": 879174,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879275,
+                "scenario": "dense24",
+                "seed": 879175,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879276,
+                "scenario": "dense24",
+                "seed": 879176,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879277,
+                "scenario": "dense24",
+                "seed": 879177,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879278,
+                "scenario": "dense24",
+                "seed": 879178,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879279,
+                "scenario": "dense24",
+                "seed": 879179,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879280,
+                "scenario": "dense24",
+                "seed": 879180,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879281,
+                "scenario": "dense24",
+                "seed": 879181,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879282,
+                "scenario": "dense24",
+                "seed": 879182,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879283,
+                "scenario": "dense24",
+                "seed": 879183,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879284,
+                "scenario": "dense24",
+                "seed": 879184,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879285,
+                "scenario": "dense24",
+                "seed": 879185,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879286,
+                "scenario": "dense24",
+                "seed": 879186,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879287,
+                "scenario": "dense24",
+                "seed": 879187,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879288,
+                "scenario": "dense24",
+                "seed": 879188,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879289,
+                "scenario": "dense24",
+                "seed": 879189,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879290,
+                "scenario": "dense24",
+                "seed": 879190,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879291,
+                "scenario": "dense24",
+                "seed": 879191,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879292,
+                "scenario": "dense24",
+                "seed": 879192,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879293,
+                "scenario": "dense24",
+                "seed": 879193,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879294,
+                "scenario": "dense24",
+                "seed": 879194,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879295,
+                "scenario": "dense24",
+                "seed": 879195,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            },
+            {
+              "cell": {
+                "policy_seed": 879296,
+                "scenario": "dense24",
+                "seed": 879196,
+                "split": "learning_curve_batch_04"
+              },
+              "model_digest_after": "c687c16572b4de08066333564430beeabd30313dd31ba6ec99a6beaabb5e1de7",
+              "unchanged": true
+            }
+          ]
+        },
+        "credit_gae_lambda": 1.0,
+        "credit_gamma": 1.0,
+        "credit_method": "full_episode_mc",
+        "emergency": 97,
+        "expected_learning_reward_total": 106.1322823476767,
+        "failed": 2,
+        "failed_energy": 2,
+        "final_rollout_kl": 0.00019126318681331737,
+        "frozen_bitwise": {
+          "frozen_changed_names": [],
+          "frozen_parameter_bitwise_unchanged": true,
+          "gate_temperature_bitwise_unchanged": true,
+          "proposal_bitwise_unchanged": true,
+          "proposal_changed_names": [],
+          "trainable_changed": true,
+          "trainable_changed_names": [
+            "critic_encoder.0.bias",
+            "critic_encoder.0.weight",
+            "critic_encoder.2.bias",
+            "critic_encoder.2.weight",
+            "critic_encoder.4.bias",
+            "critic_encoder.4.weight",
+            "critic_head.0.bias",
+            "critic_head.0.weight",
+            "critic_head.2.bias",
+            "critic_head.2.weight",
+            "critic_head.4.bias",
+            "critic_head.4.weight",
+            "gate_adapter.0.bias",
+            "gate_adapter.0.weight",
+            "gate_adapter.2.bias",
+            "gate_adapter.2.weight",
+            "gate_adapter.4.bias",
+            "gate_adapter.4.weight"
+          ]
+        },
+        "full_episode_mc_return_match": true,
+        "full_episode_mc_return_max_abs_error": 4.76837158203125e-07,
+        "full_episode_mc_returns": {
+          "count": 19031,
+          "max": 5.059577941894531,
+          "mean": 2.13243395677016,
+          "min": -0.2680000066757202,
+          "std": 1.5299239965756615
+        },
+        "learning_reward_total": 106.1322823476767,
+        "lowSOC_wait": 138.2667343344692,
+        "max_wait": 774.8147075862394,
+        "mean_wait": 139.69467554544198,
+        "normal": 477,
+        "optimizer_identity_unchanged": true,
+        "p95_wait": 335.0755480180946,
+        "permutation_seed": 879004,
+        "raw_environment_reward_total": 10613.22823476767,
+        "raw_record_reward_total": 10613.22823476767,
+        "raw_step_reward_total": 10613.22823476767,
+        "record_paths": [
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_01/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_02/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_03/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_04/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_05/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_06/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_07/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_08/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_09/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_10/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_11/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_12/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_13/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_14/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_15/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_16/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_17/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_18/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_19/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_20/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_21/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_22/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_23/record.json",
+          "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/training/episode_24/record.json"
+        ],
+        "rejected_updates": 0,
+        "requests": 576,
+        "returns": {
+          "count": 19031,
+          "max": 5.059577941894531,
+          "mean": 2.1324339568098964,
+          "min": -0.2680000066757202,
+          "std": 1.5299239966898301
+        },
+        "reward_scale": 0.01,
+        "reward_scale_consistent": true,
+        "reward_total": 10613.228234767672,
+        "reward_unit": "critic_learning_reward",
+        "rollouts": 24,
+        "safety_nonzero_cells": 0,
+        "source_q_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "source_q_model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "steps": 19031,
+        "technical_ok": true,
+        "update_stats": {
+          "accepted_updates": 298,
+          "actor_count_normalizer": 3.727759970574326,
+          "actor_decisions": 70943,
+          "actor_loss": 0.0071832492245179945,
+          "approx_kl": 0.00018388372140600568,
+          "attempted_updates": 298,
+          "clip_fraction": 0.009059071163068706,
+          "entropy": 0.11319432682639001,
+          "final_rollout_kl": 0.00019126318681331737,
+          "grad_norm": 0.836764817069841,
+          "joint_team_actor": true,
+          "loss": 0.07156634274592792,
+          "max_accepted_rollout_kl": 0.0007879848223195494,
+          "reference_kl_before": 0.00033919751876965165,
+          "reference_kl_final": 0.000519557564985007,
+          "reference_kl_max_accepted": 0.0010447801323607564,
+          "reference_rejected_updates": 0,
+          "rejected_updates": 0,
+          "rejection_reason": null,
+          "stopped": false,
+          "target_kl": 0.01,
+          "team_steps": 19031,
+          "updates": 298,
+          "value_loss": 0.1289062469497623
+        },
+        "update_stop_reason": null
+      },
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_larger_batch_20260929\\full\\training\\batch_04\\summary.json",
+      "requested_field_presence": {
+        "accepted_updates": true,
+        "actor_count_normalizer": true,
+        "actor_decisions": true,
+        "actor_loss": true,
+        "actor_valid_count": false,
+        "advantage_max": false,
+        "advantage_mean": false,
+        "advantage_min": false,
+        "advantage_std": false,
+        "approx_kl": true,
+        "batch_actor_decisions": true,
+        "clip_fraction": true,
+        "critic_value_loss": true,
+        "gate_entropy": false,
+        "gradient_clipping_count": false,
+        "gradient_norm": true,
+        "proposal_entropy": false,
+        "rejected_updates": true,
+        "rollout_outcomes": true,
+        "rollout_returns": true,
+        "total_entropy": true,
+        "total_loss": true,
+        "wait_metrics": true
+      },
+      "requested_field_values": {
+        "accepted_updates": {
+          "path": "update_stats.accepted_updates",
+          "value": 298
+        },
+        "actor_count_normalizer": {
+          "path": "actor_count_normalizer",
+          "value": 3.727759970574326
+        },
+        "actor_decisions": {
+          "path": "actor_decisions",
+          "value": 70943
+        },
+        "actor_loss": {
+          "path": "update_stats.actor_loss",
+          "value": 0.0071832492245179945
+        },
+        "actor_valid_count": {
+          "path": null,
+          "value": null
+        },
+        "advantage_max": {
+          "path": null,
+          "value": null
+        },
+        "advantage_mean": {
+          "path": null,
+          "value": null
+        },
+        "advantage_min": {
+          "path": null,
+          "value": null
+        },
+        "advantage_std": {
+          "path": null,
+          "value": null
+        },
+        "approx_kl": {
+          "path": "update_stats.approx_kl",
+          "value": 0.00018388372140600568
+        },
+        "batch_actor_decisions": {
+          "path": "batch_actor_decisions",
+          "value": 70943
+        },
+        "clip_fraction": {
+          "path": "update_stats.clip_fraction",
+          "value": 0.009059071163068706
+        },
+        "critic_value_loss": {
+          "path": "update_stats.value_loss",
+          "value": 0.1289062469497623
+        },
+        "gate_entropy": {
+          "path": null,
+          "value": null
+        },
+        "gradient_clipping_count": {
+          "path": null,
+          "value": null
+        },
+        "gradient_norm": {
+          "path": "update_stats.grad_norm",
+          "value": 0.836764817069841
+        },
+        "proposal_entropy": {
+          "path": null,
+          "value": null
+        },
+        "rejected_updates": {
+          "path": "update_stats.rejected_updates",
+          "value": 0
+        },
+        "rollout_outcomes": {
+          "path": "normal",
+          "value": 477
+        },
+        "rollout_returns": {
+          "path": "returns",
+          "value": {
+            "count": 19031,
+            "max": 5.059577941894531,
+            "mean": 2.1324339568098964,
+            "min": -0.2680000066757202,
+            "std": 1.5299239966898301
+          }
+        },
+        "total_entropy": {
+          "path": "update_stats.entropy",
+          "value": 0.11319432682639001
+        },
+        "total_loss": {
+          "path": "update_stats.loss",
+          "value": 0.07156634274592792
+        },
+        "wait_metrics": {
+          "path": "lowSOC_wait",
+          "value": 138.2667343344692
+        }
+      },
+      "requested_fields_absent": [
+        "gate_entropy",
+        "proposal_entropy",
+        "gradient_clipping_count",
+        "advantage_mean",
+        "advantage_std",
+        "advantage_min",
+        "advantage_max",
+        "actor_valid_count"
+      ],
+      "sha256": "d51051b45100c5db5cdf29eb3d2034f9057417f3a0df3c96422d443e761a62a3",
+      "top_level_keys": [
+        "accepted_updates",
+        "actor_count_normalizer",
+        "actor_decisions",
+        "anchor_observation_count",
+        "anchor_steps",
+        "anchor_weight_sum",
+        "approx_kl",
+        "batch_actor_decisions",
+        "batch_index",
+        "batch_steps_for_actor_normalizer",
+        "before_model_digest",
+        "cells",
+        "checkpoint_roundtrip",
+        "collection",
+        "credit_gae_lambda",
+        "credit_gamma",
+        "credit_method",
+        "emergency",
+        "expected_learning_reward_total",
+        "failed",
+        "failed_energy",
+        "final_rollout_kl",
+        "frozen_bitwise",
+        "full_episode_mc_return_match",
+        "full_episode_mc_return_max_abs_error",
+        "full_episode_mc_returns",
+        "learning_reward_total",
+        "lowSOC_wait",
+        "max_wait",
+        "mean_wait",
+        "normal",
+        "optimizer_identity_unchanged",
+        "p95_wait",
+        "permutation_seed",
+        "raw_environment_reward_total",
+        "raw_record_reward_total",
+        "raw_reward_total_source",
+        "raw_step_reward_total",
+        "record_paths",
+        "rejected_updates",
+        "requests",
+        "returns",
+        "reward_scale",
+        "reward_scale_consistent",
+        "reward_total",
+        "reward_unit",
+        "rollouts",
+        "safety_nonzero_cells",
+        "source_q_model_digest",
+        "source_q_model_digest_after",
+        "steps",
+        "technical_ok",
+        "update_stats",
+        "update_stop_reason"
+      ]
+    }
+  ]
+}

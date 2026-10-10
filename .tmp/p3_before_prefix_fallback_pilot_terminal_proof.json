@@ -1,0 +1,143 @@
+{
+  "status": "PILOT_OK",
+  "pair_status": "PAIR_OK",
+  "phase": "pilot",
+  "cell_id": 1,
+  "env_seed": 875101,
+  "policy_seed": 875201,
+  "paths": {
+    "pilot": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/pilot.json",
+    "pair": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/pairs/cell_01.json",
+    "arm": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/arms/cell_01_before_prefix_fallback.json",
+    "sidecar": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/sidecars/cell_01_before_prefix_fallback_orders.json"
+  },
+  "hashes": {
+    "pilot": "c3c34adf1f76180aba712248cb65a453eb07d6d755b4905b1822ec4b0a70ec1d",
+    "pair": "9000f7d36cb20a0675891960104971fbc59cbf1d3fb9c682bf8d7f1c32fdc11b",
+    "arm": "4ed5e1276cf1e44facaa4417e67157985cff67c830c0f9abcae198d9c31e9d7f",
+    "sidecar": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d"
+  },
+  "sidecar_check": {
+    "metadata_sha256": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d",
+    "server_sha256": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d",
+    "mirror_sha256": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d",
+    "metadata_match": true,
+    "server_match": true,
+    "mirror_match": true
+  },
+  "candidate": {
+    "outcomes": {
+      "N": 19,
+      "E": 5,
+      "F": 0,
+      "D": 0,
+      "U": 0
+    },
+    "wait": 3123.9868663533725,
+    "elapsed": 8878,
+    "energy": 7513.164788008758,
+    "raw_reward_excluding_rejection_penalty": 453.66623681012584,
+    "rejection_penalty": -19.8,
+    "natural": true,
+    "censored": false,
+    "error": null,
+    "technical_ok": true,
+    "hard_safety_clear": true,
+    "request_identity_exact_24": true,
+    "new_failed_ids": [],
+    "new_diverted_ids": [],
+    "new_unresolved_ids": [],
+    "binding_checks": {
+      "caller_rng_unchanged": true,
+      "checkpoint_sha256": true,
+      "config_snapshot_unchanged": true,
+      "model_unchanged": true,
+      "observer_rng_unchanged": true,
+      "replay_factory_calls": true,
+      "rollout_factory_calls": true,
+      "runtime_aliases_restored": true,
+      "runtime_dependency_shas_unchanged": true,
+      "sampler_aliases_restored": true,
+      "source_distributions_immutable": true
+    },
+    "lifecycle": {
+      "replay_exact": true,
+      "row_count": 24,
+      "all_requests_observed": true
+    },
+    "runtime_capture": {
+      "available": true,
+      "complete_integrity": true,
+      "energy_match": true,
+      "ledger_alignment": true
+    },
+    "safety": {
+      "SafetyInvariantError": 0,
+      "collisions": 0,
+      "hard_separation_violations": 0,
+      "nmac": 0,
+      "uncertified_execution": 0
+    }
+  },
+  "before_legacy": {
+    "outcomes": {
+      "N": 19,
+      "E": 5,
+      "F": 0,
+      "D": 0,
+      "U": 0
+    },
+    "wait": 3327.4996213135246,
+    "elapsed": 9050,
+    "energy": 7757.917108755452,
+    "raw_reward_excluding_rejection_penalty": 451.32887937331253,
+    "rejection_penalty": -19.55,
+    "natural": true,
+    "censored": false,
+    "error": null,
+    "technical_ok": true,
+    "hard_safety_clear": true,
+    "request_identity_exact_24": true
+  },
+  "after_prefix_cell1": {
+    "outcomes": {
+      "N": 21,
+      "E": 3,
+      "F": 0,
+      "D": 0,
+      "U": 0
+    },
+    "wait": 2813.5406783660765,
+    "elapsed": 8631,
+    "energy": 7308.588937295861,
+    "raw_reward_excluding_rejection_penalty": 479.71087729172575,
+    "rejection_penalty": -11.15,
+    "natural": true,
+    "censored": false,
+    "error": null,
+    "technical_ok": true,
+    "hard_safety_clear": true,
+    "request_identity_exact_24": true,
+    "sidecar_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070"
+  },
+  "deltas": {
+    "candidate_minus_before_legacy": {
+      "wait": -203.51275496015205,
+      "elapsed": -172,
+      "energy": -244.75232074669475,
+      "raw_reward": 2.33735743681331,
+      "rejection_penalty": -0.25
+    },
+    "candidate_minus_after_prefix": {
+      "wait": 310.446187987296,
+      "elapsed": 247,
+      "energy": 204.575850712897,
+      "raw_reward": -26.04464048159991,
+      "rejection_penalty": -8.65
+    }
+  },
+  "wall_time_seconds": 188.37618574872613,
+  "preflight_sha256": "255abac8e9a6c61bc7fa0bce082d5233665bf978847a3144861c642c5f2c8591",
+  "candidate_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+  "qualification": "not_a_qualification"
+}

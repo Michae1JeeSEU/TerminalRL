@@ -1,0 +1,36 @@
+{
+  "status": "FIT_SCREEN_FAIL",
+  "pid": 2209548,
+  "exit_observed": true,
+  "commit": "511ca42",
+  "output": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_fit_20261001",
+  "preflight_sha": "a3aee30499e5890b1597057ffc1f2a9f1d65fe5dd4d68e398379ef3d4815c8aa",
+  "source_sha": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+  "accepted_updates": 0,
+  "rejected_updates": 1,
+  "stop_reason": "ROLLBACK_STOP",
+  "initial_target_bce": 0.1893708452074146,
+  "final_target_bce": 0.1893708452074146,
+  "max_anchor_kl": 0.0,
+  "max_target_kl": 0.0,
+  "caller_rng_unchanged": true,
+  "frozen_state_unchanged": true,
+  "proposal_q_unchanged": true,
+  "source_state_unchanged_except_adapter": true,
+  "candidate_checkpoint": null,
+  "candidate_absent": true,
+  "error_absent": true,
+  "partial_absent": true,
+  "target_pstar": [
+    0.9952601652648472,
+    0.06392553361964069,
+    0.1704190621781801,
+    0.9948388080341942
+  ],
+  "initial_final_p": [
+    0.9952911425998857,
+    0.06313348800762023,
+    0.15514133644666978,
+    0.9949211148729823
+  ]
+}

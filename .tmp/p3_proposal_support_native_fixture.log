@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\p3_proposal_support_native_fixture.py", line 20, in <module>
+    from terminal_marl.core.config import SimConfig
+ModuleNotFoundError: No module named 'terminal_marl'

@@ -1,0 +1,21 @@
+{
+  "snapshot_time": "2026-10-01T16:15:08.025780+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.validate_p3_prefix_fallback_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"],
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_PREFIX_FALLBACK_20261001_V1", "cell_id": 6, "arm": "after_prefix_fallback", "absolute_step": 600, "env_now": 600.0, "active_observation_count": 1, "generated_requests": 24, "native_forward_count": 601},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed": ["cell_06_after_legacy.json", "cell_06_before_prefix.json"],
+  "cell_06": {
+    "after_legacy": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [19, 5, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 3781.6106716041218, "request_elapsed_total_seconds": 9389.0, "energy_total_consumed": 8212.56933347565, "raw_reward_excluding_rejection_penalty": 449.48621119070333, "release_rejection_penalty": -26.700000000000003, "reward_total": 422.78621119070334, "steps": 770, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true},
+    "before_prefix": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [21, 3, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2288.2917809373976, "request_elapsed_total_seconds": 7990.0, "energy_total_consumed": 6628.222865751552, "raw_reward_excluding_rejection_penalty": 486.9713952840443, "release_rejection_penalty": -13.450000000000001, "reward_total": 473.52139528404433, "steps": 705, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "aa826ef62e2a02276619b42fc93fa5e030c10c77018528e60acd3b182da5e544"}}
+  },
+  "cell_06_pair": null,
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

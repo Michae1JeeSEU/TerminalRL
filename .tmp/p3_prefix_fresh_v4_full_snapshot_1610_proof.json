@@ -1,0 +1,28 @@
+{
+  "snapshot_time": "2026-10-01T16:10:07.663346+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.validate_p3_prefix_fallback_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"],
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"status": "RUNNING", "phase": "native_step", "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1", "cell_id": 6, "arm": "after_legacy", "absolute_step": 750, "active_uavs": 0, "generated_requests": 24, "observed_steps": 750},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed": ["cell_05_before_prefix.json", "cell_05_after_prefix.json", "cell_05.json", "cell_06_before_legacy.json"],
+  "cell_05": {
+    "before_prefix": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [23, 1, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 3195.0248025513906, "request_elapsed_total_seconds": 9279.0, "energy_total_consumed": 7582.248345039119, "raw_reward_excluding_rejection_penalty": 493.94536188407056, "release_rejection_penalty": -12.65, "reward_total": 481.2953618840706, "steps": 771, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "459cbbb174b14eb93d254b234832dcd17b12a51e75b03dd35238cbdd45bc2a13"}},
+    "after_prefix": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [23, 1, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2623.0957402778245, "request_elapsed_total_seconds": 8904.0, "energy_total_consumed": 7183.38396030209, "raw_reward_excluding_rejection_penalty": 500.5420632585533, "release_rejection_penalty": -10.950000000000001, "reward_total": 489.5920632585533, "steps": 761, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "659dc32c33b10ec3ca274e13209a62d8047894d2b6e61c755cc31b35b250f325"}},
+    "pair_status": "PAIR_OK",
+    "pair_technical_ok": true,
+    "all_four_natural": true,
+    "all_request_identity_exact_24": true,
+    "new_failed_ids": [],
+    "new_diverted_ids": [],
+    "new_unresolved_ids": []
+  },
+  "cell_06_before_legacy": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [21, 3, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2690.1509303975567, "request_elapsed_total_seconds": 8410.0, "energy_total_consumed": 7130.985416874106, "raw_reward_excluding_rejection_penalty": 484.6280115660109, "release_rejection_penalty": -12.5, "reward_total": 472.1280115660109, "steps": 749, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true},
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

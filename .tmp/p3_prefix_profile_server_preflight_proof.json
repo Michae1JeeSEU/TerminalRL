@@ -1,0 +1,38 @@
+{
+  "server": "lab-server",
+  "project_cwd": "/home/user/projects/terminal",
+  "phase": "preflight",
+  "preflight_exit": 0,
+  "serialized_validator_exit": 0,
+  "server_source_sha256": {
+    "terminal_marl/training/profile_p3_prefix_fallback_20261001.py": "533c5a0459a15495039b60dbbf4e6fe31d7b6f98d6db37316f5d0ed121260091",
+    "tests/test_p3_prefix_fallback_profile.py": "3cc99457182f90d6871ec0ffcd50979961876703e4f1270d4e6d9c1f7c616a49",
+    "docs/evidence/v4_2/p3_prefix_fallback_profile_protocol_20261001.md": "f180494075f117cdd9d7e8c257b6c9a5b9fa1cf27fece2506d6dadc79c684164"
+  },
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001",
+  "preflight_sha256": "7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d",
+  "preflight_bytes": 29259,
+  "progress": {
+    "stage": "P3_PREFIX_FALLBACK_PROFILE_20261001_V1",
+    "phase": "preflight",
+    "status": "PREFLIGHT_OK"
+  },
+  "input_bindings": {
+    "full_summaries": 3,
+    "arms": 16,
+    "action_tapes": 16,
+    "unique_action_tapes": 16,
+    "prefix_sidecars": 8
+  },
+  "cells": 4,
+  "arms": ["before_legacy", "after_legacy", "before_prefix_fallback", "after_prefix_fallback"],
+  "requests_per_cell": 24,
+  "max_steps": 1800,
+  "PPO_ALLOWED": false,
+  "heldout_used": false,
+  "teacher_used": false,
+  "optimizer_used": false,
+  "no_training": true,
+  "log_bytes": 0,
+  "python_processes_after_completion": []
+}

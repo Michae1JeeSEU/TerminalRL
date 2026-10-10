@@ -1,0 +1,23 @@
+P3 gate-control failure trace (artifact-only)
+full_status=FULL_OK full_sha256=fa856f3980be848c8cb2fd5971115188a9e2f5303c37d8699b44631e57a58403
+
+pair15 control arrival21:
+{"arrival_id": 21, "base_priority": 1, "completion_time": null, "emergency_landing": false, "energy_capacity": 1500.0, "energy_consumed": 864.3333333333333, "energy_remaining": 0.0, "external_wait_time": 30.0, "final_soc": 0.0, "initial_soc": 0.5758906587575819, "initial_soc_source": "first_seen_uav", "internal_wait_time": 777.8147075862395, "mission_type": "cargo", "outcome": "failed_energy", "phase_before_terminal": "ring_outer", "post_terminal_outcome": "failed_energy", "post_terminal_reason": "energy_depleted", "reason": "energy_depleted", "request_time": 150.0, "source": "_resolve", "terminal_time": 1013.0, "touchdown_time": null, "uid": 108, "wait_seconds": 807.8147075862395}
+pair15 legacy arrival21:
+{"arrival_id": 21, "base_priority": 1, "completion_time": 606.0, "emergency_landing": true, "energy_capacity": 1500.0, "energy_consumed": 317.89684335504234, "energy_remaining": 545.9391447813252, "external_wait_time": 1.0, "final_soc": 0.3639594298542168, "initial_soc": 0.5758906587575813, "initial_soc_source": "first_seen_uav", "internal_wait_time": 106.00071230743714, "mission_type": "cargo", "outcome": "emergency_landed", "phase_before_terminal": "completed", "reason": "ground_service_complete", "request_time": 150.0, "source": "completed_uavs", "terminal_time": 606.0, "touchdown_time": 486.0, "uid": 96, "wait_seconds": 107.00071230743714}
+
+ALL9 table: pair env policy | control N/E/F/D/U | reference N/E/F/D/U | delta wait elapsed energy raw penalty
+1 877101 9303101 | 22/2/0/0/0 | 23/1/0/0/0 | wait=-239.35216812555427 elapsed=-98.0 energy=-100.97864820436735 raw=-3.94075481809017 penalty=-86.95
+5 877102 9303101 | 22/2/0/0/0 | 20/4/0/0/0 | wait=18.339647352861448 elapsed=143.0 energy=40.89286329536935 raw=14.147758091234948 penalty=-126.75000000000001
+9 877103 9303101 | 22/2/0/0/0 | 20/4/0/0/0 | wait=-66.72264290063868 elapsed=-11.0 energy=-26.62265071600268 raw=18.75097508775724 penalty=-108.4
+13 877104 9303101 | 20/4/0/0/0 | 20/3/1/0/0 | wait=-1873.6867268203923 elapsed=-1683.0 energy=-1724.6909728306491 raw=69.70406355859194 penalty=-86.4
+17 877105 9303101 | 23/1/0/0/0 | 21/3/0/0/0 | wait=-433.1753185735911 elapsed=-507.0 energy=-564.4110335816513 raw=23.98210070106842 penalty=-108.8
+21 877106 9303101 | 22/2/0/0/0 | 20/4/0/0/0 | wait=-345.43168237229656 elapsed=-270.0 energy=-285.3757113148522 raw=19.35022948037812 penalty=-121.75000000000001
+14 877104 9303102 | 19/5/0/0/0 | 19/5/0/0/0 | wait=-526.1723173262449 elapsed=-574.0 energy=-621.3371518643526 raw=7.442128802046341 penalty=-94.75
+15 877104 9303103 | 19/4/1/0/0 | 21/3/0/0/0 | wait=951.7179221760384 elapsed=650.0 energy=815.757062620658 raw=-75.83753890463692 penalty=-149.75
+16 877104 9303104 | 21/3/0/0/0 | 16/7/1/0/0 | wait=-1590.8331496236242 elapsed=-1315.0 energy=-1436.236666501356 raw=109.66986641362325 penalty=-91.2
+
+all9 true checks: {"caller_rng_unchanged": 9, "hard_safety_clear": 9, "source_model_digest_match": 9, "technical_ok": 9}
+arrival13 env877104 rows: 8 (control/reference for pair 13,14,15,16)
+per-step action/decision/phase/SOC trace in current arm JSON: absent/unknown
+exact replay artifact paths and existing helper interfaces: see JSON exact_replay_artifact_schema_paths

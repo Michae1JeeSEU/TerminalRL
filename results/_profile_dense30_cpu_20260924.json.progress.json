@@ -1,0 +1,12 @@
+{
+  "active": 30,
+  "failed_energy": 0,
+  "horizon_reached": true,
+  "resolved": 0,
+  "safety_error": null,
+  "sim_time": 20.0,
+  "status": "horizon",
+  "step": 20,
+  "terminal": false,
+  "wall_elapsed": 13.424219300039113
+}

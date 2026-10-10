@@ -1,0 +1,70 @@
+{
+  "scope": {
+    "cells": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "arm": "before_prefix",
+    "source_section": "action_tape only",
+    "rule": "runtime_shortlist_result[uid].used=true and rank>3; sidecar registration step|uid; actor_mask[uid]=true; requested_gate[uid]=1; sorted by (step,numeric UID)",
+    "approval_status": "pending_actual_replay",
+    "historical_label_records_used": false
+  },
+  "cells": {
+    "1": {
+      "arm_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\arms\\cell_01_before_prefix.json",
+      "tape_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\rollouts\\cell_01_before_prefix_fallback\\action_tapes\\safety_trace_seed_886101_step_707.json",
+      "tape_sha256": "46913055afa1ec34f97ce3d9c33ae420d542793d99dc0fca2af554c5dc16a765",
+      "sidecar_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\sidecars\\cell_01_before_prefix_fallback_orders.json",
+      "sidecar_sha256": "adfbabf9e9d6e34613f39f190899daf13c4475d4c36856c2e6fd34d344e749ba",
+      "action_tape_rows": 708,
+      "sidecar_registration_count": 314,
+      "rank_gt3_used_count": 20,
+      "action_rows_without_actor_mask_among_rank_gt3_used": 20,
+      "eligible_candidate_count": 0,
+      "candidate": null
+    },
+    "2": {
+      "arm_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\arms\\cell_02_before_prefix.json",
+      "tape_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\rollouts\\cell_02_before_prefix_fallback\\action_tapes\\safety_trace_seed_886102_step_673.json",
+      "tape_sha256": "0dc2a115935eb3fc5c57764473ef991b0e940eb9536d1594cc043a41060ad9f7",
+      "sidecar_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\sidecars\\cell_02_before_prefix_fallback_orders.json",
+      "sidecar_sha256": "6e3354bf43b2a9e699b899e098ae85e917ef3b179a2de7c9444012b4c5151138",
+      "action_tape_rows": 674,
+      "sidecar_registration_count": 267,
+      "rank_gt3_used_count": 22,
+      "action_rows_without_actor_mask_among_rank_gt3_used": 22,
+      "eligible_candidate_count": 0,
+      "candidate": null
+    },
+    "3": {
+      "arm_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\arms\\cell_03_before_prefix.json",
+      "tape_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\rollouts\\cell_03_before_prefix_fallback\\action_tapes\\safety_trace_seed_886103_step_643.json",
+      "tape_sha256": "026cf7c09540e6b2e4b1e2b950dc183d25e3aa9726c2284cb2911da03887c128",
+      "sidecar_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\sidecars\\cell_03_before_prefix_fallback_orders.json",
+      "sidecar_sha256": "0b1536d5aba50463062539318961206c624e2379790f4fd00e216f7f72a44b3f",
+      "action_tape_rows": 644,
+      "sidecar_registration_count": 290,
+      "rank_gt3_used_count": 23,
+      "action_rows_without_actor_mask_among_rank_gt3_used": 23,
+      "eligible_candidate_count": 0,
+      "candidate": null
+    },
+    "4": {
+      "arm_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\arms\\cell_04_before_prefix.json",
+      "tape_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\rollouts\\cell_04_before_prefix_fallback\\action_tapes\\safety_trace_seed_886104_step_722.json",
+      "tape_sha256": "8b48836f46ac22995b222261dca8974b243149f4858a4763ae2a0a517f664a3a",
+      "sidecar_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v4\\sidecars\\cell_04_before_prefix_fallback_orders.json",
+      "sidecar_sha256": "de3a49e6a397a710cdedc39ace8c4efabc254d5230ff3684649e2c6f79927bd6",
+      "action_tape_rows": 723,
+      "sidecar_registration_count": 274,
+      "rank_gt3_used_count": 24,
+      "action_rows_without_actor_mask_among_rank_gt3_used": 24,
+      "eligible_candidate_count": 0,
+      "candidate": null
+    }
+  },
+  "candidates": []
+}

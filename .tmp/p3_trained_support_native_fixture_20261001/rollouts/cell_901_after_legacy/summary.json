@@ -1,0 +1,54 @@
+{
+  "seed": 9101,
+  "policy_seed": 9102,
+  "steps": 2,
+  "seconds": 2.0,
+  "counts": {
+    "WAIT": 10,
+    "RELEASE": 11,
+    "shield": 0,
+    "shield_actor": 0,
+    "actor_decisions": 21
+  },
+  "safety": {
+    "collisions": 0,
+    "nmac": 0,
+    "hard_separation_violations": 0,
+    "uncertified_execution": 0,
+    "SafetyInvariantError": 0
+  },
+  "safety_error": null,
+  "completed": 0,
+  "outcomes": {},
+  "queue": [
+    0,
+    0
+  ],
+  "terminal": false,
+  "action_tape": ".tmp\\p3_trained_support_native_fixture_20261001\\rollouts\\cell_901_after_legacy\\action_tapes\\safety_trace_seed_9101_step_1.json",
+  "label_rows": 0,
+  "runtime_shortlist": {
+    "runtime_shortlist_candidates_checked": 27,
+    "runtime_shortlist_fallback_selected": 0,
+    "runtime_shortlist_exhausted": 8
+  },
+  "reward_component_totals": {
+    "time": -0.24000000000000007,
+    "progress": 0.0,
+    "release": -0.10000000000000002,
+    "touchdown": 0.0,
+    "failure": 0.0,
+    "teacher": 0.0,
+    "shield": 0.0,
+    "urgency": -0.04526475552705681,
+    "emergency": 0.0
+  },
+  "reward_total": -0.3852647555270568,
+  "reward_components_consistent": true,
+  "label_stride_steps": 1,
+  "state_only_labels": false,
+  "observation_schema": "phaseA_low_obs_v2_1_retry_state",
+  "observation_dimension": 88,
+  "student_decision_mask_mode": "legacy",
+  "PPO_ALLOWED": false
+}

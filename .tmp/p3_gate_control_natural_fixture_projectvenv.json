@@ -1,0 +1,551 @@
+{
+  "fixture": {
+    "details_hook": "dynamic active UIDs + frozen._legacy_actor + 88D zero world + WAIT=1/proposal12=1",
+    "env_class": "terminal_marl.envs.parallel_env.TerminalParallelEnv",
+    "env_seed": 877101,
+    "initial_soc": 0.001,
+    "keyed_seed": 9303101,
+    "max_simulation_seconds": 300.0,
+    "policy": "SimpleNamespace(model=nn.Linear(1,1)); no checkpoint/Teacher/PPO",
+    "registered_max_steps": 1800,
+    "request_hook": "run_p3_gate_release_control_20260930._control_keyed_request",
+    "runner_env_class": "terminal_marl.training.run_p3_forced_wait_frozen_20260930._CapturedTerminalEnv"
+  },
+  "observed": {
+    "caller_rng_unchanged": true,
+    "censored": false,
+    "energy": {
+      "coverage": {
+        "missing_requested_ids": [],
+        "requested_ids": [
+          0
+        ],
+        "unexpected_energy_ids": [],
+        "unique_arrival_ids": 1,
+        "valid": true
+      },
+      "energy_consumed_sum": 1.1,
+      "rows": [
+        {
+          "arrival_id": "0",
+          "energy_consumed": 1.1,
+          "energy_remaining": 0.3999999999999999,
+          "keys": [
+            "arrival_id",
+            "emergency_landing",
+            "energy_capacity",
+            "energy_consumed",
+            "energy_remaining",
+            "outcome",
+            "phase",
+            "position",
+            "reason",
+            "soc",
+            "time",
+            "uid"
+          ],
+          "outcome": "diverted_low_soc"
+        }
+      ],
+      "rows_count": 1
+    },
+    "json_serialization": true,
+    "ledger_outcomes": {
+      "0": "diverted_low_soc"
+    },
+    "ledger_requested_ids": [
+      0
+    ],
+    "ledger_unresolved_ids": [],
+    "model_unchanged": true,
+    "request_elapsed_seconds_by_arrival": {
+      "0": 0.0
+    },
+    "request_identity_count": 1,
+    "request_identity_unique": true,
+    "safety": {
+      "collision_events": [],
+      "hard_separation_events": [],
+      "nmac_events": [],
+      "protected_floor_events": [],
+      "safety_violation": false,
+      "safety_violation_status": "none"
+    },
+    "simulation_seconds": 1.0,
+    "status": "completed",
+    "stop_reason": "terminal",
+    "ticks": 1,
+    "wait_integrity": {
+      "all_request_wait_observed_finite": true,
+      "elapsed_by_requested_id_observed_finite": true,
+      "external_queue_integral_observed_finite": true,
+      "internal_holding_observed_finite": true
+    }
+  },
+  "raw_arm": {
+    "admitted_arrival_ids": [
+      0
+    ],
+    "admitted_count": 1,
+    "budget_cap_is_not_natural_terminal": true,
+    "budget_cap_steps": 1800,
+    "caller_rng_unchanged": true,
+    "censored": false,
+    "completed_count": 0,
+    "elapsed_seconds": 0.014999999664723873,
+    "emergency_count": 0,
+    "energy_ledger": {
+      "coverage": {
+        "missing_requested_ids": [],
+        "requested_ids": [
+          0
+        ],
+        "unexpected_energy_ids": [],
+        "unique_arrival_ids": 1,
+        "valid": true
+      },
+      "rows": {
+        "0": {
+          "arrival_id": 0,
+          "emergency_landing": 0.0,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 1.1,
+          "energy_remaining": 0.3999999999999999,
+          "outcome": "diverted_low_soc",
+          "phase": "transfer_o2m",
+          "position": [
+            599.9995297657476,
+            0.7482915422850959,
+            100.0
+          ],
+          "reason": "low_soc_before_touchdown",
+          "soc": 0.0002666666666666666,
+          "time": 0.0,
+          "uid": 0.0
+        }
+      },
+      "sources_by_arrival": {
+        "0": [
+          "energy_outcome"
+        ]
+      },
+      "unique_arrival_ids": [
+        0
+      ]
+    },
+    "env_seed": 877101,
+    "error": null,
+    "generated_process_count": 1,
+    "generated_requests": 1,
+    "keyed_policy_seed": 9303101,
+    "keying": "stable arrival_id|absolute_tick|stream; UID only action-map key",
+    "ledger": {
+      "conservation": {
+        "known": true,
+        "requested_count": 1,
+        "requested_equals_resolved_union_unresolved": true,
+        "resolved_count": 1,
+        "resolved_unresolved_disjoint": true,
+        "unresolved_count": 0
+      },
+      "outcomes": {
+        "0": "diverted_low_soc"
+      },
+      "requested_ids": [
+        0
+      ],
+      "terminal_alignment": {
+        "requested_ids": [
+          0
+        ],
+        "resolved_ids": [
+          0
+        ],
+        "terminal_row_ids": [
+          0
+        ],
+        "terminal_row_outcome_mismatches": [],
+        "unresolved_ids": [],
+        "valid": true
+      },
+      "terminal_rows": [
+        {
+          "arrival_id": 0,
+          "base_priority": 1,
+          "completion_time": null,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 1.1,
+          "energy_remaining": 0.3999999999999999,
+          "external_wait_time": 0.0,
+          "final_soc": 0.0002666666666666666,
+          "initial_soc": 0.001,
+          "initial_soc_source": "first_seen_uav",
+          "internal_wait_time": 0.0,
+          "mission_type": "standard",
+          "outcome": "diverted_low_soc",
+          "phase_before_terminal": "transfer_o2m",
+          "post_terminal_outcome": "diverted_low_soc",
+          "post_terminal_reason": "low_soc_before_touchdown",
+          "reason": "low_soc_before_touchdown",
+          "request_time": 0.0,
+          "source": "_resolve",
+          "terminal_time": 0.0,
+          "touchdown_time": null,
+          "uid": 0,
+          "wait_seconds": 0.0
+        }
+      ],
+      "unresolved_ids": []
+    },
+    "mask_counts": {
+      "current_actor": 1,
+      "forced_wait": 0,
+      "future_reservation_or_nonring": 0,
+      "interface_blocked": 0,
+      "legacy_eligible": 1,
+      "retry_blocked": 0,
+      "soc_blocked": 0
+    },
+    "mode": "legacy",
+    "model_digest_after": "99e0013cdbe2a36927889f6baa715c12a91d6cd86355fa71dda4a173450c2f1f",
+    "model_digest_before": "99e0013cdbe2a36927889f6baa715c12a91d6cd86355fa71dda4a173450c2f1f",
+    "model_unchanged": true,
+    "normal_count": 0,
+    "outcome_counts": {
+      "diverted": 1,
+      "emergency": 0,
+      "failed": 0,
+      "normal": 0,
+      "resolved": 1,
+      "unresolved": 0
+    },
+    "raw_reward_excluding_rejection_penalty": -19.909251708264936,
+    "release_rejection_penalty": -0.0,
+    "request_capture_integrity": {
+      "arrivals_generated": 1,
+      "arrivals_generated_equals_captured": true,
+      "captured_count": 1,
+      "captured_ids": [
+        0
+      ],
+      "captured_ids_equal_ledger": true,
+      "ledger_requested_ids": [
+        0
+      ]
+    },
+    "request_groups": [
+      []
+    ],
+    "request_identity": [
+      {
+        "arrival_id": 0,
+        "base_priority": 1,
+        "energy_capacity": 1500.0,
+        "gate_id": 2,
+        "initial_soc": 0.001,
+        "mission": "standard",
+        "request_time": 0.0,
+        "service_seconds": 30.0,
+        "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+      }
+    ],
+    "request_identity_count": 1,
+    "request_identity_unique": true,
+    "resolved_count": 1,
+    "reward_components": {
+      "emergency": 0.0,
+      "failure": -20.0,
+      "progress": 0.0007482917350652639,
+      "release": 0.1,
+      "shield": 0.0,
+      "teacher": 0.0,
+      "time": -0.01,
+      "touchdown": 0.0,
+      "urgency": 0.0
+    },
+    "reward_total": -19.909251708264936,
+    "safety": {
+      "collision_events": [],
+      "hard_separation_events": [],
+      "nmac_events": [],
+      "protected_floor_events": [],
+      "safety_violation": false,
+      "safety_violation_status": "none"
+    },
+    "simulation_seconds": 1.0,
+    "status": "completed",
+    "stop_reason": "terminal",
+    "telemetry": {
+      "admissibility_rejections": 0,
+      "arrivals_admitted": 0,
+      "checked_executed_plan_hash_mismatches": 0,
+      "checked_executed_plan_matches": 1,
+      "checked_executed_plan_samples": 5,
+      "collision_exposure_steps": 0,
+      "collisions": 0,
+      "emergency_attempts": 0,
+      "emergency_blocked_dynamics": 0,
+      "emergency_blocked_energy": 0,
+      "emergency_blocked_lz": 0,
+      "emergency_blocked_safety": 0,
+      "emergency_blocked_slack": 0,
+      "emergency_committed": 0,
+      "emergency_energy_guard_rejections": 0,
+      "emergency_lz_priority_rejections": 0,
+      "emergency_touchdowns": 0,
+      "energy_reachability_checks": 0,
+      "energy_reachability_negative_budgets": 0,
+      "final_busy_steps": 0,
+      "final_concurrency_step_sum": 0,
+      "final_overcapacity_steps": 0,
+      "flow_emergency_redirects": 0,
+      "free_lz_step_sum": 6,
+      "future_release_reservations": 0,
+      "geometry_updates": 0,
+      "hard_separation_exposure_steps": 0,
+      "hard_separation_violations": 0,
+      "joint_backup_uses": 0,
+      "joint_safety_checks": 0,
+      "joint_safety_corrections": 0,
+      "joint_safety_fail_closed": 0,
+      "joint_search_candidates": 0,
+      "joint_search_components": 0,
+      "joint_search_pruned": 0,
+      "joint_unrecoverable_components": 0,
+      "lz_assignment_distance_sum": 0.0,
+      "lz_assignment_regret_sum": 0.0,
+      "lz_assignments": 0,
+      "lz_idle_with_inner_demand_steps": 0,
+      "lz_nearest_distance_sum": 0.0,
+      "max_concurrent_final": 0,
+      "merge_time_modified": 0,
+      "minimum_actual_separation": null,
+      "minimum_swept_separation": null,
+      "nmac": 0,
+      "nmac_exposure_steps": 0,
+      "operational_buffer_entries": 0,
+      "operational_buffer_exposure_steps": 0,
+      "operational_buffer_takeovers": 0,
+      "recursive_feasibility_checks": 0,
+      "recursive_feasibility_rejections": 0,
+      "release_approved": 1,
+      "release_rejected": 0,
+      "repair_candidates_checked": 1,
+      "repair_used": 0,
+      "runtime_shortlist_candidates_checked": 1,
+      "runtime_shortlist_exhausted": 0,
+      "runtime_shortlist_fallback_selected": 0,
+      "runtime_traffic_interventions": 0,
+      "runtime_traffic_repair_magnitude": 0.0,
+      "safety_interventions": 0,
+      "shield_broad_phase_rejected": 0,
+      "shield_correction_magnitude": 0.0,
+      "shield_fail_closed": 0,
+      "shield_interventions": 0,
+      "shield_narrow_phase_checked": 0,
+      "trajectory_infeasible_candidates": 0
+    },
+    "telemetry_arrivals_admitted": 0,
+    "telemetry_delta": {
+      "admissibility_rejections": 0.0,
+      "arrivals_admitted": 0.0,
+      "checked_executed_plan_hash_mismatches": 0.0,
+      "checked_executed_plan_matches": 1.0,
+      "checked_executed_plan_samples": 5.0,
+      "collision_exposure_steps": 0.0,
+      "collisions": 0.0,
+      "emergency_attempts": 0.0,
+      "emergency_blocked_dynamics": 0.0,
+      "emergency_blocked_energy": 0.0,
+      "emergency_blocked_lz": 0.0,
+      "emergency_blocked_safety": 0.0,
+      "emergency_blocked_slack": 0.0,
+      "emergency_committed": 0.0,
+      "emergency_energy_guard_rejections": 0.0,
+      "emergency_lz_priority_rejections": 0.0,
+      "emergency_touchdowns": 0.0,
+      "energy_reachability_checks": 0.0,
+      "energy_reachability_negative_budgets": 0.0,
+      "final_busy_steps": 0.0,
+      "final_concurrency_step_sum": 0.0,
+      "final_overcapacity_steps": 0.0,
+      "flow_emergency_redirects": 0.0,
+      "free_lz_step_sum": 6.0,
+      "future_release_reservations": 0.0,
+      "geometry_updates": 0.0,
+      "hard_separation_exposure_steps": 0.0,
+      "hard_separation_violations": 0.0,
+      "joint_backup_uses": 0.0,
+      "joint_safety_checks": 0.0,
+      "joint_safety_corrections": 0.0,
+      "joint_safety_fail_closed": 0.0,
+      "joint_search_candidates": 0.0,
+      "joint_search_components": 0.0,
+      "joint_search_pruned": 0.0,
+      "joint_unrecoverable_components": 0.0,
+      "lz_assignment_distance_sum": 0.0,
+      "lz_assignment_regret_sum": 0.0,
+      "lz_assignments": 0.0,
+      "lz_idle_with_inner_demand_steps": 0.0,
+      "lz_nearest_distance_sum": 0.0,
+      "max_concurrent_final": 0.0,
+      "merge_time_modified": 0.0,
+      "minimum_actual_separation": null,
+      "minimum_swept_separation": null,
+      "nmac": 0.0,
+      "nmac_exposure_steps": 0.0,
+      "operational_buffer_entries": 0.0,
+      "operational_buffer_exposure_steps": 0.0,
+      "operational_buffer_takeovers": 0.0,
+      "recursive_feasibility_checks": 0.0,
+      "recursive_feasibility_rejections": 0.0,
+      "release_approved": 1.0,
+      "release_rejected": 0.0,
+      "repair_candidates_checked": 1.0,
+      "repair_used": 0.0,
+      "runtime_shortlist_candidates_checked": 1.0,
+      "runtime_shortlist_exhausted": 0.0,
+      "runtime_shortlist_fallback_selected": 0.0,
+      "runtime_traffic_interventions": 0.0,
+      "runtime_traffic_repair_magnitude": 0.0,
+      "safety_interventions": 0.0,
+      "shield_broad_phase_rejected": 0.0,
+      "shield_correction_magnitude": 0.0,
+      "shield_fail_closed": 0.0,
+      "shield_interventions": 0.0,
+      "shield_narrow_phase_checked": 0.0,
+      "trajectory_infeasible_candidates": 0.0
+    },
+    "terminal_summary": {
+      "by_mission_type": {
+        "standard": {
+          "count": 1,
+          "mean_wait_seconds": 0.0,
+          "outcomes": {
+            "diverted_low_soc": 1
+          },
+          "terminal_count": 1
+        }
+      },
+      "by_priority": {
+        "1": {
+          "count": 1,
+          "mean_wait_seconds": 0.0,
+          "outcomes": {
+            "diverted_low_soc": 1
+          },
+          "terminal_count": 1
+        }
+      },
+      "failure_terminal_time_not_touchdown": true,
+      "initial_soc_max": 0.001,
+      "initial_soc_min": 0.001,
+      "low_soc": {
+        "count": 1,
+        "landing_soc_observed_count": 0,
+        "mean_landing_soc": null,
+        "mean_terminal_soc": 0.0002666666666666666,
+        "mean_wait_seconds": 0.0,
+        "observed_wait_count": 1,
+        "terminal_soc_observed_count": 1,
+        "threshold": 0.35
+      },
+      "mean_request_to_touchdown_seconds": null,
+      "mean_wait_seconds": 0.0,
+      "missing_arrival_ids": [],
+      "missing_mission_type_count": 0,
+      "missing_request_count": 0,
+      "observed_metrics_denominator": 1,
+      "observed_terminal_count": 1,
+      "observed_wait_count": 1,
+      "outcomes": {
+        "diverted_low_soc": 1
+      },
+      "priority_weighted_wait_seconds": 0.0,
+      "request_to_touchdown_observed_count": 0,
+      "requested_count": 1,
+      "requested_denominator": 1,
+      "row_count": 1,
+      "rows": [
+        {
+          "arrival_id": 0,
+          "base_priority": 1,
+          "completion_time": null,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 1.1,
+          "energy_remaining": 0.3999999999999999,
+          "external_wait_time": 0.0,
+          "final_soc": 0.0002666666666666666,
+          "initial_soc": 0.001,
+          "initial_soc_source": "first_seen_uav",
+          "internal_wait_time": 0.0,
+          "mission_type": "standard",
+          "outcome": "diverted_low_soc",
+          "phase_before_terminal": "transfer_o2m",
+          "post_terminal_outcome": "diverted_low_soc",
+          "post_terminal_reason": "low_soc_before_touchdown",
+          "reason": "low_soc_before_touchdown",
+          "request_time": 0.0,
+          "source": "_resolve",
+          "terminal_time": 0.0,
+          "touchdown_time": null,
+          "uid": 0,
+          "wait_seconds": 0.0
+        }
+      ],
+      "rows_missing_wait_or_priority": 0,
+      "scope": "all_requested_terminal_rows",
+      "success_only": {
+        "by_mission_type": {},
+        "by_priority": {},
+        "initial_soc_max": null,
+        "initial_soc_min": null,
+        "low_soc": {
+          "count": 0,
+          "landing_soc_observed_count": 0,
+          "mean_landing_soc": null,
+          "mean_terminal_soc": null,
+          "mean_wait_seconds": null,
+          "observed_wait_count": 0,
+          "terminal_soc_observed_count": 0,
+          "threshold": 0.35
+        },
+        "mean_request_to_touchdown_seconds": null,
+        "mean_wait_seconds": null,
+        "missing_mission_type_count": 0,
+        "observed_wait_count": 0,
+        "outcomes": {},
+        "priority_weighted_wait_seconds": null,
+        "request_to_touchdown_observed_count": 0,
+        "row_count": 0,
+        "rows_missing_wait_or_priority": 0,
+        "scope": "successful_terminal_rows",
+        "success_outcomes": [
+          "completed",
+          "emergency_landed"
+        ]
+      },
+      "terminal_time_field": "terminal_time"
+    },
+    "ticks": 1,
+    "wait_integrity": {
+      "all_request_wait_observed_finite": true,
+      "elapsed_by_requested_id_observed_finite": true,
+      "external_queue_integral_observed_finite": true,
+      "internal_holding_observed_finite": true
+    },
+    "wait_metrics": {
+      "all_request_cumulative_wait_seconds": 0.0,
+      "completed_only_condition": "terminal successful rows with observed wait fields",
+      "external_queue_integral_seconds": 0.0,
+      "internal_holding_sum_seconds": 0.0,
+      "missing_internal_wait_ids": [],
+      "request_elapsed_seconds_by_arrival": {
+        "0": 0.0
+      },
+      "time_scope": "all_requested_ids; failure/diversion-inclusive; external integral + internal holding"
+    }
+  }
+}

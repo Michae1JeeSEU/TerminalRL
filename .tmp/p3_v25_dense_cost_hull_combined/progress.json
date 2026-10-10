@@ -1,0 +1,42 @@
+[
+  {
+    "slot": 0,
+    "mode": "baseline",
+    "seconds": 1.23211620002985,
+    "reason": null,
+    "feasible": true,
+    "generated_hashes": [
+      "9c482a0ff6646e011db0f83a28bf209b42496dcc0e5d44575d8ece2899cdd1fb"
+    ]
+  },
+  {
+    "slot": 0,
+    "mode": "candidate",
+    "seconds": 0.6507516000419855,
+    "reason": null,
+    "feasible": true,
+    "generated_hashes": [
+      "9c482a0ff6646e011db0f83a28bf209b42496dcc0e5d44575d8ece2899cdd1fb"
+    ]
+  },
+  {
+    "slot": 129,
+    "mode": "baseline",
+    "seconds": 3.25269139977172,
+    "reason": "predicted_holder_reachable_tube",
+    "feasible": false,
+    "generated_hashes": [
+      "468cb27624c74d1dafbc35fad508054572d9380c09516fdd4b326421ac56f001"
+    ]
+  },
+  {
+    "slot": 129,
+    "mode": "candidate",
+    "seconds": 1.7443833998404443,
+    "reason": "predicted_holder_reachable_tube",
+    "feasible": false,
+    "generated_hashes": [
+      "468cb27624c74d1dafbc35fad508054572d9380c09516fdd4b326421ac56f001"
+    ]
+  }
+]

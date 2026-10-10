@@ -1,0 +1,73 @@
+{
+  "anchors": {
+    "event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+    "manifest_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/full.json",
+    "manifest_sha256": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+    "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+    "total_rows": 28570,
+    "total_ticks": 2749
+  },
+  "code_bindings": {
+    "protocol": {
+      "path": "D:\\7_codespace\\terminal\\docs\\evidence\\v4_2\\p3_counterfactual_gate_adapter_fit_protocol_20261001.md",
+      "sha256": "e59384e35226d71c2b588413ebef6ee931f0faa8e589f1ff73d7e4b8588da6a0"
+    },
+    "runner": {
+      "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\fit_p3_counterfactual_gate_adapter_20261001.py",
+      "sha256": "0608056c828a819ae5491b3b1de828d579ce69f3cb81376fc647ed1a91a43d2d"
+    },
+    "test": {
+      "path": "D:\\7_codespace\\terminal\\tests\\test_p3_counterfactual_gate_adapter_20261001.py",
+      "sha256": "c3d4e7b07e7c0188cc8f83a42dbc84cf9ce03e4bb5717be4363b8dd23b7a31bc"
+    }
+  },
+  "phase": "preflight",
+  "readiness": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_targets_20261001\\fit_readiness_v1.json",
+    "schema": "p3_counterfactual_gate_fit_preflight_20261001_v1",
+    "sha256": "646f95f7d944a58ab2c6a0950b48fd4e1f5f99cc8f838d826ce8b0ca37ee809a"
+  },
+  "schema": "p3_counterfactual_gate_adapter_fit_20261001_v1",
+  "scope": {
+    "PPO_ALLOWED": false,
+    "anchor_chunk_size": 512,
+    "critic_frozen": true,
+    "environment_created": false,
+    "fit_seed": 9303501,
+    "heldout_used": false,
+    "kl_cap": 0.001,
+    "learning_rate": 0.0001,
+    "max_updates": 80,
+    "model_forward_used": false,
+    "optimizer": "Adam",
+    "optimizer_created": false,
+    "proposal_and_temperature_frozen": true,
+    "teacher_used": false,
+    "trainable_scope": "gate_adapter.* only",
+    "weight_decay": 0.0
+  },
+  "source_checkpoint": {
+    "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab"
+  },
+  "source_metadata_not_restored": [
+    "optimizer",
+    "report",
+    "training_history",
+    "admission_flags"
+  ],
+  "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+  "status": "FIT_PREFLIGHT_OK",
+  "target_cells": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "targets": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_targets_20261001\\targets_v1.json",
+    "schema": "p3_counterfactual_gate_targets_20261001_v1",
+    "sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473"
+  }
+}

@@ -1,0 +1,11 @@
+--- a/terminal_marl/core/trajectory_generator.py
++++ b/terminal_marl/core/trajectory_generator.py
+@@ -399,7 +399,7 @@
+         radial_load = peak_speed * peak_speed / radius
+         available_squared = limiting_acceleration ** 2 - radial_load ** 2
+         if abs(delta) > 1e-8 and available_squared <= 1e-12:
+-            raise RuntimeError("ring_hold_tangential_budget_unavailable")
++            raise TrajectoryInfeasibleError("ring_hold_tangential_budget_unavailable")
+         available = math.sqrt(max(0.0, available_squared))
+         ramp = 0.0 if abs(delta) <= 1e-8 else 1.5 * abs(delta) / available
+         return ease, ramp, v_after_ease, alpha0, p0, v0, a0

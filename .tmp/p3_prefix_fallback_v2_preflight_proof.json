@@ -1,0 +1,32 @@
+{
+  "phase": "preflight",
+  "status": "PREFLIGHT_OK",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2",
+  "preflight_sha256": "9f0a0029377296bf773ccca9e6e34cea2498a6a44ab6f22ef13738f88841e0f6",
+  "preflight_mtime": "2026-10-01 09:41:43.104124262 +0800",
+  "runner_sha256": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+  "helper_sha256": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+  "protocol_sha256": "29aa458a81e50aba4d0249cb1fe3b856829a1261feac3a3ad507c68fcfbdbc0c",
+  "addendum_sha256": "3aefdfe6ae0b06db0492fc55d86ffd07b71689801a2eb3c09f96402089001a03",
+  "baseline_preflight_sha256": "0911e9a9edafc17b2108ea9c56f770f7c54cbd1dfbc6b3c72b17974fc2a2fe38",
+  "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+  "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+  "gate_temperature": 2.5,
+  "observation_dim": 88,
+  "policy_k": 3,
+  "controller_max": 25,
+  "grid_cells": 4,
+  "config_equal": true,
+  "runtime_dependency_count": 5,
+  "flags": {
+    "optimizer_used": false,
+    "no_training": true,
+    "heldout_used": false,
+    "PPO_ALLOWED": false,
+    "off_policy": true,
+    "teacher_used": false
+  },
+  "old_v1_artifacts_unchanged": true,
+  "pilot_launched": false,
+  "full_launched": false
+}

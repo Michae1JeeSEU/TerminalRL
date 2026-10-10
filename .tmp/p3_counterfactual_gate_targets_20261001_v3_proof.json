@@ -1,0 +1,137 @@
+{
+  "cells": [
+    {
+      "alpha": 1.0,
+      "cell_id": 1,
+      "effective_D": -0.32909857323498337,
+      "kl_pstar_to_p0": 1.0196203826771808e-07,
+      "known": true,
+      "local_m_original": -5.595107700062362e-05,
+      "mean_D": -2.7208791428176653,
+      "p0": 0.9952911138534546,
+      "pstar": 0.9952601652648472,
+      "reliability_weight": 0.12095302876781885,
+      "sample_se_D": 7.335114854807762,
+      "sign_counts": {
+        "negative": 3,
+        "positive": 1,
+        "zero": 0
+      },
+      "target_delta_p": -3.094858860741567e-05,
+      "unknown_reasons": []
+    },
+    {
+      "alpha": 1.0,
+      "cell_id": 2,
+      "effective_D": 0.665660932971379,
+      "kl_pstar_to_p0": 5.282516681247057e-06,
+      "known": true,
+      "local_m_original": -0.026622027576407463,
+      "mean_D": 3.2490060899824584,
+      "p0": 0.06313349306583405,
+      "pstar": 0.06392553361964069,
+      "reliability_weight": 0.20488140512379677,
+      "sample_se_D": 6.4005192556330295,
+      "sign_counts": {
+        "negative": 1,
+        "positive": 3,
+        "zero": 0
+      },
+      "target_delta_p": 0.0007920405538066472,
+      "unknown_reasons": []
+    },
+    {
+      "alpha": 1.0,
+      "cell_id": 3,
+      "effective_D": 5.608617674599498,
+      "kl_pstar_to_p0": 0.0008676730314016359,
+      "known": true,
+      "local_m_original": -0.09437018259527523,
+      "mean_D": 6.777866457873046,
+      "p0": 0.15514136850833893,
+      "pstar": 0.1704190621781801,
+      "reliability_weight": 0.827490141545151,
+      "sample_se_D": 3.0946999864619955,
+      "sign_counts": {
+        "negative": 1,
+        "positive": 3,
+        "zero": 0
+      },
+      "target_delta_p": 0.015277693669841164,
+      "unknown_reasons": []
+    },
+    {
+      "alpha": 1.0,
+      "cell_id": 4,
+      "effective_D": -0.8082515448744497,
+      "kl_pstar_to_p0": 6.672872553939631e-07,
+      "known": true,
+      "local_m_original": 0.001358190331613985,
+      "mean_D": -1.6982152751974695,
+      "p0": 0.9949211478233337,
+      "pstar": 0.9948388080341942,
+      "reliability_weight": 0.4759417470087623,
+      "sample_se_D": 1.7819914876922014,
+      "sign_counts": {
+        "negative": 1,
+        "positive": 3,
+        "zero": 0
+      },
+      "target_delta_p": -8.233978913951834e-05,
+      "unknown_reasons": []
+    }
+  ],
+  "expected_input_sha256": "1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba",
+  "input_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\full.json",
+  "input_sha256": "1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba",
+  "known_cell_count": 4,
+  "method": {
+    "D_definition": "sum(normalized_proposal_q_before * release_return) - wait_return",
+    "alpha_initial": 1.0,
+    "bisection_steps": 60,
+    "effective_D": "reliability_weight * mu",
+    "eta": 0.02,
+    "full_episode_mc_includes_first_reward": true,
+    "kl_cap": 0.001,
+    "probability_bounds": [
+      0.0,
+      1.0
+    ],
+    "q_normalization": "standard_float_sum_then_divide",
+    "reliability_weight": "mu^2 / (mu^2 + sample_se^2), with 0 when mu=sample_se=0",
+    "target_kl": "Bernoulli(pstar) || Bernoulli(p0)",
+    "target_logit_shift": "alpha * eta * effective_D"
+  },
+  "output_path": "D:\\7_codespace\\terminal\\.tmp\\p3_counterfactual_gate_targets_20261001_v3.json",
+  "output_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+  "scope": {
+    "PPO_ALLOWED": false,
+    "branches_per_seed": 26,
+    "branches_per_state": 104,
+    "cells_expected": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "cells_retained": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "heldout_used": false,
+    "optimizer_used": false,
+    "seeds": [
+      9303401,
+      9303402,
+      9303403,
+      9303404
+    ],
+    "teacher_used": false,
+    "total_branches": 416,
+    "weights_changed": false
+  },
+  "status": "TARGETS_READY",
+  "unknown_cell_count": 0
+}

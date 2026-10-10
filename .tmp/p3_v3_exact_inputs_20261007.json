@@ -1,0 +1,23 @@
+{
+  "rows": 1046,
+  "unique_inputs": 1046,
+  "repeated_groups": 0,
+  "repeated_rows": 0,
+  "gate_conflicting_groups": 0,
+  "release_proposal_conflicting_groups": 0,
+  "gate_conflicting_ids": [],
+  "proposal_conflicting_ids": [],
+  "status": "EXACT_INPUT_CHECK_COMPLETE",
+  "synthetic_self_check": true,
+  "observation_dtype": "torch.float32",
+  "observation_dim": 90,
+  "model_created": false,
+  "optimizer_created": false,
+  "environment_resets": 0,
+  "teacher_queries": 0,
+  "gate_counts": {
+    "1": 229,
+    "0": 817
+  },
+  "limit": "Exact equality only; absence of collisions does not establish observability or rule out nearby label boundaries."
+}

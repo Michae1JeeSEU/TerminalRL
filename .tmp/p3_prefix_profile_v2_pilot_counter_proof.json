@@ -1,0 +1,78 @@
+{
+  "server": "lab-server",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001_v2",
+  "scope": "read-only release_records pilot counter verification",
+  "arms": {
+    "before_legacy": {
+      "records": 7590,
+      "full_proposals_checked": 696,
+      "suffix_by_delta_minus3": 0,
+      "suffix_by_distinct_reason_keys_gt3": 0,
+      "approved_rank_gt3_delta_positive": 0,
+      "same_call_first3_all_energy_and_suffix_mixed": null,
+      "same_call_fields_present": 0,
+      "candidate_plan_reason_mismatch_count": 0,
+      "candidate_plan_reason_missing_count": 0,
+      "candidate_plan_reason_examples": [],
+      "suffix_discrepancy_examples": [],
+      "stored_passive_counters": {
+        "approvals_rank_gt3": 0,
+        "candidate_plan_calls": 773,
+        "first_three_all_energy_blocked_calls": 0,
+        "full_mixed_candidate_set_calls": 0,
+        "landing_zone_pair_checks": 150,
+        "proposal_checks_total": 696,
+        "release_calls": 7590,
+        "suffix_plan_pairs": 0,
+        "suffix_proposal_checks": 0,
+        "zero_check_calls": 7325
+      }
+    },
+    "before_prefix_fallback": {
+      "records": 7454,
+      "full_proposals_checked": 4865,
+      "suffix_by_delta_minus3": 4206,
+      "suffix_by_distinct_reason_keys_gt3": 4206,
+      "approved_rank_gt3_delta_positive": 15,
+      "same_call_first3_all_energy_and_suffix_mixed": null,
+      "same_call_fields_present": 0,
+      "candidate_plan_reason_mismatch_count": 0,
+      "candidate_plan_reason_missing_count": 0,
+      "candidate_plan_reason_examples": [],
+      "suffix_discrepancy_examples": [],
+      "stored_passive_counters": {
+        "approvals_rank_gt3": 15,
+        "candidate_plan_calls": 5994,
+        "first_three_all_energy_blocked_calls": 0,
+        "full_mixed_candidate_set_calls": 202,
+        "landing_zone_pair_checks": 1923,
+        "proposal_checks_total": 4865,
+        "release_calls": 7454,
+        "suffix_plan_pairs": 5196,
+        "suffix_proposal_checks": 15,
+        "zero_check_calls": 7210
+      }
+    }
+  },
+  "comparisons": {
+    "suffix_delta_equals_distinct_reason_keys": {
+      "before_legacy": true,
+      "before_prefix_fallback": true
+    },
+    "stored_suffix_proposal_checks_equals_recomputed_delta_minus3": {
+      "before_legacy": true,
+      "before_prefix_fallback": false
+    },
+    "stored_suffix_plan_pairs_equals_recomputed_delta_minus3": {
+      "before_legacy": true,
+      "before_prefix_fallback": false
+    }
+  },
+  "notes": [
+    "Per-call release-record fields did not include first_three_all_energy_blocked or suffix_mixed_candidate_set; same-call conjunction count is unavailable.",
+    "Aggregate stored counters do not establish the requested same-call conjunction.",
+    "candidate_plan_calls matched the number of candidate_reasons entries for every release record in both arms.",
+    "The stored suffix_proposal_checks value is not used as the full proposal count; recomputed per-record runtime_candidates_checked_delta is used.",
+    "No raw tapes, environment execution, replay, restart, source modification, or Git operation was performed."
+  ]
+}

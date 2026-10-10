@@ -1,0 +1,33 @@
+{
+  "generated_by": "offscreen VTK renderer benchmark",
+  "frames_are_not_hardware_fps": true,
+  "before": {
+    "name": "baseline 9cd71b23dbbff48eff2992d719531b6e01972069",
+    "uavs": 30,
+    "warmup_frames": 10,
+    "timed_frames": 60,
+    "seconds": 3.245240299962461,
+    "fps": 18.488615465761978
+  },
+  "after": {
+    "name": "working-tree viewer",
+    "uavs": 30,
+    "warmup_frames": 10,
+    "timed_frames": 60,
+    "seconds": 0.6678959000855684,
+    "fps": 89.83435890580107
+  },
+  "baseline_revision": "9cd71b23dbbff48eff2992d719531b6e01972069",
+  "methodology": {
+    "viewport": [
+      1280,
+      860
+    ],
+    "pyvista_version": "0.48.4",
+    "off_screen": true,
+    "render_path": "Terminal3DViewer.update_interpolated_positions -> Plotter.update()",
+    "uavs": 30,
+    "warmup_frames": 10,
+    "timed_frames": 60
+  }
+}

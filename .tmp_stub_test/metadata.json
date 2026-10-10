@@ -1,0 +1,10 @@
+{
+  "PPO_ALLOWED": false,
+  "checkpoint": null,
+  "checkpoint_promotable": false,
+  "diagnostic_only": true,
+  "scheduler_mode": "execution",
+  "stage": "V4_2_TRAINED_DENSE30_V2_DIAGNOSTIC",
+  "teacher_enabled": false,
+  "training_called": false
+}

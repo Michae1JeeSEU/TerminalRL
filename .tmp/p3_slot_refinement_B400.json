@@ -1,0 +1,184 @@
+{
+  "status": "COMPLETE",
+  "case": "B_sto",
+  "tick": 400,
+  "uid": 114,
+  "reset_calls": 0,
+  "step_calls": 0,
+  "teacher_calls": 0,
+  "maximum_extra_builds": 12,
+  "results": [
+    {
+      "variant": "current_forecast",
+      "reason": "merge_slot_retime_conflict",
+      "elapsed": 3.7969999997876585,
+      "requested": {
+        "target": "middle",
+        "merge_time": 607.7032948595872,
+        "merge_angle": 2.8912060073275585,
+        "headway": 9.0
+      },
+      "returned": {
+        "target": "middle",
+        "merge_time": 607.7032948595872,
+        "merge_angle": 2.8912060073275585,
+        "headway": 9.0
+      },
+      "refinement_candidates": [],
+      "plan": {
+        "start": 400.0,
+        "end": 605.753829154748,
+        "duration": 205.75382915474802,
+        "metadata": {
+          "target_phase": "ring_middle",
+          "transfer_geometry": "forward_annular_v1",
+          "source_tangent": [
+            -0.039055288058333325,
+            -0.9992370511918984,
+            0.0
+          ],
+          "target_tangent": [
+            -0.2477785671186077,
+            -0.9688166914729791,
+            0.0
+          ],
+          "speed_residual_mps": 0.0,
+          "scheduled_departure": 444.259185538471,
+          "accepted_reservation_departure": 444.259185538471,
+          "transfer_entry_speed_mps": 5.119830237249458,
+          "requested_entry_speed_mps": 22.0,
+          "merge_time": 605.753829154748,
+          "vehicle_profile_id": "research_evtol",
+          "vehicle_profile_version": "eh216s_research_v2",
+          "trajectory_schema_version": "executable_trajectory_v3",
+          "trajectory_hash": "f74ee8dbcc293fd176824c80a2ec018d57625ea817d457ffd17538dad32f29b2",
+          "requested_merge_time": 607.7032948595872
+        },
+        "hash": "f74ee8dbcc293fd176824c80a2ec018d57625ea817d457ffd17538dad32f29b2",
+        "checked": "f74ee8dbcc293fd176824c80a2ec018d57625ea817d457ffd17538dad32f29b2"
+      },
+      "last_release": {
+        "o2m": 598.7032948595872,
+        "m2i": 510.5556219829233,
+        "i2f": 396.0
+      }
+    },
+    {
+      "variant": "refined_slot",
+      "reason": "predicted_holder_reachable_tube",
+      "elapsed": 5.938000000081956,
+      "requested": {
+        "target": "middle",
+        "merge_time": 607.7032948595872,
+        "merge_angle": 2.8912060073275585,
+        "headway": 9.0
+      },
+      "returned": {
+        "target": "middle",
+        "merge_time": 607.7039975633248,
+        "merge_angle": 2.8912060073275585,
+        "headway": 9.0
+      },
+      "refinement_candidates": [
+        {
+          "departure": 450.096475157082,
+          "end": 610.3500300034959,
+          "refined": true
+        },
+        {
+          "departure": 447.17783034777653,
+          "end": 608.0519237362323,
+          "refined": true
+        },
+        {
+          "departure": 445.71850794312377,
+          "end": 606.9028919054379,
+          "refined": true
+        },
+        {
+          "departure": 446.44816914545015,
+          "end": 607.4772830220923,
+          "refined": true
+        },
+        {
+          "departure": 446.81299974661334,
+          "end": 607.7646042394572,
+          "refined": true
+        },
+        {
+          "departure": 446.6305844460318,
+          "end": 607.6209438457839,
+          "refined": true
+        },
+        {
+          "departure": 446.7217920963226,
+          "end": 607.6927740963811,
+          "refined": true
+        },
+        {
+          "departure": 446.76739592146794,
+          "end": 607.7286891813603,
+          "refined": true
+        },
+        {
+          "departure": 446.74459400889526,
+          "end": 607.7107316422308,
+          "refined": true
+        },
+        {
+          "departure": 446.73319305260895,
+          "end": 607.7017528701458,
+          "refined": true
+        },
+        {
+          "departure": 446.7388935307521,
+          "end": 607.7062422563986,
+          "refined": true
+        },
+        {
+          "departure": 446.7360432916805,
+          "end": 607.7039975633248,
+          "refined": true
+        }
+      ],
+      "plan": {
+        "start": 400.0,
+        "end": 607.7039975633248,
+        "duration": 207.70399756332483,
+        "metadata": {
+          "target_phase": "ring_middle",
+          "transfer_geometry": "forward_annular_v1",
+          "source_tangent": [
+            -0.017929110755147644,
+            -0.9998392605751835,
+            0.0
+          ],
+          "target_tangent": [
+            -0.2477785671186077,
+            -0.9688166914729791,
+            0.0
+          ],
+          "speed_residual_mps": 0.0,
+          "scheduled_departure": 446.7360432916805,
+          "accepted_reservation_departure": 446.7360432916805,
+          "transfer_entry_speed_mps": 5.119830237249457,
+          "requested_entry_speed_mps": 22.0,
+          "merge_time": 607.7039975633248,
+          "vehicle_profile_id": "research_evtol",
+          "vehicle_profile_version": "eh216s_research_v2",
+          "trajectory_schema_version": "executable_trajectory_v3",
+          "trajectory_hash": "d35d66a8a39971e3029a3498c972a4826da9c5d83f1daed9e36cd0d7b89ba05e",
+          "requested_merge_time": 607.7032948595872,
+          "requested_merge_late_seconds": 0.0007027037376019507
+        },
+        "hash": "d35d66a8a39971e3029a3498c972a4826da9c5d83f1daed9e36cd0d7b89ba05e",
+        "checked": null
+      },
+      "last_release": {
+        "o2m": 598.7032948595872,
+        "m2i": 510.5556219829233,
+        "i2f": 396.0
+      }
+    }
+  ]
+}

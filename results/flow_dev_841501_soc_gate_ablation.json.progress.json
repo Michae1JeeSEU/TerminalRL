@@ -1,0 +1,23 @@
+{
+  "active": 0,
+  "emergency_commits": 3,
+  "minimum_active_soc": null,
+  "normal_commits": 63,
+  "outcome_counts": {
+    "completed": 26,
+    "emergency_landed": 3,
+    "failed_energy": 1
+  },
+  "phases": {
+    "completed": 29,
+    "ring_middle": 1
+  },
+  "queue": 0,
+  "resolved": 30,
+  "service": 0,
+  "sim_time": 936.0,
+  "step": 936,
+  "stop_reason": "terminal",
+  "terminal": true,
+  "wall_seconds": 345.68935530027375
+}

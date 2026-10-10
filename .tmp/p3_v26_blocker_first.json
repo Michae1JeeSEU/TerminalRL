@@ -1,0 +1,1492 @@
+{
+  "status": "COMPLETE",
+  "decision_id": "p3_v3_90d_sparse_expert_v1:893602:0:6",
+  "joint": 13,
+  "teacher_joint": 0,
+  "reason": "predicted_holder_reachable_tube",
+  "snapshot_sha256": "e09f793a92232f36da0492c514a0e9a78f4a77eda24006e34318a048964248b8",
+  "plan_hash": "076bca5e035816f4b637dda8fd67afe030344459bd59bd2deee083c96b77f268",
+  "duration": 62.45378193601242,
+  "safe_distance": 80.0,
+  "original_state_unchanged": true,
+  "counter_delta": {
+    "energy_reachability_checks": 1,
+    "repair_candidates_checked": 1
+  },
+  "traffic_uids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "slots": {
+    "same_ring_leader": 7,
+    "same_ring_follower": 9,
+    "target_ring_predecessor": 10,
+    "target_ring_successor": 10,
+    "nearest_predicted_conflict": 0
+  },
+  "pairs": [
+    {
+      "uid": 0,
+      "approved": true,
+      "reason": "",
+      "current_distance": 202.23748416156684,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 0,
+          "stage": "plan",
+          "point": {
+            "distance": 202.23748416156684,
+            "index": 0,
+            "time": 0.0
+          },
+          "interval_bound": {
+            "distance": 202.21813794411835,
+            "index": 78,
+            "time": 15.600000000000001
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 0,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [
+              "nearest_predicted_conflict"
+            ],
+            "initial_position": [
+              600.0,
+              0.0,
+              100.0
+            ],
+            "initial_velocity": [
+              -0.0,
+              22.0,
+              0.0
+            ],
+            "current_distance": 202.23748416156684,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 202.23748416156684,
+              "index": 0,
+              "time": 0.0
+            },
+            "ego_at_min": [
+              400.0,
+              0.0,
+              70.0
+            ],
+            "other_at_min": [
+              600.0,
+              0.0,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                0.0,
+                0.05,
+                0.1
+              ],
+              "distances": [
+                202.23748416156684,
+                202.23774786861202,
+                202.23853887814337
+              ],
+              "ego": [
+                [
+                  400.0,
+                  0.0,
+                  70.0
+                ],
+                [
+                  399.99875001219647,
+                  0.9999943397679235,
+                  70.0
+                ],
+                [
+                  399.9950001949122,
+                  1.9999547670665143,
+                  70.0
+                ]
+              ],
+              "other": [
+                [
+                  600.0,
+                  0.0,
+                  100.0
+                ],
+                [
+                  599.9989916669491,
+                  1.0999993837964,
+                  100.0
+                ],
+                [
+                  599.9959666711854,
+                  2.1999950703736846,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 0.0,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 1,
+      "approved": true,
+      "reason": "",
+      "current_distance": 530.0,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 1,
+          "stage": "plan",
+          "point": {
+            "distance": 502.67864301718896,
+            "index": 41,
+            "time": 8.200000000000001
+          },
+          "interval_bound": {
+            "distance": 502.66211720514127,
+            "index": 40,
+            "time": 8.0
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 1,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              300.00000000000006,
+              519.6152422706632,
+              100.0
+            ],
+            "initial_velocity": [
+              -19.05255888325765,
+              11.000000000000002,
+              0.0
+            ],
+            "current_distance": 530.0,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 502.67864301718896,
+              "index": 164,
+              "time": 8.200000000000001
+            },
+            "ego_at_min": [
+              372.93364005614944,
+              144.63920669884473,
+              70.0
+            ],
+            "other_at_min": [
+              132.65407111216928,
+              585.1520293200456,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                8.1,
+                8.15,
+                8.200000000000001,
+                8.25,
+                8.3
+              ],
+              "distances": [
+                502.68500553147214,
+                502.68054369963136,
+                502.67864301718896,
+                502.67930737458903,
+                502.682540512376
+              ],
+              "ego": [
+                [
+                  373.4637778526929,
+                  143.26481295836263,
+                  70.0
+                ],
+                [
+                  373.1988760756429,
+                  143.9534608680075,
+                  70.0
+                ],
+                [
+                  372.93364005614944,
+                  144.63920669884473,
+                  70.0
+                ],
+                [
+                  372.6680854236765,
+                  145.32204962307793,
+                  70.0
+                ],
+                [
+                  372.4022277197203,
+                  146.0019889912111,
+                  70.0
+                ]
+              ],
+              "other": [
+                [
+                  134.79873201622908,
+                  584.6616986316247,
+                  100.0
+                ],
+                [
+                  133.72662629916098,
+                  584.9078469456915,
+                  100.0
+                ],
+                [
+                  132.65407111216928,
+                  585.1520293200456,
+                  100.0
+                ],
+                [
+                  131.58107006023008,
+                  585.3942449339631,
+                  100.0
+                ],
+                [
+                  130.5076267498182,
+                  585.6344929733307,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 8.750918908344488,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 2,
+      "approved": true,
+      "reason": "",
+      "current_distance": 872.2958213817144,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 2,
+          "stage": "plan",
+          "point": {
+            "distance": 802.0192840959568,
+            "index": 313,
+            "time": 62.45378193601242
+          },
+          "interval_bound": {
+            "distance": 802.0042509151349,
+            "index": 311,
+            "time": 62.2
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 2,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              -299.9999999999999,
+              519.6152422706632,
+              100.0
+            ],
+            "initial_velocity": [
+              -19.052558883257653,
+              -10.999999999999995,
+              0.0
+            ],
+            "current_distance": 872.2958213817144,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 802.0192840959569,
+              "index": 1250,
+              "time": 62.45378193601242
+            },
+            "ego_at_min": [
+              74.77533296604635,
+              185.49568614880752,
+              40.0
+            ],
+            "other_at_min": [
+              -193.30260261594248,
+              -568.0088941397864,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                62.400000000000006,
+                62.45,
+                62.45378193601242
+              ],
+              "distances": [
+                802.0207767271825,
+                802.0193756089866,
+                802.0192840959569
+              ],
+              "ego": [
+                [
+                  75.11183183004023,
+                  185.35989618351283,
+                  40.00002134583459
+                ],
+                [
+                  74.79899890189418,
+                  185.4861444741199,
+                  40.000000007784244
+                ],
+                [
+                  74.77533296604635,
+                  185.49568614880752,
+                  40.0
+                ]
+              ],
+              "other": [
+                [
+                  -194.42234202569944,
+                  -567.6265963829055,
+                  100.0
+                ],
+                [
+                  -193.3813671111648,
+                  -567.9820832158501,
+                  100.0
+                ],
+                [
+                  -193.30260261594248,
+                  -568.0088941397864,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 26.425261719151013,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 3,
+      "approved": true,
+      "reason": "",
+      "current_distance": 1000.4498987955369,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 3,
+          "stage": "plan",
+          "point": {
+            "distance": 715.5122470855581,
+            "index": 313,
+            "time": 62.45378193601242
+          },
+          "interval_bound": {
+            "distance": 715.5110520641622,
+            "index": 312,
+            "time": 62.400000000000006
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 3,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              -600.0,
+              7.347880794884119e-14,
+              100.0
+            ],
+            "initial_velocity": [
+              -2.6942229581241772e-15,
+              -22.0,
+              0.0
+            ],
+            "current_distance": 1000.4498987955369,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 715.5122470855581,
+              "index": 1250,
+              "time": 62.45378193601242
+            },
+            "ego_at_min": [
+              74.77533296604635,
+              185.49568614880752,
+              40.0
+            ],
+            "other_at_min": [
+              395.2588305925899,
+              -451.4094115529474,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                62.400000000000006,
+                62.45,
+                62.45378193601242
+              ],
+              "distances": [
+                715.5359697090809,
+                715.5139060512005,
+                715.5122470855581
+              ],
+              "ego": [
+                [
+                  75.11183183004023,
+                  185.35989618351283,
+                  40.00002134583459
+                ],
+                [
+                  74.79899890189418,
+                  185.4861444741199,
+                  40.000000007784244
+                ],
+                [
+                  74.77533296604635,
+                  185.49568614880752,
+                  40.0
+                ]
+              ],
+              "other": [
+                [
+                  394.36788131844287,
+                  -452.18798544897516,
+                  100.0
+                ],
+                [
+                  395.1962294037511,
+                  -451.46421814475815,
+                  100.0
+                ],
+                [
+                  395.2588305925899,
+                  -451.4094115529474,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 26.42526171915088,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 4,
+      "approved": true,
+      "reason": "",
+      "current_distance": 872.2958213817145,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 4,
+          "stage": "plan",
+          "point": {
+            "distance": 521.8456128661368,
+            "index": 313,
+            "time": 62.45378193601242
+          },
+          "interval_bound": {
+            "distance": 521.8444178447407,
+            "index": 312,
+            "time": 62.400000000000006
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 4,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              -300.0000000000003,
+              -519.615242270663,
+              100.0
+            ],
+            "initial_velocity": [
+              19.052558883257646,
+              -11.00000000000001,
+              0.0
+            ],
+            "current_distance": 872.2958213817145,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 521.8456128661368,
+              "index": 1250,
+              "time": 62.45378193601242
+            },
+            "ego_at_min": [
+              74.77533296604635,
+              185.49568614880752,
+              40.0
+            ],
+            "other_at_min": [
+              588.5614332085322,
+              116.59948258683883,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                62.400000000000006,
+                62.45,
+                62.45378193601242
+              ],
+              "distances": [
+                521.875917702636,
+                521.8477468841684,
+                521.8456128661368
+              ],
+              "ego": [
+                [
+                  75.11183183004023,
+                  185.35989618351283,
+                  40.00002134583459
+                ],
+                [
+                  74.79899890189418,
+                  185.4861444741199,
+                  40.000000007784244
+                ],
+                [
+                  74.77533296604635,
+                  185.49568614880752,
+                  40.0
+                ]
+              ],
+              "other": [
+                [
+                  588.790223344142,
+                  115.43861093393029,
+                  100.0
+                ],
+                [
+                  588.5775965149156,
+                  116.51786507109195,
+                  100.0
+                ],
+                [
+                  588.5614332085322,
+                  116.59948258683883,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 26.425261719150924,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 5,
+      "approved": true,
+      "reason": "",
+      "current_distance": 530.0,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 5,
+          "stage": "plan",
+          "point": {
+            "distance": 314.3141986778258,
+            "index": 222,
+            "time": 44.400000000000006
+          },
+          "interval_bound": {
+            "distance": 314.29645370977084,
+            "index": 221,
+            "time": 44.2
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 5,
+            "phase": "ring_outer",
+            "ring_role": "outer",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              300.00000000000006,
+              -519.6152422706632,
+              100.0
+            ],
+            "initial_velocity": [
+              19.05255888325765,
+              11.000000000000002,
+              0.0
+            ],
+            "current_distance": 530.0,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 314.3141986778258,
+              "index": 888,
+              "time": 44.400000000000006
+            },
+            "ego_at_min": [
+              197.03501669894663,
+              263.8453450016519,
+              58.14468116227686
+            ],
+            "other_at_min": [
+              501.6135717005103,
+              329.21698723768344,
+              100.0
+            ],
+            "dense_trace": {
+              "times": [
+                44.300000000000004,
+                44.35,
+                44.400000000000006,
+                44.45,
+                44.5
+              ],
+              "distances": [
+                314.32008441042154,
+                314.31488248190374,
+                314.3141986778258,
+                314.31803148427355,
+                314.32639852962603
+              ],
+              "ego": [
+                [
+                  197.66819815048387,
+                  264.5902302943894,
+                  58.29710363433254
+                ],
+                [
+                  197.35183250179728,
+                  264.2185737837915,
+                  58.22098779877622
+                ],
+                [
+                  197.03501669894663,
+                  263.8453450016519,
+                  58.14468116227686
+                ],
+                [
+                  196.71776585887906,
+                  263.47053223612073,
+                  58.068183742863965
+                ],
+                [
+                  196.4000706331699,
+                  263.0941444489162,
+                  57.99149607076618
+                ]
+              ],
+              "other": [
+                [
+                  502.81732599473315,
+                  327.37552852879253,
+                  100.0
+                ],
+                [
+                  502.21629284976655,
+                  328.2968096041105,
+                  100.0
+                ],
+                [
+                  501.6135717005103,
+                  329.21698723768344,
+                  100.0
+                ],
+                [
+                  501.0091645727773,
+                  330.1360583366921,
+                  100.0
+                ],
+                [
+                  500.40307349804584,
+                  331.05401981203806,
+                  100.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 88.34251670739708,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 7,
+      "approved": true,
+      "reason": "",
+      "current_distance": 565.685424949238,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 7,
+          "stage": "plan",
+          "point": {
+            "distance": 565.685424949238,
+            "index": 0,
+            "time": 0.0
+          },
+          "interval_bound": {
+            "distance": 565.6619323145424,
+            "index": 0,
+            "time": 0.0
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 7,
+            "phase": "ring_middle",
+            "ring_role": "middle",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [
+              "same_ring_leader"
+            ],
+            "initial_position": [
+              2.4492935982947064e-14,
+              400.0,
+              70.0
+            ],
+            "initial_velocity": [
+              -20.0,
+              1.2246467991473533e-15,
+              0.0
+            ],
+            "current_distance": 565.685424949238,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 565.685424949238,
+              "index": 0,
+              "time": 0.0
+            },
+            "ego_at_min": [
+              400.0,
+              0.0,
+              70.0
+            ],
+            "other_at_min": [
+              2.4492935982947064e-14,
+              400.0,
+              70.0
+            ],
+            "dense_trace": {
+              "times": [
+                0.0,
+                0.05,
+                0.1
+              ],
+              "distances": [
+                565.685424949238,
+                565.6854282150666,
+                565.6854510415267
+              ],
+              "ego": [
+                [
+                  400.0,
+                  0.0,
+                  70.0
+                ],
+                [
+                  399.99875001219647,
+                  0.9999943397679235,
+                  70.0
+                ],
+                [
+                  399.9950001949122,
+                  1.9999547670665143,
+                  70.0
+                ]
+              ],
+              "other": [
+                [
+                  2.4492935982947064e-14,
+                  400.0,
+                  70.0
+                ],
+                [
+                  -0.9999989583336131,
+                  399.99875000065106,
+                  70.0
+                ],
+                [
+                  -1.9999916666770163,
+                  399.9950000104167,
+                  70.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 0.0,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 8,
+      "approved": true,
+      "reason": "",
+      "current_distance": 800.0,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 8,
+          "stage": "plan",
+          "point": {
+            "distance": 379.3355731410748,
+            "index": 313,
+            "time": 62.45378193601242
+          },
+          "interval_bound": {
+            "distance": 379.3343781196788,
+            "index": 312,
+            "time": 62.400000000000006
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 8,
+            "phase": "ring_middle",
+            "ring_role": "middle",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              -400.0,
+              4.898587196589413e-14,
+              70.0
+            ],
+            "initial_velocity": [
+              -2.4492935982947065e-15,
+              -20.0,
+              0.0
+            ],
+            "current_distance": 800.0,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 379.335573141075,
+              "index": 1250,
+              "time": 62.45378193601242
+            },
+            "ego_at_min": [
+              74.77533296604635,
+              185.49568614880752,
+              40.0
+            ],
+            "other_at_min": [
+              399.9285332363689,
+              -7.560972384990171,
+              70.0
+            ],
+            "dense_trace": {
+              "times": [
+                62.400000000000006,
+                62.45,
+                62.45378193601242
+              ],
+              "distances": [
+                379.5079710062099,
+                379.34769432203854,
+                379.335573141075
+              ],
+              "ego": [
+                [
+                  75.11183183004023,
+                  185.35989618351283,
+                  40.00002134583459
+                ],
+                [
+                  74.79899890189418,
+                  185.4861444741199,
+                  40.000000007784244
+                ],
+                [
+                  74.77533296604635,
+                  185.49568614880752,
+                  40.0
+                ]
+              ],
+              "other": [
+                [
+                  399.9067550851708,
+                  -8.636390290465073,
+                  70.0
+                ],
+                [
+                  399.92709633044757,
+                  -7.636597455469904,
+                  70.0
+                ],
+                [
+                  399.9285332363689,
+                  -7.560972384990171,
+                  70.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 31.887339260905293,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 9,
+      "approved": true,
+      "reason": "",
+      "current_distance": 565.685424949238,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 9,
+          "stage": "plan",
+          "point": {
+            "distance": 112.68422510298836,
+            "index": 233,
+            "time": 46.6
+          },
+          "interval_bound": {
+            "distance": 112.66064571082013,
+            "index": 233,
+            "time": 46.6
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 9,
+            "phase": "ring_middle",
+            "ring_role": "middle",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [
+              "same_ring_follower"
+            ],
+            "initial_position": [
+              -7.347880794884119e-14,
+              -400.0,
+              70.0
+            ],
+            "initial_velocity": [
+              20.0,
+              -3.673940397442059e-15,
+              0.0
+            ],
+            "current_distance": 565.685424949238,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 112.67859415191985,
+              "index": 933,
+              "time": 46.650000000000006
+            },
+            "ego_at_min": [
+              182.08548851872743,
+              245.62074597131118,
+              54.523098983229225
+            ],
+            "other_at_min": [
+              289.464504953355,
+              276.062131361962,
+              70.0
+            ],
+            "dense_trace": {
+              "times": [
+                46.550000000000004,
+                46.6,
+                46.650000000000006,
+                46.7,
+                46.75
+              ],
+              "distances": [
+                112.7018101210525,
+                112.68422510298836,
+                112.67859415191985,
+                112.68495908844956,
+                112.7033607272518
+              ],
+              "ego": [
+                [
+                  182.78436514563072,
+                  246.48536662067605,
+                  54.691553452881166
+                ],
+                [
+                  182.43535499568765,
+                  246.0536692507908,
+                  54.60741047098742
+                ],
+                [
+                  182.08548851872743,
+                  245.62074597131118,
+                  54.523098983229225
+                ],
+                [
+                  181.73470545026873,
+                  245.18664525431197,
+                  54.438620589297045
+                ],
+                [
+                  181.38293742884417,
+                  244.7514221025382,
+                  54.353977076067686
+                ]
+              ],
+              "other": [
+                [
+                  290.8411915601037,
+                  274.61136409824525,
+                  70.0
+                ],
+                [
+                  290.15375498674155,
+                  275.3376081596808,
+                  70.0
+                ],
+                [
+                  289.464504953355,
+                  276.062131361962,
+                  70.0
+                ],
+                [
+                  288.77344576775494,
+                  276.7849291768204,
+                  70.0
+                ],
+                [
+                  288.0805817490586,
+                  277.5059970867728,
+                  70.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 106.0056016038582,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 10,
+      "approved": true,
+      "reason": "",
+      "current_distance": 202.23748416156684,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 10,
+          "stage": "plan",
+          "point": {
+            "distance": 202.23748416156684,
+            "index": 0,
+            "time": 0.0
+          },
+          "interval_bound": {
+            "distance": 202.22095834951912,
+            "index": 0,
+            "time": 0.0
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 10,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [
+              "target_ring_predecessor",
+              "target_ring_successor"
+            ],
+            "initial_position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "initial_velocity": [
+              -0.0,
+              16.0,
+              0.0
+            ],
+            "current_distance": 202.23748416156684,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 202.23748416156684,
+              "index": 0,
+              "time": 0.0
+            },
+            "ego_at_min": [
+              400.0,
+              0.0,
+              70.0
+            ],
+            "other_at_min": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "dense_trace": {
+              "times": [
+                0.0,
+                0.05,
+                0.1
+              ],
+              "distances": [
+                202.23748416156684,
+                202.23792918920282,
+                202.23926434730663
+              ],
+              "ego": [
+                [
+                  400.0,
+                  0.0,
+                  70.0
+                ],
+                [
+                  399.99875001219647,
+                  0.9999943397679235,
+                  70.0
+                ],
+                [
+                  399.9950001949122,
+                  1.9999547670665143,
+                  70.0
+                ]
+              ],
+              "other": [
+                [
+                  200.0,
+                  0.0,
+                  40.0
+                ],
+                [
+                  199.99840000213334,
+                  0.7999978666683734,
+                  40.0
+                ],
+                [
+                  199.99360003413327,
+                  1.5999829333879465,
+                  40.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 0.0,
+            "minimum_within_forecast_horizon": true
+          }
+        },
+        {
+          "kind": "tube",
+          "uid": 10,
+          "stage": "post",
+          "point": {
+            "distance": 359.31437463931263,
+            "index": 148,
+            "time": 92.05378193601284
+          },
+          "interval_bound": {
+            "distance": 359.287866640647,
+            "index": 148,
+            "time": 92.05378193601284
+          },
+          "start": 62.45378193601242,
+          "end": 92.45378193601285,
+          "samples": 151,
+          "max_angular_width": 0.0,
+          "descriptor": "holder_proxy",
+          "dense": {
+            "uid": 10,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [
+              "target_ring_predecessor",
+              "target_ring_successor"
+            ],
+            "initial_position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "initial_velocity": [
+              -0.0,
+              16.0,
+              0.0
+            ],
+            "current_distance": 202.23748416156684,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 359.3670115083982,
+              "index": 601,
+              "time": 92.45378193601285
+            },
+            "ego_at_min": [
+              -195.8597079561288,
+              -40.48425372092127,
+              40.0
+            ],
+            "other_at_min": [
+              88.37344923128676,
+              179.416090334633,
+              40.0
+            ],
+            "dense_trace": {
+              "times": [
+                92.40378193601072,
+                92.45378193601071,
+                92.45378193601285
+              ],
+              "distances": [
+                359.3670115084132,
+                359.36701150841316,
+                359.3670115083982
+              ],
+              "ego": [
+                [
+                  -196.02007766360632,
+                  -39.700493104667444,
+                  40.0
+                ],
+                [
+                  -195.8597079561288,
+                  -40.48425372092127,
+                  40.0
+                ],
+                [
+                  -195.8597079561288,
+                  -40.48425372092127,
+                  40.0
+                ]
+              ],
+              "other": [
+                [
+                  89.09040469223444,
+                  179.06116215353316,
+                  40.0
+                ],
+                [
+                  88.37344923131734,
+                  179.4160903346179,
+                  40.0
+                ],
+                [
+                  88.37344923128676,
+                  179.416090334633,
+                  40.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 37.227708779177334,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    },
+    {
+      "uid": 11,
+      "approved": false,
+      "reason": "predicted_holder_reachable_tube",
+      "current_distance": 600.7495318350236,
+      "present_in_set": true,
+      "events": [
+        {
+          "kind": "tube",
+          "uid": 11,
+          "stage": "plan",
+          "point": {
+            "distance": 49.23582279718364,
+            "index": 264,
+            "time": 52.800000000000004
+          },
+          "interval_bound": {
+            "distance": 49.20055163761032,
+            "index": 263,
+            "time": 52.6
+          },
+          "start": 0.0,
+          "end": 62.45378193601242,
+          "samples": 314,
+          "max_angular_width": 0.0,
+          "descriptor": "flight_v3",
+          "dense": {
+            "uid": 11,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "committed": false,
+            "prediction_model": "finite_response_nominal_holder",
+            "visible_slots": [],
+            "initial_position": [
+              -200.0,
+              2.4492935982947064e-14,
+              40.0
+            ],
+            "initial_velocity": [
+              -1.959434878635765e-15,
+              -16.0,
+              0.0
+            ],
+            "current_distance": 600.7495318350236,
+            "dense_dt": 0.05,
+            "dense_minimum": {
+              "distance": 49.20964049429309,
+              "index": 1054,
+              "time": 52.7
+            },
+            "ego_at_min": [
+              138.5173891894043,
+              198.6900868433332,
+              45.333118350890715
+            ],
+            "other_at_min": [
+              95.25069038475723,
+              175.86161031113957,
+              40.0
+            ],
+            "dense_trace": {
+              "times": [
+                52.6,
+                52.650000000000006,
+                52.7,
+                52.75,
+                52.800000000000004
+              ],
+              "distances": [
+                49.24474000228519,
+                49.219451951950084,
+                49.20964049429309,
+                49.215153359241135,
+                49.23582279718373
+              ],
+              "ego": [
+                [
+                  139.21732778139597,
+                  199.2546990463808,
+                  45.45084839257323
+                ],
+                [
+                  138.86723794546663,
+                  198.97138846901,
+                  45.39182722678242
+                ],
+                [
+                  138.5173891894043,
+                  198.6900868433332,
+                  45.333118350890715
+                ],
+                [
+                  138.16778087672878,
+                  198.41080291077733,
+                  45.274722612030786
+                ],
+                [
+                  137.81840051285062,
+                  198.13356561624937,
+                  45.216642617403416
+                ]
+              ],
+              "other": [
+                [
+                  96.65452025460074,
+                  175.09398537457812,
+                  40.0
+                ],
+                [
+                  95.95337294563913,
+                  175.47920167460043,
+                  40.0
+                ],
+                [
+                  95.25069038475723,
+                  175.86161031113957,
+                  40.0
+                ],
+                [
+                  94.54648381486138,
+                  176.24120516566538,
+                  40.0
+                ],
+                [
+                  93.84076450324129,
+                  176.61798016466844,
+                  40.0
+                ]
+              ]
+            },
+            "forecast_interpolation_error_at_min": 92.91616269960487,
+            "minimum_within_forecast_horizon": true
+          }
+        }
+      ]
+    }
+  ],
+  "blockers": [
+    11
+  ],
+  "without_blockers": {
+    "approved": true,
+    "reason": ""
+  },
+  "resets": 0,
+  "steps": 0,
+  "Q_accessed": false,
+  "elapsed_seconds": 2.2820000001229346
+}

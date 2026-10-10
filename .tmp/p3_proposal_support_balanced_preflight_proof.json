@@ -1,0 +1,160 @@
+{
+  "status": "completed",
+  "stage": "P3_PROPOSAL_SUPPORT_BALANCED_20261001_V1",
+  "phase": "preflight",
+  "preflight_status": "PREFLIGHT_OK",
+  "environment_created": false,
+  "source_code_sha256": {
+    "runner": {
+      "server": "0a2fcd995c07467860d71edf49477063bc9c066d1d7bdf999587f3340a71de18",
+      "local": "0a2fcd995c07467860d71edf49477063bc9c066d1d7bdf999587f3340a71de18"
+    },
+    "test": {
+      "server": "2d72a65893287bfb43c19a11ad586137074492e12eb85195c0402648b003da43",
+      "local": "2d72a65893287bfb43c19a11ad586137074492e12eb85195c0402648b003da43"
+    },
+    "protocol": {
+      "server": "d19c5bc8de91759a5f359e59d224811be7581c64960e0c37dbdaf18a1ed6c754",
+      "local": "d19c5bc8de91759a5f359e59d224811be7581c64960e0c37dbdaf18a1ed6c754"
+    }
+  },
+  "input_bindings": {
+    "proposal_support_full_sha256": "0178f6cef9083babab207d1fbd0e71cc50b4ebd90ffc2e4601caaeb07a8668b5",
+    "legacy_forced_wait_full_sha256": "fe7954aac75f9e947298ad7de8c8bdec74bc84c3bb18bb59ab7c40860d9e6267",
+    "imported_pair_ids": [
+      1,
+      5,
+      9,
+      13,
+      14,
+      15,
+      16,
+      17,
+      21
+    ],
+    "pair_grid_count": 24,
+    "proposal_support": {
+      "epsilon": 0.1,
+      "proposal_count": 25,
+      "q_floor_min": 0.004,
+      "sampled_first": true
+    },
+    "reference_full_sha256": "fe7954aac75f9e947298ad7de8c8bdec74bc84c3bb18bb59ab7c40860d9e6267",
+    "source_binding": {
+      "binding": {
+        "baseline_scope": "fixed_task_neutral_baseline_20260928/full/records/candidate",
+        "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+        "declared_checkpoint": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+        "expected_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+        "locator_report": null,
+        "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "payload_keys": [
+          "metadata",
+          "model",
+          "policy_architecture_migrated",
+          "report"
+        ],
+        "resolved_checkpoint": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt"
+      },
+      "candidate_digest_before_warmup": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "resolved_checkpoint": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+      "source_model_digest": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+      "warmup": {
+        "checkpoint": "/home/user/training_outputs/terminal/p3_task_neutral_episodic_learning_20260929/warmup_scaled/warmup.pt",
+        "checkpoint_sha256": "a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710",
+        "critic_parameter_names": [
+          "critic_encoder.0.bias",
+          "critic_encoder.0.weight",
+          "critic_encoder.2.bias",
+          "critic_encoder.2.weight",
+          "critic_encoder.4.bias",
+          "critic_encoder.4.weight",
+          "critic_head.0.bias",
+          "critic_head.0.weight",
+          "critic_head.2.bias",
+          "critic_head.2.weight",
+          "critic_head.4.bias",
+          "critic_head.4.weight"
+        ],
+        "curriculum_id": "task_neutral_critic_warmup",
+        "model_digest_after_load": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+        "model_state_loaded": true,
+        "neutral_config_match": true,
+        "non_critic_state_bitwise_unchanged": true,
+        "parent_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+        "stage": "P3_TASK_NEUTRAL_CRITIC_WARMUP_V1"
+      },
+      "warmup_checkpoint": "/home/user/training_outputs/terminal/p3_task_neutral_episodic_learning_20260929/warmup_scaled/warmup.pt"
+    }
+  },
+  "runtime_binding": {
+    "max_steps": 1800,
+    "max_simulation_seconds": 1800.0,
+    "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+    "student_decision_mask_mode": "legacy",
+    "PPO_ALLOWED": false,
+    "off_policy": true,
+    "heldout_used": false,
+    "teacher_used": false,
+    "optimizer_used": false,
+    "no_training": null
+  },
+  "artifacts": {
+    "preflight_json": {
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\proposal_support_balanced_20261001\\preflight.json",
+      "size": 51341,
+      "mtime_local": 1790792787.308378,
+      "sha256_local": "5ee5f6cef0ca2c6d3adb414763f1c961999681fdd17b6c3b3bffed67821c67bf",
+      "sha256_server": "5ee5f6cef0ca2c6d3adb414763f1c961999681fdd17b6c3b3bffed67821c67bf",
+      "server_local_equal": true
+    },
+    "progress_json": {
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\proposal_support_balanced_20261001\\progress.json",
+      "content": {
+        "environment_created": false,
+        "phase": "preflight",
+        "stage": "P3_PROPOSAL_SUPPORT_BALANCED_20261001_V1",
+        "status": "PREFLIGHT_OK"
+      }
+    },
+    "preflight_v2_log": {
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\proposal_support_balanced_20261001\\preflight_v2.log",
+      "size": 0
+    },
+    "preserved_v1_failed_progress": {
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\proposal_support_balanced_20261001\\preflight_v1.failed_progress.json",
+      "content": {
+        "error": {
+          "message": "proposal-support v1 pair 5 arm metrics differ from immutable summary",
+          "type": "BalancedProposalSupportError"
+        },
+        "phase": "preflight",
+        "stage": "P3_PROPOSAL_SUPPORT_BALANCED_20261001_V1",
+        "status": "FAILED"
+      },
+      "sha256_local": "14c95dedf92fa5d962262247e29a01e1b2085c41275f439db54a157ff4e161d7",
+      "sha256_server": "14c95dedf92fa5d962262247e29a01e1b2085c41275f439db54a157ff4e161d7",
+      "server_local_equal": true
+    }
+  },
+  "scope": {
+    "preflight_only": true,
+    "training": false,
+    "pilot": false,
+    "full": false,
+    "PPO": false,
+    "teacher": false,
+    "heldout": false,
+    "source_modified": false,
+    "input_artifacts_modified": false
+  },
+  "checks": {
+    "preflight_ok": true,
+    "environment_created_false": true,
+    "source_code_hashes_match": true,
+    "preflight_hash_match": true,
+    "preserved_v1_hash_match": true,
+    "fixed_input_sha_bindings_present": true,
+    "no_full_artifact_in_scope": true
+  }
+}

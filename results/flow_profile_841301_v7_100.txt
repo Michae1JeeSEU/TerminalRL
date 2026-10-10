@@ -1,0 +1,64 @@
+### cumtime top 20
+Thu Sep 24 18:08:09 2026    results\flow_profile_841301_v7_100.prof
+
+         118667421 function calls (118652966 primitive calls) in 68.144 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1626 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    425/1    0.029    0.000   72.333   72.333 {built-in method builtins.exec}
+        1    0.000    0.000   72.333   72.333 <frozen runpy>:201(run_module)
+        1    0.000    0.000   72.087   72.087 <frozen runpy>:65(_run_code)
+        1    0.000    0.000   72.087   72.087 diagnose_landing_flow.py:1(<module>)
+        1    0.000    0.000   72.083   72.083 diagnose_landing_flow.py:641(main)
+        1    0.018    0.018   72.073   72.073 diagnose_landing_flow.py:346(run_diagnostic)
+      100    0.087    0.001   71.212    0.712 parallel_env.py:1378(step)
+     2913    0.036    0.000   61.042    0.021 parallel_env.py:1249(_release)
+     2913    0.194    0.000   61.006    0.021 landing_flow.py:431(release)
+     7519    0.024    0.000   59.677    0.008 landing_flow.py:310(_candidate_plan)
+     1847    0.187    0.000   47.928    0.026 flow_trajectories.py:204(ring_transfer)
+     2007    0.564    0.000   24.304    0.012 vehicle_dynamics.py:241(validate_plan)
+   864532    4.777    0.000   23.593    0.000 vehicle_dynamics.py:170(validate_transition)
+  1729064    4.159    0.000   16.352    0.000 vehicle_dynamics.py:149(validate_state)
+     2336    2.323    0.001   13.476    0.006 trajectory_generator.py:52(__post_init__)
+  3710214    5.187    0.000   10.307    0.000 _linalg.py:2598(norm)
+      129    0.056    0.000    9.817    0.076 safety_filter.py:326(filter_plan)
+  1684934    4.279    0.000    8.115    0.000 trajectory_generator.py:27(__post_init__)
+     1847    0.371    0.000    6.505    0.004 flow_trajectories.py:102(_ring_transfer_points)
+  2547176    0.903    0.000    6.399    0.000 fromnumeric.py:3582(round)
+
+
+
+
+### tottime top 20
+Thu Sep 24 18:08:09 2026    results\flow_profile_841301_v7_100.prof
+
+         118667421 function calls (118652966 primitive calls) in 68.144 seconds
+
+   Ordered by: internal time
+   List reduced from 1626 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+  3710214    5.187    0.000   10.307    0.000 _linalg.py:2598(norm)
+   864532    4.777    0.000   23.593    0.000 vehicle_dynamics.py:170(validate_transition)
+  1684934    4.279    0.000    8.115    0.000 trajectory_generator.py:27(__post_init__)
+  2547176    4.205    0.000    4.205    0.000 {method 'round' of 'numpy.ndarray' objects}
+  1729064    4.159    0.000   16.352    0.000 vehicle_dynamics.py:149(validate_state)
+ 17164548    3.557    0.000    3.557    0.000 {built-in method numpy.asarray}
+     2346    3.216    0.001    3.216    0.001 encoder.py:205(iterencode)
+  3634731    2.354    0.000    2.354    0.000 {method 'dot' of 'numpy.ndarray' objects}
+     2336    2.323    0.001   13.476    0.006 trajectory_generator.py:52(__post_init__)
+   405037    2.282    0.000    5.572    0.000 vehicle_dynamics.py:124(ring_motion_step)
+  5084433    1.772    0.000    1.772    0.000 {method 'copy' of 'numpy.ndarray' objects}
+  1729064    1.454    0.000    6.324    0.000 vehicle_dynamics.py:21(horizontal_speed)
+  5062444    1.371    0.000    1.371    0.000 {method 'setflags' of 'numpy.ndarray' objects}
+  1725096    1.233    0.000    2.188    0.000 vehicle_dynamics.py:54(ring_speed_limit)
+  2769797    1.157    0.000    6.256    0.000 fromnumeric.py:48(_wrapfunc)
+   862518    1.094    0.000    3.941    0.000 vehicle_dynamics.py:62(limited_tangential_speed)
+  2547176    0.903    0.000    6.399    0.000 fromnumeric.py:3582(round)
+  3683535    0.861    0.000    0.861    0.000 {method 'ravel' of 'numpy.ndarray' objects}
+      210    0.810    0.004    2.541    0.012 runtime_traffic_safety.py:513(_joint_position_tracks)
+  4391764    0.785    0.000    0.786    0.000 {built-in method builtins.max}
+
+

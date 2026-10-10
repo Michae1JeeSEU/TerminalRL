@@ -1,0 +1,49 @@
+{
+  "status": "aborted",
+  "reason": "primary stopped after identified I-egress queue jam",
+  "source_progress": "D:\\7_codespace\\terminal\\results\\flow_dev_841301_v4.json.progress.json",
+  "last_progress": {
+    "active": 11,
+    "emergency_commits": 1,
+    "normal_commits": 56,
+    "outcome_counts": {
+      "completed": 17,
+      "emergency_landed": 1,
+      "failed_energy": 1
+    },
+    "phases": {
+      "completed": 18,
+      "final": 1,
+      "ring_inner": 9,
+      "ring_middle": 2
+    },
+    "queue": 0,
+    "resolved": 19,
+    "service": 0,
+    "sim_time": 900.0,
+    "step": 900,
+    "stop_reason": null,
+    "terminal": false,
+    "wall_seconds": 947.0572627997026
+  },
+  "observed_failed_energy": 1,
+  "fullcycle_completion": false,
+  "failed_gates": [
+    "no_failed_energy"
+  ],
+  "incomplete_gates": [
+    "fullcycle_completion",
+    "all_uavs_resolved"
+  ],
+  "observed_state_counts": {
+    "at_progress": 900,
+    "normal": 17,
+    "emergency": 1,
+    "failed": 1,
+    "active": 11
+  },
+  "unavailable_metrics": [
+    "final_safety",
+    "minSOC"
+  ]
+}

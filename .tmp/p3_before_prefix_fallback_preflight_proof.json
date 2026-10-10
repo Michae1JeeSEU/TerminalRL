@@ -1,0 +1,112 @@
+{
+  "status": "PREFLIGHT_OK",
+  "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1",
+  "phase": "preflight",
+  "qualification": "not_a_qualification; fixed sampled-first prefix-fallback development candidate",
+  "serialized_preflight_sha256_server": "255abac8e9a6c61bc7fa0bce082d5233665bf978847a3144861c642c5f2c8591",
+  "serialized_preflight_sha256_mirror": "255abac8e9a6c61bc7fa0bce082d5233665bf978847a3144861c642c5f2c8591",
+  "phase_validation": "PHASE_VALIDATION_OK",
+  "phase_inputs_tuple_length": 3,
+  "flags": {
+    "PPO_ALLOWED": false,
+    "no_training": true,
+    "off_policy": true,
+    "optimizer_used": false,
+    "teacher_used": false,
+    "heldout_used": false
+  },
+  "schema": {
+    "action": "low_action_schema_v4_2_hierarchical",
+    "observation": "phaseA_low_obs_v2_1_retry_state",
+    "observation_dim": 88
+  },
+  "candidate": {
+    "label": "before_candidate",
+    "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "resolved_checkpoint": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+    "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "observation_dim": 88,
+    "gate_temperature": 2.5,
+    "optimizer_state_empty": true,
+    "controller_max_proposals": 25,
+    "public_shortlist_k": 3,
+    "sampled_first": true,
+    "source_logits_stable_rank": true,
+    "arm": "before_prefix_fallback"
+  },
+  "baseline": {
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001",
+    "full_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_proposal_support_20261001/full.json",
+    "full_sha256": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+    "pair_count": 4,
+    "cells": [
+      {
+        "cell_id": 1,
+        "env_seed": 875101,
+        "policy_seed": 875201
+      },
+      {
+        "cell_id": 2,
+        "env_seed": 875102,
+        "policy_seed": 875202
+      },
+      {
+        "cell_id": 3,
+        "env_seed": 875103,
+        "policy_seed": 875203
+      },
+      {
+        "cell_id": 4,
+        "env_seed": 875104,
+        "policy_seed": 875204
+      }
+    ]
+  },
+  "auxiliary_after_prefix_fallback": {
+    "loaded_for_candidate": false,
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/full.json",
+    "role": "existing_comparison_only",
+    "sha256": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50"
+  },
+  "historical_checkpoints": {
+    "after_existing_comparison": {
+      "declared": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+      "resolved": "/home/user/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/policy.pt",
+      "role": "existing_comparison_only",
+      "sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+    },
+    "warmup": {
+      "declared": "/home/user/training_outputs/terminal/p3_task_neutral_episodic_learning_20260929/warmup_scaled/warmup.pt",
+      "resolved": "/home/user/training_outputs/terminal/p3_task_neutral_episodic_learning_20260929/warmup_scaled/warmup.pt",
+      "role": "historical_input_binding_only",
+      "sha256": "a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710"
+    }
+  },
+  "runtime": {
+    "max_steps": 1800,
+    "deterministic": false,
+    "native_rollout": "evaluate_p3_runtime_rank_repair._runtime_record",
+    "replay": "terminal_lifecycle_metrics.terminal_lifecycle_metrics",
+    "selected_config": {
+      "dt": 1,
+      "geometry_min_dwell_seconds": 600,
+      "max_simulation_seconds": 1800,
+      "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+      "runtime_proposal_shortlist_k": 3,
+      "teacher_enabled": false
+    }
+  },
+  "runtime_dependency_shas": {
+    "after_prefix_fallback_full": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+    "before_prefix_fallback_wrapper": "d5c985032878e37046e111082c12717dd267acd3ee0babf2862276881aff3947",
+    "helper": "b5f1d6bd6ffcf80932f285a3b2abdd950cea32d3e6b5724315ba5b86755fabe5",
+    "immutable_base_full": "3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919",
+    "lifecycle_metrics": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+    "prefix_fallback_base_runner": "d7b1ff1c0f961e765d5aebed0832be18852a36adaa66af577e3e8f00fa486b6d",
+    "runtime_rank": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22",
+    "safety_trace": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850",
+    "student_rollout": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+  },
+  "original_base_preflight_config_equal": true,
+  "requests_per_cell": 24
+}

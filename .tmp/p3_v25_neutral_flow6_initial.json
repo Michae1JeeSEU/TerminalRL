@@ -1,0 +1,183 @@
+{
+  "case": "train_flow6_mixed",
+  "processes": [
+    {
+      "pid": 2822455,
+      "argv": [
+        "timeout",
+        "12000",
+        "env",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "OMP_NUM_THREADS=1",
+        "MKL_NUM_THREADS=1",
+        "/home/user/envs/terminal_env/bin/python",
+        "-u",
+        "-m",
+        "terminal_marl.training.p3_v25_course_data",
+        "--index",
+        "1",
+        "--output",
+        "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed"
+      ],
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 2822456,
+      "argv": [
+        "/home/user/envs/terminal_env/bin/python",
+        "-u",
+        "-m",
+        "terminal_marl.training.p3_v25_course_data",
+        "--index",
+        "1",
+        "--output",
+        "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed"
+      ],
+      "cwd": "/home/user/projects/terminal"
+    }
+  ],
+  "files": {
+    "protocol.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/protocol.json",
+      "exists": true,
+      "bytes": 1474,
+      "sha256": "d0abd77206f065dbb29ad273d99ed05d4ad80e6f5d94d8a23bd9a0c87b56dc62",
+      "json": {
+        "protocol": "p3_v25_neutral_course_data_20261008_v1",
+        "profile": "p3_v25_neutral_course_committed_merge_20261008_v1",
+        "index": 1,
+        "seed": 893501,
+        "scenario": "flow6_mixed",
+        "partition": "train",
+        "schema": "p3_v3_90d_sparse_expert_v1",
+        "smoke": false,
+        "task": {
+          "task_priority_enabled": false,
+          "priority_mode": "random_135",
+          "initial_priority": null,
+          "initial_soc_mode": "uniform",
+          "initial_soc": null,
+          "initial_soc_min": 0.55,
+          "initial_soc_max": 0.9,
+          "mission_probabilities": [
+            0.45,
+            0.25,
+            0.1,
+            0.2
+          ],
+          "release_arbitration_mode": "downstream_soc_priority",
+          "low_level_priority_time_weight": 0.0,
+          "low_level_soc_urgency_time_weight": 2.0,
+          "low_level_soc_urgency_threshold": 0.65,
+          "reset_mode": "flow_from_empty",
+          "warm_start_uavs": 0,
+          "fixed_arrival_schedule": [
+            10.0,
+            70.0,
+            130.0,
+            190.0,
+            250.0,
+            310.0
+          ],
+          "max_simulation_seconds": 1210.0,
+          "merge_gap_prediction_mode": "committed_arrivals_v1",
+          "v3_landing_path_mode": "direct_c2"
+        },
+        "max_steps": 1210,
+        "rollout_wall_seconds": 3600,
+        "annotation_wall_seconds": 7200,
+        "max_selected": 2048,
+        "max_release_intents": 51200,
+        "selection": "all actor pre-states; tick/numeric UID",
+        "behavior": "rule_nominal_k3",
+        "teacher": "state-only first feasible; not joint/global optimum",
+        "checkpoint_loaded": false,
+        "I0_QUALIFIED": false,
+        "PPO_ALLOWED": false
+      },
+      "local_sha_equal": true
+    },
+    "result.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/result.json",
+      "exists": false
+    },
+    "seed_893501/progress.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/progress.json",
+      "exists": true,
+      "bytes": 128,
+      "sha256": "a59e57257824cfd531adc5775711eb2e2cfaabc60503fed44069325e533a9f6d",
+      "json": {
+        "stage": "rollout",
+        "ticks": 50,
+        "rows": 39,
+        "selected": 0,
+        "outcomes": {},
+        "elapsed_seconds": 7.01558939088136
+      },
+      "local_sha_equal": false
+    },
+    "seed_893501/rollout_result.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/rollout_result.json",
+      "exists": false
+    },
+    "seed_893501/annotation_progress.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/annotation_progress.json",
+      "exists": false
+    },
+    "seed_893501/annotation_result.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/annotation_result.json",
+      "exists": false
+    },
+    "seed_893501/rows.jsonl": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/rows.jsonl",
+      "exists": true,
+      "bytes": 69877,
+      "sha256": "3f6161b897e551593caee1edec19f925b0cbe896241e510e7e51dfee9638fd40",
+      "lines": 60,
+      "local_sha_equal": false
+    },
+    "seed_893501/steps.jsonl": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/steps.jsonl",
+      "exists": true,
+      "bytes": 127405,
+      "sha256": "b33472c43b7c015d270f89c1b2a7896d12f4419718e69fff31b60b3197e49a37",
+      "lines": 70,
+      "local_sha_equal": false
+    },
+    "seed_893501/selected.json": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/selected.json",
+      "exists": false
+    },
+    "seed_893501/context_observations.jsonl": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/context_observations.jsonl",
+      "exists": false
+    },
+    "seed_893501/first_before.pkl": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed/seed_893501/first_before.pkl",
+      "exists": true,
+      "bytes": 14750,
+      "sha256": "098159183c6101a5fe0f647c8d3e721ac7c2f4955212f5b6714231b1f5339d37",
+      "local_sha_equal": true
+    },
+    "train_flow6_mixed.pid": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed.pid",
+      "exists": true,
+      "bytes": 8,
+      "sha256": "5969eaed060e9fd659d7ad205f02b91802f1961acda3ba7dfc8dd6db57fd2968",
+      "text": "2822455\n",
+      "local_sha_equal": true
+    },
+    "train_flow6_mixed.log": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed.log",
+      "exists": true,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "text": "",
+      "local_sha_equal": true
+    },
+    "train_flow6_mixed.exit": {
+      "path": "/home/user/training_outputs/terminal/p3_v25_neutral_course_20261008/train_flow6_mixed.exit",
+      "exists": false
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "status": "QUERY_EXACT",
+  "slot": 129,
+  "seconds": 43.191128599923104,
+  "teacher_queries": 1,
+  "release_intents_checked": 25,
+  "candidate_plan_calls": 25,
+  "teacher_gate": 0,
+  "teacher_proposal": null,
+  "original_certificate_and_audit_exact": true,
+  "reset_count": 0,
+  "env_steps": 0
+}

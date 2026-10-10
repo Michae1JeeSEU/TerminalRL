@@ -1,0 +1,18 @@
+{
+  "status": "FAILED",
+  "cases": [],
+  "teacher_queries_max": 8,
+  "release_intents_max": 200,
+  "steps_max": 4,
+  "reset_count": 0,
+  "wall_seconds": 1200,
+  "partition": "diagnostic_never_train",
+  "trained": false,
+  "PPO_ALLOWED": false,
+  "error": {
+    "type": "AssertionError",
+    "message": "child failed: 0_mixed_0_baseline",
+    "traceback": "Traceback (most recent call last):\n  File \"D:\\7_codespace\\terminal\\.tmp\\validate_p3_numeric_saved_states.py\", line 135, in parent\n    PYTHONDONTWRITEBYTECODE='1', OMP_NUM_THREADS='1', MKL_NUM_THREADS='1'))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: child failed: 0_mixed_0_baseline\n"
+  },
+  "elapsed_seconds": 3.9380000000819564
+}

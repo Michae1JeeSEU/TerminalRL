@@ -1,0 +1,50 @@
+{
+  "protocol": "p3_train_neighbor_witness_20261009_v1",
+  "inputs": [
+    {
+      "seed": 893511,
+      "context_sha256": "b3ee0bf5dfcd438bdfddee9a12120ba5ea22fed47746a64bbd2de780d92c2717",
+      "selected": 19
+    },
+    {
+      "seed": 893512,
+      "context_sha256": "91acf84e9916cf30c37bf75fdb904308e81d974e349ceefa14e18eb77be43743",
+      "selected": 24
+    },
+    {
+      "seed": 893513,
+      "context_sha256": "32df9fdcd37c8c3821df18e3d29c75bcf2a6f5fc2986028016a207f1157432b5",
+      "selected": 24
+    },
+    {
+      "seed": 893601,
+      "context_sha256": "365d0d54ff25b4757491dd2908a80fedf7023e1c7e91779c4b17f4c0c353b925",
+      "selected": 12
+    },
+    {
+      "seed": 893602,
+      "context_sha256": "5a7b827963a8edb603859013d7aae4e01a0ccfc5455d7b1eec600e69e4bfd009",
+      "selected": 24
+    },
+    {
+      "seed": 893603,
+      "context_sha256": "cdff1875d66c6b78b8260b1aa83b9963b352c7419f969afde04863814742d0cf",
+      "selected": 24
+    }
+  ],
+  "smoke": true,
+  "selected_ids": [
+    "p3_v3_90d_sparse_expert_v1:893511:75:0",
+    "p3_v3_90d_sparse_expert_v1:893511:147:0",
+    "p3_v3_90d_sparse_expert_v1:893511:222:0"
+  ],
+  "max_states": 144,
+  "max_plan_calls": 1728,
+  "wall_seconds": 120,
+  "resets": 0,
+  "steps": 0,
+  "Q_accessed": false,
+  "original_labels_unchanged": true,
+  "pair_semantics": "same_canonical_plan_isolated_native_safety_check",
+  "unknown_is_not_safe_or_blocked": true
+}

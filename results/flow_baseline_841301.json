@@ -1,0 +1,5002 @@
+{
+  "checkpoints_551_552_553": {
+    "551": {
+      "active": [
+        {
+          "acceleration": [
+            0.29591053392099753,
+            -0.9552156593746723,
+            0.0
+          ],
+          "arrival_id": 2,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 549.4235786620591,
+          "energy_remaining": 782.6406003818283,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 426.40679825352805,
+          "position": [
+            -118.36421356839901,
+            382.0862637498689,
+            70.0
+          ],
+          "ring_progress": 1.8712049283130847,
+          "ring_role": "middle",
+          "soc": 0.5217604002545522,
+          "speed": 20.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 2,
+          "velocity": [
+            -19.104313187493446,
+            -5.918210678419951,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.6955167623069817,
+            -0.4086166228399484,
+            0.0
+          ],
+          "arrival_id": 3,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 551.0,
+          "energy_remaining": 332.7853424707855,
+          "merge_reservation_id": null,
+          "phase": "ring_outer",
+          "phase_entry_time": 0.0,
+          "position": [
+            -517.3265174184162,
+            303.9297194677302,
+            100.0
+          ],
+          "ring_progress": 2.610414473230676,
+          "ring_role": "outer",
+          "soc": 0.22185689498052366,
+          "speed": 22.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 3,
+          "velocity": [
+            -11.144089713816776,
+            -18.96863897200859,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.6764983323402153,
+            1.0866232126827162,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 533.9443758407033,
+          "energy_remaining": 440.3511663481639,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 545.5180522596803,
+          "position": [
+            105.70286442815863,
+            -169.78487698167442,
+            40.0
+          ],
+          "ring_progress": 5.2692385195088685,
+          "ring_role": "inner",
+          "soc": 0.29356744423210923,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            13.582790158533953,
+            8.456229154252691,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.9772882995588318,
+            0.2119140852926204,
+            0.0
+          ],
+          "arrival_id": 5,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 542.7525681370159,
+          "energy_remaining": 701.1768355476426,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 376.1037397332051,
+          "position": [
+            390.9153198235325,
+            -84.76563411704812,
+            70.0
+          ],
+          "ring_progress": 6.069652194194142,
+          "ring_role": "middle",
+          "soc": 0.46745122369842834,
+          "speed": 20.000000000000004,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 5,
+          "velocity": [
+            4.238281705852407,
+            19.54576599117663,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.2531211412897068,
+            -0.2609356343100404,
+            0.0
+          ],
+          "arrival_id": 7,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 532.785656718396,
+          "energy_remaining": 667.708948402369,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 359.32987080740077,
+          "position": [
+            -195.80017832651666,
+            40.77119286094381,
+            40.0
+          ],
+          "ring_progress": 2.936297663527054,
+          "ring_role": "inner",
+          "soc": 0.4451392989349126,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 7,
+          "velocity": [
+            -3.2616954288755053,
+            -15.664014266121333,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.1992755284511447,
+            0.44736808877950596,
+            0.0
+          ],
+          "arrival_id": 11,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 534.1793756919712,
+          "energy_remaining": 441.1874490067835,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 369.32987080740253,
+          "position": [
+            -187.38680132049134,
+            -69.90126387179781,
+            40.0
+          ],
+          "ring_progress": 3.4986367946237267,
+          "ring_role": "inner",
+          "soc": 0.2941249660045223,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 11,
+          "velocity": [
+            5.592101109743824,
+            -14.990944105639308,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.67608953348718,
+            -0.7368028421282762,
+            0.0
+          ],
+          "arrival_id": 12,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": true,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 545.4444444444443,
+          "energy_remaining": 804.1674179093275,
+          "merge_reservation_id": "6e097f52-aaa1-44f2-81f0-0e3ed532d70b",
+          "phase": "transfer_m2i",
+          "phase_entry_time": 535.0,
+          "position": [
+            270.435813394872,
+            294.7211368513105,
+            70.0
+          ],
+          "ring_progress": 0.028342684278133135,
+          "ring_role": null,
+          "soc": 0.5361116119395516,
+          "speed": 19.999754853089758,
+          "trajectory_plan_end_time": 603.4258975355507,
+          "trajectory_plan_id": "de8b2b85-c2ed-48fe-8be3-7e3096d97722",
+          "trajectory_plan_mode": "ring_transfer",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "ring_inner",
+          "uid": 12,
+          "velocity": [
+            -14.736056842565525,
+            13.521790669743602,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.2065340562358285,
+            -0.6831036812012146,
+            0.024071704958287463
+          ],
+          "arrival_id": 13,
+          "assigned_gate": 0,
+          "assigned_lz": 2,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 551.8888888888878,
+          "energy_remaining": 501.9969807562188,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 529.0,
+          "position": [
+            204.4669937990624,
+            214.8544838074008,
+            89.80627592193458
+          ],
+          "ring_progress": 0.5619618969339881,
+          "ring_role": null,
+          "soc": 0.33466465383747923,
+          "speed": 8.614619880029018,
+          "trajectory_plan_end_time": 625.4088130936237,
+          "trajectory_plan_id": "fb160ca2-8b2c-40b8-a8cd-92c9667df21e",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 529.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 13,
+          "velocity": [
+            -5.171395248097355,
+            -6.889727633611307,
+            1.3347694982758347
+          ]
+        },
+        {
+          "acceleration": [
+            -0.5807986860769602,
+            -0.1825828570923081,
+            0.0
+          ],
+          "arrival_id": 14,
+          "assigned_gate": 3,
+          "assigned_lz": 5,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 534.1229133076478,
+          "energy_remaining": 583.9097291156448,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 535.0,
+          "position": [
+            166.60758110915268,
+            -18.310983241423614,
+            40.0
+          ],
+          "ring_progress": 5.723119296955917,
+          "ring_role": null,
+          "soc": 0.38927315274376323,
+          "speed": 6.186588810343299,
+          "trajectory_plan_end_time": 589.9154898118124,
+          "trajectory_plan_id": "449a3ec2-cbcf-4662-93d3-2e02307226a3",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 14,
+          "velocity": [
+            -4.27020021713329,
+            4.476524456971023,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.2594207672989299,
+            -1.2534356247905334,
+            0.0
+          ],
+          "arrival_id": 23,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 544.146468052732,
+          "energy_remaining": 786.8426860673492,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 343.7325216751803,
+          "position": [
+            40.53449489045779,
+            195.84931637352082,
+            40.0
+          ],
+          "ring_progress": 1.3667100600670314,
+          "ring_role": "inner",
+          "soc": 0.5245617907115662,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 23,
+          "velocity": [
+            -15.667945309881667,
+            3.2427595912366236,
+            0.0
+          ]
+        }
+      ],
+      "actual_release_calls": {
+        "11": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 11,
+            "attempt_count": 181,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 370.0,
+            "interface": "i2f",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 180,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 11
+          },
+          "time": 550.0,
+          "uid": 11
+        },
+        "12": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 550.0,
+          "uid": 12
+        },
+        "13": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 550.0,
+          "uid": 13
+        },
+        "14": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 550.0,
+          "uid": 14
+        },
+        "2": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 2,
+            "attempt_count": 124,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 427.0,
+            "interface": "m2i",
+            "primary_blocker": "NO_MERGE_GAP",
+            "retry_count": 123,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 2
+          },
+          "time": 550.0,
+          "uid": 2
+        },
+        "23": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 23,
+            "attempt_count": 207,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 344.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 206,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 23
+          },
+          "time": 550.0,
+          "uid": 23
+        },
+        "3": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 3,
+            "attempt_count": 551,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 0.0,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 550,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 3
+          },
+          "time": 550.0,
+          "uid": 3
+        },
+        "4": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 4,
+            "attempt_count": 5,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 546.0,
+            "interface": "i2f",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "approved"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 4
+          },
+          "time": 550.0,
+          "uid": 4
+        },
+        "5": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 5,
+            "attempt_count": 174,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 377.0,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 173,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "approved"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 5
+          },
+          "time": 550.0,
+          "uid": 5
+        },
+        "7": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 7,
+            "attempt_count": 191,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 360.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 190,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "time": 550.0,
+          "uid": 7
+        }
+      },
+      "landing_zones": {
+        "free_lz_ids": [
+          0,
+          3
+        ],
+        "occupied_lz_ids": [
+          1,
+          4
+        ],
+        "reserved_lz_ids": [
+          2,
+          5
+        ],
+        "zones": [
+          {
+            "lz_id": 0,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 1,
+            "occupied_by": 0,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 7.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 2,
+            "occupied_by": null,
+            "reservation_start": 529.0,
+            "reserved_by": 13,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          },
+          {
+            "lz_id": 3,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 4,
+            "occupied_by": 1,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 21.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 5,
+            "occupied_by": null,
+            "reservation_start": 535.0,
+            "reserved_by": 14,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          }
+        ]
+      },
+      "new_energy_outcomes": [],
+      "new_events": [],
+      "queue_size": 0,
+      "safety_decisions_after_call": {
+        "11": "predicted_separation",
+        "12": "approved",
+        "13": "approved",
+        "14": "approved",
+        "2": "predicted_holder_reachable_tube",
+        "23": "approved",
+        "3": "predicted_separation",
+        "4": "approved",
+        "5": "approved",
+        "7": "approved"
+      },
+      "service_uids": [
+        0,
+        1
+      ],
+      "step_time_before": 550.0,
+      "time": 551.0
+    },
+    "552": {
+      "active": [
+        {
+          "acceleration": [
+            0.3432816079370992,
+            -0.9392325258699891,
+            0.0
+          ],
+          "arrival_id": 2,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 550.4235786620591,
+          "energy_remaining": 781.6406003818283,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 426.40679825352805,
+          "position": [
+            -137.31264317483968,
+            375.69301034799565,
+            70.0
+          ],
+          "ring_progress": 1.9212049283130848,
+          "ring_role": "middle",
+          "soc": 0.5210937335878856,
+          "speed": 20.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 2,
+          "velocity": [
+            -18.784650517399783,
+            -6.865632158741985,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.710028525378536,
+            -0.3828454051701454,
+            0.0
+          ],
+          "arrival_id": 3,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 552.0,
+          "energy_remaining": 331.7853424707855,
+          "merge_reservation_id": null,
+          "phase": "ring_outer",
+          "phase_entry_time": 0.0,
+          "position": [
+            -528.1203907774235,
+            284.7610451678768,
+            100.0
+          ],
+          "ring_progress": 2.647081139897343,
+          "ring_role": "outer",
+          "soc": 0.221190228313857,
+          "speed": 22.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 3,
+          "velocity": [
+            -10.441238322822148,
+            -19.36441432850553,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.7611718534889417,
+            1.0290857153105417,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 534.9443758407033,
+          "energy_remaining": 439.3511663481639,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 545.5180522596803,
+          "position": [
+            118.93310210764713,
+            -160.79464301727214,
+            40.0
+          ],
+          "ring_progress": 5.3492385195088685,
+          "ring_role": "inner",
+          "soc": 0.2929007775654426,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            12.86357144138177,
+            9.514648168611771,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.9866582336050177,
+            0.16280519051746253,
+            0.0
+          ],
+          "arrival_id": 5,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 543.7525681370159,
+          "energy_remaining": 700.1768355476426,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 376.1037397332051,
+          "position": [
+            394.6632934420069,
+            -65.12207620698499,
+            70.0
+          ],
+          "ring_progress": 6.119652194194141,
+          "ring_role": "middle",
+          "soc": 0.4667845570317617,
+          "speed": 20.000000000000004,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 5,
+          "velocity": [
+            3.2561038103492494,
+            19.733164672100347,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.2699658832030043,
+            -0.1599582930029372,
+            0.0
+          ],
+          "arrival_id": 7,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 533.785656718396,
+          "energy_remaining": 666.708948402369,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 359.32987080740077,
+          "position": [
+            -198.4321692504694,
+            24.993483281708937,
+            40.0
+          ],
+          "ring_progress": 3.016297663527054,
+          "ring_role": "inner",
+          "soc": 0.44447263226824596,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 7,
+          "velocity": [
+            -1.999478662536715,
+            -15.874573540037552,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.1596886091806886,
+            0.5417770110816444,
+            0.0
+          ],
+          "arrival_id": 11,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 535.1793756919712,
+          "energy_remaining": 440.1874490067835,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 369.32987080740253,
+          "position": [
+            -181.2013451844826,
+            -84.65265798150693,
+            40.0
+          ],
+          "ring_progress": 3.5786367946237267,
+          "ring_role": "inner",
+          "soc": 0.29345829933785567,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 11,
+          "velocity": [
+            6.772212638520555,
+            -14.496107614758607,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.6384197459925663,
+            -0.7696723577556147,
+            0.0
+          ],
+          "arrival_id": 12,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": true,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 546.4444444444443,
+          "energy_remaining": 803.1674179093275,
+          "merge_reservation_id": "6e097f52-aaa1-44f2-81f0-0e3ed532d70b",
+          "phase": "transfer_m2i",
+          "phase_entry_time": 535.0,
+          "position": [
+            255.36789839702655,
+            307.86894310224585,
+            70.0
+          ],
+          "ring_progress": 0.028342684278133135,
+          "ring_role": null,
+          "soc": 0.535444945272885,
+          "speed": 19.99975310213903,
+          "trajectory_plan_end_time": 603.4258975355507,
+          "trajectory_plan_id": "de8b2b85-c2ed-48fe-8be3-7e3096d97722",
+          "trajectory_plan_mode": "ring_transfer",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "ring_inner",
+          "uid": 12,
+          "velocity": [
+            -15.393447155112293,
+            12.768394919851326,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.22292860518104896,
+            -0.5630767337221657,
+            0.010082444593409415
+          ],
+          "arrival_id": 13,
+          "assigned_gate": 0,
+          "assigned_lz": 2,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 553.1888888888877,
+          "energy_remaining": 500.6969807562188,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 529.0,
+          "position": [
+            199.62367257585197,
+            207.56568804217886,
+            91.15018136305967
+          ],
+          "ring_progress": 0.5619618969339881,
+          "ring_role": null,
+          "soc": 0.33379798717081255,
+          "speed": 8.634938601347583,
+          "trajectory_plan_end_time": 625.4088130936237,
+          "trajectory_plan_id": "fb160ca2-8b2c-40b8-a8cd-92c9667df21e",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 529.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 13,
+          "velocity": [
+            -4.90150199931705,
+            -7.108969179827236,
+            1.304777609049574
+          ]
+        },
+        {
+          "acceleration": [
+            -0.5579008058428466,
+            -0.17347312819956257,
+            0.0
+          ],
+          "arrival_id": 14,
+          "assigned_gate": 3,
+          "assigned_lz": 5,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 535.1229133076478,
+          "energy_remaining": 582.9097291156448,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 535.0,
+          "position": [
+            162.20337285504814,
+            -13.903233298733781,
+            40.0
+          ],
+          "ring_progress": 5.723119296955917,
+          "ring_role": null,
+          "soc": 0.3886064860770966,
+          "speed": 6.454416752378573,
+          "trajectory_plan_end_time": 589.9154898118124,
+          "trajectory_plan_id": "449a3ec2-cbcf-4662-93d3-2e02307226a3",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 14,
+          "velocity": [
+            -4.801119514557197,
+            4.313785694760837,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.15842313912871375,
+            -1.2701583007596353,
+            0.0
+          ],
+          "arrival_id": 23,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 545.146468052732,
+          "energy_remaining": 785.8426860673492,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 343.7325216751803,
+          "position": [
+            24.753615488861524,
+            198.46223449369302,
+            40.0
+          ],
+          "ring_progress": 1.4467100600670315,
+          "ring_role": "inner",
+          "soc": 0.5238951240448995,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 23,
+          "velocity": [
+            -15.876978759495442,
+            1.980289239108922,
+            0.0
+          ]
+        }
+      ],
+      "actual_release_calls": {
+        "11": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 11,
+            "attempt_count": 182,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 370.0,
+            "interface": "i2f",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 181,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 11
+          },
+          "time": 551.0,
+          "uid": 11
+        },
+        "12": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 551.0,
+          "uid": 12
+        },
+        "13": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 551.0,
+          "uid": 13
+        },
+        "14": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 551.0,
+          "uid": 14
+        },
+        "2": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 2,
+            "attempt_count": 125,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 427.0,
+            "interface": "m2i",
+            "primary_blocker": "NO_MERGE_GAP",
+            "retry_count": 124,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 2
+          },
+          "time": 551.0,
+          "uid": 2
+        },
+        "23": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 23,
+            "attempt_count": 208,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 344.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 207,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 23
+          },
+          "time": 551.0,
+          "uid": 23
+        },
+        "3": {
+          "decision": "emergency_energy_guard",
+          "telemetry": {
+            "arrival_id": 3,
+            "attempt_count": 552,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 0.0,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "retry_count": 551,
+            "runtime_shortlist_candidates_checked": 1,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 3
+          },
+          "time": 551.0,
+          "uid": 3
+        },
+        "4": {
+          "decision": "emergency_energy_guard",
+          "telemetry": {
+            "arrival_id": 4,
+            "attempt_count": 6,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 546.0,
+            "interface": "i2f",
+            "primary_blocker": "SOC",
+            "retry_count": 5,
+            "runtime_shortlist_candidates_checked": 1,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 4
+          },
+          "time": 551.0,
+          "uid": 4
+        },
+        "5": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 5,
+            "attempt_count": 175,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 377.0,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 174,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "approved"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 5
+          },
+          "time": 551.0,
+          "uid": 5
+        },
+        "7": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 7,
+            "attempt_count": 192,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 360.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 191,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "time": 551.0,
+          "uid": 7
+        }
+      },
+      "landing_zones": {
+        "free_lz_ids": [
+          0,
+          3
+        ],
+        "occupied_lz_ids": [
+          1,
+          4
+        ],
+        "reserved_lz_ids": [
+          2,
+          5
+        ],
+        "zones": [
+          {
+            "lz_id": 0,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 1,
+            "occupied_by": 0,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 6.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 2,
+            "occupied_by": null,
+            "reservation_start": 529.0,
+            "reserved_by": 13,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          },
+          {
+            "lz_id": 3,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 4,
+            "occupied_by": 1,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 20.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 5,
+            "occupied_by": null,
+            "reservation_start": 535.0,
+            "reserved_by": 14,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          }
+        ]
+      },
+      "new_energy_outcomes": [],
+      "new_events": [],
+      "queue_size": 0,
+      "safety_decisions_after_call": {
+        "11": "predicted_separation",
+        "12": "approved",
+        "13": "approved",
+        "14": "approved",
+        "2": "predicted_holder_reachable_tube",
+        "23": "approved",
+        "3": "predicted_separation",
+        "4": "approved",
+        "5": "approved",
+        "7": "approved"
+      },
+      "service_uids": [
+        0,
+        1
+      ],
+      "step_time_before": 551.0,
+      "time": 552.0
+    },
+    "553": {
+      "active": [
+        {
+          "acceleration": [
+            0.3897946567109635,
+            -0.9209018001934746,
+            0.0
+          ],
+          "arrival_id": 2,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 551.4235786620591,
+          "energy_remaining": 780.6406003818283,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 426.40679825352805,
+          "position": [
+            -155.9178626843854,
+            368.36072007738983,
+            70.0
+          ],
+          "ring_progress": 1.9712049283130848,
+          "ring_role": "middle",
+          "soc": 0.5204270669212189,
+          "speed": 20.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 2,
+          "velocity": [
+            -18.418036003869492,
+            -7.795893134219271,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.723585801488828,
+            -0.3565595307867699,
+            0.0
+          ],
+          "arrival_id": 3,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 553.0,
+          "energy_remaining": 330.7853424707855,
+          "merge_reservation_id": null,
+          "phase": "ring_outer",
+          "phase_entry_time": 0.0,
+          "position": [
+            -538.2043151569795,
+            265.2095683537958,
+            100.0
+          ],
+          "ring_progress": 2.68374780656401,
+          "ring_role": "outer",
+          "soc": 0.22052356164719034,
+          "speed": 22.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 3,
+          "velocity": [
+            -9.724350839639179,
+            -19.734158222422582,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.8409764723543937,
+            0.9649655812236827,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 535.9443758407033,
+          "energy_remaining": 438.3511663481639,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 545.5180522596803,
+          "position": [
+            131.402573805374,
+            -150.77587206620044,
+            40.0
+          ],
+          "ring_progress": 5.429238519508869,
+          "ring_role": "inner",
+          "soc": 0.29223411089877593,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            12.062069765296034,
+            10.512205904429921,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.993562035908866,
+            0.11328936755331519,
+            0.0
+          ],
+          "arrival_id": 5,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 544.7525681370159,
+          "energy_remaining": 699.1768355476426,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 376.1037397332051,
+          "position": [
+            397.42481436354626,
+            -45.315747021326054,
+            70.0
+          ],
+          "ring_progress": 6.16965219419414,
+          "ring_role": "middle",
+          "soc": 0.46611789036509504,
+          "speed": 20.000000000000004,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 5,
+          "velocity": [
+            2.265787351066303,
+            19.871240718177315,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.2786871773560287,
+            -0.05795776449512387,
+            0.0
+          ],
+          "arrival_id": 7,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 534.785656718396,
+          "energy_remaining": 665.708948402369,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 359.32987080740077,
+          "position": [
+            -199.79487146187947,
+            9.055900702363104,
+            40.0
+          ],
+          "ring_progress": 3.096297663527054,
+          "ring_role": "inner",
+          "soc": 0.4438059656015793,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 7,
+          "velocity": [
+            -0.7244720561890483,
+            -15.983589716950357,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            1.112683640370899,
+            0.6327204093839266,
+            0.0
+          ],
+          "arrival_id": 11,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 536.1793756919712,
+          "energy_remaining": 439.1874490067835,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 369.32987080740253,
+          "position": [
+            -173.85681880795298,
+            -98.86256396623853,
+            40.0
+          ],
+          "ring_progress": 3.658636794623727,
+          "ring_role": "inner",
+          "soc": 0.29279163267118896,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 11,
+          "velocity": [
+            7.909005117299082,
+            -13.908545504636239,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.5991542960129671,
+            -0.8006181514913314,
+            0.0
+          ],
+          "arrival_id": 12,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": true,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 547.4444444444443,
+          "energy_remaining": 802.1674179093275,
+          "merge_reservation_id": "6e097f52-aaa1-44f2-81f0-0e3ed532d70b",
+          "phase": "transfer_m2i",
+          "phase_entry_time": 535.0,
+          "position": [
+            239.66171840518683,
+            320.24726059653256,
+            70.0
+          ],
+          "ring_progress": 0.028342684278133135,
+          "ring_role": null,
+          "soc": 0.5347782786062183,
+          "speed": 19.999752947756036,
+          "trajectory_plan_end_time": 603.4258975355507,
+          "trajectory_plan_id": "de8b2b85-c2ed-48fe-8be3-7e3096d97722",
+          "trajectory_plan_mode": "ring_transfer",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "ring_inner",
+          "uid": 12,
+          "velocity": [
+            -16.01236302982663,
+            11.983085920259342,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.23932315412626948,
+            -0.44304978624311697,
+            -0.003906815771468647
+          ],
+          "arrival_id": 13,
+          "assigned_gate": 0,
+          "assigned_lz": 2,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 554.4888888888877,
+          "energy_remaining": 499.3969807562188,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 529.0,
+          "position": [
+            194.78035135264156,
+            200.2768922769569,
+            92.49408680418478
+          ],
+          "ring_progress": 0.5619618969339881,
+          "ring_role": null,
+          "soc": 0.33293132050414587,
+          "speed": 8.66916789913211,
+          "trajectory_plan_end_time": 625.4088130936237,
+          "trajectory_plan_id": "fb160ca2-8b2c-40b8-a8cd-92c9667df21e",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 529.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 13,
+          "velocity": [
+            -4.631608750536746,
+            -7.3282107260431655,
+            1.2747857198233132
+          ]
+        },
+        {
+          "acceleration": [
+            -0.5350029256087331,
+            -0.16436339930681704,
+            0.0
+          ],
+          "arrival_id": 14,
+          "assigned_gate": 3,
+          "assigned_lz": 5,
+          "committed": true,
+          "emergency_landing": true,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 536.1229133076478,
+          "energy_remaining": 581.9097291156448,
+          "merge_reservation_id": null,
+          "phase": "emergency_landing",
+          "phase_entry_time": 535.0,
+          "position": [
+            157.79916460094364,
+            -9.495483356043955,
+            40.0
+          ],
+          "ring_progress": 5.723119296955917,
+          "ring_role": null,
+          "soc": 0.3879398194104299,
+          "speed": 6.757353663136999,
+          "trajectory_plan_end_time": 589.9154898118124,
+          "trajectory_plan_id": "449a3ec2-cbcf-4662-93d3-2e02307226a3",
+          "trajectory_plan_mode": "emergency_landing",
+          "trajectory_plan_start_time": 535.0,
+          "trajectory_plan_target_phase": "emergency_landing",
+          "uid": 14,
+          "velocity": [
+            -5.332038811981104,
+            4.151046932550649,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.056412143503708385,
+            -1.278756298152747,
+            0.0
+          ],
+          "arrival_id": 23,
+          "assigned_gate": 2,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 546.146468052732,
+          "energy_remaining": 784.8426860673492,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 343.7325216751803,
+          "position": [
+            8.814397422454435,
+            199.8056715863667,
+            40.0
+          ],
+          "ring_progress": 1.5267100600670316,
+          "ring_role": "inner",
+          "soc": 0.5232284573782328,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 23,
+          "velocity": [
+            -15.984453726909337,
+            0.7051517937963548,
+            0.0
+          ]
+        }
+      ],
+      "actual_release_calls": {
+        "11": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 11,
+            "attempt_count": 183,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 370.0,
+            "interface": "i2f",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 182,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 11
+          },
+          "time": 552.0,
+          "uid": 11
+        },
+        "12": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 552.0,
+          "uid": 12
+        },
+        "13": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 552.0,
+          "uid": 13
+        },
+        "14": {
+          "decision": "plan_active",
+          "telemetry": null,
+          "time": 552.0,
+          "uid": 14
+        },
+        "2": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 2,
+            "attempt_count": 126,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 427.0,
+            "interface": "m2i",
+            "primary_blocker": "NO_MERGE_GAP",
+            "retry_count": 125,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 2
+          },
+          "time": 552.0,
+          "uid": 2
+        },
+        "23": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 23,
+            "attempt_count": 209,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 344.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 208,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 23
+          },
+          "time": 552.0,
+          "uid": 23
+        },
+        "3": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 3,
+            "attempt_count": 553,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 0.0,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 552,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 3
+          },
+          "time": 552.0,
+          "uid": 3
+        },
+        "4": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 4,
+            "attempt_count": 7,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 3,
+                "proposal_rank": 1,
+                "reason": "emergency_energy_guard",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 546.0,
+            "interface": "i2f",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 6,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "approved"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 4
+          },
+          "time": 552.0,
+          "uid": 4
+        },
+        "5": {
+          "decision": "safety_wait",
+          "telemetry": {
+            "arrival_id": 5,
+            "attempt_count": 176,
+            "final_lz_pairs_checked": null,
+            "final_lz_selected_id": null,
+            "first_attempt_time": 377.0,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 175,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [
+              "approved"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 5
+          },
+          "time": 552.0,
+          "uid": 5
+        },
+        "7": {
+          "decision": "emergency_lz_priority",
+          "telemetry": {
+            "arrival_id": 7,
+            "attempt_count": 193,
+            "final_lz_pairs_checked": [
+              {
+                "lz_id": 5,
+                "proposal_rank": 1,
+                "reason": "predicted_holder_reachable_tube",
+                "status": "rejected"
+              },
+              {
+                "lz_id": 0,
+                "proposal_rank": 1,
+                "reason": "predicted_separation",
+                "status": "rejected"
+              }
+            ],
+            "final_lz_selected_id": null,
+            "first_attempt_time": 360.0,
+            "interface": "i2f",
+            "primary_blocker": "LZ_RESOURCE",
+            "retry_count": 192,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 1,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "time": 552.0,
+          "uid": 7
+        }
+      },
+      "landing_zones": {
+        "free_lz_ids": [
+          0,
+          3
+        ],
+        "occupied_lz_ids": [
+          1,
+          4
+        ],
+        "reserved_lz_ids": [
+          2,
+          5
+        ],
+        "zones": [
+          {
+            "lz_id": 0,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 1,
+            "occupied_by": 0,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 5.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 2,
+            "occupied_by": null,
+            "reservation_start": 529.0,
+            "reserved_by": 13,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          },
+          {
+            "lz_id": 3,
+            "occupied_by": null,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 0.0,
+            "status": "free"
+          },
+          {
+            "lz_id": 4,
+            "occupied_by": 1,
+            "reservation_start": null,
+            "reserved_by": null,
+            "service_remaining": 19.0,
+            "status": "occupied"
+          },
+          {
+            "lz_id": 5,
+            "occupied_by": null,
+            "reservation_start": 535.0,
+            "reserved_by": 14,
+            "service_remaining": 0.0,
+            "status": "reserved"
+          }
+        ]
+      },
+      "new_energy_outcomes": [],
+      "new_events": [],
+      "queue_size": 0,
+      "safety_decisions_after_call": {
+        "11": "predicted_separation",
+        "12": "approved",
+        "13": "approved",
+        "14": "approved",
+        "2": "predicted_holder_reachable_tube",
+        "23": "approved",
+        "3": "predicted_separation",
+        "4": "approved",
+        "5": "approved",
+        "7": "approved"
+      },
+      "service_uids": [
+        0,
+        1
+      ],
+      "step_time_before": 552.0,
+      "time": 553.0
+    }
+  },
+  "config": {
+    "collision_distance": 10.0,
+    "dense_warm_start_uavs": 30,
+    "emergency_trigger_soc": 0.4,
+    "final_approach_geometry_mode": "continuous_inward_v1",
+    "initial_soc_max": 0.9,
+    "initial_soc_min": 0.55,
+    "max_simulation_seconds": 1800.0,
+    "nmac_distance": 40.0,
+    "reconcile_late_merge_slots_enabled": false,
+    "release_arbitration_mode": "downstream_priority",
+    "route_guard_enabled": true,
+    "safe_distance": 80.0
+  },
+  "conflict_events": [],
+  "emergency_commits": [
+    {
+      "assigned_lz": 2,
+      "committed_plan_end_time": 395.51177621626505,
+      "committed_plan_id": "90bef8be-2a7d-4907-ab27-da1770d5814d",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 281.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        50.38775570479711,
+        396.8136515734227,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.3718693995749024,
+      "step_time_after": 282.0,
+      "step_time_before": 281.0,
+      "time": 281.0,
+      "uid": 8
+    },
+    {
+      "assigned_lz": 1,
+      "committed_plan_end_time": 438.023641316096,
+      "committed_plan_id": "fb92f131-aa63-4f90-8ec7-b73c25b1d7f5",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 347.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        -380.4125473426479,
+        123.6377524232695,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.39547004471157804,
+      "step_time_after": 348.0,
+      "step_time_before": 347.0,
+      "time": 347.0,
+      "uid": 10
+    },
+    {
+      "assigned_lz": 4,
+      "committed_plan_end_time": 541.4704518564322,
+      "committed_plan_id": "04824e47-17fd-4063-ac5b-7c660e93954e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 453.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        383.5963318405921,
+        113.37483935354604,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.45168967101873414,
+      "step_time_after": 454.0,
+      "step_time_before": 453.0,
+      "time": 453.0,
+      "uid": 1
+    },
+    {
+      "assigned_lz": 1,
+      "committed_plan_end_time": 527.6662855187882,
+      "committed_plan_id": "0661aa64-50eb-4713-8ccc-8ba916f411d2",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 468.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        62.500789869837526,
+        -189.98329206971442,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.39944753360256724,
+      "step_time_after": 469.0,
+      "step_time_before": 468.0,
+      "time": 468.0,
+      "uid": 0
+    },
+    {
+      "assigned_lz": 2,
+      "committed_plan_end_time": 625.4088130936237,
+      "committed_plan_id": "fb160ca2-8b2c-40b8-a8cd-92c9667df21e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 529.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        338.4845394200672,
+        213.1389607124539,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.35333132050414556,
+      "step_time_after": 530.0,
+      "step_time_before": 529.0,
+      "time": 529.0,
+      "uid": 13
+    },
+    {
+      "assigned_lz": 5,
+      "committed_plan_end_time": 589.9154898118124,
+      "committed_plan_id": "449a3ec2-cbcf-4662-93d3-2e02307226a3",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 535.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        169.44400908956268,
+        -106.24842485258874,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.3999398194104299,
+      "step_time_after": 536.0,
+      "step_time_before": 535.0,
+      "time": 535.0,
+      "uid": 14
+    },
+    {
+      "assigned_lz": 5,
+      "committed_plan_end_time": 709.1975376891775,
+      "committed_plan_id": "6e028903-3fbc-446c-a836-600dfa4607fb",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 622.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        260.374149740931,
+        -303.65325973334654,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.4744270669212189,
+      "step_time_after": 623.0,
+      "step_time_before": 622.0,
+      "time": 622.0,
+      "uid": 2
+    },
+    {
+      "assigned_lz": 4,
+      "committed_plan_end_time": 775.8443555368267,
+      "committed_plan_id": "56d72691-b004-485e-bc2b-cec15d22797e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 717.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        -178.42991141818436,
+        90.348031031666,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.36406577941934193,
+      "step_time_after": 718.0,
+      "step_time_before": 717.0,
+      "time": 717.0,
+      "uid": 5
+    }
+  ],
+  "energy_outcomes": [
+    {
+      "arrival_id": 28,
+      "energy_consumed": 59.764154702457624,
+      "energy_remaining": 829.3845777995533,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5529230518663689,
+      "time": 67.0,
+      "uid": 28
+    },
+    {
+      "arrival_id": 25,
+      "energy_consumed": 63.42052748714454,
+      "energy_remaining": 938.6215167440614,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6257476778293742,
+      "time": 91.0,
+      "uid": 25
+    },
+    {
+      "arrival_id": 26,
+      "energy_consumed": 88.30530680540767,
+      "energy_remaining": 1152.872785420426,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.7685818569469507,
+      "time": 145.0,
+      "uid": 26
+    },
+    {
+      "arrival_id": 24,
+      "energy_consumed": 184.62013025280206,
+      "energy_remaining": 1029.9231633097268,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6866154422064845,
+      "time": 200.0,
+      "uid": 24
+    },
+    {
+      "arrival_id": 20,
+      "energy_consumed": 155.20821483242491,
+      "energy_remaining": 693.2617195530964,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.46217447970206427,
+      "time": 221.0,
+      "uid": 20
+    },
+    {
+      "arrival_id": 27,
+      "energy_consumed": 119.18188313281561,
+      "energy_remaining": 1006.0759554936108,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6707173036624072,
+      "time": 236.0,
+      "uid": 27
+    },
+    {
+      "arrival_id": 29,
+      "energy_consumed": 134.58844328478847,
+      "energy_remaining": 1091.5506928490208,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.7277004618993472,
+      "time": 252.0,
+      "uid": 29
+    },
+    {
+      "arrival_id": 16,
+      "energy_consumed": 217.92744423320437,
+      "energy_remaining": 725.2563243945469,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4835042162630313,
+      "time": 253.0,
+      "uid": 16
+    },
+    {
+      "arrival_id": 22,
+      "energy_consumed": 223.92648570073862,
+      "energy_remaining": 746.2410058891078,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.49749400392607185,
+      "time": 259.0,
+      "uid": 22
+    },
+    {
+      "arrival_id": 18,
+      "energy_consumed": 248.87777995843433,
+      "energy_remaining": 1099.5434815261215,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.733028987684081,
+      "time": 284.0,
+      "uid": 18
+    },
+    {
+      "arrival_id": 15,
+      "energy_consumed": 307.4568764429226,
+      "energy_remaining": 609.6986659169609,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4064657772779739,
+      "time": 342.0,
+      "uid": 15
+    },
+    {
+      "arrival_id": 21,
+      "energy_consumed": 277.97988529766474,
+      "energy_remaining": 650.4787594824845,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.43365250632165636,
+      "time": 343.0,
+      "uid": 21
+    },
+    {
+      "arrival_id": 17,
+      "energy_consumed": 319.67107277621085,
+      "energy_remaining": 900.3505766267897,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6002337177511932,
+      "time": 354.0,
+      "uid": 17
+    },
+    {
+      "arrival_id": 9,
+      "energy_consumed": 378.1282006291799,
+      "energy_remaining": 564.5234591621959,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.37634897277479723,
+      "time": 401.0,
+      "uid": 9
+    },
+    {
+      "arrival_id": 6,
+      "energy_consumed": 330.1015834349514,
+      "energy_remaining": 989.388810819239,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6595925405461593,
+      "time": 402.0,
+      "uid": 6
+    },
+    {
+      "arrival_id": 10,
+      "energy_consumed": 454.1609148687798,
+      "energy_remaining": 480.71081886525724,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.32047387924350484,
+      "time": 469.0,
+      "uid": 10
+    },
+    {
+      "arrival_id": 8,
+      "energy_consumed": 414.06688662144836,
+      "energy_remaining": 415.70702711004463,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.2771380180733631,
+      "time": 516.0,
+      "uid": 8
+    },
+    {
+      "arrival_id": 19,
+      "energy_consumed": 423.155266113101,
+      "energy_remaining": 777.6511683986587,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5184341122657724,
+      "time": 546.0,
+      "uid": 19
+    },
+    {
+      "arrival_id": 0,
+      "energy_consumed": 516.1388035303271,
+      "energy_remaining": 536.227300631932,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.3574848670879547,
+      "time": 558.0,
+      "uid": 0
+    },
+    {
+      "arrival_id": 1,
+      "energy_consumed": 551.6142040392883,
+      "energy_remaining": 568.1189793622673,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.3787459862415115,
+      "time": 572.0,
+      "uid": 1
+    },
+    {
+      "arrival_id": 14,
+      "energy_consumed": 576.3576514214283,
+      "energy_remaining": 541.6749910018643,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.36111666066790954,
+      "time": 620.0,
+      "uid": 14
+    },
+    {
+      "arrival_id": 7,
+      "energy_consumed": 614.8894536595714,
+      "energy_remaining": 585.6051514611936,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.3904034343074624,
+      "time": 641.0,
+      "uid": 7
+    },
+    {
+      "arrival_id": 13,
+      "energy_consumed": 643.4991708314458,
+      "energy_remaining": 410.38669881365666,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.2735911325424378,
+      "time": 656.0,
+      "uid": 13
+    },
+    {
+      "arrival_id": 2,
+      "energy_consumed": 728.2207059660959,
+      "energy_remaining": 603.8434730777915,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4025623153851943,
+      "time": 740.0,
+      "uid": 2
+    },
+    {
+      "arrival_id": 23,
+      "energy_consumed": 681.466135908697,
+      "energy_remaining": 649.5230182113842,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.43301534547425613,
+      "time": 746.0,
+      "uid": 23
+    },
+    {
+      "arrival_id": 5,
+      "energy_consumed": 759.815816015276,
+      "energy_remaining": 484.11358766938145,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.32274239177958763,
+      "time": 806.0,
+      "uid": 5
+    },
+    {
+      "arrival_id": 3,
+      "assigned_lz": null,
+      "emergency_landing": false,
+      "energy_capacity": 1500.0,
+      "energy_consumed": 884.0,
+      "energy_remaining": 0.0,
+      "outcome": "failed_energy",
+      "phase": "ring_outer",
+      "position": [
+        -378.7889376943109,
+        465.3159579043206,
+        100.0
+      ],
+      "reason": "energy_depleted",
+      "soc": 0.0,
+      "time": 883.0,
+      "uid": 3
+    },
+    {
+      "arrival_id": 4,
+      "assigned_lz": null,
+      "emergency_landing": false,
+      "energy_capacity": 1500.0,
+      "energy_consumed": 974.9443758407033,
+      "energy_remaining": 0.0,
+      "outcome": "failed_energy",
+      "phase": "ring_inner",
+      "position": [
+        -191.56472931138583,
+        57.471336193405754,
+        40.0
+      ],
+      "reason": "energy_depleted",
+      "soc": 0.0,
+      "time": 991.0,
+      "uid": 4
+    },
+    {
+      "arrival_id": 11,
+      "assigned_lz": null,
+      "emergency_landing": false,
+      "energy_capacity": 1500.0,
+      "energy_consumed": 976.1793756919712,
+      "energy_remaining": 0.0,
+      "outcome": "failed_energy",
+      "phase": "ring_inner",
+      "position": [
+        79.95500204588787,
+        183.322659940996,
+        40.0
+      ],
+      "reason": "energy_depleted",
+      "soc": 0.0,
+      "time": 992.0,
+      "uid": 11
+    },
+    {
+      "arrival_id": 12,
+      "assigned_lz": null,
+      "emergency_landing": false,
+      "energy_capacity": 1500.0,
+      "energy_consumed": 1350.4861183871087,
+      "energy_remaining": 0.0,
+      "outcome": "failed_energy",
+      "phase": "ring_inner",
+      "position": [
+        -69.39252919356389,
+        187.5757897281,
+        40.0
+      ],
+      "reason": "energy_depleted",
+      "soc": 0.0,
+      "time": 1363.0,
+      "uid": 12
+    }
+  ],
+  "events_of_interest": [
+    {
+      "kind": "touchdown",
+      "step_time_after": 57.0,
+      "step_time_before": 56.0,
+      "time": 57.0,
+      "uid": 28
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 61.0,
+      "step_time_before": 60.0,
+      "time": 61.0,
+      "uid": 25
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 67.0,
+      "step_time_before": 66.0,
+      "time": 67.0,
+      "uid": 28
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 85.0,
+      "step_time_before": 84.0,
+      "time": 85.0,
+      "uid": 26
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 91.0,
+      "step_time_before": 90.0,
+      "time": 91.0,
+      "uid": 25
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 116.0,
+      "step_time_before": 115.0,
+      "time": 116.0,
+      "uid": 27
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 132.0,
+      "step_time_before": 131.0,
+      "time": 132.0,
+      "uid": 29
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 145.0,
+      "step_time_before": 144.0,
+      "time": 145.0,
+      "uid": 26
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 161.0,
+      "step_time_before": 160.0,
+      "time": 161.0,
+      "uid": 20
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 190.0,
+      "step_time_before": 189.0,
+      "time": 190.0,
+      "uid": 24
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 200.0,
+      "step_time_before": 199.0,
+      "time": 200.0,
+      "uid": 24
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 221.0,
+      "step_time_before": 220.0,
+      "time": 221.0,
+      "uid": 20
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 223.0,
+      "step_time_before": 222.0,
+      "time": 223.0,
+      "uid": 16
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 229.0,
+      "step_time_before": 228.0,
+      "time": 229.0,
+      "uid": 22
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 236.0,
+      "step_time_before": 235.0,
+      "time": 236.0,
+      "uid": 27
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 252.0,
+      "step_time_before": 251.0,
+      "time": 252.0,
+      "uid": 29
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 253.0,
+      "step_time_before": 252.0,
+      "time": 253.0,
+      "uid": 16
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 254.0,
+      "step_time_before": 253.0,
+      "time": 254.0,
+      "uid": 18
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 259.0,
+      "step_time_before": 258.0,
+      "time": 259.0,
+      "uid": 22
+    },
+    {
+      "assigned_lz": 2,
+      "committed_plan_end_time": 395.51177621626505,
+      "committed_plan_id": "90bef8be-2a7d-4907-ab27-da1770d5814d",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 281.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        50.38775570479711,
+        396.8136515734227,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.3718693995749024,
+      "step_time_after": 282.0,
+      "step_time_before": 281.0,
+      "time": 281.0,
+      "uid": 8
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 283.0,
+      "step_time_before": 282.0,
+      "time": 283.0,
+      "uid": 21
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 284.0,
+      "step_time_before": 283.0,
+      "time": 284.0,
+      "uid": 18
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 312.0,
+      "step_time_before": 311.0,
+      "time": 312.0,
+      "uid": 15
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 324.0,
+      "step_time_before": 323.0,
+      "time": 324.0,
+      "uid": 17
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 342.0,
+      "step_time_before": 341.0,
+      "time": 342.0,
+      "uid": 15
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 342.0,
+      "step_time_before": 341.0,
+      "time": 342.0,
+      "uid": 6
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 343.0,
+      "step_time_before": 342.0,
+      "time": 343.0,
+      "uid": 21
+    },
+    {
+      "assigned_lz": 1,
+      "committed_plan_end_time": 438.023641316096,
+      "committed_plan_id": "fb92f131-aa63-4f90-8ec7-b73c25b1d7f5",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 347.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        -380.4125473426479,
+        123.6377524232695,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.39547004471157804,
+      "step_time_after": 348.0,
+      "step_time_before": 347.0,
+      "time": 347.0,
+      "uid": 10
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 354.0,
+      "step_time_before": 353.0,
+      "time": 354.0,
+      "uid": 17
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 391.0,
+      "step_time_before": 390.0,
+      "time": 391.0,
+      "uid": 9
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 396.0,
+      "step_time_before": 395.0,
+      "time": 396.0,
+      "uid": 8
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 401.0,
+      "step_time_before": 400.0,
+      "time": 401.0,
+      "uid": 9
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 402.0,
+      "step_time_before": 401.0,
+      "time": 402.0,
+      "uid": 6
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 426.0,
+      "step_time_before": 425.0,
+      "time": 426.0,
+      "uid": 19
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 439.0,
+      "step_time_before": 438.0,
+      "time": 439.0,
+      "uid": 10
+    },
+    {
+      "assigned_lz": 4,
+      "committed_plan_end_time": 541.4704518564322,
+      "committed_plan_id": "04824e47-17fd-4063-ac5b-7c660e93954e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 453.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        383.5963318405921,
+        113.37483935354604,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.45168967101873414,
+      "step_time_after": 454.0,
+      "step_time_before": 453.0,
+      "time": 453.0,
+      "uid": 1
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 469.0,
+      "step_time_before": 468.0,
+      "time": 469.0,
+      "uid": 10
+    },
+    {
+      "assigned_lz": 1,
+      "committed_plan_end_time": 527.6662855187882,
+      "committed_plan_id": "0661aa64-50eb-4713-8ccc-8ba916f411d2",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 468.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        62.500789869837526,
+        -189.98329206971442,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.39944753360256724,
+      "step_time_after": 469.0,
+      "step_time_before": 468.0,
+      "time": 468.0,
+      "uid": 0
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 516.0,
+      "step_time_before": 515.0,
+      "time": 516.0,
+      "uid": 8
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 528.0,
+      "step_time_before": 527.0,
+      "time": 528.0,
+      "uid": 0
+    },
+    {
+      "assigned_lz": 2,
+      "committed_plan_end_time": 625.4088130936237,
+      "committed_plan_id": "fb160ca2-8b2c-40b8-a8cd-92c9667df21e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 529.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        338.4845394200672,
+        213.1389607124539,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.35333132050414556,
+      "step_time_after": 530.0,
+      "step_time_before": 529.0,
+      "time": 529.0,
+      "uid": 13
+    },
+    {
+      "assigned_lz": 5,
+      "committed_plan_end_time": 589.9154898118124,
+      "committed_plan_id": "449a3ec2-cbcf-4662-93d3-2e02307226a3",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 535.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        169.44400908956268,
+        -106.24842485258874,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.3999398194104299,
+      "step_time_after": 536.0,
+      "step_time_before": 535.0,
+      "time": 535.0,
+      "uid": 14
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 542.0,
+      "step_time_before": 541.0,
+      "time": 542.0,
+      "uid": 1
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 546.0,
+      "step_time_before": 545.0,
+      "time": 546.0,
+      "uid": 19
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 558.0,
+      "step_time_before": 557.0,
+      "time": 558.0,
+      "uid": 0
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 572.0,
+      "step_time_before": 571.0,
+      "time": 572.0,
+      "uid": 1
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 590.0,
+      "step_time_before": 589.0,
+      "time": 590.0,
+      "uid": 14
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 620.0,
+      "step_time_before": 619.0,
+      "time": 620.0,
+      "uid": 14
+    },
+    {
+      "assigned_lz": 5,
+      "committed_plan_end_time": 709.1975376891775,
+      "committed_plan_id": "6e028903-3fbc-446c-a836-600dfa4607fb",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 622.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_middle",
+      "position_at_commit": [
+        260.374149740931,
+        -303.65325973334654,
+        70.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "middle",
+      "soc_at_commit": 0.4744270669212189,
+      "step_time_after": 623.0,
+      "step_time_before": 622.0,
+      "time": 622.0,
+      "uid": 2
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 626.0,
+      "step_time_before": 625.0,
+      "time": 626.0,
+      "uid": 13
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 631.0,
+      "step_time_before": 630.0,
+      "time": 631.0,
+      "uid": 7
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 641.0,
+      "step_time_before": 640.0,
+      "time": 641.0,
+      "uid": 7
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 656.0,
+      "step_time_before": 655.0,
+      "time": 656.0,
+      "uid": 13
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 686.0,
+      "step_time_before": 685.0,
+      "time": 686.0,
+      "uid": 23
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 710.0,
+      "step_time_before": 709.0,
+      "time": 710.0,
+      "uid": 2
+    },
+    {
+      "assigned_lz": 4,
+      "committed_plan_end_time": 775.8443555368267,
+      "committed_plan_id": "56d72691-b004-485e-bc2b-cec15d22797e",
+      "committed_plan_mode": "emergency_landing",
+      "committed_plan_start_time": 717.0,
+      "kind": "emergency_departure",
+      "phase_after_commit": "emergency_landing",
+      "phase_before_commit": "ring_inner",
+      "position_at_commit": [
+        -178.42991141818436,
+        90.348031031666,
+        40.0
+      ],
+      "ring_role_after_commit": null,
+      "ring_role_before_commit": "inner",
+      "soc_at_commit": 0.36406577941934193,
+      "step_time_after": 718.0,
+      "step_time_before": 717.0,
+      "time": 717.0,
+      "uid": 5
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 740.0,
+      "step_time_before": 739.0,
+      "time": 740.0,
+      "uid": 2
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 746.0,
+      "step_time_before": 745.0,
+      "time": 746.0,
+      "uid": 23
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 776.0,
+      "step_time_before": 775.0,
+      "time": 776.0,
+      "uid": 5
+    },
+    {
+      "kind": "completed",
+      "step_time_after": 806.0,
+      "step_time_before": 805.0,
+      "time": 806.0,
+      "uid": 5
+    }
+  ],
+  "ledger_outcomes": {
+    "0": "emergency_landed",
+    "1": "emergency_landed",
+    "10": "emergency_landed",
+    "11": "failed_energy",
+    "12": "failed_energy",
+    "13": "emergency_landed",
+    "14": "emergency_landed",
+    "15": "completed",
+    "16": "completed",
+    "17": "completed",
+    "18": "completed",
+    "19": "completed",
+    "2": "emergency_landed",
+    "20": "completed",
+    "21": "completed",
+    "22": "completed",
+    "23": "completed",
+    "24": "completed",
+    "25": "completed",
+    "26": "completed",
+    "27": "completed",
+    "28": "completed",
+    "29": "completed",
+    "3": "failed_energy",
+    "4": "failed_energy",
+    "5": "emergency_landed",
+    "6": "completed",
+    "7": "completed",
+    "8": "emergency_landed",
+    "9": "completed"
+  },
+  "outcome_counts": {
+    "completed": 18,
+    "emergency_landed": 8,
+    "failed_energy": 4
+  },
+  "run": {
+    "active_uids": [],
+    "error": null,
+    "queue_size": 0,
+    "resolved_count": 30,
+    "service_uids": [],
+    "sim_time": 1364.0,
+    "steps": 1364,
+    "stop_reason": "terminal",
+    "wall_seconds": 96.88837209995836
+  },
+  "safety": {
+    "collision_events": 0,
+    "hard_separation_violations": 0,
+    "nmac_violations": 0,
+    "per_step_actual_release_calls_recorded": true,
+    "safety_decision_field": "env.last_safety_decisions sampled only alongside current info.release_decisions"
+  },
+  "schema_version": "flow-baseline-841301-v1",
+  "seed": 841301,
+  "telemetry": {
+    "admissibility_rejections": 0,
+    "arrivals_admitted": 0,
+    "checked_executed_plan_hash_mismatches": 0,
+    "checked_executed_plan_matches": 59,
+    "checked_executed_plan_samples": 19250,
+    "collision_exposure_steps": 0,
+    "collisions": 0,
+    "emergency_attempts": 501,
+    "emergency_blocked_dynamics": 0,
+    "emergency_blocked_energy": 1756,
+    "emergency_blocked_lz": 2,
+    "emergency_blocked_safety": 332,
+    "emergency_blocked_slack": 0,
+    "emergency_committed": 8,
+    "emergency_energy_guard_rejections": 402,
+    "emergency_lz_priority_rejections": 973,
+    "emergency_touchdowns": 8,
+    "energy_reachability_checks": 2427,
+    "energy_reachability_negative_budgets": 1502,
+    "final_busy_steps": 528,
+    "final_concurrency_step_sum": 995,
+    "final_overcapacity_steps": 0,
+    "flow_emergency_redirects": 0,
+    "free_lz_step_sum": 5332,
+    "future_release_reservations": 0,
+    "geometry_updates": 0,
+    "hard_separation_exposure_steps": 0,
+    "hard_separation_violations": 0,
+    "joint_backup_uses": 0,
+    "joint_safety_checks": 55855,
+    "joint_safety_corrections": 0,
+    "joint_safety_fail_closed": 0,
+    "joint_search_candidates": 0,
+    "joint_search_components": 0,
+    "joint_search_pruned": 0,
+    "joint_unrecoverable_components": 0,
+    "lz_assignment_distance_sum": 3378.394370102746,
+    "lz_assignment_regret_sum": 680.1741165523929,
+    "lz_assignments": 18,
+    "lz_idle_with_inner_demand_steps": 1166,
+    "lz_nearest_distance_sum": 2698.2202535503543,
+    "max_concurrent_final": 3,
+    "merge_time_modified": 0,
+    "minimum_actual_separation": 81.3534283991422,
+    "minimum_swept_separation": 81.16912993354633,
+    "nmac": 0,
+    "nmac_exposure_steps": 0,
+    "operational_buffer_entries": 0,
+    "operational_buffer_exposure_steps": 0,
+    "operational_buffer_takeovers": 0,
+    "recursive_feasibility_checks": 1364,
+    "recursive_feasibility_rejections": 0,
+    "release_approved": 51,
+    "release_rejected": 13692,
+    "repair_candidates_checked": 2427,
+    "repair_used": 0,
+    "runtime_shortlist_candidates_checked": 1188,
+    "runtime_shortlist_exhausted": 1137,
+    "runtime_shortlist_fallback_selected": 0,
+    "runtime_traffic_interventions": 0,
+    "runtime_traffic_repair_magnitude": 0.0,
+    "safety_interventions": 332,
+    "shield_broad_phase_rejected": 69258,
+    "shield_correction_magnitude": 0.0,
+    "shield_fail_closed": 0,
+    "shield_interventions": 0,
+    "shield_narrow_phase_checked": 0,
+    "trajectory_infeasible_candidates": 0
+  },
+  "touchdown_events": [
+    {
+      "kind": "touchdown",
+      "step_time_after": 57.0,
+      "step_time_before": 56.0,
+      "time": 57.0,
+      "uid": 28
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 61.0,
+      "step_time_before": 60.0,
+      "time": 61.0,
+      "uid": 25
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 85.0,
+      "step_time_before": 84.0,
+      "time": 85.0,
+      "uid": 26
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 116.0,
+      "step_time_before": 115.0,
+      "time": 116.0,
+      "uid": 27
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 132.0,
+      "step_time_before": 131.0,
+      "time": 132.0,
+      "uid": 29
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 161.0,
+      "step_time_before": 160.0,
+      "time": 161.0,
+      "uid": 20
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 190.0,
+      "step_time_before": 189.0,
+      "time": 190.0,
+      "uid": 24
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 223.0,
+      "step_time_before": 222.0,
+      "time": 223.0,
+      "uid": 16
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 229.0,
+      "step_time_before": 228.0,
+      "time": 229.0,
+      "uid": 22
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 254.0,
+      "step_time_before": 253.0,
+      "time": 254.0,
+      "uid": 18
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 283.0,
+      "step_time_before": 282.0,
+      "time": 283.0,
+      "uid": 21
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 312.0,
+      "step_time_before": 311.0,
+      "time": 312.0,
+      "uid": 15
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 324.0,
+      "step_time_before": 323.0,
+      "time": 324.0,
+      "uid": 17
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 342.0,
+      "step_time_before": 341.0,
+      "time": 342.0,
+      "uid": 6
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 391.0,
+      "step_time_before": 390.0,
+      "time": 391.0,
+      "uid": 9
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 396.0,
+      "step_time_before": 395.0,
+      "time": 396.0,
+      "uid": 8
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 426.0,
+      "step_time_before": 425.0,
+      "time": 426.0,
+      "uid": 19
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 439.0,
+      "step_time_before": 438.0,
+      "time": 439.0,
+      "uid": 10
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 528.0,
+      "step_time_before": 527.0,
+      "time": 528.0,
+      "uid": 0
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 542.0,
+      "step_time_before": 541.0,
+      "time": 542.0,
+      "uid": 1
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 590.0,
+      "step_time_before": 589.0,
+      "time": 590.0,
+      "uid": 14
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 626.0,
+      "step_time_before": 625.0,
+      "time": 626.0,
+      "uid": 13
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 631.0,
+      "step_time_before": 630.0,
+      "time": 631.0,
+      "uid": 7
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 686.0,
+      "step_time_before": 685.0,
+      "time": 686.0,
+      "uid": 23
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 710.0,
+      "step_time_before": 709.0,
+      "time": 710.0,
+      "uid": 2
+    },
+    {
+      "kind": "touchdown",
+      "step_time_after": 776.0,
+      "step_time_before": 775.0,
+      "time": 776.0,
+      "uid": 5
+    }
+  ],
+  "uid_3_4": {
+    "candidate_reject_evidence_while_soc_gt_0_40": {
+      "3": {
+        "candidate_evaluation_call_count": 33,
+        "candidate_pair_reason_counts": {
+          "HEADWAY": 1,
+          "NO_MERGE_GAP": 4,
+          "PREDICTED_SEPARATION": 26,
+          "SOC": 2,
+          "dynamics_unreachable_merge_time": 25,
+          "emergency_energy_guard": 2,
+          "merge_slot_retime_conflict": 1,
+          "predicted_holder_reachable_tube": 3,
+          "predicted_post_plan_holder_reachable_tube": 1,
+          "predicted_separation": 1
+        },
+        "decision_counts": {
+          "emergency_energy_guard": 2,
+          "safety_reject": 31
+        },
+        "earliest_by_reason": {
+          "HEADWAY": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "HEADWAY",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "merge_slot_retime_conflict"
+            ],
+            "soc": 0.40852356164719034,
+            "time": 271.0
+          },
+          "NO_MERGE_GAP": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.589190228313857,
+            "time": 0.0
+          },
+          "PREDICTED_SEPARATION": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.571190228313857,
+            "time": 27.0
+          },
+          "SOC": {
+            "decision": "emergency_energy_guard",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "SOC",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "emergency_energy_guard"
+            ],
+            "soc": 0.517190228313857,
+            "time": 108.0
+          },
+          "dynamics_unreachable_merge_time": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.571190228313857,
+            "time": 27.0
+          },
+          "emergency_energy_guard": {
+            "decision": "emergency_energy_guard",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "SOC",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "emergency_energy_guard"
+            ],
+            "soc": 0.517190228313857,
+            "time": 108.0
+          },
+          "merge_slot_retime_conflict": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "HEADWAY",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "merge_slot_retime_conflict"
+            ],
+            "soc": 0.40852356164719034,
+            "time": 271.0
+          },
+          "predicted_holder_reachable_tube": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.589190228313857,
+            "time": 0.0
+          },
+          "predicted_post_plan_holder_reachable_tube": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "soc": 0.41452356164719034,
+            "time": 262.0
+          },
+          "predicted_separation": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "soc": 0.42052356164719035,
+            "time": 253.0
+          }
+        },
+        "first_examples": [
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.589190228313857,
+            "time": 0.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.583190228313857,
+            "time": 9.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.577190228313857,
+            "time": 18.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.571190228313857,
+            "time": 27.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.565190228313857,
+            "time": 36.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.559190228313857,
+            "time": 45.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.553190228313857,
+            "time": 54.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.547190228313857,
+            "time": 63.0
+          }
+        ],
+        "primary_blocker_counts": {},
+        "reason_time_ranges": {
+          "HEADWAY": {
+            "first_time": 271.0,
+            "last_time": 271.0
+          },
+          "NO_MERGE_GAP": {
+            "first_time": 0.0,
+            "last_time": 262.0
+          },
+          "PREDICTED_SEPARATION": {
+            "first_time": 27.0,
+            "last_time": 280.0
+          },
+          "SOC": {
+            "first_time": 108.0,
+            "last_time": 122.0
+          },
+          "dynamics_unreachable_merge_time": {
+            "first_time": 27.0,
+            "last_time": 280.0
+          },
+          "emergency_energy_guard": {
+            "first_time": 108.0,
+            "last_time": 122.0
+          },
+          "merge_slot_retime_conflict": {
+            "first_time": 271.0,
+            "last_time": 271.0
+          },
+          "predicted_holder_reachable_tube": {
+            "first_time": 0.0,
+            "last_time": 18.0
+          },
+          "predicted_post_plan_holder_reachable_tube": {
+            "first_time": 262.0,
+            "last_time": 262.0
+          },
+          "predicted_separation": {
+            "first_time": 253.0,
+            "last_time": 253.0
+          }
+        },
+        "secondary_constraint_counts": {},
+        "soc_gt_0_40_actual_release_call_count": 284
+      },
+      "4": {
+        "candidate_evaluation_call_count": 43,
+        "candidate_pair_reason_counts": {
+          "HEADWAY": 3,
+          "NO_MERGE_GAP": 5,
+          "PREDICTED_SEPARATION": 34,
+          "SOC": 1,
+          "dynamics_unreachable_merge_time": 33,
+          "emergency_energy_guard": 1,
+          "merge_slot_retime_conflict": 3,
+          "predicted_holder_reachable_tube": 5,
+          "predicted_separation": 1
+        },
+        "decision_counts": {
+          "emergency_energy_guard": 1,
+          "safety_reject": 42
+        },
+        "earliest_by_reason": {
+          "HEADWAY": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "HEADWAY",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "merge_slot_retime_conflict"
+            ],
+            "soc": 0.47219702812591224,
+            "time": 266.0
+          },
+          "NO_MERGE_GAP": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.6435303614592456,
+            "time": 9.0
+          },
+          "PREDICTED_SEPARATION": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6495303614592456,
+            "time": 0.0
+          },
+          "SOC": {
+            "decision": "emergency_energy_guard",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "SOC",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "emergency_energy_guard"
+            ],
+            "soc": 0.47553036145924554,
+            "time": 261.0
+          },
+          "dynamics_unreachable_merge_time": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6495303614592456,
+            "time": 0.0
+          },
+          "emergency_energy_guard": {
+            "decision": "emergency_energy_guard",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "SOC",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "emergency_energy_guard"
+            ],
+            "soc": 0.47553036145924554,
+            "time": 261.0
+          },
+          "merge_slot_retime_conflict": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "HEADWAY",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "merge_slot_retime_conflict"
+            ],
+            "soc": 0.47219702812591224,
+            "time": 266.0
+          },
+          "predicted_holder_reachable_tube": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.6435303614592456,
+            "time": 9.0
+          },
+          "predicted_separation": {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "soc": 0.5715303614592455,
+            "time": 117.0
+          }
+        },
+        "first_examples": [
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6495303614592456,
+            "time": 0.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "NO_MERGE_GAP",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube"
+            ],
+            "soc": 0.6435303614592456,
+            "time": 9.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6375303614592456,
+            "time": 18.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6315303614592456,
+            "time": 27.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6255303614592456,
+            "time": 36.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6195303614592456,
+            "time": 45.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6135303614592456,
+            "time": 54.0
+          },
+          {
+            "decision": "safety_reject",
+            "final_lz_pairs_checked": [],
+            "phase": "ring_outer",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "ring_role": "outer",
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time"
+            ],
+            "soc": 0.6075303614592455,
+            "time": 63.0
+          }
+        ],
+        "primary_blocker_counts": {},
+        "reason_time_ranges": {
+          "HEADWAY": {
+            "first_time": 266.0,
+            "last_time": 311.0
+          },
+          "NO_MERGE_GAP": {
+            "first_time": 9.0,
+            "last_time": 374.0
+          },
+          "PREDICTED_SEPARATION": {
+            "first_time": 0.0,
+            "last_time": 356.0
+          },
+          "SOC": {
+            "first_time": 261.0,
+            "last_time": 261.0
+          },
+          "dynamics_unreachable_merge_time": {
+            "first_time": 0.0,
+            "last_time": 356.0
+          },
+          "emergency_energy_guard": {
+            "first_time": 261.0,
+            "last_time": 261.0
+          },
+          "merge_slot_retime_conflict": {
+            "first_time": 266.0,
+            "last_time": 311.0
+          },
+          "predicted_holder_reachable_tube": {
+            "first_time": 9.0,
+            "last_time": 374.0
+          },
+          "predicted_separation": {
+            "first_time": 117.0,
+            "last_time": 117.0
+          }
+        },
+        "secondary_constraint_counts": {},
+        "soc_gt_0_40_actual_release_call_count": 375
+      }
+    },
+    "first_low_soc_at_or_below_0_40": {
+      "3": {
+        "acceleration": [
+          -0.5037034298696363,
+          0.6300745716569393,
+          0.0
+        ],
+        "arrival_id": 3,
+        "assigned_gate": 1,
+        "assigned_lz": null,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_capacity": 1500.0,
+        "energy_consumed": 284.0,
+        "energy_remaining": 599.7853424707855,
+        "merge_reservation_id": null,
+        "phase": "ring_outer",
+        "phase_entry_time": 0.0,
+        "position": [
+          374.6554437046882,
+          -468.6505078440044,
+          100.0
+        ],
+        "ring_progress": 5.386785087589766,
+        "ring_role": "outer",
+        "soc": 0.3998568949805237,
+        "speed": 22.0,
+        "time": 284.0,
+        "trajectory_plan_end_time": null,
+        "trajectory_plan_id": null,
+        "trajectory_plan_mode": null,
+        "trajectory_plan_start_time": null,
+        "trajectory_plan_target_phase": null,
+        "uid": 3,
+        "velocity": [
+          17.18385195428016,
+          13.7373662691719,
+          0.0
+        ]
+      },
+      "4": {
+        "acceleration": [
+          0.7747035224966674,
+          -0.22482340479222046,
+          0.0
+        ],
+        "arrival_id": 4,
+        "assigned_gate": 3,
+        "assigned_lz": null,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_capacity": 1500.0,
+        "energy_consumed": 375.0,
+        "energy_remaining": 599.2955421888684,
+        "merge_reservation_id": null,
+        "phase": "ring_outer",
+        "phase_entry_time": 0.0,
+        "position": [
+          -576.2257605347113,
+          167.2240200933871,
+          100.0
+        ],
+        "ring_progress": 2.8591454675555097,
+        "ring_role": "outer",
+        "soc": 0.3995303614592456,
+        "speed": 22.0,
+        "time": 375.0,
+        "trajectory_plan_end_time": null,
+        "trajectory_plan_id": null,
+        "trajectory_plan_mode": null,
+        "trajectory_plan_start_time": null,
+        "trajectory_plan_target_phase": null,
+        "uid": 4,
+        "velocity": [
+          -6.131547403424194,
+          -21.12827788627275,
+          0.0
+        ]
+      }
+    },
+    "latest_10_actual_release_reasons": {
+      "3": [
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 874.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 875.0
+        },
+        {
+          "decision": "emergency_energy_guard",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "SOC",
+          "secondary_constraints": [
+            "emergency_energy_guard"
+          ],
+          "time": 876.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 877.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 878.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 879.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 880.0
+        },
+        {
+          "decision": "emergency_energy_guard",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "SOC",
+          "secondary_constraints": [
+            "emergency_energy_guard"
+          ],
+          "time": 881.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 882.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": null,
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "predicted_separation"
+          ],
+          "time": 883.0
+        }
+      ],
+      "4": [
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 982.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 983.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 984.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 985.0
+        },
+        {
+          "decision": "emergency_energy_guard",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "SOC",
+          "secondary_constraints": [
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard"
+          ],
+          "time": 986.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 987.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 988.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 989.0
+        },
+        {
+          "decision": "safety_wait",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "PREDICTED_SEPARATION",
+          "secondary_constraints": [
+            "approved"
+          ],
+          "time": 990.0
+        },
+        {
+          "decision": "emergency_energy_guard",
+          "final_lz_pairs_checked": [
+            {
+              "lz_id": 3,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 0,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 4,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 1,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 5,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            },
+            {
+              "lz_id": 2,
+              "proposal_rank": 1,
+              "reason": "emergency_energy_guard",
+              "status": "rejected"
+            }
+          ],
+          "primary_blocker": "SOC",
+          "secondary_constraints": [
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard"
+          ],
+          "time": 991.0
+        }
+      ]
+    },
+    "phase_changes": {
+      "3": [
+        {
+          "acceleration": [
+            -0.24927370879579094,
+            -0.7671855898114238,
+            0.0
+          ],
+          "arrival_id": 3,
+          "assigned_gate": 1,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 0.0,
+          "energy_remaining": 883.7853424707855,
+          "merge_reservation_id": null,
+          "phase": "ring_outer",
+          "phase_entry_time": 0.0,
+          "position": [
+            185.41019662496848,
+            570.6339097770921,
+            100.0
+          ],
+          "ring_progress": 1.2566370614359172,
+          "ring_role": "outer",
+          "soc": 0.589190228313857,
+          "speed": 22.0,
+          "time": 0.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 3,
+          "velocity": [
+            -20.923243358493377,
+            6.798373876248844,
+            0.0
+          ]
+        }
+      ],
+      "4": [
+        {
+          "acceleration": [
+            0.08431962703590702,
+            -0.8022476622637406,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 0.0,
+          "energy_remaining": 974.2955421888684,
+          "merge_reservation_id": null,
+          "phase": "ring_outer",
+          "phase_entry_time": 0.0,
+          "position": [
+            -62.717077960592,
+            596.7131372209641,
+            100.0
+          ],
+          "ring_progress": 1.6755160819145563,
+          "ring_role": "outer",
+          "soc": 0.6495303614592456,
+          "speed": 22.0,
+          "time": 0.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            -21.879481698102015,
+            -2.299626191888373,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            0.30435193334320526,
+            0.8014333471276338,
+            -0.007476436743171007
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": true,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 416.0,
+          "energy_remaining": 558.2955421888684,
+          "merge_reservation_id": "b5bdb153-6e6f-4ac3-b02a-987aa5be6fd9",
+          "phase": "transfer_o2m",
+          "phase_entry_time": 415.0,
+          "position": [
+            -205.66910844754236,
+            -563.6186780487494,
+            99.99810860098165
+          ],
+          "ring_progress": 4.3258121342221925,
+          "ring_role": null,
+          "soc": 0.3721970281259122,
+          "speed": 22.011990204106056,
+          "trajectory_plan_end_time": 462.5992544321041,
+          "trajectory_plan_id": "6d6dd929-3479-454f-93d2-cac15a8c0a37",
+          "trajectory_plan_mode": "ring_transfer",
+          "trajectory_plan_start_time": 415.0,
+          "trajectory_plan_target_phase": "ring_middle",
+          "uid": 4,
+          "velocity": [
+            20.691395131970765,
+            -7.5095858899354395,
+            -0.005760796820086783
+          ]
+        },
+        {
+          "acceleration": [
+            -0.9955187021473612,
+            -0.09456486490675954,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 454.80754241695814,
+          "energy_remaining": 519.4879997719081,
+          "merge_reservation_id": null,
+          "phase": "ring_middle",
+          "phase_entry_time": 462.5992544321041,
+          "position": [
+            398.20748085894445,
+            37.82594596270382,
+            70.0
+          ],
+          "ring_progress": 0.09470637637664224,
+          "ring_role": "middle",
+          "soc": 0.34632533318127207,
+          "speed": 20.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            -1.8912972981351908,
+            19.910374042947222,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.8283121898802489,
+            -0.5602649862239162,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": true,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 464.80754241695814,
+          "energy_remaining": 509.4879997719081,
+          "merge_reservation_id": "e00d01db-b8c3-4ef2-a690-2f89449a9730",
+          "phase": "transfer_m2i",
+          "phase_entry_time": 472.0,
+          "position": [
+            331.32487595209955,
+            224.10599448956646,
+            70.0
+          ],
+          "ring_progress": 0.5447063763766425,
+          "ring_role": null,
+          "soc": 0.3396586665146054,
+          "speed": 19.99997938691636,
+          "trajectory_plan_end_time": 545.5180522596803,
+          "trajectory_plan_id": "f7aa2883-171e-4a21-acc8-f3ad505b20bd",
+          "trajectory_plan_mode": "ring_transfer",
+          "trajectory_plan_start_time": 472.0,
+          "trajectory_plan_target_phase": "ring_inner",
+          "uid": 4,
+          "velocity": [
+            -11.205299724478323,
+            16.566243797604976,
+            0.0
+          ]
+        },
+        {
+          "acceleration": [
+            -0.1999452162295694,
+            1.2642871155346442,
+            0.0
+          ],
+          "arrival_id": 4,
+          "assigned_gate": 3,
+          "assigned_lz": null,
+          "committed": false,
+          "emergency_landing": false,
+          "energy_capacity": 1500.0,
+          "energy_consumed": 528.9443758407033,
+          "energy_remaining": 445.3511663481639,
+          "merge_reservation_id": null,
+          "phase": "ring_inner",
+          "phase_entry_time": 545.5180522596803,
+          "position": [
+            31.241440035870216,
+            -197.54486180228815,
+            40.0
+          ],
+          "ring_progress": 4.869238519508868,
+          "ring_role": "inner",
+          "soc": 0.2969007775654426,
+          "speed": 16.0,
+          "trajectory_plan_end_time": null,
+          "trajectory_plan_id": null,
+          "trajectory_plan_mode": null,
+          "trajectory_plan_start_time": null,
+          "trajectory_plan_target_phase": null,
+          "uid": 4,
+          "velocity": [
+            15.803588944183053,
+            2.4993152028696173,
+            0.0
+          ]
+        }
+      ]
+    },
+    "release_counts": {
+      "3": {
+        "decision_counts": {
+          "emergency_energy_guard": 116,
+          "safety_reject": 34,
+          "safety_wait": 734
+        },
+        "primary_blocker_counts": {
+          "HEADWAY": 1,
+          "NO_MERGE_GAP": 147,
+          "PREDICTED_SEPARATION": 620,
+          "SOC": 116
+        },
+        "safety_decision_after_call_counts": {
+          "predicted_holder_reachable_tube": 162,
+          "predicted_separation": 614
+        },
+        "secondary_constraint_counts": {
+          "dynamics_unreachable_merge_time": 26,
+          "emergency_energy_guard": 116,
+          "merge_slot_retime_conflict": 1,
+          "predicted_holder_reachable_tube": 146,
+          "predicted_post_plan_holder_reachable_tube": 1,
+          "predicted_separation": 498
+        }
+      },
+      "4": {
+        "decision_counts": {
+          "approved": 2,
+          "emergency_energy_guard": 92,
+          "plan_active": 120,
+          "safety_reject": 46,
+          "safety_wait": 732
+        },
+        "primary_blocker_counts": {
+          "HEADWAY": 3,
+          "NO_MERGE_GAP": 44,
+          "PREDICTED_SEPARATION": 731,
+          "SOC": 92
+        },
+        "safety_decision_after_call_counts": {
+          "approved": 568,
+          "predicted_holder_reachable_tube": 39,
+          "predicted_separation": 124
+        },
+        "secondary_constraint_counts": {
+          "approved": 356,
+          "dynamics_unreachable_merge_time": 33,
+          "emergency_energy_guard": 423,
+          "merge_slot_retime_conflict": 3,
+          "predicted_holder_reachable_tube": 45,
+          "predicted_post_plan_holder_reachable_tube": 1,
+          "predicted_separation": 110
+        }
+      }
+    }
+  }
+}

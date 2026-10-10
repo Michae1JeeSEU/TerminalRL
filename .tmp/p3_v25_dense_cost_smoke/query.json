@@ -1,0 +1,415 @@
+{
+  "uid": "0",
+  "joint_index": 13,
+  "audit": [
+    {
+      "rank": 0,
+      "joint_index": 13,
+      "decoded": {
+        "joint_action_index": 13,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 13,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": true,
+      "reason": "certified",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    }
+  ],
+  "elapsed_seconds": 2.0470000002533197,
+  "candidates": [
+    {
+      "seconds": 2.0470000002533197,
+      "reason": null,
+      "action": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plan_mode": "ring_transfer",
+      "duration": 70.96655132919612,
+      "points": 166,
+      "segments": 165
+    }
+  ],
+  "components": [
+    {
+      "component": "ring_transfer",
+      "seconds": 1.625
+    },
+    {
+      "component": "filter_plan",
+      "seconds": 0.35900000017136335
+    }
+  ],
+  "profile_top": [
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\training\\v4_1_joint_teacher.py",
+      "line": 71,
+      "function": "teacher_joint_expert_v4_1",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 4.92e-05,
+      "cumulative_seconds": 2.0515442
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\scripts\\diagnose_p3_expert_cost.py",
+      "line": 62,
+      "function": "candidate",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 1.9900000000000003e-05,
+      "cumulative_seconds": 2.0514536000000003
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\envs\\parallel_env.py",
+      "line": 1014,
+      "function": "_candidate_plan",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 5.9000000000000004e-05,
+      "cumulative_seconds": 2.0514306
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\scripts\\diagnose_p3_expert_cost.py",
+      "line": 54,
+      "function": "wrapped",
+      "calls": 2,
+      "primitive_calls": 2,
+      "own_seconds": 4.6500000000000005e-05,
+      "cumulative_seconds": 1.9862668
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 894,
+      "function": "ring_transfer",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.0006245000000000001,
+      "cumulative_seconds": 1.6262557000000002
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 721,
+      "function": "_ring_transfer_v3",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.0004995,
+      "cumulative_seconds": 1.6256312000000002
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 777,
+      "function": "build",
+      "calls": 17,
+      "primitive_calls": 17,
+      "own_seconds": 0.00037820000000000003,
+      "cumulative_seconds": 1.5276562
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 362,
+      "function": "prime_quintic_bounds",
+      "calls": 41,
+      "primitive_calls": 41,
+      "own_seconds": 0.0697637,
+      "cumulative_seconds": 0.9828651
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 766,
+      "function": "state_at",
+      "calls": 18,
+      "primitive_calls": 18,
+      "own_seconds": 0.000111,
+      "cumulative_seconds": 0.914698
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 550,
+      "function": "ring_hold_points",
+      "calls": 18,
+      "primitive_calls": 18,
+      "own_seconds": 0.0007651,
+      "cumulative_seconds": 0.9145699
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 493,
+      "function": "_v3_ring_hold_points",
+      "calls": 18,
+      "primitive_calls": 18,
+      "own_seconds": 0.0026982,
+      "cumulative_seconds": 0.9138048000000001
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+      "line": 483,
+      "function": "parameterize",
+      "calls": 19,
+      "primitive_calls": 19,
+      "own_seconds": 6.94e-05,
+      "cumulative_seconds": 0.7049294
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+      "line": 437,
+      "function": "_parameterize_v3",
+      "calls": 19,
+      "primitive_calls": 19,
+      "own_seconds": 0.0007611,
+      "cumulative_seconds": 0.70486
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+      "line": 270,
+      "function": "_v3_candidate",
+      "calls": 95,
+      "primitive_calls": 95,
+      "own_seconds": 0.0032678000000000004,
+      "cumulative_seconds": 0.7005476
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+      "line": 202,
+      "function": "_v3_segments_feasible",
+      "calls": 15,
+      "primitive_calls": 15,
+      "own_seconds": 0.027503200000000002,
+      "cumulative_seconds": 0.5938751
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 276,
+      "function": "_batch_real_roots_in_unit_interval",
+      "calls": 205,
+      "primitive_calls": 205,
+      "own_seconds": 0.0521678,
+      "cumulative_seconds": 0.41862000000000005
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\safety_filter.py",
+      "line": 464,
+      "function": "filter_plan",
+      "calls": 1,
+      "primitive_calls": 1,
+      "own_seconds": 0.0006703000000000001,
+      "cumulative_seconds": 0.3599604
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 73,
+      "function": "_trim_polynomial",
+      "calls": 34069,
+      "primitive_calls": 34069,
+      "own_seconds": 0.1396619,
+      "cumulative_seconds": 0.3246735
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 164,
+      "function": "from_boundary",
+      "calls": 4867,
+      "primitive_calls": 4867,
+      "own_seconds": 0.0736064,
+      "cumulative_seconds": 0.3205887
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+      "line": 530,
+      "function": "<genexpr>",
+      "calls": 3391,
+      "primitive_calls": 3391,
+      "own_seconds": 0.0044938,
+      "cumulative_seconds": 0.23820300000000003
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 208,
+      "function": "sample",
+      "calls": 4468,
+      "primitive_calls": 4468,
+      "own_seconds": 0.0206835,
+      "cumulative_seconds": 0.20560930000000002
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 119,
+      "function": "_dot_polynomial",
+      "calls": 9734,
+      "primitive_calls": 9734,
+      "own_seconds": 0.0430076,
+      "cumulative_seconds": 0.1975151
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 89,
+      "function": "_wrapreduction_any_all",
+      "calls": 83121,
+      "primitive_calls": 83121,
+      "own_seconds": 0.1023429,
+      "cumulative_seconds": 0.196584
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "calls": 166865,
+      "primitive_calls": 166865,
+      "own_seconds": 0.1668889,
+      "cumulative_seconds": 0.1668889
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2589,
+      "function": "all",
+      "calls": 53434,
+      "primitive_calls": 53434,
+      "own_seconds": 0.022526,
+      "cumulative_seconds": 0.16511220000000001
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 3052,
+      "function": "max",
+      "calls": 58419,
+      "primitive_calls": 58419,
+      "own_seconds": 0.029483500000000003,
+      "cumulative_seconds": 0.1435499
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\vehicle_dynamics.py",
+      "line": 173,
+      "function": "ring_motion_step",
+      "calls": 11598,
+      "primitive_calls": 11598,
+      "own_seconds": 0.059037400000000004,
+      "cumulative_seconds": 0.1426703
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\safety_filter.py",
+      "line": 299,
+      "function": "holder_reachable_tube",
+      "calls": 15,
+      "primitive_calls": 15,
+      "own_seconds": 0.0112387,
+      "cumulative_seconds": 0.1419601
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 69,
+      "function": "_wrapreduction",
+      "calls": 73088,
+      "primitive_calls": 73088,
+      "own_seconds": 0.0557619,
+      "cumulative_seconds": 0.1416658
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 34,
+      "function": "_vector3",
+      "calls": 29202,
+      "primitive_calls": 29202,
+      "own_seconds": 0.0381209,
+      "cumulative_seconds": 0.11622510000000001
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\vehicle_dynamics.py",
+      "line": 319,
+      "function": "validate_trajectory",
+      "calls": 8,
+      "primitive_calls": 8,
+      "own_seconds": 0.0036657,
+      "cumulative_seconds": 0.1138683
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 65,
+      "function": "_evaluate_polynomial",
+      "calls": 13642,
+      "primitive_calls": 13642,
+      "own_seconds": 0.1004863,
+      "cumulative_seconds": 0.1081103
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 326,
+      "function": "_batch_points",
+      "calls": 205,
+      "primitive_calls": 205,
+      "own_seconds": 0.012584600000000001,
+      "cumulative_seconds": 0.10567190000000001
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 110,
+      "function": "_unique_unit_points",
+      "calls": 24335,
+      "primitive_calls": 24335,
+      "own_seconds": 0.0248132,
+      "cumulative_seconds": 0.0892552
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\polynomial_trajectory.py",
+      "line": 153,
+      "function": "__post_init__",
+      "calls": 4867,
+      "primitive_calls": 4867,
+      "own_seconds": 0.0068243,
+      "cumulative_seconds": 0.08469900000000001
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+      "line": 335,
+      "function": "<genexpr>",
+      "calls": 1321,
+      "primitive_calls": 1321,
+      "own_seconds": 0.0025144,
+      "cumulative_seconds": 0.0784874
+    },
+    {
+      "file": "D:\\7_codespace\\terminal\\terminal_marl\\core\\safety_filter.py",
+      "line": 135,
+      "function": "_tube_distances_with_margin",
+      "calls": 15,
+      "primitive_calls": 15,
+      "own_seconds": 0.004616,
+      "cumulative_seconds": 0.0772197
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\polynomial\\polynomial.py",
+      "line": 1439,
+      "function": "polycompanion",
+      "calls": 8787,
+      "primitive_calls": 8787,
+      "own_seconds": 0.025874300000000003,
+      "cumulative_seconds": 0.07047310000000001
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\linalg\\_linalg.py",
+      "line": 2623,
+      "function": "norm",
+      "calls": 18793,
+      "primitive_calls": 18793,
+      "own_seconds": 0.03971,
+      "cumulative_seconds": 0.0699739
+    },
+    {
+      "file": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
+      "line": 2477,
+      "function": "any",
+      "calls": 29687,
+      "primitive_calls": 29687,
+      "own_seconds": 0.013168800000000001,
+      "cumulative_seconds": 0.0671666
+    }
+  ]
+}

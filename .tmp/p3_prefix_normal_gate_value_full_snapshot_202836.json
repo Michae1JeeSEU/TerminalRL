@@ -1,0 +1,12 @@
+{
+  "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+  "phase": "full",
+  "status": "RUNNING",
+  "observed_at": "2026-10-01T20:28:38+08:00",
+  "commit": "7e5d531",
+  "server": {"host": "lab-server", "python_pid": 2191437, "parent_pid": 2191436, "cwd": "/home/user/projects/terminal", "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_normal_gate_value_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001", "exe": "/usr/bin/python3.12", "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}, "process_elapsed": "00:14:34", "state": "R"},
+  "bindings": {"runner_sha256": "0a300fbef347bc8b428619d158baf9c85cd0deb3343d213e6b4ca3f0f5084e4d", "protocol_sha256": "086f6e5cc42941cf2e564d7cfcbb44c057d3cdeba0e2936340d6ece80dcd6be6", "preflight_sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8", "pilot_sha256": "b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332", "cell_01_sha256": "ace3e81b49a05011497fd5a3f6cb3a3c90790d6b114a67d41a325c77f509605c", "pilot_reused": true, "new_cells": [2,3,4], "new_branches": 312},
+  "progress": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/progress.json", "server_mtime_epoch": 1790857712, "phase": "full", "status": "RUNNING", "cell_id": 2, "branches_completed": 34, "branches_expected": 104, "continuation_seed": 9303402, "proposal": 6, "elapsed_wall_seconds": 794.5372887710109, "D_known": false},
+  "output": {"root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001", "full_log": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/full_v1.log", "bytes": 0, "server_mtime_epoch": 1790856844}, "full_json": "absent_at_snapshot", "error_json": "absent_at_snapshot", "partial_json": "absent_at_snapshot", "cell_02_json": "absent_at_snapshot", "cell_03_json": "absent_at_snapshot", "cell_04_json": "absent_at_snapshot"},
+  "scope": {"raw_branches": "not_read", "pilot_rerun": false, "full_only": true}
+}

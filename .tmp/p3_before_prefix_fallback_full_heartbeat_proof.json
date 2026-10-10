@@ -1,0 +1,88 @@
+{
+  "status": "RUNNING",
+  "phase": "full",
+  "python_pid": 2145833,
+  "cwd": "/home/user/projects/terminal",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001",
+  "progress": {
+    "cell_id": 4,
+    "absolute_step": 150,
+    "env_now": 150,
+    "generated_request_rows": 21,
+    "active_observation_count": 16,
+    "native_forward_count": 151,
+    "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1"
+  },
+  "completed_cells": {
+    "cell2": {
+      "candidate": {
+        "N": 21,
+        "E": 3,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "wait": 2226.729425704759,
+        "elapsed": 8257,
+        "energy": 6684.560080822824,
+        "raw": 484.4218481583206,
+        "penalty": -12.9
+      },
+      "before_legacy": {
+        "N": 20,
+        "E": 4,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "wait": 3234.6369068496506,
+        "elapsed": 9133,
+        "energy": 7677.921091787695,
+        "raw": 465.58665490460396,
+        "penalty": -16.75
+      },
+      "natural": true,
+      "technical_ok": true,
+      "hard_safety_clear": true,
+      "identity24": true,
+      "new_ids_empty": true,
+      "wall_time_seconds": 141.22948727291077,
+      "sidecar_sha256": "50d07151a27432eeec299fe00d80c5cf2e5f62dc3b04dd3cef58d03a3e2409b0"
+    },
+    "cell3": {
+      "candidate": {
+        "N": 23,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "wait": 2724.385344334738,
+        "elapsed": 8539,
+        "energy": 7230.426847131098,
+        "raw": 501.98070711113314,
+        "penalty": -11.8
+      },
+      "before_legacy": {
+        "N": 22,
+        "E": 2,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "wait": 2667.140927166041,
+        "elapsed": 8369,
+        "energy": 7098.867749409129,
+        "raw": 497.63654049060835,
+        "penalty": -14.3
+      },
+      "natural": true,
+      "technical_ok": true,
+      "hard_safety_clear": true,
+      "identity24": true,
+      "new_ids_empty": true,
+      "wall_time_seconds": 191.2846238054335,
+      "sidecar_sha256": "039009beeda954222a04fa13c816267d49ae37624adc7420fe2d06ecc2210c97"
+    }
+  },
+  "full_json": false,
+  "error_json": false,
+  "full_log_size": 0,
+  "pilot_cell1_reused": true
+}

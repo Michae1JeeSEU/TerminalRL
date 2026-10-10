@@ -1,0 +1,44 @@
+{
+  "horizon_s": 30.0,
+  "method": "SafetyFilter._track_distances",
+  "records": [
+    {
+      "angular_difference_rad": 0.40281790418490065,
+      "min_point_m": 80.01999999999994,
+      "min_swept_m": 80.01743937365667,
+      "sample_count": 151,
+      "sample_dt_s": 0.2,
+      "swept_intervals": 150,
+      "target_chord_m": 80.02
+    },
+    {
+      "angular_difference_rad": 0.40281790418490065,
+      "min_point_m": 80.01999999999994,
+      "min_swept_m": 79.9559925350114,
+      "sample_count": 31,
+      "sample_dt_s": 1.0,
+      "swept_intervals": 30,
+      "target_chord_m": 80.02
+    },
+    {
+      "angular_difference_rad": 0.4078202803810345,
+      "min_point_m": 80.99999999999996,
+      "min_swept_m": 80.99740801382394,
+      "sample_count": 151,
+      "sample_dt_s": 0.2,
+      "swept_intervals": 150,
+      "target_chord_m": 81.0
+    },
+    {
+      "angular_difference_rad": 0.4078202803810345,
+      "min_point_m": 80.99999999999997,
+      "min_swept_m": 80.9352086395392,
+      "sample_count": 31,
+      "sample_dt_s": 1.0,
+      "swept_intervals": 30,
+      "target_chord_m": 81.0
+    }
+  ],
+  "ring_radius_m": 200.0,
+  "speed_mps": 16.0
+}

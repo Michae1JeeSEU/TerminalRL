@@ -1,0 +1,271 @@
+[
+  {
+    "time": 0.0,
+    "event": "request",
+    "uid": 0,
+    "gate": 0
+  },
+  {
+    "time": 0.0,
+    "event": "admission",
+    "uid": 0,
+    "external_wait": 0.0
+  },
+  {
+    "time": 0.0,
+    "event": "grant",
+    "uid": 0,
+    "not_before": 46.15384615384616,
+    "planned_touchdown": 86.15384615384616
+  },
+  {
+    "time": 47.0,
+    "event": "capture",
+    "uid": 0,
+    "expected_touchdown": 87.0,
+    "planned_touchdown": 86.15384615384616,
+    "planned_touchdown_error": 0.8461538461538396
+  },
+  {
+    "time": 75.0,
+    "event": "request",
+    "uid": 1,
+    "gate": 1
+  },
+  {
+    "time": 75.0,
+    "event": "admission",
+    "uid": 1,
+    "external_wait": 0.0
+  },
+  {
+    "time": 75.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 87.00000000000001,
+    "event": "touchdown",
+    "uid": 0
+  },
+  {
+    "time": 146.99999999999994,
+    "event": "outcome",
+    "uid": 0,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 147.0,
+    "event": "grant",
+    "uid": 1,
+    "not_before": 154.99577780327195,
+    "planned_touchdown": 194.99577780327195
+  },
+  {
+    "time": 150.0,
+    "event": "request",
+    "uid": 2,
+    "gate": 3
+  },
+  {
+    "time": 150.0,
+    "event": "admission",
+    "uid": 2,
+    "external_wait": 0.0
+  },
+  {
+    "time": 150.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 165.0,
+    "event": "capture",
+    "uid": 1,
+    "expected_touchdown": 205.0,
+    "planned_touchdown": 194.99577780327195,
+    "planned_touchdown_error": 10.004222196728051
+  },
+  {
+    "time": 204.99999999999994,
+    "event": "touchdown",
+    "uid": 1
+  },
+  {
+    "time": 225.0,
+    "event": "request",
+    "uid": 3,
+    "gate": 1
+  },
+  {
+    "time": 225.0,
+    "event": "admission",
+    "uid": 3,
+    "external_wait": 0.0
+  },
+  {
+    "time": 225.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 264.99999999999994,
+    "event": "outcome",
+    "uid": 1,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 265.0,
+    "event": "grant",
+    "uid": 2,
+    "not_before": 269.09540075685146,
+    "planned_touchdown": 309.09540075685146
+  },
+  {
+    "time": 281.0,
+    "event": "capture",
+    "uid": 2,
+    "expected_touchdown": 321.0,
+    "planned_touchdown": 309.09540075685146,
+    "planned_touchdown_error": 11.904599243148539
+  },
+  {
+    "time": 300.0,
+    "event": "request",
+    "uid": 4,
+    "gate": 3
+  },
+  {
+    "time": 300.0,
+    "event": "admission",
+    "uid": 4,
+    "external_wait": 0.0
+  },
+  {
+    "time": 300.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 320.99999999999994,
+    "event": "touchdown",
+    "uid": 2
+  },
+  {
+    "time": 375.0,
+    "event": "request",
+    "uid": 5,
+    "gate": 1
+  },
+  {
+    "time": 375.0,
+    "event": "admission",
+    "uid": 5,
+    "external_wait": 0.0
+  },
+  {
+    "time": 375.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 380.99999999999994,
+    "event": "outcome",
+    "uid": 2,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 381.0,
+    "event": "grant",
+    "uid": 3,
+    "not_before": 384.36291956414306,
+    "planned_touchdown": 424.36291956414306
+  },
+  {
+    "time": 396.0,
+    "event": "capture",
+    "uid": 3,
+    "expected_touchdown": 436.0,
+    "planned_touchdown": 424.36291956414306,
+    "planned_touchdown_error": 11.637080435856944
+  },
+  {
+    "time": 435.99999999999994,
+    "event": "touchdown",
+    "uid": 3
+  },
+  {
+    "time": 495.99999999999994,
+    "event": "outcome",
+    "uid": 3,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 496.0,
+    "event": "grant",
+    "uid": 4,
+    "not_before": 499.1689721985043,
+    "planned_touchdown": 539.1689721985043
+  },
+  {
+    "time": 511.0,
+    "event": "capture",
+    "uid": 4,
+    "expected_touchdown": 551.0,
+    "planned_touchdown": 539.1689721985043,
+    "planned_touchdown_error": 11.83102780149568
+  },
+  {
+    "time": 551.0000000000002,
+    "event": "touchdown",
+    "uid": 4
+  },
+  {
+    "time": 611.0000000000002,
+    "event": "outcome",
+    "uid": 4,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 611.0,
+    "event": "grant",
+    "uid": 5,
+    "not_before": 614.1331119537045,
+    "planned_touchdown": 654.1331119537045
+  },
+  {
+    "time": 626.0,
+    "event": "capture",
+    "uid": 5,
+    "expected_touchdown": 666.0,
+    "planned_touchdown": 654.1331119537045,
+    "planned_touchdown_error": 11.866888046295458
+  },
+  {
+    "time": 666.0000000000002,
+    "event": "touchdown",
+    "uid": 5
+  },
+  {
+    "time": 726.0000000000002,
+    "event": "outcome",
+    "uid": 5,
+    "outcome": "completed",
+    "reason": "service_complete"
+  }
+]

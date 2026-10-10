@@ -1,0 +1,252 @@
+{
+  "schema": "p3_neighbor_ring_reuse_cv_proposal_20261010_v1",
+  "status": "approval_pending",
+  "execution": "NOT_STARTED",
+  "approval": {
+    "required_before_start": true,
+    "user_authorization_observed_for_this_manifest": false,
+    "server_launch_performed": false,
+    "manifest_is_not_authorization": true
+  },
+  "candidate": {
+    "name": "p3_neighbor_prefix_ring_reuse_20261010",
+    "output_remote": "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+    "output_local_mirror": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_ring_reuse_20261010\\nine_cycle",
+    "output_must_be_new": true,
+    "local_mirror_exists_at_manifest_time": false,
+    "server_path_existence_check": "PENDING",
+    "prefix_witness_input_remote": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full",
+    "prefix_witness_input_local_mirror": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full",
+    "control_reference_remote": "/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle",
+    "variation_scope": "actor math-equivalent performance implementation only"
+  },
+  "command": {
+    "remote_shell_prefix": "env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+    "python": "/home/user/envs/terminal_env/bin/python",
+    "module": "terminal_marl.scripts.diagnose_p3_intent_neighbor",
+    "argv": [
+      "/home/user/envs/terminal_env/bin/python",
+      "-u",
+      "-m",
+      "terminal_marl.scripts.diagnose_p3_intent_neighbor",
+      "--train-directories",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed",
+      "--additional-train-directories",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "--witness-directory",
+      "/home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009",
+      "--supplemental-train-directories",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03",
+      "--supplemental-witness-directory",
+      "/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle",
+      "--prefix-witness-directory",
+      "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full",
+      "--workers",
+      "4",
+      "--output",
+      "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle"
+    ],
+    "command_string": "env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/user/envs/terminal_env/bin/python -u -m terminal_marl.scripts.diagnose_p3_intent_neighbor --train-directories /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed --additional-train-directories /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03 --witness-directory /home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009 --supplemental-train-directories /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01 /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02 /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03 --supplemental-witness-directory /home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle --prefix-witness-directory /home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full --workers 4 --output /home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+    "process_pool": "spawn",
+    "workers": 4,
+    "outer_timeout_seconds": 4200
+  },
+  "protocol": {
+    "gate_mode": "first_feasible_union",
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "model_seed": 91911,
+    "auxiliary_seed": 91912,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "wall_seconds_per_fold_arm": 1200,
+    "outer_timeout_seconds": 4200,
+    "actor_rows_fixed": 3149,
+    "old_reference_target_rows_fixed": 473,
+    "expanded_target_rows_fixed": 1270,
+    "input_seeds": [
+      893511,
+      893512,
+      893513,
+      893601,
+      893602,
+      893603,
+      893604,
+      893605,
+      893606
+    ],
+    "qualification": false,
+    "PPO_ALLOWED": false,
+    "Q_accessed": false,
+    "teacher_queries": 0,
+    "environment_steps": 0,
+    "checkpoint_written": false,
+    "source_group": "old6_plus_supplemental3_plus_prefix",
+    "comparison_control_reference": "/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle"
+  },
+  "inputs": {
+    "original_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed"
+    ],
+    "additional_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03"
+    ],
+    "supplemental_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03"
+    ],
+    "old_witness_directory": "/home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009",
+    "supplemental_witness_directory": "/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle",
+    "prefix_witness_directory": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full"
+  },
+  "observed_preflight": {
+    "prefix_full_validation": {
+      "status": "PASS",
+      "artifact": ".tmp/p3_neighbor_prefix_full_validation_20261010.json",
+      "protocol_sha256": "e1785882cb09296de408076af379c04b4a9ad8374c1159528807946537522c7c",
+      "result_sha256": "3a33b54ecfd8fd85be1f75dea818693d798a5b3cc82e73bc22acc1a4f163dea0",
+      "actor_rows": 3149,
+      "old_reference_target_rows": 473,
+      "expanded_target_rows": 1270,
+      "selection": {
+        "new": 713,
+        "reuse": 20,
+        "selected": 733,
+        "actual_plan_calls": 797
+      },
+      "runtime_validator_calls": {
+        "archived_snapshot_reads": "official load_nine_cycle_train/load_resource_train old3 SHA-verified unpickle/rebuild",
+        "environment_resets": 0,
+        "environment_steps": 0,
+        "planner_calls": 0,
+        "teacher_queries": 0,
+        "optimizer_updates": 0
+      }
+    },
+    "old_six_cycle_control": {
+      "path": "/home/user/training_outputs/terminal/p3_neighbor_relation_cv_20261009/six_cycle",
+      "observed_status": "COMPLETE",
+      "observed_folds": 12,
+      "reuse_only": true,
+      "rerun": false
+    },
+    "old_nine_cycle_control": {
+      "path": "/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle",
+      "observed_status": "COMPLETE",
+      "observed_folds": 9,
+      "reuse_only": true,
+      "rerun": false
+    },
+    "prior_failed_prefix_cv": {
+      "path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle",
+      "observed_exit": 2,
+      "observed_status": "INCOMPLETE",
+      "observed_error": "ValueError('fold wall budget exhausted')",
+      "preserve_permanently": true,
+      "counts_as_completed_effect": false,
+      "rerun": false
+    },
+    "candidate_output_path": {
+      "local_mirror_exists": false,
+      "server_check": "PENDING",
+      "must_be_checked_again_before_start": true
+    }
+  },
+  "source_hashes_expected_local": {
+    "terminal_marl/training/p3_neighbor_prefix_coverage_data.py": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+    "terminal_marl/training/p3_v26_train_dataset.py": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+    "terminal_marl/training/p3_v25_course_data.py": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+    "terminal_marl/training/p3_v26_course_data.py": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+    "terminal_marl/training/p3_v26_supplemental_data.py": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+    "terminal_marl/training/p3_neighbor_witness_data.py": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+    "terminal_marl/training/p3_neighbor_witness_dataset.py": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+    "terminal_marl/scripts/diagnose_p3_intent_neighbor.py": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+    "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+    "tests/test_p3_v26_train_dataset.py": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6",
+    "tests/test_p3_neighbor_witness_data.py": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+    "tests/test_p3_neighbor_witness_dataset.py": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+    "tests/test_p3_supplemental_neighbor_data.py": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+    "tests/test_p3_neighbor_prefix_coverage_data.py": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+    "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+    "tests/test_p3_neighbor_prefix_queries.py": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+    ".tmp/run_p3_neighbor_prefix_20261010.py": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+    ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3"
+  },
+  "local_git": {
+    "head_at_manifest_time": "a256cf4563b3c28c3a24d2d5589675413588fd83",
+    "commit_for_this_candidate": "1575edefe5e55bfffbef8cca8dbdf2d3ce7bb796",
+    "local_source_freeze_check": "PENDING",
+    "server_source_sha_recheck": "PENDING",
+    "remote_git": false
+  },
+  "execution_guards": {
+    "do_not_repeat_old_control": true,
+    "do_not_access_Q": true,
+    "PPO_ALLOWED": false,
+    "no_online_teacher_or_candidate_labels_in_observation": true,
+    "no_extra_seed": true,
+    "no_budget_extension": true,
+    "no_automatic_retry_after_failure": true,
+    "failure_keeps_partial_records_and_root_incomplete": true,
+    "not_qualification": true,
+    "not_generalization_claim": true,
+    "not_formal_or_PPO_admission": true
+  },
+  "pending_before_any_start": [
+    "user approval for this exact manifest",
+    "fresh local and server output-path nonexistence check",
+    "server source SHA equality against source_hashes_expected_local",
+    "local source freeze and candidate commit record",
+    "server preflight with old/reference/expanded counts 3149/473/1270"
+  ]
+  ,"observed_gate_fix_verification": {
+    "status": "PASS_SHORT_PERFORMANCE_ONLY",
+    "local_tests": {"count": 72, "status": "PASS"},
+    "server_tests": {"count": 62, "status": "PASS"},
+    "result": {
+      "status": "COMPLETE",
+      "exit": 0,
+      "sha256": "c572e1998ad2b6ae84858504a9f733b0d609f15df079760f16c015395b533546",
+      "all_parent_child_processes_exited": true
+    },
+    "protocol_sha256": "309fb4ebdfbb7a47faaee254387876f45e971d20b0828c795c637d80699fe8d4",
+    "weights": {
+      "initial_sha256": "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976",
+      "final_sha256": "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976",
+      "unchanged": true
+    },
+    "optimizer_updates": 0,
+    "expanded_timed_pass_mean_seconds": 0.148717,
+    "prior_four_expanded_timed_pass_mean_seconds": 0.302928,
+    "relative_factor": 2.037,
+    "scope": "Short fixed-weight performance probe only; not 5000-update CV completion, qualification, generalization, or PPO.",
+    "model_or_ssh_rerun_by_current_worker": false
+  },
+  "observed_gate_fix_source_fingerprints": {
+    "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+    "tests/test_intent_neighbor_ring_score_reuse.py": "87268b8f391b179e917edb7d034497866d0013f83e47929bbf185dfe3250eb25",
+    "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+    ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+    "verification": "local_read_only_hashes_and_committed_source_consistent",
+    "full_local_sha_recheck": "PASS"
+  },
+  "source_commit_status": "1575edefe5e55bfffbef8cca8dbdf2d3ce7bb796"
+}

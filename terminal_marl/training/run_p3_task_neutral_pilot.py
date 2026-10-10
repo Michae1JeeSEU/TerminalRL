@@ -625,6 +625,8 @@ def _validate_pilot_payload(payload: Mapping[str, Any], config: Any) -> dict[str
 def _validate_initial_warmup_payload(
     payload: Mapping[str, Any], policy: Any, config: Any,
     *, expected_parent_sha256: str = EXPECTED_CANDIDATE_SHA256,
+    expected_gamma: float | None = None,
+    expected_reward_scale: float | None = None,
 ) -> dict[str, Any]:
     """Validate a critic-only warmup before applying its model state."""
     _require(payload.get("stage") == critic_warmup.STAGE,
@@ -637,6 +639,45 @@ def _validate_initial_warmup_payload(
              "warmup checkpoint priority weight metadata mismatch")
     _require(payload.get("parent_checkpoint_sha256") == expected_parent_sha256,
              "warmup parent checkpoint SHA mismatch")
+    warmup_gamma: float | None = None
+    if expected_gamma is not None:
+        try:
+            expected_gamma_value = float(expected_gamma)
+        except (TypeError, ValueError) as exc:
+            raise TaskNeutralPilotError("expected warmup gamma must be finite and in [0, 1]") from exc
+        _require(math.isfinite(expected_gamma_value) and 0.0 <= expected_gamma_value <= 1.0,
+                 "expected warmup gamma must be finite and in [0, 1]")
+        fit_parameters = payload.get("fit_parameters")
+        _require(isinstance(fit_parameters, Mapping),
+                 "warmup fit parameters are missing for gamma validation")
+        try:
+            warmup_gamma = float(fit_parameters.get("gamma"))
+        except (TypeError, ValueError) as exc:
+            raise TaskNeutralPilotError("warmup gamma must be finite and in [0, 1]") from exc
+        _require(math.isfinite(warmup_gamma) and 0.0 <= warmup_gamma <= 1.0,
+                 "warmup gamma must be finite and in [0, 1]")
+        _require(math.isclose(warmup_gamma, expected_gamma_value, rel_tol=0.0, abs_tol=1e-12),
+                 "warmup gamma mismatch")
+    warmup_reward_scale: float | None = None
+    if expected_reward_scale is not None:
+        try:
+            expected_reward_scale_value = float(expected_reward_scale)
+        except (TypeError, ValueError) as exc:
+            raise TaskNeutralPilotError("expected warmup reward_scale must be finite and positive") from exc
+        _require(math.isfinite(expected_reward_scale_value) and expected_reward_scale_value > 0.0,
+                 "expected warmup reward_scale must be finite and positive")
+        fit_parameters = payload.get("fit_parameters")
+        _require(isinstance(fit_parameters, Mapping),
+                 "warmup fit parameters are missing for reward_scale validation")
+        try:
+            warmup_reward_scale = float(fit_parameters.get("reward_scale"))
+        except (TypeError, ValueError) as exc:
+            raise TaskNeutralPilotError("warmup reward_scale must be finite and positive") from exc
+        _require(math.isfinite(warmup_reward_scale) and warmup_reward_scale > 0.0,
+                 "warmup reward_scale must be finite and positive")
+        _require(math.isclose(warmup_reward_scale, expected_reward_scale_value,
+                              rel_tol=0.0, abs_tol=1e-12),
+                 "warmup reward_scale mismatch")
     snapshots = payload.get("neutral_config_snapshots")
     _require(isinstance(snapshots, Mapping), "warmup neutral config snapshots are missing")
     snapshot = snapshots.get("dense24")
@@ -665,17 +706,25 @@ def _validate_initial_warmup_payload(
         "neutral_config_match": True,
         "non_critic_state_bitwise_unchanged": True,
         "critic_parameter_names": list(invariance.get("critic_parameter_names", [])),
+        **({"warmup_gamma": warmup_gamma} if warmup_gamma is not None else {}),
+        **({"warmup_reward_scale": warmup_reward_scale}
+           if warmup_reward_scale is not None else {}),
     }
 
 
 def _load_initial_warmup(
     path: str | Path, policy: Any, config: Any,
+    *, expected_gamma: float | None = None,
+    expected_reward_scale: float | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     resolved = neutral_eval._synced_path(Path(path))
     _require(resolved.is_file(), f"warmup checkpoint missing: {path}")
     payload = torch.load(resolved, map_location=policy.device, weights_only=False)
     _require(isinstance(payload, Mapping), "warmup checkpoint payload must be a mapping")
-    check = _validate_initial_warmup_payload(payload, policy, config)
+    check = _validate_initial_warmup_payload(
+        payload, policy, config, expected_gamma=expected_gamma,
+        expected_reward_scale=expected_reward_scale,
+    )
     policy.model.load_state_dict(payload["model_state"], strict=True)
     policy.model.eval()
     check["checkpoint"] = str(resolved)

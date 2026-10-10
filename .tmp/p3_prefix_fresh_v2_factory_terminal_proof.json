@@ -1,0 +1,33 @@
+{
+  "server": "lab-server",
+  "snapshot_time": "2026-10-01T14:40:03+08:00",
+  "pid": 2163291,
+  "pid_exited": true,
+  "validator_processes": [],
+  "pilot": {
+    "status": "PILOT_TECHNICAL_ERROR",
+    "pair_status": "PAIR_TECHNICAL_ERROR",
+    "technical_error": "environment factory counts are incomplete",
+    "mtime": "2026-10-01 14:32:44.821848109 +0800"
+  },
+  "arm_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v2/arms/cell_01_before_legacy.json",
+  "observed_fields": {
+    "runtime_capture.factory_calls": 1,
+    "runtime_capture.replay_factory_calls": 0,
+    "runtime_capture.native_step_observer": {
+      "available": true,
+      "first_step_observed": true,
+      "observed_steps": 778
+    },
+    "lifecycle.replay_exact": true,
+    "lifecycle.steps_expected": 778,
+    "lifecycle.steps_replayed": 778,
+    "lifecycle.ledger_alignment": true,
+    "caller_rng_unchanged_before_restore": false,
+    "caller_rng_restored": true,
+    "arm.caller_rng_unchanged": true,
+    "action_tape": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v2/rollouts/cell_01_before_legacy/action_tapes/safety_trace_seed_886101_step_777.json",
+    "caller_rng_restore_error": null
+  },
+  "scope": "read-only JSON/process proof; action_tape path observed, tape content not read; no environment or launch"
+}

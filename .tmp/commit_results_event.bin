@@ -1,0 +1,764 @@
+# P3 follow-up 修复与复核事实（2026-09-30）
+
+## 范围与集成检查
+
+本页记录本轮冻结评估、被动诊断 artifact 和测试事实；本轮未训练、未运行 optimizer、未使用 held-out，也未进行 qualification。回归测试和 control full 均不构成 P3 性能改善结论。
+
+## 2026-10-01 P3 prefix-feasible-gate preregistration
+
+Fresh V4 six-scene screen 为 FAIL，P3 仍未解决；旧 trained gate-value 四个状态均为 `C=0`。沿用现有 AP/BP 标签，AP=`132N/12E`、BP=`134N/10E`，两者 `F/D/U=0`；AP 相对 BP 的三项成本差为 `+2.9843324913833236%`、`+0.5281622267627961%`、`+0.7351975729166904%`。same-prefix 扣除 rejection 后的 raw return 为 AP `2967.1651355245745`、BP `2987.9587313050633`，不能只解释为 rejection 处罚；prefix 修复业务差异不作为训练修复证据。
+
+Batch-04 larger-batch 协议与 metadata 一致：`gamma=lambda=1`、`full_episode_mc`、joint-team actor aggregation、minibatch `128`。此前与 learning-curve 协议的错误关联已由 `.tmp/p3_prefix_objective_protocol_correction.json` 纠正，未发现折扣参数误用。scalar team reward 没有单独 gate-outcome 通道，normal、emergency、failed 信号经环境 scalar reward 进入；不据此称 team credit 或 energy absence 为根因。
+
+已预注册 [prefix-feasible-gate protocol](p3_prefix_feasible_gate_protocol_20261001.md)：只对四个固定既有 BEFORE-prefix scenes 各做一次 full-cycle exact replay，按原始 `(step, numeric UID)` 顺序确认 actual approved、rank `>3` 的 `ring_inner`、`0.4<SOC<=0.65`、retry-free、`actor_mask=true`、`committed_plan=None` 窗口，在保存的 88D world 上以 no-grad 比较 BEFORE/AFTER 的 `p` 与全 25-way `q`；`D/local_m` 保持 unknown，物理排除计数和原因保留，不替换缺失 scene。full input SHA=`30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195`。
+
+`19` 个 target tests、compile、local serialized preflight 已 PASS；server/local 3-file SHA equality 已确认（代码 commit `afa9bfaab1e9e8f2ae43f661b8f24d890eb79cd5`），server preflight=`PREFLIGHT_OK`、phase validation=`PHASE_VALIDATION_OK`。ROOT 已完成 cell 1 pilot 并准入 FULL：cell 1 immutable reuse 加 cells 2–4 均已完成，FULL=`FULL_OK`，full SHA=`9188e0097acf7c9209cea0e51d890c1de0e9663860f9eb4672601e2ac8e01b6c`；四个 cell 均为 `COMPLETED_MISSING`，exact replay ticks=`2749`（`708+674+644+723`），potential candidates=`20/22/23/24`（合计 `89`）全部因 `physical_window` 排除，四个 cell 均 selected=`null`；model/config/reset/caller-RNG/controller checks 通过，无 error/partial artifact，未生成 selected NPZ，`p/q/D/m` 保持 unknown。PID `2179064` 已退出，FULL heartbeat 已删除，当前无 active job；不作 gate causal conclusion。后续仅准备另行预注册的 SAME-4-tape actual-approved normal-event diagnostic：纳入所有已注册 actual-approved 事件，分别描述 first-three、late、rank-unknown/used-false/missing，记录 phase/SOC/mask/retry/commit 并区分 normal `SOC>0.4` 与 emergency；尚未启动新 phase、训练、PPO 或 held-out，`PPO_ALLOWED=false`。
+
+## 2026-10-01 prefix-feasible-gate event diagnostic preflight
+
+新 event diagnostic runner（code commit `45484dba4377f9c46eb996f485bdbd103e6b5278`；protocol=`docs/evidence/v4_2/p3_prefix_gate_events_protocol_20261001.md`；runner=`terminal_marl/training/diagnose_p3_prefix_gate_events_20261001.py`；tests=`tests/test_p3_prefix_gate_events_20261001.py`）：`16` 项定向 tests、compile、local serialized preflight 已 PASS；server `PREFLIGHT_OK`、serialized validation exit `0`，server/local 3-file SHA equality 已确认，runner SHA=`8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef`，protocol SHA=`59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5`。四条既有 tape 的 registered-event counts 为 `314/267/290/274`；均为 requested_gate=`1` 且有 registration，未使用 used/rank filter，zero、missing rank 与 used=`false` 均保留为 unknown。actual-approved normal 事件覆盖三种 ring，并记录 actor mask、retry 状态、committed plan 和 saved full-world/target-index 对照；不设 upper-SOC filter，不按 first event 选择。只测 `p/q`，`D/local_m` 保持 unknown；excluded context、reasons 与 partial 结果保留。输入仍为同四条 existing tapes、full input SHA=`30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195`、source `3fe7`/comparison `d449`，无新 population。ROOT 仅准入 cell 1 pilot：PID `2182083`（launcher `2182082`）于 server time `18:21:52+0800` 运行中，cwd `/home/user/projects/terminal`，argv 为 `/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_gate_events_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001`，exe `/usr/bin/python3.12`，三个环境 flag 均为 `1`；progress 为 cell 1、step `299`、potential candidates `314`、events `190`、normal events `43`，无最终推断。startup proof=`.tmp/p3_prefix_gate_events_pilot_startup_or_terminal_proof.json`；FULL 未准入，未启动 PPO、训练或 held-out，`PPO_ALLOWED=false`。
+
+## 2026-10-01 被动 profile 与 fresh validation preregistration / preflight
+
+Passive profile protocol 与 runner 已固定在 commits `2ba8f83` 和 `5fd7f5a`，profile 定向测试为 `10` 项；fresh validation runner commit `0ddf8b7` 的 selected suite 为 `38` 个 distinct tests，与 profile suite 有重叠，不将两者相加。Profile server no-env preflight SHA=`7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d`，serialized validator 通过 `16` tapes、`8` sidecars、`3` full artifacts。Fresh no-env preflight SHA=`e25cde37af2da6ac1988e7c36dd1097d8bebb956be807441a8837c68046e2b92`，通过 `6` scenes×`4` arms，scene/env 为 `886101..886106`，native policy seed 为 `886201..886206`，cap=`1800`；pilot 预注册为 cell 1 四 arms，经 root review 后再处理其余 `20` arms。
+
+本轮首要顺序是先从 `16` 个 existing tapes 取得 passive timing/counts，再用六个 fresh development scenes 检查冻结 2×2 的 executor×policy interaction 与可迁移性。该设计不声称 unique optimizer cause 或 P3 已解决；`PPO_ALLOWED=false`，held-out 未使用，不做 default promotion。Local profiler preflight v1 的 directory-vs-file mirror map failure 已保留为历史 artifact，v2 已修正并返回 `PREFLIGHT_OK`。以下 startup 是历史快照：profile pilot PID `2155873` 启动于 cwd `/home/user/projects/terminal`、phase=`pilot`，输出目录为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001`，startup proof 为 `.tmp/p3_prefix_profile_pilot_startup_proof.json`；`05:16:20Z` 时 cell 1 `before_legacy` 为 step `250`、`24` generated、`18` active、`250` native forwards、`3794` actual release calls，argv、exe 和三个环境 flag 均通过，尚无 error artifact 或 pilot terminal artifact。该 profile 只回放既有 tape，不是新 flight sample。
+
+
+### Fresh validation V3 pilot startup（technical recovery）
+
+V1 的 caller-RNG check 在 restore 前执行而技术停止；V2 的 replay-factory 计数检查也导致技术停止。两次输出均保留，V2 实际完成的 `778` steps 首臂 actions、requests、outcomes 与业务字段与 V1 一致；计数修复 commit `0556a123` 与 `10` 项定向 tests 已通过。V3 no-env preflight 的真实序列化校验为 `PASS`，preflight SHA=`9e8602a3c3a4c005b9559981654b88082efd8da908e31ec917cbb093ce40c451`，runner=`14d95...`、test=`705b...`、shared protocol=`6571...`。ROOT 已准入 V3 pilot：PID `2164825`，cwd `/home/user/projects/terminal`，phase=`pilot`，输出根为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v3`；startup snapshot 为 step `150`、`21` generated、`16` active、三个 env flags 为 `1`，startup proof SHA 前缀=`6E625...`。V1/V2 outputs 保留；当前仅有首 scene/arm startup，必须先将 V3 首 `before_legacy` 与 V1 的 actions、requests、outcomes、wait/elapsed/energy、raw reward 和 rejection penalty exact 复核，ROOT review 后才可决定其余 `20` arms。monitor `p3-prefix-repair-validation` ACTIVE、间隔 `3` 分钟；无 PPO、default promotion、held-out 或训练，P3 未解决。
+
+旧 `b5c017...` mixed-newline suffix 的原始 bytes 未在当前 `.tmp` 候选中恢复，ROOT 已异步询问原始副本路径；本轮保留当前 suffix 原样，不把该历史 bytes 差异写成实验结果。
+
+### Fresh validation V3 pilot terminal（PILOT_TECHNICAL_ERROR）
+
+V3 pilot PID `2164825` 已退出 `PILOT_TECHNICAL_ERROR`，pair 状态相同；错误为 `config snapshot is missing`。三个已完成 arms 为 `before_legacy=22N/2E`、`after_legacy=20N/4E`、`before_prefix=22N/2E`，每臂 `24` requests resolved、`F/D/U=0`；native steps 为 `778/824`，prefix 为 `708`，exact-step replay、model/RNG/source/safety checks 通过。第四个 `after_prefix` 未运行，FULL 未启动；monitor `p3-prefix-repair-validation` 已删除，当前无后台任务。V1/V2 outputs 保留，startup 记录作为历史；proof=`.tmp/p3_prefix_fresh_v3_pilot_snapshot_proof.json`，SHA 前缀=`FFE01F...`。
+
+真实 prefix 配置已有 `config_snapshot` 与 `config_snapshot_before`，fresh 校验只读配置造成字段错配。ROOT 已委派最小 adapter 的 no-env 与 actual-artifact contract 复核；这是 diagnostic contract issue，本记录不把它解释为 P3 修复。`PPO_ALLOWED=false`，未启动训练、FULL 或新的 performance job。
+
+### Fresh validation V4 technical-recovery pilot startup（preflight passed）
+
+配置 adapter commit `b0702b0df27889b3fd3e7502953d91f6ced72ae5` 已通过 `12` 项 focused tests、compile；四个 actual-record no-env wrapper 的 `CONTRACT_PROOF_OK` 已通过，proof=`.tmp/p3_prefix_fresh_output_contract_proof.json`，四臂 error 均为 null，policy/env/physics unchanged。V4 no-env preflight 的真实序列化校验为 `PREFLIGHT_OK`、`PHASE_VALIDATION_OK`、exit `0`；preflight SHA=`4150e1bba322757e22e783ab9ea1829d9c01f91c850a44dc377d485f5b693a91`，runner=`0ce1f128a77941b6001446bfd0d8e0c7abd2c52ab2aaa9271398abcf2c8355fe`，test=`ccb2210bd2e64aa8d880936598602b622e658f43776fa4bfb8405d969a1a1927`，protocol=`6571d5fa...`。ROOT 已准入 V4 pilot：PID `2168258`，cwd `/home/user/projects/terminal`，输出根为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4`，startup=`2026-10-01 15:23:39+0800`；`before_legacy` step `750`、`24` generated、`0` active，argv、exe 与三个 env flags 通过，尚无 arm artifact、无 FULL。startup proof=`.tmp/p3_prefix_fresh_v4_pilot_startup_proof.json`，SHA=`313e6c5d4e53217155a0ab4114119f838a168ae73422183d3a3452e2058c1d71`。V4 固定原 cell 1、env `886101`/policy `886201`、四 arms、24 requests、cap `1800`；V1/V2/V3 历史保留，FULL 仍需 ROOT review pilot。monitor `p3-prefix-repair-validation` ACTIVE、间隔 `3` 分钟；无 PPO、训练、held-out 或 default promotion。
+
+### Fresh validation V4 pilot terminal and FULL startup
+
+V4 pilot PID `2168258` 已 `PILOT_OK/PAIR_OK` 退出；四臂均 natural、technical、exact-24、source/RNG/config、ledger/replay/safety 和 sidecar checks 通过，`F/D/U=0`。四臂完整结果如下；`N/E/F/D/U` 为 outcome counts，`elapsed` 为 request elapsed 总和，raw reward 与 rejection penalty 分列。
+
+| arm | steps | N/E/F/D/U | wait s | elapsed s | energy | raw reward | rejection penalty | total reward |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| BEFORE legacy | 778 | 22/2/0/0/0 | 2919.6693286099626 | 9168.0 | 7399.92322140943 | 493.1366835700943 | -13.5 | 479.6366835700943 |
+| AFTER legacy | 824 | 20/4/0/0/0 | 3458.227091374416 | 9633.0 | 7899.6508009200315 | 467.4572292214967 | -16.150000000000002 | 451.3072292214967 |
+| BEFORE prefix | 708 | 22/2/0/0/0 | 2656.9762761413117 | 9005.0 | 7184.872304893263 | 492.7467457263946 | -13.200000000000001 | 479.5467457263946 |
+| AFTER prefix | 743 | 23/1/0/0/0 | 2807.4185620180106 | 9041.0 | 7228.822137876213 | 501.08577846942217 | -14.450000000000001 | 486.6357784694222 |
+
+每臂 generated/admitted/successful/resolved 均为 `24`；`96` rows 是一个 cell 的四个 alternative arms，不是 `96` 个独立 population samples。AFTER-prefix 相对 BEFORE-prefix 的 N 为 `+1`，但 wait/elapsed/energy 分别为 `+150.4422858766989`、`+36`、`+43.94983298295`；相对 AFTER-legacy 则 N 为 `+3` 且上述三项分别为 `-650.8085293564054`、`-592`、`-670.8286630438185`。这些 cell-level trade-offs 均保留，不作 single-cell root-cause 或 P3 solved claim。
+
+low-audit native exact comparison proof=`.tmp/p3_prefix_fresh_v4_native_exact_comparison_proof.json` 报告 V1–V4 的 native action/replay 对齐，包含 `778` action rows、`120` request records、`24` lifecycle records 和 `24` generated/admitted/full-metric checks；tape SHA=`c4e836a1d0a1aeaacd6f361ae58080ba715725bd22ec25afdae9b1089030c130`。validation-only fixes 未改变 baseline。V4 pilot proof=`.tmp/p3_prefix_fresh_v4_pilot_final_proof.json`，SHA=`c37c68f63355676520501085d4681d691e2037c701669144821722034e2b8b6d`。
+
+ROOT 已准入 FULL 的 fixed remaining cells `2..6`、`20` arms，复用 immutable pilot，不重采样、不扩 cap、不换 seed。FULL PID `2169812` 已启动，cwd `/home/user/projects/terminal`，输出根为 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4`；startup=`2026-10-01 15:34:03+0800`，cell 2 `before_legacy` 为 step `250`、`24` generated、`14` active，argv、exe 和三个 env flags 通过，尚无 full/error artifact。startup proof=`.tmp/p3_prefix_fresh_v4_full_startup_proof.json`，SHA=`d5c6b099097bc12296f7bccaabedcb86c2293a1b1b6cc97dd8b3db3d51295c57`；pilot SHA=`7739659777a84de11f15b9aadb9d99d4698dd338467b09216ad16b38a239f3e6`。heartbeat `p3-prefix-repair-validation` 已更新为 `5` 分钟间隔。`PPO_ALLOWED=false`，无 optimizer、teacher、held-out、default promotion 或 qualification。
+
+### Fresh validation V4 FULL terminal（development screen rejected）
+
+V4 FULL PID `2169812` 已退出 `FULL_OK`，error artifact 不存在且 log 为 `0` bytes；六个 scenes×四 arms 共 `24` natural arms，0 censor/error/hardsafety，technical、model/source/RNG、config、ledger、replay、safety 与 `12` 个 sidecar checks 全部通过。每个场景的每个运行臂为 `24`；每种策略×执行器组合跨六场景汇总 generated/admitted/successful/resolved 各为 `144`；这是六场景 panel，不是 `576` 个独立 population samples。full proof=`.tmp/p3_prefix_fresh_v4_full_final_proof.json`，SHA=`cc866810108bbab2b262c130df7ed62045f763c5dbc88d57400707c353170598`；full artifact SHA(schema facts local/server equal)=`30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195`；independent aggregate helper 最大差=`7.275957614183426e-12`。
+
+下表为 proof 中全部 `24` 个 arm 的完整 cost 与 reward 分解；`N/E/F/D/U`、wait、request elapsed、energy、raw reward 和 rejection penalty 均保留。
+
+| cell | arm | N/E/F/D/U | wait s | elapsed s | energy | raw reward | rejection penalty | total reward |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 01 | BEFORE legacy | 22/2/0/0/0 | 2919.6693286099626 | 9168.0 | 7399.92322140943 | 493.1366835700943 | -13.5 | 479.6366835700943 |
+| 01 | AFTER legacy | 20/4/0/0/0 | 3458.227091374416 | 9633.0 | 7899.6508009200315 | 467.4572292214967 | -16.150000000000002 | 451.3072292214967 |
+| 01 | BEFORE prefix | 22/2/0/0/0 | 2656.9762761413117 | 9005.0 | 7184.872304893263 | 492.7467457263946 | -13.200000000000001 | 479.5467457263946 |
+| 01 | AFTER prefix | 23/1/0/0/0 | 2807.4185620180106 | 9041.0 | 7228.822137876213 | 501.08577846942217 | -14.450000000000001 | 486.6357784694222 |
+| 02 | BEFORE legacy | 18/6/0/0/0 | 4266.17076193046 | 10172.0 | 8656.863483145795 | 438.9403011874092 | -28.25 | 410.6903011874092 |
+| 02 | AFTER legacy | 22/2/0/0/0 | 3307.265844347862 | 9279.0 | 7695.952069083928 | 491.29246218237785 | -15.700000000000001 | 475.59246218237786 |
+| 02 | BEFORE prefix | 23/1/0/0/0 | 2261.200522026176 | 8571.0 | 6878.929441174629 | 508.4636303261074 | -10.8 | 497.6636303261074 |
+| 02 | AFTER prefix | 22/2/0/0/0 | 3115.5600470158242 | 9288.0 | 7607.660403507502 | 490.0309700552905 | -13.8 | 476.23097005529047 |
+| 03 | BEFORE legacy | 23/1/0/0/0 | 3174.9559298850254 | 8958.0 | 7601.9361718936125 | 502.18911860457985 | -13.950000000000001 | 488.23911860457986 |
+| 03 | AFTER legacy | 23/1/0/0/0 | 3015.609345739306 | 8885.0 | 7532.0718134327035 | 503.38491032941613 | -14.5 | 488.88491032941613 |
+| 03 | BEFORE prefix | 23/1/0/0/0 | 2383.749844360826 | 8331.0 | 6903.584356099301 | 509.85594524594313 | -11.950000000000001 | 497.90594524594314 |
+| 03 | AFTER prefix | 23/1/0/0/0 | 2410.6353297436963 | 8310.0 | 6887.979820672347 | 508.74019953993997 | -13.0 | 495.74019953993997 |
+| 04 | BEFORE legacy | 20/4/0/0/0 | 3033.466903898602 | 8879.0 | 7377.364268500799 | 474.189002055687 | -17.3 | 456.889002055687 |
+| 04 | AFTER legacy | 21/3/0/0/0 | 2898.624307190733 | 8781.0 | 7304.866188388237 | 484.2229169596477 | -18.75 | 465.4729169596477 |
+| 04 | BEFORE prefix | 22/2/0/0/0 | 2541.5645411838295 | 8702.0 | 7136.644529351648 | 495.9756528385031 | -11.200000000000001 | 484.7756528385031 |
+| 04 | AFTER prefix | 21/3/0/0/0 | 2300.4786701382777 | 8318.0 | 6780.564268184143 | 493.42421128384325 | -11.450000000000001 | 481.97421128384326 |
+| 05 | BEFORE legacy | 21/3/0/0/0 | 2831.714915546975 | 8877.0 | 7226.2010726350645 | 484.6935885149977 | -17.150000000000002 | 467.54358851499774 |
+| 05 | AFTER legacy | 22/2/0/0/0 | 3325.1994978543767 | 9377.0 | 7782.96284336841 | 484.22852901460556 | -17.5 | 466.72852901460556 |
+| 05 | BEFORE prefix | 23/1/0/0/0 | 3195.0248025513906 | 9279.0 | 7582.248345039119 | 493.94536188407056 | -12.65 | 481.2953618840706 |
+| 05 | AFTER prefix | 23/1/0/0/0 | 2623.0957402778245 | 8904.0 | 7183.38396030209 | 500.5420632585533 | -10.950000000000001 | 489.5920632585533 |
+| 06 | BEFORE legacy | 21/3/0/0/0 | 2690.1509303975567 | 8410.0 | 7130.985416874106 | 484.6280115660109 | -12.5 | 472.1280115660109 |
+| 06 | AFTER legacy | 19/5/0/0/0 | 3781.6106716041218 | 9389.0 | 8212.56933347565 | 449.48621119070333 | -26.700000000000003 | 422.78621119070334 |
+| 06 | BEFORE prefix | 21/3/0/0/0 | 2288.2917809373976 | 7990.0 | 6628.222865751552 | 486.9713952840443 | -13.450000000000001 | 473.52139528404433 |
+| 06 | AFTER prefix | 20/4/0/0/0 | 2527.02232209574 | 8291.0 | 6937.186442303664 | 473.34191291752546 | -18.0 | 455.34191291752546 |
+
+四个 aggregate（每个 `6` scenes、`144` generated/admitted/successful/resolved）为：
+
+| aggregate | N/E/F/D/U | wait s | elapsed s | energy | raw reward | rejection penalty | total reward |
+|---|---|---:|---:|---:|---:|---:|---:|
+| BEFORE legacy | 125/19/0/0/0 | 18916.128770268584 | 54464.0 | 45393.27363445881 | 2877.7767054987794 | -102.65 | 2775.1267054987793 |
+| AFTER legacy | 127/17/0/0/0 | 19786.536758110815 | 55344.0 | 46428.073048668964 | 2880.072258898247 | -109.3 | 2770.7722588982474 |
+| BEFORE prefix | 134/10/0/0/0 | 15326.807767200931 | 51878.0 | 42314.50184230952 | 2987.958731305063 | -73.25 | 2914.7087313050633 |
+| AFTER prefix | 132/12/0/0/0 | 15784.210671289373 | 52152.0 | 42625.59703284595 | 2967.165135524575 | -81.65 | 2885.515135524575 |
+
+AFTER-prefix 相对 AFTER-legacy 为 N `+5`、wait `-20.22752205577778%`、elapsed `-5.76756287944492%`、energy `-8.190036256376597%`；相对 BEFORE-prefix 为 N `-2`、wait `+2.9843324913833236%`、elapsed `+0.5281622267627961%`、energy `+0.7351975729166904%`，因此同时未通过 normal 与 cost nondegradation gates，`criterion_pass=false`、`development_candidate=false`、`qualification=not_a_qualification`。AFTER-legacy 相对 BEFORE-legacy 虽 N `+2`，但 wait/elapsed/energy 分别增加约 `4.60140655%`、`1.61574618%`、`2.27963161%`；不将旧四-cell 的 `80→74` 与新六-cell 的 `125→127` 合并成统一 population 结论。所有 local regressions 与 raw reward/penalty 分解保留，不作 single-cell root-cause 或 P3 solved claim。
+
+native observer-RNG field 在 `12` 个 native arms 未暴露，相关 component 为 unknown；controller-specific fields 对 native arms 为 N/A，不写成 `0`。low-audit proof=`.tmp/p3_prefix_fresh_v4_native_exact_comparison_proof.json` 报告 V1–V4 native action/replay 对齐，tape SHA=`c4e836a1d0a1aeaacd6f361ae58080ba715725bd22ec25afdae9b1089030c130`；validation-only fixes 未改变 baseline。heartbeat `p3-prefix-repair-validation` 已删除，当前无后台任务；无 rerun、新 seed 或 budget change。Existing `12` tests 为此前已通过的代码证据，本轮仅为 docs check，不新增测试或训练。
+### Profile pilot technical stop（PILOT_FAILED）
+
+PID `2155873` 在首个 arm 后以 `PILOT_FAILED` 终止，未运行第二个 arm 或 FULL。`.tmp/p3_prefix_profile_pilot_snapshot_proof.json` 与实际 arm artifact 显示 `761/761` replay、24-request identity、model-caller RNG、reward、ledger 和 outcome `19N/5E/0F` 均与原始 tape 一致；成本字段也一致。native runtime 不发出 `uncertified_execution` 字段，profiler 读取缺失值 `None`，而 shared-metrics 要求该字段已知，因此 `hard_safety_clear=false`，原始 tape 为 `true`。这是 technical certificate incomplete 的观察，不是 observed unsafe 或 verified violation。raw positive violations 为零，其余记录字段为零；timings/counters 虽已产生，但该 pilot 不计入 accepted timing result。heartbeat `p3-prefix-repair-validation` 已删除，无第二 arm、FULL 或后台任务。root 仅准备一个显式版本化的 safety-provenance technical-recovery，保留原 output/input，不改变 runtime；不作 performance 或 P3 solved claim。
+
+### Profile V2 technical-recovery pilot terminal（PILOT_OK）
+
+安全 provenance fix 已由 commit `b5be014` 接受；profile focused tests 最新为 `20` 项，替代此前 `10` 项记录，不与旧测试累计。该修复保留 raw `uncertified_execution=None`，只在 immutable source、exact config、full replay、无 blocked、known primitive 全为零且 input-hash conditions 全通过时使用 derived certificate label；任何 observed positive value 都保留，不被 derived value 覆盖。V2 server no-env preflight SHA=`e0022ca5b1648eacb96fded39a515d9b2c6128dd92ae2f1d1a078210ff884506`，`.tmp/p3_prefix_profile_v2_server_preflight_proof.json` 中 previous replay with original-source summary 的 derivation conditions 全通过。root 已准入 V2 technical-recovery pilot，固定使用原始 `2` 个 existing tapes，输出根为 `prefix_fallback_profile_20261001_v2`。PID `2157928` 已 `PILOT_OK` 退出；`.tmp/p3_prefix_profile_v2_pilot_snapshot_proof.json` 显示两臂均通过 bindings、metrics、reward、safety provenance、model RNG 与 exact 24-request checks，BEFORE-legacy 与 BEFORE-prefix 均为 `19N/5E/0F/0D/0U`，steps=`761/723`、wait=`3327.4996213/3123.9868664`、elapsed=`9050/8878`、energy=`7757.9171088/7513.1647880`。profile mean env-step timing 为 `34.064494 ms` 对 `122.657395 ms`，p95 为 `108.204271` 对 `717.991315 ms`，max 为 `461.213835` 对 `3472.175239 ms`，actor timing 约为 `.4586` 对 `.4833 ms`；这些是 instrumented offline simulation wall measurements，不是 hardware deadline proof。`.tmp/p3_prefix_profile_v2_pilot_counter_proof.json` 记录 total proposal=`4865`、approvals=`15`、correct distinct suffix count=`4206`，由 `sum(max(delta-3,0))` 与 distinct `reason_rank>3` 两种聚合一致；raw `suffix_proposal_checks=15` 保留为 semantic erratum，不作为 accepted count。`.tmp/p3_prefix_profile_v2_pilot_energy_reason_proof.json` 进一步从实际 per-call reasons 提取：两臂 first-three-all-energy 计数为 `0`，prefix-suffix mixed 为 `202`，同一 call 同时满足 first-three-all-energy 与 suffix-mixed 的计数为 `0`；reason maps 覆盖全部 records，但 rank 1–3 对许多 early returns/early approvals 没有记录。这里仅报告 observed reason counts，不推断 counterfactual emergency 行为或总体根因。FULL 已准入，PID `2158963` 在启动快照中运行，cwd `/home/user/projects/terminal`，exact module `--phase full`，三个环境 flag 为 `1`；cell 1 `after_legacy` 为 step `250`、`24` generated、`17` active、`250` native probes、`3692` release calls，immutable pilot 两臂复用并运行剩余 `14` tapes，无新 trajectories，FULL metrics unknown。heartbeat `p3-prefix-repair-validation` 已更新，间隔 `3` 分钟；V1 output 保留且不计为 accepted profile。该阶段不改变 runtime/source，不作 performance、physics root-cause 或 P3 solved claim。
+
+### Profile V2 FULL terminal（FULL_OK）
+
+Profile FULL proof `.tmp/p3_prefix_profile_v2_full_terminal_proof.json` reports `FULL_OK`, full JSON SHA=`d0434e370199a7ce990be4b5b6305d07f383a3c8cea591e42ce463b252d0b1db`，pilot SHA=`ddbe49caa1121f14e47f404b01c32fd409056ba1face3ec14215d77e01b72d7f`。16 arms 全部 natural、0 censor/error；exact 24-request identity、binding、replay、model/caller RNG、reward、ledger、safety provenance checks 全通过。该轮复用既有四-cell tapes，不是新的 performance population。不可变业务结果为 native legacy BEFORE `80N/16E`、AFTER `74N/22E`，prefix BEFORE `84N/12E`、AFTER `88N/8E`；这些是既有四-cell evidence 的重放汇总。
+
+四组 passive counter 汇总如下；`suffix` 使用修正后的 per-release candidate delta，raw `suffix_proposal_checks` 字段单独保留为语义 erratum。
+
+| group | proposals | suffix | late approvals | first3 all-energy | suffix-mixed |
+|---|---:|---:|---:|---:|---:|
+| BEFORE legacy (BL) | 2576 | 0 | 0 | 0 | 0 |
+| BEFORE prefix (BP) | 17970 | 15485 | 85 | 0 | 762 |
+| AFTER legacy (AL) | 2618 | 0 | 0 | 0 | 0 |
+| AFTER prefix (AP) | 17682 | 15250 | 83 | 0 | 750 |
+
+| cell | arm | env-step count | mean ms | p95 ms | max ms |
+|---:|---|---:|---:|---:|---:|
+| 1 | AFTER legacy | 689 | 34.065654022 | 107.979994400 | 473.060233 |
+| 1 | AFTER prefix | 752 | 110.881645148 | 733.874281000 | 3458.026948 |
+| 1 | BEFORE legacy | 761 | 34.064494330 | 108.204271000 | 461.213835 |
+| 1 | BEFORE prefix | 723 | 122.657394851 | 717.991314900 | 3472.175239 |
+| 2 | AFTER legacy | 727 | 34.570286757 | 111.182845100 | 552.446649 |
+| 2 | AFTER prefix | 728 | 99.712144449 | 661.602866350 | 3210.229465 |
+| 2 | BEFORE legacy | 726 | 34.280482697 | 114.505178500 | 441.097184 |
+| 2 | BEFORE prefix | 679 | 97.083102763 | 641.672342400 | 3198.779094 |
+| 3 | AFTER legacy | 776 | 33.741928911 | 118.941182500 | 563.263103 |
+| 3 | AFTER prefix | 739 | 112.277522890 | 714.302463000 | 3036.093269 |
+| 3 | BEFORE legacy | 707 | 29.447700208 | 98.306413400 | 550.970514 |
+| 3 | BEFORE prefix | 743 | 121.642978728 | 744.987549400 | 3035.529014 |
+| 4 | AFTER legacy | 726 | 30.340472351 | 104.290376250 | 447.662577 |
+| 4 | AFTER prefix | 758 | 124.715159538 | 716.222617650 | 3278.912854 |
+| 4 | BEFORE legacy | 720 | 29.713395229 | 100.326083250 | 607.608539 |
+| 4 | BEFORE prefix | 806 | 107.918946138 | 679.163612250 | 3273.932029 |
+
+按四组 arm rows 的 timing count 加权平均为：BL env-step `2914` 次、`31.923088276 ms`，actor-request `2652` 次、`0.463665043 ms`；BP 分别为 `2951` 次、`112.492079646 ms`，以及 `2608` 次、`0.482085743 ms`；AL 分别为 `2918` 次、`33.178462596 ms`，以及 `2738` 次、`0.463933798 ms`；AP 分别为 `2977` 次、`112.019018695 ms`，以及 `2593` 次、`0.475801933 ms`。p95 不跨 arm 聚合，保留上表的 per-arm 值；对应 env-step 最大值为 `607.608539 / 3472.175239 / 563.263103 / 3458.026948 ms`（BL/BP/AL/AP）。observer overhead 未测得；记录 count=`0` 表示没有累计 measurement，不表示零开销；actor outputs 未执行，actor-probe RNG 已恢复。所有 timing 都是 instrumented offline simulation wall measurements，最大 env-step `3472.175239 ms` 不构成 hardware deadline 或 latency gate。
+
+所有 16 arms 的 first-three-all-energy 与 suffix-mixed 同时发生计数均为 `0`；BP/AP 的 suffix-mixed 分别为 `762/750`。这些是实际 reason maps 的 observed counts，不是 counterfactual emergency 行为，也不支持 unique training root-cause claim。profile FULL 结束后的未来代码修正只作用于新执行，保留本轮 raw JSON 与 source commit `b5be014`，不重放旧数据。root 已准入 fresh six-scene validation 的 cell 1 四 arms；PID `2160913` 的 startup proof 为 `.tmp/p3_prefix_fresh_pilot_startup_proof.json`，随后于 `2026-10-01 14:21:26+0800` 退出，终态为 `PILOT_TECHNICAL_ERROR`，技术错误为 `caller_rng_unchanged is not true`。仅 `before_legacy` 首臂完成：`778` steps、`24` requests、`22N/2E/0F/0D/0U`；request identity、ledger、replay、safety 和该臂业务字段已观测，但 fresh pilot 证书未接受，`FULL` 不存在。该次启动的 cwd/argv/envflags 与预注册匹配，heartbeat 已删除且当前无后台任务；不自动重试或把首臂计作 fresh performance。V2 技术恢复准备使用独立输出根 `prefix_fallback_fresh_validation_20261001_v2`，固定同一 `6` scenes×`4` arms、policy seeds、cap=`1800`；保留 V1 error 和首臂，不改变业务门槛，不选择 seed/权重、不扩展 population。V2 pilot 只有在实际 preflight JSON PASS 后由 root 明确准入，FULL 仍需 root review pilot；修复 tests=`10` 已通过，代码提交由 low_audit 单独处理。本轮结果不构成 formal qualification、PPO admission 或 P3 solved claim，`PPO_ALLOWED=false`。
+
+### V2 fresh validation technical-recovery pilot startup
+
+V1 的 `PILOT_TECHNICAL_ERROR` 与首臂 artifact 保持不变。native RNG restore 后 check 的最小修复由代码 commit `e73a221` 接受，定向 tests=`10`；V2 actual no-env preflight SHA=`3a48b81fc7a77dbe7aec34e67b4c4b711206ec78349871c7cc465e3d39ac2b78` 已通过。ROOT 已准入独立输出根 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v2` 的 pilot：PID `2163291` 按预注册 module/cwd/argv 运行，cell 1 `before_legacy` 快照为 step `150`、`21` generated、`16` active，三个 env flags 为 `1`；startup proof=`.tmp/p3_prefix_fresh_v2_pilot_startup_proof.json`，SHA 前缀为 `1AD03A...`。monitor `p3-prefix-repair-validation` 已 ACTIVE、间隔 `3` 分钟。此时 pilot terminal/business metrics 尚未出现；首 `before_legacy` 终态需先与 V1 的 actions、requests、outcomes、wait/elapsed/energy、raw reward 与 rejection penalty 精确复核，FULL 仅在 ROOT review 后处理其余 `20` arms。无自动训练、seed/weight 选择或 population 扩展，`PPO_ALLOWED=false`。
+
+## 2026-10-01 P3 prefix fallback V1 技术恢复记录与 V2 准入附录
+
+本项属于已授权的实现调试，不是科学重采样、训练、PPO、held-out、teacher、optimizer 或默认配置晋升。V1 与后续 V2 的执行尝试和证据分开保存；V1 不计为性能成功，也不覆盖或重跑其中选定的 business failure。
+
+V1 no-env preflight 为 `PREFLIGHT_OK`，proof SHA256=`c82a5a749bc4afa92468a9f7c6e2ddbf28748afa6568e3766a80501ca44cab46`。服务器 pilot PID `2136806` 以 `technical_error` 退出。先前“pilot 缺失”的报告只对应较早的启动快照；之后保留的 pilot/arm/pair/sidecar/failure proof 存在，SHA 前缀为 `39cd0d...`，pilot artifact SHA256=`1cf74aa3ee3369ad0da4604d7a9e8b64e04e31b465f25ef8aca8b1b8ab554b10`。该 V1 记录实际包含 `31` 次 native forward、`33` 次 registration，`generated=14`、`admitted=13`、observed unresolved=`14`，outcome 计数 `N/E/F/D=0/0/0/0`；full metrics 仍为 unknown，不能作为 performance 结果。model-caller RNG、alias 和 distribution checks 通过；`technical/hard_safety_clear=false` 表示证书不完整，本记录不据此声称实际 unsafe，也不声称 verified violation 为零。
+
+V1 暴露的最小实现恢复已落实在 helper：`_release` 同时处理 native canonical singleton request（包括 policy map 未观察到的新 admission，如 UID `28` 的 `calls=0` 记录），singleton 直接委托原始函数，不请求 order provider、不采样、不扩展；已注册的 native K=3 request 仍执行原 prefix checks；其他 malformed shortlist 长度 fail closed。该修复保留原始 native 调用语义。定向测试共 `21 passed`，compile 和 diff check 通过；这些检查不改变 V1 的 unknown/performance 状态。
+
+### V2 technical-recovery admission（预注册）
+
+V2 输出目录固定为 `p3_followup_20260930/prefix_fallback_20261001_v2`。V1 failed version 保留为 ineligible/unknown；V2 不覆盖 V1，不自动重启，不重采样 seed，不扩展 population 或 budget。V2 使用同一组原始四 cells、checkpoint、policy seeds、1800-step cap、thresholds，以及 prefix fallback protocol `29aa458a81e50aba4d0249cb1fe3b856829a1261feac3a3ad507c68fcfbdbc0c`；新的 preflight 另外绑定上述 singleton helper 修复。
+
+只有新 preflight 通过并经 root review 后才可运行 pilot cell 1；FULL 的 cells 2–4 仍需 root 对 pilot 结果单独 review。`PPO_ALLOWED=false`，不使用 PPO、optimizer、teacher 或 held-out，也不自动把 V2 结果晋升为默认运行配置。V1 的技术状态、V2 的准入状态和任何后续 performance 结果必须分别报告。
+
+V2 preflight 已 `PREFLIGHT_OK`，fresh JSON phase validation 已 `PHASE_VALIDATION_OK`；preflight SHA256=`9f0a0029377296bf773ccca9e6e34cea2498a6a44ab6f22ef13738f88841e0f6`，server mtime 为 `2026-10-01 09:41:43+0800`。root 只准入 pilot，未准入 FULL。服务器 PID `2138749` 使用 `terminal_env/bin/python`，argv 为 `run_p3_prefix_fallback_20261001 --phase pilot`，输出位于 `/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2`；startup proof `.tmp/p3_prefix_fallback_v2_pilot_startup_proof.json` SHA256=`eeae404c55b954119f4010a57ef15773008f9e7c22a659fdc6eb5ec99df2475c`。历史快照为 step `250`、`24` generated、`15` active、`251` native forwards，3 个 env flags 为 `1`；当时无错误，terminal 结果未知。heartbeat `p3-prefix-fallback` 已创建，每 3 分钟检查；V1 failure 保持原样。
+
+该 pilot 使用 native 初始 policy seed 的 Torch RNG 序列，不作 perfect CRN claim。experimental controller 保持 public K=3 prefix 并允许 max25 fallback；all-energy exhaustion 扩展到 25 可能改变 induced emergency 行为，不能预先声称与原行为相同。当前只记录 startup/technical facts，不产生 performance 或 P3 root-cause 结论。
+
+V2 pilot 已自然终态：artifact pair SHA 前缀为 `995850...`，arm SHA 前缀为 `b69db...`，sidecar SHA 前缀为 `4a8dd...`；pilot proof `.tmp/p3_prefix_fallback_v2_pilot_terminal_proof.json` SHA256=`dfc686760649a747b2eae32a72bbc674028b266058685efc4f0d256aaecdae03`。PID `2138749` 为 `PILOT_OK/PAIR_OK`，观察到 `632` native forwards、`270` registrations，两个 factory flags 均为 `1`。24 requests 的 generated/admitted/resolved/successful 均为 `24`；candidate `N/E/F/D/U=21/3/0/0/0`，reference=`18/6/0/0/0`。natural、无 censor/error、safety、model/caller/observer RNG、config dependencies、alias、q immutability、replay、ledger、energy 和 24-request identity checks 全部通过。
+
+pilot candidate/reference 的 wait 为 `2813.5406783660765/3046.1997149195568 s`（Δ=`-232.6590365534803`），elapsed 为 `8631/8737 s`（Δ=`-106`），energy 为 `7308.588937295861/7457.839771374826`（Δ=`-149.25083407896545`）。raw reward 为 `479.71087729172575/450.31157694902555`（Δ=`+29.3993003427002`），rejection penalty 为 `-11.15/-20.95`（Δ=`+9.8`），candidate total reward=`468.5608772917258`。这些是单一固定场景的 observed business metrics，不形成总体性能或训练根因结论。每 UID 记录为 singleton `24`、extended `0`，不是累计 fallback 次数；累计 fallback 总量未暴露，不能据此声称 never fallback。
+
+root 已准入 FULL，仅运行原 cells 2–4、复用 immutable pilot、cap=`1800`。FULL 已由 PID `2139795`（launcher `2139794`）启动；startup proof `.tmp/p3_prefix_fallback_v2_full_startup_proof.json` SHA256=`e6094b5f53e367c5ec44c2d8d9d6bbf4f73d9d77fe1df2649589c958dc1e7551`，cell2 快照为 step `250`、`24` generated、`16` active、`251` native forwards，log 为 `0` bytes 且无当前错误。`freshguards/_phase_inputs/_validate_pilot_reuse` 均为 `FULL_GUARD_OK`，pilot 复用未重跑；cells 2–4 结果仍 unknown。pilot wall time 为 `177.28967501968145 s`（含 replay），baseline wall time 未暴露，FULL 预估 `9–12 min`。heartbeat `p3-prefix-fallback` 已更新为 FULL 监控。`PPO_ALLOWED=false`，无 optimizer/PPO/held-out，V1 failure 保持不变。
+
+V2 FULL 已完成：server mtime=`2026-10-01 10:01:53+0800`，PID `2139795` 已退出，4 个 cell 全部 natural，0 censor/error；full JSON SHA256=`020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50`，corrected terminal proof `.tmp/p3_prefix_fallback_v2_full_terminalproof.json` SHA256=`daf83439a3d007f0cf50bcc94fb2781be794be51e0cafe300b2e937ef4066ca7`。model/caller/observer RNG、configuration dependencies、aliases、q immutability、24-request identity、replay、ledger、energy 和 hard-safety checks 全通过；每 cell 的 new failed/diverted/unresolved arrival-ID 集合为空。之前因读取 sidecar 错层及 glob 文件名造成的 proof 问题已更正，V1 proof 保留；四个实际 order sidecar 的 server/mirror/metadata SHA 均通过。
+
+| cell | candidate N/E/F/D/U | reference N/E/F/D/U | Δwait s | Δelapsed s | Δenergy |
+|---:|---|---|---:|---:|---:|
+| 1 | 21/3/0/0/0 | 18/6/0/0/0 | -232.6590365534803 | -106 | -149.25083407896545 |
+| 2 | 23/1/0/0/0 | 18/6/0/0/0 | -951.1555657216227 | -765 | -880.4334896140444 |
+| 3 | 22/2/0/0/0 | 21/3/0/0/0 | -678.3272158045793 | -675 | -707.5583376474897 |
+| 4 | 22/2/0/0/0 | 17/7/0/0/0 | -2.8214014478126046 | +103 | +35.67359789283546 |
+
+聚合 candidate/reference 为 `N/E/F/D/U=88/8/0/0/0` 对 `74/22/0/0/0`；四场景的 generated/admitted/successful/resolved 均为 `96`，这是每 cell 的完整请求分母，不是 `96` 个独立样本。wait 为 `10829.515889168819/12694.479108696314 s`（Δ=`-14.691136229842689%`），request elapsed 为 `34515/35958 s`（Δ=`-4.0130151843817785%`），energy 为 `28596.777174838004/30298.346238285667`（Δ=`-5.616046004839429%`）。raw reward 为 `1957.2813049300375/1807.4669936354644`；rejection penalty 为 `-49.65/-74.35`，两者分列，不能把 penalty 减少单独当作业务改善。
+
+按既有 development business screen，AFTER-prefix candidate 通过 development screen only；不构成 qualification、default promotion 或 PPO admission。cell 4 的 elapsed `+103 s`、energy `+35.67359789283546` 是局部退步，必须保留。candidate wall time=`721.0561337517574 s`（含 replay），baseline wall time 与累计 fallback 检查次数未暴露，保留为测量缺口。该结果不单独证明训练根因或 P3 已解决；`PPO_ALLOWED=false`。
+
+下一项只预注册同 controller 的 BEFORE-prefix 对照，用于补齐原固定四 cell 的 panel；不运行 AFTER 或旧 V1。`p3-prefix-fallback` monitor 已删除；BEFORE-prefix pilot 已 `PILOT_OK/PAIR_OK` 退出，root 已准入 FULL 仅复用 immutable pilot 并运行其余 cells 2–4。
+
+### BEFORE-prefix pilot startup（运行中）
+
+The BEFORE-prefix preflight returned `PREFLIGHT_OK`, fresh JSON phase validation returned `PHASE_VALIDATION_OK`, and the server/mirror serialized preflight SHA is `255abac8e9a6c61bc7fa0bce082d5233665bf978847a3144861c642c5f2c8591`; the local proof `.tmp/p3_before_prefix_fallback_preflight_proof.json` SHA256 is `6eed9f45e568f2e69c90b0f27e38c9d25a29ab212c2bc9318a89445c8ff74fc7`. The candidate checkpoint is `3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab` with model digest `3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0`; the warmup is historical input only, the completed AFTER-prefix SHA `020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50` is comparison-only, and normal checkpoint critic loading is unchanged. The bound runtime is 88D/native K=3/public max25/controller temperature 2.5/1800-step cap with the original four-cell grid and nine dependency files; `PPO_ALLOWED=false`, teacher/optimizer/held-out are disabled.
+
+The single authorized pilot uses Python PID `2144374` (shell parent `2144372`), cwd `/home/user/projects/terminal`, the exact `run_p3_before_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv, and all three environment flags set to `1`. Startup proof is `.tmp/p3_before_prefix_fallback_pilot_startup_proof.json` with SHA256=`182cfb5aafa4f68a7ad321a054d44cfafc774e9582013766abbc4fdafa4693e2`.
+
+The startup snapshot reports absolute step `200`, `24` generated request rows, `16` active observations, and `201` native forwards for cell 1; cwd, argv, progress, and no-duplicate checks pass. The pilot log is `0` bytes, and pilot/error JSON artifacts did not yet exist at that snapshot. This was the single authorized pilot launch; the pilot later reached its natural terminal state and FULL was admitted only after root review.
+
+The pilot terminal proof `.tmp/p3_before_prefix_fallback_pilot_terminal_proof.json` has SHA256=`ec414af63e9c633e4b999d6e5c4e364b0b50556b786e0942804bcbaac0502d1b`. PID `2144374` exited `PILOT_OK/PAIR_OK`; the 24-request identity, natural termination, zero censor/error, model/caller/observer RNG, configuration dependency, q, alias, replay, ledger, energy, and safety checks passed, and the new failed/diverted/unresolved arrival-ID sets are empty. The actual order sidecar server/mirror/metadata SHA is `1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d`. Pilot artifact SHA prefixes are pilot=`c3c34adf1f76180aba712248cb65a453eb07d6d755b4905b1822ec4b0a70ec1d`, pair=`9000f7d36cb20a0675891960104971fbc59cbf1d3fb9c682bf8d7f1c32fdc11b`, and arm=`4ed5e1276cf1e44facaa4417e67157985cff67c830c0f9abcae198d9c31e9d7f`.
+
+Pilot candidate/reference metrics were `N/E/F/D/U=19/5/0/0/0` for BEFORE-prefix, `19/5/0/0/0` for native BEFORE legacy, and `21/3/0/0/0` for existing AFTER-prefix. BEFORE-prefix wait/elapsed/energy/raw reward/rejection penalty were `3123.9868663533725/8878/7513.164788008758/453.66623681012584/-19.8`; relative to BEFORE legacy, the deltas were wait `-203.51275496015205`, elapsed `-172`, energy `-244.75232074669475`, raw reward `+2.33735743681331`, and rejection penalty `-0.25`. Relative to AFTER-prefix, the deltas were wait `+310.446187987296`, elapsed `+247`, energy `+204.575850712897`, raw reward `-26.04464048159991`, and rejection penalty `-8.65`. Wall time was `188.37618574872613 s` including replay. These are single-pilot observed metrics and do not establish a general performance or training conclusion.
+
+### BEFORE-prefix FULL startup and terminal（FULL_OK）
+
+The single authorized FULL launch uses PID `2145833` (shell parent `2145832`), cwd `/home/user/projects/terminal`, and the exact `run_p3_before_prefix_fallback_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001` argv with all three environment flags set to `1`. Fresh `_phase_inputs` and `_validate_pilot_reuse` guards exited successfully; the immutable pilot was reused without rerunning cell 1 and no duplicate process was detected. Startup proof `.tmp/p3_before_prefix_fallback_full_startup_proof.json` has SHA256=`3a7c7f1525b57be37004a886b372d00cacac9b080c216ff0b71d5b085554b173`.
+
+The cell 2 startup snapshot reports step `50`, `15` generated rows, `15` active observations, and `51` native forwards; the `15` generated rows are an early progress value, not a missing 24-request scope. The FULL log is `0` bytes and no cell-2 completion, full terminal, or error artifact existed at that snapshot. `PPO_ALLOWED=false`, with no training, teacher, optimizer, or held-out use.
+
+The corrected terminal proof `.tmp/p3_before_prefix_fallback_full_terminal_proof.json` has SHA256=`9027b2071f434ad7093ff1a27720996f80b163e547f554781590899b6080396a`. PID `2145833` exited with `FULL_OK`; the full JSON SHA is `b4ee3a191c26911edf94fd24e1da4077bd2a0962e10cd5507174b52a8af73028`. All four scenes are natural with zero censor/error/new failed/diverted/unresolved IDs; exact 24-request identity, model/RNG/configuration/dependency/alias/source-q/replay/ledger/energy/safety checks and all order-sidecar server/mirror/metadata hashes passed. The immutable cell-1 pilot was reused. The fixed development screen passed (`development_candidate=true`, `qualification=not_a_qualification`), with no qualification, default promotion, or PPO admission.
+
+| arm | aggregate N/E/F/D/U | generated/admitted/successful/resolved | wait s | request elapsed s | energy | raw reward excluding penalty | rejection penalty |
+|---|---|---:|---:|---:|---:|---:|---:|
+| native BEFORE legacy | 80/16/0/0/0 | 96/96/96/96 | 11960.603909056079 | 35264 | 29569.552989304 | 1875.5198191582429 | -65.0 |
+| BEFORE-prefix | 84/12/0/0/0 | 96/96/96/96 | 11026.483499761933 | 34876 | 28895.644581442906 | 1913.77995418683 | -59.6 |
+| native AFTER legacy | 74/22/0/0/0 | 96/96/96/96 | 12694.479108696314 | 35958 | 30298.346238285667 | 1807.4669936354644 | -74.35000000000001 |
+| AFTER-prefix | 88/8/0/0/0 | 96/96/96/96 | 10829.515889168819 | 34515 | 28596.777174838007 | 1957.2813049300375 | -49.65 |
+
+Relative aggregate percentages are BEFORE-prefix versus native BEFORE: wait `-7.80997695765904%`, request elapsed `-1.1002722323049001%`, energy `-2.27906187186821%`; repaired same-controller AFTER-prefix versus BEFORE-prefix: wait `-1.786313928618916%`, elapsed `-1.035095767863287%`, energy `-1.0342991510797954%`; native AFTER legacy versus native BEFORE: wait `+6.1357704445389665%`, elapsed `+1.9680127041742286%`, energy `+2.464674556444219%`. Raw reward and rejection penalty remain separate; no performance claim is based on penalty alone.
+
+All per-cell F/D/U values are zero and every cell has no new failed/diverted/unresolved IDs. The following deltas are candidate minus the named reference; cost order is `wait / request elapsed / energy`.
+
+| cell | BEFORE-prefix N/E vs native BEFORE N/E; cost delta | AFTER-prefix N/E vs BEFORE-prefix N/E; cost delta | native AFTER N/E vs native BEFORE N/E; cost delta |
+|---:|---|---|---|
+| 1 | 19/5 vs 19/5; `-203.51275496015205 / -172 / -244.75232074669475` | 21/3 vs 19/5; `-310.44618798729607 / -247 / -204.57585071289668` | 18/6 vs 19/5; `-281.29990639396783 / -313 / -300.077337380626` |
+| 2 | 21/3 vs 20/4; `-1007.9074811448918 / -876 / -993.3610109648716` | 23/1 vs 21/3; `+114.70070184667702 / +210 / +185.0218761352271` | 18/6 vs 20/4; `+57.94878642340791 / +99 / +72.09435478439991` |
+| 3 | 23/1 vs 22/2; `+57.244417168697055 / +170 / +131.559097721969` | 22/2 vs 23/1; `+119.03358738113457 / -20 / +12.514108883472545` | 21/3 vs 22/2; `+854.6052203544109 / +825 / +851.6315442529312` |
+| 4 | 21/3 vs 19/5; `+220.05540964220245 / +490 / +432.64582612850427` | 22/2 vs 21/3; `-120.25571183363036 / -304 / -291.82754091070456` | 17/7 vs 19/5; `+102.6210992563847 / +83 / +105.14468732496425` |
+
+The panel retains the local regressions: BEFORE-prefix cells 3 and 4 have higher wait/elapsed/energy than native BEFORE, repaired AFTER-prefix cell 2 has higher wait/elapsed/energy than BEFORE-prefix, and repaired cell 3 has one fewer normal outcome with higher wait and energy. Candidate wall times including replay were `706.19361034967 s` (BEFORE-prefix) and `721.0561337517574 s` (AFTER-prefix); native baseline wall times and cumulative fallback check counts remain unknown.
+
+In this fixed panel, the native normal-outcome decline `80→74` was not observed under the same repaired executor (`84→88`), alongside lower aggregate wait/elapsed/energy; this supports a learned-policy/execution-rule interaction and a development execution fix, rather than a unique universal training root cause.
+
+This is a fixed development panel result. Native initial Torch policy seeds were retained but are not an exact keyed-CRN sampler, and expanding all-energy exhaustion from three to as many as 25 candidates can change induced emergency behavior. The panel does not provide an exact-CRN difference-in-differences or a unique universal training root-cause claim, and it does not establish that P3 is solved. The `p3-before-prefix-fallback` heartbeat was deleted after terminal completion; no background job remains. The next documented work is to measure cumulative fallback checks and actual inference latency, then separately review this opt-in executor and existing admission before any PPO/default-promotion decision; no new job was admitted or launched.
+
+The earlier `31` focused tests, compile, native BEFORE guard, and diff check are historical code validation; this documentation round performed only document/numeric checks and did not retest code.
+
+## Frozen always-RELEASE gate control 终态
+
+这是 `newly_run` 的冻结、离策略 gate-control full，不是训练、PPO、Teacher、optimizer、held-out 或 formal qualification。它复用 `9` 个 `preexisting_artifact` reference scenes（`6` 个环境 profile、`9` 个 fixed keyed pairs），不是 `216` 个独立请求实验；source `3fe7+a82`、88D、K=3、legacy eligibility、真实 proposal `q`、物理配置和 native safety 保持不变，仅将 legacy `actor_mask=true` 的 gate 固定为 RELEASE，其他行保持 canonical WAIT。artifact 为 `.tmp/p3_gate_control_full_proof.json`，server full SHA256 为 `fa856f3980be848c8cb2fd5971115188a9e2f5303c37d8699b44631e57a58403`，`FULL_OK`、`9/9 PAIR_OK`、9/9 natural、technical/safety/source-RNG checks 均通过；`PPO_ALLOWED=false`，held-out 未使用。
+
+逐 pair 的控制结果与相对既有 legacy reference 的 delta 如下。`N/E/F/D/U` 依次为 normal/emergency/failed/diverted/unresolved；括号内为 `control/reference`。wait、request elapsed 和 energy 均为 control 减 reference，unknown 不填零。
+
+| pair | N/E/F/D/U control/reference | Δwait s | Δelapsed s | Δenergy |
+|---:|---|---:|---:|---:|
+| 1 | 22/2/0/0/0 / 23/1/0/0/0 | -239.352168125554 | -98 | -100.978648204367 |
+| 5 | 22/2/0/0/0 / 20/4/0/0/0 | +18.339647352861 | +143 | +40.892863295369 |
+| 9 | 22/2/0/0/0 / 20/4/0/0/0 | -66.722642900639 | -11 | -26.622650716003 |
+| 13 | 20/4/0/0/0 / 20/3/1/0/0 | -1873.686726820392 | -1683 | -1724.690972830649 |
+| 17 | 23/1/0/0/0 / 21/3/0/0/0 | -433.175318573591 | -507 | -564.411033581651 |
+| 21 | 22/2/0/0/0 / 20/4/0/0/0 | -345.431682372297 | -270 | -285.375711314852 |
+| 14 | 19/5/0/0/0 / 19/5/0/0/0 | -526.172317326245 | -574 | -621.337151864353 |
+| 15 | 19/4/1/0/0 / 21/3/0/0/0 | +951.717922176038 | +650 | +815.757062620658 |
+| 16 | 21/3/0/0/0 / 16/7/1/0/0 | -1590.833149623624 | -1315 | -1436.236666501356 |
+
+Aggregate control/reference values were `N=190/180`, `E=25/34`, `F=1/2`, `D=0/0`, `U=0/0`; admitted was `216/216`, successful completed was `215/214`, and resolved was `216/216`. Wait was `25124.700815134504 / 29230.017251347945 s`, request elapsed was `79035 / 82700 s`, and energy was `64612.22804454819 / 68515.23095364538`. Raw reward excluding rejection penalty was `4315.902567907697 / 4132.633739495724` (delta `+183.26882841197312`); the rejection penalty was `-1140.55 / -165.8` (delta `-974.75`), so total reward was `3175.3525679076965 / 3966.8337394957234` (delta `-791.4811715880269`). These are observed return and business tradeoffs, not a root-cause attribution.
+
+The registered acceptance review rejected the candidate: pair `15` introduced a new failed arrival `21`, despite aggregate normal increasing `180→190`, failed decreasing `2→1`, successful completed increasing `214→215`, wait decreasing to `25124.700815134504 s`, request elapsed decreasing to `79035 s`, and energy decreasing to `64612.22804454819`. The retained new failure row was UID `108`, mission `cargo`, initial SOC `0.5758906587575819`, request time `150`, terminal time `1013`, phase `ring_outer`, outcome `failed_energy`, and wait `807.8147075862395 s`. In the `env877104` cross-keyed traces, arrival `13` was `emergency_landed` under all four control keyed runs; the two previous legacy runs that failed are retained as comparison evidence, not as an all-scene feasibility claim.
+
+The control tests were `27` unique cases (`6` gate-control, `11` opportunity, `10` forced-WAIT); code/docs commit `3a3e1ba` was not pushed because no remote is configured. The `p3-gate` heartbeat was deleted after the terminal full artifact, and no active background process remains.
+
+## Passive pair-15 failure replay 终态 (`REPLAY_OK`)
+
+The root-approved passive exact replay ran once for each arm of fixed pair `15` (`env877104`, keyed `9303103`) with source runner `CF8C08AC204BAFC2BFE6D8E3A661FFD779BC7ADCF4DBBFC58F7F51B6ED8F9794`, source checkpoints `3fe7+a82`, unchanged configuration, seeds, and 1800-step cap. Server PID `2097784` exited; the terminal snapshot was `2026-09-30T16:54:53Z`. Legacy ran `724` ticks and control ran `1077` ticks. Request identity, outcome counts, terminal rows, energy, wait, reward, model/RNG invariants, and hard-safety checks were exact for both arms; the replay artifact is `/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/failure_replay.json` with local proof `.tmp/p3_gate_failure_replay_launch_proof.json` and status `REPLAY_OK`. `PPO_ALLOWED=false`, held-out was unused, and no formal promotion occurred.
+
+Target arrival `21` was cargo: legacy became `emergency_landed` at terminal `606` after `ring_outer→ring_middle→ring_inner`, while control remained in `ring_outer` for `777` waiting frames and ended as `failed_energy` at terminal `1013`. Legacy had one positive emergency attempt, which succeeded at tick `438` with SOC `0.39723546555721995`; control had `120` actual attempt-positive emergency calls, with first safety-block evidence at tick `414`, SOC `0.39966843653535883`, and first energy-block evidence at tick `664`, SOC `0.23300176986869217`. The control blocker counts were `58` safety-block calls and `69` energy-block calls; these overlap and must not be summed. Native call totals were `336` legacy and `899` control, including early returns and retries; only attempt-positive deltas count as attempts. These are observations from this pair's causal traces only, not a global root-cause conclusion.
+
+The first launch proof's postprocessing parser incorrectly read the release field path and reported the fields missing; the collector and replay were unchanged. Corrected raw verification used `trace.steps[*].targets[str(arrival_id)].after.release_decision`: control target `21` in `ring_outer` has `777` release frames, `51` `safety_reject` + `661` `safety_wait` + `64` `emergency_energy_guard` + `1` terminal-null; legacy has `15` release frames, `10` `safety_reject` + `4` `safety_wait` + `1` `approved`, with the approved step `312`, proposal `10`, shortlist `[10,11,12]`. The prior proof v1 is retained. Because a new live server hash verification was not available, this correction is sourced from the synchronized mirror proof and is not a new server hash check. `last_safety_decision` labels are retained as stale labels and are not interpreted as the immediate failure reason. The final exact regression command over replay, gate-control, opportunity, and forced-WAIT tests produced `32 passed in 4.07s` (`5` new replay tests plus the original `27`), without duplicate counting; native fixture v3 also passed with no optimizer. Commits `d153f9e` and `99b6bd9` are local only, with no remote/upstream; the replay heartbeat was deleted and no background process remains.
+随后完成 server 直读 cross-check：更新后的 proof `.tmp/p3_gate_failure_replay_launch_proof.json` SHA256 为 `914a4b235916a64f165ebf8073ea5f74828b18cf2af12f1b45e00bb414e651ac`；replay summary 为 `REPLAY_OK`、mismatch `0`、model/RNG/safety checks 为 `true`，server trace SHA 为 legacy `d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745`、control `1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b`。上段关于首次 parser 的 mirror 来源是直读前的历史 provenance 记录；本次 server 直读复核与之不矛盾。
+
+## Proposal-support control full 终态 (`FULL_OK`; development candidate)
+
+冻结 proposal-support control 的 full 比较已经完成。固定 9 个场景全部自然终态，0 error、0 censor；每个 pair 的 24 个请求、source/model-caller RNG、ledger、energy、wait、request identity 和 hard-safety 检查均通过。该运行只评估冻结 off-policy proposal-support control，没有训练、optimizer、teacher、PPO 或 heldout。
+
+服务器产物为 `.tmp/p3_proposal_support_full_proof.json`、`.tmp/p3_proposal_support_full_perpair.csv`；full source SHA 为 `0178f6cef9083babab207d1fbd0e71cc50b4ebd90ffc2e4601caaeb07a8668b5`，PID 2102330 已于 2026-10-01 01:49:36（Asia/Shanghai）退出。9 个场景来自 6 个固定环境 profile 和 9 个 keyed 场景，不能视作 216 个独立样本。
+
+| pair | scene | ticks | control N/E/F/D/U | reference N/E/F/D/U | Δwait (s) | Δelapsed (s) | Δenergy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 722/694 | 22/2/0/0/0 | 23/1/0/0/0 | +252.53942549349722 | +282 | +324.9373252078476 |
+| 5 | 877102/9303101 | 799/795 | 20/4/0/0/0 | 20/4/0/0/0 | +261.4727465143619 | +363 | +322.5319456248826 |
+| 9 | 877103/9303101 | 711/668 | 20/4/0/0/0 | 20/4/0/0/0 | +367.11554965350433 | +351 | +397.4807547823866 |
+| 13 | 877104/9303101 | 758/863 | 19/5/0/0/0 | 20/3/1/0/0 | -578.3562047072569 | -374 | -359.9870170506765 |
+| 17 | 877105/9303101 | 685/828 | 21/3/0/0/0 | 21/3/0/0/0 | -504.171103904288 | -497 | -542.7246012361056 |
+| 21 | 877106/9303101 | 836/752 | 19/5/0/0/0 | 20/4/0/0/0 | -176.0746084480652 | -154 | -150.76281530593496 |
+| 14 | 877104/9303102 | 742/742 | 19/5/0/0/0 | 19/5/0/0/0 | -246.58688277428746 | -274 | -276.1631260163076 |
+| 15 | 877104/9303103 | 685/724 | 21/3/0/0/0 | 21/3/0/0/0 | -66.14638229183583 | -64 | -61.602128748916584 |
+| 16 | 877104/9303104 | 738/863 | 22/2/0/0/0 | 16/7/1/0/0 | -688.2406166132155 | -511 | -584.9103552780334 |
+
+聚合控制侧为 N/E/F/D/U = 183/33/0/0/0，admitted/completed/resolved = 216/216/216；reference 为 180/34/2/0/0，successful completed = 214。wait 为 27851.56917427036 对 29230.017251347945，Δ = -1378.448077077585（-4.7158647%）；elapsed 为 81822 对 82700，Δ = -878（-1.0617%）；energy 为 67584.03093562453 对 68515.23095364538，Δ = -931.20001802085（-1.3591%）。
+
+raw reward（排除 rejection penalty）为 control 4250.50923752765、reference 4132.63373949572；rejection penalty 分别为 -156 和 -165.8。两类数值分开报告，不能把结果归结为 penalty 变化。
+
+按预注册规则，该结果是 development candidate PASS only。它不是 PPO 准入、默认配置晋升、formal qualification，也不能单独证明训练退化的根因或已经解决 P3。
+
+## 2026-10-01 Balanced proposal-support full 终态 (`FULL_OK`; development candidate)
+
+balanced proposal-support control full 已完成。服务器 PID `2105971` 已退出，full mtime 为 `2026-10-01 02:37:12`（Asia/Shanghai）；artifact proof 为 `.tmp/p3_proposal_support_balanced_full_proof.json`，同步 full JSON 为 `D:/7_codespace/training_outputs/terminal/p3_followup_20260930/proposal_support_balanced_20261001/full.json`，SHA256=`f5cd9041f14c86f3b2e6ebde504a4e98f0eafcc4ee4c404db0939db38b2bb48d`。独立核对 proof 为 `.tmp/p3_proposal_support_balanced_full_proof.json`（SHA256=`02ad0f032a369fc412121e887830da71618092150ffbd08481333a7c05ae8634`），per-pair CSV 为 `.tmp/p3_proposal_support_balanced_full_perpair.csv`（SHA256=`dfdfe17476b01eda3ae3c8c96000fcb60572fabf35fc038878937e01ca3fae8f`）；ALL24 与六 profile 汇总均在 `1e-8` 内，24 control/reference 匹配、reference hashes、reuse9/new15 IDs 和 all checks 均通过。固定 24 个 pair 全部自然终态，0 censor/error；source/model RNG、request identity、ledger、energy、hard-safety checks 全通过，未出现 new failed/unresolved/diverted arrival IDs。范围为复用 9 个既有 control/reference 场景并新增 15 个 control 场景，不能视作 576 个独立样本。
+
+| pair | scene | ticks C/R | C N/E/F/D/U | R N/E/F/D/U | Δwait | Δelapsed | Δenergy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 722/694 | 22/2/0/0/0 | 23/1/0/0/0 | 252.53942549349722 | 282 | 324.9373252078476 |
+| 2 | 877101/9303102 | 713/713 | 23/1/0/0/0 | 23/1/0/0/0 | 0 | 0 | 9.094947017729282E-13 |
+| 3 | 877101/9303103 | 768/655 | 20/4/0/0/0 | 23/1/0/0/0 | 685.5275409802998 | 642 | 646.8438997043531 |
+| 4 | 877101/9303104 | 698/725 | 21/3/0/0/0 | 23/1/0/0/0 | 260.5767619747626 | 302 | 339.0913124511708 |
+| 5 | 877102/9303101 | 799/795 | 20/4/0/0/0 | 20/4/0/0/0 | 261.4727465143619 | 363 | 322.5319456248826 |
+| 6 | 877102/9303102 | 801/791 | 18/6/0/0/0 | 19/5/0/0/0 | -202.24211122579618 | -251 | -247.63182639344632 |
+| 7 | 877102/9303103 | 735/786 | 20/4/0/0/0 | 20/4/0/0/0 | -169.61955018254366 | -121 | -173.83825824859105 |
+| 8 | 877102/9303104 | 809/824 | 22/2/0/0/0 | 19/5/0/0/0 | -465.464473863537 | -397 | -443.5336065149195 |
+| 9 | 877103/9303101 | 711/668 | 20/4/0/0/0 | 20/4/0/0/0 | 367.11554965350433 | 351 | 397.4807547823866 |
+| 10 | 877103/9303102 | 831/713 | 18/6/0/0/0 | 21/3/0/0/0 | 241.61708810662867 | 113 | 197.95249503380546 |
+| 11 | 877103/9303103 | 702/770 | 21/3/0/0/0 | 20/4/0/0/0 | -428.18800897632354 | -440 | -399.874432841023 |
+| 12 | 877103/9303104 | 751/797 | 19/5/0/0/0 | 19/5/0/0/0 | -478.6270830262347 | -570 | -532.4805304688753 |
+| 13 | 877104/9303101 | 758/863 | 19/5/0/0/0 | 20/3/1/0/0 | -578.3562047072569 | -374 | -359.9870170506765 |
+| 14 | 877104/9303102 | 742/742 | 19/5/0/0/0 | 19/5/0/0/0 | -246.58688277428746 | -274 | -276.1631260163076 |
+| 15 | 877104/9303103 | 685/724 | 21/3/0/0/0 | 21/3/0/0/0 | -66.14638229183583 | -64 | -61.602128748916584 |
+| 16 | 877104/9303104 | 738/863 | 22/2/0/0/0 | 16/7/1/0/0 | -688.2406166132155 | -511 | -584.9103552780334 |
+| 17 | 877105/9303101 | 685/828 | 21/3/0/0/0 | 21/3/0/0/0 | -504.171103904288 | -497 | -542.7246012361056 |
+| 18 | 877105/9303102 | 706/706 | 22/2/0/0/0 | 22/2/0/0/0 | 0 | 0 | -9.094947017729282E-13 |
+| 19 | 877105/9303103 | 742/865 | 22/2/0/0/0 | 19/5/0/0/0 | -944.2728093343212 | -802 | -886.4363900023491 |
+| 20 | 877105/9303104 | 818/776 | 22/2/0/0/0 | 22/2/0/0/0 | -148.2594080823701 | -223 | -245.13615725234376 |
+| 21 | 877106/9303101 | 836/752 | 19/5/0/0/0 | 20/4/0/0/0 | -176.0746084480652 | -154 | -150.76281530593496 |
+| 22 | 877106/9303102 | 748/748 | 20/4/0/0/0 | 20/4/0/0/0 | 0 | 0 | 9.094947017729282E-13 |
+| 23 | 877106/9303103 | 759/755 | 19/5/0/0/0 | 20/4/0/0/0 | 476.3792891837884 | 485 | 469.0832526346667 |
+| 24 | 877106/9303104 | 799/757 | 21/3/0/0/0 | 21/3/0/0/0 | 276.4580103747421 | 151 | 211.86047995051922 |
+
+| profile | pair IDs | C normal | R normal | C wait (s) | R wait (s) | Δwait (s) |
+|---:|---|---:|---:|---:|---:|---:|
+| 877101 | 1,2,3,4 | 86 | 92 | 12260.308761386932 | 11061.665032938374 | 1198.6437284485582 |
+| 877102 | 5,6,7,8 | 80 | 78 | 13760.424366494517 | 14336.277755252031 | -575.853388757514 |
+| 877103 | 9,10,11,12 | 78 | 80 | 13243.684865547717 | 13541.767319790142 | -298.08245424242523 |
+| 877104 | 13,14,15,16 | 81 | 76 | 12144.420913491927 | 13723.750999878524 | -1579.330086386597 |
+| 877105 | 17,18,19,20 | 87 | 84 | 12382.405353223297 | 13979.108674544275 | -1596.703321320978 |
+| 877106 | 21,22,23,24 | 79 | 81 | 13516.843074574452 | 12940.080383463985 | 576.7626911104671 |
+
+聚合 control N/E/F/D/U=`491/85/0/0/0`，reference=`491/83/2/0/0`；generated/admitted/resolved 均为 `576/576/576`，completed 为 control/reference=`576/574`。wait 为 `77308.08733471885` 对 `79582.65016586734`，Δ=`-2274.5628311484907`；request elapsed 为 `221361` 对 `223350`，Δ=`-1989`；energy 为 `183268.3495482137` 对 `185263.6493281816`，Δ=`-1995.2997799678997`。raw reward（排除 rejection penalty）为 control `11371.746812675045`、reference `11251.448813678655`；rejection penalty 分别为 `-403.90000000000003` 和 `-426.05`。
+
+root review criterion 为 development candidate PASS only：technical/source/model-RNG/request identity/ledger/energy/hard-safety checks 全通过，normal 不低于 reference、wait 不高于 reference、successful completed 不低于 reference，strict business gain 为 true。该结果不是 formal qualification、默认配置晋升、PPO 准入或训练 remedy；`PPO_ALLOWED=false`，未使用 heldout。六个 profile 中 `877101` 的 normal 为 `86/92` 且 wait 增加 `1198.6437284485582 s`，`877106` 的 normal 为 `79/81` 且 wait 增加 `576.7626911104671 s`，因此不记录为普遍收益。
+
+balanced full 终态后 heartbeat `p3-balanced-proposal-support` 已删除，无 active background job。下一步由 root 选择 actual trained checkpoint validation；本轮不启动训练。
+
+## 2026-10-01 P3 trained proposal-support pilot 终态（full running）
+
+这是新的 frozen trained proposal-support development comparison，不是训练、qualification、default promotion 或 PPO。`preexisting_artifact` 包含原始 2-second/3-arm fixture 的 raw proof；该 fixture 的 evaluator classification 不再作为生产终态，新的 runner 只将 nonterminal exact-replay `IncompleteLifecycle` 保留为 lifecycle qualification metadata，并生成 safety-snapshot fallback summary。修正后的 3-arm contract 为 valid/censored，`generated=12`、`admitted=12`、`pending=12`，full metrics 保持 null；没有 physical rerun。
+
+`newly_run` 代码 commit 为 `9b66049`，28 个定向测试和 compile 通过。server no-env preflight 为 `PREFLIGHT_OK`，proof SHA 前缀为 `0911e9...fe38`；范围是原始 4 cells（`875101..875104` / `875201..875204`），每 cell 3 arms，native stochastic epsilon=`0.10` only support。该 preflight 不作 perfect keyed-CRN claim；PPO、teacher、heldout 和 default promotion 均关闭。
+
+pilot 服务器 PID `2112900` 已自然退出；server pilot SHA=`b9133fdbe1c94b7e2a2d5225c052c103339bb55ca2d59d6df3e885a871a55cda`，与 preflight SHA `0911e9...fe38` 不同。3 arms 均 natural，0 censor/error，safety、source/model、caller-RNG、24-request identity、replay、ledger 和 energy checks 全通过。pilot cell 1 的 observed metrics 如下：
+
+| arm | N/E/F | wait (s) | energy | raw reward excl. rejection penalty | rejection penalty |
+|---|---|---:|---:|---:|---:|
+| before_legacy | 19/5/0 | 3327.4996213135246 | 7757.917108755452 | 451.32887937331253 | -19.55 |
+| after_legacy | 18/6/0 | 3046.1997149195568 | 7457.839771374826 | 450.31157694902555 | -20.950000000000003 |
+| after_support | 18/6/0 | 3749.379758593257 | 8176.11847746592 | 434.348464181481 | -24.700000000000003 |
+
+该 pilot 首 cell 的 before normal=`19`、after legacy/support normal=`18`，与历史首 cell 计数一致；support arm 的首 cell wait 为 `3749.379758593257 s`。这些是该 pilot cell 的 observed metrics，不形成 global acceptance 或 root-cause 结论。root 已授权 fixed full：复用 pilot cell 1，加上 3 cells/9 arms。以下启动记录属于历史状态：PID `2113754`，cwd `/home/user/projects/terminal`，module phase 为 `full`，server env/executable checks 通过；首个新 arm `cell_02_before_legacy.json` 已生成，大小 `71978` bytes，server mtime ns=`1790799508572507832`。full 随后已完成，终态见下方；启动时的 heartbeat `p3-trained-proposal-support` 已在终态后删除。
+
+## 2026-10-01 P3 trained proposal-support full 终态（development candidate rejected）
+
+trained proposal-support full 已完成。服务器 PID `2113754` 已退出，full mtime ns=`1790799958139098485`；full artifact SHA=`3f65446f49474452d31c3e1498c8019f04f4250cad3e8594c75107a123525919`，independent proof `.tmp/p3_trained_support_full_proof.json` SHA=`6e3cd91c472cdaf522020f39d7f8180e2802dfd035332187c21b4204a79f15b8`。4 cells × 3 arms 全部 natural、0 censor/error、hard-safety clear；每个 arm generated/admitted/resolved=`96/96/96`，source/model/caller-RNG、24-request identity、replay、ledger 和 energy checks 全通过。
+
+| cell | env | arm | N/E/F/D/U | simulation s | request elapsed s | wait s | energy | raw reward excl penalty | rejection penalty |
+|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 1 | 875101 | before_legacy | 19/5/0/0/0 | 761 | 9050 | 3327.4996213135246 | 7757.917108755452 | 451.32887937331253 | -19.55 |
+| 1 | 875101 | after_legacy | 18/6/0/0/0 | 689 | 8737 | 3046.1997149195568 | 7457.839771374826 | 450.31157694902555 | -20.950000000000003 |
+| 1 | 875101 | after_support | 18/6/0/0/0 | 755 | 9504 | 3749.379758593257 | 8176.11847746592 | 434.348464181481 | -24.700000000000003 |
+| 2 | 875102 | before_legacy | 20/4/0/0/0 | 726 | 9133 | 3234.6369068496506 | 7677.921091787695 | 465.58665490460396 | -16.75 |
+| 2 | 875102 | after_legacy | 18/6/0/0/0 | 727 | 9232 | 3292.5856932730585 | 7750.015446572095 | 443.8305713428898 | -20.650000000000002 |
+| 2 | 875102 | after_support | 20/4/0/0/0 | 726 | 9159 | 3189.316530514645 | 7679.415958554219 | 463.8215531471326 | -19.450000000000003 |
+| 3 | 875103 | before_legacy | 22/2/0/0/0 | 707 | 8369 | 2667.140927166041 | 7098.867749409129 | 497.63654049060835 | -14.3 |
+| 3 | 875103 | after_legacy | 21/3/0/0/0 | 776 | 9194 | 3521.746147520452 | 7950.49929366206 | 471.0605408998054 | -17.55 |
+| 3 | 875103 | after_support | 20/4/0/0/0 | 833 | 9186 | 3573.5243270983137 | 8005.473731383905 | 462.88896723234376 | -15.350000000000001 |
+| 4 | 875104 | before_legacy | 19/5/0/0/0 | 720 | 8712 | 2731.326453726862 | 7034.847039351723 | 460.9677443897178 | -14.4 |
+| 4 | 875104 | after_legacy | 17/7/0/0/0 | 726 | 8795 | 2833.9475529832466 | 7139.991726676687 | 442.2643044437435 | -15.200000000000001 |
+| 4 | 875104 | after_support | 17/7/0/0/0 | 757 | 9443 | 3345.4609609007143 | 7798.724737635735 | 438.3307463573676 | -14.100000000000001 |
+
+聚合 before_legacy/after_legacy/after_support 分别为 normal=`80/74/75`、emergency=`16/22/21`、failed/diverted/unresolved=`0/0/0`。wait 分别为 `11960.603909056077`、`12694.479108696314`、`13857.68157710693` s；request elapsed 分别为 `35264`、`35958`、`37292` s；energy 分别为 `29569.552989304`、`30298.346238285667`、`31659.73290503978`。raw reward（排除 rejection penalty）分别为 `1875.5198191582426`、`1807.4669936354644`、`1799.3897309183249`；rejection penalty 分别为 `-65.0`、`-74.35000000000001`、`-73.60000000000001`。
+
+before→after_legacy 的 observed delta 为 normal `-6`、wait `+733.875199640237 s`、request elapsed `+694 s`、energy `+728.7932489816667`。after_support→after_legacy 的 observed delta 为 normal `+1`，但 wait `+1163.2024684106163 s`（`+9.16305788091587%`）、request elapsed `+1334 s`、energy `+1361.3866667541115`（`+4.493270543703249%`）。按既有 aggregate criterion，trained fixed-epsilon support 被拒绝为 development candidate；不进行 epsilon retune 或 default promotion。
+
+证据边界：该 full reproduces the four-cell trained regression；proposal encoder/head、gate head、temperature bitwise frozen，允许变化范围仅为 gate adapter/critic，因此不把本结果写成 newly trained proposal-head collapse。coverage 结果不足以单独建立 fix；本轮不作 team-credit、entropy、clipping root-cause 或 P3 solved 结论。原 balanced24 的 `491/85/0` 对 `491/83/2` 结果仍是 separate preexisting cohort/source/sampler，不能与本 full 合并。
+
+full heartbeat `p3-trained-proposal-support` 已删除，无 active job。随后 root 已授权下方 matched-state gate-shift diagnostic；该诊断仍未训练，`PPO_ALLOWED=false`，teacher/optimizer/heldout 均未使用。
+
+## 2026-10-01 P3 matched-state gate-shift diagnostic（pilot 与 full 终态）
+
+这是当前代码 `6f4acd0` 下的 matched-state gate-shift 只读诊断，不是训练、PPO、optimizer、Teacher、held-out 或 qualification。定向测试为 `13` 项；pilot 复用固定 cell 1，full 仅复用该 cell 加上其余 3 条既有 tape，不生成新的 policy trajectory。
+
+pilot 服务器 PID `2117546` 已自然退出，状态为 `PILOT_OK`。cell 1 既有轨迹精确回放 `689` 步；同状态分别计算 before/after 分布；eligible actor rows=`2655`，全部 observation rows=`7175`，proposal equal=`0`；raw team reward=`429.36157694902556`。NPZ SHA256=`b3121d0019233e97450ec6899d35768694acaf56e3d3c625e0062e1dcac0f424`。重复 state-row 的描述性均值为：inner 的 `p=.3382572144344204→.32877570660476363`、Δ=`-.009481507829656819`、KL=`.0014337947496490945`；middle Δ=`+.0010723269267593717`、KL=`.00019261295864622603`；outer Δ=`+.0001329123`、KL=`.0003650273`。这些是重复 state-row 的描述性统计，不是独立试验或 causal return。
+
+root 已复核 fail-fast LP validation（代码行 `625–634`）会执行 eligible gates 和 RELEASE proposals；eligible gate/RELEASE proposal logprob 逐行 fail-fast 核验已执行，结果 JSON 未单独序列化 LP 核验计数。full 已完成，full JSON SHA256=`237bc7393e0dc831204b59aaf29aa99ea55dc142ce7ab3cc9fbc4effe8c4ec3e`，PID `2118294` 已退出且无 error，heartbeat `p3-matched-gate-shift` 已删除。ALL4 的 steps=`689/727/776/726`（合计 `2918`），native output reward totals=`429.36157694902556/423.18057134288983/453.5105408998054/427.06430444374354`；model before/after、caller RNG、observer RNG 均 unchanged，instance-step hook restored，extra steps=`0`，policy sampling/optimizer 均为 false。每个 cell 的 proposal q/logit equality max abs 为 `0`，argmax proposal difference 也为 `0`。
+
+| cell | steps | matched / eligible rows | raw team reward | inner Δp / KL | middle Δp / KL | outer Δp / KL |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 689 | 7175 / 2655 | 429.36157694902556 | -0.009481507829656819 / 0.0014337947496490945 | +0.0010723269267593717 / 0.00019261295864622603 | +0.00013291226652663724 / 0.00036502730924742956 |
+| 2 | 727 | 7535 / 2920 | 423.18057134288983 | -0.014564387732508299 / 0.002288819788640633 | +0.0015276760721562412 / 0.0003872494991814025 | +0.00021801173142277483 / 0.0005416399008456102 |
+| 3 | 776 | 7764 / 3175 | 453.5105408998054 | -0.01141738188580179 / 0.001978376961868185 | +0.0007357496051711796 / 0.00019696224443501164 | +0.0019944499217231073 / 0.0005377803990094331 |
+| 4 | 726 | 7117 / 2670 | 427.06430444374354 | -0.007014479502420132 / 0.0009183402729311774 | +0.0007393442887577024 / 0.00016364977011383615 | +0.0009027146738585873 / 0.0003357394796345426 |
+
+`actual_outcomes` counts are repeated observation rows, not unique flights: cell 1 `4681 completed / 2494 emergency_landed`, cell 2 `4701/2834`, cell 3 `6443/1321`, cell 4 `4010/3107`. Inner eligible mean Δp is negative in all four tapes; middle and outer changes are small positive values in these descriptive rows. These statistics are not independent trials, action credit `D`, full value, or a global gain; no outcome-selected state claim is made.
+
+## Trained gate-value matched-state diagnostic：V1、V2 pilot 终态与 FULL 运行
+
+协议已写入 [trained gate-value protocol](p3_trained_gate_value_protocol_20261001.md)。代码先后为 `d849b2` 与 serialization fix `c5d3d900970dc036a05fb2dd8f4b1cd552cc0564`；18 个 focused tests、compile/diffcheck 和 local no-env preflight 通过。估计器固定四个 states、policy seeds=`9303201..04`、cap=`1800`，使用 common native K=3 q，并沿 `arrival_id|tick|stream` 复用同一 frozen BEFORE `3fe7` continuation。C1/C2/C3/C4 的 target-only exact Δp 与 full `D` 均已取得；local `m` 不求和为 global gain。counterfactual suffix 是新的模拟轨迹，不能表述为“没有 simulation”。
+
+server V1 preflight SHA=`fc05db44044615c329cfa34147c49df4e5cf50630002f137427d3c95c505ccc2`，状态为 `PREFLIGHT_OK`、no-env；wrapper malformed invocation 在 AFTER module 后返回 `1`，module exit unknown。V1 pilot 的真实 PID=`2121108`、argv/cwd 已核对，但在 environment/branch 之前因 `matched/native full binding changed` 退出；`pilot_v1.log` 为 `115` bytes，没有 pilot/error/branch outputs，preflight progress 保持不变。root 已核对 cause JSON 中保存的 string paths 与 runtime paths 的 raw comparison；inputs SHA checks 未变化。serialization fix 统一 canonical paths/SHA，并保留 prevalidation error artifact；V1 failed output root 保留为 `/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001`。
+
+V2 output root 为 `/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2`；server V2 no-env preflight proof SHA=`9dd8b463d61086c0c76e02db582b6a3b105f2bb4c4352b4da95358493eb05a0f`，`PREFLIGHT_OK exit0`；actual readJSON→`_validate_preflight` phase validation=`PHASE_VALIDATION_OK exit0`，no-env/replay/model-update checks 通过，stored source/runtime/runner/protocol bindings 与四个 locked-state bindings 匹配。V2 pilot `PID=2123288` 已 `PILOT_OK`：`104` branches natural、0 censor/error/hardsafety；C1 为 step `168`、UID `3`/arrival `3`，four-seed full `D` 为 `[-0.04999999999989768,-0.049999999999954525,-0.04999999999989768,-0.049999999999954525]`，mean=`-0.049999999999926104`，helper mean=`-0.04999999999989768`，C=`0`，4×25 RELEASE branches 均 safety-reject。gate p 从 `3.072129038628191e-5` 到 `2.416560164419934e-5`，Δ=`-6.555688742082566e-6`；local m=`+3.2778443710364384e-7`，只作为 local 值，不求和为 global。该状态的 p 下降没有显示有害证据，不能据单一状态归因。104 alternate-world outcome counts `N=2002/E=494/F=0/D=0/U=0` 是分支总计，不是 `2496` 个独立人口绩效；source/model/environment/RNG、外生 CRN、non-target first action 和 replay `689` 检查均通过。pilot proof SHA=`e213fbaedd2d700736bd70b2b1787ed103914e21b356ca62b9708642f512ac77`，state SHA=`0a51d689f575bcee9e2a64fdd440ce1a339bd3cb76f08f02bf14e53a5620d7d6`。独立 readonly business 核验中，four-seed q-weighted RELEASE 与 WAIT 的 N/E/F/D/U、elapsed、energy 相同（abs noise≤`1.82e-12`），wait 两臂均为 null；首步 WAIT reward=`-0.3106620065699539`，全部 RELEASE reward=`-0.36066200656995395`，complete D 差与首步 reward 差一致。first-step rejection-penalty 分量未单独暴露，保持 unknown；local m 不代表业务改善。V1 artifact 的 stage string 保持 method stage 语义，不是 V2 folder mismatch。
+
+C2 state proof `state_02.json` SHA=`03d5ee476b286b65f149475f2be2c110e72a60566fb5c3a32b668abd2b6cd375`（step `202`、UID `2`/arrival `2`）显示：`C=0`，四个 repeats 的 25 个 RELEASE branches 全为 `safety_reject`；full `D` 为 `[-8.109680200730281,-22.35170231001115,-8.058118334540154,39.60471616313083]`，mean=`+0.2713038294623118`，helper=`+0.2713038294623402`；`p=.9102736115455627→.9061629772186279`，Δp=`-.0041106343269348145`，local m=`-.0011152308344166478`，linear residual=`-.00014419527724385262`。三个 seed 的 D 为负、一个为正且均值很小，不能据此稳定归因，也不因 local m 为负宣布 p 下降为根因；C=`0` 不证明 full-cycle 无效。alternate-world outcome counts 为 `N=1898/E=598/F=0/D=0/U=0`，是分支总计而非独立人口或绩效。四个 continuation seed 的 WAIT/q-weighted RELEASE 实际值如下；wait_seconds 均为 `null`，未知 rejection-penalty 分量不填。独立按 `group.paired.proposal_q` 与各 seed 的 `release_returns` 逐项重算 full `D`，结果为 `-8.109680200730224/-22.351702310011092/-8.058118334540154/+39.60471616313089`，与记录最大绝对差≤`5.7e-14`，PASS。
+
+| continuation seed | WAIT N/E/F/D/U | RELEASE N/E/F/D/U | WAIT elapsed | RELEASE elapsed | WAIT energy | RELEASE energy | WAIT return | RELEASE return |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 9303201 | 20/4/0/0/0 | 19/5/0/0/0 | 5752 | 5763 | 7581.128143600825 | 7596.189746597886 | 333.64271582118243 | 325.53303562045215 |
+| 9303202 | 17/7/0/0/0 | 16/8/0/0/0 | 5753 | 5935 | 7877.507344213232 | 8166.286571543861 | 299.0213197882069 | 276.6696174781958 |
+| 9303203 | 20/4/0/0/0 | 19/5/0/0/0 | 5669 | 5708 | 7550.753971850365 | 7580.31106287849 | 336.5217532135773 | 328.46363487903716 |
+| 9303204 | 16/8/0/0/0 | 19/5/0/0/0 | 6175 | 5963 | 8188.862611350151 | 7905.125660514603 | 279.0753708983965 | 318.68008706152733 |
+
+C3 state proof `state_03.json` SHA=`0a84549c5313d0149aef845ceb1636f0c73c78896730bba3f1913074bdf54699`（step `198`、UID `2`/arrival `2`、SOC=`0.49960816800385516`）显示：`104` branches natural、invalid=`0`、censor/error/hardsafety=`0`；`C=0`，四个 repeats 的 25 个 RELEASE branches 全为 `safety_reject`；full `D` 为 `[-0.049999999999954525,-0.04999999999989768,-0.049999999999954525,-0.05000000000001137]`，mean=`-0.049999999999954525`，helper=`-0.04999999999989768`；`p=.0030303376261144876→.002411351539194584`，Δp=`-.0006189860869199038`，local m=`+.00003094930434596704`，linear residual=`+.00007521093357354403`。source/model/env/RNG、外生 CRN、non-target first action 和 exact replay `776` 检查均通过。local m 不代表 business gain 或 global gain；该单状态不支持把 p 下降归因于有害机制。alternate-world outcome counts 为 `N=2210/E=286/F=0/D=0/U=0`，是分支总计而非独立人口或绩效。四个 continuation seed 的 WAIT/real-q RELEASE 实际值如下；wait_seconds 均为 `null`，未读取的首步 reward 与 rejection-penalty 分量不填。
+
+| continuation seed | WAIT N/E/F/D/U | RELEASE N/E/F/D/U | WAIT elapsed | RELEASE elapsed | WAIT energy | RELEASE energy | WAIT return | RELEASE return |
+|---:|---|---|---:|---:|---:|---:|---:|---:|
+| 9303201 | 21/3/0/0/0 | 21/3/0/0/0 | 5995 | 5995.000000000001 | 7990.542702321978 | 7990.542702321979 | 342.07787631805616 | 342.02787631805614 |
+| 9303202 | 22/2/0/0/0 | 22/2/0/0/0 | 5822 | 5822 | 7737.156762648392 | 7737.156762648393 | 355.72659281137635 | 355.6765928113764 |
+| 9303203 | 20/4/0/0/0 | 20/4/0/0/0 | 6005 | 6005.000000000001 | 8015.881079010222 | 8015.8810790102225 | 334.21445937453444 | 334.16445937453443 |
+| 9303204 | 22/2/0/0/0 | 22/2/0/0/0 | 6341 | 6341.000000000001 | 8292.364322081408 | 8292.364322081408 | 344.0289732407352 | 343.9789732407352 |
+
+FULL terminal evidence：server `08:25:35`（Asia/Shanghai）PID=`2127202` 已退出，`FULL_OK`；exact module/cwd/envflags 匹配，pilot immutable reused，`4` mechanism states、`416` branches 全部 natural，invalid/censor/error/hardsafety 均为 `0`。source/model/environment/caller RNG、外生 CRN、non-target first actions、exact replay 与 model/env invariants 全部通过；artifact proof 为 `.tmp/p3_trained_gate_value_v2_full_proof.json`，full SHA=`056bbc9d4f4949c7c932b1b21c49204b2533d1fe1f7b1fe44b48a2e845ee5a5a`。该运行是 mechanism-state diagnostic，不是 performance population、qualification 或 PPO 结果；alternate-world outcome counts 不视为独立人口绩效。
+
+| state | C | per-seed D | mean D | Δp | local m |
+|---|---:|---|---:|---:|---:|
+| C1 / step168 | 0 | `[-0.04999999999989768,-0.049999999999954525,-0.04999999999989768,-0.049999999999954525]` | `-0.049999999999926104` | `-6.555688742082566e-6` | `+3.2778443710364384e-7` |
+| C2 / step202 | 0 | `[-8.109680200730281,-22.35170231001115,-8.058118334540154,39.60471616313083]` | `+0.2713038294623118` | `-0.0041106343269348145` | `-0.0011152308344166478` |
+| C3 / step198 | 0 | `[-0.049999999999954525,-0.04999999999989768,-0.049999999999954525,-0.05000000000001137]` | `-0.049999999999954525` | `-0.0006189860869199038` | `+0.00003094930434596704` |
+| C4 / step187 | 1 | `[5.684341886080802e-14,-4.864230616753275,5.684341886080802e-14,0.0]` | `-1.2160576541882904` | `+5.9545040130615234e-5` | `-7.241020181978357e-5` |
+
+C4 state proof `state_04.json` SHA=`b1ca9eba9d05dde6487f941e4d503737d5530176a307ec309e23d45d6cdae6e6`（step `187`、UID `3`/arrival `3`）为 `C=1`，四 repeats 各 `25` 个 RELEASE branches 均 `approved`；104 branches natural、invalid/censor/error/hardsafety=`0`。C4 的 wait_seconds 四 seed 均为 `null`。其中 seed `9303202` WAIT/RELEASE outcome 均 `20/4/0/0/0`，elapsed=`5410→5670`，energy=`6737.448645086157→6975.869534481303`，D=`-4.864230616753275`；其余 seed 的 D 为 `5.684341886080802e-14/5.684341886080802e-14/0.0`，对应 return 差为数值近零。不要把 local m 求和为 global gain。
+
+ALL4 结果不支持 universal increased RELEASE，也不支持把训练退化归因于 causal mechanism；entropy、team-credit、gradient clipping 等仍未由本诊断证明。只读运行契约显示：`parallel_env.py:880–883` 的 safety reject 会设置 `safety_retry_after`，`student_rollout_v4_2.py:111–153` 的 WAIT/not_requested 不设置，因此即时 `C=0` 不意味着 future trajectory 相同。实际 cfg 为 `v4_2_rejected_release_hold_mode=canonical_wait`、`emergency_priority_guard_enabled=true`、`rule_flow_coordination_enabled=false`；本运行不按 `legacy_requested` 解释，也未修改 retry 规则。
+
+ROOT 选择的下一项仍是 experimental candidate 的 implementation/test：保持 original sampled-first K3 的 prefix，再仅在需要时加入 remaining raw-source-logit ranked-25；gate/q/first3/checkpoint/safety/retry 保持不变。选择依据是 source16 step445 中 proposals22/23 的 q-starved 但 complete G-WAIT 对四 seed 为正的局部 witness；single failure witness 不作为总体 root cause。该 candidate 尚未 launch/admit 为 performance experiment，也未进入 default/PPO；`PPO_ALLOWED=false`。
+文档 erratum：现有 protocol 文本仍残留句子 “keyed by UID and absolute tick”。实际冻结源码的 scoped hook 按 `arrival_id|absolute_tick|stream` 续跑，action-map 才使用 UID；该实现与 source SHA 前缀 `6e06f837` 及 preflight 绑定一致。本轮只记录该文字差异，不修改 protocol 文件或其 digest。
+
+V2 固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`、retry-free、native-order 的 states：C1 step `168` UID `3`/arrival `3`，C2 step `202` UID `2`/arrival `2`，C3 step `198` UID `2`/arrival `2`，C4 step `187` UID `3`/arrival `3`。这些 states 按 eligibility 选择，不按 outcome 或 p-delta 选择，不替换原有 24-state 结果，也不重采样；exact prestate 恢复、其余 first requests 保持 native AFTER tape，首步比较 WAIT 与全部 25 个 RELEASE actual-q/native-K3 branches，full `D` 包含首步 reward。gate probability 的下降或上升仍需 `D` 验证；当前不作 root-cause 或 solution 结论，`PPO_ALLOWED=false`。
+
+## 可执行动作机会诊断预注册与终态
+
+这是冻结策略下的被动机制诊断，不是训练、checkpoint 选择、性能 pilot 或 qualification。固定参考为 9 个 legacy arms：pair `1/5/9/13/17/21`（`env=877101..877106`、keyed policy `9303101`），以及 `pair 14/15/16`（`env=877104`、keyed policy `9303102/9303103/9303104`）。源为 `3fe7+a82`，保持 88D、K=3、legacy mask 和同一物理配置；`PPO_ALLOWED=false`，held-out、optimizer 和 teacher 均未使用。
+
+每个参考场景在 tick `100–149`、`300–349`、`500–549` 中按顺序取第一个满足预注册条件的合法状态，最多 `27` 个 state；每个 state 固定执行 `WAIT + 25` proposal 的 `26` 个 one-step 分支，共 `25` 个已选 state、`650` 个分支。分支使用真实策略 proposal 概率计算 `C` 与 `pC`，只记录 native decision 和即时 reward difference；不计算 `D` 或 global value，不取 best proposal、不删除失败分支、不重抽样。完整条件、source replay 对齐和停止规则见 [P3 executable-opportunity coverage protocol](p3_opportunity_coverage_protocol_20260930.md)。9 个参考 arm 对应固定场景，不把其 `216` 个请求事件当作 `216` 个独立环境 profile。
+
+证据标记如下：
+
+- `preexisting_artifact`：既有 frozen-WAIT `full.json` 的 `FULL_OK/pair_count=24` 结果、reference arms 和该协议。
+- `newly_run`：local preflight 为 `PREFLIGHT_OK`，机会 runner 的 focused suite 为 `11 passed`，combined recheck 为 `37 passed in 8.15s`；服务器只读基础快照 exit `0`，115-file runtime manifest 的 SHA mismatch count 为 `0`，source `3fe7` 与 warmup `a82` checkpoint SHA 与预注册值一致。V2 preflight、V1 pilot 只读导入 guard 和 full 均已完成，`full.json` 为 `FULL_OK`。
+
+V1 server pilot 已完成：纠正项目 cwd 后，`PID 2085294` 的 `pilot.json` 为 `PILOT_OK/PAIR_OK`，env `877101`、keyed policy `9303101`，`694` ticks、`24` requests、`23 normal/1 emergency/0 failed`，自然终止且无 censor/error；source/model/caller-RNG、请求 identity、ledger、energy、wait 和 safety checks 均通过。3 个窗口共 `78` 个分支，均成功、0 error；`C=0`、`pC=0`，没有 `D`。这个新 legacy replay 与原 legacy reference 的 `reward_total` 差和 `release_rejection_penalty` 差均为 `0`，排除 penalty 的 raw reward 差也为 `0`。该 pilot 是冻结机会覆盖事实，不形成性能或因果结论；历史 frozen-WAIT 对照中的 `+2.5` 仍只在下文自己的对照段中记录。
+
+首个 launcher 在 phase 初始化前记录了 `NameError: name 'subproces' is not defined`，原始片段保存在 `.tmp/p3_opportunity_launcher_v1.stderr.txt`；修正后的 cwd/subprocess 启动 guard 完成了上述 V1 pilot。V1/V2 同时保留两种 model digest 约定：paired execution digest `20afdf4b60babc63a0a64eba6702d6f9db3891b537168a5e5346639f148b1d23`，canonical source-binding digest `a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07`；二者来自同一加载模型，只是摘要算法不同，不表示权重变化。V2 full artifact 为 `/home/user/training_outputs/terminal/p3_followup_20260930/opportunity_coverage_v2/full.json`，本地紧凑核对为 `.tmp/p3_opportunity_coverage_v2_evidence.json`。
+
+V2 的 9/9 pair 均为 `PAIR_OK`、reference exact；25/27 registered states 有结果，缺失的是 pair `14` 与 `15` 的 window `03`（`500–549`），两行均保留为 unknown，不写成 `C=0`。650/650 selected-state branches 状态为 `ok`，branch error 与 true truncation 均为 `0`。9 个 arm 的 source/model/caller-RNG、配置绑定、request identity、ledger、energy、wait 和 safety checks 均通过：source/model digest unchanged、24 个 request identity 唯一、energy coverage 与 ledger conservation valid、wait/elapsed finite、hard-safety violation false；共同 config snapshot SHA 为 `e6e8535e65a7452cb4644c43d13d6bbf3b15cdd621d7294dfdfdeaf4b79a3b97`，preflight reference SHA 为 `fe7954aac75f9e947298ad7de8c8bdec74bc84c3bb18bb59ab7c40860d9e6267`。V2 new legacy arm 的逐 arm N/E/F/D/U、generated/admitted/completed/resolved、wait、request elapsed 和 energy 如下；`elapsed` 为 24 个请求 elapsed 的和，energy 为 24 个唯一 arrival 的累计消耗。
+
+| pair | env/keyed | ticks | N/E/F/D/U | generated/admitted/completed/resolved | wait s | elapsed s | energy |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | 877101/9303101 | 694 | 23/1/0/0/0 | 24/24/24/24 | 2727.950535124339 | 8377 | 7069.867720034218 |
+| 5 | 877102/9303101 | 795 | 20/4/0/0/0 | 24/24/24/24 | 3181.211230903982 | 9296 | 7545.658308610789 |
+| 9 | 877103/9303101 | 668 | 20/4/0/0/0 | 24/24/24/24 | 2849.7762184481476 | 8903 | 7274.853470463249 |
+| 13 | 877104/9303101 | 863 | 20/3/1/0/0 | 24/24/23/24 | 4195.360899337695 | 9957 | 8410.643286521372 |
+| 17 | 877105/9303101 | 828 | 21/3/0/0/0 | 24/24/24/24 | 3298.552351300552 | 9332 | 7830.513734136947 |
+| 21 | 877106/9303101 | 752 | 20/4/0/0/0 | 24/24/24/24 | 3448.775915692401 | 9621 | 7845.565803633816 |
+| 14 | 877104/9303102 | 742 | 19/5/0/0/0 | 24/24/24/24 | 3028.2335629926934 | 8991 | 7427.784515825126 |
+| 15 | 877104/9303103 | 724 | 21/3/0/0/0 | 24/24/24/24 | 2464.0124355070643 | 8412 | 6793.041730387722 |
+| 16 | 877104/9303104 | 863 | 16/7/1/0/0 | 24/24/23/24 | 4036.144102041071 | 9811 | 8317.302384032148 |
+
+上述 9 个 V2 new legacy arm 的累计 wait 为 `29230.017251347945 s`，request elapsed 为 `82700 s`，energy 为 `68515.23095364538`；这是机会覆盖的 legacy arm 汇总，不是 24-pair frozen-WAIT 对照的 48-run 汇总。
+
+逐 state 结果（window `01/02/03` 分别为 `100–149/300–349/500–549`）如下。`p` 是 `p_release`；approved indices 是即时 native decision 通过的 proposal index。pair `15`, window `01` 的原始 `C=1.0000000000000053` 保留，显示为约 `1` 只是 rounding，未 clip。
+
+| pair | window | tick | C | pC | p | qmax | approved indices |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 1 | 01 | 100 | 0.0 | 0.0 | 0.0034812598023563623 | 0.9501171708106995 | `[]` |
+| 1 | 02 | 300 | 0.0 | 0.0 | 0.0008625637274235487 | 0.7396410703659058 | `[]` |
+| 1 | 03 | 500 | 0.0 | 0.0 | 0.27430734038352966 | 1.0 | `[]` |
+| 5 | 01 | 100 | 0.0 | 0.0 | 0.0010812501423060894 | 0.999981164932251 | `[]` |
+| 5 | 02 | 300 | 0.0 | 0.0 | 0.05724853277206421 | 0.9999755620956421 | `[]` |
+| 5 | 03 | 500 | 0.0 | 0.0 | 0.042119335383176804 | 1.0 | `[]` |
+| 9 | 01 | 100 | 0.0 | 0.0 | 0.025524627417325974 | 0.9999926090240479 | `[]` |
+| 9 | 02 | 300 | 2.0926044087687933e-18 | 2.078339034892979e-18 | 0.9931829571723938 | 1.0 | `[4]` |
+| 9 | 03 | 500 | 0.0 | 0.0 | 0.9081240296363831 | 0.999997615814209 | `[]` |
+| 13 | 01 | 116 | 0.0 | 0.0 | 0.0011279478203505278 | 0.837800145149231 | `[]` |
+| 13 | 02 | 300 | 0.0 | 0.0 | 0.00023066700669005513 | 0.9706255197525024 | `[]` |
+| 13 | 03 | 500 | 0.0 | 0.0 | 8.028752063182765e-07 | 0.9999547004699707 | `[]` |
+| 17 | 01 | 100 | 0.0 | 0.0 | 0.9985920786857605 | 0.9945176243782043 | `[]` |
+| 17 | 02 | 300 | 0.0 | 0.0 | 0.0014054110506549478 | 0.9165021181106567 | `[]` |
+| 17 | 03 | 500 | 0.0 | 0.0 | 0.8001037240028381 | 0.9831014275550842 | `[]` |
+| 21 | 01 | 100 | 0.0 | 0.0 | 0.0020757101010531187 | 0.9999845027923584 | `[]` |
+| 21 | 02 | 300 | 0.0 | 0.0 | 0.862338662147522 | 0.5847722291946411 | `[]` |
+| 21 | 03 | 500 | 0.0 | 0.0 | 0.969641923904419 | 0.9991999268531799 | `[]` |
+| 14 | 01 | 116 | 0.0 | 0.0 | 0.00012697969214059412 | 0.8391591310501099 | `[]` |
+| 14 | 02 | 300 | 0.0 | 0.0 | 0.009739718399941921 | 0.945147693157196 | `[]` |
+| 14 | 03 | unknown | unknown | unknown | unknown | unknown | unknown（未选出） |
+| 15 | 01 | 134 | 1.0000000000000053 | 0.0003375054511707294 | 0.0003375054511707276 | 1.0 | `[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]` |
+| 15 | 02 | 346 | 0.0 | 0.0 | 0.40018537640571594 | 0.5672844052314758 | `[]` |
+| 15 | 03 | unknown | unknown | unknown | unknown | unknown | unknown（未选出） |
+| 16 | 01 | 116 | 0.0 | 0.0 | 0.00024265077081508934 | 0.9968762397766113 | `[]` |
+| 16 | 02 | 300 | 0.0 | 0.0 | 2.664043449840392e-06 | 0.9775197505950928 | `[]` |
+| 16 | 03 | 500 | 0.0 | 0.0 | 9.466992923989892e-05 | 0.9971941709518433 | `[]` |
+
+其中 pair `9`/window `02`/tick `300` 是 q-starvation witness：`C=2.0926044087687933e-18`、`pC=2.078339034892979e-18`、`p=0.9931829571723938`、`qmax=1`，只有 proposal `[4]` 被记录为 approved。pair `15`/window `01`/tick `134` 是即时可执行但低 RELEASE 概率、当步未请求的 witness：`C≈1`（原值见表）、`p=0.0003375054511707276`、`pC=0.0003375054511707294`、`qmax=1`，25 个 proposal 均进入 approved index。这不证明等待有害；当前 WAIT 可能有未来收益，是否有害要看完整周期 gate control。多数 selected states 的 proposal 被 native safety/capacity/priority/energy guards 拒绝；这不是 PPO 归因。上述 q-starvation、低 `p` gate 和旧 source16 failure 是分开的机制观察，旧 source16 failure 未并入这 9 个 arm 的表。`C=0` 只表示该 one-step coverage 观测为零，不能推出 full-cycle 无作用；本轮没有产生 full-cycle `D` 或 `m`，也没有把结果写成 strong-oracle 不可行性。
+
+env `877104` 的 arrival `13` 四条实际 trace 摘要如下；trace 来自每个 legacy arm 的 `target13_trace`，不是独立 profile：
+
+| pair/keyed | ticks | active phase counts | actual decision counts | first/last normal release attempt | terminal row |
+|---|---:|---|---|---|---|
+| 13/9303101 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 734; safety_reject 1; safety_wait 28; emergency_energy_guard 41 | tick 161 / 161, p 0.024594346061348915, qmax 1, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
+| 14/9303102 | 742 | inbound 57; ring_outer 217; ring_middle 1; transfer_o2m 55; emergency_landing 87 | None 325; not_requested 407; safety_reject 8; approved 1; plan_active 1 | tick 164 reject p 0.17946651577949524 → tick 332 approved p 0.894378662109375, qmax 0.7798160910606384 | UID 46, emergency_landed, t=506, wait 246.0261539121092, energy 458.2358821167139 |
+| 15/9303103 | 724 | inbound 57; ring_outer 88; transfer_o2m 62; ring_middle 1; transfer_m2i 61; ring_inner 16; emergency_landing 54 | None 385; not_requested 333; safety_reject 4; approved 2 | tick 142 reject p 0.9835757613182068 → tick 358 reject p 0.9883878827095032, qmax 0.9975574016571045 | UID 72, emergency_landed, t=446, wait 151.21199255359232, energy 374.5005100650064 |
+| 16/9303104 | 863 | inbound 57; ring_outer 747 | None 59; not_requested 729; safety_reject 1; safety_wait 30; emergency_energy_guard 44 | tick 267 / 267, p 0.7881418466567993, qmax 0.973076581954956, safety_reject | UID 46, failed_energy, t=862, wait 776.8147075862394, energy 833.1666666666666, final SOC 0 |
+
+依据上述 witness，已完成同一 `9` 个 reference pairs 的单因素 frozen always-RELEASE gate control；结果已在本文顶部的终态段报告。随后已完成 pair `15` 的一次 passive exact replay，结果为 `REPLAY_OK`，但不构成 P3 根因结论或 formal qualification。该 replay 未训练、未 promote，`PPO_ALLOWED=false`、held-out 未使用。
+
+本地唯一集成命令为：
+
+```text
+D:\7_codespace\venv\Scripts\python.exe -m pytest -p no:cacheprovider -q \
+  tests/test_paired_gate_diagnostic.py tests/test_service_context_migration_v4_2.py \
+  tests/test_high_cost_conservation.py tests/test_research_high_level_repairs.py \
+  tests/test_a6_effectiveness.py tests/test_a6_dynamic_high.py \
+  tests/test_forced_wait_protocol.py tests/test_research_low_level_repairs.py \
+  tests/test_student_rollout_v4_2.py tests/test_p3_followup_diagnostics.py
+```
+
+结果为 `82 passed in 45.59s`、exit `0`。`--collect-only -q` 同样 exit `0`，收集 `82` 个唯一 nodeids。原始日志位于 `.tmp/p3_followup_review/integration.log` 和 `.tmp/p3_followup_review/collect_only.log`。
+
+| 模块 | nodeids |
+|---|---:|
+| `test_paired_gate_diagnostic.py` | 16 |
+| `test_service_context_migration_v4_2.py` | 11 |
+| `test_high_cost_conservation.py` | 5 |
+| `test_research_high_level_repairs.py` | 7 |
+| `test_a6_effectiveness.py` | 2 |
+| `test_a6_dynamic_high.py` | 10 |
+| `test_forced_wait_protocol.py` | 6 |
+| `test_research_low_level_repairs.py` | 8 |
+| `test_student_rollout_v4_2.py` | 9 |
+| `test_p3_followup_diagnostics.py` | 10 |
+
+## 已确认的实现修复
+
+- [`paired_gate_diagnostic.py`](../../../terminal_marl/training/paired_gate_diagnostic.py) 的 `restore_diagnostic_snapshot` 在 `TerminalParallelEnv` 深拷贝后重新绑定该 copy 的 `_resolve` 与 `arrivals.requests_until`。真实隔离测试 [`test_paired_gate_diagnostic.py`](../../../tests/test_paired_gate_diagnostic.py) 检查 branch hook 的 `__self__`、未来请求读取和 source ledger/RNG 不变。
+- [`student_rollout_v4_2.py`](../../../terminal_marl/training/student_rollout_v4_2.py) 在 opt-in `pre_action_forced_wait` 下将 forced rows 的 gate/joint logprob 记录为 `0`；proposal 继续为 `-1/NaN`，metadata 继续为 `None`。legacy 模式和 actor 可行动 rows 保持原请求/RNG/动作结果。相关 6 个测试包含 25 个真实环境 proposal、affected-interface、正 SOC 低电量和 PPO masked-row 检查。
+- high-level cost metadata、600 秒 sustained-low shrink regression、queue history/unresolved overlap 和 V4.2 adapter fail-fast 均在集成套件中通过；这些是代码回归事实，不是 A6 qualification。
+
+## 服务上下文迁移
+
+[`service_context_migration_v4_2.py`](../../../terminal_marl/algo/service_context_migration_v4_2.py) 与 [`test_service_context_migration_v4_2.py`](../../../tests/test_service_context_migration_v4_2.py) 的 11 个测试通过。迁移绑定的 source 是 `phaseA_low_obs_v2_1_retry_state` 88D，target 是 V2.4 90D；新增输入权重列初始化为 0，实际 V2.4 观测列按 UAV/LZ 状态计算。V2.3 只有在调用方显式传入该 schema 时被拒绝，不能据 88D 维度推断所有 schema 语义等价。迁移保留已有状态、mode、gradient 和 CPU RNG；fresh optimizer required，qualification status 仍为 experimental only。
+
+## Paired gate helper 与新 runner
+
+[`paired_gate_diagnostic.py`](../../../terminal_marl/training/paired_gate_diagnostic.py) 当前集成测试为 16 passed。每个 repeat 的 25 个 proposal 分支按实际请求和权重记录；branch error/censor 时不产生 qualified `delta_Q`，raw branch report 和 progress 仍保留。continuation 使用同一个 frozen policy；diagnostic 不调用 optimizer，也不改变 model、gradient、state 或 RNG。
+
+[`run_p3_followup_diagnostics.py`](../../../terminal_marl/training/run_p3_followup_diagnostics.py) 是新的独立诊断入口，配合 credit observer；其 runner tests 为 10 passed。代码登记的输入契约是 6 episodes、每 episode 24 requests、总计 4,497 steps；selection test 固定 24 个 occurrence、无放回且顺序可复现。sharding 后的 focused runner suite 为 `10 passed`，不计入上述 `82` 个已记录集成 cases。本轮只验证代码和契约，没有把 runner phase 输出写成性能结果。
+
+追加事实：此前 Python `-m` 运行时的 `__main__` entry file 被 name filter 遗漏；当前仅在 package root 内纳入该 entry file。该修复的 focused suite 为 `11 passed in 2.35s`，重复测试不计入新的总数。当前运行中的 preflight 未重跑或覆盖；修复适用于后续 preflight，既有 hash 和 startup observation 保持原边界。
+
+## 既有 episode-gradient replay artifact
+
+实际服务器运行使用的旧模块 [`diagnose_p3_task_neutral_episode_gradients.py`](../../../terminal_marl/training/diagnose_p3_task_neutral_episode_gradients.py) 是本次 replay 的 artifact source；它不是本提交新增的自包含入口。`runtime_sources.json` 记录其 SHA256：`c5e35752f78e33698510c59aa36ed9dd714606c07a80d785aa76c49d42aa19bf`。
+
+- preflight 为 `CHECK_ONLY_OK`：6 episodes、4,497 steps、144 requests，`runtime_optimizer_calls=0`、`runtime_replay_calls=0`、`runtime_env_reset=false`。
+- legacy replay 为 `COMPLETED`：6 episodes、4,497 steps、144 requests、6 replay calls；`replay_exact`、`mc_suffix_match_all`、`aggregate_gradient_matches_sum`、`model_unchanged_after_replay_and_gradient` 均为 true，`training_called=false`、`optimizer_used=false`、`PPO_ALLOWED=false`。
+- artifact paths：`/home/user/training_outputs/terminal/p3_followup_20260930/runtime_sources.json`、`legacy_preflight/report.json`、`legacy_replay/report.json`、`legacy_replay/summary.json`。
+
+## pilot artifact
+
+给定 pilot artifact `D:/7_codespace/training_outputs/terminal/research_review_repairs_20260930/p3_followup/pilot.json`（服务器路径：`/home/user/training_outputs/terminal/research_review_repairs_20260930/p3_followup/pilot.json`）状态为 `COMPLETED`。它只包含 episode 1、step 278、UID 5、continuation seed `9303101`：26 个 branch 均 `natural_terminal`，branch steps 范围 `410..427`，总计 `10677` ticks，无 censor 和 safety event；prefix 410 valid，model/source snapshot、RNG 和 `q_unchanged` 均为 true。
+
+该状态的 paired 值为 `C=0`、`p=0.7176065445`、`p*C=0`、`D=-1.4162728544`。对实际 batch-01 after model 的 gate 对齐为 `0.7176070213→0.7267845273`，`delta=0.0091775060`，linear approximation `0.0093069952`，residual `-0.0001294892`，`local_m=-0.0129978526`。
+
+该条件状态的一次续跑显示更新方向不利；一个状态一个seed不支持认定credit、entropy或clip为退化根因，也不构成性能修复证据。
+
+历史计算记录：`C` 固定为 `24×4`，由 4 个进程按 modulo 分片；这只是计算调度，不增加实验 factor、不重抽样、不删除失败 branch。此前 4 个分片进程 PID 为 `2007505`、`2007601`、`2007551`、`2007650`；timestamp snapshot 曾显示 `14/24`，该快照不是终态，最终结果见下节。`PPO_ALLOWED=false`，未消费 held-out。此前 `82` 个集成测试只作为已记录 raw count，不在本节重复累计。
+
+## C 初步结果
+
+raw artifact `causal/shard_0/diagnose/state_0001.json` 当前包含同一首状态的 `104` 个分支，来自 `4` 个 continuation seeds，均为 `natural_terminal`；model、environment 和 caller RNG 均保持不变。该状态的 `C=0`、`p=0.7176065`、平均 `D=6.56333546`、平均 `m=0.06023505`；四个 seed 的 `D` 为 `[-1.41627285, -0.05, 11.62504392, 16.09457077]`。
+
+同一首状态四种续跑的符号混合，单seed pilot负值不能用于根因判定；C=0仅表示即时覆盖为零，不能据此认定全周期动作无效或直接强制WAIT。该段是早期 pilot/timestamp snapshot；完整 24 状态的最终 named-group 结果见下节。失败机制三状态、312 个 branch 已完成，不构成性能改善证据。
+
+## C 全部 24 状态最终结果
+
+本节读取四个 causal shard 的 named group JSON（`summary.json`、`report.json`、`diagnose.json` 及其列出的 state report JSON），不把 raw branch 文件作为汇总输入。四个 shard 的状态均为 `COMPLETED`，各含 6 个 state、624 个 branch；全局共 24 个 state、2,496 个 branch（每个 state 为 4 个 continuation seed、每个 seed 26 个 WAIT/RELEASE 分支）。四个 shard 的 `diagnose.json` 修改时间分别为：shard 0 `19:12:51`、shard 1 `18:23:26`、shard 2 `19:19:08`、shard 3 `18:14:25`。
+
+24/24 个 state 的 D 与 m 均有值；2,496/2,496 个 branch 为 `natural_terminal`，error 与 censor 均为 0。所有 state 的 model、environment 和 caller RNG 不变标记均为 `true`，四个 shard 的 `PPO_ALLOWED=false`、held-out=false、optimizer calls=0、teacher=false。source checkpoint `3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab` 与 warmup `a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710` 固定；after batch-01 checkpoint 的 SHA256 为 `a7bcf3d1e6f4bda82d0d051ec25966a18f267309f1d6030689b52d90e63aa366`。D 与四个 seed 差分均值的最大绝对误差为 `7.1054273576010019e-14`。
+
+表中 `C` 是 `C_i`，`p` 是 gate 的 `p_release`，`D` 是 qualified full-return difference，`m` 是 alignment 的 per-row `local_m`。`Dseed` 顺序为 continuation seeds `9303101`、`9303102`、`9303103`、`9303104`；表中标注“浮点近零”的 D 保留原始科学计数值，不改写成 0。
+
+| selection | step / UID | C | p | D | m | Dseed |
+|---:|---:|---:|---:|---:|---:|---|
+| 1 | 278 / 5 | 0.0000000000000000e+00 | 7.1760654449462891e-01 | 6.5633354576678471e+00 | 6.0235050345867361e-02 | `-1.4162728544092147e+00, -4.9999999999954525e-02, 1.1625043919265863e+01, 1.6094570765814922e+01` |
+| 2 | 319 / 97 | 0.0000000000000000e+00 | 6.8654189817607403e-06 | -5.0000000000011369e-02 | 1.8383116184854403e-08 | `-5.0000000000011369e-02, -5.0000000000125056e-02, -5.0000000000011369e-02, -4.9999999999954525e-02` |
+| 3 | 354 / 237 | 0.0000000000000000e+00 | 1.9145017722621560e-03 | -2.4999999999948841e-02 | -4.5512570068147030e-08 | `2.8421709430404007e-14 (浮点近零), 5.6843418860808015e-14 (浮点近零), -4.9999999999926104e-02, -5.0000000000011369e-02` |
+| 4 | 361 / 298 | 0.0000000000000000e+00 | 5.5721051289543363e-16 | -5.0000000000011369e-02 | 1.5885547060386379e-18 | `-4.9999999999954525e-02, -4.9999999999954525e-02, -5.0000000000011369e-02, -5.0000000000011369e-02` |
+| 5 | 96 / 2 | 0.0000000000000000e+00 | 2.2396884858608246e-02 | -9.7227664391866142e+00 | -1.5937326957307082e-02 | `-5.0000000000068212e-02, -4.6285767845538089e+01, 4.7968038411779617e+00, 2.6478982476137958e+00` |
+| 6 | 131 / 2 | 0.0000000000000000e+00 | 3.4216021682631492e-10 | -4.9999999999897682e-02 | 2.6690594179202613e-13 | `-4.9999999999954525e-02, -4.9999999999897682e-02, -5.0000000000011369e-02, -4.9999999999840838e-02` |
+| 7 | 155 / 18 | 0.0000000000000000e+00 | 6.3217245042324066e-02 | -3.7499999999965894e-02 | -3.2444112002820074e-05 | `-5.6843418860808015e-14 (浮点近零), -5.0000000000011369e-02, -5.0000000000068212e-02, -5.0000000000011369e-02` |
+| 8 | 187 / 0 | 0.0000000000000000e+00 | 7.6557704620228151e-11 | -5.0000000000068212e-02 | 2.2415402867212491e-13 | `-5.0000000000011369e-02, -5.0000000000011369e-02, -5.0000000000068212e-02, -5.0000000000011369e-02` |
+| 9 | 312 / 5 | 0.0000000000000000e+00 | 1.6058335217117303e-10 | -5.0000000000011369e-02 | 1.1853712456047414e-13 | `-4.9999999999954525e-02, -5.0000000000011369e-02, -4.9999999999954525e-02, -5.0000000000011369e-02` |
+| 10 | 335 / 53 | 0.0000000000000000e+00 | 9.3492984888143837e-05 | -5.0000000000068212e-02 | 6.0744823713404112e-07 | `-5.0000000000068212e-02, -5.0000000000068212e-02, -5.0000000000068212e-02, -5.0000000000068212e-02` |
+| 11 | 373 / 0 | 0.0000000000000000e+00 | 5.8644739910960197e-03 | -5.0000000000039790e-02 | 4.6765222214199566e-05 | `-4.9999999999982947e-02, -5.0000000000039790e-02, -5.0000000000068212e-02, -5.0000000000039790e-02` |
+| 12 | 417 / 74 | 0.0000000000000000e+00 | 1.6107469524850870e-11 | -5.0000000000011369e-02 | 8.5018016932078455e-14 | `-5.0000000000011369e-02, -5.0000000000039790e-02, -4.9999999999982947e-02, -5.0000000000068212e-02` |
+| 13 | 440 / 74 | 0.0000000000000000e+00 | 8.1910187699991218e-16 | -4.9999999999954525e-02 | -1.1249656330710945e-20 | `-4.9999999999982947e-02, -4.9999999999926104e-02, -4.9999999999982947e-02, -4.9999999999982947e-02` |
+| 14 | 497 / 32 | 0.0000000000000000e+00 | 3.7413606150948908e-06 | 4.1246121364927717e+00 | -1.5179809506855633e-06 | `4.9905124224302710e+00, 5.3624389315122869e+00, 4.1015253646625638e-01, 5.7353446555621872e+00` |
+| 15 | 2 / 11 | 0.0000000000000000e+00 | 1.5535855008859903e-18 | -4.9999999999954525e-02 | 4.4498181052249653e-22 | `-5.0000000000068212e-02, -4.9999999999897682e-02, -4.9999999999897682e-02, -5.0000000000011369e-02` |
+| 16 | 297 / 211 | 0.0000000000000000e+00 | 1.9081822710473317e-14 | -4.9999999999954525e-02 | 8.8530528394223347e-17 | `-4.9999999999954525e-02, -4.9999999999954525e-02, -4.9999999999954525e-02, -5.0000000000011369e-02` |
+| 17 | 41 / 5 | 0.0000000000000000e+00 | 3.7640047328979520e-11 | -5.0000000000011369e-02 | 1.0240315539980058e-13 | `-5.0000000000068212e-02, -5.0000000000011369e-02, -4.9999999999954525e-02, -5.0000000000068212e-02` |
+| 18 | 328 / 0 | 0.0000000000000000e+00 | 1.4511273801326752e-01 | -5.0000000000068212e-02 | -1.0516569018378300e-04 | `-5.0000000000125056e-02, -5.0000000000011369e-02, -5.0000000000125056e-02, -5.0000000000125056e-02` |
+| 19 | 42 / 8 | 0.0000000000000000e+00 | 6.0440950619522482e-05 | -5.0000000000011369e-02 | -2.7586356736725883e-07 | `-5.0000000000011369e-02, -5.0000000000011369e-02, -4.9999999999897682e-02, -5.0000000000068212e-02` |
+| 20 | 238 / 69 | 0.0000000000000000e+00 | 1.8143804726572961e-17 | -5.0000000000011369e-02 | 1.1942999120165839e-20 | `-5.0000000000011369e-02, -4.9999999999954525e-02, -5.0000000000011369e-02, -5.0000000000011369e-02` |
+| 21 | 274 / 265 | 2.0938614857594729e-14 | 2.0441766083240509e-01 | 5.6843418860808015e-14 (浮点近零) | -1.2761017218507024e-15 | `3.9790393202565610e-13 (浮点近零), -5.6843418860808015e-14 (浮点近零), 0.0000000000000000e+00 (浮点近零), -1.1368683772161603e-13 (浮点近零)` |
+| 22 | 328 / 307 | 0.0000000000000000e+00 | 7.5787720543729620e-10 | -5.0000000000011369e-02 | -2.0763946118056711e-13 | `-5.0000000000011369e-02, -5.0000000000039790e-02, -4.9999999999982947e-02, -5.0000000000068212e-02` |
+| 23 | 418 / 264 | 0.0000000000000000e+00 | 2.8082777280360460e-03 | -5.0000000000011369e-02 | -3.2498734071858168e-06 | `-5.0000000000011369e-02, -5.0000000000011369e-02, -4.9999999999982947e-02, -4.9999999999982947e-02` |
+| 24 | 616 / 69 | 0.0000000000000000e+00 | 3.8778381422162056e-03 | -4.9999999999982947e-02 | 7.0226495154178037e-06 | `-4.9999999999954525e-02, -4.9999999999982947e-02, -4.9999999999997158e-02, -4.9999999999982947e-02` |
+
+`m` 是每个 state 的 local alignment 项，不将 24 个 m 相加解释为 global gain。named group JSON 中若报告 baseline branch outcome aggregate，则它是重复 counterfactual 场景的累加计数，不是请求总体样本量，也不作为总体比例。failure-mechanism 仍保持独立的 source16 / batch-02 episode-24 记录，不并入本表。
+
+## P3 energy-failure mechanism completed
+
+服务器 artifact `/home/user/training_outputs/terminal/p3_followup_20260930/failure_mechanism/diagnose.json` 已报告 `COMPLETED`：3 个状态共 `312` 个 branch，全部为 `natural_terminal` 且 uncensored；model、environment 和 caller RNG 均保持不变。
+
+| state | step | SOC | C | p | D | m | full D by continuation seed |
+|---|---:|---:|---:|---:|---:|---:|---|
+| F01 | 280 | 0.398656 | 0 | 8.28291e-5 | -0.05 | +2.7650e-8 | `[-0.05, -0.05, -0.05, -0.05]` |
+| F02 | 445 | 0.288656 | 1.1869090464568813e-14 | 0.000650799135 | +2.30523854878933 | -0.0002574839567 | `[0.593587408892546, -0.05, -0.05, 8.72736678626487]` |
+| F03 | 726 | 0.110987 | 0 | 2.21449e-5 | -0.05 | +1.58285e-7 | `[-0.05, -0.05, -0.05, -0.05]` |
+
+Full-return `D` is `paired.expected_release_undiscounted_return_by_repeat[i] - wait[i].undiscounted_return`; the mean check was within `1e-8`. Target arrival `14` was evaluated under WAIT and true q-weighted RELEASE. RELEASE outcomes by seed were F01: `9303201`, `9303202`, `9303204` `emergency_landed`, `9303203` `failed_energy`; F02: all four `emergency_landed`; F03: all four `failed_energy`. The F02 raw `C` is `1.1869090464568813e-14`; the earlier `C=0` display was rounded. Proposals `22`, `23`, and `24` were approved, each with K=3 runtime rank `1`; proposal `11` carried approximately `99.999999986%` of the true q mass. The new blocker first-step record agrees with the old paired first-step record; F02 is not described as 25 proposals all rejected.
+
+第726步的一次gate干预不能在冻结后续策略下挽救该机；第445步续跑仍可应急落地，需要核对等待期资源/安全/能量拒绝原因，尚未选定训练修复。one-step check 不产生 `D`。该诊断未使用 PPO 或 held-out。
+
+## Bounded blocker telemetry completed
+
+历史启动记录：初次 PID `2025086` 因工作目录缺少项目包产生
+`ModuleNotFoundError: No module named 'terminal_marl'`；该次真实 phase 未开始，
+没有产生 phase outputs。`blockers_v1.log` 保留该旧错误；纠正 project cwd 后，
+同一 blocker phase 产生了以下完成产物，旧错误不指向当前完成结果。
+
+`firststep_blockers.json` 报告 `78/78` 首步分支成功、`0` 个错误，三个固定
+状态各 `26` 个分支。`original_auto_emergency_trace.json` 报告 exact `984`
+步、`24` requests 和 terminal rows，保留 failed UID `57`、time `892`，
+source unchanged，target calls `878`、trace errors `0`。`manifest.json` 和
+`progress.json` 均为 `COMPLETED`。
+
+原始 trace 的 `878` 个 target calls 中有 `102` 次实际 attempt。pad-attempt
+reason counts 为 `blocked_lz=5`、`blocked_safety=96`、`blocked_energy=226`、
+`blocked_dynamics=0`、`committed=0`；这些是 pad 尝试的原因次数，不能求和当作
+调用次数或全局收益。首次 attempt 在 step `278`、SOC `0.399989`、energy
+`599.984`，compatible-pad availability 为 `4/0`；其中
+`blocked_safety=2` 的 reason 包含 `predicted_holder_reachable_tube`。首次
+energy rejection 在 step `656`、SOC `0.157654`、energy `236.481`，
+compatible-pad availability 为 `5/3`，reason counts 为 `energy=1`、
+`safety=1`。所有 native calls 均未成功；UID `57` 在 `892` 仍为
+`failed_energy`。`attempt=false` 不计作 reject。
+
+源码和 tests 的本地/server SHA 一致，focused suite 为 `12 passed`（commit
+`e3e13d7`）。全局 `PPO_ALLOWED=false`，未使用 held-out；该 phase 不改变
+physics、guard、model 或 optimizer，也不宣称修复或新增因果归因。
+
+原始失败回放显示安全拒绝先发生，后期出现能量拒绝；step `445` 仍存在极低
+q 的可执行 K=3 分支，因此不将该时刻描述为不可行。这只是单次 failure 加
+frozen continuation，尚未选择训练修复，P3 仍未解决。
+
+## Frozen-WAIT 对照 pilot 与完整运行状态
+
+本轮 frozen-WAIT 对照的代码版本为 `9aa7970`，配套文档提交为
+`b2aa6f8`。新增 focused tests 为 `10` 个；既有相关 `36` 个测试和
+forced-WAIT `6` 个测试保持通过，不重复累计。服务器源码 SHA 与 preflight
+校验通过；本轮没有新增环境改动。`preflight_v1.log` 保留了初始工作目录错误：
+phase 开始前出现 `ModuleNotFoundError` 且没有 phase outputs；纠正项目 cwd 后，
+`preflight_v2` 报告 `PREFLIGHT_OK`，两份记录均保留。
+
+固定 pilot pair 为 environment seed `877101` 与 keyed policy seed `9303101`，
+状态为 `PILOT_OK/PAIR_OK`：两臂均运行 `694` ticks、自然终止且未 censor；两臂
+的 `24` 个请求一致，ledger 全部 resolved，model、caller RNG、source、safety、
+energy 和 wait checks 均通过。两臂 outcome 均为 `23 normal / 1 emergency /
+0 failed / 0 diverted / 0 unresolved`；wait 为 `2727.950535124339 s`，
+external 为 `335 s`，internal 为 `2392.950535124339 s`，full-scene time 为
+`694 s`。raw reward 的差值为 `+2.5`，全部来自 rejection penalty；排除该
+penalty 后差值为 `0`。该 pilot 没有观测到 business gain，不形成 performance claim。
+
+完整运行使用显式项目 cwd 启动，`full.json` 完成时间为 `20:50:31`；PID
+`2063491` 已退出，状态为
+`FULL_OK/pilot_reused`。固定的 `24` 个 complete-scene pairs 全部为
+`PAIR_OK`；两臂共 `48` 个 run 均自然终止，censor 与 error 均为 `0`。
+safety、source/model/caller-RNG、config/runtime、preflight、24 个请求的
+identity、ledger、energy 和 wait checks 均通过。P3 heartbeat 已删除，授权的
+后台终端已无继续运行的长任务。
+
+这些是 `6` 个 environment seeds × `4` 个 keyed policy seeds 的 `24` 个 scene
+events，合计每臂 `576` 个 request events，不是 `576` 个 distinct environment
+ profiles。每臂在 24 个场景中的累计 generated/admitted 均为 `576`，successful
+completion 为 `574`，resolved 为 `576`；单场景 generated/admitted 均为 `24`。
+business outcomes 汇总为 `491 normal / 83 emergency / 2 failed_energy / 0 diverted /
+0 unresolved`。两臂每个 pair 的
+request identity、business outcome、wait、elapsed 和 energy 均一致；全体 request
+wait 为 `79582.65016586734 s`（每 request `138.1643232046308 s`），elapsed
+为 `223350 s`（每 request `387.7604166666667 s`），model energy 为
+`185263.64932818164`（每 request `321.6382800836487`）。
+
+| pair | env | keyed policy | outcome N/E/F/D/U | request wait (s) | Δ reward | Δ raw reward excluding penalty |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 877101 | 9303101 | 23/1/0/0/0 | 2727.950535124339 | 2.5 | 0 |
+| 2 | 877101 | 9303102 | 23/1/0/0/0 | 2971.032914830321 | 2.24999999999989 | -1.13686837721616e-13 |
+| 3 | 877101 | 9303103 | 23/1/0/0/0 | 2389.289311552574 | 2.5 | 0 |
+| 4 | 877101 | 9303104 | 23/1/0/0/0 | 2973.392271431140 | 2.85000000000002 | 5.6843418860808e-14 |
+| 5 | 877102 | 9303101 | 20/4/0/0/0 | 3181.211230903982 | 2.79999999999995 | -5.6843418860808e-14 |
+| 6 | 877102 | 9303102 | 19/5/0/0/0 | 4085.035316034269 | 3.10000000000014 | 1.70530256582424e-13 |
+| 7 | 877102 | 9303103 | 20/4/0/0/0 | 3209.871293396141 | 2.00000000000017 | 1.70530256582424e-13 |
+| 8 | 877102 | 9303104 | 19/5/0/0/0 | 3860.159914917639 | 3.0999999999998 | -2.27373675443232e-13 |
+| 9 | 877103 | 9303101 | 20/4/0/0/0 | 2849.776218448148 | 2.75 | 0 |
+| 10 | 877103 | 9303102 | 21/3/0/0/0 | 3072.733442276747 | 2.19999999999999 | 0 |
+| 11 | 877103 | 9303103 | 20/4/0/0/0 | 3611.372152201485 | 2.69999999999993 | -5.6843418860808e-14 |
+| 12 | 877103 | 9303104 | 19/5/0/0/0 | 4007.885506863763 | 3.24999999999989 | -1.13686837721616e-13 |
+| 13 | 877104 | 9303101 | 20/3/1/0/0 | 4195.360899337695 | 3.80000000000018 | 1.70530256582424e-13 |
+| 14 | 877104 | 9303102 | 19/5/0/0/0 | 3028.233562992693 | 2 | 0 |
+| 15 | 877104 | 9303103 | 21/3/0/0/0 | 2464.012435507064 | 2.5 | 0 |
+| 16 | 877104 | 9303104 | 16/7/1/0/0 | 4036.144102041071 | 3.65000000000032 | 2.8421709430404e-13 |
+| 17 | 877105 | 9303101 | 21/3/0/0/0 | 3298.552351300552 | 3.55000000000007 | 1.13686837721616e-13 |
+| 18 | 877105 | 9303102 | 22/2/0/0/0 | 3055.202866579842 | 2.50000000000011 | 1.13686837721616e-13 |
+| 19 | 877105 | 9303103 | 19/5/0/0/0 | 4149.664203967385 | 2.69999999999993 | -5.6843418860808e-14 |
+| 20 | 877105 | 9303104 | 22/2/0/0/0 | 3475.689252696497 | 2.04999999999995 | -5.6843418860808e-14 |
+| 21 | 877106 | 9303101 | 20/4/0/0/0 | 3448.775915692401 | 3.15000000000009 | 5.6843418860808e-14 |
+| 22 | 877106 | 9303102 | 20/4/0/0/0 | 3312.577657439126 | 2.44999999999993 | -5.6843418860808e-14 |
+| 23 | 877106 | 9303103 | 20/4/0/0/0 | 2977.679794638645 | 2.60000000000002 | 5.6843418860808e-14 |
+| 24 | 877106 | 9303104 | 21/3/0/0/0 | 3201.047015693814 | 2.65000000000009 | 1.13686837721616e-13 |
+
+Legacy total reward was `10825.398813678652` with release rejection penalty
+`-426.05`; forced-WAIT total reward was `10890.998813678656` with penalty
+`-360.45`. Excluding the penalty, both arms were `11251.448813678655`; the total
+reward gain `65.6` came entirely from the rejection penalty. The maximum per-pair
+absolute difference after excluding that penalty was
+`2.8421709430404007e-13`, treated as floating-point noise. Physical wait, elapsed,
+energy and outcome deltas were all `0`.
+
+Failure pairs `13` and `16` are the same request event under environment `877104`
+and keyed policy seeds `9303101`/`9303104`: request `13`, UID `46`, `standard`,
+initial SOC `0.5549178989494378`, final SOC `0`, request time `30`, terminal time
+`862`, `ring_outer`, `energy_depleted`, external wait `29 s`, internal wait
+`747.8147075862394 s`, total wait `776.8147075862394 s`, consumed energy
+`833.1666666666666`. The event is identical in both arms. These are repeated
+request events in the 24-scene comparison, not evidence that the scene is
+infeasible or a root-cause attribution for P3. The source before update was
+`3fe7+a82`; the separate old source16 true failure with UID `57` is not mixed into
+this result.
+
+The frozen-WAIT mechanical and probability semantics passed this protocol. The
+mode is not promoted to formal/default behavior, and the result does not verify
+learning efficacy or qualification. Joint resource-energy reachability and
+executable-candidate coverage evidence, followed by qualification, remain required
+before PPO; no new training was approved or launched.
+
+## 边界
+
+pilot 与完整 frozen-WAIT 对照均已完成；尚无学习 efficacy 或 qualification 结论。P3 退化仍未证解决；strong baselines、sensitivity、joint recursive feasibility、完整 V4.2 high adapter 和 qualification 仍是未关闭事实。`C` 的完整 `24×4` 诊断已 `COMPLETED`：24/24 state、2,496/2,496 branch，自然终止且无 error/censor；`PPO_ALLOWED=false` 保持。forced-WAIT 仅作为已完成的实验性 mechanical/probability 对照，不提升为 formal/default，也未批准或启动新训练。下一步需补 joint resource-energy reachability、executable-candidate coverage 和 qualification 证据。

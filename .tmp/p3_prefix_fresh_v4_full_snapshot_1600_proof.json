@@ -1,0 +1,21 @@
+{
+  "snapshot_time": "2026-10-01T16:00:10.964755+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.validate_p3_prefix_fallback_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"],
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"status": "RUNNING", "phase": "native_step", "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1", "cell_id": 5, "arm": "before_legacy", "absolute_step": 150, "active_uavs": 16, "generated_requests": 21, "observed_steps": 150},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed": ["cell_04_before_prefix.json", "cell_04_after_prefix.json", "cell_04.json"],
+  "cell_04": {
+    "before_prefix": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [22, 2, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2541.5645411838295, "request_elapsed_total_seconds": 8702.0, "energy_total_consumed": 7136.644529351648, "raw_reward_excluding_rejection_penalty": 495.9756528385031, "release_rejection_penalty": -11.200000000000001, "reward_total": 484.7756528385031, "steps": 723, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "de3a49e6a397a710cdedc39ace8c4efabc254d5230ff3684649e2c6f79927bd6"}},
+    "after_prefix": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [21, 3, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2300.4786701382777, "request_elapsed_total_seconds": 8318.0, "energy_total_consumed": 6780.564268184143, "raw_reward_excluding_rejection_penalty": 493.42421128384325, "release_rejection_penalty": -11.450000000000001, "reward_total": 481.97421128384326, "steps": 676, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "3b64a8aba880a5fd94f1942b7249bd805f63fb7a1506aa80e44ed8ab0ed322cf"}}
+  },
+  "cell_04_pair": {"status": "PAIR_OK", "technical_ok": true, "all_four_natural": true, "all_request_identity_exact_24": true, "new_failed_ids": [], "new_diverted_ids": [], "new_unresolved_ids": [], "after_prefix_minus_after_legacy": {"normal": 0.0, "emergency": 0.0, "wait_seconds": -598.1456370524552, "request_elapsed_total_seconds": -463.0, "energy_total_consumed": -524.3019202040941, "raw_reward_excluding_rejection_penalty": 9.201294324195544, "release_rejection_penalty": 7.299999999999999}},
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

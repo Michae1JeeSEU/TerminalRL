@@ -1,0 +1,30 @@
+ docs/CURRENT_STATUS.md                             |  2 ++
+ .../v4_2/p3_v25_generalization_repair_20261009.md  |  6 ++++
+ terminal_marl/algo/conditioned_set_actor.py        | 41 ++++++++++++++++++++++
+ .../diagnose_p3_v25_train_generalization.py        | 16 +++++++--
+ tests/test_conditioned_set_actor.py                | 34 ++++++++++++++++++
+ tests/test_p3_v25_train_generalization.py          | 12 +++++++
+ 6 files changed, 108 insertions(+), 3 deletions(-)
+
+diff --git a/docs/CURRENT_STATUS.md b/docs/CURRENT_STATUS.md
+index c6dc6a6..b157f16 100644
+--- a/docs/CURRENT_STATUS.md
++++ b/docs/CURRENT_STATUS.md
+@@ -212,6 +212,8 @@
+ 
+ - 六train整回合CV已COMPLETE但dense仍泛化不足：5000step R recall .507–.644、proposal top1 .368–.467，训练内约99%；早停也未达标。原2258 teacher audit全量符合first-feasible前缀，并未发现新误标。primary已实现仅开发用共享候选打分/first-hit概率分解，保留原观测、标签、CE与资格门槛，12项数学/接口/两step输出测试通过；下一只做同六fold单一有界对照，不继续盲目采集/训练或消费新Q。旧runtime未替换，无正式准入，详见[泛化与候选结构试验](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+ 
++- 共享候选first-hit对照已COMPLETE但无改善，dense proposal仅.245–.387且训练内也约.51–.55，不接入runtime。primary下一只检验“逐邻机编码先结合ego159再汇总”这一结构，恢复原独立gate/proposal头、原CE和全部观测/标签/门槛；15项含两step输出检查通过，待同六fold有界开发验证。该表示尚非已接受修复，未新Q/部署fit/PPO/formal，详见[完整失败与后续假设](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
++
+ ## 2026-10-03 P3 统一实现修复（最新）
+ 
+ - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
+
+[codex/v4-2-v2-1-formal-i1 b5bb744] feat: test ego-conditioned neighbor encoding before aggregation
+ 6 files changed, 108 insertions(+), 3 deletions(-)
+ create mode 100644 terminal_marl/algo/conditioned_set_actor.py
+ create mode 100644 tests/test_conditioned_set_actor.py
+
+COMMIT=b5bb7445658d0c1a45348629af9a532e27262dc3
+INDEX=''
+REMOTES=''

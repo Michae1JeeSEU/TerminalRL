@@ -1,0 +1,824 @@
+[
+  {
+    "time": 0.0,
+    "event": "request",
+    "uid": 0,
+    "gate": 0
+  },
+  {
+    "time": 0.0,
+    "event": "admission",
+    "uid": 0,
+    "external_wait": 0.0
+  },
+  {
+    "time": 0.0,
+    "event": "grant",
+    "uid": 0,
+    "not_before": 0.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 47.0,
+    "event": "capture",
+    "uid": 0,
+    "expected_touchdown": 87.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 75.0,
+    "event": "request",
+    "uid": 1,
+    "gate": 1
+  },
+  {
+    "time": 75.0,
+    "event": "admission",
+    "uid": 1,
+    "external_wait": 0.0
+  },
+  {
+    "time": 75.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 87.00000000000001,
+    "event": "touchdown",
+    "uid": 0
+  },
+  {
+    "time": 90.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 132.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 135.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 138.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 145.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 146.99999999999994,
+    "event": "outcome",
+    "uid": 0,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 147.0,
+    "event": "grant",
+    "uid": 1,
+    "not_before": 147.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 150.0,
+    "event": "request",
+    "uid": 2,
+    "gate": 2
+  },
+  {
+    "time": 150.0,
+    "event": "admission",
+    "uid": 2,
+    "external_wait": 0.0
+  },
+  {
+    "time": 150.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 164.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 168.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 171.0,
+    "event": "capture",
+    "uid": 1,
+    "expected_touchdown": 211.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 171.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 208.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 210.99999999999994,
+    "event": "touchdown",
+    "uid": 1
+  },
+  {
+    "time": 222.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 225.0,
+    "event": "request",
+    "uid": 3,
+    "gate": 3
+  },
+  {
+    "time": 225.0,
+    "event": "admission",
+    "uid": 3,
+    "external_wait": 0.0
+  },
+  {
+    "time": 225.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 234.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 243.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 250.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 255.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 261.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 267.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 270.99999999999994,
+    "event": "outcome",
+    "uid": 1,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 271.0,
+    "event": "grant",
+    "uid": 2,
+    "not_before": 271.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 278.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 283.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 290.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 295.0,
+    "event": "capture",
+    "uid": 2,
+    "expected_touchdown": 335.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 296.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 300.0,
+    "event": "request",
+    "uid": 4,
+    "gate": 0
+  },
+  {
+    "time": 300.0,
+    "event": "admission",
+    "uid": 4,
+    "external_wait": 0.0
+  },
+  {
+    "time": 300.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 310.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 316.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 323.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 334.99999999999994,
+    "event": "touchdown",
+    "uid": 2
+  },
+  {
+    "time": 337.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 343.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 348.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 351.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 355.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 360.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 363.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 370.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 373.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 375.0,
+    "event": "request",
+    "uid": 5,
+    "gate": 1
+  },
+  {
+    "time": 375.0,
+    "event": "admission",
+    "uid": 5,
+    "external_wait": 0.0
+  },
+  {
+    "time": 375.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 378.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 381.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 385.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 389.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 392.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 394.99999999999994,
+    "event": "outcome",
+    "uid": 2,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 395.0,
+    "event": "grant",
+    "uid": 3,
+    "not_before": 395.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 399.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 406.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 415.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 420.0,
+    "event": "capture",
+    "uid": 3,
+    "expected_touchdown": 460.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 422.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 427.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 430.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 434.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 439.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 443.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 448.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 456.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 459.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 459.99999999999994,
+    "event": "touchdown",
+    "uid": 3
+  },
+  {
+    "time": 462.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 470.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 474.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 477.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 480.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 487.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 493.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 497.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 500.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 503.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 507.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 514.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 518.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 520.0000000000002,
+    "event": "outcome",
+    "uid": 3,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 520.0,
+    "event": "grant",
+    "uid": 4,
+    "not_before": 520.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 525.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 538.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 543.0,
+    "event": "capture",
+    "uid": 4,
+    "expected_touchdown": 583.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 550.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 557.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 565.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 570.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 575.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 583.0000000000002,
+    "event": "touchdown",
+    "uid": 4
+  },
+  {
+    "time": 585.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 589.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 595.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 601.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 605.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 612.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 625.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 629.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 639.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 643.0000000000002,
+    "event": "outcome",
+    "uid": 4,
+    "outcome": "completed",
+    "reason": "service_complete"
+  },
+  {
+    "time": 643.0,
+    "event": "grant",
+    "uid": 5,
+    "not_before": 643.0,
+    "planned_touchdown": null
+  },
+  {
+    "time": 643.0,
+    "event": "shield",
+    "uid": null,
+    "reason": "dynamics_horizontal_acceleration_limit",
+    "selection": "shared_avoidance"
+  },
+  {
+    "time": 668.0,
+    "event": "capture",
+    "uid": 5,
+    "expected_touchdown": 708.0,
+    "planned_touchdown": null,
+    "planned_touchdown_error": null
+  },
+  {
+    "time": 708.0000000000002,
+    "event": "touchdown",
+    "uid": 5
+  },
+  {
+    "time": 768.0000000000002,
+    "event": "outcome",
+    "uid": 5,
+    "outcome": "completed",
+    "reason": "service_complete"
+  }
+]

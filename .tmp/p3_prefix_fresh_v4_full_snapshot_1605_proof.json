@@ -1,0 +1,21 @@
+{
+  "snapshot_time": "2026-10-01T16:05:06.906060+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.validate_p3_prefix_fallback_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"],
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1", "cell_id": 5, "arm": "before_prefix_fallback", "absolute_step": 650, "env_now": 650.0, "active_observation_count": 2, "generated_requests": 24, "native_forward_count": 651},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed": ["cell_05_before_legacy.json", "cell_05_after_legacy.json"],
+  "cell_05": {
+    "before_legacy": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [21, 3, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2831.714915546975, "request_elapsed_total_seconds": 8877.0, "energy_total_consumed": 7226.2010726350645, "raw_reward_excluding_rejection_penalty": 484.6935885149977, "release_rejection_penalty": -17.150000000000002, "reward_total": 467.54358851499774, "steps": 759, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true},
+    "after_legacy": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [22, 2, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 3325.1994978543767, "request_elapsed_total_seconds": 9377.0, "energy_total_consumed": 7782.96284336841, "raw_reward_excluding_rejection_penalty": 484.22852901460556, "release_rejection_penalty": -17.5, "reward_total": 466.72852901460556, "steps": 824, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true}
+  },
+  "new_pairs": [],
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

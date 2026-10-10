@@ -1,0 +1,32 @@
+........................................................................ [ 22%]
+....................................................F.F................. [ 45%]
+........................................................................ [ 68%]
+......................................s................................. [ 91%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_____________ test_protocol_and_guard_on_off_bindings_are_frozen ______________
+tests\test_emergency_priority_guard_pilot_v2.py:13: in test_protocol_and_guard_on_off_bindings_are_frozen
+    protocol = runner.load_protocol()
+               ^^^^^^^^^^^^^^^^^^^^^^
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:97: in load_protocol
+    _require(observed == expected, f"source binding mismatch: {relative}")
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:50: in _require
+    raise ProtocolError(message)
+E   terminal_marl.training.diagnose_emergency_priority_guard_pilot_v2.ProtocolError: source binding mismatch: terminal_marl/core/config.py
+___ test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite ___
+tests\test_emergency_priority_guard_pilot_v2.py:129: in test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite
+    manifest = runner.run(checkpoint=checkpoint, output=output, smoke=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:219: in run
+    protocol = load_protocol()
+               ^^^^^^^^^^^^^^^
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:97: in load_protocol
+    _require(observed == expected, f"source binding mismatch: {relative}")
+terminal_marl\training\diagnose_emergency_priority_guard_pilot_v2.py:50: in _require
+    raise ProtocolError(message)
+E   terminal_marl.training.diagnose_emergency_priority_guard_pilot_v2.ProtocolError: source binding mismatch: terminal_marl/core/config.py
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_low_v2_architecture.py:597: Historical V2 D2 diagnostic_snapshot API was removed from categorical SharedPPO; no current equivalent
+FAILED tests/test_emergency_priority_guard_pilot_v2.py::test_protocol_and_guard_on_off_bindings_are_frozen
+FAILED tests/test_emergency_priority_guard_pilot_v2.py::test_smoke_serializes_four_guard_controller_cases_and_refuses_overwrite
+2 failed, 312 passed, 1 skipped in 31.96s

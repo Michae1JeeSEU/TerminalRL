@@ -1,0 +1,178 @@
+{
+  "port": 52613,
+  "checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+  "session_status": 200,
+  "session_profile_ids": [
+    "checkpoint12",
+    "p2_initial_k3",
+    "p2_trained_k3",
+    "p3_task_neutral"
+  ],
+  "p3_start_status": 200,
+  "p3_start": {
+    "status": "starting",
+    "config": {
+      "mode": "checkpoint",
+      "scenario": "flow6",
+      "seed": 17,
+      "max_simulation_seconds": 2.0,
+      "max_steps": 2,
+      "playback_speed": 0.0,
+      "low_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+      "high_checkpoint": null,
+      "start_paused": true,
+      "profile": "p3_task_neutral",
+      "deterministic": false
+    }
+  },
+  "p3_initial_paused": {
+    "status": "paused",
+    "error": null,
+    "frame_count": 1,
+    "times": [
+      0.0
+    ],
+    "steps": [
+      0
+    ],
+    "process_alive": true
+  },
+  "p3_after_350ms": {
+    "status": "paused",
+    "error": null,
+    "frame_count": 1,
+    "times": [
+      0.0
+    ],
+    "steps": [
+      0
+    ],
+    "process_alive": true
+  },
+  "p3_step1_status": 200,
+  "p3_after_step1": {
+    "status": "paused",
+    "error": null,
+    "frame_count": 2,
+    "times": [
+      0.0,
+      1.0
+    ],
+    "steps": [
+      0,
+      1
+    ],
+    "process_alive": true
+  },
+  "p3_step2_status": 200,
+  "p3_after_step2": {
+    "status": "completed",
+    "error": null,
+    "frame_count": 3,
+    "times": [
+      0.0,
+      1.0,
+      2.0
+    ],
+    "steps": [
+      0,
+      1,
+      2
+    ],
+    "process_alive": false
+  },
+  "p3_metadata": {
+    "checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "low_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "profile": "p3_task_neutral",
+    "scenario": "flow6",
+    "seed": 17,
+    "deterministic": false,
+    "shortlist_k": 3,
+    "observation_dim": 88,
+    "weights_unchanged": true,
+    "optimizer_loaded": false,
+    "diagnostic_step_limit": 2
+  },
+  "invalid_checkpoint_start_status": 200,
+  "invalid_checkpoint_start": {
+    "response": {
+      "generation": 2,
+      "status": "starting",
+      "error": null,
+      "config": {
+        "mode": "checkpoint",
+        "scenario": "flow6",
+        "seed": 17,
+        "max_simulation_seconds": 2.0,
+        "max_steps": 2,
+        "playback_speed": 0.0,
+        "low_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\missing.pt",
+        "high_checkpoint": null,
+        "start_paused": true,
+        "profile": "p3_task_neutral",
+        "deterministic": false
+      },
+      "metadata": {
+        "profile": "p3_task_neutral",
+        "checkpoint_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\missing.pt",
+        "seed": 17,
+        "deterministic": false
+      },
+      "process_alive": true,
+      "base_cursor": 0,
+      "next_cursor": 0,
+      "dropped_frames": 0
+    },
+    "status": "error",
+    "error": "ValueError: checkpoint does not exist: D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\missing.pt\nTraceback (most recent call last):\n  File \"D:\\7_codespace\\terminal\\terminal_marl\\visualization\\console_server.py\", line 629, in _simulation_worker\n    result = run_checkpoint(config=config, observer_factory=observer_factory)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\7_codespace\\terminal\\terminal_marl\\visualization\\console_policy.py\", line 453, in run_checkpoint\n    values = _validate_config(config)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\7_codespace\\terminal\\terminal_marl\\visualization\\console_policy.py\", line 247, in _validate_config\n    _require(checkpoint.is_file(), f\"checkpoint does not exist: {checkpoint}\")\n  File \"D:\\7_codespace\\terminal\\terminal_marl\\visualization\\console_policy.py\", line 61, in _require\n    raise ValueError(message)\nValueError: checkpoint does not exist: D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\missing.pt"
+  },
+  "rule_reset": {
+    "start_status": 200,
+    "start_response": {
+      "generation": 3,
+      "status": "starting",
+      "error": null,
+      "config": {
+        "mode": "fixed_rule",
+        "scenario": "default",
+        "seed": 0,
+        "max_simulation_seconds": 2.0,
+        "max_steps": 2,
+        "playback_speed": 0.0,
+        "low_checkpoint": null,
+        "high_checkpoint": null,
+        "start_paused": false,
+        "profile": null,
+        "deterministic": true
+      },
+      "metadata": {
+        "profile": null,
+        "checkpoint_path": null,
+        "seed": 0,
+        "deterministic": true
+      },
+      "process_alive": true,
+      "base_cursor": 0,
+      "next_cursor": 0,
+      "dropped_frames": 0
+    },
+    "result": {
+      "status": "completed",
+      "error": null,
+      "frame_count": 3,
+      "times": [
+        0.0,
+        1.0,
+        2.0
+      ],
+      "steps": [
+        0,
+        1,
+        2
+      ],
+      "process_alive": false
+    }
+  }
+}

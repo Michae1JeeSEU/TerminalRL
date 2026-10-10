@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\p3_gate_control_natural_fixture.py", line 18, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'

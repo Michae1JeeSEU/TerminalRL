@@ -1,0 +1,45 @@
+{
+  "stage": "P3_PREFIX_GATE_EVENTS_20261001_V1",
+  "phase": "full",
+  "status": "RUNNING",
+  "observed_at": "2026-10-01T18:29:58.518208249+08:00",
+  "python_pid": 2183147,
+  "launcher_shell_pid": 2183146,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_gate_events_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "exe": "/usr/bin/python3.12",
+  "env_flags": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "full_log": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001/full_v1.log",
+    "size_bytes": 0
+  },
+  "progress": {
+    "status": "RUNNING",
+    "cell_id": 2,
+    "step": 299,
+    "potential_candidates_seen": 267,
+    "events_recorded": 159,
+    "normal_events": 44
+  },
+  "preflight_sha256": "633c2a525c7a797b6adb4494b3adae7121f79110fc69042bab1f18ae90933150",
+  "pilot_sha256": "ca88265f5c467b2447c5e9ec52be7c49322d285ebb1bf484ce11b8804fb78bb7",
+  "pilot_cell_sha256": "3810322a12546d0f30919d3a699a2352ff2d4f855dbf957b6ec4bfa8451f6b07",
+  "runner_sha256": "8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef",
+  "protocol_sha256": "59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5",
+  "input_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "terminal_artifacts": [
+    "full.json",
+    "error.json",
+    "partial.json",
+    "cells/cell_02.json",
+    "cells/cell_03.json",
+    "cells/cell_04.json"
+  ],
+  "terminal_state": false,
+  "notes": "Pilot cell1 reused immutably; cells2-4 only. No retry or additional phase."
+}

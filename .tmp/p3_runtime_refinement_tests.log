@@ -1,0 +1,22 @@
+F................................................................        [100%]
+================================== FAILURES ===================================
+_____ test_accepted_emergency_has_same_continuous_certificate_at_runtime ______
+
+    def test_accepted_emergency_has_same_continuous_certificate_at_runtime():
+        env = witness()
+        plan = env.active[31].committed_plan
+>       assert env.safety.filter_plan(plan, {}, WorldSnapshot(env.now, env.active, env.airspace)).approved
+E       AssertionError: assert False
+E        +  where False = TrajectorySafetyResult(approved=False, reason='predicted_holder_reachable_tube', checked_plan_id='624b9c6d-858a-4fcc-b70f-b2a06732467b', checked_trajectory_hash=None).approved
+E        +    where TrajectorySafetyResult(approved=False, reason='predicted_holder_reachable_tube', checked_plan_id='624b9c6d-858a-4fcc-b70f-b2a06732467b', checked_trajectory_hash=None) = filter_plan(TrajectoryPlan(plan_id='624b9c6d-858a-4fcc-b70f-b2a06732467b', uav_id=31, mode='emergency_landing', points=(Trajectory...n': 'executable_trajectory_v3', 'trajectory_hash': '9724d04edb5c462311f25efb16ce8cbd899e52054902fc470889ae6193bc6f29'}), {}, WorldSnapshot(now=489.0, active={0: UAVState(uid=0, arrival_id=0, request_time=0.0, mission_type=<MissionType.CARGO: '...       ]), yaw_rate=0.0)}, airspace=<terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x0000020EFB7E5910>))
+E        +      where filter_plan = <terminal_marl.core.safety_filter.SafetyFilter object at 0x0000020EFB7E5670>.filter_plan
+E        +        where <terminal_marl.core.safety_filter.SafetyFilter object at 0x0000020EFB7E5670> = <terminal_marl.envs.parallel_env.TerminalParallelEnv object at 0x0000020EFB8B1160>.safety
+E        +      and   WorldSnapshot(now=489.0, active={0: UAVState(uid=0, arrival_id=0, request_time=0.0, mission_type=<MissionType.CARGO: '...       ]), yaw_rate=0.0)}, airspace=<terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x0000020EFB7E5910>) = WorldSnapshot(489.0, {0: UAVState(uid=0, arrival_id=0, request_time=0.0, mission_type=<MissionType.CARGO: 'cargo'>, base_priority=1, assign...emergency_retry_after=0.0, acceleration=array([ 8.06666667e-01, -9.87881751e-17,  0.00000000e+00]), yaw_rate=0.0), ...}, <terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x0000020EFB7E5910>)
+E        +        where 489.0 = <terminal_marl.envs.parallel_env.TerminalParallelEnv object at 0x0000020EFB8B1160>.now
+E        +        and   {0: UAVState(uid=0, arrival_id=0, request_time=0.0, mission_type=<MissionType.CARGO: 'cargo'>, base_priority=1, assign...emergency_retry_after=0.0, acceleration=array([ 8.06666667e-01, -9.87881751e-17,  0.00000000e+00]), yaw_rate=0.0), ...} = <terminal_marl.envs.parallel_env.TerminalParallelEnv object at 0x0000020EFB8B1160>.active
+E        +        and   <terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x0000020EFB7E5910> = <terminal_marl.envs.parallel_env.TerminalParallelEnv object at 0x0000020EFB8B1160>.airspace
+
+tests\test_nominal_runtime_refinement.py:47: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_nominal_runtime_refinement.py::test_accepted_emergency_has_same_continuous_certificate_at_runtime
+1 failed, 64 passed in 11.53s

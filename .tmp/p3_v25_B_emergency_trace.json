@@ -1,0 +1,280 @@
+{
+  "B_det": {
+    "ticks": 982,
+    "reward": 486.0638783636545,
+    "total_energy": 10636.430423367074,
+    "targets": {
+      "72": {
+        "outcome": {
+          "arrival_id": 17,
+          "uid": 72,
+          "outcome": "completed",
+          "reason": "ground_service_complete",
+          "time": 690.0,
+          "soc": 0.6081973978762847,
+          "energy_remaining": 912.2960968144271,
+          "energy_consumed": 517.510102650294,
+          "phase": "completed"
+        },
+        "counts": {
+          "forced": 411,
+          "actor": 128,
+          "WAIT": 113,
+          "RELEASE": 15
+        },
+        "reasons": {
+          "PREDICTED_SEPARATION": 5,
+          "FINAL_RESOURCE": 7
+        },
+        "approvals": [
+          {
+            "tick": 267,
+            "interface": "o2m",
+            "rank": 1
+          },
+          {
+            "tick": 406,
+            "interface": "m2i",
+            "rank": 1
+          },
+          {
+            "tick": 559,
+            "interface": "i2f",
+            "rank": 2
+          }
+        ],
+        "first_tick": 91,
+        "last_tick": 629,
+        "longest_wait_streaks": [
+          [
+            155,
+            229,
+            75
+          ],
+          [
+            528,
+            558,
+            31
+          ],
+          [
+            503,
+            506,
+            4
+          ],
+          [
+            514,
+            515,
+            2
+          ],
+          [
+            248,
+            248,
+            1
+          ]
+        ],
+        "chosen_WAIT_probability": {
+          "count": 113,
+          "minimum": 0.7243878354649278,
+          "mean": 0.992133123653258,
+          "maximum": 1.0
+        }
+      },
+      "117": {
+        "outcome": {
+          "arrival_id": 22,
+          "uid": 117,
+          "outcome": "completed",
+          "reason": "ground_service_complete",
+          "time": 704.0,
+          "soc": 0.5994421936061909,
+          "energy_remaining": 899.1632904092863,
+          "energy_consumed": 478.9665531401188,
+          "phase": "completed"
+        },
+        "counts": {
+          "forced": 405,
+          "actor": 103,
+          "WAIT": 94,
+          "RELEASE": 9
+        },
+        "reasons": {
+          "NO_MERGE_GAP": 3,
+          "PREDICTED_SEPARATION": 3
+        },
+        "approvals": [
+          {
+            "tick": 284,
+            "interface": "o2m",
+            "rank": 1
+          },
+          {
+            "tick": 519,
+            "interface": "m2i",
+            "rank": 1
+          },
+          {
+            "tick": 612,
+            "interface": "i2f",
+            "rank": 1
+          }
+        ],
+        "first_tick": 166,
+        "last_tick": 673,
+        "longest_wait_streaks": [
+          [
+            230,
+            283,
+            54
+          ],
+          [
+            425,
+            464,
+            40
+          ]
+        ],
+        "chosen_WAIT_probability": {
+          "count": 94,
+          "minimum": 0.6491837338867967,
+          "mean": 0.9959596804537444,
+          "maximum": 1.0
+        }
+      }
+    }
+  },
+  "B_sto": {
+    "ticks": 1166,
+    "reward": 447.3559955350695,
+    "total_energy": 11777.768983905245,
+    "targets": {
+      "38": {
+        "outcome": {
+          "arrival_id": 17,
+          "uid": 38,
+          "outcome": "emergency_landed",
+          "reason": "ground_service_complete",
+          "time": 1128.0,
+          "soc": 0.3241480458880433,
+          "energy_remaining": 486.22206883206496,
+          "energy_consumed": 943.5841306326548,
+          "phase": "completed"
+        },
+        "counts": {
+          "forced": 814,
+          "actor": 162,
+          "WAIT": 137,
+          "RELEASE": 25,
+          "RELEASE_without_normal_release_telemetry": 1
+        },
+        "reasons": {
+          "PREDICTED_SEPARATION": 14,
+          "NO_MERGE_GAP": 7,
+          "HEADWAY": 1
+        },
+        "approvals": [
+          {
+            "tick": 350,
+            "interface": "o2m",
+            "rank": 1
+          },
+          {
+            "tick": 729,
+            "interface": "m2i",
+            "rank": 1
+          }
+        ],
+        "first_tick": 92,
+        "last_tick": 1067,
+        "longest_wait_streaks": [
+          [
+            156,
+            223,
+            68
+          ],
+          [
+            588,
+            647,
+            60
+          ],
+          [
+            308,
+            313,
+            6
+          ],
+          [
+            288,
+            289,
+            2
+          ],
+          [
+            269,
+            269,
+            1
+          ]
+        ],
+        "chosen_WAIT_probability": {
+          "count": 137,
+          "minimum": 0.547399054587865,
+          "mean": 0.9888701993640102,
+          "maximum": 1.0
+        }
+      },
+      "114": {
+        "outcome": {
+          "arrival_id": 22,
+          "uid": 114,
+          "outcome": "emergency_landed",
+          "reason": "ground_service_complete",
+          "time": 1166.0,
+          "soc": 0.29221399653569247,
+          "energy_remaining": 438.3209948035387,
+          "energy_consumed": 939.8088487458664,
+          "phase": "completed"
+        },
+        "counts": {
+          "forced": 813,
+          "actor": 144,
+          "WAIT": 122,
+          "RELEASE": 22,
+          "RELEASE_without_normal_release_telemetry": 1
+        },
+        "reasons": {
+          "NO_MERGE_GAP": 7,
+          "PREDICTED_SEPARATION": 11,
+          "HEADWAY": 1
+        },
+        "approvals": [
+          {
+            "tick": 437,
+            "interface": "o2m",
+            "rank": 3
+          },
+          {
+            "tick": 765,
+            "interface": "m2i",
+            "rank": 1
+          }
+        ],
+        "first_tick": 179,
+        "last_tick": 1135,
+        "longest_wait_streaks": [
+          [
+            243,
+            317,
+            75
+          ],
+          [
+            390,
+            436,
+            47
+          ]
+        ],
+        "chosen_WAIT_probability": {
+          "count": 122,
+          "minimum": 0.6763205908864317,
+          "mean": 0.9951117276925313,
+          "maximum": 1.0
+        }
+      }
+    }
+  }
+}

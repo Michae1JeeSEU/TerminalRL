@@ -1,0 +1,26 @@
+{
+  "actor_rows": 7378,
+  "cell_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\cells\\cell_01.json",
+  "empty_ticks": 60,
+  "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_01.npz",
+  "status": "C1_SCHEMA_VALID",
+  "steps": 708,
+  "target_row": {
+    "context": {
+      "actor_mask": true,
+      "arrival_id": 15,
+      "committed_plan": false,
+      "now": 307.0,
+      "phase": "ring_inner",
+      "retry_free": true,
+      "safety_retry_after": 307.0,
+      "soc": 0.7262173226131179,
+      "uid": 15
+    },
+    "key": "307|15",
+    "observation_hash": "7e9576d9ca717b4cd6adfefe2b2acda1e95b51b57d13b11cbf457c717b14c601",
+    "step": 307,
+    "uid": 15,
+    "world_row_index": 4873
+  }
+}

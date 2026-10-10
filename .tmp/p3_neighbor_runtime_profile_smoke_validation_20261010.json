@@ -1,0 +1,40 @@
+{
+  "protocol": "p3_neighbor_runtime_profile_20261010_v1",
+  "script": ".tmp/profile_p3_neighbor_runtime_20261010.py",
+  "script_sha256": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+  "commands": [
+    "venv\\Scripts\\python.exe -m py_compile .tmp/profile_p3_neighbor_runtime_20261010.py",
+    "venv\\Scripts\\python.exe .tmp/profile_p3_neighbor_runtime_20261010.py --smoke --workers 1 --updates 2 --output .tmp/p3_neighbor_runtime_smoke_w1_20261010_r4",
+    "venv\\Scripts\\python.exe .tmp/profile_p3_neighbor_runtime_20261010.py --smoke --workers 2 --updates 2 --output .tmp/p3_neighbor_runtime_smoke_w2_20261010_r4",
+    "venv\\Scripts\\python.exe .tmp/profile_p3_neighbor_runtime_20261010.py --smoke --workers 1 --updates 2 --wall-cap 0 --output .tmp/p3_neighbor_runtime_smoke_budget_fail_20261010_r4"
+  ],
+  "checks": {
+    "py_compile_exit": 0,
+    "workers1_status": "SMOKE_OK",
+    "workers1_backward_calls": 8,
+    "workers1_timed_backward_passes_per_group": 2,
+    "workers1_warmups_per_group": 2,
+    "workers1_actor_rows": {"train": 10, "held": 6},
+    "workers2_status": "SMOKE_OK",
+    "workers2_backward_calls": 16,
+    "workers2_worker_count": 2,
+    "serial_parallel_supports_equal": true,
+    "serial_parallel_model_hashes_unchanged": true,
+    "optimizer_updates": 0,
+    "runtime_environment_resets_steps_teacher_queries_planner_calls": 0,
+    "budget_failure_status": "INCOMPLETE",
+    "budget_failure_writes_result_json": true,
+    "budget_failure_error": "ProbeError('probe wall budget exhausted')",
+    "snapshot_metadata": "official load_nine_cycle_train/load_resource_train reads archived input snapshots for 54D resource reconstruction; outside timed probe",
+    "runtime_snapshot_calls": 0
+  },
+  "artifacts": [
+    ".tmp/p3_neighbor_runtime_smoke_w1_20261010_r4/protocol.json",
+    ".tmp/p3_neighbor_runtime_smoke_w1_20261010_r4/result.json",
+    ".tmp/p3_neighbor_runtime_smoke_w2_20261010_r4/protocol.json",
+    ".tmp/p3_neighbor_runtime_smoke_w2_20261010_r4/result.json",
+    ".tmp/p3_neighbor_runtime_smoke_budget_fail_20261010_r4/protocol.json",
+    ".tmp/p3_neighbor_runtime_smoke_budget_fail_20261010_r4/result.json"
+  ],
+  "real_probe_started": false
+}

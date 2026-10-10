@@ -1,0 +1,10 @@
+{
+  "status": "blocked",
+  "command": "C:\\Users\\user\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe .tmp/p3_gate_control_natural_fixture.py",
+  "phase": "module_import",
+  "error_type": "ModuleNotFoundError",
+  "error_message": "No module named 'torch'",
+  "log": "D:\\7_codespace\\terminal\\.tmp\\p3_gate_control_natural_fixture.log",
+  "fixture_attempted": false,
+  "server_used": false
+}

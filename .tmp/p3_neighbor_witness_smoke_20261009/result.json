@@ -1,0 +1,8 @@
+{
+  "status": "SMOKE_OK",
+  "states": 3,
+  "plan_calls": 8,
+  "error": null,
+  "elapsed_seconds": 2.405999999959022,
+  "witness_sha256": "6d75987cb4f6599cce4abb39a22946b7bb6e6f6ff45939a2996d369f38c03884"
+}

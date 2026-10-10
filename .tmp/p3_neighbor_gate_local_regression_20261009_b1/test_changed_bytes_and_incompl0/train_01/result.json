@@ -1,0 +1,17 @@
+{
+  "protocol": "p3_v26_spatial_resources_independent_train_20261009_v1",
+  "profile": "p3_v25_neutral_course_nominal_curve_total_wait_20261008_v2",
+  "partition": "train",
+  "seed": 893601,
+  "scenario": "flow6_mixed",
+  "status": "COLLECTION_OK",
+  "error": null,
+  "blockers": [],
+  "reconstruction": {
+    "rows": 1
+  },
+  "resource_reconstruction": {
+    "rows": 1,
+    "sha256": "ec465656de378f54f1d3609490410cd1858a6aeefa2e8875cdd8feb047dae9d1"
+  }
+}

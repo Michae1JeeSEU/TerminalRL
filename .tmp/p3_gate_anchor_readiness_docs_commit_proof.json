@@ -1,0 +1,17 @@
+{
+  "commit": "dc7fe321faca3360952b624cc4ab7db2af515fa0",
+  "commit_message": "docs: record complete P3 anchors and fit readiness",
+  "commit_files": [
+    "docs/CURRENT_STATUS.md",
+    "docs/evidence/v4_2/p3_followup_results_20260930.md"
+  ],
+  "working_suffix_sha": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "working_suffix_len": 208510,
+  "head_suffix_sha": "9fbb224ca94c29710457c67c6ff3ea6f4d7d50c63442313eee69a9cbfaa1279c",
+  "head_suffix_len": 193464,
+  "expected_working_suffix": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "expected_head_suffix": "9fbb224ca94c29710457c67c6ff3ea6f4d7d50c63442313eee69a9cbfaa1279c",
+  "cached_paths_after_commit": [],
+  "diff_check": "passed",
+  "push": "not attempted; no remote/upstream configured"
+}

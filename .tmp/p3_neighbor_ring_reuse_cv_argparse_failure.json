@@ -1,0 +1,30 @@
+{
+  "schema": "p3_neighbor_ring_reuse_cv_argparse_failure_20261010_v1",
+  "recorded_utc": "2026-10-10T01:46:44.5220337Z",
+  "root_remote": "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010",
+  "root_local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_ring_reuse_20261010",
+  "old_paths": [
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.log",
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.exit",
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.pid"
+  ],
+  "new_paths": [
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.argparse_failure_001.log",
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.argparse_failure_001.exit",
+    "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle.argparse_failure_001.pid"
+  ],
+  "wrapper_pid": 3136102,
+  "exit_code": 2,
+  "raw_error": "argument --additional-train-directories: expected 3 arguments",
+  "log_sha256": "df31a989a6f4925b01c21c2a4d9d797aaf3821e5180cd398695c2bdfdbd5c26b",
+  "exit_sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+  "pid_sha256": "9d7d61a0580d75916111b81b137fbe92995034113e8344b3ca4240e8a3a5cd77",
+  "local_server_hash_match": true,
+  "training_started": false,
+  "protocol_exists": false,
+  "result_exists": false,
+  "matching_processes": 0,
+  "target_nine_cycle_exists": false,
+  "original_siblings_absent": true,
+  "rename_overwrite": false
+}

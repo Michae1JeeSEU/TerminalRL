@@ -1,0 +1,174 @@
+{
+  "time_utc": "2026-10-09T00:28:00.135549+00:00",
+  "case": "train_03",
+  "adjacent": {
+    ".pid": {
+      "exists": true,
+      "bytes": 8,
+      "sha256": "4bd24112620bb973b03c4cdc47d102b9acf7b574be126b09e72c64ac754368ff",
+      "mtime": 1791505620.265985,
+      "content": 2998137
+    },
+    ".wrapper.pid": {
+      "exists": true,
+      "bytes": 8,
+      "sha256": "7b1c518ee6a41c7f51e37eff71581593565c1d94806da6cb507b81b32d667697",
+      "mtime": 1791505620.265985,
+      "content": 2998136
+    },
+    ".exit": {
+      "exists": false
+    },
+    ".log": {
+      "exists": true,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mtime": 1791505620.265985,
+      "content": ""
+    }
+  },
+  "files": {
+    "protocol.json": {
+      "exists": true,
+      "bytes": 1889,
+      "sha256": "89aa1107e29278eb152702bcbbc98d9c42a132c35e3e99b38ba6e4ecf506af49",
+      "mtime": 1791505620.9009426,
+      "content": {
+        "protocol": "p3_v26_spatial_resources_independent_train_20261009_v1",
+        "profile": "p3_v25_neutral_course_nominal_curve_total_wait_20261008_v2",
+        "index": 3,
+        "seed": 893603,
+        "scenario": "dense24_mixed",
+        "learning_observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "partition": "train",
+        "schema": "p3_v3_90d_sparse_expert_v1",
+        "smoke": false,
+        "task": {
+          "task_priority_enabled": false,
+          "priority_mode": "random_135",
+          "initial_priority": null,
+          "initial_soc_mode": "uniform",
+          "priority_wait_mode": "total_wait_v1",
+          "nominal_holder_separation_mode": "swept_curve_v1",
+          "initial_soc": null,
+          "initial_soc_min": 0.55,
+          "initial_soc_max": 0.9,
+          "mission_probabilities": [
+            0.45,
+            0.25,
+            0.1,
+            0.2
+          ],
+          "release_arbitration_mode": "downstream_soc_priority",
+          "low_level_priority_time_weight": 0.0,
+          "low_level_soc_urgency_time_weight": 2.0,
+          "low_level_soc_urgency_threshold": 0.65,
+          "reset_mode": "warm_start_rings",
+          "warm_start_uavs": 12,
+          "fixed_arrival_schedule": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            15.0,
+            30.0,
+            45.0,
+            60.0,
+            75.0,
+            90.0,
+            105.0,
+            120.0,
+            135.0,
+            150.0,
+            165.0,
+            180.0
+          ],
+          "max_simulation_seconds": 1800.0,
+          "merge_gap_prediction_mode": "committed_arrivals_v1",
+          "v3_landing_path_mode": "direct_c2"
+        },
+        "max_steps": 1800,
+        "rollout_wall_seconds": 3600,
+        "annotation_wall_seconds": 21600,
+        "max_selected": 2048,
+        "max_release_intents": 51200,
+        "selection": "all actor pre-states; tick/numeric UID",
+        "behavior": "rule_nominal_k3",
+        "teacher": "state-only first feasible; not joint/global optimum",
+        "checkpoint_loaded": false,
+        "I0_QUALIFIED": false,
+        "PPO_ALLOWED": false
+      }
+    },
+    "result.json": {
+      "exists": false
+    },
+    "progress.json": {
+      "exists": true,
+      "bytes": 129,
+      "sha256": "b696152d75c92953696b1169249e0cf78c3362fe9c40bf4a74873b5f56bb40b0",
+      "mtime": 1791505663.17121,
+      "content": {
+        "stage": "rollout",
+        "ticks": 1,
+        "rows": 12,
+        "selected": 12,
+        "outcomes": {},
+        "elapsed_seconds": 41.41091932076961
+      }
+    },
+    "rollout_result.json": {
+      "exists": false
+    },
+    "annotation_progress.json": {
+      "exists": false
+    },
+    "annotation_result.json": {
+      "exists": false
+    },
+    "rows.jsonl": {
+      "exists": true,
+      "bytes": 268715,
+      "sha256": "7fa0fb3c81ed0e0d30611cd514f55545cf1d52bd0eb0cf94250df9a22dc9f0a7",
+      "mtime": 1791505679.542866,
+      "lines": 192
+    },
+    "steps.jsonl": {
+      "exists": true,
+      "bytes": 344462,
+      "sha256": "d8d2fc325f019737fa27757070ef566a7a09802b58f096de33d962ccfba98c65",
+      "mtime": 1791505679.521866,
+      "lines": 15
+    },
+    "context_observations.jsonl": {
+      "exists": false
+    },
+    "resource_context_observations.jsonl": {
+      "exists": false
+    },
+    "selected.json": {
+      "exists": true,
+      "bytes": 47398,
+      "sha256": "fb5bd5a42786f26cc4388d99f40215fb71c280c54425facea5438cc7082c4b26",
+      "mtime": 1791505678.588061,
+      "entries": 18
+    }
+  },
+  "processes": [
+    {
+      "pid": 2998138,
+      "ppid": 2998137,
+      "argv": "/home/user/envs/terminal_env/bin/python -u -m terminal_marl.training.p3_v26_course_data --index 3 --output /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "cwd": "/home/user/projects/terminal"
+    }
+  ],
+  "label_files": 0
+}

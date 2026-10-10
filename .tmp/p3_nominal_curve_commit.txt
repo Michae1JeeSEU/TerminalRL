@@ -1,0 +1,62 @@
+HEAD=f60a4aab081f5a30c18fbc32e944e16aec518fdf CACHED_FILES= STATUS_RAW System.Object[] SCOPED_STATUS System.Object[]
+DIFF_CHECK
+warning: in the working copy of 'docs/CURRENT_STATUS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/evidence/v4_2/p3_v25_neutral_course_20261008.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/requirements.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/technical_spec.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/configs/p3_v25_course.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/core/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/core/priority.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/core/safety_filter.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/scripts/diagnose_p3_teacher_context.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'terminal_marl/training/p3_v25_course_data.py', LF will be replaced by CRLF the next time Git touches it
+DIFF_CHECK_EXIT=0
+ docs/CURRENT_STATUS.md                             |   2 +
+ .../v4_2/p3_v25_neutral_course_20261008.md         |  16 +++
+ docs/requirements.md                               |   2 +
+ docs/technical_spec.md                             |   8 ++
+ terminal_marl/configs/p3_v25_course.py             |   3 +-
+ terminal_marl/core/config.py                       |  15 +++
+ terminal_marl/core/priority.py                     |   4 +-
+ terminal_marl/core/safety_filter.py                |  18 ++++
+ .../scripts/diagnose_p3_teacher_context.py         |   4 +
+ terminal_marl/training/p3_v25_course_data.py       |   1 +
+ tests/test_nominal_holder_curve_certificate.py     | 107 +++++++++++++++++++++
+ 11 files changed, 178 insertions(+), 2 deletions(-)
+
+diff --git a/docs/CURRENT_STATUS.md b/docs/CURRENT_STATUS.md
+index 86b2a68..e018ee3 100644
+--- a/docs/CURRENT_STATUS.md
++++ b/docs/CURRENT_STATUS.md
+@@ -156,6 +156,8 @@
+ 
+ - 同状态诊断smoke已SMOKE_OK/exit0，0reset/0query、前2tick状态/reward精确重放；primary接受原定early_late五query。纯公式反例确认PriorityEngine漏计UAV内部等待（internal300s仍1、external300s为1.01202813），违反保留总等待紧迫度的规范，但现排序先按SOC且另有总等待破同分，尚不能归因本次耗尽。核心冻结直到故障原tape和候选证据读取完成；具体filter_plan阻塞须查pair/距离，不能用旧joint-track audit代替。
+ 
++- **已定位并修复一处安全预测假阻塞，尚待完整周期。** 665tick原轨迹精确重放；native witness表明UID29对UID49的零宽nominal预测间隔84.408m，却被通用速度余量压到79.320m；连续curve下界84.391m。新`swept_curve_v1`保持80m与曲线误差保护，365/29和665/29 teacher可放行，反向665/49真实冲突仍拒绝。另`total_wait_v1`修复内部等待漏计；当前neutral course v2显式启用，旧pickle保持legacy。73项local/server回归通过，清理重复config定义后7项通过。下一独立892862两tick smoke→同原失败892854/929854 frozen source完整诊断；旧标签/模型不冒称新课程资格，须后续新标签/学生/Q/PPO证据。详见[中性课程记录](evidence/v4_2/p3_v25_neutral_course_20261008.md)。
++
+ ## 2026-10-03 P3 统一实现修复（最新）
+ 
+ - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
+
+[codex/v4-2-v2-1-formal-i1 55743e9] fix: certify nominal holder curves and include internal waiting
+ 11 files changed, 178 insertions(+), 2 deletions(-)
+ create mode 100644 tests/test_nominal_holder_curve_certificate.py
+
+COMMIT=55743e9d6a567a4d39424f0f6020f0a9d3c4e77d
+INDEX=''
+REMOTES=''
+HEAD_SHOW
+55743e9d6a567a4d39424f0f6020f0a9d3c4e77d fix: certify nominal holder curves and include internal waiting
+M	docs/CURRENT_STATUS.md
+M	docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+M	docs/requirements.md
+M	docs/technical_spec.md
+M	terminal_marl/configs/p3_v25_course.py
+M	terminal_marl/core/config.py
+M	terminal_marl/core/priority.py
+M	terminal_marl/core/safety_filter.py
+M	terminal_marl/scripts/diagnose_p3_teacher_context.py
+M	terminal_marl/training/p3_v25_course_data.py
+A	tests/test_nominal_holder_curve_certificate.py
+CACHED
+REMOTE

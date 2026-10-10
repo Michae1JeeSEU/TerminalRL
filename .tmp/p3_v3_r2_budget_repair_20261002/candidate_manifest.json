@@ -1,0 +1,7 @@
+{
+  "purpose": "isolated candidate, not applied to running R2",
+  "source": "terminal_marl/core/trajectory_generator.py",
+  "source_sha256": "489d0306297089b8fd7bd437e1a4f846ef1bf8ddac9bd22bab4448cd7b1f1919",
+  "candidate_sha256": "1a20545b78bb7441e3c555e5cb9800257df79826cff0be56057ad7ec857f92ec",
+  "patch_sha256": "0f579b40c8609d968b58798363d830c2d3278ab25bf2d365d719b5e3804d5967"
+}

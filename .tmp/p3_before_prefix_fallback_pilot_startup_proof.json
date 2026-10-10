@@ -1,0 +1,35 @@
+{
+  "status": "RUNNING",
+  "phase": "pilot",
+  "command": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.run_p3_before_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001",
+  "cwd": "/home/user/projects/terminal",
+  "python_pid": 2144374,
+  "remote_parent_pid": 2144372,
+  "argv_matches": true,
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "progress": {
+    "absolute_step": 200,
+    "active_observation_count": 16,
+    "generated_request_rows": 24,
+    "native_forward_count": 201,
+    "cell_id": 1,
+    "arm": "before_prefix_fallback",
+    "phase": "arm",
+    "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1",
+    "status": "RUNNING"
+  },
+  "artifacts": {
+    "pilot_json": false,
+    "error_json": false,
+    "pilot_log": "/home/user/training_outputs/terminal/p3_followup_20260930/before_prefix_fallback_20261001/pilot_v1.log",
+    "pilot_log_size": 0
+  },
+  "preflight_status": "PREFLIGHT_OK",
+  "no_duplicate_process_check": true,
+  "phase_validation": "PHASE_VALIDATION_OK",
+  "note": "Single authorized pilot launch; no full phase started."
+}

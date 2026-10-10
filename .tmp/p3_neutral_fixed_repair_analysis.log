@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\analyze_p3_v25_course_data.py", line 173, in <module>
+    assert read(episode/'first_live.json') == read(episode/'first_replay.json')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\analyze_p3_v25_course_data.py", line 28, in <lambda>
+    read = lambda path: json.loads(path.read_text())
+                                   ^^^^^^^^^^^^^^^^
+  File "C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_20261008\\train_dense24_fixed_annotation_v2\\seed_893502\\first_live.json'

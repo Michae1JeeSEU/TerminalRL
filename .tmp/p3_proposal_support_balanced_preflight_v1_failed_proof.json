@@ -1,0 +1,53 @@
+{
+  "status": "FAILED",
+  "stage": "P3_PROPOSAL_SUPPORT_BALANCED_20261001_V1",
+  "phase": "preflight",
+  "server": "lab-server",
+  "command": "cd /home/user/projects/terminal && PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/user/envs/terminal_env/bin/python -m terminal_marl.training.run_p3_proposal_support_balanced_20261001 --phase preflight --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_balanced_20261001",
+  "source_sha256": {
+    "runner": "a7999a612a15219d9e0eafde5e928149070f8ca1365cf479efea4b5b08ba8009",
+    "test": "ba97786f346356587ffaad82a44fd698b41c7962edaab766fda0ba87d082c480",
+    "protocol": "d2fd2358ce17e4d0bc5d5aae674d7592a16046f30131a55119d24957a1ed0968",
+    "local_server_equal": true
+  },
+  "input_bindings_available_before_run": {
+    "proposal_support_full_sha256": "0178f6cef9083babab207d1fbd0e71cc50b4ebd90ffc2e4601caaeb07a8668b5",
+    "legacy_forced_wait_full_sha256": "fe7954aac75f9e947298ad7de8c8bdec74bc84c3bb18bb59ab7c40860d9e6267",
+    "legacy_pair_grid": "6 env seeds x 4 keyed seeds = 24; each combination exactly once",
+    "legacy_input_inventory": ".tmp/p3_proposal_support_balanced_input_inventory.json"
+  },
+  "output": {
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_balanced_20261001",
+    "preflight_json": {"exists": false},
+    "progress_json": {
+      "exists": true,
+      "size": 252,
+      "mtime": "2026-10-01 02:16:19.066761019 +0800",
+      "content": {
+        "error": {
+          "message": "proposal-support v1 pair 5 arm metrics differ from immutable summary",
+          "type": "BalancedProposalSupportError"
+        },
+        "phase": "preflight",
+        "stage": "P3_PROPOSAL_SUPPORT_BALANCED_20261001_V1",
+        "status": "FAILED"
+      }
+    },
+    "preflight_v1_log": {
+      "exists": true,
+      "size": 0,
+      "mtime": "2026-10-01 02:16:17.794760951 +0800"
+    }
+  },
+  "scope": {
+    "phase_run": "preflight_only",
+    "training": false,
+    "pilot": false,
+    "full": false,
+    "ppo": false,
+    "teacher": false,
+    "heldout": false,
+    "source_modified": false,
+    "input_artifacts_modified": false
+  }
+}

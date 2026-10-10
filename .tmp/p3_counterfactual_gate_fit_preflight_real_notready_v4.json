@@ -1,0 +1,36 @@
+{
+  "anchors": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\missing_anchor_bundle_for_preflight_v4"
+  },
+  "phase": "preflight",
+  "reason": "anchors_not_ready",
+  "schema": "p3_counterfactual_gate_fit_preflight_20261001_v1",
+  "scope": {
+    "PPO_ALLOWED": false,
+    "backprop_used": false,
+    "candidate_checkpoint_writer": false,
+    "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "critic_frozen": true,
+    "fit_seed": 9303501,
+    "heldout_used": false,
+    "kl_cap": 0.001,
+    "learning_rate": 0.0001,
+    "max_updates": 80,
+    "model_forward_used": false,
+    "objective": "mean four-row BCE(target pstar) + 1.0 * mean Bernoulli KL(candidate || BEFORE) over every anchor row",
+    "optimizer_used": false,
+    "proposal_and_temperature_frozen": true,
+    "rollback": "restore previous valid adapter parameters and stop",
+    "trainable_scope": "gate_adapter.* only"
+  },
+  "stage": "P3_COUNTERFACTUAL_GATE_FIT_PREFLIGHT_20261001_V1",
+  "status": "NOT_READY",
+  "targets": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_targets_20261001\\targets_v1.json",
+    "schema": "p3_counterfactual_gate_targets_20261001_v1",
+    "sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473"
+  },
+  "unresolved": [
+    "JSON input missing: D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\missing_anchor_bundle_for_preflight_v4"
+  ]
+}

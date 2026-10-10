@@ -1,0 +1,37 @@
+{
+  "architecture": "intent_destination_neighbor_risk_v1",
+  "observation": "existing V2.6 159+N50",
+  "architecture_variant": "intent_destination_neighbor_risk_v1__gate_first_feasible_union",
+  "gate_mode": "first_feasible_union",
+  "smoke": true,
+  "input_seeds": [
+    1,
+    2
+  ],
+  "model_seed": 91911,
+  "arms": [
+    "without_auxiliary",
+    "native_pair_auxiliary"
+  ],
+  "marks": [
+    0,
+    1,
+    2
+  ],
+  "learning_rate": 0.0003,
+  "batch_size": 128,
+  "auxiliary_batch_size": 64,
+  "gradient_clip": 0.5,
+  "auxiliary_weight": 1.0,
+  "scene_auxiliary_weight": 0.25,
+  "wall_seconds_per_fold_arm": 1200,
+  "original_loss": "unweighted_gate_CE_plus_RELEASE_proposal_CE",
+  "pair_loss": "mean_of_blocked_and_safe_BCE_means_ignoring_unknown",
+  "comparison_control_reference": "p3_neighbor_relation_cv_20261009/six_cycle",
+  "comparison_note": "max gate tests count-amplification; no promotion",
+  "Q_accessed": false,
+  "teacher_queries": 0,
+  "environment_steps": 0,
+  "checkpoint_written": false,
+  "all_auxiliary_rows_follow_original_whole_cycle_split": true
+}

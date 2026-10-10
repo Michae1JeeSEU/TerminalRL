@@ -1,0 +1,124 @@
+{
+  "root": "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/Q_dense24_mixed",
+  "files": {
+    "protocol.json": {
+      "bytes": 1789,
+      "sha256": "39d4593050a3f1e91f0b7149f737d76db6bcc9ee8a7216d8579261331259c06b",
+      "local_sha256": "39d4593050a3f1e91f0b7149f737d76db6bcc9ee8a7216d8579261331259c06b",
+      "synchronized": true
+    },
+    "result.json": {
+      "bytes": 124567,
+      "sha256": "a17492ac3993710982c796d772e7600ac03f971a555b4f461eb9a98a89b35221",
+      "local_sha256": "6bea3156b7f06f138d34f0d1e9bc8af09f094374d2905e472c593e74194cf5c0",
+      "synchronized": false
+    },
+    "seed_895503/progress.json": {
+      "bytes": 184,
+      "sha256": "d1fb34f049e8df3241dbe6259620ba8edd819613615fff05c19dbc066c7bfa73",
+      "local_sha256": "d1fb34f049e8df3241dbe6259620ba8edd819613615fff05c19dbc066c7bfa73",
+      "synchronized": true
+    },
+    "seed_895503/rollout_result.json": {
+      "bytes": 13226,
+      "sha256": "3e8d2c3aa880910e73ee1e6638a2e402e214b3db3eec7aa4d4664bdb9a49019f",
+      "local_sha256": "3e8d2c3aa880910e73ee1e6638a2e402e214b3db3eec7aa4d4664bdb9a49019f",
+      "synchronized": true
+    },
+    "seed_895503/annotation_progress.json": {
+      "bytes": 100053,
+      "sha256": "57ebc283a0f22134d790f3209921693b6f71383726874419722c06cf54773960",
+      "local_sha256": "57ebc283a0f22134d790f3209921693b6f71383726874419722c06cf54773960",
+      "synchronized": true
+    },
+    "seed_895503/annotation_result.json": {
+      "bytes": 100097,
+      "sha256": "b2d59fca616fcb61f7e55594750d5c73f0b2e869485ce6b6fb96495ac1b268d7",
+      "local_sha256": "b2d59fca616fcb61f7e55594750d5c73f0b2e869485ce6b6fb96495ac1b268d7",
+      "synchronized": true
+    },
+    "seed_895503/rows.jsonl": {
+      "bytes": 12952684,
+      "sha256": "2a4b337b56c080e0e2d77b238487b6a4a71e1e1f5020a65f8db942a6ef6d54db",
+      "local_sha256": "2a4b337b56c080e0e2d77b238487b6a4a71e1e1f5020a65f8db942a6ef6d54db",
+      "synchronized": true
+    },
+    "seed_895503/steps.jsonl": {
+      "bytes": 17706168,
+      "sha256": "035b5eb97852f2d4a5483122837b7617308accebd4c85738aa52774b63e11e2d",
+      "local_sha256": "035b5eb97852f2d4a5483122837b7617308accebd4c85738aa52774b63e11e2d",
+      "synchronized": true
+    },
+    "seed_895503/selected.json": {
+      "bytes": 857743,
+      "sha256": "c5c838c0b893da6c698e533f36651ecd258c59ff37873a2d5fc5801c5f9a3f0c",
+      "local_sha256": "c5c838c0b893da6c698e533f36651ecd258c59ff37873a2d5fc5801c5f9a3f0c",
+      "synchronized": true
+    },
+    "seed_895503/context_observations.jsonl": {
+      "bytes": 4074838,
+      "sha256": "cfda13e9bce4b0c0ed8da8cd3eaec7c0cb335530990362d79cac2fc32e3c0b6c",
+      "local_sha256": null,
+      "synchronized": false
+    }
+  },
+  "adjacent": {
+    ".pid": {
+      "exists": true,
+      "text": "2920920\n"
+    },
+    ".log": {
+      "exists": true,
+      "text": "{\"status\": \"COLLECTION_OK\", \"seed\": 895503, \"error\": null}\n"
+    },
+    ".exit": {
+      "exists": true,
+      "text": "0\n"
+    }
+  },
+  "records": {
+    "protocol.json": {},
+    "result.json": {
+      "status": "COLLECTION_OK",
+      "error": null,
+      "blockers": []
+    },
+    "seed_895503/progress.json": {
+      "stage": "rollout",
+      "ticks": 932,
+      "rows": 9427,
+      "selected": 318,
+      "elapsed_seconds": 716.1320941420272
+    },
+    "seed_895503/rollout_result.json": {
+      "status": "COMPLETED",
+      "error": null,
+      "ticks": 932,
+      "rows": 9427,
+      "row_counts": {
+        "actor": 318,
+        "forced_WAIT": 9109
+      },
+      "elapsed_seconds": 716.1321831541136,
+      "outcome_counts": {
+        "completed": 19,
+        "emergency_landed": 5
+      },
+      "censored": false,
+      "terminal": true,
+      "unresolved": 0
+    },
+    "seed_895503/annotation_progress.json": {
+      "status": "COMPLETED",
+      "selected": 318,
+      "elapsed_seconds": 4182.824610047042
+    },
+    "seed_895503/annotation_result.json": {
+      "status": "COMPLETED",
+      "selected": 318,
+      "labelled": 318,
+      "elapsed_seconds": 4182.826585698873
+    }
+  },
+  "processes": []
+}

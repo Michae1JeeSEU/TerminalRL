@@ -1,0 +1,136 @@
+{
+  "stage": "P3_PREFIX_GATE_EVENTS_20261001_V1",
+  "phase": "pilot",
+  "status": "PILOT_OK",
+  "observed_at": "2026-10-01T18:22:12.734856079+08:00",
+  "python_pid": 2182083,
+  "launcher_shell_pid": 2182082,
+  "process_terminal": true,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_gate_events_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "exe": "/usr/bin/python3.12",
+  "env_flags": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "preflight_sha256": "633c2a525c7a797b6adb4494b3adae7121f79110fc69042bab1f18ae90933150",
+  "pilot_sha256": "ca88265f5c467b2447c5e9ec52be7c49322d285ebb1bf484ce11b8804fb78bb7",
+  "cell_sha256": "3810322a12546d0f30919d3a699a2352ff2d4f855dbf957b6ec4bfa8451f6b07",
+  "runner_sha256": "8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef",
+  "protocol_sha256": "59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5",
+  "input_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "tape_sha256": "46913055afa1ec34f97ce3d9c33ae420d542793d99dc0fca2af554c5dc16a765",
+  "sidecar_sha256": "adfbabf9e9d6e34613f39f190899daf13c4475d4c36856c2e6fd34d344e749ba",
+  "arm_sha256": "d5f704006857232953a5215e4113c99b2fae770ae8275efafa558a5cf691909b",
+  "requests_per_cell": 24,
+  "steps_expected": 708,
+  "steps_replayed": 708,
+  "potential_count": 314,
+  "event_status_counts": {
+    "NORMAL_ELIGIBLE": 62,
+    "EXCLUDED": 251,
+    "EXCLUDED_AUTOEMERGENCY": 1
+  },
+  "phase_counts": {
+    "ring_inner": 121,
+    "ring_middle": 128,
+    "ring_outer": 65
+  },
+  "rank_class_counts": {
+    "first3": 42,
+    "late_prefix_gt3": 20,
+    "unknown": 252
+  },
+  "normal_gate_probability_stats": {
+    "before": {
+      "n": 62,
+      "min": 0.11201339215040207,
+      "max": 1.0,
+      "mean": 0.852988185060601
+    },
+    "after": {
+      "n": 62,
+      "min": 0.1425122171640396,
+      "max": 1.0,
+      "mean": 0.8516022942719921
+    },
+    "delta": {
+      "n": 62,
+      "min": -0.055561721324920654,
+      "max": 0.03796616196632385,
+      "mean": -0.0013858907886089818,
+      "negative": 33,
+      "zero": 3,
+      "positive": 26
+    }
+  },
+  "normal_gate_probability_stats_by_phase": {
+    "ring_inner": {
+      "n": 22,
+      "delta_mean": -0.01187748529694297,
+      "delta_min": -0.04625344276428223,
+      "delta_max": 0.0074163079261779785,
+      "negative": 20,
+      "zero": 0,
+      "positive": 2
+    },
+    "ring_middle": {
+      "n": 22,
+      "delta_mean": -0.0016609430313110352,
+      "delta_min": -0.055561721324920654,
+      "delta_max": 0.032653748989105225,
+      "negative": 9,
+      "zero": 3,
+      "positive": 10
+    },
+    "ring_outer": {
+      "n": 18,
+      "delta_mean": 0.01177334412932396,
+      "delta_min": -0.026778876781463623,
+      "delta_max": 0.03796616196632385,
+      "negative": 4,
+      "zero": 0,
+      "positive": 14
+    }
+  },
+  "comparison_checks": {
+    "q_bitwise_equal_all_normal": true,
+    "source_logits_match_before_all_normal": true,
+    "source_gate_logprob_checked": 62,
+    "source_gate_logprob_matched": 62,
+    "source_gate_logprob_unknown": 0,
+    "normal_event_D_local_m_none": true
+  },
+  "replay_checks": {
+    "exact": true,
+    "base_reset_state_match": true,
+    "reset_recipe_match": true,
+    "reset_state_match": true,
+    "config_match": true,
+    "controller_installed_and_restored": true,
+    "caller_rng_unchanged_before_restore": true,
+    "caller_rng_unchanged_after_restore": true,
+    "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "model_digest_after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+    "model_load_rng_consumed": {
+      "before": true,
+      "after": true
+    },
+    "unknown_predicates": [],
+    "exclusion_counts": {
+      "current_info_approved": 252,
+      "current_last_release_approved": 252,
+      "retry_free": 32,
+      "soc_gt_0_4": 1,
+      "soc_le_0_4_autoemergency": 1
+    }
+  },
+  "terminal_artifacts": [
+    "pilot.json",
+    "cells/cell_01.json"
+  ],
+  "full_launched": false,
+  "old_startup_proof": ".tmp/p3_prefix_gate_events_pilot_startup_or_terminal_proof.json"
+}

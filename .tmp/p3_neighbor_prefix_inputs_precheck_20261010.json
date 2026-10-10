@@ -1,0 +1,425 @@
+{
+  "checks": {
+    "input_hashes_and_protocol": {
+      "inputs": 9,
+      "manifest": "D:\\7_codespace\\terminal\\.tmp\\p3_nine_cycle_loader_check_20261009.json",
+      "manifest_status": "PASS",
+      "seeds": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603,
+        893604,
+        893605,
+        893606
+      ],
+      "status": "PASS"
+    },
+    "loader_159_N50_labels": {
+      "release_by_seed": {
+        "893511": 23,
+        "893512": 94,
+        "893513": 87,
+        "893601": 18,
+        "893602": 75,
+        "893603": 75,
+        "893604": 37,
+        "893605": 89,
+        "893606": 79
+      },
+      "rows": 3149,
+      "shape_ego": [
+        3149,
+        159
+      ],
+      "shape_mask": [
+        3149,
+        20
+      ],
+      "shape_original": [
+        3149,
+        90
+      ],
+      "shape_traffic": [
+        3149,
+        20,
+        50
+      ],
+      "status": "PASS",
+      "wait_by_seed": {
+        "893511": 7,
+        "893512": 627,
+        "893513": 460,
+        "893602": 496,
+        "893603": 296,
+        "893604": 20,
+        "893605": 453,
+        "893606": 213
+      }
+    }
+  },
+  "facts": {
+    "loaded_inputs": 9,
+    "old_snapshot_reads": "official load_nine_cycle_train/load_resource_train path",
+    "resource_shapes": {
+      "ego": [
+        3149,
+        159
+      ],
+      "mask": [
+        3149,
+        20
+      ],
+      "original": [
+        3149,
+        90
+      ],
+      "traffic": [
+        3149,
+        20,
+        50
+      ]
+    },
+    "runtime_calls": {
+      "environment_resets": 0,
+      "environment_steps": 0,
+      "optimizer_updates": 0,
+      "planner_calls": 0,
+      "teacher_queries": 0
+    }
+  },
+  "path_mapping": [
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\selected.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\selected.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\annotation_result.json",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\annotation_result.json",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "rule": "local_training_output"
+    },
+    {
+      "exists": true,
+      "local": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "raw": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "rule": "local_training_output"
+    }
+  ],
+  "protocol_path": ".tmp\\p3_neighbor_prefix_prepare_20261010_r5\\protocol.json",
+  "protocol_sha256": "033587c4962013c7385b4ce7285d43bc1248ca56b9269d4d031785eed91c3259",
+  "schema": "p3_neighbor_prefix_input_precheck_20261010_v1",
+  "source": "INPUTS_ONLY read-only precheck; no collector/witness_state/planner/teacher/environment/query/reset/step/optimizer calls. The official loader may read archived old3 snapshots for SHA-verified resource rebuild; this is not a full prefix validation.",
+  "status": "INPUTS_ONLY",
+  "validation": "PASS"
+}

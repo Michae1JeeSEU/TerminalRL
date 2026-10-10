@@ -1,0 +1,16 @@
+{
+  "snapshot_time": "2026-10-01T15:29:14.660105+08:00",
+  "pid": 2168258,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4",
+  "pilot_status": null,
+  "error": null,
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_PREFIX_FALLBACK_20261001_V1", "cell_id": 1, "arm": "after_prefix_fallback", "absolute_step": 600, "env_now": 600.0, "observed_steps": null, "generated_request_rows": 24, "active_observation_count": 3, "native_forward_count": 601},
+  "log": {"exists": true, "size_bytes": 0},
+  "completed_arms": ["before_legacy", "after_legacy", "before_prefix"],
+  "before_prefix": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "PPO_ALLOWED": false, "steps": 708, "metrics": {"generated": 24, "admitted": 24, "successful": 24, "resolved": 24, "normal": 22, "emergency": 2, "failed": 0, "unresolved": 0, "diverted": 0, "wait_seconds": 2656.9762761413117, "request_elapsed_total_seconds": 9005.0, "energy_total_consumed": 7184.872304893263, "raw_reward_excluding_rejection_penalty": 492.7467457263946, "release_rejection_penalty": -13.200000000000001, "reward_total": 479.5467457263946, "natural_terminal": true, "censored": false, "technical_ok": true, "complete_scene_metrics_known": true, "request_identity_exact_24": true}, "lifecycle": {"requested_count": 24, "observed_terminal_count": 24, "ledger_alignment": true, "replay_exact": true, "steps_expected": 708, "steps_replayed": 708}, "runtime_capture": {"factory_calls": 1, "replay_factory_calls": 1, "generated_requests": 24, "admitted_count": 24, "energy_duplicate_arrival_ids": [], "ledger_alignment": true}, "prefix_fallback_control": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "native_forward_count": 648, "registration_count": 314, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4/sidecars/cell_01_before_prefix_fallback_orders.json", "orders_sidecar_sha256": "adfbabf9e9d6e34613f39f190899daf13c4475d4c36856c2e6fd34d344e749ba"}},
+  "pilot_terminal": false,
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

@@ -1,0 +1,28 @@
+         20531158 function calls (20531124 primitive calls) in 11.004 seconds
+
+   Ordered by: cumulative time
+   List reduced from 713 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       20    0.019    0.001   11.379    0.569 parallel_env.py:1359(step)
+      600    0.005    0.000    6.755    0.011 parallel_env.py:1234(_release)
+      600    0.004    0.000    6.750    0.011 parallel_env.py:603(_runtime_shortlist_release)
+      113    0.006    0.000    6.694    0.059 parallel_env.py:772(_candidate_plan)
+       75    0.040    0.001    4.096    0.055 trajectory_generator.py:275(ring_transfer)
+       20    0.000    0.000    3.556    0.178 runtime_traffic_safety.py:1215(protect)
+       20    0.001    0.000    3.553    0.178 runtime_traffic_safety.py:1235(_protect_impl)
+       20    0.004    0.000    3.529    0.176 runtime_traffic_safety.py:1055(_recursive_safe)
+     2960    0.133    0.000    3.168    0.001 runtime_traffic_safety.py:690(_joint_assessment)
+       20    0.056    0.003    3.084    0.154 runtime_traffic_safety.py:930(_backup_safe)
+      725    0.012    0.000    2.609    0.004 trajectory_generator.py:345(executable_transfer)
+     2560    0.832    0.000    2.093    0.001 runtime_traffic_safety.py:513(_joint_position_tracks)
+      116    0.011    0.000    1.972    0.017 safety_filter.py:326(filter_plan)
+      968    0.543    0.001    1.940    0.002 trajectory_time_parameterization.py:99(parameterize)
+   338110    0.504    0.000    1.836    0.000 vehicle_dynamics.py:62(limited_tangential_speed)
+      362    0.092    0.000    1.067    0.003 safety_filter.py:170(holder_reachable_tube)
+    75066    0.419    0.000    1.039    0.000 vehicle_dynamics.py:124(ring_motion_step)
+   676220    0.470    0.000    0.830    0.000 vehicle_dynamics.py:54(ring_speed_limit)
+   169008    0.423    0.000    0.812    0.000 trajectory_generator.py:27(__post_init__)
+   173868    0.361    0.000    0.682    0.000 _linalg.py:2598(norm)
+
+

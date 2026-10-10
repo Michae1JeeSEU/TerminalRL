@@ -1,0 +1,11 @@
+{
+  "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+  "phase": "full",
+  "status": "RUNNING_CELL04",
+  "observed_at": "2026-10-01T21:48:38+08:00",
+  "commit": "7e5d531",
+  "server": {"host": "lab-server", "python_pid": 2191437, "parent_pid": 2191436, "cwd": "/home/user/projects/terminal", "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_normal_gate_value_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001", "exe": "/usr/bin/python3.12", "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}, "process_elapsed": "01:34:33", "state": "R"},
+  "progress": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/progress.json", "server_mtime_epoch": 1790862507, "phase": "full", "status": "RUNNING", "cell_id": 4, "branches_completed": 48, "branches_expected": 104, "continuation_seed": 9303402, "proposal": 20, "elapsed_wall_seconds": 544.3916815323755, "D_known": false},
+  "output": {"root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001", "full_log": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/full_v1.log", "bytes": 0, "server_mtime_epoch": 1790856844}, "full_json": "absent_at_snapshot", "error_json": "absent_at_snapshot", "partial_json": "absent_at_snapshot", "cell_04_json": "absent_at_snapshot"},
+  "scope": {"raw_branches": "not_read", "pilot_reused": true, "full_only": true}
+}

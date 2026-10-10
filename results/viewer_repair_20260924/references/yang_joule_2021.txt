@@ -1,0 +1,1033 @@
+
+===== PAGE 1 =====
+Perspective
+Challenges and key requirements
+of batteries for electric
+vertical takeoff and landing aircraft
+Xiao-Guang Yang,1,3 Teng Liu,1 Shanhai Ge,1 Eric Rountree,2 and Chao-Yang Wang 1,2,4,*
+SUMMARY
+Electric vertical takeoff and landi ng (eVTOL) aircraft have attracted
+considerable interest as a disruptive technology to transform future
+transportation systems. Their unique operating proﬁles and require-
+ments present grand challenges to batteries. This work identiﬁes
+the primary battery requirements for eVTOL in terms of speciﬁc en-
+ergy and power, fast charging, cycl e life, and safety, revealing that
+eVTOL batteries have more stringent requirements than electric
+vehicle batteries in all aspects. N otably, we ﬁnd that fast charging
+is essential for downsizing aircra ft and batteries for low cost while
+achieving high vehicle utilization rates to maximize revenues. We
+experimentally demonstrate two energy-dense Li-ion battery de-
+signs that can recharge adequate energy for 80 km eVTOL trips in
+5–10 min and sustain over 2,000 fast-charge cycles, laying a founda-
+tion for eVTOL batteries.
+INTRODUCTION
+Trafﬁc congestion at rush hours is inescapable in most metropolitan areas of the
+world. Statistics show that on an average, Americans lost 99 h in 2019 sitting in
+trafﬁc, which amounts to US$ 88-billion loss in productivity. 1 With growing urbaniza-
+tion and the emergence of new mega cities , the congestion issue will worsen world-
+wide. The United Nations projects that 68% of the world’s population will live in
+urban areas by 2050, up from 55% in 2018.
+2
+Urban air mobility (UAM)—an ecosystem unl ocking the airspace for on-demand pas-
+senger and cargo transportation by ﬂying vehicles—has the potential to disrupt ur-
+ban mobility systems. 3 It is predicted that even a small fraction of trafﬁc diversion to
+air taxis can substantially reduce the trafﬁc vehicle fuel use, 4 suggesting the potential
+for ﬂying cars to resolve trafﬁc congestion as well as reduce the carbon footprint of
+personal travels. Electric vertical takeoff and landing (eVTOL) aircraft, combining he-
+licopters’ convenience of local takeoff and landing, airplanes’ efﬁcient aerodynamic
+ﬂight, and electric powertra ins’ low noise and environmental impact, have emerged
+as the most promising candidate for UAM.
+5–7 A recent report from Roland Berger 8
+identiﬁes 95 ongoing eVTOL projects world wide, and predicts that commercial pas-
+senger-UAM routes will take off before 2025, with revenues prospectively soaring to
+US$ 90-billion a year by 2050. 8
+Batteries, the energy sources, are the lin c h p i no fe V T O L s .T h ep a s td e c a d eh a sw i t -
+nessed remarkable battery technology advancements, particularly in Li-ion batteries
+(LiBs), with the boom of EVs. Compared with EVs, eVTOLs have unique operating
+proﬁles and hence drastically different battery requirements. However, research
+Context & scale
+Electric vertical takeoff and
+landing (eVTOL) aircraft, also
+known as ﬂying cars, have
+emerged as the most disruptive
+technology to transform future
+urban mobility systems. Their
+unique operating proﬁles and
+requirements present formidable
+challenges to batteries. This work
+analyzes the primary performance
+metrics required for eVTOL
+batteries compared with electric
+vehicle (EV) batteries. We reveal
+that eVTOL batteries operate at
+higher C-rates and have longer
+peak-power durations than EV
+batteries. Also, it is vital to fast
+charge sufﬁcient energy in
+passenger-swapping gaps to
+ensure continuous eVTOL
+operation in rush hours, and the
+high vehicle utilization rate poses
+a critical challenge to battery cycle
+life. Further, eVTOL batteries
+should continue functioning even
+after a safety incident occurs until
+a safe landing.
+Notably, we highlight the
+importance of fast charging,
+which is essential for downsizing
+aircraft and batteries to reduce
+cost while achieving high vehicle
+use rates to maximize revenues.
+We stress that any fast-charging
+technology should fulﬁll three
+metrics simultaneously—charge
+time less than passenger
+swapping (5–10 min), charged
+Joule 5, 1–16, July 21, 2021 ª 2021 Elsevier Inc. 1
+ll
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+===== PAGE 2 =====
+on eVTOL batteries is still scarce—only a handful of papers have analyzed eVTOL
+battery performance metrics, 9–11 and experimental work has not been reported until
+recently. 12 This perspective explores the primar y battery requirements for eVTOLs in
+contrast to EV batteries. Notably, we reveal that fast charging is essential for
+achieving low cost and high revenue simultaneously and, therefore, critical for
+large-scale eVTOL commercialization. Recognizing the signiﬁcance of fast charging,
+we experimentally demonstrate two energy-dense LiB designs that can recharge
+adequate energy for 80 km eVTOL trips in 5–10 min and sustain greater than
+2,000 such fast-charge cycles. We hope that these initial designs will spur exciting
+development of eVTOL batteries.
+RESULTS AND DISCUSSION
+EVTOL battery requirements
+Speciﬁc power
+We start by analyzing the operating requirements of eVTOLs and the associated de-
+mands on batteries. A typical eVTOL trip ( Figure 1 A) contains ﬁve phases: takeoff-
+hover, climb, cruise, descent, and landing hover. 13 Figure 1 B shows a representative
+battery power proﬁle for a sample vehicle design ( Table S1 ) over an 80-km trip. We
+note that takeoff and landing hovers have the highest power demand that deter-
+mines the battery’s peak discharge rate, and the cruise power deﬁnes the battery’s
+continuous discharge rate. The power in each ﬂight phase can be estimated by
+Equations S1–S4 . Dividing the power by battery mass gives the required battery
+speciﬁc power for hover and cruise:
+SP
+hover = 1
+ubat
+g
+hh
+ﬃﬃﬃﬃﬃﬃﬃﬃﬃ ﬃs
+2rair
+r
+(Equation 1)
+SPcr = 1
+ubat
+g
+hc
+Vcr
+L=D (Equation 2)
+Notably, the speciﬁc power ( SP) depends highly on battery weight fraction ( ubat)a n d
+aircraft conﬁguration—disk loading ( s) for hover-power and lift-to-drag ( L/D)r a t i o
+for cruise power. Figure S1 summarizes the disk loading and L/D-ratio of various eV-
+TOL vehicle conﬁgurations currently being pursued by the industry (according to
+Uber’s survey
+14). Typically, there is a trade-off between hover and cruise efﬁciencies:
+e.g., vectored thrust eVTOLs have wings for efﬁcient cruise but are low in hover ef-
+ﬁciency; wingless multirotor eVTOLs have large disk actuator surfaces for efﬁcient
+hover but low cruise efﬁciency.
+Figure 1 C converts the disk loading versus L/D-ratio plot to battery’s SP in hover
+versus in cruise using Equations 1 and 2 with parameters from Table S1 at u
+bat of
+0.3. We see that the SP is /C24150–350 W/kg for cruise and 500–900 W/kg for hover,
+w h i c ht r a n s l a t e st oad i s c h a r g eC - r a t eo f0 . 7 5 – 1 . 5 Ci nc r u i s ea n d2 . 5 – 4 . 5 Ci nh o v e r
+for a 200 Wh/kg battery. Note that the C-rates would be even higher for lower spe-
+ciﬁc energy or smaller u
+bat. Hence, we can infer that eVTOL batteries operate at
+much higher C-rates than EV batteries. Figure S2 displays the power proﬁles of
+the 75-kWh battery in Tesla Model-3, estimated by the vehicle dynamics model in
+the supplemental information . The average C-rate of the EV battery is /C240.3C in high-
+way-driving and /C240.1C in city driving, whereas the sample eVTOL battery in Table S1
+averages at /C241C over the 80 km trip ( Figure 1 B).
+The demand for high SP—both for peak and continuous discharges—poses critical
+challenges to eVTOL batteries. First, bat teries face a power-energy trade-off: an
+increased discharge power inevitably reduces the deliverable energy, as typically
+energy sufﬁcient for the next trip,
+and a long cycle life. We
+experimentally demonstrate two
+energy-dense Li-ion battery
+designs that can recharge
+adequate energy for 80 km eVTOL
+trips in 5–10 min and sustain over
+2,000 fast-charge cycles. We hope
+that these initial designs will spur
+exciting development of eVTOL
+batteries.
+1Department of Mechanical Engineering and
+Electrochemical Engine Center (ECEC), the
+Pennsylvania State University, University Park, PA
+16802, USA
+2EC Power, 341 Science Park Road, State College,
+PA 16803, USA
+3Present address: National Engineering
+Laboratory for Electric Vehicles, School of
+Mechanical Engineering, Beijing Institute of
+Technology, Beijing 100081, China
+4Lead contact
+*Correspondence: cxw31@psu.edu
+https://doi.org/10.1016/j.joule.2021.05.001
+ll
+2 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 3 =====
+n o t e di nR a g o n ep l o t s .15 Therefore, the battery pack size should be optimized
+(to tailor ubat) for a speciﬁc vehicle conﬁguration to ensure sufﬁcient energy output
+at the designed C-rates. Second, both battery energy and power decrease substan-
+tially at freezing temperatures. Even for EVs, the cruise range could fall by >40% as
+Figure 1. EVTOL requirements on battery speciﬁc power and energy
+(A) Schematic illustration of a typical eVTOL trip. 13
+(B) Representative battery power proﬁle during an eVTOL trip. The proﬁle is for the sample vehicle design in Table S1 based on the operating proﬁle in
+Table S4 .
+(C) Required battery speciﬁc power in hover versus in cruise for the air craft conﬁgurations being pursued by the industry. The speciﬁc power is
+calculated by Equations 1 and 2 with the disk loading and L/D-ratio in Figure S1 and the other parameters from Table S1 .
+(D) Trip distance versus consumed speciﬁc energy for three re presentative aircraft conﬁgurations (A, B, and C as marked in Figure 1 C).
+(E) Battery energy breakdown for eVTOL trips with design-C and a 200 Wh/kg battery pack (see Figure S3 for designs A and B). Only a portion of energy
+is available for nominal trips. The battery EOL is deﬁned as 20% energy lo ss. The results in (D and E) are calculated by the range model in Note S2.
+ll
+Joule 5, 1–16, July 21, 2021 3
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 4 =====
+the temperature drops from 24 /C14Ct o /C07/C14C.16 At much higher C-rates, eVTOL oper-
+ation would prove more troublesome in cold weather than EVs, possibly grounding
+vehicles.
+Speciﬁc energy
+EVTOL batteries have high demand on speciﬁc energy on which the cruise range de-
+pends heavily, as can be noted from the Breguet range equation
+5,17:
+Rtrip = SEtrip
+L
+D
+hc
+g ubat (Equation 3)
+where Rtrip denotes trip distance ,S E trip the speciﬁc energy consumed for the trip,
+and hc the system efﬁciency. Note that Rtrip is directly proportional to SEtrip and
+ubat in the asymptotic limit of long range where energy consumption during takeoff
+and landing becomes negligible. Note S2 presents a more comprehensive range
+model considering the energy con sumption in each eVTOL phase. Figure 1 Dp l o t s
+the model-predicted Rtrip versus SEtrip relationship for three representative aircraft
+conﬁgurations (A, B, C referring to Figures 1 Ca n d S1)a t ubat of 0.3. Design-A rep-
+resents the worst-case scenario (lowest L/D-ratio) of the eVTOL conﬁgurations
+currently being pursued ( Figure S1 ), and design-C denotes the best-case scenario
+having a high L/D-ratio for efﬁcient cruise as well as a low disk loading for efﬁcient
+hover.
+It should be noted that only a portion of battery energy is available for nominal
+eVTOL ﬂights, as illustrated in Figures 1 Ea n dS3 for the three representative designs
+with 200 Wh/kg battery packs. First, give n the high power for landing, a battery
+should not discharge to state of charge (SOC) below 10%, as voltage drops drasti-
+cally in this region and leads to current spikes.
+18 On top of that, eVTOL batteries
+should have reserve energy for balked landin g or diversion to alternative locations.
+To date, there is still no ofﬁcial regulation on eVTOL reserve energy. Existing US Fed-
+eral Aviation Administration (FAA) regulations mandate reserve fuel for 30-min addi-
+tional cruise, which is for aircraft with long-haul trips and can be relaxed for eVTOLs
+when ubiquitous vertiports are available. Nonetheless, we estimate with Equation 2
+(assuming u
+bat =0 . 3, hc =0 . 8 5, Vcr = 240 km/h) that even a reserve for 10-min cruise
+amounts to 48 Wh/kg for design-A and 27 Wh/kg for design-C, corresponding to
+24% and 13.5% energy, respectively, of a 200 Wh/kg battery. Moreover, there is a
+SOC ceiling (e.g., 90%) above which the charge current must diminish, resulting in
+a long charge time. Thereby, only 112 Wh/kg out of the 200 Wh/kg battery in
+design-A and 133 Wh/kg in design-C are available for nominal trips at the beginning
+of life (BOL), rendering a maximum range of 87 km for design-A ( Figure S3 A) and
+184 km for design-C ( Figure 1 E). We should note that this range would shrink further
+as the battery degrades. If we deﬁne batter y end of life (EOL) as 20% energy loss, the
+maximum range for nominal trips will drop to only 54 km for design-A and 126 km for
+design-C, as shown in Figures 1 Ea n d S3.
+Note that the above speciﬁc energy refers to the pack level. For state-of-the-art
+(SOA) EV batteries, the gravimetric cell-to-pack (GCTP) ratio—the ratio of pack-spe-
+ciﬁc energy to cell-speciﬁc energy—is only /C240.55–0.75 due to overheads such as
+structural-support beams, cabling, thermal management systems, etc.
+19 Thus,
+SOA EV batteries only have /C24170 Wh/kg at the pack level. There are two primary
+ways to improving speciﬁc energy. One is to enhance cell-level-speciﬁc energy using
+materials with higher speciﬁc capacity (silic on-graphite anodes, nickel-rich layered-
+oxide cathodes) as well as raising the areal loading of active materials. 20 The second
+is to improve pack integration efﬁciency. For instance, several companies have
+ll
+4 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 5 =====
+adopted so-called cell-to-pack (CTP) tech nology, which assembles large-format
+cells directly into a pack without modules, boosting the GCTP ratio to /C240.85.19 En-
+ergy-dense Li-ion cells with advanced p ack designs can potentially enhance the
+pack-speciﬁc energy to 250 Wh/kg (e.g., 300 Wh/kg cells with a GCTP ratio of
+0.85), thereby extending the eVTOL range to /C24230 km at the BOL (e.g., design-C
+with 66% usable energy, Figures 1 D and 1E). Further extending the range would de-
+mand battery chemistries beyond Li ion (Li met a l ,L ia i r ,L is u l f u r ,e t c . ) ,b u tt h e s et e c h -
+nologies are currently in infancy.
+The future passenger-UAM market is envisioned to be dominated by three use
+cases—city taxi, airport shuttle, and inter-city ﬂights.
+8 The ﬁrst two are intra-city
+hops with short trip distances. Daskilewicz et al. 21 analyzed the range requirement
+for daily commutes in San Francisco and Los Angeles areas and found that most trips
+are under 50 km and only a few trips exceed 100 km. Husemann et al.
+22 studied the
+UAM demands in the Upper Bavaria district, Germany, and found that most trips are
+between 10–25 km. Thus, we can note from Figures 1 D and 1E that SOA LiBs are
+already viable for intra-city eVTOLs, th ough more advanced LiBs with higher cell-
+speciﬁc energy and GCTP ratios are needed for long-range inter-city ﬂights. It is
+worth mentioning that all-electric regional aircraft (Airbus-A320 or Boeing-737-
+sized), another area with growing interests in electriﬁcation, have standard missions
+up to 600 nautical miles ( /C241,100 km), which would demand a signiﬁcant battery
+breakthrough (e.g., speciﬁc energy to exceed 800 Wh/kg) to be technologically
+feasible.
+23,24
+Fast charging and cycle life
+Another feature of eVTOLs is that they ge nerate revenue primarily in rush hours
+(6–10 am and 4–8 pm per workday). Every minute in this period is precious. Typically,
+there is a 5–10 min gap between two trips for passenger swapping. The ideal sce-
+nario is to reﬁll the energy needed for the next trip within this period. Based on Equa-
+tion 3 , the charge time can be estimated by:
+t
+char = SEtrip
+SPchar
+= Rtrip
+SPchar
+g
+hcubat L=D (Equation 4)
+where SPchar is the speciﬁc charge power (in W/kg). Notably, fast charging should
+fulﬁll not only the time requirement but the speciﬁc energy requirement, as the re-
+ﬁlled SEtrip determines the added Rtrip. As a reference, the US Department of Energy
+(DOE) is dedicating efforts to develop extreme fast charging (XFC) technology,
+whose target is to charge 180 Wh/kg energy in 10 min without appreciable
+degradation.
+Note S3 presents an economic model for estimating an eVTOL vehicle’s annual rev-
+enue at various R
+trip and SPchar. Following Uber’s analysis, 7 the model assumes a
+four-seat vehicle with a load factor (seat occupancy) of 67%, a deadhead ratio (frac-
+tion of non-revenue trips) of 20%, a distance-dependent ticket price similar to to-
+day’s Uber-XL, and operation of 8 h per workday for 260 workdays per year. As a
+longer R
+trip requires a higher SPchar to reﬁll the energy within the 5-min passenger-
+swapping limit ( Figure 2 A), the rush-hour utilization ratio (RHUR, the fraction of
+rush hours generating revenues) increases exponentially with SPchar until the charge
+time falls below the 5-min limit ( Figure 2 B). Also, the maximum RHUR is higher for
+longer trips due to fewer stops for swapping passengers. More importantly, the ve-
+hicle’s annual revenue has similar dependencies as the RHUR on the SP
+char and
+Rtrip—a longer trip with sufﬁciently fast charging yields more revenue ( Figure 2 C).
+ll
+Joule 5, 1–16, July 21, 2021 5
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 6 =====
+Thus, we can conclude that fast charging is cri tical for maximizing vehicle utilization
+rates and hence eVTOL revenues.
+We should also note that most charging events of eVTOL batteries are fast charging
+(only those outside rush hours can be slow), which is another notable difference from
+EV batteries. For EVs, though fast charging is indispensable for boosting the range
+conﬁdence, most charging events are slow charging at home or the workplace.
+It is worth noting that battery swapping could be an alternative way to circumvent
+the battery-charge-speed limitation. Howe ver, there are formidable challenges for
+it to become a viable business. For instanc e, making battery packs interchangeable
+would require standardization among battery and aircraft manufacturers, stiﬂing
+innovation, and market competition for consumers.
+25 Moreover, battery swapping
+requires multiple sets of reserve battery pa cks stored at each vertiport, raising sig-
+niﬁcant cost and space concerns.
+The high utilization rates, especially the high frequency of fast charging, demand
+long cycle life. With sufﬁcient fast c harging, eVTOL batteries can operate /C241,600 h
+per year ( Figure 2 B), and the annual discharge energy throughput reaches
+320 kWh/kg ( Figure 2 D), corresponding to 1,600 equivalent full cycles (EFCs) of
+a 200 Wh/kg battery. For reference, on an average, Americans drive 13,476 miles
+per year, 26 which translates to /C24337 driving hours (at 40 mph average speed) and
+45 EFCs for a 300-mile-range EV.
+We should also note that many EVs (Tesla M odel-3, BMW i3) warrant batteries for
+eight years or 100,000 miles at 70% capacity retention, corresponding to 385 battery
+Figure 2. Importance of fast charging and cycle life to eVTOL batteries
+(A–D) Effects of battery charge rate and trip distance on (A) battery charge time, (B) annual
+operating hours and rush-hour utilization ratio, (C) annual revenues, and (D) annual discharge
+energy throughput and equivalent full cycles wi th respect to a 200-Wh/kg battery. The results are
+based on the economic model in Note S3 .
+ll
+6 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 7 =====
+EFCs for a 260-mile-range Model-3 and 650 EFCs for a 153-mile-range BMW i3.
+Converting to eVTOL scenarios (e.g., 1,600 battery EFCs per year), such an EV bat-
+tery warranty means that the batteries should be replaced every 3–5 months, raising
+critical cost and maintenance issues. Indeed, even a one-million-mile EV battery (a
+life of /C243,300 EFCs) can only sustain a two-year eVTOL operation, falling far short
+of an aircraft’s lifespan—commercial aircraft are typically designed for 25+ years
+of service, though eVTOL aircraft may have reduced lifetime demand given the
+high-frequency utilization (e.g., Uber assumes a 13-year service life in their ana-
+lyses
+7). Hence, we can note that eVTOLs are extremely demanding for long battery
+cycle life. Also, an aircraft needs to be designed to accommodate the evolution of
+battery technology for decades.
+Safety
+The rate of catastrophic failure for commercial LiBs has been reported to be only one
+in 40 million cells.
+27 Tesla reported that from 2012 to 2020, their vehicles’ rate of ﬁre
+incidents was one for 205-million driving miles. 28 Regardless, the failures that did
+occur created signiﬁcant notoriety for their spectacular release of energy. It would
+take very few incidents to ground aircraft altogether. As a proof of this, the thermal
+runaway incident in a small ( /C242 kWh) LiB aboard the 787 Dreamliner grounded the
+entire ﬂeet for several months, causing severe ﬁnancial consequences for Boeing
+and the operators alike.
+29 For eVTOLs, it will likely be a mandatory requirement
+that an aircraft should prevent any cell-to-cell propagation events, and more strin-
+gently, be able to continue ﬂying on reduced power to allow for an emergency land-
+ing. Novel features such as self- healing electrodes and separators
+30 and individual
+cell temperature monitoring abilities 31 have been in development. Furthermore,
+as most eVTOL battery charging events are fast charging that takes place in all
+weather conditions, it is essential to develop all-climate, plating-free, fast-charging
+technologies, as plated Li metal is highly reactive that can trigger thermal runaway
+even without internal shorting.
+32,33 Rapid thermal stimulation to charge at an opti-
+mized plating-free temperature has been d emonstrated to achieve safe and durable
+fast charging even at /C050/C14Ca m b i e n t .34
+Furthermore, the high discharge rates of eVTOL batteries pose a critical challenge to
+battery thermal management s ystems (BTMS). As battery heat generation rate is pro-
+portional to the square of current, we can infer by comparing Figure 1Bw i t hFigure S2
+that the heat generation of an eVTOL battery (at /C241C rate) is 9 3 the heat generation
+of EV batteries in highway-driving (C/3) and 100 3 that in city driving (C/10). Hence, a
+potent BTMS is essential for the safe imp lementation of eVTOLs. However, it is
+equally vital to limit BTMS mass to minimize the loss in pack-level-speciﬁc energy.
+eVTOL versus EV battery requirements
+The above discussion reveals that eVTOL batteries have more stringent require-
+ments than EV batteries in all aspects ( Figure 3 ) .T h eh i g hc r u i s ep o w e rl e a d st oa
+larger average discharge rate for eVTOL batteries. Thus, the speciﬁc energy of eV-
+TOL batteries should be rated at a higher C-rate (e.g., 1C) than EV batteries (C/3,
+even C/10). In addition, eVTOLs require high power for takeoff and landing, which
+typically lasts 30–120 s. Hence, the peak power of eVTOL batteries should be eval-
+uated for a longer timescale than EV batteries (typically 10 s). Furthermore, charging
+a sufﬁcient amount of energy in 5–10 min is essential for maximizing eVTOL reve-
+nues. The high fast-charging frequency and utilization rates make eVTOL batteries
+operate up to /C241,600 h and /C241,600 EFCs per year, posing critical challenges to bat-
+tery life. We can also infer that cycling-in duced aging is more important than calen-
+dar aging for eVTOL batteries. Note that battery life is <10% of the lifespan of an
+ll
+Joule 5, 1–16, July 21, 2021 7
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 8 =====
+eVTOL aircraft, hence, the aircraft should be designed to accommodate battery
+technology advancements over decades. Finally, eVTOL batteries have more strin-
+gent requirements on battery safety. Not on ly should they prohibit any ﬁre or explo-
+sion, but they should also continue functioning even after a safety incident occurs un-
+til a safe landing.
+Importance of fast charging
+We see from Equation 3 that raising u
+bat is another way to extend eVTOL range. A
+higher ubat also favorably reduces the required SP ( Equations 1 and 2)a n df a s t -
+charge rate ( Equation 4 ). Indeed, energy-dense Li-ion cells face the challenge of
+poor fast-charge ability due to the issue of Li plating. To ensure high-frequency
+operation during rush hours, eVTOL vehicles tend to carry large batteries to have
+a small SOC consumption per trip so that the charge rate can be relaxed by recharg-
+ing only partially the needed energy in passenger-swapping gaps ( Figure S4 ). How-
+ever, large batteries have high costs. Uber estimated that aerospace batteries could
+cost 4.1 3 more than automotive batteries on a US$/kWh basis.
+35 Moreover, raising
+ubat is constrained by the payload, as:
+mpay = GTOM
+/C0
+1 /C0ubat /C0uempty
+/C1
+(Equation 5)
+where mpay is the payload, GTOM the gross takeoff mass, and uempty the empty
+weight fraction. uempty is an essential parameter of an aircraft; a lower uempty is favor-
+able but can only be achieved at a higher GTOM. 36 The uempty of eVTOL aircraft
+reportedly ranges from 0.43 to 0.65. 9,11,37 For simplicity, a constant uempty is typi-
+cally assumed in eVTOL vehicle design and optimization, which, according to Equa-
+tion 5 , means that raising ubat without sacriﬁcing the payl oad requires increasing
+GTOM as well. However, vehicle acquisition cost, the highest cost for eVTOLs,
+Figure 3. Battery requirements for eVTOLs versus for EVs
+The average discharge C-rates are from Figures 1 Ba n d S2. Note EV batteries could have even lower
+C-rate (C/10) in city driving. The peak-power duration is typically 30–120 s for eVTOL takeoff or
+landing and ~10 s for EVs. For annual EFCs, we estimate ~1,600 EFCs for eVTOL battery ( Figure 1 D)
+and ~45 EFCs for EV battery (based on an annual mileage of 13,476 miles for a 300-mile-range EV).
+For fast-charge frequency, we assume continuous 50 km eVTOL trips for 4 h ( Figure S4 )—only the
+charge event before the ﬁrst trip (1 out of 12) can use slow rate. For EVs, fast-charge frequency is
+<20%. For safety, eVTOL battery should be able to continue functioning even after a safety
+incident. Hence, there should be no irreversibl e cell damage (meeting at least the European
+Council for Automotive R&D (EUCAR) level 1).
+ll
+8 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 9 =====
+depends heavily on the empty weight ( /C24US$700 per pound empty weight in the near
+term35). Hence, using heavy aircraft with large batteries to ensure continuous rush-
+hour operation faces critical cost issues. We should further note that the driving fac-
+t o ri nr e d u c i n gc o s ti st oe x p a n dt h em a r k e ts i z e ,a se a c hd o u b l i n go fp r o d u c t i o nr a t e
+can reduce cost by /C2415%.
+7 Expensive eVTOL aircraft have low values for the general
+public and would limit the market to the wealthy, which feeds back to further limited
+production. Indeed, the cycle of low production rate and high cost is the primary
+reason commercial helicopters are still a cottage industry after decades of existence.
+An alternative way to ensure continuous ru sh-hour operation at low costs is to adopt
+small but fast-rechargeable batteries, as shown in Figure S4 . A smaller battery size
+(and ubat) can reduce battery cost and achieve the same payload at lower aircraft
+weight ( Equation 5 ) and hence lower aircraft cost. Though it reduces the maximum
+range and increases the consumed SOC per trip, the aircraft can operate continu-
+ously as long as the battery can be charged sufﬁciently fast during passenger swap-
+ping. Thus, we can conclude that fast charging is essential for downsizing the eVTOL
+vehicles and batteries for low costs while ensuring high vehicle utilization rates for
+maximized revenues.
+We should stress that fast charging re quires fulﬁlling three metrics simulta-
+neously—charge time less than passenge r swapping (5–10 min), charged energy
+sufﬁcient for the next trip, and a long cycle life. The combination of all three met-
+rics, unfortunately, excludes the vast majority of existing fast-charging solutions.
+For instance, the entire class of ﬂash-charging (e.g., charging from zero to a low
+SOC to give a smartphone an hour of usage or a car a hundred kilometers) is
+limited to low SOCs (inaccessible for eVTOL trips) and cannot reﬂect the charge
+speed at medium-to-high SOCs. For example, Tesla’s latest superchargers can
+charge a Model-3 from 0% to 23% SOC in 5 min at 250 kW but take another
+5 min to charge from 50% to 62% SOC, as the charge power falls below 120 kW
+at >50% SOC.
+38 The 5-min added energy from 50% to 62% SOC amounts to 31
+Wh/kg at the cell level and—even with an improved GCTP ratio of 0.8—only 25
+Wh/kg at the pack level, which is insufﬁcient for eVTOL takeoff ( Figure 1 D).
+Another conventional fast-charging solutio n is to adopt high-power (ultrathin) elec-
+trodes, which apparently ca nnot offer adequat e speciﬁc energy for eVTOLs. Be-
+sides, various attempts to optimize charge algorithms merely manage the absence
+of Li plating without fundamentally relaxing the underlying electrochemical and
+transport limitations and hence can only incrementally expand the fast-charging
+ability.
+Thus, the technological challenge for eVTOL batteries is the ability to charge a substan-
+tial amount of energy very fast and do so without causing excessive degradation to the
+batteries, which requires overcoming the scientiﬁc barrier to fast charging—Li plating.
+Fundamentally, Li plating occurs due to a restricted rate of either of the three physico-
+chemical processes: (1) ion transport in electrolytes, (2) intercalation reaction at
+graphite-electrolyte interfaces, and (3) solid-state diffusion in graphite particles. For
+high-energy LiBs, ion transfer in the electrolyte is typically the limiting factor due to
+the thick and dense anodes.
+39,40 Therefore, research efforts have focused on optimizing
+electrolyte recipes to enhance electrolyte conductivity, diffusivity, and transference
+number,
+41–44 and developing novel electrode architectures to reduce tortuosity. 45–47
+Due to the trade-off nature of LiBs, it is always challenging to improve one parameter
+without sacriﬁcing others. For instance, adding esters as co-solvents can enhance elec-
+trolyte diffusivity and hence the fast-charging ability, but it often considerably deterio-
+rates electrolyte stability and battery life in normal operations.
+48,49
+ll
+Joule 5, 1–16, July 21, 2021 9
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 10 =====
+Two benchmark batteries for eVTOLs
+Another way to prevent Li plating is through thermal stimulation. For instance, our
+group reported an asymmetric temperature modulation (ATM) method 50 that
+charges LiBs at /C2460/C14C while limiting the cell exposure to 60 /C14C to the charging
+step. The elevated temperature can accelerate all the three processes mentioned
+above (e.g., increasing from 20
+/C14Ct o6 0 /C14C boosts graphite intercalation kinetics by
+133, graphite solid-state diffusivity by 5.6 3, and electrolyte conductivity by 1.9 3),
+thereby effectively preventing Li plating. On the other hand, the limited exposure
+time to 60
+/C14C controls materials degradation, primarily solid-electrolyte-interphase
+(SEI) growth. We showed that the ATM method could charge an energy-dense pouch
+cell by 167 Wh/kg in 10 min at the BOL and 144 Wh/kg after 2,500 cycles. 50 Very
+recently, we extended the ATM method with the same cells to eVTOL applications 12
+and demonstrated sustainable 5-min charging for 80 km eVTOL trips. To the best of
+our knowledge, this is the only experiment al work on eVTOL batteries reported so far.
+In the following, we will review the results of these cells, denoted as 215 Wh/kg cells
+based on the nominal speciﬁc energy, and analyze the aging behaviors under eVTOL
+operations with a particular focus on the EOL criteria for eVTOL batteries. Subse-
+quently, we will present another type of 271 Wh/kg cells that enable larger payloads.
+Table S2 summarizes the design parameters of the 215 Wh/kg cells, which have a cath-
+ode areal capacity of 2.85 mAh/cm
+2 that gives 215 Wh/kg at C/10 rate and 196 Wh/kg at
+1C in a scaled 35-Ah format. We use 1C speciﬁc energy to estimate eVTOL battery size
+and payload. Assuming a GCTP ratio of 0.8, the speciﬁc energy at pack level is 157 Wh/
+kg, which gives a 150 kg payload for a small aircraft with a maximum range of /C24150 km
+(Table S3). Note that the vehicle in Table S3 has a similar maximum range as the vehicle
+in Table S1, as they have a similar u
+bat*SE (see Equation 3).
+Figure 4 shows the cycling-test results of the 215 Wh/kg cells. Each cycle includes an
+ATM charging for 5 min and a discharge following the UAM power proﬁle in Table
+S4. Note that the proﬁle also includes a portion representing balked landing. As
+shown in Figures 4 A and 4B, an ATM charging includes rapid heating to raise cell
+temperature to /C2460/C14C, followed by a constant-current-constant-voltage (CCCV)
+charge with 6C and 4.15 V for 5 min. A control cell with the same 5-min CCCV charge,
+but no preheating was added for comparison. We see that the ATM cell exhibited a
+lower voltage in charging than the control cell ( Figure 4 A), suggesting a much-
+reduced internal resistance at the elevated temperature, which helped prevent Li
+plating. On the other hand, the cell stayed at 60
+/C14C only in the charging step
+(5 min per cycle), minimizing the negative impacts associated with the high temper-
+ature. Thereby, the ATM cell exhibited remarkable stability, retaining 92.3% capac-
+ity after 2,000 cycles ( Figure 4 C), or 870 EFCs ( Figure 4 D). For comparison, the con-
+trol cell lost 20% capacity in only 150 cycles (68 EFCs) due to severe Li plating.
+Power retention is also vital for eVTOL batteries due to the high power demand for
+takeoff and landing. Figure 4 E displays the SOC window of the two cells during
+cycling. We note that even the fresh ATM cell can only be charged to /C2484% SOC,
+conﬁrming the rapid-charge SOC ceiling f or eVTOL operation. Also, the consumed
+SOC per cycle is 39.4% (44.4%–83.7%) for the fresh cell and 41% (33.3%–74.3%) after
+2 , 0 0 0c y c l e s .A st h et o t a ld i s c h a r g ee n e r g yi st h es a m ei ne a c hc y c l e ,t h es l i g h ti n -
+crease in SOC (capacity) consumption indi cates a minimal drop in average discharge
+v o l t a g ea n dh e n c eam i l dp o w e rf a d eu p o nc y c l i n g .Figure 4 F further displays the
+minimum cell voltage in the landing and balked landing. We can see that the ATM
+cell retained good power capability after 2,000 cycles, staying >3.25 V in landing
+and >3.15 V in balked landing.
+ll
+10 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 11 =====
+One thing worth discussing is the EOL criter ia for eVTOL batteries. For EV batteries,
+EOL typically refers to 20% capacity fade. If applying this criterion to eVTOL batte-
+ries, we project a lifespan of 6,000 cycles for the 215 Wh/kg cells with ATM charging
+(Figure S5 A). However, eVTOL batteries must retain reserve energy and sufﬁcient
+power for landing. If we use the end-of-discharge (EoD) SOC as a criterion (e.g.,
+>25%SOC to ensure a 10-min additional cruise), the cycle life is predicted to be
+/C243,800 cycles ( Figure S5 B). Furthermore, if using the minimum voltage as the crite-
+rion to account for power fade (e.g., V
+min > 3 V in balked landing), a similar life of
+/C243,800 cycles is projected ( Figure S5 C). Thus, we can infer that power fade and
+reserve energy requirement should play more signiﬁcant roles than capacity fade
+Figure 4. A 215-Wh/kg cell capable of 5 min charging for 80-km eVTOL trips
+(A and B) Evolutions of (A) cell voltage and (B) temperature during one eVTOL cycle. The ATM cell
+has a rapid-heating step to raise cell temperature to ~60
+/C14C before charging. The control cell was
+charged at room temperature without preheating. Both cells use the CCCV charging protocol with
+6C rate and 4.15 V cutoff voltage for 5 min. The discharge step follows the power proﬁle
+representative of an 80 km eVTOL trip detailed in Table S4 .
+(C and D) Capacity retention versus (C) cycle number and (D) equivalent full cycle number.
+(E) Evolutions of battery state of charge at the end of charge (EoC) and EoD upon cycling (see
+experimental procedures for details).
+(F) The minimum cell voltage in landing and balked landing.
+ll
+Joule 5, 1–16, July 21, 2021 11
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 12 =====
+in deﬁning the EOL of eVTOL batteries. It would also require accurate economic
+forecasting with empirical feedback to predict when the battery should be replaced
+for maximum proﬁtability. Fortunately, even a 3,800-cycle lifespan will ensure the
+215 Wh/kg cells operate for one year before replacement.
+The primary limitation of these 215 Wh/kg cells (157 Wh/kg at 1C in pack levels) is the
+small payload—only 150 kg for the 150-km-range aircraft design. To enhance the
+payload, we developed more energy-dense pouch cells using NMC811 cathodes and
+graphite anodes at an areal capacity of 3.41 and 3.76 mAh/cm
+2, respectively, as detailed
+in Table S5. Such a design achieves 271 Wh/kg at C/10 and 250 Wh/kg at 1C in a scaled
+50-Ah format. With a GCTP ratio of 0.8, the 1C speciﬁc energy can reach 200 Wh/kg at
+pack levels, enlarging the payload to 400 kg for the 150-km-range eVTOL (Table S1). We
+should note that the thick anodes due to the increased areal capacity make the cells
+more susceptible to Li plating. Thus, these 271-Wh/kg cells were charged with a reduced
+rate of 3C for an extended time of 10 min per cycle using the ATM method ( Figure 5A).
+The discharge protocol was the same as the 215 Wh/kg cells. We saw that the 271 Wh/kg
+cell retained 81% capacity after 2,500 cycles ( Figure 5B), or 1,100 EFCs. The EoD SOC
+dropped to 25% (the 10-min reserve energy limit) after 2,000 cycles and 21.8% after
+2,500 cycles ( Figure 5C). Furthermore, the minimum voltage stayed >3.3 V in landing
+and >3.05 V in balked landing after 2,500 cycles (Figure 5D). Based on the above discus-
+sion on EOL criteria, these 271 Wh/kg cells have a life of at least 2,000 cycles.
+Future outlook
+An eVTOL vehicle is typically designed for tens of years in service, meaning that it is de-
+signed for batteries available in the near term as well as in the following decades. We
+Figure 5. A 271 Wh/kg cell enabling high payload and 10 min charging for 80 km eVTOL trips
+(A) Evolution of cell voltage and temperature during one eVTOL cycle of the 271 Wh/kg cell. The
+cell was charged with the ATM method , which involves a rapid heating to 60 /C14C, followed by CCCV
+charging with 3C limited by 4.15 V for 5 min. The discharge follows the power proﬁle in Table S4 .
+(B) Capacity retention versus cycle number.
+(C) Evolution of cell state-of-charge window during cycling.
+(D) The minimum cell voltage in landing hover and balked landing hover.
+ll
+12 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 13 =====
+note from the above discussion that the maximum range of an eVTOL vehicle is essen-
+tially proportional to ubat*SE (Eqution 3). Hence, future eVTOL batteries should
+continue to push for higher SE to (1) achieve a larger payload at smaller battery size
+(i.e., a larger m
+pay at a smaller ubat, Equation 5 ) for short-range intra-city commutes
+and (2) meet the range demand for long-range inter-city ﬂights.
+A practical approach to enhance speciﬁc energy is to raise the areal loadings of
+active materials further. A critical barrier is the reduced fast-charging ability. For
+instance, the above 215-Wh/kg cells can be charged with 6C using the ATM method,
+enabling 5-min charging for 80 km trips, whereas the 271 Wh/kg cells can only with-
+s t a n d3 Cc h a r g ee v e na t6 0
+/C14C, thereby requiring 10 min to charge the energy for
+80 km trips. An even higher areal capacity would further reduce the charge rate,
+considerably limiting eVTOL revenues. Thu s, it is vital to develop advanced technol-
+ogies that can fast-charge ultrahigh-energy LiBs.
+We should stress that eVTOLs are extreme ly demanding on battery cycle life due to
+the high utilization rates (up to 320 kWh/kg energy throughput per year, Figure 1 D).
+Any improvement in speciﬁc energy and fast -charging ability shall not sacriﬁce the
+cycle life. For instance, pairing Ni-rich oxide cathodes with silicon or Li-metal anodes
+are promising paths to higher speciﬁc energy, but fast charging can cause signiﬁcant
+volume expansion of silicon particles, or dendrite formation of Li metal, resulting in
+low cycle life. The best Li-metal pouch cells reported so far can only charge with
+ultralow rates (e.g., C/10) and sustain merely /C24200 cycles.
+51,52 More advanced
+c h e m i s t r i e sl i k eL i - Sa n dL i - a i ra r ei ne v e nearlier infancy. In essence, signiﬁcant im-
+provements in fast charging and cycle life a re essential for these advanced battery
+technologies to be viable for eVTOLs.
+Another path to higher speciﬁc energy is to improve CTP integration efﬁciency. An
+example is the recently reported CTP technology that boosts the GCTP ratio to
+/C240.85.
+19 A potential method to enhance the GCTP ratio further is to replace a
+liquid-cooling BTMS with aspirated air cooling by operating the battery at an
+elevated temperature (e.g., 60 /C14C). It has been revealed that elevating the oper-
+ating temperature can reduce the cooling need by an order of magnitude due
+to reduced heat generation rates and enl arged temperature di fferences between
+cells and ambient.
+50,53 The elevated temperature also boosts battery power capa-
+bility. Furthermore, by adding electrolyte additives such as triallyl phosphate to
+passivate cathode and anode materials, the batteries exhibited exceptional safety
+and life.
+53 Indeed, the thermal modulation structure enables outstanding battery
+performance at low ambient temperatures, while the use of stable materials
+renders high safety and durability at high temperatures. Such a synergistic combi-
+nation has the potential to achieve high-performance, durable, and safe eVTOL
+operation in all climates.
+EXPERIMENTAL PROCEDURES
+Models
+The battery power in each eVTOL phase ( Figures 1 B and 1C) is calculated by
+Equations S1–S4 in Note S1 .T h e Rtrip versus SEtrip plot in Figure 1 D and battery
+energy breakdown in Figures 1 Ea n d S3 are calculated by the eVTOL range
+model in Note S2 . The vehicle utilization rates and annual revenues ( Figure 2 )
+are obtained using the economic model in Note S3 . The battery power proﬁles
+of the 75-kWh EV battery ( Figure S2 ) are calculated by the vehicle dynamics
+model in Note S4 .
+ll
+Joule 5, 1–16, July 21, 2021 13
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 14 =====
+Cell materials and fabrication
+Two types of mass-produced industrial electrodes are selected for pouch cell fabri-
+cation. The 215 Wh/kg cells utilize LiFePO 4(LFP)-coated LiNi 0.5Mn0.3Co0.2O2
+(NMC532) as cathode materials at an areal loading of 15.92 mg/cm 2 (90%
+NMC532 and 10% LFP), or 2.55 mAh/cm 2, and artiﬁcial graphite as anode materials
+at a loading of 8.39 mg/cm 2,o r2 . 9 4m A h / c m2. Detailed cell design parameters are
+listed in Table S2. The 5.2 Ah cells were used for the fast-charging tests ( Figure 4). The
+large-format 35-Ah cells were for evaluat ing the speciﬁc energy. The 271-Wh/kg cells
+use LiNi 0.8Mn0.1Co0.1O2 (NMC811) as cathode materials at 16.8 mg/cm 2 or
+3.41 mAh/cm 2, and artiﬁcial graphite as anode materials at 10.6 mg/cm 2 or
+3.71 mAh/cm 2. Detailed cell information is given in Table S5 .T h e3 . 2A hc e l l sw e r e
+used for the cycling tests ( Figure 5 ). The speciﬁc energy in the 50-Ah format was
+estimated using commercial software GT-Au tolion. All the cells use the self-heating
+Li-ion battery structure 54 with a thin nickel (Ni) foil embedded inside as an internal
+heater. One end of the Ni foil is welded with anode tabs, and the other end extends
+outsides to form a third terminal, called activation (ACT) terminal. A switch is added
+between the positive and ACT terminals to control the on and off of cell heating.
+Electrochemical test
+All cells were tested at an ambient temperature around 20
+/C14C. The cells charged with
+the ATM method have a heating step to raise cell temperature to /C2460/C14Cb e f o r e
+charging. Details on implementing the rapid heating through the self-heating struc-
+ture have been presented in Yang et al.
+50 After heating, the cells were charged with
+the conventional CCCV method. All the cells were discharged in a constant-power
+mode following the power proﬁles listed in Table S4 .
+The cycling tests were performed with 100 cycles as a group. In the ﬁrst cycle of
+each group, the 215-Wh/kg cells were charged with 6C rate and 4.15 V cutoff
+voltage until the charge current in the constant-voltage stage fell below 3C. The
+charged SOC in the ﬁrst cycle was utilized to estimate the EoC-SOC in Figure 4 E.
+In the remainder 99 cycles of the group, the cells were charged with 6C and 4.15 V
+until the charge time reached 5 min. After ﬁnishing the 100
+th cycle of the group,
+the cell was discharged with a C/3 rate to 2.8 V to calibrate the remaining capacity,
+which was used to estimate the EoD SOC in Figure 4 E. Thereafter, a reference per-
+formance test (RPT) was performed by fully charging the cell (C/3 charge to 4.15 V,
+and CV@4.15 V until the current fell below C/20) and then discharge at C/3 to
+2.8 V to calibrate the capacity fade ( Figures 4 C and 4D). The 271 Wh/kg cells
+were cycled similarly to the 215 Wh/kg cells. The only differences are that the
+charge C-rate was reduced to 3C, and the charge time per cycle was extended
+to 10 min to prevent Li plating.
+SUPPLEMENTAL INFORMATION
+Supplemental information can be found online at https://doi.org/10.1016/j.joule.
+2021.05.001 .
+ACKNOWLEDGMENTS
+X.-G.Y., T.L., S.G., and C.-Y.W. acknow ledge the ﬁnancial support from the US
+Department of Energy’s Ofﬁce of Energy Efﬁciency and Renewable Energy (EERE)
+under award number DE-EE0008355 and the William E. Diefenderfer Endowment.
+E.R. acknowledges the support from US Air Force STTR contract number
+FA864921P0027 in support of Agility Pri me. We are also grateful to Gamma Tech-
+nologies for providing licenses to GT-Autolion software.
+ll
+14 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 15 =====
+AUTHOR CONTRIBUTIONS
+X.-G.Y. and C.-Y.W. conceived the idea and wrote the manuscript. X.-G.Y. per-
+formed the modeling analyses. T.L. performed the cycling tests. S.G. fabricated
+the cells. All authors contributed to analyses of the results.
+DECLARATION OF INTERESTS
+The authors declare no competing interests.
+REFERENCES
+1. INRIX (2019). Global trafﬁc scorecard. https://
+inrix.com/scorecard/.
+2. United Nations (2018). World urbanization
+prospects, (2018 revision). https://population.
+un.org/wup/Publications/Files/WUP2018-
+Report.pdf.
+3. Goyal, R. (2018). Urban air mobility (UAM)
+market study (Technical Report HQ-E-DAA-
+TN65181, (NASA)). https://ntrs.nasa.gov/
+citations/20190001472.
+4. Lin, Z., Xie, F., and Ou, S. (2020). Modeling the
+external effects of air taxis in reducing the
+energy consumption of road trafﬁc. Transp.
+Res. Rec. 2674, 176–187.
+5. Kasliwal, A., Furbush, N.J., Gawron, J.H.,
+McBride, J.R., Wallington, T.J., De Kleine, R.D.,
+Kim, H.C., and Keoleian, G.A. (2019). Role of
+ﬂying cars in sustainable mobility. Nat.
+Commun. 10, 1555.
+6. Sutherland, B.R. (2019). Flying cars for green
+transportation. Joule 3, 1187–1189.
+7. Holden, J., and Goel, N. (2016). Fast-
+forwarding to a future of on-demand urban air
+transportation ((Uber Elevate)). https://www.
+uber.com/elevate.pdf.
+8. Harder, M., Baur, S., Kopera, S., Schonberg, T.,
+and Hasenberg, J.-P. (2020). The High-Flying
+Industry: Urban Air Mobility Takes Off (Roland
+Berger).
+9. Fredericks, W.L., Sripad, S., Bower, G.C., and
+Viswanathan, V. (2018). Performance metrics
+required of next-generation batteries to
+electrify vertical takeoff and landing (VTOL)
+aircraft. ACS Energy Lett 3, 2989–2994.
+10. Bills, A., Sripad, S., Fredericks, W.L., Singh, M.,
+and Viswanathan, V. (2020). Performance
+metrics required of next-generation batteries
+to electrify commercial aircraft. ACS Energy
+Lett 5, 663–668.
+11. Warren, M., Garbo, A., Kotwicz Herniczek,
+M.T., Hamilton, T., and German, B. (2019).
+Effects of range requirements and battery
+technology on electric VTOL sizing and
+operational Performance (AIAA Scitech 2019
+forum), p. 0527.
+12. Liu, T., Yang, X.G., Ge, S., Leng, Y., and Wang,
+C.Y. (2021). Ultrafast charging of energy-dense
+lithium-ion batteries for urban air mobility.
+eTransportation 7, 100103.
+13. Airbus. (2018). Urban air mobility iconography.
+https://acubed.airbus.com/blog/airbus-utm/
+urban-air-mobility-iconography/.
+14. Moore, M. (2019). Making eVTOL Real. Uber
+Elevate Summit 2019.
+15. McCloskey, B.D. (2015). Expanding the Ragone
+plot: pushing the limits of energy storage.
+J. Phys. Chem. Lett. 6, 3592–3593.
+16. Krisher, T. (2019). AAA: cold weather can cut
+electric car range over 40 percent. https://
+apnews.com/article/
+04029bd1e0a94cd59ff9540a398c12d1.
+17. Patterson, M.D., German, B.J., and Moore,
+M.D. (2012). Performance analysis and design
+of on-demand electric aircraft concepts. 12th
+AIAA Aviation Technology, Integration, and
+Operations (ATIO) Conference and 14th AIAA/
+ISSMO Multidisciplinary Analysis and
+Optimization Conference.
+18. McDonald, R., and German, B. (2017). eVTOL
+stored energy overview (Uber Elevate Summit
+2017).
+19. Yang, X.G., Liu, T., and Wang, C.Y. (2021).
+Thermally modulated lithium iron phosphate
+batteries for mass-market electric vehicles.
+Nat. Energy 6, 176–185.
+20. Gallagher, K.G., Trask, S.E., Bauer, C., Woehrle,
+T., Lux, S.F., Tschech, M., Lamp, P., Polzin, B.J.,
+Ha, S., Long, B., et al. (2016). Optimizing areal
+capacities through understanding the
+limitations of lithium-ion electrodes.
+J. Electrochem. Soc. 163, A138–A149.
+21. Daskilewicz, M., German, B., Warren, M.,
+Garrow, L.A., Boddupalli, S.-S., and Douthat,
+T.H. (2018). Progress in vertiport placement
+and estimating aircraft range requirements for
+eVTOL daily commuting, Aviation Technology,
+Integration, and Operations Conference, pp.
+2884.
+22. Husemann, M., Stumpf, E., Dirks, N., and
+Walther, G. (2021). Towards the design of cost-
+efﬁcient urban air taxi systems (AIAA Scitech
+2021 Forum), p. 1515.
+23. Scha¨ fer, A.W., Barrett, S.R.H., Doyme, K., Dray,
+L.M., Gnadt, A.R., Self, R., O’Sullivan, A.,
+Synodinos, A.P., and Torija, A.J. (2019).
+Technological, economic and environmental
+prospects of all-electric aircraft. Nat. Energy 4,
+160–166.
+24. Viswanathan, V., and Knapp, B.M. (2019).
+Potential for electric aircraft. Nat. Sustain. 2,
+88–89.
+25. Ahmad, F., Saad Alam, M., Saad Alsaidan, I.,
+and Shariff, S.M. (2020). Battery swapping
+station for electric vehicles: opportunities and
+challenges. IET Smart Grid 3, 280–286.
+26. United States Department of Transportation -
+Federal Highway Administration (2018).
+Average Annual Miles per Driver, by age
+group. https://www.fhwa.dot.gov/ohim/
+onh00/bar8.htm.
+27. Doughty, D.H., and Roth, E.P. (2012). A general
+discussion of Li ion battery safety. Electrochem.
+Soc. Interface 21, 37.
+28. Tesla. (2020). Tesla vehicle safety report:
+vehicle ﬁre data. https://www.tesla.com/
+VehicleSafetyReport.
+29. Williard, N., He, W., Hendricks, C., and Pecht,
+M. (2013). Lessons learned from the 787
+Dreamliner issue on lithium-ion battery
+reliability. Energies 6, 4682–4695.
+30. Hu, C. (2020). Enabling life After damage in
+lithium-ion batteries (NASA), In 2020 NASA
+Aerospace Battery Workshop. https://www.
+nasa.gov/sites/default/ﬁles/atoms/ﬁles/
+nabw20_enab_life_after_damage_
+liion_battery_chu.pdf.
+31. Zhang, G., Ge, S., Xu, T., Yang, X.G., Tian, H.,
+and Wang, C.Y. (2016). Rapid self-heating and
+internal temperature sensing of lithium-ion
+batteries at low temperatures. Electrochim.
+Acta 218, 149–155.
+32. Waldmann, T., Hogg, B.-I., and Wohlfahrt-
+Mehrens, M. (2018). Li plating as unwanted side
+reaction in commercial Li-ion cells – a review.
+J. Power Sources 384, 107–124.
+33.
+Li, Y., Feng, X., Ren, D., Ouyang, M., Lu, L.,
+and Han, X. (2019). Thermal runaway triggered
+by plated lithium on the anode after fast
+charging. ACS Appl. Mater. Interfaces 11,
+46839–46850.
+34. Yang, X.G., Zhang, G., Ge, S., and Wang, C.Y.
+(2018). Fast charging of lithium-ion batteries at
+all temperatures. Proc. Natl. Acad. Sci. USA
+115, 7266–7271.
+35. Moore, M. (2019). eVTOL cost drivers (Uber
+Elevate Summit 2019).
+36. Raymer, D. (2012). Aircraft Design: a
+Conceptual Approach (American Institute of
+Aeronautics and Astronautics).
+37. Brown, A., and Harris, W.L. (2020). Vehicle
+design and optimization model for urban air
+mobility. J. Aircr. 57, 1003–1013.
+38. Moloughney, T. (2020). Tesla V3 supercharger
+test: we ﬁnd out exactly how fast it really is.
+https://insideevs.com/news/427836/tesla-
+model-3-v3-supercharging-test/.
+39. Ahmed, S., Bloom, I., Jansen, A.N., Tanim, T.,
+Dufek, E.J., Pesaran, A., Burnham, A., Carlson,
+R.B., Dias, F., Hardy, K., et al. (2017). Enabling
+fast charging – a battery technology gap
+assessment. J. Power Sources 367, 250–262.
+ll
+Joule 5, 1–16, July 21, 2021 15
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective
+===== PAGE 16 =====
+40. Colclasure, A.M., Tanim, T.R., Jansen, A.N.,
+Trask, S.E., Dunlop, A.R., Polzin, B.J., Bloom,
+I., Robertson, D., Flores, L., Evans, M., et al.
+(2020). Electrode scale and electrolyte
+transport effects on extreme fast charging of
+lithium-ion cells. Electrochim. Acta 337,
+135854.
+41. Zhang, S.S. (2020). Reformulation of electrolyte
+for enhanced fast-charge capability of Li-ion
+battery. J. Electrochem. Soc. 167, 060527.
+42. Logan, E.R., and Dahn, J.R. (2020). Electrolyte
+design for fast-charging Li-ion batteries.
+J. Trends Chem. 2, 354–366.
+43. Zhang, X., Zou, L., Xu, Y., Cao, X., Engelhard,
+M.H., Matthews, B.E., Zhong, L., Wu, H., Jia, H.,
+Ren, X., et al. (2020). Advanced electrolytes for
+fast-charging high-voltage lithium-ion
+batteries in wide-temperature range. Adv.
+Energy Mater. 10, 2000368.
+44. Du, Z., Wood, D.L., and Belharouak, I. (2019).
+Enabling fast charging of high energy density
+Li-ion cells with high lithium ion transport
+electrolytes. Electrochem. Commun. 103,
+109–113.
+45. Shi, B., Shang, Y., Pei, Y., Pei, S., Wang, L.,
+Heider, D., Zhao, Y.Y., Zheng, C., Yang, B.,
+Yarlagadda, S., et al. (2020). Low tortuous,
+highly conductive, and high-areal-capacity
+battery electrodes enabled by Through-
+thickness aligned carbon ﬁber framework.
+Nano Lett 20, 5504–5512.
+46. Chen, K.H., Namkoong, M.J., Goel, V., Yang,
+C., Kazemiabnavi, S., Mortuza, S.M., Kazyak,
+E., Mazumder, J., Thornton, K., Sakamoto, J.,
+and Dasgupta, N.P. (2020). Efﬁcient fast-
+charging of lithium-ion batteries enabled by
+laser-patterned three-dimensional graphite
+anode architectures. J. Power Sources 471,
+228475.
+47. Vishnugopi, B.S., Verma, A., and Mukherjee,
+P.P. (2020). Fast charging of lithium-ion
+batteries via electrode engineering.
+J. Electrochem. Soc. 167, 090508.
+48. Wu, X., Liu, T., Bai, Y., Feng, X., Rahman, M.M.,
+Sun, C.-J., Lin, F., Zhao, K., and Du, Z. (2020).
+Effects of solvent formulations in electrolytes
+on fast charging of Li-ion cells. Electrochim.
+Acta 353, 136453.
+49. Logan, E.R., Hall, D.S., Cormier, M.M.E.,
+Taskovic, T., Bauer, M., Hamam, I., Hebecker,
+H., Molino, L., and Dahn, J.R. (2020). Ester-
+based electrolytes for fast charging of energy
+dense lithium-ion batteries. J. Phys. Chem. C
+124, 12269–12280.
+50. Yang, X.G., Liu, T., Gao, Y., Ge, S., Leng, Y.,
+Wang, D., and Wang, C.Y. (2019). Asymmetric
+temperature modulation for extreme fast
+charging of lithium-ion batteries. Joule 3,
+3002–3019.
+51. Niu, C., Lee, H., Chen, S., Li, Q., Du, J., Xu, W.,
+Zhang, J.G., Whittingham, M.S., Xiao, J., and
+Liu, J. (2019). High-energy lithium metal pouch
+cells with limited anode swelling and long
+stable cycles. Nat. Energy 4, 551–559.
+52. Liu, J., Bao, Z., Cui, Y., Dufek, E.J.,
+Goodenough, J.B., Khalifah, P., Li, Q., Liaw,
+B.Y., Liu, P., Manthiram, A., et al. (2019).
+Pathways for practical high-energy long-
+cycling lithium metal batteries. Nat. Energy 4,
+180–186.
+53. Ge, S., Leng, Y., Liu, T., Longchamps, R.S.,
+Yang, X.G., Gao, Y., Wang, D., Wang, D., and
+Wang, C.Y. (2020). A new approach to both
+high safety and high performance of lithium-
+ion batteries. Sci. Adv. 6, eaay7633.
+54. Wang, C.Y., Zhang, G., Ge, S., Xu, T., Ji, Y.,
+Yang, X.G., and Leng, Y. (2016). Lithium-ion
+battery structure that self-heats at low
+temperatures. Nature 529, 515–518.
+ll
+16 Joule 5, 1–16, July 21, 2021
+Please cite this article in press as: Yang et al., Challenges and key requirements of batteries for electric vertical takeoff and landing aircraft, Jo ule
+(2021), https://doi.org/10.1016/j.joule.2021.05.001
+Perspective

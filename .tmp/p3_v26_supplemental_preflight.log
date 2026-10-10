@@ -1,0 +1,49 @@
+terminal_marl/training/p3_v26_course_data.py: 成功
+terminal_marl/training/p3_v26_supplemental_data.py: 成功
+terminal_marl/training/p3_v26_resource_inputs.py: 成功
+terminal_marl/training/p3_v25_course_data.py: 成功
+terminal_marl/training/p3_v25_imitation_qualification.py: 成功
+terminal_marl/training/p3_v25_context_dataset.py: 成功
+terminal_marl/core/resource_context_observation.py: 成功
+terminal_marl/core/trajectory_context_observation.py: 成功
+terminal_marl/core/observations.py: 成功
+terminal_marl/training/p3_v25_runtime.py: 成功
+terminal_marl/training/p3_v25_rollout.py: 成功
+terminal_marl/training/p3_v25_training.py: 成功
+terminal_marl/algo/trajectory_set_actor.py: 成功
+terminal_marl/algo/trajectory_set_ppo.py: 成功
+terminal_marl/scripts/diagnose_p3_v25_train_generalization.py: 成功
+terminal_marl/scripts/collect_p3_v3_sparse_expert.py: 成功
+terminal_marl/scripts/collect_p3_v3_i0.py: 成功
+terminal_marl/core/config.py: 成功
+terminal_marl/core/priority.py: 成功
+terminal_marl/core/merge_scheduler.py: 成功
+terminal_marl/core/merge_gap_forecast.py: 成功
+terminal_marl/core/quintic_hull.py: 成功
+terminal_marl/core/trajectory_time_parameterization.py: 成功
+terminal_marl/core/trajectory_generator.py: 成功
+terminal_marl/core/safety_filter.py: 成功
+terminal_marl/core/runtime_traffic_safety.py: 成功
+terminal_marl/core/runtime_separation.py: 成功
+terminal_marl/envs/parallel_env.py: 成功
+terminal_marl/configs/p3_integrated_repair.py: 成功
+terminal_marl/configs/p3_v25_course.py: 成功
+docs/evidence/v4_2/p3_v25_generalization_repair_20261009.md: 成功
+tests/test_p3_v26_course_data.py: 成功
+tests/test_p3_v26_supplemental_data.py: 成功
+tests/test_p3_v25_course_data.py: 成功
+tests/test_p3_v25_train_generalization.py: 成功
+tests/test_resource_context_observation.py: 成功
+tests/test_p3_v25_runtime.py: 成功
+tests/test_trajectory_set_actor.py: 成功
+tests/test_trajectory_set_ppo.py: 成功
+tests/test_p3_v25_critic_initialization.py: 成功
+.......................................................                  [100%]
+=============================== warnings summary ===============================
+tests/test_trajectory_set_ppo.py::test_fixed_reference_guard_limits_cumulative_gate_drift
+  /home/user/projects/terminal/tests/test_trajectory_set_ppo.py:121: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:822.)
+    assert float(policy.reference_kl())==pytest.approx(0.,abs=1e-7)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+55 passed, 1 warning in 34.70s

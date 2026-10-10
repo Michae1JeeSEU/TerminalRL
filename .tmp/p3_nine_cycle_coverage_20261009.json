@@ -1,0 +1,1301 @@
+{
+  "generated_by": "read-only aggregation; no training/query/reset",
+  "source_groups": {
+    "old3": "p3_v25_neutral_course_v2_20261008",
+    "mid3": "p3_v26_resources_20261009",
+    "new3": "p3_v26_supplemental_20261009"
+  },
+  "field_sources": {
+    "result": "result.json: protocol, partition, status, reconstruction.dataset_check, coverage, rollout",
+    "resource": "result.json: resource_reconstruction; old3 stores105D context and official loader rebuilds159 in memory from verified snapshots; resource JSONL path is explicitly missing",
+    "interfaces": "result.json: coverage.interface_gates",
+    "label_context": "result.json: coverage.contexts.label",
+    "neighbor": "seed_<seed>/context_observations.jsonl: traffic row count; traffic_mask cross-check",
+    "leave_one_cycle_out": "result.json: reconstruction.dataset_check.proposal_counts and teacher_release_rows",
+    "witness": ".tmp/p3_neighbor_witness_train_20261009/witnesses.jsonl: seed, one line per state, plan_calls"
+  },
+  "records": [
+    {
+      "seed": 893511,
+      "group": "old3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\result.json",
+      "protocol": "p3_v25_neutral_course_data_20261008_v2",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 2050,
+      "actor_rows": 30,
+      "forced_wait_rows": 2020,
+      "valid_labels": 30,
+      "ok_labels": 30,
+      "resource": {
+        "status": "MISSING",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\resource_context_observations.jsonl",
+        "rows": null,
+        "observation_schema": null,
+        "original_labels_preserved": null,
+        "note": "expected: old protocol stores105D; official loader rebuilds159 in memory from verified snapshot; nine-loader full check pending"
+      },
+      "release_R": 23,
+      "wait_W": 7,
+      "proposal_counts": {
+        "10": 1,
+        "11": 3,
+        "12": 16,
+        "13": 3
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 11,
+          "W": 4
+        },
+        "m2i": {
+          "R": 6,
+          "W": 0
+        },
+        "i2f": {
+          "R": 6,
+          "W": 3
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 5,
+        "busy_lz": 18,
+        "after_retry": 12,
+        "fast_inner": 8
+      },
+      "actual_N_E_F_D_U": {
+        "N": 5,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 6,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_flow6_mixed\\seed_893511\\context_observations.jsonl",
+      "context_rows": 30,
+      "neighbor_N_distribution": {
+        "1": 3,
+        "2": 8,
+        "3": 9,
+        "4": 10
+      },
+      "neighbor_N_max": 4,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "MISSING"
+      }
+    },
+    {
+      "seed": 893512,
+      "group": "old3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\result.json",
+      "protocol": "p3_v25_neutral_course_data_20261008_v2",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 11448,
+      "actor_rows": 721,
+      "forced_wait_rows": 10727,
+      "valid_labels": 721,
+      "ok_labels": 721,
+      "resource": {
+        "status": "MISSING",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\resource_context_observations.jsonl",
+        "rows": null,
+        "observation_schema": null,
+        "original_labels_preserved": null,
+        "note": "expected: old protocol stores105D; official loader rebuilds159 in memory from verified snapshot; nine-loader full check pending"
+      },
+      "release_R": 94,
+      "wait_W": 627,
+      "proposal_counts": {
+        "4": 1,
+        "6": 1,
+        "7": 3,
+        "8": 9,
+        "9": 1,
+        "10": 2,
+        "11": 3,
+        "12": 46,
+        "13": 8,
+        "14": 7,
+        "17": 8,
+        "19": 1,
+        "22": 2,
+        "23": 2
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 25,
+          "W": 119
+        },
+        "m2i": {
+          "R": 44,
+          "W": 80
+        },
+        "i2f": {
+          "R": 25,
+          "W": 428
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 238,
+        "busy_lz": 709,
+        "after_retry": 302,
+        "fast_inner": 450
+      },
+      "actual_N_E_F_D_U": {
+        "N": 20,
+        "E": 4,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_fixed\\seed_893512\\context_observations.jsonl",
+      "context_rows": 721,
+      "neighbor_N_distribution": {
+        "11": 35,
+        "12": 17,
+        "13": 21,
+        "15": 40,
+        "14": 100,
+        "16": 41,
+        "18": 47,
+        "19": 20,
+        "20": 38,
+        "17": 275,
+        "10": 8,
+        "9": 15,
+        "8": 5,
+        "7": 15,
+        "5": 25,
+        "4": 2,
+        "3": 1,
+        "2": 16
+      },
+      "neighbor_N_max": 20,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "MISSING"
+      }
+    },
+    {
+      "seed": 893513,
+      "group": "old3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\result.json",
+      "protocol": "p3_v25_neutral_course_data_20261008_v2",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 11370,
+      "actor_rows": 547,
+      "forced_wait_rows": 10823,
+      "valid_labels": 547,
+      "ok_labels": 547,
+      "resource": {
+        "status": "MISSING",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\resource_context_observations.jsonl",
+        "rows": null,
+        "observation_schema": null,
+        "original_labels_preserved": null,
+        "note": "expected: old protocol stores105D; official loader rebuilds159 in memory from verified snapshot; nine-loader full check pending"
+      },
+      "release_R": 87,
+      "wait_W": 460,
+      "proposal_counts": {
+        "1": 1,
+        "3": 2,
+        "4": 1,
+        "7": 2,
+        "8": 1,
+        "9": 5,
+        "10": 5,
+        "11": 3,
+        "12": 38,
+        "13": 12,
+        "14": 5,
+        "15": 1,
+        "17": 5,
+        "18": 1,
+        "22": 3,
+        "23": 1,
+        "24": 1
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 27,
+          "W": 104
+        },
+        "m2i": {
+          "R": 42,
+          "W": 104
+        },
+        "i2f": {
+          "R": 18,
+          "W": 252
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 339,
+        "busy_lz": 535,
+        "after_retry": 365,
+        "fast_inner": 263
+      },
+      "actual_N_E_F_D_U": {
+        "N": 14,
+        "E": 10,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\train_dense24_mixed\\seed_893513\\context_observations.jsonl",
+      "context_rows": 547,
+      "neighbor_N_distribution": {
+        "11": 34,
+        "12": 28,
+        "13": 60,
+        "14": 14,
+        "16": 160,
+        "17": 13,
+        "18": 55,
+        "19": 58,
+        "15": 14,
+        "10": 38,
+        "9": 5,
+        "8": 21,
+        "7": 15,
+        "6": 9,
+        "5": 4,
+        "4": 12,
+        "3": 2,
+        "2": 5
+      },
+      "neighbor_N_max": 19,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "MISSING"
+      }
+    },
+    {
+      "seed": 893601,
+      "group": "mid3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\result.json",
+      "protocol": "p3_v26_spatial_resources_independent_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 1719,
+      "actor_rows": 18,
+      "forced_wait_rows": 1701,
+      "valid_labels": 18,
+      "ok_labels": 18,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\resource_context_observations.jsonl",
+        "rows": 18,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 18,
+      "wait_W": 0,
+      "proposal_counts": {
+        "11": 1,
+        "12": 16,
+        "13": 1
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 6,
+          "W": 0
+        },
+        "m2i": {
+          "R": 6,
+          "W": 0
+        },
+        "i2f": {
+          "R": 6,
+          "W": 0
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 3,
+        "busy_lz": 12,
+        "after_retry": 0,
+        "fast_inner": 5
+      },
+      "actual_N_E_F_D_U": {
+        "N": 6,
+        "E": 0,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 6,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_01\\seed_893601\\context_observations.jsonl",
+      "context_rows": 18,
+      "neighbor_N_distribution": {
+        "1": 3,
+        "2": 4,
+        "3": 5,
+        "4": 6
+      },
+      "neighbor_N_max": 4,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    },
+    {
+      "seed": 893602,
+      "group": "mid3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\result.json",
+      "protocol": "p3_v26_spatial_resources_independent_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 12999,
+      "actor_rows": 571,
+      "forced_wait_rows": 12428,
+      "valid_labels": 571,
+      "ok_labels": 571,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\resource_context_observations.jsonl",
+        "rows": 571,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 75,
+      "wait_W": 496,
+      "proposal_counts": {
+        "2": 1,
+        "4": 1,
+        "7": 4,
+        "9": 1,
+        "10": 1,
+        "11": 4,
+        "12": 40,
+        "13": 5,
+        "14": 5,
+        "15": 1,
+        "17": 7,
+        "18": 1,
+        "22": 4
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 24,
+          "W": 328
+        },
+        "m2i": {
+          "R": 24,
+          "W": 71
+        },
+        "i2f": {
+          "R": 27,
+          "W": 97
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 144,
+        "busy_lz": 553,
+        "after_retry": 444,
+        "fast_inner": 120
+      },
+      "actual_N_E_F_D_U": {
+        "N": 18,
+        "E": 6,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_02\\seed_893602\\context_observations.jsonl",
+      "context_rows": 571,
+      "neighbor_N_distribution": {
+        "11": 25,
+        "12": 66,
+        "14": 34,
+        "13": 38,
+        "15": 88,
+        "16": 49,
+        "17": 24,
+        "18": 117,
+        "19": 100,
+        "10": 3,
+        "9": 11,
+        "8": 3,
+        "7": 4,
+        "5": 3,
+        "4": 1,
+        "3": 3,
+        "2": 1,
+        "0": 1
+      },
+      "neighbor_N_max": 19,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    },
+    {
+      "seed": 893603,
+      "group": "mid3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\result.json",
+      "protocol": "p3_v26_spatial_resources_independent_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 10357,
+      "actor_rows": 371,
+      "forced_wait_rows": 9986,
+      "valid_labels": 371,
+      "ok_labels": 371,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\resource_context_observations.jsonl",
+        "rows": 371,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 75,
+      "wait_W": 296,
+      "proposal_counts": {
+        "2": 2,
+        "4": 2,
+        "7": 1,
+        "9": 1,
+        "11": 4,
+        "12": 44,
+        "13": 11,
+        "14": 2,
+        "15": 1,
+        "17": 4,
+        "22": 3
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 24,
+          "W": 210
+        },
+        "m2i": {
+          "R": 27,
+          "W": 15
+        },
+        "i2f": {
+          "R": 24,
+          "W": 71
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 138,
+        "busy_lz": 359,
+        "after_retry": 300,
+        "fast_inner": 90
+      },
+      "actual_N_E_F_D_U": {
+        "N": 19,
+        "E": 5,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_resources_20261009\\train_03\\seed_893603\\context_observations.jsonl",
+      "context_rows": 371,
+      "neighbor_N_distribution": {
+        "11": 39,
+        "13": 25,
+        "14": 21,
+        "15": 30,
+        "16": 98,
+        "17": 88,
+        "12": 10,
+        "9": 10,
+        "8": 10,
+        "7": 13,
+        "6": 9,
+        "5": 6,
+        "4": 1,
+        "3": 8,
+        "2": 2,
+        "1": 1
+      },
+      "neighbor_N_max": 17,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    },
+    {
+      "seed": 893604,
+      "group": "new3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\result.json",
+      "protocol": "p3_v26_medium_dense_supplemental_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 3795,
+      "actor_rows": 57,
+      "forced_wait_rows": 3738,
+      "valid_labels": 57,
+      "ok_labels": 57,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\resource_context_observations.jsonl",
+        "rows": 57,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 37,
+      "wait_W": 20,
+      "proposal_counts": {
+        "2": 1,
+        "7": 1,
+        "9": 1,
+        "12": 26,
+        "13": 3,
+        "14": 3,
+        "17": 2
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 12,
+          "W": 19
+        },
+        "m2i": {
+          "R": 12,
+          "W": 1
+        },
+        "i2f": {
+          "R": 13,
+          "W": 0
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 11,
+        "busy_lz": 51,
+        "after_retry": 25,
+        "fast_inner": 11
+      },
+      "actual_N_E_F_D_U": {
+        "N": 12,
+        "E": 0,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 12,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_01\\seed_893604\\context_observations.jsonl",
+      "context_rows": 57,
+      "neighbor_N_distribution": {
+        "5": 13,
+        "8": 18,
+        "7": 5,
+        "9": 10,
+        "10": 5,
+        "2": 4,
+        "1": 2
+      },
+      "neighbor_N_max": 10,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    },
+    {
+      "seed": 893605,
+      "group": "new3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\result.json",
+      "protocol": "p3_v26_medium_dense_supplemental_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 12401,
+      "actor_rows": 542,
+      "forced_wait_rows": 11859,
+      "valid_labels": 542,
+      "ok_labels": 542,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\resource_context_observations.jsonl",
+        "rows": 542,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 89,
+      "wait_W": 453,
+      "proposal_counts": {
+        "2": 2,
+        "3": 4,
+        "4": 2,
+        "7": 4,
+        "8": 2,
+        "9": 4,
+        "11": 1,
+        "12": 39,
+        "13": 14,
+        "14": 5,
+        "15": 1,
+        "17": 6,
+        "18": 1,
+        "19": 1,
+        "22": 3
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 37,
+          "W": 174
+        },
+        "m2i": {
+          "R": 29,
+          "W": 117
+        },
+        "i2f": {
+          "R": 23,
+          "W": 162
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 179,
+        "busy_lz": 530,
+        "after_retry": 385,
+        "fast_inner": 179
+      },
+      "actual_N_E_F_D_U": {
+        "N": 18,
+        "E": 6,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_02\\seed_893605\\context_observations.jsonl",
+      "context_rows": 542,
+      "neighbor_N_distribution": {
+        "11": 61,
+        "12": 7,
+        "13": 25,
+        "15": 41,
+        "14": 19,
+        "16": 29,
+        "17": 17,
+        "18": 96,
+        "19": 97,
+        "20": 53,
+        "10": 15,
+        "9": 6,
+        "8": 10,
+        "7": 3,
+        "6": 10,
+        "5": 15,
+        "4": 1,
+        "3": 33,
+        "2": 1,
+        "1": 3
+      },
+      "neighbor_N_max": 20,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    },
+    {
+      "seed": 893606,
+      "group": "new3",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03",
+      "result_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\result.json",
+      "protocol": "p3_v26_medium_dense_supplemental_train_20261009_v1",
+      "partition": "train",
+      "schema": "p3_v3_90d_sparse_expert_v1",
+      "status": "COLLECTION_OK",
+      "error": null,
+      "raw_rows": 9966,
+      "actor_rows": 292,
+      "forced_wait_rows": 9674,
+      "valid_labels": 292,
+      "ok_labels": 292,
+      "resource": {
+        "status": "PASS",
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\resource_context_observations.jsonl",
+        "rows": 292,
+        "observation_schema": "phaseA_low_obs_v2_6_spatial_pad_context_set",
+        "original_labels_preserved": true,
+        "note": null
+      },
+      "release_R": 79,
+      "wait_W": 213,
+      "proposal_counts": {
+        "2": 1,
+        "3": 3,
+        "4": 1,
+        "7": 2,
+        "9": 2,
+        "10": 1,
+        "11": 3,
+        "12": 41,
+        "13": 11,
+        "14": 3,
+        "17": 7,
+        "18": 2,
+        "22": 2
+      },
+      "interface_gates_R_W": {
+        "o2m": {
+          "R": 25,
+          "W": 91
+        },
+        "m2i": {
+          "R": 31,
+          "W": 25
+        },
+        "i2f": {
+          "R": 23,
+          "W": 97
+        }
+      },
+      "label_context_counts": {
+        "low_soc": 120,
+        "busy_lz": 280,
+        "after_retry": 201,
+        "fast_inner": 115
+      },
+      "actual_N_E_F_D_U": {
+        "N": 19,
+        "E": 5,
+        "F": 0,
+        "D": 0,
+        "U": 0
+      },
+      "rollout_requested": 24,
+      "rollout_terminal": true,
+      "rollout_censored": false,
+      "context_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_v26_supplemental_20261009\\train_03\\seed_893606\\context_observations.jsonl",
+      "context_rows": 292,
+      "neighbor_N_distribution": {
+        "11": 22,
+        "12": 6,
+        "13": 7,
+        "14": 27,
+        "15": 11,
+        "16": 45,
+        "17": 70,
+        "18": 35,
+        "19": 3,
+        "10": 16,
+        "8": 10,
+        "7": 20,
+        "6": 5,
+        "5": 11,
+        "4": 1,
+        "3": 2,
+        "2": 1
+      },
+      "neighbor_N_max": 19,
+      "traffic_mask_mismatches": 0,
+      "integrity": {
+        "core": "PASS",
+        "checks": {
+          "raw_rows": true,
+          "labels": true,
+          "release_wait_actor": true,
+          "proposal_release": true,
+          "interface_release_wait": true,
+          "context_rows": true,
+          "outcomes": true,
+          "traffic_mask": true
+        },
+        "resource": "PASS"
+      }
+    }
+  ],
+  "aggregate": {
+    "old6": {
+      "seeds": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603
+      ],
+      "actor_rows": 2258,
+      "valid_labels": 2258,
+      "R": 372,
+      "W": 1886,
+      "R_plus_W": 2258,
+      "proposal_counts": {
+        "10": 9,
+        "11": 18,
+        "12": 200,
+        "13": 40,
+        "4": 5,
+        "6": 1,
+        "7": 10,
+        "8": 10,
+        "9": 8,
+        "14": 19,
+        "17": 24,
+        "19": 1,
+        "22": 12,
+        "23": 3,
+        "1": 1,
+        "3": 2,
+        "15": 3,
+        "18": 2,
+        "24": 1,
+        "2": 3
+      }
+    },
+    "new3": {
+      "seeds": [
+        893604,
+        893605,
+        893606
+      ],
+      "actor_rows": 891,
+      "valid_labels": 891,
+      "R": 205,
+      "W": 686,
+      "R_plus_W": 891,
+      "proposal_counts": {
+        "2": 4,
+        "7": 7,
+        "9": 7,
+        "12": 106,
+        "13": 28,
+        "14": 11,
+        "17": 15,
+        "3": 7,
+        "4": 3,
+        "8": 2,
+        "11": 4,
+        "15": 1,
+        "18": 3,
+        "19": 1,
+        "22": 5,
+        "10": 1
+      }
+    },
+    "nine": {
+      "seeds": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603,
+        893604,
+        893605,
+        893606
+      ],
+      "actor_rows": 3149,
+      "valid_labels": 3149,
+      "R": 577,
+      "W": 2572,
+      "R_plus_W": 3149,
+      "proposal_counts": {
+        "10": 10,
+        "11": 22,
+        "12": 306,
+        "13": 68,
+        "4": 8,
+        "6": 1,
+        "7": 17,
+        "8": 12,
+        "9": 15,
+        "14": 30,
+        "17": 39,
+        "19": 2,
+        "22": 17,
+        "23": 3,
+        "1": 1,
+        "3": 9,
+        "15": 4,
+        "18": 5,
+        "24": 1,
+        "2": 7
+      }
+    }
+  },
+  "leave_one_cycle_out": [
+    {
+      "held_seed": 893511,
+      "train_seed_count": 8,
+      "held_release_R": 23,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 0
+    },
+    {
+      "held_seed": 893512,
+      "train_seed_count": 8,
+      "held_release_R": 94,
+      "absent_classes_0": [
+        "6"
+      ],
+      "absent_held_release_rows": 1,
+      "rare_classes_1_to_5": [
+        "1",
+        "8",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 12
+    },
+    {
+      "held_seed": 893513,
+      "train_seed_count": 8,
+      "held_release_R": 87,
+      "absent_classes_0": [
+        "1",
+        "24"
+      ],
+      "absent_held_release_rows": 2,
+      "rare_classes_1_to_5": [
+        "6",
+        "10",
+        "15",
+        "18",
+        "19",
+        "23"
+      ],
+      "rare_held_release_rows": 8
+    },
+    {
+      "held_seed": 893601,
+      "train_seed_count": 8,
+      "held_release_R": 18,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 0
+    },
+    {
+      "held_seed": 893602,
+      "train_seed_count": 8,
+      "held_release_R": 75,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 2
+    },
+    {
+      "held_seed": 893603,
+      "train_seed_count": 8,
+      "held_release_R": 75,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "2",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 3
+    },
+    {
+      "held_seed": 893604,
+      "train_seed_count": 8,
+      "held_release_R": 37,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 0
+    },
+    {
+      "held_seed": 893605,
+      "train_seed_count": 8,
+      "held_release_R": 89,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "2",
+        "3",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 9
+    },
+    {
+      "held_seed": 893606,
+      "train_seed_count": 8,
+      "held_release_R": 79,
+      "absent_classes_0": [],
+      "absent_held_release_rows": 0,
+      "rare_classes_1_to_5": [
+        "1",
+        "6",
+        "15",
+        "18",
+        "19",
+        "23",
+        "24"
+      ],
+      "rare_held_release_rows": 2
+    }
+  ],
+  "leave_one_cycle_out_comparison": {
+    "original_six": {
+      "held_seed_set": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603
+      ],
+      "denominator_R": 372,
+      "absent_rows": 6,
+      "absent_percent": 1.612903,
+      "rare_rows": 35,
+      "rare_percent": 9.408602
+    },
+    "expanded_nine_train_on_original_six_held": {
+      "held_seed_set": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603
+      ],
+      "denominator_R": 372,
+      "absent_rows": 3,
+      "absent_percent": 0.806452,
+      "rare_rows": 25,
+      "rare_percent": 6.72043
+    },
+    "all_nine": {
+      "held_seed_set": [
+        893511,
+        893512,
+        893513,
+        893601,
+        893602,
+        893603,
+        893604,
+        893605,
+        893606
+      ],
+      "denominator_R": 577,
+      "absent_rows": 3,
+      "absent_percent": 0.519931,
+      "rare_rows": 36,
+      "rare_percent": 6.239168
+    }
+  },
+  "witness_coverage": {
+    "path": "D:\\7_codespace\\terminal\\.tmp\\p3_neighbor_witness_train_20261009\\witnesses.jsonl",
+    "states_by_seed": {
+      "893601": 12,
+      "893511": 19,
+      "893605": 0,
+      "893603": 24,
+      "893602": 24,
+      "893604": 0,
+      "893512": 24,
+      "893513": 24,
+      "893606": 0
+    },
+    "query_plan_calls_by_seed": {
+      "893601": 33,
+      "893511": 59,
+      "893605": 0,
+      "893603": 63,
+      "893602": 54,
+      "893604": 0,
+      "893512": 52,
+      "893513": 56,
+      "893606": 0
+    },
+    "total_states": 127,
+    "total_query_plan_calls": 317,
+    "covered_seeds": [
+      893511,
+      893512,
+      893513,
+      893601,
+      893602,
+      893603
+    ],
+    "uncovered_new_seeds": [
+      893604,
+      893605,
+      893606
+    ]
+  }
+}

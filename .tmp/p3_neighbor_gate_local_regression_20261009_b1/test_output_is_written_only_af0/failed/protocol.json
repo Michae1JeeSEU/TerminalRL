@@ -1,0 +1,17 @@
+{
+  "protocol": "p3_train_neighbor_witness_20261009_v1",
+  "inputs": [],
+  "smoke": false,
+  "selected_ids": [
+    "train:1"
+  ],
+  "max_states": 144,
+  "max_plan_calls": 1728,
+  "wall_seconds": 3600,
+  "resets": 0,
+  "steps": 0,
+  "Q_accessed": false,
+  "original_labels_unchanged": true,
+  "pair_semantics": "same_canonical_plan_isolated_native_safety_check",
+  "unknown_is_not_safe_or_blocked": true
+}

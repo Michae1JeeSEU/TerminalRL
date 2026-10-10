@@ -1,0 +1,30 @@
+{
+  "status": "READ_ONLY_PREFLIGHT_OK",
+  "target": "lab-server",
+  "observed_at_utc": "2026-10-10T00:16:09.8263118Z",
+  "command_scope": [
+    "nproc/loadavg/memory",
+    "verified environment Python interpreter and torch version",
+    "same-named output root existence/listing",
+    "related terminal_marl/prefix processes excluding the probe itself"
+  ],
+  "python_executable": "/home/user/envs/terminal_env/bin/python",
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "torch_version": "2.13.0+cu130",
+  "logical_cpu": 28,
+  "loadavg": [0.13671875, 0.0517578125, 0.009765625],
+  "meminfo": {
+    "MemTotal": "32566236 kB",
+    "MemFree": "7817236 kB",
+    "MemAvailable": "27424128 kB"
+  },
+  "output_root": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010",
+  "output_root_exists": false,
+  "output_entries": [],
+  "related_processes": [],
+  "ssh_exit_code": 0,
+  "source_or_training_executed": false,
+  "notes": [
+    "The remote `python` alias was absent; the verified environment interpreter path above was used for the same read-only probe."
+  ]
+}

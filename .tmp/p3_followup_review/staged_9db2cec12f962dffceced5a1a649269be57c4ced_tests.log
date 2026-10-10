@@ -1,0 +1,70 @@
+archive=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced
+  File "<string>", line 1
+    from types import SimpleNamespace; import inspect,json; from terminal_marl.training import run_p3_followup_diagnostics as runner; from terminal_marl.training import diagnose_p3_ppo_credit_signal as credit; pre=runner._build_preflight(); assert pre['status']=='PREFLIGHT_OK'; assert pre['protocol']['observation_dimension']==88; assert pre['protocol']['selection_size']==24; sig=inspect.signature(credit._capture_replay); assert 'state_observer' in sig.parameters and sig.parameters['state_observer'].default is None; assert credit.MAX_REPLAY_STEPS==1000; source=inspect.getsource(credit._capture_replay); assert 'state_observer(env)' in source and 'captures[-1][\
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ^
+SyntaxError: unterminated string literal (detected at line 1)
+--- corrected real-source preflight ---
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "<string>", line 6, in <module>
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_p3_followup_diagnostics.py", line 373, in _build_preflight
+    _configs, neutral_configs, _runtime = neutral_eval._build_neutral_inputs()
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\evaluate_p3_task_neutral.py", line 211, in _build_neutral_inputs
+    configs, runtime_protocol = rank_eval._build_eval_inputs(protocol)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\evaluate_p3_runtime_rank_repair.py", line 850, in _build_eval_inputs
+    return legacy_eval._build_eval_inputs(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\evaluate_p3_proposal_head_probe_v1.py", line 676, in _build_eval_inputs
+    configs, _config_snapshots = formal_v7._build_configs(protocol)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_p3_adaptive_kl_formal_v7.py", line 183, in _build_configs
+    return v6._build_configs(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_p3_gate_anchored_v6.py", line 237, in _build_configs
+    config = admission._build_config(scenario, base_protocol)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_p3_controlled_emergency_admission_v5.py", line 223, in _build_config
+    config = base._build_config(str(scenario), base_protocol)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\evaluate_random_soc_gate_repair_v1.py", line 136, in _build_config
+    config = build_scenario_config(scenario, reconcile_late_merge_slots=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\evaluate_random_soc_gate_repair_v1.py", line 49, in build_scenario_config
+    return diagnostic.build_scenario_config(scenario, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\diagnose_trained_dense30_v2.py", line 573, in build_scenario_config
+    p3_training_v4.scenario_config(scenario, raw_protocol)
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_p3_mixed_priority_soc_training_v4.py", line 309, in scenario_config
+    config = v3.scenario_config(name, p)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_p3_mixed_priority_soc_training_v3.py", line 288, in scenario_config
+    pilot_v2.scenario_config(name, dict(p)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\diagnose_v4_2_p3_mixed_priority_soc_pilot_v2.py", line 46, in scenario_config
+    p2_config(count),
+    ^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_ppo_p2_resume_v4.py", line 60, in p2_config
+    return replace(config_for(n), low_level_progress_reward_per_meter=0.0)
+                   ^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_curriculum_pilot.py", line 23, in config_for
+    return replace(scenario_config('flow6',protocol()), total_requested_uavs=n,
+                                           ^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_v4_2_v2_1_student_qualification.py", line 29, in protocol
+    raise ValueError("student qualification protocol changed")
+ValueError: student qualification protocol changed
+--- standalone archive source preflight ---
+ARCHIVE_SOURCE_PREFLIGHT_SCHEMA_CAPTURE_OBSERVER_OK
+runner_file=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\run_p3_followup_diagnostics.py
+credit_file=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced\terminal_marl\training\diagnose_p3_ppo_credit_signal.py
+state_observer_default=None
+MAX_REPLAY_STEPS=1000
+observation_dimension=88
+selection_size=24
+continuation_seed_count=4
+episodegrad_present=False
+observer_json_serializable=True
+--- 10-case follow-up test ---
+..........                                                               [100%]
+10 passed in 2.45s

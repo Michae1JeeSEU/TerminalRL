@@ -1,0 +1,162 @@
+{
+  "manifest": "trajectory_v3_change_manifest_20261002",
+  "generated_at": "2026-10-02 Asia/Shanghai",
+  "scope": "read-only local manifest; no staging, commit, push, test rerun, CLI preflight, smoke, matrix, or training",
+  "owned_files": [
+    {
+      "path": "terminal_marl/core/trajectory_time_parameterization.py",
+      "role": "V3 parameterizer; prior V3 work plus current fail-closed bounds/tangent-yaw contract",
+      "sha256": "e45d7413454d358dd9750768edeef1782a8b7a9e857c20a147c24a4fc1b24ad8",
+      "git_state": "modified"
+    },
+    {
+      "path": "terminal_marl/envs/parallel_env.py",
+      "role": "V3 commit boundary and ring handoff guard",
+      "sha256": "49234f61cd5cd9ef529cc4ae2bda0f353aeecdd76954f1141b312b08e9de8dd9",
+      "git_state": "modified"
+    },
+    {
+      "path": "terminal_marl/scripts/diagnose_trajectory_kinematic_consistency_20261002.py",
+      "role": "V2/V3 diagnostic and corrected altitude aggregation",
+      "sha256": "467c1e6f3dec23e32eba2dc481f24e27a51ee4dccf0fd40052f4eff87e35fead",
+      "git_state": "modified"
+    },
+    {
+      "path": "terminal_marl/scripts/evaluate_p3_foundation_repair_20261002.py",
+      "role": "common V3 comparison runner registration; ownership overlap with A, not frozen",
+      "sha256": "4d6bddf13df1d7eea9b4eaa51f40ea847a6187490f64814f87ae5dcb138cbfa2",
+      "git_state": "modified"
+    },
+    {
+      "path": "tests/test_trajectory_execution_v3.py",
+      "role": "new V3 execution boundary tests",
+      "sha256": "013aff4081ebc7859ba313b07b8baac8fd69003ac9accb4736dbf33420198029",
+      "git_state": "untracked"
+    },
+    {
+      "path": "tests/test_trajectory_time_parameterization_v3.py",
+      "role": "new V3 parameterizer tests",
+      "sha256": "d29a76713fe72b4b27c2b998fba932a8285ccdc90ab2eda51ee675fc1c6749ee",
+      "git_state": "untracked"
+    },
+    {
+      "path": "tests/test_trajectory_kinematic_consistency_diagnostic.py",
+      "role": "V3 analytic diagnostic and altitude aggregation tests",
+      "sha256": "ffaf5f7ab486c0a6dcd47f3d770d564f94c577b78d3569d1c5006f3cb25b6cda",
+      "git_state": "modified"
+    },
+    {
+      "path": "tests/test_p3_foundation_repair_evaluator.py",
+      "role": "common V3 runner contract tests; ownership overlap with A, not frozen",
+      "sha256": "9fe3114938b72dfd7b0e42bd795868673f6e9a615eb7410edb5cfe06a256e6e3",
+      "git_state": "modified"
+    },
+    {
+      "path": "docs/evidence/v4_2/p3_foundation_repair_protocol_20261002.md",
+      "role": "V3 comparison amendment and corrected diagnostic artifact record; ownership overlap with A, not frozen",
+      "sha256": "cd12ee982310a2f682bd290b0216ebab801c66d2d050850d56b8d5f0f4c16926",
+      "git_state": "modified"
+    },
+    {
+      "path": "docs/design_spec.md",
+      "role": "V3 execution and qualification contract",
+      "sha256": "fbf01290e29ef2dc491c517650923acd100298777585a06b655e3ff31f31e7d0",
+      "git_state": "modified"
+    },
+    {
+      "path": "docs/technical_spec.md",
+      "role": "V3 API, matrix, and holder-proxy contract",
+      "sha256": "4b140537fe3af875333951868611656d52499ea09f00b893dc58f1cb00eb5044",
+      "git_state": "modified"
+    }
+  ],
+  "preexisting_dirty_outside_owned_modified": [
+    "docs/CURRENT_STATUS.md",
+    "docs/evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md",
+    "terminal_marl/core/config.py",
+    "terminal_marl/core/reconfiguration_safety.py",
+    "terminal_marl/core/runtime_traffic_safety.py",
+    "terminal_marl/core/safety_filter.py",
+    "terminal_marl/core/trajectory_generator.py",
+    "terminal_marl/core/vehicle_dynamics.py",
+    "terminal_marl/training/diagnose_p3_ppo_credit_signal.py",
+    "terminal_marl/training/run_p3_task_neutral_critic_warmup.py",
+    "terminal_marl/training/run_p3_task_neutral_joint_batch.py",
+    "terminal_marl/training/run_p3_task_neutral_pilot.py",
+    "tests/test_p3_task_neutral_critic_warmup.py",
+    "tests/test_p3_task_neutral_joint_batch.py"
+  ],
+  "preexisting_dirty_outside_owned_untracked_groups": [
+    ".tmp/ (pre-existing untracked directory; manifest is the only new file requested here)",
+    ".tmp_*.py and other root temporary probes",
+    "dev_logs/",
+    "results/",
+    "scripts/server/eval.sh",
+    "terminal_marl/configs/low_v4_2/ppo_target_kl_guard_diagnostic_v1.yaml",
+    "terminal_marl/core/polynomial_trajectory.py",
+    "terminal_marl/plot/",
+    "terminal_marl/training/ (other P3 diagnostics)",
+    "tests/ (other P3/V3 files outside the owned list)"
+  ],
+  "current_status_special": {
+    "action": "never whole-file stage; outside owned scope",
+    "path": "docs/CURRENT_STATUS.md",
+    "diff": "179 insertions / 31 deletions"
+  },
+  "source_contract_validation": {
+    "v3_default_retained": "verified: SimConfig default executable_trajectory_v2",
+    "v3_quintic_pva": "verified: TrajectoryPlan builds QuinticSegment polynomial segments for V3",
+    "analytic_bounds_altitude": "verified: QuinticSegment.bounds includes min_altitude/max_altitude; diagnostic aggregation corrected to min/max directions",
+    "initial_state_guard": "verified: parallel_env V3 commit guard checks start_time and sampled position/velocity/acceleration",
+    "ring_handoff_guard": "verified: parallel_env V3 guard checks radius/height, tangent velocity, centripetal acceleration",
+    "tangent_yaw": "verified: V3 parameterizer raises explicit unsupported error; V2 branch retains tangent_yaw",
+    "common_matrix": "verified: runner constants retain env 877101/877102, policy 878201/878202, 24 requests, 1800 ticks, 8 arms, PPO_ALLOWED false, V3 output root",
+    "holder_proxy": "verified: SafetyFilter and PredictiveSafetyShield use V3 continuous_curve_limits and _pair_curve_error for holder_proxy",
+    "docs_boundary": "verified: design/technical text separates physical qualification from business benefit and excludes unsafe V2 duration as performance baseline"
+  },
+  "evidence": [
+    {
+      "kind": "combined_unit",
+      "command": "pytest 6 named suites",
+      "exit": 0,
+      "result": "39 passed in 1.43s",
+      "log": "/home/user/training_outputs/terminal/trajectory_v3_repair_20261002/combined_unit.log",
+      "sha256": "e823e73b069f64785f331eb3eeeb4ca52ba36f45be8696f36bd8d921fcc675a5"
+    },
+    {
+      "kind": "diagnostic_regression",
+      "command": "pytest tests/test_trajectory_kinematic_consistency_diagnostic.py -q",
+      "exit": 0,
+      "result": "5 passed in 0.16s"
+    },
+    {
+      "kind": "corrected_v3_fixture_diagnostic",
+      "command": "diagnose_trajectory_kinematic_consistency_20261002 --trajectory-schema executable_trajectory_v3",
+      "exit": 0,
+      "result": "KINEMATIC_CONSISTENCY_PASS; finding_count=0; technical_error_count=0",
+      "artifact": "/home/user/training_outputs/terminal/p3_foundation_trajectory_diagnostic_v3_corrected_20261002.json",
+      "sha256": "380da099c4595a4370d979f7d9730b782267a48c6de8cb53aa70e11c88e72305",
+      "altitude": "all four rows min 4.440892098500626e-16, max 40.0"
+    },
+    {
+      "kind": "previous_v3_fixture_diagnostic",
+      "artifact": "/home/user/training_outputs/terminal/p3_foundation_trajectory_diagnostic_v3_20261002.json",
+      "sha256": "a405560e7ece6e27d4b18a90a2f7214cdddc1fc8d089c6fce5046f8a8f8a3739",
+      "status": "superseded only for altitude aggregation; artifact retained"
+    },
+    {
+      "kind": "diff_check",
+      "command": "git diff --check owned files",
+      "exit": 0,
+      "result": "passed"
+    }
+  ],
+  "git_mutations": {
+    "pushed": false,
+    "committed": false,
+    "staged": false
+  },
+  "discrepancies": [
+    "No factual discrepancy found in the newly added V3 statements against the inspected config, parameterizer, plan, environment guard, runner constants, safety-filter, and runtime-shield call sites."
+  ]
+}

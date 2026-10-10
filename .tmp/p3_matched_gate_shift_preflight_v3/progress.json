@@ -1,0 +1,11 @@
+{
+  "PPO_ALLOWED": false,
+  "cell_id": null,
+  "eligible_rows": 0,
+  "optimizer_used": false,
+  "phase": "preflight",
+  "policy_sampling": false,
+  "replayed_steps": 0,
+  "stage": "P3_MATCHED_GATE_SHIFT_20261001_V1",
+  "status": "PREFLIGHT_OK"
+}

@@ -1,0 +1,11 @@
+archive=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_c0fe2f9d37c822a87d9802658212190a37055015_lf
+BINARYSAFE_REAL_BUILD_PREFLIGHT_OK
+status=PREFLIGHT_OK
+episodes=6
+total_steps=4497
+total_requests=144
+observation_dimension=88
+selection_size=24
+--- final tree 10-case runner test ---
+..........                                                               [100%]
+10 passed in 2.59s

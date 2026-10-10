@@ -1,0 +1,9 @@
+{
+  "verdict": "JointSafetyAssessment(approved=True, minimum_separation=80.36396389689675, unsafe_pairs=())",
+  "gate": "approved",
+  "active": 12,
+  "pairs": 42,
+  "elapsed": 0.04699999978765845,
+  "state_time_unchanged": true,
+  "plan_hash": "2de9b267c60c790118908c1cda77503dcd0b6d57f4bbc89cf32b7621a8962889"
+}

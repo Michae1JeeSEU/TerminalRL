@@ -1,0 +1,38 @@
+{
+  "status": "RUNNING",
+  "phase": "pilot",
+  "observed_at_server": "2026-10-01T17:38:27+08:00",
+  "pid": 2178083,
+  "cwd": "/home/user/projects/terminal",
+  "exe": "/usr/bin/python3.12",
+  "argv": [
+    "/home/user/envs/terminal_env/bin/python",
+    "-m",
+    "terminal_marl.training.diagnose_p3_prefix_feasible_gate_20261001",
+    "--phase",
+    "pilot",
+    "--output-dir",
+    "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001"
+  ],
+  "env_flags": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "log": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/pilot_v1.log",
+    "mtime": "2026-10-01 17:37:17.893712159 +0800",
+    "bytes": 0
+  },
+  "progress": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/progress.json",
+    "cell_id": 1,
+    "phase": "arm",
+    "stage": "P3_PREFIX_FEASIBLE_GATE_20261001_V1",
+    "status": "RUNNING",
+    "step": 349,
+    "potential_candidates_seen": 20,
+    "selected": null
+  },
+  "terminal_artifacts": []
+}

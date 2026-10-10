@@ -1,0 +1,21 @@
+{
+  "error": "CheckFailure('old witness state count 121 != 127')",
+  "execution_scope": "read-only loader/selection; no collect/witness_state",
+  "no_environment_reset_step": true,
+  "no_optimizer": true,
+  "no_q": true,
+  "no_teacher_query": true,
+  "source_file": ".tmp/check_p3_nine_cycle_inputs_20261009.py",
+  "source_file_sha256": "eb0e3dde294176347584b350e7bec78e65d93bf699213b5db442cebe2b87d8b8",
+  "status": "FAIL",
+  "traceback_tail": [
+    "  File \"D:\\7_codespace\\terminal\\.tmp\\check_p3_nine_cycle_inputs_20261009.py\", line 450, in main",
+    "    report = run_check(args.root, args.witness_directory)",
+    "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "  File \"D:\\7_codespace\\terminal\\.tmp\\check_p3_nine_cycle_inputs_20261009.py\", line 370, in run_check",
+    "    require(witness_state_count == 127, f\"old witness state count {witness_state_count} != 127\")",
+    "  File \"D:\\7_codespace\\terminal\\.tmp\\check_p3_nine_cycle_inputs_20261009.py\", line 61, in require",
+    "    raise CheckFailure(message)",
+    "CheckFailure: old witness state count 121 != 127"
+  ]
+}

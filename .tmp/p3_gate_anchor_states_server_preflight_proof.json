@@ -1,0 +1,29 @@
+{
+  "status": "PREFLIGHT_VALIDATION_OK",
+  "phase": "preflight",
+  "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/preflight.json",
+  "server_preflight_sha256": "2e6ce616d80ed4914f42e4f8f21b02d311dd6cc62535139e0e05c6f0f5d30861",
+  "server_mtime_epoch_seconds": 1790867303,
+  "validator": "collect_p3_gate_anchor_states_20261001._validate_preflight",
+  "validation_observed": "PHASE_VALIDATION_OK PREFLIGHT_OK 2749 4",
+  "runner_sha256": "20b362c6abf7dbbba72c7f2bca95089853c842915c56f2642a14463f2e80c16d",
+  "protocol_sha256": "15057283b5adabee1e37079956eff0858e786739a4df07665676a01bda200060",
+  "environment_created": false,
+  "model_forward_used": false,
+  "PPO_ALLOWED": false,
+  "no_training": true,
+  "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+  "expected_steps_total": 2749,
+  "cells": [
+    {"cell_id": 1, "expected_steps": 708},
+    {"cell_id": 2, "expected_steps": 674},
+    {"cell_id": 3, "expected_steps": 644},
+    {"cell_id": 4, "expected_steps": 723}
+  ],
+  "source_binding": {
+    "before_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "after_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+  },
+  "server_tests": {"pytest": "9 passed in 0.74s", "pytest_exit": 0, "py_compile_exit": 0}
+}

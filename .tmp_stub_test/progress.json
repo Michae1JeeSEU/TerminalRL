@@ -1,0 +1,14 @@
+{
+  "active": 2,
+  "decision_counts": {
+    "RELEASE": 2
+  },
+  "resolved": 0,
+  "safety_error": null,
+  "sim_time": 2.0,
+  "status": "running",
+  "step": 2,
+  "terminal": false,
+  "unresolved": 2,
+  "wall_elapsed": 0.07391800032928586
+}

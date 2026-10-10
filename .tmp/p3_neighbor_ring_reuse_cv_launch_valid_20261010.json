@@ -1,0 +1,107 @@
+{
+  "schema": "p3_neighbor_ring_reuse_cv_launch_valid_20261010_v1",
+  "status": "RUNNING",
+  "observed_utc": "2026-10-10T01:55:29.5700436Z",
+  "execute_command": "venv\\Scripts\\python.exe .tmp/launch_p3_ring_reuse_cv_20261010.py --execute",
+  "launcher_path": ".tmp/launch_p3_ring_reuse_cv_20261010.py",
+  "launcher_sha256": "f41e36aa43fde0e9ef86f45c042b7d4fd45213717732caf71d9de6ef0a1e403d",
+  "dryrun_path": ".tmp/launch_p3_ring_reuse_cv_20261010.dryrun.json",
+  "dryrun_sha256": "67415e1158cdc8d78ae871550ba339f40e76e9adc57e73a4ebfce8df17eb37a4",
+  "authorization": "user_explicit",
+  "source_hash_count": 19,
+  "source_hashes": {
+    "terminal_marl/training/p3_neighbor_prefix_coverage_data.py": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+    "terminal_marl/training/p3_v26_train_dataset.py": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+    "terminal_marl/training/p3_v25_course_data.py": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+    "terminal_marl/training/p3_v26_course_data.py": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+    "terminal_marl/training/p3_v26_supplemental_data.py": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+    "terminal_marl/training/p3_neighbor_witness_data.py": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+    "terminal_marl/training/p3_neighbor_witness_dataset.py": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+    "terminal_marl/scripts/diagnose_p3_intent_neighbor.py": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+    "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+    "tests/test_p3_v26_train_dataset.py": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6",
+    "tests/test_p3_neighbor_witness_data.py": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+    "tests/test_p3_neighbor_witness_dataset.py": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+    "tests/test_p3_supplemental_neighbor_data.py": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+    "tests/test_p3_neighbor_prefix_coverage_data.py": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+    "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+    "tests/test_p3_neighbor_prefix_queries.py": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+    ".tmp/run_p3_neighbor_prefix_20261010.py": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+    ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+    "tests/test_intent_neighbor_ring_score_reuse.py": "87268b8f391b179e917edb7d034497866d0013f83e47929bbf185dfe3250eb25"
+  },
+  "output_remote": "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+  "output_local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_ring_reuse_20261010\\nine_cycle",
+  "cwd": "/home/user/projects/terminal",
+  "pids": {
+    "wrapper": 3138030,
+    "timeout": 3138031,
+    "root": 3138032,
+    "spawn_workers": [
+      3138175,
+      3138178,
+      3138179,
+      3138180
+    ],
+    "resource_tracker": 3138174
+  },
+  "initial_marks": {
+    "893511": [
+      0,
+      100
+    ],
+    "893512": [
+      0,
+      100
+    ],
+    "893513": [
+      0,
+      100
+    ],
+    "893601": [
+      0,
+      100
+    ],
+    "893602": [],
+    "893603": [],
+    "893604": [],
+    "893605": [],
+    "893606": []
+  },
+  "root_status": "RUNNING",
+  "root_error": null,
+  "protocol_sha256_server": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+  "protocol_sha256_local": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+  "exit_present": false,
+  "actor_rows": 3149,
+  "reference_target_rows": 473,
+  "expanded_target_rows": 1270,
+  "seeds": [
+    893511,
+    893512,
+    893513,
+    893601,
+    893602,
+    893603,
+    893604,
+    893605,
+    893606
+  ],
+  "model_seed": 91911,
+  "auxiliary_seed": 91912,
+  "workers": 4,
+  "wall_seconds_per_fold": 1200,
+  "outer_timeout_seconds": 4200,
+  "marks": [
+    0,
+    100,
+    500,
+    1000,
+    2000,
+    5000
+  ],
+  "gate_mode": "first_feasible_union",
+  "arm": "native_pair_auxiliary",
+  "source_commit": "1575edefe5e55bfffbef8cca8dbdf2d3ce7bb796",
+  "metadata_note": "source_hash_count is the integer count of the 19-entry source_hashes map; no rerun or remote read performed for this metadata correction."
+}

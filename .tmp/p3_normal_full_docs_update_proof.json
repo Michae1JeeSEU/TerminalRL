@@ -1,0 +1,265 @@
+{
+  "kind": "p3_normal_full_docs_update",
+  "files_edited": [
+    "D:\\7_codespace\\terminal\\docs\\CURRENT_STATUS.md",
+    "D:\\7_codespace\\terminal\\docs\\evidence\\v4_2\\p3_followup_results_20260930.md"
+  ],
+  "current_marker_offset_before": 67352,
+  "current_marker_offset_after": 70253,
+  "current_suffix_sha_before": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_len_before": 208510,
+  "current_suffix_len_after": 208510,
+  "current_write_method": "read_bytes prefix splice + untouched raw suffix + write_bytes",
+  "results_inserted_before": "## 2026-10-01 P3 prefix-feasible-gate preregistration",
+  "diffcheck_requested": true,
+  "commit": false,
+  "stage": false,
+  "server_or_source_mutation": false,
+  "observed_at": "2026-10-01",
+  "current_suffix_sha_before_latest_edit": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_latest_edit": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_len_after_latest_edit": 208510,
+  "old_latest_relabelled_as_historical_cohort": true,
+  "target_preparation_status": "ROOT_ACCEPTED_PREPARATION_ONLY",
+  "target_pstar": [
+    0.9952601652648472,
+    0.06392553361964069,
+    0.1704190621781801,
+    0.9948388080341942
+  ],
+  "max_per_state_kl": 0.0008676730314016359,
+  "target_artifact": ".tmp/p3_counterfactual_gate_targets_20261001_v3.json",
+  "target_artifact_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+  "distinct_local_tests": 16,
+  "server_runtime_result_available": false,
+  "weights_or_training_changed": false,
+  "target_server_code_commit": "3852587",
+  "target_server_tests": {
+    "distinct": 16,
+    "exit_code": 0
+  },
+  "target_server_cli": {
+    "status": "TARGETS_READY",
+    "known": 4,
+    "unknown": 0
+  },
+  "target_server_output": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_targets_20261001/targets_v1.json",
+  "target_server_output_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+  "target_server_local_parity": true,
+  "next_preparation": "full actor anchor collection",
+  "next_anchor_scope": {
+    "tapes": 4,
+    "exact_replay_ticks": 2749,
+    "all_uid_rows": true,
+    "states": [
+      "WAIT",
+      "RELEASE",
+      "masked",
+      "unknown"
+    ],
+    "explicit_uid_row_mapping": true
+  },
+  "next_scope_reason": "249 normal requested_gate=1 records do not cover all actor rows",
+  "background_job": false,
+  "current_suffix_sha_before_anchor_status": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_anchor_status": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_len_anchor_status": 208510,
+  "anchor_collector_code_commit": "8fcbd6e9",
+  "anchor_collector_tests": "all passed",
+  "anchor_collector_pid": 2203299,
+  "anchor_collector_phase": "cell_1_only",
+  "anchor_collector_ticks": 708,
+  "anchor_collector_actor_rows": 6011,
+  "anchor_input_tapes": 4,
+  "anchor_input_ticks_total": 2749,
+  "anchor_row_kinds": [
+    "WAIT",
+    "RELEASE",
+    "masked",
+    "unknown"
+  ],
+  "anchor_preflight_status": "row_count_not_equal_tick_count_under_correction",
+  "anchor_ready": false,
+  "anchor_monitor": "p3-gate-anchor-collection",
+  "optimizer_checkpoint_action": "automatic approval rejected; unassigned optimizer-based fitting path and checkpoint-writing capability; not executed",
+  "original_rejected_three_file_set_present": false,
+  "model_fitting_or_new_performance": false,
+  "current_suffix_sha_before_pilot_terminal_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_pilot_terminal_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "anchor_collector_pilot_proof": ".tmp/p3_gate_anchor_states_pilot_terminal_proof.json",
+  "anchor_collector_pilot_status": "COMPLETED",
+  "anchor_collector_pilot_ticks": "708/708",
+  "anchor_collector_pilot_actor_rows": 7378,
+  "anchor_collector_pilot_empty_rows": 60,
+  "anchor_collector_gate_counts": {
+    "RELEASE": 314,
+    "WAIT": 7064,
+    "unknown": 0
+  },
+  "anchor_collector_mask_counts": {
+    "true": 2615,
+    "false": 4763,
+    "unknown": 0
+  },
+  "anchor_collector_source_current_replay_rng_restoration": "PASS",
+  "anchor_startup_snapshot_historical": {
+    "ticks": "399/708",
+    "actor_rows": 6011
+  },
+  "anchor_collector_preflight_and_tests": "PASS; 9 tests",
+  "row_count_tick_issue_scope": "fit-readiness validator only",
+  "full_admission": "C2-C4 admitted after guard/map checks",
+  "full_actual_pid_proof": "unavailable; launch-pending",
+  "model_fitting_optimizer_ppo": "not active",
+  "current_suffix_sha_before_anchor_full_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_anchor_full_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "anchor_full_status": "FULL_OK",
+  "anchor_full_proof": ".tmp/p3_gate_anchor_states_full_terminal_proof.json",
+  "anchor_full_sha": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+  "anchor_full_pid": 2204414,
+  "anchor_full_pid_state": "EXITED",
+  "anchor_full_tapes": 4,
+  "anchor_full_ticks": 2749,
+  "anchor_full_actor_rows_by_tape": [
+    7378,
+    6909,
+    7070,
+    7213
+  ],
+  "anchor_full_actor_rows_total": 28570,
+  "anchor_full_gate_counts": {
+    "true": 1145,
+    "false": 27425,
+    "unknown": 0
+  },
+  "anchor_full_mask_counts": {
+    "true": 9320,
+    "false": 19250,
+    "unknown": 0
+  },
+  "anchor_full_empty_ticks": 224,
+  "anchor_full_empty_ticks_by_tape": [
+    60,
+    30,
+    41,
+    93
+  ],
+  "anchor_full_maps_source_replay_reset_config_rng_controller_certificate": "PASS",
+  "anchor_full_pilot_immutable": true,
+  "anchor_full_model_fit_new_population": false,
+  "anchor_heartbeat": "deleted",
+  "anchor_stale_running_historical": true,
+  "fit_readiness_metadata_fix_tests": 14,
+  "fit_readiness_server_status": "running; readiness not claimed pending proof",
+  "optimizer_candidate_writer": "not implemented/fit unauthorized after automatic approval rejection",
+  "current_suffix_sha_before_readiness_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_readiness_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "fit_readiness_status": "READY_FOR_ROOT_REVIEW",
+  "fit_readiness_full_manifest_sha": "1129676804003dd5a569a7723015ef9ceddd8c1cc016cb1ffca02c3cd4318d35",
+  "fit_readiness_sha": "646f95f7d944a58ab2c6a0950b48fd4e1f5f99cc8f838d826ce8b0ca37ee809a",
+  "fit_readiness_target_maps": 4,
+  "fit_readiness_ticks": 2749,
+  "fit_readiness_rows": 28570,
+  "fit_readiness_certificate_mapping": "PASS",
+  "safe_preflight_commit": "92aa86d3d71afec368acfdcfcba3a8ed3c38346514tests",
+  "safe_preflight_tests": "14 local/server PASS",
+  "collector_commit": "8fcbd6e",
+  "soft_target_commit": "3852587",
+  "soft_target_distinct_tests": 16,
+  "optimizer_model_gradient_checkpoint_heldout_used": false,
+  "finite_fit_status": "FIT_SCREEN_FAIL/ROLLBACK_STOP",
+  "future_fit_protocol": "docs/evidence/v4_2/p3_counterfactual_gate_fit_preregistration_20261001.md",
+  "explicit_approval_required_before_optimizer_checkpoint": true,
+  "collector_commit_full": "8fcbd6e61fd90e98c15a86f267b7e1cef6bee688",
+  "current_suffix_sha_after_hash_correction": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "triplet_inventory": {
+    "targets": "p3_counterfactual_gate_targets_20261001.py / test_p3_counterfactual_gate_targets_20261001.py / p3_counterfactual_gate_targets_protocol_20261001.md",
+    "anchors": "collect_p3_gate_anchor_states_20261001.py / test_p3_gate_anchor_states_20261001.py / p3_gate_anchor_states_protocol_20261001.md",
+    "fit_preflight": "p3_counterfactual_gate_fit_preflight_20261001.py / test_p3_counterfactual_gate_fit_preflight_20261001.py / p3_counterfactual_gate_fit_preregistration_20261001.md",
+    "distinct_test_counts": [
+      16,
+      9,
+      14
+    ],
+    "cumulative": false
+  },
+  "current_suffix_sha_after_triplet_inventory": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_before_finite_fit_authorization_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_finite_fit_authorization_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "finite_fit_authorization": "latest human approval authorizes one registered finite-fit scope",
+  "finite_fit_scope": {
+    "checkpoint": "BEFORE3fe",
+    "critic": "own critic",
+    "model_temperature": 2.5,
+    "trainable": "gate_adapter only",
+    "frozen": [
+      "critic",
+      "base_gate",
+      "actor_encoder",
+      "proposal_head",
+      "temperature"
+    ],
+    "adam_seed": 9303501,
+    "lr": 0.0001,
+    "weight_decay": 0,
+    "max_updates": 80,
+    "full_batch": true,
+    "soft_targets": 4,
+    "anchors": 28570,
+    "chunk_size": 512,
+    "kl_candidate_to_before_max": 0.001,
+    "violation": "rollback previous valid and stop",
+    "alternate_lr_seed_best_of": false
+  },
+  "intrinsic_pass_scope": "candidate-only; not business/P3/default qualification/PPO",
+  "heldout_new_scene_training_population": false,
+  "prior_auto_review_rejection": "historical; no bypass",
+  "current_suffix_sha_before_finite_fit_terminal_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after_finite_fit_terminal_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "finite_fit_output": "counterfactual_gate_fit_20261001",
+  "finite_fit_preflight_sha": "a3aee30499e5890b1597057ffc1f2a9f1d65fe5dd4d68e398379ef3d4815c8aa",
+  "finite_fit_sha": "dc8890b56cf0cc6f44bea5cdf7f832a573ccc43670717d3c4dc6a892a136fab5",
+  "finite_fit_code_commit": "511ca42",
+  "finite_fit_tests": {
+    "distinct": 10,
+    "local_server_match": true
+  },
+  "finite_fit_pid": 2209548,
+  "finite_fit_candidates": {
+    "accepted": 0,
+    "rejected": 1
+  },
+  "finite_fit_first_rejection": {
+    "candidate_kl": 0.03208379613660517,
+    "target_kl": 0.011689337256158998,
+    "cap": 0.001
+  },
+  "finite_fit_final_rollback": {
+    "candidate_kl": 0.0,
+    "target_kl": 0.0
+  },
+  "finite_fit_bce_initial_final": [
+    0.1893708452074146,
+    0.1893708452074146
+  ],
+  "finite_fit_p_initial_final": [
+    0.9952911425998857,
+    0.06313348800762023,
+    0.15514133644666978,
+    0.9949211148729823
+  ],
+  "finite_fit_p_star": [
+    0.9952601652648472,
+    0.06392553361964069,
+    0.1704190621781801,
+    0.9948388080341942
+  ],
+  "finite_fit_frozen_q_source_rng": true,
+  "finite_fit_optimizer_called": true,
+  "finite_fit_weights_changed": false,
+  "finite_fit_candidate_error_partial": "absent",
+  "finite_fit_noenv_teacher_heldout_ppo_performance": true,
+  "finite_fit_elapsed_seconds": 0.7480152603238821,
+  "finite_fit_followup": "read-only source-gradient diagnosis; no second fit admitted"
+}

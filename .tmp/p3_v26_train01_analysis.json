@@ -1,0 +1,191 @@
+{
+  "task_actor_attributes": {
+    "priority_1": 18,
+    "mission_surveillance": 9,
+    "mission_standard": 6,
+    "mission_emergency": 3
+  },
+  "actor_soc_below_065": 6,
+  "case": "train_flow6_mixed",
+  "status": "COLLECTION_OK",
+  "rows": 1719,
+  "steps": 632,
+  "actor_rows": 18,
+  "contexts": {
+    "raw": {
+      "fast_inner": 5,
+      "busy_lz": 1231,
+      "retry": 0,
+      "low_soc": 316,
+      "after_retry": 0,
+      "interface_None": 1701,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 6
+    },
+    "actor": {
+      "fast_inner": 5,
+      "busy_lz": 12,
+      "retry": 0,
+      "low_soc": 3,
+      "after_retry": 0,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 6
+    },
+    "label": {
+      "fast_inner": 5,
+      "busy_lz": 12,
+      "retry": 0,
+      "low_soc": 3,
+      "after_retry": 0,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 6
+    }
+  },
+  "interface_gates": {
+    "o2m": {
+      "1": 6
+    },
+    "m2i": {
+      "1": 6
+    },
+    "i2f": {
+      "1": 6
+    }
+  },
+  "proposals": {
+    "12": 16,
+    "13": 1,
+    "11": 1
+  },
+  "teacher_vs_reported_trace_gate": {
+    "teacher1_actual1": 18
+  },
+  "rule_requests": {
+    "0": 1701,
+    "1": 18
+  },
+  "reported_trace_gates": {
+    "0": 1701,
+    "1": 18
+  },
+  "normal_K3_approval_ranks": {
+    "1": 16,
+    "2": 2
+  },
+  "unranked_release_traces": [],
+  "behavior_release_rejected_reasons": {},
+  "teacher_transitions": {},
+  "teacher_trace_gate_differences": [],
+  "terminal_soc_min": 0.4090268274975872,
+  "terminal_soc_max": 0.7001815329405302,
+  "terminal_energy_min": 613.5402412463808,
+  "emergency": {
+    "emergency_attempts": 0,
+    "emergency_committed": 0,
+    "emergency_blocked_safety": 0,
+    "emergency_blocked_energy": 0,
+    "emergency_blocked_lz": 0,
+    "emergency_blocked_dynamics": 0,
+    "emergency_blocked_slack": 0,
+    "emergency_touchdowns": 0,
+    "emergency_energy_guard_rejections": 0,
+    "emergency_lz_priority_rejections": 0
+  },
+  "min_actual": 110.12726433103829,
+  "min_swept": 110.12720124363375,
+  "label_intents": 21,
+  "label_plan_calls": 25,
+  "longest_queries": [
+    {
+      "slot": 6,
+      "tick": 244,
+      "uid": "2",
+      "interface": "m2i",
+      "soc": 0.7644368558428393,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 1.3894449099898338
+    },
+    {
+      "slot": 4,
+      "tick": 205,
+      "uid": "1",
+      "interface": "m2i",
+      "soc": 0.5174680656095934,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.667584391310811
+    },
+    {
+      "slot": 13,
+      "tick": 384,
+      "uid": "4",
+      "interface": "m2i",
+      "soc": 0.7614975739716492,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.6219660490751266
+    }
+  ],
+  "rollout_seconds": 21.62536749150604,
+  "annotation_seconds": 21.493919712491333,
+  "resource_rows": 18,
+  "resource_ego_dim": 159,
+  "original_prefix_labels_traffic_exact": true,
+  "resource_sha256": "365d0d54ff25b4757491dd2908a80fedf7023e1c7e91779c4b17f4c0c353b925",
+  "root_result_sha256": "a407c3f568415c0f8ba24172c01842910f3048f8c723f45bec900f9f7f4dac5b"
+}

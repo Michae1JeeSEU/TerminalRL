@@ -1,0 +1,287 @@
+{
+  "biases_mps": [
+    2.0,
+    4.0,
+    6.0,
+    8.0
+  ],
+  "coordinated_config": true,
+  "durations_s": [
+    60.0,
+    72.0,
+    84.0,
+    96.0,
+    108.0,
+    120.0
+  ],
+  "feasible_count": 6,
+  "initial_state": {
+    "acceleration_mps2": [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    "physics_dt_s": 0.2,
+    "position_m": [
+      400.0,
+      0.0,
+      70.0
+    ],
+    "velocity_mps": [
+      0.0,
+      20.0,
+      0.0
+    ]
+  },
+  "probe": "single nominal M-to-I positive tangential bias feasibility",
+  "records": [
+    {
+      "bias_mps": 2.0,
+      "duration_s": 60.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 3.9879266186478857,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 60.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 60.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 60.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 2.0,
+      "duration_s": 72.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 4.785511942413132,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 72.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 72.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 72.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 2.0,
+      "duration_s": 84.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 5.583097266166488,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 84.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 84.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 84.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 2.0,
+      "duration_s": 96.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 6.380682589914452,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 96.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 96.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 96.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 2.0,
+      "duration_s": 108.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 7.178267913659693,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 108.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 108.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 108.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 2.0,
+      "duration_s": 120.0,
+      "dynamics_errors": [],
+      "end_angular_advance_rad": 7.975853237403414,
+      "feasible": true,
+      "full_dynamics_validate_called": true,
+      "ring_transfer_returned": true
+    },
+    {
+      "bias_mps": 4.0,
+      "duration_s": 120.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 6.0,
+      "duration_s": 120.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    },
+    {
+      "bias_mps": 8.0,
+      "duration_s": 120.0,
+      "end_angular_advance_rad": null,
+      "error": "flow ring transfer failed dynamics validation: ['samples_are_feasible']",
+      "error_type": "RuntimeError",
+      "feasible": false,
+      "full_dynamics_validate_called": false,
+      "ring_transfer_returned": false
+    }
+  ],
+  "seed": null,
+  "source_ring": {
+    "height_m": 70.0,
+    "nominal_speed_mps": 20.0,
+    "radius_m": 400.0,
+    "role": "middle"
+  },
+  "target_ring": {
+    "height_m": 40.0,
+    "nominal_speed_mps": 16.0,
+    "radius_m": 200.0,
+    "role": "inner"
+  },
+  "total_count": 24
+}

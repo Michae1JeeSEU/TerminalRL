@@ -1,0 +1,363 @@
+{
+  "anchor": {
+    "gate_logit_absmax_global": 67.01116943359375,
+    "gate_probability_absmax_global": 1.0,
+    "gradient_kl_by_parameter": {
+      "gate_adapter.0.bias": {
+        "finite": true,
+        "l2": 8.539107869878323e-19,
+        "max_abs": 1.8139445399118689e-19,
+        "nonzero_count_exact": 96,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          96
+        ]
+      },
+      "gate_adapter.0.weight": {
+        "finite": true,
+        "l2": 6.100798907173333e-18,
+        "max_abs": 3.032475638656188e-19,
+        "nonzero_count_exact": 7296,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          96,
+          88
+        ]
+      },
+      "gate_adapter.2.bias": {
+        "finite": true,
+        "l2": 1.2425643682974424e-19,
+        "max_abs": 3.486275559215078e-20,
+        "nonzero_count_exact": 96,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          96
+        ]
+      },
+      "gate_adapter.2.weight": {
+        "finite": true,
+        "l2": 5.438069316443498e-19,
+        "max_abs": 2.996450730284924e-20,
+        "nonzero_count_exact": 9216,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          96,
+          96
+        ]
+      },
+      "gate_adapter.4.bias": {
+        "finite": true,
+        "l2": 2.685059117616669e-21,
+        "max_abs": 1.8986235099535142e-21,
+        "nonzero_count_exact": 2,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          2
+        ]
+      },
+      "gate_adapter.4.weight": {
+        "finite": true,
+        "l2": 5.6831275377722185e-19,
+        "max_abs": 7.128987012646036e-20,
+        "nonzero_count_exact": 192,
+        "nonzero_count_gt_1e-12": 0,
+        "shape": [
+          2,
+          96
+        ]
+      }
+    },
+    "kl_absmax": 0.0,
+    "kl_loss_mean": 0.0,
+    "kl_max": 0.0,
+    "kl_min": 0.0,
+    "proposal_q_max_absdiff_after_same_model": 0.0
+  },
+  "caller_rng_restored": true,
+  "fit_artifacts": {
+    "fit.json": {
+      "accepted_updates": 0,
+      "candidate_checkpoint": null,
+      "exists": true,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_fit_20261001\\fit.json",
+      "phase": "fit",
+      "rejected_updates": 1,
+      "sha256": "dc8890b56cf0cc6f44bea5cdf7f832a573ccc43670717d3c4dc6a892a136fab5",
+      "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+      "status": "FIT_SCREEN_FAIL",
+      "stop_reason": "ROLLBACK_STOP"
+    },
+    "fit_v1.log": {
+      "exists": true,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_fit_20261001\\fit_v1.log",
+      "sha256": "d120b08eadf709e5c062c37bd69c23c1017a699911f6ee22215e340c57c55902"
+    },
+    "preflight.json": {
+      "exists": true,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_fit_20261001\\preflight.json",
+      "phase": "preflight",
+      "sha256": "a3aee30499e5890b1597057ffc1f2a9f1d65fe5dd4d68e398379ef3d4815c8aa",
+      "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+      "status": "FIT_PREFLIGHT_OK"
+    },
+    "progress.json": {
+      "accepted_updates": 0,
+      "exists": true,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\counterfactual_gate_fit_20261001\\progress.json",
+      "phase": "fit",
+      "rejected_updates": 1,
+      "sha256": "2f41a7b865dfb29852d0ab94a44c9e83f105c9a35cf2f3fc341a4ebaf1954be9",
+      "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+      "status": "FIT_SCREEN_FAIL",
+      "stop_reason": "ROLLBACK_STOP"
+    }
+  },
+  "inputs": {
+    "anchor_cells": {
+      "1": {
+        "cell_id": 1,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_01.npz",
+        "npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+        "rows": 7378,
+        "ticks": 708
+      },
+      "2": {
+        "cell_id": 2,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_02.npz",
+        "npz_sha256": "7e1671404a97e617de86ea73b20bb6b9ffd2d28301ff92ceb78b99ab2ccd7d75",
+        "rows": 6909,
+        "ticks": 674
+      },
+      "3": {
+        "cell_id": 3,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_03.npz",
+        "npz_sha256": "c5cb8b954a78e8e69e0ea349121273db5af6d5671fd214800599d253bf6c4df5",
+        "rows": 7070,
+        "ticks": 644
+      },
+      "4": {
+        "cell_id": 4,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_04.npz",
+        "npz_sha256": "77cebe19ff5303eb36612102c108a712b85ceeada8aac12662bd488139160100",
+        "rows": 7213,
+        "ticks": 723
+      }
+    },
+    "anchor_observation_dim": 88,
+    "anchor_rows": 28570,
+    "cpu_threads": 1,
+    "fit_seed": 9303501,
+    "readiness_sha256": "646f95f7d944a58ab2c6a0950b48fd4e1f5f99cc8f838d826ce8b0ca37ee809a",
+    "target_ids": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "targets_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473"
+  },
+  "schema": "p3_counterfactual_gate_fit_gradient_diagnostic_20261002_v1",
+  "scope": {
+    "PPO_ALLOWED": false,
+    "candidate_checkpoint_written": false,
+    "delta_definition": "-1e-4 * g / (abs(g) + 1e-8), tensor-only first-Adam algebra",
+    "environment_created": false,
+    "heldout_used": false,
+    "optimizer_instance_created": false,
+    "optimizer_step_called": false,
+    "parameter_assignment": false,
+    "rollout_called": false,
+    "teacher_used": false
+  },
+  "server_artifact_binding": {
+    "files": {
+      "fit.json": {
+        "accepted_updates": 0,
+        "exists": true,
+        "mtime": 1790871942.3945036,
+        "phase": "fit",
+        "rejected_updates": 1,
+        "sha256": "dc8890b56cf0cc6f44bea5cdf7f832a573ccc43670717d3c4dc6a892a136fab5",
+        "size": 3715,
+        "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+        "status": "FIT_SCREEN_FAIL",
+        "stop_reason": "ROLLBACK_STOP"
+      },
+      "fit_v1.log": {
+        "exists": true,
+        "mtime": 1790871942.3980207,
+        "sha256": "d120b08eadf709e5c062c37bd69c23c1017a699911f6ee22215e340c57c55902",
+        "size": 154
+      },
+      "preflight.json": {
+        "exists": true,
+        "mtime": 1790871651.1768825,
+        "sha256": "a3aee30499e5890b1597057ffc1f2a9f1d65fe5dd4d68e398379ef3d4815c8aa",
+        "size": 2905
+      },
+      "progress.json": {
+        "accepted_updates": 0,
+        "exists": true,
+        "mtime": 1790871942.3942301,
+        "phase": "fit",
+        "rejected_updates": 1,
+        "sha256": "2f41a7b865dfb29852d0ab94a44c9e83f105c9a35cf2f3fc341a4ebaf1954be9",
+        "size": 274,
+        "stage": "P3_COUNTERFACTUAL_GATE_ADAPTER_FIT_20261001_V1",
+        "status": "FIT_SCREEN_FAIL",
+        "stop_reason": "ROLLBACK_STOP"
+      }
+    },
+    "host": "lab-server",
+    "interpreter": "/home/user/envs/terminal_env/bin/python",
+    "read_exit_code": 0,
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_fit_20261001"
+  },
+  "source": {
+    "checkpoint_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "checkpoint_sha256_after": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "checkpoint_sha256_before": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "expected_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "expected_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "metadata_architecture_id": "v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3",
+    "metadata_temperature": 2.5,
+    "model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "source_sha_returned_by_loader": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "state_unchanged": true
+  },
+  "stage": "P3_COUNTERFACTUAL_GATE_FIT_GRADIENT_DIAGNOSTIC_20261002_V1",
+  "status": "COMPLETED_READ_ONLY_GRADIENT_DIAGNOSTIC",
+  "target": {
+    "bce_mean": 0.1893708452074146,
+    "bce_per_target": [
+      0.030095110890929342,
+      0.23764013857658206,
+      0.4574177443166727,
+      0.03233038704547433
+    ],
+    "first_order_algebraic_delta": [
+      {
+        "label": "first_order_algebra_only_no_parameter_assignment",
+        "logit_delta_dot_first_adam_algebra": 0.1780496442934242,
+        "probability_delta_first_order": 0.0008344624301725075,
+        "target_id": 1
+      },
+      {
+        "label": "first_order_algebra_only_no_parameter_assignment",
+        "logit_delta_dot_first_adam_algebra": 0.3744040335262644,
+        "probability_delta_first_order": 0.02214511899553727,
+        "target_id": 2
+      },
+      {
+        "label": "first_order_algebra_only_no_parameter_assignment",
+        "logit_delta_dot_first_adam_algebra": 0.38794718885378926,
+        "probability_delta_first_order": 0.05084920875374144,
+        "target_id": 3
+      },
+      {
+        "label": "first_order_algebra_only_no_parameter_assignment",
+        "logit_delta_dot_first_adam_algebra": 0.3925988155879404,
+        "probability_delta_first_order": 0.0019838371698215657,
+        "target_id": 4
+      }
+    ],
+    "gradient_bce_by_parameter": {
+      "gate_adapter.0.bias": {
+        "finite": true,
+        "l2": 0.061449584651808116,
+        "max_abs": 0.01157787349075079,
+        "nonzero_count_exact": 96,
+        "nonzero_count_gt_1e-12": 96,
+        "shape": [
+          96
+        ]
+      },
+      "gate_adapter.0.weight": {
+        "finite": true,
+        "l2": 0.2659875407309839,
+        "max_abs": 0.011648168787360191,
+        "nonzero_count_exact": 4608,
+        "nonzero_count_gt_1e-12": 4032,
+        "shape": [
+          96,
+          88
+        ]
+      },
+      "gate_adapter.2.bias": {
+        "finite": true,
+        "l2": 0.006575357007380784,
+        "max_abs": 0.0012757553486153483,
+        "nonzero_count_exact": 96,
+        "nonzero_count_gt_1e-12": 96,
+        "shape": [
+          96
+        ]
+      },
+      "gate_adapter.2.weight": {
+        "finite": true,
+        "l2": 0.026301850016781897,
+        "max_abs": 0.0011024267878383398,
+        "nonzero_count_exact": 9216,
+        "nonzero_count_gt_1e-12": 9216,
+        "shape": [
+          96,
+          96
+        ]
+      },
+      "gate_adapter.4.bias": {
+        "finite": true,
+        "l2": 0.0022565880381165714,
+        "max_abs": 0.001595648704096675,
+        "nonzero_count_exact": 2,
+        "nonzero_count_gt_1e-12": 2,
+        "shape": [
+          2
+        ]
+      },
+      "gate_adapter.4.weight": {
+        "finite": true,
+        "l2": 0.016774650674197623,
+        "max_abs": 0.00159559422172606,
+        "nonzero_count_exact": 192,
+        "nonzero_count_gt_1e-12": 192,
+        "shape": [
+          2,
+          96
+        ]
+      }
+    },
+    "p0_recorded": [
+      0.9952911138534546,
+      0.06313349306583405,
+      0.15514136850833893,
+      0.9949211478233337
+    ],
+    "proposal_q_max_absdiff_after_same_model": 0.0,
+    "pstar": [
+      0.9952601652648472,
+      0.06392553361964069,
+      0.1704190621781801,
+      0.9948388080341942
+    ],
+    "source_gate_logits": [
+      5.35359001159668,
+      -2.69728946685791,
+      -1.6948328018188477,
+      5.277571678161621
+    ],
+    "source_gate_probabilities": [
+      0.9952911425998857,
+      0.06313348800762023,
+      0.15514133644666978,
+      0.9949211148729823
+    ],
+    "source_p0_absdiff_global_max": 3.295035144734726e-08,
+    "source_p0_absdiff_per_target": [
+      2.8746431124382354e-08,
+      5.058213820019475e-09,
+      3.206166915292741e-08,
+      3.295035144734726e-08
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\validate_p3_numeric_saved_states.py", line 167, in <module>
+    args = parser.parse_args()
+        ^^^^^^^^^^^
+  File "D:\7_codespace\terminal\.tmp\validate_p3_numeric_saved_states.py", line 72, in child
+    assert all(key in original and value == original[key] for key, value in query.items()), 'original label/certificate differs'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: original label/certificate differs

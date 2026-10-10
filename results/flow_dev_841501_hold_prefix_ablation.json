@@ -1,0 +1,2942 @@
+{
+  "PPO_ALLOWED": false,
+  "candidate_rejection_counts": {
+    "coordinated_flow_candidates": {
+      "emergency_energy_guard": 1713,
+      "final_capacity": 175,
+      "headway_conflict": 15458,
+      "inner_departure_headway": 11950,
+      "lz_unavailable": 153,
+      "predicted_holder_reachable_tube": 52,
+      "predicted_holder_separation": 9,
+      "predicted_separation": 116,
+      "trajectory_infeasible": 211
+    },
+    "legacy_release_rows": {}
+  },
+  "config": {
+    "action_schema_version": "low_action_schema_v4_2_hierarchical",
+    "airspace_schema_version": "three_ring_v1",
+    "approach_threshold_radius": 1000.0,
+    "arrival_model": "finite_cohort",
+    "arrival_rate_per_second": 0.0,
+    "collision_distance": 10.0,
+    "dt": 1.0,
+    "emergency_energy_margin_seconds": 15.0,
+    "emergency_landing_enabled": true,
+    "emergency_priority_guard_enabled": true,
+    "emergency_trigger_soc": 0.4,
+    "energy_capacity": 1500.0,
+    "energy_model_mode": "phase_motion_v2",
+    "energy_reachability_guard_enabled": true,
+    "experiment_mode": "fixed_rule",
+    "final_approach_geometry_mode": "continuous_inward_v1",
+    "final_queue_capacity": 3,
+    "fixed_arrival_schedule": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "gate_angles_deg": [
+      0.0,
+      90.0,
+      180.0,
+      270.0
+    ],
+    "gate_count": 4,
+    "gate_height": 110.0,
+    "gate_min_time_gap_seconds": 20.0,
+    "gate_probabilities": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "geometry_min_dwell_seconds": 600.0,
+    "geometry_transition_seconds": 20.0,
+    "headway_i2f": 12.0,
+    "headway_m2i": 9.0,
+    "headway_max": 30.0,
+    "headway_min": 3.0,
+    "headway_o2m": 9.0,
+    "height_max": 120.0,
+    "height_min": 0.0,
+    "high_action_schema_version": "high_airspace_v1_10d",
+    "high_level_decision_interval_seconds": 180.0,
+    "high_level_enabled": false,
+    "initial_priority": null,
+    "initial_soc": null,
+    "initial_soc_max": 0.9,
+    "initial_soc_min": 0.55,
+    "initial_soc_mode": "uniform",
+    "low_level_collision_penalty": 25.0,
+    "low_level_emergency_landing_penalty": 8.0,
+    "low_level_energy_failure_penalty": 20.0,
+    "low_level_priority_time_weight": 0.0,
+    "low_level_progress_reward_per_meter": 0.001,
+    "low_level_release_approved_reward": 0.1,
+    "low_level_release_rejected_penalty": 0.05,
+    "low_level_soc_urgency_threshold": 0.65,
+    "low_level_soc_urgency_time_weight": 0.0,
+    "low_level_time_penalty_per_second": 0.01,
+    "low_level_touchdown_reward": 25.0,
+    "lz_assignment_mode": "nearest_available",
+    "max_active_uavs": 60,
+    "max_external_wait_seconds": null,
+    "max_headway_change_per_update": 1.0,
+    "max_height_change_per_update": 20.0,
+    "max_merge_time_residual_seconds": 6.0,
+    "max_radius_change_per_update": 20.0,
+    "max_simulation_seconds": 1800.0,
+    "max_speed_profile_change_per_update": 2.0,
+    "max_speed_residual_mps": 0.0,
+    "metrics_sampling_interval_seconds": 20.0,
+    "min_height_gap": 20.0,
+    "min_ring_gap": 120.0,
+    "mission_probabilities": [
+      0.45,
+      0.25,
+      0.1,
+      0.2
+    ],
+    "neighbor_comm_range_m": 320.0,
+    "nmac_distance": 40.0,
+    "num_landing_zones": 6,
+    "observation_schema_version": "phaseA_low_obs_v2_3_source_bound_88d",
+    "phase_motion_nominal_solo_energy": 240.9,
+    "physics_dt": 0.2,
+    "power_external_wait": 1.0,
+    "power_final": 0.9,
+    "power_inbound": 1.0,
+    "power_landing": 1.05,
+    "power_reference": 1.0,
+    "power_ring_hold": 1.0,
+    "power_ring_transfer": 1.1,
+    "priority_alpha": 0.5,
+    "priority_beta": 1.5,
+    "priority_delta": 2.0,
+    "priority_feature_scale": 5.0,
+    "priority_gamma": 1.0,
+    "priority_mode": "random_135",
+    "priority_wait_reference_seconds": 3600.0,
+    "prospective_repair_delays_seconds": [
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ],
+    "radius_max": 900.0,
+    "radius_min": 120.0,
+    "reconcile_late_merge_slots_enabled": false,
+    "release_arbitration_mode": "downstream_priority",
+    "release_threshold": 0.0,
+    "repair_aware_scheduler": false,
+    "reset_mode": "warm_start_rings",
+    "retry_norm_horizon_seconds": 30.0,
+    "rings": {
+      "RingRole.INNER": {
+        "height": 40.0,
+        "nominal_speed": 16.0,
+        "radius": 200.0,
+        "role": "inner"
+      },
+      "RingRole.MIDDLE": {
+        "height": 70.0,
+        "nominal_speed": 20.0,
+        "radius": 400.0,
+        "role": "middle"
+      },
+      "RingRole.OUTER": {
+        "height": 100.0,
+        "nominal_speed": 22.0,
+        "radius": 600.0,
+        "role": "outer"
+      }
+    },
+    "rule_flow_coordination_enabled": true,
+    "runtime_proposal_shortlist_k": 1,
+    "safe_distance": 80.0,
+    "safety_sampling_dt": 1.0,
+    "scheduler_mode": "execution",
+    "schema_version": "phaseA_landing_v1",
+    "shield_broad_phase_margin": 20.0,
+    "shield_correction_magnitude_penalty": 0.1,
+    "shield_enabled": true,
+    "shield_horizon_seconds": 30.0,
+    "shield_id_interventions_per_100_intents": 10.0,
+    "shield_intervention_penalty": 0.2,
+    "shield_ood_interventions_per_100_intents": 20.0,
+    "soc_emergency": 0.2,
+    "soc_reserve": 0.25,
+    "soc_warning": 0.35,
+    "spawn_radius": 1300.0,
+    "speed_max": 36.0,
+    "speed_min": 8.0,
+    "teacher_correction_magnitude_penalty": 0.05,
+    "teacher_enabled": false,
+    "teacher_intervention_penalty": 0.1,
+    "teacher_mode": "teacher_full",
+    "teacher_release_label_enabled": false,
+    "total_requested_uavs": 30,
+    "trajectory_bezier_samples": 41,
+    "trajectory_final_samples": 51,
+    "trajectory_schema_version": "executable_trajectory_v2",
+    "vehicle_dynamics_schema_version": "performance_constrained_v2",
+    "vehicle_execution_mode": "performance_constrained",
+    "vehicle_profile_id": "research_evtol",
+    "warm_start_energy_reachability_check_enabled": true,
+    "warm_start_steady_motion": true,
+    "warm_start_uavs": 30
+  },
+  "coordinated": true,
+  "diagnostic_only": true,
+  "emergency_commits": [
+    {
+      "coordinated": true,
+      "end_time": 414.8342348660482,
+      "from_phase": "ring_middle",
+      "kind": "emergency",
+      "pad_id": 2,
+      "soc": 0.3899489080250065,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 290.0,
+      "trajectory_plan_id": "8ab050f9-7ef1-461b-a281-fc55af21d5c8",
+      "uid": 16
+    },
+    {
+      "coordinated": true,
+      "end_time": 472.8342348660482,
+      "from_phase": "ring_middle",
+      "kind": "emergency",
+      "pad_id": 3,
+      "soc": 0.36286376523015923,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 378.0,
+      "trajectory_plan_id": "bc141cac-f5b7-41d6-9722-bd635ab97721",
+      "uid": 23
+    },
+    {
+      "coordinated": true,
+      "end_time": 490.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "emergency",
+      "pad_id": 5,
+      "soc": 0.3528745409057526,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 416.0,
+      "trajectory_plan_id": "b769bd0e-a8a3-4223-9100-efd8a70947ec",
+      "uid": 7
+    },
+    {
+      "coordinated": true,
+      "end_time": 544.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "emergency",
+      "pad_id": 3,
+      "soc": 0.31348479946639096,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 482.0,
+      "trajectory_plan_id": "6d6586fd-6a6b-4426-b273-45ce64f29314",
+      "uid": 3
+    }
+  ],
+  "energy_outcomes": [
+    {
+      "arrival_id": 28,
+      "energy_consumed": 78.01215213244512,
+      "energy_remaining": 948.719183400833,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6324794556005553,
+      "time": 105.0,
+      "uid": 28
+    },
+    {
+      "arrival_id": 26,
+      "energy_consumed": 65.9788187991117,
+      "energy_remaining": 843.4057375253633,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5622704916835756,
+      "time": 123.0,
+      "uid": 26
+    },
+    {
+      "arrival_id": 25,
+      "energy_consumed": 66.01215213244504,
+      "energy_remaining": 836.2593821805218,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5575062547870145,
+      "time": 123.0,
+      "uid": 25
+    },
+    {
+      "arrival_id": 29,
+      "energy_consumed": 130.01215213244518,
+      "energy_remaining": 942.4603285973213,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.6283068857315476,
+      "time": 157.0,
+      "uid": 29
+    },
+    {
+      "arrival_id": 27,
+      "energy_consumed": 141.97881879911174,
+      "energy_remaining": 1066.6637042156815,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.7111091361437877,
+      "time": 169.0,
+      "uid": 27
+    },
+    {
+      "arrival_id": 20,
+      "energy_consumed": 140.2010410213339,
+      "energy_remaining": 857.3878447994256,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5715918965329504,
+      "time": 177.0,
+      "uid": 20
+    },
+    {
+      "arrival_id": 17,
+      "energy_consumed": 184.2010410213336,
+      "energy_remaining": 1057.1479147282614,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.7047652764855076,
+      "time": 221.0,
+      "uid": 17
+    },
+    {
+      "arrival_id": 21,
+      "energy_consumed": 172.16770768800032,
+      "energy_remaining": 662.5476889415406,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4416984592943604,
+      "time": 239.0,
+      "uid": 21
+    },
+    {
+      "arrival_id": 2,
+      "energy_consumed": 212.87881879911143,
+      "energy_remaining": 634.903594436691,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.42326906295779404,
+      "time": 261.0,
+      "uid": 2
+    },
+    {
+      "arrival_id": 18,
+      "energy_consumed": 208.33437435466692,
+      "energy_remaining": 725.9877897066914,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4839918598044609,
+      "time": 275.0,
+      "uid": 18
+    },
+    {
+      "arrival_id": 5,
+      "energy_consumed": 267.83437435466703,
+      "energy_remaining": 817.077911132541,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.544718607421694,
+      "time": 317.0,
+      "uid": 5
+    },
+    {
+      "arrival_id": 12,
+      "energy_consumed": 281.76770768800026,
+      "energy_remaining": 1050.3569814490565,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.7002379876327044,
+      "time": 331.0,
+      "uid": 12
+    },
+    {
+      "arrival_id": 0,
+      "energy_consumed": 312.0010410213339,
+      "energy_remaining": 842.1425710189387,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5614283806792925,
+      "time": 361.0,
+      "uid": 0
+    },
+    {
+      "arrival_id": 22,
+      "energy_consumed": 248.26770768800026,
+      "energy_remaining": 814.694929226571,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.543129952817714,
+      "time": 375.0,
+      "uid": 22
+    },
+    {
+      "arrival_id": 1,
+      "energy_consumed": 331.7010410213336,
+      "energy_remaining": 711.9518253547903,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4746345502365269,
+      "time": 411.0,
+      "uid": 1
+    },
+    {
+      "arrival_id": 15,
+      "energy_consumed": 376.20104102133394,
+      "energy_remaining": 484.32706104045803,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.32288470736030533,
+      "time": 413.0,
+      "uid": 15
+    },
+    {
+      "arrival_id": 16,
+      "energy_consumed": 442.4532740103911,
+      "energy_remaining": 432.4700880271212,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.2883133920180808,
+      "time": 475.0,
+      "uid": 16
+    },
+    {
+      "arrival_id": 23,
+      "energy_consumed": 493.9399406770575,
+      "energy_remaining": 428.35570716818245,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.28557047144545494,
+      "time": 483.0,
+      "uid": 23
+    },
+    {
+      "arrival_id": 6,
+      "energy_consumed": 415.96770768800025,
+      "energy_remaining": 851.3061954299937,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5675374636199958,
+      "time": 495.0,
+      "uid": 6
+    },
+    {
+      "arrival_id": 11,
+      "energy_consumed": 366.52326324355624,
+      "energy_remaining": 475.6736171364413,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.31711574475762755,
+      "time": 503.0,
+      "uid": 11
+    },
+    {
+      "arrival_id": 10,
+      "energy_consumed": 453.7010410213336,
+      "energy_remaining": 815.8022596166381,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.5438681730777588,
+      "time": 533.0,
+      "uid": 10
+    },
+    {
+      "arrival_id": 13,
+      "energy_consumed": 505.60104102133397,
+      "energy_remaining": 533.8685260896688,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.35591235072644584,
+      "time": 535.0,
+      "uid": 13
+    },
+    {
+      "arrival_id": 8,
+      "energy_consumed": 525.6343743546668,
+      "energy_remaining": 637.4162657143005,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.424944177142867,
+      "time": 575.0,
+      "uid": 8
+    },
+    {
+      "arrival_id": 3,
+      "energy_consumed": 525.767707688,
+      "energy_remaining": 404.148380400474,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.26943225360031603,
+      "time": 575.0,
+      "uid": 3
+    },
+    {
+      "arrival_id": 9,
+      "energy_consumed": 549.801041021333,
+      "energy_remaining": 629.0930112891706,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4193953408594471,
+      "time": 599.0,
+      "uid": 9
+    },
+    {
+      "arrival_id": 7,
+      "energy_consumed": 471.96770768800025,
+      "energy_remaining": 451.0329925595169,
+      "outcome": "emergency_landed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.3006886617063446,
+      "time": 611.0,
+      "uid": 7
+    },
+    {
+      "arrival_id": 19,
+      "energy_consumed": 590.2677076879999,
+      "energy_remaining": 419.98752703585467,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.2799916846905698,
+      "time": 657.0,
+      "uid": 19
+    },
+    {
+      "arrival_id": 14,
+      "energy_consumed": 613.7010410213338,
+      "energy_remaining": 662.2815206095705,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.4415210137397137,
+      "time": 693.0,
+      "uid": 14
+    },
+    {
+      "arrival_id": 24,
+      "energy_consumed": 697.0010410213356,
+      "energy_remaining": 507.42786115111016,
+      "outcome": "completed",
+      "phase": "completed",
+      "reason": "ground_service_complete",
+      "soc": 0.3382852407674068,
+      "time": 763.0,
+      "uid": 24
+    },
+    {
+      "arrival_id": 4,
+      "assigned_lz": null,
+      "emergency_landing": false,
+      "energy_capacity": 1500.0,
+      "energy_consumed": 849.4666666666667,
+      "energy_remaining": 0.0,
+      "outcome": "failed_energy",
+      "phase": "ring_middle",
+      "position": [
+        399.48230824027354,
+        20.34417368739954,
+        70.0
+      ],
+      "reason": "energy_depleted",
+      "soc": 0.0,
+      "time": 861.0,
+      "uid": 4
+    }
+  ],
+  "hold_prefix_preflight": {
+    "boundary_acceleration_continuous": true,
+    "boundary_point_count": 1,
+    "boundary_position_continuous": true,
+    "boundary_unique": true,
+    "boundary_velocity_continuous": true,
+    "duration": 72.0,
+    "dynamics_errors": [],
+    "metadata_hold_delay": 12.0,
+    "metadata_merge_time": 72.0,
+    "metadata_scheduled_departure": 12.0,
+    "passed": true,
+    "plan_end": 72.0,
+    "plan_start": 0.0,
+    "point_count": 361,
+    "source_ring": 400.0,
+    "start_acceleration_exact": true,
+    "start_position_exact": true,
+    "start_velocity_exact": true,
+    "uav_uid": 15
+  },
+  "normal_commits": [
+    {
+      "coordinated": true,
+      "end_time": 60.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5614645869200015,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 0.0,
+      "trajectory_plan_id": "9a5b428d-8b16-47cc-ac5d-6055ef7dbd35",
+      "uid": 11
+    },
+    {
+      "coordinated": true,
+      "end_time": 72.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.565188275490538,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 0.0,
+      "trajectory_plan_id": "e0528f11-e86f-4495-a66e-1129d3a6c4ad",
+      "uid": 2
+    },
+    {
+      "coordinated": true,
+      "end_time": 62.69613039923864,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 1,
+      "soc": 0.6015143562086441,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 0.0,
+      "trajectory_plan_id": "97db9a40-8bdf-4393-b5ca-937c343c5d39",
+      "uid": 25
+    },
+    {
+      "coordinated": true,
+      "end_time": 96.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6650592572138407,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 0.0,
+      "trajectory_plan_id": "2843b812-7197-4f6f-9630-f530f277958e",
+      "uid": 20
+    },
+    {
+      "coordinated": true,
+      "end_time": 84.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7232748569914749,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 0.0,
+      "trajectory_plan_id": "7831aae6-489c-4758-b5b8-3d80c2155acc",
+      "uid": 5
+    },
+    {
+      "coordinated": true,
+      "end_time": 94.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5592622653936496,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 10.0,
+      "trajectory_plan_id": "203aafba-a3dd-4229-8c6e-dc78b3aa61fe",
+      "uid": 4
+    },
+    {
+      "coordinated": true,
+      "end_time": 62.69613039923864,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 0,
+      "soc": 0.5982563708829829,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 12.0,
+      "trajectory_plan_id": "08211f6f-557a-428f-89b7-8ace356a0be4",
+      "uid": 26
+    },
+    {
+      "coordinated": true,
+      "end_time": 110.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5471435977530286,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 14.0,
+      "trajectory_plan_id": "26a68b57-e755-46eb-862d-fe0b39e8970a",
+      "uid": 21
+    },
+    {
+      "coordinated": true,
+      "end_time": 104.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7560957413601845,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 20.0,
+      "trajectory_plan_id": "d22f56d9-aa23-497a-ad12-78ff3a1f5e25",
+      "uid": 0
+    },
+    {
+      "coordinated": true,
+      "end_time": 74.69613039923865,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 5,
+      "soc": 0.6684875570221849,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 24.0,
+      "trajectory_plan_id": "050b3c88-fff3-4644-88cf-1206ce0a1038",
+      "uid": 28
+    },
+    {
+      "coordinated": true,
+      "end_time": 120.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.8115659704997328,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 24.0,
+      "trajectory_plan_id": "6d7addac-2531-450f-acfc-93bb2a5e8397",
+      "uid": 17
+    },
+    {
+      "coordinated": true,
+      "end_time": 114.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7659293682070061,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 30.0,
+      "trajectory_plan_id": "a6de044f-f42c-4fb6-b182-818c1f4b31cb",
+      "uid": 9
+    },
+    {
+      "coordinated": true,
+      "end_time": 124.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7487004267126482,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 40.0,
+      "trajectory_plan_id": "881b5197-5e68-4a36-a436-d7b44b7b0875",
+      "uid": 8
+    },
+    {
+      "coordinated": true,
+      "end_time": 134.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.8547497927580422,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 50.0,
+      "trajectory_plan_id": "f3dd2baf-b4a3-4b9d-a2a3-51bdbddba71c",
+      "uid": 12
+    },
+    {
+      "coordinated": true,
+      "end_time": 148.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5772773920589857,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 64.0,
+      "trajectory_plan_id": "dcff88ac-aebd-4e9a-a2d0-b3e9211f59ac",
+      "uid": 3
+    },
+    {
+      "coordinated": true,
+      "end_time": 126.69613039923865,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 4,
+      "soc": 0.6723149871531772,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 64.0,
+      "trajectory_plan_id": "539c3427-201f-43c8-98bc-4a7a1e72f8ad",
+      "uid": 29
+    },
+    {
+      "coordinated": true,
+      "end_time": 138.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5788814427075735,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 66.0,
+      "trajectory_plan_id": "0feb6397-bea8-4d27-99bb-b663c8594c0e",
+      "uid": 18
+    },
+    {
+      "coordinated": true,
+      "end_time": 138.69613039923868,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 2,
+      "soc": 0.7550950153431965,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 76.0,
+      "trajectory_plan_id": "613534c9-aede-457d-b237-82aaa02c464b",
+      "uid": 27
+    },
+    {
+      "coordinated": true,
+      "end_time": 150.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5207142014164622,
+      "tangential_speed_bias_mps": -4.0,
+      "time": 78.0,
+      "trajectory_plan_id": "d1041e5d-3817-4212-846f-f08d1d87caa1",
+      "uid": 2
+    },
+    {
+      "coordinated": true,
+      "end_time": 168.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5593338001650152,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 84.0,
+      "trajectory_plan_id": "22286f41-899a-49c8-be68-ff51e6fc1f85",
+      "uid": 7
+    },
+    {
+      "coordinated": true,
+      "end_time": 180.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6317685775840857,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 96.0,
+      "trajectory_plan_id": "2fffde69-cd5b-4858-8ebf-d3fb954343fe",
+      "uid": 1
+    },
+    {
+      "coordinated": true,
+      "end_time": 146.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 3,
+      "soc": 0.6075777757323578,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 96.0,
+      "trajectory_plan_id": "b6987b8c-4c31-442e-a408-f2f191c1dedd",
+      "uid": 20
+    },
+    {
+      "coordinated": true,
+      "end_time": 168.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6446417579430489,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 96.0,
+      "trajectory_plan_id": "3b49cff8-9840-4c4d-963f-8d0244df6b61",
+      "uid": 22
+    },
+    {
+      "coordinated": true,
+      "end_time": 190.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6223130447406715,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 106.0,
+      "trajectory_plan_id": "7c22a2d6-4858-466b-b9fb-344ad05ea136",
+      "uid": 13
+    },
+    {
+      "coordinated": true,
+      "end_time": 200.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.767515935411999,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 116.0,
+      "trajectory_plan_id": "68db06d4-7b94-4a8c-ba37-a182f90b5f7a",
+      "uid": 6
+    },
+    {
+      "coordinated": true,
+      "end_time": 210.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7623355337586508,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 126.0,
+      "trajectory_plan_id": "97971d5e-f890-44a7-8a2c-3d405ae46570",
+      "uid": 10
+    },
+    {
+      "coordinated": true,
+      "end_time": 178.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 5,
+      "soc": 0.4776621162715456,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 128.0,
+      "trajectory_plan_id": "0b83a1ff-6a04-4693-8a84-eac51aa3df37",
+      "uid": 21
+    },
+    {
+      "coordinated": true,
+      "end_time": 224.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6462970792136953,
+      "tangential_speed_bias_mps": -4.0,
+      "time": 128.0,
+      "trajectory_plan_id": "55541658-20b1-4f8e-9dd5-1cbad82252a6",
+      "uid": 5
+    },
+    {
+      "coordinated": true,
+      "end_time": 190.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 0,
+      "soc": 0.7407511556849165,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 140.0,
+      "trajectory_plan_id": "02d86baf-51b3-464e-a53b-381613d72650",
+      "uid": 17
+    },
+    {
+      "coordinated": true,
+      "end_time": 236.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.8031053483135959,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 140.0,
+      "trajectory_plan_id": "356d6619-6ea7-4680-be37-a50b69bdba84",
+      "uid": 12
+    },
+    {
+      "coordinated": true,
+      "end_time": 214.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 1,
+      "soc": 0.5280666278927572,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 152.0,
+      "trajectory_plan_id": "3524135c-0e3c-4c1a-98a9-2fc75980b9a4",
+      "uid": 18
+    },
+    {
+      "coordinated": true,
+      "end_time": 248.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6764512969157382,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 152.0,
+      "trajectory_plan_id": "cb498f14-9405-43a2-bd51-135d06f8f52f",
+      "uid": 0
+    },
+    {
+      "coordinated": true,
+      "end_time": 242.0,
+      "from_phase": "ring_outer",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.7453217077539394,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 158.0,
+      "trajectory_plan_id": "ae007c95-479d-438e-aa86-a623d0283dcc",
+      "uid": 14
+    },
+    {
+      "coordinated": true,
+      "end_time": 230.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 2,
+      "soc": 0.4592327199349792,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 180.0,
+      "trajectory_plan_id": "0ed69639-9ae4-4897-b2dc-deaf4a437bf3",
+      "uid": 2
+    },
+    {
+      "coordinated": true,
+      "end_time": 276.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5841241331396394,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 180.0,
+      "trajectory_plan_id": "caf3220b-9d8e-46fe-a4ee-0ba0e0131514",
+      "uid": 1
+    },
+    {
+      "coordinated": true,
+      "end_time": 254.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 3,
+      "soc": 0.5871602764615659,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 192.0,
+      "trajectory_plan_id": "5af2247c-894e-4d94-a646-2ad3ef0cb621",
+      "uid": 22
+    },
+    {
+      "coordinated": true,
+      "end_time": 288.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6557226489348686,
+      "tangential_speed_bias_mps": -4.0,
+      "time": 192.0,
+      "trajectory_plan_id": "04cd1496-a265-4ff9-8f03-0ad6cb3c8d70",
+      "uid": 8
+    },
+    {
+      "coordinated": true,
+      "end_time": 286.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 4,
+      "soc": 0.5888155977322123,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 224.0,
+      "trajectory_plan_id": "49c722de-deb7-4030-b629-2eae2ad737e8",
+      "uid": 5
+    },
+    {
+      "coordinated": true,
+      "end_time": 298.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.4173164387718518,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 226.0,
+      "trajectory_plan_id": "40639c47-ff39-43c7-ad9d-0051f6db0d0e",
+      "uid": 11
+    },
+    {
+      "coordinated": true,
+      "end_time": 300.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 5,
+      "soc": 0.7442905334987796,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 238.0,
+      "trajectory_plan_id": "4f5c4310-9aa6-464c-b5cd-1f957f2354cf",
+      "uid": 12
+    },
+    {
+      "coordinated": true,
+      "end_time": 312.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.41368540137452964,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 240.0,
+      "trajectory_plan_id": "607fca84-d7cf-4b7a-bb75-695f29430093",
+      "uid": 15
+    },
+    {
+      "coordinated": true,
+      "end_time": 330.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 0,
+      "soc": 0.6136364821009219,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 256.0,
+      "trajectory_plan_id": "a742a596-a7b5-4908-9931-5c49dff5a2bf",
+      "uid": 0
+    },
+    {
+      "coordinated": true,
+      "end_time": 328.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6840244226475379,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 256.0,
+      "trajectory_plan_id": "ca5ff0e2-21fc-4cfc-99cf-97f8fe194ead",
+      "uid": 10
+    },
+    {
+      "coordinated": true,
+      "end_time": 350.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 1,
+      "soc": 0.5186426516581564,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 288.0,
+      "trajectory_plan_id": "9ce99b27-126f-4183-b25e-f05d98123f51",
+      "uid": 1
+    },
+    {
+      "coordinated": true,
+      "end_time": 348.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.6612048243008861,
+      "tangential_speed_bias_mps": -4.0,
+      "time": 288.0,
+      "trajectory_plan_id": "690e3e38-c892-47ff-abde-8aa3d8134ef3",
+      "uid": 6
+    },
+    {
+      "coordinated": true,
+      "end_time": 382.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 4,
+      "soc": 0.3611682906237022,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 320.0,
+      "trajectory_plan_id": "d5931bab-46d3-4072-bd75-00b9636d7e45",
+      "uid": 11
+    },
+    {
+      "coordinated": true,
+      "end_time": 416.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.41035602238723556,
+      "tangential_speed_bias_mps": -4.0,
+      "time": 320.0,
+      "trajectory_plan_id": "ca313fa9-6bea-450c-8705-6bd8e4cf450b",
+      "uid": 7
+    },
+    {
+      "coordinated": true,
+      "end_time": 382.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 5,
+      "soc": 0.3588705865597133,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 332.0,
+      "trajectory_plan_id": "149eae5a-d75f-48c6-ade9-14746adaa20b",
+      "uid": 15
+    },
+    {
+      "coordinated": true,
+      "end_time": 428.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.4800019336295586,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 332.0,
+      "trajectory_plan_id": "6a40bb86-3f52-4149-9ede-884c124d1f1b",
+      "uid": 13
+    },
+    {
+      "coordinated": true,
+      "end_time": 434.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 0,
+      "soc": 0.6197233428194031,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 360.0,
+      "trajectory_plan_id": "2541dca6-a2b9-4c9e-a138-ba7642404fbb",
+      "uid": 6
+    },
+    {
+      "coordinated": true,
+      "end_time": 446.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5529515904292265,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 362.0,
+      "trajectory_plan_id": "b4c8bcdb-023d-441f-9e8b-84eb4c54701b",
+      "uid": 9
+    },
+    {
+      "coordinated": true,
+      "end_time": 472.69613039923854,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 1,
+      "soc": 0.5878762744993883,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 410.0,
+      "trajectory_plan_id": "f09a757a-0505-4eba-8e4d-0940879c0cfe",
+      "uid": 10
+    },
+    {
+      "coordinated": true,
+      "end_time": 472.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.3536329476145394,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 412.0,
+      "trajectory_plan_id": "cb204fb1-5e83-4ef6-b02f-822ba5588ea1",
+      "uid": 3
+    },
+    {
+      "coordinated": true,
+      "end_time": 490.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.3948368231492388,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 418.0,
+      "trajectory_plan_id": "32b03f6c-c057-467d-b11d-31b18775abb3",
+      "uid": 19
+    },
+    {
+      "coordinated": true,
+      "end_time": 524.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 2,
+      "soc": 0.391853785481409,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 474.0,
+      "trajectory_plan_id": "64ff4d76-da6c-4c26-8b07-a1b1bb5078c9",
+      "uid": 13
+    },
+    {
+      "coordinated": true,
+      "end_time": 556.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5363439299761598,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 484.0,
+      "trajectory_plan_id": "5cbe4203-5f9e-4e2f-b213-65a250cef328",
+      "uid": 14
+    },
+    {
+      "coordinated": true,
+      "end_time": 544.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 0,
+      "soc": 0.4609078341200523,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 494.0,
+      "trajectory_plan_id": "7b00e2d3-d712-4b10-aaa3-4c4f751dc287",
+      "uid": 8
+    },
+    {
+      "coordinated": true,
+      "end_time": 598.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.46828593478163066,
+      "tangential_speed_bias_mps": -8.0,
+      "time": 502.0,
+      "trajectory_plan_id": "c9180ad4-7bab-4c66-9493-f5169cf9a136",
+      "uid": 24
+    },
+    {
+      "coordinated": true,
+      "end_time": 568.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 4,
+      "soc": 0.4634701089477435,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 506.0,
+      "trajectory_plan_id": "73afc0c0-c10f-47fd-8c4d-8af6dba89e91",
+      "uid": 9
+    },
+    {
+      "coordinated": true,
+      "end_time": 596.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 2,
+      "soc": 0.32402200833442246,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 534.0,
+      "trajectory_plan_id": "a89b89ef-bbe7-448e-9c1a-d0f07536fe89",
+      "uid": 19
+    },
+    {
+      "coordinated": true,
+      "end_time": 632.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 1,
+      "soc": 0.4855291151613434,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 570.0,
+      "trajectory_plan_id": "6364450e-fc3c-4445-b7d0-8bc44fb6cfcf",
+      "uid": 14
+    },
+    {
+      "coordinated": true,
+      "end_time": 702.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 4,
+      "soc": 0.4108044533001477,
+      "tangential_speed_bias_mps": 0.0,
+      "time": 598.0,
+      "trajectory_plan_id": "cc33e807-654e-4af5-b284-187c87ff3bdc",
+      "uid": 24
+    }
+  ],
+  "outcome_counts": {
+    "completed": 25,
+    "emergency_landed": 4,
+    "failed_energy": 1
+  },
+  "pair_focus_commits": [
+    {
+      "committed_plan": {
+        "end_time": 110.0,
+        "mode": "ring_transfer",
+        "plan_id": "26a68b57-e755-46eb-862d-fe0b39e8970a",
+        "source": "middle",
+        "source_ring": "middle",
+        "start_time": 14.0,
+        "target": "inner",
+        "target_phase": "ring_inner",
+        "target_ring": "inner",
+        "trajectory_hash": "387dc3ff73cf97a57211b78cc668d2aca3960183b6669ea26f40eb7669975717"
+      },
+      "coordinated": true,
+      "end_time": 110.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.5471435977530286,
+      "state": {
+        "arrival_id": 21,
+        "assigned_lz": null,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 15.0,
+        "energy_remaining": 819.7153966295429,
+        "phase": "transfer_m2i",
+        "phase_entry_time": 14.0,
+        "plan_end_time": 110.0,
+        "position": [
+          -76.51660759251024,
+          -392.61330690965355,
+          70.0
+        ],
+        "ring_role": null,
+        "soc": 0.5464769310863619,
+        "speed": 20.000000000000004,
+        "trajectory_plan_id": "26a68b57-e755-46eb-862d-fe0b39e8970a",
+        "uid": 21,
+        "velocity": [
+          19.63066534548268,
+          -3.8258303796255118,
+          0.0
+        ]
+      },
+      "tangential_speed_bias_mps": 0.0,
+      "time": 14.0,
+      "trajectory_plan_id": "26a68b57-e755-46eb-862d-fe0b39e8970a",
+      "uid": 21
+    },
+    {
+      "committed_plan": {
+        "end_time": 178.6961303992387,
+        "mode": "final_approach",
+        "plan_id": "0b83a1ff-6a04-4693-8a84-eac51aa3df37",
+        "source": "inner",
+        "source_ring": "inner",
+        "start_time": 128.0,
+        "target": "landing",
+        "target_phase": "landing",
+        "target_ring": null,
+        "trajectory_hash": "0f7941ca22f6522c50a6e596193e3a3d414d4f5af1610f6b91529e8a6df3e7fc"
+      },
+      "coordinated": true,
+      "end_time": 178.6961303992387,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 5,
+      "soc": 0.4776621162715456,
+      "state": {
+        "arrival_id": 21,
+        "assigned_lz": 5,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 119.222222222222,
+        "energy_remaining": 715.4931744073184,
+        "phase": "final",
+        "phase_entry_time": 128.0,
+        "plan_end_time": 178.6961303992387,
+        "position": [
+          106.28767629177698,
+          -169.42863504055583,
+          40.0
+        ],
+        "ring_role": null,
+        "soc": 0.47699544960487894,
+        "speed": 15.891923083464668,
+        "trajectory_plan_id": "0b83a1ff-6a04-4693-8a84-eac51aa3df37",
+        "uid": 21,
+        "velocity": [
+          13.473174715053878,
+          8.427738865697611,
+          0.0
+        ]
+      },
+      "tangential_speed_bias_mps": 0.0,
+      "time": 128.0,
+      "trajectory_plan_id": "0b83a1ff-6a04-4693-8a84-eac51aa3df37",
+      "uid": 21
+    },
+    {
+      "committed_plan": {
+        "end_time": 490.0,
+        "mode": "ring_transfer",
+        "plan_id": "32b03f6c-c057-467d-b11d-31b18775abb3",
+        "source": "middle",
+        "source_ring": "middle",
+        "start_time": 418.0,
+        "target": "inner",
+        "target_phase": "ring_inner",
+        "target_ring": "inner",
+        "trajectory_hash": "9446f1e779bc10e2f63ef4767dca6e360b277937b588e229b85455bd7b898937"
+      },
+      "coordinated": true,
+      "end_time": 490.0,
+      "from_phase": "ring_middle",
+      "kind": "normal",
+      "pad_id": null,
+      "soc": 0.3948368231492388,
+      "state": {
+        "arrival_id": 19,
+        "assigned_lz": null,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 419.0,
+        "energy_remaining": 591.2552347238582,
+        "phase": "transfer_m2i",
+        "phase_entry_time": 418.0,
+        "plan_end_time": 490.0,
+        "position": [
+          -39.404299384858554,
+          -398.05439476281185,
+          70.0
+        ],
+        "ring_role": null,
+        "soc": 0.3941701564825721,
+        "speed": 20.0,
+        "trajectory_plan_id": "32b03f6c-c057-467d-b11d-31b18775abb3",
+        "uid": 19,
+        "velocity": [
+          19.90271973814059,
+          -1.970214969242928,
+          0.0
+        ]
+      },
+      "tangential_speed_bias_mps": 0.0,
+      "time": 418.0,
+      "trajectory_plan_id": "32b03f6c-c057-467d-b11d-31b18775abb3",
+      "uid": 19
+    },
+    {
+      "committed_plan": {
+        "end_time": 596.6961303992389,
+        "mode": "final_approach",
+        "plan_id": "a89b89ef-bbe7-448e-9c1a-d0f07536fe89",
+        "source": "inner",
+        "source_ring": "inner",
+        "start_time": 534.0,
+        "target": "landing",
+        "target_phase": "landing",
+        "target_ring": null,
+        "trajectory_hash": "a7a9ea33af2d54efcc0a6de99b515158aa25b509125d30c7f0efc76026f542d9"
+      },
+      "coordinated": true,
+      "end_time": 596.6961303992389,
+      "from_phase": "ring_inner",
+      "kind": "normal",
+      "pad_id": 2,
+      "soc": 0.32402200833442246,
+      "state": {
+        "arrival_id": 19,
+        "assigned_lz": 2,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 525.222222222222,
+        "energy_remaining": 485.0330125016337,
+        "phase": "final",
+        "phase_entry_time": 534.0,
+        "plan_end_time": 596.6961303992389,
+        "position": [
+          199.89199452858267,
+          -7.334233424599595,
+          40.0
+        ],
+        "ring_role": null,
+        "soc": 0.3233553416677558,
+        "speed": 15.916477264958305,
+        "trajectory_plan_id": "a89b89ef-bbe7-448e-9c1a-d0f07536fe89",
+        "uid": 19,
+        "velocity": [
+          0.6600368522135713,
+          15.902785915670707,
+          0.0
+        ]
+      },
+      "tangential_speed_bias_mps": 0.0,
+      "time": 534.0,
+      "trajectory_plan_id": "a89b89ef-bbe7-448e-9c1a-d0f07536fe89",
+      "uid": 19
+    }
+  ],
+  "progress_path": "results\\flow_dev_841501_hold_prefix_ablation.json.progress.json",
+  "release_row_reason_counts": {
+    "legacy": {}
+  },
+  "safety_error_diagnostic": null,
+  "safety_error_pair_context": null,
+  "safety_summary": {
+    "checked_executed_plan_hash_mismatches": 0,
+    "collisions": 0,
+    "conflict_event_count": 0,
+    "first_conflict": null,
+    "hard_separation_violations": 0,
+    "joint_safety_fail_closed": 0,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "nmac": 0,
+    "operational_buffer_entries": 0,
+    "requested": 30,
+    "resolved": 30,
+    "safety_error": null,
+    "safety_interventions": 0,
+    "shield_fail_closed": 0,
+    "unresolved": 0
+  },
+  "seed": 841501,
+  "sim_time_seconds": 862.0,
+  "single_factor_ablation": {
+    "duration_mapping": "D seconds = (D - 60) seconds source-ring hold prefix + 60 seconds original flow transfer",
+    "durations_seconds": [
+      60.0,
+      72.0,
+      84.0,
+      96.0
+    ],
+    "emergency_trigger_soc_unchanged": 0.4,
+    "hold_current_speed_to_nominal_speed_mps": 20.0,
+    "method": "process_local_FlowTrajectoryGenerator.ring_transfer_wrapper",
+    "name": "m2i_hold_prefix_shape",
+    "o2m_original_method": true,
+    "production_source_modified": false,
+    "safety_energy_queue_guards_unchanged": true,
+    "target_only": "ring_inner",
+    "transfer_bias_forwarded_to_original_leg": true,
+    "validity": "valid_process_local_ablation"
+  },
+  "state_at_552": {
+    "pads": [
+      {
+        "expected_release_at": null,
+        "id": 0,
+        "occupied_by": 8,
+        "reservation_start": null,
+        "reserved_by": null,
+        "service_remaining": 23.0,
+        "status": "occupied"
+      },
+      {
+        "expected_release_at": null,
+        "id": 1,
+        "occupied_by": null,
+        "reservation_start": null,
+        "reserved_by": null,
+        "service_remaining": 0.0,
+        "status": "free"
+      },
+      {
+        "expected_release_at": 657.6961303992389,
+        "id": 2,
+        "occupied_by": null,
+        "reservation_start": 534.0,
+        "reserved_by": 19,
+        "service_remaining": 0.0,
+        "status": "reserved"
+      },
+      {
+        "expected_release_at": null,
+        "id": 3,
+        "occupied_by": 3,
+        "reservation_start": null,
+        "reserved_by": null,
+        "service_remaining": 23.0,
+        "status": "occupied"
+      },
+      {
+        "expected_release_at": 599.6961303992389,
+        "id": 4,
+        "occupied_by": null,
+        "reservation_start": 506.0,
+        "reserved_by": 9,
+        "service_remaining": 0.0,
+        "status": "reserved"
+      },
+      {
+        "expected_release_at": null,
+        "id": 5,
+        "occupied_by": 7,
+        "reservation_start": null,
+        "reserved_by": null,
+        "service_remaining": 59.0,
+        "status": "occupied"
+      }
+    ],
+    "time": 552.0,
+    "uavs": [
+      {
+        "arrival_id": 0,
+        "assigned_lz": 0,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 312.0010410213339,
+        "energy_remaining": 842.1425710189387,
+        "phase": "completed",
+        "phase_entry_time": 361.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5614283806792925,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 0,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 1,
+        "assigned_lz": 1,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 331.7010410213336,
+        "energy_remaining": 711.9518253547903,
+        "phase": "completed",
+        "phase_entry_time": 411.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.4746345502365269,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 1,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 2,
+        "assigned_lz": 2,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 212.87881879911143,
+        "energy_remaining": 634.903594436691,
+        "phase": "completed",
+        "phase_entry_time": 261.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.42326906295779404,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 2,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 3,
+        "assigned_lz": 3,
+        "committed": false,
+        "emergency_landing": true,
+        "energy_consumed": 525.767707688,
+        "energy_remaining": 404.148380400474,
+        "phase": "service",
+        "phase_entry_time": 545.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.26943225360031603,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 3,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 4,
+        "assigned_lz": null,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 539.4666666666667,
+        "energy_remaining": 309.426731423805,
+        "phase": "ring_middle",
+        "phase_entry_time": 94.0,
+        "plan_end_time": null,
+        "position": [
+          -386.67443751920933,
+          -102.38593345378577,
+          70.0
+        ],
+        "ring_role": "middle",
+        "soc": 0.20628448761587,
+        "speed": 20.0,
+        "trajectory_plan_id": null,
+        "uid": 4,
+        "velocity": [
+          5.119296672689289,
+          -19.333721875960467,
+          0.0
+        ]
+      },
+      {
+        "arrival_id": 5,
+        "assigned_lz": 4,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 267.83437435466703,
+        "energy_remaining": 817.077911132541,
+        "phase": "completed",
+        "phase_entry_time": 317.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.544718607421694,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 5,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 6,
+        "assigned_lz": 0,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 415.96770768800025,
+        "energy_remaining": 851.3061954299937,
+        "phase": "completed",
+        "phase_entry_time": 495.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5675374636199958,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 6,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 7,
+        "assigned_lz": 5,
+        "committed": false,
+        "emergency_landing": true,
+        "energy_consumed": 471.96770768800025,
+        "energy_remaining": 451.0329925595169,
+        "phase": "service",
+        "phase_entry_time": 491.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.3006886617063446,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 7,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 8,
+        "assigned_lz": 0,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 525.6343743546668,
+        "energy_remaining": 637.4162657143005,
+        "phase": "service",
+        "phase_entry_time": 545.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.424944177142867,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 8,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 9,
+        "assigned_lz": 4,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 530.3222222222216,
+        "energy_remaining": 648.571830088282,
+        "phase": "final",
+        "phase_entry_time": 506.0,
+        "plan_end_time": 568.6961303992389,
+        "position": [
+          0.17304150651506472,
+          40.09137596382962,
+          40.0
+        ],
+        "ring_role": null,
+        "soc": 0.43238122005885465,
+        "speed": 0.28643522250221526,
+        "trajectory_plan_id": "73afc0c0-c10f-47fd-8c4d-8af6dba89e91",
+        "uid": 9,
+        "velocity": [
+          -0.2539403562678433,
+          -0.13251200756329368,
+          0.0
+        ]
+      },
+      {
+        "arrival_id": 10,
+        "assigned_lz": 1,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 453.7010410213336,
+        "energy_remaining": 815.8022596166381,
+        "phase": "completed",
+        "phase_entry_time": 533.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5438681730777588,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 10,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 11,
+        "assigned_lz": 4,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 366.52326324355624,
+        "energy_remaining": 475.6736171364413,
+        "phase": "completed",
+        "phase_entry_time": 503.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.31711574475762755,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 11,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 12,
+        "assigned_lz": 5,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 281.76770768800026,
+        "energy_remaining": 1050.3569814490565,
+        "phase": "completed",
+        "phase_entry_time": 331.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.7002379876327044,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 12,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 13,
+        "assigned_lz": 2,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 505.60104102133397,
+        "energy_remaining": 533.8685260896688,
+        "phase": "completed",
+        "phase_entry_time": 535.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.35591235072644584,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 13,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 14,
+        "assigned_lz": null,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 529.6888888888892,
+        "energy_remaining": 746.2936727420151,
+        "phase": "transfer_m2i",
+        "phase_entry_time": 484.0,
+        "plan_end_time": 556.0,
+        "position": [
+          123.89712260961795,
+          -157.68244852771133,
+          40.080237037037016
+        ],
+        "ring_role": null,
+        "soc": 0.4975291151613434,
+        "speed": 15.519962637696807,
+        "trajectory_plan_id": "5cbe4203-5f9e-4e2f-b213-65a250cef328",
+        "uid": 14,
+        "velocity": [
+          11.960491175183577,
+          9.890191662645401,
+          -0.058074074074070156
+        ]
+      },
+      {
+        "arrival_id": 15,
+        "assigned_lz": 5,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 376.20104102133394,
+        "energy_remaining": 484.32706104045803,
+        "phase": "completed",
+        "phase_entry_time": 413.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.32288470736030533,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 15,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 16,
+        "assigned_lz": 2,
+        "committed": false,
+        "emergency_landing": true,
+        "energy_consumed": 442.4532740103911,
+        "energy_remaining": 432.4700880271212,
+        "phase": "completed",
+        "phase_entry_time": 475.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.2883133920180808,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 16,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 17,
+        "assigned_lz": 0,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 184.2010410213336,
+        "energy_remaining": 1057.1479147282614,
+        "phase": "completed",
+        "phase_entry_time": 221.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.7047652764855076,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 17,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 18,
+        "assigned_lz": 1,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 208.33437435466692,
+        "energy_remaining": 725.9877897066914,
+        "phase": "completed",
+        "phase_entry_time": 275.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.4839918598044609,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 18,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 19,
+        "assigned_lz": 2,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 542.222222222222,
+        "energy_remaining": 468.0330125016337,
+        "phase": "final",
+        "phase_entry_time": 534.0,
+        "plan_end_time": 596.6961303992389,
+        "position": [
+          133.0825732020698,
+          126.4243027078107,
+          40.0
+        ],
+        "ring_role": null,
+        "soc": 0.3120220083344225,
+        "speed": 5.608258307249617,
+        "trajectory_plan_id": "a89b89ef-bbe7-448e-9c1a-d0f07536fe89",
+        "uid": 19,
+        "velocity": [
+          -4.893139608518886,
+          -2.7403915801173353,
+          0.0
+        ]
+      },
+      {
+        "arrival_id": 20,
+        "assigned_lz": 3,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 140.2010410213339,
+        "energy_remaining": 857.3878447994256,
+        "phase": "completed",
+        "phase_entry_time": 177.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5715918965329504,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 20,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 21,
+        "assigned_lz": 5,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 172.16770768800032,
+        "energy_remaining": 662.5476889415406,
+        "phase": "completed",
+        "phase_entry_time": 239.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.4416984592943604,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 21,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 22,
+        "assigned_lz": 3,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 248.26770768800026,
+        "energy_remaining": 814.694929226571,
+        "phase": "completed",
+        "phase_entry_time": 375.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.543129952817714,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 22,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 23,
+        "assigned_lz": 3,
+        "committed": false,
+        "emergency_landing": true,
+        "energy_consumed": 493.9399406770575,
+        "energy_remaining": 428.35570716818245,
+        "phase": "completed",
+        "phase_entry_time": 483.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.28557047144545494,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 23,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 24,
+        "assigned_lz": null,
+        "committed": true,
+        "emergency_landing": false,
+        "energy_consumed": 550.666666666667,
+        "energy_remaining": 653.762235505779,
+        "phase": "transfer_m2i",
+        "phase_entry_time": 502.0,
+        "plan_end_time": 598.0,
+        "position": [
+          -82.18982972065933,
+          373.724285451387,
+          67.39828148148136
+        ],
+        "ring_role": null,
+        "soc": 0.435841490337186,
+        "speed": 15.882674975057608,
+        "trajectory_plan_id": "c9180ad4-7bab-4c66-9493-f5169cf9a136",
+        "uid": 24,
+        "velocity": [
+          -14.506508331723373,
+          -6.466883359467801,
+          -0.4800185185185295
+        ]
+      },
+      {
+        "arrival_id": 25,
+        "assigned_lz": 1,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 66.01215213244504,
+        "energy_remaining": 836.2593821805218,
+        "phase": "completed",
+        "phase_entry_time": 123.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5575062547870145,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 25,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 26,
+        "assigned_lz": 0,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 65.9788187991117,
+        "energy_remaining": 843.4057375253633,
+        "phase": "completed",
+        "phase_entry_time": 123.0,
+        "plan_end_time": null,
+        "position": [
+          -80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.5622704916835756,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 26,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 27,
+        "assigned_lz": 2,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 141.97881879911174,
+        "energy_remaining": 1066.6637042156815,
+        "phase": "completed",
+        "phase_entry_time": 169.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          -40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.7111091361437877,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 27,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 28,
+        "assigned_lz": 5,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 78.01215213244512,
+        "energy_remaining": 948.719183400833,
+        "phase": "completed",
+        "phase_entry_time": 105.0,
+        "plan_end_time": null,
+        "position": [
+          80.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.6324794556005553,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 28,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      {
+        "arrival_id": 29,
+        "assigned_lz": 4,
+        "committed": false,
+        "emergency_landing": false,
+        "energy_consumed": 130.01215213244518,
+        "energy_remaining": 942.4603285973213,
+        "phase": "completed",
+        "phase_entry_time": 157.0,
+        "plan_end_time": null,
+        "position": [
+          0.0,
+          40.0,
+          0.0
+        ],
+        "ring_role": null,
+        "soc": 0.6283068857315476,
+        "speed": 0.0,
+        "trajectory_plan_id": null,
+        "uid": 29,
+        "velocity": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      }
+    ]
+  },
+  "steps": 862,
+  "stop_reason": "terminal",
+  "telemetry": {
+    "admissibility_rejections": 0,
+    "arrivals_admitted": 0,
+    "checked_executed_plan_hash_mismatches": 0,
+    "checked_executed_plan_matches": 66,
+    "checked_executed_plan_samples": 24728,
+    "collision_exposure_steps": 0,
+    "collisions": 0,
+    "emergency_attempts": 177,
+    "emergency_blocked_dynamics": 912,
+    "emergency_blocked_energy": 510,
+    "emergency_blocked_lz": 91,
+    "emergency_blocked_safety": 37,
+    "emergency_blocked_slack": 3,
+    "emergency_committed": 4,
+    "emergency_energy_guard_rejections": 0,
+    "emergency_lz_priority_rejections": 0,
+    "emergency_touchdowns": 4,
+    "energy_reachability_checks": 1952,
+    "energy_reachability_negative_budgets": 1713,
+    "final_busy_steps": 700,
+    "final_concurrency_step_sum": 1508,
+    "final_overcapacity_steps": 0,
+    "flow_emergency_redirects": 4,
+    "free_lz_step_sum": 1880,
+    "future_release_reservations": 0,
+    "geometry_updates": 0,
+    "hard_separation_exposure_steps": 0,
+    "hard_separation_violations": 0,
+    "joint_backup_uses": 0,
+    "joint_safety_checks": 1796,
+    "joint_safety_corrections": 0,
+    "joint_safety_fail_closed": 0,
+    "joint_search_candidates": 0,
+    "joint_search_components": 0,
+    "joint_search_pruned": 0,
+    "joint_unrecoverable_components": 0,
+    "lz_assignment_distance_sum": 5386.952782870295,
+    "lz_assignment_regret_sum": 783.5875099127511,
+    "lz_assignments": 25,
+    "lz_idle_with_inner_demand_steps": 93,
+    "lz_nearest_distance_sum": 4603.365272957544,
+    "max_concurrent_final": 3,
+    "merge_time_modified": 0,
+    "minimum_actual_separation": 80.0,
+    "minimum_swept_separation": 80.0,
+    "nmac": 0,
+    "nmac_exposure_steps": 0,
+    "operational_buffer_entries": 0,
+    "operational_buffer_exposure_steps": 0,
+    "operational_buffer_takeovers": 0,
+    "recursive_feasibility_checks": 862,
+    "recursive_feasibility_rejections": 0,
+    "release_approved": 62,
+    "release_rejected": 10925,
+    "repair_candidates_checked": 0,
+    "repair_used": 0,
+    "runtime_shortlist_candidates_checked": 0,
+    "runtime_shortlist_exhausted": 0,
+    "runtime_shortlist_fallback_selected": 0,
+    "runtime_traffic_interventions": 0,
+    "runtime_traffic_repair_magnitude": 0.0,
+    "safety_interventions": 0,
+    "shield_broad_phase_rejected": 60443,
+    "shield_correction_magnitude": 0.0,
+    "shield_fail_closed": 0,
+    "shield_interventions": 0,
+    "shield_narrow_phase_checked": 0,
+    "trajectory_infeasible_candidates": 0
+  },
+  "touchdowns": [
+    {
+      "emergency": false,
+      "pad_id": 1,
+      "plan_end_time": 62.69613039923864,
+      "soc": 0.5575062547870145,
+      "time": 63.0,
+      "uid": 25
+    },
+    {
+      "emergency": false,
+      "pad_id": 0,
+      "plan_end_time": 62.69613039923864,
+      "soc": 0.5622704916835756,
+      "time": 63.0,
+      "uid": 26
+    },
+    {
+      "emergency": false,
+      "pad_id": 5,
+      "plan_end_time": 74.69613039923865,
+      "soc": 0.6324794556005553,
+      "time": 75.0,
+      "uid": 28
+    },
+    {
+      "emergency": false,
+      "pad_id": 4,
+      "plan_end_time": 126.69613039923865,
+      "soc": 0.6283068857315476,
+      "time": 127.0,
+      "uid": 29
+    },
+    {
+      "emergency": false,
+      "pad_id": 2,
+      "plan_end_time": 138.69613039923868,
+      "soc": 0.7111091361437877,
+      "time": 139.0,
+      "uid": 27
+    },
+    {
+      "emergency": false,
+      "pad_id": 3,
+      "plan_end_time": 146.6961303992387,
+      "soc": 0.5715918965329504,
+      "time": 147.0,
+      "uid": 20
+    },
+    {
+      "emergency": false,
+      "pad_id": 5,
+      "plan_end_time": 178.6961303992387,
+      "soc": 0.4416984592943604,
+      "time": 179.0,
+      "uid": 21
+    },
+    {
+      "emergency": false,
+      "pad_id": 0,
+      "plan_end_time": 190.6961303992387,
+      "soc": 0.7047652764855076,
+      "time": 191.0,
+      "uid": 17
+    },
+    {
+      "emergency": false,
+      "pad_id": 1,
+      "plan_end_time": 214.6961303992387,
+      "soc": 0.4839918598044609,
+      "time": 215.0,
+      "uid": 18
+    },
+    {
+      "emergency": false,
+      "pad_id": 2,
+      "plan_end_time": 230.6961303992387,
+      "soc": 0.42326906295779404,
+      "time": 231.0,
+      "uid": 2
+    },
+    {
+      "emergency": false,
+      "pad_id": 3,
+      "plan_end_time": 254.6961303992387,
+      "soc": 0.543129952817714,
+      "time": 255.0,
+      "uid": 22
+    },
+    {
+      "emergency": false,
+      "pad_id": 4,
+      "plan_end_time": 286.69613039923854,
+      "soc": 0.544718607421694,
+      "time": 287.0,
+      "uid": 5
+    },
+    {
+      "emergency": false,
+      "pad_id": 5,
+      "plan_end_time": 300.69613039923854,
+      "soc": 0.7002379876327044,
+      "time": 301.0,
+      "uid": 12
+    },
+    {
+      "emergency": false,
+      "pad_id": 0,
+      "plan_end_time": 330.69613039923854,
+      "soc": 0.5614283806792925,
+      "time": 331.0,
+      "uid": 0
+    },
+    {
+      "emergency": false,
+      "pad_id": 1,
+      "plan_end_time": 350.69613039923854,
+      "soc": 0.4746345502365269,
+      "time": 351.0,
+      "uid": 1
+    },
+    {
+      "emergency": false,
+      "pad_id": 4,
+      "plan_end_time": 382.69613039923854,
+      "soc": 0.31711574475762755,
+      "time": 383.0,
+      "uid": 11
+    },
+    {
+      "emergency": false,
+      "pad_id": 5,
+      "plan_end_time": 382.69613039923854,
+      "soc": 0.32288470736030533,
+      "time": 383.0,
+      "uid": 15
+    },
+    {
+      "emergency": true,
+      "pad_id": 2,
+      "plan_end_time": 414.8342348660482,
+      "soc": 0.2883133920180808,
+      "time": 415.0,
+      "uid": 16
+    },
+    {
+      "emergency": false,
+      "pad_id": 0,
+      "plan_end_time": 434.69613039923854,
+      "soc": 0.5675374636199958,
+      "time": 435.0,
+      "uid": 6
+    },
+    {
+      "emergency": false,
+      "pad_id": 1,
+      "plan_end_time": 472.69613039923854,
+      "soc": 0.5438681730777588,
+      "time": 473.0,
+      "uid": 10
+    },
+    {
+      "emergency": true,
+      "pad_id": 3,
+      "plan_end_time": 472.8342348660482,
+      "soc": 0.28557047144545494,
+      "time": 473.0,
+      "uid": 23
+    },
+    {
+      "emergency": true,
+      "pad_id": 5,
+      "plan_end_time": 490.69613039923854,
+      "soc": 0.3006886617063446,
+      "time": 491.0,
+      "uid": 7
+    },
+    {
+      "emergency": false,
+      "pad_id": 2,
+      "plan_end_time": 524.6961303992389,
+      "soc": 0.35591235072644584,
+      "time": 525.0,
+      "uid": 13
+    },
+    {
+      "emergency": true,
+      "pad_id": 3,
+      "plan_end_time": 544.6961303992389,
+      "soc": 0.26943225360031603,
+      "time": 545.0,
+      "uid": 3
+    },
+    {
+      "emergency": false,
+      "pad_id": 0,
+      "plan_end_time": 544.6961303992389,
+      "soc": 0.424944177142867,
+      "time": 545.0,
+      "uid": 8
+    },
+    {
+      "emergency": false,
+      "pad_id": 4,
+      "plan_end_time": 568.6961303992389,
+      "soc": 0.4193953408594471,
+      "time": 569.0,
+      "uid": 9
+    },
+    {
+      "emergency": false,
+      "pad_id": 2,
+      "plan_end_time": 596.6961303992389,
+      "soc": 0.2799916846905698,
+      "time": 597.0,
+      "uid": 19
+    },
+    {
+      "emergency": false,
+      "pad_id": 1,
+      "plan_end_time": 632.6961303992389,
+      "soc": 0.4415210137397137,
+      "time": 633.0,
+      "uid": 14
+    },
+    {
+      "emergency": false,
+      "pad_id": 4,
+      "plan_end_time": 702.6961303992389,
+      "soc": 0.3382852407674068,
+      "time": 703.0,
+      "uid": 24
+    }
+  ],
+  "training_called": false,
+  "uid3_uid4": {
+    "first_low_soc": {
+      "3": {
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.39963294761453944,
+        "time": 343.0
+      },
+      "4": {
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.39961782094920334,
+        "time": 262.0
+      }
+    },
+    "low_soc_threshold": 0.4,
+    "phase_transitions": {
+      "3": [
+        {
+          "from_phase": "ring_outer",
+          "ring_role": null,
+          "soc": 0.5766107253923191,
+          "time": 65.0,
+          "to_phase": "transfer_o2m"
+        },
+        {
+          "from_phase": "transfer_o2m",
+          "ring_role": "middle",
+          "soc": 0.5296329476145394,
+          "time": 148.0,
+          "to_phase": "ring_middle"
+        },
+        {
+          "from_phase": "ring_middle",
+          "ring_role": null,
+          "soc": 0.35296628094787275,
+          "time": 413.0,
+          "to_phase": "transfer_m2i"
+        },
+        {
+          "from_phase": "transfer_m2i",
+          "ring_role": "inner",
+          "soc": 0.3201514661330576,
+          "time": 472.0,
+          "to_phase": "ring_inner"
+        },
+        {
+          "from_phase": "ring_inner",
+          "ring_role": null,
+          "soc": 0.3128181327997243,
+          "time": 483.0,
+          "to_phase": "emergency_landing"
+        },
+        {
+          "from_phase": "emergency_landing",
+          "ring_role": null,
+          "soc": 0.26943225360031603,
+          "time": 545.0,
+          "to_phase": "service"
+        },
+        {
+          "from_phase": "service",
+          "ring_role": null,
+          "soc": 0.26943225360031603,
+          "time": 575.0,
+          "to_phase": "completed"
+        }
+      ],
+      "4": [
+        {
+          "from_phase": "ring_outer",
+          "ring_role": null,
+          "soc": 0.558595598726983,
+          "time": 11.0,
+          "to_phase": "transfer_o2m"
+        },
+        {
+          "from_phase": "transfer_o2m",
+          "ring_role": "middle",
+          "soc": 0.5116178209492034,
+          "time": 94.0,
+          "to_phase": "ring_middle"
+        }
+      ]
+    }
+  },
+  "uid4_uid7_commits": {
+    "emergency": [
+      {
+        "coordinated": true,
+        "end_time": 490.69613039923854,
+        "from_phase": "ring_inner",
+        "kind": "emergency",
+        "pad_id": 5,
+        "soc": 0.3528745409057526,
+        "tangential_speed_bias_mps": 0.0,
+        "time": 416.0,
+        "trajectory_plan_id": "b769bd0e-a8a3-4223-9100-efd8a70947ec",
+        "uid": 7
+      }
+    ],
+    "normal": [
+      {
+        "coordinated": true,
+        "end_time": 94.0,
+        "from_phase": "ring_outer",
+        "kind": "normal",
+        "pad_id": null,
+        "soc": 0.5592622653936496,
+        "tangential_speed_bias_mps": 0.0,
+        "time": 10.0,
+        "trajectory_plan_id": "203aafba-a3dd-4229-8c6e-dc78b3aa61fe",
+        "uid": 4
+      },
+      {
+        "coordinated": true,
+        "end_time": 168.0,
+        "from_phase": "ring_outer",
+        "kind": "normal",
+        "pad_id": null,
+        "soc": 0.5593338001650152,
+        "tangential_speed_bias_mps": 0.0,
+        "time": 84.0,
+        "trajectory_plan_id": "22286f41-899a-49c8-be68-ff51e6fc1f85",
+        "uid": 7
+      },
+      {
+        "coordinated": true,
+        "end_time": 416.0,
+        "from_phase": "ring_middle",
+        "kind": "normal",
+        "pad_id": null,
+        "soc": 0.41035602238723556,
+        "tangential_speed_bias_mps": -4.0,
+        "time": 320.0,
+        "trajectory_plan_id": "ca313fa9-6bea-450c-8705-6bd8e4cf450b",
+        "uid": 7
+      }
+    ]
+  },
+  "uid4_uid7_outcomes": {
+    "4": [
+      {
+        "emergency_landing": false,
+        "outcome": "failed_energy",
+        "phase": "ring_middle",
+        "reason": "energy_depleted",
+        "soc": 0.0,
+        "time": 861.0,
+        "uid": 4
+      }
+    ],
+    "7": [
+      {
+        "emergency_landing": false,
+        "outcome": "emergency_landed",
+        "phase": "completed",
+        "reason": "ground_service_complete",
+        "soc": 0.3006886617063446,
+        "time": 611.0,
+        "uid": 7
+      }
+    ]
+  },
+  "wall_seconds": 369.59404410002753
+}

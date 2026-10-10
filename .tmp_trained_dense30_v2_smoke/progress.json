@@ -1,0 +1,15 @@
+{
+  "active": 30,
+  "decision_counts": {
+    "RELEASE": 13,
+    "WAIT": 133
+  },
+  "resolved": 0,
+  "safety_error": null,
+  "sim_time": 5.0,
+  "status": "running",
+  "step": 5,
+  "terminal": false,
+  "unresolved": 30,
+  "wall_elapsed": 2.2584241996519268
+}

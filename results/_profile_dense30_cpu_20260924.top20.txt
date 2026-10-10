@@ -1,0 +1,33 @@
+total_primitive_calls 24705974
+total_calls 24711879
+total_time_seconds 13.178676099999976
+Thu Sep 24 05:01:20 2026    results/_profile_dense30_cpu_20260924.stats
+
+         24711879 function calls (24705974 primitive calls) in 13.179 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1761 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    428/1    0.027    0.000   13.694   13.694 {built-in method builtins.exec}
+        1    0.000    0.000   13.694   13.694 <frozen runpy>:201(run_module)
+        1    0.000    0.000   13.454   13.454 <frozen runpy>:65(_run_code)
+        1    0.000    0.000   13.454   13.454 D:\7_codespace\terminal\terminal_marl\training\diagnose_energy_reachability_guard_smoke.py:1(<module>)
+        1    0.001    0.001   13.440   13.440 D:\7_codespace\terminal\terminal_marl\training\diagnose_energy_reachability_guard_smoke.py:484(main)
+        1    0.003    0.003   13.429   13.429 D:\7_codespace\terminal\terminal_marl\training\diagnose_energy_reachability_guard_smoke.py:255(run_smoke)
+       20    0.016    0.001   12.465    0.623 D:\7_codespace\terminal\terminal_marl\envs\parallel_env.py:1284(step)
+      600    0.005    0.000    8.405    0.014 D:\7_codespace\terminal\terminal_marl\envs\parallel_env.py:1159(_release)
+      600    0.004    0.000    8.400    0.014 D:\7_codespace\terminal\terminal_marl\envs\parallel_env.py:575(_runtime_shortlist_release)
+       82    0.009    0.000    8.347    0.102 D:\7_codespace\terminal\terminal_marl\envs\parallel_env.py:744(_candidate_plan)
+       73    0.065    0.001    5.912    0.081 D:\7_codespace\terminal\terminal_marl\core\trajectory_generator.py:222(ring_transfer)
+      725    0.014    0.000    4.648    0.006 D:\7_codespace\terminal\terminal_marl\core\trajectory_generator.py:292(executable_transfer)
+       20    0.000    0.000    3.086    0.154 D:\7_codespace\terminal\terminal_marl\core\runtime_traffic_safety.py:1215(protect)
+       20    0.001    0.000    3.083    0.154 D:\7_codespace\terminal\terminal_marl\core\runtime_traffic_safety.py:1235(_protect_impl)
+       20    0.004    0.000    3.047    0.152 D:\7_codespace\terminal\terminal_marl\core\runtime_traffic_safety.py:1055(_recursive_safe)
+     2760    0.119    0.000    2.741    0.001 D:\7_codespace\terminal\terminal_marl\core\runtime_traffic_safety.py:690(_joint_assessment)
+     1626    0.961    0.001    2.697    0.002 D:\7_codespace\terminal\terminal_marl\core\trajectory_time_parameterization.py:99(parameterize)
+       20    0.044    0.002    2.606    0.130 D:\7_codespace\terminal\terminal_marl\core\runtime_traffic_safety.py:930(_backup_safe)
+      755    0.730    0.001    2.528    0.003 D:\7_codespace\terminal\terminal_marl\core\trajectory_generator.py:135(ring_hold_points)
+       86    0.015    0.000    1.890    0.022 D:\7_codespace\terminal\terminal_marl\core\safety_filter.py:329(filter_plan)
+
+

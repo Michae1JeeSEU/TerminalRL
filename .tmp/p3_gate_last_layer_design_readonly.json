@@ -1,0 +1,133 @@
+{
+  "caller_rng_restored": true,
+  "design": {
+    "bias_column": "ones",
+    "design_dtype": "torch.float64",
+    "design_matrix_shape": [
+      4,
+      97
+    ],
+    "hidden_shape": [
+      4,
+      96
+    ],
+    "hidden_source": "model.gate_adapter[:-1](target_world)",
+    "last_linear_bias_dtype": "torch.float32",
+    "last_linear_bias_shape": [
+      2
+    ],
+    "last_linear_weight_dtype": "torch.float32",
+    "last_linear_weight_shape": [
+      2,
+      96
+    ],
+    "rank": 4,
+    "rank_tolerance": 2.9218252178416943e-13,
+    "singular_values_float64": [
+      13.565702023003682,
+      5.835490350133239,
+      2.0122989666630793,
+      1.3534608619503563
+    ]
+  },
+  "inputs": {
+    "anchor_cells": {
+      "1": {
+        "cell_id": 1,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_01.npz",
+        "npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+        "rows": 7378,
+        "ticks": 708
+      },
+      "2": {
+        "cell_id": 2,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_02.npz",
+        "npz_sha256": "7e1671404a97e617de86ea73b20bb6b9ffd2d28301ff92ceb78b99ab2ccd7d75",
+        "rows": 6909,
+        "ticks": 674
+      },
+      "3": {
+        "cell_id": 3,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_03.npz",
+        "npz_sha256": "c5cb8b954a78e8e69e0ea349121273db5af6d5671fd214800599d253bf6c4df5",
+        "rows": 7070,
+        "ticks": 644
+      },
+      "4": {
+        "cell_id": 4,
+        "npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_04.npz",
+        "npz_sha256": "77cebe19ff5303eb36612102c108a712b85ceeada8aac12662bd488139160100",
+        "rows": 7213,
+        "ticks": 723
+      }
+    },
+    "anchor_observation_dim": 88,
+    "anchor_rows": 28570,
+    "cpu_threads": 1,
+    "fit_seed": 9303501,
+    "readiness_sha256": "646f95f7d944a58ab2c6a0950b48fd4e1f5f99cc8f838d826ce8b0ca37ee809a",
+    "target_ids_order": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "target_order_binding": [
+      {
+        "cell_id": 1,
+        "p0": 0.9952911138534546,
+        "pstar": 0.9952601652648472,
+        "row": 0,
+        "world_row_index": 4873
+      },
+      {
+        "cell_id": 2,
+        "p0": 0.06313349306583405,
+        "pstar": 0.06392553361964069,
+        "row": 1,
+        "world_row_index": 12277
+      },
+      {
+        "cell_id": 3,
+        "p0": 0.15514136850833893,
+        "pstar": 0.1704190621781801,
+        "row": 2,
+        "world_row_index": 18971
+      },
+      {
+        "cell_id": 4,
+        "p0": 0.9949211478233337,
+        "pstar": 0.9948388080341942,
+        "row": 3,
+        "world_row_index": 26870
+      }
+    ],
+    "targets_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473"
+  },
+  "schema": "p3_gate_last_layer_design_readonly_20261002_v1",
+  "scope": {
+    "autograd_called": false,
+    "candidate_generated": false,
+    "environment_created": false,
+    "no_grad_forward": true,
+    "objective_or_delta_generated": false,
+    "optimizer_created": false,
+    "rollout_called": false,
+    "weights_assigned": false
+  },
+  "source": {
+    "architecture_id": "v4_2_hierarchical_gate_temperature_calibrated_residual_adapter_v3",
+    "checkpoint_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "checkpoint_sha256_after": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "checkpoint_sha256_before": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "expected_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "expected_model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "gate_temperature": 2.5,
+    "gate_temperature_dtype": "torch.float32",
+    "loader_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "state_unchanged": true
+  },
+  "status": "COMPLETED_READ_ONLY_STRUCTURE_CHECK"
+}

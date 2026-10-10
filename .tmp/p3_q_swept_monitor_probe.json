@@ -1,0 +1,143 @@
+{
+  "now": 400.0,
+  "pairs": [
+    {
+      "pair": [
+        4,
+        8
+      ],
+      "swept": 79.99084924271973,
+      "fraction": 0.6982732923661973,
+      "actual": 80.14454971748408,
+      "previous_left": [
+        124.5734364347233,
+        80.67413432961196,
+        40.0
+      ],
+      "previous_right": [
+        195.5370419218434,
+        42.015059638839666,
+        40.0
+      ],
+      "end_left": [
+        114.85573039636635,
+        80.75602416914928,
+        40.0
+      ],
+      "end_right": [
+        191.5540363999259,
+        57.50696600322311,
+        40.0
+      ],
+      "curves": {
+        "0.2": {
+          "point_min": 80.10458347928578,
+          "swept_min": 80.10176099507945,
+          "time": 399.79999999999995,
+          "endpoint_error_l": 5.833378438573445e-13,
+          "endpoint_error_r": 7.105427357601002e-15
+        },
+        "0.005": {
+          "point_min": 80.10226316262208,
+          "swept_min": 80.10225698264692,
+          "time": 399.83999999999924,
+          "endpoint_error_l": 5.833378438573445e-13,
+          "endpoint_error_r": 7.105427357601002e-15
+        }
+      },
+      "states": [
+        {
+          "uid": 4,
+          "position": [
+            124.5734364347233,
+            80.67413432961196,
+            40.0
+          ],
+          "speed": 9.659017550437497,
+          "theta": 5.146727431993285,
+          "phase": "final",
+          "ring": null,
+          "plan": {
+            "start": 372.0,
+            "end": 437.9283287292945,
+            "hash": "a2792426020e52fc6ca14106c41b598e884f0ca38c1b0b95c9a72f96d021f44f",
+            "metadata": {
+              "target_phase": "landing",
+              "scheduled_departure": 380.0,
+              "scheduled_delay": 0.0,
+              "speed_residual_mps": 0.0,
+              "final_approach_geometry": "continuous_inward_v1",
+              "final_approach_execution_mode": "speed_timing_v1",
+              "lz_id": 4,
+              "corridor_height": 40.0,
+              "source_ring_role": "inner",
+              "staging_point": [
+                0.0,
+                40.0,
+                40.0
+              ],
+              "requested_target_speed_mps": 10.0,
+              "accepted_target_speed_mps": 10.0,
+              "requested_reservation_departure": 380.0,
+              "accepted_reservation_departure": 380.0,
+              "actual_entry_speed_mps": 16.0,
+              "v3_landing_path_mode": "direct_c2",
+              "requested_entry_duration_seconds": 41.59839711074002,
+              "actual_entry_duration_seconds": 41.59839711074002,
+              "entry_duration_clamped": false,
+              "speed_clamp_reason": "none",
+              "timing_clamped": false,
+              "timing_clamp_reason": "none",
+              "timing_constraints": {
+                "now_floor": 372.0,
+                "candidate_delay_departure": 372.0,
+                "finite_ring_braking_departure": 372.0,
+                "requested_reservation_departure": 380.0
+              },
+              "candidate_delay_seconds": 0.0,
+              "required_braking_duration_seconds": 0.0,
+              "effective_delay_seconds": 8.0,
+              "vehicle_profile_id": "research_evtol",
+              "vehicle_profile_version": "eh216s_research_v2",
+              "trajectory_schema_version": "executable_trajectory_v3",
+              "trajectory_hash": "a2792426020e52fc6ca14106c41b598e884f0ca38c1b0b95c9a72f96d021f44f"
+            }
+          }
+        },
+        {
+          "uid": 8,
+          "position": [
+            195.5370419218434,
+            42.015059638839666,
+            40.0
+          ],
+          "speed": 16.0,
+          "theta": 0.21165197592905013,
+          "phase": "ring_inner",
+          "ring": "inner",
+          "plan": null
+        }
+      ]
+    }
+  ],
+  "prediction_execution_error": {
+    "2": 0.0,
+    "3": 6.697218661854651e-13,
+    "4": 5.833378438573445e-13,
+    "5": 4.218015328563021e-13,
+    "8": 0.0,
+    "16": 1.0251533693048846e-12,
+    "28": 8.988857076058406e-13,
+    "48": 7.652779469160725e-13,
+    "66": 1.1211274638365024e-12,
+    "67": 1.1316159914041722e-12,
+    "108": 1.048526129676288e-12,
+    "126": 1.1358242881322802e-12,
+    "127": 8.46112905412849e-13,
+    "191": 9.165725883006586e-13,
+    "200": 1.0073681891326079e-12,
+    "207": 1.1719432632173258e-12,
+    "225": 0.0
+  },
+  "runtime_gate": "approved"
+}

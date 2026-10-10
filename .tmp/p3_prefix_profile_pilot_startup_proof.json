@@ -1,0 +1,31 @@
+{
+  "status": "RUNNING",
+  "phase": "pilot",
+  "pid": 2155873,
+  "preflight_sha256": "7d2745abaef5c06ca9eb45583913884d5ed7f67057b2d7dd685ea150eac9db4d",
+  "runner_sha256": "533c5a0459a15495039b60dbbf4e6fe31d7b6f98d6db37316f5d0ed121260091",
+  "test_sha256": "3cc99457182f90d6871ec0ffcd50979961876703e4f1270d4e6d9c1f7c616a49",
+  "protocol_sha256": "f180494075f117cdd9d7e8c257b6c9a5b9fa1cf27fece2506d6dadc79c684164",
+  "cwd": "/home/user/projects/terminal",
+  "exe": "/usr/bin/python3.12",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.profile_p3_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001",
+  "envflags": [
+    "MKL_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "PYTHONDONTWRITEBYTECODE=1"
+  ],
+  "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001",
+  "log": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001/pilot_v1.log",
+  "observed_at": "2026-10-01T05:16:20.4354386Z",
+  "progress": {
+    "absolute_step": 250,
+    "env_now": 250.0,
+    "cell_id": 1,
+    "arm": "before_legacy",
+    "active_observation_count": 18,
+    "generated_request_rows": 24,
+    "native_forward_count": 250,
+    "release_calls": 3794,
+    "status": "RUNNING"
+  }
+}

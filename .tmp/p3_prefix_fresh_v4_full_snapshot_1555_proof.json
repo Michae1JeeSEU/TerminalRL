@@ -1,0 +1,22 @@
+{
+  "snapshot_time": "2026-10-01T15:55:05.152252+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.validate_p3_prefix_fallback_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"],
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1", "cell_id": 4, "arm": "before_prefix_fallback", "absolute_step": 100, "env_now": 100.0, "active_observation_count": 15, "generated_request_rows": 18, "native_forward_count": 101},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed": ["cell_03_after_prefix.json", "cell_04_before_legacy.json", "cell_04_after_legacy.json", "cell_03.json"],
+  "cell_03_after_prefix": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [23, 1, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2410.6353297436963, "request_elapsed_total_seconds": 8310.0, "energy_total_consumed": 6887.979820672347, "raw_reward_excluding_rejection_penalty": 508.74019953993997, "release_rejection_penalty": -13.0, "reward_total": 495.74019953993997, "steps": 653, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "a24f81b98a1b6b4ba27f6a10678e792dc2ebd3e7553663cad883b3ba9c0b3ea4"}},
+  "cell_03_pair": {"status": "PAIR_OK", "technical_ok": true, "all_four_natural": true, "all_request_identity_exact_24": true, "new_failed_ids": [], "new_diverted_ids": [], "new_unresolved_ids": []},
+  "cell_04": {
+    "before_legacy": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [20, 4, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 3033.466903898602, "request_elapsed_total_seconds": 8879.0, "energy_total_consumed": 7377.364268500799, "raw_reward_excluding_rejection_penalty": 474.189002055687, "release_rejection_penalty": -17.3, "reward_total": 456.889002055687, "steps": 711, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true},
+    "after_legacy": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [21, 3, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2898.624307190733, "request_elapsed_total_seconds": 8781.0, "energy_total_consumed": 7304.866188388237, "raw_reward_excluding_rejection_penalty": 484.2229169596477, "release_rejection_penalty": -18.75, "reward_total": 465.4729169596477, "steps": 688, "natural_terminal": true, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true}
+  },
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

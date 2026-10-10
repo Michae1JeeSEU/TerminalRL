@@ -1,0 +1,29 @@
+{
+  "snapshot_time": "2026-10-01T15:34:03+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": [
+    "/home/user/envs/terminal_env/bin/python",
+    "-m",
+    "terminal_marl.training.validate_p3_prefix_fallback_20261001",
+    "--phase",
+    "full",
+    "--output-dir",
+    "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4"
+  ],
+  "environment": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "runner_sha256": "0ce1f128a77941b6001446bfd0d8e0c7abd2c52ab2aaa9271398abcf2c8355fe",
+  "test_sha256": "ccb2210bd2e64aa8d880936598602b622e658f43776fa4bfb8405d969a1a1927",
+  "protocol_sha256": "6571d5fa174043502c5dfa0fc8cef9a3d52bac8720c27718f48b043e7fa018f3",
+  "preflight_sha256": "4150e1bba322757e22e783ab9ea1829d9c01f91c850a44dc377d485f5b693a91",
+  "pilot_sha256": "7739659777a84de11f15b9aadb9d99d4698dd338467b09216ad16b38a239f3e6",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4",
+  "full_log": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4/full_v1.log", "exists": true, "size_bytes": 0},
+  "progress": {"status": "RUNNING", "phase": "native_step", "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1", "cell_id": 2, "arm": "before_legacy", "absolute_step": 250, "observed_steps": 250, "generated_requests": 24, "active_uavs": 14},
+  "cell2_arm_files_present": [],
+  "pilot_reused": true,
+  "full_json_present": false,
+  "error_json_present": false
+}

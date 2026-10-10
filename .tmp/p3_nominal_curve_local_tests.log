@@ -1,0 +1,14 @@
+DIFF_STAT
+ terminal_marl/configs/p3_v25_course.py             |  3 ++-
+ terminal_marl/core/config.py                       | 30 ++++++++++++++++++++++
+ terminal_marl/core/priority.py                     |  4 ++-
+ terminal_marl/core/safety_filter.py                | 18 +++++++++++++
+ .../scripts/diagnose_p3_teacher_context.py         |  4 +++
+ terminal_marl/training/p3_v25_course_data.py       |  1 +
+ 6 files changed, 58 insertions(+), 2 deletions(-)
+DIFF_STAT_EXIT=
+0
+........................................................................ [ 98%]
+.                                                                        [100%]
+73 passed in 50.71s
+PYTEST_EXIT=0

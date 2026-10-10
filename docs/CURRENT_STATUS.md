@@ -279,6 +279,7 @@
 - 已实现边界可恢复的V3速度过渡、nominal holder执行/预测约定、实际应急路线资源优先、路线能量期限、基于V3路线的入场估计、同tick批量容量和入场/队列互斥计时修复；统一90D/pre-action forced-WAIT、队列team reward与gate-only entropy选项。旧V2动力学和历史profile保留；新组合使用 `terminal_marl/configs/p3_integrated_repair.py`。
 - 当前状态：22文件最终相关回归196 passed；check-only和规则/冻结source两步smoke通过；3请求高SOC规则完整周期475 ticks、3正常完成、无碰撞/硬间隔违规/hash mismatch。相同场景冻结source540 ticks、3正常完成、同样无安全/hash违规；两次验证监控均已删除。尚未验证dense/低SOC和训练效果。没有新训练、held-out、checkpoint写入或默认promotion，`PPO_ALLOWED=false`。
 
+
 ## 2026-10-02 V3 修复审核状态（最新）
 
 - 用户已同意本轮重大修复；opt-in `executable_trajectory_v3` 已实现并限定为 static geometry，V2 默认路径与 50 条历史 hash 回放保留。
@@ -604,6 +605,113 @@ V2 固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`�
 
 > **状态日期**：2026-09-29
 >
+> **当前结论与下一步（2026-09-29）：** larger-batch full `COMPLETED exit0`；最终 evaluation
+> normal `80→74`、mean wait `124.6→132.2`，d449 checkpoint 被拒绝；`3` 个训练 energy failure
+> 保留，退化未解决。critic-context probe 实现与原 `36` tests 已通过；新增完整 run fixture 后，probe+
+> credit+gradient 定向 `26` tests、compile/diffcheck 均通过。check-only 已 `CHECK_ONLY_OK exit0`：
+> `24` episodes、`18/6` fitting/validation、`18560` steps、`576` requests、`gamma=1`、`scale=.01`，
+> source `3fe7+a82` 的 critic-context probe 已 `COMPLETED exit0`：`24` replay episodes、`18560` steps、
+> `576` requests，前 `18` fit (`14072` steps)、后 `6` validation (`4488` steps)；replay/terminal/
+> ledger/safety/actor-bitwise/validation-excluded 均为 `true`，`0` actor/PPO/Teacher。validation 中，
+> legacy before 的 all/actor MAE/MSE/EV 为 `50.58621886/52.92280352`、`4255.2521/4407.1505`、
+> `.818094/.713071`；legacy after 为 `23.262293/27.636879`、`987.4543/1201.8624`、
+> `.958943/.923804`；context after 为 `22.700983/26.337413`、`859.766/1026.6398`、
+> `.966977/.940369`。context 逐 episode MAE 仅 `3/6` 改善，结果不一致；主审结论为 critic 重新拟合
+> 可改善跨 episode 预测，新增 `10D` 增益有限，不证明根因，不改 actor 维度或接入新架构，退化未解决。
+> [critic refresh comparison protocol](evidence/v4_2/p3_task_neutral_critic_refresh_comparison_20260929.md)
+> 已完成 `72` 项定向 tests、`py_compile` 与 `diffcheck`。ROOT/full `exit0`；control/refreshed 两臂均
+> `COMPLETED technical_ok=true full_evaluation=true`，PID 已退出，heartbeat 已删除。source `3fe7`、
+> control critic `a82`、legacy refresh 预检 SHA `32df2985b28699c0a7e7bf3dc5266bfcff8a75db9303a58258dc05595063ccf2`，
+> non-critic unchanged/config/q fixed、MC match（最大误差 `4.768e-7`）、freeze 与 roundtrip 均通过；
+> control updates `292+300`、refreshed updates `292+294`，两臂 rejected 均为 `0`。control `48` training
+> rollouts 统计为 `960 normal / 192 emergency / 0 failed / 0 unresolved`，refresh 为
+> `957 normal / 194 emergency / 1 failed / 0 unresolved`，两臂 safety 计数均为 `0`。每臂 evaluation
+> `96` requests，baseline/control/refresh 为 `80/16`、`81/15`、`78/18`（normal/emergency），全体
+> evaluation failed/unresolved 均为 `0`；mean/p95/max wait 分别为
+> `124.5896/281.3078/361.1838`、`130.8607/308.6437/497.1783`、
+> `137.3319/343.8039/430.7468 s`，low-SOC 为 `119.3941/107.9820/129.9535`，raw reward 为
+> `1810.5198/1801.5738/1769.6222`。control checkpoint SHA 为
+> `3a8aacd7c0e0dfc8cf7828c56a7e4d462f3d1e63d02219e7e3b4e64fee1b1b2c`，refresh final SHA 为
+> `370344b6523f250bd6816bbfd6ef51bd065c4aea1352b21d8910adc1275e942c`。refresh 的 failed record 为
+> batch02 episode24、env `881148`/policy `881248`、arrival `14`/UID `57`、`standard`，SOC
+> `.553655769→0`，wait `674.2165` s、terminal `892`、`ring_inner`、`energy_depleted`；paired control
+> 同请求为 `emergency_landed`、terminal `516`/touchdown `486`、final SOC `.2464753827`、wait
+> `226.8147` s。主审拒绝两候选，critic 预测改善不足以解决退化；不继续重复或延长该训练。
+> 下一步仅准备既有轨迹的 WAIT/RELEASE 优势与概率变化诊断，尚未启动或授权新 PPO；global/formal PPO
+> 限制及其余边界不变。
+>
+> **本轮过程记录（历史快照，2026-09-29）：** episodic full 已 `COMPLETED exit0`，gradient full
+> 也已完成 `6` exact replays、`4497` steps、`144` requests、`17825` actor decisions、`3656`
+> shared actor worlds，MC/aggregate-sum/model-unchanged 均为 `true`、optimizer 为 `0`；该六轨迹诊断
+> 只说明梯度离散度，不证明根因或统计显著。[larger-batch protocol](evidence/v4_2/p3_task_neutral_larger_batch_protocol_20260929.md)
+> 的实现与 `86` 项定向 tests、`py_compile`/`diffcheck` 已完成；q anchors 累计全部 actor-world、无固定抽样上限，
+> 默认兼容语义保持。check-only 已 `CHECK_ONLY_OK exit0`：`96` training rollouts/`2304` requests/
+> `172800` steps、`8` evaluation rollouts/`192` requests/`14400` steps，`4×24`、minibatch `128`，source
+> `3fe7+a82`、q fixed，runtime/update/Teacher/heldout 均为 `0`。主审已准入唯一 full：launcher `771673`、
+> child `771680`，cwd/cmdline 已核对。首 record env `879101`/policy `879201` 为 `711` steps/`24` requests、
+> `20 normal / 4 emergency / 0 failed / 0 unresolved`，terminal/technical/lifecycle/model/weights 正常，
+> safety 全为 `0`。20:50 UTC snapshot：batch01 已完成 `24` rollouts/`576` requests/`18560` steps，
+> `469 normal / 107 emergency / 0 failed`、safety `0`；首次 PPO update `290` accepted/`0` rejected，
+> final rollout KL `.000287400221`、reference KL `.000290478027`，MC match、最大误差 `4.768e-7`，
+> q fixed/frozen bitwise/proposal/temp/roundtrip 全通过，checkpoint SHA256
+> `554a1a978a152054872e20c3830bc35571135210d4acb895c23e50e29b63860f`。21:05 UTC 历史快照（当时为
+> `batch02_collect`）：累计 `40` records、`792 normal / 167 emergency / 1 failed / 0 unresolved`，safety
+> `0`。唯一 failed record 为 `full/training/batch_02/training/episode_14/record.json`，env
+> `879138`/policy `879238`：`24` requests、`19 normal / 4 emergency / 1 failed`、`1169` steps，
+> technical/lifecycle `true`，raw reward `359.8017673`，mean/p95/max wait
+> `205.11084/652.722486/992.814708` s。失败 arrival `19`、UID `227`、`standard`，SOC
+> `.7073555255→0`，request `120`、terminal `1168`、wait `992.8147076` s（internal `890.8147076` s、
+> external `102` s），`ring_outer`、`energy_depleted`；最后保存 step `1168` 为 requested/executed
+> `WAIT`，shield/intervention `0`，安全计数全为 `0`。无该 cell source 配对，不作唯一因果归因；按
+> energy-failure 保留规则继续固定 run，不重跑/换 seed/扩预算，最终 evaluation 再判候选。21:20 UTC
+> 历史中期快照（当时已进入 `batch03_collect`）；batch02 已完成 `24` rollouts/`576` requests/`18810` steps，
+> `473 normal / 102 emergency / 1 failed`，`294` accepted/`0` rejected，final KL
+> `.0001340259`，MC match 最大误差 `4.77e-7`，q/freeze/roundtrip 正常。累计 `48` training records：
+> `942 normal / 209 emergency / 1 failed / 0 unresolved`，safety `0`。中期 evaluation 两臂各
+> `96` requests：before/after 为 `80/16/0/0→82/14/0/0`（normal/emergency/failed/unresolved），
+> 四个 cell normal delta `[+2,-1,0,+1]`；mean/p95/max wait
+> `124.5896/281.3078/361.1838→131.9878/328.4212/387.0532 s`，low-SOC
+> `119.3941→109.7865`，raw reward `1810.5198→1814.3240`。中期指标混合，继续固定 batch03/04
+> 与 final evaluation，不选择 batch02、不宣称修复。21:50 UTC 历史快照（当时已进入 `batch04_collect`），PID
+> `771680` 正常；batch03 已完成 `24` rollouts/`576` requests/`18170` steps，`472 normal / 104 emergency /
+> 0 failed`，`284` accepted/`0` rejected，final rollout KL `.0004067797`、reference KL
+> `.0003421608`、max accepted KL `.0027564398`，MC match 最大误差 `4.77e-7`，units/q/freeze/
+> roundtrip 全通过，checkpoint SHA256 为
+> `dab2f83b43a7b878057d6ec15b47f7329e7f17c698778b309e5a52a20bec9a25`。累计 `74` training records：
+> `1455 normal / 320 emergency / 1 failed / 0 unresolved`，安全与技术异常计数为 `0`；历史
+> episode14 failed 保留。中期 evaluation 不变，final evaluation 尚未完成，不宣称性能改善。22:00 UTC
+> 历史快照（当时仍为 `batch04_collect`）：累计 `3` PPO updates、`4` new evaluation rollouts（其中 `1` 个 batch02 snapshot；final
+> 另 `4` rollouts 才构成第二个 snapshot）；累计 `83` training
+> records：`1635 normal / 355 emergency / 2 failed / 0 unresolved`，安全与技术异常计数为 `0`。
+> 第二个 failed record 为 `full/training/batch_04/training/episode_10/record.json`，env `879182`/
+> policy `879282`：`24` requests、`21 normal / 2 emergency / 1 failed`，raw reward `403.6930894`，
+> mean/p95/max/low-SOC wait `161.3673/468.6840/774.8147/214.0614` s。失败 arrival `18`、UID `164`、
+> raw mission `surveillance`，SOC `.5558992080→0`，request `105`、terminal `935`、wait
+> `774.8147076` s，`ring_outer`、`energy_depleted`；最后 step `935` 为 requested/applied `WAIT`，
+> proposal `null`、shield `null`。主审保留样本继续既定 run，不作因果归因，不改训练/安全，final
+> evaluation 尚未完成；第二个 failed record 及前一条 failure 均保留。22:05 UTC 历史快照（当时仍为
+> `batch04_collect`），累计 `88` training
+> records：`1733 normal / 376 emergency / 3 failed / 0 unresolved`，安全与技术异常计数为 `0`。
+> 第三个 failed record 为 `full/training/batch_04/training/episode_13/record.json`，env `879185`/
+> policy `879285`：`19 normal / 4 emergency / 1 failed`，raw reward `385.3507390`，mean/p95/max/
+> low-SOC wait `150.7375/465.2719/744.0361/170.7179` s。失败 arrival `21`、UID `92`、`standard`，
+> SOC `.5699187508→0`，request `150`、terminal `1014`、wait `744.0361466` s，`ring_middle`、
+> `energy_depleted`；末 step `1014` 为 requested/executed `WAIT`，applied `[0,0,0]`，shield `null`。
+> 原两条 failure 保留，继续固定 run，不作因果归因，不改训练/安全，final evaluation 尚未完成；第三条
+> failure 同样保留。larger-batch full 终态为 `COMPLETED exit0`，child PID `771680` 已退出；
+> 四批合计 `96` training rollouts/`2304` requests/`74571` steps、`4` PPO updates，`1166` accepted
+>（`290+294+284+298`）、`0` rejected，训练统计 `1891 normal / 410 emergency / 3 failed / 0 unresolved`，
+> 安全 `0`，q/freeze/MC/roundtrip 均正常。batch04 为 `19031` steps、`477 normal / 97 emergency /
+> 2 failed`、`298` accepted/`0` rejected，final rollout KL `.0001912632`，checkpoint SHA256 为
+> `d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f`。最终 `8` 条 new evaluation
+> rollouts 已完成；最后 snapshot 两臂各 `96` requests，before/after 为 `80/16/0→74/22/0`
+>（normal/emergency/failed），failed/unresolved/safety 均为 `0`；mean/p95/max wait
+> `124.5896/281.3078/361.1838→132.2342/333.6133/374.5735 s`，low-SOC
+> `119.3941→119.5818`，raw reward `1810.5198→1733.1170`，normal delta `[-1,-2,-1,-2]`。
+> 主审拒绝 d449 checkpoint，不选择 batch2；更大 batch 未解决退化，继续以 `3fe7` 作为开发起点，不延长训练。
+> heartbeat `task-neutral-larger-batch-repair` 已删除；全局
+> `PPO_ALLOWED=false`、heldout/formal 边界不变。
+>
 > **本轮用户范围修订（当前，2026-09-28）：** 当前主线是 dynamic terminal airspace、multi-UAV
 > landing-flow coordination 和 safety-filtered executable intents。低层新主课程采用
 > `task_priority_enabled=false`：目标为正常降落、吞吐、完整周期等待和等待尾部 starvation
@@ -745,15 +853,77 @@ V2 固定四条既有 tape 中 first actor-eligible INNER、`0.4 < SOC <= 0.5`�
 > [joint-team repeats protocol](evidence/v4_2/p3_task_neutral_joint_team_repeats_protocol_20260929.md)。
 > 两臂各 `288` requests 的全部结果与 new-only `192` requests 结果均保留；问题仍未解决。
 
-> **当前授权：joint-team learning-curve development protocol（待定向 tests/check-only，2026-09-29）：** 输出根为
+> **历史阶段：joint-team learning-curve development protocol 终态（2026-09-29）：** 输出根为
 > `/home/user/training_outputs/terminal/p3_task_neutral_learning_curve_20260929`。恢复 `3fe7` actor
 > 与 `b136` critic，fresh Adam 在同一 run 的六次 update 间持久；不沿用 `ac7`、不回到 full-MC。
 > 六批各六条完整 on-policy rollouts，共 `36` rollouts/`864` requests，training 上限 `64800` steps；
 > env `877101..877136`、policy `878201..878236`、permutation `878001..878006` 依序分批。
 > 第 `2/4/6` 次 update 后评估四个 dense24 cells，before 复用既有四条 records，after 共 `12` 新
 > rollouts、最多 `21600` steps、每截面 `96` requests。无 Teacher/heldout，`PPO_ALLOWED=false`；
-> 先定向 tests/check-only，主审准入后才运行唯一 full，当前尚未启动。
-> 详情见 [learning-curve protocol](evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md)。
+> 新 runner 实现与定向 suite `67 passed`，终态修正后的 learning-curve checks `9 passed`，pycompile/
+> diffcheck 通过，四个源码/测试 SHA 已完成本地-服务器同步核对。server check-only report 为
+> `CHECK_ONLY_OK exit0`；full report 最终为 `COMPLETED`、`technical_ok=true`、`exit=0`。六批 training
+> 共 `36` rollouts/`864` requests/`28030` steps，`6` 次 PPO calls、`1758` accepted/`0` rejected，
+> 训练统计 `714 normal / 149 emergency / 1 failed_energy`，q/freeze/optimizer 均为 `true`；full
+> checkpoint SHA256 为 `b1144a698b193d30a67b887e68bfc169aca183573de1ff0dcf954bf4177ca0bc`。
+> 配对 evaluation 为 `12` 条 new 与 `4` 条 reuse，三次 before 均为 `80/16/0/0`（normal/emergency/
+> failed/unresolved），安全计数均为 `0`；baseline mean/p95/max `124.5896/281.3078/361.1838`、
+> low-SOC `119.3941`、reward `1810.5198`。after update2/4/6 依次为 `77/19/0/0`、
+> `75/21/0/0`、`77/19/0/0`；mean/p95/max 分别为 `127.737/314.625/408.166`、
+> `138.778/323.653/399.081`、`143.843711/352.115802/447.42`；low-SOC 分别为
+> `116.411`、`140.425`、`123.97`，reward 分别为 `1778.264`、`1714.662`、`1743.085531`。
+> heartbeat `task-neutral-ppo-learning-curve` 已删除；主审拒绝本轮性能 candidate，但保留 joint-team
+> 数学修正，不宣称退化已解决。下一步只读核对完整周期目标与每秒折扣、critic 训练目标匹配；未批准
+> 下一次环境训练。详情见
+> [learning-curve protocol](evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md)。
+
+> **当前 episodic learning protocol 终态（V1/V2 warmup；2026-09-29）：**
+> 输出根为 `/home/user/training_outputs/terminal/p3_task_neutral_episodic_learning_20260929`。
+> V1 已 `COMPLETED exit0`：source `3fe7` 六条 tapes、`4775` steps/`84` requests、20 epochs、
+> lr `3e-4`、minibatch `64`、seed `874501`，actor bitwise unchanged、无 PPO；raw MSE
+> `34524.459→22900.692`、MAE `149.512→115.898`、EV `.01450→.05077`，dense24 after MAE
+> `196.358/137.696`。V1 warmup 输出原封保留，主审认为拟合不足，未准入 PPO。历史 `13a9` 使用旧
+> world-mean、加载 `.99` 的 `b136`，不作为正确加权且一致 critic 目标的证据。
+> V2 仅修复数值单位：`reward_scale=.01`、`gamma=1`、`lambda=1`，所有 reward 统一乘 `.01`，不改
+> 相对权重/最优期望累计目标；critic 输出、warmup targets、PPO step rewards/value/return 和
+> checkpoint metadata 使用一致 scaled unit，evaluation 仍为 raw reward。V2 `warmup_scaled` 已
+> `COMPLETED exit0`，同六条 tapes/`4775` steps/`84` requests、20 epochs、`lr=3e-4`、minibatch `64`、
+> seed `874501`，actor/noncritic bitwise unchanged，无 PPO/Teacher。normalized MSE/MAE
+> `3.4524459/1.4951182→.05620785/.11677936`，raw MSE/MAE
+> `34524.459/149.511819→562.078547/11.677936`，EV `.01449966→.95482847`；这只表示同数据上的
+> 价值拟合变化，不表示泛化或降落改善。warmup+pilot 定向 tests `24`、learning `19`，联合 `5` 文件
+> `83 passed`，compile 通过。`learning_check` 已 `CHECK_ONLY_OK exit0`，配置为 `gamma=1`、`lambda=1`、
+> joint-team、`reward_scale=.01`，source 为 `3fe7`，warmup checkpoint SHA256 为
+> `a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710`，`runtime=0`。主审已批准唯一
+> full launcher PID `3752129`、child PID `3752139`，cmdline/cwd 已核对；最终 `COMPLETED exit0`、
+> `technical=true`，共 `36` rollouts/`864` requests/`27973` steps，`6` calls、`1754` accepted/`0`
+> rejected。六批 MC 均 match，最大误差 `4.768e-7`，units/q/freeze/optimizer 全部通过；最终 checkpoint
+> SHA256 为 `de3d169bb6f69b1072a901123fda28a7f545b7dfaab9b1dcb687289dca881848`。首个 rollout 为 env
+> `877101`/policy `878201`、`725` steps、`24` completed、`terminal=true`、reward `490.6230053838741`；
+> technical/lifecycle/weights 正常，safety `0`。
+> 每个 evaluation snapshot 均为 `96` requests、failed/unresolved/safety 均为 `0`。before 为
+> `80 normal / 16 emergency`，mean/p95/max wait `124.589624/281.307806/361.183776 s`、low-SOC
+> `119.394054`、raw reward `1810.519819`。batch2 after 为 `83/13`（normal/emergency），mean/p95/max
+> `139.976895/327.301206/399.940214 s`、low-SOC `110.448643`、raw reward `1800.730385`，normal
+> deltas `[2,1,1,-1]`；batch4 after 为 `80/16`，mean/p95/max `142.946290/326.148072/692.814708 s`、
+> low-SOC `118.926817`、raw reward `1776.482964`，normal deltas `[1,-1,0,0]`；batch6 after 为 `74/22`，
+> mean/p95/max `140.979419/340.844414/692.814708 s`、low-SOC `116.6394`、raw reward `1731.358232`，
+> normal deltas `[-1,-2,-1,-2]`。
+> heartbeat `episodic-ppo-repair` 已删除。主审不保留 `de3d` 最终 candidate，不另挑 batch2 作为稳定收益；
+> joint-team、完整 return 与单位修正代码保留，退化未解决。gradient full 已 `COMPLETED exit0`：`6` exact
+> replays、`4497` steps、`144` requests、`17825` aggregate actor decisions、`3656` shared actor worlds，
+> MC/aggregate-sum/model-unchanged 为 `true`、optimizer 为 `0`；per-episode `actor_steps`
+> `[558,642,626,556,605,669]` 是 actor-world steps（合计 `3656`），不是 individual actor counts。
+> coherence `.50597656`、mean vector norm `.01370283`、vector SE `.01139388`，episode-total cosine
+> `[.48855,-.45577,.84693,.54055,.82063,.27637]`，leave-one-out 最低 `.84912`；该六轨迹诊断不证明
+> 根因或统计显著。下一步见
+> [larger-batch protocol](evidence/v4_2/p3_task_neutral_larger_batch_protocol_20260929.md)：实现与 `86` 项
+> 定向 tests 已完成，check-only 已 `CHECK_ONLY_OK exit0`；唯一 full 已 `COMPLETED exit0`，child `771680`
+> 已退出。四批合计 `96` training rollouts/`2304` requests/`74571` steps、`4` PPO updates、`1166`
+> accepted/`0` rejected；最终 `8` 条 new evaluation rollouts 已完成，failed/unresolved/safety 为 `0`。
+> 主审拒绝 d449 checkpoint，不选择 batch2；更大 batch 未解决退化，继续以 `3fe7` 作为开发起点，不延长训练。
+> 原失败结果全部保留。详情见
+> [episodic learning protocol](evidence/v4_2/p3_task_neutral_episodic_learning_protocol_20260929.md)。
 
 > **历史阶段：Scoped task-neutral PPO pilot 终态（2026-09-28）：** pilot report 为 `COMPLETED`、
 > `technical_ok=true`，服务器 `full.exit=0`；3 次 `update()` 调用记录 `148` accepted attempts
@@ -1727,34 +1897,13 @@ R3 仍为 FAIL；后续通过的是独立预注册的 R4，不能追溯升级 R3
 
 ## 当前允许的下一步
 
-本轮 task-neutral baseline full-cycle 已完成，主审已核对 report；后续进入受限开发决策：
-
-1. 保留 `ROOT/check_only` 的 wrapper 失败记录，并以 `ROOT/check_only_v2` 的 `CHECK_ONLY_OK exit0`
-   作为当前 check-only 事实；
-2. 本轮有界 task-neutral joint-batch protocol 已完成：继续以 `3fe7...d4ab` actor 为起点，
-   `fa0e` 与新 `c961` checkpoint 均不保留，`03c0` 保留为对照；完整终态与失败证据见
-   [joint-batch protocol](evidence/v4_2/p3_task_neutral_joint_batch_protocol_20260928.md)。当前
-   [full-episode credit protocol](evidence/v4_2/p3_task_neutral_full_episode_credit_protocol_20260928.md)
-   已完成：代码 `f8a8b53`、定向 tests `45`（joint `16`）、check-only `CHECK_ONLY_OK exit0`，
-   child PID `1530563`，六个 training cells 合计 `4635` steps、`1` 次 update、`290` accepted/`0`
-   rejected；配对 evaluation 两臂各 `114` requests，安全/unresolved 均为 `0`。checkpoint 不保留，
-   `3fe7` actor 继续作为开发起点；`gamma=1`、`lambda=1` 未成为既定修复。full-episode 失败
-   结果保留。当前授权见
-   [joint-team actor aggregation protocol](evidence/v4_2/p3_task_neutral_joint_team_actor_protocol_20260928.md)：
-   已完成 `COMPLETED exit0 technical_ok=true`，代码 `fb1a9a61d0dbb524a60928f598a0ad847297a080`、
-   定向 tests `57`，`4635` steps/`1` update/`290` accepted/`0` rejected，checkpoint `ac7` 仅待重复
-   验证、不晋级；full-episode 失败与本终态结果均保留。当前授权见
-   [joint-team repeats protocol](evidence/v4_2/p3_task_neutral_joint_team_repeats_protocol_20260929.md)：
-   已完成 `COMPLETED exit0 technical_ok=true`，两臂各 `288` requests，before `236/52/0`→after
-   `230/58/0`，new-only before `156/36/0`→after `151/41/0`，安全/unresolved 均为 `0`；ac7
-   性能候选拒绝，joint-team 数学修正保留。当前授权见
-   [learning-curve protocol](evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md)：
-   先定向 tests/check-only，主审准入后才启动唯一 full；当前未启动。
-3. 保留 full-cycle 的完整 ledger、normal/emergency/failed/unresolved、mean/p95/max wait、
-   low-SOC wait 和 reward 记录。新 reward 不与旧课程 reward 直接比较；不增加普通 priority-weighted
-   wait 或每 cell/子组无退化硬 gate；等待尾部只作 starvation 监测；
-4. `PPO_ALLOWED=false`，formal/heldout、P4、全局 source 晋级和 qualification 均未因本轮 pilot
-   自动放行；pilot technical completion 不等于稳定收益或全局 PPO 放行。
+critic refresh comparison 已 `COMPLETED exit0`，control/refreshed 两候选均拒绝，退化未解决；完整
+指标与 refresh failed record 见上方当前结论。当前下一步见 [gate credit diagnostic protocol](evidence/v4_2/p3_task_neutral_gate_credit_protocol_20260929.md)：
+implementation blocked，awaiting explicit user authorization。自动审批拒绝新增诊断模块，理由是其被视为
+需直接授权的实质代码新增；这不是测试失败，worker 未写入新模块或测试，未执行 check-only/full，尚未 launch。
+固定复用 refresh batch02 的 `24` 条完整 tapes，旧 comparison 监控已删除，无新监控；`0` 新采样、`0`
+PPO、`0` optimizer、`0` Teacher、`0` heldout。该诊断不改预算、不重跑输入，`PPO_ALLOWED=false`、
+formal/heldout/P4 边界不变。
 
 ## 历史允许的下一步（已由本轮 task-neutral protocol 取代）
 

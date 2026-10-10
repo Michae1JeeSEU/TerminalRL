@@ -1,0 +1,61 @@
+{
+  "files_edited": [
+    "D:\\7_codespace\\terminal\\docs\\CURRENT_STATUS.md",
+    "D:\\7_codespace\\terminal\\docs\\evidence\\v4_2\\p3_followup_results_20260930.md",
+    "D:\\7_codespace\\terminal\\docs\\evidence\\v4_2\\p3_counterfactual_gate_last_layer_projection_protocol_20261002.md"
+  ],
+  "protocol_status": "DRAFT_UNADMITTED",
+  "protocol_path": "docs\\evidence\\v4_2\\p3_counterfactual_gate_last_layer_projection_protocol_20261002.md",
+  "gradient_logit_delta": [
+    0.1780496443,
+    0.3744040335,
+    0.3879471889,
+    0.3925988156
+  ],
+  "gradient_delta_signs": "all positive",
+  "C1_C4_soft_targets_require_decrease": true,
+  "anchor_kl": 0.0,
+  "gradient_l2_approx": 1e-18,
+  "source_q_hash_rng": "unchanged",
+  "rank_check": "PASS",
+  "current_suffix_sha_before": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_sha_after": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667",
+  "current_suffix_len": 208510,
+  "commit": false,
+  "stage": false,
+  "fit_execution": false,
+  "rank": 4,
+  "H_t_shape": [
+    4,
+    97
+  ],
+  "singular_values": [
+    13.565702023,
+    5.8354903501,
+    2.0122989667,
+    1.353460862
+  ],
+  "hidden_shape": [
+    4,
+    96
+  ],
+  "last_layer_weight_shape": [
+    2,
+    96
+  ],
+  "last_layer_bias_shape": [
+    2
+  ],
+  "weight_dtype": "float32",
+  "temperature": 2.5,
+  "global_anchor_indices": [
+    4873,
+    12277,
+    18971,
+    26870
+  ],
+  "structural_proof_sha": "a03ded5c682ae909c3ea0ab91cc31ba45a29136fd5c3b000b03e992113012127",
+  "structural_proof_only": true,
+  "autograd_optimizer_weights_candidate_performance": "none",
+  "current_suffix_sha_after_rank_update": "a2f8b65c37cfc5dd80c3e8f1f0564917eed4755b5ccaf3fc18bd768cb5edf667"
+}

@@ -1,0 +1,282 @@
+{
+  "status": "READ_ONLY_COMPLETE",
+  "reset_calls": 0,
+  "step_calls": 0,
+  "teacher_calls": 0,
+  "candidate_calls": 0,
+  "counts": {
+    "queries": 3,
+    "missing_incoming": 3,
+    "stale_departing": 0
+  },
+  "queries": [
+    {
+      "case": "B_sto",
+      "tick": 400,
+      "uid": 29,
+      "arrival_id": 13,
+      "source": "middle",
+      "target": "inner",
+      "merge_time": 519.5556219829233,
+      "old_angle": 2.5511063517959576,
+      "forecast_gap_angle": 5.692699005385758,
+      "old_endpoint_chord_clearance": 58.63883650755732,
+      "forecast_endpoint_chord_clearance": 216.82433195276388,
+      "missing_incoming": [
+        3,
+        36
+      ],
+      "stale_departing": [],
+      "neighbors": [
+        {
+          "uid": 3,
+          "phase": "transfer_m2i",
+          "current_ring": null,
+          "plan_target": "ring_inner",
+          "plan_end": 401.005657382256,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 3.6598934244624117
+        },
+        {
+          "uid": 5,
+          "phase": "ring_inner",
+          "current_ring": "inner",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 0.5552888055246892
+        },
+        {
+          "uid": 25,
+          "phase": "ring_inner",
+          "current_ring": "inner",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 4.54692389806724
+        },
+        {
+          "uid": 36,
+          "phase": "transfer_m2i",
+          "current_ring": null,
+          "plan_target": "ring_inner",
+          "plan_end": 510.5556219829233,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 2.845360980457061
+        }
+      ]
+    },
+    {
+      "case": "B_sto",
+      "tick": 400,
+      "uid": 32,
+      "arrival_id": 14,
+      "source": "outer",
+      "target": "middle",
+      "merge_time": 607.7032948595872,
+      "old_angle": 6.032798660917573,
+      "forecast_gap_angle": 2.8912060073275585,
+      "old_endpoint_chord_clearance": 36.83349383652105,
+      "forecast_endpoint_chord_clearance": 218.75156884650107,
+      "missing_incoming": [
+        35,
+        38,
+        39,
+        40,
+        132,
+        168
+      ],
+      "stale_departing": [],
+      "neighbors": [
+        {
+          "uid": 29,
+          "phase": "ring_middle",
+          "current_ring": "middle",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 2.3372720899181547
+        },
+        {
+          "uid": 35,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 465.2770567949202,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 2.018434841326021
+        },
+        {
+          "uid": 38,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 587.8609688661668,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 0.2704188170733937
+        },
+        {
+          "uid": 39,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 492.1708697727723,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 4.533247289130852
+        },
+        {
+          "uid": 40,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 452.09724496244405,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 4.983963722177248
+        },
+        {
+          "uid": 86,
+          "phase": "ring_middle",
+          "current_ring": "middle",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 3.4451399247369627
+        },
+        {
+          "uid": 132,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 598.7032948595872,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 5.9406823612465685
+        },
+        {
+          "uid": 168,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 478.6772018538915,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 1.1848726627477608
+        }
+      ]
+    },
+    {
+      "case": "B_sto",
+      "tick": 400,
+      "uid": 114,
+      "arrival_id": 22,
+      "source": "outer",
+      "target": "middle",
+      "merge_time": 607.7032948595872,
+      "old_angle": 6.032798660917573,
+      "forecast_gap_angle": 2.8912060073275585,
+      "old_endpoint_chord_clearance": 36.83349383652105,
+      "forecast_endpoint_chord_clearance": 218.75156884650107,
+      "missing_incoming": [
+        35,
+        38,
+        39,
+        40,
+        132,
+        168
+      ],
+      "stale_departing": [],
+      "neighbors": [
+        {
+          "uid": 29,
+          "phase": "ring_middle",
+          "current_ring": "middle",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 2.3372720899181547
+        },
+        {
+          "uid": 35,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 465.2770567949202,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 2.018434841326021
+        },
+        {
+          "uid": 38,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 587.8609688661668,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 0.2704188170733937
+        },
+        {
+          "uid": 39,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 492.1708697727723,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 4.533247289130852
+        },
+        {
+          "uid": 40,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 452.09724496244405,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 4.983963722177248
+        },
+        {
+          "uid": 86,
+          "phase": "ring_middle",
+          "current_ring": "middle",
+          "plan_target": null,
+          "plan_end": null,
+          "old_member": true,
+          "future_member": true,
+          "future_angle": 3.4451399247369627
+        },
+        {
+          "uid": 132,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 598.7032948595872,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 5.9406823612465685
+        },
+        {
+          "uid": 168,
+          "phase": "transfer_o2m",
+          "current_ring": null,
+          "plan_target": "ring_middle",
+          "plan_end": 478.6772018538915,
+          "old_member": false,
+          "future_member": true,
+          "future_angle": 1.1848726627477608
+        }
+      ]
+    }
+  ]
+}

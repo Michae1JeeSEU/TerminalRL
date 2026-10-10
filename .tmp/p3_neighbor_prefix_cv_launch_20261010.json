@@ -1,0 +1,207 @@
+{
+  "generated_utc": "2026-10-10T00:45:09.6747727Z",
+  "command": "venv\\\\Scripts\\\\python.exe .tmp/run_p3_neighbor_prefix_20261010.py cv",
+  "source_commit": "842e4f0a265c38c2b0f4151e9797596c03589660",
+  "source_role": "importedsource",
+  "output_server": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle",
+  "output_local": "D:\\\\7_codespace\\\\training_outputs\\\\terminal\\\\p3_neighbor_prefix_coverage_20261010\\\\cv\\\\nine_cycle",
+  "cwd": "/home/user/projects/terminal",
+  "wrapper_pid": 3129150,
+  "timeout_pid": 3129151,
+  "root_python_pid": 3129152,
+  "worker_pids": [
+    3129383,
+    3129386,
+    3129387,
+    3129388
+  ],
+  "resource_tracker_pid": 3129382,
+  "first_process_observation_utc": "2026-10-10T00:39:12Z",
+  "first_mark0_observation_utc": "2026-10-10T00:40:00Z",
+  "first_mark0_status": "RUNNING",
+  "first_mark0_error": null,
+  "first_mark0_folds": [
+    893511,
+    893512,
+    893513,
+    893601
+  ],
+  "remaining_folds_without_curve_at_observation": [
+    893602,
+    893603,
+    893604,
+    893605,
+    893606
+  ],
+  "fixed_params": {
+    "model_seed": 91911,
+    "aux_seed": 91912,
+    "input_seeds": [
+      893511,
+      893512,
+      893513,
+      893601,
+      893602,
+      893603,
+      893604,
+      893605,
+      893606
+    ],
+    "gate_mode": "first_feasible_union",
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "updates_per_fold": 5000,
+    "wall_seconds_per_fold": 1200,
+    "workers": 4,
+    "outer_timeout_seconds": 4200,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "learning_rate": 0.0003,
+    "batch_size": 128,
+    "auxiliary_batch_size": 64,
+    "gradient_clip": 0.5,
+    "Q_accessed": false,
+    "teacher_queries": 0,
+    "environment_steps": 0,
+    "checkpoint_written": false,
+    "qualification": false
+  },
+  "protocol_sha256": {
+    "server": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+    "local": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+    "match": true
+  },
+  "frozen_source_hashes": [
+    {
+      "path": "terminal_marl/training/p3_neighbor_prefix_coverage_data.py",
+      "local_sha256": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+      "server_sha256": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_v26_train_dataset.py",
+      "local_sha256": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+      "server_sha256": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_v25_course_data.py",
+      "local_sha256": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+      "server_sha256": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_v26_course_data.py",
+      "local_sha256": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+      "server_sha256": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_v26_supplemental_data.py",
+      "local_sha256": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+      "server_sha256": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_neighbor_witness_data.py",
+      "local_sha256": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+      "server_sha256": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/training/p3_neighbor_witness_dataset.py",
+      "local_sha256": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+      "server_sha256": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/scripts/diagnose_p3_intent_neighbor.py",
+      "local_sha256": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+      "server_sha256": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "terminal_marl/algo/intent_neighbor_actor.py",
+      "local_sha256": "98f3dc56efd17167b1459247872e5920647ab2119a42d18127d25057b2154327",
+      "server_sha256": "98f3dc56efd17167b1459247872e5920647ab2119a42d18127d25057b2154327",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_v26_train_dataset.py",
+      "local_sha256": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6",
+      "server_sha256": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_neighbor_witness_data.py",
+      "local_sha256": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+      "server_sha256": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_neighbor_witness_dataset.py",
+      "local_sha256": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+      "server_sha256": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_supplemental_neighbor_data.py",
+      "local_sha256": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+      "server_sha256": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_neighbor_prefix_coverage_data.py",
+      "local_sha256": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+      "server_sha256": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_neighbor_prefix_parallel.py",
+      "local_sha256": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+      "server_sha256": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": "tests/test_p3_neighbor_prefix_queries.py",
+      "local_sha256": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+      "server_sha256": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+      "server_exists": true,
+      "sha256_match": true
+    },
+    {
+      "path": ".tmp/run_p3_neighbor_prefix_20261010.py",
+      "local_sha256": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+      "server_sha256": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+      "server_exists": true,
+      "sha256_match": true
+    }
+  ],
+  "frozen_source_hash_count": 17,
+  "all_source_sha256_match": true,
+  "launch_guards": "17 local/server SHA checks, duplicate/process guard, prepare/smoke/full guards passed",
+  "no_source_transfer": true,
+  "docs_commit_note": "future docs commit unrelated"
+}

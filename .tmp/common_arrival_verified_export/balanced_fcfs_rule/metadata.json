@@ -1,0 +1,43 @@
+{
+  "config": {
+    "schema": "common_arrival_bridge_v1",
+    "radius": 800.0,
+    "capture_radius": 200.0,
+    "holding_radius": 440.0,
+    "altitude": 100.0,
+    "cruise_speed": 13.0,
+    "max_turn_deg_s": 5.0,
+    "dt": 1.0,
+    "physics_dt": 0.2,
+    "decision_period": 1.0,
+    "prediction_horizon": 10.0,
+    "safety_distance": 80.0,
+    "nmac_distance": 40.0,
+    "collision_distance": 10.0,
+    "service_seconds": 60.0,
+    "energy_capacity": 1000000.0,
+    "initial_soc": 1.0,
+    "duration": 1500.0,
+    "requests": 6,
+    "arrival_interval": 75.0,
+    "arrival_pattern": "balanced",
+    "mcts_simulations": 100,
+    "mcts_depth": 3,
+    "milp_time_limit": 2.0,
+    "planner_deadline": 5.0,
+    "trace_period": 5.0
+  },
+  "policy": {
+    "policy": "fcfs_rule",
+    "execution_label": "adapted_common",
+    "future_arrivals_visible": false,
+    "learning": false,
+    "decision_period": 1.0
+  },
+  "python": "3.12.14",
+  "versions": {
+    "numpy": "2.3.5",
+    "scipy": "1.16.2",
+    "torch": null
+  }
+}

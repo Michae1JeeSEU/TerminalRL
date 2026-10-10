@@ -1,0 +1,1060 @@
+{
+  "input": {
+    "run_dir": "D:\\7_codespace\\training_outputs\\terminal\\random_soc_repair_development_20260924\\trained843101",
+    "summary": "D:\\7_codespace\\training_outputs\\terminal\\random_soc_repair_development_20260924\\trained843101\\summary.json",
+    "actor_steps": "D:\\7_codespace\\training_outputs\\terminal\\random_soc_repair_development_20260924\\trained843101\\actor_steps.jsonl",
+    "shadow_probes": "D:\\7_codespace\\training_outputs\\terminal\\random_soc_repair_development_20260924\\trained843101\\shadow_probes.jsonl",
+    "read_mode": "local_mirror_only"
+  },
+  "summary_observed": {
+    "seed": 843101,
+    "controller": "trained",
+    "steps_executed": 1036,
+    "action_rows": 16970,
+    "actor_decisions": 13719,
+    "decision_counts": {
+      "RELEASE": 858,
+      "WAIT": 12861
+    },
+    "outcome_counts": {
+      "completed": 9,
+      "emergency_landed": 18,
+      "failed_energy": 3
+    },
+    "failed_energy": 3,
+    "shadow_probe_rows": 19,
+    "shadow_approved_witnesses": 4,
+    "shadow_original_state_unchanged_rows": 19
+  },
+  "selection": {
+    "actor_release_safety_reject_predicate": "actor_mask is true AND gate == 1 AND release_decision == safety_reject",
+    "ring_from": "phase suffix ring_outer/ring_middle/ring_inner",
+    "current_decision_source": "row.release_decision",
+    "history_handling": "decision_history was not used for current-decision selection or aggregation",
+    "missing_field_encoding": "object with __missing_field__ key; missing fields are not replaced with zero",
+    "actor_rows_observed": 13719
+  },
+  "safety_reject_release_by_ring": {
+    "inner": {
+      "rows": 8,
+      "current_decision": "safety_reject",
+      "secondary_constraints": {
+        "field_status_counts": {
+          "present": 8
+        },
+        "raw_type_counts": {
+          "list": 8
+        },
+        "length_counts": {
+          "3": 3,
+          "6": 1,
+          "9": 2,
+          "15": 2
+        },
+        "sequence_counts": [
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict",
+              "predicted_separation",
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict",
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict",
+              "predicted_separation",
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict",
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict",
+              "predicted_separation",
+              "predicted_holder_reachable_tube",
+              "merge_slot_retime_conflict"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 1
+          }
+        ],
+        "item_counts": [
+          {
+            "value": "predicted_separation",
+            "count": 51
+          },
+          {
+            "value": "merge_slot_retime_conflict",
+            "count": 6
+          },
+          {
+            "value": "predicted_holder_reachable_tube",
+            "count": 6
+          }
+        ]
+      }
+    },
+    "middle": {
+      "rows": 134,
+      "current_decision": "safety_reject",
+      "secondary_constraints": {
+        "field_status_counts": {
+          "present": 134
+        },
+        "raw_type_counts": {
+          "list": 134
+        },
+        "length_counts": {
+          "3": 134
+        },
+        "sequence_counts": [
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 54
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 20
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 12
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 5
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "dynamics_unreachable_merge_time",
+              "predicted_separation"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "predicted_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_separation",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_separation",
+              "predicted_holder_separation",
+              "predicted_holder_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "emergency_energy_guard",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          }
+        ],
+        "item_counts": [
+          {
+            "value": "dynamics_unreachable_merge_time",
+            "count": 202
+          },
+          {
+            "value": "predicted_separation",
+            "count": 97
+          },
+          {
+            "value": "predicted_holder_reachable_tube",
+            "count": 79
+          },
+          {
+            "value": "predicted_post_plan_holder_reachable_tube",
+            "count": 16
+          },
+          {
+            "value": "emergency_energy_guard",
+            "count": 5
+          },
+          {
+            "value": "predicted_holder_separation",
+            "count": 3
+          }
+        ]
+      }
+    },
+    "outer": {
+      "rows": 84,
+      "current_decision": "safety_reject",
+      "secondary_constraints": {
+        "field_status_counts": {
+          "present": 84
+        },
+        "raw_type_counts": {
+          "list": 84
+        },
+        "length_counts": {
+          "3": 84
+        },
+        "sequence_counts": [
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 49
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 8
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_separation"
+            ],
+            "count": 5
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 4
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 3
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 2
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "emergency_energy_guard",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "merge_slot_retime_conflict",
+              "emergency_energy_guard"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "merge_slot_retime_conflict",
+              "merge_slot_retime_conflict",
+              "emergency_energy_guard"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_holder_reachable_tube",
+              "predicted_separation"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_post_plan_holder_reachable_tube",
+              "predicted_post_plan_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "dynamics_unreachable_merge_time"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "count": 1
+          },
+          {
+            "secondary_constraints": [
+              "predicted_separation",
+              "predicted_separation",
+              "predicted_holder_separation"
+            ],
+            "count": 1
+          }
+        ],
+        "item_counts": [
+          {
+            "value": "dynamics_unreachable_merge_time",
+            "count": 166
+          },
+          {
+            "value": "predicted_holder_reachable_tube",
+            "count": 35
+          },
+          {
+            "value": "predicted_separation",
+            "count": 24
+          },
+          {
+            "value": "predicted_post_plan_holder_reachable_tube",
+            "count": 18
+          },
+          {
+            "value": "emergency_energy_guard",
+            "count": 5
+          },
+          {
+            "value": "merge_slot_retime_conflict",
+            "count": 3
+          },
+          {
+            "value": "predicted_holder_separation",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "shadow_probes": {
+    "rows": 19,
+    "simplified_rows": [
+      {
+        "time": 0.0,
+        "uid": 27,
+        "ring": "inner",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_holder_reachable_tube",
+          "predicted_holder_reachable_tube",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_holder_reachable_tube"
+        ],
+        "approved": false
+      },
+      {
+        "time": 0.0,
+        "uid": 25,
+        "ring": "inner",
+        "actor_gate": "RELEASE",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_separation",
+          "predicted_separation",
+          "predicted_separation",
+          "predicted_separation",
+          "predicted_separation"
+        ],
+        "approved": false
+      },
+      {
+        "time": 0.0,
+        "uid": 16,
+        "ring": "middle",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_holder_reachable_tube"
+        ],
+        "approved": false
+      },
+      {
+        "time": 0.0,
+        "uid": 15,
+        "ring": "middle",
+        "actor_gate": "RELEASE",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "dynamics_unreachable_merge_time"
+        ],
+        "approved": false
+      },
+      {
+        "time": 0.0,
+        "uid": 0,
+        "ring": "outer",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "dynamics_unreachable_merge_time"
+        ],
+        "approved": false
+      },
+      {
+        "time": 0.0,
+        "uid": 6,
+        "ring": "outer",
+        "actor_gate": "RELEASE",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_holder_reachable_tube"
+        ],
+        "approved": false
+      },
+      {
+        "time": 60.0,
+        "uid": 26,
+        "ring": "inner",
+        "actor_gate": "WAIT",
+        "decision": "approved",
+        "secondary_constraints": [
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_separation",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_separation",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict",
+          "predicted_separation",
+          "predicted_holder_reachable_tube",
+          "merge_slot_retime_conflict"
+        ],
+        "approved": true
+      },
+      {
+        "time": 60.0,
+        "uid": 16,
+        "ring": "middle",
+        "actor_gate": "WAIT",
+        "decision": "safety_wait",
+        "secondary_constraints": [],
+        "approved": false
+      },
+      {
+        "time": 60.0,
+        "uid": 15,
+        "ring": "middle",
+        "actor_gate": "RELEASE",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "dynamics_unreachable_merge_time"
+        ],
+        "approved": false
+      },
+      {
+        "time": 60.0,
+        "uid": 0,
+        "ring": "outer",
+        "actor_gate": "WAIT",
+        "decision": "safety_wait",
+        "secondary_constraints": [],
+        "approved": false
+      },
+      {
+        "time": 120.0,
+        "uid": 17,
+        "ring": "inner",
+        "actor_gate": "WAIT",
+        "decision": "approved",
+        "secondary_constraints": [],
+        "approved": true
+      },
+      {
+        "time": 120.0,
+        "uid": 15,
+        "ring": "middle",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_separation"
+        ],
+        "approved": false
+      },
+      {
+        "time": 120.0,
+        "uid": 0,
+        "ring": "outer",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "predicted_holder_reachable_tube"
+        ],
+        "approved": false
+      },
+      {
+        "time": 240.0,
+        "uid": 23,
+        "ring": "inner",
+        "actor_gate": "WAIT",
+        "decision": "approved",
+        "secondary_constraints": [],
+        "approved": true
+      },
+      {
+        "time": 240.0,
+        "uid": 24,
+        "ring": "inner",
+        "actor_gate": "RELEASE",
+        "decision": "approved",
+        "secondary_constraints": [],
+        "approved": true
+      },
+      {
+        "time": 240.0,
+        "uid": 5,
+        "ring": "middle",
+        "actor_gate": "WAIT",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "dynamics_unreachable_merge_time"
+        ],
+        "approved": false
+      },
+      {
+        "time": 240.0,
+        "uid": 20,
+        "ring": "middle",
+        "actor_gate": "RELEASE",
+        "decision": "safety_wait",
+        "secondary_constraints": [],
+        "approved": false
+      },
+      {
+        "time": 240.0,
+        "uid": 0,
+        "ring": "outer",
+        "actor_gate": "WAIT",
+        "decision": "safety_wait",
+        "secondary_constraints": [],
+        "approved": false
+      },
+      {
+        "time": 240.0,
+        "uid": 2,
+        "ring": "outer",
+        "actor_gate": "RELEASE",
+        "decision": "safety_reject",
+        "secondary_constraints": [
+          "dynamics_unreachable_merge_time"
+        ],
+        "approved": false
+      }
+    ]
+  },
+  "failed_energy": {
+    "uids": [
+      2,
+      12,
+      13
+    ],
+    "count": 3,
+    "details": {
+      "2": {
+        "terminal_identity": {
+          "arrival_id": 2,
+          "outcome": "failed_energy",
+          "phase": "ring_outer",
+          "reason": "energy_depleted",
+          "time": 1035.0,
+          "uid": 2
+        },
+        "actor_rows_observed": 1036,
+        "first_release": {
+          "step": 27,
+          "time": 27.0,
+          "uid": 2,
+          "phase": "ring_outer",
+          "soc": 0.6725212462213902,
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "status": "observed",
+          "gate": 1,
+          "secondary_constraints": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ]
+        },
+        "first_soc_leq_0p4": {
+          "step": 436,
+          "time": 436.0,
+          "uid": 2,
+          "phase": "ring_outer",
+          "soc": 0.39985457955472353,
+          "proposal": null,
+          "release_decision": "not_requested",
+          "status": "observed",
+          "gate": 0,
+          "secondary_constraints": {
+            "__missing_field__": "release_telemetry.secondary_constraints"
+          }
+        },
+        "counts": {
+          "wait_rows": 936,
+          "release_rows": 100,
+          "wait_current_decision_approved": 0,
+          "release_current_decision_approved": 0,
+          "wait_or_release_current_decision_approved": 0,
+          "current_decision_counts": {
+            "emergency_energy_guard": 50,
+            "not_requested": 936,
+            "safety_reject": 12,
+            "safety_wait": 38
+          }
+        },
+        "initial_row_check": {
+          "source": "first actor_mask=true row for UID in actor_steps.jsonl",
+          "step": 0,
+          "time": 0.0,
+          "phase": "ring_outer",
+          "soc": 0.6905212462213902,
+          "priority": {
+            "__missing_field__": "actor_steps.priority"
+          }
+        }
+      },
+      "12": {
+        "terminal_identity": {
+          "arrival_id": 12,
+          "outcome": "failed_energy",
+          "phase": "ring_outer",
+          "reason": "energy_depleted",
+          "time": 888.0,
+          "uid": 12
+        },
+        "actor_rows_observed": 889,
+        "first_release": {
+          "step": 105,
+          "time": 105.0,
+          "uid": 12,
+          "phase": "ring_outer",
+          "soc": 0.5220515515377716,
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "status": "observed",
+          "gate": 1,
+          "secondary_constraints": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ]
+        },
+        "first_soc_leq_0p4": {
+          "step": 289,
+          "time": 289.0,
+          "uid": 12,
+          "phase": "ring_outer",
+          "soc": 0.39938488487110496,
+          "proposal": null,
+          "release_decision": "not_requested",
+          "status": "observed",
+          "gate": 0,
+          "secondary_constraints": {
+            "__missing_field__": "release_telemetry.secondary_constraints"
+          }
+        },
+        "counts": {
+          "wait_rows": 812,
+          "release_rows": 77,
+          "wait_current_decision_approved": 0,
+          "release_current_decision_approved": 0,
+          "wait_or_release_current_decision_approved": 0,
+          "current_decision_counts": {
+            "emergency_energy_guard": 42,
+            "not_requested": 812,
+            "safety_reject": 10,
+            "safety_wait": 25
+          }
+        },
+        "initial_row_check": {
+          "source": "first actor_mask=true row for UID in actor_steps.jsonl",
+          "step": 0,
+          "time": 0.0,
+          "phase": "ring_outer",
+          "soc": 0.5920515515377717,
+          "priority": {
+            "__missing_field__": "actor_steps.priority"
+          }
+        }
+      },
+      "13": {
+        "terminal_identity": {
+          "arrival_id": 13,
+          "outcome": "failed_energy",
+          "phase": "ring_outer",
+          "reason": "energy_depleted",
+          "time": 951.0,
+          "uid": 13
+        },
+        "actor_rows_observed": 952,
+        "first_release": {
+          "step": 79,
+          "time": 79.0,
+          "uid": 13,
+          "phase": "ring_outer",
+          "soc": 0.5819160405322337,
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "status": "observed",
+          "gate": 1,
+          "secondary_constraints": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ]
+        },
+        "first_soc_leq_0p4": {
+          "step": 352,
+          "time": 352.0,
+          "uid": 13,
+          "phase": "ring_outer",
+          "soc": 0.3999160405322336,
+          "proposal": null,
+          "release_decision": "not_requested",
+          "status": "observed",
+          "gate": 0,
+          "secondary_constraints": {
+            "__missing_field__": "release_telemetry.secondary_constraints"
+          }
+        },
+        "counts": {
+          "wait_rows": 887,
+          "release_rows": 65,
+          "wait_current_decision_approved": 0,
+          "release_current_decision_approved": 0,
+          "wait_or_release_current_decision_approved": 0,
+          "current_decision_counts": {
+            "emergency_energy_guard": 37,
+            "not_requested": 887,
+            "safety_reject": 7,
+            "safety_wait": 21
+          }
+        },
+        "initial_row_check": {
+          "source": "first actor_mask=true row for UID in actor_steps.jsonl",
+          "step": 0,
+          "time": 0.0,
+          "phase": "ring_outer",
+          "soc": 0.6345827071989003,
+          "priority": {
+            "__missing_field__": "actor_steps.priority"
+          }
+        }
+      }
+    }
+  }
+}

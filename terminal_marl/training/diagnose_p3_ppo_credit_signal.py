@@ -389,12 +389,21 @@ def analyze_captures(captures: Sequence[Mapping[str, Any]], *, dt: float = 1.0) 
     }
 
 
-def _load_tape(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _load_tape(
+    path: Path,
+    *,
+    max_replay_steps: int = MAX_REPLAY_STEPS,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    try:
+        max_replay_steps = int(max_replay_steps)
+    except (TypeError, ValueError) as exc:
+        raise PPOCreditSignalError("max_replay_steps must be a positive integer") from exc
+    _require(max_replay_steps > 0, "max_replay_steps must be a positive integer")
     payload = _read_json(path)
     _require(isinstance(payload, Mapping), "source tape must be a JSON object")
     rows = payload.get("action_tape", payload.get("records", []))
     _require(isinstance(rows, list) and rows, "source tape has no action rows")
-    _require(len(rows) <= MAX_REPLAY_STEPS, f"source tape exceeds {MAX_REPLAY_STEPS} steps")
+    _require(len(rows) <= max_replay_steps, f"source tape exceeds {max_replay_steps} steps")
     normalized: list[dict[str, Any]] = []
     for index, row in enumerate(rows):
         _require(isinstance(row, Mapping), f"source tape row {index} is not an object")
@@ -486,7 +495,14 @@ def _capture_replay(
     *,
     progress_callback: Callable[[int], None] | None = None,
     state_observer: Callable[[Any], Mapping[str, Any]] | None = None,
+    max_replay_steps: int = MAX_REPLAY_STEPS,
 ) -> dict[str, Any]:
+    try:
+        max_replay_steps = int(max_replay_steps)
+    except (TypeError, ValueError) as exc:
+        raise PPOCreditSignalError("max_replay_steps must be a positive integer") from exc
+    _require(max_replay_steps > 0, "max_replay_steps must be a positive integer")
+    _require(len(tape_rows) <= max_replay_steps, f"source tape exceeds {max_replay_steps} steps")
     env = TerminalParallelEnv(config)
     captured_terminal, first_seen = terminal_lifecycle_metrics._capture_terminal_rows(env)
     request_rows: list[dict[str, Any]] = []
@@ -499,7 +515,7 @@ def _capture_replay(
 
     def observed_step(*args: Any, **kwargs: Any):
         step_index = int(env.step_count)
-        _require(step_index < MAX_REPLAY_STEPS, f"replay exceeded {MAX_REPLAY_STEPS} steps")
+        _require(step_index < max_replay_steps, f"replay exceeded {max_replay_steps} steps")
         _require(step_index < len(tape_rows), f"replay step has no source row: {step_index}")
         tape_row = tape_rows[step_index]
         pre_observations = env._observations()

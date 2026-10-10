@@ -1,0 +1,821 @@
+.................................FFFFFFF........................         [100%]
+================================== FAILURES ===================================
+______ test_v3_continuous_final_proposals_bind_speed_timing_and_validate ______
+
+    def test_v3_continuous_final_proposals_bind_speed_timing_and_validate():
+        config = _config(final_approach_execution_mode="speed_timing_v1")
+        airspace = DynamicAirspace(config)
+        generator = TrajectoryGenerator(config)
+        uav = _uav(airspace, RingRole.INNER, speed=16.0)
+        plans = []
+        for slot, residual in ((0.0, -2.0), (30.0, 0.0), (60.0, 2.0)):
+>           plan = generator.final_approach(
+                uav, _lz(), _reservation(slot), 0.0,
+                scheduled_delay=0.0, speed_residual_mps=residual, airspace=airspace,
+            )
+
+tests\test_trajectory_generator_v3.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_generator.py:1855: in final_approach
+    return self._final_approach_v3(
+terminal_marl\core\trajectory_generator.py:1506: in _final_approach_v3
+    result = self._v3_continuous_inward_landing_points(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_generator.TrajectoryGenerator object at 0x0000017378798650>
+uav = namespace(uid=1, position=array([200.,   0.,  40.]), velocity=array([ 0., 16.,  0.]), acceleration=array([-1.28,  0.  ,  0.  ]), speed=16.0, ring_progress=0.0, ring_role=<RingRole.INNER: 'inner'>, committed_plan=None)
+lz = namespace(lz_id=0, position=array([  0., -40.,   0.]))
+airspace = <terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x000001737879A3F0>
+now = 0.0, scheduled_delay = 0.0, target_horizontal_speed = 8.0
+requested_departure = 0.0, holding_target_speed = None
+
+    def _v3_continuous_inward_landing_points(
+        self,
+        uav,
+        lz,
+        airspace,
+        now: float,
+        *,
+        scheduled_delay: float = 0.0,
+        target_horizontal_speed: float = 10.0,
+        requested_departure: float | None = None,
+        holding_target_speed: float | None = None,
+    ) -> dict:
+        """Build the continuous corridor with an analytic V3 ring boundary."""
+        if airspace is None or uav.ring_role is None:
+            raise RuntimeError("v3_continuous_landing_requires_ring_context")
+        p_live = self._v3_finite_vector(uav.position, "final_approach_initial_position")
+        v_live = self._v3_finite_vector(uav.velocity, "initial_velocity")
+        a_live = self._v3_uav_acceleration(uav)
+        current_speed = float(np.linalg.norm(v_live[:2]))
+        if abs(float(v_live[2])) > 1e-6 or not math.isfinite(current_speed):
+            raise RuntimeError("final_approach_initial_velocity_not_horizontal")
+        stored_speed = float(uav.speed)
+        if not math.isfinite(stored_speed) or stored_speed < -1e-9:
+            raise RuntimeError("final_approach_initial_speed_invalid")
+        if abs(current_speed - max(0.0, stored_speed)) > 1e-5:
+            raise RuntimeError("final_approach_initial_speed_mismatch")
+        current_speed = max(0.0, stored_speed)
+        ring = airspace.actual_ring(uav.ring_role)
+        if current_speed > self.dynamics.ring_speed_limit(float(ring.radius)) + 1e-6:
+            raise RuntimeError("final_approach_initial_speed_exceeds_ring_limit")
+        theta = float(
+            uav.ring_progress
+            if uav.ring_progress is not None
+            else math.atan2(float(p_live[1]), float(p_live[0]))
+        )
+        if not math.isfinite(theta):
+            raise RuntimeError("final_approach_initial_ring_phase_invalid")
+        try:
+            candidate_delay = max(0.0, float(scheduled_delay))
+            requested_delay = (0.0 if requested_departure is None
+                               else max(0.0, float(requested_departure) - float(now)))
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("final_approach_timing_inputs_invalid") from exc
+        if not all(math.isfinite(value) for value in (candidate_delay, requested_delay)):
+            raise RuntimeError("final_approach_timing_inputs_nonfinite")
+        base_delay = max(candidate_delay, requested_delay)
+    
+        high = min(self.config.height_max, self.dynamics.profile.max_operating_altitude_agl_m)
+        cruise_height = high if uav.ring_role is not RingRole.INNER else float(p_live[2])
+        staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
+        pad = np.asarray(lz.position, dtype=float)
+        if self.config.v3_landing_path_mode == "direct_c2":
+            return self._v3_direct_landing_points(
+                ring, theta, p_live, v_live, a_live, staging, pad, now,
+                delay=base_delay, target_horizontal_speed=target_horizontal_speed,
+            )
+    
+        def geometry(p0: np.ndarray, entry_velocity: np.ndarray, entry_acceleration: np.ndarray):
+            departure_theta = math.atan2(float(p0[1]), float(p0[0]))
+            source_tangent = self._unit_or(
+                np.asarray((-math.sin(departure_theta), math.cos(departure_theta), 0.0)),
+                entry_velocity,
+            )
+            displacement = staging - p0
+            displacement_xy = np.asarray((displacement[0], displacement[1], 0.0), dtype=float)
+            approach = self._unit_or(source_tangent, displacement_xy)
+            distance = float(np.linalg.norm(displacement))
+            tangent_control = min(.70 * distance, 240.0)
+            approach_control = min(.25 * distance, 120.0)
+            p1 = p0 + tangent_control * source_tangent
+            p2 = staging - approach_control * approach
+            p2[2] = staging[2]
+            departure_path = GeometricPath.cubic_bezier(p0, p1, p2, staging, samples=7)
+            return departure_path, departure_theta
+    
+        path0, _ = geometry(p_live, v_live, a_live)
+        entry_cap = min(float(target_horizontal_speed), self.parameterizer.entry_speed_limit(path0))
+        if holding_target_speed is not None:
+            entry_cap = min(entry_cap, max(0.0, float(holding_target_speed)))
+        if not math.isfinite(entry_cap) or entry_cap < 0.0:
+            raise RuntimeError("final_approach_entry_speed_nonfinite")
+    
+        for _ in range(7):
+            hold_target = min(current_speed, entry_cap)
+            required_prefix = self._v3_required_ring_braking_duration(
+                ring, theta, current_speed, hold_target,
+                initial_acceleration=a_live,
+            )
+            actual_delay = max(base_delay, required_prefix)
+            departure_start = float(now) + actual_delay
+            prefix: list[TrajectoryPoint] = []
+            if actual_delay > 1e-9:
+                hold_points = self.ring_hold_points(
+                    ring, theta, current_speed, hold_target, float(now), actual_delay,
+                    initial_acceleration=a_live,
+                )
+                prefix = hold_points[:-1]
+                start_state = hold_points[-1]
+                p0 = np.asarray(start_state.position, dtype=float)
+                entry_velocity = np.asarray(start_state.velocity, dtype=float)
+                entry_acceleration = np.asarray(start_state.acceleration, dtype=float)
+            else:
+                p0, entry_velocity, entry_acceleration = p_live, v_live, a_live
+            departure_path, _departure_theta = geometry(p0, entry_velocity, entry_acceleration)
+            try:
+                departure = self.parameterizer.parameterize(
+                    departure_path,
+                    start_time=departure_start,
+                    initial_velocity=entry_velocity,
+                    initial_acceleration=entry_acceleration,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=TrajectoryConstraints(
+                        end_horizontal_speed=0.0,
+                        tangent_yaw=False,
+                        end_direction=np.asarray((
+                            (staging[0] - p0[0]), (staging[1] - p0[1]), 0.0,
+                        ), dtype=float),
+                        end_curvature_vector=np.zeros(3, dtype=float),
+                    ),
+                )
+                if not np.allclose(departure[-1].velocity, np.zeros(3), atol=1e-6):
+                    raise RuntimeError("v3_staging_boundary_velocity_nonzero")
+                leg_path = GeometricPath.line(staging, pad, samples=17)
+                leg = self.parameterizer.parameterize(
+                    leg_path,
+                    start_time=departure[-1].t,
+                    initial_velocity=departure[-1].velocity,
+                    initial_acceleration=departure[-1].acceleration,
+                    target_horizontal_speed=5.0,
+                    constraints=TrajectoryConstraints(
+                        end_horizontal_speed=0.0,
+                        tangent_yaw=False,
+                        end_direction=np.asarray((0.0, 0.0, -1.0)),
+                        end_curvature_vector=np.zeros(3, dtype=float),
+                    ),
+                )
+                points = [*prefix, *departure[:-1], *leg]
+                if len(points) < 2:
+                    raise RuntimeError("v3_continuous_landing_points_missing")
+                actual_entry_speed = float(np.linalg.norm(entry_velocity[:2]))
+                return {
+                    "points": tuple(points),
+                    "departure_start": departure_start,
+                    "moment": float(leg[-1].t),
+                    "staging": staging,
+                    "cruise_height": cruise_height,
+                    "has_prefix": bool(prefix),
+                    "entry_speed": actual_entry_speed,
+                    "entry_cap": float(entry_cap),
+                    "required_prefix": float(required_prefix),
+                    "actual_delay": float(actual_delay),
+                }
+            except (RuntimeError, ValueError, FloatingPointError, np.linalg.LinAlgError):
+                entry_cap *= .8
+                if entry_cap < 0.1:
+                    break
+>       raise TrajectoryInfeasibleError("could not time-parameterize a dynamically feasible continuous landing")
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: could not time-parameterize a dynamically feasible continuous landing
+
+terminal_marl\core\trajectory_generator.py:1467: TrajectoryInfeasibleError
+______ test_v3_legacy_continuous_mapping_keeps_residual_out_of_geometry _______
+
+    def test_v3_legacy_continuous_mapping_keeps_residual_out_of_geometry():
+        config = _config(final_approach_execution_mode="legacy")
+        airspace = DynamicAirspace(config)
+        generator = TrajectoryGenerator(config)
+        uav = _uav(airspace, RingRole.INNER, speed=16.0)
+>       left = generator.final_approach(
+            uav, _lz(), _reservation(30.0), 0.0,
+            speed_residual_mps=-2.0, airspace=airspace,
+        )
+
+tests\test_trajectory_generator_v3.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_generator.py:1855: in final_approach
+    return self._final_approach_v3(
+terminal_marl\core\trajectory_generator.py:1506: in _final_approach_v3
+    result = self._v3_continuous_inward_landing_points(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_generator.TrajectoryGenerator object at 0x000001737894D370>
+uav = namespace(uid=1, position=array([200.,   0.,  40.]), velocity=array([ 0., 16.,  0.]), acceleration=array([-1.28,  0.  ,  0.  ]), speed=16.0, ring_progress=0.0, ring_role=<RingRole.INNER: 'inner'>, committed_plan=None)
+lz = namespace(lz_id=0, position=array([  0., -40.,   0.]))
+airspace = <terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x000001737894C8C0>
+now = 0.0, scheduled_delay = 0.0, target_horizontal_speed = 10.0
+requested_departure = None, holding_target_speed = None
+
+    def _v3_continuous_inward_landing_points(
+        self,
+        uav,
+        lz,
+        airspace,
+        now: float,
+        *,
+        scheduled_delay: float = 0.0,
+        target_horizontal_speed: float = 10.0,
+        requested_departure: float | None = None,
+        holding_target_speed: float | None = None,
+    ) -> dict:
+        """Build the continuous corridor with an analytic V3 ring boundary."""
+        if airspace is None or uav.ring_role is None:
+            raise RuntimeError("v3_continuous_landing_requires_ring_context")
+        p_live = self._v3_finite_vector(uav.position, "final_approach_initial_position")
+        v_live = self._v3_finite_vector(uav.velocity, "initial_velocity")
+        a_live = self._v3_uav_acceleration(uav)
+        current_speed = float(np.linalg.norm(v_live[:2]))
+        if abs(float(v_live[2])) > 1e-6 or not math.isfinite(current_speed):
+            raise RuntimeError("final_approach_initial_velocity_not_horizontal")
+        stored_speed = float(uav.speed)
+        if not math.isfinite(stored_speed) or stored_speed < -1e-9:
+            raise RuntimeError("final_approach_initial_speed_invalid")
+        if abs(current_speed - max(0.0, stored_speed)) > 1e-5:
+            raise RuntimeError("final_approach_initial_speed_mismatch")
+        current_speed = max(0.0, stored_speed)
+        ring = airspace.actual_ring(uav.ring_role)
+        if current_speed > self.dynamics.ring_speed_limit(float(ring.radius)) + 1e-6:
+            raise RuntimeError("final_approach_initial_speed_exceeds_ring_limit")
+        theta = float(
+            uav.ring_progress
+            if uav.ring_progress is not None
+            else math.atan2(float(p_live[1]), float(p_live[0]))
+        )
+        if not math.isfinite(theta):
+            raise RuntimeError("final_approach_initial_ring_phase_invalid")
+        try:
+            candidate_delay = max(0.0, float(scheduled_delay))
+            requested_delay = (0.0 if requested_departure is None
+                               else max(0.0, float(requested_departure) - float(now)))
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("final_approach_timing_inputs_invalid") from exc
+        if not all(math.isfinite(value) for value in (candidate_delay, requested_delay)):
+            raise RuntimeError("final_approach_timing_inputs_nonfinite")
+        base_delay = max(candidate_delay, requested_delay)
+    
+        high = min(self.config.height_max, self.dynamics.profile.max_operating_altitude_agl_m)
+        cruise_height = high if uav.ring_role is not RingRole.INNER else float(p_live[2])
+        staging = np.asarray((lz.position[0], lz.position[1], cruise_height), dtype=float)
+        pad = np.asarray(lz.position, dtype=float)
+        if self.config.v3_landing_path_mode == "direct_c2":
+            return self._v3_direct_landing_points(
+                ring, theta, p_live, v_live, a_live, staging, pad, now,
+                delay=base_delay, target_horizontal_speed=target_horizontal_speed,
+            )
+    
+        def geometry(p0: np.ndarray, entry_velocity: np.ndarray, entry_acceleration: np.ndarray):
+            departure_theta = math.atan2(float(p0[1]), float(p0[0]))
+            source_tangent = self._unit_or(
+                np.asarray((-math.sin(departure_theta), math.cos(departure_theta), 0.0)),
+                entry_velocity,
+            )
+            displacement = staging - p0
+            displacement_xy = np.asarray((displacement[0], displacement[1], 0.0), dtype=float)
+            approach = self._unit_or(source_tangent, displacement_xy)
+            distance = float(np.linalg.norm(displacement))
+            tangent_control = min(.70 * distance, 240.0)
+            approach_control = min(.25 * distance, 120.0)
+            p1 = p0 + tangent_control * source_tangent
+            p2 = staging - approach_control * approach
+            p2[2] = staging[2]
+            departure_path = GeometricPath.cubic_bezier(p0, p1, p2, staging, samples=7)
+            return departure_path, departure_theta
+    
+        path0, _ = geometry(p_live, v_live, a_live)
+        entry_cap = min(float(target_horizontal_speed), self.parameterizer.entry_speed_limit(path0))
+        if holding_target_speed is not None:
+            entry_cap = min(entry_cap, max(0.0, float(holding_target_speed)))
+        if not math.isfinite(entry_cap) or entry_cap < 0.0:
+            raise RuntimeError("final_approach_entry_speed_nonfinite")
+    
+        for _ in range(7):
+            hold_target = min(current_speed, entry_cap)
+            required_prefix = self._v3_required_ring_braking_duration(
+                ring, theta, current_speed, hold_target,
+                initial_acceleration=a_live,
+            )
+            actual_delay = max(base_delay, required_prefix)
+            departure_start = float(now) + actual_delay
+            prefix: list[TrajectoryPoint] = []
+            if actual_delay > 1e-9:
+                hold_points = self.ring_hold_points(
+                    ring, theta, current_speed, hold_target, float(now), actual_delay,
+                    initial_acceleration=a_live,
+                )
+                prefix = hold_points[:-1]
+                start_state = hold_points[-1]
+                p0 = np.asarray(start_state.position, dtype=float)
+                entry_velocity = np.asarray(start_state.velocity, dtype=float)
+                entry_acceleration = np.asarray(start_state.acceleration, dtype=float)
+            else:
+                p0, entry_velocity, entry_acceleration = p_live, v_live, a_live
+            departure_path, _departure_theta = geometry(p0, entry_velocity, entry_acceleration)
+            try:
+                departure = self.parameterizer.parameterize(
+                    departure_path,
+                    start_time=departure_start,
+                    initial_velocity=entry_velocity,
+                    initial_acceleration=entry_acceleration,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=TrajectoryConstraints(
+                        end_horizontal_speed=0.0,
+                        tangent_yaw=False,
+                        end_direction=np.asarray((
+                            (staging[0] - p0[0]), (staging[1] - p0[1]), 0.0,
+                        ), dtype=float),
+                        end_curvature_vector=np.zeros(3, dtype=float),
+                    ),
+                )
+                if not np.allclose(departure[-1].velocity, np.zeros(3), atol=1e-6):
+                    raise RuntimeError("v3_staging_boundary_velocity_nonzero")
+                leg_path = GeometricPath.line(staging, pad, samples=17)
+                leg = self.parameterizer.parameterize(
+                    leg_path,
+                    start_time=departure[-1].t,
+                    initial_velocity=departure[-1].velocity,
+                    initial_acceleration=departure[-1].acceleration,
+                    target_horizontal_speed=5.0,
+                    constraints=TrajectoryConstraints(
+                        end_horizontal_speed=0.0,
+                        tangent_yaw=False,
+                        end_direction=np.asarray((0.0, 0.0, -1.0)),
+                        end_curvature_vector=np.zeros(3, dtype=float),
+                    ),
+                )
+                points = [*prefix, *departure[:-1], *leg]
+                if len(points) < 2:
+                    raise RuntimeError("v3_continuous_landing_points_missing")
+                actual_entry_speed = float(np.linalg.norm(entry_velocity[:2]))
+                return {
+                    "points": tuple(points),
+                    "departure_start": departure_start,
+                    "moment": float(leg[-1].t),
+                    "staging": staging,
+                    "cruise_height": cruise_height,
+                    "has_prefix": bool(prefix),
+                    "entry_speed": actual_entry_speed,
+                    "entry_cap": float(entry_cap),
+                    "required_prefix": float(required_prefix),
+                    "actual_delay": float(actual_delay),
+                }
+            except (RuntimeError, ValueError, FloatingPointError, np.linalg.LinAlgError):
+                entry_cap *= .8
+                if entry_cap < 0.1:
+                    break
+>       raise TrajectoryInfeasibleError("could not time-parameterize a dynamically feasible continuous landing")
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: could not time-parameterize a dynamically feasible continuous landing
+
+terminal_marl\core\trajectory_generator.py:1467: TrajectoryInfeasibleError
+________ test_v3_inbound_transfer_and_emergency_use_executable_schema _________
+
+    def test_v3_inbound_transfer_and_emergency_use_executable_schema():
+        config = _config()
+        airspace = DynamicAirspace(config)
+        generator = TrajectoryGenerator(config)
+        outer = airspace.actual_ring(RingRole.OUTER)
+        inbound_uav = SimpleNamespace(
+            uid=2,
+            position=np.asarray((800.0, 0.0, 110.0)),
+            velocity=np.asarray((-5.0, 0.0, 0.0)),
+            acceleration=np.zeros(3),
+            speed=5.0,
+            ring_progress=None,
+            ring_role=None,
+            committed_plan=None,
+        )
+>       inbound = generator.inbound(inbound_uav, SimpleNamespace(angle=0.0), airspace, 0.0)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_trajectory_generator_v3.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_generator.py:660: in inbound
+    return self._inbound_v3(uav, gate, airspace, now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+terminal_marl\core\trajectory_generator.py:634: in _inbound_v3
+    points = self.parameterizer.parameterize(
+terminal_marl\core\trajectory_time_parameterization.py:488: in parameterize
+    return self._parameterize_v3(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_time_parameterization.TrajectoryTimeParameterizer object at 0x0000017379B2A960>
+path = GeometricPath(points=array([[ 8.00000000e+02,  0.00000000e+00,  1.10000000e+02],
+       [ 7.94634234e+02, -1.28128611e...     [ 6.00240621e+02, -4.99701583e+00,  1.00018438e+02],
+       [ 6.00000000e+02,  0.00000000e+00,  1.00000000e+02]]))
+start_time = 0.0, initial_velocity = array([-5.,  0.,  0.])
+initial_acceleration = array([0., 0., 0.]), target_horizontal_speed = 22.0
+constraints = TrajectoryConstraints(end_horizontal_speed=22.0, tangent_yaw=False, end_direction=array([-0.,  1.,  0.]), end_curvature_vector=array([-0.00166667, -0.        , -0.        ]))
+
+    def _parameterize_v3(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray | None,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints | None,
+    ):
+        points = path.points
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        initial = self._v3_vector(initial_velocity, "initial_velocity")
+        initial_acceleration_value = self._v3_vector(
+            initial_acceleration, "initial_acceleration", default_zero=True,
+        )
+        constraints = constraints or TrajectoryConstraints()
+        if constraints.tangent_yaw:
+            raise ValueError(
+                "V3 tangent_yaw is unsupported; V3 yaw parameterization is not qualified"
+            )
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        caps = self._v3_speed_caps(tangents, curvature, target_horizontal_speed)
+        for acceleration_reserve in (.4, .25, .15, .08):
+            for speed_cap_scale in (1.0, .8, .6, .4):
+                candidate = self._v3_candidate(
+                    path,
+                    start_time=float(start_time),
+                    initial_velocity=initial,
+                    initial_acceleration=initial_acceleration_value,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=constraints,
+                    caps=caps,
+                    acceleration_reserve=acceleration_reserve,
+                    speed_cap_scale=speed_cap_scale,
+                )
+                if candidate is not None:
+                    return candidate
+>       raise TrajectoryInfeasibleError(
+            "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
+            "the boundary state and vehicle dynamics"
+        )
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies the boundary state and vehicle dynamics
+
+terminal_marl\core\trajectory_time_parameterization.py:478: TrajectoryInfeasibleError
+______________ test_v3_brake_bezier_mode_preserves_live_boundary ______________
+
+    def test_v3_brake_bezier_mode_preserves_live_boundary():
+        config = _config(final_approach_geometry_mode="brake_bezier_v1")
+        airspace = DynamicAirspace(config)
+        generator = TrajectoryGenerator(config)
+        uav = _uav(airspace, RingRole.INNER, speed=10.0)
+>       plan = generator.final_approach(uav, _lz(), _reservation(0.0), 0.0, airspace=airspace)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_trajectory_generator_v3.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_generator.py:1855: in final_approach
+    return self._final_approach_v3(
+terminal_marl\core\trajectory_generator.py:1483: in _final_approach_v3
+    return self._final_approach_v3_brake(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_generator.TrajectoryGenerator object at 0x0000017379AE1E20>
+uav = namespace(uid=1, position=array([200.,   0.,  40.]), velocity=array([ 0., 10.,  0.]), acceleration=array([-0.5,  0. ,  0. ]), speed=10.0, ring_progress=0.0, ring_role=<RingRole.INNER: 'inner'>, committed_plan=None)
+lz = namespace(lz_id=0, position=array([  0., -40.,   0.]))
+reservation = namespace(reservation_id='r-0.0-0.0', merge_time=0.0, merge_angle=0.0)
+now = 0.0, scheduled_delay = 0.0, speed_residual_mps = 0.0
+airspace = <terminal_marl.core.dynamic_airspace.DynamicAirspace object at 0x0000017379AE3FE0>
+
+    def _final_approach_v3_brake(
+        self,
+        uav,
+        lz,
+        reservation,
+        now: float,
+        *,
+        scheduled_delay: float,
+        speed_residual_mps: float,
+        airspace,
+    ) -> TrajectoryPlan:
+        p_live = self._v3_finite_vector(uav.position, "final_approach_initial_position")
+        v_live = self._v3_finite_vector(uav.velocity, "initial_velocity")
+        a_live = self._v3_uav_acceleration(uav)
+        endpoint = np.asarray(lz.position, dtype=float)
+        start = float(now) + max(0.0, float(scheduled_delay))
+        prefix: list[TrajectoryPoint] = []
+        p0, v0, a0 = p_live, v_live, a_live
+        final_points = None
+        target_cap = min(10.0, self.config.max_speed)
+        required = 0.0
+        actual_entry_speed = float(np.linalg.norm(v_live[:2]))
+        for _ in range(7):
+            prefix = []
+            start = float(now) + max(0.0, float(scheduled_delay))
+            p0, v0, a0 = p_live, v_live, a_live
+            if uav.ring_role is RingRole.INNER and airspace is not None:
+                ring = airspace.actual_ring(RingRole.INNER)
+                theta = float(uav.ring_progress if uav.ring_progress is not None else math.atan2(p_live[1], p_live[0]))
+                current_speed = float(np.linalg.norm(v_live[:2]))
+                direction0 = self._unit_or(np.asarray((0.0, -1.0, 0.0)), v_live)
+                distance0 = float(np.linalg.norm(endpoint - p0))
+                path0 = GeometricPath.cubic_bezier(
+                    p0,
+                    p0 + min(.30 * distance0, 120.0) * direction0,
+                    endpoint - min(.25 * distance0, 80.0) * np.asarray((direction0[0], direction0[1], 0.0)),
+                    endpoint,
+                    samples=self.config.trajectory_final_samples,
+                )
+                entry_limit = self.parameterizer.entry_speed_limit(path0)
+                target = min(current_speed, target_cap, entry_limit)
+                required = self._v3_required_ring_braking_duration(
+                    ring, theta, current_speed, target, initial_acceleration=a_live,
+                )
+                start = float(now) + max(0.0, float(scheduled_delay), required)
+                if start > float(now) + 1e-9:
+                    hold = self.ring_hold_points(
+                        ring, theta, current_speed, target, float(now), start - float(now),
+                        initial_acceleration=a_live,
+                    )
+                    prefix = hold[:-1]
+                    p0, v0, a0 = hold[-1].position, hold[-1].velocity, hold[-1].acceleration
+            direction = self._unit_or(np.asarray((0.0, -1.0, 0.0)), v0)
+            distance = float(np.linalg.norm(endpoint - p0))
+            p1 = p0 + min(.30 * distance, 120.0) * direction
+            p2 = endpoint - min(.25 * distance, 80.0) * np.asarray((direction[0], direction[1], 0.0))
+            path = GeometricPath.cubic_bezier(p0, p1, p2, endpoint, samples=self.config.trajectory_final_samples)
+            try:
+                final_points = self.parameterizer.parameterize(
+                    path,
+                    start_time=start,
+                    initial_velocity=v0,
+                    initial_acceleration=a0,
+                    target_horizontal_speed=min(10.0, self.config.max_speed),
+                    constraints=TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False),
+                )
+                actual_entry_speed = float(np.linalg.norm(v0[:2]))
+                break
+            except (RuntimeError, ValueError, FloatingPointError, np.linalg.LinAlgError):
+                target_cap *= .8
+                if target_cap < 0.1:
+                    break
+        if final_points is None:
+>           raise RuntimeError("could not time-parameterize a dynamically feasible brake-bezier approach")
+E           RuntimeError: could not time-parameterize a dynamically feasible brake-bezier approach
+
+terminal_marl\core\trajectory_generator.py:1638: RuntimeError
+__ test_v3_straight_zero_to_zero_has_exact_boundaries_and_feasible_segments ___
+
+    def test_v3_straight_zero_to_zero_has_exact_boundaries_and_feasible_segments() -> None:
+        path = GeometricPath.line(np.zeros(3), np.asarray((60.0, 0.0, 0.0)), samples=9)
+>       points = _parameterizer().parameterize(
+            path,
+            start_time=3.0,
+            initial_velocity=np.zeros(3),
+            initial_acceleration=np.zeros(3),
+            target_horizontal_speed=12.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=0.0),
+        )
+
+tests\test_trajectory_time_parameterization_v3.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_time_parameterization.py:488: in parameterize
+    return self._parameterize_v3(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_time_parameterization.TrajectoryTimeParameterizer object at 0x0000017379B2AC90>
+path = GeometricPath(points=array([[ 0. ,  0. ,  0. ],
+       [ 7.5,  0. ,  0. ],
+       [15. ,  0. ,  0. ],
+       [22.5,  0... ,  0. ],
+       [37.5,  0. ,  0. ],
+       [45. ,  0. ,  0. ],
+       [52.5,  0. ,  0. ],
+       [60. ,  0. ,  0. ]]))
+start_time = 3.0, initial_velocity = array([0., 0., 0.])
+initial_acceleration = array([0., 0., 0.]), target_horizontal_speed = 12.0
+constraints = TrajectoryConstraints(end_horizontal_speed=0.0, tangent_yaw=False, end_direction=None, end_curvature_vector=None)
+
+    def _parameterize_v3(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray | None,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints | None,
+    ):
+        points = path.points
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        initial = self._v3_vector(initial_velocity, "initial_velocity")
+        initial_acceleration_value = self._v3_vector(
+            initial_acceleration, "initial_acceleration", default_zero=True,
+        )
+        constraints = constraints or TrajectoryConstraints()
+        if constraints.tangent_yaw:
+            raise ValueError(
+                "V3 tangent_yaw is unsupported; V3 yaw parameterization is not qualified"
+            )
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        caps = self._v3_speed_caps(tangents, curvature, target_horizontal_speed)
+        for acceleration_reserve in (.4, .25, .15, .08):
+            for speed_cap_scale in (1.0, .8, .6, .4):
+                candidate = self._v3_candidate(
+                    path,
+                    start_time=float(start_time),
+                    initial_velocity=initial,
+                    initial_acceleration=initial_acceleration_value,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=constraints,
+                    caps=caps,
+                    acceleration_reserve=acceleration_reserve,
+                    speed_cap_scale=speed_cap_scale,
+                )
+                if candidate is not None:
+                    return candidate
+>       raise TrajectoryInfeasibleError(
+            "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
+            "the boundary state and vehicle dynamics"
+        )
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies the boundary state and vehicle dynamics
+
+terminal_marl\core\trajectory_time_parameterization.py:478: TrajectoryInfeasibleError
+______ test_v3_curved_path_uses_curvature_and_end_direction_constraints _______
+
+    def test_v3_curved_path_uses_curvature_and_end_direction_constraints() -> None:
+        path = GeometricPath.cubic_bezier(
+            np.asarray((0.0, 0.0, 0.0)),
+            np.asarray((25.0, 0.0, 0.0)),
+            np.asarray((55.0, 20.0, 0.0)),
+            np.asarray((85.0, 25.0, 0.0)),
+            samples=25,
+        )
+>       points = _parameterizer().parameterize(
+            path,
+            start_time=0.0,
+            initial_velocity=np.zeros(3),
+            target_horizontal_speed=10.0,
+            constraints=TrajectoryConstraints(
+                end_horizontal_speed=4.0,
+                end_direction=np.asarray((30.0, 5.0, 0.0)),
+                end_curvature_vector=np.zeros(3),
+            ),
+        )
+
+tests\test_trajectory_time_parameterization_v3.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_time_parameterization.py:488: in parameterize
+    return self._parameterize_v3(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_time_parameterization.TrajectoryTimeParameterizer object at 0x0000017379B2B200>
+path = GeometricPath(points=array([[ 0.        ,  0.        ,  0.        ],
+       [ 3.15067998,  0.10163484,  0.        ],
+ ...775463,  0.        ],
+       [81.25036169, 24.29940683,  0.        ],
+       [85.        , 25.        ,  0.        ]]))
+start_time = 0.0, initial_velocity = array([0., 0., 0.])
+initial_acceleration = None, target_horizontal_speed = 10.0
+constraints = TrajectoryConstraints(end_horizontal_speed=4.0, tangent_yaw=False, end_direction=array([30.,  5.,  0.]), end_curvature_vector=array([0., 0., 0.]))
+
+    def _parameterize_v3(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray | None,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints | None,
+    ):
+        points = path.points
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        initial = self._v3_vector(initial_velocity, "initial_velocity")
+        initial_acceleration_value = self._v3_vector(
+            initial_acceleration, "initial_acceleration", default_zero=True,
+        )
+        constraints = constraints or TrajectoryConstraints()
+        if constraints.tangent_yaw:
+            raise ValueError(
+                "V3 tangent_yaw is unsupported; V3 yaw parameterization is not qualified"
+            )
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        caps = self._v3_speed_caps(tangents, curvature, target_horizontal_speed)
+        for acceleration_reserve in (.4, .25, .15, .08):
+            for speed_cap_scale in (1.0, .8, .6, .4):
+                candidate = self._v3_candidate(
+                    path,
+                    start_time=float(start_time),
+                    initial_velocity=initial,
+                    initial_acceleration=initial_acceleration_value,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=constraints,
+                    caps=caps,
+                    acceleration_reserve=acceleration_reserve,
+                    speed_cap_scale=speed_cap_scale,
+                )
+                if candidate is not None:
+                    return candidate
+>       raise TrajectoryInfeasibleError(
+            "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
+            "the boundary state and vehicle dynamics"
+        )
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies the boundary state and vehicle dynamics
+
+terminal_marl\core\trajectory_time_parameterization.py:478: TrajectoryInfeasibleError
+______ test_v3_preserves_nonzero_boundary_state_and_analytic_derivative _______
+
+    def test_v3_preserves_nonzero_boundary_state_and_analytic_derivative() -> None:
+        path = GeometricPath.line(np.asarray((10.0, 0.0, 3.0)), np.asarray((80.0, 0.0, 3.0)), samples=7)
+        initial_velocity = np.asarray((3.0, 0.0, 0.0))
+        initial_acceleration = np.asarray((0.2, 0.0, 0.0))
+>       points = _parameterizer().parameterize(
+            path,
+            start_time=5.0,
+            initial_velocity=initial_velocity,
+            initial_acceleration=initial_acceleration,
+            target_horizontal_speed=8.0,
+            constraints=TrajectoryConstraints(end_horizontal_speed=3.0),
+        )
+
+tests\test_trajectory_time_parameterization_v3.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\core\trajectory_time_parameterization.py:488: in parameterize
+    return self._parameterize_v3(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <terminal_marl.core.trajectory_time_parameterization.TrajectoryTimeParameterizer object at 0x0000017379B2BC20>
+path = GeometricPath(points=array([[10.        ,  0.        ,  3.        ],
+       [21.66666667,  0.        ,  3.        ],
+ ...      ,  3.        ],
+       [68.33333333,  0.        ,  3.        ],
+       [80.        ,  0.        ,  3.        ]]))
+start_time = 5.0, initial_velocity = array([3., 0., 0.])
+initial_acceleration = array([0.2, 0. , 0. ]), target_horizontal_speed = 8.0
+constraints = TrajectoryConstraints(end_horizontal_speed=3.0, tangent_yaw=False, end_direction=None, end_curvature_vector=None)
+
+    def _parameterize_v3(
+        self,
+        path: GeometricPath,
+        *,
+        start_time: float,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray | None,
+        target_horizontal_speed: float,
+        constraints: TrajectoryConstraints | None,
+    ):
+        points = path.points
+        segments = path.segment_lengths
+        if np.any(segments <= 1e-9):
+            raise ValueError("invalid_time_parameterization")
+        initial = self._v3_vector(initial_velocity, "initial_velocity")
+        initial_acceleration_value = self._v3_vector(
+            initial_acceleration, "initial_acceleration", default_zero=True,
+        )
+        constraints = constraints or TrajectoryConstraints()
+        if constraints.tangent_yaw:
+            raise ValueError(
+                "V3 tangent_yaw is unsupported; V3 yaw parameterization is not qualified"
+            )
+        tangents = self._tangents(points)
+        curvature = self._curvature_xy(points)
+        caps = self._v3_speed_caps(tangents, curvature, target_horizontal_speed)
+        for acceleration_reserve in (.4, .25, .15, .08):
+            for speed_cap_scale in (1.0, .8, .6, .4):
+                candidate = self._v3_candidate(
+                    path,
+                    start_time=float(start_time),
+                    initial_velocity=initial,
+                    initial_acceleration=initial_acceleration_value,
+                    target_horizontal_speed=float(target_horizontal_speed),
+                    constraints=constraints,
+                    caps=caps,
+                    acceleration_reserve=acceleration_reserve,
+                    speed_cap_scale=speed_cap_scale,
+                )
+                if candidate is not None:
+                    return candidate
+>       raise TrajectoryInfeasibleError(
+            "dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies "
+            "the boundary state and vehicle dynamics"
+        )
+E       terminal_marl.core.trajectory_time_parameterization.TrajectoryInfeasibleError: dynamically_infeasible_boundary_state: no bounded V3 candidate satisfies the boundary state and vehicle dynamics
+
+terminal_marl\core\trajectory_time_parameterization.py:478: TrajectoryInfeasibleError
+=========================== short test summary info ===========================
+FAILED tests/test_trajectory_generator_v3.py::test_v3_continuous_final_proposals_bind_speed_timing_and_validate
+FAILED tests/test_trajectory_generator_v3.py::test_v3_legacy_continuous_mapping_keeps_residual_out_of_geometry
+FAILED tests/test_trajectory_generator_v3.py::test_v3_inbound_transfer_and_emergency_use_executable_schema
+FAILED tests/test_trajectory_generator_v3.py::test_v3_brake_bezier_mode_preserves_live_boundary
+FAILED tests/test_trajectory_time_parameterization_v3.py::test_v3_straight_zero_to_zero_has_exact_boundaries_and_feasible_segments
+FAILED tests/test_trajectory_time_parameterization_v3.py::test_v3_curved_path_uses_curvature_and_end_direction_constraints
+FAILED tests/test_trajectory_time_parameterization_v3.py::test_v3_preserves_nonzero_boundary_state_and_analytic_derivative
+7 failed, 57 passed in 7.80s

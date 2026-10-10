@@ -1,0 +1,1 @@
+{"active": 14, "minimum_active_soc": 0.3166155746916731, "outcome_counts": {"completed": 12}, "resolved": 12, "sim_time": 400.0, "step": 400, "stop_reason": "max_probe_time", "terminal": false}

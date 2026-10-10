@@ -1,0 +1,219 @@
+{
+  "observed_utc": "2026-10-10T00:58:18Z",
+  "output_server": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle",
+  "cwd": "/home/user/projects/terminal",
+  "root_status": "RUNNING",
+  "root_error": null,
+  "protocol": {
+    "gate_mode": "first_feasible_union",
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "model_seed": 91911,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "workers": 4,
+    "wall_seconds_per_fold_arm": 1200,
+    "outer_timeout_seconds": 4200,
+    "qualification": false
+  },
+  "root_result": {
+    "size_bytes": 113266,
+    "mtime": "2026-10-10 08:58:17.645934606 +0800"
+  },
+  "log": {
+    "path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle.log",
+    "size_bytes": 0,
+    "mtime": "2026-10-10 08:39:06.016515904 +0800"
+  },
+  "exit": {
+    "path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle.exit",
+    "exists": false
+  },
+  "processes": [
+    {
+      "pid": 3129150,
+      "role": "wrapper",
+      "ppid": 1,
+      "stat": "S",
+      "pcpu": 0.0,
+      "rss_kb": 1852,
+      "elapsed": "19:12",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129151,
+      "role": "timeout",
+      "ppid": 3129150,
+      "stat": "S",
+      "pcpu": 0.0,
+      "rss_kb": 3104,
+      "elapsed": "19:12",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129152,
+      "role": "root_python",
+      "ppid": 3129151,
+      "stat": "Sl",
+      "pcpu": 3.9,
+      "rss_kb": 600900,
+      "elapsed": "19:12",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129382,
+      "role": "resource_tracker",
+      "ppid": 3129152,
+      "stat": "S",
+      "pcpu": 0.0,
+      "rss_kb": 13820,
+      "elapsed": "18:31",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129383,
+      "role": "worker",
+      "ppid": 3129152,
+      "stat": "R",
+      "pcpu": 99.9,
+      "rss_kb": 851832,
+      "elapsed": "18:31",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129386,
+      "role": "worker",
+      "ppid": 3129152,
+      "stat": "R",
+      "pcpu": 99.9,
+      "rss_kb": 816576,
+      "elapsed": "18:31",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129387,
+      "role": "worker",
+      "ppid": 3129152,
+      "stat": "R",
+      "pcpu": 99.9,
+      "rss_kb": 820552,
+      "elapsed": "18:31",
+      "cwd": "/home/user/projects/terminal"
+    },
+    {
+      "pid": 3129388,
+      "role": "worker",
+      "ppid": 3129152,
+      "stat": "R",
+      "pcpu": 99.9,
+      "rss_kb": 873012,
+      "elapsed": "18:31",
+      "cwd": "/home/user/projects/terminal"
+    }
+  ],
+  "folds": [
+    {
+      "held_seed": 893511,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 637.1231784261763
+    },
+    {
+      "held_seed": 893512,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 652.6407393766567
+    },
+    {
+      "held_seed": 893513,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 634.6678562154993
+    },
+    {
+      "held_seed": 893601,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 635.2123655453324
+    },
+    {
+      "held_seed": 893602,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": 0.0
+    },
+    {
+      "held_seed": 893603,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": 0.0
+    },
+    {
+      "held_seed": 893604,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": 0.0
+    },
+    {
+      "held_seed": 893605,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": 0.0
+    },
+    {
+      "held_seed": 893606,
+      "status": "RUNNING",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": 0.0
+    }
+  ]
+}

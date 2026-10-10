@@ -1,0 +1,63 @@
+{
+  "server": "lab-server",
+  "pid": 2157928,
+  "pid_state": "exited",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001_v2",
+  "pilot_status": "PILOT_OK",
+  "progress": {
+    "completed_arm_count": 2,
+    "expected_arm_count": 2,
+    "binding_checks_pass": true,
+    "exact_replay": true,
+    "preflight_sha256": "e0022ca5b1648eacb96fded39a515d9b2c6128dd92ae2f1d1a078210ff884506"
+  },
+  "arms": [
+    {
+      "arm": "before_legacy",
+      "cell_id": 1,
+      "env_seed": 875101,
+      "policy_seed": 875201,
+      "status": "completed",
+      "arm_sha256": "61ae2af93dd35555b7a283ea27e7e795bc6190c791a16d9d96ba6e3f7a9974ea",
+      "action_tape_sha256": "b753b5e8fadff5d2bd9fc751b6e6ebc134b284e28dec8608954cd83f59a2f2ac",
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "sidecar_sha256": null,
+      "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "caller_rng_unchanged": true,
+      "binding_checks_all_true": true,
+      "comparison_all_match": true,
+      "safety_provenance": {"raw_uncertified_execution": null, "shared_uncertified_execution": 0, "derived": true, "label": "exact_replay_of_frozen_certified_source", "observed_positive": false, "provenance_valid": true, "blocked_count": 0, "all_conditions_true": true},
+      "metrics": {"natural_terminal": true, "censored": false, "complete_scene_metrics_known": true, "request_identity_exact_24": true, "generated": 24, "admitted": 24, "successful": 24, "resolved": 24, "normal": 19, "emergency": 5, "failed": 0, "diverted": 0, "unresolved": 0, "wait_seconds": 3327.4996213135246, "request_elapsed_total_seconds": 9050.0, "energy_total_consumed": 7757.917108755452, "raw_reward_excluding_rejection_penalty": 451.32887937331253, "release_rejection_penalty": -19.55, "reward_total": 431.7788793733125},
+      "replay_steps": {"expected": 761, "replayed": 761},
+      "runtime_capture": {"factory_calls": 1, "generated_requests": 24, "ledger_alignment": true, "energy_duplicate_arrival_ids": [], "telemetry_arrivals_admitted": 12},
+      "passive_counter_counts": {"candidate_plan_calls": 773, "release_calls": 7590, "proposal_checks_total": 696, "landing_zone_pair_checks": 150, "suffix_plan_pairs": 0, "suffix_proposal_checks": 0, "full_mixed_candidate_set_calls": 0, "approvals_rank_gt3": 0},
+      "timing": {"actor_request": {"count": 691, "mean_ms": 0.45857431982633867, "p95_ms": 0.5673175, "max_ms": 1.333299}, "candidate_plan": {"count": 773, "mean_ms": 14.942825380336352, "p95_ms": 29.1207314, "max_ms": 101.745538}, "private_release": {"count": 7590, "mean_ms": 1.5703789242424242, "p95_ms": 0.007091449999999812, "max_ms": 156.712286}, "env_step": {"count": 761, "mean_ms": 34.064494329829174, "p95_ms": 108.204271, "max_ms": 461.213835}},
+      "wall_time_seconds": 29.846241625
+    },
+    {
+      "arm": "before_prefix_fallback",
+      "cell_id": 1,
+      "env_seed": 875101,
+      "policy_seed": 875201,
+      "status": "completed",
+      "arm_sha256": "a547c3f708e38e1f1063eead5560be979332539155a15c857bd3517b81e78685",
+      "action_tape_sha256": "f87b3c1dddff5252371581de3e2f7c9fbf88d55c97270810ee8ca75f020486de",
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "sidecar_sha256": "1b654083ba29eacb8b2185b3fc7eefea674687562a493dc9139703109e11211d",
+      "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "caller_rng_unchanged": true,
+      "binding_checks_all_true": true,
+      "comparison_all_match": true,
+      "safety_provenance": {"raw_uncertified_execution": null, "shared_uncertified_execution": 0, "derived": true, "label": "exact_replay_of_frozen_certified_source", "observed_positive": false, "provenance_valid": true, "blocked_count": 0, "all_conditions_true": true},
+      "metrics": {"natural_terminal": true, "censored": false, "complete_scene_metrics_known": true, "request_identity_exact_24": true, "generated": 24, "admitted": 24, "successful": 24, "resolved": 24, "normal": 19, "emergency": 5, "failed": 0, "diverted": 0, "unresolved": 0, "wait_seconds": 3123.9868663533725, "request_elapsed_total_seconds": 8878.0, "energy_total_consumed": 7513.164788008758, "raw_reward_excluding_rejection_penalty": 453.66623681012584, "release_rejection_penalty": -19.8, "reward_total": 433.8662368101258},
+      "replay_steps": {"expected": 723, "replayed": 723},
+      "runtime_capture": {"factory_calls": 1, "generated_requests": 24, "ledger_alignment": true, "energy_duplicate_arrival_ids": [], "telemetry_arrivals_admitted": 12},
+      "passive_counter_counts": {"candidate_plan_calls": 5994, "release_calls": 7454, "proposal_checks_total": 4865, "landing_zone_pair_checks": 1923, "suffix_plan_pairs": 5196, "suffix_proposal_checks": 15, "full_mixed_candidate_set_calls": 202, "approvals_rank_gt3": 15},
+      "timing": {"actor_request": {"count": 662, "mean_ms": 0.483318418429003, "p95_ms": 0.63584755, "max_ms": 0.883644}, "candidate_plan": {"count": 5994, "mean_ms": 12.672270658324992, "p95_ms": 30.15140565, "max_ms": 137.397991}, "private_release": {"count": 7454, "mean_ms": 10.263798795143547, "p95_ms": 0.01273595, "max_ms": 771.661561}, "env_step": {"count": 723, "mean_ms": 122.65739485062242, "p95_ms": 717.9913149, "max_ms": 3472.175239}},
+      "wall_time_seconds": 92.837292764
+    }
+  ],
+  "no_full_launched": true
+}

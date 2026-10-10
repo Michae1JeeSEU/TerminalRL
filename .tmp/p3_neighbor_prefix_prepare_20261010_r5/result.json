@@ -1,0 +1,11 @@
+{
+  "candidate_requests": 0,
+  "error": null,
+  "plan_calls": 0,
+  "resets": 0,
+  "snapshot_reads": 0,
+  "states": 223,
+  "status": "PREPARED",
+  "steps": 0,
+  "teacher_queries": 0
+}

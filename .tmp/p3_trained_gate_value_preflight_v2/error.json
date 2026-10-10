@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "policy loading changed caller RNG",
+    "type": "TrainedGateValueError"
+  },
+  "phase": "preflight",
+  "stage": "P3_TRAINED_GATE_VALUE_20261001_V1",
+  "status": "FAILED"
+}

@@ -1,0 +1,25 @@
+{
+  "active": 23,
+  "emergency_commits": 0,
+  "normal_commits": 33,
+  "outcome_counts": {
+    "completed": 4
+  },
+  "phases": {
+    "completed": 4,
+    "ring_inner": 8,
+    "ring_middle": 11,
+    "ring_outer": 1,
+    "service": 3,
+    "transfer_m2i": 2,
+    "transfer_o2m": 1
+  },
+  "queue": 0,
+  "resolved": 4,
+  "service": 3,
+  "sim_time": 190.0,
+  "step": 190,
+  "stop_reason": "max_steps",
+  "terminal": false,
+  "wall_seconds": 57.97600969998166
+}

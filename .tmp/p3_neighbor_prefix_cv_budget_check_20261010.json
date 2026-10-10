@@ -1,0 +1,340 @@
+{
+  "observed_utc": "2026-10-10T01:00:11Z",
+  "output_server": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle",
+  "output_local": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle",
+  "root_status": "INCOMPLETE",
+  "root_error": "ValueError('fold wall budget exhausted')",
+  "root_exit_code": 2,
+  "processes_absent": true,
+  "protocol": {
+    "gate_mode": "first_feasible_union",
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "model_seed": 91911,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "workers": 4,
+    "wall_seconds_per_fold_arm": 1200,
+    "outer_timeout_seconds": 4200
+  },
+  "root_result": {
+    "status": "INCOMPLETE",
+    "error": "ValueError('fold wall budget exhausted')"
+  },
+  "folds": [
+    {
+      "held_seed": 893511,
+      "status": "INCOMPLETE",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 1200.2034603403881
+    },
+    {
+      "held_seed": 893512,
+      "status": "INCOMPLETE",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 1200.083407646045
+    },
+    {
+      "held_seed": 893513,
+      "status": "INCOMPLETE",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 1200.0123816132545
+    },
+    {
+      "held_seed": 893601,
+      "status": "INCOMPLETE",
+      "error": null,
+      "latest_mark": 2000,
+      "curve_marks": [
+        0,
+        100,
+        500,
+        1000,
+        2000
+      ],
+      "elapsed_seconds": 1200.1673341384158
+    },
+    {
+      "held_seed": 893602,
+      "status": "NO_CURVE_IN_ROOT_RESULT",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": null
+    },
+    {
+      "held_seed": 893603,
+      "status": "NO_CURVE_IN_ROOT_RESULT",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": null
+    },
+    {
+      "held_seed": 893604,
+      "status": "NO_CURVE_IN_ROOT_RESULT",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": null
+    },
+    {
+      "held_seed": 893605,
+      "status": "NO_CURVE_IN_ROOT_RESULT",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": null
+    },
+    {
+      "held_seed": 893606,
+      "status": "NO_CURVE_IN_ROOT_RESULT",
+      "error": null,
+      "latest_mark": null,
+      "curve_marks": [],
+      "elapsed_seconds": null
+    }
+  ],
+  "log": {
+    "server_content": "{\"status\": \"INCOMPLETE\", \"folds\": 9, \"error\": \"ValueError('fold wall budget exhausted')\"}",
+    "local_content": "{\"status\": \"INCOMPLETE\", \"folds\": 9, \"error\": \"ValueError('fold wall budget exhausted')\"}"
+  },
+  "exit": {
+    "server_content": "2",
+    "local_content": "2"
+  },
+  "files": [
+    {
+      "file": "protocol.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/protocol.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\protocol.json",
+      "server_sha256": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+      "local_sha256": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "result.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/result.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\result.json",
+      "server_sha256": "4d4ec4dc70a08a8b2cd96370d7f22b1eb5f9e8f93c3f1b873f761e2529bea051",
+      "local_sha256": "4d4ec4dc70a08a8b2cd96370d7f22b1eb5f9e8f93c3f1b873f761e2529bea051",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "nine_cycle.log",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle.log",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle.log",
+      "server_sha256": "9d0788dbdcb023f631404e86c5975dbf40631ba1f200d42c9c0d676fad392b32",
+      "local_sha256": "9d0788dbdcb023f631404e86c5975dbf40631ba1f200d42c9c0d676fad392b32",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "nine_cycle.exit",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle.exit",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle.exit",
+      "server_sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "local_sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893511_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893511_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893511_native_pair_auxiliary.progress.json",
+      "server_sha256": "06e2e1bad353917770327fae9ae1959575b4b35d8aa9fbe532bfea5864a68a9e",
+      "local_sha256": "06e2e1bad353917770327fae9ae1959575b4b35d8aa9fbe532bfea5864a68a9e",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893512_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893512_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893512_native_pair_auxiliary.progress.json",
+      "server_sha256": "be7b7fe9bd309f406227889df66bd637f5759c17249e7e9a8bf279000d8a5c9e",
+      "local_sha256": "be7b7fe9bd309f406227889df66bd637f5759c17249e7e9a8bf279000d8a5c9e",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893513_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893513_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893513_native_pair_auxiliary.progress.json",
+      "server_sha256": "3c18857bc2f43e340223465f92140b31ee89ca7fc026cc060e06d278e9b9df20",
+      "local_sha256": "3c18857bc2f43e340223465f92140b31ee89ca7fc026cc060e06d278e9b9df20",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893601_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893601_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893601_native_pair_auxiliary.progress.json",
+      "server_sha256": "76f783e4447c1ac27b20fc95837819454547bd8ca25428f6f112cf7777972090",
+      "local_sha256": "76f783e4447c1ac27b20fc95837819454547bd8ca25428f6f112cf7777972090",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893602_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893602_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893602_native_pair_auxiliary.progress.json",
+      "server_sha256": "e7ecba4273bca4f42563739b18f409e238184db9f8921afcd3358de79695ef0d",
+      "local_sha256": "e7ecba4273bca4f42563739b18f409e238184db9f8921afcd3358de79695ef0d",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893603_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893603_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893603_native_pair_auxiliary.progress.json",
+      "server_sha256": "0babe685e9542c16a99d3cb35a3f40bceef04d9644d6a327c118043552bf696a",
+      "local_sha256": "0babe685e9542c16a99d3cb35a3f40bceef04d9644d6a327c118043552bf696a",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893604_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893604_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893604_native_pair_auxiliary.progress.json",
+      "server_sha256": "fe95aa9fa1a74c971e649b03653aa36d73ddd3de7c323d4fbc4d59bd488f0dfc",
+      "local_sha256": "fe95aa9fa1a74c971e649b03653aa36d73ddd3de7c323d4fbc4d59bd488f0dfc",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893605_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893605_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893605_native_pair_auxiliary.progress.json",
+      "server_sha256": "6ac3601b6188ed354d26df6c0f1beab44c4ae901b1ff8a3601524d7fb582ebc5",
+      "local_sha256": "6ac3601b6188ed354d26df6c0f1beab44c4ae901b1ff8a3601524d7fb582ebc5",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "file": "fold_893606_native_pair_auxiliary.progress.json",
+      "server_path": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/fold_893606_native_pair_auxiliary.progress.json",
+      "local_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\cv\\nine_cycle\\fold_893606_native_pair_auxiliary.progress.json",
+      "server_sha256": "68f5ada5f32976101ca61dc1c2a29647124b98c60dbeb50fa159e63fe8e9939a",
+      "local_sha256": "68f5ada5f32976101ca61dc1c2a29647124b98c60dbeb50fa159e63fe8e9939a",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    }
+  ],
+  "all_expected_sha256_match": true,
+  "relaunch": false,
+  "budget_extended": false,
+  "path_correction": {
+    "previous": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle/nine_cycle",
+    "corrected": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle",
+    "note": "Previous metadata only had an extra display path component; all 13 hash rows use the corrected real paths."
+  },
+  "progress_fold_errors": [
+    {
+      "latest_mark": 2000,
+      "error": "ValueError('fold wall budget exhausted')",
+      "held_seed": 893511,
+      "status": "INCOMPLETE"
+    },
+    {
+      "latest_mark": 2000,
+      "error": "ValueError('fold wall budget exhausted')",
+      "held_seed": 893512,
+      "status": "INCOMPLETE"
+    },
+    {
+      "latest_mark": 2000,
+      "error": "ValueError('fold wall budget exhausted')",
+      "held_seed": 893513,
+      "status": "INCOMPLETE"
+    },
+    {
+      "latest_mark": 2000,
+      "error": "ValueError('fold wall budget exhausted')",
+      "held_seed": 893601,
+      "status": "INCOMPLETE"
+    },
+    {
+      "latest_mark": null,
+      "error": null,
+      "held_seed": 893602,
+      "status": "RUNNING"
+    },
+    {
+      "latest_mark": null,
+      "error": null,
+      "held_seed": 893603,
+      "status": "RUNNING"
+    },
+    {
+      "latest_mark": null,
+      "error": null,
+      "held_seed": 893604,
+      "status": "RUNNING"
+    },
+    {
+      "latest_mark": null,
+      "error": null,
+      "held_seed": 893605,
+      "status": "RUNNING"
+    },
+    {
+      "latest_mark": null,
+      "error": null,
+      "held_seed": 893606,
+      "status": "RUNNING"
+    }
+  ],
+  "root_result_fold_error_field_note": "root result fold objects expose error as null; progress files contain the four observed ValueError strings.",
+  "root_artifact_sha256": {
+    "protocol": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451",
+    "result": "4d4ec4dc70a08a8b2cd96370d7f22b1eb5f9e8f93c3f1b873f761e2529bea051",
+    "log": "9d0788dbdcb023f631404e86c5975dbf40631ba1f200d42c9c0d676fad392b32",
+    "exit": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+  }
+}

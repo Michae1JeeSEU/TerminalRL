@@ -1,0 +1,217 @@
+{
+  "task_actor_attributes": {
+    "priority_1": 19,
+    "mission_standard": 13,
+    "mission_cargo": 3,
+    "mission_surveillance": 3
+  },
+  "actor_soc_below_065": 10,
+  "case": "train_flow6_mixed",
+  "status": "COLLECTION_OK",
+  "rows": 2026,
+  "steps": 694,
+  "actor_rows": 19,
+  "contexts": {
+    "raw": {
+      "fast_inner": 18,
+      "busy_lz": 1538,
+      "retry": 11,
+      "low_soc": 528,
+      "after_retry": 1,
+      "interface_None": 1996,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 18
+    },
+    "actor": {
+      "fast_inner": 7,
+      "busy_lz": 13,
+      "retry": 0,
+      "low_soc": 5,
+      "after_retry": 1,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 7
+    },
+    "label": {
+      "fast_inner": 7,
+      "busy_lz": 13,
+      "retry": 0,
+      "low_soc": 5,
+      "after_retry": 1,
+      "interface_o2m": 6,
+      "interface_m2i": 6,
+      "interface_i2f": 7
+    }
+  },
+  "interface_gates": {
+    "o2m": {
+      "1": 6
+    },
+    "m2i": {
+      "1": 6
+    },
+    "i2f": {
+      "1": 7
+    }
+  },
+  "proposals": {
+    "12": 17,
+    "13": 1,
+    "11": 1
+  },
+  "teacher_vs_reported_trace_gate": {
+    "teacher1_actual1": 18,
+    "teacher1_actual0": 1
+  },
+  "rule_requests": {
+    "0": 2007,
+    "1": 19
+  },
+  "reported_trace_gates": {
+    "0": 2008,
+    "1": 18
+  },
+  "normal_K3_approval_ranks": {
+    "1": 17,
+    "2": 1
+  },
+  "unranked_release_traces": [],
+  "behavior_release_rejected_reasons": {
+    "PREDICTED_SEPARATION": 1
+  },
+  "teacher_transitions": {},
+  "teacher_trace_gate_differences": [
+    {
+      "slot": 17,
+      "tick": 578,
+      "uid": "5",
+      "interface": "i2f",
+      "soc": 0.6819679000931702,
+      "teacher_gate": 1,
+      "teacher_proposal": 11,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 2,
+      "plan_calls": 6,
+      "seconds": 0.167501506395638
+    }
+  ],
+  "terminal_soc_min": 0.43962790061433815,
+  "terminal_soc_max": 0.6614997092975644,
+  "terminal_energy_min": 659.4418509215072,
+  "emergency": {
+    "emergency_attempts": 0,
+    "emergency_committed": 0,
+    "emergency_blocked_safety": 0,
+    "emergency_blocked_energy": 0,
+    "emergency_blocked_lz": 0,
+    "emergency_blocked_dynamics": 0,
+    "emergency_blocked_slack": 0,
+    "emergency_touchdowns": 0,
+    "emergency_energy_guard_rejections": 0,
+    "emergency_lz_priority_rejections": 0
+  },
+  "min_actual": 111.11207220985558,
+  "min_swept": 111.00305928777841,
+  "label_intents": 22,
+  "label_plan_calls": 27,
+  "longest_queries": [
+    {
+      "slot": 9,
+      "tick": 315,
+      "uid": "4",
+      "interface": "o2m",
+      "soc": 0.6210657266203051,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 3.560280398465693
+    },
+    {
+      "slot": 7,
+      "tick": 291,
+      "uid": "2",
+      "interface": "m2i",
+      "soc": 0.6671210330086652,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 1.5153592694550753
+    },
+    {
+      "slot": 10,
+      "tick": 354,
+      "uid": "3",
+      "interface": "m2i",
+      "soc": 0.5673751100718705,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 1.243915087543428
+    }
+  ],
+  "rollout_seconds": 49.80484315287322,
+  "annotation_seconds": 30.16793265938759
+}

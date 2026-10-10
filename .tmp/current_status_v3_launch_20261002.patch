@@ -1,0 +1,17 @@
+diff --git a/docs/CURRENT_STATUS.md b/docs/CURRENT_STATUS.md
+index 6ef6d30..b5a04a8 100644
+--- a/docs/CURRENT_STATUS.md
++++ b/docs/CURRENT_STATUS.md
+@@ -12,9 +12,9 @@
+ - Batch bounds helper targeted qualification 已完成：server NumPy `2.5.1`、`256` segments 为 scalar `0.0893419 s` / batch `0.0448305 s`（约 `1.9929×`），`max bounds diff=0`；local NumPy `2.3.5`、`64` segments 亦为 `max diff=0`，focused `19 passed`、caller integration `55 passed`。
+ - True batch smoke 已接受：三臂各 `2 ticks`、`SMOKE_OK`、V2/V2/V3 source/load/runtime bindings、fixed source、frozen flags 全 false；除 UUID plan id 外 requested/accepted/actual metadata、hashes、safety、validity、wait/elapsed/energy 非计时字段与 corrected smoke 相等。
+ - Final `38`-file unified regression 已完成：`319 passed / 1 skipped`、`99.25 s`、exit `0`；四个既有 before/after JSON compare 的 field/PVA-time/segment/bounds diff count 均为 `0`，max bounds diff `0`，validation errors 为空。
+-- Registered 8-arm zero-training matrix 已 exact-one launch 并进入 monitoring：UTC `2026-10-02T12:15:41.616174+00:00`、PID=`2303790`；execution/performance commit=`e5aa7af315ecefb786464740122d08d8a6816c90`（7 files，remote-v 为空，未 push）。
+-- 启动时 initial snapshot 为 `running`、`ticks=1`、`completed_arms=0/8`、cell `1 legacy88`；最新只读 snapshot（UTC `12:18:33`）为 PID `Rsl`、CPU `105%`、root `running`、`1/8` 臂完成，cell `1/repaired88` 到 `25 ticks`、safety `none`，overall comparison/终态尚未生成。cell1 legacy88 已报告 arm error（13 successful ticks、continuous-landing time-parameterization RuntimeError）；safety/invariant/uncertified 为 `0`，ledger-only validity 为 valid 但首臂未通过闭环检查。
+-- 当前继续 monitoring registered comparison；heartbeat `p3-v3` 为 ACTIVE、每 `10 min`、normal runs 静默，终态删除。primary 正在 bounded replay failed first `14` ticks，matrix sources immutable；held-out、training、optimizer step、checkpoint write、default promotion 均未执行，`PPO_ALLOWED=false`。
++- Registered 8-arm zero-training matrix comparison 已结束为 `COMPLETED_WITH_ISSUES`：artifact SHA=`d7cee7a34092cf885aa213961fa86ceba68d5dfb3b125607164d4e126183381b`，`executed=8/8`、`stopped_early=false`、wall=`1542.282646 s`；UTC `12:44:37` 时 PID=`2303790` absent，OS exit 未观测。execution/performance commit=`e5aa7af315ecefb786464740122d08d8a6816c90`（7 files，remote-v 为空，未 push）。
++- 八臂均 `status=error`、`stop_reason=exception`、`resolved=0`；ledger-only validity=`valid`、errors 为空，但 arm error 不构成 qualification。C1/C2 的 ring-hold 与 continuous-landing 错误明细见结果文档；hard/invariant/uncertified 均为 `0`、event lists 为空，zero-initialized partial tape/metrics/hash comparison 不能作为 performance qualification。
++- heartbeat `p3-v3` 已由 primary 在终态删除；当前下一步为 bounded numeric evidence → primary implementation → tests，root 决定前不注册或启动 fresh matrix。matrix sources immutable；held-out、training、optimizer step、checkpoint write、default promotion 均未执行，`PPO_ALLOWED=false`。
+ - P3 尚未解决或准入，dynamic geometry 与真实 hardware adapter 仍未 qualification。详见 [V3 修复结果](evidence/v4_2/trajectory_v3_repair_results_20261002.md)、[运动学修复审核方案](evidence/v4_2/trajectory_kinematic_consistency_repair_review_20261002.md) 与 [基础修复协议](evidence/v4_2/p3_foundation_repair_protocol_20261002.md)。
+ 
+ ## 2026-10-02 已批准首阶段修复与新增运动学阻塞（独立块）

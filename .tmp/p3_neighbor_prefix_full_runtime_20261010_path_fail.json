@@ -1,0 +1,266 @@
+{
+  "generated_utc": "2026-10-10T00:35:50.9945279Z",
+  "server_root": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full",
+  "local_root": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix_coverage_20261010\\full",
+  "root_status": "COMPLETE",
+  "root_error": null,
+  "root_states": 223,
+  "root_candidate_requests": 713,
+  "root_plan_calls": 797,
+  "root_elapsed_seconds": 1050.9524056361988,
+  "expected_file_count": 31,
+  "observed_server_hash_count": 31,
+  "all_expected_sha256_match": true,
+  "server_full_exit_exists": false,
+  "server_full_log_exists": false,
+  "files": [
+    {
+      "relative_path": "protocol.json",
+      "server_sha256": "e1785882cb09296de408076af379c04b4a9ad8374c1159528807946537522c7c",
+      "local_sha256": "e1785882cb09296de408076af379c04b4a9ad8374c1159528807946537522c7c",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "result.json",
+      "server_sha256": "3a33b54ecfd8fd85be1f75dea818693d798a5b3cc82e73bc22acc1a4f163dea0",
+      "local_sha256": "3a33b54ecfd8fd85be1f75dea818693d798a5b3cc82e73bc22acc1a4f163dea0",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "selection.json",
+      "server_sha256": "0ddd7412a06001181babd560fd2a9a5af65516dc92b2ff1af790130efb9fe63b",
+      "local_sha256": "0ddd7412a06001181babd560fd2a9a5af65516dc92b2ff1af790130efb9fe63b",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "witnesses.jsonl",
+      "server_sha256": "0e5f14fc6c7e8eaf2f90abdca700c2dbf887f7a2c036df5e9a11bd8be46e777b",
+      "local_sha256": "0e5f14fc6c7e8eaf2f90abdca700c2dbf887f7a2c036df5e9a11bd8be46e777b",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893511/protocol.json",
+      "server_sha256": "c5f338733c7d15cde4dc89df14a170b82cadd53ddf413813edeb3f7674310fce",
+      "local_sha256": "c5f338733c7d15cde4dc89df14a170b82cadd53ddf413813edeb3f7674310fce",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893511/result.json",
+      "server_sha256": "0342343b76cf471ffc01a3c2a3de24aa9ff8c61e53913eb40c9b19ddb892ecdf",
+      "local_sha256": "0342343b76cf471ffc01a3c2a3de24aa9ff8c61e53913eb40c9b19ddb892ecdf",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893511/witnesses.jsonl",
+      "server_sha256": "1d62bc04b00f4ebf9298342a06379a84ccbebc530c1124fe57242d66d4eecb42",
+      "local_sha256": "1d62bc04b00f4ebf9298342a06379a84ccbebc530c1124fe57242d66d4eecb42",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893512/protocol.json",
+      "server_sha256": "d5073ec7865659693a28346dd6401ceee41dd763a498b1fde5c4edf6171da595",
+      "local_sha256": "d5073ec7865659693a28346dd6401ceee41dd763a498b1fde5c4edf6171da595",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893512/result.json",
+      "server_sha256": "c303d034be6e91bd5c28bf62118d5a507ceb69488debbba211307a6f94861642",
+      "local_sha256": "c303d034be6e91bd5c28bf62118d5a507ceb69488debbba211307a6f94861642",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893512/witnesses.jsonl",
+      "server_sha256": "52c240bcd5b6c299194cf4813d52bf5f9dc2b16c2b52b310ed272817842abe66",
+      "local_sha256": "52c240bcd5b6c299194cf4813d52bf5f9dc2b16c2b52b310ed272817842abe66",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893513/protocol.json",
+      "server_sha256": "b24ebc3e618e5577d2d97225fbbb6f18d6304ffbf5b5088593f254c7ce56b06e",
+      "local_sha256": "b24ebc3e618e5577d2d97225fbbb6f18d6304ffbf5b5088593f254c7ce56b06e",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893513/result.json",
+      "server_sha256": "4b0bb46400f084f1c069fff8a873e73b6c45b9c33f5529e01dab7e3d5dde78e6",
+      "local_sha256": "4b0bb46400f084f1c069fff8a873e73b6c45b9c33f5529e01dab7e3d5dde78e6",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893513/witnesses.jsonl",
+      "server_sha256": "b636975c7cfea3d314135f727db1e16be3edd4db6cc7c0b5d221ce60e28a5e4c",
+      "local_sha256": "b636975c7cfea3d314135f727db1e16be3edd4db6cc7c0b5d221ce60e28a5e4c",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893601/protocol.json",
+      "server_sha256": "6ca2999f8c32e34bef52bcc1ef22d638935d8fcd10e990b03f089005e84f5602",
+      "local_sha256": "6ca2999f8c32e34bef52bcc1ef22d638935d8fcd10e990b03f089005e84f5602",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893601/result.json",
+      "server_sha256": "6a100e98832f39886daca219bf218e42d171ce70fb3751276be832a67b10c8f2",
+      "local_sha256": "6a100e98832f39886daca219bf218e42d171ce70fb3751276be832a67b10c8f2",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893601/witnesses.jsonl",
+      "server_sha256": "fa248bf6f7c3b7971f09076fca9d562b43f9836afc87c30e01ce9d8a27fee160",
+      "local_sha256": "fa248bf6f7c3b7971f09076fca9d562b43f9836afc87c30e01ce9d8a27fee160",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893602/protocol.json",
+      "server_sha256": "1fb99483265eb22746da49a3aeaee970c669f57e6064c80fe1170e2fe6da4a12",
+      "local_sha256": "1fb99483265eb22746da49a3aeaee970c669f57e6064c80fe1170e2fe6da4a12",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893602/result.json",
+      "server_sha256": "6fac88f0d253fcf4a9b7cb66b55a845c891778503a9fb95d92ca9c6a44966ec1",
+      "local_sha256": "6fac88f0d253fcf4a9b7cb66b55a845c891778503a9fb95d92ca9c6a44966ec1",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893602/witnesses.jsonl",
+      "server_sha256": "b345b3b0770ce96a203dc07e42ef302e3ab139cbf86bfa06f2e70e3e5a0bc996",
+      "local_sha256": "b345b3b0770ce96a203dc07e42ef302e3ab139cbf86bfa06f2e70e3e5a0bc996",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893603/protocol.json",
+      "server_sha256": "b5e9b690d3e5bd6e88fe0825cf4a93fc588b5c56cf90523848eda31dcc9b599e",
+      "local_sha256": "b5e9b690d3e5bd6e88fe0825cf4a93fc588b5c56cf90523848eda31dcc9b599e",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893603/result.json",
+      "server_sha256": "efb4b152f4ef3ad0a0287a609eddd8e39ec8e694bbb33522e4e3333a07328132",
+      "local_sha256": "efb4b152f4ef3ad0a0287a609eddd8e39ec8e694bbb33522e4e3333a07328132",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893603/witnesses.jsonl",
+      "server_sha256": "dfb09cc6507af73c96207ce98dc440dcd1e93dde9b4564ef2e5d1373439b073f",
+      "local_sha256": "dfb09cc6507af73c96207ce98dc440dcd1e93dde9b4564ef2e5d1373439b073f",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893604/protocol.json",
+      "server_sha256": "05e7c26b7fe689f0526faa2abb5a05fe15f292b54b0b446470e4235c1b08f62e",
+      "local_sha256": "05e7c26b7fe689f0526faa2abb5a05fe15f292b54b0b446470e4235c1b08f62e",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893604/result.json",
+      "server_sha256": "5018bfab9cc74ca2c39ba1cdddc19335e43d62ca32c576bdf8b496a4ac61c11b",
+      "local_sha256": "5018bfab9cc74ca2c39ba1cdddc19335e43d62ca32c576bdf8b496a4ac61c11b",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893604/witnesses.jsonl",
+      "server_sha256": "867c7b69e1a79baffe2c008683c0b10380c0760dce41a2aacfcb08bcdbc50c1a",
+      "local_sha256": "867c7b69e1a79baffe2c008683c0b10380c0760dce41a2aacfcb08bcdbc50c1a",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893605/protocol.json",
+      "server_sha256": "b70b1838b53a1f9e5801d71a5573732e4ccb508869ad4bed672de07353608427",
+      "local_sha256": "b70b1838b53a1f9e5801d71a5573732e4ccb508869ad4bed672de07353608427",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893605/result.json",
+      "server_sha256": "f6acb00dcb231f7f5238f832820a814513e679c0f108ca288bd8bd00b9c16446",
+      "local_sha256": "f6acb00dcb231f7f5238f832820a814513e679c0f108ca288bd8bd00b9c16446",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893605/witnesses.jsonl",
+      "server_sha256": "96866c3920d5d0ab91c4100bdcc28fcd12f4068853173301e4f730deeb335312",
+      "local_sha256": "96866c3920d5d0ab91c4100bdcc28fcd12f4068853173301e4f730deeb335312",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893606/protocol.json",
+      "server_sha256": "8cc67475ea70fc28b5d0b9c39ea22d14fd2bf002480534782c76e01bc422003b",
+      "local_sha256": "8cc67475ea70fc28b5d0b9c39ea22d14fd2bf002480534782c76e01bc422003b",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893606/result.json",
+      "server_sha256": "3033c172dc52701e9d3138de696f4ce2bede05f4b1a6c734dd684abb9cd1c45d",
+      "local_sha256": "3033c172dc52701e9d3138de696f4ce2bede05f4b1a6c734dd684abb9cd1c45d",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    },
+    {
+      "relative_path": "seed_893606/witnesses.jsonl",
+      "server_sha256": "201c0b94959f9b125d61a2a235dc1e3f5630c7b4b6a47b9d79ef96627ef974f5",
+      "local_sha256": "201c0b94959f9b125d61a2a235dc1e3f5630c7b4b6a47b9d79ef96627ef974f5",
+      "server_exists": true,
+      "local_exists": true,
+      "sha256_match": true
+    }
+  ]
+}

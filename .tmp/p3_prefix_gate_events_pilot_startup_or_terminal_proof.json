@@ -1,0 +1,42 @@
+{
+  "stage": "P3_PREFIX_GATE_EVENTS_20261001_V1",
+  "phase": "pilot",
+  "status": "RUNNING",
+  "observed_at": "2026-10-01T18:21:52.573339192+08:00",
+  "python_pid": 2182083,
+  "launcher_shell_pid": 2182082,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_gate_events_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "exe": "/usr/bin/python3.12",
+  "env_flags": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "log": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001/pilot_v1.log",
+    "size_bytes": 0
+  },
+  "progress": {
+    "status": "RUNNING",
+    "cell_id": 1,
+    "step": 299,
+    "potential_candidates_seen": 314,
+    "events_recorded": 190,
+    "normal_events": 43
+  },
+  "preflight_sha256": "59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5",
+  "runner_sha256": "8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef",
+  "source_before_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+  "source_after_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+  "terminal_artifacts": [
+    "pilot.json",
+    "full.json",
+    "error.json",
+    "partial.json",
+    "cells/cell_01.json"
+  ],
+  "terminal_state": false,
+  "notes": "Pilot admitted for cell 1 only; no FULL launch."
+}

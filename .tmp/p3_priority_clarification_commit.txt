@@ -1,0 +1,31 @@
+HEAD=935b94eba7d1c3c9099416ccbc801ab02e5c3c3e CACHED_FILES= STATUS_RAW System.Object[] SCOPED_STATUS System.Object[]
+DIFF_CHECK
+warning: in the working copy of 'docs/evidence/v4_2/p3_v25_neutral_course_20261008.md', LF will be replaced by CRLF the next time Git touches it
+DIFF_CHECK_EXIT=0
+DIFF
+warning: in the working copy of 'docs/evidence/v4_2/p3_v25_neutral_course_20261008.md', LF will be replaced by CRLF the next time Git touches it
+diff --git a/docs/evidence/v4_2/p3_v25_neutral_course_20261008.md b/docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+index c054774..b2ff127 100644
+--- a/docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
++++ b/docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+@@ -4,6 +4,8 @@
+ 
+ primary上一段把`execution_plan.md`历史P3表和旧priority-aware formal配置当成当前规范，新增了priority-enabled数据分支。这是解释错误。`README.md`明确证据文件不能改写规范；`requirements.md`5.2、design/technical与execution_plan0.1/0.2一致规定当前主课程`task_priority_enabled=false`、priority shaping=0，mission只保留物理service/兼容性，等待与能量紧迫度继续参与调度。该规则不是本轮新增，也不因用户要求“正式P3”自动恢复历史任务等级偏好。
+ 
++2026-10-08用户再次明确：整个训练阶段暂不考虑随机优先级。primary复核上述主规范及`p3_v25_course`、arrival/reward实现，确认该约定覆盖本轮数据、BC、学生验证、PPO和正式训练：有效base_priority=1、priority shaping=0；保留等待/SOC紧迫度和物理mission服务时长。元数据中历史`priority_mode=random_135`只保留随机数流兼容，不表示当前有效优先级随机化；不删除该抽样或改变已冻结seed。此补充与正在运行的中性课程一致，无需停止或重启当前完整离线标注。
++
+ 保留priority分支的全部代码/结果：flow6为6N完整；dense24环境915ticks/19N5E、无实际安全/hash问题，776actor待标注。primary已授权只停止其未完成标注并保留原ANNOTATING与行政停止说明，不伪造成功、不继续flow12。未训练91901–3、未消费旧Q；没有checkpoint需要撤回。原neutral forecast train_A仍是有效开发证据，但它高SOC/warm的场景不等于以下三条件，不冒称正式三场景采集完成。
+ 
+ ## 当前配置与最小数据范围（首次reset前冻结）
+DIFF_EXIT=0
+STAGED=docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+STAGED_DIFF_CHECK
+STAGED_DIFF_CHECK_EXIT=0
+[codex/v4-2-v2-1-formal-i1 bb312d4] docs: reaffirm neutral priority across all P3 training stages
+ 1 file changed, 2 insertions(+)
+COMMIT_EXIT=0
+POST_COMMIT
+bb312d470ae5e47a087ae60fcd1aa1a8214bfdc6 docs: reaffirm neutral priority across all P3 training stages
+M	docs/evidence/v4_2/p3_v25_neutral_course_20261008.md
+INDEX_AFTER
+REMOTE_AFTER

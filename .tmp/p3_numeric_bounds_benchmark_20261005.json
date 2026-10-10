@@ -1,0 +1,28 @@
+{
+  "status": "BOUNDS_BENCHMARK_OK",
+  "scope": "synthetic_bounds_only",
+  "segments_per_repeat": 512,
+  "repeats": 4,
+  "exact_bounds": true,
+  "seconds": {
+    "baseline": [
+      0.14932369999587536,
+      0.12816770002245903,
+      0.1339937997981906,
+      0.12901460006833076
+    ],
+    "candidate": [
+      0.06884009996429086,
+      0.07189049990847707,
+      0.0739635000936687,
+      0.0720377997495234
+    ]
+  },
+  "reset_count": 0,
+  "teacher_queries": 0,
+  "median_speedup": 1.827357097189897,
+  "source_sha256": {
+    "baseline": "832a88f432f083010cbc34a9dbc2c14b8b9fe6cbe016292bc43c0e12695d0a9f",
+    "candidate": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+  }
+}

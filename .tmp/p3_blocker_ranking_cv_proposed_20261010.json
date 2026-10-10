@@ -1,0 +1,199 @@
+{
+  "schema": "p3_neighbor_blocker_ranking_cv_proposal_20261010_v1",
+  "status": "registered",
+  "execution": "NOT_STARTED",
+  "execution_authorization": "primary-directed single bounded loss contrast under existing user request to continue P3 repair",
+  "approval": {
+    "required_before_start": true,
+    "user_authorization_observed_for_this_manifest": false,
+    "registered_under": "existing P3 repair continuation authorization; exact launch remains pending primary acceptance",
+    "server_launch_performed": false,
+    "manifest_is_not_authorization": true
+  },
+  "candidate": {
+    "name": "p3_neighbor_blocker_ranking_20261010",
+    "output_remote": "/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle",
+    "output_local_mirror": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_blocker_ranking_20261010\\nine_cycle",
+    "output_must_be_new": true,
+    "local_mirror_exists_at_manifest_time": "PENDING",
+    "server_path_existence_check": "PASS_ABSENT_AT_PREFLIGHT_20261010",
+    "variation_scope": "auxiliary loss only: existing pair BCE plus fixed scene BCE and fixed listwise known-blocker ranking",
+    "model_and_observation_unchanged": true
+  },
+  "command": {
+    "remote_shell_prefix": "env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
+    "python": "/home/user/envs/terminal_env/bin/python",
+    "module": "terminal_marl.scripts.diagnose_p3_intent_neighbor",
+    "argv": [
+      "/home/user/envs/terminal_env/bin/python",
+      "-u",
+      "-m",
+      "terminal_marl.scripts.diagnose_p3_intent_neighbor",
+      "--train-directories",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed",
+      "--additional-train-directories",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03",
+      "--witness-directory",
+      "/home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009",
+      "--supplemental-train-directories",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03",
+      "--supplemental-witness-directory",
+      "/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle",
+      "--prefix-witness-directory",
+      "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full",
+      "--workers",
+      "4",
+      "--blocker-ranking",
+      "--output",
+      "/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle"
+    ],
+    "command_string": "env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/user/envs/terminal_env/bin/python -u -m terminal_marl.scripts.diagnose_p3_intent_neighbor --train-directories /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed --additional-train-directories /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03 --witness-directory /home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009 --supplemental-train-directories /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01 /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02 /home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03 --supplemental-witness-directory /home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle --prefix-witness-directory /home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full --workers 4 --blocker-ranking --output /home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle",
+    "process_pool": "spawn",
+    "workers": 4,
+    "outer_timeout_seconds": 4200
+  },
+  "protocol": {
+    "gate_mode": "first_feasible_union",
+    "arms": ["native_pair_auxiliary"],
+    "model": "IntentNeighborActor",
+    "model_seed": 91911,
+    "auxiliary_seed": 91912,
+    "marks": [0, 100, 500, 1000, 2000, 5000],
+    "wall_seconds_per_fold_arm": 1200,
+    "outer_timeout_seconds": 4200,
+    "actor_rows_fixed": 3149,
+    "old_reference_target_rows_fixed": 473,
+    "expanded_target_rows_fixed": 1270,
+    "input_seeds": [893511, 893512, 893513, 893601, 893602, 893603, 893604, 893605, 893606],
+    "qualification": false,
+    "PPO_ALLOWED": false,
+    "Q_accessed": false,
+    "teacher_queries": 0,
+    "environment_steps": 0,
+    "checkpoint_written": false,
+    "source_group": "old6_plus_supplemental3_plus_prefix",
+    "comparison_control_reference": "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+    "comparison_reference_support": 473,
+    "comparison_expanded_support": 1270,
+    "auxiliary_variant": {
+      "flag": "--blocker-ranking",
+      "base": "existing native_pair_auxiliary BCE",
+      "scene_bce_weight": 0.25,
+      "listwise_blocker_weight": 0.25,
+      "listwise_form": "logsumexp(known_scores)-logsumexp(known_blocked_scores)",
+      "eligible": "mean only where known-blocked and known-safe both exist",
+      "unknown": "masked",
+      "validity": "requires at least one known positive; 31 no-known-safe queries skipped"
+    }
+  },
+  "inputs": {
+    "original_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed",
+      "/home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed"
+    ],
+    "additional_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03"
+    ],
+    "supplemental_train_directories": [
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_01",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_02",
+      "/home/user/training_outputs/terminal/p3_v26_supplemental_20261009/train_03"
+    ],
+    "old_witness_directory": "/home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009",
+    "supplemental_witness_directory": "/home/user/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle",
+    "prefix_witness_directory": "/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/full"
+  },
+  "observed_preflight": {
+    "ring_reuse_terminal": {
+      "status": "COMPLETE",
+      "exit": 0,
+      "result_sha256": "51f098ae4378d59f1a9e7ab189afcc9f9ba9c0ee2ec520d90dd3683fb144a553",
+      "comparison_sha256": "1ff299fdae5160f5f04ebdb8774fdf9036431f4488b4c7ed86a7295e31e64f42",
+      "terminal_check_sha256": "61b84c1393c4004951bda62984475ee7c65354239aa7fb6f637cc92588752afd",
+      "all_folds_fixed_5000": true,
+      "all_processes_exited": true
+    },
+    "ranking_support": {
+      "artifact": ".tmp/p3_blocker_ranking_support_20261010.json",
+      "sha256": "d6b9e22ab1b53173062ffd548666f12067ffc50cfce4d63752bb65c5436c9ad4",
+      "status": "PASS",
+      "queries": 1270,
+      "known_positive_queries": 839,
+      "mixed_known_blocked_and_safe_queries": 808,
+      "queries_without_known_safe": 31,
+      "blocked_queries_with_unknown_contenders": 0,
+      "blocked_pairs_in_queries_with_unknown_contenders": 0
+    },
+    "prior_prefix_cv": {
+      "status": "INCOMPLETE",
+      "exit": 2,
+      "preserve": true,
+      "rerun": false
+    }
+  },
+  "source_freeze": {
+    "status": "READY",
+    "candidate_commit": "d227b146cc2d4acdead69a56d532c858e81dfc54",
+    "source_hash_count": 20,
+    "source_hashes_expected_local": {
+      "terminal_marl/training/p3_neighbor_prefix_coverage_data.py": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+      "terminal_marl/training/p3_v26_train_dataset.py": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+      "terminal_marl/training/p3_v25_course_data.py": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+      "terminal_marl/training/p3_v26_course_data.py": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+      "terminal_marl/training/p3_v26_supplemental_data.py": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+      "terminal_marl/training/p3_neighbor_witness_data.py": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+      "terminal_marl/training/p3_neighbor_witness_dataset.py": "4c542bfca077ae9f45593a695d1397f3d4144aa17b7f3e0bd7404dd007325edf",
+      "terminal_marl/scripts/diagnose_p3_intent_neighbor.py": "9aecd7f953dc406c7c4bcd4a39d6f721144b3b5d3bf95a23d1224056ab1535f2",
+      "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+      "tests/test_p3_v26_train_dataset.py": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6",
+      "tests/test_p3_neighbor_witness_data.py": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+      "tests/test_p3_neighbor_witness_dataset.py": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+      "tests/test_p3_supplemental_neighbor_data.py": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+      "tests/test_p3_neighbor_prefix_coverage_data.py": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+      "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+      "tests/test_p3_neighbor_prefix_queries.py": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+      ".tmp/run_p3_neighbor_prefix_20261010.py": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+      ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+      "tests/test_intent_neighbor_ring_score_reuse.py": "87268b8f391b179e917edb7d034497866d0013f83e47929bbf185dfe3250eb25",
+      "tests/test_p3_neighbor_blocker_ranking.py": "38d8f0cb67d1ff7770e1a812a78e9c72d3ca08547d8a425faa64319b5c000532"
+    },
+    "server_source_sha_recheck": "CORE_3_MATCHED; FULL_20_ENFORCED_BY_REMOTE_LAUNCH_GUARD",
+    "server_preflight_sha256": "ec6424107a8976a9c5225e2b11256fc5c70e6b7e73cca4c32cb9d011e7b7357e",
+    "ready_only_after": "candidate commit d227b146cc2d4acdead69a56d532c858e81dfc54, local 20-path hashes, server core-source recheck, and 35-test local/server preflight are recorded; primary approval remains required before --execute",
+    "source_edit_allowed_in_this_manifest": false
+  },
+  "execution_guards": {
+    "do_not_repeat_ring_reuse_or_control": true,
+    "do_not_access_Q": true,
+    "PPO_ALLOWED": false,
+    "no_online_teacher_or_candidate_labels_in_observation": true,
+    "no_extra_seed": true,
+    "no_epoch_selection": true,
+    "no_budget_extension": true,
+    "no_hyperparameter_sweep": true,
+    "no_automatic_retry_after_failure": true,
+    "failure_keeps_partial_records_and_root_incomplete": true,
+    "not_qualification": true,
+    "not_generalization_claim": true,
+    "not_formal_or_PPO_admission": true
+  },
+  "pending_before_any_start": [
+    "fresh local and server output-path nonexistence check",
+    "full 20-path server source SHA equality, enforced again by the remote launch guard",
+    "primary approval of this exact manifest"
+  ],
+  "local_git": {
+    "remote_git": false,
+    "candidate_commit": "d227b146cc2d4acdead69a56d532c858e81dfc54",
+    "source_freeze_check": "READY"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "checkpoint": {
+    "checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p2_runtime_shortlist_formal_v1_808001_808006\\checkpoint_6.pt",
+    "checkpoint_sha256": "714d141f7b472a17321e95e9c4c5574fdc3bcaa0c2911494f67b5b1a9f27592e",
+    "migration": {
+      "allowed": true,
+      "allowed_deltas": {
+        "vehicle_profile_version": {
+          "source": "eh216s_research_v1",
+          "target": "eh216s_research_v2"
+        }
+      },
+      "applied_deltas": [
+        {
+          "field": "vehicle_profile_version",
+          "source": "eh216s_research_v1",
+          "target": "eh216s_research_v2"
+        }
+      ],
+      "source_metadata": {
+        "action_schema_version": "low_action_schema_v4_2_hierarchical",
+        "airspace_schema_version": "three_ring_v1",
+        "high_action_schema_version": "high_airspace_v1_10d",
+        "high_level_action_dim": 10,
+        "high_level_enabled": false,
+        "low_level_action_dim": 3,
+        "low_level_checkpoint_hash": null,
+        "low_level_joint_action_count": 26,
+        "low_level_policy_distribution": "hierarchical_gate_2_conditional_proposal_25",
+        "observation_dimension": 88,
+        "observation_feature_hash": "8cde32fb4d7481649aad5d01fae0e97c3bb7671c0379d1c4847915493d7beb98",
+        "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+        "policy_kind": "low_level",
+        "scheduler_mode": "execution",
+        "schema_version": "phaseA_landing_v1",
+        "teacher_enabled": false,
+        "trajectory_schema_version": "executable_trajectory_v2",
+        "vehicle_dynamics_schema_version": "performance_constrained_v2",
+        "vehicle_profile_id": "research_evtol",
+        "vehicle_profile_version": "eh216s_research_v1"
+      },
+      "source_unchanged": true,
+      "target_metadata": {
+        "action_schema_version": "low_action_schema_v4_2_hierarchical",
+        "airspace_schema_version": "three_ring_v1",
+        "high_action_schema_version": "high_airspace_v1_10d",
+        "high_level_action_dim": 10,
+        "high_level_enabled": false,
+        "low_level_action_dim": 3,
+        "low_level_checkpoint_hash": null,
+        "low_level_joint_action_count": 26,
+        "low_level_policy_distribution": "hierarchical_gate_2_conditional_proposal_25",
+        "observation_dimension": 88,
+        "observation_feature_hash": "8cde32fb4d7481649aad5d01fae0e97c3bb7671c0379d1c4847915493d7beb98",
+        "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+        "policy_kind": "low_level",
+        "scheduler_mode": "execution",
+        "schema_version": "phaseA_landing_v1",
+        "teacher_enabled": false,
+        "trajectory_schema_version": "executable_trajectory_v2",
+        "vehicle_dynamics_schema_version": "performance_constrained_v2",
+        "vehicle_profile_id": "research_evtol",
+        "vehicle_profile_version": "eh216s_research_v2"
+      }
+    },
+    "optimizer_restored": false,
+    "payload_bindings": {
+      "checkpoint_promotable": false,
+      "formal": true,
+      "initial_checkpoint_sha256": "4b8be66c100aaaeb5b5699dcce68a96dbe1237964e4c308e7b23b95c62fb8c8c",
+      "ppo_called": true,
+      "protocol_sha256": "7e6cf765af93925ffe960ff2ab8a4f141e13c1101e8b2f933fd64a2296bf3048",
+      "stage": "V4_2_P2_RUNTIME_SHORTLIST_FORMAL_V1"
+    },
+    "source_payload_unchanged": true,
+    "weight_digest_after": "33d0c7a9376e9a28df24c30d590fb5a112f69248a527f855a5f5e417e7d7dce0",
+    "weight_digest_before": "467e419f5c3d7b4008482248542a989531656bdceaba916d70a0dc17f5a50069",
+    "weight_digest_loaded_from_payload": "33d0c7a9376e9a28df24c30d590fb5a112f69248a527f855a5f5e417e7d7dce0",
+    "weight_digest_matches_payload": true
+  },
+  "diagnostic_migration": true,
+  "source_payload_unchanged": true
+}

@@ -1,0 +1,33 @@
+{
+  "phase": "full",
+  "status": "RUNNING",
+  "launcher_pid": 2139794,
+  "python_pid": 2139795,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.run_p3_prefix_fallback_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2",
+  "env": {
+    "MKL_NUM_THREADS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "pilot_reused_cell": 1,
+  "current_cell": 2,
+  "progress": {
+    "generated_request_rows": 24,
+    "env_now": 250.0,
+    "active_observation_count": 16,
+    "absolute_step": 250,
+    "status": "RUNNING",
+    "native_forward_count": 251
+  },
+  "existing_pair_artifacts": [
+    "pairs/cell_01.json"
+  ],
+  "new_pair_artifacts": [],
+  "pilot_wall_time_seconds": 177.28967501968145,
+  "baseline_wall_time_seconds": null,
+  "full_log_size": 0,
+  "progress_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/progress.json",
+  "log_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/full_v1.log",
+  "full_terminal": false
+}

@@ -1,0 +1,1543 @@
+{
+  "checks": {
+    "environment_steps": false,
+    "execution_sample_results_included": true,
+    "fixture_count": 4,
+    "physics_dt": 0.2,
+    "training": false,
+    "validate_kinematics_results_included": true
+  },
+  "consistent": false,
+  "finding_count": 20,
+  "plans": [
+    {
+      "canonical_departure": 0.0,
+      "consistent": false,
+      "duration": 65.45619978984061,
+      "end_time": 65.45619978984061,
+      "execution_sample_metrics": {
+        "end_time_appended_without_duplicate": true,
+        "interval_count": 328,
+        "last_interval_dt": 0.05619978984060481,
+        "last_interval_is_short": true,
+        "max_horizontal_acceleration": {
+          "between_interval_index": 46,
+          "midpoint_time": 9.4,
+          "signed_vertical_value": null,
+          "value": 28.02350524310245,
+          "vector": [
+            -21.871363168038545,
+            -17.520283082243772,
+            0.0
+          ]
+        },
+        "max_horizontal_speed": {
+          "interval_index": 112,
+          "position_end": [
+            80.60483508979809,
+            54.45966176327649,
+            40.0
+          ],
+          "position_start": [
+            82.0963230536376,
+            55.3940405160967,
+            40.0
+          ],
+          "signed_vertical_value": null,
+          "time_end": 22.6,
+          "time_start": 22.400000000000002,
+          "value": 8.800000000000031,
+          "vector": [
+            -7.4574398191976154,
+            -4.67189376410106,
+            0.0
+          ]
+        },
+        "max_vertical_acceleration_abs": {
+          "between_interval_index": 265,
+          "midpoint_time": 53.2,
+          "signed_vertical_value": -6.517811411648991,
+          "value": 6.517811411648991,
+          "vector": [
+            0.0,
+            0.0,
+            -6.517811411648991
+          ]
+        },
+        "max_vertical_speed_abs": {
+          "interval_index": 279,
+          "position_end": [
+            -80.0,
+            -40.0,
+            28.43253836088516
+          ],
+          "position_start": [
+            -80.0,
+            -40.0,
+            29.232538360885144
+          ],
+          "signed_vertical_value": -4.0,
+          "time_end": 56.0,
+          "time_start": 55.800000000000004,
+          "value": 4.0,
+          "vector": [
+            0.0,
+            0.0,
+            -4.0
+          ]
+        },
+        "physics_dt": 0.2,
+        "profile_limits": {
+          "max_horizontal_accel_mps2": 1.5,
+          "max_horizontal_decel_mps2": 1.5,
+          "max_horizontal_speed_mps": 25.0,
+          "max_vertical_accel_down_mps2": 1.0,
+          "max_vertical_accel_up_mps2": 1.0,
+          "max_vertical_speed_down_mps": 6.0,
+          "max_vertical_speed_up_mps": 4.0
+        },
+        "sample_count": 329
+      },
+      "findings": [
+        "node_chord_velocity_mismatch",
+        "node_displacement_integral_residual",
+        "first_segment_midpoint_velocity_mismatch",
+        "sampled_horizontal_acceleration_profile_exceeded",
+        "sampled_vertical_acceleration_profile_exceeded"
+      ],
+      "first_segment_midpoint_difference": {
+        "central_derivative_minus_sample_velocity": [
+          0.42613202382414794,
+          -3.8642709694747612,
+          0.0
+        ],
+        "central_derivative_minus_sample_velocity_norm": 3.887695799217562,
+        "central_position_derivative": [
+          -1.6983207402176959,
+          7.109795682005426,
+          0.0
+        ],
+        "epsilon": 0.0001,
+        "midpoint_time": 4.675097363561925,
+        "sample_mid_position": [
+          192.0601851851852,
+          33.238987048420135,
+          40.0
+        ],
+        "sample_mid_time": 4.675097363561925,
+        "sample_mid_velocity": [
+          -2.124452764041844,
+          10.974066651480188,
+          0.0
+        ],
+        "sample_minus_position": [
+          192.0603550172592,
+          33.23827606885194,
+          40.0
+        ],
+        "sample_minus_time": 4.674997363561925,
+        "sample_plus_position": [
+          192.06001535311117,
+          33.23969802798834,
+          40.0
+        ],
+        "sample_plus_time": 4.675197363561924,
+        "segment_index": 0
+      },
+      "first_three_segments": [
+        {
+          "average_reported_velocity": [
+            -2.124452764041844,
+            10.974066651480188,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            0.42613202387964977,
+            -3.864270969472064,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 3.887695799220964,
+          "chord_velocity_dx_dt": [
+            -1.698320740162194,
+            7.109795682008124,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            3.984417402738117,
+            -36.131686042935456,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 36.3507127625374,
+          "dt": 9.35019472712385,
+          "dx": [
+            -15.879629629629619,
+            66.47797409684027,
+            0.0
+          ],
+          "index": 0,
+          "left": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "t": 0.0,
+            "velocity": [
+              0.0,
+              16.0,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              184.12037037037038,
+              66.47797409684027,
+              40.0
+            ],
+            "t": 9.35019472712385,
+            "velocity": [
+              -4.248905528083688,
+              5.948133302960376,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -6.363735862381024,
+            2.6066767002522,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -1.1593867431632852,
+            -0.16289917154370936,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 1.1707748546635242,
+          "chord_velocity_dx_dt": [
+            -7.523122605544309,
+            2.4437775287084906,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -6.3427588560037975,
+            -0.8911868011578843,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 6.40506079752352,
+          "dt": 5.470787805196164,
+          "dx": [
+            -41.15740740740739,
+            13.369388302670828,
+            0.0
+          ],
+          "index": 1,
+          "left": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              184.12037037037038,
+              66.47797409684027,
+              40.0
+            ],
+            "t": 9.35019472712385,
+            "velocity": [
+              -4.248905528083688,
+              5.948133302960376,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -0.7731355737426578,
+              -1.221563226975996,
+              0.0
+            ],
+            "position": [
+              142.962962962963,
+              79.8473623995111,
+              40.0
+            ],
+            "t": 14.820982532320013,
+            "velocity": [
+              -8.47856619667836,
+              -0.7347799024559759,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -8.156129584109816,
+            -2.371963124476152,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            0.07969906012360894,
+            -0.7398351073936476,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.7441155329092093,
+          "chord_velocity_dx_dt": [
+            -8.076430523986208,
+            -3.1117982318697996,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            0.5596494430985786,
+            -5.195146657883555,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 5.225203947797561,
+          "dt": 7.022033161126199,
+          "dx": [
+            -56.71296296296299,
+            -21.851150374923606,
+            0.0
+          ],
+          "index": 2,
+          "left": {
+            "acceleration": [
+              -0.7731355737426578,
+              -1.221563226975996,
+              0.0
+            ],
+            "position": [
+              142.962962962963,
+              79.8473623995111,
+              40.0
+            ],
+            "t": 14.820982532320013,
+            "velocity": [
+              -8.47856619667836,
+              -0.7347799024559759,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              0.09183568495618714,
+              -0.4662989149876368,
+              0.0
+            ],
+            "position": [
+              86.25,
+              57.99621202458749,
+              40.0
+            ],
+            "t": 21.843015693446212,
+            "velocity": [
+              -7.833692971541275,
+              -4.009146346496328,
+              0.0
+            ]
+          }
+        }
+      ],
+      "initial_state": {
+        "acceleration": [
+          -0.454418934801229,
+          -1.0750435675826413,
+          0.0
+        ],
+        "position": [
+          200.0,
+          0.0,
+          40.0
+        ],
+        "t": 0.0,
+        "velocity": [
+          0.0,
+          16.0,
+          0.0
+        ]
+      },
+      "max_chord_minus_average_velocity": {
+        "index": 0,
+        "norm": 3.887695799220964,
+        "vector": [
+          0.42613202387964977,
+          -3.864270969472064,
+          0.0
+        ]
+      },
+      "max_displacement_integral_residual": {
+        "index": 0,
+        "norm": 36.3507127625374,
+        "vector": [
+          3.984417402738117,
+          -36.131686042935456,
+          0.0
+        ]
+      },
+      "mode": "legacy",
+      "reservation_slot": 0.0,
+      "start_time": 0.0,
+      "trajectory_hash": "099f5f7e0d25e1c52e5d46fa0c650398bb03db7e5a48bdc7174d99e827f2345a",
+      "validate_kinematics": []
+    },
+    {
+      "canonical_departure": 0.0,
+      "consistent": false,
+      "duration": 65.45619978984061,
+      "end_time": 65.45619978984061,
+      "execution_sample_metrics": {
+        "end_time_appended_without_duplicate": true,
+        "interval_count": 328,
+        "last_interval_dt": 0.05619978984060481,
+        "last_interval_is_short": true,
+        "max_horizontal_acceleration": {
+          "between_interval_index": 46,
+          "midpoint_time": 9.4,
+          "signed_vertical_value": null,
+          "value": 28.02350524310245,
+          "vector": [
+            -21.871363168038545,
+            -17.520283082243772,
+            0.0
+          ]
+        },
+        "max_horizontal_speed": {
+          "interval_index": 112,
+          "position_end": [
+            80.60483508979809,
+            54.45966176327649,
+            40.0
+          ],
+          "position_start": [
+            82.0963230536376,
+            55.3940405160967,
+            40.0
+          ],
+          "signed_vertical_value": null,
+          "time_end": 22.6,
+          "time_start": 22.400000000000002,
+          "value": 8.800000000000031,
+          "vector": [
+            -7.4574398191976154,
+            -4.67189376410106,
+            0.0
+          ]
+        },
+        "max_vertical_acceleration_abs": {
+          "between_interval_index": 265,
+          "midpoint_time": 53.2,
+          "signed_vertical_value": -6.517811411648991,
+          "value": 6.517811411648991,
+          "vector": [
+            0.0,
+            0.0,
+            -6.517811411648991
+          ]
+        },
+        "max_vertical_speed_abs": {
+          "interval_index": 279,
+          "position_end": [
+            -80.0,
+            -40.0,
+            28.43253836088516
+          ],
+          "position_start": [
+            -80.0,
+            -40.0,
+            29.232538360885144
+          ],
+          "signed_vertical_value": -4.0,
+          "time_end": 56.0,
+          "time_start": 55.800000000000004,
+          "value": 4.0,
+          "vector": [
+            0.0,
+            0.0,
+            -4.0
+          ]
+        },
+        "physics_dt": 0.2,
+        "profile_limits": {
+          "max_horizontal_accel_mps2": 1.5,
+          "max_horizontal_decel_mps2": 1.5,
+          "max_horizontal_speed_mps": 25.0,
+          "max_vertical_accel_down_mps2": 1.0,
+          "max_vertical_accel_up_mps2": 1.0,
+          "max_vertical_speed_down_mps": 6.0,
+          "max_vertical_speed_up_mps": 4.0
+        },
+        "sample_count": 329
+      },
+      "findings": [
+        "node_chord_velocity_mismatch",
+        "node_displacement_integral_residual",
+        "first_segment_midpoint_velocity_mismatch",
+        "sampled_horizontal_acceleration_profile_exceeded",
+        "sampled_vertical_acceleration_profile_exceeded"
+      ],
+      "first_segment_midpoint_difference": {
+        "central_derivative_minus_sample_velocity": [
+          0.42613202382414794,
+          -3.8642709694747612,
+          0.0
+        ],
+        "central_derivative_minus_sample_velocity_norm": 3.887695799217562,
+        "central_position_derivative": [
+          -1.6983207402176959,
+          7.109795682005426,
+          0.0
+        ],
+        "epsilon": 0.0001,
+        "midpoint_time": 4.675097363561925,
+        "sample_mid_position": [
+          192.0601851851852,
+          33.238987048420135,
+          40.0
+        ],
+        "sample_mid_time": 4.675097363561925,
+        "sample_mid_velocity": [
+          -2.124452764041844,
+          10.974066651480188,
+          0.0
+        ],
+        "sample_minus_position": [
+          192.0603550172592,
+          33.23827606885194,
+          40.0
+        ],
+        "sample_minus_time": 4.674997363561925,
+        "sample_plus_position": [
+          192.06001535311117,
+          33.23969802798834,
+          40.0
+        ],
+        "sample_plus_time": 4.675197363561924,
+        "segment_index": 0
+      },
+      "first_three_segments": [
+        {
+          "average_reported_velocity": [
+            -2.124452764041844,
+            10.974066651480188,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            0.42613202387964977,
+            -3.864270969472064,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 3.887695799220964,
+          "chord_velocity_dx_dt": [
+            -1.698320740162194,
+            7.109795682008124,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            3.984417402738117,
+            -36.131686042935456,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 36.3507127625374,
+          "dt": 9.35019472712385,
+          "dx": [
+            -15.879629629629619,
+            66.47797409684027,
+            0.0
+          ],
+          "index": 0,
+          "left": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "t": 0.0,
+            "velocity": [
+              0.0,
+              16.0,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              184.12037037037038,
+              66.47797409684027,
+              40.0
+            ],
+            "t": 9.35019472712385,
+            "velocity": [
+              -4.248905528083688,
+              5.948133302960376,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -6.363735862381024,
+            2.6066767002522,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -1.1593867431632852,
+            -0.16289917154370936,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 1.1707748546635242,
+          "chord_velocity_dx_dt": [
+            -7.523122605544309,
+            2.4437775287084906,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -6.3427588560037975,
+            -0.8911868011578843,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 6.40506079752352,
+          "dt": 5.470787805196164,
+          "dx": [
+            -41.15740740740739,
+            13.369388302670828,
+            0.0
+          ],
+          "index": 1,
+          "left": {
+            "acceleration": [
+              -0.454418934801229,
+              -1.0750435675826413,
+              0.0
+            ],
+            "position": [
+              184.12037037037038,
+              66.47797409684027,
+              40.0
+            ],
+            "t": 9.35019472712385,
+            "velocity": [
+              -4.248905528083688,
+              5.948133302960376,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -0.7731355737426578,
+              -1.221563226975996,
+              0.0
+            ],
+            "position": [
+              142.962962962963,
+              79.8473623995111,
+              40.0
+            ],
+            "t": 14.820982532320013,
+            "velocity": [
+              -8.47856619667836,
+              -0.7347799024559759,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -8.156129584109816,
+            -2.371963124476152,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            0.07969906012360894,
+            -0.7398351073936476,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.7441155329092093,
+          "chord_velocity_dx_dt": [
+            -8.076430523986208,
+            -3.1117982318697996,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            0.5596494430985786,
+            -5.195146657883555,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 5.225203947797561,
+          "dt": 7.022033161126199,
+          "dx": [
+            -56.71296296296299,
+            -21.851150374923606,
+            0.0
+          ],
+          "index": 2,
+          "left": {
+            "acceleration": [
+              -0.7731355737426578,
+              -1.221563226975996,
+              0.0
+            ],
+            "position": [
+              142.962962962963,
+              79.8473623995111,
+              40.0
+            ],
+            "t": 14.820982532320013,
+            "velocity": [
+              -8.47856619667836,
+              -0.7347799024559759,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              0.09183568495618714,
+              -0.4662989149876368,
+              0.0
+            ],
+            "position": [
+              86.25,
+              57.99621202458749,
+              40.0
+            ],
+            "t": 21.843015693446212,
+            "velocity": [
+              -7.833692971541275,
+              -4.009146346496328,
+              0.0
+            ]
+          }
+        }
+      ],
+      "initial_state": {
+        "acceleration": [
+          -0.454418934801229,
+          -1.0750435675826413,
+          0.0
+        ],
+        "position": [
+          200.0,
+          0.0,
+          40.0
+        ],
+        "t": 0.0,
+        "velocity": [
+          0.0,
+          16.0,
+          0.0
+        ]
+      },
+      "max_chord_minus_average_velocity": {
+        "index": 0,
+        "norm": 3.887695799220964,
+        "vector": [
+          0.42613202387964977,
+          -3.864270969472064,
+          0.0
+        ]
+      },
+      "max_displacement_integral_residual": {
+        "index": 0,
+        "norm": 36.3507127625374,
+        "vector": [
+          3.984417402738117,
+          -36.131686042935456,
+          0.0
+        ]
+      },
+      "mode": "legacy",
+      "reservation_slot": 30.0,
+      "start_time": 0.0,
+      "trajectory_hash": "099f5f7e0d25e1c52e5d46fa0c650398bb03db7e5a48bdc7174d99e827f2345a",
+      "validate_kinematics": []
+    },
+    {
+      "canonical_departure": 5.1561927273869514,
+      "consistent": false,
+      "duration": 70.17832002373805,
+      "end_time": 70.17832002373805,
+      "execution_sample_metrics": {
+        "end_time_appended_without_duplicate": true,
+        "interval_count": 351,
+        "last_interval_dt": 0.17832002373805267,
+        "last_interval_is_short": true,
+        "max_horizontal_acceleration": {
+          "between_interval_index": 71,
+          "midpoint_time": 14.4,
+          "signed_vertical_value": null,
+          "value": 22.304267689221348,
+          "vector": [
+            -12.271089199645932,
+            -18.62527119283841,
+            0.0
+          ]
+        },
+        "max_horizontal_speed": {
+          "interval_index": 0,
+          "position_end": [
+            199.97445146728856,
+            3.183784833147631,
+            40.0
+          ],
+          "position_start": [
+            200.0,
+            0.0,
+            40.0
+          ],
+          "signed_vertical_value": null,
+          "time_end": 0.2,
+          "time_start": 0.0,
+          "value": 15.91943669803096,
+          "vector": [
+            -0.12774266355719988,
+            15.918924165738154,
+            0.0
+          ]
+        },
+        "max_vertical_acceleration_abs": {
+          "between_interval_index": 338,
+          "midpoint_time": 67.80000000000001,
+          "signed_vertical_value": 5.850483700973213,
+          "value": 5.850483700973213,
+          "vector": [
+            0.0,
+            0.0,
+            5.850483700973213
+          ]
+        },
+        "max_vertical_speed_abs": {
+          "interval_index": 302,
+          "position_end": [
+            -80.0,
+            -40.0,
+            28.921019296474867
+          ],
+          "position_start": [
+            -80.0,
+            -40.0,
+            29.72101929647485
+          ],
+          "signed_vertical_value": -4.0,
+          "time_end": 60.6,
+          "time_start": 60.400000000000006,
+          "value": 4.0,
+          "vector": [
+            0.0,
+            0.0,
+            -4.0
+          ]
+        },
+        "physics_dt": 0.2,
+        "profile_limits": {
+          "max_horizontal_accel_mps2": 1.5,
+          "max_horizontal_decel_mps2": 1.5,
+          "max_horizontal_speed_mps": 25.0,
+          "max_vertical_accel_down_mps2": 1.0,
+          "max_vertical_accel_up_mps2": 1.0,
+          "max_vertical_speed_down_mps": 6.0,
+          "max_vertical_speed_up_mps": 4.0
+        },
+        "sample_count": 352
+      },
+      "findings": [
+        "node_chord_velocity_mismatch",
+        "node_displacement_integral_residual",
+        "first_segment_midpoint_velocity_mismatch",
+        "sampled_horizontal_acceleration_profile_exceeded",
+        "sampled_vertical_acceleration_profile_exceeded"
+      ],
+      "first_segment_midpoint_difference": {
+        "central_derivative_minus_sample_velocity": [
+          -0.0006262927679029362,
+          0.0003257233190065989,
+          0.0
+        ],
+        "central_derivative_minus_sample_velocity_norm": 0.0007059308122416783,
+        "central_position_derivative": [
+          -0.12566854465489996,
+          15.920322516080887,
+          0.0
+        ],
+        "epsilon": 0.0001,
+        "midpoint_time": 0.09915755244974907,
+        "sample_mid_position": [
+          199.98753901470468,
+          1.5786202149051232,
+          40.0
+        ],
+        "sample_mid_time": 0.09915755244974907,
+        "sample_mid_velocity": [
+          -0.12504225188699702,
+          15.91999679276188,
+          0.0
+        ],
+        "sample_minus_position": [
+          199.98755158155916,
+          1.577028182653515,
+          40.0
+        ],
+        "sample_minus_time": 0.09905755244974906,
+        "sample_plus_position": [
+          199.98752644785023,
+          1.5802122471567313,
+          40.0
+        ],
+        "sample_plus_time": 0.09925755244974907,
+        "segment_index": 0
+      },
+      "first_three_segments": [
+        {
+          "average_reported_velocity": [
+            -0.12504225188699702,
+            15.91999679276188,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006262926408710512,
+            0.00032572331811486777,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007059306991291672,
+          "chord_velocity_dx_dt": [
+            -0.12566854452786808,
+            15.920322516079995,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.00012420329077212494,
+            6.459585399998247e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.0001399967206494926,
+          "dt": 0.19831510489949813,
+          "dx": [
+            -0.02492197059061141,
+            3.1572404298102463,
+            0.0
+          ],
+          "index": 0,
+          "left": {
+            "acceleration": [
+              -1.28,
+              0.0,
+              0.0
+            ],
+            "position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "t": 0.0,
+            "velocity": [
+              0.0,
+              16.0,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.24210370001488,
+              -0.8165848546171763,
+              0.0
+            ],
+            "position": [
+              199.9750780294094,
+              3.1572404298102463,
+              40.0
+            ],
+            "t": 0.19831510489949813,
+            "velocity": [
+              -0.25008450377399405,
+              15.83999358552376,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -0.3712135931747512,
+            15.754030628621601,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006565135425572466,
+            0.00030525227569100366,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007240089663640929,
+          "chord_velocity_dx_dt": [
+            -0.37187010671730847,
+            15.754335880897292,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.00013019655206018832,
+            6.053613707424077e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.00014358191411258103,
+          "dt": 0.19831510489949813,
+          "dx": [
+            -0.0737474592226306,
+            3.1243227728420737,
+            0.0
+          ],
+          "index": 1,
+          "left": {
+            "acceleration": [
+              -1.24210370001488,
+              -0.8165848546171763,
+              0.0
+            ],
+            "position": [
+              199.9750780294094,
+              3.1572404298102463,
+              40.0
+            ],
+            "t": 0.19831510489949813,
+            "velocity": [
+              -0.25008450377399405,
+              15.83999358552376,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.2017312620094949,
+              -0.8760665843263574,
+              0.0
+            ],
+            "position": [
+              199.90133057018676,
+              6.28156320265232,
+              40.0
+            ],
+            "t": 0.39663020979899627,
+            "velocity": [
+              -0.49234268257550845,
+              15.668067671719442,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -0.6093183976663479,
+            15.576272319749418,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006851774915874742,
+            0.00028378497611036835,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007416212696815442,
+          "chord_velocity_dx_dt": [
+            -0.6100035751579354,
+            15.576556104725528,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.00013588104611893248,
+            5.6278847306412416e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.00014707469989265297,
+          "dt": 0.19831510489949816,
+          "dx": [
+            -0.12097292299651485,
+            3.0890663578815616,
+            0.0
+          ],
+          "index": 2,
+          "left": {
+            "acceleration": [
+              -1.2017312620094949,
+              -0.8760665843263574,
+              0.0
+            ],
+            "position": [
+              199.90133057018676,
+              6.28156320265232,
+              40.0
+            ],
+            "t": 0.39663020979899627,
+            "velocity": [
+              -0.49234268257550845,
+              15.668067671719442,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.1589836437025407,
+              -0.9342342690238825,
+              0.0
+            ],
+            "position": [
+              199.78035764719024,
+              9.370629560533882,
+              40.0
+            ],
+            "t": 0.5949453146984944,
+            "velocity": [
+              -0.7262941127571874,
+              15.484476967779392,
+              0.0
+            ]
+          }
+        }
+      ],
+      "initial_state": {
+        "acceleration": [
+          -1.28,
+          0.0,
+          0.0
+        ],
+        "position": [
+          200.0,
+          0.0,
+          40.0
+        ],
+        "t": 0.0,
+        "velocity": [
+          0.0,
+          16.0,
+          0.0
+        ]
+      },
+      "max_chord_minus_average_velocity": {
+        "index": 27,
+        "norm": 1.0742706573320997,
+        "vector": [
+          -0.9776580587766306,
+          -0.4452439391096211,
+          0.0
+        ]
+      },
+      "max_displacement_integral_residual": {
+        "index": 26,
+        "norm": 6.890328225215394,
+        "vector": [
+          5.321128569198827,
+          -4.377466596246734,
+          0.0
+        ]
+      },
+      "mode": "speed_timing_v1",
+      "reservation_slot": 0.0,
+      "start_time": 0.0,
+      "trajectory_hash": "dd894a4d1f316875413ff6d7ec1a730c9652f8ce147914685c17bc51d16bbf32",
+      "validate_kinematics": []
+    },
+    {
+      "canonical_departure": 30.0,
+      "consistent": false,
+      "duration": 86.51323171229114,
+      "end_time": 86.51323171229114,
+      "execution_sample_metrics": {
+        "end_time_appended_without_duplicate": true,
+        "interval_count": 433,
+        "last_interval_dt": 0.11323171229113882,
+        "last_interval_is_short": true,
+        "max_horizontal_acceleration": {
+          "between_interval_index": 187,
+          "midpoint_time": 37.6,
+          "signed_vertical_value": null,
+          "value": 23.334176513496747,
+          "vector": [
+            12.692387356301175,
+            -19.580273153371206,
+            0.0
+          ]
+        },
+        "max_horizontal_speed": {
+          "interval_index": 0,
+          "position_end": [
+            199.97465490032005,
+            3.1839279982279054,
+            40.0
+          ],
+          "position_start": [
+            200.0,
+            0.0,
+            40.0
+          ],
+          "signed_vertical_value": null,
+          "time_end": 0.2,
+          "time_start": 0.0,
+          "value": 15.920144371186888,
+          "vector": [
+            -0.12672549839976455,
+            15.919639991139526,
+            0.0
+          ]
+        },
+        "max_vertical_acceleration_abs": {
+          "between_interval_index": 370,
+          "midpoint_time": 74.2,
+          "signed_vertical_value": -6.01783603351056,
+          "value": 6.01783603351056,
+          "vector": [
+            0.0,
+            0.0,
+            -6.01783603351056
+          ]
+        },
+        "max_vertical_speed_abs": {
+          "interval_index": 384,
+          "position_end": [
+            -80.0,
+            -40.0,
+            28.66066605068727
+          ],
+          "position_start": [
+            -80.0,
+            -40.0,
+            29.460666050687223
+          ],
+          "signed_vertical_value": -4.0,
+          "time_end": 77.0,
+          "time_start": 76.80000000000001,
+          "value": 4.0,
+          "vector": [
+            0.0,
+            0.0,
+            -4.0
+          ]
+        },
+        "physics_dt": 0.2,
+        "profile_limits": {
+          "max_horizontal_accel_mps2": 1.5,
+          "max_horizontal_decel_mps2": 1.5,
+          "max_horizontal_speed_mps": 25.0,
+          "max_vertical_accel_down_mps2": 1.0,
+          "max_vertical_accel_up_mps2": 1.0,
+          "max_vertical_speed_down_mps": 6.0,
+          "max_vertical_speed_up_mps": 4.0
+        },
+        "sample_count": 434
+      },
+      "findings": [
+        "node_chord_velocity_mismatch",
+        "node_displacement_integral_residual",
+        "first_segment_midpoint_velocity_mismatch",
+        "sampled_horizontal_acceleration_profile_exceeded",
+        "sampled_vertical_acceleration_profile_exceeded"
+      ],
+      "first_segment_midpoint_difference": {
+        "central_derivative_minus_sample_velocity": [
+          -0.0006369748154114452,
+          0.00033119669003234264,
+          0.0
+        ],
+        "central_derivative_minus_sample_velocity_norm": 0.0007179332580099799,
+        "central_position_derivative": [
+          -0.12672549843273373,
+          15.919639991140988,
+          0.0
+        ],
+        "epsilon": 0.0001,
+        "midpoint_time": 0.1,
+        "sample_mid_position": [
+          199.98732745016002,
+          1.5919639991139527,
+          40.0
+        ],
+        "sample_mid_time": 0.1,
+        "sample_mid_velocity": [
+          -0.12608852361732228,
+          15.919308794450956,
+          0.0
+        ],
+        "sample_minus_position": [
+          199.98734012270987,
+          1.5903720351148387,
+          40.0
+        ],
+        "sample_minus_time": 0.0999,
+        "sample_plus_position": [
+          199.98731477761018,
+          1.593555963113067,
+          40.0
+        ],
+        "sample_plus_time": 0.10010000000000001,
+        "segment_index": 0
+      },
+      "first_three_segments": [
+        {
+          "average_reported_velocity": [
+            -0.12608852361732228,
+            15.919308794450956,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006369747824422622,
+            0.00033119668857040097,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007179332280841767,
+          "chord_velocity_dx_dt": [
+            -0.12672549839976455,
+            15.919639991139526,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.00012739495648845037,
+            6.623933771399138e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.00014358664561679252,
+          "dt": 0.2,
+          "dx": [
+            -0.02534509967995291,
+            3.1839279982279054,
+            0.0
+          ],
+          "index": 0,
+          "left": {
+            "acceleration": [
+              -1.28,
+              0.0,
+              0.0
+            ],
+            "position": [
+              200.0,
+              0.0,
+              40.0
+            ],
+            "t": 0.0,
+            "velocity": [
+              0.0,
+              16.0,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.2417820456030573,
+              -0.8167472258127227,
+              0.0
+            ],
+            "position": [
+              199.97465490032005,
+              3.1839279982279054,
+              40.0
+            ],
+            "t": 0.2,
+            "velocity": [
+              -0.25217704723464457,
+              15.838617588901911,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -0.3742857263492315,
+            15.751900813383314,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006676892486691122,
+            0.0003102033124395831,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007362302817983061,
+          "chord_velocity_dx_dt": [
+            -0.37495341559790063,
+            15.752211016695753,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.0001335378497338141,
+            6.20406624878278e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.00014724605635961624,
+          "dt": 0.2,
+          "dx": [
+            -0.07499068311958013,
+            3.150442203339151,
+            0.0
+          ],
+          "index": 1,
+          "left": {
+            "acceleration": [
+              -1.2417820456030573,
+              -0.8167472258127227,
+              0.0
+            ],
+            "position": [
+              199.97465490032005,
+              3.1839279982279054,
+              40.0
+            ],
+            "t": 0.2,
+            "velocity": [
+              -0.25217704723464457,
+              15.838617588901911,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.2010682716189156,
+              -0.876370336867805,
+              0.0
+            ],
+            "position": [
+              199.89966421720047,
+              6.334370201567056,
+              40.0
+            ],
+            "t": 0.4,
+            "velocity": [
+              -0.4963944054638184,
+              15.665184037864716,
+              0.0
+            ]
+          }
+        },
+        {
+          "average_reported_velocity": [
+            -0.6142791243522039,
+            15.572572283094177,
+            0.0
+          ],
+          "chord_minus_average_velocity": [
+            -0.0006968022593454304,
+            0.00028819284812975354,
+            0.0
+          ],
+          "chord_minus_average_velocity_norm": 0.0007540480795957481,
+          "chord_velocity_dx_dt": [
+            -0.6149759266115493,
+            15.572860475942306,
+            0.0
+          ],
+          "displacement_integral_residual": [
+            -0.00013936045186908885,
+            5.7638569626039526e-05,
+            0.0
+          ],
+          "displacement_integral_residual_norm": 0.00015080961591918614,
+          "dt": 0.20000000000000007,
+          "dx": [
+            -0.12299518532230991,
+            3.1145720951884623,
+            0.0
+          ],
+          "index": 2,
+          "left": {
+            "acceleration": [
+              -1.2010682716189156,
+              -0.876370336867805,
+              0.0
+            ],
+            "position": [
+              199.89966421720047,
+              6.334370201567056,
+              40.0
+            ],
+            "t": 0.4,
+            "velocity": [
+              -0.4963944054638184,
+              15.665184037864716,
+              0.0
+            ]
+          },
+          "right": {
+            "acceleration": [
+              -1.157961628657195,
+              -0.9346575028800972,
+              0.0
+            ],
+            "position": [
+              199.77666903187816,
+              9.448942296755519,
+              40.0
+            ],
+            "t": 0.6000000000000001,
+            "velocity": [
+              -0.7321638432405893,
+              15.479960528323637,
+              0.0
+            ]
+          }
+        }
+      ],
+      "initial_state": {
+        "acceleration": [
+          -1.28,
+          0.0,
+          0.0
+        ],
+        "position": [
+          200.0,
+          0.0,
+          40.0
+        ],
+        "t": 0.0,
+        "velocity": [
+          0.0,
+          16.0,
+          0.0
+        ]
+      },
+      "max_chord_minus_average_velocity": {
+        "index": 151,
+        "norm": 0.7061464604709975,
+        "vector": [
+          -0.026590590929224334,
+          -0.7056456363570547,
+          0.0
+        ]
+      },
+      "max_displacement_integral_residual": {
+        "index": 155,
+        "norm": 4.762247465284097,
+        "vector": [
+          -4.754431070903723,
+          -0.27273817596750405,
+          0.0
+        ]
+      },
+      "mode": "speed_timing_v1",
+      "reservation_slot": 30.0,
+      "start_time": 0.0,
+      "trajectory_hash": "34de2e870af1a8a10241b6e5a838670fc82ca6e934dd1f4c0fb8e61c23791a5e",
+      "validate_kinematics": []
+    }
+  ],
+  "profile": {
+    "max_horizontal_accel_mps2": 1.5,
+    "max_horizontal_decel_mps2": 1.5,
+    "max_horizontal_speed_mps": 25.0,
+    "max_vertical_accel_down_mps2": 1.0,
+    "max_vertical_accel_up_mps2": 1.0,
+    "max_vertical_speed_down_mps": 6.0,
+    "max_vertical_speed_up_mps": 4.0
+  },
+  "stage": "trajectory_kinematic_consistency",
+  "status": "KINEMATIC_CONSISTENCY_FAIL",
+  "technical_error_count": 0,
+  "technical_errors": []
+}

@@ -1,0 +1,48 @@
+{
+  "status": "RUNNING",
+  "cases": [],
+  "teacher_queries_max": 8,
+  "release_intents_max": 200,
+  "steps_max": 4,
+  "reset_count": 0,
+  "wall_seconds": 1200,
+  "partition": "diagnostic_never_train",
+  "trained": false,
+  "PPO_ALLOWED": false,
+  "modules": {
+    "baseline": "832a88f432f083010cbc34a9dbc2c14b8b9fe6cbe016292bc43c0e12695d0a9f",
+    "candidate": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+  },
+  "sources": {
+    "mixed": [
+      "dense_mixed/seed_893102",
+      "3befcfb8f6e5520b88dc1b394e9504f1a1e3afb2fcc9c14fef9c5bbcef929019",
+      "8401501008b969722b4555e0cc21dcb6ae13f572213aa261203985ed9f5a6d67"
+    ],
+    "high": [
+      "dense_high_launch2/seed_893101",
+      "0f0f8313e3b908eaa585f401a189ed24b9ece1cd87386a4bd9810d8ef296cde4",
+      "8bcecfbb3a97bc76f153692c34644bbcab9c68125befe6536c3c8b122c1deba1"
+    ]
+  },
+  "planned_cases": [
+    [
+      "mixed",
+      0
+    ],
+    [
+      "mixed",
+      19
+    ],
+    [
+      "mixed",
+      299
+    ],
+    [
+      "high",
+      177
+    ]
+  ],
+  "per_child_wall_seconds": 120,
+  "inactive_variants": true
+}

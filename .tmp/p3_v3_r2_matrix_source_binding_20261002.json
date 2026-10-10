@@ -1,0 +1,43 @@
+{
+  "generated_at_utc": "2026-10-02T13:12:31.3354911Z",
+  "source_paths": [
+    "terminal_marl/scripts/evaluate_p3_foundation_repair_20261002.py",
+    "terminal_marl/training/evaluate_p3_task_neutral.py",
+    "terminal_marl/training/evaluate_p3_proposal_head_probe_v1.py",
+    "terminal_marl/training/paired_gate_diagnostic.py",
+    "terminal_marl/training/run_p3_forced_wait_frozen_20260930.py",
+    "terminal_marl/training/terminal_lifecycle_metrics.py",
+    "terminal_marl/envs/parallel_env.py",
+    "terminal_marl/core/config.py",
+    "terminal_marl/core/trajectory_generator.py",
+    "terminal_marl/core/polynomial_trajectory.py",
+    "terminal_marl/core/trajectory_time_parameterization.py",
+    "terminal_marl/core/vehicle_dynamics.py",
+    "terminal_marl/core/safety_filter.py",
+    "terminal_marl/core/runtime_traffic_safety.py",
+    "terminal_marl/core/energy_reachability.py"
+  ],
+  "local_sha256": {
+    "terminal_marl/scripts/evaluate_p3_foundation_repair_20261002.py": "fc5763d19ce73fa71a1c76e1624c3ec335878272fa4254f22065c509e1cc2017",
+    "terminal_marl/training/evaluate_p3_task_neutral.py": "65f603a657c8b626eced61320c3fa719246e03bf35cfa5aa64bb39225dea8587",
+    "terminal_marl/training/evaluate_p3_proposal_head_probe_v1.py": "d97ff889396e47615137337bad444575a349e2b029b7ea4014550e2ab79b7869",
+    "terminal_marl/training/paired_gate_diagnostic.py": "449bacf4993987f8936c0966b925a706ebd3fcbf1121f893a7396ae984f64e96",
+    "terminal_marl/training/run_p3_forced_wait_frozen_20260930.py": "4c1fa4353efaa9ae65f84d20833d16bc6779bfee749262a9030108e0056969a2",
+    "terminal_marl/training/terminal_lifecycle_metrics.py": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e",
+    "terminal_marl/envs/parallel_env.py": "49234f61cd5cd9ef529cc4ae2bda0f353aeecdd76954f1141b312b08e9de8dd9",
+    "terminal_marl/core/config.py": "a9b04e01d2f0d018f4a8bd6e72ccbe55031a2996127ae9012787e07b033bcd99",
+    "terminal_marl/core/trajectory_generator.py": "489d0306297089b8fd7bd437e1a4f846ef1bf8ddac9bd22bab4448cd7b1f1919",
+    "terminal_marl/core/polynomial_trajectory.py": "832a88f432f083010cbc34a9dbc2c14b8b9fe6cbe016292bc43c0e12695d0a9f",
+    "terminal_marl/core/trajectory_time_parameterization.py": "f6e0be4f0c789f7aa5939543d181f35d73584bbbe9de7f71fb757360925e0f76",
+    "terminal_marl/core/vehicle_dynamics.py": "5569dc9a3d20f7892b7973a5b57f9f1574a321198200583bcd481cf971ab61dd",
+    "terminal_marl/core/safety_filter.py": "1e3e63a30c9e0112a13e08081a6a8b28d849ff3172e453ef8c65da060e4ee7c0",
+    "terminal_marl/core/runtime_traffic_safety.py": "d53f6808bfc60d400982a312c0006865f814eb03171532bec9c016e11a1e5658",
+    "terminal_marl/core/energy_reachability.py": "c5709a1878f6f0a326786a8a5753e7029b8f8e8ae75a9183ca7f247d7ad5673a"
+  },
+  "checkpoint": {
+    "path": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+    "expected_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "observed_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "matches": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "status": "PILOT_OK",
+  "phase": "pilot",
+  "observed_at_server": "2026-10-01T17:41:15+08:00",
+  "process": {
+    "pid": 2178083,
+    "exited": true,
+    "cwd": "/home/user/projects/terminal",
+    "exe": "/usr/bin/python3.12",
+    "argv": [
+      "/home/user/envs/terminal_env/bin/python",
+      "-m",
+      "terminal_marl.training.diagnose_p3_prefix_feasible_gate_20261001",
+      "--phase",
+      "pilot",
+      "--output-dir",
+      "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001"
+    ],
+    "env_flags": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "preflight_sha256": "cf3346e3fd1205944081c39a8de6dc0e0e68b10f64355b59b562141ed36b2915",
+  "pilot_summary": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/pilot.json",
+    "sha256": "2c18148d719c4ad7ad60a2ca28f270ec886293d9068ac447d1dd5aa3ecb302c2",
+    "bytes": 410,
+    "mtime": "2026-10-01 17:38:38.729357676 +0800",
+    "status": "PILOT_OK",
+    "cell_ids": [
+      1
+    ],
+    "cell_sha256": "760e09dcab5dd653eec31586e3b114d06f0a05c63fa204cc48d6416fc66e68ff",
+    "cells": [
+      {
+        "cell_id": 1,
+        "selected": false,
+        "status": "COMPLETED_MISSING"
+      }
+    ]
+  },
+  "cell": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/cells/cell_01.json",
+    "sha256": "760e09dcab5dd653eec31586e3b114d06f0a05c63fa204cc48d6416fc66e68ff",
+    "bytes": 28472,
+    "mtime": "2026-10-01 17:38:38.729098060 +0800",
+    "status": "COMPLETED_MISSING",
+    "phase": "arm",
+    "cell_id": 1,
+    "arm": "before_prefix",
+    "tape_sha256": "46913055afa1ec34f97ce3d9c33ae420d542793d99dc0fca2af554c5dc16a765",
+    "sidecar_sha256": "adfbabf9e9d6e34613f39f190899daf13c4475d4c36856c2e6fd34d344e749ba",
+    "potential_candidates_seen": 20,
+    "exclusions": {
+      "not_approved": 0,
+      "physical_window": 20,
+      "rank_unknown_or_le3": 0
+    },
+    "selected": null,
+    "selected_npz_sha256": null,
+    "comparison": {
+      "D": null,
+      "complete_value_known": false,
+      "local_m": null
+    },
+    "caller_rng_unchanged_before_restore": true,
+    "model_load_rng_consumed": {
+      "before": true,
+      "after": true
+    },
+    "replay": {
+      "base_reset_state_match": true,
+      "config_compatibility": null,
+      "config_match": true,
+      "exact": true,
+      "reset_recipe_match": true,
+      "reset_state_match": true,
+      "steps_expected": 708,
+      "steps_replayed": 708,
+      "controller_installed_and_restored": true,
+      "environment_constructor_rng_consumed": false,
+      "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "model_digest_after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5"
+    }
+  },
+  "progress_last": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/progress.json",
+    "sha256": "76c77ca71ec72ea46bcdf66ace97a1d3b172a912c3b9abb14f493e811ff6d68f",
+    "bytes": 180,
+    "mtime": "2026-10-01 17:38:38.684627444 +0800",
+    "status": "RUNNING",
+    "step": 699,
+    "selected": null,
+    "potential_candidates_seen": 20
+  },
+  "log": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_feasible_gate_20261001/pilot_v1.log",
+    "sha256": "2813a3eb4f4e4c5b7d9982578cded4df0e49c69b2e6c6de1ac05395d32dc828f",
+    "bytes": 354,
+    "mtime": "2026-10-01 17:38:38.776716478 +0800"
+  },
+  "terminal_artifacts": {
+    "error": false,
+    "partial": false,
+    "selected_npz": false,
+    "full": false
+  },
+  "q_p_physical_state": "not produced because selected=null"
+}

@@ -1,0 +1,256 @@
+[
+  {
+    "case": "B_det",
+    "tick": 400,
+    "snapshot_sha256": "3124a6811a78a93b1b1ea74a1fbaff14dcf3bd9751aa8151112d39182b772454",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "uid": 72,
+        "phase": "transfer_o2m",
+        "soc": 0.7550129236225767,
+        "speed": 20.00952140711399,
+        "actor_eligible": false,
+        "internal_wait": 112.41915255387869,
+        "holding_by_ring": {
+          "outer": 112.41915255387869
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 267.0,
+          "end": 405.72906001494914,
+          "remaining": 5.729060014949141,
+          "checked_hash": "d90a5b667e7f1e62f817205d461880a0174a5e5726785569cca190cee366f112",
+          "trajectory_hash": "d90a5b667e7f1e62f817205d461880a0174a5e5726785569cca190cee366f112"
+        }
+      },
+      {
+        "arrival_id": 22,
+        "uid": 117,
+        "phase": "transfer_o2m",
+        "soc": 0.775553527145049,
+        "speed": 19.00068720926857,
+        "actor_eligible": false,
+        "internal_wait": 54.41915255387869,
+        "holding_by_ring": {
+          "outer": 54.41915255387869
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 284.0,
+          "end": 424.0397342071172,
+          "remaining": 24.039734207117192,
+          "checked_hash": "8ca479d51f8deb04295e42015437265a5cb32dbe291d255e33aaa64d1420d8fb",
+          "trajectory_hash": "8ca479d51f8deb04295e42015437265a5cb32dbe291d255e33aaa64d1420d8fb"
+        }
+      }
+    ]
+  },
+  {
+    "case": "B_det",
+    "tick": 600,
+    "snapshot_sha256": "509f214dda140588f708b26997b6dcd5cf30a484b44435f0562782e0ec68de56",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "uid": 72,
+        "phase": "final",
+        "soc": 0.6300067079278429,
+        "speed": 7.790869466642417,
+        "actor_eligible": false,
+        "internal_wait": 169.0746410216301,
+        "holding_by_ring": {
+          "outer": 112.41915255387869,
+          "middle": 0.2709399850508589,
+          "inner": 56.38454848270055
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "final_approach",
+          "start": 559.0,
+          "end": 629.1833986377183,
+          "remaining": 29.183398637718255,
+          "checked_hash": "3a3fe276a9b926fa56bc3db41b4dc5f57c6b2af0d5f886a3b889c09c14d0089f",
+          "trajectory_hash": "3a3fe276a9b926fa56bc3db41b4dc5f57c6b2af0d5f886a3b889c09c14d0089f"
+        }
+      },
+      {
+        "arrival_id": 22,
+        "uid": 117,
+        "phase": "transfer_m2i",
+        "soc": 0.650124817409387,
+        "speed": 16.000574054140092,
+        "actor_eligible": false,
+        "internal_wait": 149.3794183467615,
+        "holding_by_ring": {
+          "outer": 54.41915255387869,
+          "middle": 94.96026579288281
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 519.0,
+          "end": 611.597799638621,
+          "remaining": 11.59779963862104,
+          "checked_hash": "b48515b0e98bd7ff84487075699df431e7c0c59a8ddf88f60548124f22d1cd49",
+          "trajectory_hash": "b48515b0e98bd7ff84487075699df431e7c0c59a8ddf88f60548124f22d1cd49"
+        }
+      }
+    ]
+  },
+  {
+    "case": "B_det",
+    "tick": 850,
+    "snapshot_sha256": "b586ddf576b0fd444b3c09075ff73eba85fa41628cc7a1124a3ae0058cf3f9a3",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "active": false,
+        "outcome": "completed"
+      },
+      {
+        "arrival_id": 22,
+        "active": false,
+        "outcome": "completed"
+      }
+    ]
+  },
+  {
+    "case": "B_sto",
+    "tick": 400,
+    "snapshot_sha256": "d213de7327329ea5c2605363156822a599b6338e746ef2046bffd0a149bd3a70",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "uid": 38,
+        "phase": "transfer_o2m",
+        "soc": 0.749648577420928,
+        "speed": 14.51126019737715,
+        "actor_eligible": false,
+        "internal_wait": 194.4191525538787,
+        "holding_by_ring": {
+          "outer": 194.4191525538787
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 350.0,
+          "end": 587.8609688661668,
+          "remaining": 187.8609688661668,
+          "checked_hash": "5db6a8ef37ceb924dc23930c53def9b0df19d3387fa532af2619dd1da5b5aaa4",
+          "trajectory_hash": "5db6a8ef37ceb924dc23930c53def9b0df19d3387fa532af2619dd1da5b5aaa4"
+        }
+      },
+      {
+        "arrival_id": 22,
+        "uid": 114,
+        "phase": "ring_outer",
+        "soc": 0.7638643401440514,
+        "speed": 22.0,
+        "actor_eligible": true,
+        "internal_wait": 157.4191525538787,
+        "holding_by_ring": {
+          "outer": 157.4191525538787
+        },
+        "safety_retry_remaining": 0,
+        "plan": null
+      }
+    ]
+  },
+  {
+    "case": "B_sto",
+    "tick": 600,
+    "snapshot_sha256": "bc11646f0d4ddfad60a2aa30371a6f727144b41edfc2035c730d573313a33e02",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "uid": 38,
+        "phase": "ring_middle",
+        "soc": 0.6280700181726082,
+        "speed": 20.0,
+        "actor_eligible": true,
+        "internal_wait": 206.5581836877119,
+        "holding_by_ring": {
+          "outer": 194.4191525538787,
+          "middle": 12.139031133833214
+        },
+        "safety_retry_remaining": 0,
+        "plan": null
+      },
+      {
+        "arrival_id": 22,
+        "uid": 114,
+        "phase": "transfer_o2m",
+        "soc": 0.635716191995902,
+        "speed": 20.99818575037464,
+        "actor_eligible": false,
+        "internal_wait": 194.4191525538787,
+        "holding_by_ring": {
+          "outer": 194.4191525538787
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 437.0,
+          "end": 665.4457115218368,
+          "remaining": 65.44571152183676,
+          "checked_hash": "0795e7c37c1e221fe422430df5b818263c4e8ae8169c549abcd4ab2e7803db48",
+          "trajectory_hash": "0795e7c37c1e221fe422430df5b818263c4e8ae8169c549abcd4ab2e7803db48"
+        }
+      }
+    ]
+  },
+  {
+    "case": "B_sto",
+    "tick": 850,
+    "snapshot_sha256": "0ab23e394b000ceb9c909978dabd7207f5d07a705ca3ba30a814aec3f2e4e024",
+    "targets": [
+      {
+        "arrival_id": 17,
+        "uid": 38,
+        "phase": "transfer_m2i",
+        "soc": 0.46140335150594153,
+        "speed": 12.21207431371862,
+        "actor_eligible": false,
+        "internal_wait": 335.5581836877119,
+        "holding_by_ring": {
+          "outer": 194.4191525538787,
+          "middle": 141.1390311338332
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 729.0,
+          "end": 999.9127317604238,
+          "remaining": 149.91273176042375,
+          "checked_hash": "08c54e1af18fe2bcf0e0379a34993e52f4e774fe7f2316fb1a72f29a9456dd47",
+          "trajectory_hash": "08c54e1af18fe2bcf0e0379a34993e52f4e774fe7f2316fb1a72f29a9456dd47"
+        }
+      },
+      {
+        "arrival_id": 22,
+        "uid": 114,
+        "phase": "transfer_m2i",
+        "soc": 0.47515949867328866,
+        "speed": 12.229939322706674,
+        "actor_eligible": false,
+        "internal_wait": 293.97344103204193,
+        "holding_by_ring": {
+          "outer": 194.4191525538787,
+          "middle": 99.55428847816324
+        },
+        "safety_retry_remaining": 0,
+        "plan": {
+          "mode": "ring_transfer",
+          "start": 765.0,
+          "end": 1078.9152569735006,
+          "remaining": 228.91525697350062,
+          "checked_hash": "d38bc66da569d403b59f0074d3c18960ee6639c387b28714a16f489ae002d2d1",
+          "trajectory_hash": "d38bc66da569d403b59f0074d3c18960ee6639c387b28714a16f489ae002d2d1"
+        }
+      }
+    ]
+  }
+]

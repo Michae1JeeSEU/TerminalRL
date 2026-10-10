@@ -1,0 +1,207 @@
+diff --git a/terminal_marl/configs/p3_integrated_repair.py b/terminal_marl/configs/p3_integrated_repair.py
+index d783ff6..2dedf63 100644
+--- a/terminal_marl/configs/p3_integrated_repair.py
++++ b/terminal_marl/configs/p3_integrated_repair.py
+@@ -8,12 +8,13 @@ from dataclasses import replace
+ from terminal_marl.core.config import SimConfig
+ 
+ PROFILE = 'p3_integrated_repair_direct_c2_v2_20261003'
++FORECAST_PROFILE = 'p3_direct_c2_committed_merge_gap_v1_20261008'
+ PPO_ALLOWED = False
+ # Used only AFTER a separately approved student-only qualification.
+ PPO_UPDATE_OPTIONS = {'actor_reduction': 'joint_team', 'entropy_mode': 'gate_only'}
+ 
+ 
+-def build_config(*, requests=24, warm_start=12, high_soc=False):
++def build_config(*, requests=24, warm_start=12, high_soc=False, forecast_merge_gap=False):
+     if not 0 <= warm_start <= requests or requests < 1:
+         raise ValueError('require 0 <= warm_start <= requests and requests >= 1')
+     schedule = (0.0,)*warm_start + tuple(15.0*(i+1) for i in range(requests-warm_start))
+@@ -36,6 +37,7 @@ def build_config(*, requests=24, warm_start=12, high_soc=False):
+         emergency_priority_mode='committed_route', emergency_trigger_soc=.40,
+         route_aware_emergency_enabled=True, executable_admission_energy_enabled=True,
+         holding_speed_contract='nominal_until_release',
++        merge_gap_prediction_mode='committed_arrivals_v1' if forecast_merge_gap else 'current_holders_legacy',
+         final_approach_geometry_mode='continuous_inward_v1',
+         final_approach_execution_mode='speed_timing_v1',
+         v3_landing_path_mode='direct_c2',
+diff --git a/terminal_marl/core/config.py b/terminal_marl/core/config.py
+index d74b9b5..e235eae 100644
+--- a/terminal_marl/core/config.py
++++ b/terminal_marl/core/config.py
+@@ -182,6 +182,9 @@ class SimConfig:
+     # It constrains uncommitted WAIT execution and the shield to the same
+     # nominal continuation certified by SafetyFilter, for rule and RL alike.
+     holding_speed_contract: str = "bounded_residual"
++    # Historical scenes retain their old gap semantics; new P3 runs select
++    # the explicit forecast mode before reset and record it in their config.
++    merge_gap_prediction_mode: str = "current_holders_legacy"
+     low_level_queue_cost_enabled: bool = False
+     external_queue_step_mode: str = "pre_admission"
+     # Diagnostic-only route-aware candidate energy guard.  This is layered on
+@@ -517,6 +520,8 @@ class SimConfig:
+             raise ValueError("unsupported emergency_priority_mode")
+         if self.holding_speed_contract not in {"bounded_residual", "nominal_until_release"}:
+             raise ValueError("unsupported holding_speed_contract")
++        if self.merge_gap_prediction_mode not in {"current_holders_legacy", "committed_arrivals_v1"}:
++            raise ValueError("unsupported merge_gap_prediction_mode")
+         if self.external_queue_step_mode not in {"pre_admission", "post_admission"}:
+             raise ValueError("unsupported external_queue_step_mode")
+         for name in ("route_aware_emergency_enabled", "executable_admission_energy_enabled", "low_level_queue_cost_enabled"):
+diff --git a/terminal_marl/core/merge_scheduler.py b/terminal_marl/core/merge_scheduler.py
+index ab1184c..16a8526 100644
+--- a/terminal_marl/core/merge_scheduler.py
++++ b/terminal_marl/core/merge_scheduler.py
+@@ -233,7 +233,16 @@ class MergeScheduler:
+         )
+         return reservation
+     def _gap_center(self,uav,target,time,snapshot,speed):
+-        states=[u for u in snapshot.active.values() if u.ring_role is target]
++        if self.config.merge_gap_prediction_mode == "committed_arrivals_v1":
++            from .merge_gap_forecast import target_ring_angles, largest_gap_center
++            angles = target_ring_angles(self.config, uav, target, time, snapshot)
++            if angles:
++                return largest_gap_center(angles)
++            # An empty future ring follows the established ego-phase rule.
++            # Do not let currently departing aircraft re-enter the old list.
++            states = []
++        else:
++            states=[u for u in snapshot.active.values() if u.ring_role is target]
+         # An empty target ring has no target-holder gap to optimize.  A fixed
+         # zero-angle capture made every O2M request bend through the same
+         # arbitrary corridor.  With no target traffic, use the requester's
+diff --git a/terminal_marl/scripts/diagnose_p3_integrated_repair.py b/terminal_marl/scripts/diagnose_p3_integrated_repair.py
+index 21bee63..591d7fc 100644
+--- a/terminal_marl/scripts/diagnose_p3_integrated_repair.py
++++ b/terminal_marl/scripts/diagnose_p3_integrated_repair.py
+@@ -15,7 +15,7 @@ import traceback
+ 
+ import numpy as np
+ 
+-from terminal_marl.configs.p3_integrated_repair import PROFILE, build_config, initialize_legacy_source
++from terminal_marl.configs.p3_integrated_repair import PROFILE, FORECAST_PROFILE, build_config, initialize_legacy_source
+ from terminal_marl.envs.parallel_env import TerminalParallelEnv
+ 
+ 
+@@ -66,8 +66,10 @@ def record_blockers(env, output, ticks, snapshot_ticks=()):
+ 
+ 
+ def run(args):
+-    config = build_config(requests=args.requests, warm_start=args.warm_start, high_soc=args.high_soc)
+-    result = dict(profile=PROFILE, config=asdict(config), controller=args.controller,
++    forecast = getattr(args, 'forecast_merge_gap', False)
++    config = build_config(requests=args.requests, warm_start=args.warm_start, high_soc=args.high_soc,
++                          forecast_merge_gap=forecast)
++    result = dict(profile=FORECAST_PROFILE if forecast else PROFILE, config=asdict(config), controller=args.controller,
+                   env_seed=args.seed, policy_seed=args.policy_seed, PPO_ALLOWED=False,
+                   trained=False, qualification='NOT_QUALIFIED')
+     policy = None
+@@ -132,6 +134,7 @@ def main():
+     p.add_argument('--controller',choices=('rule','source'),default='rule')
+     p.add_argument('--checkpoint',type=Path); p.add_argument('--output',type=Path,required=True)
+     p.add_argument('--requests',type=int,default=3); p.add_argument('--warm-start',type=int,default=0)
++    p.add_argument('--forecast-merge-gap',action='store_true')
+     p.add_argument('--high-soc',action='store_true'); p.add_argument('--seed',type=int,default=890301)
+     p.add_argument('--policy-seed',type=int,default=890401); p.add_argument('--max-steps',type=int,default=1800)
+     p.add_argument('--trace-blockers',action='store_true')
+diff --git a/terminal_marl/scripts/evaluate_p3_v25_student.py b/terminal_marl/scripts/evaluate_p3_v25_student.py
+index ee0144d..9a6cc37 100644
+--- a/terminal_marl/scripts/evaluate_p3_v25_student.py
++++ b/terminal_marl/scripts/evaluate_p3_v25_student.py
+@@ -24,7 +24,8 @@ from .collect_p3_v3_sparse_expert import natural_terminal
+ def run(args):
+     args.output.mkdir(parents=True,exist_ok=False)
+     torch.set_num_threads(1)
+-    config=build_config(requests=args.requests,warm_start=args.warm_start,high_soc=args.high_soc)
++    config=build_config(requests=args.requests,warm_start=args.warm_start,high_soc=args.high_soc,
++                        forecast_merge_gap=getattr(args,'forecast_merge_gap',False))
+     write_json(args.output/'protocol.json',dict(mode='development_student_never_qualification',
+         policy_observation_schema=VERSION, physics_config=asdict(config), checkpoint=str(args.checkpoint),
+         checkpoint_sha256=hashlib.sha256(args.checkpoint.read_bytes()).hexdigest(),
+@@ -108,6 +109,7 @@ def main():
+     p.add_argument('--seed',type=int,required=True);p.add_argument('--policy-seed',type=int,required=True)
+     p.add_argument('--requests',type=int,default=12);p.add_argument('--warm-start',type=int,default=6)
+     p.add_argument('--high-soc',action='store_true');p.add_argument('--deterministic',action='store_true')
++    p.add_argument('--forecast-merge-gap',action='store_true')
+     p.add_argument('--smoke',action='store_true')
+     a=p.parse_args();r=run(a)
+     print(json.dumps({k:r[k] for k in ('status','ticks','terminal','error')}))
+diff --git a/tests/test_merge_gap_forecast.py b/tests/test_merge_gap_forecast.py
+index 11b9371..280ecbd 100644
+--- a/tests/test_merge_gap_forecast.py
++++ b/tests/test_merge_gap_forecast.py
+@@ -8,6 +8,7 @@ import pytest
+ from terminal_marl.configs.p3_integrated_repair import build_config
+ from terminal_marl.core.config import RingRole
+ from terminal_marl.core.merge_gap_forecast import target_ring_angles, largest_gap_center
++from terminal_marl.core.merge_scheduler import LowLevelIntent
+ from terminal_marl.core.safety_filter import SafetyFilter
+ from terminal_marl.core.uav import FlightPhase
+ from terminal_marl.envs.parallel_env import TerminalParallelEnv, WorldSnapshot
+@@ -75,3 +76,46 @@ def test_gap_midpoint_wraps_and_is_independent_of_container_order(env):
+     assert largest_gap_center([2*math.pi-.1])==pytest.approx(math.pi-.1)
+     assert largest_gap_center([.2,1.,2.])==pytest.approx((2+(2*math.pi+.2-2)/2)%(2*math.pi))
+     with pytest.raises(ValueError):largest_gap_center([])
++
++
++def test_scheduler_uses_committed_arrivals_only_in_explicit_mode(env):
++    ego,other=env.active[4],env.active[5]
++    env.active={4:ego,5:other}
++    other.committed_plan=Plan(5.);other.ring_role=None
++    other.phase=FlightPhase.TRANSFER_M2I
++    snap=WorldSnapshot(env.now,env.active,env.airspace)
++    old=env.scheduler.propose(ego,LowLevelIntent(1.,0.,0.),snap,RingRole.INNER)
++    env.config.merge_gap_prediction_mode='committed_arrivals_v1'
++    new=env.scheduler.propose(ego,LowLevelIntent(1.,0.,0.),snap,RingRole.INNER)
++    expected=largest_gap_center(target_ring_angles(env.config,ego,RingRole.INNER,new.merge_time,snap))
++    assert new.merge_time==old.merge_time and new.headway==old.headway
++    assert new.merge_angle==pytest.approx(expected)
++    assert abs(new.merge_angle-old.merge_angle)>.1
++
++
++def test_future_empty_ring_keeps_established_empty_phase_rule(env):
++    ego,other=env.active[4],env.active[5]
++    env.active={4:ego,5:other};other.committed_plan=Plan(10.,'landing')
++    env.config.merge_gap_prediction_mode='committed_arrivals_v1'
++    snap=WorldSnapshot(env.now,env.active,env.airspace)
++    actual=env.scheduler.propose(ego,LowLevelIntent(1.,0.,0.),snap,RingRole.INNER)
++    env.active={4:ego};snap.active=env.active
++    env.config.merge_gap_prediction_mode='current_holders_legacy'
++    expected=env.scheduler.propose(ego,LowLevelIntent(1.,0.,0.),snap,RingRole.INNER)
++    assert actual==expected
++
++
++def test_config_and_check_only_cli_record_opt_in_without_hidden_changes():
++    from dataclasses import asdict
++    from terminal_marl.scripts.diagnose_p3_integrated_repair import run
++    old=build_config(requests=3,warm_start=3,high_soc=True)
++    new=build_config(requests=3,warm_start=3,high_soc=True,forecast_merge_gap=True)
++    expected=asdict(old);expected['merge_gap_prediction_mode']='committed_arrivals_v1'
++    assert asdict(new)==expected
++    args=NS(requests=3,warm_start=3,high_soc=True,controller='rule',check_only=True,seed=1,policy_seed=2,
++            forecast_merge_gap=True)
++    result=run(args)
++    assert result['status']=='CHECK_ONLY_OK' and not result['environment_constructed']
++    assert result['config']['merge_gap_prediction_mode']=='committed_arrivals_v1'
++    with pytest.raises(ValueError,match='merge_gap_prediction_mode'):
++        replace(old,merge_gap_prediction_mode='unknown')
+diff --git a/tests/test_merge_single_holder_gap.py b/tests/test_merge_single_holder_gap.py
+index 19135d8..132c32a 100644
+--- a/tests/test_merge_single_holder_gap.py
++++ b/tests/test_merge_single_holder_gap.py
+@@ -79,12 +79,14 @@ def test_multiple_holder_gap_preserves_cyclic_midpoint_behavior():
+     assert actual == pytest.approx((start + gap / 2.0) % (2.0 * math.pi))
+ 
+ 
+-def test_candidate_path_still_calls_full_safety_filter_with_single_target_holder(monkeypatch):
++@pytest.mark.parametrize('gap_mode', ['current_holders_legacy', 'committed_arrivals_v1'])
++def test_candidate_path_still_calls_full_safety_filter_with_single_target_holder(monkeypatch, gap_mode):
+     config = SimConfig(
+         reset_mode="warm_start_rings",
+         warm_start_uavs=2,
+         fixed_arrival_schedule=(0.0, 0.0),
+         total_requested_uavs=2,
++        merge_gap_prediction_mode=gap_mode,
+     )
+     env = TerminalParallelEnv(config)
+     env.reset(seed=841301)

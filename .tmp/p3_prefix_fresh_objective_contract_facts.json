@@ -1,0 +1,199 @@
+{
+  "status": "FACTS_COMPLETE",
+  "scope": {
+    "current_sources": [
+      "terminal_marl/core/config.py",
+      "terminal_marl/core/rewards.py",
+      "terminal_marl/envs/parallel_env.py",
+      "terminal_marl/training/student_rollout_v4_2.py",
+      "terminal_marl/training/validate_p3_prefix_fallback_20261001.py",
+      "terminal_marl/training/run_p3_task_neutral_joint_batch.py",
+      "terminal_marl/training/run_p3_task_neutral_pilot.py",
+      "docs/evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md"
+    ],
+    "historical_artifact": "D:/7_codespace/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/summary.json",
+    "v4_preflight": "D:/7_codespace/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4/preflight.json"
+  },
+  "source_worktree_state": {
+    "modified_named_sources": [
+      "docs/evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md",
+      "terminal_marl/training/run_p3_task_neutral_joint_batch.py",
+      "terminal_marl/training/run_p3_task_neutral_pilot.py"
+    ],
+    "clean_named_sources": [
+      "terminal_marl/core/config.py",
+      "terminal_marl/core/rewards.py",
+      "terminal_marl/envs/parallel_env.py",
+      "terminal_marl/training/student_rollout_v4_2.py",
+      "terminal_marl/training/validate_p3_prefix_fallback_20261001.py"
+    ],
+    "note": "Historical summary values below are artifact metadata; current source and current protocol text are reported separately."
+  },
+  "low_level_reward_contract": {
+    "component_dataclass": {
+      "path": "terminal_marl/core/rewards.py:65-100",
+      "components": ["time", "progress", "release", "touchdown", "failure", "teacher", "shield", "urgency", "emergency"],
+      "total": "sum of the nine components"
+    },
+    "per_step_initialization": {
+      "path": "terminal_marl/envs/parallel_env.py:1476-1497",
+      "time": "-config.low_level_time_penalty_per_second * config.dt per previous active UAV",
+      "urgency": "low_level_urgency_penalty(base_time_penalty, dt, base_priority, soc, priority_weight, soc_weight, threshold, reserve)",
+      "urgency_formula_path": "terminal_marl/core/rewards.py:20-58",
+      "urgency_formula": "-base_time_penalty*dt*(priority_weight*clipped_priority_term + soc_weight*clipped_soc_term)"
+    },
+    "release": {
+      "path": "terminal_marl/envs/parallel_env.py:1661-1664",
+      "condition": "requested release_request > release_threshold",
+      "approved": "+low_level_release_approved_reward only when decision == approved",
+      "otherwise": "-low_level_release_rejected_penalty for any other release decision"
+    },
+    "motion_and_touchdown": {
+      "path": "terminal_marl/envs/parallel_env.py:1714-1717",
+      "progress": "+distance*low_level_progress_reward_per_meter",
+      "normal_touchdown": "+low_level_touchdown_reward",
+      "emergency_touchdown": "+touchdown reward and -low_level_emergency_landing_penalty"
+    },
+    "failure_and_safety": {
+      "path": "terminal_marl/envs/parallel_env.py:1684-1687,1747-1750",
+      "shield": "-shield_intervention_penalty - shield_correction_magnitude_penalty*magnitude when shield_used",
+      "collision": "-low_level_collision_penalty for FAILED_COLLISION",
+      "energy_or_low_soc": "-low_level_energy_failure_penalty for FAILED_ENERGY or DIVERTED_LOW_SOC",
+      "teacher": "teacher penalties are applied only on teacher correction paths; V4 preflight teacher_enabled=false"
+    },
+    "energy_and_wait": {
+      "energy_consumption": "phase_motion_v2 consumes estimated plan energy/rest power at terminal_marl/envs/parallel_env.py:1705-1710; no separate energy reward component is added there",
+      "landing_floor": "landing/emergency landing below min SOC resolves FAILED_ENERGY for emergency or DIVERTED_LOW_SOC otherwise at terminal_marl/envs/parallel_env.py:1218-1230",
+      "wait_signal": "low-level reward exposes time and SOC urgency costs; no separate wait reward field is added in step()"
+    }
+  },
+  "aggregation_contract": {
+    "env_step": "parallel_env.step returns per-UAV total rewards dict at terminal_marl/envs/parallel_env.py:1758",
+    "rollout_team_reward": "student_rollout_v4_2 constructs StudentStepV42.reward as float(sum(rewards.values())) at student_rollout_v4_2.py:403-405",
+    "component_accumulation": "student_rollout_v4_2.py:202-209 sums every per-UAV component except component key total; consistency is checked at lines 428-440",
+    "critic_credit": "StudentStepV42 stores one scalar team reward; team_gae uses that scalar per simulator step at terminal_marl/algo/student_ppo_v4_2.py:20-31,67-75",
+    "actor_mask": "committed/takeover agents remain in critic world context but actor_mask excludes them, as documented in student_ppo_v4_2.py:1-5",
+    "actor_reduction": {
+      "current_joint_source": "run_p3_task_neutral_joint_batch.py:132-145; default world_mean, optional joint_team",
+      "world_mean": "averages clipped per-agent objective within each world and then across worlds",
+      "joint_team": "sums per-agent objective in minibatch and divides by one rollout-wide actor-count normalizer; implementation at student_ppo_v4_2.py:212-241"
+    }
+  },
+  "v4_preflight_actual_config": {
+    "status": "PREFLIGHT_OK",
+    "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1",
+    "checkpoint_before_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "checkpoint_after_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+    "reward_coefficients": {
+      "low_level_time_penalty_per_second": 0.01,
+      "low_level_soc_urgency_time_weight": 2.0,
+      "low_level_soc_urgency_threshold": 0.65,
+      "low_level_priority_time_weight": 0.0,
+      "low_level_progress_reward_per_meter": 0.0,
+      "low_level_touchdown_reward": 25.0,
+      "low_level_release_approved_reward": 0.1,
+      "low_level_release_rejected_penalty": 0.05,
+      "low_level_collision_penalty": 25.0,
+      "low_level_energy_failure_penalty": 20.0,
+      "low_level_emergency_landing_penalty": 8.0,
+      "teacher_intervention_penalty": 0.1,
+      "teacher_correction_magnitude_penalty": 0.05,
+      "shield_intervention_penalty": 0.2,
+      "shield_correction_magnitude_penalty": 0.1
+    },
+    "runtime_objective_flags": {
+      "energy_model_mode": "phase_motion_v2",
+      "emergency_landing_enabled": true,
+      "emergency_priority_guard_enabled": true,
+      "energy_reachability_guard_enabled": true,
+      "rule_flow_coordination_enabled": false,
+      "emergency_trigger_soc": 0.4,
+      "emergency_energy_margin_seconds": 15.0,
+      "energy_capacity": 1500.0,
+      "soc_reserve": 0.25,
+      "soc_emergency": 0.2,
+      "task_priority_enabled": false,
+      "release_arbitration_mode": "downstream_priority",
+      "lz_assignment_mode": "nearest_available",
+      "shield_enabled": true,
+      "teacher_enabled": false,
+      "v4_2_rejected_release_hold_mode": "canonical_wait",
+      "dt": 1.0,
+      "physics_dt": 0.2,
+      "max_simulation_seconds": 1800.0
+    },
+    "source": "validate_p3_prefix_fallback_20261001.py calls support._build_inputs(); support._build_inputs uses neutral_eval._build_neutral_inputs() and selects neutral_configs[dense24] at run_p3_trained_proposal_support_20261001.py:468-485"
+  },
+  "historical_after_batch04_metadata": {
+    "path": "D:/7_codespace/training_outputs/terminal/p3_task_neutral_larger_batch_20260929/full/training/batch_04/summary.json",
+    "batch_index": 4,
+    "rollouts": 24,
+    "requests": 576,
+    "steps": 19031,
+    "normal": 477,
+    "emergency": 97,
+    "failed": 2,
+    "failed_energy": 2,
+    "safety_nonzero_cells": 0,
+    "credit_method": "full_episode_mc",
+    "credit_gamma": 1.0,
+    "credit_gae_lambda": 1.0,
+    "reward_scale": 0.01,
+    "raw_environment_reward_total": 10613.22823476767,
+    "learning_reward_total": 106.1322823476767,
+    "reward_total": 10613.228234767672,
+    "accepted_updates": 298,
+    "rejected_updates": 0,
+    "actor_count_normalizer": 3.727759970574326,
+    "checkpoint_roundtrip": {
+      "sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "exact": true,
+      "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+      "payload_task_priority_enabled": false,
+      "payload_low_level_priority_time_weight": 0.0,
+      "phase_config_match": true
+    },
+    "missing_in_summary": ["unresolved", "diverted", "per_component_reward_totals", "wait_reward_decomposition", "energy_reward_decomposition"]
+  },
+  "current_training_and_checkpoint_rules": {
+    "pilot_constants": {
+      "path": "terminal_marl/training/run_p3_task_neutral_pilot.py:32-45",
+      "learning_rate": 3e-05,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_ratio": 0.1,
+      "value_coef": 0.5,
+      "entropy_coef": 0.001,
+      "target_kl": 0.01
+    },
+    "joint_batch_credit_switch": {
+      "path": "terminal_marl/training/run_p3_task_neutral_joint_batch.py:132-145",
+      "default": "pilot UPDATE_KWARGS; actor_reduction world_mean",
+      "full_episode_credit": "overrides gamma=1.0 and gae_lambda=1.0",
+      "joint_team_actor": "sets actor_reduction=joint_team; mutually exclusive with full_episode_credit at lines 636-638"
+    },
+    "training_rollout_stop": {
+      "path": "run_p3_task_neutral_joint_batch.py:203-223",
+      "stops_on": ["record error", "weights changed", "safety_nonzero", "technical_ok/lifecycle_valid incomplete", "request count mismatch"],
+      "failed_energy": "explicitly retained as a training sample and excluded from this stop predicate"
+    },
+    "update_stop": {
+      "path": "run_p3_task_neutral_pilot.py:442-451",
+      "stops_on": ["non-mapping stats", "non-finite stats", "updates <= 0", "accepted_updates <= 0"]
+    },
+    "checkpoint_progression": {
+      "path": "run_p3_task_neutral_pilot.py:1048-1085,1099-1103",
+      "fact": "episode checkpoint is saved and becomes current_checkpoint only when update_reason is None; any update_reason breaks the training loop; final pilot checkpoint roundtrip is reached only after exactly three training records/update calls"
+    },
+    "joint_batch_completion": {
+      "path": "run_p3_task_neutral_joint_batch.py:936-950",
+      "fact": "report becomes COMPLETED only after stop_reason is absent; checks include six training rollouts, one joint update, twelve evaluation rollouts, source-q fixed, no Teacher/heldout"
+    }
+  },
+  "historical_protocol_text": {
+    "path": "docs/evidence/v4_2/p3_task_neutral_learning_curve_protocol_20260929.md:30-44,60-65",
+    "registered_credit": "gamma=.99, lambda=.95; no full-episode MC; actor worlds equally weighted and within-world actors split mass",
+    "registered_stop_boundary": "no performance early stop/seed selection/budget expansion; stop only on technical anomaly, safety violation, or accepted update zero; no automatic best-checkpoint selection",
+    "historical_document_worktree_state": "modified in current worktree and contains post-run result text"
+  }
+}

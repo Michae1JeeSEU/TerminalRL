@@ -1,0 +1,54 @@
+{
+  "server": "lab-server",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001_v2",
+  "snapshot_status": "RUNNING",
+  "pid": 2158963,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.profile_p3_prefix_fallback_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001_v2",
+  "progress": {
+    "absolute_step": 200,
+    "active_observation_count": 17,
+    "generated_request_rows": 24,
+    "native_forward_count": 200,
+    "release_calls": 3108,
+    "arm": "before_prefix_fallback",
+    "cell_id": 4,
+    "env_now": 200.0,
+    "stage": "P3_PREFIX_FALLBACK_PROFILE_20261001_V1",
+    "status": "RUNNING"
+  },
+  "progress_mtime": "2026-10-01 13:54:38.416455008 +0800",
+  "known_completed_before_snapshot": 11,
+  "newly_completed_group_files": [
+    {
+      "name": "cell_03_after_prefix_fallback.json",
+      "size": 3969436,
+      "mtime": "2026-10-01 13:53:06.590318140 +0800",
+      "status": "completed"
+    },
+    {
+      "name": "cell_04_before_legacy.json",
+      "size": 3309775,
+      "mtime": "2026-10-01 13:53:31.214954600 +0800",
+      "status": "completed"
+    },
+    {
+      "name": "cell_04_after_legacy.json",
+      "size": 3356341,
+      "mtime": "2026-10-01 13:53:56.686832454 +0800",
+      "status": "completed"
+    }
+  ],
+  "arm_files_completed_total": 14,
+  "missing_at_snapshot": [
+    "full.json",
+    "error.json"
+  ],
+  "existing_at_snapshot": {
+    "full_v1_log": {
+      "size": 0,
+      "mtime": "2026-10-01 13:43:52.091964168 +0800"
+    }
+  },
+  "scope": "read-only process/progress and newly completed group identities; no raw tapes read"
+}

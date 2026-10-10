@@ -1,0 +1,151 @@
+{
+  "schema": "p3_ring_reuse_terminal_check_v1",
+  "observed_utc": "2026-10-10T02:28:56.1670492Z",
+  "source": {
+    "commit": "1575edefe5e55bfffbef8cca8dbdf2d3ce7bb796",
+    "actor_sha256": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+    "launch_manifest_path": ".tmp/p3_neighbor_ring_reuse_cv_launch_valid_20261010.json",
+    "launch_manifest_sha256": "0ec818e13545e02d48b028b220558af1c63d09aa82072bd1261f3834c56ec754",
+    "source_hash_count": 19,
+    "source_hashes": {
+      ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+      ".tmp/run_p3_neighbor_prefix_20261010.py": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+      "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+      "terminal_marl/scripts/diagnose_p3_intent_neighbor.py": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+      "terminal_marl/training/p3_neighbor_prefix_coverage_data.py": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+      "terminal_marl/training/p3_neighbor_witness_data.py": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+      "terminal_marl/training/p3_neighbor_witness_dataset.py": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+      "terminal_marl/training/p3_v25_course_data.py": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+      "terminal_marl/training/p3_v26_course_data.py": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+      "terminal_marl/training/p3_v26_supplemental_data.py": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+      "terminal_marl/training/p3_v26_train_dataset.py": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+      "tests/test_intent_neighbor_ring_score_reuse.py": "87268b8f391b179e917edb7d034497866d0013f83e47929bbf185dfe3250eb25",
+      "tests/test_p3_neighbor_prefix_coverage_data.py": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+      "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+      "tests/test_p3_neighbor_prefix_queries.py": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+      "tests/test_p3_neighbor_witness_data.py": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+      "tests/test_p3_neighbor_witness_dataset.py": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+      "tests/test_p3_supplemental_neighbor_data.py": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+      "tests/test_p3_v26_train_dataset.py": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6"
+    }
+  },
+  "ring_reuse": {
+    "server_output": "/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+    "local_output": "D:/7_codespace/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle",
+    "root": {
+      "status": "COMPLETE",
+      "error": null,
+      "fold_count": 9,
+      "exit_code": 0
+    },
+    "process_check": {
+      "matching_training_processes": 0,
+      "target_pids_absent": true,
+      "target_pids": [3138030, 3138031, 3138032, 3138174, 3138175, 3138178, 3138179, 3138180]
+    },
+    "folds": [
+      {"seed": 893511, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 743.9089782042429, "held_rows": 30, "held_auxiliary_queries": 160, "server_sha256": "4bdb1f20552e2c9941360c0dc05859b2131253d40562a920c8c6fbf34250b79c", "local_sha256": "4bdb1f20552e2c9941360c0dc05859b2131253d40562a920c8c6fbf34250b79c"},
+      {"seed": 893512, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 651.5047029126436, "held_rows": 721, "held_auxiliary_queries": 135, "server_sha256": "1127b758bb20dccb81df9aab9cb728ade6377bdbde70e39467c994ec3e967663", "local_sha256": "1127b758bb20dccb81df9aab9cb728ade6377bdbde70e39467c994ec3e967663"},
+      {"seed": 893513, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 702.5754477381706, "held_rows": 547, "held_auxiliary_queries": 138, "server_sha256": "eb240c079fc4509c89a8e677eba52599b03f6f6d825df765333fb4928bd40f35", "local_sha256": "eb240c079fc4509c89a8e677eba52599b03f6f6d825df765333fb4928bd40f35"},
+      {"seed": 893601, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 722.2364275259897, "held_rows": 18, "held_auxiliary_queries": 41, "server_sha256": "aa664c343cb2e4275c0abfc91823769d9b5d7f9e7fe0819bc3b8c5107e9a83f6", "local_sha256": "aa664c343cb2e4275c0abfc91823769d9b5d7f9e7fe0819bc3b8c5107e9a83f6"},
+      {"seed": 893602, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 827.1614586580545, "held_rows": 571, "held_auxiliary_queries": 141, "server_sha256": "ce3afd3b31916f49e7253c966aceb32b181e05ad13513d817d693e8d65efd38a", "local_sha256": "ce3afd3b31916f49e7253c966aceb32b181e05ad13513d817d693e8d65efd38a"},
+      {"seed": 893603, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 738.4573988774791, "held_rows": 371, "held_auxiliary_queries": 147, "server_sha256": "b8368b26b1bf313d06e39df9ef75769a406ad9cca8e624623f22567f8b23fe1e", "local_sha256": "b8368b26b1bf313d06e39df9ef75769a406ad9cca8e624623f22567f8b23fe1e"},
+      {"seed": 893604, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 709.281309123151, "held_rows": 57, "held_auxiliary_queries": 136, "server_sha256": "1b68eb129ac2d46956857a6038c96fa61a7a4e6d8becc81b8d1a232987d98551", "local_sha256": "1b68eb129ac2d46956857a6038c96fa61a7a4e6d8becc81b8d1a232987d98551"},
+      {"seed": 893605, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 733.7399293305352, "held_rows": 542, "held_auxiliary_queries": 207, "server_sha256": "8cd8cec7d79e36e9e1edeb12a4c5bbca7bf8757fb88422800813527e62b4bb", "local_sha256": "8cd8cec7d79e36e9e1edeb12a4c5bbca7bf8757fb88422800813527e62b4bb"},
+      {"seed": 893606, "status": "COMPLETE", "error": null, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 315.2127259345725, "held_rows": 292, "held_auxiliary_queries": 165, "server_sha256": "72f4c10f50d13037eef0a1239d31bcad4bba8b198003e9b53a5c49b287cf9de0", "local_sha256": "72f4c10f50d13037eef0a1239d31bcad4bba8b198003e9b53a5c49b287cf9de0"}
+    ],
+    "key_files": {
+      "protocol": {"server_sha256": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451", "local_sha256": "fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451"},
+      "result": {"server_sha256": "51f098ae4378d59f1a9e7ab189afcc9f9ba9c0ee2ec520d90dd3683fb144a553", "local_sha256": "51f098ae4378d59f1a9e7ab189afcc9f9ba9c0ee2ec520d90dd3683fb144a553"},
+      "log": {"server_sha256": "90bb12a775a6a9193651357ffb64f0bd1c43cd1b190f91204a93787b2cec7b19", "local_sha256": "90bb12a775a6a9193651357ffb64f0bd1c43cd1b190f91204a93787b2cec7b19", "content": "{\"status\": \"COMPLETE\", \"folds\": 9, \"error\": null}\n"},
+      "exit": {"server_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa", "local_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa", "content": "0\n"},
+      "pid": {"server_sha256": "aa09377e77feb77b0fc78203a44bf85af3b4db646570da867316422e2f9faa92", "local_sha256": "aa09377e77feb77b0fc78203a44bf85af3b4db646570da867316422e2f9faa92", "content": "3138030\n"}
+    },
+    "server_local_hashes_match": true
+  },
+  "control": {
+    "server_output": "/home/user/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle",
+    "local_output": "D:/7_codespace/training_outputs/terminal/p3_neighbor_nine_cycle_cv_20261009/nine_cycle",
+    "root": {
+      "status": "COMPLETE",
+      "error": null,
+      "fold_count": 9,
+      "exit_code": 0,
+      "all_folds_fixed_5000": true
+    },
+    "process_check": {
+      "matching_training_processes": 0,
+      "target_pid_file_content": "3099774\n",
+      "target_pid_absent": true
+    },
+    "folds_from_result": [
+      {"seed": 893511, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 792.7677011433989, "held_rows": 30, "held_auxiliary_queries": 59},
+      {"seed": 893512, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 818.8671907223761, "held_rows": 721, "held_auxiliary_queries": 52},
+      {"seed": 893513, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 796.1334899393842, "held_rows": 547, "held_auxiliary_queries": 56},
+      {"seed": 893601, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 802.5280855251476, "held_rows": 18, "held_auxiliary_queries": 33},
+      {"seed": 893602, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 788.6223454093561, "held_rows": 571, "held_auxiliary_queries": 54},
+      {"seed": 893603, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 817.7304879948497, "held_rows": 371, "held_auxiliary_queries": 63},
+      {"seed": 893604, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 796.5061099678278, "held_rows": 57, "held_auxiliary_queries": 39},
+      {"seed": 893605, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 804.6016755662858, "held_rows": 542, "held_auxiliary_queries": 62},
+      {"seed": 893606, "updates": [0, 100, 500, 1000, 2000, 5000], "elapsed_seconds": 807.9377926588058, "held_rows": 292, "held_auxiliary_queries": 55}
+    ],
+    "progress_files": {
+      "server_count": 0,
+      "local_count": 0,
+      "note": "The legacy control stores all nine fold curves in result.json; no fold_*.progress.json files were present on either side."
+    },
+    "key_files": {
+      "protocol": {"server_sha256": "994882bd2909391f23becb5abf01dba319dae421e9d9ece67aa6c0e6277db4f3", "local_sha256": "994882bd2909391f23becb5abf01dba319dae421e9d9ece67aa6c0e6277db4f3"},
+      "result": {"server_sha256": "ab1e7d7c38c52d32393d650dc389e23e77eb844eedaa760798c698036af1d76e", "local_sha256": "ab1e7d7c38c52d32393d650dc389e23e77eb844eedaa760798c698036af1d76e"},
+      "log": {"server_sha256": "90bb12a775a6a9193651357ffb64f0bd1c43cd1b190f91204a93787b2cec7b19", "local_sha256": "90bb12a775a6a9193651357ffb64f0bd1c43cd1b190f91204a93787b2cec7b19", "content": "{\"status\": \"COMPLETE\", \"folds\": 9, \"error\": null}\n"},
+      "exit": {"server_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa", "local_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa", "content": "0\n"},
+      "pid": {"server_sha256": "e7da3dcc5bfb9c03adaddaa6b51e5f32b2749dac292e71688ea5ad0201ecfd42", "local_sha256": "e7da3dcc5bfb9c03adaddaa6b51e5f32b2749dac292e71688ea5ad0201ecfd42", "content": "3099774\n"}
+    },
+    "server_local_hashes_match": true
+  },
+  "terminal_source_check": {
+    "observed_utc": "2026-10-10T02:31:55.8269935Z",
+    "source_count": 19,
+    "local_count": 19,
+    "server_count": 19,
+    "local_vs_launch_mismatch_paths": [],
+    "server_vs_launch_mismatch_paths": [],
+    "local_vs_server_mismatch_paths": [],
+    "all_current_hashes_match_launch_manifest": true,
+    "all_current_local_server_hashes_match": true,
+    "terminal_hashes": {
+      ".tmp/profile_p3_neighbor_runtime_20261010.py": "26bba7339d4fab94a4ab51b50dce279c288c57201812025c51d65edd7e4334e3",
+      ".tmp/run_p3_neighbor_prefix_20261010.py": "07c0c07ebfbd4286e56794b9f647c36f1d456f85ccbb170be37b43e1f465a562",
+      "terminal_marl/algo/intent_neighbor_actor.py": "305cd2ad9417400b81342010226b130e545077f329c47d2a27ae2212db0a41eb",
+      "terminal_marl/scripts/diagnose_p3_intent_neighbor.py": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f",
+      "terminal_marl/training/p3_neighbor_prefix_coverage_data.py": "557a1a93fb4d0a77a18974768b5df19cc845f7d1f37dbbf07afe93a8b7f2baea",
+      "terminal_marl/training/p3_neighbor_witness_data.py": "be795045a108b339cc8f880c6912f7339fa1d08a3920f02b0e0708df4ab95268",
+      "terminal_marl/training/p3_neighbor_witness_dataset.py": "ae6a956d5255204c86cfbf3cbae48818e314440d001e1f2ef220611adba69580",
+      "terminal_marl/training/p3_v25_course_data.py": "749b67b1d6274a19b55a707e9f6637d81ed3e7394a06178525cde69b3ab18f80",
+      "terminal_marl/training/p3_v26_course_data.py": "fd0f03d581a4758510806c8597838a1cb0ceb9000f046c394a625e8b84d502cd",
+      "terminal_marl/training/p3_v26_supplemental_data.py": "c94cbf963fae1815a5ab31515a9f3209314327464da55fdc8daac667437e48ca",
+      "terminal_marl/training/p3_v26_train_dataset.py": "7ed9dfef7564e75de355d5d770f063cd3fbc5a8d9b152d0b71bb006f2b8056b5",
+      "tests/test_intent_neighbor_ring_score_reuse.py": "87268b8f391b179e917edb7d034497866d0013f83e47929bbf185dfe3250eb25",
+      "tests/test_p3_neighbor_prefix_coverage_data.py": "1f846ecd99e05e79eb7eeb7af1559109174f1fc0dee95189a1a9362e9482cadf",
+      "tests/test_p3_neighbor_prefix_parallel.py": "8b5e2974d9f8ec4e20004ef1370d98e3efd065a224920a9e29f3bcd2186e5088",
+      "tests/test_p3_neighbor_prefix_queries.py": "6d45379f5cdd92e61d367f01deba52b6edcd4bb941039f06ef0c48c1f79fa47d",
+      "tests/test_p3_neighbor_witness_data.py": "ac8ba48f193557cdd0ab262a09664155dc7475c95381e22f8555c138a3856750",
+      "tests/test_p3_neighbor_witness_dataset.py": "b7cebf890bd2b5f67c3bf3aff314b5dc2e047696e16f81b06904f8876a7f32fb",
+      "tests/test_p3_supplemental_neighbor_data.py": "c9a25f10252b3648a031682be5ca902e0f6dcc78c1ae3b213dc9318973219f75",
+      "tests/test_p3_v26_train_dataset.py": "b1353d4998663659e8d288f7b2ff18c347626bc08b0bb91b2b6829bc909155a6"
+    }
+  },
+  "approximate_root_wall_time": {
+    "basis": "result.json filesystem mtime minus protocol.json filesystem mtime; approximate only, not process elapsed time",
+    "ring_reuse": {
+      "protocol_mtime_utc": "2026-10-10T01:52:33.1323016Z",
+      "result_mtime_utc": "2026-10-10T02:21:41.9383284Z",
+      "difference_seconds": 1748.8060269355774
+    },
+    "control": {
+      "protocol_mtime_utc": "2026-10-09T16:47:18.6594647Z",
+      "result_mtime_utc": "2026-10-09T18:47:44.8118054Z",
+      "difference_seconds": 7226.1523406505585
+    }
+  }
+}

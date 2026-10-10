@@ -1,0 +1,21 @@
+{
+  "environment_created": false,
+  "phase": "check",
+  "preflight_status": "PREFLIGHT_OK",
+  "registered_artifacts": {
+    "control": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\gate_release_control\\arms\\pair_0015_control.json",
+      "sha256": "2fbf13184c06abb6ab37ba119e157c17df9d241d3586ae9c8dae713824af1671"
+    },
+    "gate_preflight": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\gate_release_control\\preflight.json",
+      "sha256": "4701666d76b17d2169b5d9d2c41787b3375a8f6cc94d785b64717980595d9b79"
+    },
+    "legacy": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\forced_wait_frozen\\arms\\pair_0015_legacy.json",
+      "sha256": "9424c7a61d3007251ec4e026204269cfd859a5e51e84cea48d60807e172bd11b"
+    }
+  },
+  "stage": "P3_GATE_FAILURE_REPLAY_20261001_V1",
+  "status": "CHECK_OK"
+}

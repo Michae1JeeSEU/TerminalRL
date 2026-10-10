@@ -1,0 +1,1931 @@
+{
+  "checks": {
+    "after_legacy": {
+      "PPO_ALLOWED": false,
+      "caller_rng_restored_outer": true,
+      "caller_rng_unchanged_record": true,
+      "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "checkpoint_sha256_expected": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "factory_restored": true,
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": false,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": false,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {}
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 0
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": false,
+        "unresolved": 0,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "model_digest_after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+      "model_digest_before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+      "model_unchanged": true,
+      "runtime_capture": {
+        "admitted_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "admitted_count": 12,
+        "available": true,
+        "captured_request_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "captured_request_rows": [
+          {
+            "arrival_id": 0,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7443634364316849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 1,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.6865190550266409,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 2,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5715882823453804,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 3,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8183702234466201,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 4,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5511052190186534,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 5,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7626986176488001,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 6,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 0,
+            "initial_soc": 0.5502998917775188,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 7,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8410457721137772,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 8,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.8368012859712294,
+            "mission": "surveillance",
+            "request_time": 0.0,
+            "service_seconds": 60.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 9,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.791336601638711,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 10,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5588821157254612,
+            "mission": "cargo",
+            "request_time": 0.0,
+            "service_seconds": 120.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 11,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5671436025290849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          }
+        ],
+        "energy_by_arrival": {},
+        "energy_duplicate_arrival_ids": [],
+        "energy_outcome_arrival_ids": [],
+        "energy_total_consumed": null,
+        "factory_calls": 1,
+        "generated_requests": 12,
+        "ledger_alignment": true,
+        "outcome_arrival_ids": [],
+        "outcomes": {},
+        "release_rejected": 8,
+        "release_rejection_penalty": -0.4,
+        "requested_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "telemetry": {
+          "admissibility_rejections": 0,
+          "arrivals_admitted": 0,
+          "checked_executed_plan_hash_mismatches": 0,
+          "checked_executed_plan_matches": 3,
+          "checked_executed_plan_samples": 30,
+          "collision_exposure_steps": 0,
+          "collisions": 0,
+          "emergency_attempts": 0,
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 0,
+          "emergency_blocked_slack": 0,
+          "emergency_committed": 0,
+          "emergency_energy_guard_rejections": 0,
+          "emergency_lz_priority_rejections": 0,
+          "emergency_touchdowns": 0,
+          "energy_reachability_checks": 39,
+          "energy_reachability_negative_budgets": 0,
+          "final_busy_steps": 2,
+          "final_concurrency_step_sum": 2,
+          "final_overcapacity_steps": 0,
+          "flow_emergency_redirects": 0,
+          "free_lz_step_sum": 10,
+          "future_release_reservations": 0,
+          "geometry_updates": 0,
+          "hard_separation_exposure_steps": 0,
+          "hard_separation_violations": 0,
+          "joint_backup_uses": 0,
+          "joint_safety_checks": 100,
+          "joint_safety_corrections": 0,
+          "joint_safety_fail_closed": 0,
+          "joint_search_candidates": 0,
+          "joint_search_components": 0,
+          "joint_search_pruned": 0,
+          "joint_unrecoverable_components": 0,
+          "lz_assignment_distance_sum": 132.664991614216,
+          "lz_assignment_regret_sum": 0.0,
+          "lz_assignments": 1,
+          "lz_idle_with_inner_demand_steps": 2,
+          "lz_nearest_distance_sum": 132.664991614216,
+          "max_concurrent_final": 1,
+          "merge_time_modified": 7,
+          "minimum_actual_separation": 202.3429416475199,
+          "minimum_swept_separation": 202.23748416156684,
+          "nmac": 0,
+          "nmac_exposure_steps": 0,
+          "operational_buffer_entries": 0,
+          "operational_buffer_exposure_steps": 0,
+          "operational_buffer_takeovers": 0,
+          "recursive_feasibility_checks": 2,
+          "recursive_feasibility_rejections": 0,
+          "release_approved": 3,
+          "release_rejected": 8,
+          "repair_candidates_checked": 39,
+          "repair_used": 0,
+          "runtime_shortlist_candidates_checked": 27,
+          "runtime_shortlist_exhausted": 8,
+          "runtime_shortlist_fallback_selected": 0,
+          "runtime_traffic_interventions": 0,
+          "runtime_traffic_repair_magnitude": 0.0,
+          "safety_interventions": 0,
+          "shield_broad_phase_rejected": 72,
+          "shield_correction_magnitude": 0.0,
+          "shield_fail_closed": 0,
+          "shield_interventions": 0,
+          "shield_narrow_phase_checked": 0,
+          "trajectory_infeasible_candidates": 0
+        },
+        "telemetry_arrivals_admitted": 0
+      },
+      "sampler_intervention": {
+        "epsilon": 0.0,
+        "k3_source_logits_ranked": true,
+        "name": "native_legacy_student_request_details",
+        "off_policy": false,
+        "source_gate_unchanged": true,
+        "source_logits_immutable": true,
+        "source_q_immutable": true,
+        "training": false
+      },
+      "status": "completed",
+      "teacher_called": false,
+      "technical_error": null,
+      "training_or_update_called": false
+    },
+    "after_support": {
+      "PPO_ALLOWED": false,
+      "caller_rng_restored_outer": true,
+      "caller_rng_unchanged_record": true,
+      "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "checkpoint_sha256_expected": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "factory_restored": true,
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": false,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": false,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {}
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 0
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": false,
+        "unresolved": 0,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "model_digest_after": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+      "model_digest_before": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+      "model_unchanged": true,
+      "runtime_capture": {
+        "admitted_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "admitted_count": 12,
+        "available": true,
+        "captured_request_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "captured_request_rows": [
+          {
+            "arrival_id": 0,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7443634364316849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 1,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.6865190550266409,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 2,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5715882823453804,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 3,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8183702234466201,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 4,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5511052190186534,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 5,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7626986176488001,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 6,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 0,
+            "initial_soc": 0.5502998917775188,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 7,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8410457721137772,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 8,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.8368012859712294,
+            "mission": "surveillance",
+            "request_time": 0.0,
+            "service_seconds": 60.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 9,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.791336601638711,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 10,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5588821157254612,
+            "mission": "cargo",
+            "request_time": 0.0,
+            "service_seconds": 120.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 11,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5671436025290849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          }
+        ],
+        "energy_by_arrival": {},
+        "energy_duplicate_arrival_ids": [],
+        "energy_outcome_arrival_ids": [],
+        "energy_total_consumed": null,
+        "factory_calls": 1,
+        "generated_requests": 12,
+        "ledger_alignment": true,
+        "outcome_arrival_ids": [],
+        "outcomes": {},
+        "release_rejected": 8,
+        "release_rejection_penalty": -0.4,
+        "requested_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "telemetry": {
+          "admissibility_rejections": 0,
+          "arrivals_admitted": 0,
+          "checked_executed_plan_hash_mismatches": 0,
+          "checked_executed_plan_matches": 3,
+          "checked_executed_plan_samples": 30,
+          "collision_exposure_steps": 0,
+          "collisions": 0,
+          "emergency_attempts": 0,
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 0,
+          "emergency_blocked_slack": 0,
+          "emergency_committed": 0,
+          "emergency_energy_guard_rejections": 0,
+          "emergency_lz_priority_rejections": 0,
+          "emergency_touchdowns": 0,
+          "energy_reachability_checks": 39,
+          "energy_reachability_negative_budgets": 0,
+          "final_busy_steps": 2,
+          "final_concurrency_step_sum": 2,
+          "final_overcapacity_steps": 0,
+          "flow_emergency_redirects": 0,
+          "free_lz_step_sum": 10,
+          "future_release_reservations": 0,
+          "geometry_updates": 0,
+          "hard_separation_exposure_steps": 0,
+          "hard_separation_violations": 0,
+          "joint_backup_uses": 0,
+          "joint_safety_checks": 100,
+          "joint_safety_corrections": 0,
+          "joint_safety_fail_closed": 0,
+          "joint_search_candidates": 0,
+          "joint_search_components": 0,
+          "joint_search_pruned": 0,
+          "joint_unrecoverable_components": 0,
+          "lz_assignment_distance_sum": 132.664991614216,
+          "lz_assignment_regret_sum": 0.0,
+          "lz_assignments": 1,
+          "lz_idle_with_inner_demand_steps": 2,
+          "lz_nearest_distance_sum": 132.664991614216,
+          "max_concurrent_final": 1,
+          "merge_time_modified": 8,
+          "minimum_actual_separation": 202.3429416475199,
+          "minimum_swept_separation": 202.23748416156684,
+          "nmac": 0,
+          "nmac_exposure_steps": 0,
+          "operational_buffer_entries": 0,
+          "operational_buffer_exposure_steps": 0,
+          "operational_buffer_takeovers": 0,
+          "recursive_feasibility_checks": 2,
+          "recursive_feasibility_rejections": 0,
+          "release_approved": 3,
+          "release_rejected": 8,
+          "repair_candidates_checked": 39,
+          "repair_used": 0,
+          "runtime_shortlist_candidates_checked": 27,
+          "runtime_shortlist_exhausted": 8,
+          "runtime_shortlist_fallback_selected": 0,
+          "runtime_traffic_interventions": 0,
+          "runtime_traffic_repair_magnitude": 0.0,
+          "safety_interventions": 0,
+          "shield_broad_phase_rejected": 72,
+          "shield_correction_magnitude": 0.0,
+          "shield_fail_closed": 0,
+          "shield_interventions": 0,
+          "shield_narrow_phase_checked": 0,
+          "trajectory_infeasible_candidates": 0
+        },
+        "telemetry_arrivals_admitted": 0
+      },
+      "sampler_intervention": {
+        "calls": 2,
+        "epsilon": 0.1,
+        "k3_source_logits_ranked": true,
+        "likelihood_distribution": "epsilon_mixture_conditional_release",
+        "name": "native_release_epsilon_uniform_proposal_support",
+        "off_policy": true,
+        "proposal_count": 25,
+        "q_floor_min": 0.004,
+        "release_rows": 11,
+        "sampled_first": true,
+        "source_gate_unchanged": true,
+        "source_logits_immutable": true,
+        "source_q_immutable": true,
+        "training": false
+      },
+      "status": "completed",
+      "teacher_called": false,
+      "technical_error": null,
+      "training_or_update_called": false
+    },
+    "before_legacy": {
+      "PPO_ALLOWED": false,
+      "caller_rng_restored_outer": true,
+      "caller_rng_unchanged_record": true,
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "checkpoint_sha256_expected": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "factory_restored": true,
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": false,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": false,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {}
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 0
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": false,
+        "unresolved": 0,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "model_digest_after": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "model_digest_before": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "model_unchanged": true,
+      "runtime_capture": {
+        "admitted_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "admitted_count": 12,
+        "available": true,
+        "captured_request_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "captured_request_rows": [
+          {
+            "arrival_id": 0,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7443634364316849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 1,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.6865190550266409,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 2,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5715882823453804,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 3,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8183702234466201,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 4,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.5511052190186534,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 5,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.7626986176488001,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 6,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 0,
+            "initial_soc": 0.5502998917775188,
+            "mission": "emergency",
+            "request_time": 0.0,
+            "service_seconds": 10.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 7,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 1,
+            "initial_soc": 0.8410457721137772,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 8,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.8368012859712294,
+            "mission": "surveillance",
+            "request_time": 0.0,
+            "service_seconds": 60.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 9,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 2,
+            "initial_soc": 0.791336601638711,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 10,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5588821157254612,
+            "mission": "cargo",
+            "request_time": 0.0,
+            "service_seconds": 120.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          },
+          {
+            "arrival_id": 11,
+            "base_priority": 1,
+            "energy_capacity": 1500.0,
+            "gate_id": 3,
+            "initial_soc": 0.5671436025290849,
+            "mission": "standard",
+            "request_time": 0.0,
+            "service_seconds": 30.0,
+            "service_seconds_source": "MISSION_SERVICE_SECONDS[mission_type]"
+          }
+        ],
+        "energy_by_arrival": {},
+        "energy_duplicate_arrival_ids": [],
+        "energy_outcome_arrival_ids": [],
+        "energy_total_consumed": null,
+        "factory_calls": 1,
+        "generated_requests": 12,
+        "ledger_alignment": true,
+        "outcome_arrival_ids": [],
+        "outcomes": {},
+        "release_rejected": 8,
+        "release_rejection_penalty": -0.4,
+        "requested_arrival_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "telemetry": {
+          "admissibility_rejections": 0,
+          "arrivals_admitted": 0,
+          "checked_executed_plan_hash_mismatches": 0,
+          "checked_executed_plan_matches": 3,
+          "checked_executed_plan_samples": 30,
+          "collision_exposure_steps": 0,
+          "collisions": 0,
+          "emergency_attempts": 0,
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 0,
+          "emergency_blocked_slack": 0,
+          "emergency_committed": 0,
+          "emergency_energy_guard_rejections": 0,
+          "emergency_lz_priority_rejections": 0,
+          "emergency_touchdowns": 0,
+          "energy_reachability_checks": 39,
+          "energy_reachability_negative_budgets": 0,
+          "final_busy_steps": 2,
+          "final_concurrency_step_sum": 2,
+          "final_overcapacity_steps": 0,
+          "flow_emergency_redirects": 0,
+          "free_lz_step_sum": 10,
+          "future_release_reservations": 0,
+          "geometry_updates": 0,
+          "hard_separation_exposure_steps": 0,
+          "hard_separation_violations": 0,
+          "joint_backup_uses": 0,
+          "joint_safety_checks": 100,
+          "joint_safety_corrections": 0,
+          "joint_safety_fail_closed": 0,
+          "joint_search_candidates": 0,
+          "joint_search_components": 0,
+          "joint_search_pruned": 0,
+          "joint_unrecoverable_components": 0,
+          "lz_assignment_distance_sum": 132.664991614216,
+          "lz_assignment_regret_sum": 0.0,
+          "lz_assignments": 1,
+          "lz_idle_with_inner_demand_steps": 2,
+          "lz_nearest_distance_sum": 132.664991614216,
+          "max_concurrent_final": 1,
+          "merge_time_modified": 7,
+          "minimum_actual_separation": 202.3429416475199,
+          "minimum_swept_separation": 202.23748416156684,
+          "nmac": 0,
+          "nmac_exposure_steps": 0,
+          "operational_buffer_entries": 0,
+          "operational_buffer_exposure_steps": 0,
+          "operational_buffer_takeovers": 0,
+          "recursive_feasibility_checks": 2,
+          "recursive_feasibility_rejections": 0,
+          "release_approved": 3,
+          "release_rejected": 8,
+          "repair_candidates_checked": 39,
+          "repair_used": 0,
+          "runtime_shortlist_candidates_checked": 27,
+          "runtime_shortlist_exhausted": 8,
+          "runtime_shortlist_fallback_selected": 0,
+          "runtime_traffic_interventions": 0,
+          "runtime_traffic_repair_magnitude": 0.0,
+          "safety_interventions": 0,
+          "shield_broad_phase_rejected": 72,
+          "shield_correction_magnitude": 0.0,
+          "shield_fail_closed": 0,
+          "shield_interventions": 0,
+          "shield_narrow_phase_checked": 0,
+          "trajectory_infeasible_candidates": 0
+        },
+        "telemetry_arrivals_admitted": 0
+      },
+      "sampler_intervention": {
+        "epsilon": 0.0,
+        "k3_source_logits_ranked": true,
+        "name": "native_legacy_student_request_details",
+        "off_policy": false,
+        "source_gate_unchanged": true,
+        "source_logits_immutable": true,
+        "source_q_immutable": true,
+        "training": false
+      },
+      "status": "completed",
+      "teacher_called": false,
+      "technical_error": null,
+      "training_or_update_called": false
+    }
+  },
+  "fixture": {
+    "arms": [
+      "before_legacy",
+      "after_legacy",
+      "after_support"
+    ],
+    "cell": {
+      "cell_id": 901,
+      "env_seed": 9101,
+      "policy_seed": 9102,
+      "scenario": "dense24",
+      "split": "engineering_fixture"
+    },
+    "max_simulation_seconds": 2.0,
+    "purpose": "engineering_fixture_only"
+  },
+  "pair": {
+    "arms": {
+      "after_legacy": {
+        "caller_rng_unchanged": true,
+        "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+        "metrics": {
+          "admitted": 12,
+          "admitted_telemetry": 0,
+          "censored": false,
+          "complete_scene_metrics_known": false,
+          "diverted": 0,
+          "emergency": 0,
+          "energy_total_consumed": null,
+          "energy_total_consumed_observed": null,
+          "error": {
+            "message": "full-request lifecycle metrics were not available",
+            "type": "IncompleteLifecycle"
+          },
+          "failed": 0,
+          "generated": 12,
+          "hard_safety_clear": false,
+          "metrics": {
+            "lifecycle": {
+              "all_requests_observed": false,
+              "missing_request_count": 24,
+              "replay_exact": true,
+              "row_count": 0,
+              "scope": "all_requested_terminal_rows"
+            },
+            "runtime_capture": {
+              "available": true,
+              "complete_integrity": false,
+              "energy_match": false,
+              "factory_calls": 1,
+              "ledger_alignment": true,
+              "partial_integrity": true
+            },
+            "safety": {}
+          },
+          "natural_terminal": false,
+          "normal": 0,
+          "outcome_counts_observed": {
+            "diverted": 0,
+            "emergency": 0,
+            "failed": 0,
+            "normal": 0,
+            "unresolved": 0
+          },
+          "raw_reward_excluding_rejection_penalty": null,
+          "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+          "release_rejection_penalty": null,
+          "release_rejection_penalty_observed": -0.4,
+          "request_elapsed_total_seconds": null,
+          "request_elapsed_total_seconds_observed": null,
+          "request_identity": [
+            {
+              "arrival_id": 0,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7443634364316849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 1,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.6865190550266409,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 2,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5715882823453804,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 3,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8183702234466201,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 4,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5511052190186534,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 5,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7626986176488001,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 6,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5502998917775188,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 7,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8410457721137772,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 8,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8368012859712294,
+              "mission_type": "surveillance",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 9,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.791336601638711,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 10,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5588821157254612,
+              "mission_type": "cargo",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 11,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5671436025290849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            }
+          ],
+          "request_identity_exact_24": false,
+          "request_identity_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "requests": 24,
+          "resolved": null,
+          "reward_total": null,
+          "reward_total_observed": -0.3852647555270568,
+          "simulation_seconds": 2.0,
+          "status": "completed",
+          "successful": null,
+          "technical_ok": false,
+          "unresolved": 0,
+          "wait_seconds": null,
+          "wait_seconds_observed": null
+        },
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "status": "completed"
+      },
+      "after_support": {
+        "caller_rng_unchanged": true,
+        "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+        "metrics": {
+          "admitted": 12,
+          "admitted_telemetry": 0,
+          "censored": false,
+          "complete_scene_metrics_known": false,
+          "diverted": 0,
+          "emergency": 0,
+          "energy_total_consumed": null,
+          "energy_total_consumed_observed": null,
+          "error": {
+            "message": "full-request lifecycle metrics were not available",
+            "type": "IncompleteLifecycle"
+          },
+          "failed": 0,
+          "generated": 12,
+          "hard_safety_clear": false,
+          "metrics": {
+            "lifecycle": {
+              "all_requests_observed": false,
+              "missing_request_count": 24,
+              "replay_exact": true,
+              "row_count": 0,
+              "scope": "all_requested_terminal_rows"
+            },
+            "runtime_capture": {
+              "available": true,
+              "complete_integrity": false,
+              "energy_match": false,
+              "factory_calls": 1,
+              "ledger_alignment": true,
+              "partial_integrity": true
+            },
+            "safety": {}
+          },
+          "natural_terminal": false,
+          "normal": 0,
+          "outcome_counts_observed": {
+            "diverted": 0,
+            "emergency": 0,
+            "failed": 0,
+            "normal": 0,
+            "unresolved": 0
+          },
+          "raw_reward_excluding_rejection_penalty": null,
+          "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+          "release_rejection_penalty": null,
+          "release_rejection_penalty_observed": -0.4,
+          "request_elapsed_total_seconds": null,
+          "request_elapsed_total_seconds_observed": null,
+          "request_identity": [
+            {
+              "arrival_id": 0,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7443634364316849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 1,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.6865190550266409,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 2,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5715882823453804,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 3,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8183702234466201,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 4,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5511052190186534,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 5,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7626986176488001,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 6,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5502998917775188,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 7,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8410457721137772,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 8,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8368012859712294,
+              "mission_type": "surveillance",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 9,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.791336601638711,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 10,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5588821157254612,
+              "mission_type": "cargo",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 11,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5671436025290849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            }
+          ],
+          "request_identity_exact_24": false,
+          "request_identity_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "requests": 24,
+          "resolved": null,
+          "reward_total": null,
+          "reward_total_observed": -0.3852647555270568,
+          "simulation_seconds": 2.0,
+          "status": "completed",
+          "successful": null,
+          "technical_ok": false,
+          "unresolved": 0,
+          "wait_seconds": null,
+          "wait_seconds_observed": null
+        },
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "status": "completed"
+      },
+      "before_legacy": {
+        "caller_rng_unchanged": true,
+        "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+        "metrics": {
+          "admitted": 12,
+          "admitted_telemetry": 0,
+          "censored": false,
+          "complete_scene_metrics_known": false,
+          "diverted": 0,
+          "emergency": 0,
+          "energy_total_consumed": null,
+          "energy_total_consumed_observed": null,
+          "error": {
+            "message": "full-request lifecycle metrics were not available",
+            "type": "IncompleteLifecycle"
+          },
+          "failed": 0,
+          "generated": 12,
+          "hard_safety_clear": false,
+          "metrics": {
+            "lifecycle": {
+              "all_requests_observed": false,
+              "missing_request_count": 24,
+              "replay_exact": true,
+              "row_count": 0,
+              "scope": "all_requested_terminal_rows"
+            },
+            "runtime_capture": {
+              "available": true,
+              "complete_integrity": false,
+              "energy_match": false,
+              "factory_calls": 1,
+              "ledger_alignment": true,
+              "partial_integrity": true
+            },
+            "safety": {}
+          },
+          "natural_terminal": false,
+          "normal": 0,
+          "outcome_counts_observed": {
+            "diverted": 0,
+            "emergency": 0,
+            "failed": 0,
+            "normal": 0,
+            "unresolved": 0
+          },
+          "raw_reward_excluding_rejection_penalty": null,
+          "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+          "release_rejection_penalty": null,
+          "release_rejection_penalty_observed": -0.4,
+          "request_elapsed_total_seconds": null,
+          "request_elapsed_total_seconds_observed": null,
+          "request_identity": [
+            {
+              "arrival_id": 0,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7443634364316849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 1,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.6865190550266409,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 2,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5715882823453804,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 3,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8183702234466201,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 4,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5511052190186534,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 5,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.7626986176488001,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 6,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5502998917775188,
+              "mission_type": "emergency",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 7,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8410457721137772,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 8,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.8368012859712294,
+              "mission_type": "surveillance",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 9,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.791336601638711,
+              "mission_type": "standard",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 10,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5588821157254612,
+              "mission_type": "cargo",
+              "request_time": 0.0
+            },
+            {
+              "arrival_id": 11,
+              "energy_capacity": 1500.0,
+              "initial_soc": 0.5671436025290849,
+              "mission_type": "standard",
+              "request_time": 0.0
+            }
+          ],
+          "request_identity_exact_24": false,
+          "request_identity_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "requests": 24,
+          "resolved": null,
+          "reward_total": null,
+          "reward_total_observed": -0.3852647555270568,
+          "simulation_seconds": 2.0,
+          "status": "completed",
+          "successful": null,
+          "technical_ok": false,
+          "unresolved": 0,
+          "wait_seconds": null,
+          "wait_seconds_observed": null
+        },
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "status": "completed"
+      }
+    },
+    "before_to_after_legacy": {
+      "known": false,
+      "values": {
+        "energy_total_consumed": null,
+        "failed": null,
+        "normal": null,
+        "request_elapsed_total_seconds": null,
+        "successful": null,
+        "wait_seconds": null
+      }
+    },
+    "cell": {
+      "cell_id": 901,
+      "env_seed": 9101,
+      "policy_seed": 9102,
+      "scenario": "dense24",
+      "split": "engineering_fixture"
+    },
+    "new_diverted_arrival_ids": null,
+    "new_failed_arrival_ids": null,
+    "new_unresolved_arrival_ids": null,
+    "request_identity_match": false,
+    "source_model_and_physics_unchanged_scope": true,
+    "status": "PAIR_INCOMPLETE",
+    "support_to_after_legacy": {
+      "known": false,
+      "values": {
+        "energy_total_consumed": null,
+        "failed": null,
+        "normal": null,
+        "request_elapsed_total_seconds": null,
+        "successful": null,
+        "wait_seconds": null
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "schema": "common_arrival_bridge_v1",
+  "status": "complete",
+  "stop_reason": "all_requests_resolved",
+  "performance_valid": true,
+  "request_digest": "e6bb6516ab51f68f135d3b1a7f694f6033387425734885682cf0286434a7039f",
+  "simulated_seconds": 492.0,
+  "planned_horizon_seconds": 1500.0,
+  "requested": 4,
+  "requests_due": 4,
+  "unspawned": 0,
+  "admitted": 4,
+  "completed": 4,
+  "outcomes": {
+    "completed": 4
+  },
+  "unresolved_total": 0,
+  "unresolved_due": 0,
+  "conservation_ok": true,
+  "completed_fraction_due": 1.0,
+  "finite_cohort_completions_per_elapsed_hour": 29.26829268292683,
+  "completions_per_planned_hour": 9.6,
+  "request_to_completion_seconds": {
+    "count": 4,
+    "mean": 319.49999999999994,
+    "p50": 319.49999999999994,
+    "p95": 474.7499999999999,
+    "max": 491.99999999999994
+  },
+  "external_wait_seconds_admitted": {
+    "count": 4,
+    "mean": 0.0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "max": 0.0
+  },
+  "unresolved_age_seconds": {
+    "count": 0,
+    "mean": null,
+    "p50": null,
+    "p95": null,
+    "max": null
+  },
+  "total_time_in_system_observed_seconds": 1277.9999999999998,
+  "integrated_airborne_seconds": 1038.0,
+  "integrated_queue_seconds": 0.0,
+  "max_airborne": 4,
+  "max_external_queue": 0,
+  "pad_reserved_seconds": 400.0,
+  "pad_service_seconds": 240.0,
+  "path_length_m": 12536.205270408496,
+  "energy_proxy": 1018.6888888888728,
+  "shield_steps": 1,
+  "requested_control_steps": 392,
+  "shield_step_fraction": 0.002551020408163265,
+  "resource_violations": 0,
+  "safety": {
+    "minimum_actual_separation": 247.3775009288282,
+    "minimum_swept_separation": 247.37307882202705,
+    "operational_buffer_entries": 0,
+    "operational_buffer_exposure_steps": 0,
+    "hard_separation_violations": 0,
+    "hard_separation_exposure_steps": 0,
+    "nmac": 0,
+    "nmac_exposure_steps": 0,
+    "collisions": 0,
+    "collision_exposure_steps": 0
+  },
+  "planner_latency_seconds": {
+    "count": 393,
+    "mean": 2.424453761968904e-05,
+    "p50": 2.2999942302703857e-05,
+    "p95": 3.789989277720451e-05,
+    "max": 7.609976455569267e-05
+  },
+  "deadline_fallbacks": 0,
+  "solver_calls": 0,
+  "solver_accepted": 0,
+  "airspace": {
+    "area_m2": 2010619.2982974676,
+    "arrival_altitude_m": 100.0,
+    "mandatory_rings": false,
+    "pad_count": 1
+  },
+  "method": "fcfs_rule",
+  "seed": 20261004,
+  "wall_seconds": 5.647584300022572
+}

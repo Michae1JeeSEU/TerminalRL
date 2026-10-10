@@ -1,0 +1,2694 @@
+{
+  "coordinated": true,
+  "diagnostic_only": true,
+  "max_steps": 450,
+  "sample_times": [
+    248.0,
+    300.0,
+    350.0,
+    400.0,
+    450.0
+  ],
+  "seed": 841501,
+  "sim_time": 450.0,
+  "snapshots": [
+    {
+      "full_safety_candidates": [
+        {
+          "bias": 0.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.10161370653271407,
+              "candidate_end_angle_at_check": 3.7362321721730254,
+              "check_time": 308.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.6346184656403113,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 20.297868765483692,
+            "minimum_point": 20.313999129837537,
+            "minimum_point_time": 308.0,
+            "minimum_swept": 20.297868765483692,
+            "minimum_swept_time": 307.0,
+            "phase": "ring_inner",
+            "uid": 11
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3420004889663937,
+              "candidate_end_angle_at_check": 3.2926179766739176,
+              "check_time": 308.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.6346184656403113,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            },
+            {
+              "angular_gap": 0.8254101192475334,
+              "candidate_end_angle_at_check": 3.2926179766739176,
+              "check_time": 308.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.4672078574263843,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 54.10864623195745,
+            "minimum_point": 54.10864623195745,
+            "minimum_point_time": 289.0,
+            "minimum_swept": 54.10864623195745,
+            "minimum_swept_time": 288.0,
+            "phase": "ring_inner",
+            "uid": 11
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3817959237484265,
+              "candidate_end_angle_at_check": 2.849003781174811,
+              "check_time": 308.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.4672078574263843,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            },
+            {
+              "angular_gap": 0.7856146844655005,
+              "candidate_end_angle_at_check": 2.849003781174811,
+              "check_time": 308.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.6346184656403113,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 75.841927551105,
+            "minimum_point": 75.89624843184953,
+            "minimum_point_time": 308.0,
+            "minimum_swept": 75.841927551105,
+            "minimum_swept_time": 307.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.10516238927036081,
+              "candidate_end_angle_at_check": 4.489456076369952,
+              "check_time": 320.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 4.594618465640313,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 20.98520820745151,
+            "minimum_point": 20.98720703296073,
+            "minimum_point_time": 312.0,
+            "minimum_swept": 20.98520820745151,
+            "minimum_swept_time": 312.0,
+            "phase": "ring_inner",
+            "uid": 11
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5299111843078337,
+              "candidate_end_angle_at_check": 3.957119041734205,
+              "check_time": 320.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.4272078574263714,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            },
+            {
+              "angular_gap": 0.6374994239061076,
+              "candidate_end_angle_at_check": 3.957119041734205,
+              "check_time": 320.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 4.594618465640313,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_separation",
+          "safety_worst_other": {
+            "minimum": 91.59281364896891,
+            "minimum_point": 91.59281364896891,
+            "minimum_point_time": 290.0,
+            "minimum_swept": 91.59281364896891,
+            "minimum_swept_time": 289.0,
+            "phase": "ring_inner",
+            "uid": 11
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.002425850327908652,
+              "candidate_end_angle_at_check": 3.4247820070984627,
+              "check_time": 320.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.4272078574263714,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 0.2664319702974174,
+            "minimum_point": 0.30301421080981417,
+            "minimum_point_time": 317.0,
+            "minimum_swept": 0.2664319702974174,
+            "minimum_swept_time": 316.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.31193848507919153,
+              "candidate_end_angle_at_check": 5.242679980561122,
+              "check_time": 332.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.5546184656403135,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            },
+            {
+              "angular_gap": 0.8554721231347635,
+              "candidate_end_angle_at_check": 5.242679980561122,
+              "check_time": 332.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.387207857426358,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 61.86326893589027,
+            "minimum_point": 61.87380608157171,
+            "minimum_point_time": 313.0,
+            "minimum_swept": 61.86326893589027,
+            "minimum_swept_time": 312.0,
+            "phase": "ring_inner",
+            "uid": 11
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.23441224937464966,
+              "candidate_end_angle_at_check": 4.621620106801008,
+              "check_time": 332.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.387207857426358,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            },
+            {
+              "angular_gap": 0.9329983588393054,
+              "candidate_end_angle_at_check": 4.621620106801008,
+              "check_time": 332.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.5546184656403135,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 46.73941228014098,
+            "minimum_point": 46.7751840554835,
+            "minimum_point_time": 332.0,
+            "minimum_swept": 46.73941228014098,
+            "minimum_swept_time": 331.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3866476243854642,
+              "candidate_end_angle_at_check": 4.000560233040894,
+              "check_time": 332.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.387207857426358,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            },
+            {
+              "angular_gap": 0.8588980627598275,
+              "candidate_end_angle_at_check": 4.000560233040894,
+              "check_time": 332.0,
+              "current_angle": 3.2771888810622047,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.1416621702810668,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 34.78401121313117,
+            "minimum_point": 34.784181018206446,
+            "minimum_point_time": 307.0,
+            "minimum_swept": 34.78401121313117,
+            "minimum_swept_time": 307.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5187145808906255,
+              "candidate_end_angle_at_check": 5.995903884749688,
+              "check_time": 344.0,
+              "current_angle": 5.117803772819895,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.2314331584607276,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 11
+            },
+            {
+              "angular_gap": 0.648696027323342,
+              "candidate_end_angle_at_check": 5.995903884749688,
+              "check_time": 344.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.347207857426346,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.06108668555557184,
+              "candidate_end_angle_at_check": 5.286121171870774,
+              "check_time": 344.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.347207857426346,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 7.757580339523915,
+            "minimum_point": 7.757580339523915,
+            "minimum_point_time": 329.0,
+            "minimum_swept": 7.757580339523915,
+            "minimum_swept_time": 328.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.4746762887107998,
+              "candidate_end_angle_at_check": 4.576338458991854,
+              "check_time": 344.0,
+              "current_angle": 3.2771888810622047,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.101662170281054,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.7708693984344919,
+              "candidate_end_angle_at_check": 4.576338458991854,
+              "check_time": 344.0,
+              "current_angle": 3.9516994520171242,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.347207857426346,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 13
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 62.104929211637256,
+            "minimum_point": 62.114866301586915,
+            "minimum_point_time": 307.0,
+            "minimum_swept": 62.104929211637256,
+            "minimum_swept_time": 307.0,
+            "phase": "transfer_m2i",
+            "uid": 13
+          },
+          "scheduler_can_reserve_at": true
+        }
+      ],
+      "inner_objects": {
+        "capacity": 15,
+        "committed_incoming": [
+          {
+            "bias": 0.0,
+            "current_angle": 2.0652548116036167,
+            "end_angle": 5.3616684301818,
+            "end_time": 296.0,
+            "phase": "transfer_m2i",
+            "start_time": 224.0,
+            "target_phase": "ring_inner",
+            "uid": 8
+          },
+          {
+            "bias": -4.0,
+            "current_angle": 3.2771888810622047,
+            "end_angle": 5.584847477460662,
+            "end_time": 284.0,
+            "phase": "transfer_m2i",
+            "start_time": 212.0,
+            "target_phase": "ring_inner",
+            "uid": 12
+          },
+          {
+            "bias": -4.0,
+            "current_angle": 3.9516994520171242,
+            "end_angle": 4.270393164605988,
+            "end_time": 252.0,
+            "phase": "transfer_m2i",
+            "start_time": 180.0,
+            "target_phase": "ring_inner",
+            "uid": 13
+          }
+        ],
+        "committed_incoming_count": 3,
+        "departure_gap_angle": 0.96,
+        "departure_occupancy_and_limit": [
+          5,
+          6
+        ],
+        "holder_count": 2,
+        "holders": [
+          {
+            "angle": 0.005044151126301276,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.47132183650342646,
+            "speed": 15.999999999999998,
+            "uid": 3
+          },
+          {
+            "angle": 5.117803772819895,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.4110053276607389,
+            "speed": 15.999999999999998,
+            "uid": 11
+          }
+        ],
+        "occupancy": 2
+      },
+      "time": 248.0,
+      "uid7": {
+        "angle": 6.2532979584542785,
+        "committed_plan": null,
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.45835602238723555,
+        "speed": 20.0,
+        "uid": 7
+      }
+    },
+    {
+      "full_safety_candidates": [
+        {
+          "bias": 0.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.25534118241582426,
+              "candidate_end_angle_at_check": 0.05304686499342878,
+              "check_time": 360.0,
+              "current_angle": 2.7823527350990727,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.30838804740925285,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 6
+            },
+            {
+              "angular_gap": 0.9545700018919394,
+              "candidate_end_angle_at_check": 0.05304686499342878,
+              "check_time": 360.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.381662170281076,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 50.88956004428943,
+            "minimum_point": 50.92961600349164,
+            "minimum_point_time": 360.0,
+            "minimum_swept": 50.88956004428943,
+            "minimum_swept_time": 359.0,
+            "phase": "transfer_m2i",
+            "uid": 6
+          },
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": -4.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5109558063928317,
+              "candidate_end_angle_at_check": 5.8926179766739075,
+              "check_time": 360.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.381662170281076,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.6989553779149311,
+              "candidate_end_angle_at_check": 5.8926179766739075,
+              "check_time": 360.0,
+              "current_angle": 2.7823527350990727,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.30838804740925285,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 6
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": -8.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.06734161089372481,
+              "candidate_end_angle_at_check": 5.449003781174801,
+              "check_time": 360.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.381662170281076,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 13.46008663265462,
+            "minimum_point": 13.46577743158393,
+            "minimum_point_time": 360.0,
+            "minimum_swept": 13.46008663265462,
+            "minimum_swept_time": 359.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": 0.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.46211727821889914,
+              "candidate_end_angle_at_check": 0.8062707691903545,
+              "check_time": 372.0,
+              "current_angle": 2.7823527350990727,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.2683880474092537,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 6
+            },
+            {
+              "angular_gap": 0.7477939060888641,
+              "candidate_end_angle_at_check": 0.8062707691903545,
+              "check_time": 372.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.05847686310149022,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_separation",
+          "safety_worst_other": {
+            "minimum": 90.558684399163,
+            "minimum_point": 90.64257308297331,
+            "minimum_point_time": 301.0,
+            "minimum_swept": 90.558684399163,
+            "minimum_swept_time": 300.0,
+            "phase": "transfer_m2i",
+            "uid": 6
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.2154568714531182,
+              "candidate_end_angle_at_check": 0.2739337345546084,
+              "check_time": 372.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.05847686310149022,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 42.9758996583582,
+            "minimum_point": 43.00807375571977,
+            "minimum_point_time": 372.0,
+            "minimum_swept": 42.9758996583582,
+            "minimum_swept_time": 371.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.31688016318262413,
+              "candidate_end_angle_at_check": 6.024782007098452,
+              "check_time": 372.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.05847686310149022,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.8662988840962367,
+              "candidate_end_angle_at_check": 6.024782007098452,
+              "check_time": 372.0,
+              "current_angle": 5.681668430181796,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.158483123002215,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 32.26477449392401,
+            "minimum_point": 32.26970773832519,
+            "minimum_point_time": 352.0,
+            "minimum_swept": 32.26477449392401,
+            "minimum_swept_time": 351.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5410178102800334,
+              "candidate_end_angle_at_check": 1.5594946733815245,
+              "check_time": 384.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.018476863101491,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.6688933740277303,
+              "candidate_end_angle_at_check": 1.5594946733815245,
+              "check_time": 384.0,
+              "current_angle": 2.7823527350990727,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.2283880474092546,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 6
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.08004206348008047,
+              "candidate_end_angle_at_check": 0.9384347996214105,
+              "check_time": 384.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.018476863101491,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 10.907058077614977,
+            "minimum_point": 10.907058077614977,
+            "minimum_point_time": 369.0,
+            "minimum_swept": 10.907058077614977,
+            "minimum_swept_time": 368.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.48207711003866827,
+              "candidate_end_angle_at_check": 0.31737492586129673,
+              "check_time": 384.0,
+              "current_angle": 5.681668430181796,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 6.118483123002215,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.7011019372401943,
+              "candidate_end_angle_at_check": 0.31737492586129673,
+              "check_time": 384.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.018476863101491,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 63.25267471805318,
+            "minimum_point": 63.25267471805318,
+            "minimum_point_time": 352.0,
+            "minimum_swept": 63.25267471805318,
+            "minimum_swept_time": 351.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3342417144686003,
+              "candidate_end_angle_at_check": 2.3127185775700916,
+              "check_time": 396.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.978476863101491,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.8756694698391518,
+              "candidate_end_angle_at_check": 2.3127185775700916,
+              "check_time": 396.0,
+              "current_angle": 2.7823527350990727,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.1883880474092434,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 6
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 66.4845401710966,
+            "minimum_point": 66.53760500833913,
+            "minimum_point_time": 396.0,
+            "minimum_swept": 66.4845401710966,
+            "minimum_swept_time": 395.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3755409984103144,
+              "candidate_end_angle_at_check": 1.6029358646911767,
+              "check_time": 396.0,
+              "current_angle": 0.5816621702810723,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.978476863101491,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.8076380488685468,
+              "candidate_end_angle_at_check": 1.6029358646911767,
+              "check_time": 396.0,
+              "current_angle": 5.681668430181796,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.7952978158226299,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 45.16949826710463,
+            "minimum_point": 45.17324282049246,
+            "minimum_point_time": 365.0,
+            "minimum_swept": 45.16949826710463,
+            "minimum_swept_time": 365.0,
+            "phase": "ring_inner",
+            "uid": 12
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.09785533598962681,
+              "candidate_end_angle_at_check": 0.8931531518122566,
+              "check_time": 396.0,
+              "current_angle": 5.681668430181796,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 0.7952978158226299,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 19.54987064254271,
+            "minimum_point": 19.563259548441707,
+            "minimum_point_time": 396.0,
+            "minimum_swept": 19.54987064254271,
+            "minimum_swept_time": 395.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        }
+      ],
+      "inner_objects": {
+        "capacity": 15,
+        "committed_incoming": [
+          {
+            "bias": -4.0,
+            "current_angle": 2.7823527350990727,
+            "end_angle": 5.631573354588839,
+            "end_time": 348.0,
+            "phase": "transfer_m2i",
+            "start_time": 276.0,
+            "target_phase": "ring_inner",
+            "uid": 6
+          },
+          {
+            "bias": 0.0,
+            "current_angle": 4.320292829026347,
+            "end_angle": 1.9547430957101604,
+            "end_time": 360.0,
+            "phase": "transfer_m2i",
+            "start_time": 288.0,
+            "target_phase": "ring_inner",
+            "uid": 18
+          },
+          {
+            "bias": -8.0,
+            "current_angle": 4.575966377002796,
+            "end_angle": 5.325794638412601,
+            "end_time": 310.0,
+            "phase": "transfer_m2i",
+            "start_time": 250.0,
+            "target_phase": "ring_inner",
+            "uid": 19
+          }
+        ],
+        "committed_incoming_count": 3,
+        "departure_gap_angle": 0.96,
+        "departure_occupancy_and_limit": [
+          5,
+          6
+        ],
+        "holder_count": 2,
+        "holders": [
+          {
+            "angle": 5.681668430181796,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.5912485748607929,
+            "speed": 15.999999999999998,
+            "uid": 8
+          },
+          {
+            "angle": 0.5816621702810723,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.7039646075728536,
+            "speed": 15.999999999999998,
+            "uid": 12
+          }
+        ],
+        "occupancy": 2
+      },
+      "time": 300.0,
+      "uid7": {
+        "angle": 2.5701126512746812,
+        "committed_plan": null,
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.4236893557205689,
+        "speed": 20.0,
+        "uid": 7
+      }
+    },
+    {
+      "full_safety_candidates": [
+        {
+          "bias": 0.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5454299981081161,
+              "candidate_end_angle_at_check": 2.5530468649933757,
+              "check_time": 410.0,
+              "current_angle": 4.581662170281075,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.098476863101492,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            },
+            {
+              "angular_gap": 0.637749049170746,
+              "candidate_end_angle_at_check": 2.5530468649933757,
+              "check_time": 410.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.9152978158226295,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": -4.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.1941348536716374,
+              "candidate_end_angle_at_check": 2.109432669494267,
+              "check_time": 410.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.9152978158226295,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 38.738193270962775,
+            "minimum_point": 38.76602761327147,
+            "minimum_point_time": 410.0,
+            "minimum_swept": 38.738193270962775,
+            "minimum_swept_time": 409.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": -8.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.249479341827469,
+              "candidate_end_angle_at_check": 1.6658184739951605,
+              "check_time": 410.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.9152978158226295,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.7721531433506263,
+              "candidate_end_angle_at_check": 1.6658184739951605,
+              "check_time": 410.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.8936653306445342,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 29.000289398083954,
+            "minimum_point": 29.000289398083954,
+            "minimum_point_time": 394.0,
+            "minimum_swept": 29.000289398083954,
+            "minimum_swept_time": 393.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": false
+        },
+        {
+          "bias": 0.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.4309729533676707,
+              "candidate_end_angle_at_check": 3.306270769190301,
+              "check_time": 422.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 2.87529781582263,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.7522060939111923,
+              "candidate_end_angle_at_check": 3.306270769190301,
+              "check_time": 422.0,
+              "current_angle": 4.581662170281075,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 4.058476863101493,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.10136408126807561,
+              "candidate_end_angle_at_check": 2.7739337345545545,
+              "check_time": 422.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 2.87529781582263,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.9202684039100193,
+              "candidate_end_angle_at_check": 2.7739337345545545,
+              "check_time": 422.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.8536653306445354,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 14.872091787830927,
+            "minimum_point": 14.872091787830927,
+            "minimum_point_time": 408.0,
+            "minimum_swept": 14.872091787830927,
+            "minimum_swept_time": 407.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.38793136927427696,
+              "candidate_end_angle_at_check": 2.241596699918812,
+              "check_time": 422.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.8536653306445354,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.633701115903818,
+              "candidate_end_angle_at_check": 2.241596699918812,
+              "check_time": 422.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 2.87529781582263,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 64.96115250158492,
+            "minimum_point": 64.98245563633438,
+            "minimum_point_time": 395.0,
+            "minimum_swept": 64.96115250158492,
+            "minimum_swept_time": 394.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.22419685755883956,
+              "candidate_end_angle_at_check": 4.0594946733814705,
+              "check_time": 434.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.835297815822631,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.9589821897200235,
+              "candidate_end_angle_at_check": 4.0594946733814705,
+              "check_time": 434.0,
+              "current_angle": 4.581662170281075,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.018476863101494,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 44.70987479749221,
+            "minimum_point": 44.7455214755589,
+            "minimum_point_time": 434.0,
+            "minimum_swept": 44.70987479749221,
+            "minimum_swept_time": 433.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.39686301620127473,
+              "candidate_end_angle_at_check": 3.4384347996213562,
+              "check_time": 434.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.835297815822631,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            },
+            {
+              "angular_gap": 0.6247694689768202,
+              "candidate_end_angle_at_check": 3.4384347996213562,
+              "check_time": 434.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.813665330644536,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 52.01602728790075,
+            "minimum_point": 52.01602728790075,
+            "minimum_point_time": 406.0,
+            "minimum_swept": 52.01602728790075,
+            "minimum_swept_time": 406.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.0037095952167067736,
+              "candidate_end_angle_at_check": 2.817374925861243,
+              "check_time": 434.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.813665330644536,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 0.7419186179405997,
+            "minimum_point": 0.7419186179405997,
+            "minimum_point_time": 434.0,
+            "minimum_swept": 0.7419186179405997,
+            "minimum_swept_time": 433.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.017420761747405145,
+              "candidate_end_angle_at_check": 4.812718577570037,
+              "check_time": 446.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 4.795297815822632,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 3.4813040809170377,
+            "minimum_point": 3.4841082921149633,
+            "minimum_point_time": 446.0,
+            "minimum_swept": 3.4813040809170377,
+            "minimum_swept_time": 445.0,
+            "phase": "ring_inner",
+            "uid": 8
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.32927053404659334,
+              "candidate_end_angle_at_check": 4.102935864691123,
+              "check_time": 446.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.7736653306445294,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.6923619511315096,
+              "candidate_end_angle_at_check": 4.102935864691123,
+              "check_time": 446.0,
+              "current_angle": 3.3984831230022126,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 4.795297815822632,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 65.50587747251173,
+            "minimum_point": 65.55701630807152,
+            "minimum_point_time": 446.0,
+            "minimum_swept": 65.50587747251173,
+            "minimum_swept_time": 445.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3805121788323258,
+              "candidate_end_angle_at_check": 3.3931531518122036,
+              "check_time": 446.0,
+              "current_angle": 4.04620494231354,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.7736653306445294,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.8415953632816784,
+              "candidate_end_angle_at_check": 3.3931531518122036,
+              "check_time": 446.0,
+              "current_angle": 1.1580827771074784,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.551557788530525,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 18
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 30.559833242596234,
+            "minimum_point": 30.559833242596234,
+            "minimum_point_time": 419.0,
+            "minimum_swept": 30.559833242596234,
+            "minimum_swept_time": 419.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        }
+      ],
+      "inner_objects": {
+        "capacity": 15,
+        "committed_incoming": [
+          {
+            "bias": -8.0,
+            "current_angle": 4.04620494231354,
+            "end_angle": 0.25366533064453417,
+            "end_time": 402.0,
+            "phase": "transfer_m2i",
+            "start_time": 342.0,
+            "target_phase": "ring_inner",
+            "uid": 0
+          },
+          {
+            "bias": 0.0,
+            "current_angle": 1.1580827771074784,
+            "end_angle": 1.9547430957101604,
+            "end_time": 360.0,
+            "phase": "transfer_m2i",
+            "start_time": 288.0,
+            "target_phase": "ring_inner",
+            "uid": 18
+          }
+        ],
+        "committed_incoming_count": 2,
+        "departure_gap_angle": 0.96,
+        "departure_occupancy_and_limit": [
+          5,
+          6
+        ],
+        "holder_count": 3,
+        "holders": [
+          {
+            "angle": 5.791573354588834,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.627397416893477,
+            "speed": 16.0,
+            "uid": 6
+          },
+          {
+            "angle": 3.3984831230022126,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.5579152415274595,
+            "speed": 15.999999999999998,
+            "uid": 8
+          },
+          {
+            "angle": 4.581662170281075,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.6706312742395203,
+            "speed": 15.999999999999998,
+            "uid": 12
+          }
+        ],
+        "occupancy": 3
+      },
+      "time": 350.0,
+      "uid7": {
+        "angle": 5.070112651274628,
+        "committed_plan": null,
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.3903560223872356,
+        "speed": 20.0,
+        "uid": 7
+      }
+    },
+    {
+      "full_safety_candidates": [
+        {
+          "bias": 0.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.15938153434883517,
+              "candidate_end_angle_at_check": 5.05304686499335,
+              "check_time": 460.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.893665330644515,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.8622509508292833,
+              "candidate_end_angle_at_check": 5.05304686499335,
+              "check_time": 460.0,
+              "current_angle": 1.1152978158226297,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 5.915297815822633,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 8
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 31.81735622743809,
+            "minimum_point": 31.842578537987837,
+            "minimum_point_time": 460.0,
+            "minimum_swept": 31.81735622743809,
+            "minimum_swept_time": 459.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.2842326611502717,
+              "candidate_end_angle_at_check": 4.609432669494243,
+              "check_time": 460.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.893665330644515,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.6902216517043493,
+              "candidate_end_angle_at_check": 4.609432669494243,
+              "check_time": 460.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.919211017789894,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 44.966769871006335,
+            "minimum_point": 44.966769871006335,
+            "minimum_point_time": 443.0,
+            "minimum_swept": 44.966769871006335,
+            "minimum_swept_time": 442.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 60.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.2466074562052425,
+              "candidate_end_angle_at_check": 4.165818473995136,
+              "check_time": 460.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.919211017789894,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            },
+            {
+              "angular_gap": 0.7278468566493785,
+              "candidate_end_angle_at_check": 4.165818473995136,
+              "check_time": 460.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.893665330644515,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 49.163307090037364,
+            "minimum_point": 49.19660712284744,
+            "minimum_point_time": 460.0,
+            "minimum_swept": 49.163307090037364,
+            "minimum_swept_time": 459.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.047394561454226825,
+              "candidate_end_angle_at_check": 5.8062707691902755,
+              "check_time": 472.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.853665330644502,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.9270597514003942,
+              "candidate_end_angle_at_check": 5.8062707691902755,
+              "check_time": 472.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.879211017789881,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 9.463242348305641,
+            "minimum_point": 9.464131125523705,
+            "minimum_point_time": 466.0,
+            "minimum_swept": 9.463242348305641,
+            "minimum_swept_time": 466.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3947227167646492,
+              "candidate_end_angle_at_check": 5.2739337345545305,
+              "check_time": 472.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.879211017789881,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            },
+            {
+              "angular_gap": 0.5797315960899718,
+              "candidate_end_angle_at_check": 5.2739337345545305,
+              "check_time": 472.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.853665330644502,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 78.37275557261897,
+            "minimum_point": 78.43303909012576,
+            "minimum_point_time": 472.0,
+            "minimum_swept": 78.37275557261897,
+            "minimum_swept_time": 471.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 72.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.13761431787109402,
+              "candidate_end_angle_at_check": 4.741596699918787,
+              "check_time": 472.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 4.879211017789881,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 14.115105425329133,
+            "minimum_point": 14.149447763116477,
+            "minimum_point_time": 457.0,
+            "minimum_swept": 14.115105425329133,
+            "minimum_swept_time": 457.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.25417065726304244,
+              "candidate_end_angle_at_check": 0.2763093662018601,
+              "check_time": 484.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.5304800234649024,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.7202836555915777,
+              "candidate_end_angle_at_check": 0.2763093662018601,
+              "check_time": 484.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.839211017789869,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 50.42293059442267,
+            "minimum_point": 50.43065255569164,
+            "minimum_point_time": 467.0,
+            "minimum_swept": 50.42293059442267,
+            "minimum_swept_time": 466.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.09922378183146385,
+              "candidate_end_angle_at_check": 5.938434799621333,
+              "check_time": 484.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.839211017789869,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            },
+            {
+              "angular_gap": 0.8752305310231563,
+              "candidate_end_angle_at_check": 5.938434799621333,
+              "check_time": 484.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.5304800234649024,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 19.82226404580349,
+            "minimum_point": 19.83661658690916,
+            "minimum_point_time": 484.0,
+            "minimum_swept": 19.82226404580349,
+            "minimum_swept_time": 483.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 84.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5218360919286509,
+              "candidate_end_angle_at_check": 5.317374925861218,
+              "check_time": 484.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 5.839211017789869,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 46.931192899377905,
+            "minimum_point": 46.931192899377905,
+            "minimum_point_time": 456.0,
+            "minimum_swept": 46.931192899377905,
+            "minimum_swept_time": 455.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.46094675307446487,
+              "candidate_end_angle_at_check": 1.0295332703904252,
+              "check_time": 496.0,
+              "current_angle": 0.0941288476512722,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.49048002346489,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 0
+            },
+            {
+              "angular_gap": 0.5135075597801562,
+              "candidate_end_angle_at_check": 1.0295332703904252,
+              "check_time": 496.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.516025710610269,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_separation",
+          "safety_worst_other": {
+            "minimum": 89.21893667024477,
+            "minimum_point": 89.2217860968468,
+            "minimum_point_time": 463.0,
+            "minimum_swept": 89.21893667024477,
+            "minimum_swept_time": 463.0,
+            "phase": "transfer_m2i",
+            "uid": 0
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.19627515309875676,
+              "candidate_end_angle_at_check": 0.31975055751151227,
+              "check_time": 496.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.516025710610269,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 24.079279303327816,
+            "minimum_point": 24.095455845113978,
+            "minimum_point_time": 473.0,
+            "minimum_swept": 24.079279303327816,
+            "minimum_swept_time": 472.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 96.0,
+          "energy_guard_reason": null,
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.9060578659776777,
+              "candidate_end_angle_at_check": 5.893153151812178,
+              "check_time": 496.0,
+              "current_angle": 5.710100015498641,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.516025710610269,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 73.14625016912807,
+            "minimum_point": 73.20398903310743,
+            "minimum_point_time": 456.0,
+            "minimum_swept": 73.14625016912807,
+            "minimum_swept_time": 456.0,
+            "phase": "transfer_m2i",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        }
+      ],
+      "inner_objects": {
+        "capacity": 15,
+        "committed_incoming": [
+          {
+            "bias": -8.0,
+            "current_angle": 0.0941288476512722,
+            "end_angle": 0.25366533064453417,
+            "end_time": 402.0,
+            "phase": "transfer_m2i",
+            "start_time": 342.0,
+            "target_phase": "ring_inner",
+            "uid": 0
+          },
+          {
+            "bias": -8.0,
+            "current_angle": 5.710100015498641,
+            "end_angle": 0.719211017789894,
+            "end_time": 420.0,
+            "phase": "transfer_m2i",
+            "start_time": 360.0,
+            "target_phase": "ring_inner",
+            "uid": 1
+          }
+        ],
+        "committed_incoming_count": 2,
+        "departure_gap_angle": 0.96,
+        "departure_occupancy_and_limit": [
+          5,
+          6
+        ],
+        "holder_count": 3,
+        "holders": [
+          {
+            "angle": 3.508388047409251,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.5940640835601436,
+            "speed": 16.0,
+            "uid": 6
+          },
+          {
+            "angle": 1.1152978158226297,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.5245819081941262,
+            "speed": 15.999999999999998,
+            "uid": 8
+          },
+          {
+            "angle": 2.298476863101492,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.637297940906187,
+            "speed": 15.999999999999998,
+            "uid": 12
+          }
+        ],
+        "occupancy": 3
+      },
+      "time": 400.0,
+      "uid7": {
+        "angle": 1.286927344095016,
+        "committed_plan": null,
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.3570226890539022,
+        "speed": 20.0,
+        "uid": 7
+      }
+    },
+    {
+      "full_safety_candidates": [
+        {
+          "bias": 0.0,
+          "duration": 60.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.3661641527965829,
+              "candidate_end_angle_at_check": 1.2698615578137264,
+              "check_time": 510.0,
+              "current_angle": 3.1192110177898913,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.636025710610309,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 1
+            },
+            {
+              "angular_gap": 0.8362519614265413,
+              "candidate_end_angle_at_check": 1.2698615578137264,
+              "check_time": 510.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.4336095963871851,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "safety_worst_other": {
+            "minimum": 72.7670756458762,
+            "minimum_point": 72.82439989301464,
+            "minimum_point_time": 510.0,
+            "minimum_swept": 72.7670756458762,
+            "minimum_swept_time": 509.0,
+            "phase": "ring_inner",
+            "uid": 1
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 60.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.39263776592743405,
+              "candidate_end_angle_at_check": 0.8262473623146191,
+              "check_time": 510.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.4336095963871851,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            },
+            {
+              "angular_gap": 0.8097783482956897,
+              "candidate_end_angle_at_check": 0.8262473623146191,
+              "check_time": 510.0,
+              "current_angle": 3.1192110177898913,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.636025710610309,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 77.96531401648676,
+            "minimum_point": 78.02410124859229,
+            "minimum_point_time": 510.0,
+            "minimum_swept": 77.96531401648676,
+            "minimum_swept_time": 509.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 60.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.05097642957167281,
+              "candidate_end_angle_at_check": 0.3826331668155123,
+              "check_time": 510.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 0.4336095963871851,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 6.027293328811045,
+            "minimum_point": 6.049383576321627,
+            "minimum_point_time": 501.0,
+            "minimum_swept": 6.027293328811045,
+            "minimum_swept_time": 501.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 72.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.5729402485996573,
+              "candidate_end_angle_at_check": 2.023085462010652,
+              "check_time": 522.0,
+              "current_angle": 3.1192110177898913,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 2.5960257106103093,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 1
+            },
+            {
+              "angular_gap": 0.6294758656234682,
+              "candidate_end_angle_at_check": 2.023085462010652,
+              "check_time": 522.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.3936095963871835,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 72.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.09713883098772325,
+              "candidate_end_angle_at_check": 1.4907484273749065,
+              "check_time": 522.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.3936095963871835,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 19.406633941127662,
+            "minimum_point": 19.42012878681356,
+            "minimum_point_time": 522.0,
+            "minimum_swept": 19.406633941127662,
+            "minimum_swept_time": 521.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 72.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.43519820364802,
+              "candidate_end_angle_at_check": 0.9584113927391638,
+              "check_time": 522.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 1.3936095963871835,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 44.322172877423924,
+            "minimum_point": 44.322172877423924,
+            "minimum_point_time": 499.0,
+            "minimum_swept": 44.322172877423924,
+            "minimum_swept_time": 498.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 84.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 2,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.4226997698146522,
+              "candidate_end_angle_at_check": 2.776309366201823,
+              "check_time": 534.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.353609596387171,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            },
+            {
+              "angular_gap": 0.7797163444084867,
+              "candidate_end_angle_at_check": 2.776309366201823,
+              "check_time": 534.0,
+              "current_angle": 3.1192110177898913,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 3.5560257106103097,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 1
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_holder_separation",
+          "safety_worst_other": {
+            "minimum": 83.84516247276404,
+            "minimum_point": 83.9119754756633,
+            "minimum_point_time": 534.0,
+            "minimum_swept": 83.84516247276404,
+            "minimum_swept_time": 533.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 84.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.19836010394546166,
+              "candidate_end_angle_at_check": 2.155249492441709,
+              "check_time": 534.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.353609596387171,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 26.382037837359388,
+            "minimum_point": 26.382037837359388,
+            "minimum_point_time": 513.0,
+            "minimum_swept": 26.382037837359388,
+            "minimum_swept_time": 512.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 84.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.8194199777055764,
+              "candidate_end_angle_at_check": 1.5341896186815944,
+              "check_time": 534.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 2.353609596387171,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 74.22483387736675,
+            "minimum_point": 74.28859030171634,
+            "minimum_point_time": 500.0,
+            "minimum_swept": 74.22483387736675,
+            "minimum_swept_time": 499.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": 0.0,
+          "duration": 96.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.2159236740032302,
+              "candidate_end_angle_at_check": 3.5295332703903877,
+              "check_time": 546.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.3136095963871575,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 43.06650856470763,
+            "minimum_point": 43.10089187339174,
+            "minimum_point_time": 546.0,
+            "minimum_swept": 43.06650856470763,
+            "minimum_swept_time": 545.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -4.0,
+          "duration": 96.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.4938590388756823,
+              "candidate_end_angle_at_check": 2.819750557511475,
+              "check_time": 546.0,
+              "current_angle": 2.616723769484535,
+              "phase": "transfer_m2i",
+              "projected_angle_at_check": 3.3136095963871575,
+              "required_gap": 0.96,
+              "source": "committed_incoming",
+              "target_phase": "ring_inner",
+              "uid": 24
+            }
+          ],
+          "safety_approved": false,
+          "safety_reason": "predicted_separation",
+          "safety_worst_other": {
+            "minimum": 58.94452114945762,
+            "minimum_point": 58.94455620096104,
+            "minimum_point_time": 512.0,
+            "minimum_swept": 58.94452114945762,
+            "minimum_swept_time": 511.0,
+            "phase": "transfer_m2i",
+            "uid": 24
+          },
+          "scheduler_can_reserve_at": true
+        },
+        {
+          "bias": -8.0,
+          "duration": 96.0,
+          "energy_guard_reason": "emergency_energy_guard",
+          "inner_departure_blocker_count": 1,
+          "inner_departure_blockers": [
+            {
+              "angular_gap": 0.6978615958902257,
+              "candidate_end_angle_at_check": 2.1099678446325543,
+              "check_time": 546.0,
+              "current_angle": 0.015291555921908648,
+              "phase": "ring_inner",
+              "projected_angle_at_check": 1.4121062487423284,
+              "required_gap": 0.96,
+              "source": "inner_holder",
+              "target_phase": null,
+              "uid": 12
+            }
+          ],
+          "safety_approved": true,
+          "safety_reason": null,
+          "safety_worst_other": null,
+          "scheduler_can_reserve_at": true
+        }
+      ],
+      "inner_objects": {
+        "capacity": 15,
+        "committed_incoming": [
+          {
+            "bias": -8.0,
+            "current_angle": 2.616723769484535,
+            "end_angle": 4.47679490356677,
+            "end_time": 482.0,
+            "phase": "transfer_m2i",
+            "start_time": 410.0,
+            "target_phase": "ring_inner",
+            "uid": 24
+          }
+        ],
+        "committed_incoming_count": 1,
+        "departure_gap_angle": 0.96,
+        "departure_occupancy_and_limit": [
+          5,
+          6
+        ],
+        "holder_count": 4,
+        "holders": [
+          {
+            "angle": 4.093665330644532,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.4843031487675886,
+            "speed": 15.999999999999998,
+            "uid": 0
+          },
+          {
+            "angle": 3.1192110177898913,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.4106426516581564,
+            "speed": 16.0,
+            "uid": 1
+          },
+          {
+            "angle": 5.1152978158226325,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.4912485748607928,
+            "speed": 15.999999999999998,
+            "uid": 8
+          },
+          {
+            "angle": 0.015291555921908648,
+            "phase": "ring_inner",
+            "ring_role": "inner",
+            "soc": 0.6039646075728536,
+            "speed": 15.999999999999998,
+            "uid": 12
+          }
+        ],
+        "occupancy": 4
+      },
+      "time": 450.0,
+      "uid7": {
+        "angle": 3.7869273440949787,
+        "committed_plan": null,
+        "phase": "ring_middle",
+        "ring_role": "middle",
+        "soc": 0.3236893557205689,
+        "speed": 20.0,
+        "uid": 7
+      }
+    }
+  ],
+  "status": "completed",
+  "steps": 450,
+  "wall_seconds": 249.37908650003374
+}

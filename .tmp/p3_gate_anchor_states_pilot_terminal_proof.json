@@ -1,0 +1,90 @@
+{
+  "anchors_npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+  "cell_id": 1,
+  "cell_json_sha256": "e4b2890596b62a7e10582569039e00bc2a6463d98c6785cf2834dfe3c585f300",
+  "counts": {
+    "actor_mask": {
+      "false": 4763,
+      "true": 2615,
+      "unknown": 0
+    },
+    "requested_gate": {
+      "false": 7064,
+      "true": 314,
+      "unknown": 0
+    }
+  },
+  "empty_world_ticks": 60,
+  "json_npz_assertions": {
+    "empty_world_ticks": 60,
+    "row_fields": [
+      "step",
+      "uid",
+      "arrival_id",
+      "row_index",
+      "actor_mask",
+      "requested_gate",
+      "requested_proposal"
+    ],
+    "rows": 7378,
+    "status": "JSON_NPZ_ASSERTIONS_OK",
+    "step_metadata_empty_tick_set_checked": true,
+    "step_metadata_first_last": [
+      0,
+      707
+    ],
+    "step_metadata_uid_order_checked": true,
+    "steps": 708
+  },
+  "npz_dtype": "float32",
+  "npz_shape": [
+    7378,
+    88
+  ],
+  "phase": "pilot",
+  "pid_observed": "not_alive at 2026-10-01T23:20:19+08:00",
+  "pilot_sha256": "d2594d2feed937172a70f08790755be44b3737c8a4c4169cb41bd23b93d54fc4",
+  "preflight_event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+  "preflight_sha256": "2e6ce616d80ed4914f42e4f8f21b02d311dd6cc62535139e0e05c6f0f5d30861",
+  "preflight_source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "python_pid": 2203299,
+  "replay": {
+    "base_reset_state_match": true,
+    "config_match": true,
+    "exact": true,
+    "reset_recipe_match": true,
+    "reset_state_match": true,
+    "steps_expected": 708,
+    "steps_replayed": 708
+  },
+  "replay_restore_fields": {
+    "caller_rng_unchanged_after_restore": true,
+    "caller_rng_unchanged_before_restore": true,
+    "constructor_rng_consumed": false,
+    "controller_installed_and_restored": true,
+    "replay_config_compatibility": null
+  },
+  "row_index_match": true,
+  "rows": 7378,
+  "server_mirror_sha_equal": true,
+  "source_provenance": {
+    "binding_checks_all_true": true,
+    "caller_rng_unchanged": true,
+    "lifecycle_valid": true,
+    "model_unchanged": true,
+    "observer_rng_unchanged": true,
+    "runtime_aliases_restored": true,
+    "safety_nonzero": false,
+    "sampler_aliases_restored": true,
+    "source_distributions_immutable": true,
+    "source_status": "completed"
+  },
+  "status": "PILOT_OK",
+  "step_metadata_count": 708,
+  "step_metadata_first_last": [
+    0,
+    707
+  ],
+  "steps_expected": 708,
+  "steps_replayed": 708
+}

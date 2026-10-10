@@ -1,0 +1,300 @@
+{
+  "kind": "prefix_gate_events_normal_event_npz_metadata",
+  "observed_at": "2026-10-01T22:21:00+08:00",
+  "input_root": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells",
+  "input_files": [
+    "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_01.json",
+    "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_02.json",
+    "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_03.json",
+    "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_04.json"
+  ],
+  "normal_event_counts_by_cell": [
+    62,
+    62,
+    63,
+    62
+  ],
+  "total_normal_events": 249,
+  "npz_metadata_scan": {
+    "npz_key_names_found": [],
+    "npz_path_values_found": 0,
+    "npz_paths_unique": [],
+    "npz_paths_existing": [],
+    "npz_paths_missing": [],
+    "existence_check_applicable": false,
+    "reason": "The four group JSONs expose embedded pre_world_88d arrays and no NPZ key/path for these normal events."
+  },
+  "cell_first_normal_metadata": [
+    {
+      "cell_id": 1,
+      "group_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_01.json",
+      "event_count": 314,
+      "normal_event_count": 62,
+      "first_normal_event": {
+        "event_index": 1,
+        "status": "NORMAL_ELIGIBLE",
+        "step": 0,
+        "uid": 2,
+        "context_uid": 2,
+        "arrival_id": 2,
+        "phase": "ring_outer",
+        "soc": 0.8560560829571043,
+        "event_keys": [
+          "actual",
+          "candidate_rank",
+          "comparison",
+          "context",
+          "pre_observation_hash",
+          "pre_world_88d",
+          "pre_world_matrix_88d",
+          "predicate_state",
+          "registration_key",
+          "requested_gate",
+          "requested_proposal",
+          "runtime_used",
+          "status",
+          "step",
+          "uid"
+        ],
+        "context_keys": [
+          "actor_mask",
+          "arrival_id",
+          "committed_plan",
+          "now",
+          "phase",
+          "retry_free",
+          "safety_retry_after",
+          "soc",
+          "uid"
+        ],
+        "explicit_target_uid_key_present": false,
+        "event_uid_and_context_uid_present": true,
+        "pre_world_88d": {
+          "json_type": "list",
+          "length": 88,
+          "element_types": [
+            "float"
+          ]
+        },
+        "pre_world_matrix_88d": {
+          "json_type": "list",
+          "shape": [
+            12,
+            88
+          ]
+        },
+        "npz_keys_in_event": [],
+        "npz_path_values_in_event": []
+      },
+      "all_normal_events_embedded_pre_world_88d": true,
+      "all_normal_events_uid_and_context_uid_present": true,
+      "first_normal_embedded_world_88d_ok": true,
+      "first_normal_uid_fields_ok": true
+    },
+    {
+      "cell_id": 2,
+      "group_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_02.json",
+      "event_count": 267,
+      "normal_event_count": 62,
+      "first_normal_event": {
+        "event_index": 1,
+        "status": "NORMAL_ELIGIBLE",
+        "step": 0,
+        "uid": 2,
+        "context_uid": 2,
+        "arrival_id": 2,
+        "phase": "ring_outer",
+        "soc": 0.8067197881476236,
+        "event_keys": [
+          "actual",
+          "candidate_rank",
+          "comparison",
+          "context",
+          "pre_observation_hash",
+          "pre_world_88d",
+          "pre_world_matrix_88d",
+          "predicate_state",
+          "registration_key",
+          "requested_gate",
+          "requested_proposal",
+          "runtime_used",
+          "status",
+          "step",
+          "uid"
+        ],
+        "context_keys": [
+          "actor_mask",
+          "arrival_id",
+          "committed_plan",
+          "now",
+          "phase",
+          "retry_free",
+          "safety_retry_after",
+          "soc",
+          "uid"
+        ],
+        "explicit_target_uid_key_present": false,
+        "event_uid_and_context_uid_present": true,
+        "pre_world_88d": {
+          "json_type": "list",
+          "length": 88,
+          "element_types": [
+            "float"
+          ]
+        },
+        "pre_world_matrix_88d": {
+          "json_type": "list",
+          "shape": [
+            12,
+            88
+          ]
+        },
+        "npz_keys_in_event": [],
+        "npz_path_values_in_event": []
+      },
+      "all_normal_events_embedded_pre_world_88d": true,
+      "all_normal_events_uid_and_context_uid_present": true,
+      "first_normal_embedded_world_88d_ok": true,
+      "first_normal_uid_fields_ok": true
+    },
+    {
+      "cell_id": 3,
+      "group_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_03.json",
+      "event_count": 290,
+      "normal_event_count": 63,
+      "first_normal_event": {
+        "event_index": 1,
+        "status": "NORMAL_ELIGIBLE",
+        "step": 0,
+        "uid": 2,
+        "context_uid": 2,
+        "arrival_id": 2,
+        "phase": "ring_outer",
+        "soc": 0.6150332149744641,
+        "event_keys": [
+          "actual",
+          "candidate_rank",
+          "comparison",
+          "context",
+          "pre_observation_hash",
+          "pre_world_88d",
+          "pre_world_matrix_88d",
+          "predicate_state",
+          "registration_key",
+          "requested_gate",
+          "requested_proposal",
+          "runtime_used",
+          "status",
+          "step",
+          "uid"
+        ],
+        "context_keys": [
+          "actor_mask",
+          "arrival_id",
+          "committed_plan",
+          "now",
+          "phase",
+          "retry_free",
+          "safety_retry_after",
+          "soc",
+          "uid"
+        ],
+        "explicit_target_uid_key_present": false,
+        "event_uid_and_context_uid_present": true,
+        "pre_world_88d": {
+          "json_type": "list",
+          "length": 88,
+          "element_types": [
+            "float"
+          ]
+        },
+        "pre_world_matrix_88d": {
+          "json_type": "list",
+          "shape": [
+            12,
+            88
+          ]
+        },
+        "npz_keys_in_event": [],
+        "npz_path_values_in_event": []
+      },
+      "all_normal_events_embedded_pre_world_88d": true,
+      "all_normal_events_uid_and_context_uid_present": true,
+      "first_normal_embedded_world_88d_ok": true,
+      "first_normal_uid_fields_ok": true
+    },
+    {
+      "cell_id": 4,
+      "group_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_gate_events_20261001\\cells\\cell_04.json",
+      "event_count": 274,
+      "normal_event_count": 62,
+      "first_normal_event": {
+        "event_index": 1,
+        "status": "NORMAL_ELIGIBLE",
+        "step": 0,
+        "uid": 2,
+        "context_uid": 2,
+        "arrival_id": 2,
+        "phase": "ring_outer",
+        "soc": 0.6220981426830136,
+        "event_keys": [
+          "actual",
+          "candidate_rank",
+          "comparison",
+          "context",
+          "pre_observation_hash",
+          "pre_world_88d",
+          "pre_world_matrix_88d",
+          "predicate_state",
+          "registration_key",
+          "requested_gate",
+          "requested_proposal",
+          "runtime_used",
+          "status",
+          "step",
+          "uid"
+        ],
+        "context_keys": [
+          "actor_mask",
+          "arrival_id",
+          "committed_plan",
+          "now",
+          "phase",
+          "retry_free",
+          "safety_retry_after",
+          "soc",
+          "uid"
+        ],
+        "explicit_target_uid_key_present": false,
+        "event_uid_and_context_uid_present": true,
+        "pre_world_88d": {
+          "json_type": "list",
+          "length": 88,
+          "element_types": [
+            "float"
+          ]
+        },
+        "pre_world_matrix_88d": {
+          "json_type": "list",
+          "shape": [
+            12,
+            88
+          ]
+        },
+        "npz_keys_in_event": [],
+        "npz_path_values_in_event": []
+      },
+      "all_normal_events_embedded_pre_world_88d": true,
+      "all_normal_events_uid_and_context_uid_present": true,
+      "first_normal_embedded_world_88d_ok": true,
+      "first_normal_uid_fields_ok": true
+    }
+  ],
+  "scope": {
+    "read_only": true,
+    "model_forward": false,
+    "replay": false,
+    "optimizer": false,
+    "rawbranches_traversed": false
+  }
+}

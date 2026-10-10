@@ -1,0 +1,6122 @@
+{
+  "arms": {
+    "control": {
+      "caller_rng_unchanged": true,
+      "censored": false,
+      "model_unchanged": true,
+      "outcome_counts": {
+        "diverted": 0,
+        "emergency": 4,
+        "failed": 1,
+        "normal": 19,
+        "resolved": 24,
+        "unresolved": 0
+      },
+      "request_identity_count": 24,
+      "safety": {
+        "collision_events": [],
+        "hard_separation_events": [],
+        "nmac_events": [],
+        "protected_floor_events": [],
+        "safety_violation": false,
+        "safety_violation_status": "none"
+      },
+      "simulation_seconds": 1077.0,
+      "status": "completed",
+      "target_13_context": {
+        "action_gate_counts": {
+          "RELEASE": 104,
+          "WAIT": 212
+        },
+        "after_phase_counts": {
+          "emergency_landing": 91,
+          "inbound": 57,
+          "ring_middle": 22,
+          "ring_outer": 82,
+          "transfer_o2m": 64
+        },
+        "before_phase_counts": {
+          "emergency_landing": 91,
+          "inbound": 57,
+          "ring_middle": 22,
+          "ring_outer": 82,
+          "transfer_o2m": 64
+        },
+        "first_observed": {
+          "arrival_id": 13,
+          "emergency_retry_after": 0.0,
+          "energy_consumed": 35.00000000000001,
+          "energy_remaining": 797.3768484241566,
+          "last_safety_decision": "approved",
+          "phase": "inbound",
+          "safety_retry_after": 0.0,
+          "side": "after",
+          "soc": 0.5315845656161045,
+          "tick": 58,
+          "trace_error": null,
+          "uid": 46
+        },
+        "last_observed": {
+          "arrival_id": 13,
+          "emergency_retry_after": 283.0,
+          "energy_consumed": 359.8655276480631,
+          "energy_remaining": 472.5113207760937,
+          "last_safety_decision": "approved",
+          "phase": "emergency_landing",
+          "safety_retry_after": 289.0,
+          "side": "before",
+          "soc": 0.3150075471840625,
+          "tick": 374,
+          "trace_error": null,
+          "uid": 46
+        },
+        "observed_state_records": 632,
+        "release_decision_counts": {
+          "approved": 1,
+          "not_requested": 211,
+          "null": 761,
+          "plan_active": 2,
+          "safety_reject": 12,
+          "safety_wait": 90
+        },
+        "release_decision_observed": true,
+        "release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.release_decision",
+        "release_decision_frame_count": 1077,
+        "release_decision_present_count": 1077,
+        "release_decision_missing_count": 0,
+        "state_trace_last_release_decision_counts": {
+          "__missing__": 761,
+          "approved": 1,
+          "not_requested": 211,
+          "plan_active": 2,
+          "safety_reject": 12,
+          "safety_wait": 90
+        },
+        "state_trace_last_release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.state.trace.last_release_decision",
+        "normal_release_request_count": 104,
+        "normal_release_by_before_phase": {
+          "ring_middle": {
+            "request_count": 22,
+            "release_decision_counts": {
+              "plan_active": 1,
+              "safety_reject": 3,
+              "safety_wait": 18
+            },
+            "proposal_index_counts": {
+              "10": 20,
+              "11": 2
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 17
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  13,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          },
+          "ring_outer": {
+            "request_count": 82,
+            "release_decision_counts": {
+              "approved": 1,
+              "safety_reject": 9,
+              "safety_wait": 72
+            },
+            "proposal_index_counts": {
+              "11": 52,
+              "12": 27,
+              "14": 3
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 44
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  6,
+                  14
+                ],
+                "source_shortlist_size": 3,
+                "count": 13
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  14,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  20,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  20,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  20,
+                  14
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  14,
+                  10,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  14,
+                  10,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  14,
+                  12,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "active_phase_decision_counts": {
+          "None": {
+            "frame_count": 761,
+            "action_gate_counts": {
+              "WAIT": 761
+            },
+            "release_decision_counts": {
+              "null": 760,
+              "plan_active": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "null": 760,
+              "plan_active": 1
+            }
+          },
+          "emergency_landing": {
+            "frame_count": 91,
+            "action_gate_counts": {
+              "WAIT": 91
+            },
+            "release_decision_counts": {
+              "not_requested": 90,
+              "null": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 90,
+              "null": 1
+            }
+          },
+          "inbound": {
+            "frame_count": 57,
+            "action_gate_counts": {
+              "WAIT": 57
+            },
+            "release_decision_counts": {
+              "not_requested": 57
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 57
+            }
+          },
+          "ring_middle": {
+            "frame_count": 22,
+            "action_gate_counts": {
+              "RELEASE": 22
+            },
+            "release_decision_counts": {
+              "plan_active": 1,
+              "safety_reject": 3,
+              "safety_wait": 18
+            },
+            "state_trace_last_release_decision_counts": {
+              "plan_active": 1,
+              "safety_reject": 3,
+              "safety_wait": 18
+            }
+          },
+          "ring_outer": {
+            "frame_count": 82,
+            "action_gate_counts": {
+              "RELEASE": 82
+            },
+            "release_decision_counts": {
+              "approved": 1,
+              "safety_reject": 9,
+              "safety_wait": 72
+            },
+            "state_trace_last_release_decision_counts": {
+              "approved": 1,
+              "safety_reject": 9,
+              "safety_wait": 72
+            }
+          },
+          "transfer_o2m": {
+            "frame_count": 64,
+            "action_gate_counts": {
+              "WAIT": 64
+            },
+            "release_decision_counts": {
+              "not_requested": 64
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 64
+            }
+          }
+        },
+        "ring_outer_requested_release_check": {
+          "request_count": 82,
+          "release_decision_counts": {
+            "approved": 1,
+            "safety_reject": 9,
+            "safety_wait": 72
+          },
+          "proposal_index_counts": {
+            "11": 52,
+            "12": 27,
+            "14": 3
+          },
+          "shortlist_catalog_counts": [
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 44
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                6,
+                14
+              ],
+              "source_shortlist_size": 3,
+              "count": 13
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                14,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                20,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                20,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                20,
+                14
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                14,
+                10,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                14,
+                10,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                14,
+                12,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            }
+          ]
+        },
+        "decision_witnesses": {
+          "legacy_single_approved_outer": null,
+          "first_normal_reject": {
+            "trace_arm": "control",
+            "arrival_id": 13,
+            "uid": 46,
+            "selection": "first gate=RELEASE after.release_decision=safety_reject",
+            "step_before": 116,
+            "step_after": 117,
+            "now_before": 116.0,
+            "now_after": 117.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 12,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ],
+              [
+                1.0,
+                -0.5,
+                -0.5
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              12,
+              20,
+              6
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_reject",
+            "after_state_trace_last_release_decision": "safety_reject",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 0,
+            "attempt_count": 1,
+            "before_soc": 0.4974734545049924,
+            "after_soc": 0.4968067878383257,
+            "before_energy_remaining": 746.2101817574886,
+            "after_energy_remaining": 745.2101817574886,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 125.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": {
+              "candidate_energy": 55.66938495245883,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 333.07744361029916,
+              "selected_lz_id": 0,
+              "slack_energy": 413.13273814718946
+            }
+          },
+          "first_retry": {
+            "trace_arm": "control",
+            "arrival_id": 13,
+            "uid": 46,
+            "selection": "first gate=RELEASE after.release_decision=safety_wait with retry_count>0",
+            "step_before": 117,
+            "step_after": 118,
+            "now_before": 117.0,
+            "now_after": 118.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 12,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ],
+              [
+                1.0,
+                0.0,
+                -0.5
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              12,
+              20,
+              11
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_wait",
+            "after_state_trace_last_release_decision": "safety_wait",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 1,
+            "attempt_count": 2,
+            "before_soc": 0.4968067878383257,
+            "after_soc": 0.49614012117165907,
+            "before_energy_remaining": 745.2101817574886,
+            "after_energy_remaining": 744.2101817574886,
+            "before_safety_retry_after": 125.0,
+            "after_safety_retry_after": 125.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 55.66938495245883,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 333.07744361029916,
+              "selected_lz_id": 0,
+              "slack_energy": 413.13273814718946
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 55.66938495245883,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 333.07744361029916,
+              "selected_lz_id": 0,
+              "slack_energy": 413.13273814718946
+            }
+          },
+          "first_energy_guard": null,
+          "first_not_requested": {
+            "trace_arm": "control",
+            "arrival_id": 13,
+            "uid": 46,
+            "selection": "first after.release_decision=not_requested",
+            "step_before": 59,
+            "step_after": 60,
+            "now_before": 59.0,
+            "now_after": 60.0,
+            "before_phase": "inbound",
+            "after_phase": "inbound",
+            "before_gate": 0,
+            "proposal_index": null,
+            "source_shortlist": null,
+            "source_shortlist_proposal_indices": [],
+            "source_shortlist_size": null,
+            "after_release_decision": "not_requested",
+            "after_state_trace_last_release_decision": "not_requested",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": null,
+            "attempt_count": null,
+            "before_soc": 0.5315845656161045,
+            "after_soc": 0.5308067878383267,
+            "before_energy_remaining": 797.3768484241566,
+            "after_energy_remaining": 796.21018175749,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 0.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": null
+          }
+        },
+        "decision_field_provenance": {
+          "trace_source": "synced_local_read_only",
+          "local_trace_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_control_trace.json",
+          "server_trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+          "local_trace_sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+          "server_hash_verification": "unavailable",
+          "server_hash_error": "ssh: Could not resolve hostname lab-server",
+          "current_server_hash_verification": {
+            "status": "verified",
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+            "sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+            "expected_sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+            "sha256_match": true
+          }
+        }
+      },
+      "target_13_emergency_calls": {
+        "attempt_count_rule": "per-call telemetry_delta.emergency_attempts > 0",
+        "attempted_call_count_delta_attempt_positive": 4,
+        "blocker_call_counts": {
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 3
+        },
+        "first_attempt": {
+          "after_phase": "ring_middle",
+          "after_soc": 0.3999853249618391,
+          "before_phase": "ring_middle",
+          "before_soc": 0.3999853249618391,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 268.0,
+          "result": false,
+          "safety_reason": "approved",
+          "telemetry_delta": {
+            "emergency_attempts": 1.0,
+            "emergency_blocked_safety": 1.0,
+            "safety_interventions": 1.0
+          },
+          "uid": 46
+        },
+        "first_blocker": {
+          "emergency_blocked_dynamics": null,
+          "emergency_blocked_energy": null,
+          "emergency_blocked_lz": null,
+          "emergency_blocked_safety": {
+            "after_phase": "ring_middle",
+            "after_soc": 0.3999853249618391,
+            "before_phase": "ring_middle",
+            "before_soc": 0.3999853249618391,
+            "force": false,
+            "lz_rejection_detail": null,
+            "now": 268.0,
+            "result": false,
+            "safety_reason": "approved",
+            "telemetry_delta": {
+              "emergency_attempts": 1.0,
+              "emergency_blocked_safety": 1.0,
+              "safety_interventions": 1.0
+            },
+            "uid": 46
+          }
+        },
+        "global_telemetry_counts_not_summed_as_calls": true,
+        "last_attempt": {
+          "after_phase": "emergency_landing",
+          "after_soc": 0.3899853249618391,
+          "before_phase": "ring_middle",
+          "before_soc": 0.3899853249618391,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 283.0,
+          "result": true,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "telemetry_delta": {
+            "checked_executed_plan_matches": 1.0,
+            "emergency_attempts": 1.0,
+            "emergency_committed": 1.0
+          },
+          "uid": 46
+        },
+        "total_target_calls": 317
+      },
+      "target_21_context": {
+        "action_gate_counts": {
+          "RELEASE": 777,
+          "WAIT": 57
+        },
+        "after_phase_counts": {
+          "inbound": 57,
+          "ring_outer": 777
+        },
+        "before_phase_counts": {
+          "inbound": 57,
+          "ring_outer": 777
+        },
+        "first_observed": {
+          "arrival_id": 21,
+          "emergency_retry_after": 0.0,
+          "energy_consumed": 36.16666666666667,
+          "energy_remaining": 827.6693214697062,
+          "last_safety_decision": "approved",
+          "phase": "inbound",
+          "safety_retry_after": 0.0,
+          "side": "after",
+          "soc": 0.5517795476464709,
+          "tick": 179,
+          "trace_error": null,
+          "uid": 108
+        },
+        "last_observed": {
+          "arrival_id": 21,
+          "emergency_retry_after": 1014.0,
+          "energy_consumed": 863.3333333333333,
+          "energy_remaining": 0.5026548030382401,
+          "last_safety_decision": "predicted_holder_reachable_tube",
+          "phase": "ring_outer",
+          "safety_retry_after": 1016.0,
+          "side": "before",
+          "soc": 0.0003351032020254934,
+          "tick": 1013,
+          "trace_error": null,
+          "uid": 108
+        },
+        "observed_state_records": 1668,
+        "release_decision_counts": {
+          "emergency_energy_guard": 64,
+          "not_requested": 57,
+          "null": 243,
+          "plan_active": 1,
+          "safety_reject": 51,
+          "safety_wait": 661
+        },
+        "release_decision_observed": true,
+        "release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.release_decision",
+        "release_decision_frame_count": 1077,
+        "release_decision_present_count": 1077,
+        "release_decision_missing_count": 0,
+        "state_trace_last_release_decision_counts": {
+          "__missing__": 243,
+          "emergency_energy_guard": 64,
+          "not_requested": 57,
+          "plan_active": 1,
+          "safety_reject": 51,
+          "safety_wait": 661
+        },
+        "state_trace_last_release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.state.trace.last_release_decision",
+        "normal_release_request_count": 777,
+        "normal_release_by_before_phase": {
+          "ring_outer": {
+            "request_count": 777,
+            "release_decision_counts": {
+              "emergency_energy_guard": 64,
+              "null": 1,
+              "safety_reject": 51,
+              "safety_wait": 661
+            },
+            "proposal_index_counts": {
+              "10": 66,
+              "11": 340,
+              "12": 174,
+              "13": 190,
+              "20": 1,
+              "6": 6
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  6,
+                  11,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  6,
+                  12,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  6,
+                  13,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  6,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  7
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 7
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 25
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 98
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 26
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 18
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 8
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 93
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  13,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  13,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 15
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  13,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  20,
+                  7
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  20,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 25
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  20,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 16
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 9
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  14
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 30
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  23
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  13,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 10
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  13,
+                  14
+                ],
+                "source_shortlist_size": 3,
+                "count": 14
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  6,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 8
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  6,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 15
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 113
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  13,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 4
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  13,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  13,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  20,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 24
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  6,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 13
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  6,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  6,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 59
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  11,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 6
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  11,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 9
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  11,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  10,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  10,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 9
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  10,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  10,
+                  14
+                ],
+                "source_shortlist_size": 3,
+                "count": 70
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  12,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 10
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  12,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  12,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  20,
+                  12,
+                  11
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "active_phase_decision_counts": {
+          "None": {
+            "frame_count": 243,
+            "action_gate_counts": {
+              "WAIT": 243
+            },
+            "release_decision_counts": {
+              "null": 242,
+              "plan_active": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "null": 242,
+              "plan_active": 1
+            }
+          },
+          "inbound": {
+            "frame_count": 57,
+            "action_gate_counts": {
+              "WAIT": 57
+            },
+            "release_decision_counts": {
+              "not_requested": 57
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 57
+            }
+          },
+          "ring_outer": {
+            "frame_count": 777,
+            "action_gate_counts": {
+              "RELEASE": 777
+            },
+            "release_decision_counts": {
+              "emergency_energy_guard": 64,
+              "null": 1,
+              "safety_reject": 51,
+              "safety_wait": 661
+            },
+            "state_trace_last_release_decision_counts": {
+              "emergency_energy_guard": 64,
+              "null": 1,
+              "safety_reject": 51,
+              "safety_wait": 661
+            }
+          }
+        },
+        "ring_outer_requested_release_check": {
+          "request_count": 777,
+          "release_decision_counts": {
+            "emergency_energy_guard": 64,
+            "null": 1,
+            "safety_reject": 51,
+            "safety_wait": 661
+          },
+          "proposal_index_counts": {
+            "10": 66,
+            "11": 340,
+            "12": 174,
+            "13": 190,
+            "20": 1,
+            "6": 6
+          },
+          "shortlist_catalog_counts": [
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                6,
+                11,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                6,
+                12,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                6,
+                13,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                6,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                7
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 7
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 25
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 98
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 26
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 18
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 8
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 93
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                13,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                13,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 15
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                13,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                20,
+                7
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                20,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 25
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                20,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 16
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 9
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                14
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 30
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                23
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                13,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 10
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                13,
+                14
+              ],
+              "source_shortlist_size": 3,
+              "count": 14
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                6,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 8
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                6,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 15
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 113
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                13,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 4
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                13,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                13,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                20,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 24
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                6,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 13
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                6,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                6,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 59
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                11,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 6
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                11,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 9
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                11,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                10,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                10,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 9
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                10,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                10,
+                14
+              ],
+              "source_shortlist_size": 3,
+              "count": 70
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                12,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 10
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                12,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                12,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                20,
+                12,
+                11
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            }
+          ]
+        },
+        "decision_witnesses": {
+          "legacy_single_approved_outer": null,
+          "first_normal_reject": {
+            "trace_arm": "control",
+            "arrival_id": 21,
+            "uid": 108,
+            "selection": "first gate=RELEASE after.release_decision=safety_reject",
+            "step_before": 237,
+            "step_after": 238,
+            "now_before": 237.0,
+            "now_after": 238.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 11,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              11,
+              12,
+              20
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_reject",
+            "after_state_trace_last_release_decision": "safety_reject",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 0,
+            "attempt_count": 1,
+            "before_soc": 0.5176684365353589,
+            "after_soc": 0.5170017698686922,
+            "before_energy_remaining": 776.5026548030382,
+            "after_energy_remaining": 775.5026548030382,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 246.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": {
+              "candidate_energy": 70.35435529169321,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 371.621173461711,
+              "selected_lz_id": 0,
+              "slack_energy": 404.88148134132723
+            }
+          },
+          "first_retry": {
+            "trace_arm": "control",
+            "arrival_id": 21,
+            "uid": 108,
+            "selection": "first gate=RELEASE after.release_decision=safety_wait with retry_count>0",
+            "step_before": 238,
+            "step_after": 239,
+            "now_before": 238.0,
+            "now_after": 239.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 11,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ],
+              [
+                1.0,
+                0.0,
+                -1.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              11,
+              20,
+              10
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_wait",
+            "after_state_trace_last_release_decision": "safety_wait",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 1,
+            "attempt_count": 2,
+            "before_soc": 0.5170017698686922,
+            "after_soc": 0.5163351032020255,
+            "before_energy_remaining": 775.5026548030382,
+            "after_energy_remaining": 774.5026548030382,
+            "before_safety_retry_after": 246.0,
+            "after_safety_retry_after": 246.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 70.35435529169321,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 371.621173461711,
+              "selected_lz_id": 0,
+              "slack_energy": 404.88148134132723
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 70.35435529169321,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 371.621173461711,
+              "selected_lz_id": 0,
+              "slack_energy": 404.88148134132723
+            }
+          },
+          "first_energy_guard": {
+            "trace_arm": "control",
+            "arrival_id": 21,
+            "uid": 108,
+            "selection": "first gate=RELEASE after.release_decision=emergency_energy_guard",
+            "step_before": 696,
+            "step_after": 697,
+            "now_before": 696.0,
+            "now_after": 697.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 12,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ],
+              [
+                1.0,
+                0.0,
+                -0.5
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              12,
+              20,
+              11
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "emergency_energy_guard",
+            "after_state_trace_last_release_decision": "emergency_energy_guard",
+            "after_last_safety_decision": "predicted_holder_reachable_tube",
+            "after_state_trace_last_safety_decision": "predicted_holder_reachable_tube",
+            "primary_blocker": "SOC",
+            "retry_count": 459,
+            "attempt_count": 460,
+            "before_soc": 0.21166843653535883,
+            "after_soc": 0.21100176986869215,
+            "before_energy_remaining": 317.50265480303824,
+            "after_energy_remaining": 316.50265480303824,
+            "before_safety_retry_after": 696.0,
+            "after_safety_retry_after": 701.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 50.3936716197199,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 321.9965643928849,
+              "selected_lz_id": 2,
+              "slack_energy": 4.50609041015332
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 50.393671619719676,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 319.2625252671814,
+              "selected_lz_id": 2,
+              "slack_energy": -1.7598704641431482
+            }
+          },
+          "first_not_requested": {
+            "trace_arm": "control",
+            "arrival_id": 21,
+            "uid": 108,
+            "selection": "first after.release_decision=not_requested",
+            "step_before": 180,
+            "step_after": 181,
+            "now_before": 180.0,
+            "now_after": 181.0,
+            "before_phase": "inbound",
+            "after_phase": "inbound",
+            "before_gate": 0,
+            "proposal_index": null,
+            "source_shortlist": null,
+            "source_shortlist_proposal_indices": [],
+            "source_shortlist_size": null,
+            "after_release_decision": "not_requested",
+            "after_state_trace_last_release_decision": "not_requested",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": null,
+            "attempt_count": null,
+            "before_soc": 0.5517795476464709,
+            "after_soc": 0.5510017698686931,
+            "before_energy_remaining": 827.6693214697062,
+            "after_energy_remaining": 826.5026548030396,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 0.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": null
+          }
+        },
+        "decision_field_provenance": {
+          "trace_source": "synced_local_read_only",
+          "local_trace_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_control_trace.json",
+          "server_trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+          "local_trace_sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+          "server_hash_verification": "unavailable",
+          "server_hash_error": "ssh: Could not resolve hostname lab-server",
+          "current_server_hash_verification": {
+            "status": "verified",
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+            "sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+            "expected_sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+            "sha256_match": true
+          }
+        }
+      },
+      "target_21_emergency_calls": {
+        "attempt_count_rule": "per-call telemetry_delta.emergency_attempts > 0",
+        "attempted_call_count_delta_attempt_positive": 120,
+        "blocker_call_counts": {
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 69,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 58
+        },
+        "first_attempt": {
+          "after_phase": "ring_outer",
+          "after_soc": 0.39966843653535883,
+          "before_phase": "ring_outer",
+          "before_soc": 0.39966843653535883,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 414.0,
+          "result": false,
+          "safety_reason": "approved",
+          "telemetry_delta": {
+            "emergency_attempts": 1.0,
+            "emergency_blocked_safety": 3.0,
+            "safety_interventions": 3.0
+          },
+          "uid": 108
+        },
+        "first_blocker": {
+          "emergency_blocked_dynamics": null,
+          "emergency_blocked_energy": {
+            "after_phase": "ring_outer",
+            "after_soc": 0.23300176986869217,
+            "before_phase": "ring_outer",
+            "before_soc": 0.23300176986869217,
+            "force": false,
+            "lz_rejection_detail": null,
+            "now": 664.0,
+            "result": false,
+            "safety_reason": "predicted_holder_reachable_tube",
+            "telemetry_delta": {
+              "emergency_attempts": 1.0,
+              "emergency_blocked_energy": 1.0,
+              "emergency_blocked_safety": 4.0,
+              "safety_interventions": 4.0
+            },
+            "uid": 108
+          },
+          "emergency_blocked_lz": null,
+          "emergency_blocked_safety": {
+            "after_phase": "ring_outer",
+            "after_soc": 0.39966843653535883,
+            "before_phase": "ring_outer",
+            "before_soc": 0.39966843653535883,
+            "force": false,
+            "lz_rejection_detail": null,
+            "now": 414.0,
+            "result": false,
+            "safety_reason": "approved",
+            "telemetry_delta": {
+              "emergency_attempts": 1.0,
+              "emergency_blocked_safety": 3.0,
+              "safety_interventions": 3.0
+            },
+            "uid": 108
+          }
+        },
+        "global_telemetry_counts_not_summed_as_calls": true,
+        "last_attempt": {
+          "after_phase": "ring_outer",
+          "after_soc": 0.00300176986869216,
+          "before_phase": "ring_outer",
+          "before_soc": 0.00300176986869216,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 1009.0,
+          "result": false,
+          "safety_reason": "predicted_holder_reachable_tube",
+          "telemetry_delta": {
+            "emergency_attempts": 1.0,
+            "emergency_blocked_energy": 5.0
+          },
+          "uid": 108
+        },
+        "total_target_calls": 899
+      },
+      "target_terminal_row": {
+        "arrival_id": 21,
+        "base_priority": 1,
+        "completion_time": null,
+        "emergency_landing": false,
+        "energy_capacity": 1500.0,
+        "energy_consumed": 864.3333333333333,
+        "energy_remaining": 0.0,
+        "external_wait_time": 30.0,
+        "final_soc": 0.0,
+        "initial_soc": 0.5758906587575819,
+        "initial_soc_source": "first_seen_uav",
+        "internal_wait_time": 777.8147075862395,
+        "mission_type": "cargo",
+        "outcome": "failed_energy",
+        "phase_before_terminal": "ring_outer",
+        "post_terminal_outcome": "failed_energy",
+        "post_terminal_reason": "energy_depleted",
+        "reason": "energy_depleted",
+        "request_time": 150.0,
+        "source": "_resolve",
+        "terminal_time": 1013.0,
+        "touchdown_time": null,
+        "uid": 108,
+        "wait_seconds": 807.8147075862395
+      },
+      "ticks": 1077,
+      "trace_artifact": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_control_trace.json",
+      "trace_summary": {
+        "emergency_call_records": 1216,
+        "first_relevant_step": 58,
+        "last_relevant_step": 1014,
+        "native_lz_rejection_detail": null,
+        "relevant_step_records": 956,
+        "step_records": 1077
+      },
+      "validation": {
+        "caller_rng_unchanged": true,
+        "float_abs_tol": 1e-08,
+        "float_rel_tol": 1e-10,
+        "hard_safety_clear": true,
+        "match": true,
+        "mismatches": [],
+        "mode": "control",
+        "model_unchanged": true,
+        "outcome_counts_exact": true,
+        "request_identity_exact": true,
+        "target_terminal_row_match": true,
+        "terminal_rows_checked": true,
+        "ticks_exact": true,
+        "trace": {
+          "errors": [],
+          "match": true,
+          "step_records": 1077,
+          "target_state_observed": true
+        }
+      }
+    },
+    "legacy": {
+      "caller_rng_unchanged": true,
+      "censored": false,
+      "model_unchanged": true,
+      "outcome_counts": {
+        "diverted": 0,
+        "emergency": 3,
+        "failed": 0,
+        "normal": 21,
+        "resolved": 24,
+        "unresolved": 0
+      },
+      "request_identity_count": 24,
+      "safety": {
+        "collision_events": [],
+        "hard_separation_events": [],
+        "nmac_events": [],
+        "protected_floor_events": [],
+        "safety_violation": false,
+        "safety_violation_status": "none"
+      },
+      "simulation_seconds": 724.0,
+      "status": "completed",
+      "target_13_context": {
+        "action_gate_counts": {
+          "RELEASE": 6,
+          "WAIT": 333
+        },
+        "after_phase_counts": {
+          "emergency_landing": 54,
+          "inbound": 57,
+          "ring_inner": 16,
+          "ring_middle": 1,
+          "ring_outer": 88,
+          "transfer_m2i": 61,
+          "transfer_o2m": 62
+        },
+        "before_phase_counts": {
+          "emergency_landing": 54,
+          "inbound": 57,
+          "ring_inner": 16,
+          "ring_middle": 1,
+          "ring_outer": 88,
+          "transfer_m2i": 61,
+          "transfer_o2m": 62
+        },
+        "first_observed": {
+          "arrival_id": 13,
+          "emergency_retry_after": 0.0,
+          "energy_consumed": 55.999999999999964,
+          "energy_remaining": 776.3768484241573,
+          "last_safety_decision": "approved",
+          "phase": "inbound",
+          "safety_retry_after": 0.0,
+          "side": "after",
+          "soc": 0.5175845656161049,
+          "tick": 76,
+          "trace_error": null,
+          "uid": 72
+        },
+        "last_observed": {
+          "arrival_id": 13,
+          "emergency_retry_after": 361.0,
+          "energy_consumed": 374.39113741304027,
+          "energy_remaining": 457.98571101111133,
+          "last_safety_decision": "approved",
+          "phase": "emergency_landing",
+          "safety_retry_after": 370.0,
+          "side": "before",
+          "soc": 0.3053238073407409,
+          "tick": 415,
+          "trace_error": null,
+          "uid": 72
+        },
+        "observed_state_records": 678,
+        "release_decision_counts": {
+          "approved": 2,
+          "not_requested": 332,
+          "null": 385,
+          "plan_active": 1,
+          "safety_reject": 4
+        },
+        "release_decision_observed": true,
+        "release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.release_decision",
+        "release_decision_frame_count": 724,
+        "release_decision_present_count": 724,
+        "release_decision_missing_count": 0,
+        "state_trace_last_release_decision_counts": {
+          "__missing__": 385,
+          "approved": 2,
+          "not_requested": 332,
+          "plan_active": 1,
+          "safety_reject": 4
+        },
+        "state_trace_last_release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.state.trace.last_release_decision",
+        "normal_release_request_count": 6,
+        "normal_release_by_before_phase": {
+          "ring_inner": {
+            "request_count": 2,
+            "release_decision_counts": {
+              "safety_reject": 2
+            },
+            "proposal_index_counts": {
+              "20": 1,
+              "6": 1
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  6,
+                  13,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  20,
+                  11,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          },
+          "ring_middle": {
+            "request_count": 1,
+            "release_decision_counts": {
+              "approved": 1
+            },
+            "proposal_index_counts": {
+              "10": 1
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          },
+          "ring_outer": {
+            "request_count": 3,
+            "release_decision_counts": {
+              "approved": 1,
+              "safety_reject": 2
+            },
+            "proposal_index_counts": {
+              "10": 1,
+              "11": 2
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  20,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "active_phase_decision_counts": {
+          "None": {
+            "frame_count": 385,
+            "action_gate_counts": {
+              "WAIT": 385
+            },
+            "release_decision_counts": {
+              "null": 384,
+              "plan_active": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "null": 384,
+              "plan_active": 1
+            }
+          },
+          "emergency_landing": {
+            "frame_count": 54,
+            "action_gate_counts": {
+              "WAIT": 54
+            },
+            "release_decision_counts": {
+              "not_requested": 53,
+              "null": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 53,
+              "null": 1
+            }
+          },
+          "inbound": {
+            "frame_count": 57,
+            "action_gate_counts": {
+              "WAIT": 57
+            },
+            "release_decision_counts": {
+              "not_requested": 57
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 57
+            }
+          },
+          "ring_inner": {
+            "frame_count": 16,
+            "action_gate_counts": {
+              "RELEASE": 2,
+              "WAIT": 14
+            },
+            "release_decision_counts": {
+              "not_requested": 14,
+              "safety_reject": 2
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 14,
+              "safety_reject": 2
+            }
+          },
+          "ring_middle": {
+            "frame_count": 1,
+            "action_gate_counts": {
+              "RELEASE": 1
+            },
+            "release_decision_counts": {
+              "approved": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "approved": 1
+            }
+          },
+          "ring_outer": {
+            "frame_count": 88,
+            "action_gate_counts": {
+              "RELEASE": 3,
+              "WAIT": 85
+            },
+            "release_decision_counts": {
+              "approved": 1,
+              "not_requested": 85,
+              "safety_reject": 2
+            },
+            "state_trace_last_release_decision_counts": {
+              "approved": 1,
+              "not_requested": 85,
+              "safety_reject": 2
+            }
+          },
+          "transfer_m2i": {
+            "frame_count": 61,
+            "action_gate_counts": {
+              "WAIT": 61
+            },
+            "release_decision_counts": {
+              "not_requested": 61
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 61
+            }
+          },
+          "transfer_o2m": {
+            "frame_count": 62,
+            "action_gate_counts": {
+              "WAIT": 62
+            },
+            "release_decision_counts": {
+              "not_requested": 62
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 62
+            }
+          }
+        },
+        "ring_outer_requested_release_check": {
+          "request_count": 3,
+          "release_decision_counts": {
+            "approved": 1,
+            "safety_reject": 2
+          },
+          "proposal_index_counts": {
+            "10": 1,
+            "11": 2
+          },
+          "shortlist_catalog_counts": [
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                20,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            }
+          ]
+        },
+        "decision_witnesses": {
+          "legacy_single_approved_outer": {
+            "trace_arm": "legacy",
+            "arrival_id": 13,
+            "uid": 72,
+            "selection": "single approved ring_outer RELEASE",
+            "step_before": 221,
+            "step_after": 222,
+            "now_before": 221.0,
+            "now_after": 222.0,
+            "before_phase": "ring_outer",
+            "after_phase": "transfer_o2m",
+            "before_gate": 1,
+            "proposal_index": 11,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              11,
+              20,
+              12
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "approved",
+            "after_state_trace_last_release_decision": "approved",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": 2,
+            "attempt_count": 3,
+            "before_soc": 0.42547345450499285,
+            "after_soc": 0.4248067878383262,
+            "before_energy_remaining": 638.2101817574893,
+            "after_energy_remaining": 637.2101817574893,
+            "before_safety_retry_after": 189.0,
+            "after_safety_retry_after": 189.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 66.33536400222188,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 395.84756350940125,
+              "selected_lz_id": 0,
+              "slack_energy": 283.36261824808804
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 52.85836779246447,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 361.6757649162895,
+              "selected_lz_id": 0,
+              "slack_energy": 276.5344168411998
+            }
+          },
+          "first_normal_reject": {
+            "trace_arm": "legacy",
+            "arrival_id": 13,
+            "uid": 72,
+            "selection": "first gate=RELEASE after.release_decision=safety_reject",
+            "step_before": 142,
+            "step_after": 143,
+            "now_before": 142.0,
+            "now_after": 143.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 11,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                0.0,
+                -1.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              11,
+              10,
+              20
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_reject",
+            "after_state_trace_last_release_decision": "safety_reject",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "HEADWAY",
+            "retry_count": 0,
+            "attempt_count": 1,
+            "before_soc": 0.47814012117165955,
+            "after_soc": 0.47747345450499284,
+            "before_energy_remaining": 717.2101817574893,
+            "after_energy_remaining": 716.2101817574893,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 151.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": {
+              "candidate_energy": 53.93821791036445,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 351.0081285465702,
+              "selected_lz_id": 0,
+              "slack_energy": 366.2020532109191
+            }
+          },
+          "first_retry": null,
+          "first_energy_guard": null,
+          "first_not_requested": {
+            "trace_arm": "legacy",
+            "arrival_id": 13,
+            "uid": 72,
+            "selection": "first after.release_decision=not_requested",
+            "step_before": 77,
+            "step_after": 78,
+            "now_before": 77.0,
+            "now_after": 78.0,
+            "before_phase": "inbound",
+            "after_phase": "inbound",
+            "before_gate": 0,
+            "proposal_index": null,
+            "source_shortlist": null,
+            "source_shortlist_proposal_indices": [],
+            "source_shortlist_size": null,
+            "after_release_decision": "not_requested",
+            "after_state_trace_last_release_decision": "not_requested",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": null,
+            "attempt_count": null,
+            "before_soc": 0.5175845656161049,
+            "after_soc": 0.5168067878383271,
+            "before_energy_remaining": 776.3768484241573,
+            "after_energy_remaining": 775.2101817574907,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 0.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": null
+          }
+        },
+        "decision_field_provenance": {
+          "trace_source": "synced_local_read_only",
+          "local_trace_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_legacy_trace.json",
+          "server_trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+          "local_trace_sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+          "server_hash_verification": "unavailable",
+          "server_hash_error": "ssh: Could not resolve hostname lab-server",
+          "current_server_hash_verification": {
+            "status": "verified",
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+            "sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+            "expected_sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+            "sha256_match": true
+          }
+        }
+      },
+      "target_13_emergency_calls": {
+        "attempt_count_rule": "per-call telemetry_delta.emergency_attempts > 0",
+        "attempted_call_count_delta_attempt_positive": 5,
+        "blocker_call_counts": {
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 4
+        },
+        "first_attempt": {
+          "after_phase": "ring_middle",
+          "after_soc": 0.3898686998906802,
+          "before_phase": "ring_middle",
+          "before_soc": 0.3898686998906802,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 284.0,
+          "result": false,
+          "safety_reason": "approved",
+          "telemetry_delta": {
+            "emergency_attempts": 1.0,
+            "emergency_blocked_safety": 1.0,
+            "safety_interventions": 1.0
+          },
+          "uid": 72
+        },
+        "first_blocker": {
+          "emergency_blocked_dynamics": null,
+          "emergency_blocked_energy": null,
+          "emergency_blocked_lz": null,
+          "emergency_blocked_safety": {
+            "after_phase": "ring_middle",
+            "after_soc": 0.3898686998906802,
+            "before_phase": "ring_middle",
+            "before_soc": 0.3898686998906802,
+            "force": false,
+            "lz_rejection_detail": null,
+            "now": 284.0,
+            "result": false,
+            "safety_reason": "approved",
+            "telemetry_delta": {
+              "emergency_attempts": 1.0,
+              "emergency_blocked_safety": 1.0,
+              "safety_interventions": 1.0
+            },
+            "uid": 72
+          }
+        },
+        "global_telemetry_counts_not_summed_as_calls": true,
+        "last_attempt": {
+          "after_phase": "emergency_landing",
+          "after_soc": 0.34332380734074114,
+          "before_phase": "ring_inner",
+          "before_soc": 0.34332380734074114,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 361.0,
+          "result": true,
+          "safety_reason": "predicted_separation",
+          "telemetry_delta": {
+            "checked_executed_plan_matches": 1.0,
+            "emergency_attempts": 1.0,
+            "emergency_committed": 1.0
+          },
+          "uid": 72
+        },
+        "total_target_calls": 340
+      },
+      "target_21_context": {
+        "action_gate_counts": {
+          "RELEASE": 17,
+          "WAIT": 318
+        },
+        "after_phase_counts": {
+          "emergency_landing": 47,
+          "inbound": 57,
+          "ring_inner": 1,
+          "ring_middle": 1,
+          "ring_outer": 105,
+          "transfer_m2i": 66,
+          "transfer_o2m": 58
+        },
+        "before_phase_counts": {
+          "emergency_landing": 47,
+          "inbound": 57,
+          "ring_inner": 1,
+          "ring_middle": 1,
+          "ring_outer": 105,
+          "transfer_m2i": 66,
+          "transfer_o2m": 58
+        },
+        "first_observed": {
+          "arrival_id": 21,
+          "emergency_retry_after": 0.0,
+          "energy_consumed": 2.3333333333333335,
+          "energy_remaining": 861.5026548030385,
+          "last_safety_decision": "approved",
+          "phase": "inbound",
+          "safety_retry_after": 0.0,
+          "side": "after",
+          "soc": 0.5743351032020256,
+          "tick": 150,
+          "trace_error": null,
+          "uid": 96
+        },
+        "last_observed": {
+          "arrival_id": 21,
+          "emergency_retry_after": 0.0,
+          "energy_consumed": 317.81612313387035,
+          "energy_remaining": 546.0198650024972,
+          "last_safety_decision": "approved",
+          "phase": "emergency_landing",
+          "safety_retry_after": 312.0,
+          "side": "before",
+          "soc": 0.3640132433349981,
+          "tick": 485,
+          "trace_error": null,
+          "uid": 96
+        },
+        "observed_state_records": 670,
+        "release_decision_counts": {
+          "approved": 2,
+          "not_requested": 317,
+          "null": 389,
+          "plan_active": 2,
+          "safety_reject": 10,
+          "safety_wait": 4
+        },
+        "release_decision_observed": true,
+        "release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.release_decision",
+        "release_decision_frame_count": 724,
+        "release_decision_present_count": 724,
+        "release_decision_missing_count": 0,
+        "state_trace_last_release_decision_counts": {
+          "__missing__": 389,
+          "approved": 2,
+          "not_requested": 317,
+          "plan_active": 2,
+          "safety_reject": 10,
+          "safety_wait": 4
+        },
+        "state_trace_last_release_decision_source": "trace.steps[*].targets[str(arrival_id)].after.state.trace.last_release_decision",
+        "normal_release_request_count": 17,
+        "normal_release_by_before_phase": {
+          "ring_inner": {
+            "request_count": 1,
+            "release_decision_counts": {
+              "plan_active": 1
+            },
+            "proposal_index_counts": {
+              "12": 1
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.5,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  20,
+                  18
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          },
+          "ring_middle": {
+            "request_count": 1,
+            "release_decision_counts": {
+              "approved": 1
+            },
+            "proposal_index_counts": {
+              "12": 1
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          },
+          "ring_outer": {
+            "request_count": 15,
+            "release_decision_counts": {
+              "approved": 1,
+              "safety_reject": 10,
+              "safety_wait": 4
+            },
+            "proposal_index_counts": {
+              "10": 2,
+              "11": 9,
+              "12": 3,
+              "13": 1
+            },
+            "shortlist_catalog_counts": [
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  10,
+                  13
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  10
+                ],
+                "source_shortlist_size": 3,
+                "count": 2
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  11,
+                  12,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  12
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    -1.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  10,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    -1.0
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  12,
+                  11,
+                  20
+                ],
+                "source_shortlist_size": 3,
+                "count": 3
+              },
+              {
+                "source_shortlist": [
+                  [
+                    1.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    1.0,
+                    0.0,
+                    -0.5
+                  ],
+                  [
+                    1.0,
+                    -0.5,
+                    -0.5
+                  ]
+                ],
+                "source_shortlist_proposal_indices": [
+                  13,
+                  11,
+                  6
+                ],
+                "source_shortlist_size": 3,
+                "count": 1
+              }
+            ]
+          }
+        },
+        "active_phase_decision_counts": {
+          "None": {
+            "frame_count": 389,
+            "action_gate_counts": {
+              "WAIT": 389
+            },
+            "release_decision_counts": {
+              "null": 388,
+              "plan_active": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "null": 388,
+              "plan_active": 1
+            }
+          },
+          "emergency_landing": {
+            "frame_count": 47,
+            "action_gate_counts": {
+              "WAIT": 47
+            },
+            "release_decision_counts": {
+              "not_requested": 46,
+              "null": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 46,
+              "null": 1
+            }
+          },
+          "inbound": {
+            "frame_count": 57,
+            "action_gate_counts": {
+              "WAIT": 57
+            },
+            "release_decision_counts": {
+              "not_requested": 57
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 57
+            }
+          },
+          "ring_inner": {
+            "frame_count": 1,
+            "action_gate_counts": {
+              "RELEASE": 1
+            },
+            "release_decision_counts": {
+              "plan_active": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "plan_active": 1
+            }
+          },
+          "ring_middle": {
+            "frame_count": 1,
+            "action_gate_counts": {
+              "RELEASE": 1
+            },
+            "release_decision_counts": {
+              "approved": 1
+            },
+            "state_trace_last_release_decision_counts": {
+              "approved": 1
+            }
+          },
+          "ring_outer": {
+            "frame_count": 105,
+            "action_gate_counts": {
+              "RELEASE": 15,
+              "WAIT": 90
+            },
+            "release_decision_counts": {
+              "approved": 1,
+              "not_requested": 90,
+              "safety_reject": 10,
+              "safety_wait": 4
+            },
+            "state_trace_last_release_decision_counts": {
+              "approved": 1,
+              "not_requested": 90,
+              "safety_reject": 10,
+              "safety_wait": 4
+            }
+          },
+          "transfer_m2i": {
+            "frame_count": 66,
+            "action_gate_counts": {
+              "WAIT": 66
+            },
+            "release_decision_counts": {
+              "not_requested": 66
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 66
+            }
+          },
+          "transfer_o2m": {
+            "frame_count": 58,
+            "action_gate_counts": {
+              "WAIT": 58
+            },
+            "release_decision_counts": {
+              "not_requested": 58
+            },
+            "state_trace_last_release_decision_counts": {
+              "not_requested": 58
+            }
+          }
+        },
+        "ring_outer_requested_release_check": {
+          "request_count": 15,
+          "release_decision_counts": {
+            "approved": 1,
+            "safety_reject": 10,
+            "safety_wait": 4
+          },
+          "proposal_index_counts": {
+            "10": 2,
+            "11": 9,
+            "12": 3,
+            "13": 1
+          },
+          "shortlist_catalog_counts": [
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                10,
+                13
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                10
+              ],
+              "source_shortlist_size": 3,
+              "count": 2
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                11,
+                12,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                12
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  -1.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                10,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.0
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  1.0,
+                  -1.0
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                12,
+                11,
+                20
+              ],
+              "source_shortlist_size": 3,
+              "count": 3
+            },
+            {
+              "source_shortlist": [
+                [
+                  1.0,
+                  0.0,
+                  0.5
+                ],
+                [
+                  1.0,
+                  0.0,
+                  -0.5
+                ],
+                [
+                  1.0,
+                  -0.5,
+                  -0.5
+                ]
+              ],
+              "source_shortlist_proposal_indices": [
+                13,
+                11,
+                6
+              ],
+              "source_shortlist_size": 3,
+              "count": 1
+            }
+          ]
+        },
+        "decision_witnesses": {
+          "legacy_single_approved_outer": {
+            "trace_arm": "legacy",
+            "arrival_id": 21,
+            "uid": 96,
+            "selection": "single approved ring_outer RELEASE",
+            "step_before": 312,
+            "step_after": 313,
+            "now_before": 312.0,
+            "now_after": 313.0,
+            "before_phase": "ring_outer",
+            "after_phase": "transfer_o2m",
+            "before_gate": 1,
+            "proposal_index": 10,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -1.0
+              ],
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              10,
+              11,
+              12
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "approved",
+            "after_state_trace_last_release_decision": "approved",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": 14,
+            "attempt_count": 15,
+            "before_soc": 0.4708906587575803,
+            "after_soc": 0.47022399209091365,
+            "before_energy_remaining": 706.3359881363705,
+            "after_energy_remaining": 705.3359881363705,
+            "before_safety_retry_after": 312.0,
+            "after_safety_retry_after": 312.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 52.85630787022087,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 334.7109800570181,
+              "selected_lz_id": 0,
+              "slack_energy": 380.62500807935237
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 50.393671619720266,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 335.29391172334545,
+              "selected_lz_id": 0,
+              "slack_energy": 371.04207641302503
+            }
+          },
+          "first_normal_reject": {
+            "trace_arm": "legacy",
+            "arrival_id": 21,
+            "uid": 96,
+            "selection": "first gate=RELEASE after.release_decision=safety_reject",
+            "step_before": 221,
+            "step_after": 222,
+            "now_before": 221.0,
+            "now_after": 222.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 11,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              11,
+              12,
+              20
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_reject",
+            "after_state_trace_last_release_decision": "safety_reject",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "HEADWAY",
+            "retry_count": 0,
+            "attempt_count": 1,
+            "before_soc": 0.5315573254242469,
+            "after_soc": 0.5308906587575803,
+            "before_energy_remaining": 797.3359881363705,
+            "after_energy_remaining": 796.3359881363705,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 230.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": {
+              "candidate_energy": 55.67176169965617,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 358.64131818084036,
+              "selected_lz_id": 0,
+              "slack_energy": 438.6946699555301
+            }
+          },
+          "first_retry": {
+            "trace_arm": "legacy",
+            "arrival_id": 21,
+            "uid": 96,
+            "selection": "first gate=RELEASE after.release_decision=safety_wait with retry_count>0",
+            "step_before": 229,
+            "step_after": 230,
+            "now_before": 229.0,
+            "now_after": 230.0,
+            "before_phase": "ring_outer",
+            "after_phase": "ring_outer",
+            "before_gate": 1,
+            "proposal_index": 12,
+            "source_shortlist": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                -0.5
+              ],
+              [
+                1.0,
+                1.0,
+                -1.0
+              ]
+            ],
+            "source_shortlist_proposal_indices": [
+              12,
+              11,
+              20
+            ],
+            "source_shortlist_size": 3,
+            "after_release_decision": "safety_wait",
+            "after_state_trace_last_release_decision": "safety_wait",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "retry_count": 1,
+            "attempt_count": 2,
+            "before_soc": 0.5262239920909136,
+            "after_soc": 0.5255573254242469,
+            "before_energy_remaining": 789.3359881363705,
+            "after_energy_remaining": 788.3359881363705,
+            "before_safety_retry_after": 230.0,
+            "after_safety_retry_after": 230.0,
+            "before_energy_reachability_budget": {
+              "candidate_energy": 55.67176169965617,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 358.64131818084036,
+              "selected_lz_id": 0,
+              "slack_energy": 438.6946699555301
+            },
+            "after_energy_reachability_budget": {
+              "candidate_energy": 55.67176169965617,
+              "pad_wait_seconds": 0.0,
+              "required_energy": 358.64131818084036,
+              "selected_lz_id": 0,
+              "slack_energy": 438.6946699555301
+            }
+          },
+          "first_energy_guard": null,
+          "first_not_requested": {
+            "trace_arm": "legacy",
+            "arrival_id": 21,
+            "uid": 96,
+            "selection": "first after.release_decision=not_requested",
+            "step_before": 151,
+            "step_after": 152,
+            "now_before": 151.0,
+            "now_after": 152.0,
+            "before_phase": "inbound",
+            "after_phase": "inbound",
+            "before_gate": 0,
+            "proposal_index": null,
+            "source_shortlist": null,
+            "source_shortlist_proposal_indices": [],
+            "source_shortlist_size": null,
+            "after_release_decision": "not_requested",
+            "after_state_trace_last_release_decision": "not_requested",
+            "after_last_safety_decision": "approved",
+            "after_state_trace_last_safety_decision": "approved",
+            "primary_blocker": null,
+            "retry_count": null,
+            "attempt_count": null,
+            "before_soc": 0.5743351032020256,
+            "after_soc": 0.5735573254242479,
+            "before_energy_remaining": 861.5026548030385,
+            "after_energy_remaining": 860.3359881363718,
+            "before_safety_retry_after": 0.0,
+            "after_safety_retry_after": 0.0,
+            "before_energy_reachability_budget": null,
+            "after_energy_reachability_budget": null
+          }
+        },
+        "decision_field_provenance": {
+          "trace_source": "synced_local_read_only",
+          "local_trace_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_legacy_trace.json",
+          "server_trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+          "local_trace_sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+          "server_hash_verification": "unavailable",
+          "server_hash_error": "ssh: Could not resolve hostname lab-server",
+          "current_server_hash_verification": {
+            "status": "verified",
+            "server_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+            "sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+            "expected_sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+            "sha256_match": true
+          }
+        }
+      },
+      "target_21_emergency_calls": {
+        "attempt_count_rule": "per-call telemetry_delta.emergency_attempts > 0",
+        "attempted_call_count_delta_attempt_positive": 1,
+        "blocker_call_counts": {
+          "emergency_blocked_dynamics": 0,
+          "emergency_blocked_energy": 0,
+          "emergency_blocked_lz": 0,
+          "emergency_blocked_safety": 0
+        },
+        "first_attempt": {
+          "after_phase": "emergency_landing",
+          "after_soc": 0.39723546555721995,
+          "before_phase": "ring_inner",
+          "before_soc": 0.39723546555721995,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 438.0,
+          "result": true,
+          "safety_reason": "approved",
+          "telemetry_delta": {
+            "checked_executed_plan_matches": 1.0,
+            "emergency_attempts": 1.0,
+            "emergency_committed": 1.0
+          },
+          "uid": 96
+        },
+        "first_blocker": {
+          "emergency_blocked_dynamics": null,
+          "emergency_blocked_energy": null,
+          "emergency_blocked_lz": null,
+          "emergency_blocked_safety": null
+        },
+        "global_telemetry_counts_not_summed_as_calls": true,
+        "last_attempt": {
+          "after_phase": "emergency_landing",
+          "after_soc": 0.39723546555721995,
+          "before_phase": "ring_inner",
+          "before_soc": 0.39723546555721995,
+          "force": false,
+          "lz_rejection_detail": null,
+          "now": 438.0,
+          "result": true,
+          "safety_reason": "approved",
+          "telemetry_delta": {
+            "checked_executed_plan_matches": 1.0,
+            "emergency_attempts": 1.0,
+            "emergency_committed": 1.0
+          },
+          "uid": 96
+        },
+        "total_target_calls": 336
+      },
+      "target_terminal_row": {
+        "arrival_id": 21,
+        "base_priority": 1,
+        "completion_time": 606.0,
+        "emergency_landing": true,
+        "energy_capacity": 1500.0,
+        "energy_consumed": 317.89684335504234,
+        "energy_remaining": 545.9391447813252,
+        "external_wait_time": 1.0,
+        "final_soc": 0.3639594298542168,
+        "initial_soc": 0.5758906587575813,
+        "initial_soc_source": "first_seen_uav",
+        "internal_wait_time": 106.00071230743714,
+        "mission_type": "cargo",
+        "outcome": "emergency_landed",
+        "phase_before_terminal": "completed",
+        "reason": "ground_service_complete",
+        "request_time": 150.0,
+        "source": "completed_uavs",
+        "terminal_time": 606.0,
+        "touchdown_time": 486.0,
+        "uid": 96,
+        "wait_seconds": 107.00071230743714
+      },
+      "ticks": 724,
+      "trace_artifact": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\traces\\pair_0015_legacy_trace.json",
+      "trace_summary": {
+        "emergency_call_records": 676,
+        "first_relevant_step": 76,
+        "last_relevant_step": 486,
+        "native_lz_rejection_detail": null,
+        "relevant_step_records": 410,
+        "step_records": 724
+      },
+      "validation": {
+        "caller_rng_unchanged": true,
+        "float_abs_tol": 1e-08,
+        "float_rel_tol": 1e-10,
+        "hard_safety_clear": true,
+        "match": true,
+        "mismatches": [],
+        "mode": "legacy",
+        "model_unchanged": true,
+        "outcome_counts_exact": true,
+        "request_identity_exact": true,
+        "target_terminal_row_match": true,
+        "terminal_rows_checked": true,
+        "ticks_exact": true,
+        "trace": {
+          "errors": [],
+          "match": true,
+          "step_records": 724,
+          "target_state_observed": true
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "failure_replay": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001\\failure_replay.json",
+    "failure_replay_sha256": "a39fb6759f24d5e33d47b1ca0039f4dcefcfcff21b8aca51e456a5b81bc4285b",
+    "root": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_failure_replay_20261001",
+    "previous_launch_proof_v1": "D:\\7_codespace\\terminal\\.tmp\\p3_gate_failure_replay_launch_proof_v1.json",
+    "current_server_failure_replay_summary": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/failure_replay.json"
+  },
+  "pair": {
+    "env_seed": 877104,
+    "keyed_policy_seed": 9303103,
+    "pair_id": 15
+  },
+  "qualification": "not_a_qualification; passive exact replay only",
+  "server": {
+    "argv": "/home/user/envs/terminal_env/bin/python -u -m terminal_marl.training.run_p3_gate_failure_replay_20261001 --phase run --include-arrival13 --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001",
+    "cwd": "/home/user/projects/terminal",
+    "launcher_parent_pid": 2097780,
+    "pid": 2097784,
+    "process_absent_at_terminal_snapshot": true,
+    "terminal_snapshot_utc": "2026-09-30T16:54:53Z"
+  },
+  "source_model_digest": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+  "stage": "P3_GATE_FAILURE_REPLAY_20261001_V1",
+  "status": "REPLAY_OK",
+  "target_arrival_ids": [
+    21,
+    13
+  ],
+  "decision_aggregation": {
+    "status": "CORRECTED_FROM_TRACE_AFTER_FIELDS",
+    "source_field": "steps[*].targets[str(arrival_id)].after.release_decision",
+    "independent_state_trace_field": "steps[*].targets[str(arrival_id)].after.state.trace.last_release_decision",
+    "requested_release_definition": "before.action_fields.gate == 1",
+    "phase_definition": "before.state.phase",
+    "target_arrival_ids": [
+      21,
+      13
+    ],
+    "trace_source": "synced_local_read_only",
+    "server_hash_verification": "unavailable",
+    "server_hash_error": "ssh: Could not resolve hostname lab-server",
+    "current_server_verification": {
+      "status": "PASS",
+      "summary_proof": {
+        "path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/failure_replay.json",
+        "read_method": "ssh cat named summary",
+        "stage": "P3_GATE_FAILURE_REPLAY_20261001_V1",
+        "phase": "run",
+        "status": "REPLAY_OK",
+        "PPO_ALLOWED": false,
+        "off_policy": true,
+        "pair": {
+          "pair_id": 15,
+          "env_seed": 877104,
+          "keyed_policy_seed": 9303103
+        },
+        "source_model_digest": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+        "target_arrival_ids": [
+          21,
+          13
+        ],
+        "arms": {
+          "control": {
+            "trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+            "status": "completed",
+            "ticks": 1077,
+            "validation": {
+              "match": true,
+              "model_unchanged": true,
+              "caller_rng_unchanged": true,
+              "hard_safety_clear": true,
+              "trace_match": true,
+              "trace_step_records": 1077,
+              "mismatches": []
+            },
+            "target_outcome": "failed_energy"
+          },
+          "legacy": {
+            "trace_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+            "status": "completed",
+            "ticks": 724,
+            "validation": {
+              "match": true,
+              "model_unchanged": true,
+              "caller_rng_unchanged": true,
+              "hard_safety_clear": true,
+              "trace_match": true,
+              "trace_step_records": 724,
+              "mismatches": []
+            },
+            "target_outcome": "emergency_landed"
+          }
+        }
+      },
+      "trace_hashes": {
+        "legacy": {
+          "path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_legacy_trace.json",
+          "sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+          "expected_sha256": "d1b71ef6abfe32feb84c009961b974e369935377eef85db1dd01c10dcd607745",
+          "sha256_match": true
+        },
+        "control": {
+          "path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_failure_replay_20261001/traces/pair_0015_control_trace.json",
+          "sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+          "expected_sha256": "1b185b39f7e26cd0f8d534e3573001bf70bbbd04afb760516f1bf7af8364ec1b",
+          "sha256_match": true
+        }
+      }
+    }
+  }
+}

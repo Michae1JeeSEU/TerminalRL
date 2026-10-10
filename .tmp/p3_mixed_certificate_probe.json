@@ -1,0 +1,53 @@
+{
+  "now": 489.0,
+  "physics_dt": 0.2,
+  "safety_dt": 1.0,
+  "residual_limit": 2.0,
+  "info": {
+    "2": {
+      "kind": "holder_proxy",
+      "resampled": true
+    },
+    "31": {
+      "kind": "flight_v3",
+      "resampled": false
+    }
+  },
+  "runtime": {
+    "point_min": 80.41391842514992,
+    "swept_min": 80.41077426518846,
+    "bound_min": 79.99012396399587,
+    "interval": [
+      518.0,
+      519.0
+    ],
+    "interval_raw": 80.41077426518846,
+    "interval_margin": 0.4206503011925977
+  },
+  "direct_holder": {
+    "max_sample_error": 7.105427357601002e-13,
+    "point_min": 80.41391842514946,
+    "bound_min": 79.99762896399542
+  },
+  "0.2": {
+    "point_min": 80.38049042156067,
+    "bound_min": 80.36396389691193,
+    "time": 518.7999999999984
+  },
+  "0.1": {
+    "point_min": 80.38049042148042,
+    "bound_min": 80.37607635678636,
+    "time": 518.8000000000068
+  },
+  "0.02": {
+    "point_min": 80.37974033253373,
+    "bound_min": 80.37955270989059,
+    "time": 518.8199999999729
+  },
+  "0.005": {
+    "point_min": 80.3796959567493,
+    "bound_min": 80.37968479141973,
+    "time": 518.8249999999729
+  },
+  "filter_plan": "TrajectorySafetyResult(approved=True, reason='', checked_plan_id='5744d9de-a291-44f4-8f12-2e66a1c1583b', checked_trajectory_hash='2de9b267c60c790118908c1cda77503dcd0b6d57f4bbc89cf32b7621a8962889')"
+}

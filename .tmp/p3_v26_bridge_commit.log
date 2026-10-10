@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "D:\7_codespace\terminal\.tmp\commit_p3_v26_bridge_smoke.py", line 8, in <module>
+    exec(compile(body,__file__,'exec'))
+  File "D:\7_codespace\terminal\.tmp\commit_p3_v26_bridge_smoke.py", line 29, in <module>
+AssertionError

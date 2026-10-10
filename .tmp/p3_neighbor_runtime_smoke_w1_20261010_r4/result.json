@@ -1,0 +1,228 @@
+{
+  "backward_calls": 8,
+  "environment_resets": 0,
+  "environment_steps": 0,
+  "optimizer_updates": 0,
+  "planner_calls": 0,
+  "protocol": "p3_neighbor_runtime_profile_20261010_v1",
+  "q_accessed": false,
+  "status": "SMOKE_OK",
+  "teacher_queries": 0,
+  "updates": 0,
+  "wall_seconds": 0.07062259968370199,
+  "worker_results": [
+    {
+      "backward_calls": 8,
+      "elapsed_seconds": 0.0704993000254035,
+      "expanded_phase": {
+        "backward_calls": 4,
+        "peak_rss_bytes": null,
+        "timed_backward_passes": 2,
+        "timings": [
+          {
+            "actor_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.001913200132548809
+            },
+            "aux_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0008381996303796768
+            },
+            "backward_clip": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0027740001678466797
+            },
+            "process_seconds": 0.0,
+            "round": 2,
+            "timed": true,
+            "wall_seconds": 0.005999600514769554
+          },
+          {
+            "actor_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.001832599751651287
+            },
+            "aux_forward": {
+              "process_seconds": 0.015625,
+              "wall_seconds": 0.0009249001741409302
+            },
+            "backward_clip": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0025641005486249924
+            },
+            "process_seconds": 0.015625,
+            "round": 3,
+            "timed": true,
+            "wall_seconds": 0.005803999491035938
+          }
+        ],
+        "warmups": 2
+      },
+      "held_seed": 893511,
+      "mark_measurements": {
+        "actor_held": {
+          "batches": 1,
+          "process_seconds": 0.0,
+          "rows": 6,
+          "wall_seconds": 0.001833599992096424
+        },
+        "actor_train": {
+          "batches": 1,
+          "process_seconds": 0.0,
+          "rows": 10,
+          "wall_seconds": 0.00411980040371418
+        },
+        "expanded_held_pairs": {
+          "batches": 1,
+          "blocked_pairs": 2,
+          "known_pairs": 10,
+          "process_seconds": 0.0,
+          "rows": 6,
+          "scene_blocked": 0,
+          "scene_known": 6,
+          "wall_seconds": 0.0006769997999072075
+        },
+        "expanded_train_pairs": {
+          "batches": 1,
+          "blocked_pairs": 4,
+          "known_pairs": 20,
+          "process_seconds": 0.0,
+          "rows": 10,
+          "scene_blocked": 0,
+          "scene_known": 10,
+          "wall_seconds": 0.0007736999541521072
+        },
+        "old_held_pairs": {
+          "batches": 1,
+          "blocked_pairs": 2,
+          "known_pairs": 10,
+          "process_seconds": 0.0,
+          "rows": 6,
+          "scene_blocked": 0,
+          "scene_known": 6,
+          "wall_seconds": 0.0007309000939130783
+        },
+        "old_train_pairs": {
+          "batches": 1,
+          "blocked_pairs": 4,
+          "known_pairs": 20,
+          "process_seconds": 0.0,
+          "rows": 10,
+          "scene_blocked": 0,
+          "scene_known": 10,
+          "wall_seconds": 0.0007891999557614326
+        },
+        "reference_held_pairs": {
+          "batches": 1,
+          "blocked_pairs": 2,
+          "known_pairs": 10,
+          "process_seconds": 0.0,
+          "rows": 6,
+          "scene_blocked": 0,
+          "scene_known": 6,
+          "wall_seconds": 0.0007004998624324799
+        }
+      },
+      "model_state": {
+        "final_sha256": "4fd5e4191e4a542dfe2e6972df57e4be910319bed110fd714dbd19f7d06adb4e",
+        "initial_sha256": "4fd5e4191e4a542dfe2e6972df57e4be910319bed110fd714dbd19f7d06adb4e",
+        "unchanged": true
+      },
+      "old_phase": {
+        "backward_calls": 4,
+        "peak_rss_bytes": null,
+        "timed_backward_passes": 2,
+        "timings": [
+          {
+            "actor_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0018836995586752892
+            },
+            "aux_forward": {
+              "process_seconds": 0.015625,
+              "wall_seconds": 0.0009008999913930893
+            },
+            "backward_clip": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0025975992903113365
+            },
+            "process_seconds": 0.015625,
+            "round": 2,
+            "timed": true,
+            "wall_seconds": 0.005897100083529949
+          },
+          {
+            "actor_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0018477998673915863
+            },
+            "aux_forward": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.0008957004174590111
+            },
+            "backward_clip": {
+              "process_seconds": 0.0,
+              "wall_seconds": 0.002749199979007244
+            },
+            "process_seconds": 0.0,
+            "round": 3,
+            "timed": true,
+            "wall_seconds": 0.006017500534653664
+          }
+        ],
+        "warmups": 2
+      },
+      "optimizer_updates": 0,
+      "runtime": {
+        "after": {
+          "cpu_affinity": null,
+          "cpu_number": null,
+          "peak_rss_bytes": null,
+          "pid": 15976,
+          "rss_bytes": null
+        },
+        "before": {
+          "cpu_affinity": null,
+          "cpu_number": null,
+          "peak_rss_bytes": null,
+          "pid": 15976,
+          "rss_bytes": null
+        }
+      },
+      "status": "COMPLETE",
+      "supports": {
+        "actor_held_rows": 6,
+        "actor_train_rows": 10,
+        "expanded_held": {
+          "blocked_pairs": 2,
+          "known_pairs": 10,
+          "rows": 6,
+          "scene_blocked": 0,
+          "scene_known": 6
+        },
+        "expanded_train": {
+          "blocked_pairs": 4,
+          "known_pairs": 20,
+          "rows": 10,
+          "scene_blocked": 0,
+          "scene_known": 10
+        },
+        "old_held": {
+          "blocked_pairs": 2,
+          "known_pairs": 10,
+          "rows": 6,
+          "scene_blocked": 0,
+          "scene_known": 6
+        },
+        "old_train": {
+          "blocked_pairs": 4,
+          "known_pairs": 20,
+          "rows": 10,
+          "scene_blocked": 0,
+          "scene_known": 10
+        }
+      }
+    }
+  ],
+  "workers": 1
+}

@@ -36,3 +36,30 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Local environments and credentials
+.venv/
+env/
+.claude/
+.env
+.env.*
+!.env.example
+
+# Copied dependencies and generated test caches
+.tmp/common_arrival_deps/
+.tmp/pytest_*/
+/.tmp_p3_hold_baseline/
+**/.pytest_cache/
+.tmp/**/.pytest_cache/
+coverage/
+**/coverage/
+.coverage.*
+
+# Staged review copies: retain preflight scripts and logs, exclude copied files
+.tmp/p3_followup_review/staged_*/
+.tmp/p3_followup_review/staged_*.zip
+.tmp/p3_followup_review/staged_*.tar
+
+# Keep diagnostic logs under the unignored evidence trees
+!.tmp/**/*.log
+!results/**/*.log

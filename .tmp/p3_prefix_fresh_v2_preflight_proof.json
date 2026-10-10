@@ -1,0 +1,37 @@
+{
+  "server": "lab-server",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v2",
+  "phase": "preflight",
+  "status": "PREFLIGHT_OK",
+  "exit_code": 0,
+  "serialized_validator": "FRESH_V2_PREFLIGHT_VALIDATION_OK",
+  "preflight_sha256": "3a48b81fc7a77dbe7aec34e67b4c4b711206ec78349871c7cc465e3d39ac2b78",
+  "runner_sha256": "c4475cfe5612d77d12f3c9fac560868f2e8a6f29069b276c62f064cdb0e3a448",
+  "test_sha256": "fc914bdef5e68676a291b092e0aacc6797b600177f45f8f07de48845ea2f15e7",
+  "protocol_sha256": "6571d5fa174043502c5dfa0fc8cef9a3d52bac8720c27718f48b043e7fa018f3",
+  "server_hashes_match_local": true,
+  "bindings": {
+    "cells": 6,
+    "arms": 4,
+    "requests_per_cell": 24,
+    "max_steps": 1800,
+    "environment_created": false,
+    "PPO_ALLOWED": false,
+    "heldout_used": false,
+    "teacher_used": false,
+    "optimizer_used": false,
+    "caller_rng_restored": true,
+    "off_policy": true,
+    "no_training": true
+  },
+  "files": {
+    "preflight": "preflight.json",
+    "progress": "progress.json",
+    "log": "preflight_v1.log",
+    "error_present": false,
+    "pilot_present": false,
+    "full_present": false
+  },
+  "preflight_log_size": 0,
+  "scope": "no-environment preflight only; V1 output preserved; no pilot/full/training/Git"
+}

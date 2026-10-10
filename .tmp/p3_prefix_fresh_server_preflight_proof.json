@@ -1,0 +1,35 @@
+{
+  "server": "lab-server",
+  "project_cwd": "/home/user/projects/terminal",
+  "preflight_command_exit": 0,
+  "serialized_validation_exit": 0,
+  "server_source_sha256": {
+    "terminal_marl/training/validate_p3_prefix_fallback_20261001.py": "a0e30d6fe429030c5d89d59a8806e732f45b85d9dcf2a08ac8560db680c70e35",
+    "tests/test_p3_prefix_fallback_fresh_validation.py": "f9c193f356fdc5a6b601f5b5ffbedf3fc84842476c3e7d9bfc6e626cae983f46",
+    "docs/evidence/v4_2/p3_prefix_fallback_fresh_validation_protocol_20261001.md": "6571d5fa174043502c5dfa0fc8cef9a3d52bac8720c27718f48b043e7fa018f3"
+  },
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001",
+  "preflight_sha256": "e25cde37af2da6ac1988e7c36dd1097d8bebb956be807441a8837c68046e2b92",
+  "preflight_bytes": 24570,
+  "progress": {
+    "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1",
+    "phase": "preflight",
+    "status": "PREFLIGHT_OK",
+    "environment_created": false
+  },
+  "serialized_validator": "FRESH_SERVER_PREFLIGHT_VALIDATION_OK",
+  "source_before_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+  "source_after_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+  "cells": 6,
+  "arms": ["before_legacy", "after_legacy", "before_prefix", "after_prefix"],
+  "requests_per_cell": 24,
+  "max_steps": 1800,
+  "warmup_loaded": false,
+  "caller_rng_restored": true,
+  "PPO_ALLOWED": false,
+  "heldout_used": false,
+  "teacher_used": false,
+  "optimizer_used": false,
+  "python_validation_processes_after_completion": [],
+  "log_bytes": 0
+}

@@ -82,6 +82,38 @@ def test_collect_six_passes_policy_seeds_and_retains_terminal_failure(monkeypatc
     assert all(record["terminal_failure_retained"] for record in records)
 
 
+def test_collect_training_accepts_explicit_batch_cells_without_changing_default(monkeypatch, tmp_path) -> None:
+    calls: list[tuple[int, int]] = []
+    step = _step(1.0, episode_end=True, terminated=True)
+    selected = (
+        {"scenario": "dense24", "seed": 880101, "policy_seed": 880201, "split": "curve_01"},
+        {"scenario": "dense24", "seed": 880102, "policy_seed": 880202, "split": "curve_01"},
+    )
+
+    def fake_training_record(**kwargs):
+        calls.append((int(kwargs["seed"]), int(kwargs["policy_seed"])))
+        return [step], {"scenario": kwargs["scenario"], "seed": kwargs["seed"],
+                        "policy_seed": kwargs["policy_seed"], "weights_unchanged": True}
+
+    monkeypatch.setattr(runner.pilot, "_training_record", fake_training_record)
+    monkeypatch.setattr(runner.pilot, "_record_annotations", lambda record, config: dict(record))
+    monkeypatch.setattr(runner, "_training_stop_reason", lambda record, steps: None)
+    monkeypatch.setattr(runner.pilot, "_model_digest", lambda policy: "unchanged")
+    policy = SimpleNamespace()
+    all_steps, records, collection, reason = runner._collect_training(
+        output=tmp_path,
+        policy=policy,
+        checkpoint=tmp_path / "candidate.pt",
+        config=_config(),
+        training_cells=selected,
+    )
+    assert reason is None
+    assert calls == [(880101, 880201), (880102, 880202)]
+    assert len(records) == len(selected)
+    assert len(all_steps) == len(selected)
+    assert collection["bitwise_unchanged"] is True
+
+
 @pytest.mark.parametrize("freeze_ok", [True, False])
 def test_joint_update_occurs_after_collection_and_only_once(monkeypatch, tmp_path, freeze_ok) -> None:
     events: list[str] = []

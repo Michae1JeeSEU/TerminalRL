@@ -1,0 +1,541 @@
+{
+  "arms": {
+    "after_legacy": {
+      "error": null,
+      "lifecycle_qualification_error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": true,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": null,
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": true,
+        "lifecycle_qualification_error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 12
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": true,
+        "unresolved": 12,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "source_proof_arm": "fixture_proof.json#checks.after_legacy",
+      "source_summary": ".tmp\\p3_trained_support_native_fixture_20261001\\rollouts\\cell_901_after_legacy\\summary.json"
+    },
+    "after_support": {
+      "error": null,
+      "lifecycle_qualification_error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": true,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": null,
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": true,
+        "lifecycle_qualification_error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 12
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": true,
+        "unresolved": 12,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "source_proof_arm": "fixture_proof.json#checks.after_support",
+      "source_summary": ".tmp\\p3_trained_support_native_fixture_20261001\\rollouts\\cell_901_after_support\\summary.json"
+    },
+    "before_legacy": {
+      "error": null,
+      "lifecycle_qualification_error": {
+        "message": "full-request lifecycle metrics were not available",
+        "type": "IncompleteLifecycle"
+      },
+      "metrics": {
+        "admitted": 12,
+        "admitted_telemetry": 0,
+        "censored": true,
+        "complete_scene_metrics_known": false,
+        "diverted": 0,
+        "emergency": 0,
+        "energy_total_consumed": null,
+        "energy_total_consumed_observed": null,
+        "error": null,
+        "failed": 0,
+        "generated": 12,
+        "hard_safety_clear": true,
+        "lifecycle_qualification_error": {
+          "message": "full-request lifecycle metrics were not available",
+          "type": "IncompleteLifecycle"
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": false,
+            "missing_request_count": 24,
+            "replay_exact": true,
+            "row_count": 0,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": false,
+            "energy_match": false,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        },
+        "natural_terminal": false,
+        "normal": 0,
+        "outcome_counts_observed": {
+          "diverted": 0,
+          "emergency": 0,
+          "failed": 0,
+          "normal": 0,
+          "unresolved": 12
+        },
+        "raw_reward_excluding_rejection_penalty": null,
+        "raw_reward_excluding_rejection_penalty_observed": 0.01473524447294322,
+        "release_rejection_penalty": null,
+        "release_rejection_penalty_observed": -0.4,
+        "request_elapsed_total_seconds": null,
+        "request_elapsed_total_seconds_observed": null,
+        "request_identity": [
+          {
+            "arrival_id": 0,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7443634364316849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 1,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.6865190550266409,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 2,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5715882823453804,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 3,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8183702234466201,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 4,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5511052190186534,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 5,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.7626986176488001,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 6,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5502998917775188,
+            "mission_type": "emergency",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 7,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8410457721137772,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 8,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.8368012859712294,
+            "mission_type": "surveillance",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 9,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.791336601638711,
+            "mission_type": "standard",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 10,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5588821157254612,
+            "mission_type": "cargo",
+            "request_time": 0.0
+          },
+          {
+            "arrival_id": 11,
+            "energy_capacity": 1500.0,
+            "initial_soc": 0.5671436025290849,
+            "mission_type": "standard",
+            "request_time": 0.0
+          }
+        ],
+        "request_identity_exact_24": false,
+        "request_identity_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "requests": 24,
+        "resolved": null,
+        "reward_total": null,
+        "reward_total_observed": -0.3852647555270568,
+        "simulation_seconds": 2.0,
+        "status": "completed",
+        "successful": null,
+        "technical_ok": true,
+        "unresolved": 12,
+        "wait_seconds": null,
+        "wait_seconds_observed": null
+      },
+      "source_proof_arm": "fixture_proof.json#checks.before_legacy",
+      "source_summary": ".tmp\\p3_trained_support_native_fixture_20261001\\rollouts\\cell_901_before_legacy\\summary.json"
+    }
+  },
+  "contract_normalization": "preserved 2-second records only",
+  "physical_fixture_rerun": false,
+  "source_proof": ".tmp\\p3_trained_support_native_fixture_20261001\\rollouts\\arms\\pairfixture\\proof\\fixture_proof.json"
+}

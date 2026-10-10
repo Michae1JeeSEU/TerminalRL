@@ -1,0 +1,248 @@
+{
+  "observed_utc": "2026-10-10T01:00:11Z",
+  "host": "user-MS",
+  "resources": {
+    "nproc": 28,
+    "online_cpus": "0-27",
+    "model": "Intel(R) Core(TM) i7-14700",
+    "threads_per_core": 2,
+    "cores_per_socket": 20,
+    "sockets": 1,
+    "scaling_mhz_percent": 18,
+    "max_mhz": 5400.0,
+    "min_mhz": 800.0,
+    "loadavg": "0.65 2.78 2.89",
+    "memory_bytes": {
+      "total": 33347825664,
+      "used": 5197139968,
+      "free": 7988199424,
+      "shared": 971718656,
+      "buff_cache": 21328326656,
+      "available": 28150685696
+    },
+    "swap_bytes": {
+      "total": 8589930496,
+      "used": 1533788160,
+      "free": 7056143360
+    },
+    "shell_affinity": "0-27",
+    "cgroup_path": "0::/user.slice/user-1000.slice/session-24394.scope",
+    "current_cgroup_cpu_max": null,
+    "parent_user_slice_cpu_max": "max 100000",
+    "cpu_total_percent": 3.5,
+    "high_cpu_processes": [
+      {
+        "pid": 3131416,
+        "pcpu": 1.7,
+        "comm": "sshd"
+      },
+      {
+        "pid": 3120594,
+        "pcpu": 0.4,
+        "comm": "update-manager"
+      },
+      {
+        "pid": 1819266,
+        "pcpu": 0.3,
+        "comm": "firefox"
+      },
+      {
+        "pid": 1813502,
+        "pcpu": 0.2,
+        "comm": "gnome-shell"
+      },
+      {
+        "pid": 1820226,
+        "pcpu": 0.1,
+        "comm": "Isolated Web Co"
+      },
+      {
+        "pid": 2402336,
+        "pcpu": 0.1,
+        "comm": "codex"
+      },
+      {
+        "pid": 2405450,
+        "pcpu": 0.1,
+        "comm": "Isolated Web Co"
+      },
+      {
+        "pid": 2025947,
+        "pcpu": 0.1,
+        "comm": "codex"
+      },
+      {
+        "pid": 3131409,
+        "pcpu": 0.1,
+        "comm": "kworker/12:1-events"
+      },
+      {
+        "pid": 1820229,
+        "pcpu": 0.1,
+        "comm": "Isolated Web Co"
+      },
+      {
+        "pid": 1794,
+        "pcpu": 0.1,
+        "comm": "syncthing"
+      },
+      {
+        "pid": 1813790,
+        "pcpu": 0.1,
+        "comm": "clash-verge"
+      }
+    ]
+  },
+  "torch": {
+    "interpreter": "/home/user/envs/terminal_env/bin/python",
+    "version": "2.13.0+cu130",
+    "num_threads": 20,
+    "interop_threads": 20
+  },
+  "source_hash_manifest": {
+    "path": ".tmp/p3_neighbor_prefix_cv_launch_20261010.json",
+    "sha256": "b0882bc001be55f290e2bb7296104c0baccee21615c6d1a11ec4f87892fff00a",
+    "source_commit": "842e4f0a265c38c2b0f4151e9797596c03589660",
+    "count": 17,
+    "all_match": true
+  },
+  "old_control": {
+    "status": "COMPLETE",
+    "error": null,
+    "model_seed": 91911,
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "workers": null,
+    "wall_seconds_per_fold_arm": 1200,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "source_group": "old6_plus_supplemental3",
+    "gate_mode": "first_feasible_union",
+    "folds": [
+      {
+        "held_seed": 893511,
+        "elapsed_seconds": 792.7677011433989,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893512,
+        "elapsed_seconds": 818.8671907223761,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893513,
+        "elapsed_seconds": 796.1334899393842,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893601,
+        "elapsed_seconds": 802.5280855251476,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893602,
+        "elapsed_seconds": 788.6223454093561,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893603,
+        "elapsed_seconds": 817.7304879948497,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893604,
+        "elapsed_seconds": 796.5061099678278,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893605,
+        "elapsed_seconds": 804.6016755662858,
+        "last_update": 5000
+      },
+      {
+        "held_seed": 893606,
+        "elapsed_seconds": 807.9377926588058,
+        "last_update": 5000
+      }
+    ]
+  },
+  "new_prefix_cv": {
+    "status": "INCOMPLETE",
+    "error": "ValueError('fold wall budget exhausted')",
+    "model_seed": 91911,
+    "arms": [
+      "native_pair_auxiliary"
+    ],
+    "workers": 4,
+    "wall_seconds_per_fold_arm": 1200,
+    "marks": [
+      0,
+      100,
+      500,
+      1000,
+      2000,
+      5000
+    ],
+    "source_group": "old6_plus_supplemental3_plus_prefix",
+    "gate_mode": "first_feasible_union",
+    "folds": [
+      {
+        "held_seed": 893511,
+        "elapsed_seconds": 1200.2034603403881,
+        "last_update": 2000
+      },
+      {
+        "held_seed": 893512,
+        "elapsed_seconds": 1200.083407646045,
+        "last_update": 2000
+      },
+      {
+        "held_seed": 893513,
+        "elapsed_seconds": 1200.0123816132545,
+        "last_update": 2000
+      },
+      {
+        "held_seed": 893601,
+        "elapsed_seconds": 1200.1673341384158,
+        "last_update": 2000
+      },
+      {
+        "held_seed": 893602,
+        "elapsed_seconds": null,
+        "last_update": null
+      },
+      {
+        "held_seed": 893603,
+        "elapsed_seconds": null,
+        "last_update": null
+      },
+      {
+        "held_seed": 893604,
+        "elapsed_seconds": null,
+        "last_update": null
+      },
+      {
+        "held_seed": 893605,
+        "elapsed_seconds": null,
+        "last_update": null
+      },
+      {
+        "held_seed": 893606,
+        "elapsed_seconds": null,
+        "last_update": null
+      }
+    ],
+    "exit_code": 2,
+    "processes_absent": true
+  },
+  "read_only": true,
+  "no_benchmark": true,
+  "no_training": true
+}

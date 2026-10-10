@@ -1,0 +1,16 @@
+archive=D:\7_codespace\terminal\.tmp\p3_followup_review\staged_9db2cec12f962dffceced5a1a649269be57c4ced_binarysafe_extract
+Traceback (most recent call last):
+BINARYSAFE_REAL_BUILD_PREFLIGHT_OK
+status=PREFLIGHT_OK
+  File "D:\7_codespace\terminal\.tmp\p3_followup_review\run_binarysafe_preflight.py", line 31, in <module>
+    print(f"episodes={report['runtime']['episodes']}")
+                      ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+KeyError: 'episodes'
+--- corrected binary-safe preflight ---
+BINARYSAFE_REAL_BUILD_PREFLIGHT_OK
+status=PREFLIGHT_OK
+episodes=6
+total_steps=4497
+total_requests=144
+observation_dimension=88
+selection_size=24

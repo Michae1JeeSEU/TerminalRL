@@ -1,0 +1,354 @@
+{
+  "old_root": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\Q_dense24_fixed\\seed_895502",
+  "new_root": "D:\\7_codespace\\training_outputs\\terminal\\p3_v25_neutral_course_v2_20261008\\Q_substep_monitor_dense24_fixed\\seed_895502",
+  "sha256": {
+    "old_steps": "a7dae1133395a88718ad1ee564f03608ce262588a67afe9fa0c73295c5e884f7",
+    "new_steps": "7367a6251aec80e2d353fc5ed56f7305df0edac4aad9eb3c656b27feb4a5b1c9",
+    "old_rows": "a6fe9174ebed2b903f8541c572071ab8cc5a545dddfb965d8b3488cb9f94e1eb",
+    "new_rows": "1e1b64c96ef20fd08131e7d6a2f803f8d9a82d5c742330fac5adcbfa59fae2e9"
+  },
+  "steps": {
+    "old_count": 399,
+    "new_count": 967,
+    "prefix_requested": 399,
+    "prefix_compared": 399,
+    "assertions": {
+      "old_count_is_399": true,
+      "new_has_399_prefix": true,
+      "jsonl_parse_errors_old": true,
+      "jsonl_parse_errors_new": true
+    },
+    "field_stats": {
+      "tick": {
+        "equal": 399,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "tape": {
+        "equal": 399,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "pre_state_hash": {
+        "equal": 17,
+        "unequal": 382,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": [
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 1
+            },
+            "new": {
+              "tick": 1
+            }
+          },
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 2
+            },
+            "new": {
+              "tick": 2
+            }
+          },
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 3
+            },
+            "new": {
+              "tick": 3
+            }
+          }
+        ]
+      },
+      "post_state_hash": {
+        "equal": 16,
+        "unequal": 383,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": [
+          {
+            "field": "post_state_hash",
+            "old": {
+              "tick": 0
+            },
+            "new": {
+              "tick": 0
+            }
+          },
+          {
+            "field": "post_state_hash",
+            "old": {
+              "tick": 1
+            },
+            "new": {
+              "tick": 1
+            }
+          },
+          {
+            "field": "post_state_hash",
+            "old": {
+              "tick": 2
+            },
+            "new": {
+              "tick": 2
+            }
+          }
+        ]
+      },
+      "action_traces": {
+        "equal": 399,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "release_telemetry": {
+        "equal": 399,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "outcomes": {
+        "equal": 399,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      }
+    },
+    "parse_error_counts": {
+      "old": 0,
+      "new": 0
+    }
+  },
+  "rows": {
+    "old_count": 6863,
+    "new_count": 11503,
+    "matched_by_decision_id": 6863,
+    "missing_in_new": 0,
+    "extra_in_new": 4640,
+    "assertions": {
+      "jsonl_parse_errors_old": true,
+      "jsonl_parse_errors_new": true,
+      "old_decision_ids_present": true,
+      "new_decision_ids_present": true,
+      "old_decision_ids_unique": true,
+      "new_decision_ids_unique": true
+    },
+    "decision_id_counts": {
+      "old_missing": 0,
+      "new_missing": 0,
+      "old_duplicates": 0,
+      "new_duplicates": 0
+    },
+    "field_stats": {
+      "actor_mask": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "arrival_id": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "behavior_request": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "behavior_shortlist": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "busy_lz": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "decision_id": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "interface": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "observation": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "observation_dim": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "observation_schema": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "partition": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "phase": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "pre_state_hash": {
+        "equal": 235,
+        "unequal": 6628,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": [
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 1,
+              "uid": "0",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:0"
+            },
+            "new": {
+              "tick": 1,
+              "uid": "0",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:0"
+            }
+          },
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 1,
+              "uid": "1",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:1"
+            },
+            "new": {
+              "tick": 1,
+              "uid": "1",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:1"
+            }
+          },
+          {
+            "field": "pre_state_hash",
+            "old": {
+              "tick": 1,
+              "uid": "2",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:2"
+            },
+            "new": {
+              "tick": 1,
+              "uid": "2",
+              "decision_id": "p3_v3_90d_sparse_expert_v1:895502:1:2"
+            }
+          }
+        ]
+      },
+      "retry_active": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "schema": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "seed": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "soc": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "speed": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "teacher_label": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "tick": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "time": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      },
+      "uid": {
+        "equal": 6863,
+        "unequal": 0,
+        "missing_old": 0,
+        "missing_new": 0,
+        "examples": []
+      }
+    },
+    "parse_error_counts": {
+      "old": 0,
+      "new": 0
+    }
+  }
+}

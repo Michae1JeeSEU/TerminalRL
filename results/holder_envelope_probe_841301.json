@@ -1,0 +1,625 @@
+{
+  "candidates": [
+    {
+      "duration": 48.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 829.7739137314934,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 48.0,
+      "plan_id": "f00c28ef-47be-4c2b-8943-166e67e3b235",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "f00c28ef-47be-4c2b-8943-166e67e3b235",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "f00c28ef-47be-4c2b-8943-166e67e3b235",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.5531826091543289,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 8
+    },
+    {
+      "duration": 60.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 829.7739137314934,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 60.0,
+      "plan_id": "b42aed2b-d5c0-4e5a-8f2e-b16a99e6837f",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "b42aed2b-d5c0-4e5a-8f2e-b16a99e6837f",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": true,
+        "checked_plan_id": "b42aed2b-d5c0-4e5a-8f2e-b16a99e6837f",
+        "checked_trajectory_hash": "902deaf659517b20bf84e1051b4a95e1034ffe92785ceac33a08dc7fe1420eaa",
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": ""
+      },
+      "soc": 0.5531826091543289,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 8
+    },
+    {
+      "duration": 72.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 829.7739137314934,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 72.0,
+      "plan_id": "6846e243-b28a-42bd-aaef-ef0bb78c421f",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "6846e243-b28a-42bd-aaef-ef0bb78c421f",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": true,
+        "checked_plan_id": "6846e243-b28a-42bd-aaef-ef0bb78c421f",
+        "checked_trajectory_hash": "c09b35fcea34a6585caebc34679db833de1e5994727f9491c093a6af18d7e187",
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": ""
+      },
+      "soc": 0.5531826091543289,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 8
+    },
+    {
+      "duration": 84.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 829.7739137314934,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 84.0,
+      "plan_id": "e7c554b3-8656-4877-a6da-1d38c6cd8921",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "e7c554b3-8656-4877-a6da-1d38c6cd8921",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": true,
+        "checked_plan_id": "e7c554b3-8656-4877-a6da-1d38c6cd8921",
+        "checked_trajectory_hash": "bc4ca0c395b68923f976e2cf9d99a99139b9317aaf8d38b2e8d9a31d6fa30b3c",
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": ""
+      },
+      "soc": 0.5531826091543289,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 8
+    },
+    {
+      "duration": 48.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 883.7853424707855,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 48.0,
+      "plan_id": "55feb52c-1e34-4dd0-a60b-d6da062aaf9e",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "55feb52c-1e34-4dd0-a60b-d6da062aaf9e",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": true,
+        "checked_plan_id": "55feb52c-1e34-4dd0-a60b-d6da062aaf9e",
+        "checked_trajectory_hash": "27ed272e2366164c811c18074f0d53688ae12d700c593d908a49d834f9a483a3",
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": ""
+      },
+      "soc": 0.589190228313857,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 3
+    },
+    {
+      "duration": 60.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 883.7853424707855,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 60.0,
+      "plan_id": "dba42280-da3a-4092-8086-4e7cb0dffcd2",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "dba42280-da3a-4092-8086-4e7cb0dffcd2",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "dba42280-da3a-4092-8086-4e7cb0dffcd2",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.589190228313857,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 3
+    },
+    {
+      "duration": 72.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 883.7853424707855,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 72.0,
+      "plan_id": "118a1b3e-6b6c-4245-9cdd-777bf84c96ef",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "118a1b3e-6b6c-4245-9cdd-777bf84c96ef",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "118a1b3e-6b6c-4245-9cdd-777bf84c96ef",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.589190228313857,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 3
+    },
+    {
+      "duration": 84.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 883.7853424707855,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 84.0,
+      "plan_id": "53ec00c0-16cd-453f-877b-dafabf03ba79",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "53ec00c0-16cd-453f-877b-dafabf03ba79",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "53ec00c0-16cd-453f-877b-dafabf03ba79",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.589190228313857,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 3
+    },
+    {
+      "duration": 48.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 974.2955421888684,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 48.0,
+      "plan_id": "903f9a4b-e370-4fe3-8536-40e12580f735",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "903f9a4b-e370-4fe3-8536-40e12580f735",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "903f9a4b-e370-4fe3-8536-40e12580f735",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6495303614592456,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 4
+    },
+    {
+      "duration": 60.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 974.2955421888684,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 60.0,
+      "plan_id": "90563628-a59a-448c-9ff2-f7ff9b4c642c",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "90563628-a59a-448c-9ff2-f7ff9b4c642c",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "90563628-a59a-448c-9ff2-f7ff9b4c642c",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6495303614592456,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 4
+    },
+    {
+      "duration": 72.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 974.2955421888684,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 72.0,
+      "plan_id": "b013cd68-19f9-400c-a731-cc6b83f9374f",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "b013cd68-19f9-400c-a731-cc6b83f9374f",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "b013cd68-19f9-400c-a731-cc6b83f9374f",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6495303614592456,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 4
+    },
+    {
+      "duration": 84.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 974.2955421888684,
+      "mode": "ring_transfer",
+      "phase": "ring_outer",
+      "plan_end": 84.0,
+      "plan_id": "8cf94346-67ca-4b2b-ac4a-41a4f3da2f8c",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "8cf94346-67ca-4b2b-ac4a-41a4f3da2f8c",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "8cf94346-67ca-4b2b-ac4a-41a4f3da2f8c",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6495303614592456,
+      "source_ring": "outer",
+      "target_ring": "middle",
+      "time": 0.0,
+      "uid": 4
+    },
+    {
+      "duration": 60.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 917.155542359884,
+      "mode": "ring_transfer",
+      "phase": "ring_middle",
+      "plan_end": 60.0,
+      "plan_id": "e92781a9-3e85-4810-bcd5-7f55f9a162c3",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "e92781a9-3e85-4810-bcd5-7f55f9a162c3",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "e92781a9-3e85-4810-bcd5-7f55f9a162c3",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6114370282399226,
+      "source_ring": "middle",
+      "target_ring": "inner",
+      "time": 0.0,
+      "uid": 15
+    },
+    {
+      "duration": 72.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 917.155542359884,
+      "mode": "ring_transfer",
+      "phase": "ring_middle",
+      "plan_end": 72.0,
+      "plan_id": "5fbc8995-1b93-4f8c-8e6c-214d7053bf6e",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "5fbc8995-1b93-4f8c-8e6c-214d7053bf6e",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "5fbc8995-1b93-4f8c-8e6c-214d7053bf6e",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6114370282399226,
+      "source_ring": "middle",
+      "target_ring": "inner",
+      "time": 0.0,
+      "uid": 15
+    },
+    {
+      "duration": 84.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 917.155542359884,
+      "mode": "ring_transfer",
+      "phase": "ring_middle",
+      "plan_end": 84.0,
+      "plan_id": "25904ab5-858c-4afc-9890-b5a139722b85",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "25904ab5-858c-4afc-9890-b5a139722b85",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_post_plan_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "25904ab5-858c-4afc-9890-b5a139722b85",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6114370282399226,
+      "source_ring": "middle",
+      "target_ring": "inner",
+      "time": 0.0,
+      "uid": 15
+    },
+    {
+      "duration": 96.0,
+      "energy_guard_reason": null,
+      "energy_remaining": 917.155542359884,
+      "mode": "ring_transfer",
+      "phase": "ring_middle",
+      "plan_end": 96.0,
+      "plan_id": "1a78ad48-16ea-4173-8470-076adb939fb4",
+      "plan_start": 0.0,
+      "present": true,
+      "safety_baseline": {
+        "approved": false,
+        "checked_plan_id": "1a78ad48-16ea-4173-8470-076adb939fb4",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "safety_nominal": {
+        "approved": false,
+        "checked_plan_id": "1a78ad48-16ea-4173-8470-076adb939fb4",
+        "checked_trajectory_hash": null,
+        "min_track_audit": {
+          "checked_pairs": 0,
+          "minimum_separation": null,
+          "reason": "not_run"
+        },
+        "reason": "predicted_holder_reachable_tube"
+      },
+      "soc": 0.6114370282399226,
+      "source_ring": "middle",
+      "target_ring": "inner",
+      "time": 0.0,
+      "uid": 15
+    }
+  ],
+  "filter_configs": {
+    "baseline": {
+      "max_speed_residual_mps": 2.0,
+      "rule_flow_coordination_enabled": false
+    },
+    "nominal": {
+      "max_speed_residual_mps": 0.0,
+      "rule_flow_coordination_enabled": false
+    }
+  },
+  "flow_v1_probe": true,
+  "seed": 841301,
+  "time": 0.0
+}

@@ -1,0 +1,20 @@
+Source retrieval and pypdf extraction report
+
+Joule/Yang PDF
+URL: https://ecec.me.psu.edu/Pubs/2021_Yang_Joule.pdf
+Local PDF: yang_joule_2021.pdf
+Local extraction: yang_joule_2021.txt
+Relevant PDF pages:
+- p4: the article states that a 10-min cruise reserve corresponds to 24% for design-A and 13.5% for design-C under its stated battery/aircraft assumptions.
+- p11: it discusses end-of-discharge (EoD) SOC >25% as an example criterion for 10-min additional cruise and says eVTOL batteries must retain reserve energy and landing power.
+- p12: it reports EoD SOC reaching 25% (10-min reserve energy limit) after 2,000 cycles in the described cell test.
+
+CAAC EH216-S special conditions PDF
+URL: https://www.caac.gov.cn/XXGK/XXGK/BZGF/ZYTJHHM/202202/P020220222611863596239.pdf
+Local PDF: caac_2022.pdf
+Local extraction: caac_2022.txt
+Relevant PDF page:
+- PDF p19, printed page 12, PEU.E025(a)(3): the powerplant installation must provide appropriate electrical-energy margin considering all permitted/possible operating conditions and possible component failures.
+- The extracted text contains no exact occurrence of “电能裕度”; it uses “适当裕度的电能”. The PDF search for “百分” found an unrelated structural sampling-percentage passage on printed page 7.
+
+Extractor: bundled workspace Python with pypdf; pypdf successfully read Joule (16 pages) and CAAC (32 pages). Full extracted text is saved beside each PDF.

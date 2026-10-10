@@ -1,0 +1,13 @@
+status=FULL_OK pair_count=9 selected_states=25/27
+all_pair_ok=True all_reference_exact=True all_selected_branches_ok=True
+pair_id env keyed states missing status C_values approved_count
+1 877101 9303101 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+5 877102 9303101 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+9 877103 9303101 3 [] PAIR_OK [0.0, 2.0926044087687933e-18, 0.0] 1
+13 877104 9303101 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+17 877105 9303101 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+21 877106 9303101 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+14 877104 9303102 2 [2] PAIR_OK [0.0, 0.0] 0
+15 877104 9303103 2 [2] PAIR_OK [1.0000000000000053, 0.0] 25
+16 877104 9303104 3 [] PAIR_OK [0.0, 0.0, 0.0] 0
+env877104 arrival13 terminal rows: pair13/keyed9303101/uid46/failed_energy@862.0,pair14/keyed9303102/uid46/emergency_landed@506.0,pair15/keyed9303103/uid72/emergency_landed@446.0,pair16/keyed9303104/uid46/failed_energy@862.0

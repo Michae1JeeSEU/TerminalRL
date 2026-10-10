@@ -1,0 +1,10 @@
+{
+  "active": 0,
+  "failed_energy": 4,
+  "resolved": 30,
+  "service": 0,
+  "sim_time": 1364.0,
+  "status": "terminal",
+  "step": 1364,
+  "wall_elapsed": 96.88741480000317
+}

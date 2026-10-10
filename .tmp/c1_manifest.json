@@ -1,0 +1,18 @@
+{
+  "cells": [
+    {
+      "anchors_npz_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\anchors\\cell_01.npz",
+      "anchors_npz_sha256": "02563b8ff7c6005a52605cf9787fb657a3d63f8e80004f9e1c211dc4f9b0580d",
+      "cell_id": 1,
+      "cell_json_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\gate_anchor_states_20261001\\cells\\cell_01.json",
+      "cell_json_sha256": "e4b2890596b62a7e10582569039e00bc2a6463d98c6785cf2834dfe3c585f300",
+      "rows": 7378,
+      "status": "COMPLETED",
+      "steps": 708
+    }
+  ],
+  "event_full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+  "source_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "stage": "P3_GATE_ANCHOR_STATES_20261001_V1",
+  "status": "FULL_OK"
+}

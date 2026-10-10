@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "[WinError 5] \u62d2\u7edd\u8bbf\u95ee\u3002: '\\\\home'",
+    "type": "PermissionError"
+  },
+  "phase": "preflight",
+  "stage": "P3_PROPOSAL_SUPPORT_CONTROL_20261001_V1",
+  "status": "FAILED"
+}

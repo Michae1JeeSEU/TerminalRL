@@ -1,0 +1,33 @@
+{
+  "server": "lab-server",
+  "pid": 2160913,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.validate_p3_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001",
+  "progress": {
+    "absolute_step": 150,
+    "active_uavs": 16,
+    "arm": "before_legacy",
+    "cell_id": 1,
+    "generated_requests": 21,
+    "observed_steps": 150,
+    "phase": "native_step",
+    "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1",
+    "status": "RUNNING"
+  },
+  "progress_mtime": "2026-10-01 14:08:53.451517624 +0800",
+  "pilot_log": {
+    "exists": true,
+    "size": 0,
+    "mtime": "2026-10-01 14:08:42.854043783 +0800"
+  },
+  "pilot_json_present": false,
+  "error_json_present": false,
+  "first_arm_artifact_present": false,
+  "startup_scope": "bounded startup verification; no full phase launched"
+}

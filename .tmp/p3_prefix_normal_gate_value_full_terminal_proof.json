@@ -1,0 +1,996 @@
+{
+  "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+  "phase": "full",
+  "status": "FULL_OK",
+  "observed_at": "2026-10-01T22:11:45+08:00",
+  "server": {
+    "host": "lab-server",
+    "python_pid": 2191437,
+    "process_state": "exited",
+    "output_root": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001"
+  },
+  "full": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\full.json",
+    "sha256": "1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba",
+    "bytes": 310992,
+    "server_mtime_epoch": 1790863356
+  },
+  "pilot": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\pilot.json",
+    "sha256": "b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332",
+    "status": "PILOT_OK",
+    "cell_01_sha256": "ace3e81b49a05011497fd5a3f6cb3a3c90790d6b114a67d41a325c77f509605c",
+    "preflight_sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8",
+    "server_mtime_epoch": 1790856223
+  },
+  "preflight": {
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\preflight.json",
+    "sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8",
+    "server_mtime_epoch": 1790853948
+  },
+  "runner_sha256": "0a300fbef347bc8b428619d158baf9c85cd0deb3343d213e6b4ca3f0f5084e4d",
+  "protocol_sha256": "086f6e5cc42941cf2e564d7cfcbb44c057d3cdeba0e2936340d6ece80dcd6be6",
+  "source_bindings": {
+    "before": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "after": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+  },
+  "cells": [
+    {
+      "cell_id": 1,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\cell_01.json",
+      "sha256": "ace3e81b49a05011497fd5a3f6cb3a3c90790d6b114a67d41a325c77f509605c",
+      "status": "COMPLETED",
+      "phase": "pilot",
+      "elapsed_wall_seconds": 1705.6691152118146,
+      "selection": {
+        "context": {
+          "actor_mask": true,
+          "arrival_id": 15,
+          "committed_plan": false,
+          "now": 307.0,
+          "phase": "ring_inner",
+          "retry_free": true,
+          "safety_retry_after": 307.0,
+          "soc": 0.7262173226131179,
+          "uid": 15
+        },
+        "registration_key": "307|15",
+        "step": 307,
+        "uid": 15
+      },
+      "C": 1.0,
+      "p_before": 0.9952911138534546,
+      "p_after": 0.9953116774559021,
+      "delta_p": 2.0563602447509766e-05,
+      "local_m": -5.595107700062362e-05,
+      "linear_residual": null,
+      "D": -2.7208791428176653,
+      "qualified_D": true,
+      "all_branches_natural": true,
+      "caller_rng_unchanged": true,
+      "source_policy": {
+        "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "model_unchanged": true
+      },
+      "after_policy": {
+        "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+        "model_unchanged": true
+      },
+      "source_actual": {
+        "decision": "approved",
+        "last_decision": "approved"
+      },
+      "replay": {
+        "base_reset_state_match": true,
+        "config_compatibility": null,
+        "config_match": true,
+        "exact": true,
+        "reset_recipe_match": true,
+        "reset_state_match": true,
+        "steps_expected": 708,
+        "steps_replayed": 708
+      },
+      "invariants": {
+        "D_includes_first_reward": true,
+        "PPO_ALLOWED": false,
+        "continuation_seeds": [
+          9303401,
+          9303402,
+          9303403,
+          9303404
+        ],
+        "controller_max": 25,
+        "local_m_is_state_local": true,
+        "max_steps": 1800,
+        "native_policy_sampler_used": false,
+        "optimizer_used": false,
+        "prefix_sampling": true,
+        "public_k": 3,
+        "teacher_used": false
+      },
+      "input_binding": {
+        "arm_sha256": "d5f704006857232953a5215e4113c99b2fae770ae8275efafa558a5cf691909b",
+        "event_group_sha256": "3810322a12546d0f30919d3a699a2352ff2d4f855dbf957b6ec4bfa8451f6b07",
+        "sidecar_sha256": "adfbabf9e9d6e34613f39f190899daf13c4475d4c36856c2e6fd34d344e749ba",
+        "tape_sha256": "46913055afa1ec34f97ce3d9c33ae420d542793d99dc0fca2af554c5dc16a765"
+      },
+      "branch_checks": {
+        "count": 104,
+        "terminal": 104,
+        "censored": 0,
+        "errors": 0,
+        "safety_violations": 0,
+        "termination_classes": {
+          "natural_terminal": 104
+        }
+      },
+      "q_count": 25,
+      "q_sum": 0.9999999296069113,
+      "alternative_branch_outcome_counts": {
+        "diverted": 0,
+        "emergency": 337,
+        "failed": 0,
+        "normal": 2159,
+        "unresolved": 0
+      },
+      "per_seed": [
+        {
+          "seed": 9303401,
+          "D": -17.633685634105575,
+          "release_G_qweighted": 272.00606794774717,
+          "wait_G": 289.6397535818527,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7202.767332341116,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 4.0,
+                "failed": 0.0,
+                "normal": 20.0,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5697.000000000001,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7149.836836249728,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5653.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303402,
+          "D": -0.03883038093772484,
+          "release_G_qweighted": 281.45610788885233,
+          "wait_G": 281.49493826979,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7198.43631013958,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.9999999999999996,
+                "failed": 0.0,
+                "normal": 20.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5694.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7199.30099054863,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 3,
+                "failed": 0,
+                "normal": 21,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5694.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303403,
+          "D": 16.457156780716787,
+          "release_G_qweighted": 287.6887411566554,
+          "wait_G": 271.2315843759387,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7210.246438464547,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 21.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5711.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7211.035476209442,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 4,
+                "failed": 0,
+                "normal": 20,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5711.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303404,
+          "D": -9.668157336944148,
+          "release_G_qweighted": 271.68658626104843,
+          "wait_G": 281.3547435979926,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7190.47999692004,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 4.0,
+                "failed": 0.0,
+                "normal": 20.0,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5693.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7196.624313459153,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 3,
+                "failed": 0,
+                "normal": 21,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5691.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        }
+      ]
+    },
+    {
+      "cell_id": 2,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\cell_02.json",
+      "sha256": "b8c3610c48c0942ddc055685c0b9b862effd9e95312812fa098ed532dcdaa1c4",
+      "status": "COMPLETED",
+      "phase": "full",
+      "elapsed_wall_seconds": 2452.173635396175,
+      "selection": {
+        "context": {
+          "actor_mask": true,
+          "arrival_id": 15,
+          "committed_plan": false,
+          "now": 321.0,
+          "phase": "ring_inner",
+          "retry_free": true,
+          "safety_retry_after": 127.0,
+          "soc": 0.6731115455491892,
+          "uid": 25
+        },
+        "registration_key": "321|25",
+        "step": 321,
+        "uid": 25
+      },
+      "C": 1.0,
+      "p_before": 0.06313349306583405,
+      "p_after": 0.054939594119787216,
+      "delta_p": -0.00819389894604683,
+      "local_m": -0.026622027576407463,
+      "linear_residual": null,
+      "D": 3.2490060899825153,
+      "qualified_D": true,
+      "all_branches_natural": true,
+      "caller_rng_unchanged": true,
+      "source_policy": {
+        "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "model_unchanged": true
+      },
+      "after_policy": {
+        "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+        "model_unchanged": true
+      },
+      "source_actual": {
+        "decision": "approved",
+        "last_decision": "approved"
+      },
+      "replay": {
+        "base_reset_state_match": true,
+        "config_compatibility": null,
+        "config_match": true,
+        "exact": true,
+        "reset_recipe_match": true,
+        "reset_state_match": true,
+        "steps_expected": 674,
+        "steps_replayed": 674
+      },
+      "invariants": {
+        "D_includes_first_reward": true,
+        "PPO_ALLOWED": false,
+        "continuation_seeds": [
+          9303401,
+          9303402,
+          9303403,
+          9303404
+        ],
+        "controller_max": 25,
+        "local_m_is_state_local": true,
+        "max_steps": 1800,
+        "native_policy_sampler_used": false,
+        "optimizer_used": false,
+        "prefix_sampling": true,
+        "public_k": 3,
+        "teacher_used": false
+      },
+      "input_binding": {
+        "arm_sha256": "9cee85f8ee8fa260972624f26a9ac8b5557717f0e75f862c2867def644086d81",
+        "event_group_sha256": "2b74fe521da0a9d9f31c7e6b17203bf34a9008558edae3940db80108010963b0",
+        "sidecar_sha256": "6e3354bf43b2a9e699b899e098ae85e917ef3b179a2de7c9444012b4c5151138",
+        "tape_sha256": "0dc2a115935eb3fc5c57764473ef991b0e940eb9536d1594cc043a41060ad9f7"
+      },
+      "branch_checks": {
+        "count": 104,
+        "terminal": 104,
+        "censored": 0,
+        "errors": 0,
+        "safety_violations": 0,
+        "termination_classes": {
+          "natural_terminal": 104
+        }
+      },
+      "q_count": 25,
+      "q_sum": 1.0000000975829433,
+      "alternative_branch_outcome_counts": {
+        "diverted": 0,
+        "emergency": 80,
+        "failed": 0,
+        "normal": 2416,
+        "unresolved": 0
+      },
+      "per_seed": [
+        {
+          "seed": 9303401,
+          "D": 8.923167075767708,
+          "release_G_qweighted": 290.48683611042225,
+          "wait_G": 281.56366903465454,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7025.679651017594,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 0.0,
+                "failed": 0.0,
+                "normal": 24.000000000000004,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5558.000000000002,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7083.629463223752,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 1,
+                "failed": 0,
+                "normal": 23,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5608.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303402,
+          "D": -13.078767221640362,
+          "release_G_qweighted": 269.8934960039416,
+          "wait_G": 282.972263225582,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7125.042063585192,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 22.000000000000004,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5652.999999999999,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 6991.324301847828,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 1,
+                "failed": 0,
+                "normal": 23,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5526.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303403,
+          "D": 16.823774088948483,
+          "release_G_qweighted": 291.05089997937927,
+          "wait_G": 274.22712589043084,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7009.428290886533,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 0.0,
+                "failed": 0.0,
+                "normal": 24.000000000000004,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5541.999999999998,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7026.4038413707995,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5546.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303404,
+          "D": 0.32785041685423266,
+          "release_G_qweighted": 283.14862942283435,
+          "wait_G": 282.8207790059801,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 6935.615810990827,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 1.0,
+                "failed": 0.0,
+                "normal": 22.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5468.000000000002,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7024.982721029277,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 1,
+                "failed": 0,
+                "normal": 23,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5564.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        }
+      ]
+    },
+    {
+      "cell_id": 3,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\cell_03.json",
+      "sha256": "5021883caa8eb8ba03cad2b55da6dece118d9e1e7aec802feb1290fef6e82e8f",
+      "status": "COMPLETED",
+      "phase": "full",
+      "elapsed_wall_seconds": 2436.97114124801,
+      "selection": {
+        "context": {
+          "actor_mask": true,
+          "arrival_id": 15,
+          "committed_plan": false,
+          "now": 303.0,
+          "phase": "ring_inner",
+          "retry_free": true,
+          "safety_retry_after": 303.0,
+          "soc": 0.6404768921709051,
+          "uid": 20
+        },
+        "registration_key": "303|20",
+        "step": 303,
+        "uid": 20
+      },
+      "C": 1.0,
+      "p_before": 0.15514136850833893,
+      "p_after": 0.14121808111667633,
+      "delta_p": -0.013923287391662598,
+      "local_m": -0.09437018259527523,
+      "linear_residual": null,
+      "D": 6.777866457872946,
+      "qualified_D": true,
+      "all_branches_natural": true,
+      "caller_rng_unchanged": true,
+      "source_policy": {
+        "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "model_unchanged": true
+      },
+      "after_policy": {
+        "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+        "model_unchanged": true
+      },
+      "source_actual": {
+        "decision": "approved",
+        "last_decision": "approved"
+      },
+      "replay": {
+        "base_reset_state_match": true,
+        "config_compatibility": null,
+        "config_match": true,
+        "exact": true,
+        "reset_recipe_match": true,
+        "reset_state_match": true,
+        "steps_expected": 644,
+        "steps_replayed": 644
+      },
+      "invariants": {
+        "D_includes_first_reward": true,
+        "PPO_ALLOWED": false,
+        "continuation_seeds": [
+          9303401,
+          9303402,
+          9303403,
+          9303404
+        ],
+        "controller_max": 25,
+        "local_m_is_state_local": true,
+        "max_steps": 1800,
+        "native_policy_sampler_used": false,
+        "optimizer_used": false,
+        "prefix_sampling": true,
+        "public_k": 3,
+        "teacher_used": false
+      },
+      "input_binding": {
+        "arm_sha256": "b447e59da958133626e122c6b4f6b7f9b72358eae43b223108134179dd790660",
+        "event_group_sha256": "9751102fe00ce811a44e6e4de93f0dc48c533462eeb984dc95370592b98c0e5c",
+        "sidecar_sha256": "0b1536d5aba50463062539318961206c624e2379790f4fd00e216f7f72a44b3f",
+        "tape_sha256": "026cf7c09540e6b2e4b1e2b950dc183d25e3aa9726c2284cb2911da03887c128"
+      },
+      "branch_checks": {
+        "count": 104,
+        "terminal": 104,
+        "censored": 0,
+        "errors": 0,
+        "safety_violations": 0,
+        "termination_classes": {
+          "natural_terminal": 104
+        }
+      },
+      "q_count": 25,
+      "q_sum": 0.9999999607471016,
+      "alternative_branch_outcome_counts": {
+        "diverted": 0,
+        "emergency": 158,
+        "failed": 0,
+        "normal": 2338,
+        "unresolved": 0
+      },
+      "per_seed": [
+        {
+          "seed": 9303401,
+          "D": 12.306142033410083,
+          "release_G_qweighted": 301.65455869109957,
+          "wait_G": 289.34841665768937,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7016.042186716949,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 1.0,
+                "failed": 0.0,
+                "normal": 22.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5130.999999999999,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7230.343781126628,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5239.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303402,
+          "D": 4.107853647160425,
+          "release_G_qweighted": 293.6726589473124,
+          "wait_G": 289.56480530015193,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 6976.04829766583,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 21.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5059.000000000001,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7106.580586114122,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5156.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303403,
+          "D": 11.396477786987532,
+          "release_G_qweighted": 303.6915586944498,
+          "wait_G": 292.2950809074622,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 6970.093032344944,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 1.0,
+                "failed": 0.0,
+                "normal": 22.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5048.999999999999,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7085.965486629591,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5069.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303404,
+          "D": -0.6990076360662556,
+          "release_G_qweighted": 293.0572849521223,
+          "wait_G": 293.75629258818844,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7044.253320627053,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 21.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5128.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7076.388471504143,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5181.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        }
+      ]
+    },
+    {
+      "cell_id": 4,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_normal_gate_value_20261001\\cell_04.json",
+      "sha256": "39f89ecd86ce27677672d6a9bf3ef73adb4a68745057422c03467dc2c5b78df8",
+      "status": "COMPLETED",
+      "phase": "full",
+      "elapsed_wall_seconds": 1393.2985483296216,
+      "selection": {
+        "context": {
+          "actor_mask": true,
+          "arrival_id": 15,
+          "committed_plan": false,
+          "now": 365.0,
+          "phase": "ring_inner",
+          "retry_free": true,
+          "safety_retry_after": 365.0,
+          "soc": 0.47479269296572224,
+          "uid": 46
+        },
+        "registration_key": "365|46",
+        "step": 365,
+        "uid": 46
+      },
+      "C": 1.0,
+      "p_before": 0.9949211478233337,
+      "p_after": 0.9941213726997375,
+      "delta_p": -0.0007997751235961914,
+      "local_m": 0.001358190331613985,
+      "linear_residual": null,
+      "D": -1.6982152751974553,
+      "qualified_D": true,
+      "all_branches_natural": true,
+      "caller_rng_unchanged": true,
+      "source_policy": {
+        "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+        "model_unchanged": true
+      },
+      "after_policy": {
+        "model_digest": "5261fc7d0da7deb15e6433f743162e79e8fc13b86205bf90e5ed8525e44530a5",
+        "model_unchanged": true
+      },
+      "source_actual": {
+        "decision": "approved",
+        "last_decision": "approved"
+      },
+      "replay": {
+        "base_reset_state_match": true,
+        "config_compatibility": null,
+        "config_match": true,
+        "exact": true,
+        "reset_recipe_match": true,
+        "reset_state_match": true,
+        "steps_expected": 723,
+        "steps_replayed": 723
+      },
+      "invariants": {
+        "D_includes_first_reward": true,
+        "PPO_ALLOWED": false,
+        "continuation_seeds": [
+          9303401,
+          9303402,
+          9303403,
+          9303404
+        ],
+        "controller_max": 25,
+        "local_m_is_state_local": true,
+        "max_steps": 1800,
+        "native_policy_sampler_used": false,
+        "optimizer_used": false,
+        "prefix_sampling": true,
+        "public_k": 3,
+        "teacher_used": false
+      },
+      "input_binding": {
+        "arm_sha256": "b6c21624af7ec7a7ff55c3670f1de21b925acbc322197299c3a446969e58541e",
+        "event_group_sha256": "a5e87ede5cc32dc081431fd237a92fca7e3d3394e9b7e794bc3397403601a181",
+        "sidecar_sha256": "de3a49e6a397a710cdedc39ace8c4efabc254d5230ff3684649e2c6f79927bd6",
+        "tape_sha256": "8b48836f46ac22995b222261dca8974b243149f4858a4763ae2a0a517f664a3a"
+      },
+      "branch_checks": {
+        "count": 104,
+        "terminal": 104,
+        "censored": 0,
+        "errors": 0,
+        "safety_violations": 0,
+        "termination_classes": {
+          "natural_terminal": 104
+        }
+      },
+      "q_count": 25,
+      "q_sum": 0.9999999575060586,
+      "alternative_branch_outcome_counts": {
+        "diverted": 0,
+        "emergency": 259,
+        "failed": 0,
+        "normal": 2237,
+        "unresolved": 0
+      },
+      "per_seed": [
+        {
+          "seed": 9303401,
+          "D": 0.1476743613766871,
+          "release_G_qweighted": 285.0397910105028,
+          "wait_G": 284.89211664912614,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 6993.09204085136,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 21.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5478.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 6994.98801696986,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5481.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303402,
+          "D": 0.020493698685015715,
+          "release_G_qweighted": 272.9464678481403,
+          "wait_G": 272.92597414945527,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7147.278140201983,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.999999999999999,
+                "failed": 0.0,
+                "normal": 21.0,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5624.999999999997,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7147.824037955034,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 3,
+                "failed": 0,
+                "normal": 21,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5626.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303403,
+          "D": -7.043622299281537,
+          "release_G_qweighted": 270.08775571816585,
+          "wait_G": 277.13137801744733,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7272.9539341146865,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.999999999999999,
+                "failed": 0.0,
+                "normal": 21.0,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5749.0,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7382.209399329251,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5861.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        },
+        {
+          "seed": 9303404,
+          "D": 0.08259313843001337,
+          "release_G_qweighted": 283.74840776192985,
+          "wait_G": 283.66581462349984,
+          "business_metrics": {
+            "release_q_weighted": {
+              "energy_total_consumed": 7037.1565874432135,
+              "outcomes": {
+                "diverted": 0.0,
+                "emergency": 2.0,
+                "failed": 0.0,
+                "normal": 21.999999999999996,
+                "unresolved": 0.0
+              },
+              "request_elapsed_integral_seconds": 5520.999999999999,
+              "wait_seconds": null
+            },
+            "wait": {
+              "energy_total_consumed": 7038.277158146317,
+              "outcomes": {
+                "diverted": 0,
+                "emergency": 2,
+                "failed": 0,
+                "normal": 22,
+                "unresolved": 0
+              },
+              "request_elapsed_integral_seconds": 5523.0,
+              "wait_seconds": null
+            }
+          },
+          "complete": true
+        }
+      ]
+    }
+  ],
+  "max_qweighted_D_recalc_abs_error": 1.1368683772161603e-13,
+  "max_error_reference": {
+    "cell_id": 1,
+    "seed": 9303403,
+    "error": 1.1368683772161603e-13
+  },
+  "all_branch_checks": true,
+  "full_new_branches": 312,
+  "pilot_reused": true,
+  "error_json": "absent",
+  "partial_json": "absent",
+  "full_summary": {
+    "status": "FULL_OK",
+    "phase": "full",
+    "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+    "pilot_sha256": "b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332",
+    "preflight_sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8",
+    "PPO_ALLOWED": false,
+    "cell_statuses": {
+      "cell_01": "COMPLETED",
+      "cell_02": "COMPLETED",
+      "cell_03": "COMPLETED",
+      "cell_04": "COMPLETED"
+    }
+  }
+}

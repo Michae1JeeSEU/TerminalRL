@@ -1,0 +1,152 @@
+{
+  "comparisons": {
+    "terminal_marl/core/polynomial_trajectory.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 21837,
+        "sha256": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+      },
+      "server": {
+        "bytes": 21837,
+        "sha256": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+      },
+      "sha_equal": true
+    },
+    "terminal_marl/core/safety_filter.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 50948,
+        "sha256": "096c158f03e7cde086a997fe099c30cb7701f4d9ab5fa33497cc7b24861735d3"
+      },
+      "server": {
+        "bytes": 50948,
+        "sha256": "096c158f03e7cde086a997fe099c30cb7701f4d9ab5fa33497cc7b24861735d3"
+      },
+      "sha_equal": true
+    },
+    "terminal_marl/core/trajectory_generator.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 108270,
+        "sha256": "62f76c76c8257eb8d2d231a756bbfd3947384ae8651e66438345c1d78f17d148"
+      },
+      "server": {
+        "bytes": 108270,
+        "sha256": "62f76c76c8257eb8d2d231a756bbfd3947384ae8651e66438345c1d78f17d148"
+      },
+      "sha_equal": true
+    },
+    "terminal_marl/core/trajectory_time_parameterization.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 31362,
+        "sha256": "f6e0be4f0c789f7aa5939543d181f35d73584bbbe9de7f71fb757360925e0f76"
+      },
+      "server": {
+        "bytes": 31362,
+        "sha256": "f6e0be4f0c789f7aa5939543d181f35d73584bbbe9de7f71fb757360925e0f76"
+      },
+      "sha_equal": true
+    },
+    "terminal_marl/core/vehicle_dynamics.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 25538,
+        "sha256": "8b56bbc987b5cc4b613abcf390f7c426c01b38671e88f2e2df64426f4bb4b2cc"
+      },
+      "server": {
+        "bytes": 25538,
+        "sha256": "8b56bbc987b5cc4b613abcf390f7c426c01b38671e88f2e2df64426f4bb4b2cc"
+      },
+      "sha_equal": true
+    },
+    "terminal_marl/envs/parallel_env.py": {
+      "bytes_equal": true,
+      "local": {
+        "bytes": 119268,
+        "sha256": "c5edebad1a7dc304674a1d5e1d71c4bbdc9d7183c2fffbb82e332ceebfa62b5f"
+      },
+      "server": {
+        "bytes": 119268,
+        "sha256": "c5edebad1a7dc304674a1d5e1d71c4bbdc9d7183c2fffbb82e332ceebfa62b5f"
+      },
+      "sha_equal": true
+    }
+  },
+  "local": {
+    "cwd": "D:\\7_codespace\\terminal",
+    "files": {
+      "terminal_marl/core/polynomial_trajectory.py": {
+        "bytes": 21837,
+        "sha256": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+      },
+      "terminal_marl/core/safety_filter.py": {
+        "bytes": 50948,
+        "sha256": "096c158f03e7cde086a997fe099c30cb7701f4d9ab5fa33497cc7b24861735d3"
+      },
+      "terminal_marl/core/trajectory_generator.py": {
+        "bytes": 108270,
+        "sha256": "62f76c76c8257eb8d2d231a756bbfd3947384ae8651e66438345c1d78f17d148"
+      },
+      "terminal_marl/core/trajectory_time_parameterization.py": {
+        "bytes": 31362,
+        "sha256": "f6e0be4f0c789f7aa5939543d181f35d73584bbbe9de7f71fb757360925e0f76"
+      },
+      "terminal_marl/core/vehicle_dynamics.py": {
+        "bytes": 25538,
+        "sha256": "8b56bbc987b5cc4b613abcf390f7c426c01b38671e88f2e2df64426f4bb4b2cc"
+      },
+      "terminal_marl/envs/parallel_env.py": {
+        "bytes": 119268,
+        "sha256": "c5edebad1a7dc304674a1d5e1d71c4bbdc9d7183c2fffbb82e332ceebfa62b5f"
+      }
+    },
+    "runtime": {
+      "numpy": {
+        "import": "2.3.5",
+        "metadata": "2.3.5"
+      },
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python": "3.12.14",
+      "scipy": {
+        "import_error": "ModuleNotFoundError(\"No module named 'scipy'\")",
+        "metadata_error": "PackageNotFoundError('scipy')"
+      }
+    }
+  },
+  "server": {
+    "cwd": "/home/user/projects/terminal",
+    "files": {
+      "terminal_marl/core/polynomial_trajectory.py": {
+        "bytes": 21837,
+        "sha256": "603a2997df35bac03771bc9d69d99f1fed48c899cce0ff1e93acf75908fea1e6"
+      },
+      "terminal_marl/core/safety_filter.py": {
+        "bytes": 50948,
+        "sha256": "096c158f03e7cde086a997fe099c30cb7701f4d9ab5fa33497cc7b24861735d3"
+      },
+      "terminal_marl/core/trajectory_generator.py": {
+        "bytes": 108270,
+        "sha256": "62f76c76c8257eb8d2d231a756bbfd3947384ae8651e66438345c1d78f17d148"
+      },
+      "terminal_marl/core/trajectory_time_parameterization.py": {
+        "bytes": 31362,
+        "sha256": "f6e0be4f0c789f7aa5939543d181f35d73584bbbe9de7f71fb757360925e0f76"
+      },
+      "terminal_marl/core/vehicle_dynamics.py": {
+        "bytes": 25538,
+        "sha256": "8b56bbc987b5cc4b613abcf390f7c426c01b38671e88f2e2df64426f4bb4b2cc"
+      },
+      "terminal_marl/envs/parallel_env.py": {
+        "bytes": 119268,
+        "sha256": "c5edebad1a7dc304674a1d5e1d71c4bbdc9d7183c2fffbb82e332ceebfa62b5f"
+      }
+    },
+    "runtime": {
+      "numpy": "2.5.1",
+      "python": "3.12.3"
+    },
+    "ssh_exit": 1,
+    "stderr": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/importlib/metadata/__init__.py\", line 397, in from_name\n    return next(cls.discover(name=name))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nStopIteration\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/usr/lib/python3.12/importlib/metadata/__init__.py\", line 889, in version\n    return distribution(distribution_name).version\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/importlib/metadata/__init__.py\", line 862, in distribution\n    return Distribution.from_name(distribution_name)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/importlib/metadata/__init__.py\", line 399, in from_name\n    raise PackageNotFoundError(name)\nimportlib.metadata.PackageNotFoundError: No package metadata was found for scipy\n"
+  }
+}

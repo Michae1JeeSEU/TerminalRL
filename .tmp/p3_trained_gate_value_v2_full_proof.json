@@ -1,0 +1,25 @@
+{
+  "full_path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2/full.json",
+  "full_sha256": "056bbc9d4f4949c7c932b1b21c49204b2533d1fe1f7b1fe44b48a2e845ee5a5a",
+  "status": "FULL_OK",
+  "phase": "full",
+  "pilot_reused": true,
+  "PPO_ALLOWED": false,
+  "qualification": "mechanism_state_diagnostic; no performance or PPO qualification",
+  "scope": {"branch_count": 416, "mechanism_states": 4, "no_new_performance_episode": true, "population_estimate": false},
+  "state_files": {
+    "state_01.json": "0a51d689f575bcee9e2a64fdd440ce1a339bd3cb76f08f02bf14e53a5620d7d6",
+    "state_02.json": "03d5ee476b286b65f149475f2be2c110e72a60566fb5c3a32b668abd2b6cd375",
+    "state_03.json": "0a84549c5313d0149aef845ceb1636f0c73c78896730bba3f1913074bdf54699",
+    "state_04.json": "b1ca9eba9d05dde6487f941e4d503737d5530176a307ec309e23d45d6cdae6e6"
+  },
+  "states": [
+    {"cell_id": 1, "env_seed": 875101, "policy_seed": 875201, "C": 0.0, "D": -0.049999999999926104, "p_before": 3.072129038628191e-05, "p_after": 2.416560164419934e-05, "delta_p": -6.555688742082566e-06, "local_m": 3.2778443710364384e-07, "normal": 2002, "emergency": 494, "failed": 0, "all_natural": true},
+    {"cell_id": 2, "env_seed": 875102, "policy_seed": 875202, "C": 0.0, "D": 0.2713038294623118, "p_before": 0.9102736115455627, "p_after": 0.9061629772186279, "delta_p": -0.0041106343269348145, "local_m": -0.0011152308344166478, "normal": 1898, "emergency": 598, "failed": 0, "all_natural": true},
+    {"cell_id": 3, "env_seed": 875103, "policy_seed": 875203, "C": 0.0, "D": -0.049999999999954525, "p_before": 0.0030303376261144876, "p_after": 0.002411351539194584, "delta_p": -0.0006189860869199038, "local_m": 3.094930434596704e-05, "normal": 2210, "emergency": 286, "failed": 0, "all_natural": true},
+    {"cell_id": 4, "env_seed": 875104, "policy_seed": 875204, "C": 1.0, "D": -1.2160576541882904, "p_before": 0.9951754808425903, "p_after": 0.995235025882721, "delta_p": 5.9545040130615234e-05, "local_m": -7.241020181978357e-05, "normal": 2002, "emergency": 494, "failed": 0, "all_natural": true}
+  ],
+  "aggregate_outcome_counts": {"normal": 8112, "emergency": 1872, "diverted": 0, "failed": 0, "unresolved": 0},
+  "state04_alignment": {"linear_approximation": 5.940761911915615e-05, "exact_linear_residual": 1.3742101145908237e-07, "actual_probability_delta": 5.9545040130615234e-05},
+  "binding_facts": {"source_model_unchanged": true, "after_model_unchanged": true, "caller_rng_unchanged": true, "env_snapshot_unchanged": true, "first_actions_other_uids_fixed": true, "external_common_prefix_valid": true, "replay_exact_all_states": true, "optimizer_used": false, "native_policy_sampler_used": false, "teacher_used": false, "PPO_ALLOWED": false, "continuation_policy": "before_3fe7_frozen", "keying": "arrival_id|absolute_tick|stream"}
+}

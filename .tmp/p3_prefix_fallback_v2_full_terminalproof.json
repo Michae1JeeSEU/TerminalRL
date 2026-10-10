@@ -1,0 +1,774 @@
+{
+  "proof_version": "v2_corrected_nested_sidecar",
+  "source_proof_v1": "D:\\7_codespace\\terminal\\.tmp\\p3_prefix_fallback_v2_full_terminalproof.v1.json",
+  "full_status": "FULL_OK",
+  "phase": "full",
+  "qualification": "not_a_qualification; frozen candidate comparison",
+  "full_sha256": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+  "mirror_full_sha256": "020312813fc2c90a445bd3fe30e94e6739797151fe46efb65f760809a9361c50",
+  "sidecarInfo": [
+    {
+      "cell_id": 1,
+      "found": [
+        {
+          "path": "$.prefix_fallback_control.orders_sidecar_sha256",
+          "value": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070"
+        }
+      ],
+      "wall_time_seconds": [
+        {
+          "path": "$.wall_time_seconds",
+          "value": 177.28967501968145
+        }
+      ],
+      "checkpoint_sha256": [
+        {
+          "path": "$.binding_checks.checkpoint_sha256",
+          "value": true
+        },
+        {
+          "path": "$.checkpoint_sha256",
+          "value": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+        },
+        {
+          "path": "$.metrics.binding_checks.checkpoint_sha256",
+          "value": true
+        }
+      ]
+    },
+    {
+      "cell_id": 2,
+      "found": [
+        {
+          "path": "$.prefix_fallback_control.orders_sidecar_sha256",
+          "value": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966"
+        }
+      ],
+      "wall_time_seconds": [
+        {
+          "path": "$.wall_time_seconds",
+          "value": 158.9005096340552
+        }
+      ],
+      "checkpoint_sha256": [
+        {
+          "path": "$.binding_checks.checkpoint_sha256",
+          "value": true
+        },
+        {
+          "path": "$.checkpoint_sha256",
+          "value": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+        },
+        {
+          "path": "$.metrics.binding_checks.checkpoint_sha256",
+          "value": true
+        }
+      ]
+    },
+    {
+      "cell_id": 3,
+      "found": [
+        {
+          "path": "$.prefix_fallback_control.orders_sidecar_sha256",
+          "value": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331"
+        }
+      ],
+      "wall_time_seconds": [
+        {
+          "path": "$.wall_time_seconds",
+          "value": 181.0879017561674
+        }
+      ],
+      "checkpoint_sha256": [
+        {
+          "path": "$.binding_checks.checkpoint_sha256",
+          "value": true
+        },
+        {
+          "path": "$.checkpoint_sha256",
+          "value": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+        },
+        {
+          "path": "$.metrics.binding_checks.checkpoint_sha256",
+          "value": true
+        }
+      ]
+    },
+    {
+      "cell_id": 4,
+      "found": [
+        {
+          "path": "$.prefix_fallback_control.orders_sidecar_sha256",
+          "value": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0"
+        }
+      ],
+      "wall_time_seconds": [
+        {
+          "path": "$.wall_time_seconds",
+          "value": 203.77804734185338
+        }
+      ],
+      "checkpoint_sha256": [
+        {
+          "path": "$.binding_checks.checkpoint_sha256",
+          "value": true
+        },
+        {
+          "path": "$.checkpoint_sha256",
+          "value": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+        },
+        {
+          "path": "$.metrics.binding_checks.checkpoint_sha256",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "sums": {
+    "candidate": {
+      "N": 88,
+      "E": 8,
+      "F": 0,
+      "D": 0,
+      "U": 0,
+      "generated": 96,
+      "admitted": 96,
+      "successful": 96,
+      "resolved": 96,
+      "wait": 10829.515889168819,
+      "elapsed": 34515,
+      "energy": 28596.777174838007,
+      "raw": 1957.2813049300375,
+      "penalty": -49.65
+    },
+    "baseline": {
+      "N": 74,
+      "E": 22,
+      "F": 0,
+      "D": 0,
+      "U": 0,
+      "generated": 96,
+      "admitted": 96,
+      "successful": 96,
+      "resolved": 96,
+      "wait": 12694.479108696314,
+      "elapsed": 35958,
+      "energy": 30298.346238285667,
+      "raw": 1807.4669936354644,
+      "penalty": -74.35000000000001
+    }
+  },
+  "reviewDiffs": {
+    "candidate": {
+      "energy": 3.637978807091713e-12,
+      "failed": 0,
+      "normal": 0,
+      "elapsed": 0,
+      "successful": 0,
+      "wait": 0
+    },
+    "baseline": {
+      "energy": 0,
+      "failed": 0,
+      "normal": 0,
+      "elapsed": 0,
+      "successful": 0,
+      "wait": 0
+    }
+  },
+  "max_abs_review_diff": 3.637978807091713e-12,
+  "overall_percentages": {
+    "wait": -14.691136229842689,
+    "elapsed": -4.0130151843817785,
+    "energy": -5.616046004839429
+  },
+  "total_candidate_wall_time_seconds": 721.0561337517574,
+  "pairs": [
+    {
+      "cell_id": 1,
+      "env_seed": 875101,
+      "policy_seed": 875201,
+      "candidate": {
+        "N": 21,
+        "E": 3,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 2813.5406783660765,
+        "elapsed": 8631,
+        "energy": 7308.588937295861,
+        "raw": 479.71087729172575,
+        "penalty": -11.15,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "new_failed": [],
+        "new_diverted": [],
+        "new_unresolved": [],
+        "binding_checks": {
+          "caller_rng_unchanged": true,
+          "checkpoint_sha256": true,
+          "config_snapshot_unchanged": true,
+          "model_unchanged": true,
+          "observer_rng_unchanged": true,
+          "replay_factory_calls": true,
+          "rollout_factory_calls": true,
+          "runtime_aliases_restored": true,
+          "runtime_dependency_shas_unchanged": true,
+          "sampler_aliases_restored": true,
+          "source_distributions_immutable": true
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "baseline": {
+        "N": 18,
+        "E": 6,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 3046.1997149195568,
+        "elapsed": 8737,
+        "energy": 7457.839771374826,
+        "raw": 450.31157694902555,
+        "penalty": -20.950000000000003,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "delta": {
+        "wait": -232.6590365534803,
+        "elapsed": -106,
+        "energy": -149.25083407896545,
+        "raw": 29.3993003427002,
+        "penalty": 9.800000000000002
+      },
+      "percentages": {
+        "wait": -7.63768164687207,
+        "elapsed": -1.2132310861851894,
+        "energy": -2.001260936871155
+      },
+      "wall_time_seconds": 177.28967501968145,
+      "orders_sidecar_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070"
+    },
+    {
+      "cell_id": 2,
+      "env_seed": 875102,
+      "policy_seed": 875202,
+      "candidate": {
+        "N": 23,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 2341.430127551436,
+        "elapsed": 8467,
+        "energy": 6869.581956958051,
+        "raw": 498.10484884249325,
+        "penalty": -12.05,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "new_failed": [],
+        "new_diverted": [],
+        "new_unresolved": [],
+        "binding_checks": {
+          "caller_rng_unchanged": true,
+          "checkpoint_sha256": true,
+          "config_snapshot_unchanged": true,
+          "model_unchanged": true,
+          "observer_rng_unchanged": true,
+          "replay_factory_calls": true,
+          "rollout_factory_calls": true,
+          "runtime_aliases_restored": true,
+          "runtime_dependency_shas_unchanged": true,
+          "sampler_aliases_restored": true,
+          "source_distributions_immutable": true
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "baseline": {
+        "N": 18,
+        "E": 6,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 3292.5856932730585,
+        "elapsed": 9232,
+        "energy": 7750.015446572095,
+        "raw": 443.8305713428898,
+        "penalty": -20.650000000000002,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "delta": {
+        "wait": -951.1555657216227,
+        "elapsed": -765,
+        "energy": -880.4334896140444,
+        "raw": 54.27427749960344,
+        "penalty": 8.600000000000001
+      },
+      "percentages": {
+        "wait": -28.887799873056853,
+        "elapsed": -8.28639514731369,
+        "energy": -11.360409481551013
+      },
+      "wall_time_seconds": 158.9005096340552,
+      "orders_sidecar_sha256": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966"
+    },
+    {
+      "cell_id": 3,
+      "env_seed": 875103,
+      "policy_seed": 875203,
+      "candidate": {
+        "N": 22,
+        "E": 2,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 2843.4189317158725,
+        "elapsed": 8519,
+        "energy": 7242.9409560145705,
+        "raw": 492.9986998117001,
+        "penalty": -11.8,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "new_failed": [],
+        "new_diverted": [],
+        "new_unresolved": [],
+        "binding_checks": {
+          "caller_rng_unchanged": true,
+          "checkpoint_sha256": true,
+          "config_snapshot_unchanged": true,
+          "model_unchanged": true,
+          "observer_rng_unchanged": true,
+          "replay_factory_calls": true,
+          "rollout_factory_calls": true,
+          "runtime_aliases_restored": true,
+          "runtime_dependency_shas_unchanged": true,
+          "sampler_aliases_restored": true,
+          "source_distributions_immutable": true
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "baseline": {
+        "N": 21,
+        "E": 3,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 3521.746147520452,
+        "elapsed": 9194,
+        "energy": 7950.49929366206,
+        "raw": 471.0605408998054,
+        "penalty": -17.55,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "delta": {
+        "wait": -678.3272158045793,
+        "elapsed": -675,
+        "energy": -707.5583376474897,
+        "raw": 21.938158911894675,
+        "penalty": 5.75
+      },
+      "percentages": {
+        "wait": -19.261104786958246,
+        "elapsed": -7.341744616053949,
+        "energy": -8.899545946900938
+      },
+      "wall_time_seconds": 181.0879017561674,
+      "orders_sidecar_sha256": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331"
+    },
+    {
+      "cell_id": 4,
+      "env_seed": 875104,
+      "policy_seed": 875204,
+      "candidate": {
+        "N": 22,
+        "E": 2,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 2831.126151535434,
+        "elapsed": 8898,
+        "energy": 7175.665324569522,
+        "raw": 486.46687898411847,
+        "penalty": -14.65,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "new_failed": [],
+        "new_diverted": [],
+        "new_unresolved": [],
+        "binding_checks": {
+          "caller_rng_unchanged": true,
+          "checkpoint_sha256": true,
+          "config_snapshot_unchanged": true,
+          "model_unchanged": true,
+          "observer_rng_unchanged": true,
+          "replay_factory_calls": true,
+          "rollout_factory_calls": true,
+          "runtime_aliases_restored": true,
+          "runtime_dependency_shas_unchanged": true,
+          "sampler_aliases_restored": true,
+          "source_distributions_immutable": true
+        },
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "baseline": {
+        "N": 17,
+        "E": 7,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "generated": 24,
+        "admitted": 24,
+        "successful": 24,
+        "resolved": 24,
+        "wait": 2833.9475529832466,
+        "elapsed": 8795,
+        "energy": 7139.991726676687,
+        "raw": 442.2643044437435,
+        "penalty": -15.200000000000001,
+        "natural": true,
+        "censored": false,
+        "error": null,
+        "technical_ok": true,
+        "hard_safety_clear": true,
+        "request_identity_exact_24": true,
+        "metrics": {
+          "lifecycle": {
+            "all_requests_observed": true,
+            "missing_request_count": 0,
+            "replay_exact": true,
+            "row_count": 24,
+            "scope": "all_requested_terminal_rows"
+          },
+          "runtime_capture": {
+            "available": true,
+            "complete_integrity": true,
+            "energy_match": true,
+            "factory_calls": 1,
+            "ledger_alignment": true,
+            "partial_integrity": true
+          },
+          "safety": {
+            "SafetyInvariantError": 0,
+            "collisions": 0,
+            "hard_separation_violations": 0,
+            "nmac": 0,
+            "uncertified_execution": 0
+          }
+        }
+      },
+      "delta": {
+        "wait": -2.8214014478126046,
+        "elapsed": 103,
+        "energy": 35.67359789283546,
+        "raw": 44.20257454037494,
+        "penalty": 0.5500000000000007
+      },
+      "percentages": {
+        "wait": -0.09955729225978671,
+        "elapsed": 1.1711199545196136,
+        "energy": 0.49963080152530864
+      },
+      "wall_time_seconds": 203.77804734185338,
+      "orders_sidecar_sha256": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0"
+    }
+  ],
+  "screen": {
+    "PPO_ALLOWED": false,
+    "after_legacy_aggregate": {
+      "energy_total_consumed": 30298.346238285667,
+      "failed": 0,
+      "normal": 74,
+      "request_elapsed_total_seconds": 35958,
+      "successful": 96,
+      "wait_seconds": 12694.479108696314
+    },
+    "all_four_natural": true,
+    "all_request_identity_exact_24": true,
+    "all_technical_ok": true,
+    "candidate_aggregate": {
+      "energy_total_consumed": 28596.777174838004,
+      "failed": 0,
+      "normal": 88,
+      "request_elapsed_total_seconds": 34515,
+      "successful": 96,
+      "wait_seconds": 10829.515889168819
+    },
+    "criterion_pass": true,
+    "development_candidate": true,
+    "no_new_failed_diverted_unresolved": true,
+    "normal_not_lower": true,
+    "pair_count": 4,
+    "qualification": "not_a_qualification",
+    "strict_business_gain": true,
+    "successful_not_lower": true,
+    "wait_elapsed_energy_not_higher": true
+  },
+  "sidecar_checks": [
+    {
+      "cell_id": 1,
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_01_after_prefix_fallback_orders.json",
+      "mirror_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_01_after_prefix_fallback_orders.json",
+      "metadata_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070",
+      "server_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070",
+      "mirror_sha256": "4a8dd75bf5ae85b33bee4b47c557d66b36a5745314b5a578cd9d4069ecb97070",
+      "metadata_match": true,
+      "server_match": true,
+      "mirror_match": true
+    },
+    {
+      "cell_id": 2,
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_02_after_prefix_fallback_orders.json",
+      "mirror_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_02_after_prefix_fallback_orders.json",
+      "metadata_sha256": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966",
+      "server_sha256": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966",
+      "mirror_sha256": "e3221e25dd2909d162369b8aae967b1f735f47d6770da28bffdef3b603264966",
+      "metadata_match": true,
+      "server_match": true,
+      "mirror_match": true
+    },
+    {
+      "cell_id": 3,
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_03_after_prefix_fallback_orders.json",
+      "mirror_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_03_after_prefix_fallback_orders.json",
+      "metadata_sha256": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331",
+      "server_sha256": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331",
+      "mirror_sha256": "c946546fc01f1b1349f95e2117978b57866ce1112d853b9ec0b84bced77f2331",
+      "metadata_match": true,
+      "server_match": true,
+      "mirror_match": true
+    },
+    {
+      "cell_id": 4,
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/sidecars/cell_04_after_prefix_fallback_orders.json",
+      "mirror_path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\sidecars\\cell_04_after_prefix_fallback_orders.json",
+      "metadata_sha256": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0",
+      "server_sha256": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0",
+      "mirror_sha256": "f5fd2520d8c3e2c7834bf49b01826847cdefb8b4c0db4b9b46861288d253b8c0",
+      "metadata_match": true,
+      "server_match": true,
+      "mirror_match": true
+    }
+  ],
+  "sidecar_glob_note": "Actual sidecar files are named *_orders.json under sidecars; the earlier *sidecar* filename glob matched none. Direct paths were hashed and matched nested metadata."
+}

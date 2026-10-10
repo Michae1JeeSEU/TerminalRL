@@ -1,0 +1,2637 @@
+{
+  "by_ring": {
+    "inner": {
+      "release_actor_rows": 615,
+      "release_decision_counts": {
+        "approved": 8,
+        "emergency_lz_priority": 510,
+        "lz_unavailable": 83,
+        "plan_active": 1,
+        "safety_reject": 12,
+        "safety_wait": 1
+      },
+      "release_telemetry_field_status_counts": {
+        "present": 615
+      },
+      "release_telemetry_raw_type_counts": {
+        "dict": 615
+      },
+      "secondary_constraints": {
+        "field_status_counts": {
+          "missing": 1,
+          "present": 614
+        },
+        "item_counts": {
+          "merge_slot_retime_conflict": 6,
+          "predicted_holder_reachable_tube": 27,
+          "predicted_separation": 43
+        },
+        "length_counts": {
+          "0": 600,
+          "1": 1,
+          "12": 1,
+          "15": 2,
+          "3": 9,
+          "6": 1
+        },
+        "raw_type_counts": {
+          "list": 614,
+          "missing": 1
+        },
+        "sequence_counts": {
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\"]": 2,
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 2,
+          "[\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": 7,
+          "[\"predicted_separation\"]": 1,
+          "[]": 600
+        },
+        "sequence_examples": {
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"merge_slot_retime_conflict\",\"predicted_separation\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "merge_slot_retime_conflict",
+            "predicted_separation",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "merge_slot_retime_conflict",
+            "predicted_separation",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "merge_slot_retime_conflict",
+            "predicted_separation"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_holder_reachable_tube\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_holder_reachable_tube",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_holder_reachable_tube",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\"]": [
+            "predicted_separation"
+          ],
+          "[]": []
+        }
+      }
+    },
+    "middle": {
+      "release_actor_rows": 202,
+      "release_decision_counts": {
+        "approved": 9,
+        "emergency_energy_guard": 23,
+        "safety_reject": 102,
+        "safety_wait": 68
+      },
+      "release_telemetry_field_status_counts": {
+        "present": 202
+      },
+      "release_telemetry_raw_type_counts": {
+        "dict": 202
+      },
+      "secondary_constraints": {
+        "field_status_counts": {
+          "present": 202
+        },
+        "item_counts": {
+          "approved": 2,
+          "dynamics_unreachable_merge_time": 198,
+          "emergency_energy_guard": 71,
+          "merge_slot_retime_conflict": 3,
+          "predicted_holder_reachable_tube": 74,
+          "predicted_holder_separation": 3,
+          "predicted_post_plan_holder_reachable_tube": 10,
+          "predicted_post_plan_holder_separation": 3,
+          "predicted_separation": 32
+        },
+        "length_counts": {
+          "0": 66,
+          "1": 6,
+          "3": 130
+        },
+        "raw_type_counts": {
+          "list": 202
+        },
+        "sequence_counts": {
+          "[\"approved\"]": 2,
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 56,
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": 3,
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\"]": 2,
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_separation\",\"dynamics_unreachable_merge_time\"]": 1,
+          "[\"dynamics_unreachable_merge_time\",\"predicted_separation\",\"predicted_separation\"]": 2,
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"emergency_energy_guard\"]": 23,
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"merge_slot_retime_conflict\"]": 1,
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"predicted_post_plan_holder_reachable_tube\"]": 1,
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 4,
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 18,
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\"]": 1,
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_separation\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_separation\",\"predicted_post_plan_holder_separation\"]": 1,
+          "[\"predicted_holder_reachable_tube\"]": 3,
+          "[\"predicted_holder_separation\",\"predicted_holder_separation\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\"]": 1,
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 2,
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\",\"predicted_separation\",\"dynamics_unreachable_merge_time\"]": 1,
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_post_plan_holder_reachable_tube\"]": 2,
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": 4,
+          "[\"predicted_separation\"]": 1,
+          "[]": 66
+        },
+        "sequence_examples": {
+          "[\"approved\"]": [
+            "approved"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "predicted_separation"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\"]": [
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_separation\",\"dynamics_unreachable_merge_time\"]": [
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_separation",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"predicted_separation\",\"predicted_separation\"]": [
+            "dynamics_unreachable_merge_time",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"emergency_energy_guard\"]": [
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard"
+          ],
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"merge_slot_retime_conflict\"]": [
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "merge_slot_retime_conflict"
+          ],
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "merge_slot_retime_conflict",
+            "merge_slot_retime_conflict",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_separation\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_post_plan_holder_separation",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_post_plan_holder_separation\",\"predicted_post_plan_holder_separation\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_post_plan_holder_separation",
+            "predicted_post_plan_holder_separation"
+          ],
+          "[\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_separation\",\"predicted_holder_separation\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_separation",
+            "predicted_holder_separation",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_separation",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "dynamics_unreachable_merge_time",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\"]": [
+            "predicted_separation"
+          ],
+          "[]": []
+        }
+      }
+    },
+    "outer": {
+      "release_actor_rows": 238,
+      "release_decision_counts": {
+        "approved": 7,
+        "emergency_energy_guard": 100,
+        "safety_reject": 87,
+        "safety_wait": 44
+      },
+      "release_telemetry_field_status_counts": {
+        "present": 238
+      },
+      "release_telemetry_raw_type_counts": {
+        "dict": 238
+      },
+      "secondary_constraints": {
+        "field_status_counts": {
+          "present": 238
+        },
+        "item_counts": {
+          "dynamics_unreachable_merge_time": 197,
+          "emergency_energy_guard": 302,
+          "merge_slot_retime_conflict": 5,
+          "predicted_holder_reachable_tube": 59,
+          "predicted_holder_separation": 4,
+          "predicted_post_plan_holder_reachable_tube": 8,
+          "predicted_separation": 44
+        },
+        "length_counts": {
+          "0": 7,
+          "1": 37,
+          "3": 194
+        },
+        "raw_type_counts": {
+          "list": 238
+        },
+        "sequence_counts": {
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 59,
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_post_plan_holder_reachable_tube\"]": 1,
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": 1,
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 2,
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"emergency_energy_guard\"]": 100,
+          "[\"emergency_energy_guard\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 1,
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\"]": 1,
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"predicted_post_plan_holder_reachable_tube\"]": 1,
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 4,
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\"]": 2,
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\"]": 2,
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 13,
+          "[\"predicted_holder_separation\",\"predicted_holder_separation\",\"predicted_post_plan_holder_reachable_tube\"]": 2,
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": 2,
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": 1,
+          "[\"predicted_separation\",\"emergency_energy_guard\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": 1,
+          "[\"predicted_separation\"]": 37,
+          "[]": 7
+        },
+        "sequence_examples": {
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\",\"predicted_separation\"]": [
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time",
+            "predicted_separation"
+          ],
+          "[\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"emergency_energy_guard\",\"emergency_energy_guard\",\"emergency_energy_guard\"]": [
+            "emergency_energy_guard",
+            "emergency_energy_guard",
+            "emergency_energy_guard"
+          ],
+          "[\"emergency_energy_guard\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "emergency_energy_guard",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\"]": [
+            "merge_slot_retime_conflict",
+            "merge_slot_retime_conflict",
+            "merge_slot_retime_conflict"
+          ],
+          "[\"merge_slot_retime_conflict\",\"merge_slot_retime_conflict\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "merge_slot_retime_conflict",
+            "merge_slot_retime_conflict",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_holder_separation\",\"predicted_holder_separation\",\"predicted_post_plan_holder_reachable_tube\"]": [
+            "predicted_holder_separation",
+            "predicted_holder_separation",
+            "predicted_post_plan_holder_reachable_tube"
+          ],
+          "[\"predicted_post_plan_holder_reachable_tube\",\"predicted_post_plan_holder_reachable_tube\",\"predicted_holder_reachable_tube\"]": [
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_post_plan_holder_reachable_tube",
+            "predicted_holder_reachable_tube"
+          ],
+          "[\"predicted_separation\",\"dynamics_unreachable_merge_time\",\"dynamics_unreachable_merge_time\"]": [
+            "predicted_separation",
+            "dynamics_unreachable_merge_time",
+            "dynamics_unreachable_merge_time"
+          ],
+          "[\"predicted_separation\",\"emergency_energy_guard\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "emergency_energy_guard",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\",\"predicted_separation\",\"predicted_separation\"]": [
+            "predicted_separation",
+            "predicted_separation",
+            "predicted_separation"
+          ],
+          "[\"predicted_separation\"]": [
+            "predicted_separation"
+          ],
+          "[]": []
+        }
+      }
+    }
+  },
+  "episode_observed": {
+    "actor_release_rows_total": 1055,
+    "release_decision_counts": {
+      "approved": 24,
+      "emergency_energy_guard": 123,
+      "emergency_lz_priority": 510,
+      "lz_unavailable": 83,
+      "plan_active": 1,
+      "safety_reject": 201,
+      "safety_wait": 113
+    },
+    "rows_total": 19054
+  },
+  "failed_uids": {
+    "10": {
+      "first_five_release_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5211318404101478,
+          "step": 126,
+          "time": 126.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.5151318404101478,
+          "step": 135,
+          "time": 135.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.5091318404101478,
+          "step": 144,
+          "time": 144.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.1704651737434811,
+          "step": 652,
+          "time": 652.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.16713184041014778,
+          "step": 657,
+          "time": 657.0,
+          "uid": 10
+        }
+      ],
+      "outcome": "failed_energy",
+      "release_rows_observed": 39,
+      "representative_non_approved_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5211318404101478,
+          "step": 126,
+          "time": 126.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.1704651737434811,
+          "step": 652,
+          "time": 652.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 19,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "safety_wait"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 18,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.06046517374348112,
+          "step": 817,
+          "time": 817.0,
+          "uid": 10
+        }
+      ],
+      "representative_rejections": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5211318404101478,
+          "step": 126,
+          "time": 126.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.1704651737434811,
+          "step": 652,
+          "time": 652.0,
+          "uid": 10
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 10,
+            "attempt_count": 19,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "safety_wait"
+            ],
+            "first_attempt_time": 126.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 29,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 18,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 10
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.06046517374348112,
+          "step": 817,
+          "time": 817.0,
+          "uid": 10
+        }
+      ],
+      "representative_selection_rule": "first row for each unique (release_decision, secondary_constraints sequence), capped at 3; approved rows excluded"
+    },
+    "12": {
+      "first_five_release_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6675544639168529,
+          "step": 94,
+          "time": 94.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.6615544639168529,
+          "step": 103,
+          "time": 103.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.5415544639168529,
+          "step": 283,
+          "time": 283.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 13,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            0.5
+          ],
+          "soc": 0.3555544639168529,
+          "step": 562,
+          "time": 562.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.11622113058351957,
+          "step": 921,
+          "time": 921.0,
+          "uid": 12
+        }
+      ],
+      "outcome": "failed_energy",
+      "release_rows_observed": 54,
+      "representative_non_approved_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6675544639168529,
+          "step": 94,
+          "time": 94.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.11622113058351957,
+          "step": 921,
+          "time": 921.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 13,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 23,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "safety_wait"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 22,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            0.5
+          ],
+          "soc": 0.05288779725018624,
+          "step": 1016,
+          "time": 1016.0,
+          "uid": 12
+        }
+      ],
+      "representative_rejections": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6675544639168529,
+          "step": 94,
+          "time": 94.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "emergency_energy_guard",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "SOC",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.11622113058351957,
+          "step": 921,
+          "time": 921.0,
+          "uid": 12
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 13,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 12,
+            "attempt_count": 23,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "emergency_energy_guard",
+              "safety_wait"
+            ],
+            "first_attempt_time": 94.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 25,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 22,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 12
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            0.5
+          ],
+          "soc": 0.05288779725018624,
+          "step": 1016,
+          "time": 1016.0,
+          "uid": 12
+        }
+      ],
+      "representative_selection_rule": "first row for each unique (release_decision, secondary_constraints sequence), capped at 3; approved rows excluded"
+    },
+    "22": {
+      "first_five_release_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5331645422032548,
+          "step": 47,
+          "time": 47.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5284978755365882,
+          "step": 54,
+          "time": 54.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait",
+              "safety_wait"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5278312088699215,
+          "step": 55,
+          "time": 55.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait",
+              "safety_wait",
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5271645422032548,
+          "step": 56,
+          "time": 56.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait",
+              "safety_wait",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5211645422032548,
+          "step": 65,
+          "time": 65.0,
+          "uid": 22
+        }
+      ],
+      "outcome": "failed_energy",
+      "release_rows_observed": 40,
+      "representative_non_approved_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5331645422032548,
+          "step": 47,
+          "time": 47.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5284978755365882,
+          "step": 54,
+          "time": 54.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 8,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait",
+              "safety_wait",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 7,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_post_plan_holder_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.4224978755365882,
+          "step": 213,
+          "time": 213.0,
+          "uid": 22
+        }
+      ],
+      "representative_rejections": [
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5331645422032548,
+          "step": 47,
+          "time": 47.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_wait",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 0,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.5284978755365882,
+          "step": 54,
+          "time": 54.0,
+          "uid": 22
+        },
+        {
+          "gate": 1,
+          "phase": "ring_middle",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 22,
+            "attempt_count": 8,
+            "decision_history": [
+              "safety_reject",
+              "safety_wait",
+              "safety_wait",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 47.0,
+            "forecast_attempted": false,
+            "interface": "m2i",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 18,
+            "repair_used": false,
+            "requested_merge_time_residual": -1.0,
+            "requested_speed_residual": 0.0,
+            "retry_count": 7,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_post_plan_holder_separation",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 22
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.4224978755365882,
+          "step": 213,
+          "time": 213.0,
+          "uid": 22
+        }
+      ],
+      "representative_selection_rule": "first row for each unique (release_decision, secondary_constraints sequence), capped at 3; approved rows excluded"
+    },
+    "7": {
+      "first_five_release_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6758429883606084,
+          "step": 0,
+          "time": 0.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.576509655027275,
+          "step": 149,
+          "time": 149.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.570509655027275,
+          "step": 158,
+          "time": 158.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 4,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "HEADWAY",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 3,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "merge_slot_retime_conflict",
+              "merge_slot_retime_conflict",
+              "merge_slot_retime_conflict"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.34450965502727504,
+          "step": 497,
+          "time": 497.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 5,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "PREDICTED_SEPARATION",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 4,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "dynamics_unreachable_merge_time",
+              "predicted_separation"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.31784298836060837,
+          "step": 537,
+          "time": 537.0,
+          "uid": 7
+        }
+      ],
+      "outcome": "failed_energy",
+      "release_rows_observed": 56,
+      "representative_non_approved_rows": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6758429883606084,
+          "step": 0,
+          "time": 0.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.576509655027275,
+          "step": 149,
+          "time": 149.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.570509655027275,
+          "step": 158,
+          "time": 158.0,
+          "uid": 7
+        }
+      ],
+      "representative_rejections": [
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 11,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 1,
+            "decision_history": [
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 0,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -0.5
+          ],
+          "soc": 0.6758429883606084,
+          "step": 0,
+          "time": 0.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 2,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 1,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.576509655027275,
+          "step": 149,
+          "time": 149.0,
+          "uid": 7
+        },
+        {
+          "gate": 1,
+          "phase": "ring_outer",
+          "proposal": 10,
+          "release_decision": "safety_reject",
+          "release_telemetry": {
+            "applied_merge_time_residual": null,
+            "applied_speed_residual": null,
+            "approval_time": null,
+            "arrival_id": 7,
+            "attempt_count": 3,
+            "decision_history": [
+              "safety_reject",
+              "safety_reject",
+              "safety_reject"
+            ],
+            "first_attempt_time": 0.0,
+            "forecast_attempted": false,
+            "interface": "o2m",
+            "primary_blocker": "NO_MERGE_GAP",
+            "release_intent_id": 10,
+            "repair_used": false,
+            "requested_merge_time_residual": -0.5,
+            "requested_speed_residual": 0.0,
+            "retry_count": 2,
+            "runtime_shortlist_candidates_checked": 3,
+            "runtime_shortlist_rank": null,
+            "runtime_shortlist_size": 3,
+            "scheduled_delay": null,
+            "secondary_constraints": [
+              "predicted_holder_reachable_tube",
+              "dynamics_unreachable_merge_time",
+              "predicted_holder_reachable_tube"
+            ],
+            "trajectory_plan_id": null,
+            "uav_id": 7
+          },
+          "requested_action": [
+            1.0,
+            0.0,
+            -1.0
+          ],
+          "soc": 0.570509655027275,
+          "step": 158,
+          "time": 158.0,
+          "uid": 7
+        }
+      ],
+      "representative_selection_rule": "first row for each unique (release_decision, secondary_constraints sequence), capped at 3; approved rows excluded"
+    }
+  },
+  "input": "D:\\7_codespace\\training_outputs\\terminal\\trained_dense30_v2_diagnostic_20260924\\seed842101\\actor_steps.jsonl",
+  "selection": {
+    "actor_release_predicate": "actor_mask is true and gate == 1",
+    "missing_field_encoding": "__missing_field__",
+    "primary_blocker_handling": "retained only inside raw release_telemetry; no interpretation or recoding",
+    "ring_field": "phase suffix for ring_outer/ring_middle/ring_inner"
+  },
+  "summary_input": "D:\\7_codespace\\training_outputs\\terminal\\trained_dense30_v2_diagnostic_20260924\\seed842101\\summary.json"
+}

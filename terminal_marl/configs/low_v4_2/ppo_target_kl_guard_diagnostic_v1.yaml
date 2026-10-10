@@ -1,0 +1,17 @@
+protocol: V4_2_P2_TARGET_KL_GUARD_DIAGNOSTIC_V1
+purpose: validate_optional_transactional_target_kl_guard_without_formal_training
+diagnostic_only: true
+formal_training_allowed: false
+checkpoint_promotion_allowed: false
+target_kl: 0.01
+legacy_maximum_approx_kl: 0.05
+kl_definition: sampled_requested_gate_conditional_proposal_expm1_float64
+aggregation: agent_mean_then_actor_world_mean
+rollback: model_and_adam_state_before_optimizer_step
+stop_after_rejection: true
+nonfinite_update_rejected: true
+advantage_formula: unchanged_team_gae_and_actor_time_normalization
+teacher_behavior: unchanged_student_only_validation
+validation: tests/test_student_ppo_v4_2.py
+requires_new_environment_rollout: false
+evaluation_seeds_reserved: [755001, 755002, 755003, 755004, 755005, 755006]

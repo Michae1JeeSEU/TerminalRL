@@ -1,0 +1,665 @@
+{
+  "status": "OK",
+  "decision_id": "p3_v3_90d_sparse_expert_v1:893502:218:49",
+  "tick": 218,
+  "uid": "49",
+  "window": 129,
+  "actor_mask": true,
+  "observation": [
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    -0.526819109916687,
+    -0.849977433681488,
+    0.8799999952316284,
+    0.7178888916969299,
+    0.017616432160139084,
+    0.20000000298023224,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.5,
+    1.0,
+    0.7452431321144104,
+    0.7403473258018494,
+    1.4210854397564648e-16,
+    0.0,
+    0.7403473258018494,
+    0.0,
+    3.245036714361049e-05,
+    0.0,
+    1.0,
+    -0.7342362403869629,
+    0.7295538783073425,
+    1.4210854397564648e-16,
+    0.0,
+    0.7295538783073425,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.7295538783073425,
+    1.4210854397564648e-16,
+    0.0,
+    0.7295538783073425,
+    -0.0,
+    0.0,
+    0.0,
+    0.1702127605676651,
+    0.0,
+    0.0,
+    0.30000001192092896,
+    0.30000001192092896,
+    0.4000000059604645,
+    0.05000000074505806,
+    0.6666666865348816,
+    0.5,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.25,
+    0.0
+  ],
+  "pre_state_hash": "29ee85721ada644a6d3db20b6e50ed73a9e8e0d41804945e2f805e17523a8db5",
+  "teacher_gate": 0,
+  "teacher_proposal": null,
+  "teacher_joint_index": 0,
+  "teacher_request": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "teacher_audit": [
+    {
+      "rank": 0,
+      "joint_index": 13,
+      "decoded": {
+        "joint_action_index": 13,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 13,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 1,
+      "joint_index": 12,
+      "decoded": {
+        "joint_action_index": 12,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": -0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 12,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 2,
+      "joint_index": 14,
+      "decoded": {
+        "joint_action_index": 14,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": 0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 14,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 3,
+      "joint_index": 11,
+      "decoded": {
+        "joint_action_index": 11,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": -1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 11,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 4,
+      "joint_index": 15,
+      "decoded": {
+        "joint_action_index": 15,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": 1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 15,
+        "abs_speed_residual": 0.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 5,
+      "joint_index": 8,
+      "decoded": {
+        "joint_action_index": 8,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -0.5,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 8,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 6,
+      "joint_index": 18,
+      "decoded": {
+        "joint_action_index": 18,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.5,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 18,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 7,
+      "joint_index": 7,
+      "decoded": {
+        "joint_action_index": 7,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -0.5,
+        "merge_time_residual": -0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 7,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 8,
+      "joint_index": 9,
+      "decoded": {
+        "joint_action_index": 9,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -0.5,
+        "merge_time_residual": 0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 9,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 9,
+      "joint_index": 17,
+      "decoded": {
+        "joint_action_index": 17,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.5,
+        "merge_time_residual": -0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 17,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 10,
+      "joint_index": 19,
+      "decoded": {
+        "joint_action_index": 19,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.5,
+        "merge_time_residual": 0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 19,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 11,
+      "joint_index": 6,
+      "decoded": {
+        "joint_action_index": 6,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -0.5,
+        "merge_time_residual": -1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 6,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 12,
+      "joint_index": 10,
+      "decoded": {
+        "joint_action_index": 10,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -0.5,
+        "merge_time_residual": 1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 10,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 13,
+      "joint_index": 16,
+      "decoded": {
+        "joint_action_index": 16,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.5,
+        "merge_time_residual": -1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 16,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 14,
+      "joint_index": 20,
+      "decoded": {
+        "joint_action_index": 20,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 0.5,
+        "merge_time_residual": 1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 20,
+        "abs_speed_residual": 0.5,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 15,
+      "joint_index": 3,
+      "decoded": {
+        "joint_action_index": 3,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -1.0,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 3,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_separation",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 16,
+      "joint_index": 23,
+      "decoded": {
+        "joint_action_index": 23,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 1.0,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 23,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 17,
+      "joint_index": 2,
+      "decoded": {
+        "joint_action_index": 2,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -1.0,
+        "merge_time_residual": -0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 2,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_separation",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 18,
+      "joint_index": 4,
+      "decoded": {
+        "joint_action_index": 4,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -1.0,
+        "merge_time_residual": 0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 4,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_separation",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 19,
+      "joint_index": 22,
+      "decoded": {
+        "joint_action_index": 22,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 1.0,
+        "merge_time_residual": -0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 22,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 20,
+      "joint_index": 24,
+      "decoded": {
+        "joint_action_index": 24,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 1.0,
+        "merge_time_residual": 0.5
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 24,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 0.5
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 21,
+      "joint_index": 1,
+      "decoded": {
+        "joint_action_index": 1,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -1.0,
+        "merge_time_residual": -1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 1,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_separation",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 22,
+      "joint_index": 5,
+      "decoded": {
+        "joint_action_index": 5,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": -1.0,
+        "merge_time_residual": 1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 5,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_separation",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 23,
+      "joint_index": 21,
+      "decoded": {
+        "joint_action_index": 21,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 1.0,
+        "merge_time_residual": -1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 21,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 24,
+      "joint_index": 25,
+      "decoded": {
+        "joint_action_index": 25,
+        "kind": "RELEASE",
+        "release_request": 1.0,
+        "speed_residual": 1.0,
+        "merge_time_residual": 1.0
+      },
+      "candidate_score": {
+        "preference_group": "RELEASE",
+        "release_priority": 0,
+        "joint_index": 25,
+        "abs_speed_residual": 1.0,
+        "abs_merge_time_residual": 1.0
+      },
+      "feasible": false,
+      "reason": "predicted_holder_reachable_tube",
+      "tie_break": "catalogue_rank_release_then_abs_residual_then_index"
+    },
+    {
+      "rank": 25,
+      "joint_index": 0,
+      "decoded": {
+        "joint_action_index": 0,
+        "kind": "WAIT",
+        "release_request": 0.0,
+        "speed_residual": 0.0,
+        "merge_time_residual": 0.0
+      },
+      "candidate_score": {
+        "preference_group": "WAIT",
+        "release_priority": 1,
+        "joint_index": 0
+      },
+      "feasible": true,
+      "reason": "wait_legal",
+      "tie_break": "canonical_wait"
+    }
+  ],
+  "selected_certificate": null,
+  "release_intents_checked": 25,
+  "candidate_plan_calls": 25,
+  "contexts": {
+    "fast_inner": false,
+    "busy_lz": true,
+    "retry": false,
+    "low_soc": false
+  },
+  "executed_as_behavior": false
+}

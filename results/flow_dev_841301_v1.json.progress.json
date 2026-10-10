@@ -1,0 +1,11 @@
+{
+  "active": 0,
+  "queue": 0,
+  "resolved": 30,
+  "service": 0,
+  "sim_time": 904.0,
+  "step": 904,
+  "stop_reason": "terminal",
+  "terminal": true,
+  "wall_seconds": 298.849761699792
+}

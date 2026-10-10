@@ -1,0 +1,197 @@
+{
+  "schema_version": "p3_existing_gate_fit_interfaces_inventory_v1",
+  "evidence_type": "preexisting_artifact",
+  "inventory_scope": "readonly source/protocol/artifact interface inventory; no model forward, optimizer, replay, training, server execution, Git, or tracked-file edits",
+  "ppo_boundary": {
+    "PPO_ALLOWED": false,
+    "P3_QUALIFIED": false,
+    "P4_ALLOWED": false,
+    "heldout_used": false,
+    "teacher_used": false,
+    "current_gate_fit_status": "softtargetprep_only; no training launch authorized"
+  },
+  "source_3fe_loading": {
+    "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "declared_checkpoint": "/home/user/training_outputs/terminal/p3_normal_advantage_gate_repair_20260928/fit_smoke/terminal_gate_repair.pt",
+    "construction_path": [
+      "terminal_marl/training/run_p3_task_neutral_pilot.py:563-580 _load_binding resolves candidate report/path/SHA then calls rank_eval._load_policy",
+      "terminal_marl/training/evaluate_p3_runtime_rank_repair.py:443-446 _load_policy delegates to legacy_eval._load_policy",
+      "terminal_marl/training/evaluate_p3_proposal_head_probe_v1.py:585-603 _new_policy/_load_policy constructs TemperatureCalibratedGateResidualAdapterStudentPPOV42(OBSERVATION_DIM=88, temperature=2.5, learning_rate=3e-5), calls load_checkpoint(..., load_optimizer=False), validates architecture/dimension/temperature and empty optimizer state, then eval()"
+    ],
+    "model_components": {
+      "actor_encoder": "model.actor_encoder.*",
+      "gate_head": "model.gate_head.*",
+      "proposal_head": "model.proposal_head.*",
+      "gate_adapter": "model.gate_adapter.*",
+      "critic_encoder": "model.critic_encoder.*",
+      "critic_head": "model.critic_head.*",
+      "temperature": "model.gate_temperature buffer; required exact 2.5; no gradient"
+    },
+    "fit_scope": {
+      "trainable": [
+        "gate_adapter.*",
+        "critic_encoder.*",
+        "critic_head.*"
+      ],
+      "frozen": [
+        "actor_encoder.*",
+        "gate_head.*",
+        "proposal_head.*",
+        "gate_temperature"
+      ],
+      "configure_file": "terminal_marl/training/run_p3_task_neutral_pilot.py:211-240",
+      "frozen_check": "run_p3_task_neutral_pilot.py:243-259 (_frozen_bitwise_check)"
+    },
+    "source_vs_candidate_note": "The 3fe checkpoint is the normal-advantage gate-repair candidate; the loader validates architecture/state but the explicit requires_grad scope is applied by _configure_trainable_policy."
+  },
+  "anchor_and_softtarget_interfaces": {
+    "gate_adapter_objective_v1": "terminal_marl/training/train_v4_2_p2_gate_repair_v1.py:253-360; 0.5 support CE + 0.5 D1 CE + 0.5 categorical KL(frozen candidate || repaired), trainable gate_adapter only, finite gradient checks, no early stopping (metadata early_stopping=false, selection_split=none_final_epoch_only).",
+    "gate_adapter_objective_v2": "terminal_marl/training/train_v4_2_p2_gate_repair_v2.py:163-177 stable_anchor_kl_from_logits uses float64 log_softmax; :229-366 train_repair computes 0.5 support CE + 0.5 D1 CE + 0.5 stable D1 anchor KL, wraps per-step finite errors and optional epoch progress, metadata early_stopping=false/final_epoch_only.",
+    "gate_adapter_objective_v3": "terminal_marl/training/train_v4_2_p2_gate_repair_v3.py:382-396 stable float64 anchor KL; :446-578 train_repair uses 0.5 support CE + 0.5 D1 CE + 2.0 anchor KL, gate_adapter-only scope, finite loss/gradient checks, metadata early_stopping=false/final_epoch_only.",
+    "gate_reference": "terminal_marl/algo/gate_reference_v4_2.py:21-39 GateReference stores detached 88D observations, normalized reference logits/probs and positive weights; :103-139 from_policy snapshots gate distribution under no_grad.",
+    "reference_regularization": "gate_reference_v4_2.py:179-210 weighted_kl=KL(reference||current); regularization_loss is coefficient*K plus optional soft_kl_gain*relu(K-soft_kl_target)^2. The soft target is a KL threshold/penalty, not BCE.",
+    "student_update_rollback": "terminal_marl/algo/student_ppo_v4_2.py:181-199 pre-update reference KL hard-cap check; :243-258 reference penalty plus model/optimizer snapshots when target_kl is set; :299-316 restores model/optimizer on nonfinite, rollout-KL target or reference-KL failure; :337-353 emits accepted/rejected/reference-KL fields.",
+    "recovery": "terminal_marl/training/p3_kl_recovery_v1.py:271-451 recover_update retries only pure KL rejection with LR_MULTIPLIERS [1,.5,.25,.125], exact model/optimizer/RNG/reference rollback, statuses UPDATED/SKIPPED_KL/HARD_FAILED; non-pure or restore failure is hard failure.",
+    "soft_target_bce": "No gate-anchor soft-target BCE function found in the scoped gate-repair/adaptive-KL implementations. An unrelated joint-feasibility audit uses F.binary_cross_entropy_with_logits at terminal_marl/training/audit_v4_2_observation_v2_2_joint_feasibility_head_v1.py:157-159."
+  },
+  "historical_results": {
+    "gate_anchored_v6": {
+      "report": "docs/evidence/v4_2/p3_gate_anchored_v6_20260925.md",
+      "source": "03c0acb0d561219cbe1dc8dac88cd4df696ade4e4691ff0d4db1d4a72ed5e3ba",
+      "objective": "PPO adds 0.1*KL(q_source||p_current), cap .05, rollout target .01/.05",
+      "pilot": "PILOT_TECHNICAL_PASS; 12 episodes/198 requests; 181 normal,17 emergency,0 failed-energy; 622 accepted minibatches,0 rejected,12 restore exact",
+      "formal": "run0 FAILED 79/80 accepted, run1 COMPLETED 240/240, run2 FAILED 48/49; 6078 training requests: 5374 normal,704 emergency,0 failed/unresolved; not qualified",
+      "status": "P3_QUALIFIED=false; P4_ALLOWED=false; PPO_ALLOWED=false"
+    },
+    "adaptive_kl_v7": {
+      "report": "docs/evidence/v4_2/p3_adaptive_kl_v7_20260926.md",
+      "soft_penalty": "L_ref=0.1*K + 400*relu(K-.02)^2",
+      "formal": "run0 FAILED 80 processed/80 updated; run1/2 COMPLETED 240/240; 560 updates, 0 skips, 9240 training requests (8211 normal,1029 emergency,0 failed/other/unresolved)",
+      "dev": "run0 episode80 76 normal+7 emergency+1 failed-energy; run1 76+8+0; run2 72+12+0",
+      "status": "P3_QUALIFIED=false; P4_ALLOWED=false; no heldout final evaluation"
+    },
+    "runtime_rank": "docs/evidence/v4_2/p3_runtime_rank_repair_result_20260926.md: source 03c0; V1 fit 86 accepted/0 rejected, sparse and anchored variants; all candidates rejected for adoption. Overall source 76/8 vs V1 73/11, sparse 74/10, anchored 75/9; aggregate strict no-regression false; source remains reference; P3/P4/PPO false.",
+    "normal_advantage": "docs/evidence/v4_2/p3_normal_advantage_gate_repair_result_20260928.md: 3fe fit COMPLETED 120 accepted/120 logical/123 optimizer; final KL mean 1.0704449096010649e-6, max .0016782581806182861; frozen/proposal/roundtrip true. Six-cell evaluation 84 requests: normal 76->78, emergency 8->6, failed/unresolved/safety 0; priority wait 86.6690576161->87.6221465489; candidate_retained=false, P3/P4/PPO false."
+  },
+  "prefix_gate_events": {
+    "artifact_type": "preexisting_artifact",
+    "full_json": "D:\\\\7_codespace\\\\training_outputs\\\\terminal\\\\p3_followup_20260930\\\\prefix_gate_events_20261001\\\\full.json",
+    "full_sha256": "fb89f62339755f7ebcd2bb0f9672438000fe8b754067cd2cdb28bf8407feb3e6",
+    "preflight_sha256": "633c2a525c7a797b6adb4494b3adae7121f79110fc69042bab1f18ae90933150",
+    "protocol": "docs/evidence/v4_2/p3_prefix_gate_events_protocol_20261001.md",
+    "runner": "terminal_marl/training/diagnose_p3_prefix_gate_events_20261001.py",
+    "replay_status": "FULL_OK; four cells; full JSON summary normal_event_count 62,62,63,62 = 249",
+    "event_population": {
+      "potential_events": 1145,
+      "normal_eligible": 249,
+      "excluded": 896,
+      "autoemergency_excluded": 7,
+      "normal_selection": "requested_gate=1 registered sidecar event plus current approval/mask/phase/SOC/retry/commit predicates; normal events are native requested-RELEASE conditions",
+      "wait_events": "not in this event catalogue: select_all_potential filters requested_gate=1, so WAIT rows are not enumerated as events"
+    },
+    "event_fields": {
+      "top_level": [
+        "registration_key",
+        "step",
+        "uid",
+        "candidate_rank",
+        "runtime_used",
+        "requested_gate",
+        "requested_proposal",
+        "pre_observation_hash",
+        "pre_world_88d",
+        "pre_world_matrix_88d",
+        "context",
+        "actual",
+        "predicate_state",
+        "status",
+        "comparison when normal"
+      ],
+      "context": [
+        "actor_mask",
+        "arrival_id",
+        "committed_plan",
+        "now",
+        "phase",
+        "retry_free",
+        "safety_retry_after",
+        "soc",
+        "uid"
+      ],
+      "registration": "sidecar registration_key is \"step|uid\"; sidecar order has 25 unique proposal IDs and source_logits length25",
+      "comparison": [
+        "before_gate_p",
+        "after_gate_p",
+        "delta_p",
+        "q_before",
+        "q_after",
+        "source_proposal_logits",
+        "source_logits_match_before",
+        "q_bitwise_equal",
+        "source_gate_logprob_check",
+        "D=null",
+        "local_m=null"
+      ]
+    },
+    "world_coverage": {
+      "cells": [
+        {
+          "cell": 1,
+          "normal": 62,
+          "world_shape": "88",
+          "pre_world_88d": 314,
+          "matrix_shape": "12x88",
+          "pre_world_matrix_88d": 314,
+          "excluded": 252,
+          "events": 314
+        },
+        {
+          "cell": 2,
+          "normal": 62,
+          "world_shape": "88",
+          "pre_world_88d": 267,
+          "matrix_shape": "12x88",
+          "pre_world_matrix_88d": 267,
+          "excluded": 205,
+          "events": 267
+        },
+        {
+          "cell": 3,
+          "normal": 63,
+          "world_shape": "88",
+          "pre_world_88d": 290,
+          "matrix_shape": "12x88",
+          "pre_world_matrix_88d": 290,
+          "excluded": 227,
+          "events": 290
+        },
+        {
+          "cell": 4,
+          "normal": 62,
+          "world_shape": "88",
+          "pre_world_88d": 274,
+          "matrix_shape": "12x88",
+          "pre_world_matrix_88d": 274,
+          "excluded": 212,
+          "events": 274
+        }
+      ],
+      "all_events_with_world": true,
+      "all_249_normal_with_world": true,
+      "excluded_with_world": true
+    },
+    "uid_mapping": "Target UID/arrival is explicit in event.uid, context.uid, context.arrival_id, and registration_key. The 12x88 matrix has no serialized UID-order field in the inspected event schema; row-to-UID order is therefore not independently encoded in the event JSON. No claim of a complete per-matrix UID mapping is made.",
+    "normal_sample": "cell1 first normal event observed step=0, uid=2, arrival_id=2, phase=ring_outer, soc=0.8560560829571043, actor_mask=true, p_before=0.9038470387458801, p_after=0.927477240562439, q length=25, source gate LP stored and checked.",
+    "limitations": "Events are repeated actor-state observations within four tapes, not independent samples; D/local_m are null by protocol; pre_world completeness is observed for event records, but WAIT states and a serialized matrix UID-order map are absent."
+  },
+  "checks": {
+    "source_scan": "read-only rg/Get-Content; no model forward/optimizer/replay/server",
+    "artifact_scan": "read full.json and four named cell JSON summaries only",
+    "tracked_changes": "none intended; only .tmp inventory output",
+    "qualification": "not performed; existing artifacts retain PPO_ALLOWED=false"
+  },
+  "unresolved": [
+    "No soft-target BCE gate loss found in scoped code; whether a future shared-policy fit can use matrix rows requires an external UID-order source or target 88D rows.",
+    "No new fit or acceptance result was generated in this task."
+  ]
+}

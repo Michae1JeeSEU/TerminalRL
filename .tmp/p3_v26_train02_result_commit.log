@@ -1,0 +1,24 @@
+ docs/CURRENT_STATUS.md                                      |  2 ++
+ docs/evidence/v4_2/p3_v25_generalization_repair_20261009.md | 12 ++++++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/docs/CURRENT_STATUS.md b/docs/CURRENT_STATUS.md
+index 2548c58..1d5b8ab 100644
+--- a/docs/CURRENT_STATUS.md
++++ b/docs/CURRENT_STATUS.md
+@@ -204,6 +204,8 @@
+ 
+ - 采集等待期间仅准备未被collector导入的V26六完整train周期loader和整回合CV入口，6项local合成检查通过；新train893601–3必须全部COLLECTION_OK后，才能结合旧893511–13同合同train做一次六fold开发曲线，固定91911/原loss/0–5000steps/300s每fold，无Q或部署checkpoint。当前dense采集核心冻结、没有实际新增CV或模型拟合，不能提前用部分cycle或smoke代替数据。
+ 
++- V26独立train02/893602已完整COLLECTION_OK/exit0：1167ticks、18N6E/0FDU、12999raw/571完整标签=75R496W/13proposal、571资源159行，原null/forced/label/prefix/traffic全量核对通过。actual/swept81.783820m、minSOC.153794，无技术/censor/安全/hash/耗尽，6应急均完成；标注9805.817s未超预算，九关键文件SHA同步、原2940967及child退出。primary接受唯一train03/893603 dense mixed（新路径、预算不变），完成后执行六整回合train-only CV；不重跑已有臂、不消费旧Q，尚无新fit/PPO/formal资格。全训练随机priority继续关闭，详见[完整独立dense证据](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
++
+ ## 2026-10-03 P3 统一实现修复（最新）
+ 
+ - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
+
+[codex/v4-2-v2-1-formal-i1 94e2b3f] docs: accept complete independent dense resource training data
+ 2 files changed, 14 insertions(+)
+
+COMMIT=94e2b3f31a541e26a66be12db436d0ffa744d3d6
+INDEX=''
+REMOTES=''

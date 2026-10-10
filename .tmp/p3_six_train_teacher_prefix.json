@@ -1,0 +1,126 @@
+{
+  "status": "COMPLETE",
+  "Q_accessed": false,
+  "new_queries": 0,
+  "cases": [
+    {
+      "seed": 893511,
+      "counts": {
+        "RELEASE": 23,
+        "known_positive": 23,
+        "known_negative": 187,
+        "unqueried": 540,
+        "WAIT": 7
+      },
+      "negative_reasons": {
+        "predicted_separation": 102,
+        "predicted_swept_separation": 76,
+        "predicted_holder_separation": 2,
+        "merge_slot_retime_conflict": 7
+      }
+    },
+    {
+      "seed": 893512,
+      "counts": {
+        "RELEASE": 94,
+        "known_positive": 94,
+        "known_negative": 15990,
+        "unqueried": 1941,
+        "WAIT": 627
+      },
+      "negative_reasons": {
+        "trajectory_infeasible": 81,
+        "predicted_holder_reachable_tube": 1034,
+        "merge_slot_retime_conflict": 504,
+        "predicted_separation": 4115,
+        "predicted_swept_separation": 1128,
+        "predicted_holder_separation": 89,
+        "predicted_post_plan_holder_swept_separation": 8,
+        "predicted_post_plan_holder_separation": 123,
+        "final_capacity": 8200,
+        "predicted_post_plan_holder_reachable_tube": 8,
+        "lz_unavailable": 700
+      }
+    },
+    {
+      "seed": 893513,
+      "counts": {
+        "RELEASE": 87,
+        "known_positive": 87,
+        "known_negative": 11860,
+        "unqueried": 1728,
+        "WAIT": 460
+      },
+      "negative_reasons": {
+        "trajectory_infeasible": 101,
+        "predicted_holder_reachable_tube": 1337,
+        "merge_slot_retime_conflict": 313,
+        "predicted_separation": 4574,
+        "predicted_holder_separation": 234,
+        "predicted_swept_separation": 2079,
+        "predicted_post_plan_holder_separation": 140,
+        "predicted_post_plan_holder_reachable_tube": 6,
+        "lz_unavailable": 375,
+        "final_capacity": 2700,
+        "predicted_post_plan_holder_swept_separation": 1
+      }
+    },
+    {
+      "seed": 893601,
+      "counts": {
+        "RELEASE": 18,
+        "known_positive": 18,
+        "known_negative": 3,
+        "unqueried": 429
+      },
+      "negative_reasons": {
+        "merge_slot_retime_conflict": 2,
+        "predicted_swept_separation": 1
+      }
+    },
+    {
+      "seed": 893602,
+      "counts": {
+        "RELEASE": 75,
+        "known_positive": 75,
+        "known_negative": 12635,
+        "unqueried": 1565,
+        "WAIT": 496
+      },
+      "negative_reasons": {
+        "trajectory_infeasible": 234,
+        "predicted_holder_reachable_tube": 3318,
+        "merge_slot_retime_conflict": 656,
+        "predicted_separation": 5956,
+        "predicted_swept_separation": 507,
+        "predicted_holder_separation": 179,
+        "predicted_post_plan_holder_separation": 128,
+        "final_capacity": 1650,
+        "predicted_post_plan_holder_swept_separation": 3,
+        "predicted_post_plan_holder_reachable_tube": 4
+      }
+    },
+    {
+      "seed": 893603,
+      "counts": {
+        "RELEASE": 75,
+        "known_positive": 75,
+        "known_negative": 7610,
+        "unqueried": 1590,
+        "WAIT": 296
+      },
+      "negative_reasons": {
+        "trajectory_infeasible": 72,
+        "predicted_holder_reachable_tube": 1184,
+        "merge_slot_retime_conflict": 325,
+        "predicted_post_plan_holder_separation": 165,
+        "predicted_holder_separation": 104,
+        "predicted_separation": 4631,
+        "predicted_swept_separation": 915,
+        "predicted_post_plan_holder_swept_separation": 13,
+        "predicted_post_plan_holder_reachable_tube": 1,
+        "final_capacity": 200
+      }
+    }
+  ]
+}

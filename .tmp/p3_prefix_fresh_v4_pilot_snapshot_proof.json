@@ -1,0 +1,19 @@
+{
+  "snapshot_time": "2026-10-01T15:26:09.941344+08:00",
+  "pid": 2168258,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4",
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_BEFORE_PREFIX_FALLBACK_20261001_V1", "cell_id": 1, "arm": "before_prefix_fallback", "absolute_step": 450, "env_now": 450.0, "observed_steps": 450, "generated_request_rows": 24, "active_observation_count": 8, "native_forward_count": 451},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "pilot_json": null,
+  "completed_arms": ["before_legacy", "after_legacy"],
+  "arm_summaries": {
+    "before_legacy": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "caller_rng_unchanged": true, "caller_rng_restored": true, "caller_rng_unchanged_before_restore": false, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "PPO_ALLOWED": false, "steps": 778, "metrics": {"generated": 24, "admitted": 24, "successful": 24, "resolved": 24, "normal": 22, "emergency": 2, "failed": 0, "unresolved": 0, "diverted": 0, "wait_seconds": 2919.6693286099626, "request_elapsed_total_seconds": 9168.0, "energy_total_consumed": 7399.92322140943, "raw_reward_excluding_rejection_penalty": 493.1366835700943, "release_rejection_penalty": -13.5, "reward_total": 479.6366835700943, "natural_terminal": true, "censored": false, "technical_ok": true, "complete_scene_metrics_known": true, "request_identity_exact_24": true}, "lifecycle": {"requested_count": 24, "observed_terminal_count": 24, "ledger_alignment": true, "replay_exact": true, "steps_expected": 778, "steps_replayed": 778}, "runtime_capture": {"factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true, "generated_requests": 24, "admitted_count": 24, "energy_duplicate_arrival_ids": [], "ledger_alignment": true}},
+    "after_legacy": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "caller_rng_unchanged": true, "caller_rng_restored": true, "caller_rng_unchanged_before_restore": false, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "PPO_ALLOWED": false, "steps": 824, "metrics": {"generated": 24, "admitted": 24, "successful": 24, "resolved": 24, "normal": 20, "emergency": 4, "failed": 0, "unresolved": 0, "diverted": 0, "wait_seconds": 3458.227091374416, "request_elapsed_total_seconds": 9633.0, "energy_total_consumed": 7899.6508009200315, "raw_reward_excluding_rejection_penalty": 467.4572292214967, "release_rejection_penalty": -16.150000000000002, "reward_total": 451.3072292214967, "natural_terminal": true, "censored": false, "technical_ok": true, "complete_scene_metrics_known": true, "request_identity_exact_24": true}, "lifecycle": {"requested_count": 24, "observed_terminal_count": 24, "ledger_alignment": true, "replay_exact": true, "steps_expected": 824, "steps_replayed": 824}, "runtime_capture": {"factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true, "generated_requests": 24, "admitted_count": 24, "energy_duplicate_arrival_ids": [], "ledger_alignment": true}}
+  },
+  "full_or_terminal_pilot": false,
+  "raw_tapes_read": false,
+  "old_v1_v3_outputs_read": false
+}

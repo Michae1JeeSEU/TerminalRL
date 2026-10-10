@@ -1,0 +1,319 @@
+{
+  "current_safety_filter": {
+    "all_lz": {
+      "both_pass_count": 0,
+      "candidate_count": 6,
+      "energy_pass_count": 6,
+      "safety_pass_count": 0,
+      "verdict_reason_counts": {
+        "predicted_holder_reachable_tube": 3,
+        "predicted_separation": 3
+      }
+    },
+    "all_lz_count": 6,
+    "energy_remaining": 689.3476455407933,
+    "free_compatible": {
+      "both_pass_count": 0,
+      "candidate_count": 1,
+      "energy_pass_count": 1,
+      "safety_pass_count": 0,
+      "verdict_reason_counts": {
+        "predicted_holder_reachable_tube": 1
+      }
+    },
+    "free_compatible_lz_ids": [
+      4
+    ],
+    "phase": "ring_outer",
+    "ring_role": "outer",
+    "rows": [
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 115.72909404364839,
+        "free_compatible": false,
+        "lz_id": 0,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "occupied",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 129.05350407436924,
+        "free_compatible": false,
+        "lz_id": 1,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 136.70785332192656,
+        "free_compatible": false,
+        "lz_id": 2,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "occupied",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 130.91464357293557,
+        "free_compatible": false,
+        "lz_id": 3,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 143.61386800533091,
+        "free_compatible": true,
+        "lz_id": 4,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "free",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 156.06625337279672,
+        "free_compatible": false,
+        "lz_id": 5,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      }
+    ],
+    "soc": 0.45956509702719556,
+    "time": 200.0,
+    "uid": 13
+  },
+  "diagnostic_only": true,
+  "method": {
+    "counterfactual": "SafetyFilter._holder_positions(uav, snapshot, times, speed_residual_mps=0.0), atan2+unwrap, same angle array as lower and upper; temporary class method replacement only",
+    "current": "unchanged SafetyFilter.holder_reachable_tube"
+  },
+  "nominal_holder_contract_counterfactual": {
+    "all_lz": {
+      "both_pass_count": 0,
+      "candidate_count": 6,
+      "energy_pass_count": 6,
+      "safety_pass_count": 0,
+      "verdict_reason_counts": {
+        "predicted_holder_reachable_tube": 3,
+        "predicted_separation": 3
+      }
+    },
+    "all_lz_count": 6,
+    "energy_remaining": 689.3476455407933,
+    "free_compatible": {
+      "both_pass_count": 0,
+      "candidate_count": 1,
+      "energy_pass_count": 1,
+      "safety_pass_count": 0,
+      "verdict_reason_counts": {
+        "predicted_holder_reachable_tube": 1
+      }
+    },
+    "free_compatible_lz_ids": [
+      4
+    ],
+    "phase": "ring_outer",
+    "ring_role": "outer",
+    "rows": [
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 115.72909404364839,
+        "free_compatible": false,
+        "lz_id": 0,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "occupied",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 129.05350407436924,
+        "free_compatible": false,
+        "lz_id": 1,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 136.70785332192656,
+        "free_compatible": false,
+        "lz_id": 2,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "occupied",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 130.91464357293557,
+        "free_compatible": false,
+        "lz_id": 3,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 143.61386800533091,
+        "free_compatible": true,
+        "lz_id": 4,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "free",
+        "verdict_reason": "predicted_holder_reachable_tube"
+      },
+      {
+        "both_pass": false,
+        "energy_pass": true,
+        "energy_slack": 156.06625337279672,
+        "free_compatible": false,
+        "lz_id": 5,
+        "mission_compatible": true,
+        "safety_pass": false,
+        "status": "reserved",
+        "verdict_reason": "predicted_separation"
+      }
+    ],
+    "soc": 0.45956509702719556,
+    "time": 200.0,
+    "uid": 13
+  },
+  "replay": {
+    "outcome_counts": {
+      "completed": 5
+    },
+    "safety_error": null,
+    "sim_time_seconds": 201.0,
+    "state_at_scan": {
+      "all_lz": {
+        "both_pass_count": 0,
+        "candidate_count": 6,
+        "energy_pass_count": 6,
+        "safety_pass_count": 0,
+        "verdict_reason_counts": {
+          "predicted_holder_reachable_tube": 3,
+          "predicted_separation": 3
+        }
+      },
+      "all_lz_count": 6,
+      "energy_remaining": 689.3476455407933,
+      "free_compatible": {
+        "both_pass_count": 0,
+        "candidate_count": 1,
+        "energy_pass_count": 1,
+        "safety_pass_count": 0,
+        "verdict_reason_counts": {
+          "predicted_holder_reachable_tube": 1
+        }
+      },
+      "free_compatible_lz_ids": [
+        4
+      ],
+      "phase": "ring_outer",
+      "ring_role": "outer",
+      "rows": [
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 115.72909404364839,
+          "free_compatible": false,
+          "lz_id": 0,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "occupied",
+          "verdict_reason": "predicted_holder_reachable_tube"
+        },
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 129.05350407436924,
+          "free_compatible": false,
+          "lz_id": 1,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "reserved",
+          "verdict_reason": "predicted_separation"
+        },
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 136.70785332192656,
+          "free_compatible": false,
+          "lz_id": 2,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "occupied",
+          "verdict_reason": "predicted_holder_reachable_tube"
+        },
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 130.91464357293557,
+          "free_compatible": false,
+          "lz_id": 3,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "reserved",
+          "verdict_reason": "predicted_separation"
+        },
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 143.61386800533091,
+          "free_compatible": true,
+          "lz_id": 4,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "free",
+          "verdict_reason": "predicted_holder_reachable_tube"
+        },
+        {
+          "both_pass": false,
+          "energy_pass": true,
+          "energy_slack": 156.06625337279672,
+          "free_compatible": false,
+          "lz_id": 5,
+          "mission_compatible": true,
+          "safety_pass": false,
+          "status": "reserved",
+          "verdict_reason": "predicted_separation"
+        }
+      ],
+      "soc": 0.45956509702719556,
+      "time": 200.0,
+      "uid": 13
+    },
+    "steps_executed": 201
+  },
+  "safety_threshold_changed": false,
+  "scan_time": 200.0,
+  "seed": 840626,
+  "server_writes": false,
+  "source_edits": false,
+  "target_uid": 13,
+  "training_called": false
+}

@@ -1,0 +1,889 @@
+{
+  "PPO_ALLOWED": false,
+  "environment_created": false,
+  "heldout_used": false,
+  "optimizer_used": false,
+  "phase": "preflight",
+  "protocol": {
+    "action_schema": "low_action_schema_v4_2_hierarchical",
+    "float_abs_tol": 1e-08,
+    "float_rel_tol": 1e-10,
+    "max_steps": 1800,
+    "observation_dimension": 88,
+    "observation_schema": "phaseA_low_obs_v2_1_retry_state",
+    "optional_arrival_id": 13,
+    "pair": {
+      "env_seed": 877104,
+      "keyed_policy_seed": 9303103,
+      "pair_id": 15
+    },
+    "passive_only": true,
+    "runtime_proposal_shortlist_k": 3,
+    "target_arrival_id": 21
+  },
+  "qualification": "not_a_qualification; exact passive failure replay only",
+  "registered_artifacts": {
+    "control": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\gate_release_control\\arms\\pair_0015_control.json",
+      "sha256": "2fbf13184c06abb6ab37ba119e157c17df9d241d3586ae9c8dae713824af1671"
+    },
+    "gate_preflight": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\gate_release_control\\preflight.json",
+      "sha256": "4701666d76b17d2169b5d9d2c41787b3375a8f6cc94d785b64717980595d9b79"
+    },
+    "legacy": {
+      "path": "\\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\forced_wait_frozen\\arms\\pair_0015_legacy.json",
+      "sha256": "9424c7a61d3007251ec4e026204269cfd859a5e51e84cea48d60807e172bd11b"
+    }
+  },
+  "runtime": {
+    "code_manifest": {
+      "count": 118,
+      "files": [
+        {
+          "module": "terminal_marl",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\__init__.py",
+          "sha256": "a062d2f5a2bfa15ee5b9f53c3267a9b53a5f351b40a38c48bddb2723421430f6"
+        },
+        {
+          "module": "terminal_marl.algo",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\__init__.py",
+          "sha256": "13df22aa621a0a2047f592fe2877d21f7c564668a7fb17882c5dbbf55af1b7a8"
+        },
+        {
+          "module": "terminal_marl.algo.gate_adapter_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\gate_adapter_v4_2.py",
+          "sha256": "28a5f41f8da096205eb0f8190aca85eaf6536eac0a07b0d8c559697d6a62a9f1"
+        },
+        {
+          "module": "terminal_marl.algo.gate_calibrated_adapter_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\gate_calibrated_adapter_v4_2.py",
+          "sha256": "bfd1764ad8ba5fee7f6098780c981399bf839386e6dc1bb0c851bf8ed5096c83"
+        },
+        {
+          "module": "terminal_marl.algo.gate_reference_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\gate_reference_v4_2.py",
+          "sha256": "2072ef7869518ad68e86dc16940b5bc5f5512f0c96688eb830fa2cfbf48691fd"
+        },
+        {
+          "module": "terminal_marl.algo.high_level_ppo",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\high_level_ppo.py",
+          "sha256": "333f45f7c323f794baa9b4d524c4bdbffc857fcfbf8313da2ee1663fdbee3b2a"
+        },
+        {
+          "module": "terminal_marl.algo.joint_ppo_v4_1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\joint_ppo_v4_1.py",
+          "sha256": "dee64ae01968d577c6ef4206c2a295e5a77894a53dda3359021783269e8cfde2"
+        },
+        {
+          "module": "terminal_marl.algo.joint_ppo_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\joint_ppo_v4_2.py",
+          "sha256": "abc2f3678b68de7808328ffdeccc5fa7f18d6c21527a38627fdcfc38fd173490"
+        },
+        {
+          "module": "terminal_marl.algo.shared_ppo",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\shared_ppo.py",
+          "sha256": "49032d1ce0b52a6f2293d96489118cb50857d26cefa992a72ff4f50395dc1059"
+        },
+        {
+          "module": "terminal_marl.algo.student_ppo_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\algo\\student_ppo_v4_2.py",
+          "sha256": "30fdf4f3a6ceb741851a3469fb1216aac973015242af221df333ef0b176fd7b9"
+        },
+        {
+          "module": "terminal_marl.core",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "module": "terminal_marl.core.action_trace",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\action_trace.py",
+          "sha256": "f890bed84252144b338da7b03e3588f83134d90dd683a928c261abe1a984211f"
+        },
+        {
+          "module": "terminal_marl.core.admission",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\admission.py",
+          "sha256": "b83ad5e3137aeaaa8237fe123ac620dbf6cbf4cf4c53ce1c8ca3db3b34bb032b"
+        },
+        {
+          "module": "terminal_marl.core.arrival_process",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\arrival_process.py",
+          "sha256": "3a07bff576d2423c312eeff0ecb1b75dc9167553db11fa4a5538fd19f5078c57"
+        },
+        {
+          "module": "terminal_marl.core.checkpoints",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\checkpoints.py",
+          "sha256": "2fc41879c256e86b04a2702aacb5a9cd0a02b9ae549bd10faf508dc82acec686"
+        },
+        {
+          "module": "terminal_marl.core.config",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\config.py",
+          "sha256": "9291fc3459d871dd787588ea929e37b8ac0b77b9963e375b75539ce2e85408fa"
+        },
+        {
+          "module": "terminal_marl.core.dynamic_airspace",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\dynamic_airspace.py",
+          "sha256": "074e68819778ec40c86aae026d084481844e946b6c507f04bd66eecbef7a78fc"
+        },
+        {
+          "module": "terminal_marl.core.energy",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\energy.py",
+          "sha256": "b95b25b3ef1fd67ef52b32ecfb8f2d38217d7ab8f2e303a2bd87a741f6c2aabf"
+        },
+        {
+          "module": "terminal_marl.core.energy_reachability",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\energy_reachability.py",
+          "sha256": "c0f850e4a9f2ca9455b2a0a4aa0d4b6c8ac947d778f7bebdded5e37dac327368"
+        },
+        {
+          "module": "terminal_marl.core.execution_scheduler",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\execution_scheduler.py",
+          "sha256": "254664670efa32d5e99ee58be5a253cd09f5fe6fee11af99b38a791829aaa91d"
+        },
+        {
+          "module": "terminal_marl.core.flow_trajectories",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\flow_trajectories.py",
+          "sha256": "38c87f11c46f6cd5196031a0a3d5ecaacaf11022330d3a79a4fdb44b0390fc2a"
+        },
+        {
+          "module": "terminal_marl.core.forecast_world",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\forecast_world.py",
+          "sha256": "08bad96cfe28a4119611b67a8f2d875e97ae22d2d537cd58a63b4bf3fe213fb9"
+        },
+        {
+          "module": "terminal_marl.core.landing_flow",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\landing_flow.py",
+          "sha256": "402966a265d424e406c5180bce5b30c2bd4b048150491370d2cdc25ac75b1d57"
+        },
+        {
+          "module": "terminal_marl.core.landing_zone",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\landing_zone.py",
+          "sha256": "d80f936085252251d304587198bb342145e20721adc82567aee1fcdd71dd7333"
+        },
+        {
+          "module": "terminal_marl.core.lifecycle",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\lifecycle.py",
+          "sha256": "af5828daa9ad726882fc3563b00da8c0048d27b09d7963956c1e22d29fafd700"
+        },
+        {
+          "module": "terminal_marl.core.low_level_action",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\low_level_action.py",
+          "sha256": "663b0f5b3fe7f3e104448f49a52a1431f919a4e099ab2961fc756efdbb06a891"
+        },
+        {
+          "module": "terminal_marl.core.low_level_joint_action",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\low_level_joint_action.py",
+          "sha256": "4770e1dbb4ce4b853f7ab869251e829b38af2aabb2e0137fa22fb06df5ead099"
+        },
+        {
+          "module": "terminal_marl.core.low_level_joint_action_v4_1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\low_level_joint_action_v4_1.py",
+          "sha256": "69cead929759cba4ae9e77b9ea93fc183784ba81130c1304a820c634e1b4604e"
+        },
+        {
+          "module": "terminal_marl.core.low_level_joint_action_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\low_level_joint_action_v4_2.py",
+          "sha256": "0c9d1b078d19a9fc6a5105869d73bc230f7bfc59dd5984552716a125145eccfe"
+        },
+        {
+          "module": "terminal_marl.core.merge_scheduler",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\merge_scheduler.py",
+          "sha256": "c27113ca81913515444866af6c17dfc44e812399545f27d65aaa3d78608517f6"
+        },
+        {
+          "module": "terminal_marl.core.observations",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\observations.py",
+          "sha256": "004bc0ef49aff93a47800728a11c7a379423ece61b48c9face2802fed0f81ea6"
+        },
+        {
+          "module": "terminal_marl.core.priority",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\priority.py",
+          "sha256": "81ecaf239c6cbaddfd7705c700e7ced1116d50338b88c3be3e11d40598f98151"
+        },
+        {
+          "module": "terminal_marl.core.reconfiguration_safety",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\reconfiguration_safety.py",
+          "sha256": "b96f14ce57405fa0891df7ced003a72745c603a2509a4106026b998bcc7afdd9"
+        },
+        {
+          "module": "terminal_marl.core.rewards",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\rewards.py",
+          "sha256": "f6a6ad3c6cfc99493c0a01f5d686c8ab359f8ade82ca67a0c71d8016a4013ed5"
+        },
+        {
+          "module": "terminal_marl.core.ring_capacity",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\ring_capacity.py",
+          "sha256": "f2ed919228d5dbf5c2e29c673af9081664d73f111ce01570a08ecd3b0ee8b4f6"
+        },
+        {
+          "module": "terminal_marl.core.runtime_separation",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\runtime_separation.py",
+          "sha256": "8934b0d2c3fad058ceaaef267b070a44245eb93dd5e714005eb7db87fe58968c"
+        },
+        {
+          "module": "terminal_marl.core.runtime_traffic_safety",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\runtime_traffic_safety.py",
+          "sha256": "72e8dfd196b4a033ca9e84d370a7146dd12280fa3c4abefe1b7f801ea59e8450"
+        },
+        {
+          "module": "terminal_marl.core.safety_filter",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\safety_filter.py",
+          "sha256": "d6a0a4782503aa39c93d7054baf07d2305311acfb0fd238046afe202a484c63a"
+        },
+        {
+          "module": "terminal_marl.core.safety_trace",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\safety_trace.py",
+          "sha256": "a12ae426c9e4192becdf2b28b4354698c3d335b196af1e377910d8a5bba57850"
+        },
+        {
+          "module": "terminal_marl.core.teacher_scheduler",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\teacher_scheduler.py",
+          "sha256": "7a4491bbdebde079a5cf20d51a0f976d05699f85e58b01cd897960a027845772"
+        },
+        {
+          "module": "terminal_marl.core.topology_neighbors",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\topology_neighbors.py",
+          "sha256": "3e5efd63075eadab6fdbc5bc41c6cf159eb4c377ab7074fb9cc160e68e15bec0"
+        },
+        {
+          "module": "terminal_marl.core.trajectory_generator",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_generator.py",
+          "sha256": "b267c5fc30d27a05d93c49007cd13380b150f68e743e318e8845bf3246b3d738"
+        },
+        {
+          "module": "terminal_marl.core.trajectory_time_parameterization",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\trajectory_time_parameterization.py",
+          "sha256": "ea4f56b57a269171d4c3a12a17ff643e91f1cfa2c5176e6d982e0747e543a309"
+        },
+        {
+          "module": "terminal_marl.core.uav",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\uav.py",
+          "sha256": "137571791c2053f618ecbed9afae8436da5d763f66e49925caa3a0c9ee8baec8"
+        },
+        {
+          "module": "terminal_marl.core.vehicle_dynamics",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\vehicle_dynamics.py",
+          "sha256": "a6681585001c424739e24fb62231d11b316ea913db782866144f2357b0c6fe51"
+        },
+        {
+          "module": "terminal_marl.core.vehicle_profiles",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\core\\vehicle_profiles.py",
+          "sha256": "fb8b5732119406225d0644f6c0558e564c06b19bfdfb48411dd3b0ca106af6a6"
+        },
+        {
+          "module": "terminal_marl.envs",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\envs\\__init__.py",
+          "sha256": "880087eb8abb68ea99de6a9a289808653a4b36b571489323c145be3b6ba93f2c"
+        },
+        {
+          "module": "terminal_marl.envs.high_level_wrapper",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\envs\\high_level_wrapper.py",
+          "sha256": "72944706291739f47f4a418eb3465cf7d7ca8faef25e54f57710efbbd792467d"
+        },
+        {
+          "module": "terminal_marl.envs.parallel_env",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\envs\\parallel_env.py",
+          "sha256": "04a9b7285cbe705973ed9b2350d1bb76f38fa6963267c8322287345665001a31"
+        },
+        {
+          "module": "terminal_marl.policies",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\policies\\__init__.py",
+          "sha256": "d2fa0b94e1bdba2843fd2aa8ef5155cf7874cb2ea6a2e034ed070881b21ab096"
+        },
+        {
+          "module": "terminal_marl.policies.dynamic_rule",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\policies\\dynamic_rule.py",
+          "sha256": "cca4f5482bc1270a451b14171628d0f5de83a70c48dfefcb96b466978f0e2f88"
+        },
+        {
+          "module": "terminal_marl.policies.rule_low_level",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\policies\\rule_low_level.py",
+          "sha256": "77d41d5991d205b3d8b38bbfdd758abcc4fe78a2738d17ac456e72ebe013ed8a"
+        },
+        {
+          "module": "terminal_marl.training",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\__init__.py",
+          "sha256": "37fc6d1091f67822c681e054533d563a239518aaa3d37799c0dae6a8b5aa9dae"
+        },
+        {
+          "module": "terminal_marl.training.collect_p3_proposal_head_probe_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\collect_p3_proposal_head_probe_v1.py",
+          "sha256": "919614c94bc5e3da4e0f7354cdb42a9720ae10071ef0559c615a884abc11a516"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_energy_reachability_guard_smoke",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_energy_reachability_guard_smoke.py",
+          "sha256": "cb3f1e59e7b4d109ecac37a0327b4f42c11ec164c422cea7ca238b034d329141"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_p3_action_credit",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_p3_action_credit.py",
+          "sha256": "1969780523594ee78942c3f2ccad5e1039a390f9838fc962640bca70ab311967"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_p3_k3_coverage_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_p3_k3_coverage_v1.py",
+          "sha256": "35ab3607f8adcdfaa06bb4afe8ae6c479867d7684579d6f320e033f7692ef175"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_p3_ppo_credit_signal",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_p3_ppo_credit_signal.py",
+          "sha256": "1c587bc77003d5c3cc7a768fa8cf571697fe91584b03787fcb7eab21a6ce9bdc"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_p3_terminal_credit",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_p3_terminal_credit.py",
+          "sha256": "550cf6248c8a2a2c47aec628dca69a854a9191ca17bc65340cf8436ce277bfd3"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_trained_dense30_v2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_trained_dense30_v2.py",
+          "sha256": "8e9f93f48760a22b7608352e63082e2d53594da53c77fc27c171768956400244"
+        },
+        {
+          "module": "terminal_marl.training.diagnose_v4_2_p3_mixed_priority_soc_pilot_v2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\diagnose_v4_2_p3_mixed_priority_soc_pilot_v2.py",
+          "sha256": "7ec050733ef5139e9b003db6b1ee8594b87d114a84bbbec7b1a57996a71b4d15"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_p3_adaptive_kl_v7",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_p3_adaptive_kl_v7.py",
+          "sha256": "237f97b38853decc0d7778a10bbb3f24b5201ce244121f5b11261070b252eefd"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_p3_proposal_head_probe_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_p3_proposal_head_probe_v1.py",
+          "sha256": "d97ff889396e47615137337bad444575a349e2b029b7ea4014550e2ab79b7869"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_p3_runtime_rank_repair",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_p3_runtime_rank_repair.py",
+          "sha256": "717b0b45d37dcced447a4a0a3a75a66a056d14cc539713ff78eb6532bc703b22"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_p3_task_neutral",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_p3_task_neutral.py",
+          "sha256": "65f603a657c8b626eced61320c3fa719246e03bf35cfa5aa64bb39225dea8587"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_random_soc_gate_repair_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_random_soc_gate_repair_v1.py",
+          "sha256": "e77d485460153299b8de00ebb86a7de172ede4aceba9c7d14653eb38073c8338"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_v4_2_p2_gate_effectiveness_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_v4_2_p2_gate_effectiveness_v1.py",
+          "sha256": "00693e042f3581f0700dd9a694ed9f57ad4109982ee58b2c9224052376c8721b"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_v4_2_p2_gate_runtime_shortlist_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_v4_2_p2_gate_runtime_shortlist_v1.py",
+          "sha256": "9f02e9bf7b884c09f852b163458ecf58d2c1df6245ea5f66bc17bb571af3b1a1"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_v4_2_p2_runtime_shortlist_heldout_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_v4_2_p2_runtime_shortlist_heldout_v1.py",
+          "sha256": "7f71b286b58052eec7aa74b562bc951cb600d60ed573d41174ab8106d59a4053"
+        },
+        {
+          "module": "terminal_marl.training.evaluate_v4_2_p2_v4",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\evaluate_v4_2_p2_v4.py",
+          "sha256": "05b9502f3f4ddc83cf7fe718ffefa3efebb3815ec067a8bb7acc6d1e81e89a12"
+        },
+        {
+          "module": "terminal_marl.training.k3_coverage_objective",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\k3_coverage_objective.py",
+          "sha256": "1a80fa44eb3338e62780393edd8ef889517024cc4e61356bba306b0e5553982f"
+        },
+        {
+          "module": "terminal_marl.training.k3_gate_feasibility",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\k3_gate_feasibility.py",
+          "sha256": "26456ab1fd2c281cfa791dce17e52dee8c8631512ee72eee62c6a68ec2ff72ff"
+        },
+        {
+          "module": "terminal_marl.training.p3_action_credit",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\p3_action_credit.py",
+          "sha256": "31a2e8cc85fedd12dc118734747a9a600b70358769c544864dcdd79ef742f6f0"
+        },
+        {
+          "module": "terminal_marl.training.p3_kl_recovery_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\p3_kl_recovery_v1.py",
+          "sha256": "0925d52fd370f19e54b3533f9a4985d899c2e3513fd645731bc199a7ccb2b02c"
+        },
+        {
+          "module": "terminal_marl.training.paired_gate_diagnostic",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\paired_gate_diagnostic.py",
+          "sha256": "449bacf4993987f8936c0966b925a706ebd3fcbf1121f893a7396ae984f64e96"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_adaptive_kl_formal_v7",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_adaptive_kl_formal_v7.py",
+          "sha256": "3e2c3cb764d0c7a291dc3762039b1978a02a8ca4366de929a23d3171679ba8d8"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_followup_diagnostics",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_followup_diagnostics.py",
+          "sha256": "616bd29ae9470527534c77bf748be764620cbbb99639c3abe308b8df535b1547"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_forced_wait_frozen_20260930",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_forced_wait_frozen_20260930.py",
+          "sha256": "4c1fa4353efaa9ae65f84d20833d16bc6779bfee749262a9030108e0056969a2"
+        },
+        {
+          "module": "__main__",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_gate_failure_replay_20261001.py",
+          "sha256": "8903f2b96df984f4272bb2f51d1e89bb980d2a4498e1e2a32aa7bb12e05fe097"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_gate_release_control_20260930",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_gate_release_control_20260930.py",
+          "sha256": "3f304a85cc28a140d4e643f37a7902e1cfa5ed1c0d4e5ea87e3064ade1943cd9"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_opportunity_coverage_20260930",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_opportunity_coverage_20260930.py",
+          "sha256": "15a4d273128709b99a626b554537843b70d9c24f636c70d6a948f731b8e89afe"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_task_neutral_critic_warmup",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_task_neutral_critic_warmup.py",
+          "sha256": "b2ccc4bee0a747d7c35f4daebe0eec662fc0bd2f8f30ecebbb83a280ce0c598e"
+        },
+        {
+          "module": "terminal_marl.training.run_p3_task_neutral_pilot",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_task_neutral_pilot.py",
+          "sha256": "a27ee1ac279550cab2922759935a60c411bda5aa7682184429fd32e493f97439"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_curriculum_pilot",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_curriculum_pilot.py",
+          "sha256": "b95354558a80e23f69d54cc24594e9bf080d71ca93f4baf522dc579d0d00cd66"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_hierarchical_s0_qualification",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_hierarchical_s0_qualification.py",
+          "sha256": "469bbf293ed57b9b704ba5c03285e2078add2518256a0fdfa891c58d5e5a88c1"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_i2_dagger_preflight",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_i2_dagger_preflight.py",
+          "sha256": "2c2700593dd13a7e2fe69d3140c083979d071f1953d0c429ad4053caea6c2093"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_observation_v2_1_qualification",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_observation_v2_1_qualification.py",
+          "sha256": "cebc72438e34324ba3c88e87b1a27349be7eb24329a8cde2dfb8d681974652d9"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_observation_v2_1_teacher_predicate_closure_audit",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_observation_v2_1_teacher_predicate_closure_audit.py",
+          "sha256": "cdf9dd61919b24a99c35af4806b5c685ca9eab39a241ea71eab914ca3d279771"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p2_runtime_shortlist_entry_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p2_runtime_shortlist_entry_v1.py",
+          "sha256": "f57b3d071cc2cafb1be02ef041c858c2385e291574e069264eb9dd0b6c2bdc79"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p3_controlled_emergency_admission_v5",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p3_controlled_emergency_admission_v5.py",
+          "sha256": "2ac5d0648affa4f618689d750c8c534648ea9933af848a7d44466dbcd9b94824"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p3_controlled_emergency_formal_v5",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p3_controlled_emergency_formal_v5.py",
+          "sha256": "19cb21abb498b7b8ea31ee5d7d653d26ea67c3d9d50ed6ea625f6ed43a9761ca"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p3_gate_anchored_v6",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p3_gate_anchored_v6.py",
+          "sha256": "8736ebcdf7ba617523e717370bc64f1e0b6f61b2f409c0a19b7fd6efb2ab55d4"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p3_mixed_priority_soc_training_v3",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p3_mixed_priority_soc_training_v3.py",
+          "sha256": "42344154369c8cdbb2bb065be2088d99e12b1f894aa7d33355f616a6b9c45249"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_p3_mixed_priority_soc_training_v4",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_p3_mixed_priority_soc_training_v4.py",
+          "sha256": "7f94ab2157b9192d947bcdd0b3fcc46ea7ff65d04e7a4b6057f6048e301803b9"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_ppo_block2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_ppo_block2.py",
+          "sha256": "b59cba2228b54a4fc3fa9e21aa2a75679033506563b23838827a90e4eb02c4ed"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_ppo_p2_resume_v4",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_ppo_p2_resume_v4.py",
+          "sha256": "bb9dfcf15d6c74385e8b1d6ea3e47e527f9c83c4d67840f275335e5ac6b337b6"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_formal_i0",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_formal_i0.py",
+          "sha256": "64e23ac8ad8767135119de56ea9c689fe6dfcf3a4a0f5ff392b29e02e0ce1404"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_formal_i0_r",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_formal_i0_r.py",
+          "sha256": "2afcab82f9c88353e96042eb32d89c6611f9cb4db53c1b88c1b2a55caac1159f"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_formal_i0_r2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_formal_i0_r2.py",
+          "sha256": "42225d433295890f8f28778a0b47827f1fa2bc1889a3f6ebf9653b2de1583832"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_formal_i0_r3",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_formal_i0_r3.py",
+          "sha256": "44eaefdbc7b0fa145f0362348e815781baeda075f4f0f02d2c928c38f57d6da3"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_formal_i0_r4",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_formal_i0_r4.py",
+          "sha256": "f1e33d1a221190173287583c95e98fbff3fd38163d8b20bce2a86d2516cd17ef"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i0_r2_support_closure_attribution",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i0_r2_support_closure_attribution.py",
+          "sha256": "23f8ba0535dcebcc39aabea80bb03ddb7c14ee9c2a82a24c04a59315ae7b08f6"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i1_bc",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i1_bc.py",
+          "sha256": "8630cb5cddef5d4ad9eab7f12c6c63cc7aaf2a07f629dafb375696790d441a58"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i1_failure_attribution",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i1_failure_attribution.py",
+          "sha256": "2256ccb1a85bb21fca0a6c0e3c0afc631953b7772fd53a9b2edbbbcc57fa99b9"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i1_multiseed_qualification",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i1_multiseed_qualification.py",
+          "sha256": "347929f40926e1f03950aa802f8b563817ec3d3554c628ff09d0a1b8c11e2250"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i1_q_cohort",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i1_q_cohort.py",
+          "sha256": "05baad51a65be2d838e0f6d8ce58eb74dc4fbe8f118e4971643b0f115a28a173"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i1_v2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i1_v2.py",
+          "sha256": "055d90256557d444a3983868f81df83b614ff77ded4b21d9240c6cd2e8aa0893"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_i2_preflight",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_i2_preflight.py",
+          "sha256": "0bfc04e85f905a9cd45697196ceeb17b3f29bf7c45dc469bc01d63e821a25728"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_ppo",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_ppo.py",
+          "sha256": "fa6476faaccaeafd683316890a27fbee553dfefe41b3f5e44695e7c087b86d61"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_predicate_release_reachability",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_predicate_release_reachability.py",
+          "sha256": "49b210556f6e4e994525e0621b58af7a6db08037cb0e5150cee3913e3c689cc2"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_release_manifold_audit",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_release_manifold_audit.py",
+          "sha256": "c9a91f119a18743e02ac04b74172c546fa8ff7e8fb4ac2acae3726f7678e1b69"
+        },
+        {
+          "module": "terminal_marl.training.run_v4_2_v2_1_student_qualification",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_v4_2_v2_1_student_qualification.py",
+          "sha256": "a11cc3f3a3f773a00348864d52852ce16d27520bc1aca9abe76c8a768c59b59b"
+        },
+        {
+          "module": "terminal_marl.training.student_rollout_v4_2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\student_rollout_v4_2.py",
+          "sha256": "f91953818337ba678bb06d6507f5933a5ee7e0b1037f3004997a2399dd993a7f"
+        },
+        {
+          "module": "terminal_marl.training.terminal_lifecycle_metrics",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\terminal_lifecycle_metrics.py",
+          "sha256": "5072dc161e5b83c7c52ca6b7a6da7a49d4b4dc3417f120bbbe5363d9d63fd68e"
+        },
+        {
+          "module": "terminal_marl.training.train_p3_gate_coverage_repair_v2",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\train_p3_gate_coverage_repair_v2.py",
+          "sha256": "3bf083f69ef98354019282f900bddbc5281223c759a3069b67e132ab28735891"
+        },
+        {
+          "module": "terminal_marl.training.train_p3_runtime_rank_repair",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\train_p3_runtime_rank_repair.py",
+          "sha256": "fed010a41a4fa951cf1d7e4e10a2d35e37a6acc8540c8f1f0e530e38ee7eb213"
+        },
+        {
+          "module": "terminal_marl.training.train_random_soc_gate_repair_v1",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\train_random_soc_gate_repair_v1.py",
+          "sha256": "93230e3b60710fff619fc1860bc1e86d6fc8a9c5d0d82259f69e73d090f0ba88"
+        },
+        {
+          "module": "terminal_marl.training.v4_1_joint_teacher",
+          "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\v4_1_joint_teacher.py",
+          "sha256": "ce73676f718e39a20182264dfe91612939079a0b7f8c797811ab3115a93e40c2"
+        }
+      ],
+      "package_root": "D:\\7_codespace\\terminal\\terminal_marl"
+    },
+    "config_snapshot": {
+      "action_schema_version": "low_action_schema_v4_2_hierarchical",
+      "airspace_schema_version": "three_ring_v1",
+      "approach_threshold_radius": 1000.0,
+      "arrival_model": "finite_cohort",
+      "arrival_rate_per_second": 0.03,
+      "collision_distance": 10.0,
+      "dt": 1.0,
+      "emergency_energy_margin_seconds": 15.0,
+      "emergency_landing_enabled": true,
+      "emergency_priority_guard_enabled": true,
+      "emergency_trigger_soc": 0.4,
+      "energy_capacity": 1500.0,
+      "energy_model_mode": "phase_motion_v2",
+      "energy_reachability_guard_enabled": true,
+      "experiment_mode": "fixed_low_student",
+      "final_approach_geometry_mode": "continuous_inward_v1",
+      "final_queue_capacity": 3,
+      "fixed_arrival_schedule": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        15.0,
+        30.0,
+        45.0,
+        60.0,
+        75.0,
+        90.0,
+        105.0,
+        120.0,
+        135.0,
+        150.0,
+        165.0,
+        180.0
+      ],
+      "gate_angles_deg": [
+        0.0,
+        90.0,
+        180.0,
+        270.0
+      ],
+      "gate_count": 4,
+      "gate_height": 110.0,
+      "gate_min_time_gap_seconds": 20.0,
+      "gate_probabilities": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "geometry_min_dwell_seconds": 600.0,
+      "geometry_transition_seconds": 20.0,
+      "headway_i2f": 12.0,
+      "headway_m2i": 9.0,
+      "headway_max": 30.0,
+      "headway_min": 3.0,
+      "headway_o2m": 9.0,
+      "height_max": 120.0,
+      "height_min": 0.0,
+      "high_action_schema_version": "high_airspace_v1_10d",
+      "high_level_decision_interval_seconds": 180.0,
+      "high_level_enabled": false,
+      "initial_priority": null,
+      "initial_soc": null,
+      "initial_soc_max": 0.9,
+      "initial_soc_min": 0.55,
+      "initial_soc_mode": "uniform",
+      "low_level_collision_penalty": 25.0,
+      "low_level_emergency_landing_penalty": 8.0,
+      "low_level_energy_failure_penalty": 20.0,
+      "low_level_priority_time_weight": 0.0,
+      "low_level_progress_reward_per_meter": 0.0,
+      "low_level_release_approved_reward": 0.1,
+      "low_level_release_rejected_penalty": 0.05,
+      "low_level_soc_urgency_threshold": 0.65,
+      "low_level_soc_urgency_time_weight": 2.0,
+      "low_level_time_penalty_per_second": 0.01,
+      "low_level_touchdown_reward": 25.0,
+      "lz_assignment_mode": "nearest_available",
+      "max_active_uavs": 60,
+      "max_external_wait_seconds": null,
+      "max_headway_change_per_update": 1.0,
+      "max_height_change_per_update": 20.0,
+      "max_merge_time_residual_seconds": 6.0,
+      "max_radius_change_per_update": 20.0,
+      "max_simulation_seconds": 1800.0,
+      "max_speed_profile_change_per_update": 2.0,
+      "max_speed_residual_mps": 2.0,
+      "metrics_sampling_interval_seconds": 20.0,
+      "min_height_gap": 20.0,
+      "min_ring_gap": 120.0,
+      "mission_probabilities": [
+        0.45,
+        0.25,
+        0.1,
+        0.2
+      ],
+      "neighbor_comm_range_m": null,
+      "nmac_distance": 40.0,
+      "num_landing_zones": 6,
+      "observation_schema_version": "phaseA_low_obs_v2_1_retry_state",
+      "phase_motion_nominal_solo_energy": 240.9,
+      "physics_dt": 0.2,
+      "power_external_wait": 1.0,
+      "power_final": 0.9,
+      "power_inbound": 1.0,
+      "power_landing": 1.05,
+      "power_reference": 1.0,
+      "power_ring_hold": 1.0,
+      "power_ring_transfer": 1.1,
+      "priority_alpha": 0.5,
+      "priority_beta": 1.5,
+      "priority_delta": 2.0,
+      "priority_feature_scale": 5.0,
+      "priority_gamma": 1.0,
+      "priority_mode": "random_135",
+      "priority_wait_reference_seconds": 3600.0,
+      "prospective_repair_delays_seconds": [
+        5.0,
+        10.0,
+        20.0,
+        40.0
+      ],
+      "radius_max": 900.0,
+      "radius_min": 120.0,
+      "reconcile_late_merge_slots_enabled": false,
+      "release_arbitration_mode": "downstream_priority",
+      "release_threshold": 0.0,
+      "repair_aware_scheduler": false,
+      "reset_mode": "warm_start_rings",
+      "retry_norm_horizon_seconds": 30.0,
+      "rings": {
+        "RingRole.INNER": {
+          "height": 40.0,
+          "nominal_speed": 16.0,
+          "radius": 200.0,
+          "role": "inner"
+        },
+        "RingRole.MIDDLE": {
+          "height": 70.0,
+          "nominal_speed": 20.0,
+          "radius": 400.0,
+          "role": "middle"
+        },
+        "RingRole.OUTER": {
+          "height": 100.0,
+          "nominal_speed": 22.0,
+          "radius": 600.0,
+          "role": "outer"
+        }
+      },
+      "rule_flow_coordination_enabled": false,
+      "runtime_proposal_shortlist_k": 3,
+      "safe_distance": 80.0,
+      "safety_sampling_dt": 1.0,
+      "scheduler_mode": "execution",
+      "schema_version": "phaseA_landing_v1",
+      "shield_broad_phase_margin": 20.0,
+      "shield_correction_magnitude_penalty": 0.1,
+      "shield_enabled": true,
+      "shield_horizon_seconds": 30.0,
+      "shield_id_interventions_per_100_intents": 10.0,
+      "shield_intervention_penalty": 0.2,
+      "shield_ood_interventions_per_100_intents": 20.0,
+      "soc_emergency": 0.2,
+      "soc_reserve": 0.25,
+      "soc_warning": 0.35,
+      "spawn_radius": 1300.0,
+      "speed_max": 36.0,
+      "speed_min": 8.0,
+      "student_decision_mask_mode": "legacy",
+      "task_priority_enabled": false,
+      "teacher_correction_magnitude_penalty": 0.05,
+      "teacher_enabled": false,
+      "teacher_intervention_penalty": 0.1,
+      "teacher_mode": "teacher_label_only",
+      "teacher_release_label_enabled": false,
+      "total_requested_uavs": 24,
+      "trajectory_bezier_samples": 41,
+      "trajectory_final_samples": 51,
+      "trajectory_schema_version": "executable_trajectory_v2",
+      "v4_2_rejected_release_hold_mode": "canonical_wait",
+      "vehicle_dynamics_schema_version": "performance_constrained_v2",
+      "vehicle_execution_mode": "performance_constrained",
+      "vehicle_profile_id": "research_evtol",
+      "warm_start_energy_reachability_check_enabled": true,
+      "warm_start_layout_randomized": false,
+      "warm_start_steady_motion": true,
+      "warm_start_uavs": 12
+    },
+    "runner": {
+      "path": "D:\\7_codespace\\terminal\\terminal_marl\\training\\run_p3_gate_failure_replay_20261001.py",
+      "sha256": "8903f2b96df984f4272bb2f51d1e89bb980d2a4498e1e2a32aa7bb12e05fe097"
+    }
+  },
+  "source_binding": {
+    "binding": {
+      "baseline_scope": "fixed_task_neutral_baseline_20260928/full/records/candidate",
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "declared_checkpoint": "\\home\\user\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+      "expected_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "locator_report": null,
+      "model_digest": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+      "payload_keys": [
+        "metadata",
+        "model",
+        "policy_architecture_migrated",
+        "report"
+      ],
+      "resolved_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt"
+    },
+    "candidate_digest_before_warmup": "3434378719efdb02bf3d41febb52e66797a0d3928756fc0cbbfde056ddd337b0",
+    "resolved_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_normal_advantage_gate_repair_20260928\\fit_smoke\\terminal_gate_repair.pt",
+    "source_model_digest": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+    "warmup": {
+      "checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_episodic_learning_20260929\\warmup_scaled\\warmup.pt",
+      "checkpoint_sha256": "a82ed7a287035fb1fc868fc955e056c0481de75bcb99880d5c79f35588dde710",
+      "critic_parameter_names": [
+        "critic_encoder.0.bias",
+        "critic_encoder.0.weight",
+        "critic_encoder.2.bias",
+        "critic_encoder.2.weight",
+        "critic_encoder.4.bias",
+        "critic_encoder.4.weight",
+        "critic_head.0.bias",
+        "critic_head.0.weight",
+        "critic_head.2.bias",
+        "critic_head.2.weight",
+        "critic_head.4.bias",
+        "critic_head.4.weight"
+      ],
+      "curriculum_id": "task_neutral_critic_warmup",
+      "model_digest_after_load": "a8a133863bc03627452814535aa938ed062fe0496b35678d0fe9333524503f07",
+      "model_state_loaded": true,
+      "neutral_config_match": true,
+      "non_critic_state_bitwise_unchanged": true,
+      "parent_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "stage": "P3_TASK_NEUTRAL_CRITIC_WARMUP_V1"
+    },
+    "warmup_checkpoint": "D:\\7_codespace\\training_outputs\\terminal\\p3_task_neutral_episodic_learning_20260929\\warmup_scaled\\warmup.pt"
+  },
+  "stage": "P3_GATE_FAILURE_REPLAY_20261001_V1",
+  "status": "PREFLIGHT_OK",
+  "teacher_used": false
+}

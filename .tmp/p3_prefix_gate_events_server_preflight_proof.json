@@ -1,0 +1,59 @@
+{
+  "stage": "P3_PREFIX_GATE_EVENTS_20261001_V1",
+  "phase": "preflight",
+  "status": "PREFLIGHT_OK",
+  "observed_server_time": "2026-10-01T18:17:54+08:00",
+  "preflight_mtime": "2026-10-01 18:17:15.443874671 +0800",
+  "preflight_size_bytes": 198806,
+  "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_gate_events_20261001",
+  "process_check": "no active diagnose_p3_prefix_gate_events_20261001 process",
+  "command_exit_code": 0,
+  "serialized_validation": {
+    "method": "json.load(preflight.json) then _validate_preflight(payload)",
+    "exit_code": 0,
+    "status": "PREFLIGHT_OK"
+  },
+  "local_sha256": {
+    "runner": "8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef",
+    "tests": "f5b428dea03a1f9a49a742cbd2ef758cc18b916147106036908d83e7f146889c",
+    "protocol": "59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5"
+  },
+  "server_sha256": {
+    "runner": "8627e72f2a3aa66c917f65673b1f63f13a326c7f9a65416a837d24972b30cdef",
+    "tests": "f5b428dea03a1f9a49a742cbd2ef758cc18b916147106036908d83e7f146889c",
+    "protocol": "59d812d5ff1a53d18b7407dedf25a2b7d107902087796e4bd3a97f41910ff6e5"
+  },
+  "input_full_sha256": "30c28c03d26466eabeab2a35c9fc117424648f1a3ae17be6f8d69b6b92cb2195",
+  "source_bindings": {
+    "before": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "after": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f"
+  },
+  "requests_per_cell": 24,
+  "max_steps": 1800,
+  "potential_counts": [
+    314,
+    267,
+    290,
+    274
+  ],
+  "flags": {
+    "environment_created": false,
+    "model_forward_used": false,
+    "gradient_operations": 0,
+    "optimizer_operations": 0,
+    "teacher_calls": 0,
+    "PPO_ALLOWED": false,
+    "heldout_used": false,
+    "teacher_used": false,
+    "optimizer_used": false,
+    "off_policy": true,
+    "no_training": true
+  },
+  "selection": {
+    "all_registered_requested_gate_events": true,
+    "rank_filter": false,
+    "upper_soc_filter": false,
+    "decision_history_used": false,
+    "rank_descriptor": "known 1..25 validated against current telemetry; unknown retained; no rank filter"
+  }
+}

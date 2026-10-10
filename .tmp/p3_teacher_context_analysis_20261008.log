@@ -1,0 +1,528 @@
+{
+  "summary": [
+    {
+      "index": 0,
+      "tick": 92,
+      "uid": "0",
+      "proposal": 12,
+      "request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "teacher_proposal": null,
+      "reason": "predicted_separation",
+      "certificate_equal": null,
+      "hash": "5e85068fce84e8c011e7af05efd22793c156fa13395ac6d61fb0f6dbe6557e29",
+      "duration": 74.60000544704857,
+      "scheduled_departure": 103.103290314403,
+      "merge_angle": 0.770441758393158,
+      "closest": {
+        "uid": 4,
+        "kind": "track",
+        "stage": "plan",
+        "raw_min": 29.651600596352345,
+        "lower_bound": 29.284394564391835,
+        "dense_min": 29.62400719066516,
+        "time": 166.60000544704857,
+        "visible_slots": [],
+        "current_distance": 564.3777660408034,
+        "other_phase": "transfer_m2i",
+        "other_plan": {
+          "start": 0.0,
+          "end": 92.99170394693412,
+          "mode": "ring_transfer",
+          "target_phase": "ring_inner",
+          "hash": "22f1320aec7f56605436823653aa1ae07abfbf0f60c28694df31a9c59fd6d326",
+          "endpoint": [
+            102.57062983011957,
+            171.69527045394287,
+            40.0
+          ],
+          "endpoint_velocity": [
+            -12.018668931776,
+            7.17994408810837,
+            0.0
+          ]
+        },
+        "tube_width": null
+      },
+      "all_observed_pairs": 7,
+      "slots": {
+        "same_ring_leader": null,
+        "same_ring_follower": null,
+        "target_ring_predecessor": null,
+        "target_ring_successor": null,
+        "nearest_predicted_conflict": 6
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": null,
+          "path_gap": 0.0,
+          "relative_path_gap": null,
+          "relative_gap_encoded": null,
+          "baseline_merge_horizon": null
+        },
+        "target_ring_successor": {
+          "uid": null,
+          "path_gap": 0.0,
+          "relative_path_gap": null,
+          "relative_gap_encoded": null,
+          "baseline_merge_horizon": null
+        }
+      },
+      "energy_counters": {
+        "energy_reachability_checks": 1,
+        "repair_candidates_checked": 1
+      },
+      "elapsed": 0.8444305751472712
+    },
+    {
+      "index": 1,
+      "tick": 101,
+      "uid": "0",
+      "proposal": 12,
+      "request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "teacher_proposal": 12,
+      "reason": "certified",
+      "certificate_equal": true,
+      "hash": "cdddda2d0afff57679cfa6482b47b561fd7d40a71eba52163214127c21ba73c8",
+      "duration": 74.47768238512762,
+      "scheduled_departure": 112.103654134578,
+      "merge_angle": 1.2137114365948278,
+      "closest": {
+        "uid": 6,
+        "kind": "track",
+        "stage": "plan",
+        "raw_min": 105.8157742274047,
+        "lower_bound": 105.28777718024234,
+        "dense_min": 105.75633311205183,
+        "time": 143.4499999999976,
+        "visible_slots": [],
+        "current_distance": 211.79377432490472,
+        "other_phase": "transfer_o2m",
+        "other_plan": {
+          "start": 80.0,
+          "end": 151.055960507659,
+          "mode": "ring_transfer",
+          "target_phase": "ring_middle",
+          "hash": "fa3f739b3d5ea0b6d2bf867f7f9a4aea681a45a99e331691374f8f326f1e8bd1",
+          "endpoint": [
+            328.6348171429748,
+            -228.03323652793145,
+            70.0
+          ],
+          "endpoint_velocity": [
+            11.401661826396571,
+            16.43174085714874,
+            0.0
+          ]
+        },
+        "tube_width": null
+      },
+      "all_observed_pairs": 18,
+      "slots": {
+        "same_ring_leader": null,
+        "same_ring_follower": null,
+        "target_ring_predecessor": null,
+        "target_ring_successor": null,
+        "nearest_predicted_conflict": 10
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": null,
+          "path_gap": 0.0,
+          "relative_path_gap": null,
+          "relative_gap_encoded": null,
+          "baseline_merge_horizon": null
+        },
+        "target_ring_successor": {
+          "uid": null,
+          "path_gap": 0.0,
+          "relative_path_gap": null,
+          "relative_gap_encoded": null,
+          "baseline_merge_horizon": null
+        }
+      },
+      "energy_counters": {
+        "energy_reachability_checks": 1,
+        "repair_candidates_checked": 1
+      },
+      "elapsed": 0.9483941402286291
+    },
+    {
+      "index": 2,
+      "tick": 0,
+      "uid": "4",
+      "proposal": 12,
+      "request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "teacher_proposal": 14,
+      "reason": "predicted_holder_reachable_tube",
+      "certificate_equal": null,
+      "hash": "e69ba951a2ae4c1b16ea40772cc2d3098caf3826cc035371b0208c7e37a67436",
+      "duration": 115.2096052764114,
+      "scheduled_departure": 11.027869896593,
+      "merge_angle": 2.7584071159362793,
+      "closest": {
+        "uid": 5,
+        "kind": "tube",
+        "stage": "plan",
+        "raw_min": 33.51671971204928,
+        "lower_bound": 28.428981296477495,
+        "dense_min": 33.51648193040579,
+        "time": 100.35000000000001,
+        "visible_slots": [
+          "target_ring_predecessor",
+          "target_ring_successor"
+        ],
+        "current_distance": 600.7495318350236,
+        "other_phase": "ring_inner",
+        "other_plan": null,
+        "tube_width": 0.0
+      },
+      "all_observed_pairs": 5,
+      "slots": {
+        "same_ring_leader": 3,
+        "same_ring_follower": 3,
+        "target_ring_predecessor": 5,
+        "target_ring_successor": 5,
+        "nearest_predicted_conflict": 2
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": 5,
+          "path_gap": 296.0,
+          "relative_path_gap": 628.3185307179585,
+          "relative_gap_encoded": 1.0,
+          "baseline_merge_horizon": 18.5
+        },
+        "target_ring_successor": {
+          "uid": 5,
+          "path_gap": -296.0,
+          "relative_path_gap": -628.3185307179588,
+          "relative_gap_encoded": -1.0,
+          "baseline_merge_horizon": 18.5
+        }
+      },
+      "energy_counters": {
+        "repair_candidates_checked": 1,
+        "energy_reachability_checks": 1
+      },
+      "elapsed": 1.341546343639493
+    },
+    {
+      "index": 3,
+      "tick": 0,
+      "uid": "4",
+      "proposal": 14,
+      "request": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "teacher_proposal": 14,
+      "reason": "certified",
+      "certificate_equal": true,
+      "hash": "bbb540ee3f5acbca279ec25ee480e0fb882bbaeaf071e4825bbd6268f9879113",
+      "duration": 143.43951757207125,
+      "scheduled_departure": 25.608870805195,
+      "merge_angle": 3.2384073734283447,
+      "closest": {
+        "uid": 5,
+        "kind": "tube",
+        "stage": "plan",
+        "raw_min": 193.54905865350176,
+        "lower_bound": 188.46132023792998,
+        "dense_min": 193.54844439953544,
+        "time": 61.95,
+        "visible_slots": [
+          "target_ring_predecessor",
+          "target_ring_successor"
+        ],
+        "current_distance": 600.7495318350236,
+        "other_phase": "ring_inner",
+        "other_plan": null,
+        "tube_width": 0.0
+      },
+      "all_observed_pairs": 6,
+      "slots": {
+        "same_ring_leader": 3,
+        "same_ring_follower": 3,
+        "target_ring_predecessor": 5,
+        "target_ring_successor": 5,
+        "nearest_predicted_conflict": 2
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": 5,
+          "path_gap": 296.0,
+          "relative_path_gap": 628.3185307179585,
+          "relative_gap_encoded": 1.0,
+          "baseline_merge_horizon": 18.5
+        },
+        "target_ring_successor": {
+          "uid": 5,
+          "path_gap": -296.0,
+          "relative_path_gap": -628.3185307179588,
+          "relative_gap_encoded": -1.0,
+          "baseline_merge_horizon": 18.5
+        }
+      },
+      "energy_counters": {
+        "energy_reachability_checks": 1,
+        "repair_candidates_checked": 1
+      },
+      "elapsed": 1.6576592763885856
+    },
+    {
+      "index": 4,
+      "tick": 152,
+      "uid": "6",
+      "proposal": 12,
+      "request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "teacher_proposal": 13,
+      "reason": "predicted_separation",
+      "certificate_equal": null,
+      "hash": "a47f1d2fae93f4eafbd4b04398cc7f8beeca63f88b6db6c0a0ece6eeb2fc59a8",
+      "duration": 74.50143457316307,
+      "scheduled_departure": 194.697204717963,
+      "merge_angle": 1.2407622337341309,
+      "closest": {
+        "uid": 1,
+        "kind": "track",
+        "stage": "plan",
+        "raw_min": 50.51968843553542,
+        "lower_bound": 50.06864783315022,
+        "dense_min": 50.45550615596595,
+        "time": 219.20000000001528,
+        "visible_slots": [],
+        "current_distance": 580.34120266322,
+        "other_phase": "transfer_m2i",
+        "other_plan": {
+          "start": 83.0,
+          "end": 156.88460964757195,
+          "mode": "ring_transfer",
+          "target_phase": "ring_inner",
+          "hash": "a9723f7aa0044bc8ed6be7a2bd018d59751af2aedde73974dfc3cbc7843f6bfa",
+          "endpoint": [
+            -145.299962749603,
+            137.43333229229358,
+            40.0
+          ],
+          "endpoint_velocity": [
+            -10.80923946879848,
+            -11.427956129504592,
+            0.0
+          ]
+        },
+        "tube_width": null
+      },
+      "all_observed_pairs": 3,
+      "slots": {
+        "same_ring_leader": null,
+        "same_ring_follower": null,
+        "target_ring_predecessor": 2,
+        "target_ring_successor": 2,
+        "nearest_predicted_conflict": 0
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": 2,
+          "path_gap": 1249.1082540534542,
+          "relative_path_gap": 1064.9892564908348,
+          "relative_gap_encoded": 1.0,
+          "baseline_merge_horizon": 18.5
+        },
+        "target_ring_successor": {
+          "uid": 2,
+          "path_gap": -1249.1082540534542,
+          "relative_path_gap": -191.64780494508236,
+          "relative_gap_encoded": -0.5988993904533824,
+          "baseline_merge_horizon": 18.5
+        }
+      },
+      "energy_counters": {
+        "repair_candidates_checked": 1,
+        "energy_reachability_checks": 1
+      },
+      "elapsed": 0.793475135229528
+    },
+    {
+      "index": 5,
+      "tick": 152,
+      "uid": "6",
+      "proposal": 13,
+      "request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "teacher_proposal": 13,
+      "reason": "certified",
+      "certificate_equal": true,
+      "hash": "2454f45863d925f92759a309177cbdada7000ab7bd84cb3659eb4a96d24998fb",
+      "duration": 52.9138685282154,
+      "scheduled_departure": 175.785040326673,
+      "merge_angle": 1.480762004852295,
+      "closest": {
+        "uid": 0,
+        "kind": "track",
+        "stage": "plan",
+        "raw_min": 127.53382918982727,
+        "lower_bound": 127.08278858744208,
+        "dense_min": 127.53382918982727,
+        "time": 152.0,
+        "visible_slots": [
+          "nearest_predicted_conflict"
+        ],
+        "current_distance": 127.53382918982638,
+        "other_phase": "transfer_m2i",
+        "other_plan": {
+          "start": 101.0,
+          "end": 175.47767946670473,
+          "mode": "ring_transfer",
+          "target_phase": "ring_inner",
+          "hash": "b00d743b3ad109ba4ff6a5b304a608cf4ab152b9db1f8927bc4077bdf42919d4",
+          "endpoint": [
+            69.90892975982493,
+            187.38394152070734,
+            40.0
+          ],
+          "endpoint_velocity": [
+            -14.77021611489983,
+            5.510450855789366,
+            0.0
+          ]
+        },
+        "tube_width": null
+      },
+      "all_observed_pairs": 17,
+      "slots": {
+        "same_ring_leader": null,
+        "same_ring_follower": null,
+        "target_ring_predecessor": 2,
+        "target_ring_successor": 2,
+        "nearest_predicted_conflict": 0
+      },
+      "target_gaps": {
+        "target_ring_predecessor": {
+          "uid": 2,
+          "path_gap": 1249.1082540534542,
+          "relative_path_gap": 1064.9892564908348,
+          "relative_gap_encoded": 1.0,
+          "baseline_merge_horizon": 18.5
+        },
+        "target_ring_successor": {
+          "uid": 2,
+          "path_gap": -1249.1082540534542,
+          "relative_path_gap": -191.64780494508236,
+          "relative_gap_encoded": -0.5988993904533824,
+          "baseline_merge_horizon": 18.5
+        }
+      },
+      "energy_counters": {
+        "energy_reachability_checks": 1,
+        "repair_candidates_checked": 1
+      },
+      "elapsed": 0.8032270446419716
+    }
+  ],
+  "uid0_observation_differences": {
+    "ring_progress": {
+      "tick92": [
+        -0.21608595550060272,
+        -0.9763743281364441
+      ],
+      "tick101": [
+        -0.6192631721496582,
+        -0.7851834893226624
+      ]
+    },
+    "soc": {
+      "tick92": [
+        0.9241750240325928
+      ],
+      "tick101": [
+        0.9181750416755676
+      ]
+    },
+    "wait": {
+      "tick92": [
+        6.27297686150996e-06
+      ],
+      "tick101": [
+        0.002506272867321968
+      ]
+    },
+    "free_lz_fraction": {
+      "tick92": [
+        0.6666666865348816
+      ],
+      "tick101": [
+        0.5
+      ]
+    },
+    "nearest_predicted_conflict": {
+      "tick92": [
+        1.0,
+        0.0,
+        0.6284806728363037,
+        -0.2184123396873474,
+        0.02200738713145256,
+        0.6253120303153992,
+        0.122553750872612,
+        0.0,
+        1.0
+      ],
+      "tick101": [
+        1.0,
+        0.0,
+        1.0,
+        -0.1759929358959198,
+        1.0,
+        0.2227245271205902,
+        0.9076016545295715,
+        0.0,
+        1.0
+      ]
+    },
+    "final_queue_pressure": {
+      "tick92": [
+        0.3333333432674408
+      ],
+      "tick101": [
+        0.6666666865348816
+      ]
+    },
+    "global_free_lz_fraction": {
+      "tick92": [
+        0.6666666865348816
+      ],
+      "tick101": [
+        0.5
+      ]
+    },
+    "interface_headway_slack": {
+      "tick92": [
+        1.0
+      ],
+      "tick101": [
+        0.8898106813430786
+      ]
+    }
+  },
+  "total_candidate_wall_seconds": 11.170924453996122,
+  "failed_first_wall_seconds": 1.5687925703823566
+}

@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "failure replay runner changed",
+    "type": "FailureReplayError"
+  },
+  "phase": "check",
+  "stage": "P3_GATE_FAILURE_REPLAY_20261001_V1",
+  "status": "FAILED"
+}

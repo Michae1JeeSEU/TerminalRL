@@ -1,0 +1,19 @@
+{
+  "snapshot_time": "2026-10-01T15:45:11.559955+08:00",
+  "pid": 2169812,
+  "pid_alive": true,
+  "cwd": "/home/user/projects/terminal",
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_fresh_validation_20261001_v4",
+  "progress": {"status": "RUNNING", "phase": "arm", "stage": "P3_PREFIX_FALLBACK_20261001_V1", "cell_id": 2, "arm": "after_prefix_fallback", "absolute_step": 650, "env_now": 650.0, "active_observation_count": 1, "generated_request_rows": 24, "native_forward_count": 651},
+  "log": {"exists": true, "size_bytes": 0},
+  "error": null,
+  "full": null,
+  "new_completed_arms": ["cell_02_before_legacy.json", "cell_02_after_legacy.json", "cell_02_before_prefix.json"],
+  "cell_02": {
+    "before_legacy": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [18, 6, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 4266.17076193046, "request_elapsed_total_seconds": 10172.0, "energy_total_consumed": 8656.863483145795, "raw_reward_excluding_rejection_penalty": 438.9403011874092, "release_rejection_penalty": -28.25, "reward_total": 410.6903011874092, "steps": 855, "natural_terminal": true, "censored": false, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true},
+    "after_legacy": {"status": "completed", "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f", "N_E_F_D_U": [22, 2, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 3307.265844347862, "request_elapsed_total_seconds": 9279.0, "energy_total_consumed": 7695.952069083928, "raw_reward_excluding_rejection_penalty": 491.29246218237785, "release_rejection_penalty": -15.700000000000001, "reward_total": 475.59246218237786, "steps": 736, "natural_terminal": true, "censored": false, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "aliases_restored": true},
+    "before_prefix": {"status": "completed", "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab", "N_E_F_D_U": [23, 1, 0, 0, 0], "generated_admitted_successful_resolved": [24, 24, 24, 24], "wait_seconds": 2261.200522026176, "request_elapsed_total_seconds": 8571.0, "energy_total_consumed": 6878.929441174629, "raw_reward_excluding_rejection_penalty": 508.4636303261074, "release_rejection_penalty": -10.8, "reward_total": 497.6636303261074, "steps": 674, "natural_terminal": true, "censored": false, "technical_ok": true, "request_identity_exact_24": true, "caller_rng_unchanged": true, "model_unchanged": true, "weights_unchanged": true, "safety_nonzero": false, "lifecycle_valid": true, "replay_exact": true, "factory_calls": 1, "replay_factory_calls": 1, "prefix_controller": {"name": "sampled_first_prefix_fallback", "policy_requested_k": 3, "controller_max": 25, "public_k3_prefix_validated": true, "no_second_forward": true, "no_second_sample": true, "runtime_aliases_restored": true, "sampler_aliases_restored": true, "source_distributions_immutable": true, "orders_sidecar_sha256": "6e3354bf43b2a9e699b899e098ae85e917ef3b179a2de7c9444012b4c5151138"}}
+  },
+  "raw_tapes_read": false,
+  "old_outputs_read": false
+}

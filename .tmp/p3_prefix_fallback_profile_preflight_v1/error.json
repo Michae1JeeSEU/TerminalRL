@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "JSON input missing: \\home\\user\\training_outputs\\terminal\\p3_followup_20260930\\trained_proposal_support_20261001\\arms\\cell_01_before_legacy.json",
+    "type": "PrefixFallbackProfileError"
+  },
+  "phase": "preflight",
+  "stage": "P3_PREFIX_FALLBACK_PROFILE_20261001_V1",
+  "status": "FAILED"
+}

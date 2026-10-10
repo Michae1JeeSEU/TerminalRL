@@ -1,0 +1,67 @@
+{
+  "status": "ANALYSIS_OK",
+  "rows": [
+    {
+      "scene": "mixed",
+      "slot": 0,
+      "teacher_gate": 1,
+      "proposal": 12,
+      "baseline_seconds": 0.9925285903736949,
+      "candidate_seconds": 0.6707358425483108,
+      "speedup": 1.4797607752745172,
+      "reduction_fraction": 0.32421509158162043,
+      "intents_each": 1,
+      "plans_each": 1
+    },
+    {
+      "scene": "mixed",
+      "slot": 19,
+      "teacher_gate": 0,
+      "proposal": null,
+      "baseline_seconds": 33.60630257707089,
+      "candidate_seconds": 23.534258478321135,
+      "speedup": 1.4279737178899323,
+      "reduction_fraction": 0.299706999175261,
+      "intents_each": 25,
+      "plans_each": 25
+    },
+    {
+      "scene": "mixed",
+      "slot": 299,
+      "teacher_gate": 1,
+      "proposal": 22,
+      "baseline_seconds": 28.522228899411857,
+      "candidate_seconds": 19.932304522022605,
+      "speedup": 1.430954903779365,
+      "reduction_fraction": 0.30116595753028197,
+      "intents_each": 17,
+      "plans_each": 17
+    },
+    {
+      "scene": "high",
+      "slot": 177,
+      "teacher_gate": 0,
+      "proposal": null,
+      "baseline_seconds": 83.34455945342779,
+      "candidate_seconds": 56.71194975543767,
+      "speedup": 1.4696119567893453,
+      "reduction_fraction": 0.3195482689289657,
+      "intents_each": 25,
+      "plans_each": 25
+    }
+  ],
+  "seconds": {
+    "baseline": 146.46561952028424,
+    "candidate": 100.84924859832972
+  },
+  "speedup": 1.4523223678506418,
+  "reduction_fraction": 0.311447635775282,
+  "teacher_queries": 8,
+  "release_intents": 136,
+  "candidate_plan_calls": 136,
+  "env_steps": 4,
+  "reset_count": 0,
+  "full_outputs_exact": true,
+  "prior_local_failed_queries": 1,
+  "trained": false
+}

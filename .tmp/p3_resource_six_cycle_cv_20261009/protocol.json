@@ -1,0 +1,32 @@
+{
+  "mode": "train_cycle_cross_validation",
+  "smoke": false,
+  "model_seed": 91911,
+  "resource_context": true,
+  "ego_dim": 159,
+  "input_seeds": [
+    893511,
+    893512,
+    893513,
+    893601,
+    893602,
+    893603
+  ],
+  "measurements": [
+    0,
+    100,
+    500,
+    1000,
+    2000,
+    5000
+  ],
+  "updates": 5000,
+  "learning_rate": 0.0003,
+  "batch_size": 128,
+  "gradient_clip": 0.5,
+  "wall_seconds_per_fold": 300,
+  "Q_rows_accessed": false,
+  "environment_steps": 0,
+  "teacher_queries": 0,
+  "checkpoint_written": false
+}

@@ -1,0 +1,184 @@
+{
+  "all_validator_errors_none": true,
+  "artifact_count": 4,
+  "artifacts": [
+    {
+      "adapted_arm": "before_legacy",
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "config_fields": [
+        "config"
+      ],
+      "controller_flags": null,
+      "flags": {
+        "PPO_ALLOWED": false,
+        "caller_rng_unchanged": true,
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "teacher_called": false,
+        "training_or_update_called": false,
+        "weights_unchanged": true
+      },
+      "kind": "native",
+      "metrics": {
+        "censored": false,
+        "complete_scene_metrics_known": true,
+        "hard_safety_clear": true,
+        "natural_terminal": true,
+        "request_identity_exact_24": true,
+        "technical_ok": true
+      },
+      "original_arm": "before_legacy",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v3\\arms\\cell_01_before_legacy.json",
+      "runtime_factory_counts": {
+        "factory_calls": 1,
+        "replay_factory_calls": 1
+      },
+      "sha256": "0549ba7d7df609da5d5f99e293afb354e641699013ac2508e2d42b69d6ef2a7b",
+      "status": "completed",
+      "validator_error": null
+    },
+    {
+      "adapted_arm": "after_legacy",
+      "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "config_fields": [
+        "config"
+      ],
+      "controller_flags": null,
+      "flags": {
+        "PPO_ALLOWED": false,
+        "caller_rng_unchanged": true,
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "teacher_called": false,
+        "training_or_update_called": false,
+        "weights_unchanged": true
+      },
+      "kind": "native",
+      "metrics": {
+        "censored": false,
+        "complete_scene_metrics_known": true,
+        "hard_safety_clear": true,
+        "natural_terminal": true,
+        "request_identity_exact_24": true,
+        "technical_ok": true
+      },
+      "original_arm": "after_legacy",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v3\\arms\\cell_01_after_legacy.json",
+      "runtime_factory_counts": {
+        "factory_calls": 1,
+        "replay_factory_calls": 1
+      },
+      "sha256": "35e01503e5a353f1865b5ff06f1558e224204025a0ad57f01bd1bcb70e42fd04",
+      "status": "completed",
+      "validator_error": null
+    },
+    {
+      "adapted_arm": "before_prefix",
+      "checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+      "config_fields": [
+        "config_snapshot",
+        "config_snapshot_before"
+      ],
+      "controller_flags": {
+        "controller_max": 25,
+        "name": "sampled_first_prefix_fallback",
+        "native_forward_count": 648,
+        "no_second_forward": true,
+        "no_second_sample": true,
+        "policy_requested_k": 3,
+        "public_k3_prefix_validated": true,
+        "registration_count": 314,
+        "runtime_aliases_restored": true,
+        "sampler_aliases_restored": true,
+        "source_distributions_immutable": true
+      },
+      "flags": {
+        "PPO_ALLOWED": false,
+        "caller_rng_unchanged": true,
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "teacher_called": false,
+        "training_or_update_called": false,
+        "weights_unchanged": true
+      },
+      "kind": "prefix",
+      "metrics": {
+        "censored": false,
+        "complete_scene_metrics_known": true,
+        "hard_safety_clear": true,
+        "natural_terminal": true,
+        "request_identity_exact_24": true,
+        "technical_ok": true
+      },
+      "original_arm": "before_prefix",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_fresh_validation_20261001_v3\\arms\\cell_01_before_prefix.json",
+      "runtime_factory_counts": {
+        "factory_calls": 1,
+        "replay_factory_calls": 1
+      },
+      "sha256": "edbd591b65abc2c51b8e1d7a0790b80ab9fc069e3ab59c1a1f2bb31e4f05c002",
+      "status": "completed",
+      "validator_error": null
+    },
+    {
+      "adapted_arm": "after_prefix",
+      "checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+      "config_fields": [
+        "config_snapshot",
+        "config_snapshot_before"
+      ],
+      "controller_flags": {
+        "controller_max": 25,
+        "name": "sampled_first_prefix_fallback",
+        "native_forward_count": 632,
+        "no_second_forward": true,
+        "no_second_sample": true,
+        "policy_requested_k": 3,
+        "public_k3_prefix_validated": true,
+        "registration_count": 270,
+        "runtime_aliases_restored": true,
+        "sampler_aliases_restored": true,
+        "source_distributions_immutable": true
+      },
+      "flags": {
+        "PPO_ALLOWED": false,
+        "caller_rng_unchanged": true,
+        "model_unchanged": true,
+        "safety_nonzero": false,
+        "teacher_called": false,
+        "training_or_update_called": false,
+        "weights_unchanged": true
+      },
+      "kind": "prefix",
+      "metrics": {
+        "censored": false,
+        "complete_scene_metrics_known": true,
+        "hard_safety_clear": true,
+        "natural_terminal": true,
+        "request_identity_exact_24": true,
+        "technical_ok": true
+      },
+      "original_arm": "after_prefix_fallback",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\p3_followup_20260930\\prefix_fallback_20261001_v2\\arms\\cell_01_after_prefix_fallback.json",
+      "runtime_factory_counts": {
+        "factory_calls": 1,
+        "replay_factory_calls": 1
+      },
+      "sha256": "b69db65c7605a4d3a743d665164895b85ae20aad4b6d98f03aa3284bcbca5b0a",
+      "status": "completed",
+      "validator_error": null
+    }
+  ],
+  "exit_code": 0,
+  "scope": {
+    "PPO_ALLOWED": false,
+    "environment_created": false,
+    "heldout_used": false,
+    "optimizer_used": false,
+    "teacher_called": false,
+    "training_or_update_called": false
+  },
+  "status": "CONTRACT_PROOF_OK",
+  "test_source_sha256": "ccb2210bd2e64aa8d880936598602b622e658f43776fa4bfb8405d969a1a1927",
+  "validator_source_sha256": "0ce1f128a77941b6001446bfd0d8e0c7abd2c52ab2aaa9271398abcf2c8355fe"
+}

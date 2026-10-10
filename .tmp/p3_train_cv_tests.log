@@ -1,0 +1,21 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+_____ test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint ______
+
+tmp_path = WindowsPath('C:/Users/user/AppData/Local/Temp/pytest-of-user/pytest-1196/test_smoke_has_disjoint_splits0')
+
+    def test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint(tmp_path):
+        torch.set_num_threads(1)
+        root=tmp_path/'smoke';result=run([],root,smoke=True)
+>       assert result==json.loads((root/'result.json').read_text())
+E       AssertionError: assert {'status': 'C...se': 4, ...}]} == {'status': 'C...se': 4, ...}]}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'folds': [{'held_seed': None, 'train_rows': 8, 'validation_rows': 8, 'train_release': 4, ...}, {'held_seed': None, 'train_rows': 8, 'validation_rows': 8, 'train_release': 4, ...}]} != {'folds': [{'held_seed': None, 'train_rows': 8, 'validation_rows': 8, 'train_release': 4, ...}, {'held_seed': None, 'train_rows': 8, 'validation_rows': 8, 'train_release': 4, ...}]}
+E         Use -v to get more diff
+
+tests\test_p3_v25_train_generalization.py:19: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_p3_v25_train_generalization.py::test_smoke_has_disjoint_splits_serialized_curves_and_no_checkpoint
+1 failed, 1 passed in 3.19s

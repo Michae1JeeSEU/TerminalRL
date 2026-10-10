@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "preflight changed caller RNG",
+    "type": "FreshValidationError"
+  },
+  "phase": "preflight",
+  "stage": "P3_PREFIX_FALLBACK_FRESH_VALIDATION_20261001_V1",
+  "status": "ERROR"
+}

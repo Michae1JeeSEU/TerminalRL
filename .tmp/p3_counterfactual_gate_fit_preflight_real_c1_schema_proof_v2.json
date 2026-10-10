@@ -1,0 +1,38 @@
+{
+  "actor_rows": 7378,
+  "empty_ticks": 60,
+  "flags": {
+    "caller_rng_unchanged_after_restore": true,
+    "caller_rng_unchanged_before_restore": true,
+    "controller_installed_and_restored": true,
+    "replay_exact": true
+  },
+  "replay_checks": {
+    "base_reset_state_match": true,
+    "config_compatibility": null,
+    "config_match": true,
+    "exact": true,
+    "reset_recipe_match": true,
+    "reset_state_match": true
+  },
+  "source_provenance": {
+    "binding_checks": {
+      "caller_rng_unchanged": true,
+      "checkpoint_sha256": true,
+      "config_snapshot_unchanged": true,
+      "model_unchanged": true,
+      "observer_rng_unchanged": true,
+      "replay_factory_calls": true,
+      "rollout_factory_calls": true,
+      "runtime_aliases_restored": true,
+      "runtime_dependency_shas_unchanged": true,
+      "sampler_aliases_restored": true,
+      "source_distributions_immutable": true
+    },
+    "lifecycle_valid": true,
+    "safety_nonzero": false,
+    "source_status": "completed"
+  },
+  "status": "C1_SCHEMA_VALID",
+  "steps": 708
+}

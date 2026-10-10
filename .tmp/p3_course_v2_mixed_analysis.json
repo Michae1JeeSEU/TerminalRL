@@ -1,0 +1,1464 @@
+{
+  "task_actor_attributes": {
+    "priority_1": 547,
+    "mission_cargo": 80,
+    "mission_emergency": 53,
+    "mission_surveillance": 130,
+    "mission_standard": 284
+  },
+  "actor_soc_below_065": 453,
+  "case": "train_dense24_mixed",
+  "status": "COLLECTION_OK",
+  "rows": 11370,
+  "steps": 957,
+  "actor_rows": 547,
+  "contexts": {
+    "raw": {
+      "fast_inner": 1725,
+      "busy_lz": 11358,
+      "retry": 3389,
+      "low_soc": 6446,
+      "after_retry": 365,
+      "interface_o2m": 1035,
+      "interface_m2i": 1142,
+      "interface_i2f": 1735,
+      "interface_None": 7458
+    },
+    "actor": {
+      "fast_inner": 263,
+      "busy_lz": 535,
+      "retry": 0,
+      "low_soc": 339,
+      "after_retry": 365,
+      "interface_o2m": 131,
+      "interface_m2i": 146,
+      "interface_i2f": 270
+    },
+    "label": {
+      "fast_inner": 263,
+      "busy_lz": 535,
+      "retry": 0,
+      "low_soc": 339,
+      "after_retry": 365,
+      "interface_o2m": 131,
+      "interface_m2i": 146,
+      "interface_i2f": 270
+    }
+  },
+  "interface_gates": {
+    "o2m": {
+      "1": 27,
+      "0": 104
+    },
+    "m2i": {
+      "0": 104,
+      "1": 42
+    },
+    "i2f": {
+      "1": 18,
+      "0": 252
+    }
+  },
+  "proposals": {
+    "12": 38,
+    "11": 3,
+    "7": 2,
+    "4": 1,
+    "17": 5,
+    "23": 1,
+    "8": 1,
+    "13": 12,
+    "22": 3,
+    "18": 1,
+    "14": 5,
+    "9": 5,
+    "3": 2,
+    "10": 5,
+    "24": 1,
+    "1": 1,
+    "15": 1
+  },
+  "teacher_vs_reported_trace_gate": {
+    "teacher1_actual1": 48,
+    "teacher1_actual0": 39,
+    "teacher0_actual1": 6,
+    "teacher0_actual0": 454
+  },
+  "rule_requests": {
+    "1": 547,
+    "0": 10823
+  },
+  "reported_trace_gates": {
+    "1": 54,
+    "0": 11316
+  },
+  "normal_K3_approval_ranks": {
+    "1": 35,
+    "2": 11,
+    "3": 6
+  },
+  "unranked_release_traces": [
+    {
+      "tick": 273,
+      "uid": "3",
+      "soc": 0.381467246822287,
+      "trace_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "trace_applied": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "tick": 662,
+      "uid": "1",
+      "soc": 0.37320678418774417,
+      "trace_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "trace_applied": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "behavior_release_rejected_reasons": {
+    "NO_MERGE_GAP": 84,
+    "PREDICTED_SEPARATION": 273,
+    "HEADWAY": 16,
+    "LZ_RESOURCE": 11,
+    "FINAL_RESOURCE": 109
+  },
+  "teacher_transitions": {
+    "same_uid_WAIT_to_RELEASE": 43,
+    "same_uid_same_interface_WAIT_to_RELEASE": 40
+  },
+  "teacher_trace_gate_differences": [
+    {
+      "slot": 1,
+      "tick": 0,
+      "uid": "1",
+      "interface": "o2m",
+      "soc": 0.7936927640225415,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.6010620137676597
+    },
+    {
+      "slot": 2,
+      "tick": 0,
+      "uid": "2",
+      "interface": "o2m",
+      "soc": 0.7089403433269661,
+      "teacher_gate": 1,
+      "teacher_proposal": 11,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 2,
+      "plan_calls": 2,
+      "seconds": 1.0178023418411613
+    },
+    {
+      "slot": 3,
+      "tick": 0,
+      "uid": "3",
+      "interface": "o2m",
+      "soc": 0.5519904884190294,
+      "teacher_gate": 1,
+      "teacher_proposal": 7,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 6,
+      "plan_calls": 6,
+      "seconds": 4.318436585366726
+    },
+    {
+      "slot": 4,
+      "tick": 0,
+      "uid": "4",
+      "interface": "o2m",
+      "soc": 0.7408829923099849,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.6896648732945323
+    },
+    {
+      "slot": 6,
+      "tick": 0,
+      "uid": "6",
+      "interface": "m2i",
+      "soc": 0.568121477576763,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 10.961885370314121
+    },
+    {
+      "slot": 8,
+      "tick": 0,
+      "uid": "8",
+      "interface": "m2i",
+      "soc": 0.6461841229874241,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.6056874804198742
+    },
+    {
+      "slot": 9,
+      "tick": 0,
+      "uid": "9",
+      "interface": "m2i",
+      "soc": 0.675675232250459,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.4312725765630603
+    },
+    {
+      "slot": 11,
+      "tick": 0,
+      "uid": "11",
+      "interface": "i2f",
+      "soc": 0.827134209194941,
+      "teacher_gate": 1,
+      "teacher_proposal": 12,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 1,
+      "plan_calls": 1,
+      "seconds": 0.08123804908245802
+    },
+    {
+      "slot": 18,
+      "tick": 12,
+      "uid": "11",
+      "interface": "i2f",
+      "soc": 0.819134209194941,
+      "teacher_gate": 1,
+      "teacher_proposal": 4,
+      "teacher_request": [
+        1.0,
+        -1.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 23,
+      "plan_calls": 113,
+      "seconds": 5.482622733339667
+    },
+    {
+      "slot": 39,
+      "tick": 45,
+      "uid": "3",
+      "interface": "o2m",
+      "soc": 0.5219904884190294,
+      "teacher_gate": 1,
+      "teacher_proposal": 23,
+      "teacher_request": [
+        1.0,
+        1.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 21,
+      "plan_calls": 21,
+      "seconds": 19.86509930342436
+    },
+    {
+      "slot": 45,
+      "tick": 54,
+      "uid": "4",
+      "interface": "o2m",
+      "soc": 0.7048829923099849,
+      "teacher_gate": 1,
+      "teacher_proposal": 8,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 9,
+      "plan_calls": 9,
+      "seconds": 9.255454482510686
+    },
+    {
+      "slot": 118,
+      "tick": 180,
+      "uid": "2",
+      "interface": "o2m",
+      "soc": 0.5889403433269661,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 2.548638249747455
+    },
+    {
+      "slot": 128,
+      "tick": 194,
+      "uid": "62",
+      "interface": "o2m",
+      "soc": 0.7154939713681145,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 2.5220584087073803
+    },
+    {
+      "slot": 139,
+      "tick": 207,
+      "uid": "2",
+      "interface": "o2m",
+      "soc": 0.5709403433269661,
+      "teacher_gate": 1,
+      "teacher_proposal": 7,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 6,
+      "plan_calls": 6,
+      "seconds": 4.437684425152838
+    },
+    {
+      "slot": 148,
+      "tick": 224,
+      "uid": "87",
+      "interface": "o2m",
+      "soc": 0.6071969878505032,
+      "teacher_gate": 1,
+      "teacher_proposal": 14,
+      "teacher_request": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 5,
+      "plan_calls": 5,
+      "seconds": 4.441841988824308
+    },
+    {
+      "slot": 152,
+      "tick": 233,
+      "uid": "87",
+      "interface": "o2m",
+      "soc": 0.6011969878505032,
+      "teacher_gate": 1,
+      "teacher_proposal": 9,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 13,
+      "plan_calls": 13,
+      "seconds": 10.248230883851647
+    },
+    {
+      "slot": 158,
+      "tick": 242,
+      "uid": "87",
+      "interface": "o2m",
+      "soc": 0.5951969878505032,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 17.428453010506928
+    },
+    {
+      "slot": 159,
+      "tick": 242,
+      "uid": "114",
+      "interface": "o2m",
+      "soc": 0.5279589473626222,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        -1.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 15.997182491235435
+    },
+    {
+      "slot": 164,
+      "tick": 259,
+      "uid": "0",
+      "interface": "m2i",
+      "soc": 0.5253729813848685,
+      "teacher_gate": 1,
+      "teacher_proposal": 3,
+      "teacher_request": [
+        1.0,
+        -1.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 19,
+      "plan_calls": 19,
+      "seconds": 8.50031568389386
+    },
+    {
+      "slot": 168,
+      "tick": 270,
+      "uid": "12",
+      "interface": "m2i",
+      "soc": 0.6020964614651505,
+      "teacher_gate": 1,
+      "teacher_proposal": 9,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 13,
+      "plan_calls": 13,
+      "seconds": 5.420485535636544
+    },
+    {
+      "slot": 172,
+      "tick": 279,
+      "uid": "12",
+      "interface": "m2i",
+      "soc": 0.5960964614651505,
+      "teacher_gate": 1,
+      "teacher_proposal": 11,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 2,
+      "plan_calls": 2,
+      "seconds": 1.8447167025879025
+    },
+    {
+      "slot": 175,
+      "tick": 288,
+      "uid": "12",
+      "interface": "m2i",
+      "soc": 0.5900964614651505,
+      "teacher_gate": 1,
+      "teacher_proposal": 10,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 4,
+      "plan_calls": 4,
+      "seconds": 3.4647350450977683
+    },
+    {
+      "slot": 185,
+      "tick": 311,
+      "uid": "54",
+      "interface": "m2i",
+      "soc": 0.41868896317179594,
+      "teacher_gate": 1,
+      "teacher_proposal": 10,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 4,
+      "plan_calls": 4,
+      "seconds": 3.637645948678255
+    },
+    {
+      "slot": 189,
+      "tick": 317,
+      "uid": "209",
+      "interface": "o2m",
+      "soc": 0.7766634713590803,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 12.827430337667465
+    },
+    {
+      "slot": 193,
+      "tick": 325,
+      "uid": "136",
+      "interface": "o2m",
+      "soc": 0.5637279422452628,
+      "teacher_gate": 1,
+      "teacher_proposal": 24,
+      "teacher_request": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 23.50338090956211
+    },
+    {
+      "slot": 212,
+      "tick": 366,
+      "uid": "86",
+      "interface": "m2i",
+      "soc": 0.6385392184561351,
+      "teacher_gate": 1,
+      "teacher_proposal": 1,
+      "teacher_request": [
+        1.0,
+        -1.0,
+        -0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 18,
+      "plan_calls": 18,
+      "seconds": 8.54447502270341
+    },
+    {
+      "slot": 216,
+      "tick": 369,
+      "uid": "98",
+      "interface": "m2i",
+      "soc": 0.5838685631524809,
+      "teacher_gate": 1,
+      "teacher_proposal": 14,
+      "teacher_request": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 5,
+      "plan_calls": 5,
+      "seconds": 2.491493168286979
+    },
+    {
+      "slot": 223,
+      "tick": 373,
+      "uid": "0",
+      "interface": "i2f",
+      "soc": 0.4542646090912089,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 0,
+      "seconds": 0.05816570855677128
+    },
+    {
+      "slot": 302,
+      "tick": 413,
+      "uid": "87",
+      "interface": "m2i",
+      "soc": 0.48600198763500474,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 2.426991374231875
+    },
+    {
+      "slot": 330,
+      "tick": 422,
+      "uid": "87",
+      "interface": "m2i",
+      "soc": 0.48000198763500473,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 2.2734796218574047
+    },
+    {
+      "slot": 358,
+      "tick": 431,
+      "uid": "87",
+      "interface": "m2i",
+      "soc": 0.47400198763500473,
+      "teacher_gate": 1,
+      "teacher_proposal": 14,
+      "teacher_request": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 5,
+      "plan_calls": 5,
+      "seconds": 3.473848885856569
+    },
+    {
+      "slot": 363,
+      "tick": 440,
+      "uid": "87",
+      "interface": "m2i",
+      "soc": 0.4680019876350048,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 1.8832271797582507
+    },
+    {
+      "slot": 371,
+      "tick": 449,
+      "uid": "87",
+      "interface": "m2i",
+      "soc": 0.4620019876350048,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 1.7658966537564993
+    },
+    {
+      "slot": 384,
+      "tick": 467,
+      "uid": "32",
+      "interface": "m2i",
+      "soc": 0.5761460567163719,
+      "teacher_gate": 1,
+      "teacher_proposal": 13,
+      "teacher_request": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 3,
+      "plan_calls": 3,
+      "seconds": 2.6190975476056337
+    },
+    {
+      "slot": 386,
+      "tick": 471,
+      "uid": "209",
+      "interface": "m2i",
+      "soc": 0.6841450349018469,
+      "teacher_gate": 1,
+      "teacher_proposal": 17,
+      "teacher_request": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 7,
+      "plan_calls": 7,
+      "seconds": 3.8554065534844995
+    },
+    {
+      "slot": 401,
+      "tick": 499,
+      "uid": "136",
+      "interface": "m2i",
+      "soc": 0.45906161999835415,
+      "teacher_gate": 1,
+      "teacher_proposal": 9,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 13,
+      "plan_calls": 13,
+      "seconds": 6.47963609546423
+    },
+    {
+      "slot": 417,
+      "tick": 527,
+      "uid": "232",
+      "interface": "m2i",
+      "soc": 0.4223169601063393,
+      "teacher_gate": 1,
+      "teacher_proposal": 15,
+      "teacher_request": [
+        1.0,
+        0.5,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 14,
+      "plan_calls": 14,
+      "seconds": 6.38739596772939
+    },
+    {
+      "slot": 432,
+      "tick": 546,
+      "uid": "86",
+      "interface": "m2i",
+      "soc": 0.5185392184561352,
+      "teacher_gate": 1,
+      "teacher_proposal": 3,
+      "teacher_request": [
+        1.0,
+        -1.0,
+        0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 19,
+      "plan_calls": 19,
+      "seconds": 8.727106204256415
+    },
+    {
+      "slot": 436,
+      "tick": 554,
+      "uid": "1",
+      "interface": "i2f",
+      "soc": 0.4452067841877442,
+      "teacher_gate": 1,
+      "teacher_proposal": 10,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 4,
+      "plan_calls": 4,
+      "seconds": 0.1737766359001398
+    },
+    {
+      "slot": 451,
+      "tick": 572,
+      "uid": "232",
+      "interface": "m2i",
+      "soc": 0.39231696010633926,
+      "teacher_gate": 1,
+      "teacher_proposal": 11,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -0.5
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 2,
+      "plan_calls": 2,
+      "seconds": 0.9319949522614479
+    },
+    {
+      "slot": 452,
+      "tick": 573,
+      "uid": "62",
+      "interface": "m2i",
+      "soc": 0.47169981290708307,
+      "teacher_gate": 1,
+      "teacher_proposal": 9,
+      "teacher_request": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 13,
+      "plan_calls": 13,
+      "seconds": 7.678986160084605
+    },
+    {
+      "slot": 456,
+      "tick": 582,
+      "uid": "62",
+      "interface": "m2i",
+      "soc": 0.46569981290708307,
+      "teacher_gate": 1,
+      "teacher_proposal": 14,
+      "teacher_request": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 5,
+      "plan_calls": 5,
+      "seconds": 3.150831298902631
+    },
+    {
+      "slot": 501,
+      "tick": 663,
+      "uid": "86",
+      "interface": "i2f",
+      "soc": 0.44450004599400555,
+      "teacher_gate": 1,
+      "teacher_proposal": 10,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 4,
+      "plan_calls": 8,
+      "seconds": 0.21003446262329817
+    },
+    {
+      "slot": 527,
+      "tick": 730,
+      "uid": "209",
+      "interface": "i2f",
+      "soc": 0.5187683408826025,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 50,
+      "seconds": 1.1662398725748062
+    },
+    {
+      "slot": 545,
+      "tick": 817,
+      "uid": "98",
+      "interface": "i2f",
+      "soc": 0.2934172949460074,
+      "teacher_gate": 1,
+      "teacher_proposal": 10,
+      "teacher_request": [
+        1.0,
+        0.0,
+        -1.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 4,
+      "plan_calls": 14,
+      "seconds": 0.3310034601017833
+    }
+  ],
+  "terminal_soc_min": 0.1265629925480357,
+  "terminal_soc_max": 0.7652702370942516,
+  "terminal_energy_min": 189.84448882205356,
+  "emergency": {
+    "emergency_attempts": 151,
+    "emergency_committed": 10,
+    "emergency_blocked_safety": 297,
+    "emergency_blocked_energy": 0,
+    "emergency_blocked_lz": 2,
+    "emergency_blocked_dynamics": 0,
+    "emergency_blocked_slack": 0,
+    "emergency_touchdowns": 10,
+    "emergency_energy_guard_rejections": 0,
+    "emergency_lz_priority_rejections": 0
+  },
+  "min_actual": 81.23869925877942,
+  "min_swept": 80.87157196369067,
+  "label_intents": 11947,
+  "label_plan_calls": 11613,
+  "longest_queries": [
+    {
+      "slot": 36,
+      "tick": 36,
+      "uid": "9",
+      "interface": "m2i",
+      "soc": 0.651675232250459,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 28.32434984575957
+    },
+    {
+      "slot": 46,
+      "tick": 54,
+      "uid": "9",
+      "interface": "m2i",
+      "soc": 0.639675232250459,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 28.25679781474173
+    },
+    {
+      "slot": 29,
+      "tick": 27,
+      "uid": "4",
+      "interface": "o2m",
+      "soc": 0.7228829923099849,
+      "teacher_gate": 0,
+      "teacher_proposal": null,
+      "teacher_request": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "behavior": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "execution": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "intent_checks": 25,
+      "plan_calls": 25,
+      "seconds": 27.599685500375926
+    }
+  ],
+  "rollout_seconds": 817.3852404709905,
+  "annotation_seconds": 4546.195686399005
+}

@@ -1,0 +1,8 @@
+{
+  "status": "COMPLETE",
+  "states": 1,
+  "plan_calls": 1,
+  "error": null,
+  "elapsed_seconds": 0.0,
+  "witness_sha256": "9cbdfd8841ea5375ac39b2fe05bfc4317a68a25101966c46a553600ee405a447"
+}

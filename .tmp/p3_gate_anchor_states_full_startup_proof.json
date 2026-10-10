@@ -1,0 +1,18 @@
+{
+  "status": "RUNNING",
+  "phase": "full",
+  "server_time": "2026-10-01T23:25:04+08:00",
+  "python_pid": 2204414,
+  "launcher_pid": 2204413,
+  "cwd": "/home/user/projects/terminal",
+  "exe": "/usr/bin/python3.12",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.collect_p3_gate_anchor_states_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001",
+  "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "preflight_sha256": "2e6ce616d80ed4914f42e4f8f21b02d311dd6cc62535139e0e05c6f0f5d30861",
+  "pilot_sha256": "d2594d2feed937172a70f08790755be44b3737c8a4c4169cb41bd23b93d54fc4",
+  "progress_path": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/progress.json",
+  "progress_mtime": "2026-10-01 23:24:58.768285394 +0800",
+  "progress": {"cell_id": 2, "step": 299, "steps_expected": 674, "rows_recorded": 4599, "active_actor_count": 14, "empty_world_ticks": 0, "status": "RUNNING"},
+  "full_log": "/home/user/training_outputs/terminal/p3_followup_20260930/gate_anchor_states_20261001/full_v1.log",
+  "completed_cell_artifacts": ["cell_01.json", "anchors/cell_01.npz"]
+}

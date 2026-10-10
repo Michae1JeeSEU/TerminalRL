@@ -1,0 +1,50 @@
+[
+  {
+    "uid": 0,
+    "request_time": 0.0,
+    "gate": 0,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  },
+  {
+    "uid": 1,
+    "request_time": 75.0,
+    "gate": 1,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  },
+  {
+    "uid": 2,
+    "request_time": 150.0,
+    "gate": 3,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  },
+  {
+    "uid": 3,
+    "request_time": 225.0,
+    "gate": 1,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  },
+  {
+    "uid": 4,
+    "request_time": 300.0,
+    "gate": 3,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  },
+  {
+    "uid": 5,
+    "request_time": 375.0,
+    "gate": 1,
+    "speed": 13.0,
+    "initial_soc": 1.0,
+    "service_seconds": 60.0
+  }
+]

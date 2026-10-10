@@ -1,0 +1,1011 @@
+{
+  "combined": {
+    "blocked_pairs": 394,
+    "blocked_scene": 27,
+    "known_pairs": 4555,
+    "known_scene": 214,
+    "queries": 473,
+    "queries_by_seed": {
+      "893511": 59,
+      "893512": 52,
+      "893513": 56,
+      "893601": 33,
+      "893602": 54,
+      "893603": 63,
+      "893604": 39,
+      "893605": 62,
+      "893606": 55
+    },
+    "split": [
+      {
+        "actor_held_rows": 30,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 3119,
+        "auxiliary_held_queries": 59,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 414,
+        "held_seed": 893511
+      },
+      {
+        "actor_held_rows": 721,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2428,
+        "auxiliary_held_queries": 52,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 421,
+        "held_seed": 893512
+      },
+      {
+        "actor_held_rows": 547,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2602,
+        "auxiliary_held_queries": 56,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 417,
+        "held_seed": 893513
+      },
+      {
+        "actor_held_rows": 18,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 3131,
+        "auxiliary_held_queries": 33,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 440,
+        "held_seed": 893601
+      },
+      {
+        "actor_held_rows": 571,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2578,
+        "auxiliary_held_queries": 54,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 419,
+        "held_seed": 893602
+      },
+      {
+        "actor_held_rows": 371,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2778,
+        "auxiliary_held_queries": 63,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 410,
+        "held_seed": 893603
+      },
+      {
+        "actor_held_rows": 57,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 3092,
+        "auxiliary_held_queries": 39,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 434,
+        "held_seed": 893604
+      },
+      {
+        "actor_held_rows": 542,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2607,
+        "auxiliary_held_queries": 62,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 411,
+        "held_seed": 893605
+      },
+      {
+        "actor_held_rows": 292,
+        "actor_train_has_held_seed": false,
+        "actor_train_rows": 2857,
+        "auxiliary_held_queries": 55,
+        "auxiliary_train_has_held_seed": false,
+        "auxiliary_train_queries": 418,
+        "held_seed": 893606
+      }
+    ],
+    "target_states": 184
+  },
+  "execution_scope": "official read-only loaders and serialized witness inspection; no collect/witness_state",
+  "loader_check": {
+    "path": ".tmp/p3_nine_cycle_loader_check_20261009.json",
+    "sha256": "acd7a7d7a3c3dda6c4792a5c3228432d5c73042cdc5a2a6f6bd6f91a70e3c262",
+    "status": "PASS",
+    "supplemental_selected_ids_match": true,
+    "supplemental_selected_states": 65
+  },
+  "no_collect": true,
+  "no_environment_reset_step": true,
+  "no_optimizer": true,
+  "no_teacher_query": true,
+  "no_witness_state": true,
+  "old": {
+    "all_destinations": 317,
+    "blocked_pairs": 260,
+    "blocked_scene": 16,
+    "budget": {
+      "max_plan_calls": 1728,
+      "max_states": 144,
+      "wall_seconds": 3600
+    },
+    "budget_within_limits": true,
+    "candidate_consistency_checks": 197,
+    "candidate_infeasible": 125,
+    "candidate_total": 197,
+    "destination_record_count": 121,
+    "elapsed_seconds": 408.31300000008196,
+    "empty_pair_destinations": 8,
+    "error": null,
+    "feasible_pair_approved_checks": 1098,
+    "known_pairs": 2899,
+    "known_scene": 145,
+    "pair_uid_order_checks": 309,
+    "plan_calls_sum": 317,
+    "protocol": "p3_train_neighbor_witness_20261009_v1",
+    "protocol_file": ".tmp/p3_neighbor_witness_train_20261009/protocol.json",
+    "protocol_file_sha256": "e784c34cd847bb18b8e526d52c180ced9ef2d603f80974e2d64b6a2f2e0282b7",
+    "queries": 317,
+    "query_counter_delta": {
+      "by_record": {
+        "p3_v3_90d_sparse_expert_v1:893511:135:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:144:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:147:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:162:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:171:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:195:2": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:222:0": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:250:1": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:315:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:325:1": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:375:5": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:385:3": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:447:5": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:465:3": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:497:4": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:509:4": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:521:4": {
+          "energy_reachability_checks": 8,
+          "repair_candidates_checked": 8
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:600:5": {
+          "energy_reachability_checks": 5,
+          "repair_candidates_checked": 5
+        },
+        "p3_v3_90d_sparse_expert_v1:893511:75:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:125:30": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:148:3": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:182:33": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:188:12": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:260:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:267:0": {
+          "energy_reachability_checks": 3,
+          "repair_candidates_checked": 3
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:269:2": {},
+        "p3_v3_90d_sparse_expert_v1:893512:319:109": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:378:8": {},
+        "p3_v3_90d_sparse_expert_v1:893512:440:13": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:454:33": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:464:31": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:505:8": {
+          "energy_reachability_checks": 8,
+          "repair_candidates_checked": 8
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:569:126": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:578:126": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:707:31": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:730:126": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:803:126": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893512:821:133": {},
+        "p3_v3_90d_sparse_expert_v1:893512:9:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:180:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:202:7": {
+          "energy_reachability_checks": 5,
+          "repair_candidates_checked": 5
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:207:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:293:54": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:297:12": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:301:5": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:317:209": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:350:232": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:413:84": {},
+        "p3_v3_90d_sparse_expert_v1:893513:449:87": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:453:209": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:478:12": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:564:62": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:578:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:591:62": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:63:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:811:2": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:823:2": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:99:2": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893513:9:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:135:1": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:147:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:205:1": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:222:0": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:255:3": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:311:1": {
+          "energy_reachability_checks": 5,
+          "repair_candidates_checked": 5
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:327:3": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:375:5": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:402:3": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:434:5": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:512:5": {
+          "energy_reachability_checks": 10,
+          "repair_candidates_checked": 10
+        },
+        "p3_v3_90d_sparse_expert_v1:893601:75:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:1004:131": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:1079:131": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:135:8": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:157:1": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:18:5": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:255:0": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:280:1": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:296:44": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:299:8": {},
+        "p3_v3_90d_sparse_expert_v1:893602:348:4": {},
+        "p3_v3_90d_sparse_expert_v1:893602:443:52": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:482:119": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:511:88": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:537:5": {
+          "energy_reachability_checks": 3,
+          "repair_candidates_checked": 3
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:550:46": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:698:131": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:716:131": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:913:218": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:959:278": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893602:9:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:108:3": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:158:62": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:168:7": {
+          "energy_reachability_checks": 5,
+          "repair_candidates_checked": 5
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:212:71": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:273:3": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:276:96": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:318:3": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:324:39": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:469:62": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:475:3": {
+          "energy_reachability_checks": 3,
+          "repair_candidates_checked": 3
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:499:119": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:508:119": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:531:40": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:549:110": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:63:9": {
+          "energy_reachability_checks": 8,
+          "repair_candidates_checked": 8
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:653:210": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:658:119": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:782:119": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:790:194": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893603:9:0": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        }
+      },
+      "field_sums": {
+        "energy_reachability_checks": 313,
+        "repair_candidates_checked": 317,
+        "trajectory_infeasible_candidates": 4
+      },
+      "nonempty_records": 121
+    },
+    "record_queries_by_seed": {
+      "893511": 19,
+      "893512": 24,
+      "893513": 24,
+      "893601": 12,
+      "893602": 24,
+      "893603": 24
+    },
+    "record_unique_decision_ids": 127,
+    "records": 127,
+    "result_file": ".tmp/p3_neighbor_witness_train_20261009/result.json",
+    "result_file_sha256": "f252e13fc25c08d25174f13507de786c80c7a130acf7ab569bd83d497591e103",
+    "selected_ids": 127,
+    "status": "COMPLETE",
+    "target_queries_by_seed": {
+      "893511": 59,
+      "893512": 52,
+      "893513": 56,
+      "893601": 33,
+      "893602": 54,
+      "893603": 63
+    },
+    "target_states": 121,
+    "witnesses_file": ".tmp/p3_neighbor_witness_train_20261009/witnesses.jsonl",
+    "witnesses_file_sha256": "b5e6a9c37efc327782b2c2f853c2fd504064fe19150a2d4c677f8e97cffadcc4"
+  },
+  "paired": {
+    "labels_preserved_by_official_loader": true,
+    "release": 577,
+    "rows": 3149,
+    "shapes": {
+      "ego": [
+        3149,
+        159
+      ],
+      "mask": [
+        3149,
+        20
+      ],
+      "traffic": [
+        3149,
+        20,
+        50
+      ]
+    },
+    "unique_decision_ids": 3149,
+    "wait": 2572
+  },
+  "root": "D:\\7_codespace\\training_outputs\\terminal",
+  "source_file": ".tmp/analyze_p3_nine_cycle_witness_20261009.py",
+  "source_file_sha256": "32cdf20552349fd4ed7a34c0740b1c2fa08b29d6dd4a7e96826582d441b00527",
+  "status": "PASS",
+  "supplemental": {
+    "all_destinations": 156,
+    "blocked_pairs": 134,
+    "blocked_scene": 11,
+    "budget": {
+      "max_plan_calls": 864,
+      "max_states": 72,
+      "wall_seconds": 1800
+    },
+    "budget_within_limits": true,
+    "candidate_consistency_checks": 104,
+    "candidate_infeasible": 68,
+    "candidate_total": 104,
+    "destination_record_count": 63,
+    "elapsed_seconds": 130.63183272443712,
+    "empty_pair_destinations": 2,
+    "error": null,
+    "feasible_pair_approved_checks": 565,
+    "known_pairs": 1656,
+    "known_scene": 69,
+    "pair_uid_order_checks": 154,
+    "plan_calls_sum": 156,
+    "protocol": "p3_supplemental_train_neighbor_witness_20261009_v1",
+    "protocol_file": "D:/7_codespace/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle/protocol.json",
+    "protocol_file_sha256": "1b77d8f64f3dfbf4301b53f4c346d454f87607dd1c7db399d944eaca3636521f",
+    "queries": 156,
+    "query_counter_delta": {
+      "by_record": {
+        "p3_v3_90d_sparse_expert_v1:893604:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:0:3": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:0:5": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:100:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:105:1": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:138:8": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:145:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:190:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:208:1": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:235:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:244:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:269:8": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:344:9": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:426:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:444:7": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:597:7": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893604:9:2": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:208:42": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:242:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:255:0": {
+          "energy_reachability_checks": 8,
+          "repair_candidates_checked": 8
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:271:151": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:279:0": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:279:47": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:343:2": {},
+        "p3_v3_90d_sparse_expert_v1:893605:372:152": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:456:47": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:469:151": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:487:151": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:489:5": {
+          "energy_reachability_checks": 3,
+          "repair_candidates_checked": 3
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:571:99": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:589:99": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:697:152": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:710:151": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:779:90": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:927:120": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:939:120": {
+          "energy_reachability_checks": 3,
+          "repair_candidates_checked": 3
+        },
+        "p3_v3_90d_sparse_expert_v1:893605:9:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:0:0": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:0:10": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:0:6": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 2,
+          "trajectory_infeasible_candidates": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:0:7": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:110:7": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:119:18": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:172:0": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:185:17": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:237:71": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:242:3": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:242:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:257:20": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:293:0": {},
+        "p3_v3_90d_sparse_expert_v1:893606:295:18": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:340:18": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:344:137": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:347:20": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:405:17": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:497:58": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:582:71": {
+          "energy_reachability_checks": 6,
+          "repair_candidates_checked": 6
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:644:20": {
+          "energy_reachability_checks": 1,
+          "repair_candidates_checked": 1
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:739:76": {
+          "energy_reachability_checks": 4,
+          "repair_candidates_checked": 4
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:751:76": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        },
+        "p3_v3_90d_sparse_expert_v1:893606:9:4": {
+          "energy_reachability_checks": 2,
+          "repair_candidates_checked": 2
+        }
+      },
+      "field_sums": {
+        "energy_reachability_checks": 154,
+        "repair_candidates_checked": 156,
+        "trajectory_infeasible_candidates": 2
+      },
+      "nonempty_records": 63
+    },
+    "record_queries_by_seed": {
+      "893604": 17,
+      "893605": 24,
+      "893606": 24
+    },
+    "record_unique_decision_ids": 65,
+    "records": 65,
+    "result_file": "D:/7_codespace/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle/result.json",
+    "result_file_sha256": "ce38c84739c1da577d2a3676d20e37417a9b718d180c86eb69bb1f86f72c991c",
+    "selected_ids": 65,
+    "status": "COMPLETE",
+    "target_queries_by_seed": {
+      "893604": 39,
+      "893605": 62,
+      "893606": 55
+    },
+    "target_states": 63,
+    "witnesses_file": "D:/7_codespace/training_outputs/terminal/p3_neighbor_supplemental_witness_20261009/three_cycle/witnesses.jsonl",
+    "witnesses_file_sha256": "e543020f06583ae98b0e44df7ee3c73507c76c3d622abc1be043e3c22e4dcc60"
+  }
+}

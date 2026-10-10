@@ -1,0 +1,41 @@
+{
+  "actor_batch_size": 128,
+  "architecture": "intent_destination_neighbor_risk_v1",
+  "aux_batch_seed": 91912,
+  "auxiliary_batch_size": 64,
+  "backward_calls_expected_per_worker": 8,
+  "backward_calls_expected_total": 16,
+  "checkpoint_written": false,
+  "environment_resets": 0,
+  "environment_steps": 0,
+  "gate_mode": "first_feasible_union",
+  "groups": {
+    "expanded": "old+supplemental+prefix",
+    "old_reference": "old+supplemental"
+  },
+  "held_seed": 893511,
+  "input_source": {
+    "kind": "synthetic",
+    "source": "terminal_marl.scripts.diagnose_p3_intent_neighbor.smoke_inputs",
+    "source_sha256": "6cea299481b352dc8b91d6b06b1ea703121c8b6f001e4b5ae702f11484d6928f"
+  },
+  "loader_snapshot_reads": "official load_nine_cycle_train/load_resource_train input reconstruction only",
+  "metrics": "timing_and_support_counts_only; no loss/accuracy/action metrics",
+  "model_seed": 91911,
+  "observation": "existing V2.6 159+N50",
+  "optimizer_constructed": false,
+  "optimizer_updates": 0,
+  "output_must_be_new": true,
+  "planner_calls": 0,
+  "protocol": "p3_neighbor_runtime_profile_20261010_v1",
+  "q_accessed": false,
+  "recommended_real_output_root": "/home/user/training_outputs/terminal/p3_neighbor_runtime_probe_20261010",
+  "runtime_snapshot_calls": 0,
+  "smoke": true,
+  "teacher_queries": 0,
+  "timed_updates_per_group": 2,
+  "updates": 0,
+  "wall_cap_seconds": 180.0,
+  "warmups": 2,
+  "workers": 2
+}

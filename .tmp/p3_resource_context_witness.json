@@ -1,0 +1,18 @@
+{
+  "status": "VERIFIED",
+  "old_dimensions": 105,
+  "new_dimensions": 159,
+  "differing_ego_indices": [
+    144,
+    146,
+    149,
+    153,
+    155,
+    158
+  ],
+  "old_same": true,
+  "new_same": false,
+  "old_prefix_and_traffic_exact": true,
+  "teacher_queries": 0,
+  "environment_steps": 0
+}

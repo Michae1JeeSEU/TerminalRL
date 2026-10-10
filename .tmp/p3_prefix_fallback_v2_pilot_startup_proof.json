@@ -1,0 +1,27 @@
+{
+  "phase": "pilot",
+  "status": "RUNNING",
+  "cell_id": 1,
+  "python_pid": 2138749,
+  "launcher_pid": 2138748,
+  "cwd": "/home/user/projects/terminal",
+  "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.run_p3_prefix_fallback_20261001 --phase pilot --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2",
+  "env": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "progress": {
+    "active_observation_count": 15,
+    "env_now": 250.0,
+    "generated_request_rows": 24,
+    "native_forward_count": 251,
+    "absolute_step": 250,
+    "status": "RUNNING"
+  },
+  "progress_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/progress.json",
+  "log_path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_20261001_v2/pilot_v1.log",
+  "pilot_artifact_present": false,
+  "threshold_reached": true,
+  "no_full_launched": true
+}

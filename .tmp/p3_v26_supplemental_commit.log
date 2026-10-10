@@ -1,0 +1,30 @@
+ docs/CURRENT_STATUS.md                             |  2 ++
+ .../v4_2/p3_v25_generalization_repair_20261009.md  | 12 +++++++
+ terminal_marl/configs/p3_v25_course.py             |  7 ++--
+ terminal_marl/training/p3_v26_course_data.py       | 16 ++++++++--
+ terminal_marl/training/p3_v26_supplemental_data.py | 37 ++++++++++++++++++++++
+ tests/test_p3_v26_supplemental_data.py             | 30 ++++++++++++++++++
+ 6 files changed, 98 insertions(+), 6 deletions(-)
+
+diff --git a/docs/CURRENT_STATUS.md b/docs/CURRENT_STATUS.md
+index b157f16..ce1fdd3 100644
+--- a/docs/CURRENT_STATUS.md
++++ b/docs/CURRENT_STATUS.md
+@@ -214,6 +214,8 @@
+ 
+ - 共享候选first-hit对照已COMPLETE但无改善，dense proposal仅.245–.387且训练内也约.51–.55，不接入runtime。primary下一只检验“逐邻机编码先结合ego159再汇总”这一结构，恢复原独立gate/proposal头、原CE和全部观测/标签/门槛；15项含两step输出检查通过，待同六fold有界开发验证。该表示尚非已接受修复，未新Q/部署fit/PPO/formal，详见[完整失败与后续假设](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
+ 
++- 条件邻机六fold亦COMPLETE但无稳定改善，dense R .426–.655/proposal .368–.453，训练内约99%；两种表示均不接入正式训练，停止继续网络变体试探。依据六周期/罕见proposal和6→24负载跨度的覆盖限制，primary冻结下一有界补充周期：893604 medium12/warm6 mixed、893605 dense24 fixed、893606 dense24 mixed；开发smoke892872隔离，物理/teacher/priority关闭/159合同不变，逐臂1800ticks/3600s环境/21600s标注。新入口12项local检查通过，尚待server同步/smoke；无新Q/准入，详见[补充周期预注册](evidence/v4_2/p3_v25_generalization_repair_20261009.md)。
++
+ ## 2026-10-03 P3 统一实现修复（最新）
+ 
+ - 用户授权 primary 亲自完成重要实现，再逐步验证效果；详细问题、证据、修改和限制见 [统一修复记录](evidence/v4_2/p3_integrated_repair_20261003.md)。
+
+[codex/v4-2-v2-1-formal-i1 8901bfe] feat: declare bounded medium and dense supplemental training cycles
+ 6 files changed, 98 insertions(+), 6 deletions(-)
+ create mode 100644 terminal_marl/training/p3_v26_supplemental_data.py
+ create mode 100644 tests/test_p3_v26_supplemental_data.py
+
+COMMIT=8901bfe411bda7b5d723665bc4ff2c3e2494b0df
+INDEX=''
+REMOTES=''

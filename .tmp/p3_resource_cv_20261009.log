@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\7_codespace\terminal\terminal_marl\scripts\diagnose_p3_v25_train_generalization.py", line 102, in <module>
+    if __name__=='__main__':raise SystemExit(main())
+                                             ^^^^^^
+  File "D:\7_codespace\terminal\terminal_marl\scripts\diagnose_p3_v25_train_generalization.py", line 97, in main
+    result=run(args.train_directories or (),args.output,smoke=args.smoke,resource_context=args.resource_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\terminal_marl\scripts\diagnose_p3_v25_train_generalization.py", line 27, in run
+    paired=load_resource_train(directories)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\7_codespace\terminal\terminal_marl\training\p3_v26_resource_inputs.py", line 36, in load_resource_train
+    raise ValueError('original observation prefix or traffic changed')
+ValueError: original observation prefix or traffic changed

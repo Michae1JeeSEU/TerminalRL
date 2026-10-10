@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "V2 opportunity preflight changed after gate-control preflight",
+    "type": "GateReleaseControlError"
+  },
+  "phase": "preflight",
+  "stage": "P3_PROPOSAL_SUPPORT_CONTROL_20261001_V1",
+  "status": "FAILED"
+}

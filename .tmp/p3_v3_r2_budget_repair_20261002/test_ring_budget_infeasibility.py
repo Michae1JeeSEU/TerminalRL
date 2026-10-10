@@ -1,0 +1,153 @@
+"""Real high-load ring candidates must fail closed without aborting energy queries."""
+from copy import deepcopy
+import importlib.util
+import math
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+import pytest
+
+from terminal_marl.core.config import RingRole, SimConfig
+from terminal_marl.core.dynamic_airspace import DynamicAirspace
+from terminal_marl.core.energy import EnergyModel
+from terminal_marl.core.energy_reachability import (
+    _copy_state_at_ring, compute_candidate_energy_budget, minimum_immediate_emergency_soc,
+)
+from terminal_marl.core.landing_zone import LandingZoneManager
+from terminal_marl.core.trajectory_generator import TrajectoryGenerator, TrajectoryPlan, TrajectoryPoint
+from terminal_marl.core.trajectory_time_parameterization import TrajectoryInfeasibleError
+from terminal_marl.core.uav import ArrivalRequest, MissionType, QueuedArrivalState, UAVState
+
+
+@pytest.fixture
+def generator_class():
+    candidate = os.environ.get("V3_RING_BUDGET_CANDIDATE")
+    if not candidate:
+        return TrajectoryGenerator
+    name = "terminal_marl.core._r2_ring_budget_candidate"
+    spec = importlib.util.spec_from_file_location(name, Path(candidate))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module.TrajectoryGenerator
+
+
+def components(generator_class, speed=17.2):
+    config = SimConfig(
+        trajectory_schema_version="executable_trajectory_v3",
+        final_approach_geometry_mode="continuous_inward_v1",
+        energy_model_mode="phase_motion_v2",
+    )
+    airspace = DynamicAirspace(config)
+    ring = airspace.actual_ring(RingRole.INNER)
+    generator = generator_class(config)
+    manager, energy = LandingZoneManager(), EnergyModel(config)
+    request = ArrivalRequest(7, 0., 0, MissionType.STANDARD, 1, config.energy_capacity, .8)
+    queued = QueuedArrivalState(request, request.energy_capacity * request.initial_soc)
+    uav = UAVState.from_request(7, request, queued, np.zeros(3), 0.)
+    holder = _copy_state_at_ring(
+        uav, RingRole.INNER, 1.,
+        position=np.array((ring.radius, 0., ring.height)),
+        velocity=np.array((0., speed, 0.)),
+        acceleration=np.array((-speed ** 2 / ring.radius, 0., 0.)), ring_progress=0.,
+    )
+    motion = generator.dynamics.ring_motion_step(ring, 0., speed, speed, 1.)
+    candidate = TrajectoryPlan(
+        "high-load-budget-fixture", holder.uid, "ring_transfer",
+        (TrajectoryPoint(0., holder.position, holder.velocity, holder.acceleration),
+         TrajectoryPoint(1., motion.position, motion.velocity, motion.acceleration)),
+        0., 1., metadata={"target_phase": "ring_inner"},
+    )
+    return config, airspace, ring, generator, manager, energy, holder, candidate
+
+
+@pytest.mark.parametrize("speed", (17.2, math.sqrt(1.5 * 200.)))
+def test_no_tangential_budget_is_explicit_trajectory_infeasibility(generator_class, speed):
+    _, _, ring, generator, _, _, holder, _ = components(generator_class, speed)
+    # This is a valid live circular boundary under the unchanged physical cap.
+    assert speed <= generator.dynamics.ring_speed_limit(ring.radius) + 1e-9
+    assert np.linalg.norm(holder.acceleration[:2]) <= 1.5 + 1e-9
+    with pytest.raises(TrajectoryInfeasibleError, match="ring_hold_tangential_budget_unavailable"):
+        generator._v3_required_ring_braking_duration(
+            ring, 0., speed, 10., initial_acceleration=holder.acceleration,
+        )
+
+
+@pytest.mark.parametrize("query", ("candidate", "immediate"))
+def test_real_high_load_fallbacks_return_conservative_energy_without_mutation(generator_class, query):
+    config, airspace, _, generator, manager, energy, holder, candidate = components(generator_class)
+    original = deepcopy(holder)
+    if query == "candidate":
+        result = compute_candidate_energy_budget(
+            holder, candidate, RingRole.INNER, 0., airspace, manager, generator, energy, config,
+        )
+        assert result.selected_lz_id is None
+        assert result.required_energy == math.inf
+        assert result.slack_energy == -math.inf
+    else:
+        assert minimum_immediate_emergency_soc(
+            holder, RingRole.INNER, 1., airspace, manager, generator, energy, config,
+        ) == math.inf
+    for field in ("position", "velocity", "acceleration"):
+        np.testing.assert_array_equal(getattr(holder, field), getattr(original, field))
+    assert holder.energy_remaining == original.energy_remaining
+    assert all(zone.reserved_by is None for zone in manager.zones)
+
+
+@pytest.mark.parametrize("query", ("candidate", "immediate"))
+def test_invalid_live_state_still_exposes_runtime_error(generator_class, query):
+    config, airspace, _, generator, manager, energy, holder, candidate = components(generator_class)
+    # Change only the copied boundary passed into a real generator call.
+    # Invalid PVA must not be silently classified as candidate infeasibility.
+    holder.acceleration = np.array((0., 0., 1.))
+    if query == "candidate":
+        candidate = TrajectoryPlan(
+            candidate.plan_id, holder.uid, candidate.mode,
+            (candidate.points[0], TrajectoryPoint(
+                1., candidate.points[-1].position, candidate.points[-1].velocity, holder.acceleration,
+            )), 0., 1., metadata={"target_phase": "ring_inner"},
+        )
+        call = lambda: compute_candidate_energy_budget(
+            holder, candidate, RingRole.INNER, 0., airspace, manager, generator, energy, config,
+        )
+    else:
+        call = lambda: minimum_immediate_emergency_soc(
+            holder, RingRole.INNER, 1., airspace, manager, generator, energy, config,
+        )
+    with pytest.raises(RuntimeError, match="ring_hold_initial_acceleration_inconsistent") as error:
+        call()
+    assert not isinstance(error.value, TrajectoryInfeasibleError)
+
+
+def test_normal_braking_curve_unchanged_against_frozen_generator(generator_class):
+    config, airspace, ring, generator, _, _, holder, _ = components(generator_class, speed=16.)
+    frozen = TrajectoryGenerator(config)
+    duration = frozen._v3_required_ring_braking_duration(
+        ring, 0., holder.speed, 10., initial_acceleration=holder.acceleration,
+    )
+    assert generator._v3_required_ring_braking_duration(
+        ring, 0., holder.speed, 10., initial_acceleration=holder.acceleration,
+    ) == duration
+    before = frozen.ring_hold_points(ring, 0., holder.speed, 10., 5., duration,
+                                     initial_acceleration=holder.acceleration)
+    after = generator.ring_hold_points(ring, 0., holder.speed, 10., 5., duration,
+                                       initial_acceleration=holder.acceleration)
+    assert len(before) == len(after)
+    for old, new in zip(before, after):
+        assert old.t == new.t
+        for name in ("position", "velocity", "acceleration"):
+            np.testing.assert_array_equal(getattr(old, name), getattr(new, name))
+
+
+def test_v2_rejection_and_curve_are_unchanged(generator_class):
+    config = SimConfig(trajectory_schema_version="executable_trajectory_v2")
+    ring = DynamicAirspace(config).actual_ring(RingRole.INNER)
+    old = TrajectoryGenerator(config).ring_hold_points(ring, .4, 16., 10., 5., 30.)
+    new = generator_class(config).ring_hold_points(ring, .4, 16., 10., 5., 30.)
+    assert len(old) == len(new)
+    for before, after in zip(old, new):
+        assert before.t == after.t
+        for field in ("position", "velocity", "acceleration"):
+            np.testing.assert_array_equal(getattr(before, field), getattr(after, field))

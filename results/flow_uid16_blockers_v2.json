@@ -1,0 +1,4637 @@
+{
+  "config": {
+    "action_schema_version": "low_action_schema_v4_2_hierarchical",
+    "airspace_schema_version": "three_ring_v1",
+    "approach_threshold_radius": 1000.0,
+    "arrival_model": "finite_cohort",
+    "arrival_rate_per_second": 0.0,
+    "collision_distance": 10.0,
+    "dt": 1.0,
+    "emergency_energy_margin_seconds": 15.0,
+    "emergency_landing_enabled": true,
+    "emergency_priority_guard_enabled": true,
+    "emergency_trigger_soc": 0.4,
+    "energy_capacity": 1500.0,
+    "energy_model_mode": "phase_motion_v2",
+    "energy_reachability_guard_enabled": true,
+    "experiment_mode": "fixed_rule",
+    "final_approach_geometry_mode": "continuous_inward_v1",
+    "final_queue_capacity": 3,
+    "fixed_arrival_schedule": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "gate_angles_deg": [
+      0.0,
+      90.0,
+      180.0,
+      270.0
+    ],
+    "gate_count": 4,
+    "gate_height": 110.0,
+    "gate_min_time_gap_seconds": 20.0,
+    "gate_probabilities": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "geometry_min_dwell_seconds": 600.0,
+    "geometry_transition_seconds": 20.0,
+    "headway_i2f": 12.0,
+    "headway_m2i": 9.0,
+    "headway_max": 30.0,
+    "headway_min": 3.0,
+    "headway_o2m": 9.0,
+    "height_max": 120.0,
+    "height_min": 0.0,
+    "high_action_schema_version": "high_airspace_v1_10d",
+    "high_level_decision_interval_seconds": 180.0,
+    "high_level_enabled": false,
+    "initial_priority": null,
+    "initial_soc": null,
+    "initial_soc_max": 0.9,
+    "initial_soc_min": 0.55,
+    "initial_soc_mode": "uniform",
+    "low_level_collision_penalty": 25.0,
+    "low_level_emergency_landing_penalty": 8.0,
+    "low_level_energy_failure_penalty": 20.0,
+    "low_level_priority_time_weight": 0.0,
+    "low_level_progress_reward_per_meter": 0.001,
+    "low_level_release_approved_reward": 0.1,
+    "low_level_release_rejected_penalty": 0.05,
+    "low_level_soc_urgency_threshold": 0.65,
+    "low_level_soc_urgency_time_weight": 0.0,
+    "low_level_time_penalty_per_second": 0.01,
+    "low_level_touchdown_reward": 25.0,
+    "lz_assignment_mode": "nearest_available",
+    "max_active_uavs": 60,
+    "max_external_wait_seconds": null,
+    "max_headway_change_per_update": 1.0,
+    "max_height_change_per_update": 20.0,
+    "max_merge_time_residual_seconds": 6.0,
+    "max_radius_change_per_update": 20.0,
+    "max_simulation_seconds": 301.0,
+    "max_speed_profile_change_per_update": 2.0,
+    "max_speed_residual_mps": 0.0,
+    "metrics_sampling_interval_seconds": 20.0,
+    "min_height_gap": 20.0,
+    "min_ring_gap": 120.0,
+    "mission_probabilities": [
+      0.45,
+      0.25,
+      0.1,
+      0.2
+    ],
+    "neighbor_comm_range_m": 320.0,
+    "nmac_distance": 40.0,
+    "num_landing_zones": 6,
+    "observation_schema_version": "phaseA_low_obs_v2_3_source_bound_88d",
+    "phase_motion_nominal_solo_energy": 240.9,
+    "physics_dt": 0.2,
+    "power_external_wait": 1.0,
+    "power_final": 0.9,
+    "power_inbound": 1.0,
+    "power_landing": 1.05,
+    "power_reference": 1.0,
+    "power_ring_hold": 1.0,
+    "power_ring_transfer": 1.1,
+    "priority_alpha": 0.5,
+    "priority_beta": 1.5,
+    "priority_delta": 2.0,
+    "priority_feature_scale": 5.0,
+    "priority_gamma": 1.0,
+    "priority_mode": "random_135",
+    "priority_wait_reference_seconds": 3600.0,
+    "prospective_repair_delays_seconds": [
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ],
+    "radius_max": 900.0,
+    "radius_min": 120.0,
+    "reconcile_late_merge_slots_enabled": false,
+    "release_arbitration_mode": "downstream_priority",
+    "release_threshold": 0.0,
+    "repair_aware_scheduler": false,
+    "reset_mode": "warm_start_rings",
+    "retry_norm_horizon_seconds": 30.0,
+    "rings": {
+      "RingRole.INNER": {
+        "height": 40.0,
+        "nominal_speed": 16.0,
+        "radius": 200.0,
+        "role": "inner"
+      },
+      "RingRole.MIDDLE": {
+        "height": 70.0,
+        "nominal_speed": 20.0,
+        "radius": 400.0,
+        "role": "middle"
+      },
+      "RingRole.OUTER": {
+        "height": 100.0,
+        "nominal_speed": 22.0,
+        "radius": 600.0,
+        "role": "outer"
+      }
+    },
+    "rule_flow_coordination_enabled": true,
+    "runtime_proposal_shortlist_k": 1,
+    "safe_distance": 80.0,
+    "safety_sampling_dt": 1.0,
+    "scheduler_mode": "execution",
+    "schema_version": "phaseA_landing_v1",
+    "shield_broad_phase_margin": 20.0,
+    "shield_correction_magnitude_penalty": 0.1,
+    "shield_enabled": true,
+    "shield_horizon_seconds": 30.0,
+    "shield_id_interventions_per_100_intents": 10.0,
+    "shield_intervention_penalty": 0.2,
+    "shield_ood_interventions_per_100_intents": 20.0,
+    "soc_emergency": 0.2,
+    "soc_reserve": 0.25,
+    "soc_warning": 0.35,
+    "spawn_radius": 1300.0,
+    "speed_max": 36.0,
+    "speed_min": 8.0,
+    "teacher_correction_magnitude_penalty": 0.05,
+    "teacher_enabled": false,
+    "teacher_intervention_penalty": 0.1,
+    "teacher_mode": "teacher_full",
+    "teacher_release_label_enabled": false,
+    "total_requested_uavs": 30,
+    "trajectory_bezier_samples": 41,
+    "trajectory_final_samples": 51,
+    "trajectory_schema_version": "executable_trajectory_v2",
+    "vehicle_dynamics_schema_version": "performance_constrained_v2",
+    "vehicle_execution_mode": "performance_constrained",
+    "vehicle_profile_id": "research_evtol",
+    "warm_start_energy_reachability_check_enabled": true,
+    "warm_start_steady_motion": true,
+    "warm_start_uavs": 30
+  },
+  "diagnostic_only": true,
+  "pickle_roundtrip": {
+    "ok": true
+  },
+  "reconstruction": "loaded pre-release snapshots from completed 301 s replay; compact candidate rows",
+  "scenario": "30 warm-start continuous_inward_v1 route_guard downstream_urgency_v2",
+  "seed": 841501,
+  "sim_time_seconds": 301.0,
+  "snapshots": {
+    "200": {
+      "emergency": [
+        {
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 506.0399406770562
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "bca71591-0d1a-4d48-943a-5f3c997fa433",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 168.8834213604535,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 36.445166499070694,
+            "phase": "ring_middle",
+            "point_minimum": 36.52762453649053,
+            "reachable_tube_minimum": 36.48576024272348,
+            "reachable_tube_time": 218.79999999999893,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 36.445166499070694,
+            "time": 218.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 505.97327401038956
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "70570015-b659-459a-b60b-6e539af1d556",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 168.95008802712016,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 44.53823093381235,
+            "phase": "ring_middle",
+            "point_minimum": 44.559982061877115,
+            "reachable_tube_minimum": 44.55998206186494,
+            "reachable_tube_time": 216.99999999999903,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 44.53823093381235,
+            "time": 217.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 520.7732740103895
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "0dc8e8b0-e703-4942-a774-1478a6a2b3d2",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 154.1500880271202,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 13.858087224765237,
+            "phase": "ring_middle",
+            "point_minimum": 13.865395148101154,
+            "reachable_tube_minimum": 13.865395148094784,
+            "reachable_tube_time": 221.99999999999875,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 13.858087224765237,
+            "time": 222.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 520.6399406770562
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "ac13afae-899a-4620-a691-215575492a93",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 154.28342136045353,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 25.283187890313805,
+            "phase": "ring_middle",
+            "point_minimum": 25.631747630901565,
+            "reachable_tube_minimum": 25.338603433677722,
+            "reachable_tube_time": 220.59999999999883,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 25.283187890313805,
+            "time": 220.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 535.2866073437228
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "a1d4a341-b9d3-4e7f-8bcc-c387504f07d2",
+            "reason": "predicted_swept_separation"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 139.63675469378688,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 15.18687232906364,
+            "phase": "ring_middle",
+            "point_minimum": 15.241673951244726,
+            "reachable_tube_minimum": 15.18687232906364,
+            "reachable_tube_time": 224.19999999999862,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 15.195569192077617,
+            "time": 224.19999999999862,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 535.1532740103896
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "5fc6af2e-dfd6-415f-9063-f30472ba7e8f",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 139.7700880271201,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 7.112791411331192,
+            "phase": "ring_middle",
+            "point_minimum": 8.311312948616719,
+            "reachable_tube_minimum": 7.124927502748592,
+            "reachable_tube_time": 223.59999999999866,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 7.112791411331192,
+            "time": 223.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 90.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 542.6199406770562
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "e93280f1-8ac3-4050-8045-5cb5b1795ece",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 132.3034213604535,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 22.61507193885871,
+            "phase": "ring_middle",
+            "point_minimum": 23.633695987439886,
+            "reachable_tube_minimum": 22.675389201066942,
+            "reachable_tube_time": 237.39999999999787,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 22.61507193885871,
+            "time": 237.5,
+            "uid": 3
+          }
+        },
+        {
+          "duration": 90.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 674.9233620375097,
+            "pass": true,
+            "required_energy": 542.4532740103896
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "10b6d06f-5abe-4050-bf48-1b571d2a64cc",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": false,
+            "slack_energy": 132.47008802712014,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 12.249269175476893,
+            "phase": "ring_middle",
+            "point_minimum": 12.631765638829878,
+            "reachable_tube_minimum": 12.249269175476893,
+            "reachable_tube_time": 224.5999999999986,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 12.259685888653419,
+            "time": 224.5999999999986,
+            "uid": 6
+          }
+        }
+      ],
+      "emergency_free_pads": [
+        2,
+        4
+      ],
+      "normal_m2i": [
+        {
+          "bias_mps": 0.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 29.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 537.3120623995151,
+            "selected_lz_id": 0,
+            "slack_energy": 137.61129963799465
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "443a697b-5919-4c63-8eac-0cfdabb57e31",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 260.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 70.52299629256602,
+            "phase": "transfer_m2i",
+            "point_minimum": 70.57854923608659,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 70.52299629256602,
+            "time": 259.5,
+            "uid": 4
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 29.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 536.9611801663517,
+            "selected_lz_id": 0,
+            "slack_energy": 137.962181871158
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": true,
+            "checked_plan_id": "754dc7e6-a76d-4b95-8faf-d4c492f747d4",
+            "reason": null
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 260.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 83.90758094794353,
+            "phase": "ring_middle",
+            "point_minimum": 83.97845659406006,
+            "reachable_tube_minimum": 83.97201957603734,
+            "reachable_tube_time": 219.1999999999989,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 83.90758094794353,
+            "time": 219.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 29.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 534.4816540380109,
+            "selected_lz_id": 0,
+            "slack_energy": 140.44170799949882
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "f0807960-9bdc-4a48-a767-1743d7d9d0e2",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 260.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 51.4981531249492,
+            "phase": "transfer_m2i",
+            "point_minimum": 51.53328854344788,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 51.4981531249492,
+            "time": 259.5,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 17.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 532.4572994247435,
+            "selected_lz_id": 0,
+            "slack_energy": 142.46606261276622
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": true,
+            "checked_plan_id": "a43a44a0-abe3-4c39-b096-5ce30742ec60",
+            "reason": null
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 272.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 97.22229834485772,
+            "phase": "ring_middle",
+            "point_minimum": 97.2639239222161,
+            "reachable_tube_minimum": 97.26265585148613,
+            "reachable_tube_time": 208.5999999999995,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 97.22229834485772,
+            "time": 208.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 17.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 533.1431695268438,
+            "selected_lz_id": 0,
+            "slack_energy": 141.78019251066587
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "71b15503-ae83-4830-be4b-a5fef7ad91ec",
+            "reason": "predicted_holder_separation"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 272.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 80.66740136977614,
+            "phase": "ring_middle",
+            "point_minimum": 80.76843933490235,
+            "reachable_tube_minimum": 80.73700429116312,
+            "reachable_tube_time": 223.59999999999866,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 80.66740136977614,
+            "time": 223.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 17.69613039923871,
+            "pass": true,
+            "reason": null,
+            "required_energy": 529.2000184634752,
+            "selected_lz_id": 0,
+            "slack_energy": 145.72334357403452
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "bdfa361d-ea93-4bc8-9c40-1ae806edf533",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 272.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 12.885830325163761,
+            "phase": "transfer_m2i",
+            "point_minimum": 12.885830325163761,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 12.885830325163761,
+            "time": 258.0,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 5.696130399238712,
+            "pass": true,
+            "reason": null,
+            "required_energy": 534.5747788504648,
+            "selected_lz_id": 0,
+            "slack_energy": 140.34858318704494
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": true,
+            "checked_plan_id": "3d41c938-8518-45fb-8f37-3a3d4a1449b6",
+            "reason": null
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 284.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 97.25195948314258,
+            "phase": "ring_middle",
+            "point_minimum": 97.29054648875268,
+            "reachable_tube_minimum": 97.2900894604412,
+            "reachable_tube_time": 209.19999999999948,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 97.25195948314258,
+            "time": 209.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 5.696130399238712,
+            "pass": true,
+            "reason": null,
+            "required_energy": 532.1624066209979,
+            "selected_lz_id": 0,
+            "slack_energy": 142.76095541651182
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "0f627918-1f7f-42be-97a5-343fd5dee8ae",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 284.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 22.172571415822304,
+            "phase": "transfer_m2i",
+            "point_minimum": 22.188791876832564,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 22.172571415822304,
+            "time": 283.5,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 5.696130399238712,
+            "pass": true,
+            "reason": null,
+            "required_energy": 520.0360330365374,
+            "selected_lz_id": 0,
+            "slack_energy": 154.88732900097227
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "38286a7b-c445-45e6-8e9c-faa4eaa6d817",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 284.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 45.88651751783735,
+            "phase": "transfer_m2i",
+            "point_minimum": 45.88651751783735,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 45.88651751783735,
+            "time": 256.0,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 537.6184205436541,
+            "selected_lz_id": 0,
+            "slack_energy": 137.3049414938556
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "6231f2ce-1114-4cf2-ac19-c111fa0ca383",
+            "reason": "predicted_holder_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 296.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 97.27437185607943,
+            "phase": "ring_middle",
+            "point_minimum": 97.31023010696019,
+            "reachable_tube_minimum": 97.31004166729143,
+            "reachable_tube_time": 209.79999999999944,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 97.27437185607943,
+            "time": 209.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 536.778316537464,
+            "selected_lz_id": 0,
+            "slack_energy": 138.14504550004574
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "80e7fd45-b98e-426e-819a-1af1ce407261",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 296.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 22.634309677390505,
+            "phase": "transfer_m2i",
+            "point_minimum": 22.634309677390505,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 22.634309677390505,
+            "time": 273.0,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 528.6291032494016,
+            "selected_lz_id": 0,
+            "slack_energy": 146.2942587881081
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "5ea11f78-54e5-4aca-997a-def671ae5637",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 296.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 45.729156104193684,
+            "phase": "ring_middle",
+            "point_minimum": 45.7854404496518,
+            "reachable_tube_minimum": 45.780366875017066,
+            "reachable_tube_time": 231.19999999999823,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 45.729156104193684,
+            "time": 231.5,
+            "uid": 6
+          }
+        }
+      ],
+      "state": {
+        "incoming_plans": [
+          {
+            "end": 228.0,
+            "phase": "transfer_o2m",
+            "plan_id": "d45e6398-e6e4-4686-bc1c-6a5044ec6873",
+            "position": [
+              -29.754935247817848,
+              440.9725810949789,
+              76.29629629629633
+            ],
+            "position_end": [
+              -396.3657983769572,
+              53.79734079856868,
+              70.0
+            ],
+            "soc": 0.5686870961026028,
+            "source_ring": "outer",
+            "start": 144.0,
+            "target_phase": "ring_middle",
+            "target_ring": "middle",
+            "uid": 1
+          },
+          {
+            "end": 250.0,
+            "phase": "transfer_m2i",
+            "plan_id": "38ba1e1a-a385-4739-8c20-36218650e3a6",
+            "position": [
+              -65.9537742575566,
+              -300.6544048672695,
+              56.1705193696199
+            ],
+            "position_end": [
+              37.374753032870544,
+              196.47678701498538,
+              40.0
+            ],
+            "soc": 0.44524745057883197,
+            "source_ring": "middle",
+            "start": 154.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 4
+          },
+          {
+            "end": 212.0,
+            "phase": "transfer_m2i",
+            "plan_id": "a2078459-b118-4d1d-9908-c357fceffca4",
+            "position": [
+              -117.1876158015433,
+              170.754096133151,
+              41.064814814814824
+            ],
+            "position_end": [
+              -199.97455100214935,
+              3.1904469105074864,
+              40.0
+            ],
+            "soc": 0.441968290623702,
+            "source_ring": "middle",
+            "start": 140.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 11
+          },
+          {
+            "end": 228.6961303992387,
+            "phase": "final",
+            "plan_id": "a3c2dffd-dd55-4601-8195-a3d3c6d2a7bf",
+            "position": [
+              -64.32504452147734,
+              -6.938814234522904,
+              40.0
+            ],
+            "position_end": [
+              -80.0,
+              -40.0,
+              0.0
+            ],
+            "soc": 0.4960666278927572,
+            "source_ring": "inner",
+            "start": 154.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 18
+          },
+          {
+            "end": 254.6961303992387,
+            "phase": "final",
+            "plan_id": "a95187b8-d45f-4afe-a9e9-794846f1c219",
+            "position": [
+              125.51023220098335,
+              157.943962467135,
+              40.0
+            ],
+            "position_end": [
+              -80.0,
+              40.0,
+              0.0
+            ],
+            "soc": 0.5493553416677552,
+            "source_ring": "inner",
+            "start": 192.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 19
+          },
+          {
+            "end": 202.6961303992387,
+            "phase": "final",
+            "plan_id": "4d118f6f-4bce-4d36-9ed3-3ca357b4179b",
+            "position": [
+              80.0,
+              40.0,
+              3.1935298381749035
+            ],
+            "position_end": [
+              80.0,
+              40.0,
+              0.0
+            ],
+            "soc": 0.5373185164730987,
+            "source_ring": "inner",
+            "start": 140.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 20
+          },
+          {
+            "end": 264.0,
+            "phase": "transfer_m2i",
+            "plan_id": "c177cbb4-e0ea-4352-970f-2bf830e7c134",
+            "position": [
+              -307.8561616588276,
+              251.76309653188042,
+              69.65401615607377
+            ],
+            "position_end": [
+              194.45614231934937,
+              -46.76332659549521,
+              40.0
+            ],
+            "soc": 0.4815304318968259,
+            "source_ring": "middle",
+            "start": 192.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 23
+          }
+        ],
+        "pads": [
+          {
+            "id": 0,
+            "occupied_by": null,
+            "reserved_by": 18,
+            "status": "reserved"
+          },
+          {
+            "id": 1,
+            "occupied_by": 27,
+            "reserved_by": null,
+            "status": "occupied"
+          },
+          {
+            "id": 2,
+            "occupied_by": null,
+            "reserved_by": null,
+            "status": "free"
+          },
+          {
+            "id": 3,
+            "occupied_by": null,
+            "reserved_by": 19,
+            "status": "reserved"
+          },
+          {
+            "id": 4,
+            "occupied_by": null,
+            "reserved_by": null,
+            "status": "free"
+          },
+          {
+            "id": 5,
+            "occupied_by": null,
+            "reserved_by": 20,
+            "status": "reserved"
+          }
+        ],
+        "ring_holders_and_plans": [
+          {
+            "committed_plan": null,
+            "energy_remaining": 966.6769453736074,
+            "phase": "ring_middle",
+            "position": [
+              -362.953198179279,
+              168.12190794608836,
+              70.0
+            ],
+            "ring_progress": 2.707811481770374,
+            "ring_role": "middle",
+            "soc": 0.6444512969157382,
+            "speed": 20.0,
+            "uid": 0,
+            "velocity": [
+              -8.40609539730442,
+              -18.147659908963952,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 228.0,
+              "mode": "ring_transfer",
+              "plan_id": "d45e6398-e6e4-4686-bc1c-6a5044ec6873",
+              "position_end": [
+                -396.3657983769572,
+                53.79734079856868,
+                70.0
+              ],
+              "source_ring": "outer",
+              "start": 144.0,
+              "target_phase": "ring_middle",
+              "target_ring": "middle",
+              "velocity_end": [
+                -2.6898670399284343,
+                -19.818289918847857,
+                0.0
+              ]
+            },
+            "energy_remaining": 853.0306441539042,
+            "phase": "transfer_o2m",
+            "position": [
+              -29.754935247817848,
+              440.9725810949789,
+              76.29629629629633
+            ],
+            "ring_progress": 5.698879020478689,
+            "ring_role": null,
+            "soc": 0.5686870961026028,
+            "speed": 20.72217221815782,
+            "uid": 1,
+            "velocity": [
+              -20.13595639833211,
+              -4.894045500754965,
+              -0.5291005291005304
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 742.4494214218091,
+            "phase": "ring_middle",
+            "position": [
+              -339.7092745461455,
+              -211.18145938346854,
+              70.0
+            ],
+            "ring_progress": 3.6977818765396537,
+            "ring_role": "middle",
+            "soc": 0.49496628094787276,
+            "speed": 20.0,
+            "uid": 3,
+            "velocity": [
+              10.559072969173426,
+              -16.985463727307273,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 250.0,
+              "mode": "ring_transfer",
+              "plan_id": "38ba1e1a-a385-4739-8c20-36218650e3a6",
+              "position_end": [
+                37.374753032870544,
+                196.47678701498538,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 154.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                -15.718142961198831,
+                2.9899802426296436,
+                0.0
+              ]
+            },
+            "energy_remaining": 667.871175868248,
+            "phase": "transfer_m2i",
+            "position": [
+              -65.9537742575566,
+              -300.6544048672695,
+              56.1705193696199
+            ],
+            "ring_progress": 2.3499942303516277,
+            "ring_role": null,
+            "soc": 0.44524745057883197,
+            "speed": 14.694913162047861,
+            "uid": 4,
+            "velocity": [
+              14.674931925650295,
+              0.7660586254701314,
+              -0.5839047608552155
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 897.4456188205429,
+            "phase": "ring_middle",
+            "position": [
+              188.1859784657445,
+              -352.9674737265324,
+              70.0
+            ],
+            "ring_progress": 5.202206584163538,
+            "ring_role": "middle",
+            "soc": 0.5982970792136952,
+            "speed": 20.0,
+            "uid": 5,
+            "velocity": [
+              17.648373686326618,
+              9.409298923287226,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1079.8072364513291,
+            "phase": "ring_middle",
+            "position": [
+              -229.57411302062658,
+              -327.560264120654,
+              70.0
+            ],
+            "ring_progress": 4.101085604642291,
+            "ring_role": "middle",
+            "soc": 0.7198714909675528,
+            "speed": 20.0,
+            "uid": 6,
+            "velocity": [
+              16.378013206032698,
+              -11.47870565103133,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 991.4273856438397,
+            "phase": "ring_middle",
+            "position": [
+              280.9324641818005,
+              -284.7401456920702,
+              70.0
+            ],
+            "ring_progress": 5.491055999411521,
+            "ring_role": "middle",
+            "soc": 0.6609515904292265,
+            "speed": 20.0,
+            "uid": 9,
+            "velocity": [
+              14.23700728460351,
+              14.046623209090026,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1082.0366339713069,
+            "phase": "ring_middle",
+            "position": [
+              390.92521215838667,
+              84.7200005838076,
+              70.0
+            ],
+            "ring_progress": 0.21341637937719043,
+            "ring_role": "middle",
+            "soc": 0.7213577559808713,
+            "speed": 19.999999999999996,
+            "uid": 10,
+            "velocity": [
+              -4.23600002919038,
+              19.546260607919333,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 212.0,
+              "mode": "ring_transfer",
+              "plan_id": "a2078459-b118-4d1d-9908-c357fceffca4",
+              "position_end": [
+                -199.97455100214935,
+                3.1904469105074864,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 140.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                -0.2552357528405989,
+                -15.997964080171949,
+                0.0
+              ]
+            },
+            "energy_remaining": 662.952435935553,
+            "phase": "transfer_m2i",
+            "position": [
+              -117.1876158015433,
+              170.754096133151,
+              41.064814814814824
+            ],
+            "ring_progress": 4.889481624473171,
+            "ring_role": null,
+            "soc": 0.441968290623702,
+            "speed": 16.221820372296225,
+            "uid": 11,
+            "velocity": [
+              -12.399533624635996,
+              -10.459398743836383,
+              -0.24112654320987784
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1144.658022470394,
+            "phase": "ring_middle",
+            "position": [
+              283.0944462214648,
+              282.59075448174553,
+              70.0
+            ],
+            "ring_progress": 0.7845077536678332,
+            "ring_role": "middle",
+            "soc": 0.763105348313596,
+            "speed": 20.0,
+            "uid": 12,
+            "velocity": [
+              -14.129537724087275,
+              14.15472231107324,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 852.0029004443379,
+            "phase": "ring_middle",
+            "position": [
+              92.77779853007411,
+              389.0916088788256,
+              70.0
+            ],
+            "ring_progress": 1.3367201074798036,
+            "ring_role": "middle",
+            "soc": 0.5680019336295586,
+            "speed": 20.0,
+            "uid": 13,
+            "velocity": [
+              -19.45458044394128,
+              4.638889926503706,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1088.5158949642396,
+            "phase": "ring_middle",
+            "position": [
+              -220.81398581648114,
+              333.5283851006371,
+              70.0
+            ],
+            "ring_progress": 2.1555991279584164,
+            "ring_role": "middle",
+            "soc": 0.725677263309493,
+            "speed": 20.000000000000004,
+            "uid": 14,
+            "velocity": [
+              -16.676419255031856,
+              -11.040699290824058,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 674.9233620375097,
+            "phase": "ring_middle",
+            "position": [
+              -143.6222162410449,
+              -373.32647776712884,
+              70.0
+            ],
+            "ring_progress": 4.345133223538234,
+            "ring_role": "middle",
+            "soc": 0.4499489080250065,
+            "speed": 20.0,
+            "uid": 16,
+            "velocity": [
+              18.66632388835644,
+              -7.181110812052244,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1041.348955749599,
+            "phase": "ring_middle",
+            "position": [
+              103.24298421300777,
+              -386.4464855717964,
+              70.0
+            ],
+            "ring_progress": 4.973451754256178,
+            "ring_role": "middle",
+            "soc": 0.6942326371663994,
+            "speed": 20.0,
+            "uid": 17,
+            "velocity": [
+              19.322324278589818,
+              5.162149210650389,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 228.6961303992387,
+              "mode": "final_approach",
+              "plan_id": "a3c2dffd-dd55-4601-8195-a3d3c6d2a7bf",
+              "position_end": [
+                -80.0,
+                -40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 154.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 744.0999418391358,
+            "phase": "final",
+            "position": [
+              -64.32504452147734,
+              -6.938814234522904,
+              40.0
+            ],
+            "ring_progress": 6.000661414874414,
+            "ring_role": null,
+            "soc": 0.4960666278927572,
+            "speed": 6.577260664941957,
+            "uid": 18,
+            "velocity": [
+              -3.0571536803682573,
+              -5.823587316182659,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 254.6961303992387,
+              "mode": "final_approach",
+              "plan_id": "a95187b8-d45f-4afe-a9e9-794846f1c219",
+              "position_end": [
+                -80.0,
+                40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 192.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 824.0330125016328,
+            "phase": "final",
+            "position": [
+              125.51023220098335,
+              157.943962467135,
+              40.0
+            ],
+            "ring_progress": 0.3029120291086603,
+            "ring_role": null,
+            "soc": 0.5493553416677552,
+            "speed": 13.166391728922408,
+            "uid": 19,
+            "velocity": [
+              -10.263532044960181,
+              8.247046812132925,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 202.6961303992387,
+              "mode": "final_approach",
+              "plan_id": "4d118f6f-4bce-4d36-9ed3-3ca357b4179b",
+              "position_end": [
+                80.0,
+                40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 140.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 805.977774709648,
+            "phase": "final",
+            "position": [
+              80.0,
+              40.0,
+              3.1935298381749035
+            ],
+            "ring_progress": 3.8330767022339054,
+            "ring_role": null,
+            "soc": 0.5373185164730987,
+            "speed": 0.0,
+            "uid": 20,
+            "velocity": [
+              0.0,
+              0.0,
+              -2.3051914913491376
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 862.9626369145733,
+            "phase": "ring_middle",
+            "position": [
+              -103.24298421301701,
+              386.4464855717939,
+              70.0
+            ],
+            "ring_progress": 1.831859100666409,
+            "ring_role": "middle",
+            "soc": 0.5753084246097155,
+            "speed": 20.0,
+            "uid": 22,
+            "velocity": [
+              -19.322324278589697,
+              -5.162149210650851,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 264.0,
+              "mode": "ring_transfer",
+              "plan_id": "c177cbb4-e0ea-4352-970f-2bf830e7c134",
+              "position_end": [
+                194.45614231934937,
+                -46.76332659549521,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 192.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                3.7410661276396167,
+                15.556491385547949,
+                0.0
+              ]
+            },
+            "energy_remaining": 722.2956478452388,
+            "phase": "transfer_m2i",
+            "position": [
+              -307.8561616588276,
+              251.76309653188042,
+              69.65401615607377
+            ],
+            "ring_progress": 2.0601776313843794,
+            "ring_role": null,
+            "soc": 0.4815304318968259,
+            "speed": 19.346658674438387,
+            "uid": 23,
+            "velocity": [
+              -11.607488205161626,
+              -15.477707176202031,
+              -0.12193263222069657
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1004.428902172446,
+            "phase": "ring_middle",
+            "position": [
+              -399.4362849742224,
+              21.228618560608613,
+              70.0
+            ],
+            "ring_progress": 3.088496162102329,
+            "ring_role": "middle",
+            "soc": 0.669619268114964,
+            "speed": 20.0,
+            "uid": 24,
+            "velocity": [
+              -1.0614309280304308,
+              -19.97181424871112,
+              0.0
+            ]
+          }
+        ],
+        "source_neighbors": {
+          "ahead": {
+            "absolute_angle": 0.6283185307179444,
+            "chord_gap": 247.21359549995253,
+            "phase": "ring_middle",
+            "signed_angle": 0.6283185307179444,
+            "soc": 0.6942326371663994,
+            "uid": 17
+          },
+          "all_count": 12,
+          "behind": {
+            "absolute_angle": 0.24404761889594262,
+            "chord_gap": 97.3769730046208,
+            "phase": "ring_middle",
+            "signed_angle": -0.24404761889594262,
+            "soc": 0.7198714909675528,
+            "uid": 6
+          },
+          "reference_uid": 16
+        },
+        "time": 200.0,
+        "uid16": {
+          "committed_plan": null,
+          "energy_remaining": 674.9233620375097,
+          "phase": "ring_middle",
+          "position": [
+            -143.6222162410449,
+            -373.32647776712884,
+            70.0
+          ],
+          "ring_progress": 4.345133223538234,
+          "ring_role": "middle",
+          "soc": 0.4499489080250065,
+          "speed": 20.0,
+          "uid": 16,
+          "velocity": [
+            18.66632388835644,
+            -7.181110812052244,
+            0.0
+          ]
+        }
+      }
+    },
+    "250": {
+      "emergency": [
+        {
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 506.0399406770562
+          },
+          "pad_id": 5,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "acd55223-c511-4777-9c39-24335f3302b2",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 118.8834213604535,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 26.14159261035719,
+            "phase": "ring_middle",
+            "point_minimum": 26.912047828201732,
+            "reachable_tube_minimum": 26.21811004999445,
+            "reachable_tube_time": 267.599999999999,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 26.14159261035719,
+            "time": 267.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 506.0399406770562
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "1d4d0a5c-b90a-4bb4-ac01-089682b9ec74",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 118.8834213604535,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 35.46338335244143,
+            "phase": "ring_middle",
+            "point_minimum": 35.47258036096581,
+            "reachable_tube_minimum": 35.472580360955455,
+            "reachable_tube_time": 267.999999999999,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 35.46338335244143,
+            "time": 267.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 520.6732740103896
+          },
+          "pad_id": 5,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "b2b32d0c-935e-4cc4-9646-9110752a1a97",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 104.25008802712011,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 9.984879743536643,
+            "phase": "ring_middle",
+            "point_minimum": 10.763904688728452,
+            "reachable_tube_minimum": 10.05402796885941,
+            "reachable_tube_time": 270.39999999999884,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 9.984879743536643,
+            "time": 270.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 520.7066073437229
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "fcd61662-54e9-4097-949c-c72e37d3f934",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 104.21675469378681,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 15.334321017825744,
+            "phase": "ring_middle",
+            "point_minimum": 15.46678974087751,
+            "reachable_tube_minimum": 15.367580779833522,
+            "reachable_tube_time": 271.1999999999988,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 15.334321017825744,
+            "time": 271.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 535.1532740103896
+          },
+          "pad_id": 5,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "536c95f1-38dd-481e-827c-20a1bed0455f",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 89.7700880271201,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 13.287609526176462,
+            "phase": "ring_middle",
+            "point_minimum": 14.051988771710434,
+            "reachable_tube_minimum": 13.287609526176462,
+            "reachable_tube_time": 272.5999999999987,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 13.33114429481894,
+            "time": 272.5999999999987,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 535.2199406770562
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "eee8f645-8bce-4e79-8875-03d001557586",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 89.70342136045349,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 11.354777932590208,
+            "phase": "ring_middle",
+            "point_minimum": 12.328037327255405,
+            "reachable_tube_minimum": 11.354777932590208,
+            "reachable_tube_time": 273.59999999999866,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 11.37661637923766,
+            "time": 273.59999999999866,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 90.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 542.4532740103896
+          },
+          "pad_id": 5,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "f5ee85c3-7242-460d-abe2-6190e7438dee",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 82.47008802712014,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 22.105305864766034,
+            "phase": "ring_middle",
+            "point_minimum": 22.627243354594963,
+            "reachable_tube_minimum": 22.105305864766034,
+            "reachable_tube_time": 273.39999999999867,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 22.14003137086635,
+            "time": 273.39999999999867,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 90.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 624.9233620375097,
+            "pass": true,
+            "required_energy": 542.5199406770562
+          },
+          "pad_id": 4,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "0c94df67-2dfb-40a6-ae39-c9601925a24c",
+            "reason": "predicted_separation"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 82.40342136045354,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 21.017517582161805,
+            "phase": "ring_middle",
+            "point_minimum": 21.361165867453803,
+            "reachable_tube_minimum": 21.017517582161805,
+            "reachable_tube_time": 274.3999999999986,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 21.059679922768883,
+            "time": 274.3999999999986,
+            "uid": 6
+          }
+        }
+      ],
+      "emergency_free_pads": [
+        5,
+        4
+      ],
+      "normal_m2i": [
+        {
+          "bias_mps": 0.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 501.7963222265053,
+            "selected_lz_id": 0,
+            "slack_energy": 123.12703981100441
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "cc230e92-16c8-48b7-8cba-8570f1f07ca6",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 310.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 70.45158888445914,
+            "phase": "ring_inner",
+            "point_minimum": 70.5070854645206,
+            "reachable_tube_minimum": 70.50708546457417,
+            "reachable_tube_time": 309.9999999999966,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 70.45158888445914,
+            "time": 309.5,
+            "uid": 11
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 508.9210495572647,
+            "selected_lz_id": 0,
+            "slack_energy": 116.002312480245
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "9f39becb-f0d5-4607-b24b-875ef9b850ba",
+            "reason": "predicted_holder_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 310.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 83.90758094793814,
+            "phase": "ring_middle",
+            "point_minimum": 83.97845659405476,
+            "reachable_tube_minimum": 83.9720195760318,
+            "reachable_tube_time": 269.1999999999989,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 83.90758094793814,
+            "time": 269.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 504.8861121668963,
+            "selected_lz_id": 0,
+            "slack_energy": 120.03724987061344
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "98c18e10-abd2-4c98-a3dc-bac7f88cc6c1",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 310.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 0.38855523046742335,
+            "phase": "transfer_m2i",
+            "point_minimum": 0.40026376937445735,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 0.38855523046742335,
+            "time": 306.5,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 517.8995719167109,
+            "selected_lz_id": 0,
+            "slack_energy": 107.02379012079882
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": true,
+            "checked_plan_id": "a19cc5dd-34ce-40bb-a1c7-51331e746487",
+            "reason": null
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 322.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 97.22229834485604,
+            "phase": "ring_middle",
+            "point_minimum": 97.26392392221415,
+            "reachable_tube_minimum": 97.26265585148373,
+            "reachable_tube_time": 258.5999999999995,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 97.22229834485604,
+            "time": 258.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 510.4098571322446,
+            "selected_lz_id": 0,
+            "slack_energy": 114.51350490526511
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "61a1c0d2-6a84-4445-a04f-0eca0b547d6e",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 322.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 28.94469754291602,
+            "phase": "transfer_m2i",
+            "point_minimum": 28.96574322290926,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 28.94469754291602,
+            "time": 321.5,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 515.0457351201702,
+            "selected_lz_id": 0,
+            "slack_energy": 109.87762691733951
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "694fc406-58e7-4c84-b76a-dd4792236399",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 322.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 39.39767032373415,
+            "phase": "transfer_m2i",
+            "point_minimum": 39.39767032373415,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 39.39767032373415,
+            "time": 300.0,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 535.1592154266467,
+            "selected_lz_id": 0,
+            "slack_energy": 89.76414661086301
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "cf644e71-6105-407a-bffb-2c285ea3cd60",
+            "reason": "predicted_holder_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 334.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 93.16342409282201,
+            "phase": "transfer_m2i",
+            "point_minimum": 93.2376578549743,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 93.16342409282201,
+            "time": 333.5,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 530.1900578164826,
+            "selected_lz_id": 0,
+            "slack_energy": 94.73330422102708
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "da16231d-64ec-48aa-8b28-fc1cf1039757",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 334.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 20.172611872796715,
+            "phase": "transfer_m2i",
+            "point_minimum": 20.172611872796715,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 20.172611872796715,
+            "time": 315.0,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 521.8346252394199,
+            "selected_lz_id": 0,
+            "slack_energy": 103.08873679808983
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "d4f5f5d2-f592-4414-a87b-3da9ec7a1016",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 334.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 50.42172437378343,
+            "phase": "ring_middle",
+            "point_minimum": 50.46121911320424,
+            "reachable_tube_minimum": 50.46121911318759,
+            "reachable_tube_time": 277.9999999999984,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 50.42172437378343,
+            "time": 277.5,
+            "uid": 6
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 539.7895873430634,
+            "selected_lz_id": 0,
+            "slack_energy": 85.13377469444629
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "040c6b7d-4981-4ded-b0bd-1dc9dc834e9b",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 346.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 52.55338913065182,
+            "phase": "transfer_m2i",
+            "point_minimum": 52.595340526814546,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 52.55338913065182,
+            "time": 345.5,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 546.1155551709851,
+            "selected_lz_id": 0,
+            "slack_energy": 78.80780686652463
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "ebe17a10-759e-474f-ac5f-86e2bc72b9a8",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 346.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 53.334005957779254,
+            "phase": "transfer_m2i",
+            "point_minimum": 53.334005957779254,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 53.334005957779254,
+            "time": 313.0,
+            "uid": 23
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 540.4370768796506,
+            "selected_lz_id": 0,
+            "slack_energy": 84.48628515785913
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "7eb61e4f-446a-44e8-a8d4-ebe8b4ce3309",
+            "reason": "predicted_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 346.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 10.35048157041168,
+            "phase": "transfer_m2i",
+            "point_minimum": 10.357262412620633,
+            "reachable_tube_minimum": null,
+            "reachable_tube_time": null,
+            "ring_role": null,
+            "source_kind": "committed_plan",
+            "swept_minimum": 10.35048157041168,
+            "time": 328.5,
+            "uid": 22
+          }
+        }
+      ],
+      "state": {
+        "incoming_plans": [
+          {
+            "end": 254.6961303992387,
+            "phase": "final",
+            "plan_id": "135448e6-5544-44bb-a101-153a4628cfef",
+            "position": [
+              80.0,
+              -40.0,
+              9.424075876099272
+            ],
+            "position_end": [
+              80.0,
+              -40.0,
+              0.0
+            ],
+            "soc": 0.4135660532683123,
+            "source_ring": "inner",
+            "start": 204.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 2
+          },
+          {
+            "end": 292.69613039923854,
+            "phase": "final",
+            "plan_id": "cd64ec86-e982-4ba1-a81d-d55f1799ff3c",
+            "position": [
+              -160.5576193160401,
+              -45.86871926084415,
+              40.0
+            ],
+            "position_end": [
+              0.0,
+              -40.0,
+              0.0
+            ],
+            "soc": 0.4645486149798264,
+            "source_ring": "inner",
+            "start": 230.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 7
+          },
+          {
+            "end": 308.0,
+            "phase": "transfer_o2m",
+            "plan_id": "74173734-4635-4816-82c7-6537c80ac170",
+            "position": [
+              564.4356795929868,
+              -20.798508446673964,
+              94.72281170323656
+            ],
+            "position_end": [
+              -340.46485595832274,
+              209.9611436844411,
+              70.0
+            ],
+            "soc": 0.6105078341200553,
+            "source_ring": "outer",
+            "start": 224.0,
+            "target_phase": "ring_middle",
+            "target_ring": "middle",
+            "uid": 8
+          },
+          {
+            "end": 276.0,
+            "phase": "transfer_m2i",
+            "plan_id": "86fb5be4-16fb-4ece-a4d1-8ed51fb22bfb",
+            "position": [
+              -244.76906122871839,
+              -53.43508033413362,
+              47.58007485044204
+            ],
+            "position_end": [
+              55.078983870636,
+              -192.26623607846028,
+              40.0
+            ],
+            "soc": 0.5399130447406685,
+            "source_ring": "middle",
+            "start": 204.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 13
+          },
+          {
+            "end": 254.6961303992387,
+            "phase": "final",
+            "plan_id": "a95187b8-d45f-4afe-a9e9-794846f1c219",
+            "position": [
+              -80.0,
+              40.0,
+              9.424075876099272
+            ],
+            "position_end": [
+              -80.0,
+              40.0,
+              0.0
+            ],
+            "soc": 0.5142442305566445,
+            "source_ring": "inner",
+            "start": 192.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 19
+          },
+          {
+            "end": 290.0,
+            "phase": "transfer_m2i",
+            "plan_id": "a0334e80-4501-475f-9aed-46669d0390df",
+            "position": [
+              -126.5989658287357,
+              -334.89458262728533,
+              63.703703703703745
+            ],
+            "position_end": [
+              137.2037578437369,
+              145.51676478522054,
+              40.0
+            ],
+            "soc": 0.5437528690541595,
+            "source_ring": "middle",
+            "start": 230.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 22
+          },
+          {
+            "end": 264.0,
+            "phase": "transfer_m2i",
+            "plan_id": "c177cbb4-e0ea-4352-970f-2bf830e7c134",
+            "position": [
+              55.54434835526488,
+              -203.2971364635615,
+              41.61226435089926
+            ],
+            "position_end": [
+              194.45614231934937,
+              -46.76332659549521,
+              40.0
+            ],
+            "soc": 0.45521932078571314,
+            "source_ring": "middle",
+            "start": 192.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 23
+          }
+        ],
+        "pads": [
+          {
+            "id": 0,
+            "occupied_by": 18,
+            "reserved_by": null,
+            "status": "occupied"
+          },
+          {
+            "id": 1,
+            "occupied_by": null,
+            "reserved_by": 7,
+            "status": "reserved"
+          },
+          {
+            "id": 2,
+            "occupied_by": null,
+            "reserved_by": 2,
+            "status": "reserved"
+          },
+          {
+            "id": 3,
+            "occupied_by": null,
+            "reserved_by": 19,
+            "status": "reserved"
+          },
+          {
+            "id": 4,
+            "occupied_by": null,
+            "reserved_by": null,
+            "status": "free"
+          },
+          {
+            "id": 5,
+            "occupied_by": null,
+            "reserved_by": null,
+            "status": "free"
+          }
+        ],
+        "ring_holders_and_plans": [
+          {
+            "committed_plan": null,
+            "energy_remaining": 916.6769453736074,
+            "phase": "ring_middle",
+            "position": [
+              190.16135874430825,
+              -351.9071719083294,
+              70.0
+            ],
+            "ring_progress": 5.207811481770321,
+            "ring_role": "middle",
+            "soc": 0.6111179635824049,
+            "speed": 20.0,
+            "uid": 0,
+            "velocity": [
+              17.59535859541647,
+              9.508067937215412,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 806.1861997094591,
+            "phase": "ring_middle",
+            "position": [
+              -227.73457488096653,
+              -328.8418516609245,
+              70.0
+            ],
+            "ring_progress": 4.106690502249084,
+            "ring_role": "middle",
+            "soc": 0.5374574664729727,
+            "speed": 20.0,
+            "uid": 1,
+            "velocity": [
+              16.442092583046225,
+              -11.386728744048327,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 254.6961303992387,
+              "mode": "final_approach",
+              "plan_id": "135448e6-5544-44bb-a101-153a4628cfef",
+              "position_end": [
+                80.0,
+                -40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 204.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 620.3490799024685,
+            "phase": "final",
+            "position": [
+              80.0,
+              -40.0,
+              9.424075876099272
+            ],
+            "ring_progress": 4.998795789164458,
+            "ring_role": null,
+            "soc": 0.4135660532683123,
+            "speed": 0.0,
+            "uid": 2,
+            "velocity": [
+              0.0,
+              0.0,
+              -3.903521401758329
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 692.4494214218091,
+            "phase": "ring_middle",
+            "position": [
+              398.5421372369501,
+              -34.11986000270243,
+              70.0
+            ],
+            "ring_progress": 6.197781876539601,
+            "ring_role": "middle",
+            "soc": 0.46163294761453944,
+            "speed": 20.0,
+            "uid": 3,
+            "velocity": [
+              1.7059930001351216,
+              19.927106861847506,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 847.4456188205429,
+            "phase": "ring_middle",
+            "position": [
+              60.47720561679958,
+              395.4017040944353,
+              70.0
+            ],
+            "ring_progress": 1.4190212769839297,
+            "ring_role": "middle",
+            "soc": 0.5649637458803619,
+            "speed": 20.0,
+            "uid": 5,
+            "velocity": [
+              -19.770085204721763,
+              3.023860280839979,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1029.8072364513291,
+            "phase": "ring_middle",
+            "position": [
+              379.957528532877,
+              125.02910265689316,
+              70.0
+            ],
+            "ring_progress": 0.31790029746265824,
+            "ring_role": "middle",
+            "soc": 0.6865381576342194,
+            "speed": 20.0,
+            "uid": 6,
+            "velocity": [
+              -6.251455132844658,
+              18.997876426643852,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 292.69613039923854,
+              "mode": "final_approach",
+              "plan_id": "cd64ec86-e982-4ba1-a81d-d55f1799ff3c",
+              "position_end": [
+                0.0,
+                -40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 230.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 696.8229224697396,
+            "phase": "final",
+            "position": [
+              -160.5576193160401,
+              -45.86871926084415,
+              40.0
+            ],
+            "ring_progress": 2.277119041734157,
+            "ring_role": null,
+            "soc": 0.4645486149798264,
+            "speed": 8.765183869466698,
+            "uid": 7,
+            "velocity": [
+              7.749963490082918,
+              -4.094693415622347,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 308.0,
+              "mode": "ring_transfer",
+              "plan_id": "74173734-4635-4816-82c7-6537c80ac170",
+              "position_end": [
+                -340.46485595832274,
+                209.9611436844411,
+                70.0
+              ],
+              "source_ring": "outer",
+              "start": 224.0,
+              "target_phase": "ring_middle",
+              "target_ring": "middle",
+              "velocity_end": [
+                -10.498057184222056,
+                -17.02324279791614,
+                0.0
+              ]
+            },
+            "energy_remaining": 915.7617511800829,
+            "phase": "transfer_o2m",
+            "position": [
+              564.4356795929868,
+              -20.798508446673964,
+              94.72281170323656
+            ],
+            "ring_progress": 5.281180189982936,
+            "ring_role": null,
+            "soc": 0.6105078341200553,
+            "speed": 21.89265329434836,
+            "uid": 8,
+            "velocity": [
+              -2.463181359661093,
+              21.753643507604888,
+              -0.489382868469706
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 941.4273856438397,
+            "phase": "ring_middle",
+            "position": [
+              -54.658204574304726,
+              396.24800399839677,
+              70.0
+            ],
+            "ring_progress": 1.707870692231919,
+            "ring_role": "middle",
+            "soc": 0.6276182570958931,
+            "speed": 20.0,
+            "uid": 9,
+            "velocity": [
+              -19.812400199919836,
+              -2.7329102287152365,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1032.0366339713069,
+            "phase": "ring_middle",
+            "position": [
+              -363.88979827489953,
+              166.08496232787874,
+              70.0
+            ],
+            "ring_progress": 2.713416379377177,
+            "ring_role": "middle",
+            "soc": 0.6880244226475379,
+            "speed": 19.999999999999996,
+            "uid": 10,
+            "velocity": [
+              -8.304248116393936,
+              -18.194489913744974,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1094.658022470394,
+            "phase": "ring_middle",
+            "position": [
+              -395.9220029257678,
+              -56.971638551548786,
+              70.0
+            ],
+            "ring_progress": 3.284507753667807,
+            "ring_role": "middle",
+            "soc": 0.7297720149802626,
+            "speed": 20.0,
+            "uid": 12,
+            "velocity": [
+              2.848581927577439,
+              -19.79610014628839,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 276.0,
+              "mode": "ring_transfer",
+              "plan_id": "86fb5be4-16fb-4ece-a4d1-8ed51fb22bfb",
+              "position_end": [
+                55.078983870636,
+                -192.26623607846028,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 204.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                15.381298886276822,
+                4.40631870965088,
+                0.0
+              ]
+            },
+            "energy_remaining": 809.8695671110028,
+            "phase": "transfer_m2i",
+            "position": [
+              -244.76906122871839,
+              -53.43508033413362,
+              47.58007485044204
+            ],
+            "ring_progress": 1.5367201074798038,
+            "ring_role": null,
+            "soc": 0.5399130447406685,
+            "speed": 11.12051159602392,
+            "uid": 13,
+            "velocity": [
+              6.5085217066647,
+              -9.016924273341598,
+              -0.6653380891822903
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1038.5158949642396,
+            "phase": "ring_middle",
+            "position": [
+              -22.70373279038444,
+              -399.3551558667833,
+              70.0
+            ],
+            "ring_progress": 4.6555991279583635,
+            "ring_role": "middle",
+            "soc": 0.6923439299761597,
+            "speed": 20.000000000000004,
+            "uid": 14,
+            "velocity": [
+              19.96775779333917,
+              -1.1351866395192223,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 624.9233620375097,
+            "phase": "ring_middle",
+            "position": [
+              338.48751919229466,
+              213.13422848300542,
+              70.0
+            ],
+            "ring_progress": 0.5619479163586063,
+            "ring_role": "middle",
+            "soc": 0.41661557469167315,
+            "speed": 20.0,
+            "uid": 16,
+            "velocity": [
+              -10.656711424150272,
+              16.924375959614732,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 991.3489557495991,
+            "phase": "ring_middle",
+            "position": [
+              148.56499914933792,
+              371.38718479204044,
+              70.0
+            ],
+            "ring_progress": 1.190266447076564,
+            "ring_role": "middle",
+            "soc": 0.660899303833066,
+            "speed": 20.0,
+            "uid": 17,
+            "velocity": [
+              -18.569359239602022,
+              7.428249957466896,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 254.6961303992387,
+              "mode": "final_approach",
+              "plan_id": "a95187b8-d45f-4afe-a9e9-794846f1c219",
+              "position_end": [
+                -80.0,
+                40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 192.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 771.3663458349668,
+            "phase": "final",
+            "position": [
+              -80.0,
+              40.0,
+              9.424075876099272
+            ],
+            "ring_progress": 0.3029120291086603,
+            "ring_role": null,
+            "soc": 0.5142442305566445,
+            "speed": 0.0,
+            "uid": 19,
+            "velocity": [
+              0.0,
+              0.0,
+              -3.903521401758329
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 290.0,
+              "mode": "ring_transfer",
+              "plan_id": "a0334e80-4501-475f-9aed-46669d0390df",
+              "position_end": [
+                137.2037578437369,
+                145.51676478522054,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 230.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                -11.641341182817643,
+                10.976300627498953,
+                0.0
+              ]
+            },
+            "energy_remaining": 815.6293035812394,
+            "phase": "transfer_m2i",
+            "position": [
+              -126.5989658287357,
+              -334.89458262728533,
+              63.703703703703745
+            ],
+            "ring_progress": 3.3318591006663807,
+            "ring_role": null,
+            "soc": 0.5437528690541595,
+            "speed": 19.786638171877378,
+            "uid": 22,
+            "velocity": [
+              19.668826847208297,
+              -2.155991790182212,
+              -0.7407407407407386
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 264.0,
+              "mode": "ring_transfer",
+              "plan_id": "c177cbb4-e0ea-4352-970f-2bf830e7c134",
+              "position_end": [
+                194.45614231934937,
+                -46.76332659549521,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 192.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                3.7410661276396167,
+                15.556491385547949,
+                0.0
+              ]
+            },
+            "energy_remaining": 682.8289811785697,
+            "phase": "transfer_m2i",
+            "position": [
+              55.54434835526488,
+              -203.2971364635615,
+              41.61226435089926
+            ],
+            "ring_progress": 2.0601776313843794,
+            "ring_role": null,
+            "soc": 0.45521932078571314,
+            "speed": 14.786775912262339,
+            "uid": 23,
+            "velocity": [
+              13.588098022590204,
+              5.832009431400288,
+              -0.30668468268937954
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 954.428902172446,
+            "phase": "ring_middle",
+            "position": [
+              307.30109265853775,
+              -256.05866212817097,
+              70.0
+            ],
+            "ring_progress": 5.588496162102276,
+            "ring_role": "middle",
+            "soc": 0.6362859347816306,
+            "speed": 20.0,
+            "uid": 24,
+            "velocity": [
+              12.802933106408547,
+              15.365054632926887,
+              0.0
+            ]
+          }
+        ],
+        "source_neighbors": {
+          "ahead": {
+            "absolute_angle": 0.6283185307179577,
+            "chord_gap": 247.21359549995756,
+            "phase": "ring_middle",
+            "signed_angle": 0.6283185307179577,
+            "soc": 0.660899303833066,
+            "uid": 17
+          },
+          "all_count": 11,
+          "behind": {
+            "absolute_angle": 0.24404761889594795,
+            "chord_gap": 97.37697300462293,
+            "phase": "ring_middle",
+            "signed_angle": -0.24404761889594795,
+            "soc": 0.6865381576342194,
+            "uid": 6
+          },
+          "reference_uid": 16
+        },
+        "time": 250.0,
+        "uid16": {
+          "committed_plan": null,
+          "energy_remaining": 624.9233620375097,
+          "phase": "ring_middle",
+          "position": [
+            338.48751919229466,
+            213.13422848300542,
+            70.0
+          ],
+          "ring_progress": 0.5619479163586063,
+          "ring_role": "middle",
+          "soc": 0.41661557469167315,
+          "speed": 20.0,
+          "uid": 16,
+          "velocity": [
+            -10.656711424150272,
+            16.924375959614732,
+            0.0
+          ]
+        }
+      }
+    },
+    "300": {
+      "emergency": [
+        {
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 574.9233620375097,
+            "pass": true,
+            "required_energy": 506.00660734372286
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "ec7e2d42-f5b2-4790-bdc8-265a9397f1d5",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 68.91675469378686,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 51.445647347910935,
+            "phase": "ring_middle",
+            "point_minimum": 51.61723776130463,
+            "reachable_tube_minimum": 51.50934256490037,
+            "reachable_tube_time": 317.399999999999,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 51.445647347910935,
+            "time": 317.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 574.9233620375097,
+            "pass": true,
+            "required_energy": 520.6732740103896
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "fd3b28d4-1fe9-4276-ad4c-d55816072cb9",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 54.250088027120114,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 29.704615034891553,
+            "phase": "ring_middle",
+            "point_minimum": 30.057630012188287,
+            "reachable_tube_minimum": 29.756673774482046,
+            "reachable_tube_time": 321.3999999999988,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 29.704615034891553,
+            "time": 321.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 574.9233620375097,
+            "pass": true,
+            "required_energy": 535.1866073437229
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "fcc8385e-07dc-4085-b764-ef05bb3b7728",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 39.73675469378679,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 8.079669540446126,
+            "phase": "ring_middle",
+            "point_minimum": 9.213250251337756,
+            "reachable_tube_minimum": 8.11170924325212,
+            "reachable_tube_time": 324.5999999999986,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 8.079669540446126,
+            "time": 324.5,
+            "uid": 6
+          }
+        },
+        {
+          "duration": 90.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "energy_remaining": 574.9233620375097,
+            "pass": true,
+            "required_energy": 542.5199406770562
+          },
+          "pad_id": 2,
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "8f0308f2-cc16-4297-9224-0a4cd6891678",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "slack": {
+            "pass": true,
+            "slack_energy": 32.403421360453535,
+            "slack_limit": 125.66370614359172,
+            "wait_seconds": 125.66370614359172
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 12.98466734171933,
+            "phase": "ring_middle",
+            "point_minimum": 13.554614205316952,
+            "reachable_tube_minimum": 12.98466734171933,
+            "reachable_tube_time": 325.59999999999854,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 13.022165441014726,
+            "time": 325.59999999999854,
+            "uid": 6
+          }
+        }
+      ],
+      "emergency_free_pads": [
+        2
+      ],
+      "normal_m2i": [
+        {
+          "bias_mps": 0.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 506.98061643768295,
+            "selected_lz_id": 0,
+            "slack_energy": 67.94274559982676
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": true,
+            "checked_plan_id": "b4323847-4ce6-4a61-9adb-7be428fde3fe",
+            "reason": null
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 360.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 82.00303717269145,
+            "phase": "ring_inner",
+            "point_minimum": 82.06786775725148,
+            "reachable_tube_minimum": 82.06786775719806,
+            "reachable_tube_time": 359.9999999999966,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 82.00303717269145,
+            "time": 359.5,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 508.1038579226304,
+            "selected_lz_id": 0,
+            "slack_energy": 66.8195041148793
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "a4894ffb-6109-4cc8-8ef7-91a6f100b8d3",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 360.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 4.902921067605805,
+            "phase": "ring_inner",
+            "point_minimum": 4.917143055500106,
+            "reachable_tube_minimum": 4.902921067605805,
+            "reachable_tube_time": 352.799999999997,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 4.915711655333057,
+            "time": 352.799999999997,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 60.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 50.22222222222222,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 514.3714989753279,
+            "selected_lz_id": 0,
+            "slack_energy": 60.55186306218184
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "d319502d-112b-4558-b381-26c766861938",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": false,
+            "proposal_time": 360.0,
+            "requested_end": false
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 55.48684612552647,
+            "phase": "ring_inner",
+            "point_minimum": 55.5079002641645,
+            "reachable_tube_minimum": 55.48684612552647,
+            "reachable_tube_time": 339.1999999999978,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 55.5079002641645,
+            "time": 339.1999999999978,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 512.3183665295479,
+            "selected_lz_id": 0,
+            "slack_energy": 62.6049955079618
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "9f2eaea4-e5e2-48a4-a346-a2ebb8cdac1f",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 372.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 41.19349598586637,
+            "phase": "ring_inner",
+            "point_minimum": 41.22626641368941,
+            "reachable_tube_minimum": 41.226266413624145,
+            "reachable_tube_time": 371.9999999999959,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 41.19349598586637,
+            "time": 371.5,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 516.3385504160048,
+            "selected_lz_id": 0,
+            "slack_energy": 58.58481162150497
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "855fe678-7a02-48a6-9fc9-dc03ff0cead7",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 372.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 46.948787695315204,
+            "phase": "ring_inner",
+            "point_minimum": 46.961197535807514,
+            "reachable_tube_minimum": 46.948787695315204,
+            "reachable_tube_time": 349.79999999999717,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 46.961197535807514,
+            "time": 349.79999999999717,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 72.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 60.711111111111116,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 518.4281390995375,
+            "selected_lz_id": 0,
+            "slack_energy": 56.495222937972244
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "b3331b70-8b14-4fdf-8215-86ae2eaf4760",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 372.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 25.648438583815835,
+            "phase": "ring_inner",
+            "point_minimum": 25.66498082286826,
+            "reachable_tube_minimum": 25.664980822802924,
+            "reachable_tube_time": 371.9999999999959,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 25.648438583815835,
+            "time": 371.5,
+            "uid": 13
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 510.9422710852205,
+            "selected_lz_id": 0,
+            "slack_energy": 63.98109095228921
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "f0127e9b-1e44-471c-9422-37884511ae20",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 384.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 0.05561140616261438,
+            "phase": "ring_inner",
+            "point_minimum": 0.055613747843594366,
+            "reachable_tube_minimum": 0.05561140616261438,
+            "reachable_tube_time": 383.39999999999526,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 0.055613747843594366,
+            "time": 383.39999999999526,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 521.9029158315597,
+            "selected_lz_id": 0,
+            "slack_energy": 53.020446205950066
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "bc90bf7e-e3fd-448c-9568-27ba68991343",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 384.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 72.58849402142597,
+            "phase": "ring_inner",
+            "point_minimum": 72.64485644502464,
+            "reachable_tube_minimum": 72.64485644494944,
+            "reachable_tube_time": 383.9999999999952,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 72.58849402142597,
+            "time": 383.5,
+            "uid": 13
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 84.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 71.46666666666667,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 526.8310812358905,
+            "selected_lz_id": 0,
+            "slack_energy": 48.09228080161927
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "25325f14-1d5f-48a8-8afe-de8758682356",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 384.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "point",
+            "minimum_separation": 23.024466477028675,
+            "phase": "ring_inner",
+            "point_minimum": 23.024466477028675,
+            "reachable_tube_minimum": 23.02446647705413,
+            "reachable_tube_time": 362.9999999999964,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 23.024466477028675,
+            "time": 363.0,
+            "uid": 13
+          }
+        },
+        {
+          "bias_mps": 0.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 534.3962047336911,
+            "selected_lz_id": 0,
+            "slack_energy": 40.527157303818626
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "5e1cd8a8-2ba6-479f-a439-fe98b6caa5f0",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 396.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "reachable_tube",
+            "minimum_separation": 40.67678910335612,
+            "phase": "ring_inner",
+            "point_minimum": 40.67809879327371,
+            "reachable_tube_minimum": 40.67678910335612,
+            "reachable_tube_time": 375.7999999999957,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 40.67680443763872,
+            "time": 375.7999999999957,
+            "uid": 22
+          }
+        },
+        {
+          "bias_mps": -4.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 521.2787471534657,
+            "selected_lz_id": 0,
+            "slack_energy": 53.64461488404402
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "1bbf5c08-11a5-4a2d-a119-a58207dcda37",
+            "reason": "predicted_holder_reachable_tube"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 396.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 13.937612078109513,
+            "phase": "ring_inner",
+            "point_minimum": 13.94762824313064,
+            "reachable_tube_minimum": 13.947628243043397,
+            "reachable_tube_time": 395.99999999999454,
+            "ring_role": "inner",
+            "source_kind": "holder",
+            "swept_minimum": 13.937612078109513,
+            "time": 395.5,
+            "uid": 13
+          }
+        },
+        {
+          "bias_mps": -8.0,
+          "duration": 96.0,
+          "dynamics_pass": true,
+          "dynamics_reason": null,
+          "energy": {
+            "candidate_energy": 82.22222222222221,
+            "pad_wait_seconds": 0.0,
+            "pass": true,
+            "reason": null,
+            "required_energy": 533.06572092976,
+            "selected_lz_id": 0,
+            "slack_energy": 41.857641107749714
+          },
+          "inner_departure_headway": {
+            "pass": false,
+            "reason": "inner_departure_headway"
+          },
+          "safety": {
+            "approved": false,
+            "checked_plan_id": "f04a937b-b184-480e-93e2-c4ab1dbb28fa",
+            "reason": "predicted_holder_separation"
+          },
+          "scheduler": {
+            "proposal": true,
+            "proposal_time": 396.0,
+            "requested_end": true
+          },
+          "worst_conflict": {
+            "metric": "swept",
+            "minimum_separation": 45.729156104193564,
+            "phase": "ring_middle",
+            "point_minimum": 45.785440449651674,
+            "reachable_tube_minimum": 45.78036687501643,
+            "reachable_tube_time": 331.1999999999982,
+            "ring_role": "middle",
+            "source_kind": "holder",
+            "swept_minimum": 45.729156104193564,
+            "time": 331.5,
+            "uid": 6
+          }
+        }
+      ],
+      "state": {
+        "incoming_plans": [
+          {
+            "end": 336.0,
+            "phase": "transfer_m2i",
+            "plan_id": "8ee0d194-de53-48a9-a51e-19c5f876e02c",
+            "position": [
+              326.037515927526,
+              83.30584824493683,
+              60.47680000000005
+            ],
+            "position_end": [
+              -153.53615641997675,
+              128.16648809958252,
+              40.0
+            ],
+            "soc": 0.5064945035100092,
+            "source_ring": "middle",
+            "start": 276.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 1
+          },
+          {
+            "end": 350.69613039923854,
+            "phase": "final",
+            "plan_id": "e079094b-2129-4172-9ac3-10a1ef195cd2",
+            "position": [
+              29.032385536365613,
+              -178.40588795977501,
+              40.0
+            ],
+            "position_end": [
+              80.0,
+              40.0,
+              0.0
+            ],
+            "soc": 0.3834696728010531,
+            "source_ring": "inner",
+            "start": 276.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 4
+          },
+          {
+            "end": 316.0,
+            "phase": "transfer_m2i",
+            "plan_id": "d3b8f397-faf2-46d0-adbc-5f08f74a4be2",
+            "position": [
+              -103.03930691000194,
+              -199.315005018206,
+              43.6560592592593
+            ],
+            "position_end": [
+              139.62163190722882,
+              -143.19846334218224,
+              40.0
+            ],
+            "soc": 0.5369637458803608,
+            "source_ring": "middle",
+            "start": 256.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 5
+          },
+          {
+            "end": 308.0,
+            "phase": "transfer_o2m",
+            "plan_id": "74173734-4635-4816-82c7-6537c80ac170",
+            "position": [
+              -232.7902600404364,
+              327.11332767138356,
+              70.22354001529342
+            ],
+            "position_end": [
+              -340.46485595832274,
+              209.9611436844411,
+              70.0
+            ],
+            "soc": 0.5837226489348686,
+            "source_ring": "outer",
+            "start": 224.0,
+            "target_phase": "ring_middle",
+            "target_ring": "middle",
+            "uid": 8
+          },
+          {
+            "end": 354.0,
+            "phase": "transfer_m2i",
+            "plan_id": "d8ee1432-4723-40d8-92d3-c69058b8a8e9",
+            "position": [
+              -193.41410914107473,
+              -348.17282106615454,
+              69.7432
+            ],
+            "position_end": [
+              116.79318215660459,
+              162.3556361871499,
+              40.0
+            ],
+            "soc": 0.5942849237625598,
+            "source_ring": "middle",
+            "start": 294.0,
+            "target_phase": "ring_inner",
+            "target_ring": "inner",
+            "uid": 9
+          },
+          {
+            "end": 318.69613039923854,
+            "phase": "final",
+            "plan_id": "7f2e9ffa-e14a-4643-9a55-580cb7c54888",
+            "position": [
+              -0.260712377631957,
+              41.33156067693307,
+              40.0
+            ],
+            "position_end": [
+              0.0,
+              40.0,
+              0.0
+            ],
+            "soc": 0.3752645869199983,
+            "source_ring": "inner",
+            "start": 256.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 11
+          },
+          {
+            "end": 344.69613039923854,
+            "phase": "final",
+            "plan_id": "6585d422-1a8f-4a41-9c39-fa6b7c269928",
+            "position": [
+              -172.31763159792112,
+              100.88489294997639,
+              40.0
+            ],
+            "position_end": [
+              -80.0,
+              -40.0,
+              0.0
+            ],
+            "soc": 0.4223896911560834,
+            "source_ring": "inner",
+            "start": 294.0,
+            "target_phase": "landing",
+            "target_ring": null,
+            "uid": 23
+          }
+        ],
+        "pads": [
+          {
+            "id": 0,
+            "occupied_by": null,
+            "reserved_by": 23,
+            "status": "reserved"
+          },
+          {
+            "id": 1,
+            "occupied_by": 7,
+            "reserved_by": null,
+            "status": "occupied"
+          },
+          {
+            "id": 2,
+            "occupied_by": null,
+            "reserved_by": null,
+            "status": "free"
+          },
+          {
+            "id": 3,
+            "occupied_by": 19,
+            "reserved_by": null,
+            "status": "occupied"
+          },
+          {
+            "id": 4,
+            "occupied_by": null,
+            "reserved_by": 11,
+            "status": "reserved"
+          },
+          {
+            "id": 5,
+            "occupied_by": null,
+            "reserved_by": 4,
+            "status": "reserved"
+          }
+        ],
+        "ring_holders_and_plans": [
+          {
+            "committed_plan": null,
+            "energy_remaining": 866.6769453736074,
+            "phase": "ring_middle",
+            "position": [
+              58.260081215813656,
+              395.7344601329619,
+              70.0
+            ],
+            "ring_progress": 1.4246261745907123,
+            "ring_role": "middle",
+            "soc": 0.5777846302490716,
+            "speed": 20.0,
+            "uid": 0,
+            "velocity": [
+              -19.786723006648096,
+              2.9130040607906826,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 336.0,
+              "mode": "ring_transfer",
+              "plan_id": "8ee0d194-de53-48a9-a51e-19c5f876e02c",
+              "position_end": [
+                -153.53615641997675,
+                128.16648809958252,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 276.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                -10.2533190479666,
+                -12.28289251359814,
+                0.0
+              ]
+            },
+            "energy_remaining": 759.7417552650138,
+            "phase": "transfer_m2i",
+            "position": [
+              326.037515927526,
+              83.30584824493683,
+              60.47680000000005
+            ],
+            "ring_progress": 5.406690502249056,
+            "ring_role": null,
+            "soc": 0.5064945035100092,
+            "speed": 16.1088398696368,
+            "uid": 1,
+            "velocity": [
+              -9.304916150995076,
+              13.14964856445035,
+              -0.8639999999999988
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 642.4494214218091,
+            "phase": "ring_middle",
+            "position": [
+              -298.8697030014659,
+              265.85127539249373,
+              70.0
+            ],
+            "ring_progress": 2.4145965693600053,
+            "ring_role": "middle",
+            "soc": 0.42829961428120605,
+            "speed": 20.0,
+            "uid": 3,
+            "velocity": [
+              -13.292563769624689,
+              -14.943485150073295,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 350.69613039923854,
+              "mode": "final_approach",
+              "plan_id": "e079094b-2129-4172-9ac3-10a1ef195cd2",
+              "position_end": [
+                80.0,
+                40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 276.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 575.2045092015796,
+            "phase": "final",
+            "position": [
+              29.032385536365613,
+              -178.40588795977501,
+              40.0
+            ],
+            "ring_progress": 3.4628174437681207,
+            "ring_role": null,
+            "soc": 0.3834696728010531,
+            "speed": 9.146519249679859,
+            "uid": 4,
+            "velocity": [
+              6.678213494432843,
+              6.249822310077247,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 316.0,
+              "mode": "ring_transfer",
+              "plan_id": "d3b8f397-faf2-46d0-adbc-5f08f74a4be2",
+              "position_end": [
+                139.62163190722882,
+                -143.19846334218224,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 256.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                11.455877067374578,
+                11.169730552578304,
+                0.0
+              ]
+            },
+            "energy_remaining": 805.4456188205411,
+            "phase": "transfer_m2i",
+            "position": [
+              -103.03930691000194,
+              -199.315005018206,
+              43.6560592592593
+            ],
+            "ring_progress": 1.71902127698393,
+            "ring_role": null,
+            "soc": 0.5369637458803608,
+            "speed": 16.925167780032734,
+            "uid": 5,
+            "velocity": [
+              16.402293466488402,
+              -4.174454865183,
+              -0.5736296296296324
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 979.8072364513291,
+            "phase": "ring_middle",
+            "position": [
+              -379.22698330556887,
+              127.22772941838505,
+              70.0
+            ],
+            "ring_progress": 2.8179002974626424,
+            "ring_role": "middle",
+            "soc": 0.6532048243008861,
+            "speed": 20.0,
+            "uid": 6,
+            "velocity": [
+              -6.3613864709192525,
+              -18.961349165278442,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 308.0,
+              "mode": "ring_transfer",
+              "plan_id": "74173734-4635-4816-82c7-6537c80ac170",
+              "position_end": [
+                -340.46485595832274,
+                209.9611436844411,
+                70.0
+              ],
+              "source_ring": "outer",
+              "start": 224.0,
+              "target_phase": "ring_middle",
+              "target_ring": "middle",
+              "velocity_end": [
+                -10.498057184222056,
+                -17.02324279791614,
+                0.0
+              ]
+            },
+            "energy_remaining": 875.583973402303,
+            "phase": "transfer_o2m",
+            "position": [
+              -232.7902600404364,
+              327.11332767138356,
+              70.22354001529342
+            ],
+            "ring_progress": 5.281180189982936,
+            "ring_role": null,
+            "soc": 0.5837226489348686,
+            "speed": 20.021927957849353,
+            "uid": 8,
+            "velocity": [
+              -15.999594014959271,
+              -12.03705073952042,
+              -0.07955239108925076
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 354.0,
+              "mode": "ring_transfer",
+              "plan_id": "d8ee1432-4723-40d8-92d3-c69058b8a8e9",
+              "position_end": [
+                116.79318215660459,
+                162.3556361871499,
+                40.0
+              ],
+              "source_ring": "middle",
+              "start": 294.0,
+              "target_phase": "ring_inner",
+              "target_ring": "inner",
+              "velocity_end": [
+                -12.988450894971992,
+                9.343454572528367,
+                0.0
+              ]
+            },
+            "energy_remaining": 891.4273856438397,
+            "phase": "transfer_m2i",
+            "position": [
+              -193.41410914107473,
+              -348.17282106615454,
+              69.7432
+            ],
+            "ring_progress": 3.9078706922318784,
+            "ring_role": null,
+            "soc": 0.5942849237625598,
+            "speed": 19.464221303961803,
+            "uid": 9,
+            "velocity": [
+              17.393714151300976,
+              -8.735823887443738,
+              -0.121499999999998
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 982.0366339713069,
+            "phase": "ring_middle",
+            "position": [
+              192.13076514278842,
+              -350.83581499847855,
+              70.0
+            ],
+            "ring_progress": 5.213416379377124,
+            "ring_role": "middle",
+            "soc": 0.6546910893142046,
+            "speed": 19.999999999999996,
+            "uid": 10,
+            "velocity": [
+              17.541790749923926,
+              9.60653825713942,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 318.69613039923854,
+              "mode": "final_approach",
+              "plan_id": "7f2e9ffa-e14a-4643-9a55-580cb7c54888",
+              "position_end": [
+                0.0,
+                40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 256.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 562.8968803799975,
+            "phase": "final",
+            "position": [
+              -0.260712377631957,
+              41.33156067693307,
+              40.0
+            ],
+            "ring_progress": 0.3624544352092565,
+            "ring_role": null,
+            "soc": 0.3752645869199983,
+            "speed": 0.964790472655902,
+            "uid": 11,
+            "velocity": [
+              0.17528383063677602,
+              -0.9487340169114296,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 1044.658022470394,
+            "phase": "ring_middle",
+            "position": [
+              351.2863235755841,
+              -191.30582549611503,
+              70.0
+            ],
+            "ring_progress": 5.784507753667754,
+            "ring_role": "middle",
+            "soc": 0.6964386816469292,
+            "speed": 20.0,
+            "uid": 12,
+            "velocity": [
+              9.565291274805752,
+              17.564316178779205,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 988.5158949642396,
+            "phase": "ring_middle",
+            "position": [
+              257.19188696467415,
+              306.3532818161906,
+              70.0
+            ],
+            "ring_progress": 0.8724138207787427,
+            "ring_role": "middle",
+            "soc": 0.6590105966428264,
+            "speed": 20.000000000000004,
+            "uid": 14,
+            "velocity": [
+              -15.317664090809531,
+              12.85959434823371,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 574.9233620375097,
+            "phase": "ring_middle",
+            "position": [
+              -398.7320136453932,
+              31.824224959768955,
+              70.0
+            ],
+            "ring_progress": 3.061947916358585,
+            "ring_role": "middle",
+            "soc": 0.3832822413583398,
+            "speed": 20.0,
+            "uid": 16,
+            "velocity": [
+              -1.5912112479884477,
+              -19.93660068226966,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 941.3489557495991,
+            "phase": "ring_middle",
+            "position": [
+              -341.2867853374599,
+              -208.62245841237365,
+              70.0
+            ],
+            "ring_progress": 3.6902664470765285,
+            "ring_role": "middle",
+            "soc": 0.6275659704997327,
+            "speed": 20.0,
+            "uid": 17,
+            "velocity": [
+              10.431122920618684,
+              -17.064339266872995,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": {
+              "end": 344.69613039923854,
+              "mode": "final_approach",
+              "plan_id": "6585d422-1a8f-4a41-9c39-fa6b7c269928",
+              "position_end": [
+                -80.0,
+                -40.0,
+                0.0
+              ],
+              "source_ring": "inner",
+              "start": 294.0,
+              "target_phase": "landing",
+              "target_ring": null,
+              "velocity_end": [
+                0.0,
+                0.0,
+                -0.0
+              ]
+            },
+            "energy_remaining": 633.5845367341251,
+            "phase": "final",
+            "position": [
+              -172.31763159792112,
+              100.88489294997639,
+              40.0
+            ],
+            "ring_progress": 2.1639987146643045,
+            "ring_role": null,
+            "soc": 0.4223896911560834,
+            "speed": 13.134614405895476,
+            "uid": 23,
+            "velocity": [
+              -6.194673958785156,
+              -11.582059839938058,
+              0.0
+            ]
+          },
+          {
+            "committed_plan": null,
+            "energy_remaining": 904.428902172446,
+            "phase": "ring_middle",
+            "position": [
+              -92.94833189374201,
+              389.0509061783185,
+              70.0
+            ],
+            "ring_progress": 1.805310854922676,
+            "ring_role": "middle",
+            "soc": 0.6029526014482973,
+            "speed": 20.0,
+            "uid": 24,
+            "velocity": [
+              -19.452545308915926,
+              -4.6474165946871,
+              0.0
+            ]
+          }
+        ],
+        "source_neighbors": {
+          "ahead": {
+            "absolute_angle": 0.6283185307179426,
+            "chord_gap": 247.2135954999522,
+            "phase": "ring_middle",
+            "signed_angle": 0.6283185307179426,
+            "soc": 0.6275659704997327,
+            "uid": 17
+          },
+          "all_count": 8,
+          "behind": {
+            "absolute_angle": 0.24404761889594262,
+            "chord_gap": 97.3769730046208,
+            "phase": "ring_middle",
+            "signed_angle": -0.24404761889594262,
+            "soc": 0.6532048243008861,
+            "uid": 6
+          },
+          "reference_uid": 16
+        },
+        "time": 300.0,
+        "uid16": {
+          "committed_plan": null,
+          "energy_remaining": 574.9233620375097,
+          "phase": "ring_middle",
+          "position": [
+            -398.7320136453932,
+            31.824224959768955,
+            70.0
+          ],
+          "ring_progress": 3.061947916358585,
+          "ring_role": "middle",
+          "soc": 0.3832822413583398,
+          "speed": 20.0,
+          "uid": 16,
+          "velocity": [
+            -1.5912112479884477,
+            -19.93660068226966,
+            0.0
+          ]
+        }
+      }
+    }
+  },
+  "steps": 301,
+  "stop_reason": "max_time",
+  "wrapper_info": {
+    "emergency_order": "original emergency order; trigger set to 1.0 after ordering",
+    "normal_order": "(downstream_rank, energy_slack, priority, uid)",
+    "restore_after_step": true,
+    "trigger_during_emergency_step": 1.0,
+    "trigger_original": 0.4
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "headless": {
+    "steps": 20,
+    "wall_seconds": 6.507917699869722,
+    "steps_per_second": 3.073179613257919
+  },
+  "spawn_process": {
+    "error": null,
+    "stop_requested": false,
+    "forwarded": 20,
+    "forwarded_dropped": 0,
+    "queue_remaining": 0,
+    "full_calls": 2,
+    "full_render_calls": 1,
+    "dynamic_calls": 19,
+    "interpolation": {
+      "frames": 31,
+      "effective_fps": 5.798606286099783,
+      "median_gap_seconds": 0.09373930003494024,
+      "p95_gap_seconds": 0.8954942196840383,
+      "min_gap_seconds": 0.02379810018464923,
+      "max_gap_seconds": 1.4924579998478293
+    },
+    "ready": true,
+    "startup_wall_seconds": 1.6899127000942826,
+    "simulation_wall_seconds": 6.769589599687606,
+    "simulation_steps_per_second": 2.95438884521492,
+    "process_exitcode": 0,
+    "source_frames": 20,
+    "source_rate_hz": 3.7870969065408127,
+    "source_median_gap_seconds": 0.109026700258255,
+    "source_p95_gap_seconds": 1.5497998498380183,
+    "ipc_queue_maxsize": 1,
+    "ipc_put_counters": {
+      "put": 20,
+      "dropped": 0,
+      "put_failed": 0
+    },
+    "telemetry": {
+      "hard_separation_violations": 0,
+      "nmac": 0,
+      "collisions": 0
+    }
+  }
+}

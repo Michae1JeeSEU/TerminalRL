@@ -1,0 +1,42 @@
+{
+  "binding": {
+    "after_checkpoint_sha256": "d44990dc7d129573d9145f169df1cbc4f91fa32bc5127b1c58d937260c02a24f",
+    "after_label": "AFTERd449",
+    "before_checkpoint_sha256": "3fe7dd1e01d032227521f6fc5c8464fe8d00d98fb0e9f0dbd13411123a27d4ab",
+    "pilot_sha256": "b5138ee3493fbfeaf22172f0107251a1897175878914727c21bd52e424a85332",
+    "preflight_sha256": "a247e7cdbaee8f9686b67cf6506ba2ad5e7d59f5d38df09a0088f7c6629cd5f8",
+    "source_label": "BEFORE3fe"
+  },
+  "known_cell_count": 4,
+  "local_output_path": "D:\\7_codespace\\terminal\\.tmp\\p3_counterfactual_gate_targets_20261001_v3.json",
+  "local_output_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+  "max_kl_pstar_to_p0": 0.0008676730314016359,
+  "scope": {
+    "PPO_ALLOWED": false,
+    "cells": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "heldout_used": false,
+    "optimizer_used": false,
+    "seeds": [
+      9303401,
+      9303402,
+      9303403,
+      9303404
+    ],
+    "teacher_used": false,
+    "total_branches": 416,
+    "weights_changed": false
+  },
+  "server_cli_exit": 0,
+  "server_input_sha256": "1280dc0a5697913749f22982cff89aa7f0ff2a8075f4bb05b02331033ff7cdba",
+  "server_output_path": "/home/user/training_outputs/terminal/p3_followup_20260930/counterfactual_gate_targets_20261001/targets_v1.json",
+  "server_output_sha256": "4085299501758c55c476fac9676092ace9d9c69f4ea5d3a68b74f786eaaf1473",
+  "server_pytest_exit": 0,
+  "server_pytest_summary": "16 passed in 0.11s",
+  "status": "TARGETS_READY",
+  "unknown_cell_count": 0
+}

@@ -1,0 +1,55 @@
+{
+  "server": "lab-server",
+  "project_cwd": "/home/user/projects/terminal",
+  "phase": "preflight_v2",
+  "preflight_exit": 0,
+  "serialized_validator_exit": 0,
+  "phase_inputs_exit": 0,
+  "server_source_sha256": {
+    "terminal_marl/training/profile_p3_prefix_fallback_20261001.py": "0f3b8afe09cd65d15f6539f8bc33205662e2cdd8d1575a41107a567bc18993dc",
+    "tests/test_p3_prefix_fallback_profile.py": "2c059c3fdaa483ba714cb9bc0445144a0a6ebce1259c6bb0454b68049692ba05",
+    "docs/evidence/v4_2/p3_prefix_fallback_profile_protocol_20261001.md": "f180494075f117cdd9d7e8c257b6c9a5b9fa1cf27fece2506d6dadc79c684164"
+  },
+  "output_root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_fallback_profile_20261001_v2",
+  "preflight_sha256": "e0022ca5b1648eacb96fded39a515d9b2c6128dd92ae2f1d1a078210ff884506",
+  "preflight_bytes": 29259,
+  "progress": {
+    "stage": "P3_PREFIX_FALLBACK_PROFILE_20261001_V1",
+    "phase": "preflight",
+    "status": "PREFLIGHT_OK"
+  },
+  "input_bindings": {
+    "full_summaries": 3,
+    "arms": 16,
+    "action_tapes": 16,
+    "unique_action_tapes": 16,
+    "prefix_sidecars": 8
+  },
+  "cells": 4,
+  "arms": ["before_legacy", "after_legacy", "before_prefix_fallback", "after_prefix_fallback"],
+  "requests_per_cell": 24,
+  "max_steps": 1800,
+  "PPO_ALLOWED": false,
+  "heldout_used": false,
+  "teacher_used": false,
+  "optimizer_used": false,
+  "no_training": true,
+  "safety_provenance": {
+    "raw": {
+      "collisions": 0,
+      "nmac": 0,
+      "hard_separation_violations": 0,
+      "SafetyInvariantError": 0,
+      "uncertified_execution": null
+    },
+    "shared_uncertified_execution": 0,
+    "derived_uncertified_execution": true,
+    "derivation_label": "exact_replay_of_frozen_certified_source",
+    "observed_positive": false,
+    "provenance_valid": true,
+    "blocked_count": 0,
+    "all_conditions_true": true
+  },
+  "log_bytes": 0,
+  "python_processes_after_completion": []
+}

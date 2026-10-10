@@ -1,0 +1,16 @@
+{
+  "phase": "full",
+  "status": "RUNNING",
+  "pid": 2127202,
+  "server_time": "2026-10-01T07:10:27+08:00",
+  "cwd": "/home/user/projects/terminal",
+  "executable": "/usr/bin/python3.12",
+  "argv": ["/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.training.diagnose_p3_trained_gate_value_20261001", "--phase", "full", "--output-dir", "/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2"],
+  "env_flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+  "runner_sha256": "6e06f83712d47346cc7c9e3b9dd0e200393c984036900aa42a336e714017301d",
+  "protocol_sha256": "8f5802c69c28c2ed698e66c8c8e347f791a56c98fa2422bf697aacf3a74d0e2d",
+  "pilot_file_sha256": "e213fbaedd2d700736bd70b2b1787ed103914e21b356ca62b9708642f512ac77",
+  "pilot_state_sha256": "0a51d689f575bcee9e2a64fdd440ce1a339bd3cb76f08f02bf14e53a5620d7d6",
+  "progress": {"cell_id": 2, "branches_completed": 6, "branches_expected": 104, "continuation_seed": 9303201, "proposal": 4, "start_step": 202, "elapsed_wall_seconds": 82.13785220403224, "status": "RUNNING"},
+  "first_c2_branch": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/trained_gate_value_20261001_v2/branches/cell_02_001.json", "branch_index": 1, "continuation_seed": 9303201, "proposal": null, "elapsed_wall_seconds": 13.742773282341659, "branch": "wait", "steps": 495, "terminal": true, "censored": false, "termination_classification": "natural_terminal", "safety_violation": false, "safety_invariant_error": false, "unresolved": 0, "undiscounted_return": 333.64271582118243}
+}

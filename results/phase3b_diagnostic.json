@@ -1,0 +1,195 @@
+{
+  "15": {
+    "ppo": {
+      "n_uavs": 15,
+      "num_seeds": 20,
+      "avg_landed": 15.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 87.8,
+      "avg_steps": 408.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    },
+    "heuristic": {
+      "n_uavs": 15,
+      "num_seeds": 20,
+      "avg_landed": 15.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 0.2,
+      "avg_steps": 404.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "20": {
+    "ppo": {
+      "n_uavs": 20,
+      "num_seeds": 20,
+      "avg_landed": 20.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 201.2,
+      "avg_steps": 540.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    },
+    "heuristic": {
+      "n_uavs": 20,
+      "num_seeds": 20,
+      "avg_landed": 20.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 0.5,
+      "avg_steps": 537.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "25": {
+    "ppo": {
+      "n_uavs": 25,
+      "num_seeds": 20,
+      "avg_landed": 24.7,
+      "std_landed": 0.95,
+      "avg_landing_rate": 98.8,
+      "avg_failed": 0.1,
+      "avg_collisions": 0.05,
+      "avg_near_misses": 652.7,
+      "avg_steps": 685.0,
+      "eps_with_collisions": 1,
+      "eps_with_failures": 1,
+      "eps_with_timeout": 1,
+      "total_collisions_all_eps": 1
+    },
+    "heuristic": {
+      "n_uavs": 25,
+      "num_seeds": 20,
+      "avg_landed": 25.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 1.2,
+      "avg_steps": 650.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "30": {
+    "ppo": {
+      "n_uavs": 30,
+      "num_seeds": 20,
+      "avg_landed": 29.9,
+      "std_landed": 0.44,
+      "avg_landing_rate": 99.7,
+      "avg_failed": 0.1,
+      "avg_collisions": 0.05,
+      "avg_near_misses": 1081.8,
+      "avg_steps": 779.0,
+      "eps_with_collisions": 1,
+      "eps_with_failures": 1,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 1
+    },
+    "heuristic": {
+      "n_uavs": 30,
+      "num_seeds": 20,
+      "avg_landed": 29.8,
+      "std_landed": 0.6,
+      "avg_landing_rate": 99.3,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 1.1,
+      "avg_steps": 822.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 2,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "35": {
+    "ppo": {
+      "n_uavs": 35,
+      "num_seeds": 20,
+      "avg_landed": 34.9,
+      "std_landed": 0.44,
+      "avg_landing_rate": 99.7,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 1657.7,
+      "avg_steps": 941.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 1,
+      "total_collisions_all_eps": 0
+    },
+    "heuristic": {
+      "n_uavs": 35,
+      "num_seeds": 20,
+      "avg_landed": 34.05,
+      "std_landed": 3.51,
+      "avg_landing_rate": 97.3,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 68.0,
+      "avg_steps": 947.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 2,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "40": {
+    "ppo": {
+      "n_uavs": 40,
+      "num_seeds": 20,
+      "avg_landed": 39.9,
+      "std_landed": 0.44,
+      "avg_landing_rate": 99.8,
+      "avg_failed": 0.1,
+      "avg_collisions": 0.05,
+      "avg_near_misses": 2505.4,
+      "avg_steps": 1043.0,
+      "eps_with_collisions": 1,
+      "eps_with_failures": 1,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 1
+    },
+    "heuristic": {
+      "n_uavs": 40,
+      "num_seeds": 20,
+      "avg_landed": 40.0,
+      "std_landed": 0.0,
+      "avg_landing_rate": 100.0,
+      "avg_failed": 0.0,
+      "avg_collisions": 0.0,
+      "avg_near_misses": 4.3,
+      "avg_steps": 1040.0,
+      "eps_with_collisions": 0,
+      "eps_with_failures": 0,
+      "eps_with_timeout": 0,
+      "total_collisions_all_eps": 0
+    }
+  },
+  "collision_diagnosis": {}
+}

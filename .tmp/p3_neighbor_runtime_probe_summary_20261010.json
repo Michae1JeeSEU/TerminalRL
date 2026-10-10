@@ -1,0 +1,1910 @@
+{
+  "four_vs_single_perpass_multiplier": {
+    "expanded_new": {
+      "actor_forward": {
+        "mean_process_multiplier": 1.6533864529630242,
+        "mean_wall_multiplier": 1.6533331626774008,
+        "median_process_multiplier": 1.6405399155195122,
+        "median_wall_multiplier": 1.6405109351353078
+      },
+      "aux_forward": {
+        "mean_process_multiplier": 1.7282812171728628,
+        "mean_wall_multiplier": 1.7281416872644855,
+        "median_process_multiplier": 1.7452284119803274,
+        "median_wall_multiplier": 1.7445531573231894
+      },
+      "backward_clip": {
+        "mean_process_multiplier": 2.109455656718302,
+        "mean_wall_multiplier": 2.1099885114513643,
+        "median_process_multiplier": 2.104654171045484,
+        "median_wall_multiplier": 2.1060504246650193
+      },
+      "total": {
+        "mean_process_multiplier": 1.8769888699291661,
+        "mean_wall_multiplier": 1.877211218466053,
+        "median_process_multiplier": 1.8707389877056892,
+        "median_wall_multiplier": 1.8709650104931987
+      }
+    },
+    "old_reference": {
+      "actor_forward": {
+        "mean_process_multiplier": 1.6418735952937817,
+        "mean_wall_multiplier": 1.6416926781923662,
+        "median_process_multiplier": 1.63811881828373,
+        "median_wall_multiplier": 1.6379751427494342
+      },
+      "aux_forward": {
+        "mean_process_multiplier": 1.860854663040988,
+        "mean_wall_multiplier": 1.8605839459441502,
+        "median_process_multiplier": 1.770626967740985,
+        "median_wall_multiplier": 1.770114740816786
+      },
+      "backward_clip": {
+        "mean_process_multiplier": 2.0791717058491312,
+        "mean_wall_multiplier": 2.079339677568125,
+        "median_process_multiplier": 2.0765374329035255,
+        "median_wall_multiplier": 2.07398414460757
+      },
+      "total": {
+        "mean_process_multiplier": 1.855810684673946,
+        "mean_wall_multiplier": 1.8558017896675805,
+        "median_process_multiplier": 1.855623918305301,
+        "median_wall_multiplier": 1.8554235601188873
+      }
+    }
+  },
+  "interpretation_boundary": {
+    "four_combined_means_use_64_timed_passes_per_phase": true,
+    "four_per_worker_means_use_16_timed_passes_per_phase": true,
+    "mark_per_worker_stats_and_combined_all_worker_sums_are_both_present": true,
+    "no_loss_accuracy_or_action_metrics_serialized": true,
+    "optimizer_updates_are_zero": true,
+    "result_wall_includes_parent_startup_and_worker_mark": true,
+    "timed_passes_are_forward_aux_backward_clip_measurements": true,
+    "timed_record_wall_sum_excludes_warmup_mark_and_parent_startup": true
+  },
+  "runs": {
+    "four": {
+      "all_groups": {
+        "actor_forward": {
+          "process_seconds": {
+            "mean": 0.13552703488281248,
+            "median": 0.13413377749999977,
+            "n": 128
+          },
+          "wall_seconds": {
+            "mean": 0.13555094251933042,
+            "median": 0.13415754027664661,
+            "n": 128
+          }
+        },
+        "aux_forward": {
+          "process_seconds": {
+            "mean": 0.001716964546874927,
+            "median": 0.0016819060000003994,
+            "n": 128
+          },
+          "wall_seconds": {
+            "mean": 0.0017158493428723887,
+            "median": 0.0016812989488244057,
+            "n": 128
+          }
+        },
+        "backward_clip": {
+          "process_seconds": {
+            "mean": 0.16553488046093748,
+            "median": 0.16522714100000035,
+            "n": 128
+          },
+          "wall_seconds": {
+            "mean": 0.16558755240839673,
+            "median": 0.1652627931907773,
+            "n": 128
+          }
+        },
+        "mean_wall_time_share": {
+          "actor_forward": 0.44712641157145466,
+          "aux_forward": 0.0056598762444338,
+          "backward_clip": 0.5462047458556643
+        },
+        "median_wall_time_share": {
+          "actor_forward": 0.4440679569849063,
+          "aux_forward": 0.005565180963706818,
+          "backward_clip": 0.5470278508872044
+        },
+        "timed_passes": 128,
+        "total": {
+          "process_seconds": {
+            "mean": 0.30307584106249996,
+            "median": 0.3021072679999999,
+            "n": 128
+          },
+          "wall_seconds": {
+            "mean": 0.30316022272745613,
+            "median": 0.3021103823557496,
+            "n": 128
+          }
+        }
+      },
+      "backward_calls": 144,
+      "directory": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_runtime_probe_20261010\\four",
+      "exit": "0",
+      "mark_measurements": {
+        "aggregates": {
+          "expanded_new": {
+            "combined_all_workers": {
+              "process_seconds": 0.053573053000000925,
+              "wall_seconds": 0.05356002226471901
+            },
+            "fields": [
+              "expanded_train_pairs",
+              "expanded_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.013393263250000231,
+              "median": 0.013394045000000965,
+              "n": 4
+            },
+            "wall_seconds": {
+              "mean": 0.013390005566179752,
+              "median": 0.013390555512160063,
+              "n": 4
+            }
+          },
+          "old_reference": {
+            "combined_all_workers": {
+              "process_seconds": 0.023618331999999853,
+              "wall_seconds": 0.023610376752912998
+            },
+            "fields": [
+              "old_train_pairs",
+              "old_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.005904582999999963,
+              "median": 0.005782710500000121,
+              "n": 4
+            },
+            "wall_seconds": {
+              "mean": 0.0059025941882282495,
+              "median": 0.005780077073723078,
+              "n": 4
+            }
+          },
+          "reference_held": {
+            "combined_all_workers": {
+              "process_seconds": 0.003283371000001978,
+              "wall_seconds": 0.00328022800385952
+            },
+            "fields": [
+              "reference_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.0008208427500004944,
+              "median": 0.0008265625000012378,
+              "n": 4
+            },
+            "wall_seconds": {
+              "mean": 0.00082005700096488,
+              "median": 0.000825896393507719,
+              "n": 4
+            }
+          }
+        },
+        "per_mark": {
+          "actor_held": {
+            "combined_all_workers": {
+              "process_seconds": 0.08540023600000168,
+              "wall_seconds": 0.08557049371302128
+            },
+            "process_seconds": {
+              "mean": 0.02135005900000042,
+              "median": 0.02160073699999998,
+              "n": 4
+            },
+            "support_values": {
+              "rows": [
+                30
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.02139262342825532,
+              "median": 0.021689089946448803,
+              "n": 4
+            }
+          },
+          "actor_train": {
+            "combined_all_workers": {
+              "process_seconds": 11.994748817,
+              "wall_seconds": 11.99746236205101
+            },
+            "process_seconds": {
+              "mean": 2.99868720425,
+              "median": 3.0121817559999995,
+              "n": 4
+            },
+            "support_values": {
+              "rows": [
+                3119
+              ]
+            },
+            "wall_seconds": {
+              "mean": 2.9993655905127525,
+              "median": 3.012671337928623,
+              "n": 4
+            }
+          },
+          "expanded_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.007722250000000486,
+              "wall_seconds": 0.007717578671872616
+            },
+            "process_seconds": {
+              "mean": 0.0019305625000001214,
+              "median": 0.0019255945000002939,
+              "n": 4
+            },
+            "support_values": {
+              "blocked_pairs": [
+                182
+              ],
+              "known_pairs": [
+                438
+              ],
+              "rows": [
+                160
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                32
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.001929394667968154,
+              "median": 0.0019242260605096817,
+              "n": 4
+            }
+          },
+          "expanded_train_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.04585080300000044,
+              "wall_seconds": 0.045842443592846394
+            },
+            "process_seconds": {
+              "mean": 0.01146270075000011,
+              "median": 0.011468450500000671,
+              "n": 4
+            },
+            "support_values": {
+              "blocked_pairs": [
+                1287
+              ],
+              "known_pairs": [
+                13958
+              ],
+              "rows": [
+                1110
+              ],
+              "scene_blocked": [
+                74
+              ],
+              "scene_known": [
+                399
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.011460610898211598,
+              "median": 0.011466329451650381,
+              "n": 4
+            }
+          },
+          "old_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.0035177089999987032,
+              "wall_seconds": 0.003515341319143772
+            },
+            "process_seconds": {
+              "mean": 0.0008794272499996758,
+              "median": 0.0008760764999991011,
+              "n": 4
+            },
+            "support_values": {
+              "blocked_pairs": [
+                43
+              ],
+              "known_pairs": [
+                158
+              ],
+              "rows": [
+                59
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                24
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.000878835329785943,
+              "median": 0.0008755414746701717,
+              "n": 4
+            }
+          },
+          "old_train_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.02010062300000115,
+              "wall_seconds": 0.020095035433769226
+            },
+            "process_seconds": {
+              "mean": 0.0050251557500002875,
+              "median": 0.004878522500000315,
+              "n": 4
+            },
+            "support_values": {
+              "blocked_pairs": [
+                351
+              ],
+              "known_pairs": [
+                4397
+              ],
+              "rows": [
+                414
+              ],
+              "scene_blocked": [
+                26
+              ],
+              "scene_known": [
+                190
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.0050237588584423065,
+              "median": 0.004876740276813507,
+              "n": 4
+            }
+          },
+          "reference_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.003283371000001978,
+              "wall_seconds": 0.00328022800385952
+            },
+            "process_seconds": {
+              "mean": 0.0008208427500004944,
+              "median": 0.0008265625000012378,
+              "n": 4
+            },
+            "support_values": {
+              "blocked_pairs": [
+                43
+              ],
+              "known_pairs": [
+                158
+              ],
+              "rows": [
+                59
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                24
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.00082005700096488,
+              "median": 0.000825896393507719,
+              "n": 4
+            }
+          }
+        }
+      },
+      "model_state": {
+        "all_unchanged": true,
+        "final_sha256_unique": [
+          "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976"
+        ],
+        "initial_equals_final_all_workers": true,
+        "initial_sha256_unique": [
+          "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976"
+        ]
+      },
+      "optimizer_updates": 0,
+      "phases": {
+        "expanded_new": {
+          "combined": {
+            "actor_forward": {
+              "process_seconds": {
+                "mean": 0.13470339864062497,
+                "median": 0.13371811749999996,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.13473415387852583,
+                "median": 0.1337346164509654,
+                "n": 64
+              }
+            },
+            "aux_forward": {
+              "process_seconds": {
+                "mean": 0.0016560564531249156,
+                "median": 0.0016718624999993992,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.001655085783568211,
+                "median": 0.0016704644076526165,
+                "n": 64
+              }
+            },
+            "backward_clip": {
+              "process_seconds": {
+                "mean": 0.16617764154687503,
+                "median": 0.1657666949999994,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.16623529176285956,
+                "median": 0.16588924452662468,
+                "n": 64
+              }
+            },
+            "mean_wall_time_share": {
+              "actor_forward": 0.4447725579008047,
+              "aux_forward": 0.005463623857144492,
+              "backward_clip": 0.548761348198423
+            },
+            "median_wall_time_share": {
+              "actor_forward": 0.4428620339997256,
+              "aux_forward": 0.005531741032572754,
+              "backward_clip": 0.5493420491969304
+            },
+            "timed_passes": 64,
+            "total": {
+              "process_seconds": {
+                "mean": 0.30283188667187494,
+                "median": 0.3019338659999997,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.3029282078787219,
+                "median": 0.30197805678471923,
+                "n": 64
+              }
+            }
+          },
+          "per_worker": [
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.13496703743750005,
+                  "median": 0.13373258250000042,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.13498338632052764,
+                  "median": 0.13372667273506522,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.001623570874999869,
+                  "median": 0.0016401940000001503,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.001622306474018842,
+                  "median": 0.0016391393728554249,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16406214631250027,
+                  "median": 0.16445135950000012,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16411949729081243,
+                  "median": 0.16444759769365191,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.4483753939113821,
+                "aux_forward": 0.005388828389635412,
+                "backward_clip": 0.5451570467462428
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.44992062126304655,
+                "aux_forward": 0.005514850477383139,
+                "backward_clip": 0.5532805371305892
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.30096814712500014,
+                  "median": 0.29722259299999987,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.30104994197608903,
+                  "median": 0.29722281312569976,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.13220911656250006,
+                  "median": 0.13155676449999998,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.13230463565560058,
+                  "median": 0.13172546681016684,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0016639804375000455,
+                  "median": 0.0016992944999998372,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0016636440414004028,
+                  "median": 0.0016985498368740082,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.1670852133124997,
+                  "median": 0.16682184300000014,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.1671592550119385,
+                  "median": 0.16686789458617568,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.43895192375170966,
+                "aux_forward": 0.0055195326210012744,
+                "backward_clip": 0.5545903678794266
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.43466802970011464,
+                "aux_forward": 0.005604879062645253,
+                "backward_clip": 0.5506311020670548
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.30123310512499996,
+                  "median": 0.30295302150000003,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.3014103105524555,
+                  "median": 0.3030484365299344,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.13781174018749986,
+                  "median": 0.1343791104999985,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.13782436231849715,
+                  "median": 0.13438475877046585,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0015719004999998898,
+                  "median": 0.0015690619999997324,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0015709505532868207,
+                  "median": 0.0015678396448493004,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16685719968750012,
+                  "median": 0.16616734400000066,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16695655894000083,
+                  "median": 0.16628440422937274,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.44942678828659777,
+                "aux_forward": 0.0051226593749020746,
+                "backward_clip": 0.5444229801287923
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.44293199354643603,
+                "aux_forward": 0.005167597470189137,
+                "backward_clip": 0.5480731843020904
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.3065466896874998,
+                  "median": 0.30309320050000066,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.3066669942927547,
+                  "median": 0.30339817563071847,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.13382570037499997,
+                  "median": 0.133610354,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.13382423121947795,
+                  "median": 0.13361088233068585,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.001764773999999858,
+                  "median": 0.0017462914999999413,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0017634420655667782,
+                  "median": 0.001744680106639862,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16670600687499998,
+                  "median": 0.1657118125000001,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16670585580868647,
+                  "median": 0.1657092976383865,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.4422690240019013,
+                "aux_forward": 0.00582791168770488,
+                "backward_clip": 0.5509378643318394
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.44353900244757777,
+                "aux_forward": 0.005791696459079927,
+                "backward_clip": 0.5500939391217432
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.3025796047499999,
+                  "median": 0.30123580749999945,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.3025855846935883,
+                  "median": 0.3012381810694933,
+                  "n": 16
+                }
+              }
+            }
+          ],
+          "timed_passes_per_worker": [
+            16,
+            16,
+            16,
+            16
+          ]
+        },
+        "old_reference": {
+          "combined": {
+            "actor_forward": {
+              "process_seconds": {
+                "mean": 0.136350671125,
+                "median": 0.13596992050000012,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.136367731160135,
+                "median": 0.13597946893423796,
+                "n": 64
+              }
+            },
+            "aux_forward": {
+              "process_seconds": {
+                "mean": 0.0017778726406249383,
+                "median": 0.0016922359999997916,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.0017766129021765664,
+                "median": 0.0016909204423427582,
+                "n": 64
+              }
+            },
+            "backward_clip": {
+              "process_seconds": {
+                "mean": 0.16489211937499992,
+                "median": 0.16419312200000014,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.1649398130539339,
+                "median": 0.1642137193121016,
+                "n": 64
+              }
+            },
+            "mean_wall_time_share": {
+              "actor_forward": 0.44947666509064593,
+              "aux_forward": 0.005855828469343777,
+              "backward_clip": 0.5436520537626242
+            },
+            "median_wall_time_share": {
+              "actor_forward": 0.44962229332501286,
+              "aux_forward": 0.005591105282842211,
+              "backward_clip": 0.5429801252440879
+            },
+            "timed_passes": 64,
+            "total": {
+              "process_seconds": {
+                "mean": 0.303319795453125,
+                "median": 0.3024152645,
+                "n": 64
+              },
+              "wall_seconds": {
+                "mean": 0.3033922375761904,
+                "median": 0.3024304420687258,
+                "n": 64
+              }
+            }
+          },
+          "per_worker": [
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.1316771955,
+                  "median": 0.13212864449999984,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.1316974670626223,
+                  "median": 0.1321280673146248,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.001789880687499995,
+                  "median": 0.0016265130000001626,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0017887912690639496,
+                  "median": 0.0016253436915576458,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16222968874999993,
+                  "median": 0.16143626699999958,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16222691582515836,
+                  "median": 0.16143178567290306,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.44484606902406515,
+                "aux_forward": 0.006042156938138324,
+                "backward_clip": 0.5479680619856157
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.44783683623044307,
+                "aux_forward": 0.0055089640786240264,
+                "backward_clip": 0.5471592950090914
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.2960258344374999,
+                  "median": 0.295028716,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.29605177213670686,
+                  "median": 0.29503617528826,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.1343778594999999,
+                  "median": 0.13510732450000007,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.13440663664368913,
+                  "median": 0.13514052843675017,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0017941813124998929,
+                  "median": 0.0017132444999998775,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0017928271554410458,
+                  "median": 0.0017120074480772018,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16234776887500002,
+                  "median": 0.16175441699999993,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.1623884435975924,
+                  "median": 0.16179589973762631,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.4497038849263681,
+                "aux_forward": 0.005998523264447626,
+                "backward_clip": 0.5433266970780388
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.45440899659809475,
+                "aux_forward": 0.005756611992333083,
+                "backward_clip": 0.5440374793848094
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.29880003099999997,
+                  "median": 0.2972858334999997,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.29887808655621484,
+                  "median": 0.2973984437994659,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.14226102875000013,
+                  "median": 0.14343885049999994,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.1422705528093502,
+                  "median": 0.1434394628740847,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0017902546874999092,
+                  "median": 0.0017047820000000158,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0017889434820972383,
+                  "median": 0.0017038453370332718,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.17094443337499993,
+                  "median": 0.17056267749999976,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.17100005637621507,
+                  "median": 0.17058525420725346,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.4511331058479909,
+                "aux_forward": 0.005672654061775786,
+                "backward_clip": 0.542232985040552
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.45668212046759427,
+                "aux_forward": 0.005424697540510381,
+                "backward_clip": 0.5431088073737269
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.31529095387499984,
+                  "median": 0.3136872719999999,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.31536269665230066,
+                  "median": 0.3140903846360743,
+                  "n": 16
+                }
+              }
+            },
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.13708660074999995,
+                  "median": 0.13716947199999985,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.1370962681248784,
+                  "median": 0.13718776777386665,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.001737173874999956,
+                  "median": 0.0017172819999999867,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.001735889702104032,
+                  "median": 0.0017163120210170746,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.16404658649999987,
+                  "median": 0.16480771649999948,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16414383641676977,
+                  "median": 0.1648086621426046,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.45205057301993035,
+                "aux_forward": 0.005723787709675266,
+                "backward_clip": 0.5412351213112665
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.4515589321013125,
+                "aux_forward": 0.005649308505701563,
+                "backward_clip": 0.5424741920200352
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.3031623625000001,
+                  "median": 0.3037910905000003,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.3032763949595392,
+                  "median": 0.3038092218339443,
+                  "n": 16
+                }
+              }
+            }
+          ],
+          "timed_passes_per_worker": [
+            16,
+            16,
+            16,
+            16
+          ]
+        }
+      },
+      "protocol": {
+        "actor_batch_size": 128,
+        "aux_batch_seed": 91912,
+        "auxiliary_batch_size": 64,
+        "held_seed": 893511,
+        "model_seed": 91911,
+        "timed_backward_passes_per_group": 16,
+        "wall_cap_seconds": 180.0,
+        "warmups": 2
+      },
+      "protocol_sha256": "da67065d6a132df54b00a9a7bb83bfb5a818237a1622b70c035ffd8c6a5ba60a",
+      "result_sha256": "9a9b9fa2a0c94806386451f106e557d05ef9d2876ed784023e8f8b5fba677a8f",
+      "result_wall_seconds": 15.177205354906619,
+      "status": "COMPLETE",
+      "supports": {
+        "consistent_across_workers": true,
+        "per_worker": [
+          {
+            "actor_held_rows": 30,
+            "actor_train_rows": 3119,
+            "expanded_held": {
+              "blocked_pairs": 182,
+              "known_pairs": 438,
+              "rows": 160,
+              "scene_blocked": 1,
+              "scene_known": 32
+            },
+            "expanded_train": {
+              "blocked_pairs": 1287,
+              "known_pairs": 13958,
+              "rows": 1110,
+              "scene_blocked": 74,
+              "scene_known": 399
+            },
+            "old_held": {
+              "blocked_pairs": 43,
+              "known_pairs": 158,
+              "rows": 59,
+              "scene_blocked": 1,
+              "scene_known": 24
+            },
+            "old_train": {
+              "blocked_pairs": 351,
+              "known_pairs": 4397,
+              "rows": 414,
+              "scene_blocked": 26,
+              "scene_known": 190
+            }
+          },
+          {
+            "actor_held_rows": 30,
+            "actor_train_rows": 3119,
+            "expanded_held": {
+              "blocked_pairs": 182,
+              "known_pairs": 438,
+              "rows": 160,
+              "scene_blocked": 1,
+              "scene_known": 32
+            },
+            "expanded_train": {
+              "blocked_pairs": 1287,
+              "known_pairs": 13958,
+              "rows": 1110,
+              "scene_blocked": 74,
+              "scene_known": 399
+            },
+            "old_held": {
+              "blocked_pairs": 43,
+              "known_pairs": 158,
+              "rows": 59,
+              "scene_blocked": 1,
+              "scene_known": 24
+            },
+            "old_train": {
+              "blocked_pairs": 351,
+              "known_pairs": 4397,
+              "rows": 414,
+              "scene_blocked": 26,
+              "scene_known": 190
+            }
+          },
+          {
+            "actor_held_rows": 30,
+            "actor_train_rows": 3119,
+            "expanded_held": {
+              "blocked_pairs": 182,
+              "known_pairs": 438,
+              "rows": 160,
+              "scene_blocked": 1,
+              "scene_known": 32
+            },
+            "expanded_train": {
+              "blocked_pairs": 1287,
+              "known_pairs": 13958,
+              "rows": 1110,
+              "scene_blocked": 74,
+              "scene_known": 399
+            },
+            "old_held": {
+              "blocked_pairs": 43,
+              "known_pairs": 158,
+              "rows": 59,
+              "scene_blocked": 1,
+              "scene_known": 24
+            },
+            "old_train": {
+              "blocked_pairs": 351,
+              "known_pairs": 4397,
+              "rows": 414,
+              "scene_blocked": 26,
+              "scene_known": 190
+            }
+          },
+          {
+            "actor_held_rows": 30,
+            "actor_train_rows": 3119,
+            "expanded_held": {
+              "blocked_pairs": 182,
+              "known_pairs": 438,
+              "rows": 160,
+              "scene_blocked": 1,
+              "scene_known": 32
+            },
+            "expanded_train": {
+              "blocked_pairs": 1287,
+              "known_pairs": 13958,
+              "rows": 1110,
+              "scene_blocked": 74,
+              "scene_known": 399
+            },
+            "old_held": {
+              "blocked_pairs": 43,
+              "known_pairs": 158,
+              "rows": 59,
+              "scene_blocked": 1,
+              "scene_known": 24
+            },
+            "old_train": {
+              "blocked_pairs": 351,
+              "known_pairs": 4397,
+              "rows": 414,
+              "scene_blocked": 26,
+              "scene_known": 190
+            }
+          }
+        ]
+      },
+      "throughput": {
+        "result_wall_seconds_including_parent_startup_and_worker_mark": 15.177205354906619,
+        "timed_passes_per_result_wall_second_including_startup_and_mark": 8.43370021073208,
+        "timed_passes_per_sum_worker_elapsed_second": 2.2923381055112984,
+        "timed_passes_per_timed_record_wall_sum_second": 3.298585780823262,
+        "timed_passes_per_worker": [
+          32,
+          32,
+          32,
+          32
+        ],
+        "timed_passes_total": 128,
+        "timed_record_wall_sum_seconds_excluding_warmup_mark_and_parent_startup": 38.804508509114385,
+        "worker_elapsed_seconds_including_worker_model_and_mark": {
+          "per_worker": [
+            13.79541100654751,
+            13.939621490426362,
+            14.133660268969834,
+            13.969492575153708
+          ],
+          "sum": 55.838185341097414
+        },
+        "workers": 4
+      },
+      "updates": 0,
+      "workers": 4
+    },
+    "single": {
+      "all_groups": {
+        "actor_forward": {
+          "process_seconds": {
+            "mean": 0.08225849543749986,
+            "median": 0.08154565250000445,
+            "n": 32
+          },
+          "wall_seconds": {
+            "mean": 0.082278881163802,
+            "median": 0.08158342493698001,
+            "n": 32
+          }
+        },
+        "aux_forward": {
+          "process_seconds": {
+            "mean": 0.00095680828125011,
+            "median": 0.0009567789999991305,
+            "n": 32
+          },
+          "wall_seconds": {
+            "mean": 0.0009562970953993499,
+            "median": 0.0009563262574374676,
+            "n": 32
+          }
+        },
+        "backward_clip": {
+          "process_seconds": {
+            "mean": 0.07904206903125033,
+            "median": 0.07891261299999996,
+            "n": 32
+          },
+          "wall_seconds": {
+            "mean": 0.0790540483139921,
+            "median": 0.0789214693941176,
+            "n": 32
+          }
+        },
+        "mean_wall_time_share": {
+          "actor_forward": 0.506558347403191,
+          "aux_forward": 0.0058875408782914215,
+          "backward_clip": 0.4867043341260889
+        },
+        "median_wall_time_share": {
+          "actor_forward": 0.5050126620634077,
+          "aux_forward": 0.0059197915439649215,
+          "backward_clip": 0.48853478979911097
+        },
+        "timed_passes": 32,
+        "total": {
+          "process_seconds": {
+            "mean": 0.16239124378124914,
+            "median": 0.1614992274999949,
+            "n": 32
+          },
+          "wall_seconds": {
+            "mean": 0.16242725361371413,
+            "median": 0.16154728597030044,
+            "n": 32
+          }
+        }
+      },
+      "backward_calls": 36,
+      "directory": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_runtime_probe_20261010\\single",
+      "exit": "0",
+      "mark_measurements": {
+        "aggregates": {
+          "expanded_new": {
+            "combined_all_workers": {
+              "process_seconds": 0.012821420000001638,
+              "wall_seconds": 0.01282079704105854
+            },
+            "fields": [
+              "expanded_train_pairs",
+              "expanded_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.012821420000001638,
+              "median": 0.012821420000001638,
+              "n": 1
+            },
+            "wall_seconds": {
+              "mean": 0.01282079704105854,
+              "median": 0.01282079704105854,
+              "n": 1
+            }
+          },
+          "old_reference": {
+            "combined_all_workers": {
+              "process_seconds": 0.005569597999993903,
+              "wall_seconds": 0.005568878725171089
+            },
+            "fields": [
+              "old_train_pairs",
+              "old_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.005569597999993903,
+              "median": 0.005569597999993903,
+              "n": 1
+            },
+            "wall_seconds": {
+              "mean": 0.005568878725171089,
+              "median": 0.005568878725171089,
+              "n": 1
+            }
+          },
+          "reference_held": {
+            "combined_all_workers": {
+              "process_seconds": 0.0007427090000007297,
+              "wall_seconds": 0.0007421663030982018
+            },
+            "fields": [
+              "reference_held_pairs"
+            ],
+            "process_seconds": {
+              "mean": 0.0007427090000007297,
+              "median": 0.0007427090000007297,
+              "n": 1
+            },
+            "wall_seconds": {
+              "mean": 0.0007421663030982018,
+              "median": 0.0007421663030982018,
+              "n": 1
+            }
+          }
+        },
+        "per_mark": {
+          "actor_held": {
+            "combined_all_workers": {
+              "process_seconds": 0.015243823000005818,
+              "wall_seconds": 0.01524260826408863
+            },
+            "process_seconds": {
+              "mean": 0.015243823000005818,
+              "median": 0.015243823000005818,
+              "n": 1
+            },
+            "support_values": {
+              "rows": [
+                30
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.01524260826408863,
+              "median": 0.01524260826408863,
+              "n": 1
+            }
+          },
+          "actor_train": {
+            "combined_all_workers": {
+              "process_seconds": 1.7753852250000008,
+              "wall_seconds": 1.7757309125736356
+            },
+            "process_seconds": {
+              "mean": 1.7753852250000008,
+              "median": 1.7753852250000008,
+              "n": 1
+            },
+            "support_values": {
+              "rows": [
+                3119
+              ]
+            },
+            "wall_seconds": {
+              "mean": 1.7757309125736356,
+              "median": 1.7757309125736356,
+              "n": 1
+            }
+          },
+          "expanded_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.0018145800000013423,
+              "wall_seconds": 0.0018142908811569214
+            },
+            "process_seconds": {
+              "mean": 0.0018145800000013423,
+              "median": 0.0018145800000013423,
+              "n": 1
+            },
+            "support_values": {
+              "blocked_pairs": [
+                182
+              ],
+              "known_pairs": [
+                438
+              ],
+              "rows": [
+                160
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                32
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.0018142908811569214,
+              "median": 0.0018142908811569214,
+              "n": 1
+            }
+          },
+          "expanded_train_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.011006840000000295,
+              "wall_seconds": 0.011006506159901619
+            },
+            "process_seconds": {
+              "mean": 0.011006840000000295,
+              "median": 0.011006840000000295,
+              "n": 1
+            },
+            "support_values": {
+              "blocked_pairs": [
+                1287
+              ],
+              "known_pairs": [
+                13958
+              ],
+              "rows": [
+                1110
+              ],
+              "scene_blocked": [
+                74
+              ],
+              "scene_known": [
+                399
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.011006506159901619,
+              "median": 0.011006506159901619,
+              "n": 1
+            }
+          },
+          "old_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.0008345849999997768,
+              "wall_seconds": 0.0008342508226633072
+            },
+            "process_seconds": {
+              "mean": 0.0008345849999997768,
+              "median": 0.0008345849999997768,
+              "n": 1
+            },
+            "support_values": {
+              "blocked_pairs": [
+                43
+              ],
+              "known_pairs": [
+                158
+              ],
+              "rows": [
+                59
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                24
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.0008342508226633072,
+              "median": 0.0008342508226633072,
+              "n": 1
+            }
+          },
+          "old_train_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.004735012999994126,
+              "wall_seconds": 0.004734627902507782
+            },
+            "process_seconds": {
+              "mean": 0.004735012999994126,
+              "median": 0.004735012999994126,
+              "n": 1
+            },
+            "support_values": {
+              "blocked_pairs": [
+                351
+              ],
+              "known_pairs": [
+                4397
+              ],
+              "rows": [
+                414
+              ],
+              "scene_blocked": [
+                26
+              ],
+              "scene_known": [
+                190
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.004734627902507782,
+              "median": 0.004734627902507782,
+              "n": 1
+            }
+          },
+          "reference_held_pairs": {
+            "combined_all_workers": {
+              "process_seconds": 0.0007427090000007297,
+              "wall_seconds": 0.0007421663030982018
+            },
+            "process_seconds": {
+              "mean": 0.0007427090000007297,
+              "median": 0.0007427090000007297,
+              "n": 1
+            },
+            "support_values": {
+              "blocked_pairs": [
+                43
+              ],
+              "known_pairs": [
+                158
+              ],
+              "rows": [
+                59
+              ],
+              "scene_blocked": [
+                1
+              ],
+              "scene_known": [
+                24
+              ]
+            },
+            "wall_seconds": {
+              "mean": 0.0007421663030982018,
+              "median": 0.0007421663030982018,
+              "n": 1
+            }
+          }
+        }
+      },
+      "model_state": {
+        "all_unchanged": true,
+        "final_sha256_unique": [
+          "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976"
+        ],
+        "initial_equals_final_all_workers": true,
+        "initial_sha256_unique": [
+          "398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976"
+        ]
+      },
+      "optimizer_updates": 0,
+      "phases": {
+        "expanded_new": {
+          "combined": {
+            "actor_forward": {
+              "process_seconds": {
+                "mean": 0.08147121224999987,
+                "median": 0.08150860349999789,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.0814924401929602,
+                "median": 0.0815201005898416,
+                "n": 16
+              }
+            },
+            "aux_forward": {
+              "process_seconds": {
+                "mean": 0.0009582100625000756,
+                "median": 0.0009579620000010891,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.0009577257442288101,
+                "median": 0.00095753138884902,
+                "n": 16
+              }
+            },
+            "backward_clip": {
+              "process_seconds": {
+                "mean": 0.07877749931249989,
+                "median": 0.07876196349999631,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.07878492743475363,
+                "median": 0.07876793574541807,
+                "n": 16
+              }
+            },
+            "mean_wall_time_share": {
+              "actor_forward": 0.5049992670594879,
+              "aux_forward": 0.0059349161435631225,
+              "backward_clip": 0.48822112229893083
+            },
+            "median_wall_time_share": {
+              "actor_forward": 0.5050739695441259,
+              "aux_forward": 0.005932575843623775,
+              "backward_clip": 0.4880223857904866
+            },
+            "timed_passes": 16,
+            "total": {
+              "process_seconds": {
+                "mean": 0.16133920212499886,
+                "median": 0.16139817899999898,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.16137140290811658,
+                "median": 0.16140230046585202,
+                "n": 16
+              }
+            }
+          },
+          "per_worker": [
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.08147121224999987,
+                  "median": 0.08150860349999789,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0814924401929602,
+                  "median": 0.0815201005898416,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0009582100625000756,
+                  "median": 0.0009579620000010891,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0009577257442288101,
+                  "median": 0.00095753138884902,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.07877749931249989,
+                  "median": 0.07876196349999631,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.07878492743475363,
+                  "median": 0.07876793574541807,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.5049992670594879,
+                "aux_forward": 0.0059349161435631225,
+                "backward_clip": 0.48822112229893083
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.5050739695441259,
+                "aux_forward": 0.005932575843623775,
+                "backward_clip": 0.4880223857904866
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.16133920212499886,
+                  "median": 0.16139817899999898,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16137140290811658,
+                  "median": 0.16140230046585202,
+                  "n": 16
+                }
+              }
+            }
+          ],
+          "timed_passes_per_worker": [
+            16
+          ]
+        },
+        "old_reference": {
+          "combined": {
+            "actor_forward": {
+              "process_seconds": {
+                "mean": 0.08304577862499984,
+                "median": 0.08300369850000067,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.0830653221346438,
+                "median": 0.0830168086104095,
+                "n": 16
+              }
+            },
+            "aux_forward": {
+              "process_seconds": {
+                "mean": 0.0009554065000001444,
+                "median": 0.0009557270000009055,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.0009548684465698898,
+                "median": 0.0009552603587508202,
+                "n": 16
+              }
+            },
+            "backward_clip": {
+              "process_seconds": {
+                "mean": 0.07930663875000077,
+                "median": 0.0790706295000021,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.07932316919323057,
+                "median": 0.07917790487408638,
+                "n": 16
+              }
+            },
+            "mean_wall_time_share": {
+              "actor_forward": 0.5080972892000044,
+              "aux_forward": 0.005840777556467617,
+              "backward_clip": 0.4852071382147128
+            },
+            "median_wall_time_share": {
+              "actor_forward": 0.5093116338686283,
+              "aux_forward": 0.005860562724936004,
+              "backward_clip": 0.48575979699440347
+            },
+            "timed_passes": 16,
+            "total": {
+              "process_seconds": {
+                "mean": 0.16344328543749942,
+                "median": 0.1629722820000019,
+                "n": 16
+              },
+              "wall_seconds": {
+                "mean": 0.16348310431931168,
+                "median": 0.162998060695827,
+                "n": 16
+              }
+            }
+          },
+          "per_worker": [
+            {
+              "actor_forward": {
+                "process_seconds": {
+                  "mean": 0.08304577862499984,
+                  "median": 0.08300369850000067,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0830653221346438,
+                  "median": 0.0830168086104095,
+                  "n": 16
+                }
+              },
+              "aux_forward": {
+                "process_seconds": {
+                  "mean": 0.0009554065000001444,
+                  "median": 0.0009557270000009055,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.0009548684465698898,
+                  "median": 0.0009552603587508202,
+                  "n": 16
+                }
+              },
+              "backward_clip": {
+                "process_seconds": {
+                  "mean": 0.07930663875000077,
+                  "median": 0.0790706295000021,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.07932316919323057,
+                  "median": 0.07917790487408638,
+                  "n": 16
+                }
+              },
+              "mean_wall_time_share": {
+                "actor_forward": 0.5080972892000044,
+                "aux_forward": 0.005840777556467617,
+                "backward_clip": 0.4852071382147128
+              },
+              "median_wall_time_share": {
+                "actor_forward": 0.5093116338686283,
+                "aux_forward": 0.005860562724936004,
+                "backward_clip": 0.48575979699440347
+              },
+              "timed_passes": 16,
+              "total": {
+                "process_seconds": {
+                  "mean": 0.16344328543749942,
+                  "median": 0.1629722820000019,
+                  "n": 16
+                },
+                "wall_seconds": {
+                  "mean": 0.16348310431931168,
+                  "median": 0.162998060695827,
+                  "n": 16
+                }
+              }
+            }
+          ],
+          "timed_passes_per_worker": [
+            16
+          ]
+        }
+      },
+      "protocol": {
+        "actor_batch_size": 128,
+        "aux_batch_seed": 91912,
+        "auxiliary_batch_size": 64,
+        "held_seed": 893511,
+        "model_seed": 91911,
+        "timed_backward_passes_per_group": 16,
+        "wall_cap_seconds": 180.0,
+        "warmups": 2
+      },
+      "protocol_sha256": "4d12fd3a3f8b7fc76979a4f7ab559d4db094f2d554c3cfb444411a7b076a3a5b",
+      "result_sha256": "a9f70a8a90a1f810433cf70bde9c3d96f3e5779be7bf7e9d64670af3a2aa4b05",
+      "result_wall_seconds": 7.6716570518910885,
+      "status": "COMPLETE",
+      "supports": {
+        "consistent_across_workers": true,
+        "per_worker": [
+          {
+            "actor_held_rows": 30,
+            "actor_train_rows": 3119,
+            "expanded_held": {
+              "blocked_pairs": 182,
+              "known_pairs": 438,
+              "rows": 160,
+              "scene_blocked": 1,
+              "scene_known": 32
+            },
+            "expanded_train": {
+              "blocked_pairs": 1287,
+              "known_pairs": 13958,
+              "rows": 1110,
+              "scene_blocked": 74,
+              "scene_known": 399
+            },
+            "old_held": {
+              "blocked_pairs": 43,
+              "known_pairs": 158,
+              "rows": 59,
+              "scene_blocked": 1,
+              "scene_known": 24
+            },
+            "old_train": {
+              "blocked_pairs": 351,
+              "known_pairs": 4397,
+              "rows": 414,
+              "scene_blocked": 26,
+              "scene_known": 190
+            }
+          }
+        ]
+      },
+      "throughput": {
+        "result_wall_seconds_including_parent_startup_and_worker_mark": 7.6716570518910885,
+        "timed_passes_per_result_wall_second_including_startup_and_mark": 4.171197928107579,
+        "timed_passes_per_sum_worker_elapsed_second": 4.1712933990852115,
+        "timed_passes_per_timed_record_wall_sum_second": 6.156602280416613,
+        "timed_passes_per_worker": [
+          32
+        ],
+        "timed_passes_total": 32,
+        "timed_record_wall_sum_seconds_excluding_warmup_mark_and_parent_startup": 5.197672115638852,
+        "worker_elapsed_seconds_including_worker_model_and_mark": {
+          "per_worker": [
+            7.671481465920806
+          ],
+          "sum": 7.671481465920806
+        },
+        "workers": 1
+      },
+      "updates": 0,
+      "workers": 1
+    }
+  },
+  "schema": "p3_neighbor_runtime_probe_summary_20261010_v1",
+  "source": {
+    "four_result": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_runtime_probe_20261010\\four\\result.json",
+    "model_rerun": false,
+    "root": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_runtime_probe_20261010",
+    "server_accessed": false,
+    "single_result": "D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_runtime_probe_20261010\\single\\result.json"
+  }
+}

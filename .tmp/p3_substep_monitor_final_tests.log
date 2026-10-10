@@ -1,0 +1,42 @@
+......F.                                                                 [100%]
+================================== FAILURES ===================================
+_______ test_executor_records_handoff_remainder_without_changing_motion _______
+
+    def test_executor_records_handoff_remainder_without_changing_motion():
+        from tests.test_nominal_runtime_refinement import witness
+        from terminal_marl.core.trajectory_generator import TrajectoryPlan, TrajectoryPoint
+        env = witness(); u = env.active[2]
+        ring = env.airspace.actual_ring(u.ring_role)
+        end = env.now+.37
+        theta = u.ring_progress + u.speed*.37/ring.radius
+        point = TrajectoryPoint(end, np.array([ring.radius*math.cos(theta),ring.radius*math.sin(theta),ring.height]),
+            np.array([-u.speed*math.sin(theta),u.speed*math.cos(theta),0.]),
+            np.array([-u.speed**2*math.cos(theta)/ring.radius,-u.speed**2*math.sin(theta)/ring.radius,0.]))
+        plan = TrajectoryPlan('handoff', u.uid, 'transfer', (
+            TrajectoryPoint(env.now,u.position.copy(),u.velocity.copy(),u.acceleration.copy()),point),
+            env.now,end,metadata={'trajectory_schema_version':'executable_trajectory_v3','target_phase':'ring_inner'})
+        u.committed_plan=plan
+        env.safety.checked_trajectory_hashes[plan.plan_id]=plan.trajectory_hash
+        reference=copy.deepcopy(env)
+        samples=[(env.now,u.position.copy())]
+>       actual=env._advance_plan(u,position_samples=samples)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_executed_substep_separation.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+terminal_marl\envs\parallel_env.py:1349: in _advance_plan
+    transition(uav, FlightPhase.RING_INNER, completion_time)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+uav = UAVState(uid=2, arrival_id=2, request_time=0.0, mission_type=<MissionType.STANDARD: 'standard'>, base_priority=1, assi...ety_retry_after=0.0, emergency_retry_after=0.0, acceleration=array([1.2766462 , 0.09259843, 0.        ]), yaw_rate=0.0)
+target = <FlightPhase.RING_INNER: 'ring_inner'>, now = 489.37
+
+    def transition(uav: UAVState, target: FlightPhase, now: float) -> None:
+        if target not in ALLOWED_TRANSITIONS.get(uav.phase, set()):
+>           raise ValueError(f"illegal lifecycle transition {uav.phase.value}->{target.value}")
+E           ValueError: illegal lifecycle transition ring_inner->ring_inner
+
+terminal_marl\core\lifecycle.py:22: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_executed_substep_separation.py::test_executor_records_handoff_remainder_without_changing_motion
+1 failed, 7 passed in 4.11s

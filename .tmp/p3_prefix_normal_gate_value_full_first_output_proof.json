@@ -1,0 +1,68 @@
+{
+  "stage": "P3_PREFIX_NORMAL_GATE_VALUE_20261001_V1",
+  "phase": "full",
+  "status": "RUNNING",
+  "observed_at": "2026-10-01T20:16:04+08:00",
+  "commit": "7e5d531",
+  "server": {
+    "host": "lab-server",
+    "python_pid": 2191437,
+    "parent_pid": 2191436,
+    "cwd": "/home/user/projects/terminal",
+    "argv": "/home/user/envs/terminal_env/bin/python -m terminal_marl.training.diagnose_p3_prefix_normal_gate_value_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001",
+    "exe": "/usr/bin/python3.12",
+    "flags": {"PYTHONDONTWRITEBYTECODE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+    "process_elapsed": "00:02:00",
+    "state": "R"
+  },
+  "progress": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/progress.json",
+    "server_mtime_epoch": 1790856958,
+    "phase": "full",
+    "status": "RUNNING",
+    "cell_id": 2,
+    "branches_completed": 2,
+    "branches_expected": 104,
+    "continuation_seed": 9303401,
+    "proposal": 0,
+    "elapsed_wall_seconds": 40.2948703141883,
+    "D_known": false
+  },
+  "first_new_branch": {
+    "path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/branches/cell_02_001.json",
+    "bytes": 43508,
+    "server_mtime_epoch": 1790856936,
+    "phase": "full",
+    "cell_id": 2,
+    "branch_index": 1,
+    "continuation_seed": 9303401,
+    "proposal": null,
+    "elapsed_wall_seconds": 18.729321520775557,
+    "report": {
+      "steps": 419,
+      "terminal": true,
+      "censored": false,
+      "unresolved": 0,
+      "safety_violation": false,
+      "safety_violation_status": "none",
+      "termination_classification": "natural_terminal",
+      "undiscounted_return": 281.56366903465454,
+      "elapsed_request_time_seconds": 5608.0,
+      "outcome_counts": {"normal": 23, "emergency": 1, "failed": 0, "diverted": 0, "unresolved": 0},
+      "first_step_decision": "not_requested",
+      "first_step_actual_immediate_approval": false,
+      "first_step_reward": -0.27802081224280095
+    }
+  },
+  "output": {
+    "root": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001",
+    "full_log": {"path": "/home/user/training_outputs/terminal/p3_followup_20260930/prefix_normal_gate_value_20261001/full_v1.log", "bytes": 0, "server_mtime_epoch": 1790856844},
+    "full_json": "absent_at_snapshot",
+    "error_json": "absent_at_snapshot",
+    "partial_json": "absent_at_snapshot",
+    "cell_02_json": "absent_at_snapshot",
+    "cell_03_json": "absent_at_snapshot",
+    "cell_04_json": "absent_at_snapshot"
+  },
+  "scope": {"pilot_reused": true, "cell_01_rerun": false, "full_only": true}
+}

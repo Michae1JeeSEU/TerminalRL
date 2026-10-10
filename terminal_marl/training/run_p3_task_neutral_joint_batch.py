@@ -417,13 +417,15 @@ def _binding_report(
 def _collect_training(
     *, output: Path, policy: Any, checkpoint: Path, config: Any,
     update_kwargs: Mapping[str, Any] | None = None,
+    training_cells: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[list[StudentStepV42], list[dict[str, Any]], dict[str, Any], str | None]:
     kwargs = dict(pilot.UPDATE_KWARGS) if update_kwargs is None else dict(update_kwargs)
+    selected_cells = tuple(TRAINING_CELLS if training_cells is None else training_cells)
     all_steps: list[StudentStepV42] = []
     records: list[dict[str, Any]] = []
     source_digest = pilot._model_digest(policy)
     cell_digests: list[dict[str, Any]] = []
-    for index, cell in enumerate(TRAINING_CELLS, start=1):
+    for index, cell in enumerate(selected_cells, start=1):
         _progress(output, status="RUNNING", phase=f"training_cell_{index}", training_processed=index - 1)
         episode_dir = output / "training" / f"episode_{index:02d}"
         steps, raw_record = pilot._training_record(
@@ -463,7 +465,7 @@ def _collect_training(
             )
         if reason is not None:
             return all_steps, records, {"model_digest_after_collection": source_digest}, reason
-    _require(len(records) == len(TRAINING_CELLS), "joint training collection is incomplete")
+    _require(len(records) == len(selected_cells), "joint training collection is incomplete")
     return all_steps, records, {
         "model_digest_before_collection": source_digest,
         "model_digest_after_collection": source_digest,

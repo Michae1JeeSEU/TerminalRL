@@ -1,0 +1,62 @@
+{
+  "status": "RUNNING",
+  "phase": "full",
+  "stage": "P3_PROPOSAL_SUPPORT_CONTROL_20261001_V1",
+  "server": "lab-server",
+  "pid": 2102330,
+  "cwd": "/home/user/projects/terminal",
+  "argv": [
+    "/home/user/envs/terminal_env/bin/python",
+    "-m",
+    "terminal_marl.training.run_p3_proposal_support_control_20261001",
+    "--phase",
+    "full",
+    "--output-dir",
+    "/home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_control_20261001"
+  ],
+  "launch": {
+    "launcher": "remote_python_subprocess.Popen",
+    "start_new_session": true,
+    "actual_exe": "/usr/bin/python3.12",
+    "environment_flags": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "initial_ps": "2102330       1 Rs         00:55 /home/user/envs/terminal_env/bin/python -m terminal_marl.training.run_p3_proposal_support_control_20261001 --phase full --output-dir /home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_control_20261001",
+    "cwd_observed": "/home/user/projects/terminal"
+  },
+  "artifacts": {
+    "output_dir": "/home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_control_20261001",
+    "full_json": {"exists_at_check": false},
+    "full_v1_log": {
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_control_20261001/full_v1.log",
+      "size": 0,
+      "mtime": "2026-10-01 01:46:21.017664993 +0800"
+    },
+    "progress": {
+      "path": "/home/user/training_outputs/terminal/p3_followup_20260930/proposal_support_control_20261001/progress.json",
+      "size": 189,
+      "mtime": "2026-10-01 01:47:55.040438770 +0800",
+      "content": {
+        "mode": "legacy",
+        "now": 325.0,
+        "pair_id": 17,
+        "phase": "arm",
+        "request_count": 24,
+        "stage": "P3_PROPOSAL_SUPPORT_CONTROL_20261001_V1",
+        "status": "RUNNING",
+        "tick": 325
+      }
+    }
+  },
+  "scope": {
+    "training": false,
+    "ppo": false,
+    "teacher": false,
+    "heldout": false,
+    "rerun": false,
+    "reseed": false,
+    "cap_expansion": false
+  }
+}

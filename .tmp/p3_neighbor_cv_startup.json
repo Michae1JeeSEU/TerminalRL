@@ -1,0 +1,43 @@
+{
+  "time": 1791517843.982588,
+  "files": {
+    "six_cycle.pid": {
+      "sha256": "d901a7a52d45ce8fbc8c1b3bf149bca9e72a4f0179d8084ecf5f17cfaeba0379",
+      "size": 8,
+      "mtime": 1791517807.6285138,
+      "text": "3045748\n"
+    },
+    "six_cycle.wrapper.pid": {
+      "sha256": "3d24068f908f215f843c87c2431ecd201182e602a3d23da1e1b49b4467c88ac3",
+      "size": 8,
+      "mtime": 1791517807.6274502,
+      "text": "3045747\n"
+    },
+    "six_cycle.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "mtime": 1791517807.6285138,
+      "text": ""
+    },
+    "preflight.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size": 2,
+      "mtime": 1791517789.715202,
+      "text": "0\n"
+    }
+  },
+  "processes": [
+    {
+      "pid": 3045749,
+      "argv": "/home/user/envs/terminal_env/bin/python -u -m terminal_marl.scripts.diagnose_p3_intent_neighbor --train-directories /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_flow6_mixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_fixed /home/user/training_outputs/terminal/p3_v25_neutral_course_v2_20261008/train_dense24_mixed --additional-train-directories /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_01 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_02 /home/user/training_outputs/terminal/p3_v26_resources_20261009/train_03 --witness-directory /home/user/projects/terminal/.tmp/p3_neighbor_witness_train_20261009 --output /home/user/training_outputs/terminal/p3_neighbor_relation_cv_20261009/six_cycle ",
+      "cwd": "/home/user/projects/terminal",
+      "stat": "3045749 (python) R 3045748 3045748 3045740 0 -1 4194304 101965 104 0 0 3593 40 0 0 20 0 1 0 508397962 3360473088 147381 18446744073709551615 4325376 7352253 140724198380416 0 0 0 0 16781312 2 0 0 0 17 10 0 0 0 0 0 10653128 12216448 1062023168 140724198382188 140724198383000 140724198383000 140724198383568 0\n"
+    },
+    {
+      "pid": 3045837,
+      "argv": "/home/user/envs/terminal_env/bin/python -c import json,os,hashlib,time\nfrom pathlib import Path\nroot=Path('/home/user/training_outputs/terminal/p3_neighbor_relation_cv_20261009')\nr={'time':time.time(),'files':{},'processes':[]}\nfor name in ['six_cycle.pid','six_cycle.wrapper.pid','six_cycle.log','six_cycle.exit','preflight.exit','six_cycle/protocol.json','six_cycle/result.json']:\n p=root/name\n if p.exists():\n  data=p.read_bytes();r['files'][name]={'sha256':hashlib.sha256(data).hexdigest(),'size':len(data),'mtime':p.stat().st_mtime,'text':data.decode(errors='replace')[-200000:]}\nfor p in Path('/proc').iterdir():\n if not p.name.isdigit():continue\n try:\n  argv=(p/'cmdline').read_bytes().replace(b'\\0',b' ').decode()\n  if argv.startswith('/home/user/envs/terminal_env/bin/python') and 'terminal_marl.scripts.diagnose_p3_intent_neighbor' in argv:\n   r['processes'].append({'pid':int(p.name),'argv':argv,'cwd':os.readlink(p/'cwd'),'stat':(p/'stat').read_text()})\n except (OSError,UnicodeError):pass\nprint(json.dumps(r))\n ",
+      "cwd": "/home/user",
+      "stat": "3045837 (python) R 3045836 3045837 3045837 0 -1 4194304 1898 0 0 0 1 0 0 0 20 0 1 0 508401595 28389376 4124 18446744073709551615 4325376 7352253 140720736627696 0 0 0 0 16781312 2 0 0 0 17 8 0 0 0 0 0 10653128 12216448 762855424 140720736631283 140720736632307 140720736632307 140720736632784 0\n"
+    }
+  ]
+}
