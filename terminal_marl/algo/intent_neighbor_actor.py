@@ -85,7 +85,32 @@ class IntentNeighborActor(nn.Module):
     def relations(self,ego,traffic,mask):
         pair,scene,pads,eligible=self.bases(ego,traffic,mask)
         query=self.intent(self.proposals)[None,:,None,:]+self.destination(pads)[:,None,:,:]
-        output=self.pair_head(pair[:,None,None,:,:]+query[:,:,:,None,:]).squeeze(-1)
+        batch_size,_,pad_count,_=query.shape
+        neighbor_count=traffic.shape[1]
+        output=pair.new_empty((batch_size,25,pad_count,neighbor_count))
+        scene_risk=scene.new_empty((batch_size,25,pad_count))
+        is_final=ego[:,10]>.5  # keep final rows on the original six-pad path
+        for rows,query_rows,pads_to_score in (
+            (is_final,query, pad_count),
+            (~is_final,query[:,:,:1,:], 1),
+        ):
+            if not bool(rows.any()):
+                continue
+            pair_rows=pair[rows]
+            scene_rows=scene[rows]
+            query_rows=query_rows[rows]
+            pair_scores=self.pair_head(
+                pair_rows[:,None,None,:,:]+query_rows[:,:,:,None,:]
+            ).squeeze(-1)
+            scene_scores=self.scene_head(
+                scene_rows[:,None,None,:]+query_rows
+            ).squeeze(-1)
+            if pads_to_score==1:
+                # bases zeroes non-final pads, so all six queries are identical.
+                pair_scores=pair_scores.expand(-1,-1,pad_count,-1)
+                scene_scores=scene_scores.expand(-1,-1,pad_count)
+            output[rows]=pair_scores
+            scene_risk[rows]=scene_scores
         risk=output.masked_fill(~mask[:,None,None,:],-torch.inf)
         if traffic.shape[1]:
             maximum,blocker=risk.max(-1)
@@ -93,7 +118,6 @@ class IntentNeighborActor(nn.Module):
         else:
             maximum=torch.full(query.shape[:3],-torch.inf,device=ego.device,dtype=ego.dtype)
             blocker=torch.full(query.shape[:3],-1,device=ego.device,dtype=torch.long)
-        scene_risk=self.scene_head(scene[:,None,None,:]+query).squeeze(-1)
         destination_risk=torch.maximum(maximum,scene_risk)
         destination_risk=destination_risk.masked_fill(~eligible[:,None,:],30.)
         best_risk,best_pad=destination_risk.min(-1)

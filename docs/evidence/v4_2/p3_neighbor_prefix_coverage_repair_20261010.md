@@ -1,6 +1,6 @@
 # P3 邻机前缀覆盖修复预登记（2026-10-10）
 
-状态：prepare-only 预登记、prefix smoke/full validation 已完成；唯一后续九 CV 已启动并处于 `RUNNING`。prepare 阶段未执行 query、snapshot、step 或训练；本轮 full collector 仍仅为 train-only development。
+状态：prepare-only 预登记、prefix smoke/full validation 已完成；唯一后续九 CV 已启动后因 fold wall budget exhausted 终止为 `INCOMPLETE/exit2`。prepare 阶段未执行 query、snapshot、step 或训练；本轮 full collector 与 CV 均仅为 train-only development。
 
 来源标注：`preexisting` 表示既有产物，`read-only` 表示本轮只读核对，`newly_run` 表示本轮新执行的实验。本轮 `prepare-only` 仅生成本地准备产物，不执行 query、snapshot、step 或训练。
 
@@ -18,13 +18,31 @@ smoke 输出为 `D:\\7_codespace\\training_outputs\\terminal\\p3_neighbor_prefix
 
 原存档 labels、`105D` prefix/traffic/mask 与输入 SHA 保持一致；官方旧快照资源重建比对沿用 `atol=1e-7`、`rtol=1e-6`。本轮 `reset=0/step=0`，仅为 train-only development，新 Q 保持隔离且 `PPO_ALLOWED=false`。两次 checker 路径误报 artifact `.tmp/p3_neighbor_prefix_full_validation_20261010_path_fail.json` 与 `.tmp/p3_neighbor_prefix_full_runtime_20261010_path_fail.json` 保留，原数据未变。full monitor `p3-prefix` 已删除。
 
-九 CV 已按既有 preregistration 启动，输出为 `/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle`；UTC `2026-10-10T00:40:00Z` 已确认启动并出现首批 mark `0`，cwd `/home/user/projects/terminal`，wrapper/timeout/root 为 `3129150/3129151/3129152`，4 workers 为 `3129383/3129386/3129387/3129388`，resource tracker 为 `3129382`。root 初读为 `RUNNING/error=null`；held `893511/893512/893513/893601` 已到 mark `0`，其余 progress 文件不单独证明已开始训练。protocol 两端 SHA256 均为 `fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451`，17/17 source hashes 两端一致；launch artifact `.tmp/p3_neighbor_prefix_cv_launch_20261010.json` SHA256 为 `b0882bc001be55f290e2bb7296104c0baccee21615c6d1a11ec4f87892fff00`。heartbeat `p3-prefix`（`P3 prefix 九折对照`）已建立并正常监控。该 CV 未终态，不记录学习改善。
+九 CV 启动记录（历史）为按既有 preregistration 启动，输出 `/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/cv/nine_cycle`；UTC `2026-10-10T00:40:00Z` 已确认启动并出现首批 mark `0`，cwd `/home/user/projects/terminal`，wrapper/timeout/root 为 `3129150/3129151/3129152`，4 workers 为 `3129383/3129386/3129387/3129388`，resource tracker 为 `3129382`。启动初读 root 为 `RUNNING/error=null`；held `893511/893512/893513/893601` 已到 mark `0`，其余 progress 文件不单独证明已开始训练。protocol 两端 SHA256 均为 `fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451`，17/17 source hashes 两端一致；launch artifact `.tmp/p3_neighbor_prefix_cv_launch_20261010.json` SHA256 为 `b0882bc001be55f290e2bb7296104c0baccee21615c6d1a11ec4f87892fff00`。heartbeat `p3-prefix` 已在终态后删除。该段只记录启动事实，不记录学习改善。
+
+## 九 CV 预算终态（2026-10-10，本轮 newly_run）
+
+来源 `.tmp/p3_neighbor_prefix_cv_budget_check_20261010.json`，运行终态为 `INCOMPLETE/exit2`，错误为 `ValueError('fold wall budget exhausted')`；server/local `nine_cycle.log` 内容一致，exit 内容均为 `2`，所有父子进程已退出。首四个 held fold `893511/893512/893513/893601` 分别耗时 `1200.203/1200.083/1200.012/1200.167s`，均只写入 marks `[0,100,500,1000,2000]`；这四个 progress 记录均为 `ValueError` 终态，另 `5` folds 仅有初始化 `RUNNING` 文件、无 curve，`0/9` folds 达到 fixed-5000 `COMPLETE`。13 个关键文件两端 SHA 一致；protocol SHA256 为 `fc9bde3b1990ddc67a259e511deeb791a019434f35429fdbd87968f91a99b451`，result SHA256 为 `4d4ec4dc70a08a8b2cd96370d7f22b1eb5f9e8f93c3f1b873f761e2529bea051`；budget-check manifest SHA256 为 `ab2196d57684bc148173139486901d69fe41d138d37b246caca277a8c4af64f1`（路径元数据修正，不改原数据）。无重启、延长预算、换 seed 或换 model，原九周期 control `9/9` fixed-5000 complete 未重跑；source 为 `842e4f0`。该次 CV 失败及 partial/2000 产物永久保留，不作动作效果或泛化结论。
+
+该 partial/2000 结果不用于 prefix 动作效果或泛化结论，耗时分解尚未知。后续仅预备一次 `0 optimizer/0 updates` 固定权重短性能计时，不自动重启 CV；新 Q 保持隔离，`PPO_ALLOWED=false`。
+
+## 计算效率与纯代数复用（2026-10-10，本轮 newly_run）
+
+`.tmp/p3_neighbor_runtime_probe_summary_20261010.json` 的旧 expanded 数据为单 worker `0.161371s/pass`、四 worker `0.302928s/pass`；四 worker 的总有效吞吐为 `8.4337` passes/s，单 worker 为 `4.1712` passes/s，aux forward 约占 wall `0.55%`。该计时只表明四并发时单折耗时增加并触及既定 fold wall budget；CPU 频率、cache 或 bandwidth 等具体机制未由此 probe 单独证实。
+
+纯代数修复保持 architecture、state_dict、loss、输入和 safety 不变：`3149` 行中 `1874` 个 ring non-final 行的 six pads 已由 `bases` 置零，因此相同 query 只计算 pad0 再 expand 到 six；final 行仍计算 six。固定权重 `ring_reuse_four` 的 `64` 个 timed passes 均值为 `0.148717s/pass`，相对旧四 worker 数据降低约 `50.91%`、为 `2.037x`；该结果不能断言 `5000` 全程必过或 P3 已解决。probe model 初始/最终 SHA 均为 `398981a06e2e2f97893d317d733b4f4474ea98ba47fc46b7bd208ec2771da976`，`optimizer=0/reset=0/step=0/teacher=0/Q=false`，四个 parent/child 均已退出；官方 loader 只读既有 snapshot 重建资源。protocol/result SHA256 分别为 `309fb4ebdfbb7a47faaee254387876f45e971d20b0828c795c637d80699fe8d4` / `c572e1998ad2b6ae84858504a9f733b0d609f15df079760f16c015395b533546`。
+
+local `72` tests/`9.29s`、server `62` tests/`1.47s`；float32 outputs max diff `0`、parameter grad `1.19e-6`、input grad `4.47e-8`，float64 outputs `4.44e-16`、parameter grad `3.55e-15`、input grad `6.94e-17`，未放宽既有 torch tolerance。当前 monitor `p3-prefix` 已删除，`p3-v2-5` 未触碰。
+
+## 后续候选登记（approval_pending/NOT_STARTED）
+
+`.tmp/p3_neighbor_ring_reuse_cv_proposed_20261010.json` 仅为候选新登记，尚未启动，需用户重新授权；原冻结 prefix CV 失败后禁止重跑。候选保持相同九 train `3149` rows/`1270` targets、model/aux seeds `91911/91912`、每 fold `5000/1200s`、最多 `4` spawn、outer `4200s`，新输出 `/home/user/training_outputs/terminal/p3_neighbor_prefix_ring_reuse_20261010/nine_cycle`；旧 control 不重跑，不新 Q/PPO/formal。
 
 ## coverage gain（2026-10-10，本轮 newly_run）
 
 来源 artifact 为 `.tmp/p3_neighbor_prefix_coverage_gain_20261010.json`。reference old+supplemental 为 `4555` known pairs / `394` blocked pairs；prefix 新增 `9841` / `1075`；combined 为 `14396` / `1469`。candidate 为 `301 reference + 713 new = 1014`，target rows 为 `1270`，其中 `797` 为 new targets；`100` 个新增 `final_capacity` global candidates 合法为 `0` targets。
 
-全部 `75` 个 interface×joint 组的 candidate/known/blocked 覆盖为 reference `18/18/8`，new 与 combined `75/75/75`。两切环接口 `o2m,m2i × 25`（与 N50 特征无关）为 reference `14/14/4`，new 与 combined `50/50/50`。这些数字只说明监督覆盖缺口已补齐，不说明学习或泛化已解决；九 CV 仍 `RUNNING`。
+全部 `75` 个 interface×joint 组的 candidate/known/blocked 覆盖为 reference `18/18/8`，new 与 combined `75/75/75`。两切环接口 `o2m,m2i × 25`（与 N50 特征无关）为 reference `14/14/4`，new 与 combined `50/50/50`。这些数字只说明监督覆盖缺口已补齐，不说明学习或泛化已解决；九 CV 后续已按技术预算终止为 `INCOMPLETE/exit2`。
 
 ## 既有九周期对照（preexisting）
 
@@ -57,7 +75,7 @@ candidate key 固定为 `(seed, interface, joint, original_feasible)`。每组�
 
 ## prefix collector 预算与后续九 CV
 
-以下保留执行前冻结的 collector 预算与后续九 CV 约束；prefix smoke/full 已完成，九 CV 已启动且尚未终态：
+以下保留执行前冻结的 collector 预算与后续九 CV 约束；prefix smoke/full 已完成，九 CV 已按预算终止为 `INCOMPLETE/exit2`：
 
 - 每个 parent 最多 `150` 个 new candidates、`900` plans、`1800s`；九个 parent 合计上限 `1350` candidates、`8100` plans。root timeout `5700s`，outer timeout `6000s`，上限不延长、不重跑、不补成功样本。
 - collector 最多 `4` 个 parent 进程并发；并发时固定 `OMP_NUM_THREADS=1`、`MKL_NUM_THREADS=1`。prepare 阶段为 `0 snapshot / 0 query`，只生成候选 manifest 和输入校验。
@@ -65,11 +83,11 @@ candidate key 固定为 `(seed, interface, joint, original_feasible)`。每组�
 - full 只为 `713` 个 new groups 写新 candidate 输出；20 个 reuse 组只保留 manifest 引用。实际输出为 `/home/user/training_outputs/terminal/p3_neighbor_prefix_coverage_20261010/{prepare,smoke,full}`。
 - 原始 `3149` BC 行不变；新增 held auxiliary support 单独报告，不能与旧量直接作 delta。
 
-full 完整验收（进程、exit、schema、hash、candidate IDs、reason、parent split 和上限）已通过；随后已启动唯一同模型九周期 CV：`first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`，每 fold `5000` updates / `1200s`，最多 4 个进程，固定 root outer `4200s`。已有 nine-cycle control 不重复运行；当前仍为 `RUNNING`，尚无终态。
+full 完整验收（进程、exit、schema、hash、candidate IDs、reason、parent split 和上限）已通过；随后曾启动唯一同模型九周期 CV：`first_feasible_union`、`native_pair_auxiliary`、model seed `91911`、aux seed `91912`，每 fold `5000` updates / `1200s`，最多 4 个进程，固定 root outer `4200s`。已有 nine-cycle control 不重复运行；该 CV 已因 fold wall budget exhausted 终止为 `INCOMPLETE/exit2`。
 
 该后续 CV 的每个 mark 另行输出 `validation_reference_pairs`，固定引用原 `473` plans 对应 targets；新增 held auxiliary support 单独报告，不与旧量直接作 delta。
 
-后续 CV 仍禁止新 Q、PPO、qualification、seed、epoch 或 network sweep；失败即停止，不追加预算。prepare-only、prefix smoke/full 与限定集成回归已完成；九 CV 已启动但尚未终态，后续仍需遵守本节冻结的预算和输入 guard，不报告学习改善。
+后续 CV 仍禁止新 Q、PPO、qualification、seed、epoch 或 network sweep；失败即停止，不追加预算。prepare-only、prefix smoke/full 与限定集成回归已完成；九 CV 已按技术预算终止为 `INCOMPLETE/exit2`，后续仍需遵守本节冻结的预算和输入 guard，不报告学习改善。
 
 ## 只读命名记录与边界
 
