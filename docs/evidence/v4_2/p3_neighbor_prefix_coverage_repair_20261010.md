@@ -1,22 +1,74 @@
 # P3 邻机前缀覆盖修复预登记（2026-10-10）
 
-状态：prefix smoke/full validation 已完成；原 prefix coverage 九 CV 因 fold wall budget exhausted 保留为历史 `INCOMPLETE/exit2`，随后登记的 ring-reuse 九 CV 已 `COMPLETE/exit0`（9/9 fixed-5000）。当前 blocker-ranking 九 CV 正在运行，仍为 train-only development；尚无 result/exit 终态或指标验收。
+状态：prefix smoke/full validation 已完成；原 prefix coverage 九 CV 因 fold wall budget exhausted 保留为历史 `INCOMPLETE/exit2`，随后登记的 ring-reuse 九 CV 已 `COMPLETE/exit0`（9/9 fixed-5000）。当前 blocker-ranking 九 CV 已 `COMPLETE/exit0`（9/9 fixed-5000），仍为 train-only development；终态 fixed-5000 对照待 primary review，尚未作指标验收。
 
-来源标注：`preexisting` 表示既有产物，`read-only` 表示本轮只读核对，`newly_run` 表示本轮新执行的实验；此前 `prepare-only` 仅生成本地准备产物，当前 blocker-ranking CV 已启动，仍为 train-only development。
+来源标注：`preexisting` 表示既有产物，`read-only` 表示本轮只读核对，`newly_run` 表示本轮新执行的实验；此前 `prepare-only` 仅生成本地准备产物，当前 blocker-ranking CV 已完成，仍为 train-only development。
 
-## blocker-ranking controlled CV 运行记录（2026-10-10，本轮 RUNNING；source frozen）
+## blocker-ranking controlled CV 运行记录（2026-10-10，本轮 COMPLETE；source frozen）
 
-沿用既有 P3 修复继续执行一次有界 blocker-ranking 假设检验。输出 `/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle` 在 UTC `2026-10-10T03:01:02Z` 观察为 `RUNNING/error=null`，`exit` 尚不存在；这是观察时间，不是精确启动秒。wrapper/timeout/root/tracker 为 `3145302/3145303/3145304/3145381`，首四个 worker 为 `3145382/3145385/3145386/3145387`，cwd 为 `/home/user/projects/terminal`。首四折 `893511/893512/893513/893601` 最新 marks 为 `[100,500,500,100]`，其余五折仅有初始化文件，尚非全臂终态。
+沿用既有 P3 修复继续执行的一次有界 blocker-ranking 假设检验已终态完成。输出 `/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle` 在终态核验 UTC `2026-10-10T04:24:49Z` 为 `COMPLETE/error=null`、`exit=0`；9/9 folds 均达到固定 marks `[0,100,500,1000,2000,5000]`，所有父子进程均已退出且无匹配 argv 训练进程。各折记录的 `elapsed_seconds` 为 `314.980–795.877s`，均在每折 `1200s` 上限内；这是训练内部计时，不等同于 OS 进程墙钟耗时。历史启动观察 UTC `2026-10-10T03:01:02Z` 为 `RUNNING`，首四折 marks `[100,500,500,100]`，仅作启动阶段记录。
 
-source commit `d227b146cc2d4acdead69a56d532c858e81dfc54`；guarded launcher SHA256 `af1a3ff16a8ea71fcd3e84f455f07d983ba768386f676af7e7c19f15f26ccb16` 已执行一次，20-path source guard PASS。launch artifact `.tmp/p3_blocker_ranking_cv_launch_20261010.json` SHA256 `da1693a847f9180e6a673f7453f5939abba8649fc4d892fb222c73d18172ca18`；protocol server/local SHA256 均为 `cbc50d308327f123cfb396261b4e0445bae818552227a8dbb956cbe722ca5206`。
+source commit `d227b146cc2d4acdead69a56d532c858e81dfc54`；guarded launcher SHA256 `af1a3ff16a8ea71fcd3e84f455f07d983ba768386f676af7e7c19f15f26ccb16` 已执行一次，20-path source guard PASS。launch artifact `.tmp/p3_blocker_ranking_cv_launch_20261010.json` SHA256 `da1693a847f9180e6a673f7453f5939abba8649fc4d892fb222c73d18172ca18`；terminal check `.tmp/p3_blocker_ranking_terminal_check_20261010.json` SHA256 `7793516523301ffa48ff1b51b0da94414cbcde40047297b3a538be49c91ae131`；result SHA256 `63368ccc2306bdd4352ccd8931de5eaca74922f071da54a55b237937bba55dd4`；protocol server/local SHA256 均为 `cbc50d308327f123cfb396261b4e0445bae818552227a8dbb956cbe722ca5206`。terminal UTC `2026-10-10T04:24:49Z` 的 20 个源码路径均与 launch expected、local、server 完全匹配；protocol/result/progress/log/exit/pid 的本地与服务器 SHA 均匹配。
 
-候选保持 `IntentNeighborActor`、state_dict、`first_feasible_union`、1270 expanded targets、473 held reference、model seed `91911`、固定 marks `[0,100,500,1000,2000,5000]`、每折 `1200s`、4 spawn 与 `OMP_NUM_THREADS=MKL_NUM_THREADS=1`。唯一新增 loss 是原 native pair auxiliary BCE 之外的 fixed scene BCE `0.25` 与 fixed listwise known-blocker ranking `0.25`：`logsumexp(known)-logsumexp(known_blocked)`，只在 query 同时有 known-blocked 与 known-safe 时求均值，unknown mask；31 个无 known-safe 的 query 跳过。无 architecture、输入、physics、safety、teacher、Q 或 observation 改动。
+候选保持 `IntentNeighborActor`、state_dict、`first_feasible_union`、1270 expanded targets、473 held reference、model seed `91911`、固定 marks `[0,100,500,1000,2000,5000]`、每折 `1200s`、4 spawn 与 `OMP_NUM_THREADS=MKL_NUM_THREADS=1`。保留原 native pair auxiliary BCE 与既有 fixed scene BCE `0.25`；本轮唯一新增 loss 为 fixed listwise known-blocker ranking `0.25`：`logsumexp(known)-logsumexp(known_blocked)`，只在 query 同时有 known-blocked 与 known-safe 时求均值，unknown mask；31 个无 known-safe 的 query 跳过。无 architecture、输入、physics、safety、teacher、Q 或 observation 改动。
 
 `.tmp/p3_blocker_ranking_support_20261010.json` 为 `PASS`，SHA256 `d6b9e22ab1b53173062ffd548666f12067ffc50cfce4d63752bb65c5436c9ad4`；1270 queries 中 839 个有 known-blocked、808 个同时有 known-blocked/known-safe、31 个无 known-safe，blocked query 中 unknown contender 为 `0`。该 support inventory 不证明 ranking loss 是根因。
 
 protocol records 记录 `1270/14396/1469/808` eligible 与 `473/4555/394/232` eligible 支持；固定 marks `[0,100,500,1000,2000,5000]`、每折 `5000/1200s`、4 spawn、`OMP_NUM_THREADS=MKL_NUM_THREADS=1`。wrapper outer timeout `4200s` 仅为执行边界，不当作 protocol 字段；`3149` actor rows 为 loader/fold 派生支持，不写成 literal protocol 字段；aux seed `91912` 属冻结 source metadata，不写成显式 protocol 字段。无 architecture、输入、physics、safety、teacher、Q 或 observation 改动。
 
-新增加的 blocker-ranking 定向测试为 `12` 项，合并本地定向测试为 `35` 项，均 PASS（含 synthetic 4-spawn route）；server 同一 `35` 项 PASS，exit `0`，用时 `5.23s`。本轮已执行一次 guarded launcher，source guard `20/20` PASS；当前仍无 result/exit 终态，不能做指标验收或接受 candidate。heartbeat `p3-blocker-ranking` 每 15 分钟静默监控；旧 `p3-ring-reuse` 已删除，`p3-v2-5` 保持 `PAUSED`。无 hyperparameter sweep、epoch 选择、重启、预算延长或新 seed，不重跑 ring-reuse/control；仍为 train-only development，`PPO_ALLOWED=false`，不是泛化、qualification 或 PPO/formal 准入。
+新增加的 blocker-ranking 定向测试为 `12` 项，合并本地定向测试为 `35` 项，均 PASS（含 synthetic 4-spawn route）；server 同一 `35` 项 PASS，exit `0`，用时 `5.23s`。本轮已执行一次 guarded launcher，source guard `20/20` PASS。比较脚本 `.tmp/compare_p3_blocker_ranking_20261010.py` SHA256 为 `7d2f75adc5e56ebef3223df83ed6482c5e18f38061468f200ef2088ea6269cf2`；comparison artifact `.tmp/p3_blocker_ranking_comparison_20261010.json` SHA256 为 `26549bcf09dcb8be368b868bf12106d3cd7c6e85999f85ee28b8a45dd4359d87`，状态 `PASS`、errors `0`，reference/expanded support 均 exact。终态 fixed-5000 对照已完成 primary review；仍为 train-only development，`PPO_ALLOWED=false`，不是泛化、qualification 或 PPO/formal 准入。heartbeat `p3-blocker-ranking` 已删除；旧 `p3-ring-reuse` 已删除，`p3-v2-5` 保持 `PAUSED`。无 hyperparameter sweep、epoch 选择、重启、预算延长或新 seed，不重跑 ring-reuse/control。
+
+### blocker-ranking all-9 fixed-5000 对照（ranking − ring-reuse）
+
+比较固定为同一 `9` 个 fold、同一 `577 RELEASE/2572 WAIT` actor 支持；held-reference pair 使用 `473` queries/`4555` known pairs/`394` blocked pairs，expanded pair 使用 `1270` queries/`14396` known pairs/`1469` blocked pairs。指标均来自 comparison artifact 的整数分子/分母；WAIT false-release 的宏平均为 `8` folds，排除零 WAIT 分母的 `893601`。`proposal` 分母为 RELEASE proposal rows，`joint` 分母为 actor rows。
+
+#### Micro
+
+| 指标 | held reference：ring-reuse → ranking | Δ pp | expanded：ring-reuse → ranking | Δ pp |
+|---|---:|---:|---:|---:|
+| RELEASE recall | `369/577=63.9515% → 381/577=66.0312%` | `+2.0797` | `369/577=63.9515% → 381/577=66.0312%` | `+2.0797` |
+| WAIT false-release | `317/2572=12.3250% → 304/2572=11.8196%` | `-0.5054` | `317/2572=12.3250% → 304/2572=11.8196%` | `-0.5054` |
+| proposal top-1 | `252/577=43.6742% → 252/577=43.6742%` | `0.0000` | `252/577=43.6742% → 252/577=43.6742%` | `0.0000` |
+| proposal top-3 | `354/577=61.3518% → 366/577=63.4315%` | `+2.0797` | `354/577=61.3518% → 366/577=63.4315%` | `+2.0797` |
+| joint accuracy | `2474/3149=78.5646% → 2487/3149=78.9775%` | `+0.4128` | `2474/3149=78.5646% → 2487/3149=78.9775%` | `+0.4128` |
+| blocked recall | `296/394=75.1269% → 304/394=77.1574%` | `+2.0305` | `1089/1469=74.1321% → 1135/1469=77.2634%` | `+3.1314` |
+| blocker top-1 | `159/259=61.3900% → 195/259=75.2896%` | `+13.8996` | `562/839=66.9845% → 617/839=73.5399%` | `+6.5554` |
+| safe recall | `3508/4161=84.3067% → 3589/4161=86.2533%` | `+1.9466` | `10292/12927=79.6163% → 10634/12927=82.2619%` | `+2.6456` |
+| pair accuracy | `3804/4555=83.5126% → 3893/4555=85.4665%` | `+1.9539` | `11381/14396=79.0567% → 11769/14396=81.7519%` | `+2.6952` |
+
+#### Macro（9 folds；WAIT 指标 8 folds）
+
+| 指标 | held reference：ring-reuse → ranking | Δ pp | expanded：ring-reuse → ranking | Δ pp |
+|---|---:|---:|---:|---:|
+| RELEASE recall | `71.0598% → 72.6391%` | `+1.5793` | `71.0598% → 72.6391%` | `+1.5793` |
+| WAIT false-release | `25.4825% → 24.0400%` | `-1.4425` | `25.4825% → 24.0400%` | `-1.4425` |
+| proposal top-1 | `50.0270% → 48.5591%` | `-1.4679` | `50.0270% → 48.5591%` | `-1.4679` |
+| proposal top-3 | `67.6935% → 69.2187%` | `+1.5252` | `67.6935% → 69.2187%` | `+1.5252` |
+| joint accuracy | `73.2475% → 72.4183%` | `-0.8292` | `73.2475% → 72.4183%` | `-0.8292` |
+| blocked recall | `74.4087% → 69.6654%` | `-4.7433` | `73.1917% → 69.9554%` | `-3.2363` |
+| blocker top-1 | `64.4438% → 77.5214%` | `+13.0776` | `67.9011% → 75.0953%` | `+7.1942` |
+| safe recall | `85.7132% → 87.3731%` | `+1.6599` | `81.8261% → 83.4678%` | `+1.6417` |
+| pair accuracy | `84.5674% → 85.5131%` | `+0.9457` | `80.8945% → 82.2712%` | `+1.3767` |
+
+宏 blocked recall 的下降（held `-4.7433 pp`、expanded `-3.2363 pp`）与 `893601` 的小 blocked support 折次表现同时存在，保留该折事实，不以 blocker top-1 的改善替代 blocked recall 报告。所有九折 train pool 行在各 fold 复用，不能称为独立样本。
+
+#### 全部 fold 的 paired delta（ranking − ring-reuse，pp）
+
+| seed | RELEASE | WAIT false | top-1 | top-3 | joint | ref blocked | ref blocker | expanded blocked | expanded blocker |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 893511 | `0.0000` | `0.0000` | `-8.6957` | `0.0000` | `-6.6667` | `+2.3256` | `+5.7143` | `+1.6484` | `+5.4688` |
+| 893512 | `+9.5745` | `-0.3190` | `0.0000` | `-1.0638` | `0.0000` | `+2.0000` | `+21.8750` | `-7.0423` | `-4.5977` |
+| 893513 | `+3.4483` | `+1.9565` | `-1.1494` | `+1.1494` | `-1.2797` | `+10.0000` | `+25.8065` | `+9.0909` | `+20.5479` |
+| 893601 | `0.0000` | `0.0000` | `-5.5556` | `-5.5556` | `-5.5556` | `-77.7778` | `0.0000` | `-58.3333` | `0.0000` |
+| 893602 | `+4.0000` | `+0.4032` | `-2.6667` | `+10.6667` | `-0.3503` | `+5.4054` | `+7.4074` | `+15.1724` | `+23.1707` |
+| 893603 | `+2.6667` | `+1.6892` | `+2.6667` | `+6.6667` | `-1.3477` | `0.0000` | `0.0000` | `+2.0513` | `+1.0000` |
+| 893604 | `0.0000` | `-10.0000` | `-5.4054` | `+2.7027` | `+1.7544` | `+6.6667` | `+14.2857` | `-2.6087` | `+6.2500` |
+| 893605 | `-6.7416` | `-5.7395` | `0.0000` | `-3.3708` | `+4.6125` | `+3.0303` | `+10.2564` | `+2.2923` | `-6.5359` |
+| 893606 | `+1.2658` | `+0.4695` | `+7.5949` | `+2.5316` | `+1.3699` | `+5.6604` | `+32.3529` | `+8.6022` | `+19.4444` |
+
+其中 dense6 的 joint 为上升 `893605/893606`、下降 `893513/893602/893603`、持平 `893512`；WAIT false-release 在 `893513/893602/893603/893606` 变差。all-9 micro joint `+0.4128 pp` 的正确数为 control `2474-2255=219`、ranking `2487-2268=219`，增加的 `13` 个全部来自 WAIT false-release 减少；正确 RELEASE gate+proposal 仍为 `219/577`，尽管 RELEASE gate hits 增加 `12`。
+
+comparison artifact 的 `16` 个 integer-recovery residual 全部来自 `train_pairs.safe_recall`（new `9`、control `7`），最大绝对 residual 为 `0.0003160834`；仅按原始报告率恢复整数分子并披露，不新增 tolerance。该结果在 held-reference 与 expanded 两种固定支持上都显示 blocker top-1 提高，但未证明 ranking loss 是因果根因，也未形成稳定动作修复；保留为 opt-in train-only 实验结果，不升格模型、qualification 或 PPO。后续只基于既有数据检查 action/proposal error/support 与 gate-candidate coupling，尚未启动新的 learning、CV、epoch/weight scan、seed 或网络系列；Q 保持隔离，`PPO_ALLOWED=false`。
 
 ## ring-reuse 九折终态与完整对照（2026-10-10，本轮 newly_run）
 
