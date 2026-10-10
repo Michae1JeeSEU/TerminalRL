@@ -14,7 +14,7 @@ import torch
 from ..algo.intent_neighbor_actor import IntentNeighborActor
 from ..algo.joint_ppo_v4_2 import hierarchical_bc_loss
 from ..training.p3_neighbor_witness_dataset import (WitnessTargets,load_witness_targets,
-    combine_witness_targets,auxiliary_loss,SUPPLEMENTAL_PROTOCOL,PREFIX_COVERAGE_PROTOCOL)
+    combine_witness_targets,auxiliary_loss,blocker_ranking_loss,SUPPLEMENTAL_PROTOCOL,PREFIX_COVERAGE_PROTOCOL)
 from ..training.p3_v26_train_dataset import load_six_cycle_train,load_nine_cycle_train
 from ..training.p3_v25_set_learnability import synthetic
 from ..training.p3_v3_bc_learnability import classification,read,require,write
@@ -39,8 +39,17 @@ def measure(model,paired,indices):
         overall=classification(gate,proposal,y.gate[indices],y.proposal[indices]))
 
 
+def _ranking_support(target):
+    known=target.known.bool()
+    blocked=known & target.blocked.bool()
+    safe=known & ~target.blocked.bool()
+    eligible=blocked.any(-1) & safe.any(-1)
+    return dict(queries=int(len(target.state_index)),known_pairs=int(known.sum()),
+        blocked_pairs=int(blocked.sum()),eligible_queries=int(eligible.sum()))
+
+
 @torch.no_grad()
-def measure_pairs(model,paired,target):
+def measure_pairs(model,paired,target,*,blocker_ranking_weight=0.):
     pairs=[];scenes=[]
     for batch in torch.arange(len(target.state_index)).split(64):
         t=target.take(batch)
@@ -54,10 +63,14 @@ def measure_pairs(model,paired,target):
     top=pairs.masked_fill(~paired.new[2][target.state_index],-torch.inf).argmax(-1)
     hit=positive[torch.arange(len(top)),top]
     def rate(values,mask):return float(values[mask].float().mean()) if mask.any() else None
-    return dict(queries=len(top),known_pairs=int(target.known.sum()),blocked_pairs=int(positive.sum()),
+    result=dict(queries=len(top),known_pairs=int(target.known.sum()),blocked_pairs=int(positive.sum()),
         blocked_recall=rate(pairs>=0,positive),safe_recall=rate(pairs<0,negative),
         blocker_top1=rate(hit,eligible),blocked_queries=int(eligible.sum()),
         auxiliary_loss=float(auxiliary_loss(pairs,scenes,target)))
+    if blocker_ranking_weight:
+        result.update(blocker_ranking_loss=float(blocker_ranking_loss(pairs,target)),
+            blocker_ranking_queries=_ranking_support(target)['eligible_queries'])
+    return result
 
 
 def smoke_inputs(*,supplemental=False):
@@ -110,7 +123,7 @@ def _initial_fold(paired,witness,seed,arm,progress_path):
 
 
 def train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
-               reference_witness=None):
+               reference_witness=None,blocker_ranking_weight=0.):
     """Train one deterministic seed/arm and persist independently readable progress."""
     progress_path=Path(progress_path)
     record=_initial_fold(paired,witness,seed,arm,progress_path)
@@ -136,16 +149,20 @@ def train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_pat
                     chosen=wtrain[torch.randint(len(wtrain),(64,),generator=aux_generator)]
                     target=witness.take(chosen)
                     pair,scene=model.queried_scores(*(t[target.state_index] for t in paired.new),target.proposal,target.pad)
-                    loss=loss+auxiliary_loss(pair,scene,target)
+                    loss=loss+auxiliary_loss(pair,scene,target,
+                        blocker_ranking_weight=blocker_ranking_weight)
                 require(bool(torch.isfinite(loss)),'nonfinite loss')
                 loss.backward();torch.nn.utils.clip_grad_norm_(model.parameters(),.5,error_if_nonfinite=True);optimizer.step()
             if step in marks:
                 curve_item=dict(update=step,train=measure(model,paired,train),validation=measure(model,paired,held),
-                    train_pairs=measure_pairs(model,paired,witness.take(wtrain)),
-                    validation_pairs=measure_pairs(model,paired,witness.take(wheld)))
+                    train_pairs=measure_pairs(model,paired,witness.take(wtrain),
+                        blocker_ranking_weight=blocker_ranking_weight),
+                    validation_pairs=measure_pairs(model,paired,witness.take(wheld),
+                        blocker_ranking_weight=blocker_ranking_weight))
                 if reference_witness is not None:
                     curve_item['validation_reference_pairs']=measure_pairs(
-                        model,paired,reference_witness.take(reference_wheld))
+                        model,paired,reference_witness.take(reference_wheld),
+                        blocker_ranking_weight=blocker_ranking_weight)
                 record['curve'].append(curve_item)
                 record['elapsed_seconds']=time.monotonic()-started
                 _atomic_write(progress_path,_progress_payload(record,status='RUNNING',stage=f'mark_{step}',
@@ -162,10 +179,10 @@ def train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_pat
 
 
 def _train_fold_job(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
-                    reference_witness=None):
+                    reference_witness=None,blocker_ranking_weight=0.):
     torch.set_num_threads(1)
     return train_fold(paired,witness,seed,arm,gate_mode,marks,wall_seconds,progress_path,
-        reference_witness=reference_witness)
+        reference_witness=reference_witness,blocker_ranking_weight=blocker_ranking_weight)
 
 
 def _read_progress(path):
@@ -207,7 +224,8 @@ def _mark_progress_failure(spec,error):
     _atomic_write(spec['progress_path'],progress)
 
 
-def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_witness=None):
+def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_witness=None,
+                   blocker_ranking_weight=0.):
     for spec in specs:
         _initial_fold(paired,witness,spec['seed'],spec['arm'],spec['progress_path'])
     _write_root_result(root_path,protocol,specs,'RUNNING')
@@ -216,7 +234,7 @@ def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_w
         for spec in specs:
             outcome=train_fold(paired,witness,spec['seed'],spec['arm'],spec['gate_mode'],
                 spec['marks'],spec['wall_seconds'],spec['progress_path'],
-                reference_witness=reference_witness)
+                reference_witness=reference_witness,blocker_ranking_weight=blocker_ranking_weight)
             if outcome['status']!='COMPLETE' and root_error is None:root_error=outcome['error']
             _write_root_result(root_path,protocol,specs,'RUNNING',root_error)
             if root_error is not None:break
@@ -243,7 +261,8 @@ def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_w
             if root_error is not None or next_index>=len(specs):return False
             spec=specs[next_index];next_index+=1
             future=pool.submit(_train_fold_job,paired,witness,spec['seed'],spec['arm'],spec['gate_mode'],
-                spec['marks'],spec['wall_seconds'],str(spec['progress_path']),reference_witness)
+                spec['marks'],spec['wall_seconds'],str(spec['progress_path']),reference_witness,
+                blocker_ranking_weight)
             futures[future]=spec;pending.add(future)
             return True
 
@@ -275,7 +294,8 @@ def _execute_folds(paired,witness,specs,*,workers,root_path,protocol,reference_w
 
 
 def run(original,additional,witness_directory,output,*,smoke=False,max_candidate_gate=False,
-        supplemental=None,supplemental_witness=None,prefix_witness=None,workers=1):
+        supplemental=None,supplemental_witness=None,prefix_witness=None,workers=1,
+        blocker_ranking_weight=0.):
     supplemental_route=supplemental is not None or supplemental_witness is not None
     prefix_route=prefix_witness is not None
     require((supplemental is None)==(supplemental_witness is None),
@@ -288,6 +308,9 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
         'prefix witness requires the paired nine-cycle supplemental route')
     require(not prefix_route or not max_candidate_gate,
         'prefix witness does not support max_candidate_gate')
+    require(blocker_ranking_weight in (0.,.25),'blocker ranking weight is fixed at 0.25')
+    require(not blocker_ranking_weight or prefix_route and supplemental_route and not smoke,
+        'blocker ranking requires the non-smoke prefix supplemental route')
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     reference_witness=None
     if smoke:paired,witness=smoke_inputs(supplemental=supplemental_route)
@@ -329,6 +352,20 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
             prefix_role='new_train_decision_joint_candidates_only_not_qualification',
             prefix_train_seeds=seeds,
             qualification=False)
+    if blocker_ranking_weight:
+        require(reference_witness is not None,'blocker ranking requires a reference witness')
+        protocol.update(loss_variant='native_pair_auxiliary_plus_blocker_ranking',
+            comparison_control_reference='p3_neighbor_prefix_ring_reuse_20261010/nine_cycle',
+            comparison_note=
+                'same nine-fold 3149 actor rows; same 1270 expanded and 473 original-held '
+                'reference supports; sole loss change is fixed 0.25 blocker ranking',
+            blocker_ranking_loss_variant='known_blocked_mass_within_known_neighbors',
+            blocker_ranking_weight=float(blocker_ranking_weight),
+            blocker_ranking_formula=
+                'mean_eligible[logsumexp(known_logits)-logsumexp(known_blocked_logits)], '
+                'eligible requires at least one known blocked and one known safe; unknown/absent excluded',
+            blocker_ranking_reference_support=_ranking_support(reference_witness),
+            blocker_ranking_training_support=_ranking_support(witness))
     if max_candidate_gate:
         protocol.update(comparison_control_reference='p3_neighbor_relation_cv_20261009/six_cycle',
             comparison_note='max gate tests count-amplification; no promotion')
@@ -343,7 +380,7 @@ def run(original,additional,witness_directory,output,*,smoke=False,max_candidate
                 specs.append(dict(seed=seed,arm=arm,gate_mode=gate_mode,marks=marks,wall_seconds=1200,
                     progress_path=_progress_path(output,seed,arm)))
         result=_execute_folds(paired,witness,specs,workers=workers,root_path=result_path,protocol=protocol,
-            reference_witness=reference_witness)
+            reference_witness=reference_witness,blocker_ranking_weight=blocker_ranking_weight)
     except Exception as error:result.update(status='INCOMPLETE',error=repr(error))
     _atomic_write(result_path,result);return result
 
@@ -357,7 +394,9 @@ def main():
     p.add_argument('--workers',type=int,default=1)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--smoke',action='store_true')
     p.add_argument('--max-candidate-gate',action='store_true',
-        help='run the bounded max-candidate gate hypothesis only');a=p.parse_args()
+        help='run the bounded max-candidate gate hypothesis only')
+    p.add_argument('--blocker-ranking',action='store_true',
+        help='enable the fixed 0.25 known-blocker ranking loss on the prefix route');a=p.parse_args()
     supplemental_args=(a.supplemental_train_directories,a.supplemental_witness_directory)
     if (supplemental_args[0] is None)!=(supplemental_args[1] is None):
         p.error('--supplemental-train-directories and --supplemental-witness-directory must be provided together')
@@ -367,12 +406,14 @@ def main():
         p.error('--prefix-witness-directory requires supplemental nine-cycle inputs')
     if a.prefix_witness_directory is not None and a.smoke:
         p.error('--prefix-witness-directory is not available in smoke mode')
+    if a.blocker_ranking and (a.prefix_witness_directory is None or a.smoke or supplemental_args[0] is None):
+        p.error('--blocker-ranking requires the non-smoke prefix supplemental route')
     if not 1<=a.workers<=4:p.error('--workers must be in 1..4')
     torch.set_num_threads(1)
     result=run(a.train_directories,a.additional_train_directories,a.witness_directory,a.output,smoke=a.smoke,
         max_candidate_gate=a.max_candidate_gate,supplemental=a.supplemental_train_directories,
         supplemental_witness=a.supplemental_witness_directory,prefix_witness=a.prefix_witness_directory,
-        workers=a.workers)
+        workers=a.workers,blocker_ranking_weight=.25 if a.blocker_ranking else 0.)
     print(json.dumps(dict(status=result['status'],folds=len(result['folds']),error=result['error'])))
     return 0 if result['status']=='COMPLETE' else 2
 

@@ -102,7 +102,28 @@ def combine_witness_targets(parts):
         for key in WitnessTargets.__dataclass_fields__))
 
 
-def auxiliary_loss(pair_logits,scene_logits,target):
+def blocker_ranking_loss(pair_logits,target):
+    """Rank explicitly blocked known neighbors above explicitly safe ones.
+
+    Unknown and absent neighbors are excluded from both reductions.  Rows are
+    selected before masking/reducing so non-finite logits on ineligible or
+    ignored entries cannot contaminate the result.
+    """
+    known=target.known.bool()
+    blocked=known & target.blocked.bool()
+    safe=known & ~target.blocked.bool()
+    eligible=blocked.any(dim=-1) & safe.any(dim=-1)
+    if not eligible.any():
+        return pair_logits.reshape(-1)[:0].sum()
+    logits=pair_logits[eligible]
+    known=known[eligible]
+    blocked=blocked[eligible]
+    known_logits=logits.masked_fill(~known,-torch.inf)
+    blocked_logits=logits.masked_fill(~blocked,-torch.inf)
+    return (torch.logsumexp(known_logits,dim=-1)-torch.logsumexp(blocked_logits,dim=-1)).mean()
+
+
+def auxiliary_loss(pair_logits,scene_logits,target,*,blocker_ranking_weight=0.):
     # Balance native blocked/safe pairs; null outcomes never acquire a target.
     losses=[]
     for positive in (False,True):
@@ -111,4 +132,7 @@ def auxiliary_loss(pair_logits,scene_logits,target):
     pair_loss=torch.stack(losses).mean() if losses else pair_logits.sum()*0.
     scene_loss=(F.binary_cross_entropy_with_logits(scene_logits[target.scene_known],target.scene_blocked[target.scene_known])
         if target.scene_known.any() else scene_logits.sum()*0.)
-    return pair_loss+.25*scene_loss
+    loss=pair_loss+.25*scene_loss
+    if blocker_ranking_weight:
+        loss=loss+float(blocker_ranking_weight)*blocker_ranking_loss(pair_logits,target)
+    return loss
