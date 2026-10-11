@@ -1,8 +1,9 @@
 # 研究重构计划：可执行协同到达优先
 
-> **版本与状态**：2026-10-11；第一批有界 rollout reference 与 local reorder 为
-> IN_PROGRESS，尚无结果。本文档记录当前研究顺序和证据边界，不能把待运行内容写成
-> PASS、qualification 或 superiority。
+> **版本与状态**：2026-10-11；第一批有界 rollout reference `48/48`、full pilot `9/9` 均已完成，
+> M1–M3 已完成，M4 及以后未完成。2-tick smoke 的 `9/9` replay 为 `MATCH`，但不是 full-cycle；
+> 4 个 selected reference 均通过 whole-cycle replay `MATCH`。本批所有 seeds 属 development，
+> Q untouched、`PPO_ALLOWED=false`；结果见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)。
 >
 > **当前研究入口**：[docs/README.md](README.md)。当前阶段和授权边界仍由
 > [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定；业务语义、模块职责和技术接口分别服从
@@ -133,7 +134,7 @@ headway 和 reservation expiry；不得取消、回写或重排已经 committed 
 candidate count、replan decision、native planning cost 和实际 applied order 都写入输出。
 
 实现和 controller 可以在首次完整 development pilot 前做有界 refinement；每次 refinement 必须记录
-版本、原因、输入协议、旧/新 knobs 和是否重新执行 smoke。第一批尚未产生结果。
+版本、原因、输入协议、旧/新 knobs 和是否重新执行 smoke。本批实现冻结于 `59e3f24652c7480087b8110a832105bbd010bea1`；后续修订另行登记，不改写既有结果。
 
 ## 5. 第一批冻结的协议、seed 和预算
 
@@ -226,9 +227,9 @@ reservation/coordination 和 adapter 行为，不把 2–3 架缩尺实验写成
 | 阶段 | 目标 | 状态 |
 |---|---|---|
 | M0 | 文档、scope、schema/Q/PPO 边界冻结 | 完成/持续维护 |
-| M1 | controller authority、serialization、2-tick smoke | IN_PROGRESS |
-| M2 | 三场景 full pilot 与 small-N candidate search | 待 M1 |
-| M3 | whole-cycle tape、independent replay、joint completion witness | 待 M2 |
+| M1 | controller authority、serialization、2-tick smoke | 完成 |
+| M2 | 三场景 full pilot 与 small-N candidate search | 完成：9/9 pilot、48/48 reference（[证据](evidence/arrival_restructure/first_batch_20261011.md)） |
+| M3 | whole-cycle tape、independent replay、joint completion witness | 完成：small reference 四个 selected whole-cycle replay MATCH（[证据](evidence/arrival_restructure/first_batch_20261011.md)） |
 | M4 | measured-value gate；决定传统、IL 或 bounded RL 是否继续 | 待 M3 |
 | M5 | reliable lower layer 下的 static geometry causal comparison | 待 M4 或传统参考闭合 |
 | M6 | dynamic three-ring geometry 与 reconfiguration cost | 待 M5 |

@@ -17,8 +17,10 @@ formal/heldout 记录均按历史协议解释，不能据此宣称稳定收益�
 > **2026-10-11 研究重构入口**：当前研究顺序、第一批 bounded traditional joint reference、
 > external_dispatch_v1、local reorder、seed/预算和 IL/RL measured-value gate 见
 > [research_restructure_plan.md](research_restructure_plan.md)。该计划取代旧的“先取得低层 RL
-> 成功再进入其他研究”排序；本页的任务语义、schema、安全和历史证据边界继续有效。第一批
-> 标记为 IN_PROGRESS，尚无结果；阶段授权仍由 [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定。
+> 成功再进入其他研究”排序；本页的任务语义、schema、安全和历史证据边界继续有效。第一批已完成：
+> `9/9` pilot、`48/48` small-reference candidates；4 个选定 reference 通过完整重放。完整结果与
+> 三场景权衡见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)，当前进度与下一步见
+> [CURRENT_STATUS.md](CURRENT_STATUS.md)。M4 及以后尚未完成。
 
 ## 2026-09-24 历史集成摘要（不定义当前课程）
 
