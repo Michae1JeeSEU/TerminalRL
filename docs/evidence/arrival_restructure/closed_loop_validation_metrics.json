@@ -1,0 +1,1216 @@
+{
+  "schema": "arrival_closed_loop_validation_metrics_v1",
+  "evidence_type": "newly_run",
+  "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+  "original_freeze": {
+    "head": "99c4ffb5af5c106a1aefedb99dc1fe72ed884c2b",
+    "tracked_tmp_deletions": 36,
+    "unchanged": true
+  },
+  "output_roots": {
+    "server": "/home/user/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1",
+    "local": "D:/7_codespace/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1"
+  },
+  "protocol": {
+    "authority": "external_dispatch_v1",
+    "controllers": [
+      "downstream_soc_external",
+      "energy_slack",
+      "rolling_reorder"
+    ],
+    "scenarios": [
+      "flow6_mixed",
+      "dense24_fixed",
+      "dense24_mixed"
+    ],
+    "matrix": {
+      "smoke_arms": 3,
+      "bridge_arms": 3,
+      "fresh_arms": 15,
+      "suite_arms": 18,
+      "fresh_cohorts": 5,
+      "smoke_seeds": [896191, 896192, 896193],
+      "bridge_seeds": [896101, 896102, 896103],
+      "fresh_seeds": [896201, 896211, 896212, 896221, 896222]
+    },
+    "bounds": {
+      "max_ticks": 2400,
+      "wall_seconds": 7200,
+      "native_cap": "unchanged",
+      "smoke_ticks": 2
+    },
+    "rolling_search": {
+      "lookahead": 4,
+      "max_orders": 4,
+      "replan_interval": 10,
+      "planning_wall_seconds": 60,
+      "budget_type": "cooperative_not_hard_realtime"
+    },
+    "execution": {
+      "smoke_workers": 3,
+      "suite_workers": 18,
+      "nested_pool": false,
+      "blas_threads": 1
+    },
+    "q_consumed": false,
+    "ppo_allowed": false,
+    "rl_il_geometry_experiment": false
+  },
+  "suite_exit": {
+    "returncode": 0,
+    "wrapper_error": null,
+    "wrapper_pid": 3234325,
+    "child_pid": 3234326,
+    "started_at": "2026-10-11T04:19:03.048981+00:00",
+    "finished_at": "2026-10-11T05:24:49.811080+00:00",
+    "elapsed_seconds": 3946.7621019110084
+  },
+  "suite_summary": {
+    "status": "COMPLETED",
+    "error": null,
+    "exit_code": 0,
+    "expected_arms": 18,
+    "status_counts": {
+      "COMPLETED": 18
+    },
+    "workers": 18,
+    "natural_terminal": true,
+    "full_valid_all": true,
+    "integrity_all": true,
+    "native_collisions": 0,
+    "native_nmac": 0,
+    "native_hard_separation_violations": 0,
+    "hash_mismatches": 0
+  },
+  "smoke_summary": {
+    "status": "SMOKE_PASS",
+    "error": null,
+    "exit_code": 0,
+    "elapsed_seconds": 49.75270622968674,
+    "expected_arms": 3,
+    "status_counts": {
+      "CENSORED": 3
+    },
+    "stop_reason": "tick_cap",
+    "ticks": 2,
+    "integrity_all": true,
+    "independent_replay": {
+      "count": 3,
+      "status": "MATCH",
+      "matched_steps": 2,
+      "whole_cycle": false
+    },
+    "safety_mismatches": 0,
+    "hash_mismatches": 0
+  },
+  "terminal_check": {
+    "artifact": "tmp_restructure_checks/closed_loop_terminal_check.json",
+    "all_matching_argv_processes": false,
+    "heartbeat_deleted": true,
+    "all_local_server_hashes_equal": true,
+    "trajectory_equivalence_asserted": false,
+    "hashes": {
+      "final_analysis_summary": "02f29748ce11324431ae3a77c7af8d2909f8791955b7bf8715f5e423b7263514",
+      "smoke_summary": "0489a29e57c0128ed3ff6baece91d1cb51605862bd79499ab6a46be5feb68b75",
+      "suite_exit": "0226e1beebaaaefeb2e74657058e2b973318ba91579eb58d25e62c71aaf18460",
+      "suite_summary": "308344ddfa5d9ce01584d0acd5fc3a1ae8439e0ede609f749bb2a7bf29f81444"
+    }
+  },
+  "bridge_comparison": [
+    {
+      "arm": "bridge_dense24_fixed_896102_downstream_soc_external",
+      "comparison": "old_legacy",
+      "scalar_and_per_arrival_equal_excluding_timing": true,
+      "p90_equal": true,
+      "min_landing_soc_equal": true,
+      "trajectory_equivalence_asserted": false
+    },
+    {
+      "arm": "bridge_dense24_mixed_896103_downstream_soc_external",
+      "comparison": "old_legacy",
+      "scalar_and_per_arrival_equal_excluding_timing": true,
+      "p90_equal": true,
+      "min_landing_soc_equal": true,
+      "trajectory_equivalence_asserted": false
+    },
+    {
+      "arm": "bridge_flow6_mixed_896101_downstream_soc_external",
+      "comparison": "old_legacy",
+      "scalar_and_per_arrival_equal_excluding_timing": true,
+      "p90_equal": true,
+      "min_landing_soc_equal": true,
+      "trajectory_equivalence_asserted": false
+    }
+  ],
+  "arms": [
+    {
+      "name": "bridge_dense24_fixed_896102_downstream_soc_external",
+      "mode": "bridge",
+      "scenario": "dense24_fixed",
+      "seed": 896102,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 20,
+        "E": 4,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1033.0,
+        "energy": 11479.979348607038
+      },
+      "wait_derived": {
+        "mean": 150.75331291629348,
+        "p90": 291.4150840287134,
+        "max": 385.94798942416446
+      },
+      "min_landing_soc": 0.2645058505660261,
+      "timing": {
+        "planning_seconds": 0.09291929751634598,
+        "native_seconds": 1658.2375678503886,
+        "wall_seconds": 1683.6148419147357
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 1033
+        },
+        "fallback": {
+          "unknown": 1033
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 1033
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "bridge_dense24_mixed_896103_downstream_soc_external",
+      "mode": "bridge",
+      "scenario": "dense24_mixed",
+      "seed": 896103,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 17,
+        "E": 7,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1096.0,
+        "energy": 10544.692712210144
+      },
+      "wait_derived": {
+        "mean": 134.4766020046635,
+        "p90": 357.12267365777745,
+        "max": 526.477267734288
+      },
+      "min_landing_soc": 0.19530999448202332,
+      "timing": {
+        "planning_seconds": 0.08745197020471096,
+        "native_seconds": 1287.1472751442343,
+        "wall_seconds": 1312.542199268937
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 1096
+        },
+        "fallback": {
+          "unknown": 1096
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 1096
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "bridge_flow6_mixed_896101_downstream_soc_external",
+      "mode": "bridge",
+      "scenario": "flow6_mixed",
+      "seed": 896101,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 6,
+        "E": 0,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 620.0,
+        "energy": 1602.6027327052632
+      },
+      "wait_derived": {
+        "mean": 5.516609176665938,
+        "p90": 13.49318532005087,
+        "max": 25.100858060586944
+      },
+      "min_landing_soc": 0.48591544451115526,
+      "timing": {
+        "planning_seconds": 0.022910362109541893,
+        "native_seconds": 30.01999673899263,
+        "wall_seconds": 33.39455567765981
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 620
+        },
+        "fallback": {
+          "unknown": 620
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 620
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_fixed_896211_downstream_soc_external",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896211,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 21,
+        "E": 3,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 953.0,
+        "energy": 11229.0454246612
+      },
+      "wait_derived": {
+        "mean": 170.33440964098784,
+        "p90": 335.9320231406426,
+        "max": 476.9129811353439
+      },
+      "min_landing_soc": 0.2733806049336444,
+      "timing": {
+        "planning_seconds": 0.10211034771054983,
+        "native_seconds": 1787.5501522570848,
+        "wall_seconds": 1813.8278447249904
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 953
+        },
+        "fallback": {
+          "unknown": 953
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 953
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_fixed_896211_energy_slack",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896211,
+      "controller": "energy_slack",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 21,
+        "E": 3,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1036.0,
+        "energy": 9771.980089722188
+      },
+      "wait_derived": {
+        "mean": 97.90894467264899,
+        "p90": 235.8864789193828,
+        "max": 332.49078624366416
+      },
+      "min_landing_soc": 0.310213282269998,
+      "timing": {
+        "planning_seconds": 408.07873418089,
+        "native_seconds": 931.1784744830802,
+        "wall_seconds": 1363.748308636248
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 204,
+          "False": 832
+        },
+        "fallback": {
+          "False": 1036
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "same": 1036
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_fixed_896211_rolling_reorder",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896211,
+      "controller": "rolling_reorder",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 23,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 907.0,
+        "energy": 9476.194079044426
+      },
+      "wait_derived": {
+        "mean": 110.06753405288573,
+        "p90": 270.84479244363035,
+        "max": 362.98932649922983
+      },
+      "min_landing_soc": 0.3309590410996852,
+      "timing": {
+        "planning_seconds": 1540.1664480827749,
+        "native_seconds": 710.4590172776952,
+        "wall_seconds": 2268.6742878165096
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 203,
+          "False": 704
+        },
+        "fallback": {
+          "False": 907
+        },
+        "candidate_status": {
+          "evaluated": 246,
+          "timeout": 6
+        },
+        "order_comparison": {
+          "different": 1,
+          "same": 906
+        }
+      },
+      "first_order_difference_tick": 1
+    },
+    {
+      "name": "replicate_dense24_fixed_896212_downstream_soc_external",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896212,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 19,
+        "E": 5,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 977.0,
+        "energy": 12060.341591781927
+      },
+      "wait_derived": {
+        "mean": 192.52309250737085,
+        "p90": 400.0952483443297,
+        "max": 443.6911122168352
+      },
+      "min_landing_soc": 0.21999452130483652,
+      "timing": {
+        "planning_seconds": 0.09276627656072378,
+        "native_seconds": 1482.324622515589,
+        "wall_seconds": 1505.7124137328938
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 977
+        },
+        "fallback": {
+          "unknown": 977
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 977
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_fixed_896212_energy_slack",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896212,
+      "controller": "energy_slack",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 24,
+        "E": 0,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 893.0,
+        "energy": 9646.280763893023
+      },
+      "wait_derived": {
+        "mean": 112.182349207644,
+        "p90": 235.8169630533742,
+        "max": 353.7002946374665
+      },
+      "min_landing_soc": 0.32646668339566365,
+      "timing": {
+        "planning_seconds": 303.847681844607,
+        "native_seconds": 685.8198481267318,
+        "wall_seconds": 1011.147945725359
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 196,
+          "False": 697
+        },
+        "fallback": {
+          "False": 893
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "same": 893
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_fixed_896212_rolling_reorder",
+      "mode": "fresh",
+      "scenario": "dense24_fixed",
+      "seed": 896212,
+      "controller": "rolling_reorder",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 23,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 926.0,
+        "energy": 9499.82296414999
+      },
+      "wait_derived": {
+        "mean": 114.74795927187569,
+        "p90": 277.3287659234855,
+        "max": 365.9245765040945
+      },
+      "min_landing_soc": 0.3281190325108187,
+      "timing": {
+        "planning_seconds": 1350.0800473615527,
+        "native_seconds": 598.9662882853299,
+        "wall_seconds": 1969.706559416838
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 203,
+          "False": 723
+        },
+        "fallback": {
+          "False": 926
+        },
+        "candidate_status": {
+          "evaluated": 261,
+          "timeout": 3
+        },
+        "order_comparison": {
+          "different": 3,
+          "same": 923
+        }
+      },
+      "first_order_difference_tick": 1
+    },
+    {
+      "name": "replicate_dense24_mixed_896221_downstream_soc_external",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896221,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 15,
+        "E": 8,
+        "F": 1,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1031.0,
+        "energy": 12036.600032264525
+      },
+      "wait_derived": {
+        "mean": 208.89946510854733,
+        "p90": 433.2656202168702,
+        "max": 670.3505264525264
+      },
+      "min_landing_soc": 0.12279019738145594,
+      "timing": {
+        "planning_seconds": 0.08810317423194647,
+        "native_seconds": 1734.162207448855,
+        "wall_seconds": 1756.42529337015
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 1031
+        },
+        "fallback": {
+          "unknown": 1031
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 1031
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_mixed_896221_energy_slack",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896221,
+      "controller": "energy_slack",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 15,
+        "E": 9,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 984.0,
+        "energy": 11515.312334352631
+      },
+      "wait_derived": {
+        "mean": 181.93740616258387,
+        "p90": 436.5164484257149,
+        "max": 538.8097615554011
+      },
+      "min_landing_soc": 0.18644395845062184,
+      "timing": {
+        "planning_seconds": 793.613496449776,
+        "native_seconds": 1603.8742843046784,
+        "wall_seconds": 2414.0672255484387
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 207,
+          "False": 777
+        },
+        "fallback": {
+          "False": 984
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "same": 984
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_mixed_896221_rolling_reorder",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896221,
+      "controller": "rolling_reorder",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 15,
+        "E": 9,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 984.0,
+        "energy": 11515.312334352631
+      },
+      "wait_derived": {
+        "mean": 181.93740616258387,
+        "p90": 436.5164484257149,
+        "max": 538.8097615554011
+      },
+      "min_landing_soc": 0.18644395845062184,
+      "timing": {
+        "planning_seconds": 2481.23618645221,
+        "native_seconds": 1450.1682364456356,
+        "wall_seconds": 3946.6219101576135
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 207,
+          "False": 777
+        },
+        "fallback": {
+          "False": 984
+        },
+        "candidate_status": {
+          "evaluated": 241,
+          "timeout": 4
+        },
+        "order_comparison": {
+          "same": 984
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_mixed_896222_downstream_soc_external",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896222,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 15,
+        "E": 9,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 995.0,
+        "energy": 10834.115953046876
+      },
+      "wait_derived": {
+        "mean": 137.63207853987134,
+        "p90": 281.67417130121714,
+        "max": 406.1701082838457
+      },
+      "min_landing_soc": 0.14765206878783216,
+      "timing": {
+        "planning_seconds": 0.08731695637106895,
+        "native_seconds": 2088.9786195000634,
+        "wall_seconds": 2111.4072886658832
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 995
+        },
+        "fallback": {
+          "unknown": 995
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 995
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_mixed_896222_energy_slack",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896222,
+      "controller": "energy_slack",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 17,
+        "E": 7,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1103.0,
+        "energy": 10176.626175298064
+      },
+      "wait_derived": {
+        "mean": 91.88232056005147,
+        "p90": 234.66077394721728,
+        "max": 291.9445481005822
+      },
+      "min_landing_soc": 0.15297181883890068,
+      "timing": {
+        "planning_seconds": 660.5134396636859,
+        "native_seconds": 1286.6043141009286,
+        "wall_seconds": 1972.121798642911
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 222,
+          "False": 881
+        },
+        "fallback": {
+          "False": 1103
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "same": 1103
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_dense24_mixed_896222_rolling_reorder",
+      "mode": "fresh",
+      "scenario": "dense24_mixed",
+      "seed": 896222,
+      "controller": "rolling_reorder",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 17,
+        "E": 7,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 1103.0,
+        "energy": 10176.626175298064
+      },
+      "wait_derived": {
+        "mean": 91.88232056005147,
+        "p90": 234.66077394721728,
+        "max": 291.9445481005822
+      },
+      "min_landing_soc": 0.15297181883890068,
+      "timing": {
+        "planning_seconds": 1952.6321352813393,
+        "native_seconds": 984.8271074639633,
+        "wall_seconds": 2957.756908176467
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 222,
+          "False": 881
+        },
+        "fallback": {
+          "True": 1,
+          "False": 1102
+        },
+        "candidate_status": {
+          "evaluated": 252,
+          "timeout": 4
+        },
+        "order_comparison": {
+          "same": 1103
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_flow6_mixed_896201_downstream_soc_external",
+      "mode": "fresh",
+      "scenario": "flow6_mixed",
+      "seed": 896201,
+      "controller": "downstream_soc_external",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 5,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 798.0,
+        "energy": 1902.2713279766963
+      },
+      "wait_derived": {
+        "mean": 1.2779520743044703,
+        "p90": 1.9957885248951754,
+        "max": 2.1060644702755553
+      },
+      "min_landing_soc": 0.35134257595372953,
+      "timing": {
+        "planning_seconds": 0.04317581653594971,
+        "native_seconds": 110.10541114863008,
+        "wall_seconds": 117.23380802292377
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "unknown": 798
+        },
+        "fallback": {
+          "unknown": 798
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "unknown": 798
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_flow6_mixed_896201_energy_slack",
+      "mode": "fresh",
+      "scenario": "flow6_mixed",
+      "seed": 896201,
+      "controller": "energy_slack",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 5,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 798.0,
+        "energy": 1902.2713279766963
+      },
+      "wait_derived": {
+        "mean": 1.2779520743044703,
+        "p90": 1.9957885248951754,
+        "max": 2.1060644702755553
+      },
+      "min_landing_soc": 0.35134257595372953,
+      "timing": {
+        "planning_seconds": 15.267900086939335,
+        "native_seconds": 53.17736384179443,
+        "wall_seconds": 73.13566349633038
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 117,
+          "False": 681
+        },
+        "fallback": {
+          "False": 798
+        },
+        "candidate_status": {},
+        "order_comparison": {
+          "same": 798
+        }
+      },
+      "first_order_difference_tick": null
+    },
+    {
+      "name": "replicate_flow6_mixed_896201_rolling_reorder",
+      "mode": "fresh",
+      "scenario": "flow6_mixed",
+      "seed": 896201,
+      "controller": "rolling_reorder",
+      "authority": "external_dispatch_v1",
+      "source_commit": "3e61fb5611fa11a5673363ad08253fb6b7e20238",
+      "status": "COMPLETED",
+      "metrics": {
+        "N": 5,
+        "E": 1,
+        "F": 0,
+        "D": 0,
+        "U": 0,
+        "not_yet_requested": 0,
+        "makespan": 798.0,
+        "energy": 1902.2713279766963
+      },
+      "wait_derived": {
+        "mean": 1.2779520743044703,
+        "p90": 1.9957885248951754,
+        "max": 2.1060644702755553
+      },
+      "min_landing_soc": 0.35134257595372953,
+      "timing": {
+        "planning_seconds": 44.10131945926696,
+        "native_seconds": 67.84033583849669,
+        "wall_seconds": 116.70381046738476
+      },
+      "integrity": {
+        "full_valid": true,
+        "integrity_ok": true
+      },
+      "safety": {
+        "collisions": 0,
+        "nmac": 0,
+        "hard_separation_violations": 0,
+        "hash_mismatches": 0
+      },
+      "diagnostics": {
+        "replanned": {
+          "True": 117,
+          "False": 681
+        },
+        "fallback": {
+          "False": 798
+        },
+        "candidate_status": {
+          "evaluated": 117
+        },
+        "order_comparison": {
+          "same": 798
+        }
+      },
+      "first_order_difference_tick": null
+    }
+  ],
+  "pairs": [
+    {
+      "cohort": "dense24_fixed_896211",
+      "energy_arm": "replicate_dense24_fixed_896211_energy_slack",
+      "rolling_arm": "replicate_dense24_fixed_896211_rolling_reorder",
+      "initial_physical_equal": true,
+      "first_release_tick": 1,
+      "first_physical_tick": 1,
+      "membership_differs": true,
+      "E_to_N": ["18", "19", "21"],
+      "N_to_E": ["15"],
+      "alignment": "unequal_tape_lengths_common_ticks"
+    },
+    {
+      "cohort": "dense24_fixed_896212",
+      "energy_arm": "replicate_dense24_fixed_896212_energy_slack",
+      "rolling_arm": "replicate_dense24_fixed_896212_rolling_reorder",
+      "initial_physical_equal": true,
+      "first_release_tick": 1,
+      "first_physical_tick": 1,
+      "membership_differs": true,
+      "E_to_N": [],
+      "N_to_E": ["18"],
+      "alignment": "unequal_tape_lengths_common_ticks"
+    },
+    {
+      "cohort": "dense24_mixed_896221",
+      "energy_arm": "replicate_dense24_mixed_896221_energy_slack",
+      "rolling_arm": "replicate_dense24_mixed_896221_rolling_reorder",
+      "initial_physical_equal": true,
+      "first_release_tick": null,
+      "first_physical_tick": null,
+      "membership_differs": null,
+      "E_to_N": [],
+      "N_to_E": [],
+      "alignment": "common_ticks_no_recorded_difference"
+    },
+    {
+      "cohort": "dense24_mixed_896222",
+      "energy_arm": "replicate_dense24_mixed_896222_energy_slack",
+      "rolling_arm": "replicate_dense24_mixed_896222_rolling_reorder",
+      "initial_physical_equal": true,
+      "first_release_tick": null,
+      "first_physical_tick": null,
+      "membership_differs": null,
+      "E_to_N": [],
+      "N_to_E": [],
+      "alignment": "common_ticks_no_recorded_difference"
+    },
+    {
+      "cohort": "flow6_mixed_896201",
+      "energy_arm": "replicate_flow6_mixed_896201_energy_slack",
+      "rolling_arm": "replicate_flow6_mixed_896201_rolling_reorder",
+      "initial_physical_equal": true,
+      "first_release_tick": null,
+      "first_physical_tick": null,
+      "membership_differs": null,
+      "E_to_N": [],
+      "N_to_E": [],
+      "alignment": "common_ticks_no_recorded_difference"
+    }
+  ],
+  "interpretation_boundaries": [
+    "The suite is development evidence; all seeds remain outside Q.",
+    "Five fresh paired cohorts are descriptive and do not support statistical significance or aircraft-independent-n claims.",
+    "Completion and replay MATCH do not certify global optimality, generic feasibility, or realtime performance.",
+    "Bridge equality excludes timing and is descriptive only; no trajectory or legacy stepwise equivalence assertion is made.",
+    "Native recorded active-UAV fields omit SOC, so physical/order comparisons are limited to recorded fields.",
+    "The old tick-355 trace is preexisting-artifact input with newly_run extraction and is temporal code interpretation, not counterfactual causality."
+  ]
+}

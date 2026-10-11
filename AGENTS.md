@@ -59,18 +59,15 @@ Dynamic terminal airspace reconfiguration
 
 ## 近期优先任务
 
-研究排序、两批 protocol、seed、预算和证据边界以
-[docs/research_restructure_plan.md](docs/research_restructure_plan.md) 为准；阶段授权仍以
-[docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为准。第一批已完成，第二批
-`arrival_closed_loop_validation_v1` 仅完成预注册，当前为 `PREREGISTERED/NOT_STARTED`：
+第一批与第二批 registered development validation 均已完成；本轮 M4 measured-value decision
+已记录于 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 和
+[closed-loop evidence](docs/evidence/arrival_restructure/closed_loop_validation_20261011.md)：
 
 ```text
-1. 保持既有 geometry/physics/safety/K3/service、external authority、Q 隔离和 PPO_ALLOWED=false
-2. 先完成第二批 smoke：flow6_mixed/896191、dense24_fixed/896192、dense24_mixed/896193；2 ticks、CENSORED tickcap、3 次独立 replay MATCH2 与 integrity
-3. 按预注册 suite 运行 3 个 prior-seed bridge 加 15 个 fresh arms；只报告预注册的 N/E/F/D/U、arrival integrity、安全、等待、makespan、energy、SOC、planning/native/wall 与 order-difference 指标
-4. downstream_soc_external 仅按 prestep active UAV 的 inner/mid/outer/other、SOC、dynamic priority、wait、UID 顺序排序；不启用 energy budget 或 rollout，nominal_requests 保持 K3
-5. 保持 lookahead=4、max_orders=4、replan=10、planning=60s cooperative 上限；不增加 seed、替换 arm、调参或事后 tuning，失败/CENSORED 保留为 unknown
-6. validation 完成后才依据同 authority 的 measured-value gate 决定后续传统、IL/DAgger 或 bounded RL；本批不做 RL/IL/geometry 实验
+1. 保持既有 geometry/physics/safety/K3/service、Q 隔离、PPO_ALLOWED=false；所有 seeds 仍为 development，永不作为 Q
+2. energy_slack 作为 provisional traditional comparison baseline；rolling_reorder 保持 opt-in research/ablation，不自动改变 default/global controller
+3. 本轮不启动 qualification、RL/IL 或 M5 geometry；M5+ 需要独立 protocol
+4. bridge 仅作 descriptive comparison，不作 trajectory 或 stepwise equivalence；后续研究边界保留在 evidence 中，不新增本轮 matrix
 ```
 
 ## 本地-服务器同步准则
