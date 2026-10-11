@@ -391,8 +391,14 @@ class SimConfig:
             "legacy_insertion",
             "downstream_priority",
             "downstream_soc_priority",
+            "external_dispatch_v1",
         }:
             raise ValueError("unsupported release arbitration mode")
+        if self.release_arbitration_mode == "external_dispatch_v1" and self.rule_flow_coordination_enabled:
+            raise ValueError(
+                "release_arbitration_mode='external_dispatch_v1' requires "
+                "rule_flow_coordination_enabled=False"
+            )
         if not 0 <= self.final_queue_capacity <= self.num_landing_zones:
             raise ValueError("final queue capacity must fit the landing-zone set")
         if self.dt <= 0 or self.physics_dt <= 0 or self.safety_sampling_dt <= 0 or self.max_active_uavs <= 0 or self.energy_capacity <= 0:

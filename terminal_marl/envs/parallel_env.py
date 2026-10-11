@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from collections import deque
 from copy import deepcopy
 import math
-from typing import Callable
+from typing import Callable, Iterable
 import numpy as np
 
 from ..core.admission import AdmissionManager
@@ -125,6 +125,8 @@ class TerminalParallelEnv:
         self.last_safety_decisions: dict[int, str] = {}
         self.last_release_decisions: dict[int, str] = {}
         self.last_release_telemetry: dict[int, dict] = {}
+        self.last_dispatch_order: list[int] = []
+        self.last_dispatch_order_requested: list[int] | None = None
         self.energy_reachability_diagnostics: dict[int, dict] = {}
         self.last_action_traces: dict[int, LowLevelActionTrace] = {}
         self.release_intents: dict[int, dict] = {}
@@ -520,7 +522,43 @@ class TerminalParallelEnv:
             inner_demand and free_lz > 0 and concurrent < self.config.final_queue_capacity
         )
 
-    def _release_processing_order(self) -> list[tuple[int, UAVState]]:
+    def _validate_release_order(self, release_order: Iterable[int] | None) -> tuple[int, ...] | None:
+        """Validate an optional external dispatch order without changing state."""
+        if self.config.release_arbitration_mode != "external_dispatch_v1":
+            if release_order is not None:
+                raise ValueError(
+                    "release_order is only supported with release_arbitration_mode='external_dispatch_v1'"
+                )
+            return None
+        if release_order is None:
+            raise ValueError("external_dispatch_v1 requires an explicit release_order")
+        try:
+            raw_order = tuple(release_order)
+        except TypeError as exc:
+            raise ValueError("release_order must be an iterable of integer UIDs") from exc
+        normalized: list[int] = []
+        seen: set[int] = set()
+        for raw_uid in raw_order:
+            if isinstance(raw_uid, (bool, np.bool_)) or not isinstance(raw_uid, (int, np.integer)):
+                raise ValueError("release_order must contain integer UIDs")
+            uid = int(raw_uid)
+            if uid in seen:
+                raise ValueError("release_order must contain unique UIDs")
+            seen.add(uid)
+            normalized.append(uid)
+        current_ids = set(self.active)
+        unknown = sorted(set(normalized) - current_ids)
+        missing = sorted(current_ids - set(normalized))
+        if unknown or missing:
+            raise ValueError(
+                "release_order must contain each current active UID exactly once "
+                f"(unknown={unknown}, missing={missing})"
+            )
+        return tuple(normalized)
+
+    def _release_processing_order(
+        self, release_order: tuple[int, ...] | None = None
+    ) -> list[tuple[int, UAVState]]:
         """Return the configured deterministic same-tick arbitration order.
 
         The legacy insertion order remains the default for historical replay.
@@ -529,13 +567,26 @@ class TerminalParallelEnv:
         Safety certification and reservations still run for every selected
         request in this exact order.
         """
+        mode = self.config.release_arbitration_mode
+        if mode == "external_dispatch_v1":
+            if release_order is None:
+                raise ValueError("external_dispatch_v1 requires an explicit release_order")
+            requested_set = set(release_order)
+            prefix = [(uid, self.active[uid]) for uid in release_order if uid in self.active]
+            # Validation covered every pre-step active UID. Any remaining UID
+            # was admitted during this tick; append it without reordering the prefix.
+            appended = [
+                (uid, self.active[uid]) for uid in sorted(self.active)
+                if uid not in requested_set
+            ]
+            return prefix + appended
         if self.flow_coordinator is not None:
             return self.flow_coordinator.processing_order()
         rows = list(self.active.items())
-        if self.config.release_arbitration_mode == "legacy_insertion":
+        if mode == "legacy_insertion":
             return rows
         rank = {RingRole.INNER: 0, RingRole.MIDDLE: 1, RingRole.OUTER: 2}
-        if self.config.release_arbitration_mode == "downstream_soc_priority":
+        if mode == "downstream_soc_priority":
             return sorted(rows, key=lambda row: (
                 rank.get(row[1].ring_role, 3),
                 float(row[1].soc),
@@ -543,12 +594,14 @@ class TerminalParallelEnv:
                 -float(row[1].external_wait_time + row[1].internal_wait_time),
                 int(row[0]),
             ))
-        return sorted(rows, key=lambda row: (
-            rank.get(row[1].ring_role, 3),
-            -float(row[1].dynamic_priority),
-            -float(row[1].external_wait_time + row[1].internal_wait_time),
-            int(row[0]),
-        ))
+        if mode == "downstream_priority":
+            return sorted(rows, key=lambda row: (
+                rank.get(row[1].ring_role, 3),
+                -float(row[1].dynamic_priority),
+                -float(row[1].external_wait_time + row[1].internal_wait_time),
+                int(row[0]),
+            ))
+        raise RuntimeError(f"unsupported release arbitration mode: {mode!r}")
 
     def _record_lz_assignment(self, uav: UAVState, lz_id: int) -> None:
         """Record committed LZ travel distance and avoidable geometric regret."""
@@ -1614,10 +1667,19 @@ class TerminalParallelEnv:
         self._finish_release_intent(uav, row, decision, safety_reason=last_reason)
         return decision
 
-    def step(self, actions: dict[str, np.ndarray] | None = None,
-             proposal_shortlists: dict[str, tuple[np.ndarray, ...] | list[np.ndarray]] | None = None):
+    def step(
+        self,
+        actions: dict[str, np.ndarray] | None = None,
+        proposal_shortlists: dict[str, tuple[np.ndarray, ...] | list[np.ndarray]] | None = None,
+        *,
+        release_order: Iterable[int] | None = None,
+    ):
+        validated_release_order = self._validate_release_order(release_order)
         self.safety.begin_prediction_step()
         previous = dict(self.active)
+        if self.config.release_arbitration_mode == "external_dispatch_v1":
+            self.last_dispatch_order = []
+            self.last_dispatch_order_requested = list(validated_release_order or ())
         self.last_release_telemetry = {}
         rewards = {
             uid: LowLevelReward(
@@ -1764,7 +1826,10 @@ class TerminalParallelEnv:
         if self.config.release_arbitration_mode in {"downstream_priority", "downstream_soc_priority"}:
             for uav in self.active.values():
                 self.priority.update(uav, self.now)
-        for uid, uav in self._release_processing_order():
+        processing_order = self._release_processing_order(validated_release_order)
+        if self.config.release_arbitration_mode == "external_dispatch_v1":
+            self.last_dispatch_order = [uid for uid, _ in processing_order]
+        for uid, uav in processing_order:
             intent = LowLevelIntent.from_array(actions.get(str(uid), np.array([1.0, 0.0, 0.0])))
             ranked_intents = None
             raw_shortlist = proposal_shortlists.get(str(uid))
@@ -1927,12 +1992,22 @@ class TerminalParallelEnv:
             if encounter.collision_entry:
                 for uid in encounter.pair:
                     if uid in self.active: self._resolve(self.active[uid], TerminalOutcome.FAILED_COLLISION, "collision")
+        normal_approved_releases = [
+            uid for uid, _ in processing_order if decisions.get(uid) == "approved"
+        ]
+        dispatch_fields = {}
+        if self.config.release_arbitration_mode == "external_dispatch_v1":
+            dispatch_fields = {
+                "dispatch_order": list(self.last_dispatch_order),
+                "dispatch_order_requested": list(self.last_dispatch_order_requested or ()),
+                "normal_approved_releases": list(normal_approved_releases),
+            }
         self._record_final_occupancy()
         self.runtime_trace.append({"time": self.now + self.config.dt, "active": [self._uav_trace(uav) for uav in self.active.values()],
             "release_decisions": dict(decisions), "release_intents": {str(uid): dict(row) for uid, row in self.last_release_telemetry.items()},
             "action_traces": {str(uid): trace.as_dict() for uid, trace in traces.items()},
             "prediction_execution_position_error": prediction_execution_error,
-            "telemetry": dict(self.telemetry)})
+            "telemetry": dict(self.telemetry), **dispatch_fields})
         for uid, uav in previous.items():
             if uav.terminal_outcome is TerminalOutcome.FAILED_COLLISION: rewards[uid].failure -= self.config.low_level_collision_penalty
             if uav.terminal_outcome in {TerminalOutcome.FAILED_ENERGY, TerminalOutcome.DIVERTED_LOW_SOC}:
@@ -1944,7 +2019,7 @@ class TerminalParallelEnv:
         # check; snapshot creation belongs exclusively to an attached observer.
         if self._step_observer is not None:
             self._step_observer(self)
-        return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, {
+        info = {
             "time": self.now, "queue_size": len(self.admission.queue.items), "outcomes": dict(self.ledger.outcomes),
             **({"team_reward": float(sum(r.total for r in rewards.values())+sum(team_reward_components.values())),
                 "team_reward_components": team_reward_components} if self.config.low_level_queue_cost_enabled else {}),
@@ -1955,6 +2030,9 @@ class TerminalParallelEnv:
             "telemetry": dict(self.telemetry), "conflict_events": list(self.conflict_events),
             "energy_outcomes": list(self.energy_outcomes),
         }
+        if dispatch_fields:
+            info.update(dispatch_fields)
+        return observation, {str(uid): r.total for uid, r in rewards.items()}, {str(uid): uid not in self.active for uid in previous}, {str(uid): self.now >= self.config.max_simulation_seconds for uid in previous}, info
 
     def run_rule_only(self, max_steps: int | None = None) -> OutcomeLedger:
         for _ in range(max_steps or int(self.config.max_simulation_seconds / self.config.dt)):

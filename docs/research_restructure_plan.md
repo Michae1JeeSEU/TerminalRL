@@ -69,9 +69,17 @@ shield 结果。若 actual order 与 requested/selected order 不同，保留两
 ### 3.1 有界 candidate dispatch policies
 
 参考搜索只覆盖小规模闭合场景 N ∈ {3,4,5,6}。每个 N 最多登记 24 个 priority
-permutations；serial 与 all-release variants 的总数上限为 48。候选可以包含优先级
+permutations；serial 与 all-release variants 的硬上限为每个 N 共 48。Protocol V2 的首批实际登记
+每个 N 的 6 个 priority permutations：在完整 n! lexicographic 排列索引中等距选取 6 个
+（N=3 覆盖全部 6 个），若初始 energy-slack order 不在其中，则替换最后一个。每个排列
+各运行 all-release 与 serial-release，因此每个 N 实际 12 个候选，N=3..6 合计 48 个；
+24 permutations / 48 candidates per N 仍是硬上限，不代表本批实际登记数。候选可以包含优先级
 排列和 wait/serial 变体，但每个候选都必须通过完整 native simulator、原生轨迹生成、
 SafetyFilter、LZ service 和 energy ledger。
+
+Protocol V2 在首个 full pilot / reference rollout 前登记：revision 原因为先形成有界机制与
+reference 证据，并控制首批成本；仅使用 dense 2-tick smoke 的运行时间作为性能输入，
+未使用 full-rollout outcome 数据选择候选。此范围不构成 exhaustive optimum。
 
 该 small-N reference 使用当前 physics 与 task-neutral service 语义；N=3,4,5,6 均在
 t=0 warm-start，初始 SOC 固定为 0.8，不提供尚未到达的未来未知 demand。三场景 full
@@ -83,7 +91,13 @@ failed 或 unresolved。候选选择后保存 whole-cycle tape，并用独立的
 
 ### 3.2 证据边界
 
-本批次只形成 bounded joint completion witness：完整请求分母、normal/emergency/failed/
+完整 resolved rollout 与 joint completion witness 分开标注。仍在有效、完整 resolved
+rollout 中按 F/D/U、E、wait、makespan、energy 的顺序选取候选；只有 N+E 等于完整请求
+分母，且 F=D=U=not_yet_requested=0，并经 independent replay MATCH whole-cycle 后，
+才标注 joint_completion_witness；进一步 E=0 才标注 normal_completion_witness。
+有 failure/diversion 的完整 rollout 保留为 replayed resolved rollout，不使用 witness 名称。
+
+本批次记录 bounded rollout 及满足上述条件的 joint completion witness：完整请求分母、normal/emergency/failed/
 diverted/unresolved、full-cycle wait、all-request wait、native safety、landing reserve、
 committed/reservation 记录和实际执行轨迹。候选的“最好”只表示登记集合中的比较结果。
 
@@ -145,8 +159,10 @@ time 三者中先到者。环境自然终止时照常记录真实终态；若任
    protection、energy/slack、N/E/F/D/U ledger 和 serialization；
 2. 三个场景与所有 controller 的 2-tick smoke，核对输入、字段、索引、hash、序列化和
    replay 输出；
-3. CPU-parallel full pilot，按 scene/controller 分开运行；
-4. N=3..6 bounded candidate search 与独立 whole-cycle tape replay；
+3. CPU-parallel full pilot，按 scene/controller 分开运行；完成 smoke 后，9 个 pilot arms
+   与第 4 项独立 reference candidates 允许并发，pilot 使用 9 个 worker；
+4. N=3..6 bounded candidate search（首批合计 48 个 rollouts）与独立 whole-cycle tape replay；
+   与 pilot 并发时 reference 使用 15 个 worker，总并发上限 24，禁止 nested pools；
 5. 逐 scene/controller 汇总 native safety、landing reserve、total wait、all-request wait、
    planning cost、实际 order、N/E/F/D/U 和 censor/unknown 计数。
 

@@ -11,6 +11,63 @@
 > 不取消 committed plan。第一批只做 development pilot，Q 保持隔离、`PPO_ALLOWED=false`；
 > 当前阶段授权仍由 [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定。
 
+## 2026-10-11 到达调度 API 与 development runner
+
+`SimConfig(release_arbitration_mode="external_dispatch_v1")` 显式启用外部放行顺序，
+并要求 `rule_flow_coordination_enabled=False`；默认与其他既有仲裁模式保持原行为。
+接口为 `env.step(actions, proposal_shortlists=None, *, release_order=None)`。
+外部模式必须提供当前 **step 前全部 active UID 的完整整数排列**，包括未请求 RELEASE 的
+UAV；重复、缺失、未知 UID、字符串、浮点数和 bool 均在任何环境状态修改前拒绝。
+非外部模式不接受 `release_order`。同 tick 新入场的 UID 按整数升序追加至仍 active 的
+requested order 后，不改写原 requested order，也不跳过原生资源与安全检查。
+
+外部模式的 info 与 runtime trace 分别记录 `dispatch_order_requested`（调用方请求）、
+`dispatch_order`（本 tick 实际处理顺序）和 `normal_approved_releases`（正常放行获批
+子序列）；处理过不代表已获批或执行。committed plan、headway、scheduler reservation、
+pad/LZ、SafetyFilter、PredictiveSafetyShield 和 emergency takeover 仍由原生环境管理。
+
+`terminal_marl.core.arrival_dispatch` 提供：
+
+- `nominal_requests(env, release_ids=None)` 返回 actions/shortlists。保持既有 collector 的
+  nominal K3：无 committed plan、ring_role 非空且 retry 已到时请求 `[1,0,0]`，
+  shortlist 为 `[1,0,0]`、`[1,-1,0]`、`[1,1,0]`；其余显式 WAIT。
+- `normal_route_budget(env, uav)` 使用 detached 当前状态、原生 TrajectoryGenerator 与
+  EnergyModel 估计剩余正常切环、兼容 pad final、pad ETA 等待、landing reserve 和既有
+  margin；不调用 emergency shortcut，不修改 live state。无可用路线时内部为 infinity、
+  diagnostics 为显式 `no_route`/JSON null。`energy_slack_order(env)` 每次重新估计，按
+  `(energy_remaining-required_energy)/waiting_power`、累计等待和 UID 确定顺序，非 holder
+  排在 holder 后。该估计不构成安全证书。
+- `ArrivalDispatcher(controller="energy_slack" | "rolling_reorder", lookahead_steps=4,
+  max_orders=4, replan_interval=10, planning_wall_seconds=60).decide(env)` 返回
+  `DispatchDecision(order, actions, shortlists, diagnostics)`。两控制器保持同一 nominal K3，
+  只改变 order。budget/order 可缓存至 10 ticks，或 active/ring/committed identity、
+  pad 状态/owner/release ETA、scheduler reservation 等事件变化时刷新；记录 cache age、
+  refresh reason、native query/rollout 计数与完整 planning timing。
+
+rolling 每次最多评估 base 加局部相邻交换共 4 个 order，各使用独立 clone 的最多 4 个
+native steps；保留 observed queue 与 committed plans，隐藏未来 arrival schedule。
+无有效候选时回退 energy-slack；异常、超时和 native integrity/safety 失败显式记录，
+不保证完整 suffix 可行。60 s 是 native 调用之间检查的 cooperative 预算，不是可抢占
+或实时上界：本地 dense24_fixed 首次 decision 已观察到 67.110 s，含 budget 12.688 s；
+该计时不构成性能保证或 full-pilot 结果。
+
+公共入口为 `python -m terminal_marl.scripts.evaluate_arrival_restructure`。以下为服务器
+运行示例，`SOURCE_COMMIT` 必须先设为实际冻结 commit，output 使用尚不存在的新目录：
+
+```bash
+python -m terminal_marl.scripts.evaluate_arrival_restructure smoke --workers 9 --source-commit "$SOURCE_COMMIT" --output "$HOME/training_outputs/terminal/arrival_smoke"
+python -m terminal_marl.scripts.evaluate_arrival_restructure pilot --workers 9 --source-commit "$SOURCE_COMMIT" --output "$HOME/training_outputs/terminal/arrival_pilot"
+python -m terminal_marl.scripts.evaluate_arrival_restructure reference --workers 15 --source-commit "$SOURCE_COMMIT" --output "$HOME/training_outputs/terminal/arrival_reference"
+python -m terminal_marl.scripts.evaluate_arrival_restructure replay --source-commit "$SOURCE_COMMIT" --input "$HOME/training_outputs/terminal/arrival_pilot/flow6_mixed_energy_slack" --output "$HOME/training_outputs/terminal/arrival_replay"
+python -m terminal_marl.scripts.evaluate_arrival_restructure aggregate --source-commit "$SOURCE_COMMIT" --input "$HOME/training_outputs/terminal/arrival_pilot" "$HOME/training_outputs/terminal/arrival_reference" --output "$HOME/training_outputs/terminal/arrival_aggregate"
+```
+
+Protocol V2 实际登记 N=3..6 各 6 个 permutations × 2 variants，共 48 reference
+rollouts，另有三场景 × 三控制器共 9 pilot arms；pilot 9 与 reference 15 workers 可并发，
+总进程并发上限 24，禁止 nested pools。先通过 focused tests 与完整 smoke/replay matrix，
+再执行 full；每 arm 仍受 native time limit、2400 ticks、7200 s wall 的最先触及项约束，
+未闭合时为 CENSORED/unknown。所有输出均为 development，Q untouched、PPO_ALLOWED=false。
+
 ---
 
 ## 1. 开发栈与依赖
