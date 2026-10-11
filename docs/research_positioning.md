@@ -5,6 +5,14 @@
 > Phase B（departure-only）与 Phase C（arrival + departure integrated operations）仅作为后续研究路线，不进入当前代码实现、训练或正式实验。  
 > 本文档与 `requirements.md`、`design_spec.md`、`technical_spec.md`、`execution_plan.md` 共同构成当前唯一有效的主线说明；阅读入口与文档权威关系见 `README.md`，当前进度见 `CURRENT_STATUS.md`。历史“两环版本”“直接输出自由飞行动作版本”、日期型 handoff 和旧迁移指南不再作为实现依据。
 
+> **2026-10-11 研究重构 supersession**：当前论文证据顺序以
+> [research_restructure_plan.md](research_restructure_plan.md) 为准，首要研究对象是
+> energy/resource-constrained executable coordinated arrivals。先建立传统可执行联合参考，
+> 再按 measured value 选择 IL/RL；可靠 traditional lower layer 可以直接支撑 static/dynamic
+> geometry 研究，不要求低层 RL 成功。本文既有 dynamic-airspace、shared-intent 和 HRL
+> 语义保留为系统机制与后续可选方法，不把待运行学习结果写成当前贡献；第一批为 IN_PROGRESS，
+> 尚无结果，Q 保持隔离且 `PPO_ALLOWED=false`。
+
 ## 0.1 本轮研究范围与文档状态（2026-09-28）
 
 当前主线聚焦 **dynamic terminal airspace + multi-UAV landing-flow coordination +

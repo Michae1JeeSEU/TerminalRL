@@ -59,17 +59,19 @@ Dynamic terminal airspace reconfiguration
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为唯一滚动进度入口。当前按顺序执行：
+研究排序、第一批 protocol、seed、预算和证据边界以
+[docs/research_restructure_plan.md](docs/research_restructure_plan.md) 为准；阶段授权仍以
+[docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为准。当前第一批为 IN_PROGRESS，尚无结果：
 
 ```text
-1. 诊断 I0-R3 的场景可达性、完整-cycle 停止规则与 88D radius gate 失配
-2. 若需新一轮数据修复，先预注册 fresh I0 protocol、seeds、上限和 hard gates
-3. fresh I0 repair 全 gate PASS
-4. 预注册 I1 Qualification Protocol V2 并冻结 untouched Q2
-5. fresh multi-seed V4.2 I1；只评估 Q2 一次
-6. I2 Safe DAgger → student-only imitation qualification
-7. PPO admission review；未通过前 PPO_ALLOWED=false
-8. static-geometry qualification 后才进入 A6 high-level dynamic airspace
+1. 维持 task-neutral mission/service、SOC、原生轨迹、安全、reservation、Q 隔离和 PPO_ALLOWED=false
+2. 完成 external_dispatch_v1 opt-in 与 legacy arbitration 的 order provenance、K=3 和 committed-slot 检查
+3. focused tests 与三个场景/控制器的 2-tick smoke；先核对输入、索引、字段、hash、序列化和 replay
+4. 按冻结 development seeds 运行 flow6_mixed、dense24_fixed、dense24_mixed 的 bounded full pilot
+5. 运行 N=3–6 bounded candidate dispatch search 与独立 whole-cycle tape replay
+6. 只依据 native safety、landing reserve、N/E/F/D/U、total/all-request wait 和含 native checks 的 planning cost 判断测量增量
+7. measured-value gate 后再决定传统 lower layer、IL/DAgger 或 bounded RL；低层 RL 成功不是静态几何研究前置
+8. reliable traditional lower layer 下先做 static geometry causal comparison，再考虑 A6 dynamic geometry 与硬件
 ```
 
 ## 本地-服务器同步准则

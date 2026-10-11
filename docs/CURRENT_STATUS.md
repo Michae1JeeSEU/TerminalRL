@@ -1,5 +1,13 @@
 # 项目当前状态
 
+## 2026-10-11 研究重构与第一批 bounded reference pilot（IN_PROGRESS；尚无结果）
+
+- 当前研究排序见 [research_restructure_plan.md](research_restructure_plan.md)：先冻结可执行的传统联合到达参考，再按测量增量决定 IL/RL，并在可靠 traditional lower layer 下进行 static geometry 研究；低层 RL 成功不是进入几何研究的前置条件。
+- 第一批保持 task-neutral mission/service、SOC、原生 canonical trajectory、SafetyFilter/SafetyShield、K=3、pad/LZ、emergency takeover、Q 隔离和 `PPO_ALLOWED=false`。legacy arbitration 与 opt-in `external_dispatch_v1` 只比较 release-order authority，并记录 requested/selected/approved/actual order；不得取消 committed flight 或绕过 scheduler slot、安全和 reservation。
+- 首批场景固定为 `flow6_mixed`、`dense24_fixed`、`dense24_mixed`；full bound 为每 scene/controller `2400 ticks / 7200 s`。development seeds 为 smoke `896091–896093`、full `896101–896103`、N=3–6 candidate search `896113–896116`；所有 seeds 永远不作为 Q。
+- 第一批执行顺序为 focused tests → 三场景/控制器 2-tick smoke → CPU-parallel full pilot → N=3–6 bounded candidate search 与 independent whole-cycle replay。预算耗尽记为 `unknown/censored`，不得重标为 failure 或 PASS；当前没有结果、qualification、superiority 或 PPO admission 结论。
+- 冻结记录：原 checkout `D:/7_codespace/terminal`、分支 `codex/v4-2-v2-1-formal-i1`、HEAD `99c4ffb5af5c106a1aefedb99dc1fe72ed884c2b`、tag `codex/frozen-pre-restructure-20261011`，其 36 个 `.tmp` tracked deletions 保持不动。当前文档 worktree 为 `D:/7_codespace/terminal/.worktrees/arrival-restructure`，分支 `codex/arrival-restructure`，初始 HEAD 同上；源码只在该本地 worktree 修改，服务器同步目标为 `~/projects/terminal/.worktrees/arrival-restructure`，运行输出写入 `$HOME/training_outputs/terminal`。
+
 ## 2026-10-10 P3 blocker-ranking controlled CV（COMPLETE；source frozen；newly_run）
 
 - **终态与进程：** `/home/user/training_outputs/terminal/p3_neighbor_blocker_ranking_20261010/nine_cycle` 在终态核验 UTC `2026-10-10T04:24:49Z` 为 `COMPLETE/error=null`、`exit=0`；9/9 folds 均达到固定 marks `[0,100,500,1000,2000,5000]`，所有父子进程均已退出且没有匹配的训练 argv 进程。各折记录的 `elapsed_seconds` 范围为 `314.980–795.877s`，均低于每折 `1200s` 上限；该字段是训练内部计时，不等同于 OS 进程墙钟耗时。

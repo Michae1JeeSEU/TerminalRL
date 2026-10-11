@@ -14,6 +14,14 @@
 > `STANDARD`，Observation V2.1 保持 88D。能量应急 takeover 始终属于执行/安全层，与后续
 > 独立 emergency mission 鲁棒性场景分开。
 
+> **2026-10-11 研究重构指针**：研究排序、第一批 legacy arbitration / opt-in
+> `external_dispatch_v1` release-order authority、bounded traditional joint reference 和
+> local reorder 见 [research_restructure_plan.md](research_restructure_plan.md)。它们复用本架构
+> 的 action、K=3、pad/LZ、scheduler、canonical trajectory、SafetyFilter、energy 和 emergency
+> 语义，不取消 committed flight 或放宽安全边界。第一批先验证可靠 traditional lower layer；
+> IL/RL 是 measured-value gate 后的可选路径，当前状态与授权仍以 [CURRENT_STATUS.md](CURRENT_STATUS.md)
+> 为准。
+
 ---
 
 ## 1. 总体架构

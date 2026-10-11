@@ -4,6 +4,13 @@
 > **用途**：用于 Codex 直接修改 `terminal_marl/`。V4.2/88D/mission/base 字段的接口兼容语义
 > 继续保留；旧 checkpoint、旧两环 schema 和旧 4 维 intention 不能直接作为新训练入口。
 
+> **2026-10-11 研究重构指针**：当前 docs-first 顺序与第一批 protocol 见
+> [research_restructure_plan.md](research_restructure_plan.md)。`external_dispatch_v1` 是
+> opt-in release-order authority，复用现有 action/K=3、scheduler slots、pad/LZ、canonical
+> trajectory、SafetyFilter、energy 和 emergency interfaces；它不新增 direct-flight action、
+> 不取消 committed plan。第一批只做 development pilot，Q 保持隔离、`PPO_ALLOWED=false`；
+> 当前阶段授权仍由 [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定。
+
 ---
 
 ## 1. 开发栈与依赖

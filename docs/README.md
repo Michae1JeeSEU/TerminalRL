@@ -14,6 +14,12 @@ Landing-only terminal-area operations**：动态三环终端空域构型、多 U
 [CURRENT_STATUS](CURRENT_STATUS.md) 为准；旧 source/candidate 与
 formal/heldout 记录均按历史协议解释，不能据此宣称稳定收益或自动放行 PPO。
 
+> **2026-10-11 研究重构入口**：当前研究顺序、第一批 bounded traditional joint reference、
+> external_dispatch_v1、local reorder、seed/预算和 IL/RL measured-value gate 见
+> [research_restructure_plan.md](research_restructure_plan.md)。该计划取代旧的“先取得低层 RL
+> 成功再进入其他研究”排序；本页的任务语义、schema、安全和历史证据边界继续有效。第一批
+> 标记为 IN_PROGRESS，尚无结果；阶段授权仍由 [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定。
+
 ## 2026-09-24 历史集成摘要（不定义当前课程）
 
 历史 opt-in `fixed_rule_dense30_coordinated` 使用 downstream/deadline landing-flow coordinator；
@@ -38,9 +44,10 @@ qualification 后才进入 A6 高层动态空域。
 ### 只需快速接手项目
 
 1. [研究定位](research_positioning.md)：研究问题、创新边界与论文主线；
-2. [当前状态](CURRENT_STATUS.md)：已冻结 schema、已完成证据、当前阻塞和下一步；
-3. [设计规范](design_spec.md)：系统模块、数据流与职责边界；
-4. [低层策略专项规范](reference/low_level_policy.md)：当前 V4.2 / Observation V2.1 语义。
+2. [研究重构计划](research_restructure_plan.md)：当前证据顺序、第一批 pilot 和后续学习/几何路线；
+3. [当前状态](CURRENT_STATUS.md)：已冻结 schema、已完成证据、当前阻塞和下一步；
+4. [设计规范](design_spec.md)：系统模块、数据流与职责边界；
+5. [低层策略专项规范](reference/low_level_policy.md)：当前 V4.2 / Observation V2.1 语义。
 
 ### 需要修改代码或实验
 
@@ -55,6 +62,7 @@ qualification 后才进入 A6 高层动态空域。
 | 文档 | 职责 | 不负责 |
 |---|---|---|
 | [research_positioning.md](research_positioning.md) | 研究范围、gap、贡献、RQ、论文叙事 | 实现进度 |
+| [research_restructure_plan.md](research_restructure_plan.md) | 当前研究排序、bounded reference、pilot 与后续 measured-value gate | 当前完成度与 qualification 判定 |
 | [requirements.md](requirements.md) | 不可变业务语义与系统需求 | 文件级实现 |
 | [design_spec.md](design_spec.md) | 架构、模块职责、核心数据流 | 历史迁移 |
 | [technical_spec.md](technical_spec.md) | 当前 schema、API、配置、日志、测试 | 实验结果判定 |

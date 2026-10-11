@@ -4,6 +4,13 @@
 > **文档职责**：定义系统必须具备的能力与正式场景不可变语义。  
 > 实现细节见 `technical_spec.md`，模块组织见 `design_spec.md`，开发顺序见 `execution_plan.md`。
 
+> **2026-10-11 研究重构指针**：当前研究顺序与第一批 bounded traditional joint reference、
+> `external_dispatch_v1`、energy-slack/local reorder、pilot seed/预算和 IL/RL measured-value
+> gate 见 [research_restructure_plan.md](research_restructure_plan.md)。该计划 supersede 旧的
+> 低层 RL 优先排序，但不改变本文件的 task-neutral mission/service、SOC、canonical trajectory、
+> reservation、SafetyFilter、emergency 和 outcome-ledger 语义；当前授权仍见
+> [CURRENT_STATUS.md](CURRENT_STATUS.md)，第一批为 IN_PROGRESS，尚无结果。
+
 ---
 
 ## 1. 总体需求

@@ -4,6 +4,14 @@
 > Phase B（departure-only）和 Phase C（arrival + departure）只保留在研究路线中，不进入本轮 Codex 修改。
 > 本执行计划按“先修正环境语义，再训练低层，再训练高层”的依赖顺序推进。
 
+> **2026-10-11 研究排序 supersession**：当前研究不再要求先取得低层 RL 成功。以
+> [research_restructure_plan.md](research_restructure_plan.md) 为当前顺序入口，先完成
+> legacy arbitration / opt-in `external_dispatch_v1` 的可执行 bounded traditional joint
+> reference、energy-slack/local reorder、whole-cycle replay 和 joint completion witness，
+> 再按 measured-value gate 决定 IL/RL，并在 reliable traditional lower layer 下进行 static
+> geometry causal comparison。下方旧的低层学习优先段落保留为历史协议与接口背景；它们不能
+> 覆盖当前计划、`CURRENT_STATUS.md` 的授权边界、Q 隔离或 `PPO_ALLOWED=false`。
+
 ## 0.1 2026-09-28 当前课程与执行顺序
 
 本轮主线为 dynamic terminal airspace、multi-UAV landing flow 和 safety-filtered executable
