@@ -68,6 +68,35 @@ rollouts，另有三场景 × 三控制器共 9 pilot arms；pilot 9 与 referen
 再执行 full；每 arm 仍受 native time limit、2400 ticks、7200 s wall 的最先触及项约束，
 未闭合时为 CENSORED/unknown。所有输出均为 development，Q untouched、PPO_ALLOWED=false。
 
+### 2026-10-11 第二批 closed-loop validation API/CLI addendum
+
+`downstream_soc_external`、`energy_slack` 与 `rolling_reorder` 均使用同一
+`external_dispatch_v1` authority 和 prestep active-UAV boundary。new rule 的顺序键为
+`(ring_rank, SOC, -dynamic_priority, -total_wait, UID)`，其中 `ring_rank` 为
+`inner=0, middle=1, outer=2, other=3`；
+它不使用 energy budget 或 rollout，`nominal_requests` 仍返回 K3。新的 admitted UID 由既有
+interface 追加；legacy 在 admission 后计算，第二批不作 legacy stepwise equivalence assertion。
+Rolling 的冻结搜索参数仍为 `lookahead=4`、`max_orders=4`、`replan_interval=10`、
+`planning_wall_seconds=60`，其中 planning 上限为 cooperative 检查，不是 hard realtime 上界。
+
+第二批入口为 `python -m terminal_marl.scripts.evaluate_arrival_closed_loop_validation`，
+`--source-commit` 必须是实际 source 的完整 40 位十六进制 SHA；该值由 launcher/header 在
+启动时冻结并记录。Smoke 和 suite 的服务器命令为：
+
+```bash
+python -m terminal_marl.scripts.evaluate_arrival_closed_loop_validation smoke --workers 3 --source-commit "$SOURCE_COMMIT" --output "$HOME/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1/smoke"
+python -m terminal_marl.scripts.evaluate_arrival_closed_loop_validation suite --workers 18 --source-commit "$SOURCE_COMMIT" --output "$HOME/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1/suite"
+```
+
+Smoke 固定三个 new-rule arms（seeds `896191/896192/896193`）和 `2 ticks`，保留
+`CENSORED/tick_cap`，要求三次独立 replay `MATCH`、`matched_steps=2` 和 integrity 通过。
+Suite 固定 `18` arms：3 个 prior-seed bridge（`896101/896102/896103`，仅 descriptive
+old-legacy comparison）加 15 个 fresh arms，即三个 controller 在五个 common-seed cohorts
+上运行：`flow6_mixed/896201`、`dense24_fixed/896211/896212`、
+`dense24_mixed/896221/896222`。每 arm 上限为 `2400 ticks / 7200 s wall` 加 unchanged
+native cap，最多 `18` workers、无 nested pool、BLAS threads=`1`。旧的
+`evaluate_arrival_restructure` CLI 保持不变。
+
 ---
 
 ## 1. 开发栈与依赖

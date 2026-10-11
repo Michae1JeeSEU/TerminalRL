@@ -59,19 +59,18 @@ Dynamic terminal airspace reconfiguration
 
 ## 近期优先任务
 
-研究排序、第一批 protocol、seed、预算和证据边界以
+研究排序、两批 protocol、seed、预算和证据边界以
 [docs/research_restructure_plan.md](docs/research_restructure_plan.md) 为准；阶段授权仍以
-[docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为准。当前第一批为 IN_PROGRESS，尚无结果：
+[docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为准。第一批已完成，第二批
+`arrival_closed_loop_validation_v1` 仅完成预注册，当前为 `PREREGISTERED/NOT_STARTED`：
 
 ```text
-1. 维持 task-neutral mission/service、SOC、原生轨迹、安全、reservation、Q 隔离和 PPO_ALLOWED=false
-2. 完成 external_dispatch_v1 opt-in 与 legacy arbitration 的 order provenance、K=3 和 committed-slot 检查
-3. focused tests 与三个场景/控制器的 2-tick smoke；先核对输入、索引、字段、hash、序列化和 replay
-4. 按冻结 development seeds 运行 flow6_mixed、dense24_fixed、dense24_mixed 的 bounded full pilot
-5. 运行 N=3–6 bounded candidate dispatch search 与独立 whole-cycle tape replay
-6. 只依据 native safety、landing reserve、N/E/F/D/U、total/all-request wait 和含 native checks 的 planning cost 判断测量增量
-7. measured-value gate 后再决定传统 lower layer、IL/DAgger 或 bounded RL；低层 RL 成功不是静态几何研究前置
-8. reliable traditional lower layer 下先做 static geometry causal comparison，再考虑 A6 dynamic geometry 与硬件
+1. 保持既有 geometry/physics/safety/K3/service、external authority、Q 隔离和 PPO_ALLOWED=false
+2. 先完成第二批 smoke：flow6_mixed/896191、dense24_fixed/896192、dense24_mixed/896193；2 ticks、CENSORED tickcap、3 次独立 replay MATCH2 与 integrity
+3. 按预注册 suite 运行 3 个 prior-seed bridge 加 15 个 fresh arms；只报告预注册的 N/E/F/D/U、arrival integrity、安全、等待、makespan、energy、SOC、planning/native/wall 与 order-difference 指标
+4. downstream_soc_external 仅按 prestep active UAV 的 inner/mid/outer/other、SOC、dynamic priority、wait、UID 顺序排序；不启用 energy budget 或 rollout，nominal_requests 保持 K3
+5. 保持 lookahead=4、max_orders=4、replan=10、planning=60s cooperative 上限；不增加 seed、替换 arm、调参或事后 tuning，失败/CENSORED 保留为 unknown
+6. validation 完成后才依据同 authority 的 measured-value gate 决定后续传统、IL/DAgger 或 bounded RL；本批不做 RL/IL/geometry 实验
 ```
 
 ## 本地-服务器同步准则
@@ -80,8 +79,9 @@ Dynamic terminal airspace reconfiguration
    `~/projects/terminal` 实时同步。代码、脚本和文档修改只应在本地完成。
 2. 不需要、也不应手动把本地文件打包上传到服务器再解压；除非用户明确要求，
    不使用 `scp`、`rsync`、手工 zip/tar 传输源码来更新服务器项目目录。
-3. Git 操作只在本地仓库执行：检查、暂存、提交和推送均以本地
-   `D:\7_codespace\terminal` 为准。服务器侧仅作为运行环境，不承担源码提交职责。
+3. Git 操作只在本地仓库执行：当前授权的重构分支以本地嵌套 worktree
+   `D:\7_codespace\terminal\.worktrees\arrival-restructure` 为 Git 路径；原始冻结 checkout
+   保持不动。服务器侧仅作为运行环境，不承担源码提交职责。
 4. 服务器只通过 `ssh lab-server` 执行运行、测试、评估、查看日志和读取结果等命令。
 5. 服务器输出统一写入 `$HOME/training_outputs/terminal`；该目录会通过 Syncthing
    同步到本地 `D:\7_codespace\training_outputs\terminal`。不要把 runs、训练输出或评估
@@ -115,7 +115,7 @@ find terminal_marl -maxdepth 3 -type f | sort
 3. 使用小而清晰的提交，提交信息应说明改动目的；不得把无关改动混入同一提交。
 4. 禁止提交密码、令牌、私钥、个人凭据、大型临时产物或本地环境文件；必要时先更新 `.gitignore`。
 5. 不得覆盖或丢弃用户已有的未提交改动。暂存时应显式指定本轮文件，避免直接使用 `git add .`。
-6. 每次在本地完成一轮文件修改并通过与改动范围匹配的验证后，必须将本轮相关改动提交并推送到远程 GitHub 仓库 `https://github.com/Michae1JeeSEU/TerminalRL.git` 的当前分支上游（当前为 `origin/main`）。此项授权已由用户持续授予，后续无需每轮重新询问；不得只停留在本地修改或提交状态。若认证、网络或上游分支配置导致推送失败，必须如实报告失败及原因，不得声称已完成推送。
+6. 每次在本地完成一轮文件修改并通过与改动范围匹配的验证后，必须将本轮相关改动提交并推送到远程 GitHub 仓库 `https://github.com/Michae1JeeSEU/TerminalRL.git` 的当前分支上游（当前重构分支为 `origin/codex/arrival-restructure`）。此项授权已由用户持续授予，后续无需每轮重新询问；不得只停留在本地修改或提交状态。若认证、网络或上游分支配置导致推送失败，必须如实报告失败及原因，不得声称已完成推送。
 7. 未经用户明确授权，不得强制推送、改写公共提交历史、删除远程分支或执行其他破坏性 Git 操作。
 8. 最终交付时必须报告：修改文件、测试结果、提交哈希，以及是否已成功推送。
 

@@ -1,5 +1,15 @@
 # 项目当前状态
 
+## 2026-10-11 第二批 closed-loop validation（PREREGISTERED/NOT_STARTED；M4 IN_PROGRESS）
+
+- 第一批已完成，源码基线为 `59e3f24652c7480087b8110a832105bbd010bea1`，文档提交为 `84a2f07e399626cf3214e334556aa0a4caca2ad5`。第二批 `arrival_closed_loop_validation_v1` 只完成预注册，尚未运行任何 full seed；协议记录见 [closed-loop validation protocol](evidence/arrival_restructure/closed_loop_validation_20261011.md)。
+- 三个既有场景族 `flow6_mixed`、`dense24_fixed`、`dense24_mixed` 使用 fresh demand/SOC realizations；geometry、physics、safety、K3 和 service 不变。`downstream_soc_external`、`energy_slack`、`rolling_reorder` 共用 `external_dispatch_v1` authority；所有 external controller 共用 prestep boundary，同 tick 新 admitted UID 由既有 interface 追加。legacy 在 admission 后计算，因此不登记 legacy stepwise equivalence assertion。
+- 新 rule（`downstream_soc_external`）按 prestep active UAV 的 inner/mid/outer/other、SOC ascending、dynamic priority descending、wait descending、UID 排序；不使用 energy budget 或 rollout，`nominal_requests` 保持 K3。rolling search 冻结为 lookahead `4`、max orders `4`、replan `10`、planning `60 s` cooperative（不是 hard realtime）。
+- Smoke 仅 3 个 new-rule arms：`flow6_mixed/896191`、`dense24_fixed/896192`、`dense24_mixed/896193`；每 arm `2 ticks`，保留 `CENSORED/tick_cap`，要求 `3` 次独立 replay 均 `MATCH`、`matched_steps=2` 且 integrity 通过。Suite 共 `18` arms：3 个 prior-seed bridge（`896101/896102/896103`，只作 descriptive old-legacy comparison，不作 independent evidence）加 15 个 fresh arms（3 controllers × 5 cohorts：`flow6_mixed/896201`、`dense24_fixed/896211/896212`、`dense24_mixed/896221/896222`）。
+- 每 arm 上限为 `2400 ticks / 7200 s wall` 加 unchanged native cap；suite 最多 `18` workers，禁止 nested pool，BLAS threads=`1`。不新增 seed、replacement 或 tuning；失败与 `CENSORED` 保留为 unknown。全部 seeds 仍为 development，Q 不消费，`PPO_ALLOWED=false`；本批不做 RL/IL/geometry 实验。
+- 评估逐 arm 报告 normal/emergency/fail/divert/unrequested、arrival integrity、collisions/NMAC/hard separation/hash mismatch、overall-requests mean/p90/max wait、makespan、energy、min landing SOC、planning/native/wall timing 和 order differences。五个 fresh paired cohorts 使用各 controller 的 common seed；只作 per-seed ranges/directions 的描述，不做 statistical significance 或 aircraft-independent-n 声明。`COMPLETE`/`MATCH` 不认证 global optimality、generic feasibility 或 realtime performance。
+- 服务器输出根为 `/home/user/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1/{smoke,suite}`，本地同步根为 `D:/7_codespace/training_outputs/terminal/arrival_closed_loop_validation_20261011_v1/{smoke,suite}`。实际运行的 `source_commit` 必须由 launcher/header 在本次预注册提交后记录完整 40 位 SHA；此处不预填 self-SHA。定向 preflight 已核验 `77 passed / 10.51 s`；validation full suite 尚未运行。
+
 ## 2026-10-11 研究重构与第一批 bounded reference pilot（COMPLETED；9/9 pilot、48/48 reference 完成，M4+未完成）
 
 - 当前研究排序见 [research_restructure_plan.md](research_restructure_plan.md)：先冻结可执行的传统联合到达参考，再按测量增量决定 IL/RL，并在可靠 traditional lower layer 下进行 static geometry 研究；低层 RL 成功不是进入几何研究的前置条件。

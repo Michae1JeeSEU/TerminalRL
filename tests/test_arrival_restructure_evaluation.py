@@ -66,6 +66,11 @@ def test_native_two_ticks_and_order_tape_replay(tmp_path):
     assert result['metrics']['not_yet_requested']==6
     assert result['metrics']['wait_measurement']=='accrued_partial'
     assert result['metrics']['mean_wait_over_requested'] is None
+    from terminal_marl.configs.arrival_restructure import protocol_snapshot
+    old_header=protocol_snapshot(mode=spec['mode'],scenario=spec['scenario'],seed=spec['seed'],
+        controller=spec['controller'],authority=EXTERNAL_AUTHORITY,source_commit=spec['source_commit'],
+        smoke=True,max_ticks=2)
+    assert all(result['protocol'][key]==value for key,value in old_header.items())
     replay=replay_run(tmp_path/'run',tmp_path/'replay')
     assert replay['status']=='MATCH',replay
     assert replay['matched_steps']==2 and not replay['whole_cycle']
@@ -82,6 +87,48 @@ def test_legacy_course_config_is_preserved():
     from terminal_marl.configs.p3_v25_course import build_config as course
     for scene in ('flow6_mixed','dense24_fixed','dense24_mixed'):
         assert build_config(scene)==course(scene)
+
+
+def test_external_downstream_run_and_phase2_metadata(tmp_path):
+    spec=dict(mode='phase2',scenario='dense24_fixed',seed=896113,
+              controller='downstream_soc_external',reference_n=3,max_ticks=1,
+              source_commit='unit-test',output=str(tmp_path/'external_rule'),
+              protocol_version='phase2_test',comparison_boundary='same external authority',
+              registration={'seeds':[896113]},profile='phase2_profile',
+              concurrency_budget={'total_max':3,'nested_pools':False},
+              protocol_revision_reason='same authority validation',
+              control_authority='invalid_override',q_consumed=True,ppo_allowed=True)
+    result=run_arm(spec)
+    assert result['status']=='CENSORED',result.get('stop_reason')
+    assert result['protocol']['control_authority']==EXTERNAL_AUTHORITY
+    for key in ('profile','protocol_version','comparison_boundary','registration',
+                'concurrency_budget','protocol_revision_reason'):
+        assert result['protocol'][key]==spec[key]
+    assert not any(key.startswith(('reference_registered_','max_reference_')) for key in result['protocol'])
+    assert 'reference_permutation_selection' not in result['protocol']
+    assert result['protocol']['seed']==896113
+    assert result['protocol']['source_commit']=='unit-test'
+    assert result['protocol']['q_consumed'] is False
+    assert result['protocol']['ppo_allowed'] is False
+    entry=json.loads((tmp_path/'external_rule'/'steps.jsonl').read_text())
+    assert set(entry['release_order'])=={0,1,2}
+    assert entry['diagnostics']['controller']=='downstream_soc_external'
+    assert entry['diagnostics']['ordering_state']=='pre_step_active'
+    assert entry['diagnostics']['same_tick_admissions']=='appended_in_uid_order_by_external_interface'
+    assert entry['diagnostics']['legacy_stepwise_equivalence'] is False
+    assert all(candidates==[[1.,0.,0.],[1.,-1.,0.],[1.,1.,0.]] for candidates in entry['shortlists'].values())
+    json.dumps(result,allow_nan=False)
+    assert replay_run(tmp_path/'external_rule',tmp_path/'external_replay')['status']=='MATCH'
+
+
+@pytest.mark.parametrize('controller,candidate', [
+    ('unknown',None), ('reference_static',None),
+    ('downstream_soc_external',{'order':[],'variant':'all_release'}),
+])
+def test_invalid_controller_never_falls_back_to_nominal(tmp_path,controller,candidate):
+    with pytest.raises(ValueError):
+        run_arm(dict(controller=controller,candidate=candidate,output=str(tmp_path/'invalid')))
+    assert not (tmp_path/'invalid').exists()
 
 
 def test_integrity_checks_reject_duplicate_living_and_unchecked_plan():

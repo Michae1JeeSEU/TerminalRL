@@ -24,7 +24,9 @@ from terminal_marl.configs.arrival_restructure import (
     PILOT_SCENARIOS, PILOT_SEEDS, REFERENCE_REGISTERED_PERMUTATIONS, REFERENCE_SEEDS, REFERENCE_SIZES, SMOKE_SEEDS,
     build_config, config_snapshot, protocol_snapshot,
 )
-from terminal_marl.core.arrival_dispatch import ArrivalDispatcher, energy_slack_order, nominal_requests
+from terminal_marl.core.arrival_dispatch import (
+    ArrivalDispatcher, downstream_soc_external_decision, energy_slack_order, nominal_requests,
+)
 from terminal_marl.core.safety_trace import SafetyTraceRecorder
 from terminal_marl.envs.parallel_env import TerminalParallelEnv
 
@@ -145,6 +147,13 @@ def state_record(env, rows):
 
 
 def run_arm(spec):
+    controller = spec['controller']
+    if controller not in (*CONTROLLERS, 'downstream_soc_external', 'reference_static'):
+        raise ValueError(f'unsupported arrival controller: {controller!r}')
+    if controller == 'reference_static' and not spec.get('candidate'):
+        raise ValueError('reference_static requires a candidate')
+    if spec.get('candidate') and controller != 'reference_static':
+        raise ValueError('candidate is only supported by reference_static')
     started = time.perf_counter()
     out = Path(spec['output']); out.mkdir(parents=True, exist_ok=False)
     authority = LEGACY_AUTHORITY if spec['controller'] == 'rule_nominal_k3' else EXTERNAL_AUTHORITY
@@ -155,6 +164,14 @@ def run_arm(spec):
     header.update(search_settings=SEARCH, candidate=spec.get('candidate'),
         comparison_boundary='legacy arbitration versus external ordering is a control-authority confound; no algorithm-superiority claim',
         nonfinite_values='null means undefined/nonfinite native field', spec=spec)
+    for key in ('profile', 'protocol_version', 'comparison_boundary', 'registration',
+                'concurrency_budget', 'protocol_revision_reason'):
+        if key in spec:
+            header[key] = spec[key]
+    if 'registration' in spec:
+        for key in tuple(header):
+            if key.startswith(('reference_registered_', 'max_reference_')) or key == 'reference_permutation_selection':
+                del header[key]
     write_json(out/'protocol.json',header)
     env = None; rows = {}; planning = native = 0.; ticks = 0; status='ERROR'; reason=None
     integrity_ok = True; hash_samples = 0; first_tick_seconds = None
@@ -180,6 +197,9 @@ def run_arm(spec):
                     if candidate['variant']=='serial_release':
                         eligible=[uid for uid in order if str(uid) in shortlists]
                         actions,shortlists=nominal_requests(env,eligible[:1])
+                elif controller == 'downstream_soc_external':
+                    decision=downstream_soc_external_decision(env)
+                    order,actions,shortlists,diagnostics=decision.order,decision.actions,decision.shortlists,decision.diagnostics
                 elif dispatcher:
                     decision=dispatcher.decide(env)
                     order,actions,shortlists,diagnostics=decision.order,decision.actions,decision.shortlists,decision.diagnostics

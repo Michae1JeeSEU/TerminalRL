@@ -22,6 +22,7 @@ from .config import RingRole
 from .energy import EnergyModel
 from .energy_reachability import _advance_ring_holder, _copy_state_at_ring, _future_ring_holder
 from .merge_scheduler import MergeReservation, MergeScheduler
+from .priority import PriorityEngine
 from .trajectory_generator import TrajectoryGenerator
 from .trajectory_time_parameterization import TrajectoryInfeasibleError
 from .uav import FlightPhase
@@ -128,6 +129,35 @@ def nominal_requests(
         if release:
             shortlists[key] = [_array(candidate) for candidate in NOMINAL_K3]
     return actions, shortlists
+
+
+def downstream_soc_external_decision(env: "TerminalParallelEnv") -> DispatchDecision:
+    """Recompute the native downstream/SOC rule on pre-step active state.
+
+    This uses the legacy tuple on the same state, but is not a claim of
+    stepwise equivalence: native admission occurs inside step, and external
+    dispatch appends new same-tick admissions in UID order.
+    """
+    rank = {RingRole.INNER: 0, RingRole.MIDDLE: 1, RingRole.OUTER: 2}
+    priority = PriorityEngine(env.config)
+    keys = {
+        uid: (rank.get(uav.ring_role, 3), float(uav.soc),
+              -float(priority.compute(uav, env.now)),
+              -float(uav.external_wait_time + uav.internal_wait_time), uid)
+        for uid, uav in _active_rows(env)
+    }
+    order = tuple(sorted(keys, key=keys.__getitem__))
+    actions, shortlists = nominal_requests(env)
+    return DispatchDecision(order, actions, shortlists, {
+        "controller": "downstream_soc_external",
+        "ordering_state": "pre_step_active",
+        "same_tick_admissions": "appended_in_uid_order_by_external_interface",
+        "legacy_stepwise_equivalence": False,
+        "ordering_keys": {str(uid): list(keys[uid]) for uid in order},
+        "native_budget_queries": 0,
+        "native_rollout_steps": 0,
+        "cache_used": False,
+    })
 
 
 def _reservation(uid: int, holder: Any, target: RingRole | str,
@@ -590,6 +620,7 @@ __all__ = [
     "ArrivalDispatcher",
     "DispatchDecision",
     "NOMINAL_K3",
+    "downstream_soc_external_decision",
     "energy_slack_order",
     "nominal_requests",
     "normal_route_budget",

@@ -19,8 +19,10 @@ formal/heldout 记录均按历史协议解释，不能据此宣称稳定收益�
 > [research_restructure_plan.md](research_restructure_plan.md)。该计划取代旧的“先取得低层 RL
 > 成功再进入其他研究”排序；本页的任务语义、schema、安全和历史证据边界继续有效。第一批已完成：
 > `9/9` pilot、`48/48` small-reference candidates；4 个选定 reference 通过完整重放。完整结果与
-> 三场景权衡见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)，当前进度与下一步见
-> [CURRENT_STATUS.md](CURRENT_STATUS.md)。M4 及以后尚未完成。
+> 三场景权衡见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)。M4 当前已进入
+> 第二批 `arrival_closed_loop_validation_v1` 预注册，协议见
+> [closed-loop validation](evidence/arrival_restructure/closed_loop_validation_20261011.md)，状态与授权见
+> [CURRENT_STATUS.md](CURRENT_STATUS.md)；尚未启动第二批 full validation。
 
 ## 2026-09-24 历史集成摘要（不定义当前课程）
 

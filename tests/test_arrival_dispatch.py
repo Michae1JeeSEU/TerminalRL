@@ -26,6 +26,58 @@ def make_env():
         action_schema_version='low_action_schema_v4_2_hierarchical'), seed=77)
 
 
+def test_downstream_external_matches_native_tuple_on_same_state_without_mutation(monkeypatch):
+    from terminal_marl.core.config import RingRole
+    env = make_env()
+    env.config.task_priority_enabled = True
+    template = deepcopy(env.active[0])
+    # Each adjacent pair exercises a distinct component of the tuple key.
+    cases = [
+        (RingRole.INNER, .8, 1, 0.),
+        (RingRole.MIDDLE, .6, 1, 0.),
+        (RingRole.OUTER, .6, 1, 0.),
+        (None, .6, 1, 0.),
+        (RingRole.INNER, .7, 1, 0.),
+        (RingRole.INNER, .7, 3, 0.),
+        (RingRole.INNER, .7, 3, 20.),
+        (RingRole.INNER, .7, 3, 20.),
+    ]
+    env.config.priority_alpha = 0.  # Isolate wait tie-breaking from priority.
+    env.active = {}
+    for uid, (role, soc, base, wait) in enumerate(cases):
+        uav = deepcopy(template)
+        uav.uid = uid; uav.ring_role = role
+        uav.energy_remaining = soc * uav.energy_capacity
+        uav.base_priority = base; uav.internal_wait_time = wait
+        uav.dynamic_priority = -999.
+        env.active[uid] = uav
+    env.active[6].committed_plan = SimpleNamespace(plan_id='committed')
+    before = pickle.dumps(env)
+    def forbidden(*args, **kwargs):
+        pytest.fail('pure rule must not query energy budgets or clone rollouts')
+    monkeypatch.setattr(dispatch, '_energy_rows', forbidden)
+    monkeypatch.setattr(dispatch, '_clone_for_planning', forbidden)
+    decision = dispatch.downstream_soc_external_decision(env)
+    assert decision.order == (6, 7, 5, 4, 0, 1, 2, 3)
+    assert set(decision.order) == set(env.active)
+    assert pickle.dumps(env) == before
+    native = deepcopy(env)
+    native.config.release_arbitration_mode = 'downstream_soc_priority'
+    for uav in native.active.values():
+        native.priority.update(uav, native.now)
+    assert decision.order == tuple(uid for uid, _ in native._release_processing_order())
+    # Same-state tuple equality does not equate pre/post-admission tick behavior.
+    assert decision.diagnostics['ordering_state'] == 'pre_step_active'
+    assert decision.diagnostics['legacy_stepwise_equivalence'] is False
+    actions, shortlists = dispatch.nominal_requests(env)
+    assert {k:v.tolist() for k,v in decision.actions.items()} == {k:v.tolist() for k,v in actions.items()}
+    assert {k:[v.tolist() for v in vs] for k,vs in decision.shortlists.items()} == {k:[v.tolist() for v in vs] for k,vs in shortlists.items()}
+    assert decision.actions['6'][0] == decision.actions['3'][0] == 0.
+    json.dumps(decision.diagnostics, allow_nan=False)
+    env.active[7].energy_remaining = .1 * template.energy_capacity
+    assert dispatch.downstream_soc_external_decision(env).order[0] == 7
+
+
 def test_normal_remaining_routes_change_equal_soc_urgency_without_live_mutation():
     env = make_env()
     before = pickle.dumps(env)

@@ -1,9 +1,11 @@
 # 研究重构计划：可执行协同到达优先
 
 > **版本与状态**：2026-10-11；第一批有界 rollout reference `48/48`、full pilot `9/9` 均已完成，
-> M1–M3 已完成，M4 及以后未完成。2-tick smoke 的 `9/9` replay 为 `MATCH`，但不是 full-cycle；
-> 4 个 selected reference 均通过 whole-cycle replay `MATCH`。本批所有 seeds 属 development，
-> Q untouched、`PPO_ALLOWED=false`；结果见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)。
+> M1–M3 已完成，M4 正在进行。第一批 2-tick smoke 的 `9/9` replay 为 `MATCH`，但不是
+> full-cycle；4 个 selected reference 均通过 whole-cycle replay `MATCH`。第二批
+> `arrival_closed_loop_validation_v1` 已预注册但尚未启动 full validation；所有 seeds 属
+> development，Q untouched、`PPO_ALLOWED=false`。结果与边界见 [第一批证据](evidence/arrival_restructure/first_batch_20261011.md)
+> 和 [第二批 protocol](evidence/arrival_restructure/closed_loop_validation_20261011.md)。
 >
 > **当前研究入口**：[docs/README.md](README.md)。当前阶段和授权边界仍由
 > [CURRENT_STATUS.md](CURRENT_STATUS.md) 决定；业务语义、模块职责和技术接口分别服从
@@ -171,6 +173,19 @@ time 三者中先到者。环境自然终止时照常记录真实终态；若任
 结论。启动前若发现 protocol、controller 或输出路径需要修订，先记录 revision，再重新跑
 focused tests 和 smoke；不消费 Q、不启动 PPO、不改写旧结果。
 
+## 5.1 第二批 closed-loop validation 预注册（M4 addendum）
+
+第二批 `arrival_closed_loop_validation_v1` 当前为 `PREREGISTERED/NOT_STARTED`，用于在同一
+`external_dispatch_v1` authority 下比较 `downstream_soc_external`、`energy_slack` 与
+`rolling_reorder` 的 closed-loop 行为。三个既有场景族使用 fresh demand/SOC realizations，
+geometry、physics、safety、K3 和 service 不变；new rule 的 prestep ordering、bridge/fresh
+cohorts、seed、smoke/suite arms、预算、指标、输出和旧 trace 的描述性边界均冻结在
+[closed-loop validation protocol](evidence/arrival_restructure/closed_loop_validation_20261011.md)。
+
+本批 source commit 必须由 launcher/header 在启动时写入完整 40 位 SHA；不在预注册文档中
+预填 self-SHA。M4 仅推进到 protocol registration 和 preflight，尚未有 full validation 结果；
+Q 保持 untouched，`PPO_ALLOWED=false`，本批不做 RL/IL/geometry experiment。
+
 ## 6. 证据闭环与后续学习选择
 
 第一阶段先获得可重放的传统 executable joint reference，再用同一 closed cohort、同一
@@ -230,7 +245,7 @@ reservation/coordination 和 adapter 行为，不把 2–3 架缩尺实验写成
 | M1 | controller authority、serialization、2-tick smoke | 完成 |
 | M2 | 三场景 full pilot 与 small-N candidate search | 完成：9/9 pilot、48/48 reference（[证据](evidence/arrival_restructure/first_batch_20261011.md)） |
 | M3 | whole-cycle tape、independent replay、joint completion witness | 完成：small reference 四个 selected whole-cycle replay MATCH（[证据](evidence/arrival_restructure/first_batch_20261011.md)） |
-| M4 | measured-value gate；决定传统、IL 或 bounded RL 是否继续 | 待 M3 |
+| M4 | measured-value gate；决定传统、IL 或 bounded RL 是否继续 | 进行中：第二批 closed-loop validation 已预注册，尚未启动 full validation |
 | M5 | reliable lower layer 下的 static geometry causal comparison | 待 M4 或传统参考闭合 |
 | M6 | dynamic three-ring geometry 与 reconfiguration cost | 待 M5 |
 | M7 | optional hardware validation 与论文材料 | 待 M6 |
