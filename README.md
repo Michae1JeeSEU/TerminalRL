@@ -2,8 +2,11 @@
 
 研究固定多环终端区中，随机剩余电量和独立安全/能源/资源约束下的向内跨环、最终进近与pad联合调度。
 
-**阶段3机制分析与学习问题定义已完成，学习必要性仍未证明。** 冻结15context、209个根产生局部改进与明确负结果；后续可研究窗口条件价值或联合批次评分，下一阶段仍待用户授权，不训练网络/PPO/IL/teacher，不调奖励或几何。
+**阶段4学习辅助调度设计已授权，当前实现中；正式数据、训练与评价未运行。** 比较简单价值回归/排序筛选能否以更低完整在线成本逼近预算传统闭合rollout参考。阶段3学习必要性尚未证明，闭合与实际未来排序反转的限制继续保留。
 
+- [阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)
+- [阶段4冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)
+- [阶段4用户计划](docs/fixed_terminal_stage4_learning_scheduler_plan.md)
 - [阶段3结果与证据](docs/evidence/fixed_terminal_stage3/results.md)
 - [当前状态](docs/CURRENT_STATUS.md)
 - [阶段3用户计划](docs/fixed_terminal_stage3_learning_problem_definition_plan.md)

@@ -1,25 +1,25 @@
-# 当前状态：阶段3机制分析与学习问题定义
+# 当前状态：阶段4学习辅助调度
 
-更新日期：2026-10-13。用户已授权阶段3机制分析，当前完成阶段2决策inventory、协议/定义、冻结15context正式机制实验及结果核对；**阶段3已完成，学习必要性仍未证明，下一阶段待用户授权。** 不训练actor、网络、PPO或IL/teacher，不设计GNN/attention，不调奖励。
+更新日期：2026-10-13。用户已授权[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)，主线程已确定[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)。**实现与最终预检完成；正式train/val数据生成获主审授权但尚未启动，正式训练与test未授权。** 目标为学习筛选能否以较低完整在线成本逼近有限预算闭合参考，不预设学习有效或必要。
 
-## 保留的阶段2事实
+## 已完成准备
 
-阶段2算法提交`bfa1a8c2ea4e4973972738504ad005756586fc21`，文档证据提交`52e15e06740aca8f0c41318c3b0f5234ce70fdba`。162场和12个有限目录参考已完成，47项针对性测试及2项元数据修正测试通过；这些是阶段2证据，不是阶段3测试结果。
+用户计划已从父checkout字节不变复制，5016 bytes，SHA256 `c43b11c6aab48e025d24988a4b9f7b1ed98aefef3f622a44b076fb54326ef584`。现有venv为Python3.12.4、torch2.5.1+cpu、NumPy2.4.4、SciPy1.18.1；CPU tensor检查成功，CUDA不可用，sklearn缺失，未安装依赖。完整只读记录为`tmp_stage4_preflight/runtime.json`和`runtime.log`。
 
-每方法831请求，FCFS正常444/失败7，deadline445/7，joint429/9，rolling441/9。rolling相对joint正常+12，但相对FCFS正常−3、应急+25、失败+2、截尾−24，存在权衡；其632/1296次决策超过5 s。阶段2未建立学习必要性证据。完整事实和限制见[阶段2结果](evidence/fixed_terminal_stage2/results.md)，旧证据不改写。
+设计固定：新池扩展joint8/48/8/128、前12unique+HOLD+现场FCFS，≤14；full_reference全池闭合rollout，beam/value/rank前3+anchors最多5精确根，另比较原FCFS与原rolling。单根共用快路径，独立安全/能源/资源/应急职责不变，无warm-start或跨方法缓存。
 
-用户[阶段3计划](fixed_terminal_stage3_learning_problem_definition_plan.md)开头关于joint/rolling有效和传统方法边界的表述按研究动机理解，不能视为已证明事实；当前检验机制，不预设学习必要。
+train seeds4101–4103、val4201、test4301–4303，pilot4001。每seed九profiles，joint behavior在0/5/15/90 s取共同prefix快照；train108/val36/test108。train-only scaler，两类64/64 CPU MLP各一次固定seed训练；checkpoint固定后才首次生成test。正式episode为27新场景×六方法=162，最多4进程、threads1。所有值是闭合continuation下的有限窗监督标签，不是teacher动作或expected Q。
 
-## 阶段3已完成与冻结范围
+## 当前下一步
 
-- 只读162场、27情景、7776次决策，生成本地`tmp_stage3_analysis/stage2_decision_inventory.json`；N/E/F/C、正常与应急承诺、holding数及来源均已核对。这是独立策略rollout差异，不是单决策因果对照。
-- [机制实验协议](experiments/fixed_terminal_stage3_protocol.md)固定15个依阶段2结果选择的context，t60使用共同FCFS prefix；不是heldout或全方法性能矩阵。
-- 扩展参考cohort8/scan48/keep8/beam128，前12个唯一root加HOLD与六控制根，去重后最多19；同池FCFS continuation比较20/60/until240闭合估计，并在完整固定需求路径上作一次根干预的ex-post对照。
-- 价值采用无权重词典序`(-F,N,-E,-C,-T,-D,-energy)`的实际累计量，保留共同prefix；closed-observed与ex-post分世界记录，不泄漏未到达信息。物理、安全、SOC、指标与基础周期不变。
-- [学习问题定义](fixed_terminal_learning_problem_definition.md)已定义受约束窗口条件价值或联合批次评分并完成机制核对；不把数据库称为teacher，不许可训练。
+实现、93维特征、模型/筛选与数据/评价接口已完成；最终阶段4新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0并覆盖最终生产字节。主审已接受代码与预检。正式trainval调度器准备36任务/144快照，只生成train/val；等待源码提交消息后启动，当前尚未启动。训练、test数据和正式episode未获本步授权。
 
-首个low/medium/101、t0序列化smoke已完成（17root，11.480 s）；主审在未查看结果时提出数值比较、observed Δ与计时字段修正，旧产物保留为preliminary，不计正式矩阵。场景/预算先于首次预检确定，最终比较口径和接口在正式运行前固定。
+pilot仅为4001 low/medium流程验证：四时刻根数14/9/1/1、25候选；两模型只训练2epoch，train/val复用同一pilot且标smoke_only，不能给性能或泛化结论。offline和两条240s学习episode完成，模型重载预测相等，59 JSON+8 JSONL（176行）严格finite可解析。原始记录为`tmp_stage4_preflight/validation.json`、`combined_tests.log`等，预检数据不并入正式集。
 
-## 完成情况与下一阶段边界
+## 保留的既有证据
 
-机制工具及公开API/CLI/schema已完成。最终阶段1/2/3合并57项测试通过（17.58 s、exit0）；最终low/medium/101 t0 smoke为17根、10.5729187 s、exit0，57个JSON加1个JSONL可解析，两世界根均可行。产物在`tmp_stage3_preflight/low-medium-101-t0-timing-final`，原始日志及`final_validation.json`同目录上层保留。主审已审核最终实现和预检，正式15context按冻结名单以最多4个并行子进程完成，全部真实exit0，共209个唯一root；实现版本`5a67b9ac6d8421ac31172a00ce0de851ed0a4c14`。原始记录与事实汇总分别在`tmp_stage3_results/contexts`和`tmp_stage3_results/summary`。15个FCFS根的ex-post逐请求记录与阶段2精确一致，45次选根及原始价值/差分已重算；执行spacing违反与未认证区间均为0，着陆最低SOC为0.0602558271。三个固定t60状态均无holding飞机，去重后只有一个空HOLD根，作为退化对照保留，不补换时刻，也不把15context当作独立泛化样本。主审结论已依据完整证据写入[阶段3结果](evidence/fixed_terminal_stage3/results.md)：三窗对FCFS实际词典序赢/平/输为0/12/3、5/7/3、6/8/1，延长窗不保证单调收益；33次局部remove-one为13可行、20undefined，不能默认价值可加。medium/low有局部收益，但low/low词典序win伴随更多截尾/暴露，high/low出现闭合与实际未来排序反转，不能盲目蒸馏参考。局部参考改善且慢或有限窗排序敏感均不能单独证明学习唯一必要。后续若获授权，可研究明示窗口、continuation与需求假设的联合或条件价值；当前不增补实验、不训练模型。阶段1/2固定物理合同及原始证据保持不变。
+[阶段3结果](evidence/fixed_terminal_stage3/results.md)：15context、209root、57项合并测试通过；15个FCFS逐请求重放一致，执行安全违反/未认证0，着陆最低SOC0.0602558271。三个t60为单HOLD退化对照。until240对FCFS实际词典序6赢/8平/1输；13可行/20不可行remove-one；闭合与实际未来存在排序反转。学习必要性仍未证明，旧数据只作动机，不用于阶段4训练。实现版本`5a67b9ac6d8421ac31172a00ce0de851ed0a4c14`，文档证据版本`3fb624b80b93ffc11ecbc8761d4309bbe7a89e74`。
+
+[阶段2结果](evidence/fixed_terminal_stage2/results.md)保留162场/12有限oracle：FCFS444正常/7失败、deadline445/7、joint429/9、rolling441/9；rolling不支配FCFS。以上历史测试不作为阶段4通过证据。阶段1固定物理合同、SOC、负载和原阶段证据不变。
+
+本轮只实现监督价值和排序辅助筛选，不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention、动态几何或自由飞行。实际未来只由评价环境推进，不能作输入。科学结论等待本轮结果与主审。

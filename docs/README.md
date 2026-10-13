@@ -1,11 +1,14 @@
 # 固定终端区文档入口
 
-**阶段3机制分析与学习问题定义已完成，学习必要性仍未证明。** 阶段1/2物理合同与证据保留；下一阶段待用户授权，不训练网络或teacher，不调整几何/SOC/负载。
+**当前为阶段4学习辅助调度，实现中，正式数据/训练/评价未运行。** 学习只近似已到达机群的预算闭合参考，不替代候选生成或安全。阶段1–3物理合同和证据保留，学习必要性尚未证明。
 
 ## 当前阅读顺序
 
 | 文档 | 职责 |
 |---|---|
+| [阶段4用户计划](fixed_terminal_stage4_learning_scheduler_plan.md) | 本轮用户任务，原样保存 |
+| [阶段4方法](arrival_restructure/stage4_learning_scheduler.md) | 六方法、统一候选池与学习筛选职责 |
+| [阶段4协议](experiments/fixed_terminal_stage4_protocol.md) | seed分组、标签、模型/选择预算和评价顺序 |
 | [阶段3用户计划](fixed_terminal_stage3_learning_problem_definition_plan.md) | 用户指定任务；开头方法有效性和传统边界是待检验动机，不是既有证据结论 |
 | [阶段3协议](experiments/fixed_terminal_stage3_protocol.md) | 15context预定方案、根池、价值、闭合/真实重放与边界 |
 | [阶段3结果](evidence/fixed_terminal_stage3/results.md) | 15context、209根、选择/成本/条件边际与正负结果 |

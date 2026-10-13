@@ -1,5 +1,7 @@
 # 固定多环与阶段3机制分析设计
 
+当前阶段4已授权、实现中，正式数据/训练/评价未运行。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
 ## 模块边界
 
 新模型放在 `terminal_marl/core/fixed_terminal/`，与旧动态空域及 RL 栈分离。阶段1核心不导入 ROS2、Crazyswarm2、策略训练器或 teacher。
@@ -40,10 +42,16 @@
 
 阶段2实现与冻结实验已完成，47项针对性测试及2项元数据修正测试通过；162场完整比较和12个有限目录参考的事实与边界见[结果报告](evidence/fixed_terminal_stage2/results.md)。本轮尚未建立学习必要性证据，不自动启动后续训练。
 
-## 当前阶段3机制层
+## 已完成阶段3机制层
 
 阶段3机制层与15context实验已完成。数据流为既有场景/共同FCFS prefix → 根前完整状态 → 可观测副本与确定性候选池 → 独立批次检查 → 固定FCFS continuation的闭合评估与原需求ex-post重放 → 原始累计J和条件边际。定义见[阶段3协议](experiments/fixed_terminal_stage3_protocol.md)。
 
 闭合副本只保留根时已到达请求及终态历史；完整未来只留在ex-post评估器，不能进入候选或决策观察。两类世界各有请求分母，不能直接混用。候选评分与可行性/执行职责分离，既有预约不撤销。remove-one先检查两批可行；不以预测值替代安全证明。
 
 学习接口定义窗口条件价值或联合批次价值，不设计网络/actor，也不把机制数据库叫teacher。扩大候选和延长窗仅是预算受限参考。公开机制接口已按实现事实列于[技术规范](technical_spec.md)，正式证据见[阶段3结果](evidence/fixed_terminal_stage3/results.md)。13可行/20不可行的局部remove-one不能默认可加；undefined保留状态。输出可为声明窗口/continuation/需求假设后的结果分量向量或批次比较分数，不是固定单机urgency或optimal/expected Q；下一阶段训练仍待授权。
+
+## 阶段4新增职责
+
+数据层只从joint behavior共同prefix的可见snapshot生成手工状态/候选特征和闭合J/Δ；模型层仅筛选批次。统一池≤14，学习或beam前3+FCFS/HOLD后≤5根精确rollout，最终按真实key选根并独立复查/共用应急。单根快路径不推理/rollout，完整承诺不撤销。生成中的feasibility开销须计入在线链，不以模型分数替代安全。
+
+train/val/test按新seed场景分组，scaler只拟合train。两简单MLP分别回归七维ΔJ、学习同context非tie pair顺序；输出不是动作模仿。公开类名、接口和FEATURE_NAMES待实现稳定后补充。

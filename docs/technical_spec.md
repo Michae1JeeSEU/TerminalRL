@@ -1,5 +1,7 @@
 # 固定终端区与阶段3机制技术规范
 
+阶段4实现与最终预检完成，正式train/val数据生成已获主审授权、尚未启动；正式训练/test未授权。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
 ## 文件与依赖边界
 
 | 路径 | 内容 |
@@ -86,7 +88,7 @@ oracle输出 `status/objective/seconds/candidates/iterations/cuts/solver_status/
 
 阶段2实现与冻结实验已完成，47项针对性测试及2项元数据修正测试通过；162场完整比较和12个有限目录参考的事实与边界见[结果报告](evidence/fixed_terminal_stage2/results.md)。本轮尚未建立学习必要性证据，不自动启动后续训练。
 
-## 当前阶段3机制接口
+## 已完成阶段3机制接口
 
 阶段3实现与正式15context机制实验已完成；上文阶段1/2测试和CLI结果均为历史已完成事实。实现任务已提供以下稳定接口，最终阶段1/2/3合并57项测试通过（17.58 s、exit0）；最终修正smoke完成，但不把预检记录称为正式机制实验结果。
 
@@ -123,3 +125,41 @@ schema为`fixed-terminal-stage3-v1`。每context保存`input.json/snapshot.json/
 selection key前四项整数精确比较，T/D round8位、energy round10位；raw J/ΔJ仍保存。相同key按action_key最小者，no-worse使用同key。首次17root/11.480 s仅为修正前序列化smoke，保留旧目录；后续输出接口修订smoke也单独保留。最终含stop累计计时的smoke位于`tmp_stage3_preflight/low-medium-101-t0-timing-final`：17根、10.5729187 s、exit0，57 JSON+1 JSONL、3,155,951 bytes。closed请求分母7、ex-post分母12，不跨世界直接比较。正式15context已全部exit0，共209根，原始结果及汇总在`tmp_stage3_results`；[阶段3结果](evidence/fixed_terminal_stage3/results.md)给出事实和边界。
 
 最终测试命令在既有阶段1/2七个文件外加入`tests/test_fixed_terminal_stage3_values.py`、`tests/test_fixed_terminal_stage3_replay.py`、`tests/test_fixed_terminal_stage3_reference.py`，完整原始命令与57 PASS见`tmp_stage3_preflight/final_combined_tests.log`；smoke命令/exit见`final_smoke.log`，产物检查见`final_validation.json`。最终smoke累计observed stop时间合计20/60/240为0.343890/0.684381/1.899963 s，根生成5.802359 s、控制获取0.031774 s，ex-post2.518635 s、remove-one0.154133 s；原控制求解成本单列。这些仅是预检记录，不作为正式机制收益结论。
+
+## 阶段4运行环境与待核对接口
+
+只读检查：既有venv Python3.12.4、torch2.5.1+cpu、NumPy2.4.4、SciPy1.18.1；CPU可用，CUDA不可用，sklearn缺失。未安装新依赖，`requirements-stage2.txt`仍为SciPy1.18.1。阶段4固定CPU threads1，与当前检查所得默认torch threads10区分。
+
+具体CLI、93个FEATURE_NAMES、数据/模型schema与checkpoint/scaler文件名已按当前实现核对如下，最终测试/预检事实如下，不将pilot指标视为正式性能结果。必须能记录seed场景split、snapshot时刻、raw J/Δ、真实key、模型筛选与精确选择、validation选择依据及全请求episode结局。所有部署特征禁用未来draw、seed/profile/method标签、aircraft ID数值与真实未来结局。
+
+在线计时分别保存generation/feature/inference/exact_rollout/final_validation_and_emergency/total，模型加载另列，I/O排除；generation保留候选可行性工作，无跨方法cache。最多4并发、threads1，单根与非退化分开，offline时钟不计计算等待。正式train/val数据生成已获主审授权，等待源码提交后启动；正式训练/test仍待另行授权。
+
+### 阶段4当前公开接口
+
+|模块（terminal_marl/core/fixed_terminal/）|接口|职责|
+|---|---|---|
+|learning_features.py|FEATURE_NAMES、extract_features(env, plans)|有序93维可见特征；协议附录完整导出|
+|learning_scheduler.py|make_pool(env)、prediction_order(roots, predictions, kind)、shortlist(roots, metadata, method, predictions=None)|现场候选/anchors、预测排序、有限筛选|
+|同上|select_exact(env, roots)、apply_learning_scheduler(env, method, scorer=None)|精确闭合J选择、独立提交与共同应急|
+|learning_data.py|generate_context(env, output, metadata)、generate_scenario_data(output, split, seed, load, soc, ...)|joint prefix的四个决策前snapshot与闭合标签|
+|同上|load_contexts(directory, expected_split, training=False)|检查split、根/特征/标签对齐和重复context；训练拒绝test|
+|learning_models.py|Standardizer、MLP(outputs)、Scorer.load(path)/predict(values)|train-only缩放、CPU网络、冻结scorer|
+|同上|train_models(train, val, output, epochs=300, smoke=False)、offline_metrics(contexts, method, scorer=None)|训练与分组离线指标|
+
+配置`fixed_terminal_stage4.py`导出SPLIT_SEEDS、SNAPSHOT_TIMES、METHODS、POOL_KEEP=12、TOP_K=3、TRAINING、jobs(split)及validate_split(split, seed)。完整CLI示例在[协议](experiments/fixed_terminal_stage4_protocol.md)。
+
+每scenario数据目录保存frozen_input.json、generation.json；t0/t5/t15/t90下各保存snapshot.json、roots.json、features.json、labels.json、context.json和rollouts/root-ID.json。context schema为`fixed-terminal-stage4-context-v1`；features.json包含有序feature_names及按root_id对齐的values；labels.json分开保存真实value和delta_vs_HOLD。数据标签阶段即使单根也评估以保存标签，在线single-root快路径才跳过rollout/infer。
+
+模型目录含protocol.json、value.pt、rank.pt、value_curve.jsonl、rank_curve.jsonl、value_training.json、rank_training.json、training.json。输入scaler与value target scaler存于protocol.json和checkpoint内部，非独立scaler文件；包含mean/scale/fit_scope=train_only。标准差小于1e−8用1，模型输入为float32；checkpoint带feature_names/state_dict/protocol并以CPU weights_only加载。training.json记录完成、两best_epoch及test_read=false；无informative val时按recall0再val loss/最早epoch。
+
+在线目录为frozen_input.json、result.json、requests.jsonl、events.jsonl、decisions.jsonl；schema分别为`fixed-terminal-stage4-input-v1`和`fixed-terminal-stage4-episode-v1`，offline输出为`fixed-terminal-stage4-offline-v1`。决策保存pool/anchors、选中根、真实评估、final_check、应急统计和分项timing；原FCFS/rolling保留legacy_scheduler总计时，degenerate=null，不伪造新池分类。新池方法按all/degenerate/nondegenerate汇总；I/O及environment step另于在线链计时之外。
+
+预测计数使用Python round最近整数，.5取偶；其他预测维保留raw，预测tie按action_key。pair accuracy衡量非真实tie对在该最终诱导排序中的正确性，不仅比较未打破tie的scalar。raw_J及raw_component_regret均为full minus filtered逐分量差，不是非负标量。离线分组另含informative，top3 best-key指标在加入anchors前计算，filtered-vs-full则在anchors和精确选择后计算。
+
+### 阶段4最终针对性检查
+
+新增命令`python -m pytest tests/test_fixed_terminal_stage4_features.py tests/test_fixed_terminal_stage4_scheduler.py tests/test_fixed_terminal_stage4_learning.py -q`为10 passed、3.28 s、exit0；阶段1–4合并67 passed、12.64 s、exit0，完整命令与日志在`tmp_stage4_preflight/combined_tests.log`。`validation.json`核对最终源码字节、CLI、模型重载与序列化。
+
+pilot4001 low/medium四快照25候选，2epoch且复用同一pilot为train/val，smoke_only；只验证流程，不作为性能比较或正式checkpoint。59 JSON+8 JSONL/176行finite可解析，两模型重载预测精确相同。正式train/val已授权尚未启动，正式训练/test未授权。
+
+在线timing按all/degenerate/nondegenerate提供各分项total/p50/p95/max及total>5s次数；p95按0.95×(n−1)位置线性插值。预检两episode均exit0，仅说明执行链可运行；模型加载时间另列。

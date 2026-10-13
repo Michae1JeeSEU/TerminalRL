@@ -4,7 +4,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-阶段1/2已完成固定合同、162场比较与12个有限目录参考，阶段2未建立学习必要性证据。用户现已授权阶段3机制分析与学习问题定义：固定15context、共同状态和根池、有限窗价值与一次根干预重放。阶段3已完成15context/209根与问题定义，学习必要性仍未证明，不训练actor/PPO/IL/teacher或网络，不调奖励或几何。
+阶段1–3已完成，学习必要性仍未证明。用户已授权阶段4简单监督价值与排序筛选：只近似当前已到达机群的有限预算闭合参考，确定性候选生成/安全/能源/资源/应急层继续负责约束。当前实现中，正式数据/训练/评价尚未运行；不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
 
 ## 主代码路线
 
@@ -27,6 +27,8 @@
 | 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 当前阶段3机制实现、预检与审查 |
 | 阶段2方法 | [docs/arrival_restructure/stage2_traditional_baselines.md](docs/arrival_restructure/stage2_traditional_baselines.md) | 六方法、联合批次、滚动信息边界与 oracle |
 | 阶段2协议 | [docs/experiments/fixed_terminal_stage2_protocol.md](docs/experiments/fixed_terminal_stage2_protocol.md) | 冻结预算、162场比较和12个小实例 |
+| 阶段4方法 | [docs/arrival_restructure/stage4_learning_scheduler.md](docs/arrival_restructure/stage4_learning_scheduler.md) | 学习筛选、确定性约束和闭合参考 |
+| 阶段4协议 | [docs/experiments/fixed_terminal_stage4_protocol.md](docs/experiments/fixed_terminal_stage4_protocol.md) | 数据分组、训练/筛选预算与完整链评价 |
 | 阶段3协议 | [docs/experiments/fixed_terminal_stage3_protocol.md](docs/experiments/fixed_terminal_stage3_protocol.md) | 15context、根池、累计J与配对机制核对 |
 | 学习问题定义 | [docs/fixed_terminal_learning_problem_definition.md](docs/fixed_terminal_learning_problem_definition.md) | 已核对的受约束窗口/联合价值及结论边界 |
 
@@ -45,7 +47,7 @@
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。阶段3的[协议](docs/experiments/fixed_terminal_stage3_protocol.md)、[结果](docs/evidence/fixed_terminal_stage3/results.md)与[学习问题定义](docs/fixed_terminal_learning_problem_definition.md)均已完成；下一阶段待用户授权，不增补实验或训练。阶段2证据保持原样；其独立策略轨迹差异不能替代单步因果对照。候选/联合价值接口不授权训练，未到达draw和全程标签不得作决策特征。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按[阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)和[冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)完成实现、tiny输出预检及针对性测试，主审后再正式data/train/eval。固定train/val/test种子与模型预算，checkpoint锁定后才首次生成test；不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段1–3结果与用户计划保留原样。
 
 ## 本地-服务器同步准则
 
