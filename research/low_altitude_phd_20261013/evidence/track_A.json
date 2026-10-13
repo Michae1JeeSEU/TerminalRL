@@ -1,0 +1,492 @@
+[
+  {
+    "id": "A01",
+    "title": "Self-organized UAV traffic in realistic environments",
+    "authors": [
+      "Csaba Virágh",
+      "Máté Nagy",
+      "Carlos Gershenson",
+      "Gábor Vásárhelyi"
+    ],
+    "year": 2016,
+    "venue": "2016 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)",
+    "doi": "10.1109/IROS.2016.7759265",
+    "publication_status": "PUBLISHED_CONFERENCE",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://ieeexplore.ieee.org/document/7759265",
+    "fulltext_url": "https://hal.elte.hu/~vasarhelyi/doc/viragh2016self.pdf",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A01.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A01.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "accepted",
+    "method": "自组织无人机交通：在含位置噪声、通信延迟、有限通信范围/更新率和有限惯性的 agent-based 仿真中，比较 constant-direction 与 constant-velocity preference 两类局部速度规则；用 CMA-ES 在五类交通场景上优化参数，再做密度扫描，指标为 effective velocity、throughput/flux 和 collision risk。",
+    "scenario": "开放、无障碍的 2D/3D 方形/立方体空间；RANDOM、LINE、CROSS、STAR、EDGE 五类目标点场景。优化阶段 100 架、初始间距至少 6 m；典型环境参数为 v0=4 m/s、vmax=8 m/s、amax=6 m/s²、通信延迟 1 s、通信范围 80 m、更新率 5 Hz。",
+    "findings": "不同场景和密度需要不同局部规则；FIFO/constant-direction 更适合开放空间、目标各异的流量，constant-velocity 更能应对共同目标但仍会拥堵。模型出现自组织车道和通信延迟导致的自激振荡。作者报告 slower-is-faster 现象：中等密度下平均速度已明显下降时，整体通量仍可达到最大。2D 与 3D 的 effective velocity、flux 和碰撞数总体相近，3D 可在相同水平面积上容纳更多飞行器。",
+    "quantitative_findings": [
+      "移除 1 s 通信延迟的附加试验平均降低约 90% 碰撞、提高超过 20% effective velocity；该比较使用各场景优化参数。",
+      "密度扫描中，通量随密度先升后降；真正明显的中间密度最大通量转变主要出现在 RANDOM/EDGE 场景，共同目标场景长期存在目标附近拥堵。",
+      "100 架、仿真时长按飞行 10 个场景特征长度定义；单次仿真通常约为实时的 2 倍速度。"
+    ],
+    "author_limitations": [
+      "作者明确称所研究场景仍然是 simplistic；只展示了自组织空中交通的潜力。",
+      "共同目标处的显式排序/排队没有被模型处理；作者指出需要额外通信来协商顺序并按让行规则排队。",
+      "FIFO 在高密度和共同目标条件下会因延迟和强排斥出现振荡/拥堵；作者建议用所有场景共同进化参数或增加显式排队。",
+      "作者指出仍需推广到更高且异质的 preferred-velocity 范围，并进行包含多场景选择行为的全局优化。"
+    ],
+    "evidence_locations": [
+      "PDF p.1 Abstract：五类场景、两种规则、现实约束和三项主要结论。",
+      "PDF pp.4–5, Sec. II-B–III：五类场景、障碍不在目标范围、噪声/延迟/通信范围/惯性参数及 100-agent 优化设定。",
+      "PDF pp.6–7, Sec. IV：密度增大降低 effective velocity、提高碰撞概率；slower-is-faster 与共同目标拥堵。",
+      "PDF p.7, Sec. IV：共同目标排序未显式处理、模型适用场景差异及 2D/3D 比较。",
+      "PDF p.7, Sec. V：1 s 延迟移除带来约 90% 碰撞下降和超过 20% effective-velocity 提升；作者给出的简化场景/泛化限制。"
+    ],
+    "abstract": "论文在现实通信和动力学约束下研究开放空间密集多旋翼 UAV 的自组织交通。结果表明局部规则必须随场景和密度改变，存在 slower-is-faster 效应，通信延迟是最严重的失稳因素。",
+    "access_attempts": [
+      "IEEE Xplore record opened: metadata and abstract verified.",
+      "Public author/HAL PDF https://hal.elte.hu/~vasarhelyi/doc/viragh2016self.pdf downloaded and parsed locally as A01.pdf.",
+      "No restricted source was bypassed."
+    ],
+    "notes": "这是自组织无人机交通论文，研究独立目的地/不同目标的自组织流；场景为空间开放且无障碍，未建立完整的 UTM/系统级空域调度。"
+  },
+  {
+    "id": "A02",
+    "title": "Internet of Unmanned Aerial Vehicles—A Multilayer Low-Altitude Airspace Model for Distributed UAV Traffic Management",
+    "authors": [
+      "Nader S. Labib",
+      "Grégoire Danoy",
+      "Jedrzej Musial",
+      "Matthias R. Brust",
+      "Pascal Bouvry"
+    ],
+    "year": 2019,
+    "venue": "Sensors",
+    "doi": "10.3390/s19214779",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://www.mdpi.com/1424-8220/19/21/4779",
+    "fulltext_url": "https://www.mdpi.com/1424-8220/19/21/4779/pdf",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A02.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A02.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "构建 Class G 低空的加权多层网络：节点和水平/垂直 airway 组成图，每条 airway 具有时间、能耗、容量权重。提出单目标时间或能耗优化，并比较 GOS（全局离线静态 A*）、GPD（全局交通状态下拥堵概率重规划）和 LPG（仅用局部交通知识的 pheromone-guided 重规划）三种启发式。",
+    "scenario": "三层 Erdős–Rényi 网络；正式实验使用每层 100 节点、共 300 节点、20% 边生成概率，底层起终点，层高越高速度越大但能耗更高。实验 1/2 使用 10、50、100、200、500 架，实验 3 扩展到 1000、1500 架；概率启发式每个设置运行 30 次。示例任务含例行监视 UAV 与应急 UAV，具有时间/能耗偏好。",
+    "findings": "论文把空域构形、容量和局部通信连接到分布式路径选择。小流量时 GPD/LPG 参数对结果有差异；大流量下 LPG 的局部交通知识和 pheromone 分散机制总体优于 GOS 与 GPD。实验 2 中除最小样本 10 外，Tlim=0% 的 LPG 在所测指标上通常优于 50%/80%。实验 3 中 LPG 在大样本的总旅行时间和多数指标上优于 GOS/GPD，但 GPD 在部分 50–200 架设置中因减少换层而有能耗优势。",
+    "quantitative_findings": [
+      "网络规模为 3 层、每层 100 节点、20% 边概率；时间/能耗/容量权重按预设区间随机设置。",
+      "实验 3 的样本规模为 10、50、100、200、500、1000、1500 架；结果用 30 次概率启发式运行的均值/标准差，并用 Kruskal–Wallis/Wilcoxon 检验比较。",
+      "表 5 的总旅行时间均值显示，在样本 500/1000/1500 时 LPG 分别为 45.676/49.867/59.887，GPD 为 54.502/76.069/93.355，GOS 为 80.355/123.007/162.340（任意时间单位）；这些是该网络和参数设定下的仿真值。",
+      "实验 2 中样本 500 的 LPG 总时间均值为 Tlim=0% 时 40.798，50% 时 131.893，80% 时 160.942（任意时间单位）；作者将差异解释为 pheromone 使流量更快分散。"
+    ],
+    "author_limitations": [
+      "作者明确说仿真为简化多因素问题，未来工作要使用更现实的通信场景。",
+      "未来工作包括研究不同通信协议对交通行为的影响、更加现实的通信指标，以及其他元启发式优化方法。",
+      "可观察设定：网络为随机图、时间/能耗/容量权重人为给定，优化目标主要分开处理时间或能耗；没有飞行动力学、障碍物或真实城市网络验证。"
+    ],
+    "evidence_locations": [
+      "PDF p.1 Abstract；pp.5–8, Sec. 3：层、节点、airway、容量、时间/能耗权重和 ad-hoc 通信定义。",
+      "PDF pp.9–11, Sec. 4：GOS/GPD/LPG 算法和局部/全局信息假设。",
+      "PDF pp.12–13, Sec. 5.1：300 节点三层网络、20% 边概率、样本规模和 30 次重复。",
+      "PDF pp.14–18, Sec. 5.2：参数扫描、统计检验、LPG/GPD/GOS 对比表和大流量结果。",
+      "PDF p.18, Sec. 6：作者关于现实通信场景和未来优化方法的明确限制与计划。"
+    ],
+    "abstract": "论文提出用节点–航路加权多层网络表示低空 Class G 空域，并用三种启发式处理时间、能耗和容量。仿真显示，使用局部交通信息的 LPG 在较大流量下通常优于静态全局方案和全局概率重规划。",
+    "access_attempts": [
+      "MDPI article page opened and metadata verified.",
+      "Open MDPI publisher PDF downloaded as A02.pdf and parsed with pypdf.",
+      "No restricted source was bypassed."
+    ],
+    "notes": "属于分布式 UTM 与空域构形的系统层论文；实验网络是抽象随机图，不是城市实测空域。"
+  },
+  {
+    "id": "A03",
+    "title": "Designing airspace for urban air mobility: A review of concepts and approaches",
+    "authors": [
+      "Aleksandar Bauranov",
+      "Jasenka Rakas"
+    ],
+    "year": 2021,
+    "venue": "Progress in Aerospace Sciences",
+    "doi": "10.1016/j.paerosci.2021.100726",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://www.sciencedirect.com/science/article/pii/S0376042121000312",
+    "fulltext_url": "https://www.sciencedirect.com/science/article/pii/S0376042121000312",
+    "local_pdf": null,
+    "local_text": null,
+    "reading_status": "ABSTRACT_ONLY",
+    "version": "publisher",
+    "method": "综述并建立 UAM 空域概念评估框架；把影响空域物理结构的因素分为 safety、social、system、aircraft 四组，比较自由飞行、走廊、管道、航路/层等结构概念。",
+    "scenario": "概念和产业方案层面的 UAM 城市空域；非单一仿真场景，摘要未给出统一的飞行器规模、网络几何或实验参数。",
+    "findings": "结构越少，飞行器在位置、 高度、航向和速度上自由度越大，可提高容量和路线效率并降低飞行成本，但依赖动态地理围栏和先进感知避碰能力；更严格的管道/航路结构可容纳能力较弱的飞行器，但需要严格运行规则且容量降低。作者还指出多数方案理想化为抽象网络，技术复杂度、噪声、隐私和城市规划因素被忽略。",
+    "quantitative_findings": [
+      "摘要和可访问元数据未提供可核验的数值实验结果。",
+      "文章的主要产出是因素框架和概念比较，而不是统一仿真基准。"
+    ],
+    "author_limitations": [
+      "作者明确指出多数已提出概念是理想化抽象网络，偏重安全/容量，较少考虑技术复杂度、噪声和隐私。",
+      "作者指出 UAM 方案需要大量地面基础设施，并提出城市规划、空域权利、公共接受度和公平可达性仍需研究。",
+      "由于全文未合法取得，不能把摘要之外的章节内容或作者自述限制补写为已核验事实。"
+    ],
+    "evidence_locations": [
+      "ScienceDirect publisher abstract：四类影响因素、结构自由度与安全/容量/效率权衡、抽象网络和城市规划研究缺口。",
+      "ScienceDirect metadata：Progress in Aerospace Sciences 125 (2021), article 100726, DOI."
+    ],
+    "abstract": "该综述从安全、社会、系统和飞行器四类因素审视 UAM 空域概念，指出自由度更高的非结构化空域需要更强的感知与地理围栏能力，而结构化空域以容量和运行自由度为代价换取较低技术要求与更易管理的运行。",
+    "access_attempts": [
+      "ScienceDirect publisher record opened; metadata and abstract verified.",
+      "ScienceDirect PDF/Elsevier CDN requests returned access/HTTP errors.",
+      "Unpaywall query did not return a repository PDF; no author manuscript was located in the checked first-party records.",
+      "No paywall bypass was attempted."
+    ],
+    "notes": "无法阅读全文，明确标为 ABSTRACT_ONLY；建议主代理向用户列为需自行下载原文。"
+  },
+  {
+    "id": "A04",
+    "title": "Constrained Urban Airspace Design for Large-Scale Drone-Based Delivery Traffic",
+    "authors": [
+      "Malik Doole",
+      "Joost Ellerbroek",
+      "Victor L. Knoop",
+      "Jacco M. Hoekstra"
+    ],
+    "year": 2021,
+    "venue": "Aerospace",
+    "doi": "10.3390/aerospace8020038",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://www.mdpi.com/2226-4310/8/2/38",
+    "fulltext_url": "https://www.mdpi.com/2226-4310/8/2/38/pdf",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A04.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A04.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "在受城市街网约束的空域中设计 two-way 与 one-way 两种结构：按航向分层，设置 through/turn 高度层，并让转弯飞行减速。使用 BlueSky 快速仿真比较无/有战术冲突解脱时的安全、稳定性和效率。",
+    "scenario": "纽约 Manhattan 街网，面积 59.1 km²；DJI Matrice 600 Pro 多旋翼模型，速度 5–10.3 m/s、最大横滚角 35°、加减速度 1.5 m/s²。空域 75–1050 ft，40 个高度层；水平分离 164 ft、垂直分离 25 ft、30 s look-ahead；三个 depot，起终点距离 1–10 km。",
+    "findings": "one-way 结构由于水平单向约束和按航向垂直分层，冲突与侵入通常少于 two-way，DEP 略低；但两种结构在所测需求下吞吐率和累计旅行时间相近，因为网络尚未达到容量。启用战术解脱降低侵入，却可能因高度受限和冲突链增加预测冲突。two-way 平均转弯多于 one-way。",
+    "quantitative_findings": [
+      "低/中/高需求分别为 55/61/73 drones/km²、54/60/72 drones/min；每个实验条件 5 次，共 60 次随机快速仿真，涉及超过 200,000 次无人机飞行。",
+      "two-way 平均每条飞行计划略多于 8 个转弯，one-way 约 6.5 个；两者累计旅行时间无显著差异。",
+      "两种结构的 DEP 在各需求下接近 1，作者解释为一次冲突解脱平均至多触发一个附加冲突；作者未将该需求范围视为达到最大容量。"
+    ],
+    "author_limitations": [
+      "作者明确列出：测试区域是 Manhattan 正交网格，不能直接外推到非正交街网。",
+      "安全只用冲突数和侵入数衡量，未细分冲突位置、终止位置及 head-on/side/rear 类型。",
+      "未考虑 hyperlocal wind；未考虑起飞和降落阶段。",
+      "结果不应外推到 fixed-wing；模型针对多旋翼。",
+      "空域结构保持静态且交通分布均匀，未覆盖随需求变化的动态重构；作者明确指出未来按需配送需要动态配置。",
+      "作者建议用更高需求测试容量、研究动态空域、风场、起降阶段及冲突性质。"
+    ],
+    "evidence_locations": [
+      "PDF p.1 Abstract：两种结构、航向/高度分层、转弯层和总体结论。",
+      "PDF pp.5–10, Sec. 3：75–1050 ft、40 层、heading-altitude rule、turn layer 和 one-way/two-way 差异。",
+      "PDF pp.10–13, Sec. 4：BlueSky、DJI Matrice 600 Pro、分离标准、Manhattan、需求水平和 60 次仿真。",
+      "PDF pp.14–17, Sec. 5–6：冲突/侵入、DEP、吞吐率、转弯数和累计旅行时间结果。",
+      "PDF pp.18–19, Sec. 6：作者明确的六类限制与动态重构需求；p.19, Sec. 7：结论和后续工作。"
+    ],
+    "abstract": "论文将道路交通的双向/单向思想引入受城市街网约束的低空空域，通过航向分层和转弯高度层降低冲突。Manhattan 快速仿真表明，单向结构在安全性上更有利，但在未饱和需求下没有表现出吞吐优势。",
+    "access_attempts": [
+      "MDPI publisher page and open PDF opened.",
+      "TU Delft institutional record also checked.",
+      "Publisher PDF downloaded as A04.pdf and parsed with pypdf."
+    ],
+    "notes": "与用户的宏微观协同兴趣直接相关：论文已经展示“空域结构—个体解脱”的耦合，但结构是静态的，未做在线重构。"
+  },
+  {
+    "id": "A05",
+    "title": "Airspace Designs and Operations for UAS Traffic Management at Low Altitude",
+    "authors": [
+      "Ui-Jeong Lee",
+      "Sang-Jun Ahn",
+      "Dong-Young Choi",
+      "Sang-Min Chin",
+      "Dae-Sung Jang"
+    ],
+    "year": 2023,
+    "venue": "Aerospace",
+    "doi": "10.3390/aerospace10090737",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://www.mdpi.com/2226-4310/10/9/737",
+    "fulltext_url": "https://www.mdpi.com/2226-4310/10/9/737/pdf",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A05.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A05.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "综述低空 UTM 的空间构形和运行分配方式，将结构化空域归纳为 Air-Matrix、Air-Network、Air-Tubes，将空间分割、时间分配和单位空间多机运行组合成分类体系；随后用 safety、efficiency、computation load、communication load 四项准则对可行组合做定性评分和加权比较。",
+    "scenario": "文献分类与概念评价，不包含统一的飞行动力学仿真。共定义 3 类结构、8 类空间分割方式、5 类时间/多机运行方式，筛得 13 个可行组合；安全导向和效率导向各使用一组权重。",
+    "findings": "Air-Matrix 便于地址化管理但网格细化会带来存储/计算负担且转弯不自然；Air-Network 便于图搜索和管理但节点易拥堵且需求变化需要重构；Air-Tubes 适合高流量节点直连但不适合多样航路。完整时间占用通常安全得分高，Air-Network 在效率导向下优于 Air-Tubes；非结构化方案在多机共享空间时通信/计算和安全代价更明显。作者把该定性结果定位为后续定量仿真的前置指南。",
+    "quantitative_findings": [
+      "分类规模：3 个结构模型、8 个空间分割方法、5 个时间/多机运行选项、13 个可行组合。",
+      "评价表使用 0–5 左右的离散分数和 safety-focused/efficiency-focused 两组权重；这些是专家式定性评分，不是实测容量或冲突率。",
+      "在作者给出的组合表中，Air-Network 的 no-partition + full temporal allocation 在安全导向和效率导向均获得较高加权得分；动态 geofence tubelet 计算/通信负担最高。"
+    ],
+    "author_limitations": [
+      "作者明确指出定性研究具有主观性、研究者解释偏差、可重复性和解释复杂度问题，后续需要适当的定量研究。",
+      "作者明确指出现有研究缺少跨结构的系统比较，本文的评分框架需要后续飞行和 UTM 数值仿真验证。",
+      "可观察设定：结构/运行评分依赖人工设定的准则和权重，没有统一的动态需求、飞行动力学或实飞数据。"
+    ],
+    "evidence_locations": [
+      "PDF pp.1–2, Abstract/Introduction：三类结构、结构化/非结构化区分和论文贡献。",
+      "PDF pp.3–5, Sec. 2：Air-Matrix、Air-Network、Air-Tubes 的优缺点。",
+      "PDF pp.15–20, Sec. 4：8 类空间分割、5 类运行方式、4 项评分准则、13 个组合及两组权重。",
+      "PDF pp.20–21, Sec. 5：结论明确要求进一步定量分析和数值仿真。"
+    ],
+    "abstract": "该文是低空 UTM 空域结构综述和定性分类研究，将结构化方案分为 Air-Matrix、Air-Network 和 Air-Tubes，并把空间分割、时间占用、多机共享、计算和通信负担放进统一比较框架。",
+    "access_attempts": [
+      "MDPI publisher page and open PDF opened.",
+      "Publisher PDF downloaded as A05.pdf and parsed with pypdf."
+    ],
+    "notes": "适合作为空域构形分类基线；论文没有给出可直接用于容量/冲突率比较的统一数值实验。"
+  },
+  {
+    "id": "A06",
+    "title": "Comparing Urban Air Mobility Network Airspaces: Experiments and Insights",
+    "authors": [
+      "Christopher Cummings",
+      "Hani S. Mahmassani"
+    ],
+    "year": 2024,
+    "venue": "Transportation Research Record, 2678(4), 440–454",
+    "doi": "10.1177/03611981231185146",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://journals.sagepub.com/doi/10.1177/03611981231185146",
+    "fulltext_url": "https://journals.sagepub.com/doi/10.1177/03611981231185146",
+    "local_pdf": null,
+    "local_text": null,
+    "reading_status": "ABSTRACT_ONLY",
+    "version": "publisher",
+    "method": "使用 UAM microscopic traffic simulator，在不同需求水平下比较多种网络架构，指标覆盖安全、效率和外部性，并观察交通流与拥堵随需求变化的差异。",
+    "scenario": "UAM 结构化/非结构化网络架构比较；摘要未公开统一的节点/航路几何、飞行器数量、冲突参数或仿真时长。",
+    "findings": "不存在适用于所有需求的单一网络设计。限制少、组织程度低的网络具有路由效率，但高需求下冲突率和拥堵更高；限制多、组织程度高的网络可降低冲突并管理高需求，但会出现局部冲突/轨迹集中和路由低效。",
+    "quantitative_findings": [
+      "仅从摘要和开放元数据无法核验具体需求档位、网络规模、冲突数、容量或效率数值。",
+      "正式记录：online 2023-07-28，期刊卷期 2678(4)，issue year 2024，页码 440–454。"
+    ],
+    "author_limitations": [
+      "摘要未明确列出作者自述限制；由于全文未合法取得，不能补写正文限制。",
+      "可观察范围仅能确认是 microscopic simulator、多网络架构和多需求比较，具体设定待原文下载后核对。"
+    ],
+    "evidence_locations": [
+      "SAGE publisher record：标题、作者、online-first date、卷期页码、DOI 和摘要。",
+      "摘要：结构限制、冲突/拥堵、路由效率和局部集聚之间的权衡。"
+    ],
+    "abstract": "论文用微观 UAM 交通仿真比较不同网络空域架构，核心结论是结构自由度与安全、拥堵、路由效率之间存在需求相关的权衡，没有一种网络适用于全部需求水平。",
+    "access_attempts": [
+      "SAGE publisher page opened and metadata/abstract verified; full-text page indicated no access.",
+      "SAGE PDF request returned 403/no access.",
+      "TRID/Northwestern/secondary records checked without obtaining a legal full text.",
+      "No paywall bypass was attempted."
+    ],
+    "notes": "无法阅读全文，明确标为 ABSTRACT_ONLY；主代理需要在最终综述中标注缺少全文数值和限制信息。"
+  },
+  {
+    "id": "A07",
+    "title": "Decentralized traffic management of autonomous drones",
+    "authors": [
+      "Boldizsár Balázs",
+      "Tamás Vicsek",
+      "Gergő Somorjai",
+      "Tamás Nepusz",
+      "Gábor Vásárhelyi"
+    ],
+    "year": 2025,
+    "venue": "Swarm Intelligence, volume 19, pages 29–53 (2025 issue; online 11 July 2024)",
+    "doi": "10.1007/s11721-024-00241-y",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://link.springer.com/article/10.1007/s11721-024-00241-y",
+    "fulltext_url": "https://link.springer.com/content/pdf/10.1007/s11721-024-00241-y.pdf",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A07.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A07.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "自组织无人机交通：完全分布式的 on-board conflict-avoidance/self-drive 速度项与 pairwise repulsion、velocity-alignment 相结合；用迭代路径/速度选择和进化优化调参，处理异质速度、加速度及 pairwise priority；在 2D 开放交通上训练/测试，并扩展到分层 3D。",
+    "scenario": "仿真框架包含加速度限制、感知噪声、通信带宽/范围等现实约束；方形区域边缘目标，密度和 agent 数量扫描。仿真最多 5000 架；实飞为 100 架自主四旋翼，在半径 125 m 的圆形区域、两层、层间 14 m，水平 6 m/s、垂直 1.5 m/s、10 Hz 状态广播，回收 97/100 份日志。",
+    "findings": "局部信息足以产生可扩展的自组织交通；算法在稀疏和密集 2D 场景、异质速度和成对优先级下都能运行。增加层数可降低单层拥堵和碰撞风险，但受起降/目标区域瓶颈限制，收益递减。实飞 100 架实现无碰撞的稳定交通；作者强调它是交通协调而非编队飞行。",
+    "quantitative_findings": [
+      "100 架仿真在 mean free path 27.5 m（约 13.2×10^-4 agents/m²）时，近零碰撞风险通量最大；最大通量约 1.961 s^-1，约为作者前作 0.96 s^-1 的两倍以上。",
+      "在 100 架、275 m×275 m 场景中，vSPP=8 m/s 时通量最优；与无交互 null model 相比，27.5 m mean free path 处 collision risk 约降低至 1/2500。",
+      "保持密度和 mean free path 后扩展到 5000 架，effective velocity 基本保持；50 倍 agent 数对应碰撞数约为 270 倍，说明绝对碰撞数略超线性增长。",
+      "实飞日志中偶有低于 3 m 参考距离的瞬时峰值，但 97 架记录中最近距离不低于 1.5 m；两层设置的实飞 effective velocity 3.57 m/s，匹配仿真 3.52±0.02 m/s。"
+    ],
+    "author_limitations": [
+      "作者明确指出当前算法主要针对多旋翼；fixed-wing 需要保持失速速度、用盘旋代替悬停并修改排队和 self-drive 选择。",
+      "论文主要研究开放空域的严格 2D 交通和分层 3D；非分层全 3D 的 self-drive 项仍需进一步推广。",
+      "静态障碍物/一般物体避障超出本文范围，作者把带传感器的障碍物感知列为未来研究。",
+      "增加层数的收益受起降/到达区域几何瓶颈限制；作者指出未来智能城市需要规划多层着陆点。",
+      "作者建议实飞复现时增大 avoidance radius，以消除偶发的危险最小距离峰值。"
+    ],
+    "evidence_locations": [
+      "PDF pp.1–5, Abstract/Sec. 2–3：分布式算法、5000 架仿真、100 架实飞及多旋翼/开放空间假设。",
+      "PDF pp.12–14, Sec. 4/4.1：100 架通量、27.5 m mean free path、1.961 s^-1、5000 架扩展和碰撞数增长。",
+      "PDF pp.15–18, Sec. 4.2–4.3：异质速度/优先级、1/3/5 层与层间移动设定。",
+      "PDF pp.18–20, Sec. 5：100 架实飞硬件、10 Hz、两层 14 m、97 份日志、最近距离和实飞/仿真对照。",
+      "PDF pp.20–22, Sec. 6：通信局部性、到达区瓶颈、静态障碍物、全 3D 和 fixed-wing 限制。"
+    ],
+    "abstract": "论文提出完全分布式的自组织无人机交通算法，结合路径规划、局部感知避碰和群体相互作用。仿真扩展到 5000 架，户外实飞展示 100 架自主无人机协同交通；作者同时明确了多旋翼、开放空域和起降瓶颈等边界。",
+    "access_attempts": [
+      "Springer Nature article page opened; publication date, volume, DOI, authors and abstract verified.",
+      "Open publisher PDF downloaded as A07.pdf and parsed with pypdf.",
+      "No restricted source was bypassed."
+    ],
+    "notes": "这是自组织无人机交通的强实证论文，处理独立目的地交通而非编队控制；online 11 July 2024，卷期年份为 2025。其系统级空域构形仍是简单分层，不等于完整 UTM 调度。"
+  },
+  {
+    "id": "A08",
+    "title": "Decentralized deconfliction of aerial robots in high intensity traffic structures",
+    "authors": [
+      "Verdon Crann",
+      "Peyman Amiri",
+      "Samuel Knox",
+      "William Crowther"
+    ],
+    "year": 2024,
+    "venue": "Journal of Field Robotics, 41(5), 1541–1557",
+    "doi": "10.1002/rob.22340",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://onlinelibrary.wiley.com/doi/10.1002/rob.22340",
+    "fulltext_url": "https://onlinelibrary.wiley.com/doi/10.1002/rob.22340",
+    "local_pdf": null,
+    "local_text": null,
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "面向高强度交通结构的工程化分布式解脱：用 directed waypoints 和横截面定义 corridors/junctions，车辆执行 flow、merge、swirl 速度规则，局部使用 elastic-repulsion 模型；论文同时实现软件、通信、飞控和户外试验。",
+    "scenario": "最多 10 架、最大起飞质量约 1 kg 的旋翼机；GPS/WiFi、Pixhawk 4/PX4 和 companion computer；室外测试体积长度尺度约 100 m，正文实验体积约 130×130×110 m，视距/120 m ceiling。指导更新 10 Hz，通信/处理最坏延迟约 0.5 s，巡航 2 m/s，冲突半径 2.5 m；测试 recirculating junction 与 meshed helical junction。",
+    "findings": "冲突解脱活动峰值通常在 junction 节点附近，但由于 corridor 内 agent 分布偏置，峰值可能被推到节点前方。meshed helical junction 明显降低冲突强度，同时牺牲 junction 时间效率。正文结果还报告 corridor 半径增大通常降低拥堵和 merge 速度；低密度、同向旋转流可能在节点前产生边缘偏置路径。",
+    "quantitative_findings": [
+      "最多 10 架旋翼机，指导更新率 10 Hz，位置共享最坏延迟约 0.5 s，巡航速度 2 m/s，冲突半径 2.5 m。",
+      "正文参数试验使用 corridor 半径 3/4/5 m、6 agents 等设置；结果观察到半径增大使拥堵和 merge velocity 降低，冲突峰值集中在节点及其上游。",
+      "作者将 meshed helical 结构描述为降低冲突强度但增加 junction transition time 的结构折中；未给出可泛化到城市规模的容量曲线。"
+    ],
+    "author_limitations": [
+      "作者明确指出实验中低密度/同手性流会造成路径分布偏置，后续可调整 merge rule 以实现更均匀分布或处理相反曲率。",
+      "方法以 powered-lift/rotary-wing 车辆为主；fixed-wing 需要改造。",
+      "可观察实验边界：户外视距测试体积约百米量级、最多 10 架，通信通过集中式 message broker；因此论文展示的是局部解脱执行和实飞工程框架，而非完全无基础设施的全局 UTM。",
+      "MITL 试验假定理想感知/无扰动，随后用 SITL 和硬件推进；正文没有给出城市尺度或多类型飞行器验证。"
+    ],
+    "evidence_locations": [
+      "Wiley publisher HTML abstract/metadata：最多 10 架、1 kg、100 m 量级、10 Hz、0.5 s、2 m/s、2.5 m 和节点/螺旋结果。",
+      "Publisher HTML Sec. 1–3：waypoint/corridor/junction 结构、flow/merge/swirl 规则、旋翼机和通信架构。",
+      "Publisher HTML Sec. 3：MITL/SITL/hardware 验证流程、理想感知和户外实验体积/视距约束。",
+      "Publisher HTML Sec. 4–5：corridor 半径、recirculating/meshed helical junction 结果以及作者关于 merge rule 的改进说明。",
+      "University of Manchester Research Explorer：正式期刊、作者、DOI、CC BY 和 2024-08-01 publication status。"
+    ],
+    "abstract": "论文把分布式局部解脱算法与可执行的空中交通结构、通信和实飞平台结合起来。小规模户外试验显示，节点附近是冲突强度高点，网状螺旋 junction 可降低冲突强度但会牺牲转换效率。",
+    "access_attempts": [
+      "Wiley publisher article opened; public HTML was read continuously from Introduction through Sec. 5 Conclusion (HTML lines 150–526).",
+      "University of Manchester Research Explorer record opened; CC BY and publication metadata verified.",
+      "Wiley PDF click timed out; direct Wiley/Cloudfront download returned 403/SSL transport EOF; the public author-preprint CloudFront PDF also returned SSL EOF.",
+      "No restricted copy was bypassed; no local A08 PDF/text was created."
+    ],
+    "notes": "已从公开 publisher HTML 连续阅读 Introduction、Sec. 2–4 和 Conclusion（HTML lines 150–526）；Wiley 直接下载被 Cloudflare/SSL 阻断，未保存本地 HTML/PDF/text。论文为开放获取，全文内容在公开 HTML 中可读。"
+  },
+  {
+    "id": "A09",
+    "title": "Self-organized free-flight arrival for urban air mobility",
+    "authors": [
+      "Martin Waltz",
+      "Ostap Okhrin",
+      "Michael Schultz"
+    ],
+    "year": 2024,
+    "venue": "Transportation Research Part C: Emerging Technologies, 167, 104806",
+    "doi": "10.1016/j.trc.2024.104806",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://www.sciencedirect.com/science/article/pii/S0968090X24003279",
+    "fulltext_url": "https://arxiv.org/pdf/2404.03710",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A09_article.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A09_article.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "preprint",
+    "method": "在圆形终端空域中把每架 eVTOL 作为独立 agent，采用 CTDE/parameter sharing 的 recurrent LSTM-TD3；执行时每架只用局部观测，连续动作改变 heading，每步 ±5°。奖励同时考虑碰撞、进入 VTOL zone、留在空域和舒适性；用 curriculum learning 逐步增加交通量，随后做噪声、入流分布和 Crazyflie sim-to-real 验证。",
+    "scenario": "vertiport VTOL zone 半径 200 m，外层终端空域半径 800 m，四个入场 gate；无静态障碍，同一高度到达流，车辆不能悬停、只能调 heading。训练/仿真中每架飞机的速度从 U(10,16) m/s 随机抽样，作为环境/个体输入而非 policy action；正文动作方程只改变 heading（±5°），未把速度作为可控动作，也未明确说明该随机速度是否在每个 episode 内恒定；验证波次另设恒速 13 m/s。事故阈值 10 m、incident 阈值 100 m、一次 landing maneuver 60 s 且同一时间仅一架进入。训练数量 3–8、8–15、15–25 架分阶段，2×10^6 steps；仿真 N∈{5,10,15,20,25,30}，每档 30 次（正文 p.22 的集合漏写 20，Figure 7 p.23 的横轴包含 20，且 8/180 与六档×30一致）；五架 Crazyflie 做小尺度实飞。",
+    "findings": "策略从入口附近局部 holding 逐渐学出围绕 vertiport 的顺/逆时针流，并在局部观测下实现安全到达。三波验证场景无事故/事件且最小距离超过 300 m。直接随机入场时 180 次仿真中有 8 次事故，主要出现在 20 架以上的高密度入口；增加“入口 300 m 内有占用则换 gate/拒绝进入”的安全检查后事故消失。小/中位置噪声下表现保持，极端大噪声下出现事故；Poisson clustered arrivals 整体鲁棒。五架 Crazyflie 在未重新训练的情况下顺序进入 vertiport。",
+    "quantitative_findings": [
+      "训练 curriculum 为前 10^6 steps 使用 3–8 架，后 5×10^5 使用 8–15 架，最后 5×10^5 使用 15–25 架；完整训练 2×10^6 steps。",
+      "三波验证为每波 4 架、四个 gate、波间 30 s、速度 13 m/s；Policy IV 最小相邻距离均高于 300 m。",
+      "N=5 到 N=30 时，平均 airspace time 约由 220 s 增至超过 1000 s；平均 entrance time 约由 45 s 降到略高于 30 s，主要等待来自有限 vertiport landing capacity。",
+      "位置噪声试验使用 σN=10/20/100 m；作者称大噪声 100 m 为极端场景，事故仅在大噪声下观察到。Poisson 试验为四个 cluster、间隔 120 s、每 cluster Poisson(λ=5)，期望 20 架。",
+      "Crazyflie 实验 5 架、终端空域半径 1.2 m、速度约 0.15 m/s；高层策略输出 heading，低层由 Crazyswarm2/板载控制执行。"
+    ],
+    "author_limitations": [
+      "作者在结论中明确承认使用 non-cooperative 假设，没有车辆间通信；未来可用意图共享增强安全并让 agent 自主决定进入顺序。",
+      "当前进入顺序由简单规则决定；作者将通信和自主排序列为后续工作。",
+      "作者明确提出下一步是在 full-scale eVTOL 上验证；当前实飞是小尺度 Crazyflie。",
+      "可观察设定边界：单一到达高度、无静态障碍、不能悬停、常规控制只改 heading，且一次只能有一个 VTOL zone landing maneuver；这些条件不能直接代表完整 UAM 终端区。"
+    ],
+    "evidence_locations": [
+      "PDF dissertation Chapter 7 pp.171–177：正式 TRC 发表信息、圆形终端空域和贡献。",
+      "Chapter 7 pp.175–180, Sec. 7.3–7.4：800/200 m 半径、四 gate、10/100 m 阈值、60 s landing、局部观测、heading action、reward。",
+      "Article PDF pp.15–16, Sec. 4.5：训练速度 U(10,16) m/s；p.11, Sec. 4.2：连续动作仅为 heading ±5°，速度是观测/状态输入而非动作。",
+      "Article PDF p.22, Sec. 5.4：正文列 N=5/10/15/25/30 但报告 8/180；p.23 Figure 7 横轴实际含 20，六档×30=180；p.23：事故主要在 N≥20。",
+      "Article PDF p.24, Sec. 5.4：入口安全检查为对应 gate 300 m 内有航空器则换 gate，全部占用则不进入；改进试验无事故。",
+      "Dissertation Chapter 7 pp.182–186, Sec. 7.4.5–7.5.4：对应 curriculum、2×10^6 steps、验证波次、8/180 accidents 和入口安全检查；完整学位论文仍保留为 A09.pdf。",
+      "Chapter 7 pp.187–192, Sec. 7.5.4–7.6.3：airspace time、噪声、Poisson arrivals 和 Crazyflie 实验。",
+      "Chapter 7 pp.193–194, Sec. 7.6.4–7.7：作者关于无通信、顺序规则和 full-scale eVTOL 的明确未来工作。"
+    ],
+    "abstract": "论文用共享 recurrent DRL policy 在圆形 vertiport 终端区实现分散式自由飞行到达，并通过仿真噪声、变化入流和 Crazyflie 实验验证。其关键边界是非合作、局部感知和简化的单机 heading 决策。",
+    "access_attempts": [
+      "ScienceDirect formal article record opened; title/authors/venue/DOI/year verified.",
+      "TU Dresden QuCOSA public PDF downloaded as A09.pdf; the file is the complete author dissertation containing the published TRC article as Chapter 7.",
+      "arXiv v2 public author manuscript https://arxiv.org/pdf/2404.03710 downloaded as A09_article.pdf and parsed with pypdf (43 pages); this is now the main local_pdf/local_text and is labelled preprint.",
+      "Both the arXiv article manuscript and the complete dissertation are retained locally; no restricted source was bypassed."
+    ],
+    "notes": "主本地全文为公开 arXiv v2 作者稿 A09_article.pdf（43页）；完整公开学位论文原文件仍保留为 originals/A09.pdf、文本为 extracted/A09.txt。正式 TRC 发表信息以 ScienceDirect record 核验。正文 p.22 的 N 集合漏写 20，但 Figure 7 p.23 和 8/180 证明应为六档；速度由 U(10,16) m/s 个体随机输入，policy action 仅 heading，正文未将速度列为可控动作，也未明确该速度是否在 episode 内恒定；验证波次明确恒速 13 m/s。"
+  },
+  {
+    "id": "A10",
+    "title": "Collision avoidance strategies for advanced air mobility using UAS-to-UAS communications",
+    "authors": [
+      "Jaya Sravani Mandapaka",
+      "Logan McCorkendale",
+      "Zachary McCorkendale",
+      "Mathias Feriew Kidane",
+      "Nathan Smith",
+      "Skyler Hawkins",
+      "Kamesh Namuduri"
+    ],
+    "year": 2025,
+    "venue": "Drone Systems and Applications, 13, 1–14",
+    "doi": "10.1139/dsa-2024-0044",
+    "publication_status": "PUBLISHED_JOURNAL",
+    "metadata_status": "VERIFIED",
+    "primary_url": "https://cdnsciencepub.com/doi/10.1139/dsa-2024-0044",
+    "fulltext_url": "https://cdnsciencepub.com/doi/pdf/10.1139/dsa-2024-0044",
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A10.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A10.txt",
+    "reading_status": "FULL_TEXT",
+    "version": "publisher",
+    "method": "围绕 U2U communication 和结构化/非结构化空域，组织四类 tactical CAS：cooperative-structured 用 roundabout/subroutine/DCT；cooperative-unstructured 用 crossroads、priority、altitude-yield 或 velocity-yield；noncooperative-structured 用 onboard detection、collaborative sensing、flood casting 和 Dijkstra；noncooperative-unstructured 用 LiDAR/RADAR 约束和 artificial potential field。",
+    "scenario": "结构化空域为城市 air corridors/air cells，非结构化空域主要对应农村/开放环境；覆盖 merging、minimum separation、information relay、collaborative sensing、rerouting 五类 U2U use case。发现消息以 1 Hz 广播，冲突车辆通过 DCT/ETA、优先级和约束路径处理。",
+    "findings": "论文给出一套从合作/非合作与结构化/非结构化交叉分类得到的规则和算法流程：结构化合作交通用 roundabout 和 5 s DCT 窗口让行；非结构化合作交通用 ETA/MSR 和优先级选择 ROW，并可用高度或速度避让；结构化非合作交通在 corridor 内用 flood-casting 生成绕障路径；非结构化非合作交通用势场绕开传感器构造的约束。结果主要是场景流程和仿真示例。",
+    "quantitative_findings": [
+      "U2U discovery message 频率为 1 Hz。",
+      "结构化合作 roundabout 示例中，当两个 DCT 窗口差小于 5 s 时，低优先级车辆让行。",
+      "MSR 与速度成比例，DCT 由 ETA±MSR/v 构成；这些是算法参数关系，不是大规模容量结果。",
+      "文章未提供统一规模、冲突率、吞吐量或实飞统计；定量结果不足以支撑系统级性能结论。"
+    ],
+    "author_limitations": [
+      "作者明确把“将仿真方案部署到真实环境”列为未来工作。",
+      "作者明确指出还需研究有人/无人飞行器融合，因为有人机既有飞行规则会增加协同难度。",
+      "数据可向通讯作者合理请求，论文没有给出可下载的完整实验数据集。",
+      "可观察设定：重点是 tactical deconfliction/use-case 规则，未展示统一的城市网络级在线空域重构或大规模宏观交通反馈。"
+    ],
+    "evidence_locations": [
+      "PDF pp.1–4, Abstract/Sec. 1–3：AAM、structured/unstructured 定义、1 Hz discovery message 和五类 use case。",
+      "PDF pp.7–9, Sec. 4.1–4.2：roundabout、DCT、crossroads、ETA/MSR、优先级和高度/速度让行。",
+      "PDF pp.10–12, Sec. 4.3–4.4：noncooperative structured 的 flood casting/Dijkstra 与 noncooperative unstructured 的势场。",
+      "PDF pp.12–13, Sec. 5：作者的真实环境验证、有人/无人融合未来工作和数据可用性。"
+    ],
+    "abstract": "论文以 U2U 通信为核心，系统化构造结构化和非结构化空域中合作/非合作飞行器的四类冲突避免策略。它给出了 roundabout、DCT、优先级、协同感知、flood casting 和势场等可执行机制，但验证主要停留在仿真示例。",
+    "access_attempts": [
+      "Canadian Science Publishing version-of-record open-access PDF opened and metadata verified.",
+      "Publisher PDF downloaded as A10.pdf and parsed with pypdf.",
+      "No restricted source was bypassed."
+    ],
+    "notes": "属于 U2U tactical deconfliction 方法邻域；其系统级动态空域构形和宏观反馈仍未展开。"
+  }
+]

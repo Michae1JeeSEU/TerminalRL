@@ -1,0 +1,60 @@
+# Track A: low-altitude/UAV/UAM self-organized traffic, distributed management, airspace structure, self-separation
+# Search and verification log (2026-10-13, Asia/Shanghai)
+
+## Scope and source policy
+
+- Target: 8–10 published papers, including classic self-organization, distributed UTM/self-separation, structured versus unstructured low-altitude airspace, and 2023–2026 progress.
+- Swarm papers are retained as a method-neighborhood and labelled as such in `track_A.json`; they are not treated as complete UTM/system-management studies.
+- Metadata was accepted as VERIFIED only after a publisher, institutional repository, or other first-party record was opened. Preprints are marked separately and are not used as publication evidence.
+- Search sources used: IEEE Xplore, MDPI, ScienceDirect, SAGE/TRID, Springer Nature, Wiley, Canadian Science Publishing, TU Delft/TU Dresden/University of Manchester repositories, and HAL/author records where available.
+
+## Real queries
+
+### Problem/background queries
+
+1. `urban air mobility structured unstructured airspace self separation UAV traffic management paper`
+2. `low altitude airspace structure structured unstructured UAV traffic management Hoekstra paper`
+3. `self-organized UAV traffic management distributed collision avoidance paper`
+4. `Vásárhelyi self-organized UAV swarm traffic paper`
+
+### Method queries
+
+5. `site:ntrs.nasa.gov UAS traffic management self separation distributed conflict resolution low altitude airspace PDF`
+6. `site:arc.aiaa.org urban air mobility airspace structure self separation corridor paper DOI`
+7. `"structured airspace" UAV traffic management corridor paper 2021 DOI`
+8. `"decentralized" "traffic management" autonomous drones published 2024 DOI`
+
+### Baseline/classic/structure queries
+
+9. `"UAV traffic management" "airspace design" IEEE DOI corridor lanes`
+10. `"low-altitude" "airspace structure" UAV traffic flows paper`
+11. `"self-separation" UAS traffic management journal paper 2022 2023`
+12. `"airspace structure" "urban air mobility" paper DOI structured unstructured`
+
+### Recent queries
+
+13. `Cummings Mahmassani 2023 UAM network airspaces pdf Northwestern repository`
+14. `"Decentralized deconfliction of aerial robots in high intensity traffic structures" pdf`
+15. `"Self-organized free-flight arrival for urban air mobility" pdf Waltz`
+16. `"Collision avoidance strategies for advanced air mobility using UAS-to-UAS communications" pdf`
+17. `"Decentralized traffic management of autonomous drones" Springer 2024`
+18. `"Sky highway" "low-altitude" heterogeneous VTOL aircraft 2026 DOI`
+
+## Verification and access attempts by ID
+
+- A01: IEEE Xplore record opened and DOI/year/venue/authors verified. Public author/HAL PDF was used locally; IEEE page itself is the primary metadata URL.
+- A02: MDPI article page and open PDF opened; local publisher PDF parsed successfully.
+- A03: ScienceDirect article record opened; DOI, volume, article number, authors, abstract verified. ScienceDirect PDF and Elsevier CDN attempts returned access/HTTP errors; Unpaywall did not return a repository PDF. No paywall bypass was attempted.
+- A04: MDPI open article/PDF and TU Delft repository record opened; local publisher PDF parsed successfully.
+- A05: MDPI open article/PDF opened; local publisher PDF parsed successfully.
+- A06: SAGE article record opened; online-first date, issue, pages, DOI, authors, and abstract verified. Publisher full-text/PDF indicated no access; TRID/Northwestern records did not provide a legal full text. No paywall bypass was attempted.
+- A07: Springer Nature article page and open publisher PDF opened; local PDF parsed successfully. The page states online publication 11 July 2024 and volume 19 pages 29–53 (2025); both dates are recorded in the article entry.
+- A08: Wiley article and University of Manchester Research Explorer record opened; metadata, CC BY status, abstract and full-text section headings were inspected. Wiley PDF click timed out; direct Wiley/Cloudfront and author preprint download attempts failed with 403/SSL EOF/transport EOF. ResearchGate/Manchester records were not used to bypass access. Full-text observations are limited to the accessible publisher HTML sections and are explicitly documented as such.
+- A09: ScienceDirect formal article record and TU Dresden QuCOSA full-text copy were checked. The downloaded PDF is an author manuscript embedded as Chapter 7 of the author’s dissertation; the chapter itself states the formal TRC publication, volume/article number and DOI. It was parsed as full text for the article chapter.
+- A10: Canadian Science Publishing open-access/version-of-record PDF opened and parsed; DOI, issue, article dates, authors, and CC BY status verified.
+
+## Download and parsing summary
+
+- Local PDFs downloaded and parsed: A01, A02, A04, A05, A07, A09, A10 (7 files).
+- Full-text evidence read: those 7 PDFs plus accessible publisher HTML sections for A08 (8 records). A03 and A06 remain ABSTRACT_ONLY.
+- Missing local PDF/text: A03, A06, A08. Reasons are recorded per record in `track_A.json`; no restricted copy was bypassed.

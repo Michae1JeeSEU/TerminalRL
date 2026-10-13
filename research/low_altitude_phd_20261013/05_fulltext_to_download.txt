@@ -1,0 +1,117 @@
+05_fulltext_to_download.txt
+生成日期：2026-10-13
+
+本清单只按 track_A/B/C 的 reading_status 组织。I 类是尚未阅读全文的 ABSTRACT_ONLY；II 类是已读 HTML 但没有本地文件的 A08。A09 的 A09_article.pdf 为主文，A09.pdf 学位论文为补充材料。
+
+I. 未阅读全文（按指定次序）
+
+指定次序：B05、B12、B06、C04、A06、B04、B11、C02、B03；其余按原 track 顺序列出。
+
+1. B05 | 2023 | Macroscopic Fundamental Diagrams for Low-Altitude Air city Transport
+   DOI：https://doi.org/10.1016/j.trc.2023.104141
+   来源：https://www.sciencedirect.com/science/article/pii/S0968090X23001304
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、作者、2023、卷 152、文章号 104141 和 DOI 核验通过；PDF 显示需组织/购买。；Technion institutional page和公开会议摘要可访问，但会议摘要不冒充正式期刊全文。
+   作者讨论或原文边界（待全文核实）：未获得可合法下载的正式期刊全文；作者限制、场景参数和页码级结论尚未核验。；可见论文摘要明确研究依赖微观仿真和实时同步实现，未提供实飞/实测验证信息。
+
+2. B12 | 2024 | Integrated departure and boundary control for low-altitude air city transport systems
+   DOI：https://doi.org/10.1016/j.trb.2024.103020
+   来源：https://www.sciencedirect.com/science/article/pii/S0191261524001449
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、全作者、2024、Transportation Research Part B: Methodological 卷189、文章号103020 和 DOI 核验通过；PDF 端点返回 HTTP 403，未保存文件。；Technion institutional page：正式元数据、摘要和 DOI 可访问，未提供公开 PDF。；EPFL Infoscience official record URL可定位该出版物，但页面返回 HTTP 405，未得到文件。；TRID、ResearchGate 和 LAAT-Flow 作者页面：可访问书目/摘要或全文请求页，未找到无需组织访问的合法 PDF。；未绕过付费墙；未创建 B12.pdf 或 B12.txt。
+   作者讨论或原文边界（待全文核实）：出版社引言节选中作者指出，边界 buffer zone 的悬停等待可能增加飞机间冲突和电池能耗；这属于作者在可见节选中的运行问题说明，完整 limitations 和页码因未获得全文尚未核验。；未获得可合法下载且可解析的正式全文，无法把出版商页面节选扩展为完整作者限制清单。
+
+3. B06 | 2025 | Urban low-altitude air transport management: Bridging dynamic traffic control and static network equilibrium
+   DOI：https://doi.org/10.1016/j.trc.2025.105237
+   来源：https://www.sciencedirect.com/science/article/pii/S0968090X25002414
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、作者、2025、卷 178、文章号 105237 和 DOI 核验通过；全文需组织访问。；作者公开页面检索到正式书目信息和摘要，未找到可公开下载正式全文。
+   作者讨论或原文边界（待全文核实）：未获得可合法下载的正式期刊全文；作者限制和完整场景假设尚未核验。；可见摘要和章节节选将模型定位为 flow-based、区域 MFD 与两区域数值案例，不能据此扩展为所有三维微观空域。
+
+4. C04 | 2023 | Urban air mobility: from complex tactical conflict resolution to network design and fairness insights
+   DOI：https://doi.org/10.1080/10556788.2023.2241148
+   来源：https://www.tandfonline.com/doi/abs/10.1080/10556788.2023.2241148
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：Taylor & Francis正式摘要页打开并核验作者、在线发表日期、卷页、DOI和摘要；正式全文页返回403；未获得作者稿或开放PDF；未保存本地PDF
+   作者讨论或原文边界（待全文核实）：Taylor & Francis正文访问返回403；作者明确限制与页码无法核验，不能用二手摘要补写。
+
+5. A06 | 2024 | Comparing Urban Air Mobility Network Airspaces: Experiments and Insights
+   DOI：https://doi.org/10.1177/03611981231185146
+   来源：https://journals.sagepub.com/doi/10.1177/03611981231185146
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：SAGE publisher page opened and metadata/abstract verified; full-text page indicated no access.；SAGE PDF request returned 403/no access.；TRID/Northwestern/secondary records checked without obtaining a legal full text.；No paywall bypass was attempted.
+   作者讨论或原文边界（待全文核实）：摘要未明确列出作者自述限制；由于全文未合法取得，不能补写正文限制。；可观察范围仅能确认是 microscopic simulator、多网络架构和多需求比较，具体设定待原文下载后核对。
+
+6. B04 | 2024 | Airspace Congestion, flow Relations, and 4-D fundamental Diagrams for advanced urban air mobility
+   DOI：https://doi.org/10.1016/j.trc.2023.104467
+   来源：https://www.sciencedirect.com/science/article/pii/S0968090X23004576
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、作者、2024、卷 159、文章号 104467 和 DOI 核验通过；全文访问受限。；未找到公开机构全文，未下载 PDF。
+   作者讨论或原文边界（待全文核实）：作者指出真实 AAM 运行尚处早期，当前没有高密度观测数据，因此用仿真验证理论关系（publisher Introduction/Simulation setup 节选）。；模型以非结构化、近似随机航向和近似普适服务为主，并被作者描述为向结构化走廊扩展的起点。
+
+7. B11 | 2021 | Traffic flow modeling and feedback control for future Low-Altitude Air city Transport: An MFD-based approach
+   DOI：https://doi.org/10.1016/j.trc.2021.103380
+   来源：https://www.sciencedirect.com/science/article/pii/S0968090X21003806
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、作者、卷期、文章号和 DOI 核验通过；PDF 端点返回 HTTP 403，未保存文件。；Technion institutional publication page：正式元数据和摘要可访问，未提供公开 PDF。；TRID、ResearchGate 和 LAAT-Flow 作者页面：可访问元数据/摘要或请求全文页面，未找到无需组织访问的合法全文。；搜索到的公开机构页面未提供可下载 accepted manuscript；未绕过付费墙。
+   作者讨论或原文边界（待全文核实）：未获得可合法下载且可解析的正式全文，作者明确 limitations、完整假设和页码定位尚未核验。
+
+8. C02 | 2021 | Automated flight planning of high-density urban air mobility
+   DOI：https://doi.org/10.1016/j.trc.2021.103324
+   来源：https://doi.org/10.1016/j.trc.2021.103324
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect/DOI页面打开，核验标题、作者、期刊、年份、DOI并读取摘要/预览；直接publisher /pdfft请求返回Cloudflare访问页；ResearchGate全文落地页可见但未获得可合法保存的直接PDF；未保存本地PDF
+   作者讨论或原文边界（待全文核实）：出版商可见的结论/未来工作指出需要加入出发时间位移和速度控制，并将战略计划与考虑不确定性的战术冲突解决结合；由于未获得全文，限制的页码和完整措辞无法核验。
+
+9. B03 | 2023 | A quasi-dynamic air traffic assignment model for mitigating air traffic complexity and congestion for high-density UAM operations
+   DOI：https://doi.org/10.1016/j.trc.2023.104279
+   来源：https://www.sciencedirect.com/science/article/abs/pii/S0968090X23002681
+   全文/作者稿入口（若可用）：https://enac.hal.science/hal-04180867/file/DTIS22224.1693569649_postprint.pdf
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher abstract：HTTP 可检索，全文需组织访问。；HAL postprint URL、preview URL、document URL：返回 503 或 anti-bot HTML，未保存为 PDF，故不声称已阅读全文。；ResearchGate 页面可检索摘要/局部正文，但未将其作为本地全文来源。
+   作者讨论或原文边界（待全文核实）：未获得可合法下载并可解析的全文；作者限制、完整假设和页码级结论尚未核验。；摘要/页面节选明确其网络为预设计的新加坡高密度 parcel-delivery 路网，结果不应扩展为所有空域结构。
+
+10. A03 | 2021 | Designing airspace for urban air mobility: A review of concepts and approaches
+   DOI：https://doi.org/10.1016/j.paerosci.2021.100726
+   来源：https://www.sciencedirect.com/science/article/pii/S0376042121000312
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record opened; metadata and abstract verified.；ScienceDirect PDF/Elsevier CDN requests returned access/HTTP errors.；Unpaywall query did not return a repository PDF; no author manuscript was located in the checked first-party records.；No paywall bypass was attempted.
+   作者讨论或原文边界（待全文核实）：作者明确指出多数已提出概念是理想化抽象网络，偏重安全/容量，较少考虑技术复杂度、噪声和隐私。；作者指出 UAM 方案需要大量地面基础设施，并提出城市规划、空域权利、公共接受度和公平可达性仍需研究。；由于全文未合法取得，不能把摘要之外的章节内容或作者自述限制补写为已核验事实。
+
+11. B02 | 2022 | Complexity optimal air traffic assignment in multi-layer transport network for Urban Air Mobility operations
+   DOI：https://doi.org/10.1016/j.trc.2022.103776
+   来源：https://www.sciencedirect.com/science/article/pii/S0968090X22002054
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect publisher record：标题、作者、2022、卷 142、文章号 103776 和 DOI 核验通过；全文受组织访问限制。；HAL/ResearchGate 等公开候选页面检索；未找到可直接、稳定且合法下载的该正式论文全文。
+   作者讨论或原文边界（待全文核实）：未获得可合法下载的正式全文；本文作者限制、假设边界和页码级结论尚未核验。
+
+12. B07 | 2025 | Airspace Partitioning for Urban Air Mobility: A Macroscopic Approach with a Realistic Network
+   DOI：https://doi.org/10.1109/ITSC60802.2025.11423788
+   来源：https://portal.fis.tum.de/en/publications/airspace-partitioning-for-urban-air-mobility-a-macroscopic-approa/
+   全文/作者稿入口（若可用）：https://doi.org/10.1109/ITSC60802.2025.11423788
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：TUM official page：标题、作者、2025、会议、页码和 DOI 核验通过。；IEEE DOI 页面可定位出版记录，但未找到无需组织访问的 PDF。
+   作者讨论或原文边界（待全文核实）：作者明确指出既有相似分析在现实场景中仍有限，且大规模网络的异质流会造成 NMFD 散布（官方 TUM Abstract）。；未获得可合法下载全文，更多限制和实验细节尚未核验。
+
+13. C03 | 2022 | Vertiport Planning for Urban Aerial Mobility: An Adaptive Discretization Approach
+   DOI：https://doi.org/10.1287/msom.2022.1148
+   来源：https://pubsonline.informs.org/doi/10.1287/msom.2022.1148
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：INFORMS正式页面打开并核验作者、在线日期、期刊、DOI、摘要和结果段；未获得开放PDF或作者稿；未保存本地PDF
+   作者讨论或原文边界（待全文核实）：正式全文不可访问；出版商摘要未给出作者明确列出的局限性，不能据摘要外推。
+
+14. C06 | 2023 | A heuristic approach for scheduling advanced air mobility aircraft at vertiports
+   DOI：https://doi.org/10.1016/j.apm.2023.07.009
+   来源：https://www.sciencedirect.com/science/article/pii/S0307904X23003062
+   现有材料：已核验出版元数据及摘要/出版商节选；本资料包未观察到本条的本地 PDF/TXT。
+   获取失败说明：ScienceDirect正式页面/DOI记录核验标题、作者、期刊、卷页、年份、摘要；作者机构仓储元数据可见；仓储bitstream请求返回HTML/bot内容（15040 bytes），不是PDF；未保存本地PDF
+   作者讨论或原文边界（待全文核实）：正式全文及作者明确限制无法访问；本条不从摘要之外推断限制。
+
+II. 已读 HTML 但缺少本地文件
+
+A08 | 2024 | Decentralized deconfliction of aerial robots in high intensity traffic structures
+   DOI：https://doi.org/10.1002/rob.22340
+   来源：https://onlinelibrary.wiley.com/doi/10.1002/rob.22340
+   现有材料：track_A 标记 FULL_TEXT；公开 HTML 正文已读。
+   本地状态：未观察到 A08.pdf 或 A08.txt；因此不能把 A08 列入“未阅读全文”。
+   获取说明：本次未能取得可保存、可解析的本地 PDF；后续如需离线复核可从来源链接进入。

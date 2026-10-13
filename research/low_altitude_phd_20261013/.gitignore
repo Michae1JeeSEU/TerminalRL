@@ -1,0 +1,8 @@
+# Local source files and generated extraction/support data
+originals/
+extracted/
+qa/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
