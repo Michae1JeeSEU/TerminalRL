@@ -1,6 +1,6 @@
-# 固定终端区需求：阶段2传统调度
+# 固定终端区需求：阶段3机制分析
 
-本需求继承阶段1固定物理合同，落实用户授权的[阶段2计划](fixed_terminal_stage2_traditional_baseline_plan.md)；数学与统计口径以[问题定义](fixed_terminal_problem_definition.md)为准。
+本需求继承阶段1/2固定物理合同，落实用户授权的[阶段3机制协议](experiments/fixed_terminal_stage3_protocol.md)；物理与原始统计以[问题定义](fixed_terminal_problem_definition.md)为准，价值接口见[学习问题定义](fixed_terminal_learning_problem_definition.md)。
 
 ## 固定结构与联合决策
 
@@ -33,3 +33,14 @@
 3. 滚动优化必须实际推进可观测状态并包含 HOLD/延后分支，仅承诺首批完整路线，不读取未来 `pending` 请求。
 4. 方法共用应急证书和所有安全/能源/资源规则；预算不足不等于正常不可行。
 5. 162场完整比较与12个闭合 oracle实例按[冻结协议](experiments/fixed_terminal_stage2_protocol.md)执行；小实例共用候选目录并按共同目标重算评价，各方法内部评分保持各自定义。有限目录最优不得称为动态全局最优。
+
+## 当前阶段3要求
+
+1. 只使用已冻结15context；t60取共同FCFS prefix后的决策前状态，所有根共享状态、候选池和FCFS continuation。案例依旧结果选择，不作heldout宣称。
+2. 根池为扩展joint前12唯一批次，加HOLD和六控制根，去重最多19；全部由独立可行性执行，不改变应急证书或已有承诺。
+3. J采用episode累计实际分量`(-F,N,-E,-C,-T,-D,-energy)`，不拟合权重、不用计划完成或激活代替实际着陆。保留原始分量及条件均值。
+4. 闭合观测世界和ex-post固定原需求世界分别记录分母、J与差分；未到达身份/SOC/time及结果标签不得进入决策输入。
+5. 单机边际条件在其余批次，两批都可行才定义，否则undefined+状态；不得假定价值可加或用整策略差异替代单次干预。
+6. t0控制为预计算warm-start，保留原求解计时；t60重新求六控制根。分项记录候选生成、控制获取和两类rollout成本。
+7. 阶段3已完成15context与定义核对，见[结果](evidence/fixed_terminal_stage3/results.md)；学习必要性仍未证明。undefined不得作为0或负奖励，词典序收益不得写成Pareto改善。
+8. 后续接口须明示continuation、horizon、需求假设，允许结果分量向量或批次比较分数；下一阶段待授权，不训练actor/PPO/IL/teacher、设计网络或调奖励。

@@ -1,12 +1,11 @@
-# 阶段2传统调度基线执行计划
+# 阶段3机制分析执行计划
 
-阶段1已完成，用户现授权[阶段2总体计划](fixed_terminal_stage2_traditional_baseline_plan.md)。物理合同继续服从[固定问题定义](fixed_terminal_problem_definition.md)。
+用户已授权[阶段3计划](fixed_terminal_stage3_learning_problem_definition_plan.md)。阶段1/2已完成，结果见[阶段2证据](evidence/fixed_terminal_stage2/results.md)；物理规则仍由[固定问题定义](fixed_terminal_problem_definition.md)约束。本阶段不预设学习必要性。
 
-1. **建立调度接口。** 在独立可行性层原子验证完整普通计划批次，保留所有已承诺路线及未选飞机保持预测；不修改物理参数和安全标准。
-2. **实现六种方法。** FCFS、SOC、真实可行能源余量、最后正常完成窗口余量、联合窗口、具有状态推进和 HOLD 的滚动搜索。截断时标明未知/界限，不读取未来请求。
-3. **建立有限目录 oracle。** 使用 SciPy MILP，在同一目录中选择，并按共同目标重算小实例评价；各方法内部评分保持各自定义。独立复核候选解，区分最优与受限状态。
-4. **冻结预算并预检。** 将获批准的 cadence、候选数、搜索上限及目标写入[实验协议](experiments/fixed_terminal_stage2_protocol.md)，完成针对性测试和小样本输出验证。不得凭提交命令宣称运行成功。
-5. **经主审授权执行比较。** 既有九情景×三种子×六方法共 162 场；另做 N=3/4/5/6×三种子的同目录 oracle 比较。记录所有结果，不按结果改场景、删失败或筛选种子。
-6. **汇总与审查。** 比较服务结局、延迟、能源、资源与在线计算，报告有限目录参考差距及局限。保存紧凑证据，最终向用户交付包含重要文档和全部最终结果的 ZIP。
+1. **读取旧轨迹。** 核对162场承诺、holding、首差异和两例额外失败。已生成只读inventory，仅是不同策略轨迹的描述，不作单步因果解释。
+2. **冻结机制样本与价值。** 按[阶段3协议](experiments/fixed_terminal_stage3_protocol.md)使用15context、共同状态、最多19根、指定continuation和无权重累计J；定义闭合估计、真实固定未来重放及可行条件边际。
+3. **实现并核对工具。** 复用独立可行性与执行层，核对共同prefix、未到达信息删除、根批次/应急fallback、累计原始分量、不同世界分母及undefined状态。公开API已按实现事实写入技术规范。
+4. **主审后预检与正式执行。** 初次和中间输出修订预检均保留；最终修正smoke及57项合并测试已通过，随后固定15context全部完成、exit0，共209根，不新增场景、种子或全方法矩阵。
+5. **证据审查与问题定义收尾。** 分析同池短长窗排序、配对ex-post结局、条件remove-one和分项计算成本。证据核对和[学习问题定义](fixed_terminal_learning_problem_definition.md)已完成，见[阶段3结果](evidence/fixed_terminal_stage3/results.md)。局部收益、退化对照、闭合/实际排序反转和不可行边际均保留，不将预算参考称为全局最优。
 
-上述实现、测试、预检、162场比较、12个oracle与主审均已完成，证据见[结果报告](evidence/fixed_terminal_stage2/results.md)和[CURRENT_STATUS](CURRENT_STATUS.md)。本轮尚未建立学习必要性证据，阶段2停止于研究判断，不自动引入 RL、IL、teacher、网络、动态几何或硬件实验。
+阶段3已完成，学习必要性仍未证明；下一阶段待用户授权。本阶段仅定义可检验的候选或联合价值接口，不训练actor/PPO/IL/teacher，不设计网络结构或调奖励。若传统方法表现强，应如实承认；局部改善且慢不证明学习唯一必要。状态以[CURRENT_STATUS](CURRENT_STATUS.md)为准。

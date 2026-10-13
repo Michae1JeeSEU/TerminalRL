@@ -1,4 +1,4 @@
-# 固定终端区与阶段2技术规范
+# 固定终端区与阶段3机制技术规范
 
 ## 文件与依赖边界
 
@@ -85,3 +85,41 @@ python -m pytest tests/test_fixed_terminal_domain.py tests/test_fixed_terminal_s
 oracle输出 `status/objective/seconds/candidates/iterations/cuts/solver_status/solver_gap/certified_tiers/unknown_assignments/reason`，另含 `solver_dual_bound/solver_bound_tier/solver_bound_scope`。tier为负正常数、延迟秒或路线SOC能耗；bound只对应当前有限MILP松弛目标层，不是动态全局界，缺失或非有限值为 `null`。闭合实例结果带 `full_episode_optimality_claim=false`，不得与完整rollout的收益混用。最终合并针对性测试已由实现任务保存：47 passed in 1.58s，exit 0，原始日志在忽略目录 `tmp_stage2_validation/final_tests.log`。测试文件为阶段1三个文件以及 `tests/test_fixed_terminal_stage2_joint.py`、`tests/test_fixed_terminal_stage2_baselines.py`、`tests/test_fixed_terminal_stage2_oracle.py`、`tests/test_fixed_terminal_stage2_runner.py`。正式162场与12个oracle已另行完成原始文件和指标核验。
 
 阶段2实现与冻结实验已完成，47项针对性测试及2项元数据修正测试通过；162场完整比较和12个有限目录参考的事实与边界见[结果报告](evidence/fixed_terminal_stage2/results.md)。本轮尚未建立学习必要性证据，不自动启动后续训练。
+
+## 当前阶段3机制接口
+
+阶段3实现与正式15context机制实验已完成；上文阶段1/2测试和CLI结果均为历史已完成事实。实现任务已提供以下稳定接口，最终阶段1/2/3合并57项测试通过（17.58 s、exit0）；最终修正smoke完成，但不把预检记录称为正式机制实验结果。
+
+固定设置为cohort8/scan48/keep8/beam128，扩展前12根加HOLD与六控制、去重最多19，公共5s/256不变。15context与三种终点见[阶段3协议](experiments/fixed_terminal_stage3_protocol.md)。原始价值必须记录`root_time`、`evaluation_stop`、`episode_cumulative=true`及全部分量；闭合观测与ex-post各记分母；value实际字段为`request_denominator/arrived_request_count`。公共prefix保留、Δ中抵消，不另定义增量J。
+
+输出应包括候选来源labels（仅审计，不作特征）、feasibility与undefined、根前状态、完整既有承诺、实际J/ΔJ、配对请求/events与remove-one。t0旧日志控制保留原`decision.seconds`，新读取时间另列；t60在共同状态重新求解。计时拆候选生成/控制获取/closed-observed rollout/actual ex-post rollout/remove-one，不能把读取时间冒充求解时间。每个J stop另存`elapsed_through_stop_seconds`，记录同一closed rollout至该stop的累计耗时，不参与value比较；参考成本（生成+控制获取+observed）与ex-post/remove-one分析成本分开。
+
+部署输入只含已到达状态和固定资源预约；未到达draw、全程标签和方法来源不可输入。价值接口见[学习问题定义](fixed_terminal_learning_problem_definition.md)，不训练或设计模型。
+
+### 阶段3公开符号
+
+| 文件 | 公开接口 | 用途 |
+|---|---|---|
+| `core/fixed_terminal/value_analysis.py` | `load_stage2_episode(directory)`、`replay_episode(directory, stop_time=None)` | 读取已存阶段2记录、恢复决策前环境 |
+| 同上 | `visible_snapshot(env)`、`system_value(env)` | 可见状态与累计实际J |
+| 同上 | `evaluate_root(env, plans, stops, *, realized_future=False)`、`delta_value(value, baseline)` | 指定终点/世界的根评估与分量差 |
+| 同上 | `conditional_margin(env, full_batch, aircraft_id, full_evaluation=None)` | 可行条件remove-one对照 |
+| `core/fixed_terminal/reference.py` | `Root`、`acquire_controls`、`make_root_pool(env, context, stage2_root=None)` | 六控制与确定性候选根池 |
+| 同上 | `observed_evaluation`、`select_observed_roots`、`value_comparison_key`、`action_key` | 闭合估计、选择及冻结比较/tie |
+| `configs/fixed_terminal_stage3.py` | `Context(load, soc, seed, time=0)`、`FORMAL_CONTEXTS` | 15个固定context |
+| 同上 | `REFERENCE_SETTINGS`、`ROOT_SEARCH_KEEP`、`REMOVE_ONE_LIMIT` | 8/48/8/128、12根、最多3个remove-one |
+| `scripts/analyze_fixed_terminal_stage3.py` | `run_context`、`aggregate` | 单context机制产物与汇总 |
+
+以上路径以`terminal_marl/`为根。CLI示例：
+
+```text
+python -m terminal_marl.scripts.analyze_fixed_terminal_stage3 --load low --soc medium --seed 101 --time 0 --stage2-root tmp_stage2_results/episodes --output NEW_DIRECTORY
+python -m terminal_marl.scripts.analyze_fixed_terminal_stage3 --list-contexts
+python -m terminal_marl.scripts.analyze_fixed_terminal_stage3 --aggregate ROOT --output SUMMARY.json
+```
+
+schema为`fixed-terminal-stage3-v1`。每context保存`input.json/snapshot.json/root_pool.json/observed_selections.json/conditional_margins.json/result.json/decision_database.jsonl`；各唯一root在`<context-output>/<root_id>/root.json`、`observed.json`、`realized.json`保存根定义和两类重放。异常写`errors.json`并向上报错，不静默丢根。数据库分开保存两世界raw values，以及每stop的`delta_observed_vs_HOLD/FCFS`与`delta_realized_vs_HOLD/FCFS`，不是teacher训练集。
+
+selection key前四项整数精确比较，T/D round8位、energy round10位；raw J/ΔJ仍保存。相同key按action_key最小者，no-worse使用同key。首次17root/11.480 s仅为修正前序列化smoke，保留旧目录；后续输出接口修订smoke也单独保留。最终含stop累计计时的smoke位于`tmp_stage3_preflight/low-medium-101-t0-timing-final`：17根、10.5729187 s、exit0，57 JSON+1 JSONL、3,155,951 bytes。closed请求分母7、ex-post分母12，不跨世界直接比较。正式15context已全部exit0，共209根，原始结果及汇总在`tmp_stage3_results`；[阶段3结果](evidence/fixed_terminal_stage3/results.md)给出事实和边界。
+
+最终测试命令在既有阶段1/2七个文件外加入`tests/test_fixed_terminal_stage3_values.py`、`tests/test_fixed_terminal_stage3_replay.py`、`tests/test_fixed_terminal_stage3_reference.py`，完整原始命令与57 PASS见`tmp_stage3_preflight/final_combined_tests.log`；smoke命令/exit见`final_smoke.log`，产物检查见`final_validation.json`。最终smoke累计observed stop时间合计20/60/240为0.343890/0.684381/1.899963 s，根生成5.802359 s、控制获取0.031774 s，ex-post2.518635 s、remove-one0.154133 s；原控制求解成本单列。这些仅是预检记录，不作为正式机制收益结论。

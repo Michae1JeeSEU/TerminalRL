@@ -1,0 +1,526 @@
+[
+  {
+    "context": "low-medium-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 0.0,
+        "normal_delay_sum_seconds": 0.0,
+        "energy_consumed_soc_all_requests": 0.0
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "low-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "low-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "low-low-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 0.0,
+        "normal_delay_sum_seconds": 0.0,
+        "energy_consumed_soc_all_requests": 0.0
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "low-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "low-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-high-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        261.7993877991494,
+        261.7993877991494,
+        0.2094395102393185
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": -261.7993877991494,
+        "normal_delay_sum_seconds": -261.7993877991494,
+        "energy_consumed_soc_all_requests": -0.2094395102393185
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "medium-high-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-high-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-medium-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        1,
+        1,
+        0,
+        133.85523259835327,
+        157.07963267948958,
+        0.09814661365656097
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 1,
+        "emergency_landed": -1,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": -133.85523259835327,
+        "normal_delay_sum_seconds": -157.07963267948958,
+        "energy_consumed_soc_all_requests": -0.09814661365656097
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "medium-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-low-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        2,
+        1,
+        1,
+        146.2311386176425,
+        -0.913335599446782,
+        0.09515976604987131
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 2,
+        "emergency_landed": -1,
+        "arrived_unresolved": -1,
+        "observed_request_seconds": -146.2311386176425,
+        "normal_delay_sum_seconds": 0.913335599446782,
+        "energy_consumed_soc_all_requests": -0.09515976604987131
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "medium-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-high-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        1,
+        1,
+        0,
+        -18.75226412613665,
+        2.2737367544323206e-13,
+        -0.01692560698153045
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 1,
+        "emergency_landed": -1,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 18.75226412613665,
+        "normal_delay_sum_seconds": -2.2737367544323206e-13,
+        "energy_consumed_soc_all_requests": 0.01692560698153045
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-high-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0001",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        1,
+        -1,
+        -150.66109534485895,
+        44.728689071514054,
+        -0.1147157698557617
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": -1,
+        "arrived_unresolved": 1,
+        "observed_request_seconds": 150.66109534485895,
+        "normal_delay_sum_seconds": -44.728689071514054,
+        "energy_consumed_soc_all_requests": 0.1147157698557617
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-high-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0002",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 0.0,
+        "normal_delay_sum_seconds": 0.0,
+        "energy_consumed_soc_all_requests": 0.0
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0000",
+    "aircraft_id": "uav-0000",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-medium-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-low-101-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        44.079632679489805,
+        79.76580449291737,
+        0.036647779607694275
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": -44.079632679489805,
+        "normal_delay_sum_seconds": -79.76580449291737,
+        "energy_consumed_soc_all_requests": -0.036647779607694275
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-low-101-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-low-303-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        3,
+        2,
+        1,
+        -25.353139023323365,
+        -183.1481523215191,
+        -0.03918407770498833
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 3,
+        "emergency_landed": -2,
+        "arrived_unresolved": -1,
+        "observed_request_seconds": 25.353139023323365,
+        "normal_delay_sum_seconds": 183.1481523215191,
+        "energy_consumed_soc_all_requests": 0.03918407770498833
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "medium-low-303-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "medium-low-303-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-high-202-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0000",
+    "marginal": {
+      "delta_J": [
+        0,
+        1,
+        1,
+        0,
+        -18.75226412613665,
+        2.2737367544323206e-13,
+        -0.01692560698153045
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 1,
+        "emergency_landed": -1,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 18.75226412613665,
+        "normal_delay_sum_seconds": -2.2737367544323206e-13,
+        "energy_consumed_soc_all_requests": 0.01692560698153045
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-high-202-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0001",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        1,
+        -1,
+        -150.66109534485895,
+        55.18828415555936,
+        -0.1147157698557617
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": -1,
+        "arrived_unresolved": 1,
+        "observed_request_seconds": 150.66109534485895,
+        "normal_delay_sum_seconds": -55.18828415555936,
+        "energy_consumed_soc_all_requests": 0.1147157698557617
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-high-202-t0",
+    "status": "feasible",
+    "aircraft_id": "uav-0002",
+    "marginal": {
+      "delta_J": [
+        0,
+        0,
+        0,
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "delta_components": {
+        "failed_energy": 0,
+        "normal_landed": 0,
+        "emergency_landed": 0,
+        "arrived_unresolved": 0,
+        "observed_request_seconds": 0.0,
+        "normal_delay_sum_seconds": 0.0,
+        "energy_consumed_soc_all_requests": 0.0
+      },
+      "interpretation": "finite_window_same_state_fixed_continuation_difference; not optimal or expected Q"
+    },
+    "additivity_claim": false,
+    "interpretation": "conditional marginal of this full compatible batch under the same realized path and FCFS continuation"
+  },
+  {
+    "context": "high-high-303-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0000",
+    "aircraft_id": "uav-0000",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-high-303-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0001",
+    "aircraft_id": "uav-0001",
+    "marginal": null,
+    "additivity_claim": false
+  },
+  {
+    "context": "high-high-303-t0",
+    "status": "infeasible",
+    "reason": "without:continuous_spacing:uav-0002",
+    "aircraft_id": "uav-0002",
+    "marginal": null,
+    "additivity_claim": false
+  }
+]

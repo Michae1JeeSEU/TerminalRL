@@ -1,25 +1,25 @@
-# 当前状态：阶段2传统调度基线已完成
+# 当前状态：阶段3机制分析与学习问题定义
 
-更新日期：2026-10-13。阶段1固定物理合同与内部验证保持不变；阶段2实现、冻结实验及主审研究判断已完成。**本轮尚未建立学习必要性证据，不启动第三阶段训练。**
+更新日期：2026-10-13。用户已授权阶段3机制分析，当前完成阶段2决策inventory、协议/定义、冻结15context正式机制实验及结果核对；**阶段3已完成，学习必要性仍未证明，下一阶段待用户授权。** 不训练actor、网络、PPO或IL/teacher，不设计GNN/attention，不调奖励。
 
-## 已核对事实
+## 保留的阶段2事实
 
-- 实现提交：`bfa1a8c2ea4e4973972738504ad005756586fc21`；阶段1基准：`b069580627cb25c167ca54f78a3488248b95af24`。Python3.12.4、SciPy1.18.1、NumPy2.4.4。
-- 47项针对性测试通过（1.58 s、exit0），应急资格元数据措辞修正后2项runner测试通过（0.27 s）。
-- 六方法×九负载/SOC格×三种子共162场、12个有限目录oracle全部exit0；27情景输入跨方法完全一致，物理配置及预算冻结，所有原始文件、有限JSON、结局分母、逐请求指标与7776次决策检查通过。
-- 执行间隔违反及执行间隔未认证均0；着陆最低SOC为0.06051182964520303，满足0.06储备。12个有限目录实例均OPTIMAL，joint/rolling目录gap在数值容差内为0。
-- 262个旧进程产出的应急说明字段已统一修正，324文件核对确认其他结构、数值和轨迹完全不变；执行器交接没有重启或重复场景，旧控制器已退役，最终监督器exit0。
+阶段2算法提交`bfa1a8c2ea4e4973972738504ad005756586fc21`，文档证据提交`52e15e06740aca8f0c41318c3b0f5234ce70fdba`。162场和12个有限目录参考已完成，47项针对性测试及2项元数据修正测试通过；这些是阶段2证据，不是阶段3测试结果。
 
-## 研究判断
+每方法831请求，FCFS正常444/失败7，deadline445/7，joint429/9，rolling441/9。rolling相对joint正常+12，但相对FCFS正常−3、应急+25、失败+2、截尾−24，存在权衡；其632/1296次决策超过5 s。阶段2未建立学习必要性证据。完整事实和限制见[阶段2结果](evidence/fixed_terminal_stage2/results.md)，旧证据不改写。
 
-每方法831请求。FCFS为444正常/22应急/7失败/358截尾，deadline为445/21/7/358；joint为429/49/9/344，rolling为441/47/9/334。rolling相对joint正常+12（11赢11平5输），相对FCFS则正常−3、应急+25、失败+2、截尾−24，存在权衡。正常延迟只针对完成者，不能单凭该均值或全请求平均耗能宣称整体改善。SOC和slack排序没有稳定优于FCFS，不表示SOC没有作用。
+用户[阶段3计划](fixed_terminal_stage3_learning_problem_definition_plan.md)开头关于joint/rolling有效和传统方法边界的表述按研究动机理解，不能视为已证明事实；当前检验机制，不预设学习必要。
 
-joint/rolling都比FCFS多2个相同ID的失败；FCFS在t=0对它们合法应急并完成，二者均未安排计划直至耗尽。存在观察到的合法替代调度，不能归为初始场景不可避免；未做反事实消融，不唯一归因目标、cohort或搜索截断。
+## 阶段3已完成与冻结范围
 
-rolling有632/1296次决策超过5 s，p95 38.50 s、最大70.96 s。仿真时钟不随真实计算等待推进，服务结果不包含这种部署延迟；并发Python实现耗时不能推出传统优化固有下限。joint/rolling评分不同，不能将差异单独归于lookahead。有限目录最优不等于全动态最优，也不能证明FCFS接近理想。
+- 只读162场、27情景、7776次决策，生成本地`tmp_stage3_analysis/stage2_decision_inventory.json`；N/E/F/C、正常与应急承诺、holding数及来源均已核对。这是独立策略rollout差异，不是单决策因果对照。
+- [机制实验协议](experiments/fixed_terminal_stage3_protocol.md)固定15个依阶段2结果选择的context，t60使用共同FCFS prefix；不是heldout或全方法性能矩阵。
+- 扩展参考cohort8/scan48/keep8/beam128，前12个唯一root加HOLD与六控制根，去重后最多19；同池FCFS continuation比较20/60/until240闭合估计，并在完整固定需求路径上作一次根干预的ex-post对照。
+- 价值采用无权重词典序`(-F,N,-E,-C,-T,-D,-energy)`的实际累计量，保留共同prefix；closed-observed与ex-post分世界记录，不泄漏未到达信息。物理、安全、SOC、指标与基础周期不变。
+- [学习问题定义](fixed_terminal_learning_problem_definition.md)已定义受约束窗口条件价值或联合批次评分并完成机制核对；不把数据库称为teacher，不许可训练。
 
-## 证据与交付
+首个low/medium/101、t0序列化smoke已完成（17root，11.480 s）；主审在未查看结果时提出数值比较、observed Δ与计时字段修正，旧产物保留为preliminary，不计正式矩阵。场景/预算先于首次预检确定，最终比较口径和接口在正式运行前固定。
 
-[结果报告](evidence/fixed_terminal_stage2/results.md)包含六方法总体、27配对、九格负载/SOC、规模与oracle比较；[协议](experiments/fixed_terminal_stage2_protocol.md)记录冻结预算，[紧凑摘要](evidence/fixed_terminal_stage2/summary.json)和[逐场CSV](evidence/fixed_terminal_stage2/summary.csv)保留统计。全部最终原始结果、执行日志、预检、验证及补充诊断随文档打包交付，预检和cache诊断不并入正式比较。
+## 完成情况与下一阶段边界
 
-阶段1[原始验证](evidence/fixed_terminal_stage1/validation_20261013.md)未改写。合成运动学与能源模型不是硬件标定，零观察违反不是实机认证。阶段2停止于上述研究判断，不恢复旧动态几何/RL/teacher路线。
+机制工具及公开API/CLI/schema已完成。最终阶段1/2/3合并57项测试通过（17.58 s、exit0）；最终low/medium/101 t0 smoke为17根、10.5729187 s、exit0，57个JSON加1个JSONL可解析，两世界根均可行。产物在`tmp_stage3_preflight/low-medium-101-t0-timing-final`，原始日志及`final_validation.json`同目录上层保留。主审已审核最终实现和预检，正式15context按冻结名单以最多4个并行子进程完成，全部真实exit0，共209个唯一root；实现版本`5a67b9ac6d8421ac31172a00ce0de851ed0a4c14`。原始记录与事实汇总分别在`tmp_stage3_results/contexts`和`tmp_stage3_results/summary`。15个FCFS根的ex-post逐请求记录与阶段2精确一致，45次选根及原始价值/差分已重算；执行spacing违反与未认证区间均为0，着陆最低SOC为0.0602558271。三个固定t60状态均无holding飞机，去重后只有一个空HOLD根，作为退化对照保留，不补换时刻，也不把15context当作独立泛化样本。主审结论已依据完整证据写入[阶段3结果](evidence/fixed_terminal_stage3/results.md)：三窗对FCFS实际词典序赢/平/输为0/12/3、5/7/3、6/8/1，延长窗不保证单调收益；33次局部remove-one为13可行、20undefined，不能默认价值可加。medium/low有局部收益，但low/low词典序win伴随更多截尾/暴露，high/low出现闭合与实际未来排序反转，不能盲目蒸馏参考。局部参考改善且慢或有限窗排序敏感均不能单独证明学习唯一必要。后续若获授权，可研究明示窗口、continuation与需求假设的联合或条件价值；当前不增补实验、不训练模型。阶段1/2固定物理合同及原始证据保持不变。

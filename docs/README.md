@@ -1,25 +1,23 @@
-# 固定多环终端区文档入口
+# 固定终端区文档入口
 
-用户授权的**阶段2传统调度基线**已完成162场冻结比较和12个有限目录参考；本轮未建立学习必要性证据。阶段1已完成固定问题定义与内部验证；阶段2继承全部物理参数、容量、SOC、负载和生成器，只研究调度方法。尚不设计学习方法或改变几何。
+**阶段3机制分析与学习问题定义已完成，学习必要性仍未证明。** 阶段1/2物理合同与证据保留；下一阶段待用户授权，不训练网络或teacher，不调整几何/SOC/负载。
 
-## 阅读顺序
+## 当前阅读顺序
 
 | 文档 | 职责 |
 |---|---|
-| [阶段2总体计划](fixed_terminal_stage2_traditional_baseline_plan.md) | 用户指定阶段2范围与研究问题 |
-| [问题定义](fixed_terminal_problem_definition.md) | 固定几何、运动、能源、资源、外部需求与应急合同 |
-| [阶段2方法](arrival_restructure/stage2_traditional_baselines.md) | 六种方法、联合批次、可观测信息与有限目录 oracle |
-| [阶段2实验协议](experiments/fixed_terminal_stage2_protocol.md) | 比较输入、种子、预算、目标、输出与验证安排 |
-| [阶段2结果](evidence/fixed_terminal_stage2/results.md) | 完整比较、研究判断及紧凑证据入口 |
-| [当前状态](CURRENT_STATUS.md) | 已观察到的实现、测试与结果 |
-| [研究定位](research_positioning.md) | 当前研究问题与结论边界 |
-| [需求](requirements.md)、[设计](design_spec.md)、[技术规范](technical_spec.md) | 行为、接口与模块职责 |
-| [执行计划](execution_plan.md) | 阶段2实现、预检、比较与审查顺序 |
+| [阶段3用户计划](fixed_terminal_stage3_learning_problem_definition_plan.md) | 用户指定任务；开头方法有效性和传统边界是待检验动机，不是既有证据结论 |
+| [阶段3协议](experiments/fixed_terminal_stage3_protocol.md) | 15context预定方案、根池、价值、闭合/真实重放与边界 |
+| [阶段3结果](evidence/fixed_terminal_stage3/results.md) | 15context、209根、选择/成本/条件边际与正负结果 |
+| [学习问题定义](fixed_terminal_learning_problem_definition.md) | 受约束条件价值或联合批次评分，明确需求/窗口/continuation假设 |
+| [冻结物理定义](fixed_terminal_problem_definition.md) | 几何、路径、安全、能源、资源、外部与应急合同 |
+| [当前状态](CURRENT_STATUS.md) | 已执行与未执行工作，区分历史测试和新实验 |
+| [研究定位](research_positioning.md) | 问题、事实基础和结论范围 |
+| [需求](requirements.md)、[设计](design_spec.md)、[技术](technical_spec.md) | 接口责任、信息隔离和输出口径 |
+| [执行计划](execution_plan.md) | 机制实现、核对、预检与主审顺序 |
 
-最新用户指令和阶段2计划定义当前范围；阶段1问题合同中的物理规则保持冻结。协议在 pilot 前明确调度预算，正式比较不能按结果调整参数。状态页只报告实际进度，不授权未运行的实验结论。
+## 保留的既有结果
 
-## 保留的阶段1入口
+[阶段2结果](evidence/fixed_terminal_stage2/results.md)记录完整162场、12个有限目录参考与学习必要性尚未建立的判断；[方法](arrival_restructure/stage2_traditional_baselines.md)、[协议](experiments/fixed_terminal_stage2_protocol.md)和[阶段2计划](fixed_terminal_stage2_traditional_baseline_plan.md)保留原阶段语义。阶段3只读inventory是独立策略轨迹差异，不能替代共同状态的一次根干预。
 
-[阶段1总体方案](fixed_terminal_reconstruction_plan_stage1.md)与[阶段1验证](evidence/fixed_terminal_stage1/validation_20261013.md)保留原阶段语义。新核心仍位于 `terminal_marl/core/fixed_terminal/`，环境为 `terminal_marl/envs/fixed_terminal_env.py`；调度器通过独立可行性层执行。
-
-旧动态空域、RL 和前次 arrival 实验位于原 `reference/`、`evidence/arrival_restructure/` 和[历史索引](history/README.md)，不构成本次阶段2证据。[旧研究重构计划](research_restructure_plan.md)仍为已替代说明。
+[阶段1计划](fixed_terminal_reconstruction_plan_stage1.md)与[验证](evidence/fixed_terminal_stage1/validation_20261013.md)保持不变。旧动态空域/RL/arrival资产按[历史索引](history/README.md)解释，不构成新机制结论依据。代码仍由独立固定核心、可行性层和环境承接，公开机制接口已按实现事实记录于技术规范，smoke与正式实验状态单独列明。

@@ -1,0 +1,2007 @@
+[
+  {
+    "context": "high-low-101-t0",
+    "aircraft_id": "uav-0016",
+    "root_results": [
+      {
+        "root_id": "root-40dff7ad3341",
+        "labels": [
+          "HOLD"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-42c4fcbd14e7",
+        "labels": [
+          "joint_window",
+          "rolling_horizon"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-ed35431109bf",
+        "labels": [
+          "expanded_joint_rank_1"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-0fd1b6d97ce4",
+        "labels": [
+          "fcfs",
+          "energy_slack",
+          "deadline_slack"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": true,
+            "wait_cycles": [
+              1
+            ],
+            "planned_end": 111.82791743050004,
+            "required_soc_including_reserve": 0.15341233394440001,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 94.32791743050004
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 91.32791743050004,
+                "end": 98.32791743050004
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 96.32791743050004,
+                "end": 111.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 112.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 117.82791743050004
+              }
+            ]
+          },
+          {
+            "time": 111.82791743050004,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.07797328699005283
+          }
+        ]
+      },
+      {
+        "root_id": "root-508668ce4f6b",
+        "labels": [
+          "expanded_joint_rank_4"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-1ef26efaf852",
+        "labels": [
+          "expanded_joint_rank_0"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-e48c229bdbaa",
+        "labels": [
+          "expanded_joint_rank_11"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-d02d0f6ec81b",
+        "labels": [
+          "soc"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "normal_landed",
+          "state_at_cutoff": "normal_landed",
+          "reason": null,
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.09234409655088659,
+          "minimum_soc": 0.09234409655088659,
+          "energy_consumed_soc": 0.07904152438356617,
+          "completion_time": 82.69243995180628,
+          "landing_duration_seconds": 82.69243995180628,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 52.35987755982987,
+          "observed_request_seconds": 82.69243995180628,
+          "planned_landing_time": 82.69243995180628,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 5.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": false,
+            "wait_cycles": [
+              0,
+              0,
+              1
+            ],
+            "planned_end": 82.69243995180628,
+            "required_soc_including_reserve": 0.13504152438356612,
+            "reason": "joint_normal_batch",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 5.0,
+                "end": 68.14797865058509
+              },
+              {
+                "resource": "transfer:2:1",
+                "start": 65.14797865058509,
+                "end": 71.62011460558466
+              },
+              {
+                "resource": "merge:1",
+                "start": 68.62011460558466,
+                "end": 72.62011460558466
+              },
+              {
+                "resource": "ring:1",
+                "start": 68.62011460558466,
+                "end": 72.62011460558466
+              },
+              {
+                "resource": "transfer:1:0",
+                "start": 69.62011460558466,
+                "end": 76.09225056058423
+              },
+              {
+                "resource": "merge:0",
+                "start": 73.09225056058423,
+                "end": 77.09225056058423
+              },
+              {
+                "resource": "ring:0",
+                "start": 73.09225056058423,
+                "end": 77.09225056058423
+              },
+              {
+                "resource": "normal_approach",
+                "start": 74.09225056058423,
+                "end": 82.69243995180628
+              },
+              {
+                "resource": "normal_pad",
+                "start": 80.69243995180628,
+                "end": 83.69243995180628
+              },
+              {
+                "resource": "normal_pad",
+                "start": 80.69243995180628,
+                "end": 88.69243995180628
+              }
+            ]
+          },
+          {
+            "time": 82.69243995180628,
+            "event": "normal_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.09234409655088659
+          }
+        ]
+      },
+      {
+        "root_id": "root-7afa5c364a81",
+        "labels": [
+          "expanded_joint_rank_10"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-837cc2858a13",
+        "labels": [
+          "expanded_joint_rank_9"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-9c0f1a77648e",
+        "labels": [
+          "expanded_joint_rank_3"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-661840290610",
+        "labels": [
+          "expanded_joint_rank_2"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 214.23202616806628,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0016"
+          }
+        ]
+      },
+      {
+        "root_id": "root-213724c345be",
+        "labels": [
+          "expanded_joint_rank_8"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": true,
+            "wait_cycles": [
+              1
+            ],
+            "planned_end": 111.82791743050004,
+            "required_soc_including_reserve": 0.15341233394440001,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 94.32791743050004
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 91.32791743050004,
+                "end": 98.32791743050004
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 96.32791743050004,
+                "end": 111.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 112.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 117.82791743050004
+              }
+            ]
+          },
+          {
+            "time": 111.82791743050004,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.07797328699005283
+          }
+        ]
+      },
+      {
+        "root_id": "root-dbd4951a7e46",
+        "labels": [
+          "expanded_joint_rank_7"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": true,
+            "wait_cycles": [
+              1
+            ],
+            "planned_end": 111.82791743050004,
+            "required_soc_including_reserve": 0.15341233394440001,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 94.32791743050004
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 91.32791743050004,
+                "end": 98.32791743050004
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 96.32791743050004,
+                "end": 111.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 112.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 117.82791743050004
+              }
+            ]
+          },
+          {
+            "time": 111.82791743050004,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.07797328699005283
+          }
+        ]
+      },
+      {
+        "root_id": "root-c20ca9959b81",
+        "labels": [
+          "expanded_joint_rank_6"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": true,
+            "wait_cycles": [
+              1
+            ],
+            "planned_end": 111.82791743050004,
+            "required_soc_including_reserve": 0.15341233394440001,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 94.32791743050004
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 91.32791743050004,
+                "end": 98.32791743050004
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 96.32791743050004,
+                "end": 111.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 112.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 117.82791743050004
+              }
+            ]
+          },
+          {
+            "time": 111.82791743050004,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.07797328699005283
+          }
+        ]
+      },
+      {
+        "root_id": "root-b9f5ead70dfa",
+        "labels": [
+          "expanded_joint_rank_5"
+        ],
+        "request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0016",
+            "emergency": true,
+            "wait_cycles": [
+              1
+            ],
+            "planned_end": 111.82791743050004,
+            "required_soc_including_reserve": 0.15341233394440001,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 94.32791743050004
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 91.32791743050004,
+                "end": 98.32791743050004
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 96.32791743050004,
+                "end": 111.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 112.82791743050004
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 109.82791743050004,
+                "end": 117.82791743050004
+              }
+            ]
+          },
+          {
+            "time": 111.82791743050004,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0016",
+            "soc": 0.07797328699005283
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "context": "medium-low-303-t0",
+    "aircraft_id": "uav-0013",
+    "root_results": [
+      {
+        "root_id": "root-40dff7ad3341",
+        "labels": [
+          "HOLD"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.11419364232707353,
+          "completion_time": 142.74205290884223,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": null,
+          "observed_request_seconds": 142.74205290884223,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 142.74205290884223,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0013"
+          }
+        ]
+      },
+      {
+        "root_id": "root-3b0f069aaa36",
+        "labels": [
+          "expanded_joint_rank_8"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-2344a74e8663",
+        "labels": [
+          "fcfs"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-6a33e9f28d33",
+        "labels": [
+          "expanded_joint_rank_5"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-8f3abfe9a1c5",
+        "labels": [
+          "rolling_horizon"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.11419364232707353,
+          "completion_time": 142.74205290884223,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": null,
+          "observed_request_seconds": 142.74205290884223,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 142.74205290884223,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0013"
+          }
+        ]
+      },
+      {
+        "root_id": "root-bea8a7cdedae",
+        "labels": [
+          "expanded_joint_rank_7"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-58a082f781e3",
+        "labels": [
+          "expanded_joint_rank_4"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-3ba3399dffd9",
+        "labels": [
+          "expanded_joint_rank_2"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-549554d561c2",
+        "labels": [
+          "expanded_joint_rank_1"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-222e6e7ad42a",
+        "labels": [
+          "expanded_joint_rank_10"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-401d1d0faba4",
+        "labels": [
+          "soc"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-7b3a0a9bd646",
+        "labels": [
+          "joint_window"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.11419364232707353,
+          "completion_time": 142.74205290884223,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": null,
+          "observed_request_seconds": 142.74205290884223,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "events": [
+          {
+            "time": 142.74205290884223,
+            "event": "failed_energy",
+            "aircraft_id": "uav-0013"
+          }
+        ]
+      },
+      {
+        "root_id": "root-bf02aabbd714",
+        "labels": [
+          "expanded_joint_rank_6"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-04fee110afcc",
+        "labels": [
+          "expanded_joint_rank_3"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-5553eaa1ecc1",
+        "labels": [
+          "expanded_joint_rank_0"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-8a2b78d8f87a",
+        "labels": [
+          "expanded_joint_rank_11"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-8217702190f5",
+        "labels": [
+          "expanded_joint_rank_9"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      },
+      {
+        "root_id": "root-6a202e47d9c4",
+        "labels": [
+          "energy_slack",
+          "deadline_slack"
+        ],
+        "request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "events": [
+          {
+            "time": 0.0,
+            "event": "plan_committed",
+            "aircraft_id": "uav-0013",
+            "emergency": true,
+            "wait_cycles": [
+              0
+            ],
+            "planned_end": 31.455505376161163,
+            "required_soc_including_reserve": 0.08911440430092893,
+            "reason": "normal_domain_infeasible;emergency_feasible",
+            "reservations": [
+              {
+                "resource": "ring:2",
+                "start": 0.0,
+                "end": 13.955505376161161
+              },
+              {
+                "resource": "emergency_corridor",
+                "start": 10.955505376161161,
+                "end": 17.955505376161163
+              },
+              {
+                "resource": "emergency_approach",
+                "start": 15.955505376161163,
+                "end": 31.455505376161163
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 32.45550537616116
+              },
+              {
+                "resource": "emergency_pad",
+                "start": 29.455505376161163,
+                "end": 37.45550537616116
+              }
+            ]
+          },
+          {
+            "time": 31.455505376161163,
+            "event": "emergency_landed",
+            "aircraft_id": "uav-0013",
+            "soc": 0.08507923802614463
+          }
+        ]
+      }
+    ]
+  }
+]

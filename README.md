@@ -1,15 +1,16 @@
 # TerminalRL
 
-当前研究固定多环终端区内，在随机剩余电量（SOC）与安全间隔约束下，联合调度向内跨环转移、最后进近和着陆资源。
+研究固定多环终端区中，随机剩余电量和独立安全/能源/资源约束下的向内跨环、最终进近与pad联合调度。
 
-阶段1独立运动学仿真与内部验证、**阶段2传统调度基线的162场比较与12个有限目录参考**已完成：在完全相同的几何、安全、容量、能源、负载与 SOC 生成规则下，比较四种排序规则、联合窗口和滚动优化，并建立小规模有限目录 MILP 参考。尚不引入 RL、IL、teacher 或网络，也不调物理参数。
+**阶段3机制分析与学习问题定义已完成，学习必要性仍未证明。** 冻结15context、209个根产生局部改进与明确负结果；后续可研究窗口条件价值或联合批次评分，下一阶段仍待用户授权，不训练网络/PPO/IL/teacher，不调奖励或几何。
 
-- [阶段2结果与结论](docs/evidence/fixed_terminal_stage2/results.md)
+- [阶段3结果与证据](docs/evidence/fixed_terminal_stage3/results.md)
 - [当前状态](docs/CURRENT_STATUS.md)
-- [阶段2总体计划](docs/fixed_terminal_stage2_traditional_baseline_plan.md)
-- [阶段2方法说明](docs/arrival_restructure/stage2_traditional_baselines.md)
-- [阶段2实验协议](docs/experiments/fixed_terminal_stage2_protocol.md)
-- [固定问题定义](docs/fixed_terminal_problem_definition.md)
-- [文档入口](docs/README.md)
+- [阶段3用户计划](docs/fixed_terminal_stage3_learning_problem_definition_plan.md)
+- [阶段3机制协议](docs/experiments/fixed_terminal_stage3_protocol.md)
+- [学习问题定义](docs/fixed_terminal_learning_problem_definition.md)
+- [冻结物理合同](docs/fixed_terminal_problem_definition.md)
+- [文档索引](docs/README.md)
+- [阶段2已完成结果](docs/evidence/fixed_terminal_stage2/results.md)
 
-本轮尚未建立学习必要性证据，保留服务结局和计算代价的权衡，不启动第三阶段训练。仿真采用合成归一化能源和有界运动学路径，不是实机标定模型。阶段1证据保留；阶段2结果必须独立记录，不能据有限目录最优性宣称全动态问题最优。
+阶段2的162场及12个有限目录参考已完成：FCFS正常444/失败7、deadline445/7、joint429/9、rolling441/9。rolling相对joint正常+12，但不支配FCFS，未建立学习必要性证据。阶段3检验机制，不能把这些独立rollout差异当作单步因果。模型是合成运动学与归一化能源研究模型，不是硬件标定或实时部署认证。
