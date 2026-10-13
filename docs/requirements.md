@@ -56,3 +56,11 @@
 六方法使用相同物理/安全合同；新统一池无warm-start，full/beam/value/rank共享定义和anchors预算，原rolling目标差异明确标注。共同单根快路径与非退化表现分开，模型仅筛选，最终精确J选择及独立提交复查不可省略。
 
 报告全请求结局、应急分母、暴露/条件延迟/能耗、安全及完整链成本，不能以推理耗时替代在线总耗时。仅两固定简单MLP各训练一次，不调奖励、不按结果改模型/seed/预算，offline RL及复杂架构不实施。
+
+## 阶段5具体要求
+
+按[阶段5冻结协议](experiments/fixed_terminal_stage5_protocol.md)验证当前已到达机群的联合批次筛选，保持93特征和阶段4train/val；新test seeds5301/5302/5303只在四模型冻结后生成，pilot只用5001。linear_rank、mlp_rank、gradient_boost、value分别按验证集TOTAL B5保优率、各自loss、最早迭代选checkpoint；train-only scaler及明确smoke标记不可省略。
+
+TOTAL B3/5/8包含去重anchors；统一普通池最多14、敏感性池最多32。30场景含27标准与3个medium/medium初相变体；线上11 arms共330场，固定行为90 snapshots；同状态实际计时24状态×11 arms独立重建，不使用标签查表时间冒充求解时间。初相变体只改变指定初始相位，不改变SOC、请求及物理参数。
+
+报告区分闭合参考质量、实际完整episode结局、同状态计算量和continuation敏感性。完整在线计时保留生成/特征/推理/精确rollout/最终验证及应急；rolling内部搜索和仿真步数不能被相同根数掩盖。既有stage4诊断不是新test，也不是长期训练标签。正式结果尚须依据实际运行与汇总证据记录，不按结果改模型、预算、种子或删除失败。

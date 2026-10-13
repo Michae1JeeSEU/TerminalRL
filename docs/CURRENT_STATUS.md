@@ -1,15 +1,19 @@
-# 当前状态：阶段5实现与预检
+# 当前状态：阶段5正式test运行中，continuation比较补丁准备中
 
-更新日期：2026-10-13。用户已授权[阶段5计划](fixed_terminal_stage5_learning_validation_plan.md)，当前落实[方法](arrival_restructure/stage5_learning_validation.md)与[冻结协议](experiments/fixed_terminal_stage5_protocol.md)。**阶段5正式训练、新test与完整评价尚未开始；当前没有阶段5效果结论。**
+更新日期：2026-10-13。用户已授权[阶段5计划](fixed_terminal_stage5_learning_validation_plan.md)，当前落实[方法](arrival_restructure/stage5_learning_validation.md)与[冻结协议](experiments/fixed_terminal_stage5_protocol.md)。**阶段5正式训练与四模型冻结已完成；流程pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中，阶段5尚未完成。当前没有阶段5效果结论。** 运行证据见[阶段5运行状态](evidence/fixed_terminal_stage5/run_status.md)。
 
 ## 阶段5当前进度
 
 - 阶段4只读诊断已完成：108context、1012候选、60informative、30单根，冻结预测精确复现旧保存top3的chosen/pair counts/regret；诊断7项测试通过。[诊断简报](evidence/fixed_terminal_stage5/diagnosis.md)与[紧凑证据](evidence/fixed_terminal_stage5/stage4_diagnostics_summary.json)保留anchors、分量误差、特征别名及旧online差异。
-- 四类评分器与训练入口已实现，模型8项针对性检查通过（5.69 s）；pilot5001小fixture各跑3epoch/trees并检查保存加载，均为smoke，不是正式训练或独立泛化结果。评价实现和完整输出路径仍处于预检、主审阶段。
+- 实现源提交`4811abb805ab03997f5ce4186c6b2610f3c6b3b3`已推送，阶段1–5合并101项检查通过（17.21 s、exit0）。早期pilot5001四模型3epoch/trees只验证流程；正式四模型随后已按300epoch/100树完成唯一实际训练（22.092 s、maxRSS913020 KB、exit0），train108/val36。
+- 模型已冻结，manifest确认completed/frozen、非smoke、未读test、重载预测一致。validation TOTAL B5选择linear155（24/25）、MLP161（25/25）、GB100（24/25）、value113（24/25）；它们只是validation选择指标，不是test效果，后续不重新训练。
+- 首次训练launcher未设cwd，ModuleNotFoundError后0.036 s退出、未训练；修正后成功。四项服务器pilot首attempt因wrapper预建目录，在仿真前FileExistsError；原始失败日志保留。pilot_v2四项seed5001流程检查现已通过：beam/rolling60/full各48decisions、snapshot保存t0/15/90且t0/t15各有11arm真实计时面板，均exit0，四模型hash不变；耗时与内存见运行状态。
 - 冻结方向为当前可见状态下完整联合批次的闭合FCFS参考筛选，保留93维表示与物理。复用train4101/4102/4103、val4201；model seed5401，validation TOTAL B5选checkpoint；冻结后首次生成test5301/5302/5303。
-- 已定评价范围为330个完整episode、90个固定snapshot、24个真实同状态计时state、9个32根池context及9个旧4303/t15 continuation诊断，精确口径见协议。服务器拟20workers、每进程threads1，仍须按小pilot核定并发与耗时后启动。
+- 已定评价范围为330个完整episode、90个固定snapshot、24个真实同状态计时state、9个32根池context及9个旧4303/t15 continuation诊断，精确口径见协议。主对话已授权test360使用20workers、continuation9使用4workers，每进程threads1；24并发预计内存约17 GB，T0约90 min，已于北京时间20:05:07启动；test初验3/360完成、20running、337pending、0failed，有18份非空decisions.jsonl。独立continuation在15.93 s后exit1，3成功6失败，原始错误`ValueError: old visible snapshot mismatch`，主对话已核对九场旧4303：仅已存plan segment坐标有最大1.7763568394002505e-15的末位浮点差异，结构与非浮点内容、scenario及新提议root plans一致。
 
-下一步是完成评价链小样本验证和主对话实现复核，按协议训练冻结四模型，再生成新test及运行评价。源文件仅本地修改并经Syncthing同步；服务器输出进入`$HOME/training_outputs/terminal`。正式运行开始后补充命令、PID/job、日志、总工作量与估时；当前未登记正式任务。
+正式test继续运行。主对话诊断为跨平台浮点末位表示差异触发旧JSON严格相等，不归因具体库；Astra仅在`tmp_stage5_preflight/continuation_fix`准备artifact比较补丁和测试，待test360终态再应用，尚未修改运行源码或重启。test启动/dispatcher PID为3416299/3416301，continuation为3416300/3416302，四模型hash不变。T0约90 min；当前线程heartbeat id=5“阶段5冻结评价接续”已创建并view确认，20:13:57（北京时间）设置81 min，约21:35复查并接续已授权分析/交付，无常驻监控worker。源文件仅本地修改并经Syncthing同步；服务器输出进入`$HOME/training_outputs/terminal/stage5_validation_20261013`。训练PID3412631及实际启动/进度/失败日志位置见运行状态，全部原始记录保留。
+
+新增汇总/打包工具独立验证：summary7项+package6项，共13 passed in 1.10 s，与原101项检查分开记录。真实pilot汇总CLI exit0，标记`fixture_or_pilot_incomplete`，41份源/副本文件hash相同；核对记录`tmp_stage5_preflight/summary_integration/validation.json`。没有新仿真、训练或读取正式530x结果。
 
 ## 阶段4已完成事实
 

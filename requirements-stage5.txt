@@ -1,2 +1,7 @@
--r requirements-stage4.txt
+# Formal server base versions. The installed experimental build was
+# torch 2.13.0+cu130, used CPU only. See the model manifest for the actual runtime.
+# Local preflight used torch 2.5.1 / NumPy 2.4.4 for interface tests only.
+numpy==2.5.1
+scipy==1.18.1
+torch==2.13.0
 scikit-learn==1.9.1

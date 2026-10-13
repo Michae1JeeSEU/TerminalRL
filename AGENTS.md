@@ -21,7 +21,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-阶段1–4已完成，学习必要性仍未证明。阶段4固定数据、训练与全部评价已完成，rank的离线排序信号尚未转化为优于同预算beam的综合证据。用户已授权阶段5闭合参考搜索筛选与计算预算验证，当前处于implementation/preflight，正式训练、新test与评价尚未开始；只近似当前已到达机群的完整联合批次价值，确定性候选生成/安全/能源/资源/应急层继续负责约束。不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
+阶段1–4已完成，学习必要性仍未证明。阶段4固定数据、训练与全部评价已完成，rank的离线排序信号尚未转化为优于同预算beam的综合证据。用户已授权阶段5闭合参考搜索筛选与计算预算验证，四模型正式训练与冻结已完成，评价流程pilot已通过，正式test360运行中，独立continuation9检查失败、正在核对；只近似当前已到达机群的完整联合批次价值，确定性候选生成/安全/能源/资源/应急层继续负责约束。不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
 
 ## 主代码路线
 
@@ -68,7 +68,7 @@
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按已授权[阶段5方法](docs/arrival_restructure/stage5_learning_validation.md)和[冻结协议](docs/experiments/fixed_terminal_stage5_protocol.md)完成实现预检，再训练冻结模型并首次生成新test；当前尚无阶段5正式效果结果。固定93维表示、train/val/test种子与模型预算，TOTAL预算包含anchors，不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段4完成结论、full_reference与beam_topk工程参考及rank实验性结果保留，阶段1–4结果与用户计划保留原样。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按已授权[阶段5方法](docs/arrival_restructure/stage5_learning_validation.md)和[冻结协议](docs/experiments/fixed_terminal_stage5_protocol.md)评价pilot已通过，正式test360（20workers）已启动，独立continuation9（4workers）终态3成功6失败，旧artifact比较补丁准备中，待test终态后应用；四模型正式训练与冻结已完成，不再训练或更换checkpoint，当前尚无阶段5正式效果结果。固定93维表示、train/val/test种子与模型预算，TOTAL预算包含anchors，不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段4完成结论、full_reference与beam_topk工程参考及rank实验性结果保留，阶段1–4结果与用户计划保留原样。
 
 ## 本地-服务器同步准则
 

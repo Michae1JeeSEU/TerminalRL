@@ -1,6 +1,6 @@
 # 阶段5：联合候选筛选与计算预算验证
 
-阶段5按[用户计划](../fixed_terminal_stage5_learning_validation_plan.md)执行方向A：检验学习能否作为当前状态下的搜索筛选器，在有限闭合参考质量与完整计算成本之间提供收益。**当前处于实现与预检阶段，正式训练、新test和完整评价尚未开始。** 精确种子、模型超参数、预算、矩阵和运行接口以[冻结协议](../experiments/fixed_terminal_stage5_protocol.md)为准；[阶段4诊断](../evidence/fixed_terminal_stage5/diagnosis.md)记录本轮依据，阶段4原结论保留。
+阶段5按[用户计划](../fixed_terminal_stage5_learning_validation_plan.md)执行方向A：检验学习能否作为当前状态下的搜索筛选器，在有限闭合参考质量与完整计算成本之间提供收益。**四模型正式训练与冻结已完成，评价流程pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中；阶段5尚未完成。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。 精确种子、模型超参数、预算、矩阵和运行接口以[冻结协议](../experiments/fixed_terminal_stage5_protocol.md)为准；[阶段4诊断](../evidence/fixed_terminal_stage5/diagnosis.md)记录本轮依据，阶段4原结论保留。
 
 ## 学习对象与职责
 

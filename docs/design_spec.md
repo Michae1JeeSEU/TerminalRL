@@ -57,3 +57,11 @@
 数据层只从joint behavior共同prefix的可见snapshot生成手工状态/候选特征和闭合J/Δ；模型层仅筛选批次。统一池≤14，学习或beam前3+FCFS/HOLD后≤5根精确rollout，最终按真实key选根并独立复查/共用应急。单根快路径不推理/rollout，完整承诺不撤销。生成中的feasibility开销须计入在线链，不以模型分数替代安全。
 
 train/val/test按新seed场景分组，scaler只拟合train。两简单MLP分别回归七维ΔJ、学习同context非tie pair顺序；输出不是动作模仿。公开接口与93个FEATURE_NAMES已按实现列于技术规范和协议附录。
+
+## 阶段5筛选与预算职责
+
+阶段5在固定93维表示上比较 linear_rank、mlp_rank、gradient_boost 与 value；训练读取阶段4既有train/val，模型冻结后才读取新5301–5303测试场景。当前接口与实验矩阵以[阶段5协议](experiments/fixed_terminal_stage5_protocol.md)为准，不能把实现或预检完成写成正式效果结论。
+
+`validation_models.ValidationScorer`只输出批次排序/价值预测；`validation_scheduler`负责现场候选池、TOTAL预算筛选、闭合评估及提交。TOTAL B=3/5/8先计入去重后的HOLD和现场FCFS anchors，再按排序补足，不能在B之外额外添加anchors。有限池参考评估全部根；rolling20/60保留旧joint continuation及承诺代理目标，其内部搜索与仿真步数另记。网络不替代候选生成、安全、能源、资源、pad或应急证书，已承诺路线不撤销。
+
+独立进程dispatcher只执行冻结任务并记录退出状态，不自动重训、重试或恢复已有场景。交付工具只在正式执行、汇总和模型hash核对完成后生成ZIP；原始数据、模型与日志和紧凑研究报告分目录保留。

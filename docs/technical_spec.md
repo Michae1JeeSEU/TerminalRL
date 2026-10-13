@@ -165,3 +165,13 @@ selection key前四项整数精确比较，T/D round8位、energy round10位；r
 pilot4001 low/medium四快照25候选，2epoch且复用同一pilot为train/val，smoke_only；只验证流程，不作为性能比较或正式checkpoint。59 JSON+8 JSONL/176行finite可解析，两模型重载预测精确相同。正式train/val、固定训练、test数据与完整评价均已完成。
 
 在线timing按all/degenerate/nondegenerate提供各分项total/p50/p95/max及total>5s次数；p95按0.95×(n−1)位置线性插值。预检两episode均exit0，仅说明执行链可运行；模型加载时间另列。
+
+## 阶段5公开接口与交付
+
+详细冻结设置见[阶段5协议](experiments/fixed_terminal_stage5_protocol.md)。`configs/fixed_terminal_stage5.py`导出MODEL_NAMES/MODEL_FILES、BUDGETS=(3,5,8)、POOL_LIMIT=14、LARGE_POOL_LIMIT=32、SNAPSHOT_TIMES=(0,15,90)、ONLINE_ARMS及scenario_jobs。`validation_models.ValidationScorer.load(path)`加载本地产生的冻结checkpoint，`kind`为rank/value，`predict(feature_rows)`返回二维预测；torch使用weights_only，joblib仅加载已声明来源且hash匹配的本地GB产物。
+
+训练CLI为`python -m terminal_marl.scripts.train_fixed_terminal_stage5 --stage4-root INPUT --output NEW_MODELS`；`--smoke`只允许pilot5001小fixture。正式固定超参数，无epoch覆盖参数。输出manifest schema为`fixed-terminal-stage5-model-manifest-v1`，记录frozen、smoke_only、test_read、重载预测一致及所有产物hash。来源通过`TERMINAL_SOURCE_COMMIT`传入，服务器运行不调用Git。
+
+评价CLI `evaluate_fixed_terminal_stage5`使用`--mode episode|snapshot|continuation`，episode/snapshot指定`--models --seed --load --soc --variant --output`，episode另选`--arm`，continuation使用`--stage4-root`且不依赖新模型。`run_fixed_terminal_stage5 --phase test --models MODELS --output NEW_RESULTS --workers 20 --execute`分发30 snapshot+330 episode；`--phase continuation --stage4-root INPUT`分发9个旧stage4诊断。无`--execute`只列任务；已有state/产物拒绝覆盖，失败返回主对话。线程环境OMP/MKL/OPENBLAS固定1。执行文件`execution_test.json`、`execution_continuation.json`保留真实命令/PID/退出码及模型起止hash。
+
+本地交付入口`package_fixed_terminal_stage5 --results-root RESULTS --stage4-root INPUT --output-dir DELIVERY --final-commit FULL_SHA`默认只读预览；加`--build`才写ZIP。它要求本地HEAD一致、360+9任务全部成功、正式`summary/summary.json`完成、模型冻结与hash一致。包保留明确范围内文档/代码、阶段5全部产物及阶段4训练/诊断输入；拒绝symlink逃逸和同名覆盖，完成后核对CRC及逐entry SHA256，外置`validation.json`、`zip.sha256`。该工具的fixture检查不代表正式实验或正式交付已完成。

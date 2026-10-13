@@ -1,6 +1,6 @@
 # 阶段5：当前状态联合候选筛选验证协议
 
-状态：**四类评分器、训练接口及针对性小fixture测试已实现；正式训练与本协议评价矩阵尚未运行。** 本文按主对话确定的方向A冻结范围，落实[用户阶段5计划](../fixed_terminal_stage5_learning_validation_plan.md)，保留[阶段4结果](../evidence/fixed_terminal_stage4/results.md)及原始数据，不按后续结果调整模型、种子、表示或预算。
+状态：**四模型正式训练与冻结已完成，评价流程pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中；本阶段评价尚未完成。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。 本文按主对话确定的方向A冻结范围，落实[用户阶段5计划](../fixed_terminal_stage5_learning_validation_plan.md)，保留[阶段4结果](../evidence/fixed_terminal_stage4/results.md)及原始数据，不按后续结果调整模型、种子、表示或预算。
 
 ## 研究对象与既有事实
 
@@ -90,11 +90,11 @@ STAGE4_RESULTS_ROOT含`data/train`、`data/val`；CLI不提供正式超参数覆
 
 实现版本由本地核定后通过`TERMINAL_SOURCE_COMMIT`环境变量传入；训练代码不运行服务器Git。CLI在导入数值库前设OMP/MKL/OPENBLAS线程1，训练与预测显式torch threads1；dispatcher继续保证线程限制。
 
-依赖已准备：本地sklearn1.9.1、SciPy1.18.1、NumPy2.4.4、torch2.5.1+cpu；服务器sklearn1.9.1、SciPy1.18.1、NumPy2.5.1、torch2.13.0+cu130，正式仅CPU。`requirements-stage5.txt`引用阶段4依赖并固定scikit-learn1.9.1；实际版本写入protocol。正式训练与评价统一使用服务器runtime，本地仅单测/smoke。服务器已有完整阶段4train108/val36数据，路径`~/projects/terminal/.worktrees/arrival-restructure/tmp_stage4_results`。
+依赖已准备：本地sklearn1.9.1、SciPy1.18.1、NumPy2.4.4、torch2.5.1+cpu；服务器sklearn1.9.1、SciPy1.18.1、NumPy2.5.1、torch2.13.0+cu130，正式仅CPU。`requirements-stage5.txt`独立固定正式base版本NumPy2.5.1、SciPy1.18.1、torch2.13.0、scikit-learn1.9.1；安装与重现以冻结模型manifest记录的实际环境为准，实际torch安装构建为2.13.0+cu130。本地旧torch/NumPy仅作接口单测/smoke，不作为正式重现环境；此次依赖文本修正不升级任何现有环境，也不修改阶段4依赖。正式训练与评价统一使用服务器runtime。服务器已有完整阶段4train108/val36数据，路径`~/projects/terminal/.worktrees/arrival-restructure/tmp_stage4_results`。
 
-服务器28 logical CPU，拟20workers、每进程threads1；具体并发须由主对话依据小pilot内存/时长核对后确定，当前不把拟定值写成已运行事实。服务器正式输出写入`$HOME/training_outputs/terminal`，按既有同步规则取回，不在服务器提交Git。
+服务器28 logical CPU；主对话已依据通过的pilot授权test360使用20workers、continuation9使用4workers，每进程threads1。两任务于20:05:07（北京时间）启动；test运行中，continuation已exit1、3成功6失败，旧artifact比较补丁准备中。启动时24并发预计内存约17 GB，初始T0约90 min，证据见运行状态；heartbeat已创建并view确认，详见运行状态。服务器正式输出写入`$HOME/training_outputs/terminal`，按既有同步规则取回，不在服务器提交Git。
 
-当前针对性模型单测8项通过（最终4.68 s，exit0），实际小fixture训练/保存加载四模型，覆盖TOTAL B5去重、ordinal ties、checkpoint排序、test隔离和覆盖拒绝。该检查未运行正式训练或评价矩阵，所有模型仅pilot流程产物。
+当前针对性模型单测8项通过（最终4.68 s，exit0），实际小fixture训练/保存加载四模型，覆盖TOTAL B5去重、ordinal ties、checkpoint排序、test隔离和覆盖拒绝。上述单测产物仅作pilot流程检查。随后正式四模型已按冻结协议完成训练并锁定，服务器pilot_v2亦已通过；正式test现已启动，独立continuation比较补丁准备中，训练与运行证据见运行状态。
 
 ## 固定任务分发接口
 
@@ -106,7 +106,7 @@ python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase test --models 
 python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase continuation --stage4-root STAGE4_RESULTS_ROOT --output OUTPUT_ROOT --workers 20 --execute
 ```
 
-上例并发20为拟定默认值，正式执行由小pilot核对后主对话指定；不以文档命令表示已经授权或启动。test开始和结束均验证formal manifest及所有模型文件hash一致，任何失败最终exit1；continuation只使用旧labels/selections和重建snapshot对照，不设置新模型前置条件。训练与子进程继承`TERMINAL_SOURCE_COMMIT`；OMP/MKL/OPENBLAS线程均1，不执行服务器Git或源码传输。
+主对话已在pilot核对后授权上例test20workers、continuation4workers；Luna已确认实际启动，test运行中，continuation终态失败，比较补丁准备中，PID与日志见运行状态。test开始和结束均验证formal manifest及所有模型文件hash一致，任何失败最终exit1；continuation只使用旧labels/selections和重建snapshot对照，不设置新模型前置条件。训练与子进程继承`TERMINAL_SOURCE_COMMIT`；OMP/MKL/OPENBLAS线程均1，不执行服务器Git或源码传输。
 
 ROOT下每job独立输出至`episodes/arm-load-soc-seed-variant`、`snapshots/load-soc-seed-variant`或`continuation/load-soc-4303`。`logs/`保存每job stdout/stderr；`execution_<phase>.json`原子更新PID、命令、起止、退出码、耗时与计数，`progress_<phase>.jsonl`写完成事件并flush。总日志只打印简短启动/完成事件与phase摘要。已存在job目录、日志或phase状态一律拒绝重复execute，无自动恢复、重训或重跑；失败处理由主对话决定。
 
