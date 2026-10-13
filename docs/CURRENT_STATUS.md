@@ -1,8 +1,10 @@
-# 当前状态：阶段6实现与预检
+# 当前状态：阶段6正式episode运行中
 
 ## 阶段6当前范围（2026-10-13）
 
-用户已授权[阶段6学习辅助联合调度](fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，当前进入implementation/preflight，正式264episode和30同状态面板（15jobs、240方法行）尚未启动。复用阶段5冻结MLP rank/GB，无需重训；固定物理、93维特征、pool14和FCFS闭合J。八方法比较采用TOTAL B3→B5→B8→full及已到达机群正常完成上界证书，证书不保证未来到达或全J最优。质量条件epsilon_normal=0与同状态非退化计算减少10%门槛预先冻结，A/B/C判断等待正式证据。
+用户已授权[阶段6学习辅助联合调度](fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，实现、修复与真实服务器pilot输出已由主审核验；冻结源码`f1018d8aaeff03836b13475301087f83ab70a155`已推送。正式264episode已于2026-10-13 23:26:21北京时间一次启动，20workers、数值库threads=1；30同状态面板（15jobs、240方法行）待episode阶段完成后单worker运行，两阶段不重叠。复用阶段5冻结MLP rank/GB，无需重训；固定物理、93维特征、pool14和FCFS闭合J。八方法比较采用TOTAL B3→B5→B8→full及已到达机群正常完成上界证书，证书不保证未来到达或全J最优。质量条件epsilon_normal=0与同状态非退化计算减少10%门槛预先冻结，A/B/C判断等待正式证据。
+
+服务器pilot首次四任务因launcher未cd项目目录而exit1，未仿真，失败日志保留；修正cwd后四任务exit0，模型hash不变。三个episode各24请求、18正常/6截尾/0失败/0应急且守恒，dense panel为t0/t60共16行；仅作流程和估时依据。正式time PID3431309、dispatcher PID3431310，启动初验0/264完成、20运行、244待运行、0失败且已有非空中间产物。T0=75 min，初始预计2026-10-14 00:41北京时间；该数值为初估。输出服务器`/home/user/training_outputs/terminal/stage6_assisted_20261013`，本地`D:\7_codespace\training_outputs\terminal\stage6_assisted_20261013`。短期监控worker已结束；当前聊天heartbeat已由工具确认创建成功（automationId=6、ACTIVE），约23:30建立71分钟间隔，预计10月14日00:41北京时间自动复查，之后按实际剩余时间重估。正常且无变化时保持安静；episode完成后接续panels、严格summary及交付，交付完成后删除该heartbeat。正式矩阵、严格summary和结果包均未完成。
 
 当前依据为[方法](arrival_restructure/stage6_learning_assisted_scheduling.md)、[协议](experiments/fixed_terminal_stage6_protocol.md)、[运行状态](evidence/fixed_terminal_stage6/run_status.md)。阶段1–5历史事实与结论保持；下文“下一阶段另定范围”等表述属于阶段5结束时的历史状态，本节记录后续明确授权。阶段6仍不开展PPO、actor、teacher动作模仿、offline RL、GNN/attention或改变几何。
 
