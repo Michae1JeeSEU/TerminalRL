@@ -1,6 +1,6 @@
-# 阶段5运行状态：正式test运行中，continuation比较补丁准备中
+# 阶段5运行状态：正式test完成，continuation修复与收尾进行中
 
-更新日期：2026-10-13。源提交`4811abb805ab03997f5ce4186c6b2610f3c6b3b3`已推送；阶段1–5合并检查为101 passed in 17.21 s、exit0，日志`tmp_stage5_preflight/combined_tests.log`。当前四模型正式训练及冻结已完成，评价流程pilot已通过；新530x正式360个jobs已启动并在运行，独立旧4303 continuation 9个jobs终态3成功6失败，旧artifact比较补丁准备中。阶段5尚未完成。本文是运行状态，不是阶段5效果报告。
+更新日期：2026-10-13。源提交`4811abb805ab03997f5ce4186c6b2610f3c6b3b3`已推送；阶段1–5合并检查为101 passed in 17.21 s、exit0，日志`tmp_stage5_preflight/combined_tests.log`。当前四模型正式训练及冻结已完成，评价流程pilot已通过；新530x正式360个jobs已全部完成，0failed、exit0、四模型hash不变；独立旧4303 continuation首轮3成功6失败，旧artifact比较修复正在应用与验证，第二轮尚未运行。服务器完整产物核验和最终研究汇总仍在进行，阶段5尚未完成。本文是运行状态，不是阶段5效果报告。
 
 ## 正式训练与冻结
 
@@ -44,8 +44,10 @@ env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 TERMINAL_SOURCE_C
 
 |任务|nohup/time启动PID|dispatcher PID|dispatcher开始UTC|状态|
 |---|---:|---:|---|---|
-|test360，20workers|3416299|3416301|2026-10-13T12:05:07.413712+00:00|运行中|
+|test360，20workers|3416299|3416301|2026-10-13T12:05:07.413712+00:00|已完成，360成功、0失败、exit0|
 |continuation9，4workers|3416300|3416302|2026-10-13T12:05:07.404932+00:00|exit1，3成功6失败|
+
+正式test终态来源于已同步本地`execution_test.json`：`status=completed`，360/360成功，pending/running/failed均0，exit0，`model_hashes_unchanged=true`；结束时间2026-10-13T13:17:04.821508+00:00，即北京时间21:17:04.821508，duration4317.407811361365 s。Luna正在核验服务器完整产物，最终研究结论待结果汇总和主对话解释；任务全部exit0不单独代表阶段5研究验收完成。
 
 Luna启动初验test为3/360 completed、20 running、337 pending、0 failed，并有18份非空decisions.jsonl；这是启动时进度，不是完成结果。四模型hash不变。continuation的dispatcher结束于12:05:23.289072 UTC，记录duration15.884156 s，外层time墙钟15.93 s、exit1；原始错误为`ValueError: old visible snapshot mismatch`。主对话已完成下述限定诊断；原始失败记录保留。
 
@@ -53,11 +55,13 @@ Luna启动初验test为3/360 completed、20 running、337 pending、0 failed，�
 
 初始T0约90 min：270个非rolling episode按约2 min、60个rolling按约10.6 min、30个snapshot场景按约1 min，合计约1206 worker-min，20workers理想墙钟约60 min，再加50%余量。它是主对话依据pilot确定的初估，未把不同任务当作均匀工作量；后续按实际阶段吞吐更新。预计超过一小时，启动验证已完成。当前线程heartbeat已工具创建并view确认：id=`5`，名称“阶段5冻结评价接续”，创建于2026-10-13 20:13:57北京时间，间隔81 min，约21:35复查并自动接续已授权分析与交付，无常驻监控worker。
 
-## continuation限定诊断与待应用补丁
+## continuation限定诊断与比较修复
 
 已收集九个旧4303场景的只读重建比较，证据为根目录`dispatch_logs/continuation_replay_comparison.json`。scenario全部exact相等；low三个场景完全相等，medium三个各有2个浮点差异，high三个各有4个浮点差异。最大绝对差均为1.7763568394002505e-15，仅位于已经存储的plan segment坐标；结构、字符串、整数、布尔和其他类型差异均0，所有新提议root plans无差异。该检查未运行evaluate_root、未读正式test或模型。
 
-主对话诊断为跨平台浮点末位表示差异触发旧JSON严格相等检查，不归因具体库。Astra正在`tmp_stage5_preflight/continuation_fix`准备只修旧artifact比较的patch/tests：拟固定float绝对差≤1e-12，config/scenario及结构、字符串、整数、布尔保持exact，并记录比较审计。此容差仅用于旧artifact复现比较，不扩展物理、安全或J比较容差。**补丁仅准备中，尚未应用或验收；待正式test360终态后再应用，当前运行源码未修改、未重启。** 原始失败与差异证据均保留。
+主对话诊断为跨平台浮点末位表示差异触发旧JSON严格相等检查，不归因具体库。正式test已达终态，Astra正在应用已审查的旧artifact比较修复并执行26项针对性检查，结果与验收待执行报告确认。修复仅允许finite float使用绝对容差1e-12、相对容差0；config/scenario和类型、离散值、结构保持exact。审计保留`exact_match`、差异count及max绝对差。它不改变物理、安全、J、模型、episode或snapshot计算，也不重跑已完成的360个正式test任务。
+
+九个continuation计划先将首轮全部原始证据保留到`continuation_attempt1`，再完整重放一次。**当前第二轮尚未运行，不能写为修复验证成功或continuation已完成。** 原始失败和差异证据均保留；是否已归档、应用、通过26项检查及重放结果，均待后续实际记录更新。
 
 ## 独立汇总与打包验证
 

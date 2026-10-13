@@ -8,7 +8,7 @@ from copy import deepcopy
 from dataclasses import asdict, replace
 from hashlib import sha256
 import json
-from math import pi
+from math import pi, isfinite
 from pathlib import Path, PurePosixPath
 from time import perf_counter
 
@@ -301,6 +301,50 @@ def saved_context_path(value):
     return PurePosixPath(str(value).replace("\\", "/"))
 
 
+def compare_continuation_artifact(stored, rebuilt, path="$", *, exact=False):
+    """Compare parsed old artifacts; tolerance never changes flight feasibility.
+
+    exact_match means recursively identical Python types and numeric values,
+    not bitwise-identical source files. Discrete values and order remain exact.
+    """
+    tolerance = 0. if exact else 1e-12
+    audit = {"exact_match": True, "float_difference_count": 0, "max_abs_difference": 0.,
+             "absolute_tolerance": tolerance, "relative_tolerance": 0.,
+             "exact_match_definition": "parsed_types_and_values_equal; not_bitwise_file_equality"}
+
+    def visit(left, right, location):
+        if type(left) is not type(right):
+            raise ValueError(f"artifact mismatch at {location}: type {type(left).__name__} != {type(right).__name__}")
+        if isinstance(left, dict):
+            if list(left) != list(right):
+                raise ValueError(f"artifact mismatch at {location}: dictionary keys/order differ")
+            for key in left:
+                visit(left[key], right[key], f"{location}[{key!r}]")
+        elif isinstance(left, list):
+            if len(left) != len(right):
+                raise ValueError(f"artifact mismatch at {location}: list length {len(left)} != {len(right)}")
+            for index, (a, b) in enumerate(zip(left, right)):
+                visit(a, b, f"{location}[{index}]")
+        elif isinstance(left, float):
+            if not isfinite(left) or not isfinite(right):
+                raise ValueError(f"artifact mismatch at {location}: nonfinite float")
+            difference = abs(left-right)
+            if difference > tolerance:
+                raise ValueError(f"artifact mismatch at {location}: abs_difference={difference!r} exceeds {tolerance!r}")
+            if difference:
+                audit["exact_match"] = False
+                audit["float_difference_count"] += 1
+                audit["max_abs_difference"] = max(audit["max_abs_difference"], difference)
+        elif isinstance(left, (str, bool, int)) or left is None:
+            if left != right:
+                raise ValueError(f"artifact mismatch at {location}: discrete values differ")
+        else:
+            raise ValueError(f"artifact mismatch at {location}: unsupported parsed type {type(left).__name__}")
+
+    visit(stored, rebuilt, path)
+    return audit
+
+
 def continuation_diagnostic(stage4_root, output, load, soc):
     """One fixed old test context; saved old selections, no checkpoint re-inference."""
     stage4_root, output = Path(stage4_root), Path(output)
@@ -318,14 +362,17 @@ def continuation_diagnostic(stage4_root, output, load, soc):
             apply_scheduler(env, "joint_window")
             next_decision += 5.
         env.step()
-    if canonical_json(visible_snapshot(env)) != read_json(base/"t15"/"snapshot.json"):
-        raise ValueError("old visible snapshot mismatch")
+    stored_snapshot = read_json(base/"t15"/"snapshot.json")
+    # Configuration remains exact; only reconstructed artifact floats below
+    # receive the fixed platform-roundoff tolerance.
+    compare_continuation_artifact(stored_snapshot["config"], canonical_json(asdict(config)), "$.snapshot.config", exact=True)
+    snapshot_audit = compare_continuation_artifact(stored_snapshot, canonical_json(visible_snapshot(env)), "$.snapshot")
     roots_doc = read_json(base/"t15"/"roots.json")
-    roots = {}
+    roots, plan_audits = {}, {}
     for row in roots_doc["roots"]:
         plans = tuple(env.propose(Intent(p["aircraft_id"], tuple(p["wait_cycles"]))) for p in row["plans"])
-        if canonical_json([asdict(p) for p in plans]) != row["plans"]:
-            raise ValueError("old canonical plan mismatch")
+        plan_audits[row["root_id"]] = compare_continuation_artifact(
+            row["plans"], canonical_json([asdict(p) for p in plans]), f"$.plans[{row['root_id']!r}]")
         roots[row["root_id"]] = Root(row["root_id"], plans, row["labels"], row["provenance"], row["feasibility"])
     old = read_json(stage4_root/"summary"/"offline_test.json")
     chosen = {}
@@ -339,7 +386,13 @@ def continuation_diagnostic(stage4_root, output, load, soc):
         raise AssertionError("continuation union exceeded5")
     labels = {r["root_id"]: r["value"] for r in read_json(base/"t15"/"labels.json")["rows"]}
     output.mkdir(parents=True)
-    write_json(output/"input.json", {"source": str(base), "snapshot_match": True, "selected_by": chosen,
+    plans_audit = {"exact_match": all(a["exact_match"] for a in plan_audits.values()),
+                   "float_difference_count": sum(a["float_difference_count"] for a in plan_audits.values()),
+                   "max_abs_difference": max((a["max_abs_difference"] for a in plan_audits.values()), default=0.),
+                   "absolute_tolerance": 1e-12, "relative_tolerance": 0., "by_root": plan_audits}
+    write_json(output/"input.json", {"source": str(base), "snapshot_match": True,
+               "snapshot_match_scope": "artifact_comparison_with_reported_absolute_float_tolerance; config_exact",
+               "artifact_comparison": {"snapshot": snapshot_audit, "plans": plans_audit}, "selected_by": chosen,
                "root_ids": ids, "selection_source": "preexisting_stage4_offline_test; no_checkpoint_reinference"})
     rows = []
     for root_id in ids:
