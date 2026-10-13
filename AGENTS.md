@@ -4,7 +4,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-当前阶段1只建立明确的问题定义、独立可行性层、可信的合成仿真与可复现场景。固定几何不作为控制变量；不引入 RL、IL、teacher、算法比较或实机实验。阶段1完成后停止于审查，不自动进入阶段2。
+阶段1已完成固定问题合同与内部验证；用户已授权阶段2传统调度比较。已完成 FCFS、SOC、能源余量、deadline余量、联合窗口和滚动优化的162场冻结比较，以及12个小规模有限目录 MILP参考。固定物理合同不变，不引入 RL、IL、teacher、网络或实机实验。阶段2主审结论为学习必要性尚未建立，不自动进入学习研究。
 
 ## 主代码路线
 
@@ -24,7 +24,9 @@
 | 需求 | [docs/requirements.md](docs/requirements.md) | 必須满足的模型行为 |
 | 设计 | [docs/design_spec.md](docs/design_spec.md) | 独立核心职责与数据流 |
 | 技术规范 | [docs/technical_spec.md](docs/technical_spec.md) | 参数、接口、测试与输出 |
-| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 阶段1实现、验证和审查 |
+| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 阶段2实现、预检、比较与审查 |
+| 阶段2方法 | [docs/arrival_restructure/stage2_traditional_baselines.md](docs/arrival_restructure/stage2_traditional_baselines.md) | 六方法、联合批次、滚动信息边界与 oracle |
+| 阶段2协议 | [docs/experiments/fixed_terminal_stage2_protocol.md](docs/experiments/fixed_terminal_stage2_protocol.md) | 冻结预算、162场比较和12个小实例 |
 
 ## 开发原则
 
@@ -41,7 +43,7 @@
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为唯一滚动进度入口：核对问题合同与冻结参数，完成新核心及针对性测试，运行阶段1场景并审查运行域。当前不恢复旧 I0/I1/I2、PPO、M1–M4 或动态空域开发顺序。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为唯一滚动进度入口。阶段2六方法、原子联合可行性、有限目录oracle、47项测试及162+12冻结实验已完成，结果见 [阶段2证据](docs/evidence/fixed_terminal_stage2/results.md)。本轮未建立学习必要性证据，保留负结果与完整交付，不启动第三阶段训练。方法不得读取尚未到达请求；已承诺完整计划保持不变。阶段1证据保留，不恢复旧 I0/I1/I2、PPO、M1–M4 或动态几何路线。
 
 ## 本地-服务器同步准则
 

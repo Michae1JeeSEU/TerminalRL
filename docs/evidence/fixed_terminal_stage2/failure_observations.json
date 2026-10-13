@@ -1,0 +1,2358 @@
+{
+  "scope": "Read-only extraction from completed four-rule episode artifacts; route energy evaluated algebraically without new simulation. No causal/inevitability claim.",
+  "summary": {
+    "result_files_read": 108,
+    "cases": 27,
+    "all_four_methods_present_in_every_case": true,
+    "failed_id_sets_identical_in_every_case": true,
+    "failed_request_records": 28,
+    "failed_records_by_method": {
+      "deadline_slack": 7,
+      "energy_slack": 7,
+      "fcfs": 7,
+      "soc": 7
+    },
+    "unique_scenario_request_failures": 7,
+    "unique_initial_ring_failures": 4,
+    "unique_external_failures": 3,
+    "initial_failures_with_soc_below_both_t0_requirements": 2
+  },
+  "case_comparisons": [
+    {
+      "load": "high",
+      "soc_profile": "high",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "high",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "high",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "energy_slack": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "fcfs": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "soc": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ]
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [
+          "uav-0033"
+        ],
+        "energy_slack": [
+          "uav-0033"
+        ],
+        "fcfs": [
+          "uav-0033"
+        ],
+        "soc": [
+          "uav-0033"
+        ]
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [
+          "uav-0032"
+        ],
+        "energy_slack": [
+          "uav-0032"
+        ],
+        "fcfs": [
+          "uav-0032"
+        ],
+        "soc": [
+          "uav-0032"
+        ]
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "medium",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "medium",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "high",
+      "soc_profile": "medium",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "high",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "high",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "high",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "low",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "low",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "low",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "medium",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "medium",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "low",
+      "soc_profile": "medium",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "high",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "high",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "high",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [
+          "uav-0013"
+        ],
+        "energy_slack": [
+          "uav-0013"
+        ],
+        "fcfs": [
+          "uav-0013"
+        ],
+        "soc": [
+          "uav-0013"
+        ]
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [
+          "uav-0010"
+        ],
+        "energy_slack": [
+          "uav-0010"
+        ],
+        "fcfs": [
+          "uav-0010"
+        ],
+        "soc": [
+          "uav-0010"
+        ]
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "medium",
+      "seed": 101,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "medium",
+      "seed": 202,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    },
+    {
+      "load": "medium",
+      "soc_profile": "medium",
+      "seed": 303,
+      "methods_present": [
+        "deadline_slack",
+        "energy_slack",
+        "fcfs",
+        "soc"
+      ],
+      "failed_ids_by_method": {
+        "deadline_slack": [],
+        "energy_slack": [],
+        "fcfs": [],
+        "soc": []
+      },
+      "all_four_present": true,
+      "failed_id_sets_identical": true
+    }
+  ],
+  "failures": [
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 1,
+      "initial_theta": 5.7883844642391935,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11532088571919358,
+        "emergency_required_soc_including_reserve": 0.09839527873766267,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.026527096256526467,
+        "emergency_margin_soc": -0.009601489274995559,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0021",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09895558593477233,
+      "failure_time": 123.69448241846561,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 5.145230634879283,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.12042467902895997,
+        "emergency_required_soc_including_reserve": 0.09290758654192993,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02146909309418764,
+        "emergency_margin_soc": 0.006047999392842396,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": false,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0040",
+      "arrival_time": 131.66227604535962,
+      "admitted_time": null,
+      "initial_soc": 0.051809869789129714,
+      "failure_time": 196.4246132817717,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-high-low-101\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 202,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0033",
+      "arrival_time": 72.71877226622544,
+      "admitted_time": null,
+      "initial_soc": 0.08604128676080666,
+      "failure_time": 180.27038071723388,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-high-low-202\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0032",
+      "arrival_time": 81.5031227188404,
+      "admitted_time": null,
+      "initial_soc": 0.09408119398171794,
+      "failure_time": 199.10461519598798,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-high-low-303\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 4.5762532987291324,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-medium-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11663149678795895,
+        "emergency_required_soc_including_reserve": 0.08911440430092893,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02783770732529184,
+        "emergency_margin_soc": -0.0003206148382618179,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "deadline_slack",
+      "aircraft_id": "uav-0010",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09782098117014676,
+      "failure_time": 122.27622646268364,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 1.434660645139339,
+      "source_result": "tmp_stage2_results\\episodes\\deadline_slack-medium-low-303\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.095687545764027,
+        "emergency_required_soc_including_reserve": 0.11005835532486088,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": 0.002133435406119766,
+        "emergency_margin_soc": -0.012237374154714126,
+        "initial_soc_below_normal_requirement": false,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 1,
+      "initial_theta": 5.7883844642391935,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11532088571919358,
+        "emergency_required_soc_including_reserve": 0.09839527873766267,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.026527096256526467,
+        "emergency_margin_soc": -0.009601489274995559,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0021",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09895558593477233,
+      "failure_time": 123.69448241846561,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 5.145230634879283,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.12042467902895997,
+        "emergency_required_soc_including_reserve": 0.09290758654192993,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02146909309418764,
+        "emergency_margin_soc": 0.006047999392842396,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": false,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0040",
+      "arrival_time": 131.66227604535962,
+      "admitted_time": null,
+      "initial_soc": 0.051809869789129714,
+      "failure_time": 196.4246132817717,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-high-low-101\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 202,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0033",
+      "arrival_time": 72.71877226622544,
+      "admitted_time": null,
+      "initial_soc": 0.08604128676080666,
+      "failure_time": 180.27038071723388,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-high-low-202\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0032",
+      "arrival_time": 81.5031227188404,
+      "admitted_time": null,
+      "initial_soc": 0.09408119398171794,
+      "failure_time": 199.10461519598798,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-high-low-303\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 4.5762532987291324,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-medium-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11663149678795895,
+        "emergency_required_soc_including_reserve": 0.08911440430092893,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02783770732529184,
+        "emergency_margin_soc": -0.0003206148382618179,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "energy_slack",
+      "aircraft_id": "uav-0010",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09782098117014676,
+      "failure_time": 122.27622646268364,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 1.434660645139339,
+      "source_result": "tmp_stage2_results\\episodes\\energy_slack-medium-low-303\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.095687545764027,
+        "emergency_required_soc_including_reserve": 0.11005835532486088,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": 0.002133435406119766,
+        "emergency_margin_soc": -0.012237374154714126,
+        "initial_soc_below_normal_requirement": false,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "fcfs",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 1,
+      "initial_theta": 5.7883844642391935,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11532088571919358,
+        "emergency_required_soc_including_reserve": 0.09839527873766267,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.026527096256526467,
+        "emergency_margin_soc": -0.009601489274995559,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "fcfs",
+      "aircraft_id": "uav-0021",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09895558593477233,
+      "failure_time": 123.69448241846561,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 5.145230634879283,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.12042467902895997,
+        "emergency_required_soc_including_reserve": 0.09290758654192993,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02146909309418764,
+        "emergency_margin_soc": 0.006047999392842396,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": false,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "fcfs",
+      "aircraft_id": "uav-0040",
+      "arrival_time": 131.66227604535962,
+      "admitted_time": null,
+      "initial_soc": 0.051809869789129714,
+      "failure_time": 196.4246132817717,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 202,
+      "method": "fcfs",
+      "aircraft_id": "uav-0033",
+      "arrival_time": 72.71877226622544,
+      "admitted_time": null,
+      "initial_soc": 0.08604128676080666,
+      "failure_time": 180.27038071723388,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-high-low-202\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "fcfs",
+      "aircraft_id": "uav-0032",
+      "arrival_time": 81.5031227188404,
+      "admitted_time": null,
+      "initial_soc": 0.09408119398171794,
+      "failure_time": 199.10461519598798,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-high-low-303\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "fcfs",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 4.5762532987291324,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-medium-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11663149678795895,
+        "emergency_required_soc_including_reserve": 0.08911440430092893,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02783770732529184,
+        "emergency_margin_soc": -0.0003206148382618179,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "fcfs",
+      "aircraft_id": "uav-0010",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09782098117014676,
+      "failure_time": 122.27622646268364,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 1.434660645139339,
+      "source_result": "tmp_stage2_results\\episodes\\fcfs-medium-low-303\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.095687545764027,
+        "emergency_required_soc_including_reserve": 0.11005835532486088,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": 0.002133435406119766,
+        "emergency_margin_soc": -0.012237374154714126,
+        "initial_soc_below_normal_requirement": false,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "soc",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 1,
+      "initial_theta": 5.7883844642391935,
+      "source_result": "tmp_stage2_results\\episodes\\soc-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11532088571919358,
+        "emergency_required_soc_including_reserve": 0.09839527873766267,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.026527096256526467,
+        "emergency_margin_soc": -0.009601489274995559,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "soc",
+      "aircraft_id": "uav-0021",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09895558593477233,
+      "failure_time": 123.69448241846561,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 5.145230634879283,
+      "source_result": "tmp_stage2_results\\episodes\\soc-high-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.12042467902895997,
+        "emergency_required_soc_including_reserve": 0.09290758654192993,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02146909309418764,
+        "emergency_margin_soc": 0.006047999392842396,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": false,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "soc",
+      "aircraft_id": "uav-0040",
+      "arrival_time": 131.66227604535962,
+      "admitted_time": null,
+      "initial_soc": 0.051809869789129714,
+      "failure_time": 196.4246132817717,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\soc-high-low-101\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 202,
+      "method": "soc",
+      "aircraft_id": "uav-0033",
+      "arrival_time": 72.71877226622544,
+      "admitted_time": null,
+      "initial_soc": 0.08604128676080666,
+      "failure_time": 180.27038071723388,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\soc-high-low-202\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "high",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "soc",
+      "aircraft_id": "uav-0032",
+      "arrival_time": 81.5031227188404,
+      "admitted_time": null,
+      "initial_soc": 0.09408119398171794,
+      "failure_time": 199.10461519598798,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": null,
+      "initial_theta": 0.0,
+      "source_result": "tmp_stage2_results\\episodes\\soc-high-low-303\\result.json",
+      "t0_route_energy": null
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 101,
+      "method": "soc",
+      "aircraft_id": "uav-0013",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.08879378946266711,
+      "failure_time": 110.992236828334,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 4.5762532987291324,
+      "source_result": "tmp_stage2_results\\episodes\\soc-medium-low-101\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.11663149678795895,
+        "emergency_required_soc_including_reserve": 0.08911440430092893,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": -0.02783770732529184,
+        "emergency_margin_soc": -0.0003206148382618179,
+        "initial_soc_below_normal_requirement": true,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    },
+    {
+      "load": "medium",
+      "soc_profile": "low",
+      "seed": 303,
+      "method": "soc",
+      "aircraft_id": "uav-0010",
+      "arrival_time": 0.0,
+      "admitted_time": 0.0,
+      "initial_soc": 0.09782098117014676,
+      "failure_time": 122.27622646268364,
+      "reason": "SOC_exhausted_before_landing",
+      "initial_ring": 2,
+      "initial_theta": 1.434660645139339,
+      "source_result": "tmp_stage2_results\\episodes\\soc-medium-low-303\\result.json",
+      "t0_route_energy": {
+        "normal_required_soc_including_reserve": 0.095687545764027,
+        "emergency_required_soc_including_reserve": 0.11005835532486088,
+        "reserve_soc": 0.06,
+        "normal_margin_soc": 0.002133435406119766,
+        "emergency_margin_soc": -0.012237374154714126,
+        "initial_soc_below_normal_requirement": false,
+        "initial_soc_below_emergency_requirement": true,
+        "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+      }
+    }
+  ],
+  "joint_comparison": {
+    "scope": "Completed joint_window versus paired FCFS only; observational event and decision extraction. No rolling data and no causal attribution.",
+    "summary": {
+      "completed_joint_cases": 27,
+      "fcfs_failed_count": 7,
+      "joint_failed_count": 9,
+      "additional_failures_under_joint": 2,
+      "avoided_failures_under_joint": 0,
+      "identical_failure_id_sets_case_count": 25
+    },
+    "case_comparisons": [
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "joint_window_failed_ids": [
+          "uav-0013",
+          "uav-0016",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "additional_failed_ids_under_joint": [
+          "uav-0016"
+        ],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [
+          "uav-0033"
+        ],
+        "joint_window_failed_ids": [
+          "uav-0033"
+        ],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [
+          "uav-0032"
+        ],
+        "joint_window_failed_ids": [
+          "uav-0032"
+        ],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [
+          "uav-0013"
+        ],
+        "joint_window_failed_ids": [
+          "uav-0013"
+        ],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [
+          "uav-0010"
+        ],
+        "joint_window_failed_ids": [
+          "uav-0010",
+          "uav-0013"
+        ],
+        "additional_failed_ids_under_joint": [
+          "uav-0013"
+        ],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "joint_window_failed_ids": [],
+        "additional_failed_ids_under_joint": [],
+        "avoided_failed_ids_under_joint": []
+      }
+    ],
+    "difference_requests": [
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 101,
+        "aircraft_id": "uav-0016",
+        "difference": "additional_failure_under_joint",
+        "initial_request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "soc": 0.17138562093445242,
+          "ring": 2,
+          "theta": 1.6545721308906245
+        },
+        "t0_route_energy": {
+          "normal_required_soc_including_reserve": 0.09715362233570224,
+          "emergency_required_soc_including_reserve": 0.11152443189653612,
+          "reserve_soc": 0.06,
+          "normal_margin_soc": 0.07423199859875018,
+          "emergency_margin_soc": 0.059861189037916304,
+          "initial_soc_below_normal_requirement": false,
+          "initial_soc_below_emergency_requirement": false,
+          "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+        },
+        "fcfs_request_outcome": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "joint_window_request_outcome": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "fcfs_trace": {
+          "events": [
+            {
+              "time": 0.0,
+              "event": "plan_committed",
+              "aircraft_id": "uav-0016",
+              "emergency": true,
+              "wait_cycles": [
+                1
+              ],
+              "planned_end": 111.82791743050004,
+              "required_soc_including_reserve": 0.15341233394440001,
+              "reason": "normal_domain_infeasible;emergency_feasible",
+              "reservations": [
+                {
+                  "resource": "ring:2",
+                  "start": 0.0,
+                  "end": 94.32791743050004
+                },
+                {
+                  "resource": "emergency_corridor",
+                  "start": 91.32791743050004,
+                  "end": 98.32791743050004
+                },
+                {
+                  "resource": "emergency_approach",
+                  "start": 96.32791743050004,
+                  "end": 111.82791743050004
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 109.82791743050004,
+                  "end": 112.82791743050004
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 109.82791743050004,
+                  "end": 117.82791743050004
+                }
+              ]
+            },
+            {
+              "time": 111.82791743050004,
+              "event": "emergency_landed",
+              "aircraft_id": "uav-0016",
+              "soc": 0.07797328699005283
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "joint_window_trace": {
+          "events": [
+            {
+              "time": 214.23202616806628,
+              "event": "failed_energy",
+              "aircraft_id": "uav-0016"
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "source_fcfs": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\result.json",
+        "source_joint_window": "tmp_stage2_results\\episodes\\joint_window-high-low-101\\result.json"
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 303,
+        "aircraft_id": "uav-0013",
+        "difference": "additional_failure_under_joint",
+        "initial_request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "soc": 0.11419364232707352,
+          "ring": 2,
+          "theta": 4.5762532987291324
+        },
+        "t0_route_energy": {
+          "normal_required_soc_including_reserve": 0.11663149678795895,
+          "emergency_required_soc_including_reserve": 0.08911440430092893,
+          "reserve_soc": 0.06,
+          "normal_margin_soc": -0.0024378544608854302,
+          "emergency_margin_soc": 0.02507923802614459,
+          "initial_soc_below_normal_requirement": true,
+          "initial_soc_below_emergency_requirement": false,
+          "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+        },
+        "fcfs_request_outcome": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "joint_window_request_outcome": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.11419364232707353,
+          "completion_time": 142.74205290884223,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": null,
+          "observed_request_seconds": 142.74205290884223,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "fcfs_trace": {
+          "events": [
+            {
+              "time": 0.0,
+              "event": "plan_committed",
+              "aircraft_id": "uav-0013",
+              "emergency": true,
+              "wait_cycles": [
+                0
+              ],
+              "planned_end": 31.455505376161163,
+              "required_soc_including_reserve": 0.08911440430092893,
+              "reason": "normal_domain_infeasible;emergency_feasible",
+              "reservations": [
+                {
+                  "resource": "ring:2",
+                  "start": 0.0,
+                  "end": 13.955505376161161
+                },
+                {
+                  "resource": "emergency_corridor",
+                  "start": 10.955505376161161,
+                  "end": 17.955505376161163
+                },
+                {
+                  "resource": "emergency_approach",
+                  "start": 15.955505376161163,
+                  "end": 31.455505376161163
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 29.455505376161163,
+                  "end": 32.45550537616116
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 29.455505376161163,
+                  "end": 37.45550537616116
+                }
+              ]
+            },
+            {
+              "time": 31.455505376161163,
+              "event": "emergency_landed",
+              "aircraft_id": "uav-0013",
+              "soc": 0.08507923802614463
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "joint_window_trace": {
+          "events": [
+            {
+              "time": 142.74205290884223,
+              "event": "failed_energy",
+              "aircraft_id": "uav-0013"
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "source_fcfs": "tmp_stage2_results\\episodes\\fcfs-medium-low-303\\result.json",
+        "source_joint_window": "tmp_stage2_results\\episodes\\joint_window-medium-low-303\\result.json"
+      }
+    ]
+  },
+  "rolling_comparison": {
+    "scope": "All27 completed rolling_horizon versus paired FCFS cases; only artifact extraction and algebraic initial-route energy evaluation; no simulation, causal attribution, or external-queue spatial assumptions.",
+    "summary": {
+      "completed_rolling_cases": 27,
+      "fcfs_failed_count": 7,
+      "rolling_failed_count": 9,
+      "additional_failures_under_rolling": 2,
+      "avoided_failures_under_rolling": 0,
+      "identical_failure_id_sets_case_count": 25,
+      "all_case_count_differences_closed": true,
+      "all_scenario_inputs_identical": true,
+      "all_request_jsonl_match_result": true,
+      "aggregate_count_difference_closed": true
+    },
+    "case_comparisons": [
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [
+          "uav-0013",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "rolling_horizon_failed_ids": [
+          "uav-0013",
+          "uav-0016",
+          "uav-0021",
+          "uav-0040"
+        ],
+        "additional_failed_ids_under_rolling": [
+          "uav-0016"
+        ],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [
+          "uav-0033"
+        ],
+        "rolling_horizon_failed_ids": [
+          "uav-0033"
+        ],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [
+          "uav-0032"
+        ],
+        "rolling_horizon_failed_ids": [
+          "uav-0032"
+        ],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "high",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "low",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "high",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 101,
+        "fcfs_failed_ids": [
+          "uav-0013"
+        ],
+        "rolling_horizon_failed_ids": [
+          "uav-0013"
+        ],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 303,
+        "fcfs_failed_ids": [
+          "uav-0010"
+        ],
+        "rolling_horizon_failed_ids": [
+          "uav-0010",
+          "uav-0013"
+        ],
+        "additional_failed_ids_under_rolling": [
+          "uav-0013"
+        ],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 101,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 202,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      },
+      {
+        "load": "medium",
+        "soc_profile": "medium",
+        "seed": 303,
+        "fcfs_failed_ids": [],
+        "rolling_horizon_failed_ids": [],
+        "additional_failed_ids_under_rolling": [],
+        "avoided_failed_ids_under_rolling": [],
+        "count_difference_closed": true,
+        "scenario_inputs_identical": true,
+        "request_jsonl_matches_result": true
+      }
+    ],
+    "difference_requests": [
+      {
+        "load": "high",
+        "soc_profile": "low",
+        "seed": 101,
+        "aircraft_id": "uav-0016",
+        "difference": "additional_failure_under_rolling",
+        "initial_request": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "soc": 0.17138562093445242,
+          "ring": 2,
+          "theta": 1.6545721308906245
+        },
+        "initial_position_type": "initial_terminal_ring",
+        "t0_route_energy": {
+          "normal_required_soc_including_reserve": 0.09715362233570224,
+          "emergency_required_soc_including_reserve": 0.11152443189653612,
+          "reserve_soc": 0.06,
+          "normal_margin_soc": 0.07423199859875018,
+          "emergency_margin_soc": 0.059861189037916304,
+          "initial_soc_below_normal_requirement": false,
+          "initial_soc_below_emergency_requirement": false,
+          "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+        },
+        "fcfs_request_outcome": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.07797328699005283,
+          "minimum_soc": 0.07797328699005283,
+          "energy_consumed_soc": 0.09341233394440003,
+          "completion_time": 111.82791743050004,
+          "landing_duration_seconds": 111.82791743050004,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": 81.49535503852363,
+          "observed_request_seconds": 111.82791743050004,
+          "planned_landing_time": 111.82791743050004,
+          "emergency_planned_energy_soc": 0.09341233394440003,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "rolling_horizon_request_outcome": {
+          "aircraft_id": "uav-0016",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.17138562093445242,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.17138562093445242,
+          "completion_time": 214.23202616806628,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 30.332562391976406,
+          "delay_seconds": null,
+          "observed_request_seconds": 214.23202616806628,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "fcfs_trace": {
+          "events": [
+            {
+              "time": 0.0,
+              "event": "plan_committed",
+              "aircraft_id": "uav-0016",
+              "emergency": true,
+              "wait_cycles": [
+                1
+              ],
+              "planned_end": 111.82791743050004,
+              "required_soc_including_reserve": 0.15341233394440001,
+              "reason": "normal_domain_infeasible;emergency_feasible",
+              "reservations": [
+                {
+                  "resource": "ring:2",
+                  "start": 0.0,
+                  "end": 94.32791743050004
+                },
+                {
+                  "resource": "emergency_corridor",
+                  "start": 91.32791743050004,
+                  "end": 98.32791743050004
+                },
+                {
+                  "resource": "emergency_approach",
+                  "start": 96.32791743050004,
+                  "end": 111.82791743050004
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 109.82791743050004,
+                  "end": 112.82791743050004
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 109.82791743050004,
+                  "end": 117.82791743050004
+                }
+              ]
+            },
+            {
+              "time": 111.82791743050004,
+              "event": "emergency_landed",
+              "aircraft_id": "uav-0016",
+              "soc": 0.07797328699005283
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "rolling_horizon_trace": {
+          "events": [
+            {
+              "time": 214.23202616806628,
+              "event": "failed_energy",
+              "aircraft_id": "uav-0016"
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "source_fcfs": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\result.json",
+        "source_rolling_horizon": "tmp_stage2_results\\episodes\\rolling_horizon-high-low-101\\result.json",
+        "source_fcfs_requests": "tmp_stage2_results\\episodes\\fcfs-high-low-101\\requests.jsonl",
+        "source_rolling_requests": "tmp_stage2_results\\episodes\\rolling_horizon-high-low-101\\requests.jsonl",
+        "source_frozen_input": "tmp_stage2_results\\episodes\\rolling_horizon-high-low-101\\frozen_input.json"
+      },
+      {
+        "load": "medium",
+        "soc_profile": "low",
+        "seed": 303,
+        "aircraft_id": "uav-0013",
+        "difference": "additional_failure_under_rolling",
+        "initial_request": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "soc": 0.11419364232707352,
+          "ring": 2,
+          "theta": 4.5762532987291324
+        },
+        "initial_position_type": "initial_terminal_ring",
+        "t0_route_energy": {
+          "normal_required_soc_including_reserve": 0.11663149678795895,
+          "emergency_required_soc_including_reserve": 0.08911440430092893,
+          "reserve_soc": 0.06,
+          "normal_margin_soc": -0.0024378544608854302,
+          "emergency_margin_soc": 0.02507923802614459,
+          "initial_soc_below_normal_requirement": true,
+          "initial_soc_below_emergency_requirement": false,
+          "comparison_scope": "zero-extra-lap canonical path energy plus reserve only; no traffic/resource feasibility claim"
+        },
+        "fcfs_request_outcome": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "emergency_landed",
+          "state_at_cutoff": "emergency_landed",
+          "reason": "no_normal_plan_in_snapshot_domain",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.08507923802614463,
+          "minimum_soc": 0.08507923802614463,
+          "energy_consumed_soc": 0.029114404300928952,
+          "completion_time": 31.455505376161163,
+          "landing_duration_seconds": 31.455505376161163,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": -23.224400081136146,
+          "observed_request_seconds": 31.455505376161163,
+          "planned_landing_time": 31.455505376161163,
+          "emergency_planned_energy_soc": 0.02911440430092893,
+          "emergency_reserved_resource_seconds": 30.5
+        },
+        "rolling_horizon_request_outcome": {
+          "aircraft_id": "uav-0013",
+          "arrival_time": 0.0,
+          "admitted_time": 0.0,
+          "outcome": "failed_energy",
+          "state_at_cutoff": "failed_energy",
+          "reason": "SOC_exhausted_before_landing",
+          "initial_soc": 0.11419364232707352,
+          "final_soc": 0.0,
+          "minimum_soc": 0.0,
+          "energy_consumed_soc": 0.11419364232707353,
+          "completion_time": 142.74205290884223,
+          "landing_duration_seconds": null,
+          "unimpeded_duration_seconds": 54.67990545729731,
+          "delay_seconds": null,
+          "observed_request_seconds": 142.74205290884223,
+          "planned_landing_time": null,
+          "emergency_planned_energy_soc": 0.0,
+          "emergency_reserved_resource_seconds": 0.0
+        },
+        "fcfs_trace": {
+          "events": [
+            {
+              "time": 0.0,
+              "event": "plan_committed",
+              "aircraft_id": "uav-0013",
+              "emergency": true,
+              "wait_cycles": [
+                0
+              ],
+              "planned_end": 31.455505376161163,
+              "required_soc_including_reserve": 0.08911440430092893,
+              "reason": "normal_domain_infeasible;emergency_feasible",
+              "reservations": [
+                {
+                  "resource": "ring:2",
+                  "start": 0.0,
+                  "end": 13.955505376161161
+                },
+                {
+                  "resource": "emergency_corridor",
+                  "start": 10.955505376161161,
+                  "end": 17.955505376161163
+                },
+                {
+                  "resource": "emergency_approach",
+                  "start": 15.955505376161163,
+                  "end": 31.455505376161163
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 29.455505376161163,
+                  "end": 32.45550537616116
+                },
+                {
+                  "resource": "emergency_pad",
+                  "start": 29.455505376161163,
+                  "end": 37.45550537616116
+                }
+              ]
+            },
+            {
+              "time": 31.455505376161163,
+              "event": "emergency_landed",
+              "aircraft_id": "uav-0013",
+              "soc": 0.08507923802614463
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "rolling_horizon_trace": {
+          "events": [
+            {
+              "time": 142.74205290884223,
+              "event": "failed_energy",
+              "aircraft_id": "uav-0013"
+            }
+          ],
+          "appears_in_decision_normal_plans": false,
+          "decision_normal_plan_occurrences": []
+        },
+        "source_fcfs": "tmp_stage2_results\\episodes\\fcfs-medium-low-303\\result.json",
+        "source_rolling_horizon": "tmp_stage2_results\\episodes\\rolling_horizon-medium-low-303\\result.json",
+        "source_fcfs_requests": "tmp_stage2_results\\episodes\\fcfs-medium-low-303\\requests.jsonl",
+        "source_rolling_requests": "tmp_stage2_results\\episodes\\rolling_horizon-medium-low-303\\requests.jsonl",
+        "source_frozen_input": "tmp_stage2_results\\episodes\\rolling_horizon-medium-low-303\\frozen_input.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6215 @@
+{
+  "status": "complete",
+  "cases": [
+    {
+      "size": 3,
+      "seed": 101,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              2
+            ],
+            "completion": 115.54880362707134
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 66.85384724319364
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 18.697034045347543
+          }
+        ],
+        "objective": [
+          3,
+          -157.07963267948966,
+          -0.18210113497435498
+        ],
+        "seconds": 0.03942629974335432,
+        "candidates": 12,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.182101134966355,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0007734000682830811,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 7,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.000924999825656414,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 71.05691160517743
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            }
+          ],
+          "generated": 0,
+          "examined": 6,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 1,
+            "infeasible:resource_conflict:normal_approach": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.0021922001615166664,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 71.05691160517743
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            }
+          ],
+          "generated": 6,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 1,
+            "infeasible:resource_conflict:normal_approach": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.35302050370560073,
+              "latest_feasible_completion": 437.5760545239867,
+              "deadline_status": "exact",
+              "deadline_slack": 437.5760545239867,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.002446400001645088,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 71.05691160517743
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            }
+          ],
+          "generated": 6,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 1,
+            "infeasible:resource_conflict:normal_approach": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.35302050370560073,
+              "latest_feasible_completion": 437.5760545239867,
+              "deadline_status": "exact",
+              "deadline_slack": 437.5760545239867,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.06193870026618242,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 18.697034045347543
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 193,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 29,
+            "infeasible:resource_conflict:transfer:1:0": 22
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.29697780031710863,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 21,
+          "examined": 21,
+          "joint_assignments": 619,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 101,
+            "infeasible:resource_conflict:transfer:1:0": 87,
+            "infeasible:normal_plan_exists": 3,
+            "infeasible:continuous_spacing:uav-0006": 1
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 8.988429199904203,
+      "relative_result_path": "oracle/n3-seed101/result.json"
+    },
+    {
+      "size": 3,
+      "seed": 202,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              2
+            ],
+            "completion": 115.54880362707134
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 66.85384724319364
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 18.697034045347543
+          }
+        ],
+        "objective": [
+          3,
+          -157.07963267948966,
+          -0.18210113497435498
+        ],
+        "seconds": 0.04169150069355965,
+        "candidates": 12,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.182101134966355,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0013199998065829277,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 7,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.0011569000780582428,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 7,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.002362099476158619,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 6,
+          "examined": 13,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.490102791469278,
+              "latest_feasible_completion": 594.6556872034762,
+              "deadline_status": "exact",
+              "deadline_slack": 594.6556872034762,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.0019414005801081657,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 6,
+          "examined": 13,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.490102791469278,
+              "latest_feasible_completion": 594.6556872034762,
+              "deadline_status": "exact",
+              "deadline_slack": 594.6556872034762,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.0745117999613285,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 18.697034045347543
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 193,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 29,
+            "infeasible:resource_conflict:transfer:1:0": 22
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.28763270005583763,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 21,
+          "examined": 21,
+          "joint_assignments": 619,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 101,
+            "infeasible:resource_conflict:transfer:1:0": 87,
+            "infeasible:normal_plan_exists": 3,
+            "infeasible:continuous_spacing:uav-0006": 1
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 7.073694299906492,
+      "relative_result_path": "oracle/n3-seed202/result.json"
+    },
+    {
+      "size": 3,
+      "seed": 303,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              2
+            ],
+            "completion": 115.54880362707134
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 66.85384724319364
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 18.697034045347543
+          }
+        ],
+        "objective": [
+          3,
+          -157.07963267948966,
+          -0.18210113497435498
+        ],
+        "seconds": 0.04244939982891083,
+        "candidates": 12,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.182101134966355,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0013287002220749855,
+          "objective": [
+            2,
+            -52.35987755982988,
+            -0.07048013122022802
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 7,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.0014970004558563232,
+          "objective": [
+            2,
+            -52.3598775598299,
+            -0.07048013122022803
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            }
+          ],
+          "generated": 0,
+          "examined": 7,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 4,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.0037981001660227776,
+          "objective": [
+            2,
+            -52.3598775598299,
+            -0.07048013122022803
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            }
+          ],
+          "generated": 6,
+          "examined": 13,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 4,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.5831552418028836,
+              "latest_feasible_completion": 699.375442323136,
+              "deadline_status": "exact",
+              "deadline_slack": 699.375442323136,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.0034321006387472153,
+          "objective": [
+            2,
+            -52.3598775598299,
+            -0.07048013122022803
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            }
+          ],
+          "generated": 6,
+          "examined": 13,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 4,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.08784519965839914,
+              "minimum_status": "exact",
+              "energy_slack": 0.5831552418028836,
+              "latest_feasible_completion": 699.375442323136,
+              "deadline_status": "exact",
+              "deadline_slack": 699.375442323136,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.06772430054843426,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 18.697034045347543
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 193,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 29,
+            "infeasible:resource_conflict:transfer:1:0": 22
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.23755939956754446,
+          "objective": [
+            3,
+            -157.07963267948966,
+            -0.18210113497435498
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                2
+              ],
+              "completion": 115.54880362707134
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 21,
+          "examined": 21,
+          "joint_assignments": 619,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 101,
+            "infeasible:resource_conflict:transfer:1:0": 87,
+            "infeasible:normal_plan_exists": 3,
+            "infeasible:continuous_spacing:uav-0006": 1
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 1.447036299854517,
+      "relative_result_path": "oracle/n3-seed303/result.json"
+    },
+    {
+      "size": 4,
+      "seed": 101,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              1
+            ],
+            "completion": 71.05691160517743
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948966,
+          -0.19900570972738374
+        ],
+        "seconds": 0.06243220064789057,
+        "candidates": 16,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19900570972738374,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0017680004239082336,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 8,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.002500699833035469,
+          "objective": [
+            3,
+            -104.7197551196598,
+            -0.12927260802112073
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            }
+          ],
+          "generated": 0,
+          "examined": 9,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 2,
+            "infeasible:continuous_spacing:uav-0001": 2,
+            "infeasible:resource_conflict:normal_approach": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.06999710015952587,
+          "objective": [
+            3,
+            -104.7197551196598,
+            -0.12927260802112073
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            }
+          ],
+          "generated": 171,
+          "examined": 180,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 165,
+            "infeasible:resource_conflict:normal_approach": 5,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.0612185001373291,
+          "objective": [
+            3,
+            -104.7197551196598,
+            -0.12927260802112073
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            }
+          ],
+          "generated": 171,
+          "examined": 180,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 165,
+            "infeasible:resource_conflict:normal_approach": 5,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.22202210035175085,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 545,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 135,
+            "infeasible:continuous_spacing:uav-0014": 116,
+            "infeasible:resource_conflict:transfer:1:0": 20,
+            "infeasible:continuous_spacing:uav-0001": 9
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.5102606993168592,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 187,
+          "examined": 187,
+          "joint_assignments": 1020,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 212,
+            "infeasible:continuous_spacing:uav-0014": 116,
+            "infeasible:resource_conflict:transfer:1:0": 20,
+            "infeasible:continuous_spacing:uav-0001": 9,
+            "infeasible:normal_plan_exists": 3,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 2.001572700217366,
+      "relative_result_path": "oracle/n4-seed101/result.json"
+    },
+    {
+      "size": 4,
+      "seed": 202,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              1
+            ],
+            "completion": 71.05691160517743
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948966,
+          -0.19900570972738374
+        ],
+        "seconds": 0.05024410039186478,
+        "candidates": 16,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19900570972738374,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0015064002946019173,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 8,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.001344500109553337,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 8,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.06940839998424053,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 262,
+          "examined": 270,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.06274759955704212,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 262,
+          "examined": 270,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.19571700040251017,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 545,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 135,
+            "infeasible:continuous_spacing:uav-0014": 116,
+            "infeasible:resource_conflict:transfer:1:0": 20,
+            "infeasible:continuous_spacing:uav-0001": 9
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.6908242991194129,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 283,
+          "examined": 283,
+          "joint_assignments": 1475,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 382,
+            "infeasible:continuous_spacing:uav-0014": 225,
+            "infeasible:resource_conflict:transfer:1:0": 71,
+            "infeasible:continuous_spacing:uav-0001": 9,
+            "infeasible:normal_plan_exists": 3,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 1.9263618001714349,
+      "relative_result_path": "oracle/n4-seed202/result.json"
+    },
+    {
+      "size": 4,
+      "seed": 303,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0014",
+            "wait_cycles": [
+              0,
+              0,
+              1
+            ],
+            "completion": 71.05691160517743
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948966,
+          -0.19900570972738374
+        ],
+        "seconds": 0.047131599858403206,
+        "candidates": 16,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19900570972738374,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0010192999616265297,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            }
+          ],
+          "generated": 0,
+          "examined": 8,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.0009919004514813423,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            }
+          ],
+          "generated": 0,
+          "examined": 8,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.07175080012530088,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            }
+          ],
+          "generated": 262,
+          "examined": 270,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.059368099085986614,
+          "objective": [
+            3,
+            -52.35987755982988,
+            -0.08738470597325679
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            }
+          ],
+          "generated": 262,
+          "examined": 270,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 3,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.21822219993919134,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 545,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 135,
+            "infeasible:continuous_spacing:uav-0014": 116,
+            "infeasible:resource_conflict:transfer:1:0": 20,
+            "infeasible:continuous_spacing:uav-0001": 9
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.6878410000354052,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19900570972738374
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0014",
+              "wait_cycles": [
+                0,
+                1,
+                0
+              ],
+              "completion": 71.05691160517743
+            }
+          ],
+          "generated": 283,
+          "examined": 283,
+          "joint_assignments": 1475,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 382,
+            "infeasible:continuous_spacing:uav-0014": 225,
+            "infeasible:resource_conflict:transfer:1:0": 71,
+            "infeasible:continuous_spacing:uav-0001": 9,
+            "infeasible:normal_plan_exists": 3,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 1.8871351005509496,
+      "relative_result_path": "oracle/n4-seed303/result.json"
+    },
+    {
+      "size": 5,
+      "seed": 101,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 73.39883193817238
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948963,
+          -0.19506546925228024
+        ],
+        "seconds": 0.05554420035332441,
+        "candidates": 20,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19506546924428025,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0015669995918869972,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.003180399537086487,
+          "objective": [
+            4,
+            -209.4395102393196,
+            -0.2369533713001442
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 13,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 2,
+            "infeasible:continuous_spacing:uav-0001": 2,
+            "infeasible:resource_conflict:normal_approach": 5
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 52.359877559829954,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.0948524996638298,
+          "objective": [
+            4,
+            -209.4395102393196,
+            -0.2369533713001442
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 262,
+          "examined": 275,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 8,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 649.3574850963012,
+              "domain_size": 91,
+              "examined": 91
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 52.359877559829954,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.07940940000116825,
+          "objective": [
+            4,
+            -209.4395102393196,
+            -0.2369533713001442
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 262,
+          "examined": 275,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 8,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 649.3574850963012,
+              "domain_size": 91,
+              "examined": 91
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 52.359877559829954,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.3567099003121257,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 870,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 253,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 60,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:continuous_spacing:uav-0001": 21
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 0.725802400149405,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 352,
+          "examined": 352,
+          "joint_assignments": 1384,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 333,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 77,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:continuous_spacing:uav-0001": 21,
+            "infeasible:normal_plan_exists": 6,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 2.124568600207567,
+      "relative_result_path": "oracle/n5-seed101/result.json"
+    },
+    {
+      "size": 5,
+      "seed": 202,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 73.39883193817238
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948963,
+          -0.19506546925228024
+        ],
+        "seconds": 0.05934570077806711,
+        "candidates": 20,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19506546924428025,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0027772001922130585,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.0026483992114663124,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            }
+          ],
+          "generated": 0,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.0923488000407815,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 317,
+          "examined": 329,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 311,
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 492.2778524168115,
+              "domain_size": 55,
+              "examined": 55
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.0917950002476573,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 317,
+          "examined": 329,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 311,
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 492.2778524168115,
+              "domain_size": 55,
+              "examined": 55
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.36812550015747547,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 870,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 253,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 60,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:continuous_spacing:uav-0001": 21
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 1.1817827997729182,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 411,
+          "examined": 411,
+          "joint_assignments": 1839,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 503,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 128,
+            "infeasible:continuous_spacing:uav-0014": 165,
+            "infeasible:continuous_spacing:uav-0001": 21,
+            "infeasible:normal_plan_exists": 6,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 2.5932179000228643,
+      "relative_result_path": "oracle/n5-seed202/result.json"
+    },
+    {
+      "size": 5,
+      "seed": 303,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 10.829048507411553
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              0
+            ],
+            "completion": 19.5556947673832
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 119.21372480302352
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              1
+            ],
+            "completion": 73.39883193817238
+          }
+        ],
+        "objective": [
+          4,
+          -157.07963267948963,
+          -0.19506546925228024
+        ],
+        "seconds": 0.09074010048061609,
+        "candidates": 20,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.19506546924428025,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0027609001845121384,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.002582400105893612,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 12,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.08961990009993315,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 340,
+          "examined": 352,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 334,
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 596.9976075364713,
+              "domain_size": 78,
+              "examined": 78
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.09907559957355261,
+          "objective": [
+            4,
+            -157.07963267948966,
+            -0.19506546925228027
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 340,
+          "examined": 352,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 334,
+            "infeasible:resource_conflict:normal_approach": 6,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 596.9976075364713,
+              "domain_size": 78,
+              "examined": 78
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 2.842170943040401e-14,
+            "energy_gap_soc": 2.7755575615628914e-17
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.39721169974654913,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 870,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 253,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 60,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:continuous_spacing:uav-0001": 21
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 1.0280198995023966,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            }
+          ],
+          "generated": 434,
+          "examined": 434,
+          "joint_assignments": 1839,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 503,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 128,
+            "infeasible:continuous_spacing:uav-0014": 165,
+            "infeasible:continuous_spacing:uav-0001": 21,
+            "infeasible:normal_plan_exists": 6,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 2.6310753002762794,
+      "relative_result_path": "oracle/n5-seed303/result.json"
+    },
+    {
+      "size": 6,
+      "seed": 101,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 63.18892606724145
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 71.9155723272131
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              0
+            ],
+            "completion": 14.493969683363755
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 125.75870949800228
+          },
+          {
+            "aircraft_id": "uav-0015",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 24.514798218661973
+          }
+        ],
+        "objective": [
+          5,
+          -209.4395102393196,
+          -0.2694527822971949
+        ],
+        "seconds": 0.09288140013813972,
+        "candidates": 24,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.2694527822891949,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.002202100120484829,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            }
+          ],
+          "generated": 0,
+          "examined": 14,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.002825399860739708,
+          "objective": [
+            5,
+            -209.4395102393196,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 24.514798218661973
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 14,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:transfer:1:0": 2,
+            "infeasible:continuous_spacing:uav-0001": 2,
+            "infeasible:resource_conflict:normal_approach": 5
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.07687829993665218,
+          "objective": [
+            5,
+            -209.4395102393196,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 24.514798218661973
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 264,
+          "examined": 278,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 8,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 649.3574850963012,
+              "domain_size": 91,
+              "examined": 91
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.4314925585673662,
+              "latest_feasible_completion": 548.1135738169608,
+              "deadline_status": "exact",
+              "deadline_slack": 548.1135738169608,
+              "completion_energy_only_upper_bound": 548.1135738169609,
+              "domain_size": 286,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.07673959992825985,
+          "objective": [
+            5,
+            -209.4395102393196,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                0
+              ],
+              "completion": 14.493969683363755
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                0
+              ],
+              "completion": 24.514798218661973
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 63.18892606724145
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                1
+              ],
+              "completion": 71.9155723272131
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 264,
+          "examined": 278,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 256,
+            "infeasible:resource_conflict:normal_approach": 8,
+            "infeasible:resource_conflict:transfer:1:0": 1
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.46272497670186935,
+              "latest_feasible_completion": 586.7877016655402,
+              "deadline_status": "exact",
+              "deadline_slack": 586.7877016655402,
+              "completion_energy_only_upper_bound": 586.7877016655403,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3060300989692233,
+              "latest_feasible_completion": 381.013112602173,
+              "deadline_status": "exact",
+              "deadline_slack": 381.013112602173,
+              "completion_energy_only_upper_bound": 381.01311260217295,
+              "domain_size": 36,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 437.57605452398667,
+              "domain_size": 165,
+              "examined": 165
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.5011563894049408,
+              "latest_feasible_completion": 595.5143479255119,
+              "deadline_status": "exact",
+              "deadline_slack": 595.5143479255119,
+              "completion_energy_only_upper_bound": 595.514347925512,
+              "domain_size": 12,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 649.3574850963012,
+              "domain_size": 91,
+              "examined": 91
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.4314925585673662,
+              "latest_feasible_completion": 548.1135738169608,
+              "deadline_status": "exact",
+              "deadline_slack": 548.1135738169608,
+              "completion_energy_only_upper_bound": 548.1135738169609,
+              "domain_size": 286,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": 0.0,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.6470082001760602,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 1195,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 336,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 116,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:resource_conflict:transfer:2:1": 5,
+            "infeasible:continuous_spacing:uav-0001": 16
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 1.7812948999926448,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 361,
+          "examined": 361,
+          "joint_assignments": 2164,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 500,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 129,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:resource_conflict:transfer:2:1": 8,
+            "infeasible:continuous_spacing:uav-0001": 16,
+            "infeasible:normal_plan_exists": 7,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 3.6192876007407904,
+      "relative_result_path": "oracle/n6-seed101/result.json"
+    },
+    {
+      "size": 6,
+      "seed": 202,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 63.18892606724145
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 71.9155723272131
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              0
+            ],
+            "completion": 14.493969683363755
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 125.75870949800228
+          },
+          {
+            "aircraft_id": "uav-0015",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 24.514798218661973
+          }
+        ],
+        "objective": [
+          5,
+          -209.4395102393196,
+          -0.2694527822971949
+        ],
+        "seconds": 0.10864240024238825,
+        "candidates": 24,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.2694527822891949,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0033585000783205032,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            }
+          ],
+          "generated": 0,
+          "examined": 14,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.002903200685977936,
+          "objective": [
+            4,
+            -157.07963267948963,
+            -0.19506546925228024
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 73.39883193817238
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 119.21372480302352
+            }
+          ],
+          "generated": 0,
+          "examined": 16,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 8,
+            "infeasible:resource_conflict:transfer:1:0": 4
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 1,
+            "delay_gap_seconds": null,
+            "energy_gap_soc": null
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.1256824005395174,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 319,
+          "examined": 333,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 311,
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 492.2778524168115,
+              "domain_size": 55,
+              "examined": 55
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.6029213534041784,
+              "latest_feasible_completion": 757.5530840562803,
+              "deadline_status": "exact",
+              "deadline_slack": 757.5530840562803,
+              "completion_energy_only_upper_bound": 757.5530840562805,
+              "domain_size": 680,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.11319340020418167,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 319,
+          "examined": 333,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 311,
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.35050128769223815,
+              "latest_feasible_completion": 429.70806898605065,
+              "deadline_status": "exact",
+              "deadline_slack": 429.70806898605065,
+              "completion_energy_only_upper_bound": 429.70806898605065,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.411870929565258,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 594.6556872034763,
+              "domain_size": 364,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.28266194470207157,
+              "latest_feasible_completion": 333.71496012636254,
+              "deadline_status": "exact",
+              "deadline_slack": 333.71496012636254,
+              "completion_energy_only_upper_bound": 333.71496012636254,
+              "domain_size": 7,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 492.2778524168115,
+              "domain_size": 55,
+              "examined": 55
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.6029213534041784,
+              "latest_feasible_completion": 757.5530840562803,
+              "deadline_status": "exact",
+              "deadline_slack": 757.5530840562803,
+              "completion_energy_only_upper_bound": 757.5530840562805,
+              "domain_size": 680,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.7773369001224637,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 1195,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 336,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 116,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:resource_conflict:transfer:2:1": 5,
+            "infeasible:continuous_spacing:uav-0001": 16
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 1.956560899503529,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 420,
+          "examined": 420,
+          "joint_assignments": 2619,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 703,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 210,
+            "infeasible:continuous_spacing:uav-0014": 165,
+            "infeasible:resource_conflict:transfer:2:1": 64,
+            "infeasible:continuous_spacing:uav-0001": 16,
+            "infeasible:normal_plan_exists": 7,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 3.9399140998721123,
+      "relative_result_path": "oracle/n6-seed202/result.json"
+    },
+    {
+      "size": 6,
+      "seed": 303,
+      "oracle": {
+        "status": "OPTIMAL",
+        "plans": [
+          {
+            "aircraft_id": "uav-0000",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 63.18892606724145
+          },
+          {
+            "aircraft_id": "uav-0001",
+            "wait_cycles": [
+              1
+            ],
+            "completion": 71.9155723272131
+          },
+          {
+            "aircraft_id": "uav-0006",
+            "wait_cycles": [
+              0,
+              0
+            ],
+            "completion": 14.493969683363755
+          },
+          {
+            "aircraft_id": "uav-0007",
+            "wait_cycles": [
+              0,
+              2
+            ],
+            "completion": 125.75870949800228
+          },
+          {
+            "aircraft_id": "uav-0015",
+            "wait_cycles": [
+              0,
+              0,
+              0
+            ],
+            "completion": 24.514798218661973
+          }
+        ],
+        "objective": [
+          5,
+          -209.4395102393196,
+          -0.2694527822971949
+        ],
+        "seconds": 0.0834166994318366,
+        "candidates": 24,
+        "iterations": 3,
+        "cuts": 0,
+        "solver_status": 0,
+        "solver_gap": 0.0,
+        "certified_tiers": 3,
+        "unknown_assignments": 0,
+        "reason": "all_lexicographic_tiers_certified",
+        "solver_dual_bound": 0.2694527822891949,
+        "solver_bound_tier": "route_energy_soc",
+        "solver_bound_scope": "current_finite_MILP_relaxation_tier_not_dynamic_bound"
+      },
+      "comparisons": [
+        {
+          "time": 0.0,
+          "method": "fcfs",
+          "seconds": 0.0020733000710606575,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            }
+          ],
+          "generated": 0,
+          "examined": 14,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "soc",
+          "seconds": 0.002113799564540386,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 0,
+          "examined": 14,
+          "joint_assignments": 0,
+          "truncated": false,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "energy_slack",
+          "seconds": 0.10349840018898249,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 342,
+          "examined": 356,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 334,
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 596.9976075364713,
+              "domain_size": 78,
+              "examined": 78
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.4395216953766116,
+              "latest_feasible_completion": 548.1135738169608,
+              "deadline_status": "exact",
+              "deadline_slack": 548.1135738169608,
+              "completion_energy_only_upper_bound": 548.1135738169609,
+              "domain_size": 286,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "deadline_slack",
+          "seconds": 0.08922869991511106,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                0,
+                1
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                0,
+                0,
+                1
+              ],
+              "completion": 76.87467577849188
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            }
+          ],
+          "generated": 342,
+          "examined": 356,
+          "joint_assignments": 0,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:continuous_spacing:uav-0001": 334,
+            "infeasible:resource_conflict:normal_approach": 7,
+            "infeasible:resource_conflict:transfer:1:0": 2
+          },
+          "priority_windows": {
+            "uav-0000": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.06992325774505144,
+              "minimum_status": "exact",
+              "energy_slack": 0.45404586808219366,
+              "latest_feasible_completion": 534.4278241057103,
+              "deadline_status": "exact",
+              "deadline_slack": 534.4278241057103,
+              "completion_energy_only_upper_bound": 534.4278241057104,
+              "domain_size": 11,
+              "examined": 2
+            },
+            "uav-0006": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07866897142731266,
+              "minimum_status": "exact",
+              "energy_slack": 0.3923247673234393,
+              "latest_feasible_completion": 485.7328677218328,
+              "deadline_status": "exact",
+              "deadline_slack": 485.7328677218328,
+              "completion_energy_only_upper_bound": 485.73286772183275,
+              "domain_size": 55,
+              "examined": 2
+            },
+            "uav-0014": {
+              "status": "unknown",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "unknown",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "unknown",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 699.3754423231361,
+              "domain_size": 560,
+              "examined": 256
+            },
+            "uav-0001": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.07690457475302877,
+              "minimum_status": "exact",
+              "energy_slack": 0.34366340719519733,
+              "latest_feasible_completion": 438.43471524602234,
+              "deadline_status": "exact",
+              "deadline_slack": 438.43471524602234,
+              "completion_energy_only_upper_bound": 438.43471524602234,
+              "domain_size": 9,
+              "examined": 2
+            },
+            "uav-0007": {
+              "status": "infeasible",
+              "minimum_feasible_required_soc": null,
+              "minimum_status": "infeasible",
+              "energy_slack": null,
+              "latest_feasible_completion": null,
+              "deadline_status": "infeasible",
+              "deadline_slack": null,
+              "completion_energy_only_upper_bound": 596.9976075364713,
+              "domain_size": 78,
+              "examined": 78
+            },
+            "uav-0015": {
+              "status": "feasible",
+              "minimum_feasible_required_soc": 0.09249941099705068,
+              "minimum_status": "exact",
+              "energy_slack": 0.4395216953766116,
+              "latest_feasible_completion": 548.1135738169608,
+              "deadline_status": "exact",
+              "deadline_slack": 548.1135738169608,
+              "completion_energy_only_upper_bound": 548.1135738169609,
+              "domain_size": 286,
+              "examined": 2
+            }
+          },
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "joint_window",
+          "seconds": 0.6780096003785729,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 0,
+          "examined": 0,
+          "joint_assignments": 1195,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 336,
+            "infeasible:continuous_spacing:uav-0007": 127,
+            "infeasible:resource_conflict:transfer:1:0": 116,
+            "infeasible:continuous_spacing:uav-0014": 56,
+            "infeasible:resource_conflict:transfer:2:1": 5,
+            "infeasible:continuous_spacing:uav-0001": 16
+          },
+          "priority_windows": {},
+          "lookahead_states": 0,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        },
+        {
+          "time": 0.0,
+          "method": "rolling_horizon",
+          "seconds": 2.0171757005155087,
+          "objective": [
+            5,
+            -209.43951023931956,
+            -0.2694527822971949
+          ],
+          "normal_plans": [
+            {
+              "aircraft_id": "uav-0000",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 10.829048507411553
+            },
+            {
+              "aircraft_id": "uav-0001",
+              "wait_cycles": [
+                0
+              ],
+              "completion": 19.5556947673832
+            },
+            {
+              "aircraft_id": "uav-0006",
+              "wait_cycles": [
+                1,
+                0
+              ],
+              "completion": 66.85384724319364
+            },
+            {
+              "aircraft_id": "uav-0007",
+              "wait_cycles": [
+                0,
+                2
+              ],
+              "completion": 125.75870949800228
+            },
+            {
+              "aircraft_id": "uav-0015",
+              "wait_cycles": [
+                1,
+                0,
+                0
+              ],
+              "completion": 76.87467577849186
+            }
+          ],
+          "generated": 443,
+          "examined": 443,
+          "joint_assignments": 2619,
+          "truncated": true,
+          "rejection_reasons": {
+            "infeasible:resource_conflict:normal_approach": 703,
+            "infeasible:continuous_spacing:uav-0007": 128,
+            "infeasible:resource_conflict:transfer:1:0": 210,
+            "infeasible:continuous_spacing:uav-0014": 165,
+            "infeasible:resource_conflict:transfer:2:1": 64,
+            "infeasible:continuous_spacing:uav-0001": 16,
+            "infeasible:normal_plan_exists": 7,
+            "unknown:normal_feasibility_unknown": 1,
+            "infeasible:continuous_spacing:uav-0006": 7
+          },
+          "priority_windows": {},
+          "lookahead_states": 80,
+          "gap": {
+            "valid": true,
+            "normal_count_gap": 0,
+            "delay_gap_seconds": -2.842170943040401e-14,
+            "energy_gap_soc": 0.0
+          }
+        }
+      ],
+      "wall_seconds": 3.7578672003000975,
+      "relative_result_path": "oracle/n6-seed303/result.json"
+    }
+  ],
+  "status_counts": {
+    "OPTIMAL": 12
+  }
+}

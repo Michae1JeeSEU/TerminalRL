@@ -1,4 +1,4 @@
-# 阶段1技术规范
+# 固定终端区与阶段2技术规范
 
 ## 文件与依赖边界
 
@@ -56,3 +56,32 @@ python -m pytest tests/test_fixed_terminal_domain.py tests/test_fixed_terminal_s
 ```
 
 上述三个文件已完成 32 项测试；九格单种子 pilot 和输出重算记录见[验证记录](evidence/fixed_terminal_stage1/validation_20261013.md)，滚动进度见[当前状态](CURRENT_STATUS.md)。先检查小样本 JSON 等输出字段、分母和序列化，再启动长运行；服务器启动与监控继续遵守根目录 `AGENTS.md`。
+
+## 阶段2接口与依赖状态
+
+阶段1的物理配置和现有单计划API保持冻结。阶段2增加以下接口，已按当前实现核对；测试与最终运行状态独立记录。
+
+现有 `D:\7_codespace\terminal\venv\Scripts\python.exe` 环境已验证 Python 3.12.4、SciPy 1.18.1、NumPy 2.4.4，`from scipy.optimize import milp` 可导入。只在本地现有虚拟环境安装所需 SciPy；不依赖服务端或新学习框架。
+
+调度配置每5s决策，基础dt仍1s，搜索/候选/滚动/oracle预算见[阶段2协议](experiments/fixed_terminal_stage2_protocol.md)。完整比较与闭合目录比较分开输出；预算截断及oracle状态是数据字段，不应由失败异常或`null`悄悄抹去。阶段2主要接口：
+
+| 模块/对象 | 接口 | 语义 |
+|---|---|---|
+| `safety.Feasibility` | `check_batch(plans, fleet, now)` | 独立验证普通计划批次、未选保持和现有承诺 |
+| `FixedTerminalEnv` | `submit_batch(plans)` | 整批可行时原子提交完整路线 |
+| `baselines.py` | `observed_clone(env)` | 删除未到达飞机及其场景请求信息 |
+| `baselines.py` | `analyse_windows(env, aircraft, limit=256, stats=None)` | 能源/最晚窗口值与 exact/界限/未知状态 |
+| `baselines.py` | `choose_normal_batch(method, observed_env, settings=DEFAULT_SCHEDULER_CONFIG, catalogue=None)` | 当前可观测状态上的普通批次选择 |
+| `baselines.py` | `apply_scheduler(env, method, settings=DEFAULT_SCHEDULER_CONFIG)` | 提交普通决策并使用共同应急逻辑 |
+| `oracle.py` | `finite_catalogue_milp(env, catalogue, seconds=30., iteration_limit=1000)` | 有限目录三层目标 MILP 及独立验证 |
+| `evaluate_fixed_terminal_stage2.py` | `run(...)` / `run_reference(...)` / `aggregate(...)` | 完整运行、闭合目录参考与摘要 |
+
+`terminal_marl/configs/fixed_terminal_stage2.py` 中的冻结 `SchedulerConfig` 保存计算预算，`METHODS` 保存六方法。CLI 入口为 `python -m terminal_marl.scripts.evaluate_fixed_terminal_stage2`：单场使用 `--method/--load/--soc/--seed/--output`；`--matrix` 为162场；`--oracle --size N --seed S` 为单个闭合实例；`--oracle-matrix` 为12实例；`--aggregate <root> --output <prefix>` 产生汇总JSON/CSV。每个结果目录要求尚不存在。上述接口已用于完成并核对本轮162场与12个oracle；精确单元命令和结果见阶段2证据。
+
+完整场景文件为 `frozen_input.json/result.json/requests.jsonl/events.jsonl/decisions.jsonl`。结果schema为 `fixed-terminal-stage2-v1`，增加 `scheduler/scheduler_config`；决策记录保存 `generated/examined/joint_assignments/truncated/rejection_reasons/priority_windows/lookahead_states` 与耗时。摘要含 `online_call_seconds_total/p50/max`、`normal_delay_max_seconds`、候选数、联合检查数、截断次数及约束拒绝原因。
+
+优先级分析字段包括 `minimum_feasible_required_soc/minimum_status`、`energy_slack`、`latest_feasible_completion/deadline_status`、`deadline_slack`、`completion_energy_only_upper_bound/domain_size/examined`。已发现可行最低能源若未认证为最小则为上界，对应能量余量是下界；已发现最后完成窗口若未认证为最晚则为下界。energy-only完成上界不代表资源可行。
+
+oracle输出 `status/objective/seconds/candidates/iterations/cuts/solver_status/solver_gap/certified_tiers/unknown_assignments/reason`，另含 `solver_dual_bound/solver_bound_tier/solver_bound_scope`。tier为负正常数、延迟秒或路线SOC能耗；bound只对应当前有限MILP松弛目标层，不是动态全局界，缺失或非有限值为 `null`。闭合实例结果带 `full_episode_optimality_claim=false`，不得与完整rollout的收益混用。最终合并针对性测试已由实现任务保存：47 passed in 1.58s，exit 0，原始日志在忽略目录 `tmp_stage2_validation/final_tests.log`。测试文件为阶段1三个文件以及 `tests/test_fixed_terminal_stage2_joint.py`、`tests/test_fixed_terminal_stage2_baselines.py`、`tests/test_fixed_terminal_stage2_oracle.py`、`tests/test_fixed_terminal_stage2_runner.py`。正式162场与12个oracle已另行完成原始文件和指标核验。
+
+阶段2实现与冻结实验已完成，47项针对性测试及2项元数据修正测试通过；162场完整比较和12个有限目录参考的事实与边界见[结果报告](evidence/fixed_terminal_stage2/results.md)。本轮尚未建立学习必要性证据，不自动启动后续训练。
