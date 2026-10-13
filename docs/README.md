@@ -1,11 +1,12 @@
 # 固定终端区文档入口
 
-**当前为阶段4学习辅助调度，实现中，正式数据/训练/评价未运行。** 学习只近似已到达机群的预算闭合参考，不替代候选生成或安全。阶段1–3物理合同和证据保留，学习必要性尚未证明。
+**阶段4实现、train/val数据和固定训练已完成；test数据已生成，完整episode评价运行中，结论待完整证据。** 学习只近似已到达机群的预算闭合参考，不替代候选生成或安全。阶段1–3物理合同和证据保留，学习必要性尚未证明。
 
 ## 当前阅读顺序
 
 | 文档 | 职责 |
 |---|---|
+| [阶段4结果与运行证据](evidence/fixed_terminal_stage4/results.md) | 预检、train/val、固定训练及待完成test的证据入口 |
 | [阶段4用户计划](fixed_terminal_stage4_learning_scheduler_plan.md) | 本轮用户任务，原样保存 |
 | [阶段4方法](arrival_restructure/stage4_learning_scheduler.md) | 六方法、统一候选池与学习筛选职责 |
 | [阶段4协议](experiments/fixed_terminal_stage4_protocol.md) | seed分组、标签、模型/选择预算和评价顺序 |

@@ -1,6 +1,8 @@
 # 固定终端区与阶段3机制技术规范
 
-阶段4实现与最终预检完成，正式train/val数据生成已获主审授权、尚未启动；正式训练/test未授权。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、最终预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
+阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
 
 ## 文件与依赖边界
 
@@ -126,13 +128,13 @@ selection key前四项整数精确比较，T/D round8位、energy round10位；r
 
 最终测试命令在既有阶段1/2七个文件外加入`tests/test_fixed_terminal_stage3_values.py`、`tests/test_fixed_terminal_stage3_replay.py`、`tests/test_fixed_terminal_stage3_reference.py`，完整原始命令与57 PASS见`tmp_stage3_preflight/final_combined_tests.log`；smoke命令/exit见`final_smoke.log`，产物检查见`final_validation.json`。最终smoke累计observed stop时间合计20/60/240为0.343890/0.684381/1.899963 s，根生成5.802359 s、控制获取0.031774 s，ex-post2.518635 s、remove-one0.154133 s；原控制求解成本单列。这些仅是预检记录，不作为正式机制收益结论。
 
-## 阶段4运行环境与待核对接口
+## 阶段4运行环境与已核对接口
 
 只读检查：既有venv Python3.12.4、torch2.5.1+cpu、NumPy2.4.4、SciPy1.18.1；CPU可用，CUDA不可用，sklearn缺失。未安装新依赖，`requirements-stage2.txt`仍为SciPy1.18.1。阶段4固定CPU threads1，与当前检查所得默认torch threads10区分。
 
 具体CLI、93个FEATURE_NAMES、数据/模型schema与checkpoint/scaler文件名已按当前实现核对如下，最终测试/预检事实如下，不将pilot指标视为正式性能结果。必须能记录seed场景split、snapshot时刻、raw J/Δ、真实key、模型筛选与精确选择、validation选择依据及全请求episode结局。所有部署特征禁用未来draw、seed/profile/method标签、aircraft ID数值与真实未来结局。
 
-在线计时分别保存generation/feature/inference/exact_rollout/final_validation_and_emergency/total，模型加载另列，I/O排除；generation保留候选可行性工作，无跨方法cache。最多4并发、threads1，单根与非退化分开，offline时钟不计计算等待。正式train/val数据生成已获主审授权，等待源码提交后启动；正式训练/test仍待另行授权。
+在线计时分别保存generation/feature/inference/exact_rollout/final_validation_and_emergency/total，模型加载另列，I/O排除；generation保留候选可行性工作，无跨方法cache。最多4并发、threads1，单根与非退化分开，offline时钟不计计算等待。正式train/val数据与固定训练已完成；checkpoint冻结后的test数据已生成，完整episode评价运行中。
 
 ### 阶段4当前公开接口
 
@@ -160,6 +162,6 @@ selection key前四项整数精确比较，T/D round8位、energy round10位；r
 
 新增命令`python -m pytest tests/test_fixed_terminal_stage4_features.py tests/test_fixed_terminal_stage4_scheduler.py tests/test_fixed_terminal_stage4_learning.py -q`为10 passed、3.28 s、exit0；阶段1–4合并67 passed、12.64 s、exit0，完整命令与日志在`tmp_stage4_preflight/combined_tests.log`。`validation.json`核对最终源码字节、CLI、模型重载与序列化。
 
-pilot4001 low/medium四快照25候选，2epoch且复用同一pilot为train/val，smoke_only；只验证流程，不作为性能比较或正式checkpoint。59 JSON+8 JSONL/176行finite可解析，两模型重载预测精确相同。正式train/val已授权尚未启动，正式训练/test未授权。
+pilot4001 low/medium四快照25候选，2epoch且复用同一pilot为train/val，smoke_only；只验证流程，不作为性能比较或正式checkpoint。59 JSON+8 JSONL/176行finite可解析，两模型重载预测精确相同。正式train/val与固定训练已完成，test数据已生成，完整episode评价运行中。
 
 在线timing按all/degenerate/nondegenerate提供各分项total/p50/p95/max及total>5s次数；p95按0.95×(n−1)位置线性插值。预检两episode均exit0，仅说明执行链可运行；模型加载时间另列。

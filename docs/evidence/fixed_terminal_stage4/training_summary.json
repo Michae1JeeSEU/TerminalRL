@@ -1,0 +1,54 @@
+{
+  "status": "completed_frozen_by_primary",
+  "source_commit": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+  "workspace_head": "c0f02fbcc5dd078c34c8211bd47b71bb98caebce",
+  "command": [
+    "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe",
+    "-m",
+    "terminal_marl.scripts.train_fixed_terminal_stage4",
+    "--train",
+    "tmp_stage4_results/data/train",
+    "--val",
+    "tmp_stage4_results/data/val",
+    "--output",
+    "tmp_stage4_results/models"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 30.057532199658453,
+  "epochs_per_model": 300,
+  "total_curve_rows": 600,
+  "model_seed": 4401,
+  "training_runs_per_kind": 1,
+  "test_read": false,
+  "smoke_only": false,
+  "validation_informative_contexts": 25,
+  "models": {
+    "value": {
+      "best_epoch": 17,
+      "epoch": 17,
+      "train_loss": 0.25402122735977173,
+      "val_loss": 0.21172821521759033,
+      "val_informative_top3_best_recall": 0.96,
+      "val_informative_contexts": 25,
+      "training_status": "completed_with_updates"
+    },
+    "rank": {
+      "best_epoch": 35,
+      "epoch": 35,
+      "train_loss": 0.18844270706176758,
+      "val_loss": 0.6074614524841309,
+      "val_informative_top3_best_recall": 0.96,
+      "val_informative_contexts": 25,
+      "training_status": "completed_with_updates"
+    }
+  },
+  "checkpoint_sha256": {
+    "value": "004d9f1f6054a1f9109ee4a3b64f337045599eb5b91577fafc77d339375b0d2a",
+    "rank": "a1c298f294143e8d2e4330d748648a2006978c0e9db4be0a32b2aa913f636c38"
+  },
+  "scope": "validation selection only; no generalization or training-stability claim",
+  "source_records": [
+    "tmp_stage4_results/models/training.json",
+    "tmp_stage4_results/training_run/run_meta.json"
+  ]
+}

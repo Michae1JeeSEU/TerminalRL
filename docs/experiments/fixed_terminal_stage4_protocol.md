@@ -1,6 +1,6 @@
 # 固定终端区阶段4学习辅助调度协议
 
-状态：**实现与最终预检已完成；正式train/val数据生成已获主审授权、尚未启动，正式训练和test尚未授权。** 本文落实[用户阶段4计划](../fixed_terminal_stage4_learning_scheduler_plan.md)，方法责任见[方法文档](../arrival_restructure/stage4_learning_scheduler.md)。当前API、93个FEATURE_NAMES与产物schema已按实现代码核对，仍须随预检修订同步；未以接口存在宣称测试或正式运行通过。
+状态：**实现与最终预检已完成；正式train/val数据生成已完成；正式训练已完成并冻结，test数据已生成，完整episode评价运行中、最终结论待完整证据。** 本文落实[用户阶段4计划](../fixed_terminal_stage4_learning_scheduler_plan.md)，方法责任见[方法文档](../arrival_restructure/stage4_learning_scheduler.md)。当前API、93个FEATURE_NAMES与产物schema已按实现代码核对，仍须随预检修订同步；未以接口存在宣称测试或正式运行通过。
 
 ## 问题与固定范围
 
@@ -34,7 +34,7 @@
 |validation|4201|9|36|
 |test|4301、4302、4303|27|108|
 
-先生成train/val，分别训练一次两模型并固定checkpoint；之后才首次生成test数据并评估。不得先查看test选择epoch或调整模型、预算、seed。正式运行须在tiny输出预检、针对性测试与主审后启动；train/val数据生成已获主审授权，等待源码提交后启动；正式训练和test仍未授权。
+先生成train/val，分别训练一次两模型并固定checkpoint；之后才首次生成test数据并评估。不得先查看test选择epoch或调整模型、预算、seed。正式运行须在tiny输出预检、针对性测试与主审后启动；train/val数据生成已完成，固定训练已完成，checkpoint确定后启动test评价。
 
 ## 特征与标签
 
@@ -68,7 +68,7 @@ A报告各raw价值分量MAE。两模型均报告非tie pair accuracy（含固�
 
 现有venv Python3.12.4、torch2.5.1+cpu、NumPy2.4.4、SciPy1.18.1；CUDA不可用，sklearn缺失。只读环境记录在`tmp_stage4_preflight/runtime.json`及日志，未安装依赖。公开命令、schema和特征表已按当前实现列于[技术规范](../technical_spec.md)及下文；最终针对性测试与pilot已完成，记录如下；其通过不构成正式性能结果。
 
-保留tiny预检、冻结设置、数据split、train-only scalers、epoch/val/checkpoint选择、offline统计、episode逐请求/事件和分项计时。本次只授权正式train/val数据生成，训练与test/eval仍须另行明确授权。结果不佳时不重调参数、不删数据、不换种子，结论由主线程依据事实决定；本协议不预设学习有效。
+保留tiny预检、冻结设置、数据split、train-only scalers、epoch/val/checkpoint选择、offline统计、episode逐请求/事件和分项计时。执行顺序为先train/val数据、再固定训练与checkpoint，最后首次test/eval；按阶段记录真实进度。结果不佳时不重调参数、不删数据、不换种子，结论由主线程依据事实决定；本协议不预设学习有效。
 
 ## 当前接口与已准备执行器
 
@@ -78,7 +78,7 @@ A报告各raw价值分量MAE。两模型均报告非tie pair accuracy（含固�
 
 评价CLI为`python -m terminal_marl.scripts.evaluate_fixed_terminal_stage4 --offline TEST_DATA_ROOT --models MODEL_DIRECTORY --output NEW_OFFLINE.json`；完整episode用`--method METHOD --load LOAD --soc SOC --seed TEST_SEED --models MODEL_DIRECTORY --output NEW_EPISODE_DIRECTORY`。所有正式test方法都核对冻结模型记录，只有学习方法加载scorer。`--aggregate EPISODE_ROOT --output SUMMARY_PREFIX`输出JSON/CSV。以上是接口说明，不是已执行记录。
 
-临时`tmp_stage4_analysis/dispatch_stage4.py`已准备trainval phase，默认只列任务；未使用`--execute`，未启动进程。固定顺序train4101/4102/4103再val4201，每seed按load low/medium/high、SOC high/medium/low填槽，共36任务、144快照。每条命令使用既有venv `-m terminal_marl.scripts.generate_fixed_terminal_stage4 --split SPLIT --seed SEED --load LOAD --soc SOC --output tmp_stage4_results/data/SPLIT/LOAD-SOC-SEED`。最多4并发，OMP/MKL/OPENBLAS线程各1；结果根须尚不存在。保存execution、progress、逐run命令/PID/起止/真实exit/stdout/stderr，首context+frozen_input+实际进程核对后记录startup_check。失败停止新任务调度、保留在运行任务与原始stderr，不自动重跑。该脚本不包含test或online phase；后续另授权。
+临时`tmp_stage4_analysis/dispatch_stage4.py`已准备trainval phase，默认只列任务；本次已使用`--execute`完成36任务，真实exit全0。固定顺序train4101/4102/4103再val4201，每seed按load low/medium/high、SOC high/medium/low填槽，共36任务、144快照。每条命令使用既有venv `-m terminal_marl.scripts.generate_fixed_terminal_stage4 --split SPLIT --seed SEED --load LOAD --soc SOC --output tmp_stage4_results/data/SPLIT/LOAD-SOC-SEED`。最多4并发，OMP/MKL/OPENBLAS线程各1；结果根须尚不存在。保存execution、progress、逐run命令/PID/起止/真实exit/stdout/stderr，首context+frozen_input+实际进程核对后记录startup_check。失败停止新任务调度、保留在运行任务与原始stderr，不自动重跑。该脚本仅完成trainval；test与online由独立执行器运行，未混用队列。
 
 ## 附录：93个固定特征
 
@@ -202,4 +202,6 @@ unselected_holding_soc_max
 
 pilot4001 low/medium在0/5/15/90 s生成14/9/1/1根，共25候选、39个非tie pair、2个informative context。两模型仅2epoch且train/val复用同一pilot，smoke_only=true，test_read=false；这是流程检查，不是验证集性能或泛化证据，不能用于正式test。模型重载预测一致；offline与value/rank两个240s episode均完成，均11请求、N/E/F/C=10/0/0/1、执行spacing违反/未认证0。59个JSON和8个JSONL（176行）严格finite可解析。预检早期失败测试日志部分被覆盖，validation.json明确记录仅恢复工具输出摘录，不将摘录伪称完整原日志。
 
-主审已接受最终代码和预检，并仅授权36任务train/val数据生成，等待源码提交后执行；当前尚未启动。正式训练、test数据和162episode仍须另行授权。预检不混入正式数据，不因其指标调整冻结参数。
+主审接受最终代码和预检后，36任务train/val已按提交后的实现完成：144context/1501根，无重跑。固定训练已完成并冻结，随后安排test数据和162episode，尚无评价结果；执行进度与统计见[阶段4结果](../evidence/fixed_terminal_stage4/results.md)。预检不混入正式数据，不因其指标调整冻结参数。
+
+正式执行记录：两类模型各300epoch、seed4401一次训练已完成，value选17、rank选35，25个informative val中均24个top3命中；这仅用于checkpoint选择。主审冻结后才安排首次test数据与episode，具体哈希和loss见[训练摘要](../evidence/fixed_terminal_stage4/training_summary.json)。

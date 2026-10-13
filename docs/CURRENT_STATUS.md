@@ -1,6 +1,6 @@
 # 当前状态：阶段4学习辅助调度
 
-更新日期：2026-10-13。用户已授权[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)，主线程已确定[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)。**实现与最终预检完成；正式train/val数据生成获主审授权但尚未启动，正式训练与test未授权。** 目标为学习筛选能否以较低完整在线成本逼近有限预算闭合参考，不预设学习有效或必要。
+更新日期：2026-10-13。用户已授权[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)，主线程已确定[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)。**实现与最终预检完成；正式train/val数据生成已完成，两模型正式训练已完成并冻结，test评价待后续证据。** 目标为学习筛选能否以较低完整在线成本逼近有限预算闭合参考，不预设学习有效或必要。
 
 ## 已完成准备
 
@@ -12,7 +12,7 @@ train seeds4101–4103、val4201、test4301–4303，pilot4001。每seed九profi
 
 ## 当前下一步
 
-实现、93维特征、模型/筛选与数据/评价接口已完成；最终阶段4新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0并覆盖最终生产字节。主审已接受代码与预检。正式trainval调度器准备36任务/144快照，只生成train/val；等待源码提交消息后启动，当前尚未启动。训练、test数据和正式episode未获本步授权。
+实现、93维特征、模型/筛选与数据/评价接口已完成；最终阶段4新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0并覆盖最终生产字节。主审已接受代码与预检。正式trainval数据36任务全部exit0，144context/1501根；train108context/1117根/64informative/22degenerate/3332非tie pairs，val36/384/25/2/1032。2293JSON finite、seed/config/时刻/93特征与根标签对齐已核对；无补采样或实验重跑。源提交`08235fb476f4bf483fecd71fdec5dfe9a8e1778e`，协议/生成工作树提交`c0f02fbcc5dd078c34c8211bd47b71bb98caebce`。固定正式训练已exit0，墙钟30.0575322 s，两类各300epoch；value选epoch17、rank选35，informative val均24/25召回。主审已冻结checkpoint并安排test数据与episode，当前尚无完整test评价结论；validation召回不作泛化结论。记录与后续索引见[阶段4结果](evidence/fixed_terminal_stage4/results.md)。
 
 pilot仅为4001 low/medium流程验证：四时刻根数14/9/1/1、25候选；两模型只训练2epoch，train/val复用同一pilot且标smoke_only，不能给性能或泛化结论。offline和两条240s学习episode完成，模型重载预测相等，59 JSON+8 JSONL（176行）严格finite可解析。原始记录为`tmp_stage4_preflight/validation.json`、`combined_tests.log`等，预检数据不并入正式集。
 

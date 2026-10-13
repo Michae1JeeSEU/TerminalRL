@@ -1,6 +1,8 @@
 # 固定终端区需求：阶段3机制分析
 
-当前阶段4已授权、实现中，正式数据/训练/评价未运行。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
+阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
 
 本需求继承阶段1/2固定物理合同，落实用户授权的[阶段3机制协议](experiments/fixed_terminal_stage3_protocol.md)；物理与原始统计以[问题定义](fixed_terminal_problem_definition.md)为准，价值接口见[学习问题定义](fixed_terminal_learning_problem_definition.md)。
 
@@ -49,7 +51,7 @@
 
 ## 阶段4新增要求
 
-阶段4正式数据与训练未运行。必须遵循冻结train/val/test seed组，所有同场景候选归同集合，scaler只用train；两checkpoint确定后才首次生成test。只近似闭合参考，不声明期望未来价值，不用阶段3数据训练。
+阶段4train/val数据与固定训练已完成，test数据已生成，完整episode评价运行中。必须遵循冻结train/val/test seed组，所有同场景候选归同集合，scaler只用train；两checkpoint确定后才首次生成test。只近似闭合参考，不声明期望未来价值，不用阶段3数据训练。
 
 六方法使用相同物理/安全合同；新统一池无warm-start，full/beam/value/rank共享定义和anchors预算，原rolling目标差异明确标注。共同单根快路径与非退化表现分开，模型仅筛选，最终精确J选择及独立提交复查不可省略。
 

@@ -4,7 +4,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-阶段1–3已完成，学习必要性仍未证明。用户已授权阶段4简单监督价值与排序筛选：只近似当前已到达机群的有限预算闭合参考，确定性候选生成/安全/能源/资源/应急层继续负责约束。当前实现中，正式数据/训练/评价尚未运行；不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
+阶段1–3已完成，学习必要性仍未证明。用户已授权阶段4简单监督价值与排序筛选：只近似当前已到达机群的有限预算闭合参考，确定性候选生成/安全/能源/资源/应急层继续负责约束。实现、预检、train/val数据与固定训练已完成，test数据已生成，完整episode评价运行中；不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
 
 ## 主代码路线
 
@@ -45,9 +45,11 @@
 9. 新核心配套针对性测试；先小样本核对输出，再运行场景。需求、语义或接口变化时同步更新文档。
 10. 保留旧实验和文档，但不将其结果当作新模型的有效性证据。核心不导入 ROS2/Crazyswarm2。
 
+阶段4执行事实与后续结论见[阶段4结果与运行证据](docs/evidence/fixed_terminal_stage4/results.md)。
+
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按[阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)和[冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)完成实现、tiny输出预检及针对性测试，主审后再正式data/train/eval。固定train/val/test种子与模型预算，checkpoint锁定后才首次生成test；不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段1–3结果与用户计划保留原样。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按[阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)和[冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)执行冻结协议；实现、tiny预检、train/val和固定训练已完成，当前跟进test评价。固定train/val/test种子与模型预算，checkpoint锁定后才首次生成test；不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段1–3结果与用户计划保留原样。
 
 ## 本地-服务器同步准则
 

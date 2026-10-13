@@ -2,8 +2,9 @@
 
 研究固定多环终端区中，随机剩余电量和独立安全/能源/资源约束下的向内跨环、最终进近与pad联合调度。
 
-**阶段4学习辅助调度设计已授权，当前实现中；正式数据、训练与评价未运行。** 比较简单价值回归/排序筛选能否以更低完整在线成本逼近预算传统闭合rollout参考。阶段3学习必要性尚未证明，闭合与实际未来排序反转的限制继续保留。
+**阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中，结论待完整证据。** 比较简单价值回归/排序筛选能否以更低完整在线成本逼近预算传统闭合rollout参考。阶段3学习必要性尚未证明，闭合与实际未来排序反转的限制继续保留。
 
+- [阶段4结果与运行证据](docs/evidence/fixed_terminal_stage4/results.md)
 - [阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)
 - [阶段4冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)
 - [阶段4用户计划](docs/fixed_terminal_stage4_learning_scheduler_plan.md)

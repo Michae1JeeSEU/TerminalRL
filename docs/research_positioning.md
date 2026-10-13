@@ -1,6 +1,8 @@
 # 研究定位：固定多环联合到达调度
 
-当前阶段4已授权、实现中，正式数据/训练/评价未运行。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
+阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
 
 在随机剩余电量和持续到达需求下，联合安排多 UAV 各环等待、向内跨环转移、最后进近与 pad 服务窗口，在独立的安全、能源和资源约束下提高正常着陆效率并控制应急代价。
 

@@ -1,6 +1,8 @@
 # 固定多环与阶段3机制分析设计
 
-当前阶段4已授权、实现中，正式数据/训练/评价未运行。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+
+阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
 
 ## 模块边界
 
@@ -54,4 +56,4 @@
 
 数据层只从joint behavior共同prefix的可见snapshot生成手工状态/候选特征和闭合J/Δ；模型层仅筛选批次。统一池≤14，学习或beam前3+FCFS/HOLD后≤5根精确rollout，最终按真实key选根并独立复查/共用应急。单根快路径不推理/rollout，完整承诺不撤销。生成中的feasibility开销须计入在线链，不以模型分数替代安全。
 
-train/val/test按新seed场景分组，scaler只拟合train。两简单MLP分别回归七维ΔJ、学习同context非tie pair顺序；输出不是动作模仿。公开类名、接口和FEATURE_NAMES待实现稳定后补充。
+train/val/test按新seed场景分组，scaler只拟合train。两简单MLP分别回归七维ΔJ、学习同context非tie pair顺序；输出不是动作模仿。公开接口与93个FEATURE_NAMES已按实现列于技术规范和协议附录。
