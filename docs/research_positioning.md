@@ -1,5 +1,17 @@
 # 研究定位：固定多环联合到达调度
 
+## 当前阶段5研究判断
+
+阶段5冻结实现、评价与研究验收已完成。存在离线排序信号和部分在线收益，但尚未达到不退化系统质量并明显降低计算的B类门槛，也无长期价值C类证据；不能据此笼统宣称学习完全无效或普遍无必要。保留beamB5/B8及full工程参考，rank/GB保留实验性结果；下一阶段另定范围，不自动扩大网络或启动新实验。[结果报告](evidence/fixed_terminal_stage5/results.md)保存完整分组，方法及预算见[方法](arrival_restructure/stage5_learning_validation.md)和[协议](experiments/fixed_terminal_stage5_protocol.md)。
+
+90个共同状态中，B5保优beam80、linear87、MLP88、GB89、value77、hybrid87，59个informative与23个单根分别保留分母。30episode每法1010请求，MLP/GB相对beamB5增加正常完成，却均多一次能源失败；13/15/2与14/14/2的配对胜/平/负不能表示无代价综合优势。24个真实同状态面板中，beamB5/MLP/GB均80根、24/24保优，累计时间128.355/128.106/128.280 s，没有明显加速，beam候选生成占约76%。不同episode轨迹的累计时间不能当作同状态因果贡献。
+
+学习B3离线87/90高于beamB8的84/90，只支持筛选潜力，未跑学习B3在线。上限32面板实际仅1/8/9根，与原14池root ID集合全同，没有实现扩池；九个continuation selected union均仅HOLD、pair_count0，无法检测排序反转或证明无偏差，两个world请求分母也不同。330episode间隔违反/未认证为0，但存在真实能源失败，不能混称零失败。
+
+结论限于固定93维表示、有限池FCFS闭合参考、同profile family新seed、3个初相场景和单一模型seed5401。20并发墙钟与仿真交通时钟分离，不支持实时部署声明；没有未来需求期望模型，不建立长期Q证据。下列阶段1–4内容保留各自历史问题、合同和事实。
+
+## 阶段1–4历史研究定位
+
 阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
 
 阶段4完整结果与结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
@@ -40,7 +52,7 @@ SOC排序不等于有效的可行性紧迫程度，slack规则也未稳定超越
 
 [结果报告](evidence/fixed_terminal_stage3/results.md)支持研究明示continuation、horizon和需求假设的联合批次价值或单窗口条件价值；不支持固定单机urgency、optimal/expected Q或传统全局上界。[学习问题定义](fixed_terminal_learning_problem_definition.md)已完成。较强传统参考的局部收益与计算成本只提供快速估值动机，学习必要性仍未证明；更好的传统求解仍未排除。未来期望价值若要研究，需另定需求模型与独立路径；阶段4仍只研究指定闭合参考。
 
-## 当前阶段4研究问题
+## 阶段4研究问题（历史）
 
 本阶段问学习筛选是否能以较低完整在线成本逼近预算传统闭合rollout参考；不把阶段3局部收益当成学习必要性证明。监督回归ΔJ与非tie pair排序只是两个固定简单近似器，与同预算beam筛选和全池精确参考比较。
 

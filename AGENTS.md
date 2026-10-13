@@ -21,7 +21,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-阶段1–4已完成，学习必要性仍未证明。阶段4固定数据、训练与全部评价已完成，rank的离线排序信号尚未转化为优于同预算beam的综合证据。用户已授权阶段5闭合参考搜索筛选与计算预算验证，四模型正式训练与冻结已完成，评价流程pilot已通过，正式test360运行中，独立continuation9检查失败、正在核对；只近似当前已到达机群的完整联合批次价值，确定性候选生成/安全/能源/资源/应急层继续负责约束。不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
+阶段1–5冻结研究已完成。阶段5存在离线排序信号和部分在线收益，但MLP/GB在增加正常完成时增加一次能源失败，同状态计时没有明显加速，尚未达到不退化系统质量并明显降算的B类门槛，也无长期价值C类证据；不笼统宣称学习完全无效或普遍无必要。保留beamB5/B8/full工程参考与rank/GB实验性结果，下一阶段另定范围。学习只近似当前已到达机群的完整联合批次闭合价值，确定性候选生成/安全/能源/资源/应急层继续负责约束；不自动开展actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
 
 ## 主代码路线
 
@@ -44,6 +44,7 @@
 | 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 阶段4已完成工作与后续范围边界 |
 | 阶段2方法 | [docs/arrival_restructure/stage2_traditional_baselines.md](docs/arrival_restructure/stage2_traditional_baselines.md) | 六方法、联合批次、滚动信息边界与 oracle |
 | 阶段2协议 | [docs/experiments/fixed_terminal_stage2_protocol.md](docs/experiments/fixed_terminal_stage2_protocol.md) | 冻结预算、162场比较和12个小实例 |
+| 阶段5结果 | [docs/evidence/fixed_terminal_stage5/results.md](docs/evidence/fixed_terminal_stage5/results.md) | 离线信号、在线质量代价与同状态计算结论 |
 | 阶段5方法 | [docs/arrival_restructure/stage5_learning_validation.md](docs/arrival_restructure/stage5_learning_validation.md) | 联合批次筛选、TOTAL预算与证据关系 |
 | 阶段5协议 | [docs/experiments/fixed_terminal_stage5_protocol.md](docs/experiments/fixed_terminal_stage5_protocol.md) | 四模型、冻结数据及质量/计时评价矩阵 |
 | 阶段4方法 | [docs/arrival_restructure/stage4_learning_scheduler.md](docs/arrival_restructure/stage4_learning_scheduler.md) | 学习筛选、确定性约束和闭合参考 |
@@ -68,7 +69,7 @@
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按已授权[阶段5方法](docs/arrival_restructure/stage5_learning_validation.md)和[冻结协议](docs/experiments/fixed_terminal_stage5_protocol.md)评价pilot已通过，正式test360（20workers）已启动，独立continuation9（4workers）终态3成功6失败，旧artifact比较补丁准备中，待test终态后应用；四模型正式训练与冻结已完成，不再训练或更换checkpoint，当前尚无阶段5正式效果结果。固定93维表示、train/val/test种子与模型预算，TOTAL预算包含anchors，不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段4完成结论、full_reference与beam_topk工程参考及rank实验性结果保留，阶段1–4结果与用户计划保留原样。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。[阶段5结果](docs/evidence/fixed_terminal_stage5/results.md)记录已完成的研究验收：正式test360与修复后continuation9均完成，四模型hash不变，严格汇总已完成。保留当前研究结论，后续研究另定范围，不自动新增实验、扩模型或重复打包。32上限未实际扩大候选池，continuation九场均仅HOLD、pair_count0，不证明无排序反转或无continuation偏差。固定93维表示、种子、预算和物理保持不变；部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段1–4历史结论、证据与用户阶段1–5计划保留原样。
 
 ## 本地-服务器同步准则
 

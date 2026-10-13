@@ -1,6 +1,6 @@
 # 阶段5：联合候选筛选与计算预算验证
 
-阶段5按[用户计划](../fixed_terminal_stage5_learning_validation_plan.md)执行方向A：检验学习能否作为当前状态下的搜索筛选器，在有限闭合参考质量与完整计算成本之间提供收益。**四模型正式训练与冻结已完成，评价流程pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中；阶段5尚未完成。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。 精确种子、模型超参数、预算、矩阵和运行接口以[冻结协议](../experiments/fixed_terminal_stage5_protocol.md)为准；[阶段4诊断](../evidence/fixed_terminal_stage5/diagnosis.md)记录本轮依据，阶段4原结论保留。
+阶段5按[用户计划](../fixed_terminal_stage5_learning_validation_plan.md)执行方向A：检验学习能否作为当前状态下的搜索筛选器，在有限闭合参考质量与完整计算成本之间提供收益。**阶段5冻结实现、评价与研究验收已完成。存在离线信号和部分在线收益，但尚未达到不退化系统质量并明显降算的B类门槛，也无长期价值C类证据。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。精确种子、模型超参数、预算、矩阵和运行接口以[冻结协议](../experiments/fixed_terminal_stage5_protocol.md)为准；[阶段4诊断](../evidence/fixed_terminal_stage5/diagnosis.md)记录本轮依据，阶段4原结论保留。
 
 ## 学习对象与职责
 
@@ -28,4 +28,10 @@ rolling20/60保留旧joint continuation与commitment surrogate，共用外层候
 
 ## 结果解释
 
-正式报告须同时保留N/E/F/C、全请求暴露、正常条件延迟、能耗、安全检查及生成/推理/rollout/复查完整成本，逐场景配对比较。学习是否达到相同质量并减少计算，须由同状态实际计时和完整episode共同判断；当前没有阶段5效果结论。单一模型seed不证明训练稳定性，固定behavior的离线差异不能直接归因另一在线轨迹的失败。最终结论限定于冻结表示、池、预算和需求假设，不推广成普遍的学习必要性判断。
+正式报告须同时保留N/E/F/C、全请求暴露、正常条件延迟、能耗、安全检查及生成/推理/rollout/复查完整成本，逐场景配对比较。学习是否达到相同质量并减少计算，须由同状态实际计时和完整episode共同判断；阶段5结果显示学习在离线保优与部分正常完成上有收益，但MLP/GB增加一次能源失败，同状态计时没有明显加速，不能据多数胜场宣布无代价综合优势。单一模型seed不证明训练稳定性，固定behavior的离线差异不能直接归因另一在线轨迹的失败。最终结论限定于冻结表示、池、预算和需求假设，不推广成普遍的学习必要性判断。
+
+完整结果见[阶段5报告](../evidence/fixed_terminal_stage5/results.md)。B5离线保优为beam80/90、MLP88/90、GB89/90；24个真实同状态面板中三者均80根、24/24保优，累计时间128.355/128.106/128.280 s，beam生成耗时约占76%。学习B3离线87/90对beamB8的84/90仅支持筛选潜力，未运行学习B3在线，不声称真实加速。
+
+预定32上限的9个t15面板实际仅1/8/9根，与原14池root ID集合全同，未实现候选池扩大。九个continuation selected union均仅HOLD、pair_count0，无法检测排序反转或证明无偏差，两个world请求分母不同。330episode全请求守恒，间隔违反和uncertified均0、最低着陆SOC0.06170707293994795高于reserve0.06，但能源失败存在。结论还受3个初相场景、同profile family新seed、单一模型seed5401和20并发墙钟限制。
+
+保留beamB5/B8/full工程参考和rank/GB实验性结果；不推成学习完全无效或普遍无必要。下一阶段另定范围，不自动扩大网络或启动新实验。

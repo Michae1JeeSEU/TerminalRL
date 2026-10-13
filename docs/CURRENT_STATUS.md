@@ -1,19 +1,25 @@
-# 当前状态：阶段5正式test运行中，continuation比较补丁准备中
+# 当前状态：阶段5研究验收完成
 
-更新日期：2026-10-13。用户已授权[阶段5计划](fixed_terminal_stage5_learning_validation_plan.md)，当前落实[方法](arrival_restructure/stage5_learning_validation.md)与[冻结协议](experiments/fixed_terminal_stage5_protocol.md)。**阶段5正式训练与四模型冻结已完成；流程pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中，阶段5尚未完成。当前没有阶段5效果结论。** 运行证据见[阶段5运行状态](evidence/fixed_terminal_stage5/run_status.md)。
+更新日期：2026-10-13。阶段5冻结实现、评价与研究验收已完成。存在离线排序信号和部分在线收益，但尚未达到不退化系统质量并明显降低计算的B类门槛，也无长期价值C类证据；不能据此笼统宣称学习完全无效或普遍无必要。保留beamB5/B8及full工程参考，rank/GB保留实验性结果；下一阶段另定范围，不自动扩大网络或启动新实验。版本与交付校验信息由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，交付状态见最终交付回复。完整数据见[阶段5结果](evidence/fixed_terminal_stage5/results.md)，执行与失败记录见[运行状态](evidence/fixed_terminal_stage5/run_status.md)，方法和冻结范围见[方法](arrival_restructure/stage5_learning_validation.md)、[协议](experiments/fixed_terminal_stage5_protocol.md)。
 
-## 阶段5当前进度
+## 已完成的执行证据
 
-- 阶段4只读诊断已完成：108context、1012候选、60informative、30单根，冻结预测精确复现旧保存top3的chosen/pair counts/regret；诊断7项测试通过。[诊断简报](evidence/fixed_terminal_stage5/diagnosis.md)与[紧凑证据](evidence/fixed_terminal_stage5/stage4_diagnostics_summary.json)保留anchors、分量误差、特征别名及旧online差异。
-- 实现源提交`4811abb805ab03997f5ce4186c6b2610f3c6b3b3`已推送，阶段1–5合并101项检查通过（17.21 s、exit0）。早期pilot5001四模型3epoch/trees只验证流程；正式四模型随后已按300epoch/100树完成唯一实际训练（22.092 s、maxRSS913020 KB、exit0），train108/val36。
-- 模型已冻结，manifest确认completed/frozen、非smoke、未读test、重载预测一致。validation TOTAL B5选择linear155（24/25）、MLP161（25/25）、GB100（24/25）、value113（24/25）；它们只是validation选择指标，不是test效果，后续不重新训练。
-- 首次训练launcher未设cwd，ModuleNotFoundError后0.036 s退出、未训练；修正后成功。四项服务器pilot首attempt因wrapper预建目录，在仿真前FileExistsError；原始失败日志保留。pilot_v2四项seed5001流程检查现已通过：beam/rolling60/full各48decisions、snapshot保存t0/15/90且t0/t15各有11arm真实计时面板，均exit0，四模型hash不变；耗时与内存见运行状态。
-- 冻结方向为当前可见状态下完整联合批次的闭合FCFS参考筛选，保留93维表示与物理。复用train4101/4102/4103、val4201；model seed5401，validation TOTAL B5选checkpoint；冻结后首次生成test5301/5302/5303。
-- 已定评价范围为330个完整episode、90个固定snapshot、24个真实同状态计时state、9个32根池context及9个旧4303/t15 continuation诊断，精确口径见协议。主对话已授权test360使用20workers、continuation9使用4workers，每进程threads1；24并发预计内存约17 GB，T0约90 min，已于北京时间20:05:07启动；test初验3/360完成、20running、337pending、0failed，有18份非空decisions.jsonl。独立continuation在15.93 s后exit1，3成功6失败，原始错误`ValueError: old visible snapshot mismatch`，主对话已核对九场旧4303：仅已存plan segment坐标有最大1.7763568394002505e-15的末位浮点差异，结构与非浮点内容、scenario及新提议root plans一致。
+- 四模型训练一次并冻结，train108/val36，seed5401；正式test360/360成功、0failed、exit0，21:17:04.821508北京时间结束，duration4317.407811 s。完整覆盖330episode、30snapshot jobs、90base contexts、9large-pool contexts和24真实计时面板/264行；四模型hash不变。
+- continuation首轮3成功6失败全部原始证据33files/133416 bytes逐hash保留至`continuation_attempt1/`。旧artifact浮点比较修复提交`b7233cfb58b1b7ebeb534ad095a6373516fac84c`已推送；仅finite float abs1e-12/rel0，config/scenario、类型、离散和结构exact，其他17函数AST一致，不改变物理、安全、J、模型或正式test计算。第二轮21:37:28开始，启动/dispatcher PID3424338/3424339，外层10.20 s、exit0，9/9成功。
+- 严格summary一次完成，`status=completed`、`allow_incomplete=false`，覆盖330/30/90/9/24/264/9。正式test源为`4811abb805ab03997f5ce4186c6b2610f3c6b3b3`，修复诊断源为`b7233cf...`。首次训练cwd失败、pilot预建目录失败和continuation浮点比较失败均保留，没有据结果重训或改变评价矩阵。
+- 检查分别为原阶段1–5合并101项（17.21 s）、summary7+package6共13项（1.10 s）、修复相关26项（0.79 s），均通过；它们是三次范围不同的检查，不是一次合并运行。正式输出在`D:\7_codespace\training_outputs\terminal\stage5_validation_20261013`。
 
-正式test继续运行。主对话诊断为跨平台浮点末位表示差异触发旧JSON严格相等，不归因具体库；Astra仅在`tmp_stage5_preflight/continuation_fix`准备artifact比较补丁和测试，待test360终态再应用，尚未修改运行源码或重启。test启动/dispatcher PID为3416299/3416301，continuation为3416300/3416302，四模型hash不变。T0约90 min；当前线程heartbeat id=5“阶段5冻结评价接续”已创建并view确认，20:13:57（北京时间）设置81 min，约21:35复查并接续已授权分析/交付，无常驻监控worker。源文件仅本地修改并经Syncthing同步；服务器输出进入`$HOME/training_outputs/terminal/stage5_validation_20261013`。训练PID3412631及实际启动/进度/失败日志位置见运行状态，全部原始记录保留。
+## 研究判断
 
-新增汇总/打包工具独立验证：summary7项+package6项，共13 passed in 1.10 s，与原101项检查分开记录。真实pilot汇总CLI exit0，标记`fixture_or_pilot_incomplete`，41份源/副本文件hash相同；核对记录`tmp_stage5_preflight/summary_integration/validation.json`。没有新仿真、训练或读取正式530x结果。
+B5离线保优为beam80/90、linear87、MLP88、GB89、value77、hybrid87；90context含59 informative和23单根。30episode每方法1010请求，beamB5 N/E/F/C=528/24/4/454，MLP534/25/5/446，GB535/23/5/447。MLP与GB对beam的词典序配对为13/15/2、14/14/2，但在high/low/5303均增加一次能源失败（uav-0026）。正常数或多数胜场增加不能抵销这一代价。
+
+真实同状态24面板的beamB5/MLP/GB总时间为128.355/128.106/128.280 s，均精确评估80根、24/24保留闭合最佳，beam已有同等质量，没有明显加速；beam生成耗时约占76%。各自episode轨迹的MLP/GB累计成本反而更高，但不同状态与并发不能解释为同状态因果。学习B3离线87/90对beamB8的84/90表明筛选潜力；未运行学习B3在线，不能据此声称真实加速。
+
+## 关键边界与下一步
+
+上限32的9个t15面板实际仅1/8/9根，与原上限14池的root ID集合全部相同，未实际扩大池。9个continuation的selected union均仅HOLD、pair_count=0，不能检测排序反转或证明continuation无偏差，closed与realized两个world的请求分母不同。330episode spacing违反/uncertified均0，但能源失败真实存在。仅3个初相场景、同profile family新seed、单一模型seed5401；20并发墙钟不证明实时性，有限池FCFS闭合值不等于长期Q。
+
+保留现有结论，后续研究另定范围，不自动新增实验或扩模型。阶段1–4历史计划和证据保留。
 
 ## 阶段4已完成事实
 

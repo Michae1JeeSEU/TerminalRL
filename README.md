@@ -2,8 +2,12 @@
 
 研究固定多环终端区中，随机剩余电量和独立安全/能源/资源约束下的向内跨环、最终进近与pad联合调度。
 
-**阶段4实现与冻结实验已完成。** rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。学习仅近似已到达机群的预算闭合参考，确定性生成与安全职责不变，阶段3闭合与实际未来排序反转的限制继续保留。
+阶段5冻结实现、评价与研究验收已完成。存在离线排序信号和部分在线收益，但尚未达到不退化系统质量并明显降低计算的B类门槛，也无长期价值C类证据；不能据此笼统宣称学习完全无效或普遍无必要。保留beamB5/B8及full工程参考，rank/GB保留实验性结果；下一阶段另定范围，不自动扩大网络或启动新实验。完整结果见下方阶段5报告。版本与交付校验信息由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，交付状态见最终交付回复。
 
+- [阶段5结果与研究判断](docs/evidence/fixed_terminal_stage5/results.md)
+- [阶段5运行与失败记录](docs/evidence/fixed_terminal_stage5/run_status.md)
+- [阶段5方法](docs/arrival_restructure/stage5_learning_validation.md)
+- [阶段5冻结协议](docs/experiments/fixed_terminal_stage5_protocol.md)
 - [阶段4结果与运行证据](docs/evidence/fixed_terminal_stage4/results.md)
 - [阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)
 - [阶段4冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)

@@ -1,4 +1,4 @@
-"""Preview-only tests; importing this module never simulates an episode."""
+"""Continuation artifact comparison boundary tests."""
 import pytest
 from terminal_marl.scripts.evaluate_fixed_terminal_stage5 import compare_continuation_artifact
 

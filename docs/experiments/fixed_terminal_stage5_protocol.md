@@ -1,6 +1,6 @@
 # 阶段5：当前状态联合候选筛选验证协议
 
-状态：**四模型正式训练与冻结已完成，评价流程pilot已通过，正式test360/360成功、0failed、exit0且模型hash不变；独立continuation首轮失败，已审查比较修复正在应用与验证，第二轮尚未运行。最终研究汇总与验收待完成。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。 本文按主对话确定的方向A冻结范围，落实[用户阶段5计划](../fixed_terminal_stage5_learning_validation_plan.md)，保留[阶段4结果](../evidence/fixed_terminal_stage4/results.md)及原始数据，不按后续结果调整模型、种子、表示或预算。
+状态：**阶段5冻结实现、评价与研究验收已完成。正式test360及修复后continuation9全部成功，模型hash不变，严格汇总完成。离线信号和部分在线收益尚未达到不退化系统质量并明显降算的B类门槛，无长期价值C类证据。** 运行记录见[阶段5运行状态](../evidence/fixed_terminal_stage5/run_status.md)。本文按主对话确定的方向A冻结范围，落实[用户阶段5计划](../fixed_terminal_stage5_learning_validation_plan.md)，保留[阶段4结果](../evidence/fixed_terminal_stage4/results.md)及原始数据，不按后续结果调整模型、种子、表示或预算。
 
 ## 研究对象与既有事实
 
@@ -92,9 +92,9 @@ STAGE4_RESULTS_ROOT含`data/train`、`data/val`；CLI不提供正式超参数覆
 
 依赖已准备：本地sklearn1.9.1、SciPy1.18.1、NumPy2.4.4、torch2.5.1+cpu；服务器sklearn1.9.1、SciPy1.18.1、NumPy2.5.1、torch2.13.0+cu130，正式仅CPU。`requirements-stage5.txt`独立固定正式base版本NumPy2.5.1、SciPy1.18.1、torch2.13.0、scikit-learn1.9.1；安装与重现以冻结模型manifest记录的实际环境为准，实际torch安装构建为2.13.0+cu130。本地旧torch/NumPy仅作接口单测/smoke，不作为正式重现环境；此次依赖文本修正不升级任何现有环境，也不修改阶段4依赖。正式训练与评价统一使用服务器runtime。服务器已有完整阶段4train108/val36数据，路径`~/projects/terminal/.worktrees/arrival-restructure/tmp_stage4_results`。
 
-服务器28 logical CPU；主对话已依据通过的pilot授权test360使用20workers、continuation9使用4workers，每进程threads1。两任务于20:05:07（北京时间）启动；test已于21:17:04.821508（北京时间）全部完成，360成功、0failed、exit0，duration4317.407811361365 s、模型hash不变；continuation首轮exit1、3成功6失败，比较修复与第二轮准备进行中。启动时24并发预计内存约17 GB，初始T0约90 min，证据见运行状态；heartbeat已创建并view确认，详见运行状态。服务器正式输出写入`$HOME/training_outputs/terminal`，按既有同步规则取回，不在服务器提交Git。
+服务器28 logical CPU；主对话已依据通过的pilot授权test360使用20workers、continuation9使用4workers，每进程threads1。两任务于20:05:07（北京时间）启动；test已于21:17:04.821508（北京时间）全部完成，360成功、0failed、exit0，duration4317.407811361365 s、模型hash不变；continuation首轮exit1、3成功6失败，原始证据已保留；artifact比较修复后第二轮9/9成功、exit0。启动时24并发预计内存约17 GB，初始T0约90 min，证据见运行状态；heartbeat已创建并view确认，详见运行状态。服务器正式输出写入`$HOME/training_outputs/terminal`，按既有同步规则取回，不在服务器提交Git。
 
-当前针对性模型单测8项通过（最终4.68 s，exit0），实际小fixture训练/保存加载四模型，覆盖TOTAL B5去重、ordinal ties、checkpoint排序、test隔离和覆盖拒绝。上述单测产物仅作pilot流程检查。随后正式四模型已按冻结协议完成训练并锁定，服务器pilot_v2亦已通过；正式test已全部完成，服务器完整产物核验与研究汇总进行中；独立continuation比较修复正在应用与验证，第二轮尚未运行，训练与运行证据见运行状态。
+当前针对性模型单测8项通过（最终4.68 s，exit0），实际小fixture训练/保存加载四模型，覆盖TOTAL B5去重、ordinal ties、checkpoint排序、test隔离和覆盖拒绝。上述单测产物仅作pilot流程检查。随后正式四模型已按冻结协议完成训练并锁定，服务器pilot_v2亦已通过；正式test已全部完成，服务器完整产物核验和严格研究汇总已完成；独立continuation比较修复及第二轮9/9重放完成，训练与运行证据见运行状态。
 
 ## 固定任务分发接口
 
@@ -103,10 +103,10 @@ STAGE4_RESULTS_ROOT含`data/train`、`data/val`；CLI不提供正式超参数覆
 ```bash
 python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase test --models FROZEN_MODELS --output NEW_OUTPUT_ROOT --workers 20
 python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase test --models FROZEN_MODELS --output NEW_OUTPUT_ROOT --workers 20 --execute
-python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase continuation --stage4-root STAGE4_RESULTS_ROOT --output OUTPUT_ROOT --workers 20 --execute
+python -m terminal_marl.scripts.run_fixed_terminal_stage5 --phase continuation --stage4-root STAGE4_RESULTS_ROOT --output OUTPUT_ROOT --workers 4 --execute
 ```
 
-主对话已在pilot核对后授权上例test20workers、continuation4workers；Luna已确认实际启动，随后test终态360成功、0failed；continuation首轮终态失败，已审查比较修复正在应用与验证，PID与日志见运行状态。test开始和结束均验证formal manifest及所有模型文件hash一致，任何失败最终exit1；continuation只使用旧labels/selections和重建snapshot对照，不设置新模型前置条件。训练与子进程继承`TERMINAL_SOURCE_COMMIT`；OMP/MKL/OPENBLAS线程均1，不执行服务器Git或源码传输。
+主对话已在pilot核对后授权上例test20workers、continuation4workers；Luna已确认实际启动，随后test终态360成功、0failed；continuation首轮终态失败的证据已保留，artifact比较修复后第二轮9/9成功，PID与日志见运行状态。test开始和结束均验证formal manifest及所有模型文件hash一致，任何失败最终exit1；continuation只使用旧labels/selections和重建snapshot对照，不设置新模型前置条件。训练与子进程继承`TERMINAL_SOURCE_COMMIT`；OMP/MKL/OPENBLAS线程均1，不执行服务器Git或源码传输。
 
 ROOT下每job独立输出至`episodes/arm-load-soc-seed-variant`、`snapshots/load-soc-seed-variant`或`continuation/load-soc-4303`。`logs/`保存每job stdout/stderr；`execution_<phase>.json`原子更新PID、命令、起止、退出码、耗时与计数，`progress_<phase>.jsonl`写完成事件并flush。总日志只打印简短启动/完成事件与phase摘要。已存在job目录、日志或phase状态一律拒绝重复execute，无自动恢复、重训或重跑；失败处理由主对话决定。
 
@@ -114,10 +114,16 @@ ROOT下每job独立输出至`episodes/arm-load-soc-seed-variant`、`snapshots/lo
 
 ## 解释边界
 
-本轮仅比较冻结表示、目标、候选池与预算中的方法；新场景seed数和模型seed数有限。闭合标签并不代表未来需求期望，有限池参考不是全动态最优，计算成本不代表算法固有下限；离线交通时钟不计CPU等待。结果可以支持或不支持本范围中的学习收益，不能宣布普遍不需要学习或期望长期价值优越。后续科学结论由完整证据给出，当前没有正式效果结论。
+本轮仅比较冻结表示、目标、候选池与预算中的方法；新场景seed数和模型seed数有限。闭合标签并不代表未来需求期望，有限池参考不是全动态最优，计算成本不代表算法固有下限；离线交通时钟不计CPU等待。结果可以支持或不支持本范围中的学习收益，不能宣布普遍不需要学习或期望长期价值优越。完整[结果报告](../evidence/fixed_terminal_stage5/results.md)显示离线筛选改善和部分在线收益，但MLP/GB相对beamB5多一次能源失败，真实同状态计时没有明显加速，尚未达到不退化系统质量且明显降算的B类门槛，也无长期价值C类证据。不能笼统宣称学习完全无效或普遍无必要；保留beamB5/B8/full工程参考与rank/GB实验性结果，下一阶段另定范围。
 
 ## 旧artifact比较修复与continuation接续状态
 
-正式test360终态由同步的`execution_test.json`确认，结束UTC 2026-10-13T13:17:04.821508+00:00，exit0且模型hash不变；最终研究结论待完整产物核验及汇总。continuation首轮保留3成功6失败和全部原始错误证据。旧artifact比较修复仅对finite float使用abs1e-12、rel0；config/scenario与类型、离散值、结构严格相等，审计记录exact_match、差异count和max绝对差。此修复不改变物理、安全、J、模型、episode或snapshot计算，不改变上述冻结预算和矩阵。
+正式test360终态由同步的`execution_test.json`确认，结束UTC 2026-10-13T13:17:04.821508+00:00，exit0且模型hash不变；完整产物核验及严格汇总已完成，研究结论见结果报告。continuation首轮保留3成功6失败和全部原始错误证据。旧artifact比较修复仅对finite float使用abs1e-12、rel0；config/scenario与类型、离散值、结构严格相等，审计记录exact_match、差异count和max绝对差。此修复不改变物理、安全、J、模型、episode或snapshot计算，不改变上述冻结预算和矩阵。
 
-Astra正在应用已审查修复并跑26项针对性检查，尚待实际检查结果与验收报告。九个continuation计划先将首轮全部原始证据保留至`continuation_attempt1`，再完整重放一次；第二轮尚未运行，不预写成功。该接续不重训模型、不重跑360个正式test任务，运行状态和原始证据见[运行记录](../evidence/fixed_terminal_stage5/run_status.md)。
+修复提交`b7233cfb58b1b7ebeb534ad095a6373516fac84c`已推送，26项针对性检查通过（0.79 s），其他17个函数AST保持相同。首轮33files/133416 bytes逐hash保留至`continuation_attempt1/`后，九个continuation完整重放一次；第二轮21:37:28北京时间开始，外层10.20 s、exit0，9/9成功，未重训模型或重跑360个正式test任务。严格summary一次completed、allow_incomplete=false，覆盖330episode/30snapshot jobs/90base contexts/9large contexts/24panels/264rows/9continuations，运行状态和原始证据见[运行记录](../evidence/fixed_terminal_stage5/run_status.md)。
+
+## 预定面板的实际覆盖边界
+
+32上限的9个t15面板实际仅1/8/9根，root ID集合与原14池全部相同，未实际扩大候选池，不能据此声称检验了更大搜索空间。九个continuation selected union均只有HOLD，pair_count0，不能检测排序反转或证明无continuation偏差；closed与realized两个world的请求分母不同。学习B3只做离线质量曲线，未作在线episode比较，不声称B3真实加速。
+
+330episode全请求守恒，spacing违反/uncertified均0，最低着陆SOC0.06170707293994795；能源失败真实存在，间隔检查和储备结果不等于全请求无失败。初相仅3场、新seed仍属同profile family、模型seed仅5401，20并发墙钟不代表实时部署，有限池FCFS闭合参考不代表长期Q。

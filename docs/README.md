@@ -1,12 +1,13 @@
 # 固定终端区文档入口
 
-**阶段5正式训练与四模型冻结已完成，评价pilot已通过，正式test运行中，独立continuation检查失败，比较补丁准备中。** 当前范围是完整联合批次的闭合参考筛选与计算预算验证，详见方法和冻结协议。阶段4实现与冻结实验已完成。rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。学习仅近似已到达机群的预算闭合参考，确定性生成与安全职责不变，阶段3闭合与实际未来排序反转的限制继续保留。
+阶段5冻结实现、评价与研究验收已完成。存在离线排序信号和部分在线收益，但尚未达到不退化系统质量并明显降低计算的B类门槛，也无长期价值C类证据；不能据此笼统宣称学习完全无效或普遍无必要。保留beamB5/B8及full工程参考，rank/GB保留实验性结果；下一阶段另定范围，不自动扩大网络或启动新实验。版本与交付校验信息由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，交付状态见最终交付回复。
 
 ## 当前阅读顺序
 
 | 文档 | 职责 |
 |---|---|
-| [阶段5运行状态](evidence/fixed_terminal_stage5/run_status.md) | 正式训练冻结、启动失败记录与待执行评价 |
+| [阶段5结果与研究判断](evidence/fixed_terminal_stage5/results.md) | 完整分母、系统质量/计算权衡及结论边界 |
+| [阶段5运行状态](evidence/fixed_terminal_stage5/run_status.md) | 训练/评价完成、失败保留、修复重放及交付状态 |
 | [阶段5用户计划](fixed_terminal_stage5_learning_validation_plan.md) | 用户授权范围，原样保存 |
 | [阶段5方法](arrival_restructure/stage5_learning_validation.md) | 联合批次筛选、TOTAL预算和证据关系 |
 | [阶段5冻结协议](experiments/fixed_terminal_stage5_protocol.md) | 四模型、数据、330episode及质量/计时面板 |
