@@ -21,7 +21,7 @@
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-阶段1–3已完成，学习必要性仍未证明。用户已授权阶段4简单监督价值与排序筛选：只近似当前已到达机群的有限预算闭合参考，确定性候选生成/安全/能源/资源/应急层继续负责约束。固定数据、训练与全部评价已完成；rank的离线排序信号尚未转化为优于同预算beam的综合证据；不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
+阶段1–4已完成，学习必要性仍未证明。阶段4固定数据、训练与全部评价已完成，rank的离线排序信号尚未转化为优于同预算beam的综合证据。用户已授权阶段5闭合参考搜索筛选与计算预算验证，当前处于implementation/preflight，正式训练、新test与评价尚未开始；只近似当前已到达机群的完整联合批次价值，确定性候选生成/安全/能源/资源/应急层继续负责约束。不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention或几何改变。
 
 ## 主代码路线
 
@@ -44,6 +44,8 @@
 | 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 阶段4已完成工作与后续范围边界 |
 | 阶段2方法 | [docs/arrival_restructure/stage2_traditional_baselines.md](docs/arrival_restructure/stage2_traditional_baselines.md) | 六方法、联合批次、滚动信息边界与 oracle |
 | 阶段2协议 | [docs/experiments/fixed_terminal_stage2_protocol.md](docs/experiments/fixed_terminal_stage2_protocol.md) | 冻结预算、162场比较和12个小实例 |
+| 阶段5方法 | [docs/arrival_restructure/stage5_learning_validation.md](docs/arrival_restructure/stage5_learning_validation.md) | 联合批次筛选、TOTAL预算与证据关系 |
+| 阶段5协议 | [docs/experiments/fixed_terminal_stage5_protocol.md](docs/experiments/fixed_terminal_stage5_protocol.md) | 四模型、冻结数据及质量/计时评价矩阵 |
 | 阶段4方法 | [docs/arrival_restructure/stage4_learning_scheduler.md](docs/arrival_restructure/stage4_learning_scheduler.md) | 学习筛选、确定性约束和闭合参考 |
 | 阶段4协议 | [docs/experiments/fixed_terminal_stage4_protocol.md](docs/experiments/fixed_terminal_stage4_protocol.md) | 数据分组、训练/筛选预算与完整链评价 |
 | 阶段3协议 | [docs/experiments/fixed_terminal_stage3_protocol.md](docs/experiments/fixed_terminal_stage3_protocol.md) | 15context、根池、累计J与配对机制核对 |
@@ -66,7 +68,7 @@
 
 ## 近期优先任务
 
-以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按[阶段4方法](docs/arrival_restructure/stage4_learning_scheduler.md)和[冻结协议](docs/experiments/fixed_terminal_stage4_protocol.md)执行冻结协议；固定实现、数据、训练与评价均已完成；当前保留full_reference与beam_topk工程参考及rank实验性结果，后续新研究需另定范围。固定train/val/test种子与模型预算，checkpoint锁定后才首次生成test；不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段1–3结果与用户计划保留原样。
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为滚动入口。按已授权[阶段5方法](docs/arrival_restructure/stage5_learning_validation.md)和[冻结协议](docs/experiments/fixed_terminal_stage5_protocol.md)完成实现预检，再训练冻结模型并首次生成新test；当前尚无阶段5正式效果结果。固定93维表示、train/val/test种子与模型预算，TOTAL预算包含anchors，不得按结果调参、改物理或删数据。部署输入不得含未到达draw、seed/profile/method标签或真实结局。阶段4完成结论、full_reference与beam_topk工程参考及rank实验性结果保留，阶段1–4结果与用户计划保留原样。
 
 ## 本地-服务器同步准则
 

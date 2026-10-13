@@ -1,0 +1,1429 @@
+{
+  "schema": "fixed-terminal-stage5-stage4-diagnostics-summary-v1",
+  "source_raw": "tmp_stage5_preflight/stage4_diagnostics.json",
+  "stage4_root": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results",
+  "source_offline": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\summary\\offline_test.json",
+  "models_sha256": {
+    "value.pt": "004d9f1f6054a1f9109ee4a3b64f337045599eb5b91577fafc77d339375b0d2a",
+    "rank.pt": "a1c298f294143e8d2e4330d748648a2006978c0e9db4be0a32b2aa913f636c38"
+  },
+  "scope": "saved_test_labels_and_frozen_predictions_only; no_rollouts_or_training",
+  "selection_key": "four_exact_integer_counts; exposure_delay_round8; energy_round10; action_key_tie",
+  "beam_order_scope": "original_beam_order_for_finite_k; full_pool_for_all; complete_ranking_appends_nonbeam_roots_by_action_key",
+  "saved_offline_top3_reproduction": true,
+  "inventory": {
+    "contexts": 108,
+    "candidates": 1012,
+    "informative": 60,
+    "single_candidate": 30
+  },
+  "J_component_order": [
+    "failed_energy",
+    "normal_landed",
+    "emergency_landed",
+    "arrived_unresolved",
+    "observed_request_seconds",
+    "normal_delay_sum_seconds",
+    "energy_consumed_soc_all_requests"
+  ],
+  "J_signs": [
+    -1,
+    1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+  ],
+  "raw_regret_definition": "full_J_minus_chosen_J; componentwise_signed_differences_not_scalar_or_nonnegative_bounds",
+  "top3": {
+    "beam_topk": {
+      "before_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 96,
+          "selected_candidates_sum": 264,
+          "raw_J_regret_sum": [
+            0.0,
+            9.0,
+            17.0,
+            -8.0,
+            -2036.2477172036165,
+            -1256.6911454362157,
+            -1.692219106143591
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 48,
+          "selected_candidates_sum": 180,
+          "raw_J_regret_sum": [
+            0.0,
+            9.0,
+            17.0,
+            -8.0,
+            -2036.2477172036167,
+            -1256.6911454362162,
+            -1.6922191061435878
+          ]
+        }
+      },
+      "after_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 103,
+          "selected_candidates_sum": 390,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            52.35987755982978,
+            52.35987755983058,
+            0.06299088769123529
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 55,
+          "selected_candidates_sum": 270,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            52.35987755982978,
+            52.35987755983058,
+            0.06299088769123529
+          ]
+        }
+      },
+      "pair_counts": {
+        "non_tie_pairs": 2813,
+        "pair_correct": 1790
+      },
+      "contexts_matching_full_first_four_J_after_anchors": 108
+    },
+    "value_topk": {
+      "before_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 92,
+          "selected_candidates_sum": 264,
+          "raw_J_regret_sum": [
+            0.0,
+            4.0,
+            4.0,
+            0.0,
+            865.3591086560662,
+            790.3262241115702,
+            0.6572001036564886
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 44,
+          "selected_candidates_sum": 180,
+          "raw_J_regret_sum": [
+            0.0,
+            4.0,
+            4.0,
+            0.0,
+            865.3591086560658,
+            790.3262241115701,
+            0.6572001036564895
+          ]
+        }
+      },
+      "after_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 98,
+          "selected_candidates_sum": 353,
+          "raw_J_regret_sum": [
+            0.0,
+            2.0,
+            1.0,
+            1.0,
+            701.5496693356015,
+            580.9407978725487,
+            0.5394145906242376
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 50,
+          "selected_candidates_sum": 247,
+          "raw_J_regret_sum": [
+            0.0,
+            2.0,
+            1.0,
+            1.0,
+            701.5496693356015,
+            580.9407978725487,
+            0.5394145906242376
+          ]
+        }
+      },
+      "pair_counts": {
+        "non_tie_pairs": 2813,
+        "pair_correct": 1662
+      },
+      "contexts_matching_full_first_four_J_after_anchors": 106
+    },
+    "rank_topk": {
+      "before_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 102,
+          "selected_candidates_sum": 264,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            367.5191429188098,
+            367.51914291880956,
+            0.2942793265790649
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 54,
+          "selected_candidates_sum": 180,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            367.5191429188092,
+            367.5191429188093,
+            0.29427932657906425
+          ]
+        }
+      },
+      "after_anchors": {
+        "all": {
+          "contexts": 108,
+          "best_key_hits": 103,
+          "selected_candidates_sum": 328,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            366.51914291880917,
+            366.5191429188093,
+            0.29347932657906406
+          ]
+        },
+        "informative": {
+          "contexts": 60,
+          "best_key_hits": 55,
+          "selected_candidates_sum": 227,
+          "raw_J_regret_sum": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            366.51914291880917,
+            366.5191429188093,
+            0.29347932657906406
+          ]
+        }
+      },
+      "pair_counts": {
+        "non_tie_pairs": 2813,
+        "pair_correct": 2337
+      },
+      "contexts_matching_full_first_four_J_after_anchors": 108
+    }
+  },
+  "rank_beam_top3_crosstab": [
+    {
+      "informative": false,
+      "rank_all_pairs_correct": null,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": true,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 48
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": false,
+      "same_chosen_action_after_anchors": false,
+      "same_chosen_key_after_anchors": false,
+      "contexts": 3
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": false,
+      "same_chosen_action_after_anchors": false,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 2
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": false,
+      "same_chosen_action_after_anchors": true,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 7
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": false,
+      "same_chosen_key_after_anchors": false,
+      "contexts": 2
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": false,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 4
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": false,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": true,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 24
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": true,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": false,
+      "same_chosen_key_after_anchors": false,
+      "contexts": 1
+    },
+    {
+      "informative": true,
+      "rank_all_pairs_correct": true,
+      "rank_top1_hit": true,
+      "same_chosen_action_after_anchors": true,
+      "same_chosen_key_after_anchors": true,
+      "contexts": 17
+    }
+  ],
+  "top3_context_group_counts": {
+    "before_anchors_both_hit": 93,
+    "after_anchors_both_hit": 100,
+    "before_anchors_rank_hit_beam_miss": 9,
+    "beam_topk_anchor_rescued": 7,
+    "after_anchors_rank_hit_beam_miss": 3,
+    "before_anchors_both_miss": 3,
+    "after_anchors_both_miss": 2,
+    "value_topk_anchor_rescued": 6,
+    "before_anchors_beam_hit_rank_miss": 3,
+    "after_anchors_beam_hit_rank_miss": 3,
+    "rank_topk_anchor_rescued": 1
+  },
+  "unique_after_anchor_hits": {
+    "after_anchors_rank_hit_beam_miss": [
+      {
+        "context_id": "high-low-4301-t90",
+        "rank_topk": {
+          "chosen_root_id": "root-d8040606e432",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-d6bfc64c6219",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0028460183660259375
+          ]
+        }
+      },
+      {
+        "context_id": "medium-high-4301-t90",
+        "rank_topk": {
+          "chosen_root_id": "root-09bfeb34be4c",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-d6bfc64c6219",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.008996477516663548
+          ]
+        }
+      },
+      {
+        "context_id": "medium-medium-4301-t90",
+        "rank_topk": {
+          "chosen_root_id": "root-09bfeb34be4c",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-d6bfc64c6219",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.008996477516663548
+          ]
+        }
+      }
+    ],
+    "after_anchors_beam_hit_rank_miss": [
+      {
+        "context_id": "medium-high-4302-t0",
+        "rank_topk": {
+          "chosen_root_id": "root-3b0f069aaa36",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            104.7197551196598,
+            104.7197551196598,
+            0.08377580409572771
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-3ba3399dffd9",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      {
+        "context_id": "medium-medium-4301-t0",
+        "rank_topk": {
+          "chosen_root_id": "root-3b0f069aaa36",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            104.7197551196598,
+            104.7197551196598,
+            0.08377580409572771
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-3ba3399dffd9",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      {
+        "context_id": "medium-medium-4302-t0",
+        "rank_topk": {
+          "chosen_root_id": "root-3b0f069aaa36",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            104.7197551196598,
+            104.7197551196598,
+            0.08377580409572771
+          ]
+        },
+        "beam_topk": {
+          "chosen_root_id": "root-3ba3399dffd9",
+          "raw_J_regret_full_minus_chosen": [
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    ]
+  },
+  "value_errors": {
+    "all_candidates": {
+      "rows": 1012,
+      "MAE": [
+        0.07079910961307762,
+        0.5834211763870667,
+        0.46894937411712573,
+        0.3284308507682856,
+        78.5493179950717,
+        68.48807955482913,
+        0.06062181861698558
+      ]
+    },
+    "rounded_first_four": {
+      "rows": 1012,
+      "MAE": [
+        0.03359683794466403,
+        0.5029644268774703,
+        0.34288537549407117,
+        0.22134387351778656
+      ]
+    },
+    "HOLD": {
+      "rows": 108,
+      "MAE": [
+        0.024153466573224463,
+        0.4195473104286782,
+        0.33271741369756314,
+        0.1854921267584421,
+        28.70352972436445,
+        36.15516153237066,
+        0.022702999486538426
+      ]
+    }
+  },
+  "identical_features": {
+    "equality": "exact_numeric_equality_of_all_93_features; no_approximate_clustering",
+    "candidate_rows": 1012,
+    "unique_feature_vectors": 989,
+    "duplicate_groups": 19,
+    "different_labels": {
+      "J": {
+        "groups": 3,
+        "rows": 6,
+        "unequal_label_pairs": 3,
+        "examples_first_5_groups": [
+          [
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859003,
+                -1413.7166941154069,
+                -2.7209435862300846
+              ],
+              "delta_J": [
+                0,
+                2,
+                7,
+                -5,
+                -1086.518810150043,
+                -314.1592653589794,
+                -0.8300723445154359
+              ],
+              "key": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859,
+                -1413.71669412,
+                -2.7209435862
+              ]
+            },
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.7996951616947,
+                -1413.7166941154069,
+                -2.8664815412170785
+              ],
+              "delta_J": [
+                0,
+                1,
+                7,
+                -6,
+                -1284.5507194114375,
+                -314.1592653589794,
+                -0.9756102995024298
+              ],
+              "key": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.79969516,
+                -1413.71669412,
+                -2.8664815412
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.5520895865116,
+                -1413.7166941154069,
+                -2.123092440437397
+              ],
+              "delta_J": [
+                0,
+                9,
+                7,
+                2,
+                -159.89881501211994,
+                -1204.2771838760873,
+                -0.16427441595996162
+              ],
+              "key": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.55208959,
+                -1413.71669412,
+                -2.1230924404
+              ]
+            },
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.9154944339093,
+                -1256.6370614359173,
+                -2.1247580194710727
+              ],
+              "delta_J": [
+                0,
+                7,
+                6,
+                1,
+                -189.2622198595177,
+                -1047.1975511965977,
+                -0.16593999499363732
+              ],
+              "key": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.91549443,
+                -1256.63706144,
+                -2.1247580195
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.3292407310837,
+                -1413.7166941154069,
+                -2.552542750094712
+              ],
+              "delta_J": [
+                0,
+                4,
+                8,
+                -4,
+                -969.888942702929,
+                -575.9586531581289,
+                -0.7585935954019867
+              ],
+              "key": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.32924073,
+                -1413.71669412,
+                -2.5525427501
+              ]
+            },
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624010692,
+                -1256.6370614359173,
+                -2.713300742586457
+              ],
+              "delta_J": [
+                0,
+                2,
+                8,
+                -6,
+                -1203.0553643729145,
+                -418.8790204786393,
+                -0.9193515878937317
+              ],
+              "key": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624,
+                -1256.63706144,
+                -2.7133007426
+              ]
+            }
+          ]
+        ]
+      },
+      "delta_J": {
+        "groups": 3,
+        "rows": 6,
+        "unequal_label_pairs": 3,
+        "examples_first_5_groups": [
+          [
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859003,
+                -1413.7166941154069,
+                -2.7209435862300846
+              ],
+              "delta_J": [
+                0,
+                2,
+                7,
+                -5,
+                -1086.518810150043,
+                -314.1592653589794,
+                -0.8300723445154359
+              ],
+              "key": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859,
+                -1413.71669412,
+                -2.7209435862
+              ]
+            },
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.7996951616947,
+                -1413.7166941154069,
+                -2.8664815412170785
+              ],
+              "delta_J": [
+                0,
+                1,
+                7,
+                -6,
+                -1284.5507194114375,
+                -314.1592653589794,
+                -0.9756102995024298
+              ],
+              "key": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.79969516,
+                -1413.71669412,
+                -2.8664815412
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.5520895865116,
+                -1413.7166941154069,
+                -2.123092440437397
+              ],
+              "delta_J": [
+                0,
+                9,
+                7,
+                2,
+                -159.89881501211994,
+                -1204.2771838760873,
+                -0.16427441595996162
+              ],
+              "key": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.55208959,
+                -1413.71669412,
+                -2.1230924404
+              ]
+            },
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.9154944339093,
+                -1256.6370614359173,
+                -2.1247580194710727
+              ],
+              "delta_J": [
+                0,
+                7,
+                6,
+                1,
+                -189.2622198595177,
+                -1047.1975511965977,
+                -0.16593999499363732
+              ],
+              "key": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.91549443,
+                -1256.63706144,
+                -2.1247580195
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.3292407310837,
+                -1413.7166941154069,
+                -2.552542750094712
+              ],
+              "delta_J": [
+                0,
+                4,
+                8,
+                -4,
+                -969.888942702929,
+                -575.9586531581289,
+                -0.7585935954019867
+              ],
+              "key": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.32924073,
+                -1413.71669412,
+                -2.5525427501
+              ]
+            },
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624010692,
+                -1256.6370614359173,
+                -2.713300742586457
+              ],
+              "delta_J": [
+                0,
+                2,
+                8,
+                -6,
+                -1203.0553643729145,
+                -418.8790204786393,
+                -0.9193515878937317
+              ],
+              "key": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624,
+                -1256.63706144,
+                -2.7133007426
+              ]
+            }
+          ]
+        ]
+      },
+      "key": {
+        "groups": 3,
+        "rows": 6,
+        "unequal_label_pairs": 3,
+        "examples_first_5_groups": [
+          [
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859003,
+                -1413.7166941154069,
+                -2.7209435862300846
+              ],
+              "delta_J": [
+                0,
+                2,
+                7,
+                -5,
+                -1086.518810150043,
+                -314.1592653589794,
+                -0.8300723445154359
+              ],
+              "key": [
+                0,
+                18,
+                0,
+                -5,
+                -3241.7677859,
+                -1413.71669412,
+                -2.7209435862
+              ]
+            },
+            {
+              "context_id": "high-high-4303-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.7996951616947,
+                -1413.7166941154069,
+                -2.8664815412170785
+              ],
+              "delta_J": [
+                0,
+                1,
+                7,
+                -6,
+                -1284.5507194114375,
+                -314.1592653589794,
+                -0.9756102995024298
+              ],
+              "key": [
+                0,
+                17,
+                0,
+                -6,
+                -3439.79969516,
+                -1413.71669412,
+                -2.8664815412
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.5520895865116,
+                -1413.7166941154069,
+                -2.123092440437397
+              ],
+              "delta_J": [
+                0,
+                9,
+                7,
+                2,
+                -159.89881501211994,
+                -1204.2771838760873,
+                -0.16427441595996162
+              ],
+              "key": [
+                0,
+                18,
+                -5,
+                0,
+                -2484.55208959,
+                -1413.71669412,
+                -2.1230924404
+              ]
+            },
+            {
+              "context_id": "high-low-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.9154944339093,
+                -1256.6370614359173,
+                -2.1247580194710727
+              ],
+              "delta_J": [
+                0,
+                7,
+                6,
+                1,
+                -189.2622198595177,
+                -1047.1975511965977,
+                -0.16593999499363732
+              ],
+              "key": [
+                0,
+                16,
+                -6,
+                -1,
+                -2513.91549443,
+                -1256.63706144,
+                -2.1247580195
+              ]
+            }
+          ],
+          [
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-9c95e249c302",
+              "J": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.3292407310837,
+                -1413.7166941154069,
+                -2.552542750094712
+              ],
+              "delta_J": [
+                0,
+                4,
+                8,
+                -4,
+                -969.888942702929,
+                -575.9586531581289,
+                -0.7585935954019867
+              ],
+              "key": [
+                0,
+                18,
+                -1,
+                -4,
+                -3026.32924073,
+                -1413.71669412,
+                -2.5525427501
+              ]
+            },
+            {
+              "context_id": "high-medium-4302-t0",
+              "root_id": "root-0637f652228a",
+              "J": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624010692,
+                -1256.6370614359173,
+                -2.713300742586457
+              ],
+              "delta_J": [
+                0,
+                2,
+                8,
+                -6,
+                -1203.0553643729145,
+                -418.8790204786393,
+                -0.9193515878937317
+              ],
+              "key": [
+                0,
+                16,
+                -1,
+                -6,
+                -3259.4956624,
+                -1256.63706144,
+                -2.7133007426
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "stage3_remove_one": {
+    "source": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage3_results\\summary\\conditional_margins.json",
+    "status": "read_existing",
+    "rows": 33,
+    "status_counts": {
+      "feasible": 13,
+      "infeasible": 20
+    },
+    "context_count": 11,
+    "new_counterfactuals_run": 0,
+    "interpretation": "counts_of_preexisting_stage3_conditional_remove_one_records_only"
+  },
+  "stage4_online": {
+    "episodes": 162,
+    "medium_low_4303": {
+      "beam_topk": {
+        "source": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\beam_topk-medium-low-4303\\result.json",
+        "N": 17,
+        "E": 1,
+        "F": 0,
+        "C": 7,
+        "request_count": 25,
+        "decision_count": 48
+      },
+      "full_reference": {
+        "source": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\full_reference-medium-low-4303\\result.json",
+        "N": 17,
+        "E": 1,
+        "F": 0,
+        "C": 7,
+        "request_count": 25,
+        "decision_count": 48
+      },
+      "rank_topk": {
+        "source": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\rank_topk-medium-low-4303\\result.json",
+        "N": 17,
+        "E": 0,
+        "F": 1,
+        "C": 7,
+        "request_count": 25,
+        "decision_count": 48
+      }
+    },
+    "first_different_normal_action": {
+      "beam_topk": {
+        "time": 50.0,
+        "zero_based_decision_index": 10,
+        "rank_action_key": [
+          [
+            "uav-0008",
+            [
+              1,
+              1
+            ]
+          ],
+          [
+            "uav-0009",
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            "uav-0010",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0011",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0012",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0013",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0015",
+            [
+              0,
+              0,
+              1
+            ]
+          ]
+        ],
+        "reference_action_key": [
+          [
+            "uav-0008",
+            [
+              1,
+              1
+            ]
+          ],
+          [
+            "uav-0009",
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            "uav-0010",
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            "uav-0011",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0012",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0013",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0015",
+            [
+              0,
+              1,
+              0
+            ]
+          ]
+        ],
+        "decision_sources": {
+          "rank_topk": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\rank_topk-medium-low-4303\\decisions.jsonl",
+          "beam_topk": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\beam_topk-medium-low-4303\\decisions.jsonl"
+        },
+        "state_snapshot": "not_recorded_in_decisions; no_state_replay_or_inference_performed"
+      },
+      "full_reference": {
+        "time": 50.0,
+        "zero_based_decision_index": 10,
+        "rank_action_key": [
+          [
+            "uav-0008",
+            [
+              1,
+              1
+            ]
+          ],
+          [
+            "uav-0009",
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            "uav-0010",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0011",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0012",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0013",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0015",
+            [
+              0,
+              0,
+              1
+            ]
+          ]
+        ],
+        "reference_action_key": [
+          [
+            "uav-0008",
+            [
+              1,
+              1
+            ]
+          ],
+          [
+            "uav-0009",
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          [
+            "uav-0010",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0011",
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          [
+            "uav-0012",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0013",
+            [
+              1,
+              0,
+              0
+            ]
+          ],
+          [
+            "uav-0015",
+            [
+              0,
+              1,
+              0
+            ]
+          ]
+        ],
+        "decision_sources": {
+          "rank_topk": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\rank_topk-medium-low-4303\\decisions.jsonl",
+          "full_reference": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\episodes\\full_reference-medium-low-4303\\decisions.jsonl"
+        },
+        "state_snapshot": "not_recorded_in_decisions; no_state_replay_or_inference_performed"
+      }
+    }
+  }
+}

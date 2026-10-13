@@ -1,8 +1,21 @@
-# 当前状态：阶段4已完成
+# 当前状态：阶段5实现与预检
 
-更新日期：2026-10-13。[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)的实现、冻结数据与训练、108context离线评价及162个完整episode均已完成，主审已完成研究判断。**rank存在可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。** 完整分母、表格与边界见[结果报告](evidence/fixed_terminal_stage4/results.md)，设计见[方法](arrival_restructure/stage4_learning_scheduler.md)和[协议](experiments/fixed_terminal_stage4_protocol.md)。
+更新日期：2026-10-13。用户已授权[阶段5计划](fixed_terminal_stage5_learning_validation_plan.md)，当前落实[方法](arrival_restructure/stage5_learning_validation.md)与[冻结协议](experiments/fixed_terminal_stage5_protocol.md)。**阶段5正式训练、新test与完整评价尚未开始；当前没有阶段5效果结论。**
 
-## 已执行事实
+## 阶段5当前进度
+
+- 阶段4只读诊断已完成：108context、1012候选、60informative、30单根，冻结预测精确复现旧保存top3的chosen/pair counts/regret；诊断7项测试通过。[诊断简报](evidence/fixed_terminal_stage5/diagnosis.md)与[紧凑证据](evidence/fixed_terminal_stage5/stage4_diagnostics_summary.json)保留anchors、分量误差、特征别名及旧online差异。
+- 四类评分器与训练入口已实现，模型8项针对性检查通过（5.69 s）；pilot5001小fixture各跑3epoch/trees并检查保存加载，均为smoke，不是正式训练或独立泛化结果。评价实现和完整输出路径仍处于预检、主审阶段。
+- 冻结方向为当前可见状态下完整联合批次的闭合FCFS参考筛选，保留93维表示与物理。复用train4101/4102/4103、val4201；model seed5401，validation TOTAL B5选checkpoint；冻结后首次生成test5301/5302/5303。
+- 已定评价范围为330个完整episode、90个固定snapshot、24个真实同状态计时state、9个32根池context及9个旧4303/t15 continuation诊断，精确口径见协议。服务器拟20workers、每进程threads1，仍须按小pilot核定并发与耗时后启动。
+
+下一步是完成评价链小样本验证和主对话实现复核，按协议训练冻结四模型，再生成新test及运行评价。源文件仅本地修改并经Syncthing同步；服务器输出进入`$HOME/training_outputs/terminal`。正式运行开始后补充命令、PID/job、日志、总工作量与估时；当前未登记正式任务。
+
+## 阶段4已完成事实
+
+[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)的实现、冻结数据与训练、108context离线评价及162个完整episode均已完成，主审已完成研究判断。**rank存在可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。** 完整分母、表格与边界见[结果报告](evidence/fixed_terminal_stage4/results.md)，设计见[方法](arrival_restructure/stage4_learning_scheduler.md)和[协议](experiments/fixed_terminal_stage4_protocol.md)。
+
+### 阶段4执行事实
 
 - 新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0，生产代码未再改变。pilot4001 low/medium只作流程检查：25根，2epoch且同一pilot复用train/val，smoke_only，不能作性能结论。
 - train/val共36数据任务全部exit0：train108context/1117根/64informative/22单根/3332非tie pairs；val36/384/25/2/1032。两模型各固定seed4401训练300epoch一次，wall30.0575322 s、exit0；value选17、rank选35，val informative召回均24/25，仅用于选checkpoint。
@@ -11,13 +24,13 @@
 
 实现版本`08235fb476f4bf483fecd71fdec5dfe9a8e1778e`，原运行工作树`c0f02fbcc5dd078c34c8211bd47b71bb98caebce`，各日志保留实际workspace_head。当前分支在主目录`D:\7_codespace\terminal`；raw保留在`.worktrees/arrival-restructure`的detached `d511438`目录。分支归属调整没有改变实验实现或模型字节。
 
-## 研究结论与当前边界
+### 阶段4研究结论与保留边界
 
 informative离线rank top3命中54/60、beam48/60，但加共同anchors并精确评估后两者保优均55/60。在线每法795请求：rank N/E/F/C=439/16/9/331，full438/17/8/332，beam436/17/8/334；rank多1正常不能抵销对full多1失败。rank对beam实际J为9赢/11平/7输，尚未形成综合支配。
 
 rank累计在线决策5659.16 s、beam3575.93 s，>5 s分别274/1296与208/1296；状态轨迹、并发竞争与退化比例不同，不解释为纯网络因果贡献。仿真时钟不计CPU等待，不能据服务结果宣称实时可用。标签仅近似已到达闭合FCFS continuation，非真实未来Q；单一模型seed也不证明训练稳定性。
 
-当前工程参考优先保留full_reference与beam_topk，rank保留实验性可学习信号。阶段4已完成；后续研究需另定范围，不自动启动新实验、GNN/attention、PPO、offline RL、teacher动作模仿或动态几何。
+当前工程参考优先保留full_reference与beam_topk，rank保留实验性可学习信号。阶段4已完成；阶段5按本页列明的已授权范围推进，不扩展GNN/attention、PPO、offline RL、teacher动作模仿或动态几何。
 
 ## 保留的既有证据
 
