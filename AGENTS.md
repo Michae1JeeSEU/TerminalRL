@@ -17,6 +17,12 @@
 5. **完成闭环**：主对话核验结果后，继续已授权的分析、文档更新和版本交付。涉及文件修改时按 Git 准则检查、验证、提交并推送；仅监控或等待不会自动授权新实验或协议调整。
 6. **如实处理工具限制**：`AGENTS.md` 约定工作流，不能直接切换主对话模型或改变运行时固定角色。指定模型、推理强度或 heartbeat 工具不可用时，明确报告限制和未完成环节，不默默替换模型、不宣称自动切换或定时接续已成功。
 
+## 阶段6当前范围（2026-10-13）
+
+用户已授权[阶段6学习辅助联合调度](docs/fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，当前进入implementation/preflight，正式264episode和30同状态面板（15jobs、240方法行）尚未启动。复用阶段5冻结MLP rank/GB，无需重训；固定物理、93维特征、pool14和FCFS闭合J。八方法比较采用TOTAL B3→B5→B8→full及已到达机群正常完成上界证书，证书不保证未来到达或全J最优。质量条件epsilon_normal=0与同状态非退化计算减少10%门槛预先冻结，A/B/C判断等待正式证据。
+
+当前依据为[方法](docs/arrival_restructure/stage6_learning_assisted_scheduling.md)、[协议](docs/experiments/fixed_terminal_stage6_protocol.md)、[运行状态](docs/evidence/fixed_terminal_stage6/run_status.md)。阶段1–5历史事实与结论保持；下文“下一阶段另定范围”等表述属于阶段5结束时的历史状态，本节记录后续明确授权。阶段6仍不开展PPO、actor、teacher动作模仿、offline RL、GNN/attention或改变几何。
+
 ## 项目简介与研究主线
 
 本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
