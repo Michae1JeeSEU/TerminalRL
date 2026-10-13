@@ -1,0 +1,2 @@
+# Optional offline finite-catalogue MILP reference; stage1 does not import SciPy.
+scipy==1.18.1

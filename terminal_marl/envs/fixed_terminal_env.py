@@ -103,6 +103,15 @@ class FixedTerminalEnv:
         self.decision_seconds += perf_counter()-start
         return result
 
+    def submit_batch(self, plans):
+        """Validate all normal plans before committing any; no partial changes."""
+        plans = tuple(plans)
+        result = self.feasibility.check_batch(plans, list(self.aircraft.values()), self.time)
+        if result.status == "feasible":
+            for plan in plans:
+                self._commit(self.aircraft[plan.aircraft_id], plan, "joint_normal_batch")
+        return result
+
     def _commit(self, aircraft, plan, reason):
         aircraft.plan, aircraft.state = plan, "scheduled"
         if plan.emergency:

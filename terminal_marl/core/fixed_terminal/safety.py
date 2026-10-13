@@ -5,7 +5,7 @@ are fixed. Search statements are conditional on this explicit snapshot model.
 An exhausted computational budget or uncertified continuous bound is UNKNOWN,
 never a proof authorizing emergency. Temporal windows are half-open.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import floor, isfinite
 from .domain import Segment, distance
 from .routes import build_plan, hold_segment, plan_energy
@@ -81,6 +81,28 @@ def forecast(aircraft, now, end, config):
 class Feasibility:
     def __init__(self, config):
         self.config = config
+
+    def check_batch(self, plans, fleet, now):
+        """Atomic normal-plan feasibility against the prospective entire fleet.
+
+        Selected holders simultaneously receive their candidate routes. All
+        unselected holders and previous commitments remain in the check. A
+        failing/uncertified member rejects the whole batch without mutation.
+        """
+        originals = {a.aircraft_id: a for a in fleet}
+        ids = [p.aircraft_id for p in plans]
+        if len(set(ids)) != len(ids) or any(p.emergency for p in plans):
+            return Check("infeasible", "batch_duplicate_or_emergency")
+        if any(key not in originals or originals[key].state != "holding" for key in ids):
+            return Check("infeasible", "batch_requires_observed_holders")
+        selected = {p.aircraft_id: p for p in plans}
+        future = [replace(a, state="scheduled", plan=selected[a.aircraft_id])
+                  if a.aircraft_id in selected else a for a in fleet]
+        for plan in plans:
+            result = self.check(plan, originals[plan.aircraft_id], future, now, check_emergency=False)
+            if result.status != "feasible":
+                return result
+        return Check("feasible", "joint_normal_batch")
 
     def check(self, plan, aircraft, fleet, now, *, check_emergency=True, search_limit=256):
         """Validate canonical route identity, energy, resources, capacities, spacing."""

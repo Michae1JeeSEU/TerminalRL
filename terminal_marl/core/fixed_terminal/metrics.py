@@ -42,6 +42,7 @@ def report(env):
                "emergency_landing_metric_denominator": len(emergency),
                "normal_landing_duration_mean_seconds": average("landing_duration_seconds", normal),
                "normal_delay_mean_seconds": average("delay_seconds", normal),
+               "normal_delay_max_seconds": max((row["delay_seconds"] for row in normal), default=None),
                "emergency_landing_duration_mean_seconds": average("landing_duration_seconds", emergency),
                "emergency_delay_mean_seconds_vs_normal_route": average("delay_seconds", emergency),
                "landing_metric_denominator": len(landed),
