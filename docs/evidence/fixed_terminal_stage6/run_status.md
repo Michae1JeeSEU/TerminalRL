@@ -1,10 +1,10 @@
 # 阶段6运行状态
 
-更新日期：2026-10-13。
+更新日期：2026-10-14。
 
-- 当前状态：正式episodes运行中。阶段6实现、修复及真实服务器pilot输出已由主审核验；冻结源码提交`f1018d8aaeff03836b13475301087f83ab70a155`已推送。
+- 当前状态：正式episodes已完成，panels运行中。阶段6实现、修复及真实服务器pilot输出已由主审核验；冻结源码提交`f1018d8aaeff03836b13475301087f83ab70a155`已推送。
 - 服务器pilot第二次启动四项均exit0；首次launcher工作目录失败证据保留，详见下文。
-- 正式264episode已一次启动；独立panel15 jobs尚未启动。正式矩阵尚未完成，严格summary与结果包尚未生成。
+- 正式episodes为264/264成功、0 failed、exit0；独立panel15 jobs已唯一启动。完整阶段6矩阵尚未完成，严格summary与结果包尚未生成。
 - 复用阶段5四冻结模型，不重新训练；学习排序仅使用MLP rank/gradient boost。
 - 方法、场景矩阵、停止证书与接受口径已写入[方法](../../arrival_restructure/stage6_learning_assisted_scheduling.md)和[协议](../../experiments/fixed_terminal_stage6_protocol.md)。
 - 已完成三批范围不同的本地检查：核心33项、评价/dispatcher13项、summary/package13项均通过；这不是一次完整联合检查。真实冻结模型fixture汇总为1episode/1generation/2panels/16rows，状态fixture_or_pilot_incomplete，不能作为正式效果证据。
@@ -37,6 +37,22 @@ pilot attempt1的四个任务因launcher未进入项目目录而报`ModuleNotFou
 
 启动初验为0/264完成、20 running、244 pending、0 failed，并已见非空decisions/events/frozen_input中间产物；这是启动观测，不是最新进度或成功完成证明。初始T0=75 min：pilot最大约153 s×264/20≈33.7 min，再留约2.2倍高负载、并发与尾部余量，初始预计完成时间2026-10-14 00:41北京时间。
 
-短期监控worker已结束。当前聊天heartbeat已由工具确认创建成功（automationId=6、状态ACTIVE），约2026-10-13 23:30北京时间建立71分钟间隔，预计10月14日00:41北京时间自动复查，之后按实际剩余时间重估。正常且无变化时保持安静；episode完成后自动接续panels、严格summary及交付，交付完成后删除该heartbeat。后续依次核对264任务完成与模型hash，运行不与episodes重叠的单worker panel阶段（15jobs/30states/240rows），再严格汇总、主审研究判断、更新文档、提交推送与打包。
+## 正式episode完成与panel前置检查
+
+`execution_episodes.json`记录开始时间2026-10-13 23:26:21.767140北京时间，结束时间2026-10-14 00:17:45.013521，duration=3083.246397658251 s。264/264 unique jobs全部completed、0 failed、exit0，20 workers。每job的frozen_input/decisions/events/requests/result五文件齐全、48条decision、result可读且请求守恒；model_hashes_unchanged=true。manifest.files的14个文件逐hash匹配，四模型预期hash匹配。
+
+2026-10-14 00:42:32北京时间服务器只读复核未见stage6进程；28 CPU，load=0/0.111/3.430，可用内存27,431,296 kB，panels目录当时尚不存在。正式panels为15 jobs/30 states/240 rows、workers=1、数值库threads=1，与episodes不重叠且沿用冻结源码。初估T0=50 min，依据dense pilot 135.52 s×15×1.5。
+
+## 正式panel启动与接续
+
+2026-10-14 00:43:49北京时间（UTC 2026-10-13T16:43:49Z）唯一启动正式panels；`/usr/bin/time` PID3435847、dispatcher PID3435848、worker PID3435856，源码`f1018d8aaeff03836b13475301087f83ab70a155`，workers=1、OMP/MKL/OPENBLAS threads均为1。
+
+```bash
+/home/user/envs/terminal_env/bin/python -m terminal_marl.scripts.run_fixed_terminal_stage6 --phase panels --models /home/user/training_outputs/terminal/stage5_validation_20261013/models --output /home/user/training_outputs/terminal/stage6_assisted_20261013 --workers 1 --execute
+```
+
+初验0/15完成、1 running、14 pending、0 failed；`panels/low-high-6301-standard/`已有非空`frozen_input.json`、`t0/snapshot.json`及5个arm JSON。这是启动产物确认，不代表panel完成。状态与进度写入`execution_panels.json`、`progress_panels.jsonl`；独立日志为`dispatch_logs/panels.launch.json`、`dispatch_logs/panels.stdout-stderr.log`、`dispatch_logs/panels.time.log`，均在同一正式输出根内。
+
+Luna已结束常驻监控。当前聊天heartbeat6已由工具确认更新成功、状态ACTIVE，约00:46北京时间设置48分钟后复查，预计01:34北京时间。正常且未变化时保持安静；若仍正常运行，按实际进度重估剩余时间并更新同一heartbeat；完成后核对全部产物与模型hash，严格汇总、主审研究解释、更新文档、提交推送与打包，交付完成后删除heartbeat。不重复启动任一phase。
 
 阶段1–5历史结果保留；阶段6A/B/C判断待正式证据。
