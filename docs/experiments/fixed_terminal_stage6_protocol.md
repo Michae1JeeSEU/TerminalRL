@@ -1,6 +1,6 @@
 # 阶段6冻结评价协议
 
-更新日期：2026-10-13。范围依据[用户阶段6计划](../fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，具体方法见[方法](../arrival_restructure/stage6_learning_assisted_scheduling.md)。状态为implementation/preflight，正式任务尚未启动；不以pilot支持效果结论。
+更新日期：2026-10-13。范围依据[用户阶段6计划](../fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，具体方法见[方法](../arrival_restructure/stage6_learning_assisted_scheduling.md)。本页冻结数值保持不变。正式264episode、15panel jobs及严格汇总已完成；研究判断见[结果](../evidence/fixed_terminal_stage6/results.md)，不以pilot支持效果结论。
 
 ## 冻结输入与矩阵
 
@@ -24,4 +24,4 @@ episode阶段264独立jobs。panel阶段15场景jobs：standard的low/high、med
 `panels/<load>-<soc>-<seed>-<variant>/`保存frozen_input.json、generation.json；t0/t60各保存snapshot.json、8个arm JSON、full_values.json、summary.json。full_values中的analysis_label_cost排除于方法计时。
 根目录execution_episodes.json与execution_panels.json保存264/15 jobs和退出状态；progress与日志沿阶段5结构。decision adaptive含enabled/stages/stop_reason/fallback_count/quality_certified/visible_counts；各stage保留target_budget/new_root_ids/cumulative_count/chosen_root_id/certificate/elapsed_seconds。budget为累计真实精确根数，configured_budget为原始配置预算。
 
-默认严格汇总检查正式数量、唯一性、finite、配对输入、请求守恒、决策成本和模型hash一致。仅显式`--allow-incomplete`接收标记fixture/pilot的部分产物，输出状态不得completed。汇总写summary.json及episodes/groups/paired/same_state/fallback五类CSV。打包默认dry-run；只有正式矩阵、严格汇总、冻结模型一致且最终提交为实际HEAD才能build，禁止覆盖。包包含当前必要文档、用户阶段1–6计划、阶段6全部raw、阶段5四冻结模型及manifest、当前fixed核心/config/scripts/tests和依赖，不包含旧阶段4/5全部raw；ZIP核验CRC与每entry hash，包外保存validation.json和zip.sha256。
+默认严格汇总检查正式数量、唯一性、finite、配对输入、请求守恒、决策成本和模型hash一致。仅显式`--allow-incomplete`接收标记fixture/pilot的部分产物，输出状态不得completed。汇总写summary.json及episodes/groups/paired/same_state/fallback五类CSV。打包默认dry-run；只有正式矩阵、严格汇总、冻结模型一致且最终提交为实际HEAD才能build，禁止覆盖。包包含当前必要文档、用户阶段1–6计划、阶段6全部raw、阶段5四冻结模型、manifest及其files引用的全部安全辅助文件、当前fixed核心/config/scripts/tests和依赖，不包含旧阶段4/5全部raw；ZIP核验CRC与每entry hash，包外保存validation.json和zip.sha256。

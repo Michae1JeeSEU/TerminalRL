@@ -2,9 +2,9 @@
 
 更新日期：2026-10-14。
 
-- 当前状态：正式episodes已完成，panels运行中。阶段6实现、修复及真实服务器pilot输出已由主审核验；冻结源码提交`f1018d8aaeff03836b13475301087f83ab70a155`已推送。
+- 当前状态：正式episodes、panels、严格summary与研究验收完成。阶段6实现、修复及真实服务器pilot输出已由主审核验；冻结源码提交`f1018d8aaeff03836b13475301087f83ab70a155`已推送。
 - 服务器pilot第二次启动四项均exit0；首次launcher工作目录失败证据保留，详见下文。
-- 正式episodes为264/264成功、0 failed、exit0；独立panel15 jobs已唯一启动。完整阶段6矩阵尚未完成，严格summary与结果包尚未生成。
+- 正式episodes为264/264成功、0 failed、exit0；独立panels为15/15成功、exit0，覆盖30states/240rows；严格summary为completed、allow_incomplete=false。
 - 复用阶段5四冻结模型，不重新训练；学习排序仅使用MLP rank/gradient boost。
 - 方法、场景矩阵、停止证书与接受口径已写入[方法](../../arrival_restructure/stage6_learning_assisted_scheduling.md)和[协议](../../experiments/fixed_terminal_stage6_protocol.md)。
 - 已完成三批范围不同的本地检查：核心33项、评价/dispatcher13项、summary/package13项均通过；这不是一次完整联合检查。真实冻结模型fixture汇总为1episode/1generation/2panels/16rows，状态fixture_or_pilot_incomplete，不能作为正式效果证据。
@@ -53,6 +53,17 @@ pilot attempt1的四个任务因launcher未进入项目目录而报`ModuleNotFou
 
 初验0/15完成、1 running、14 pending、0 failed；`panels/low-high-6301-standard/`已有非空`frozen_input.json`、`t0/snapshot.json`及5个arm JSON。这是启动产物确认，不代表panel完成。状态与进度写入`execution_panels.json`、`progress_panels.jsonl`；独立日志为`dispatch_logs/panels.launch.json`、`dispatch_logs/panels.stdout-stderr.log`、`dispatch_logs/panels.time.log`，均在同一正式输出根内。
 
-Luna已结束常驻监控。当前聊天heartbeat6已由工具确认更新成功、状态ACTIVE，约00:46北京时间设置48分钟后复查，预计01:34北京时间。正常且未变化时保持安静；若仍正常运行，按实际进度重估剩余时间并更新同一heartbeat；完成后核对全部产物与模型hash，严格汇总、主审研究解释、更新文档、提交推送与打包，交付完成后删除heartbeat。不重复启动任一phase。
+启动时监控记录：Luna已结束常驻监控。当前聊天heartbeat6已由工具确认更新成功、状态ACTIVE，约00:46北京时间设置48分钟后复查，预计01:34北京时间。正常且未变化时保持安静；若仍正常运行，按实际进度重估剩余时间并更新同一heartbeat；完成后核对全部产物与模型hash，严格汇总、主审研究解释、更新文档、提交推送与打包，交付完成后删除heartbeat。不重复启动任一phase。
 
-阶段1–5历史结果保留；阶段6A/B/C判断待正式证据。
+## 正式panel、汇总与研究验收完成
+
+panels于2026-10-14 00:59:27.788642北京时间结束，duration938.2823586342856 s，15/15成功、exit0、workers=1，覆盖30states/240rows，与episode阶段无重叠。全部期望产物齐全，14个manifest.files引用文件及四模型预期hash均未变。
+
+严格summary实际exit0、elapsed8.60 s、最大RSS152540 kB；日志保存在正式根的`dispatch_logs/summary.*`，输出`summary/summary.json`为completed、allow_incomplete=false，计数264episodes/15generations/30panels/240rows。SHA256为`9c712b31f9792beabb668b3082504c28053f0089dac26da56889f110c6fb75d8`。
+
+主审核验并完成[研究判断](results.md)：B未成立；相对同机制beam无学习增量计算收益，当前配置按A停止扩展，保留实验资产。学习相对full的根数与wall实际下降保留报告；C的大量验证现象不支持扩大value或长期Q路线。阶段1–5历史结果保留，不自动开始下一阶段。
+
+交付版本、ZIP条目与校验结果由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，包链接与最终交付状态见交付回复。交付完成后删除heartbeat6检查任务；删除的实际工具结果由主对话记录，历史ACTIVE记录不代表需要继续实验。此前pilot首次cwd失败四次exit1及全部失败日志继续保留。
+
+
+本轮文档交付检查：既有summary/package测试首次3 passed、11个tmpdir fixture setup错误（exit1，2.73 s），错误位置为默认`C:/Users/user/AppData/Local/Temp/pytest-of-user`的os.scandir权限；错误输出节选保留在`tmp_stage6_preflight/evidence/pytest_delivery_default_temp_failure.log`。主审授权改用已核对位于workspace且原先不存在的绝对`--basetemp D:/7_codespace/terminal/tmp_stage6_preflight/evidence/pytest_delivery_20261014`后，同两测试14 passed（1.00 s，exit0），完整重试日志`tmp_stage6_preflight/evidence/pytest_delivery_20261014.log`。没有修改生产代码或测试。

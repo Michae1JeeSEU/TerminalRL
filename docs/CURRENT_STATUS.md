@@ -1,13 +1,14 @@
-# 当前状态：阶段6episode完成，panels运行中
+# 当前状态：阶段6研究验收完成
 
-## 阶段6当前范围（2026-10-14）
+## 阶段6研究验收完成（2026-10-14）
 
-用户已授权[阶段6学习辅助联合调度](fixed_terminal_stage6_learning_assisted_scheduling_plan.md)，实现、修复与真实服务器pilot输出已由主审核验；冻结源码`f1018d8aaeff03836b13475301087f83ab70a155`已推送。正式episodes于2026-10-14 00:17:45.013521北京时间完成，264/264成功、0 failed、exit0，duration3083.246397658251 s；20workers、数值库threads=1。每job五文件/48decision齐全、result可读、请求守恒、模型hash不变，manifest.files的14个文件逐hash匹配。30同状态面板（15jobs、240方法行）已于2026-10-14 00:43:49北京时间唯一启动，单worker、threads=1、同一冻结源码，两阶段不重叠。复用阶段5冻结MLP rank/GB，无需重训；固定物理、93维特征、pool14和FCFS闭合J。八方法比较采用TOTAL B3→B5→B8→full及已到达机群正常完成上界证书，证书不保证未来到达或全J最优。质量条件epsilon_normal=0与同状态非退化计算减少10%门槛预先冻结，A/B/C判断等待正式证据。
+[阶段6用户计划](fixed_terminal_stage6_learning_assisted_scheduling_plan.md)的264episode、15个独立panel jobs（30states/240方法行）及严格汇总全部完成，模型hash未变。**B未成立；相对同机制beam_adaptive未见学习增量计算收益，当前学习排序配置按A停止扩展，保留实验资产。** 学习相对full的非退化根数301→202（减少32.9%），完整wall仅减少约6.4%–6.6%，未达预定双10%门槛；相对beam_adaptive三学习根数都相同，wall比约0.9994/1.0015/1.0013。C的大量验证现象存在，但不支持扩大value或长期Q路线，不启动新训练或下一阶段。
 
-服务器pilot首次四任务因launcher未cd项目目录而exit1，未仿真，失败日志保留；修正cwd后四任务exit0，模型hash不变。三个episode各24请求、18正常/6截尾/0失败/0应急且守恒，dense panel为t0/t60共16行；仅作流程和估时依据。正式episode启动与结束证据见[运行状态](evidence/fixed_terminal_stage6/run_status.md)。输出服务器`/home/user/training_outputs/terminal/stage6_assisted_20261013`，本地`D:\7_codespace\training_outputs\terminal\stage6_assisted_20261013`。00:42:32服务器复核无stage6进程、panels目录尚不存在；随后panel启动time PID3435847、dispatcher PID3435848、worker PID3435856，初验0/15完成、1运行、14待运行、0失败，首场已有frozen_input、t0/snapshot及5个arm JSON。panel初估T0=50 min（dense pilot 135.52 s×15×1.5）。Luna常驻监控已结束；heartbeat6已由工具确认更新成功、ACTIVE，约00:46设置48分钟后复查，预计01:34北京时间。正常且无变化时静默，仍正常运行则重估；完成后严格summary、主审研究解释、文档提交推送和打包，交付后删除heartbeat，不重复启动任一phase。panels、严格summary及结果包仍未完成。
+每方法33场/1163请求，仍各有6次能源失败；全部间隔违反/未认证为0、最终执行验证通过，不能写成零能源失败。结论限定pool14、已到达FCFS闭合值、单模型seed5401和本profile新seed及初态占用变体，不泛称所有学习无效。主表、15种质量/计算条件、泛化和成本见[阶段6结果](evidence/fixed_terminal_stage6/results.md)；[方法](arrival_restructure/stage6_learning_assisted_scheduling.md)、[协议](experiments/fixed_terminal_stage6_protocol.md)、[运行状态](evidence/fixed_terminal_stage6/run_status.md)保留完整范围与执行事实。源码冻结`f1018d8aaeff03836b13475301087f83ab70a155`。交付版本、ZIP条目与校验结果由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，包链接与最终交付状态见交付回复。
 
-当前依据为[方法](arrival_restructure/stage6_learning_assisted_scheduling.md)、[协议](experiments/fixed_terminal_stage6_protocol.md)、[运行状态](evidence/fixed_terminal_stage6/run_status.md)。阶段1–5历史事实与结论保持；下文“下一阶段另定范围”等表述属于阶段5结束时的历史状态，本节记录后续明确授权。阶段6仍不开展PPO、actor、teacher动作模仿、offline RL、GNN/attention或改变几何。
+阶段1–5历史计划和结论保持原样；下文“下一阶段另定范围”等属于当时历史状态。后续可另定高效传统优化范围，本次不自动开展新实验、actor/PPO、teacher动作模仿、offline RL、GNN/attention或改变几何。
 
+## 阶段5历史状态
 
 更新日期：2026-10-13。阶段5冻结实现、评价与研究验收已完成。存在离线排序信号和部分在线收益，但尚未达到不退化系统质量并明显降低计算的B类门槛，也无长期价值C类证据；不能据此笼统宣称学习完全无效或普遍无必要。保留beamB5/B8及full工程参考，rank/GB保留实验性结果；下一阶段另定范围，不自动扩大网络或启动新实验。版本与交付校验信息由包内`BUNDLE_README.md`、`MANIFEST.json`及包外`validation.json`、`zip.sha256`记录，交付状态见最终交付回复。完整数据见[阶段5结果](evidence/fixed_terminal_stage5/results.md)，执行与失败记录见[运行状态](evidence/fixed_terminal_stage5/run_status.md)，方法和冻结范围见[方法](arrival_restructure/stage5_learning_validation.md)、[协议](experiments/fixed_terminal_stage5_protocol.md)。
 

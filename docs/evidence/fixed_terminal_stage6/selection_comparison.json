@@ -1,0 +1,192 @@
+{
+  "schema": "stage6-selection-comparison-v1",
+  "source": "D:/7_codespace/training_outputs/terminal/stage6_assisted_20261013",
+  "command_notes": [
+    "rg --files D:/7_codespace/training_outputs/terminal/stage6_assisted_20261013 (read-only inventory)",
+    "Node.js read-only JSON/JSONL parser over episodes/*/decisions.jsonl and panels/*/t{0,60}/{rank_adaptive,gb_adaptive,hybrid_adaptive,beam_adaptive}.json",
+    "Episode rows paired by matching suffix load-soc-seed-variant and exact time (48 rows per episode); no simulation or input writes"
+  ],
+  "scope": {
+    "episode_pairs": 33,
+    "episode_decision_rows_per_method": 1584,
+    "panel_jobs": 15,
+    "panel_states": 30,
+    "panel_adaptive_methods": [
+      "rank_adaptive",
+      "gb_adaptive",
+      "hybrid_adaptive",
+      "beam_adaptive"
+    ]
+  },
+  "episode_non_degenerate_counts": {
+    "hybrid": 1199,
+    "beam": 1199,
+    "both": 1199,
+    "hybrid_only": 0,
+    "beam_only": 0
+  },
+  "episode_selection_comparisons": {
+    "pool_action_sets": {
+      "rows": 1584,
+      "equal": 1584,
+      "different": 0,
+      "first_difference_key": null,
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 1199,
+      "both_nondegenerate_different": 0,
+      "first_difference_key_both_nondegenerate": null
+    },
+    "pool_root_id_sets": {
+      "rows": 1584,
+      "equal": 1584,
+      "different": 0,
+      "first_difference_key": null,
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 1199,
+      "both_nondegenerate_different": 0,
+      "first_difference_key_both_nondegenerate": null
+    },
+    "pool_action_root_sets": {
+      "rows": 1584,
+      "equal": 1584,
+      "different": 0,
+      "first_difference_key": null,
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 1199,
+      "both_nondegenerate_different": 0,
+      "first_difference_key_both_nondegenerate": null
+    },
+    "first_stage_new_root_id_sets": {
+      "rows": 1584,
+      "equal": 1123,
+      "different": 461,
+      "first_difference_key": {
+        "episode": "high-high-6302-standard",
+        "time": 155,
+        "decision_index": 31
+      },
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 738,
+      "both_nondegenerate_different": 461,
+      "first_difference_key_both_nondegenerate": {
+        "episode": "high-high-6302-standard",
+        "time": 155,
+        "decision_index": 31
+      }
+    },
+    "all_stage_budget_new_root_sets": {
+      "rows": 1584,
+      "equal": 1123,
+      "different": 461,
+      "first_difference_key": {
+        "episode": "high-high-6302-standard",
+        "time": 155,
+        "decision_index": 31
+      },
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 738,
+      "both_nondegenerate_different": 461,
+      "first_difference_key_both_nondegenerate": {
+        "episode": "high-high-6302-standard",
+        "time": 155,
+        "decision_index": 31
+      }
+    },
+    "chosen_root_id": {
+      "rows": 1584,
+      "equal": 1584,
+      "different": 0,
+      "first_difference_key": null,
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 1199,
+      "both_nondegenerate_different": 0,
+      "first_difference_key_both_nondegenerate": null
+    },
+    "normal_plans": {
+      "rows": 1584,
+      "equal": 1584,
+      "different": 0,
+      "first_difference_key": null,
+      "both_nondegenerate_rows": 1199,
+      "both_nondegenerate_equal": 1199,
+      "both_nondegenerate_different": 0,
+      "first_difference_key_both_nondegenerate": null
+    }
+  },
+  "panel_same_state_comparisons": {
+    "budget_across_four_adaptive": {
+      "states": 30,
+      "equal": 30,
+      "different": 0,
+      "first_difference_key": null
+    },
+    "stage_cumulative_budgets_across_four_adaptive": {
+      "states": 30,
+      "equal": 30,
+      "different": 0,
+      "first_difference_key": null
+    },
+    "stage_cumulative_budgets_by_index": [
+      {
+        "stage_index": 0,
+        "states": 25,
+        "equal": 25,
+        "different": 0,
+        "first_difference_key": null
+      },
+      {
+        "stage_index": 1,
+        "states": 15,
+        "equal": 15,
+        "different": 0,
+        "first_difference_key": null
+      },
+      {
+        "stage_index": 2,
+        "states": 13,
+        "equal": 13,
+        "different": 0,
+        "first_difference_key": null
+      },
+      {
+        "stage_index": 3,
+        "states": 13,
+        "equal": 13,
+        "different": 0,
+        "first_difference_key": null
+      }
+    ],
+    "hybrid_vs_beam_first_stage_new_root_id_sets": {
+      "states": 30,
+      "equal": 26,
+      "different": 4,
+      "first_difference_key": {
+        "panel": "low-high-6303-standard",
+        "time": 60
+      }
+    },
+    "hybrid_vs_beam_first_stage_chosen_root_id": {
+      "states": 30,
+      "equal": 28,
+      "different": 2,
+      "first_difference_key": {
+        "panel": "medium-medium-6302-initial_sparse",
+        "time": 60
+      }
+    }
+  },
+  "hybrid_nondegenerate_pool_metadata_anchors_unique_count_distribution": {
+    "rows": 1199,
+    "distribution": {
+      "2": 1199
+    },
+    "unique_count_min": 2,
+    "unique_count_max": 2
+  },
+  "validation": {
+    "paired_time_checks": 1584,
+    "expected_decision_rows": 1584,
+    "expected_panel_states": 30,
+    "input_field_validation": "passed"
+  }
+}

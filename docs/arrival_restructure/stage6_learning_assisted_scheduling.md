@@ -1,6 +1,6 @@
 # 阶段6：学习辅助联合调度方法
 
-阶段6沿用阶段1–5固定物理、安全、能源和资源层，检验固定质量条件下的搜索成本。阶段5结论保留；本阶段正式结果尚未生成。
+阶段6沿用阶段1–5固定物理、安全、能源和资源层，检验固定质量条件下的搜索成本。阶段5结论保留；本阶段正式264episode、15panel jobs与严格汇总已完成，见[阶段6结果](../evidence/fixed_terminal_stage6/results.md)。
 
 ## 搜索和确定性提交
 
@@ -20,4 +20,4 @@
 
 ## 结论边界
 
-质量条件和10%计算门槛预先冻结于[协议](../experiments/fixed_terminal_stage6_protocol.md)。三种学习方法分别与B3/B5/B8/full/beam_adaptive比较，不能择优隐藏参考。学习贡献必须通过同机制beam_adaptive比较；adaptive机制自身有效不等于学习有效。A/B/C判断留待实际结果，单一模型训练seed及有限池FCFS闭合值不支持训练稳定性或长期Q结论。
+质量条件和10%计算门槛预先冻结于[协议](../experiments/fixed_terminal_stage6_protocol.md)。三种学习方法分别与B3/B5/B8/full/beam_adaptive比较，不能择优隐藏参考。学习贡献必须通过同机制beam_adaptive比较；adaptive机制自身有效不等于学习有效。正式结果未达到B：学习相对full减少32.9%精确根，但完整wall减少仅约6.4%–6.6%，未达冻结双10%阈值；相对同机制beam_adaptive无学习增量计算收益，当前配置按A停止扩展。C的大量验证现象不授权扩大value路线。保留实验资产，不自动开始下一阶段；单一模型训练seed及有限池FCFS闭合值不支持训练稳定性或长期Q结论。
