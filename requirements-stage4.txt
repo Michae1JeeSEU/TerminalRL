@@ -1,0 +1,5 @@
+# CPU environment used for the stage4 implementation and single-seed MLPs.
+# Install torch CPU build using the official PyTorch CPU index where required.
+-r requirements-stage2.txt
+numpy==2.4.4
+torch==2.5.1
