@@ -1,0 +1,1120 @@
+{
+  "date": "2026-10-13",
+  "status": "implementation_and_internal_validation_complete_stage1_review_only",
+  "purpose": "stage1 synthetic infrastructure and operating-domain pilot; no algorithm comparison",
+  "workdir": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure",
+  "interpreter": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe",
+  "config": {
+    "rings": [
+      {
+        "radius": 12.0,
+        "height": 6.0
+      },
+      {
+        "radius": 20.0,
+        "height": 10.0
+      },
+      {
+        "radius": 28.0,
+        "height": 14.0
+      }
+    ],
+    "angular_speed": 0.12,
+    "separation": 3.0,
+    "tracking_error": 0.5,
+    "temporal_spacing": 2.0,
+    "merge_window": 2.0,
+    "merge_spare_slots": 1,
+    "transfer_speed": 2.0,
+    "max_speed": 4.0,
+    "max_descent": 1.0,
+    "landing_speed": 0.5,
+    "landing_height": 0.5,
+    "pad_service": 5.0,
+    "normal_pad": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "emergency_pad": [
+      -38.0,
+      0.0,
+      0.0
+    ],
+    "horizon": 240.0,
+    "dt": 1.0,
+    "continuous_tolerance": 0.005,
+    "energy": {
+      "hold": 0.0008,
+      "transfer": 0.0012,
+      "descent": 0.0009,
+      "landing": 0.0014,
+      "reserve": 0.06
+    }
+  },
+  "capacity": [
+    {
+      "ring": 0,
+      "geometric": 25,
+      "operational": 6
+    },
+    {
+      "ring": 1,
+      "geometric": 41,
+      "operational": 8
+    },
+    {
+      "ring": 2,
+      "geometric": 58,
+      "operational": 9
+    }
+  ],
+  "load_profiles": {
+    "low": {
+      "initial_fraction": 0.25,
+      "mean_interarrival": 35.0
+    },
+    "medium": {
+      "initial_fraction": 0.6,
+      "mean_interarrival": 18.0
+    },
+    "high": {
+      "initial_fraction": 0.9,
+      "mean_interarrival": 8.0
+    }
+  },
+  "soc_profiles": {
+    "high": {
+      "mean": 0.85,
+      "std": 0.08,
+      "lower": 0.05,
+      "upper": 0.98
+    },
+    "medium": {
+      "mean": 0.55,
+      "std": 0.12,
+      "lower": 0.05,
+      "upper": 0.98
+    },
+    "low": {
+      "mean": 0.3,
+      "std": 0.1,
+      "lower": 0.05,
+      "upper": 0.98
+    }
+  },
+  "pilot_seed": 101,
+  "standard_seeds_not_all_run": [
+    101,
+    202,
+    303
+  ],
+  "observation_seconds": 240,
+  "search_limit": 256,
+  "execution": "three parallel independent subprocesses per load; each cell once; wall time includes interpreter startup and local contention",
+  "checks": {
+    "all_nine_exit_zero": true,
+    "same_load_demand_unchanged_across_soc": true,
+    "all_nine_json_and_metric_checks_passed": true,
+    "all_nine_final_inputs_exactly_equal_preliminary": true
+  },
+  "limitations": [
+    "One pilot seed, not multi-seed performance evidence.",
+    "Synthetic normalized energy and piecewise arc/line kinematics; no hardware calibration or acceleration model.",
+    "Deterministic feasibility exerciser, not a strong scheduling baseline.",
+    "No-normal certificate conditional on fixed commitments and other aircraft holding.",
+    "Censoring, external backlog and failed energy are retained; no successful-only completion claim.",
+    "Observed zero violation is bounded model evidence, not real-world safety certification.",
+    "High-load backlog under the feasibility exerciser does not prove globally infeasible demand or an optimal capacity.",
+    "Stage1 remains at review; stage2 not started."
+  ],
+  "cells": [
+    {
+      "load": "low",
+      "soc": "high",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load low --soc high --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/low-high-101",
+      "exit_code": 0,
+      "wall_seconds": 0.1855531,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/low-high-101",
+      "summary": {
+        "request_count": 12,
+        "outcomes": {
+          "normal_landed": 9,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 3,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 12,
+        "normal_proportion_all_requests": 0.75,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 3,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.0375,
+        "normal_throughput_per_second": 0.0375,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 9,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 90.0187489038611,
+        "normal_delay_mean_seconds": 58.362464993631725,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 9,
+        "landing_duration_mean_seconds_conditional_landed": 90.0187489038611,
+        "delay_mean_seconds_conditional_landed": 58.362464993631725,
+        "energy_mean_soc_all_requests": 0.06763840091884527,
+        "energy_mean_soc_arrived_requests": 0.06763840091884527,
+        "observed_request_exposure_seconds": 913.1941495950629,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 2,
+          "normal_landed": 9,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 2
+        },
+        "minimum_soc_all_requests": 0.6247671549186982,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.005348893813788891,
+        "online_decision_calls": 11,
+        "search_candidates": 24,
+        "search_status_counts": {
+          "feasible": 11,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {},
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 12,
+        "events": 35
+      }
+    },
+    {
+      "load": "low",
+      "soc": "medium",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load low --soc medium --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/low-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2010112,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/low-medium-101",
+      "summary": {
+        "request_count": 12,
+        "outcomes": {
+          "normal_landed": 9,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 3,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 12,
+        "normal_proportion_all_requests": 0.75,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 3,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.0375,
+        "normal_throughput_per_second": 0.0375,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 9,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 90.0187489038611,
+        "normal_delay_mean_seconds": 58.362464993631725,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 9,
+        "landing_duration_mean_seconds_conditional_landed": 90.0187489038611,
+        "delay_mean_seconds_conditional_landed": 58.362464993631725,
+        "energy_mean_soc_all_requests": 0.06763840091884527,
+        "energy_mean_soc_arrived_requests": 0.06763840091884527,
+        "observed_request_exposure_seconds": 913.1941495950629,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 2,
+          "normal_landed": 9,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 2
+        },
+        "minimum_soc_all_requests": 0.2696832924504131,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.006036295555531979,
+        "online_decision_calls": 11,
+        "search_candidates": 24,
+        "search_status_counts": {
+          "feasible": 11,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {},
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 12,
+        "events": 35
+      }
+    },
+    {
+      "load": "low",
+      "soc": "low",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load low --soc low --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/low-low-101",
+      "exit_code": 0,
+      "wall_seconds": 0.1762119,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/low-low-101",
+      "summary": {
+        "request_count": 12,
+        "outcomes": {
+          "normal_landed": 9,
+          "emergency_landed": 1,
+          "failed_energy": 0,
+          "censored": 2,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 12,
+        "normal_proportion_all_requests": 0.75,
+        "emergency_proportion_all_requests": 0.08333333333333333,
+        "unserved_count": 2,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.041666666666666664,
+        "normal_throughput_per_second": 0.0375,
+        "emergency_throughput_per_second": 0.004166666666666667,
+        "normal_landing_metric_denominator": 9,
+        "emergency_landing_metric_denominator": 1,
+        "normal_landing_duration_mean_seconds": 71.84811764553173,
+        "normal_delay_mean_seconds": 40.90935798334448,
+        "emergency_landing_duration_mean_seconds": 52.137657012293964,
+        "emergency_delay_mean_seconds_vs_normal_route": 29.135477478693744,
+        "landing_metric_denominator": 10,
+        "landing_duration_mean_seconds_conditional_landed": 69.87707158220796,
+        "delay_mean_seconds_conditional_landed": 39.73196993287941,
+        "energy_mean_soc_all_requests": 0.054407587992206956,
+        "energy_mean_soc_arrived_requests": 0.054407587992206956,
+        "observed_request_exposure_seconds": 709.7944556954882,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 1,
+          "normal_landed": 9,
+          "emergency_landed": 1,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 1,
+          "holding": 0,
+          "scheduled": 1
+        },
+        "minimum_soc_all_requests": 0.10303464124953618,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.004965596832334995,
+        "online_decision_calls": 11,
+        "search_candidates": 25,
+        "search_status_counts": {
+          "feasible": 11,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {},
+        "emergency_activation_count": 1,
+        "emergency_planned_energy_soc": 0.04566012560983517,
+        "emergency_reserved_resource_seconds": 30.5
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 12,
+        "events": 36
+      }
+    },
+    {
+      "load": "medium",
+      "soc": "high",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load medium --soc high --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/medium-high-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2781165,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/medium-high-101",
+      "summary": {
+        "request_count": 24,
+        "outcomes": {
+          "normal_landed": 18,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 6,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 24,
+        "normal_proportion_all_requests": 0.75,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 6,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.075,
+        "normal_throughput_per_second": 0.075,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 18,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 103.93917998383722,
+        "normal_delay_mean_seconds": 69.9424430139829,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 18,
+        "landing_duration_mean_seconds_conditional_landed": 103.93917998383722,
+        "delay_mean_seconds_conditional_landed": 69.9424430139829,
+        "energy_mean_soc_all_requests": 0.08533889577077769,
+        "energy_mean_soc_arrived_requests": 0.08533889577077769,
+        "observed_request_exposure_seconds": 2355.049768779145,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 0,
+          "scheduled": 6,
+          "normal_landed": 18,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 0,
+          "scheduled": 6
+        },
+        "minimum_soc_all_requests": 0.5545903647023986,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.023741199634969234,
+        "online_decision_calls": 24,
+        "search_candidates": 74,
+        "search_status_counts": {
+          "feasible": 24,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "committed_future_spacing_or_uncertified": 8
+        },
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 24,
+        "events": 83
+      }
+    },
+    {
+      "load": "medium",
+      "soc": "medium",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load medium --soc medium --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/medium-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2782705,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/medium-medium-101",
+      "summary": {
+        "request_count": 24,
+        "outcomes": {
+          "normal_landed": 18,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 6,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 24,
+        "normal_proportion_all_requests": 0.75,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 6,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.075,
+        "normal_throughput_per_second": 0.075,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 18,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 103.93917998383722,
+        "normal_delay_mean_seconds": 69.9424430139829,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 18,
+        "landing_duration_mean_seconds_conditional_landed": 103.93917998383722,
+        "delay_mean_seconds_conditional_landed": 69.9424430139829,
+        "energy_mean_soc_all_requests": 0.08533889577077769,
+        "energy_mean_soc_arrived_requests": 0.08533889577077769,
+        "observed_request_exposure_seconds": 2355.049768779145,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 0,
+          "scheduled": 6,
+          "normal_landed": 18,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 0,
+          "scheduled": 6
+        },
+        "minimum_soc_all_requests": 0.15614524647151298,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.023437404073774815,
+        "online_decision_calls": 24,
+        "search_candidates": 74,
+        "search_status_counts": {
+          "feasible": 24,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "committed_future_spacing_or_uncertified": 8
+        },
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 24,
+        "events": 83
+      }
+    },
+    {
+      "load": "medium",
+      "soc": "low",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load medium --soc low --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/medium-low-101",
+      "exit_code": 0,
+      "wall_seconds": 0.3051807,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/medium-low-101",
+      "summary": {
+        "request_count": 24,
+        "outcomes": {
+          "normal_landed": 16,
+          "emergency_landed": 3,
+          "failed_energy": 1,
+          "censored": 4,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 24,
+        "normal_proportion_all_requests": 0.6666666666666666,
+        "emergency_proportion_all_requests": 0.125,
+        "unserved_count": 5,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.07916666666666666,
+        "normal_throughput_per_second": 0.06666666666666667,
+        "emergency_throughput_per_second": 0.0125,
+        "normal_landing_metric_denominator": 16,
+        "emergency_landing_metric_denominator": 3,
+        "normal_landing_duration_mean_seconds": 96.0605093469972,
+        "normal_delay_mean_seconds": 62.2657031783185,
+        "emergency_landing_duration_mean_seconds": 83.3435996036015,
+        "emergency_delay_mean_seconds_vs_normal_route": 66.79913830238031,
+        "landing_metric_denominator": 19,
+        "landing_duration_mean_seconds_conditional_landed": 94.05257622961894,
+        "delay_mean_seconds_conditional_landed": 62.981508724223,
+        "energy_mean_soc_all_requests": 0.07811628319326998,
+        "energy_mean_soc_arrived_requests": 0.07811628319326998,
+        "observed_request_exposure_seconds": 2155.7778225092156,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 1,
+          "scheduled": 3,
+          "normal_landed": 16,
+          "emergency_landed": 3,
+          "failed_energy": 1
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 0,
+          "holding": 1,
+          "scheduled": 3
+        },
+        "minimum_soc_all_requests": 0.0,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.034747504629194736,
+        "online_decision_calls": 180,
+        "search_candidates": 82,
+        "search_status_counts": {
+          "feasible": 22,
+          "infeasible": 158,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "committed_future_spacing_or_uncertified": 8
+        },
+        "emergency_activation_count": 3,
+        "emergency_planned_energy_soc": 0.20285765716752374,
+        "emergency_reserved_resource_seconds": 91.5
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 24,
+        "events": 239
+      }
+    },
+    {
+      "load": "high",
+      "soc": "high",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load high --soc high --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/high-high-101",
+      "exit_code": 0,
+      "wall_seconds": 1.0847962,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/high-high-101",
+      "summary": {
+        "request_count": 56,
+        "outcomes": {
+          "normal_landed": 20,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 36,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 56,
+        "normal_proportion_all_requests": 0.35714285714285715,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 36,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.08333333333333333,
+        "normal_throughput_per_second": 0.08333333333333333,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 20,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 117.62983850683867,
+        "normal_delay_mean_seconds": 81.15781021773633,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 20,
+        "landing_duration_mean_seconds_conditional_landed": 117.62983850683867,
+        "delay_mean_seconds_conditional_landed": 81.15781021773633,
+        "energy_mean_soc_all_requests": 0.09699061232248243,
+        "energy_mean_soc_arrived_requests": 0.09699061232248243,
+        "observed_request_exposure_seconds": 6597.712234631167,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 26,
+          "holding": 0,
+          "scheduled": 10,
+          "normal_landed": 20,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 26,
+          "holding": 0,
+          "scheduled": 10
+        },
+        "minimum_soc_all_requests": 0.4971644687478123,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.049216391518712044,
+        "online_decision_calls": 30,
+        "search_candidates": 183,
+        "search_status_counts": {
+          "feasible": 30,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "operational_capacity": 3210
+        },
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 56,
+        "events": 3297
+      }
+    },
+    {
+      "load": "high",
+      "soc": "medium",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load high --soc medium --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/high-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 1.1031874,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/high-medium-101",
+      "summary": {
+        "request_count": 56,
+        "outcomes": {
+          "normal_landed": 20,
+          "emergency_landed": 0,
+          "failed_energy": 0,
+          "censored": 36,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 56,
+        "normal_proportion_all_requests": 0.35714285714285715,
+        "emergency_proportion_all_requests": 0.0,
+        "unserved_count": 36,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.08333333333333333,
+        "normal_throughput_per_second": 0.08333333333333333,
+        "emergency_throughput_per_second": 0.0,
+        "normal_landing_metric_denominator": 20,
+        "emergency_landing_metric_denominator": 0,
+        "normal_landing_duration_mean_seconds": 117.62983850683867,
+        "normal_delay_mean_seconds": 81.15781021773633,
+        "emergency_landing_duration_mean_seconds": null,
+        "emergency_delay_mean_seconds_vs_normal_route": null,
+        "landing_metric_denominator": 20,
+        "landing_duration_mean_seconds_conditional_landed": 117.62983850683867,
+        "delay_mean_seconds_conditional_landed": 81.15781021773633,
+        "energy_mean_soc_all_requests": 0.09699061232248243,
+        "energy_mean_soc_arrived_requests": 0.09699061232248243,
+        "observed_request_exposure_seconds": 6597.712234631167,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 26,
+          "holding": 0,
+          "scheduled": 10,
+          "normal_landed": 20,
+          "emergency_landed": 0,
+          "failed_energy": 0
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 26,
+          "holding": 0,
+          "scheduled": 10
+        },
+        "minimum_soc_all_requests": 0.116746703121726,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.05275619029998779,
+        "online_decision_calls": 30,
+        "search_candidates": 183,
+        "search_status_counts": {
+          "feasible": 30,
+          "infeasible": 0,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "operational_capacity": 3210
+        },
+        "emergency_activation_count": 0,
+        "emergency_planned_energy_soc": 0.0,
+        "emergency_reserved_resource_seconds": 0.0
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 56,
+        "events": 3297
+      }
+    },
+    {
+      "load": "high",
+      "soc": "low",
+      "seed": 101,
+      "search_limit": 256,
+      "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m terminal_marl.scripts.evaluate_fixed_terminal_stage1 --load high --soc low --seed 101 --search-limit 256 --output tmp_fixed_terminal_stage1_validation_final/high-low-101",
+      "exit_code": 0,
+      "wall_seconds": 1.0336574,
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation_final/high-low-101",
+      "summary": {
+        "request_count": 56,
+        "outcomes": {
+          "normal_landed": 19,
+          "emergency_landed": 7,
+          "failed_energy": 3,
+          "censored": 27,
+          "not_arrived": 0
+        },
+        "conservation_ok": true,
+        "arrived_request_count": 56,
+        "normal_proportion_all_requests": 0.3392857142857143,
+        "emergency_proportion_all_requests": 0.125,
+        "unserved_count": 30,
+        "observation_seconds": 240.0,
+        "throughput_landings_per_second": 0.10833333333333334,
+        "normal_throughput_per_second": 0.07916666666666666,
+        "emergency_throughput_per_second": 0.029166666666666667,
+        "normal_landing_metric_denominator": 19,
+        "emergency_landing_metric_denominator": 7,
+        "normal_landing_duration_mean_seconds": 110.73984120382019,
+        "normal_delay_mean_seconds": 78.61804607531371,
+        "emergency_landing_duration_mean_seconds": 94.07759916951639,
+        "emergency_delay_mean_seconds_vs_normal_route": 61.866730058727036,
+        "landing_metric_denominator": 26,
+        "landing_duration_mean_seconds_conditional_landed": 106.25385296381532,
+        "delay_mean_seconds_conditional_landed": 74.10807637854037,
+        "energy_mean_soc_all_requests": 0.08159688861044538,
+        "energy_mean_soc_arrived_requests": 0.08159688861044538,
+        "observed_request_exposure_seconds": 5495.761657385867,
+        "state_at_cutoff_counts": {
+          "pending": 0,
+          "external": 18,
+          "holding": 1,
+          "scheduled": 8,
+          "normal_landed": 19,
+          "emergency_landed": 7,
+          "failed_energy": 3
+        },
+        "censored_state_counts": {
+          "pending": 0,
+          "external": 18,
+          "holding": 1,
+          "scheduled": 8
+        },
+        "minimum_soc_all_requests": 0.0,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "infeasible_intent_count": 0,
+        "unknown_intent_count": 0,
+        "online_decision_seconds": 0.1673901928588748,
+        "online_decision_calls": 352,
+        "search_candidates": 413,
+        "search_status_counts": {
+          "feasible": 34,
+          "infeasible": 318,
+          "unknown": 0
+        },
+        "admission_rejection_counts": {
+          "operational_capacity": 1505,
+          "committed_future_spacing_or_uncertified": 437,
+          "minimum_route_energy_reserve": 144
+        },
+        "emergency_activation_count": 7,
+        "emergency_planned_energy_soc": 0.4533653449968332,
+        "emergency_reserved_resource_seconds": 213.5
+      },
+      "checks": {
+        "json_jsonl_parse_and_finite": true,
+        "frozen_input_matches_result": true,
+        "requests_jsonl_matches_result": true,
+        "outcome_counts_recomputed": true,
+        "normal_emergency_throughput_recomputed": true,
+        "energy_averages_recomputed": true,
+        "observed_exposure_recomputed": true,
+        "separation_violation_pair_ticks": 0,
+        "spacing_uncertified_pair_ticks": 0,
+        "frozen_inputs_exactly_equal_preliminary": true,
+        "outcome_counts_unchanged_after_correction": true,
+        "observed_exposure_row_formula_recomputed": true,
+        "failed_hold_soc_depletion_times_recomputed": true
+      },
+      "row_counts": {
+        "requests": 56,
+        "events": 2515
+      }
+    }
+  ],
+  "preliminary_runs": [
+    {
+      "load": "low",
+      "soc": "high",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/low-high-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2121796,
+      "outcomes": {
+        "normal_landed": 9,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 3,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 913.1941495950629
+    },
+    {
+      "load": "low",
+      "soc": "medium",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/low-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 0.1989159,
+      "outcomes": {
+        "normal_landed": 9,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 3,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 913.1941495950629
+    },
+    {
+      "load": "low",
+      "soc": "low",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/low-low-101",
+      "exit_code": 0,
+      "wall_seconds": 0.1929755,
+      "outcomes": {
+        "normal_landed": 9,
+        "emergency_landed": 1,
+        "failed_energy": 0,
+        "censored": 2,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 709.7944556954882
+    },
+    {
+      "load": "medium",
+      "soc": "high",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/medium-high-101",
+      "exit_code": 0,
+      "wall_seconds": 0.3012741,
+      "outcomes": {
+        "normal_landed": 18,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 6,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 2355.049768779145
+    },
+    {
+      "load": "medium",
+      "soc": "medium",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/medium-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2763086,
+      "outcomes": {
+        "normal_landed": 18,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 6,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 2355.049768779145
+    },
+    {
+      "load": "medium",
+      "soc": "low",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/medium-low-101",
+      "exit_code": 0,
+      "wall_seconds": 0.2896537,
+      "outcomes": {
+        "normal_landed": 16,
+        "emergency_landed": 3,
+        "failed_energy": 1,
+        "censored": 4,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 2155.785585680882
+    },
+    {
+      "load": "high",
+      "soc": "high",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/high-high-101",
+      "exit_code": 0,
+      "wall_seconds": 1.0676925,
+      "outcomes": {
+        "normal_landed": 20,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 36,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 6597.712234631167
+    },
+    {
+      "load": "high",
+      "soc": "medium",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/high-medium-101",
+      "exit_code": 0,
+      "wall_seconds": 1.0769178,
+      "outcomes": {
+        "normal_landed": 20,
+        "emergency_landed": 0,
+        "failed_energy": 0,
+        "censored": 36,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 6597.712234631167
+    },
+    {
+      "load": "high",
+      "soc": "low",
+      "raw_output_relative_path": "tmp_fixed_terminal_stage1_validation/high-low-101",
+      "exit_code": 0,
+      "wall_seconds": 1.0083083,
+      "outcomes": {
+        "normal_landed": 19,
+        "emergency_landed": 7,
+        "failed_energy": 3,
+        "censored": 27,
+        "not_arrived": 0
+      },
+      "observed_request_exposure_seconds": 5496.650324857295
+    }
+  ],
+  "rerun_reason": "One same-input rerun after exact SOC depletion timestamp, explicit emergency search counting, custom input validation and ring immutability corrections; no frozen parameter changes.",
+  "targeted_tests": {
+    "command": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe -m pytest tests/test_fixed_terminal_domain.py tests/test_fixed_terminal_safety.py tests/test_fixed_terminal_env.py -q",
+    "passed": 32,
+    "pytest_seconds": 0.6,
+    "exit_code": 0,
+    "source": "implementation worker report confirmed by primary; not rerun by documentation worker"
+  }
+}

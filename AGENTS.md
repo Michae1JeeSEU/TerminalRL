@@ -1,74 +1,47 @@
 # AGENTS.md
 
-## 项目简介
+## 项目简介与研究主线
 
-本项目研究城市低空交通起降场终端区中的动态空域构型调节与多 UAV 降落流协同管理。当前路线已重构为：
+本项目当前研究固定多环终端区内，在随机剩余电量（SOC）和安全间隔约束下，对多 UAV 的向内跨环转移、最后进近及着陆 pad 资源进行联合调度，提高正常着陆效率并控制应急代价。
 
-```text
-Dynamic terminal airspace reconfiguration
-+ Multi-UAV landing-flow coordination
-+ Safety-filtered executable trajectory generation
-+ Crazyflie / Lighthouse / Crazyswarm2 scaled validation
-```
-
-本项目不应被实现或描述为“RL 直接控制无人机飞行动作”的底层飞控问题。强化学习应输出空域调节、放行、排序、调速和轨迹意图。真实飞行动作由轨迹生成器、Crazyswarm2 和 Crazyflie 板载控制器执行。
-
-## 论文主线
-
-推荐论文主线：
-
-> 面向城市低空起降场终端区，研究如何根据动态入场交通流实时调节环形终端区空域构型，并协同决策多架 UAV 的等待、切环、最终进近和降落意图，从而在安全间隔和轨迹可执行性约束下提升降落吞吐量、降低等待延误和冲突风险。
-
-核心 gaps：
-
-1. 固定终端区空域结构难以适应动态入场交通流；
-2. 空域构型设计与单机降落动作缺少跨层协同；
-3. 学习型终端区控制缺少面向真实无人机平台的轨迹可执行约束。
+当前阶段1只建立明确的问题定义、独立可行性层、可信的合成仿真与可复现场景。固定几何不作为控制变量；不引入 RL、IL、teacher、算法比较或实机实验。阶段1完成后停止于审查，不自动进入阶段2。
 
 ## 主代码路线
 
-- `terminal_marl/` 是后续唯一主开发线。
-- `src/` 是 legacy HRL/Gym 原型，仅作参考，不在其中继续新增主要功能。
-- 新功能优先放在 `terminal_marl/core/`、`terminal_marl/envs/`、`terminal_marl/hardware/`、`terminal_marl/configs/` 和 `terminal_marl/scripts/`。
+- 新主线为 `terminal_marl/core/fixed_terminal/`、`terminal_marl/envs/fixed_terminal_env.py`、`terminal_marl/configs/fixed_terminal_stage1.py`、`terminal_marl/scripts/evaluate_fixed_terminal_stage1.py` 与 `tests/test_fixed_terminal*.py`。
+- 旧 `src/`、动态空域、RL 和 arrival 调度代码仅保留为历史资产，不作为新核心的运行依赖。
+- 旧兼容性目标与动态空域优先级不约束当前研究重构；避免为兼容旧训练接口污染新问题定义。
 
 ## 文档索引
 
 | 文档 | 路径 | 用途 |
 |---|---|---|
-| 文档入口 | [docs/README.md](docs/README.md) | 阅读顺序、文档权威关系、证据与历史目录规则 |
-| 当前状态 | [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) | 当前 schema、阶段进度、最新阻塞和允许的下一步 |
-| 研究定位 | [docs/research_positioning.md](docs/research_positioning.md) | Q1 创新主线、gap、贡献点和实验体系 |
-| 需求文档 | [docs/requirements.md](docs/requirements.md) | 当前研究目标、业务语义、动作与平台需求 |
-| 设计规范 | [docs/design_spec.md](docs/design_spec.md) | 动态空域、轨迹生成器、安全过滤、Crazyswarm2 adapter 架构 |
-| 技术规范 | [docs/technical_spec.md](docs/technical_spec.md) | 依赖、接口、配置、动作/观测、测试和日志规范 |
-| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | Phase A / A0–A8 的依赖路线与 gate |
-| 低层策略规范 | [docs/reference/low_level_policy.md](docs/reference/low_level_policy.md) | V4.2 action、Observation V2.1、训练与 qualification 纪律 |
+| 文档入口 | [docs/README.md](docs/README.md) | 当前文档权威关系与历史边界 |
+| 阶段化方案 | [docs/fixed_terminal_reconstruction_plan_stage1.md](docs/fixed_terminal_reconstruction_plan_stage1.md) | 用户指定的研究范围和顺序 |
+| 问题定义 | [docs/fixed_terminal_problem_definition.md](docs/fixed_terminal_problem_definition.md) | 几何、运动、容量、能源、资源、应急与指标 |
+| 当前状态 | [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) | 实际实现、验证进度与允许的下一步 |
+| 研究定位 | [docs/research_positioning.md](docs/research_positioning.md) | 研究问题与结论范围 |
+| 需求 | [docs/requirements.md](docs/requirements.md) | 必須满足的模型行为 |
+| 设计 | [docs/design_spec.md](docs/design_spec.md) | 独立核心职责与数据流 |
+| 技术规范 | [docs/technical_spec.md](docs/technical_spec.md) | 参数、接口、测试与输出 |
+| 执行计划 | [docs/execution_plan.md](docs/execution_plan.md) | 阶段1实现、验证和审查 |
 
 ## 开发原则
 
-1. **主线明确**：只在 `terminal_marl/` 上推进新架构，`src/` 不再作为主开发对象。
-2. **创新聚焦**：必须服务于动态空域构型与多 UAV 降落流协同，不要退化成普通多机避障或固定环降落控制。
-3. **轨迹意图优先**：低层 V4.2 策略输出 WAIT/RELEASE gate 与条件 RELEASE speed×timing proposal，不直接输出自由 `ψ, γ, V`。
-4. **安全优先**：所有推进、切环、final approach 和 landing 必须经过 VTAC/SafetyFilter。
-5. **硬件解耦**：`core/` 不 import ROS2/Crazyswarm2；硬件接口放在 `terminal_marl/hardware/` 并采用懒加载。
-6. **先仿真后实物**：先完成 rule-only、residual policy 和 dynamic airspace 的仿真/dry-run，再接入真实 Crazyflie。
-7. **实验可消融**：必须支持 fixed/dynamic、rule/RL、with/without safety、direct-action baseline 等模式。
-8. **兼容旧脚本**：新增 action mode 或 wrapper 时，不应破坏当前已有训练/评估脚本。
-9. **测试驱动**：每个新增核心模块必须配套 `tests/`。
-10. **文档同步**：需求、架构或接口变化时，同步更新 `docs/`。
+1. 固定环数量、半径、高度、节点、路径与 pad；不得根据方法或运行结果改变几何及容量。
+2. 调度问题联合包含各环等待、向内跨环、最后进近和 pad 窗口；不能仅实现初始放行排序。
+3. 安全间隔、运动学可执行性、能源储备和资源可行性由独立确定性层执行，不能交给未来学习模型。
+4. 区分几何容量与运营容量；检查连续轨迹间隔，而非仅采样时刻距离。
+5. 按运动模式累计归一化 SOC 消耗；明确其合成研究假设，不宣称实机能耗标定或未建模的加速度动态。
+6. 应急只在已定义有限正常可行域为空且应急路径、储备和资源可用时成立。搜索预算耗尽返回未知，不得冒充正常不可行。
+7. 外部请求的准入、等待时间和能耗均明确建模，全部请求纳入结局统计，保留失败、应急和截尾。
+8. 到达与 SOC 使用独立可复现随机流；SOC 使用拒绝采样截断正态。pilot 前冻结参数，不按结果调场景。
+9. 新核心配套针对性测试；先小样本核对输出，再运行场景。需求、语义或接口变化时同步更新文档。
+10. 保留旧实验和文档，但不将其结果当作新模型的有效性证据。核心不导入 ROS2/Crazyswarm2。
 
 ## 近期优先任务
 
-第一批与第二批 registered development validation 均已完成；本轮 M4 measured-value decision
-已记录于 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 和
-[closed-loop evidence](docs/evidence/arrival_restructure/closed_loop_validation_20261011.md)：
-
-```text
-1. 保持既有 geometry/physics/safety/K3/service、Q 隔离、PPO_ALLOWED=false；所有 seeds 仍为 development，永不作为 Q
-2. energy_slack 作为 provisional traditional comparison baseline；rolling_reorder 保持 opt-in research/ablation，不自动改变 default/global controller
-3. 本轮不启动 qualification、RL/IL 或 M5 geometry；M5+ 需要独立 protocol
-4. bridge 仅作 descriptive comparison，不作 trajectory 或 stepwise equivalence；后续研究边界保留在 evidence 中，不新增本轮 matrix
-```
+以 [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) 为唯一滚动进度入口：核对问题合同与冻结参数，完成新核心及针对性测试，运行阶段1场景并审查运行域。当前不恢复旧 I0/I1/I2、PPO、M1–M4 或动态空域开发顺序。
 
 ## 本地-服务器同步准则
 
@@ -90,9 +63,9 @@ Dynamic terminal airspace reconfiguration
 
 ```bash
 # 运行新增测试
-python -m pytest tests/test_dynamic_airspace.py tests/test_trajectory_generator.py -v
+python -m pytest tests/test_fixed_terminal_domain.py tests/test_fixed_terminal_safety.py tests/test_fixed_terminal_env.py -q
 
-# 运行全部测试
+# 全仓库历史/兼容性测试（可选，不是阶段1独立入口要求）
 python -m pytest tests/ -v
 
 # 查看当前项目结构

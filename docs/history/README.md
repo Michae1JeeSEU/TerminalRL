@@ -1,13 +1,12 @@
 # 历史文档索引
 
-本目录保存已经被替代、完成或仅用于解释演化过程的文档。它们不是当前实现依据。
+本目录与旧 `reference/`、`evidence/`、`baselines/` 保留项目演化、原模型设定及实验记录，不定义当前实现或执行优先级。
 
-| 目录 | 内容 | 当前替代入口 |
-|---|---|---|
-| `handoffs/` | 2026-08 的日期型交接 | [项目当前状态](../CURRENT_STATUS.md) |
-| `migrations/` | V3/V4/V4.1 action 与 Observation V2.1 迁移说明 | [低层共享策略规范](../reference/low_level_policy.md) |
-| `plans/` | 旧训练纲领、Teacher–Student 修改计划、动力学/可视化开发计划、Phase A 对齐清单 | [主文档入口](../README.md) 与当前专项规范 |
+| 目录 | 内容 |
+|---|---|
+| [pre_fixed_terminal_stage1](pre_fixed_terminal_stage1/README.md) | 2026-10-13 切换前的权威项目文档、状态与旧研究重构计划 |
+| `handoffs/` | 旧日期型交接 |
+| `migrations/` | 旧 V3/V4/V4.1 action 与 observation 迁移 |
+| `plans/` | 旧训练、teacher、动力学、可视化和 Phase A 计划 |
 
-保留这些文件是为了追溯设计决策和旧实验语义。若历史文档与根目录主规范、
-`reference/` 或 `CURRENT_STATUS.md` 冲突，以当前文档为准。后续不再新增日期型 handoff；
-状态变化直接滚动更新 `CURRENT_STATUS.md`，详细证据写入 `evidence/`。
+历史实验只支持其原协议中的结论，不是固定多环新模型的验证。即便历史内容使用“当前”“必须”或列出下一步，也只描述当时状态。现行研究依据是[文档入口](../README.md)、[问题定义](../fixed_terminal_problem_definition.md)与[当前状态](../CURRENT_STATUS.md)。
