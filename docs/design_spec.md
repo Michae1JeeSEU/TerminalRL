@@ -1,8 +1,8 @@
-# 固定多环与阶段3机制分析设计
+# 固定多环与学习辅助调度设计
 
-阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
 
-阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
+阶段4完整结果与结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
 
 ## 模块边界
 
@@ -50,7 +50,7 @@
 
 闭合副本只保留根时已到达请求及终态历史；完整未来只留在ex-post评估器，不能进入候选或决策观察。两类世界各有请求分母，不能直接混用。候选评分与可行性/执行职责分离，既有预约不撤销。remove-one先检查两批可行；不以预测值替代安全证明。
 
-学习接口定义窗口条件价值或联合批次价值，不设计网络/actor，也不把机制数据库叫teacher。扩大候选和延长窗仅是预算受限参考。公开机制接口已按实现事实列于[技术规范](technical_spec.md)，正式证据见[阶段3结果](evidence/fixed_terminal_stage3/results.md)。13可行/20不可行的局部remove-one不能默认可加；undefined保留状态。输出可为声明窗口/continuation/需求假设后的结果分量向量或批次比较分数，不是固定单机urgency或optimal/expected Q；下一阶段训练仍待授权。
+学习接口定义窗口条件价值或联合批次价值，不设计网络/actor，也不把机制数据库叫teacher。扩大候选和延长窗仅是预算受限参考。公开机制接口已按实现事实列于[技术规范](technical_spec.md)，正式证据见[阶段3结果](evidence/fixed_terminal_stage3/results.md)。13可行/20不可行的局部remove-one不能默认可加；undefined保留状态。输出可为声明窗口/continuation/需求假设后的结果分量向量或批次比较分数，不是固定单机urgency或optimal/expected Q；阶段3当时不开展训练，其后授权的阶段4实现和结果见下节。
 
 ## 阶段4新增职责
 

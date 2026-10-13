@@ -1,8 +1,8 @@
 # 阶段4方法：学习筛选与精确闭合参考
 
-状态：**实现、预检、train/val数据及固定训练已完成；test数据已生成，完整episode评价运行中，结果待证据。** 参数、seed和执行顺序集中在[阶段4协议](../experiments/fixed_terminal_stage4_protocol.md)，原[学习问题定义](../fixed_terminal_learning_problem_definition.md)及[物理合同](../fixed_terminal_problem_definition.md)仍成立。
+状态：**阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成。** 参数、seed和执行顺序集中在[阶段4协议](../experiments/fixed_terminal_stage4_protocol.md)，原[学习问题定义](../fixed_terminal_learning_problem_definition.md)及[物理合同](../fixed_terminal_problem_definition.md)仍成立。
 
-阶段4执行事实与后续结论见[结果报告](../evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
+阶段4完整结果与结论见[结果报告](../evidence/fixed_terminal_stage4/results.md)，rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
 
 ## 研究对象
 
@@ -38,6 +38,12 @@ offline在相同未见snapshot池比较分量误差、排序和top3保留能力�
 
 完整成本包含生成、特征、推理、精确rollout、最终复查/应急；模型加载单列，不把I/O或预计算控制优势混入求解比较。离线仿真不模拟计算延迟，四进程CPU计时只支持当前实现和运行条件。若学习未优于简单搜索，如实保留；若局部接近参考且更快，也不推导学习唯一必要或真实未来最优。
 
-当前API/CLI、FEATURE_NAMES、checkpoint/scaler与数据schema已按实现核对，见[技术规范](../technical_spec.md)及协议附录；最终预检、正式数据与固定训练已完成，完整评价与性能结论待证据。非tie pair accuracy按带action_key tie-break的诱导全序计算；raw regret为full−filtered分量差，不保证逐维非负。
+当前API/CLI、FEATURE_NAMES、checkpoint/scaler与数据schema已按实现核对，见[技术规范](../technical_spec.md)及协议附录；最终预检、正式数据、固定训练与完整评价均已完成，结论见结果报告。非tie pair accuracy按带action_key tie-break的诱导全序计算；raw regret为full−filtered分量差，不保证逐维非负。
 
 最终预检使用4001 low/medium四时刻25候选，2epoch两模型复用相同pilot train/val，仅核对序列化、重载和执行链。10项新增及67项合并测试通过，不能将pilot排序或episode结局当成性能结论；详细日志见协议。
+
+## 本轮结果与工程定位
+
+60个informative test context中，rank原始top3命中54/60，beam为48/60；共同anchors和精确评价后，两者保优均55/60，value为50/60。在线rank相对beam实际J为9赢/11平/7输，累计决策耗时5659.16 s对3575.93 s；状态轨迹及并发条件不同，不作网络贡献的单因素归因。
+
+本轮完成，rank保留可学习的排序信号，但尚无优于同预算beam的综合证据。工程参考优先保留full_reference与beam_topk；学习必要性仍未证明，不自动扩展下一阶段。完整成本、失败及分组分母见结果报告。

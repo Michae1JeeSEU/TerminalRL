@@ -1,8 +1,8 @@
 # 研究定位：固定多环联合到达调度
 
-阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
 
-阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
+阶段4完整结果与结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
 
 在随机剩余电量和持续到达需求下，联合安排多 UAV 各环等待、向内跨环转移、最后进近与 pad 服务窗口，在独立的安全、能源和资源约束下提高正常着陆效率并控制应急代价。
 
@@ -38,10 +38,18 @@ SOC排序不等于有效的可行性紧迫程度，slack规则也未稳定超越
 
 15context共209根已完成，三窗选根不同10/15；其中三个t60无holding、仅空HOLD根。until240相对FCFS实际词典序6赢/8平/1输，相对60s仍有1输，延长窗不是单调收益。medium/low有局部正常数增加，low/low词典序收益却伴随更多截尾/暴露；high/low闭合与实际未来的根排序反转，不能盲目蒸馏参考。33次局部remove-one为13可行、20undefined，价值与可行性不能默认可加。
 
-[结果报告](evidence/fixed_terminal_stage3/results.md)支持研究明示continuation、horizon和需求假设的联合批次价值或单窗口条件价值；不支持固定单机urgency、optimal/expected Q或传统全局上界。[学习问题定义](fixed_terminal_learning_problem_definition.md)已完成。较强传统参考的局部收益与计算成本只提供快速估值动机，学习必要性仍未证明；更好的传统求解仍未排除。未来期望价值若要研究，需另定需求模型与独立路径，下一阶段待授权。
+[结果报告](evidence/fixed_terminal_stage3/results.md)支持研究明示continuation、horizon和需求假设的联合批次价值或单窗口条件价值；不支持固定单机urgency、optimal/expected Q或传统全局上界。[学习问题定义](fixed_terminal_learning_problem_definition.md)已完成。较强传统参考的局部收益与计算成本只提供快速估值动机，学习必要性仍未证明；更好的传统求解仍未排除。未来期望价值若要研究，需另定需求模型与独立路径；阶段4仍只研究指定闭合参考。
 
 ## 当前阶段4研究问题
 
 本阶段问学习筛选是否能以较低完整在线成本逼近预算传统闭合rollout参考；不把阶段3局部收益当成学习必要性证明。监督回归ΔJ与非tie pair排序只是两个固定简单近似器，与同预算beam筛选和全池精确参考比较。
 
-闭合参考只包含当前已到达机群，阶段3与实际未来排序反转的负结果继续限制标签解释。阶段4不研究expected/optimal Q、offline RL或长期价值，也不通过teacher动作模仿替代问题定义。新seed分组提供本次受控比较，单一模型seed不支持训练稳定性结论；完整episode与behavior快照状态分布也须区分。结果和科学判断仍待正式实验与主审。
+闭合参考只包含当前已到达机群，阶段3与实际未来排序反转的负结果继续限制标签解释。阶段4不研究expected/optimal Q、offline RL或长期价值，也不通过teacher动作模仿替代问题定义。新seed分组提供本次受控比较，单一模型seed不支持训练稳定性结论；完整episode与behavior快照状态分布也须区分。本轮完整评价已完成；rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
+
+## 阶段4结果判断
+
+60个informative test context中，rank的pair accuracy为0.830786、top3命中54/60，beam为0.636331、48/60；加入相同HOLD/FCFS anchors并精确评价后，两者同为55/60保留全池最佳key。学习排序信号存在，但最终保优未超过同预算简单搜索。
+
+在线每方法27场、795请求，rank正常439/失败9，full438/8，beam436/8；正常增加不能抵销失败，且rank相对beam实际J为9赢/11平/7输。rank累计决策5659.16 s，beam3575.93 s，轨迹分布和并发竞争不同，不能作纯网络因果归因或实时资格证明。完整数据与权衡见阶段4结果。
+
+当前优先保留确定性full_reference与beam_topk工程参考，rank作为实验性信号；尚无学习综合胜出或必要性的证据。后续若另定范围，可考虑候选生成/简单搜索加速；当前不启动新实验或复杂学习架构。

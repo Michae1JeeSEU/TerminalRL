@@ -1,8 +1,8 @@
-# 固定终端区需求：阶段3机制分析
+# 固定终端区需求：阶段4学习辅助调度
 
-阶段4实现、预检、train/val数据与固定训练已完成；test数据已生成，完整episode评价运行中。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
+阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成。设计集中于[阶段4方法](arrival_restructure/stage4_learning_scheduler.md)，预算与执行顺序见[阶段4协议](experiments/fixed_terminal_stage4_protocol.md)；下列阶段1–3内容保留既有合同和历史事实。
 
-阶段4执行事实与后续结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，test未完成前不作最终性能判断。
+阶段4完整结果与结论见[结果报告](evidence/fixed_terminal_stage4/results.md)，rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。
 
 本需求继承阶段1/2固定物理合同，落实用户授权的[阶段3机制协议](experiments/fixed_terminal_stage3_protocol.md)；物理与原始统计以[问题定义](fixed_terminal_problem_definition.md)为准，价值接口见[学习问题定义](fixed_terminal_learning_problem_definition.md)。
 
@@ -47,11 +47,11 @@
 5. 单机边际条件在其余批次，两批都可行才定义，否则undefined+状态；不得假定价值可加或用整策略差异替代单次干预。
 6. t0控制为预计算warm-start，保留原求解计时；t60重新求六控制根。分项记录候选生成、控制获取和两类rollout成本。
 7. 阶段3已完成15context与定义核对，见[结果](evidence/fixed_terminal_stage3/results.md)；学习必要性仍未证明。undefined不得作为0或负奖励，词典序收益不得写成Pareto改善。
-8. 后续接口须明示continuation、horizon、需求假设，允许结果分量向量或批次比较分数；下一阶段待授权，不训练actor/PPO/IL/teacher、设计网络或调奖励。
+8. 后续接口须明示continuation、horizon、需求假设，允许结果分量向量或批次比较分数；阶段3当时不开展网络训练或调奖励；其后授权的阶段4范围见下节，仍不实施actor/PPO/IL/teacher。
 
 ## 阶段4新增要求
 
-阶段4train/val数据与固定训练已完成，test数据已生成，完整episode评价运行中。必须遵循冻结train/val/test seed组，所有同场景候选归同集合，scaler只用train；两checkpoint确定后才首次生成test。只近似闭合参考，不声明期望未来价值，不用阶段3数据训练。
+阶段4固定数据、训练与全部评价已完成。必须遵循冻结train/val/test seed组，所有同场景候选归同集合，scaler只用train；两checkpoint确定后才首次生成test。只近似闭合参考，不声明期望未来价值，不用阶段3数据训练。
 
 六方法使用相同物理/安全合同；新统一池无warm-start，full/beam/value/rank共享定义和anchors预算，原rolling目标差异明确标注。共同单根快路径与非退化表现分开，模型仅筛选，最终精确J选择及独立提交复查不可省略。
 

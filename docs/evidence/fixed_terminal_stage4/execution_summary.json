@@ -1,0 +1,224 @@
+{
+  "schema": "fixed-terminal-stage4-execution-summary-v1",
+  "raw_relative_root": "tmp_stage4_results",
+  "raw_actual_root": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results",
+  "stages": {
+    "trainval": {
+      "source": "tmp_stage4_results/execution.json",
+      "recorded_fields": {
+        "phase": "trainval",
+        "status": "completed",
+        "implementation_commit": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+        "workspace_head": "c0f02fbcc5dd078c34c8211bd47b71bb98caebce",
+        "started_utc": "2026-10-13T06:36:12.519798+00:00",
+        "dispatcher_pid": 17212,
+        "max_concurrent": 4,
+        "logical_cpu_count": 16,
+        "thread_environment": {
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "cwd": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure",
+        "scope": "36 train/val jobs only; no test generation, training, online evaluation or retries",
+        "ended_utc": "2026-10-13T06:49:41.493900+00:00",
+        "startup_outputs_verified": true
+      },
+      "job_counts": {
+        "jobs": 36,
+        "completed": 36,
+        "failures": 0,
+        "not_started": 0
+      },
+      "job_exit_code_counts": {
+        "0": 36
+      },
+      "job_exit_source": "tmp_stage4_results/logs/<job-key>/run_meta.json.exit_code",
+      "dispatcher_exit_code_note": "No dispatcher process exit_code field is recorded in this source; individual job exit codes are preserved separately."
+    },
+    "training": {
+      "source": "tmp_stage4_results/training_run/run_meta.json",
+      "recorded_fields": {
+        "status": "completed",
+        "command": [
+          "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe",
+          "-m",
+          "terminal_marl.scripts.train_fixed_terminal_stage4",
+          "--train",
+          "tmp_stage4_results/data/train",
+          "--val",
+          "tmp_stage4_results/data/val",
+          "--output",
+          "tmp_stage4_results/models"
+        ],
+        "cwd": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure",
+        "thread_environment": {
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "generator_jobs_completed_exit_zero": 36,
+        "contexts": {
+          "train": 108,
+          "val": 36
+        },
+        "source_commit": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+        "workspace_head": "c0f02fbcc5dd078c34c8211bd47b71bb98caebce",
+        "started_utc": "2026-10-13T06:50:53.258992+00:00",
+        "runner_pid": 40084,
+        "pid": 47364,
+        "exit_code": 0,
+        "scope": "one frozen300epoch training of value/rank; no smoke/test/retry",
+        "observed_curve_bytes": {
+          "value": 47162,
+          "rank": 46867
+        },
+        "finished_utc": "2026-10-13T06:51:23.316789+00:00",
+        "wall_seconds": 30.057532199658453,
+        "protocol_seen": true,
+        "curves": {
+          "value": 300,
+          "rank": 300
+        },
+        "model_training_results": {
+          "value": {
+            "best_epoch": 17,
+            "epoch": 17,
+            "train_loss": 0.25402122735977173,
+            "val_loss": 0.21172821521759033,
+            "val_informative_top3_best_recall": 0.96,
+            "val_informative_contexts": 25,
+            "training_status": "completed_with_updates"
+          },
+          "rank": {
+            "best_epoch": 35,
+            "epoch": 35,
+            "train_loss": 0.18844270706176758,
+            "val_loss": 0.6074614524841309,
+            "val_informative_top3_best_recall": 0.96,
+            "val_informative_contexts": 25,
+            "training_status": "completed_with_updates"
+          }
+        }
+      }
+    },
+    "test_all": {
+      "source": "tmp_stage4_results/test_execution_all.json",
+      "recorded_fields": {
+        "status": "completed",
+        "phase": "all",
+        "started_utc": "2026-10-13T06:52:40.609609+00:00",
+        "dispatcher_pid": 38880,
+        "workspace_head": "c0f02fbcc5dd078c34c8211bd47b71bb98caebce",
+        "source_commit": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+        "docs_commit": "c0f02fbcc5dd078c34c8211bd47b71bb98caebce",
+        "models": {
+          "directory": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\models",
+          "sha256": {
+            "value.pt": "004d9f1f6054a1f9109ee4a3b64f337045599eb5b91577fafc77d339375b0d2a",
+            "rank.pt": "a1c298f294143e8d2e4330d748648a2006978c0e9db4be0a32b2aa913f636c38",
+            "training.json": "d8ef700c5671918926a6c510dcfc7f47581c5577b12b3f3c842051fce383993e",
+            "protocol.json": "6e1bb6a0272bee04d2e0f22a550be8f35841742734d8e774976e172e1f5f9ebf"
+          }
+        },
+        "max_concurrent": 4,
+        "thread_environment": {
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "active_children": [],
+        "finished_utc": "2026-10-13T09:17:13.626789+00:00",
+        "model_hashes_unchanged": true
+      },
+      "job_counts": {
+        "jobs": 189,
+        "completed": 189,
+        "failures": 0,
+        "not_started": 0
+      },
+      "job_exit_code_counts": {
+        "0": 189
+      },
+      "job_exit_source": "tmp_stage4_results/test_logs/<job-key>/run_meta.json.exit_code",
+      "dispatcher_exit_code_note": "No dispatcher process exit_code field is recorded in this source; individual job exit codes are preserved separately."
+    },
+    "offline": {
+      "source": "tmp_stage4_results/test_execution_offline.json",
+      "recorded_fields": {
+        "status": "completed",
+        "phase": "offline",
+        "started_utc": "2026-10-13T09:37:16.989786+00:00",
+        "dispatcher_pid": 53208,
+        "workspace_head": "d5114385f2802bbc13dc96b85bced8d2b897c8e2",
+        "source_commit": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+        "docs_commit": "d5114385f2802bbc13dc96b85bced8d2b897c8e2",
+        "models": {
+          "directory": "D:\\7_codespace\\terminal\\.worktrees\\arrival-restructure\\tmp_stage4_results\\models",
+          "sha256": {
+            "value.pt": "004d9f1f6054a1f9109ee4a3b64f337045599eb5b91577fafc77d339375b0d2a",
+            "rank.pt": "a1c298f294143e8d2e4330d748648a2006978c0e9db4be0a32b2aa913f636c38",
+            "training.json": "d8ef700c5671918926a6c510dcfc7f47581c5577b12b3f3c842051fce383993e",
+            "protocol.json": "6e1bb6a0272bee04d2e0f22a550be8f35841742734d8e774976e172e1f5f9ebf"
+          }
+        },
+        "max_concurrent": 4,
+        "thread_environment": {
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "active_children": [],
+        "finished_utc": "2026-10-13T09:37:23.184007+00:00",
+        "model_hashes_unchanged": true
+      },
+      "job_counts": {
+        "jobs": 1,
+        "completed": 1,
+        "failures": 0,
+        "not_started": 0
+      },
+      "job_exit_code_counts": {
+        "0": 1
+      },
+      "job_exit_source": "tmp_stage4_results/test_logs/<job-key>/run_meta.json.exit_code",
+      "dispatcher_exit_code_note": "No dispatcher process exit_code field is recorded in this source; individual job exit codes are preserved separately."
+    }
+  },
+  "model_sha256_observed": {
+    "value.pt": "004d9f1f6054a1f9109ee4a3b64f337045599eb5b91577fafc77d339375b0d2a",
+    "rank.pt": "a1c298f294143e8d2e4330d748648a2006978c0e9db4be0a32b2aa913f636c38",
+    "training.json": "d8ef700c5671918926a6c510dcfc7f47581c5577b12b3f3c842051fce383993e",
+    "protocol.json": "6e1bb6a0272bee04d2e0f22a550be8f35841742734d8e774976e172e1f5f9ebf"
+  },
+  "commit_note": "Raw workspace_head/source/docs commit fields are preserved as recorded. The main-workspace final documentation commit will be reported in the delivery note; it does not replace historical log commits.",
+  "source_check": {
+    "baseline": "08235fb476f4bf483fecd71fdec5dfe9a8e1778e",
+    "paths": [
+      "requirements-stage4.txt",
+      "terminal_marl/configs/fixed_terminal_stage4.py",
+      "terminal_marl/core/fixed_terminal/learning_features.py",
+      "terminal_marl/core/fixed_terminal/learning_scheduler.py",
+      "terminal_marl/core/fixed_terminal/learning_data.py",
+      "terminal_marl/core/fixed_terminal/learning_models.py",
+      "terminal_marl/scripts/generate_fixed_terminal_stage4.py",
+      "terminal_marl/scripts/train_fixed_terminal_stage4.py",
+      "terminal_marl/scripts/evaluate_fixed_terminal_stage4.py"
+    ],
+    "git_diff_exit_code": 0,
+    "stdout": "",
+    "workspace": "D:\\7_codespace\\terminal"
+  },
+  "conversion_checks": {
+    "strict_finite": true,
+    "offline_removed_error_arrays": 324,
+    "csv_data_rows": 60,
+    "episodes_per_method": 27,
+    "decisions_per_method": 1296,
+    "all_request_denominator_per_method": 795,
+    "N_E_F_C_conservation": true,
+    "frozen_input_count": 162,
+    "matched_scenarios": 27,
+    "input_configurations_identical": true
+  }
+}

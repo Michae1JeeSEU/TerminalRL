@@ -1,25 +1,26 @@
-# 当前状态：阶段4学习辅助调度
+# 当前状态：阶段4已完成
 
-更新日期：2026-10-13。用户已授权[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)，主线程已确定[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)。**实现与最终预检完成；正式train/val数据生成已完成，两模型正式训练已完成并冻结，test评价待后续证据。** 目标为学习筛选能否以较低完整在线成本逼近有限预算闭合参考，不预设学习有效或必要。
+更新日期：2026-10-13。[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)的实现、冻结数据与训练、108context离线评价及162个完整episode均已完成，主审已完成研究判断。**rank存在可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。** 完整分母、表格与边界见[结果报告](evidence/fixed_terminal_stage4/results.md)，设计见[方法](arrival_restructure/stage4_learning_scheduler.md)和[协议](experiments/fixed_terminal_stage4_protocol.md)。
 
-## 已完成准备
+## 已执行事实
 
-用户计划已从父checkout字节不变复制，5016 bytes，SHA256 `c43b11c6aab48e025d24988a4b9f7b1ed98aefef3f622a44b076fb54326ef584`。现有venv为Python3.12.4、torch2.5.1+cpu、NumPy2.4.4、SciPy1.18.1；CPU tensor检查成功，CUDA不可用，sklearn缺失，未安装依赖。完整只读记录为`tmp_stage4_preflight/runtime.json`和`runtime.log`。
+- 新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0，生产代码未再改变。pilot4001 low/medium只作流程检查：25根，2epoch且同一pilot复用train/val，smoke_only，不能作性能结论。
+- train/val共36数据任务全部exit0：train108context/1117根/64informative/22单根/3332非tie pairs；val36/384/25/2/1032。两模型各固定seed4401训练300epoch一次，wall30.0575322 s、exit0；value选17、rank选35，val informative召回均24/25，仅用于选checkpoint。
+- 冻结后首次test生成27场景、108context/1012根/60informative/30单根/2813pairs，随后完成六方法162episode。189任务于UTC 06:52:40.609609至09:17:13.626789全部exit0；独立offline评价exit0、6.014 s。四模型文件hash不变，无实验重跑或补采样。
+- 物理、安全、能源、SOC与负载设置保持不变。全部方法执行spacing违反与未认证均0，最低着陆SOC0.06067783709660538；每方法仍有8–9例能源失败，不能写成零失败或硬件安全认证。
 
-设计固定：新池扩展joint8/48/8/128、前12unique+HOLD+现场FCFS，≤14；full_reference全池闭合rollout，beam/value/rank前3+anchors最多5精确根，另比较原FCFS与原rolling。单根共用快路径，独立安全/能源/资源/应急职责不变，无warm-start或跨方法缓存。
+实现版本`08235fb476f4bf483fecd71fdec5dfe9a8e1778e`，原运行工作树`c0f02fbcc5dd078c34c8211bd47b71bb98caebce`，各日志保留实际workspace_head。当前分支在主目录`D:\7_codespace\terminal`；raw保留在`.worktrees/arrival-restructure`的detached `d511438`目录。分支归属调整没有改变实验实现或模型字节。
 
-train seeds4101–4103、val4201、test4301–4303，pilot4001。每seed九profiles，joint behavior在0/5/15/90 s取共同prefix快照；train108/val36/test108。train-only scaler，两类64/64 CPU MLP各一次固定seed训练；checkpoint固定后才首次生成test。正式episode为27新场景×六方法=162，最多4进程、threads1。所有值是闭合continuation下的有限窗监督标签，不是teacher动作或expected Q。
+## 研究结论与当前边界
 
-## 当前下一步
+informative离线rank top3命中54/60、beam48/60，但加共同anchors并精确评估后两者保优均55/60。在线每法795请求：rank N/E/F/C=439/16/9/331，full438/17/8/332，beam436/17/8/334；rank多1正常不能抵销对full多1失败。rank对beam实际J为9赢/11平/7输，尚未形成综合支配。
 
-实现、93维特征、模型/筛选与数据/评价接口已完成；最终阶段4新增10项测试通过（3.28 s），阶段1–4合并67项通过（12.64 s），均exit0并覆盖最终生产字节。主审已接受代码与预检。正式trainval数据36任务全部exit0，144context/1501根；train108context/1117根/64informative/22degenerate/3332非tie pairs，val36/384/25/2/1032。2293JSON finite、seed/config/时刻/93特征与根标签对齐已核对；无补采样或实验重跑。源提交`08235fb476f4bf483fecd71fdec5dfe9a8e1778e`，协议/生成工作树提交`c0f02fbcc5dd078c34c8211bd47b71bb98caebce`。固定正式训练已exit0，墙钟30.0575322 s，两类各300epoch；value选epoch17、rank选35，informative val均24/25召回。主审已冻结checkpoint并安排test数据与episode，当前尚无完整test评价结论；validation召回不作泛化结论。记录与后续索引见[阶段4结果](evidence/fixed_terminal_stage4/results.md)。
+rank累计在线决策5659.16 s、beam3575.93 s，>5 s分别274/1296与208/1296；状态轨迹、并发竞争与退化比例不同，不解释为纯网络因果贡献。仿真时钟不计CPU等待，不能据服务结果宣称实时可用。标签仅近似已到达闭合FCFS continuation，非真实未来Q；单一模型seed也不证明训练稳定性。
 
-pilot仅为4001 low/medium流程验证：四时刻根数14/9/1/1、25候选；两模型只训练2epoch，train/val复用同一pilot且标smoke_only，不能给性能或泛化结论。offline和两条240s学习episode完成，模型重载预测相等，59 JSON+8 JSONL（176行）严格finite可解析。原始记录为`tmp_stage4_preflight/validation.json`、`combined_tests.log`等，预检数据不并入正式集。
+当前工程参考优先保留full_reference与beam_topk，rank保留实验性可学习信号。阶段4已完成；后续研究需另定范围，不自动启动新实验、GNN/attention、PPO、offline RL、teacher动作模仿或动态几何。
 
 ## 保留的既有证据
 
 [阶段3结果](evidence/fixed_terminal_stage3/results.md)：15context、209root、57项合并测试通过；15个FCFS逐请求重放一致，执行安全违反/未认证0，着陆最低SOC0.0602558271。三个t60为单HOLD退化对照。until240对FCFS实际词典序6赢/8平/1输；13可行/20不可行remove-one；闭合与实际未来存在排序反转。学习必要性仍未证明，旧数据只作动机，不用于阶段4训练。实现版本`5a67b9ac6d8421ac31172a00ce0de851ed0a4c14`，文档证据版本`3fb624b80b93ffc11ecbc8761d4309bbe7a89e74`。
 
 [阶段2结果](evidence/fixed_terminal_stage2/results.md)保留162场/12有限oracle：FCFS444正常/7失败、deadline445/7、joint429/9、rolling441/9；rolling不支配FCFS。以上历史测试不作为阶段4通过证据。阶段1固定物理合同、SOC、负载和原阶段证据不变。
-
-本轮只实现监督价值和排序辅助筛选，不实施actor/PPO、teacher动作模仿、offline RL、GNN/attention、动态几何或自由飞行。实际未来只由评价环境推进，不能作输入。科学结论等待本轮结果与主审。

@@ -1,12 +1,12 @@
 # 固定终端区文档入口
 
-**阶段4实现、train/val数据和固定训练已完成；test数据已生成，完整episode评价运行中，结论待完整证据。** 学习只近似已到达机群的预算闭合参考，不替代候选生成或安全。阶段1–3物理合同和证据保留，学习必要性尚未证明。
+**阶段4实现与冻结实验已完成。** rank显示可学习的离线排序信号，但尚无优于同预算beam筛选的综合证据；学习必要性仍未证明。学习仅近似已到达机群的预算闭合参考，确定性生成与安全职责不变，阶段3闭合与实际未来排序反转的限制继续保留。
 
 ## 当前阅读顺序
 
 | 文档 | 职责 |
 |---|---|
-| [阶段4结果与运行证据](evidence/fixed_terminal_stage4/results.md) | 预检、train/val、固定训练及待完成test的证据入口 |
+| [阶段4结果与运行证据](evidence/fixed_terminal_stage4/results.md) | 完整数据、训练、离线/episode结果、计算成本与结论 |
 | [阶段4用户计划](fixed_terminal_stage4_learning_scheduler_plan.md) | 本轮用户任务，原样保存 |
 | [阶段4方法](arrival_restructure/stage4_learning_scheduler.md) | 六方法、统一候选池与学习筛选职责 |
 | [阶段4协议](experiments/fixed_terminal_stage4_protocol.md) | seed分组、标签、模型/选择预算和评价顺序 |
@@ -18,7 +18,7 @@
 | [当前状态](CURRENT_STATUS.md) | 已执行与未执行工作，区分历史测试和新实验 |
 | [研究定位](research_positioning.md) | 问题、事实基础和结论范围 |
 | [需求](requirements.md)、[设计](design_spec.md)、[技术](technical_spec.md) | 接口责任、信息隔离和输出口径 |
-| [执行计划](execution_plan.md) | 机制实现、核对、预检与主审顺序 |
+| [执行计划](execution_plan.md) | 阶段4已完成顺序与后续边界 |
 
 ## 保留的既有结果
 

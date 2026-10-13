@@ -1,6 +1,6 @@
 # 固定终端区阶段4学习辅助调度协议
 
-状态：**实现与最终预检已完成；正式train/val数据生成已完成；正式训练已完成并冻结，test数据已生成，完整episode评价运行中、最终结论待完整证据。** 本文落实[用户阶段4计划](../fixed_terminal_stage4_learning_scheduler_plan.md)，方法责任见[方法文档](../arrival_restructure/stage4_learning_scheduler.md)。当前API、93个FEATURE_NAMES与产物schema已按实现代码核对，仍须随预检修订同步；未以接口存在宣称测试或正式运行通过。
+状态：**阶段4实现、固定数据与训练、108context离线评价和162个完整episode均已完成，主审已完成研究判断。** 本文落实[用户阶段4计划](../fixed_terminal_stage4_learning_scheduler_plan.md)，方法责任见[方法文档](../arrival_restructure/stage4_learning_scheduler.md)，完整证据见[阶段4结果](../evidence/fixed_terminal_stage4/results.md)。API、93个FEATURE_NAMES及schema已按最终实现核对；以下保留执行前冻结的设计，不按结果调整。
 
 ## 问题与固定范围
 
@@ -29,12 +29,12 @@
 
 |用途|seed|场景数|snapshot数|
 |---|---|---:|---:|
-|pilot|4001|最多九组合的预检用途，具体tiny命令待主审|不计正式集|
+|pilot|4001|实际使用low/medium的流程预检|不计正式集|
 |train|4101、4102、4103|27|108|
 |validation|4201|9|36|
 |test|4301、4302、4303|27|108|
 
-先生成train/val，分别训练一次两模型并固定checkpoint；之后才首次生成test数据并评估。不得先查看test选择epoch或调整模型、预算、seed。正式运行须在tiny输出预检、针对性测试与主审后启动；train/val数据生成已完成，固定训练已完成，checkpoint确定后启动test评价。
+先生成train/val，分别训练一次两模型并固定checkpoint；之后才首次生成test数据并评估。不得先查看test选择epoch或调整模型、预算、seed。正式运行按tiny预检、针对性测试与主审后的顺序执行；train/val数据和固定训练完成后冻结checkpoint，再首次生成test并完成评价。
 
 ## 特征与标签
 
@@ -70,7 +70,7 @@ A报告各raw价值分量MAE。两模型均报告非tie pair accuracy（含固�
 
 保留tiny预检、冻结设置、数据split、train-only scalers、epoch/val/checkpoint选择、offline统计、episode逐请求/事件和分项计时。执行顺序为先train/val数据、再固定训练与checkpoint，最后首次test/eval；按阶段记录真实进度。结果不佳时不重调参数、不删数据、不换种子，结论由主线程依据事实决定；本协议不预设学习有效。
 
-## 当前接口与已准备执行器
+## 复现接口与已执行调度器
 
 训练数据CLI为`python -m terminal_marl.scripts.generate_fixed_terminal_stage4 --split train --seed 4101 --load low --soc high --output NEW_DIRECTORY`，`--list-jobs --split train|val|test|pilot`只打印注册任务。test生成必须另给`--models MODEL_DIRECTORY`，检查已完成非smoke训练及value.pt/rank.pt/training.json/protocol.json哈希；train/val不读模型。
 
@@ -202,6 +202,12 @@ unselected_holding_soc_max
 
 pilot4001 low/medium在0/5/15/90 s生成14/9/1/1根，共25候选、39个非tie pair、2个informative context。两模型仅2epoch且train/val复用同一pilot，smoke_only=true，test_read=false；这是流程检查，不是验证集性能或泛化证据，不能用于正式test。模型重载预测一致；offline与value/rank两个240s episode均完成，均11请求、N/E/F/C=10/0/0/1、执行spacing违反/未认证0。59个JSON和8个JSONL（176行）严格finite可解析。预检早期失败测试日志部分被覆盖，validation.json明确记录仅恢复工具输出摘录，不将摘录伪称完整原日志。
 
-主审接受最终代码和预检后，36任务train/val已按提交后的实现完成：144context/1501根，无重跑。固定训练已完成并冻结，随后安排test数据和162episode，尚无评价结果；执行进度与统计见[阶段4结果](../evidence/fixed_terminal_stage4/results.md)。预检不混入正式数据，不因其指标调整冻结参数。
+主审接受最终代码和预检后，36任务train/val已按提交后的实现完成：144context/1501根，无重跑。固定训练完成并冻结后，27个test数据任务与162episode全部exit0，108context独立offline评价完成；完整结果与统计见[阶段4结果](../evidence/fixed_terminal_stage4/results.md)。预检不混入正式数据，不因其指标调整冻结参数。
 
-正式执行记录：两类模型各300epoch、seed4401一次训练已完成，value选17、rank选35，25个informative val中均24个top3命中；这仅用于checkpoint选择。主审冻结后才安排首次test数据与episode，具体哈希和loss见[训练摘要](../evidence/fixed_terminal_stage4/training_summary.json)。
+正式执行记录：两类模型各300epoch、seed4401一次训练已完成，value选17、rank选35，25个informative val中均24个top3命中；这仅用于checkpoint选择。主审冻结后才首次生成test数据并执行episode，现全部完成；具体哈希和loss见[训练摘要](../evidence/fixed_terminal_stage4/training_summary.json)。
+
+## 最终执行与证据定位
+
+189个test数据/episode任务于UTC 2026-10-13 06:52:40.609609至09:17:13.626789全部exit0；offline独立执行exit0、6.014 s。实现版本08235fb、原运行工作树c0f02fb及各log实际workspace_head保留，冻结四模型文件hash不变。预检后未改生产代码、固定预算、模型seed或物理设置，没有实验重跑。
+
+raw路径`tmp_stage4_results`、`tmp_stage4_preflight`在本地以`D:\7_codespace\terminal\.worktrees\arrival-restructure`为根，交付ZIP保留这些相对目录；当前docs与源码以主目录为准。详细分母、分项时间和结论集中在结果报告，协议本身不把有限池闭合参考扩展为全问题最优。rank离线排序信号未形成优于同预算beam的综合证据，学习必要性仍未证明；本阶段完成后不自动追加研究或训练。

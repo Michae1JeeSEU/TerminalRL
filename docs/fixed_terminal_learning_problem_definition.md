@@ -48,6 +48,6 @@ selection comparison key在正式运行前冻结：前四计数精确整数，T/
 
 较强预算传统参考产生局部改进，也有负结果；它不是传统上界或全局优越方法，学习必要性仍未证明。后续输出可为明示continuation、horizon与需求假设下的结果分量向量或批次比较分数，安全仍由独立层决定。若未来研究期望未来价值，须另定未来需求模型和独立需求路径，不能直接使用本轮闭合标签代替。当前成本只提供快速估值动机，不证明学习唯一必要。本阶段不训练actor、PPO、IL/teacher或任何网络，不调奖励，也不自动进入下一阶段。
 
-## 阶段4授权入口
+## 阶段4已完成入口
 
-阶段3正文与结论保留。用户现已授权[阶段4学习辅助调度计划](fixed_terminal_stage4_learning_scheduler_plan.md)，按[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)实现简单监督价值/排序筛选，近似指定闭合参考。当前实现中，正式数据/训练/评价未运行；不据此宣称学习必要或期望未来价值，原阶段3数据不用于训练。
+阶段3正文与结论保留。用户授权的[阶段4计划](fixed_terminal_stage4_learning_scheduler_plan.md)已按[方法](arrival_restructure/stage4_learning_scheduler.md)与[协议](experiments/fixed_terminal_stage4_protocol.md)完成：两类简单监督模型、108context离线评价及162个完整episode。rank有可学习的离线排序信号，但加共同anchors及精确评估后的保优率未超过同预算beam，在线结局与成本也未形成综合优势，见[阶段4结果](evidence/fixed_terminal_stage4/results.md)。学习必要性仍未证明；标签只近似指定闭合FCFS continuation，非期望未来价值，原阶段3数据未用于训练。后续新研究需另定范围，不自动扩展训练或实验。
