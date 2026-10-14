@@ -1,4 +1,9 @@
-# 当前状态：阶段6研究验收完成
+# 当前状态：阶段7实现与小样本核验
+
+## 阶段7用户授权状态（2026-10-14）
+
+用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。当前进入真实partial计划搜索的学习展开/剪枝/beam宽度实现与小样本核验；尚未启动正式stage7数据、训练或评价。八方法、一次GradientBoostingClassifier、train108/val36、test264episodes及30states/240panelrows范围冻结于[阶段7方法](arrival_restructure/stage7_learning_to_search.md)与[协议](experiments/fixed_terminal_stage7_protocol.md)。阶段6停止扩展当前学习排序方案的结论及全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次仅执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。
+
 
 ## 阶段6研究验收完成（2026-10-14）
 

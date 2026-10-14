@@ -1,5 +1,10 @@
 # 固定终端区文档入口
 
+## 阶段7用户授权状态（2026-10-14）
+
+用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。当前进入真实partial计划搜索的学习展开/剪枝/beam宽度实现与小样本核验；尚未启动正式stage7数据、训练或评价。八方法、一次GradientBoostingClassifier、train108/val36、test264episodes及30states/240panelrows范围冻结于[阶段7方法](arrival_restructure/stage7_learning_to_search.md)与[协议](experiments/fixed_terminal_stage7_protocol.md)。阶段6停止扩展当前学习排序方案的结论及全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次仅执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。
+
+
 ## 阶段6研究验收完成（2026-10-14）
 
 [阶段6用户计划](fixed_terminal_stage6_learning_assisted_scheduling_plan.md)的264episode、15个独立panel jobs（30states/240方法行）及严格汇总全部完成，模型hash未变。**B未成立；相对同机制beam_adaptive未见学习增量计算收益，当前学习排序配置按A停止扩展，保留实验资产。** 学习相对full的非退化根数301→202（减少32.9%），完整wall仅减少约6.4%–6.6%，未达预定双10%门槛；相对beam_adaptive三学习根数都相同，wall比约0.9994/1.0015/1.0013。C的大量验证现象存在，但不支持扩大value或长期Q路线，不启动新训练或下一阶段。
