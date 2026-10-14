@@ -24,7 +24,10 @@ def metadata():
 
 def test_trace_labels_have_real_leaf_linkage_and_no_internal_rollouts(tmp_path):
     env = tiny(Request("a", 0, .95, 0, .1))
-    record = data.generate_context(env, tmp_path/"context", metadata())
+    source_audit = data.compare_source_scenario(canonical_json(data.asdict(env.scenario)), canonical_json(data.asdict(env.scenario)))
+    context_metadata = {**metadata(), "source_input": {"source_scenario_comparison": source_audit}}
+    record = data.generate_context(env, tmp_path/"context", context_metadata)
+    assert record["source_scenario_comparison"] == source_audit
     trace = json.loads((tmp_path/"context"/"trace.json").read_text())
     labels = json.loads((tmp_path/"context"/"labels.json").read_text())
     leaves = json.loads((tmp_path/"context"/"leaves.json").read_text())
@@ -95,3 +98,131 @@ def test_existing_stage4_medium_high_prefix_snapshot():
         env.step()
     audit = data.compare_source_snapshot(env, base/"t15"/"snapshot.json")
     assert audit["max_abs_difference"] <= 1e-12
+
+
+def source_scenario_fixture():
+    return canonical_json(data.asdict(Scenario(4201, "high", "low", tuple(
+        Request(f"a-{index}", float(index), .5, None, .1) for index in range(42)), 1, 2)))
+
+
+@pytest.mark.parametrize("profile,index,stored_soc,rebuilt_soc", [
+    ("medium-low", 23, .17577007356836272, .17577007356836266),
+    ("high-low", 23, .17577007356836272, .17577007356836266),
+    ("high-low", 41, .4411787410317879, .44117874103178784),
+    ("high-medium", 41, .7194144892381455, .7194144892381454),
+])
+def test_source_scenario_four_observed_soc_roundoff_patterns(profile, index, stored_soc, rebuilt_soc):
+    stored = source_scenario_fixture()
+    stored["load"], stored["soc_profile"] = profile.split("-")
+    stored["requests"][index]["soc"] = stored_soc
+    rebuilt = deepcopy(stored)
+    rebuilt["requests"][index]["soc"] = rebuilt_soc
+    before_stored, before_rebuilt = deepcopy(stored), deepcopy(rebuilt)
+    audit = data.compare_source_scenario(stored, rebuilt)
+    assert not audit["exact_match"] and audit["float_difference_count"] == 1
+    assert audit["max_abs_difference"] == abs(stored_soc-rebuilt_soc)
+    assert audit["absolute_tolerance"] == 1e-12 and audit["relative_tolerance"] == 0.
+    assert audit["differing_paths"] == [f"scenario.requests[{index}].soc"]
+    assert audit["differences"] == [{"path": f"scenario.requests[{index}].soc", "stored": stored_soc,
+                                      "rebuilt": rebuilt_soc, "abs_difference": abs(stored_soc-rebuilt_soc)}]
+    assert "soc" in audit["scope"] and "all_other_fields" in audit["scope"]
+    assert stored == before_stored and rebuilt == before_rebuilt
+
+
+def test_source_scenario_exact_and_multi_difference_audit():
+    stored = source_scenario_fixture()
+    exact = data.compare_source_scenario(stored, deepcopy(stored))
+    assert exact["exact_match"] and exact["float_difference_count"] == 0
+    assert exact["max_abs_difference"] == 0. and exact["differing_paths"] == []
+    stored["requests"][23]["soc"] = .17577007356836272
+    stored["requests"][41]["soc"] = .4411787410317879
+    rebuilt = deepcopy(stored)
+    rebuilt["requests"][23]["soc"] = .17577007356836266
+    rebuilt["requests"][41]["soc"] = .44117874103178784
+    audit = data.compare_source_scenario(stored, rebuilt)
+    assert audit["float_difference_count"] == 2
+    assert audit["differing_paths"] == ["scenario.requests[23].soc", "scenario.requests[41].soc"]
+
+
+@pytest.mark.parametrize("changed_soc", [.5+2e-12, 0, True, "0.5", float("nan"), float("inf"), -float("inf")])
+def test_source_scenario_soc_large_difference_type_and_nonfinite_rejected(changed_soc):
+    stored = source_scenario_fixture()
+    rebuilt = deepcopy(stored)
+    rebuilt["requests"][0]["soc"] = changed_soc
+    with pytest.raises(ValueError):
+        data.compare_source_scenario(stored, rebuilt)
+    with pytest.raises(ValueError):
+        data.compare_source_scenario(rebuilt, stored)
+
+
+@pytest.mark.parametrize("mutation", ["arrival_time", "theta", "seed", "bool_type", "soc_profile", "request_id",
+                                     "request_length", "request_order", "request_key_order", "scenario_key_order", "missing_soc"])
+def test_source_scenario_other_float_discrete_and_structure_changes_rejected(mutation):
+    stored = source_scenario_fixture()
+    rebuilt = deepcopy(stored)
+    if mutation in ("arrival_time", "theta"):
+        rebuilt["requests"][1][mutation] += 1e-15
+    elif mutation == "seed":
+        rebuilt["seed"] += 1
+    elif mutation == "bool_type":
+        rebuilt["demand_stream_seed"] = True
+    elif mutation == "soc_profile":
+        rebuilt["soc_profile"] = "medium"
+    elif mutation == "request_id":
+        rebuilt["requests"][0]["aircraft_id"] = "changed"
+    elif mutation == "request_length":
+        rebuilt["requests"].pop()
+    elif mutation == "request_order":
+        rebuilt["requests"][0], rebuilt["requests"][1] = rebuilt["requests"][1], rebuilt["requests"][0]
+    elif mutation == "request_key_order":
+        rebuilt["requests"][0] = dict(reversed(list(rebuilt["requests"][0].items())))
+    elif mutation == "scenario_key_order":
+        rebuilt = dict(reversed(list(rebuilt.items())))
+    elif mutation == "missing_soc":
+        del rebuilt["requests"][0]["soc"]
+    with pytest.raises(ValueError):
+        data.compare_source_scenario(stored, rebuilt)
+
+
+def test_source_scenario_generation_uses_stored_soc_and_saves_audit(tmp_path, monkeypatch):
+    stored_scenario = Scenario(4201, "medium", "low", (Request("a", 0., .17577007356836272, 0, .1),), 1, 2)
+    rebuilt_scenario = replace(stored_scenario, requests=(replace(stored_scenario.requests[0], soc=.17577007356836266),))
+    source = tmp_path/"source"/"frozen_input.json"
+    frozen_row = {"split": "val", "seed": 4201, "load": "medium", "soc": "low",
+                  "scenario": data.asdict(stored_scenario), "config": data.asdict(DEFAULT_CONFIG), "times": data.SNAPSHOT_TIMES}
+    write_json(source, frozen_row)
+    source_hash = data.file_hash(source)
+    monkeypatch.setattr(data, "generate_scenario", lambda *args: rebuilt_scenario)
+    monkeypatch.setattr(data, "apply_scheduler", lambda *args: None)
+    captured = []
+    def context(env, output, metadata, source_snapshot=None):
+        assert env.scenario.requests[0].soc == stored_scenario.requests[0].soc
+        assert env.scenario.requests[0].soc != rebuilt_scenario.requests[0].soc
+        captured.append(metadata)
+        return {**metadata, "time": env.time, "status": "completed"}
+    monkeypatch.setattr(data, "generate_context", context)
+    output = tmp_path/"generated"
+    records = data.generate_scenario_data(output, "val", 4201, "medium", "low", source_stage4=source.parent)
+    assert len(records) == len(captured) == 4
+    generated_input = json.loads((output/"frozen_input.json").read_text())
+    generated = json.loads((output/"generation.json").read_text())
+    audit = generated["source_scenario_comparison"]
+    assert audit["float_difference_count"] == 1 and not audit["exact_match"]
+    assert generated_input["scenario"] == canonical_json(data.asdict(stored_scenario)) == generated["scenario"]
+    assert generated_input["source_scenario_comparison"] == audit
+    assert all(c["source_input"]["source_scenario_comparison"] == audit for c in captured)
+    assert generated["source"]["sha256"] == source_hash == data.file_hash(source)
+
+
+@pytest.mark.parametrize("field", ["config", "times"])
+def test_source_input_config_and_times_types_remain_exact(tmp_path, field):
+    config = canonical_json(data.asdict(DEFAULT_CONFIG))
+    times = list(data.SNAPSHOT_TIMES)
+    if field == "config":
+        config["horizon"] = int(config["horizon"])
+    else:
+        times[0] = 0
+    write_json(tmp_path/"frozen_input.json", {"split": "val", "seed": 4201, "load": "medium", "soc": "low",
+               "config": config, "times": times})
+    with pytest.raises(ValueError, match="type"):
+        data._source_input(tmp_path, "val", 4201, "medium", "low", DEFAULT_CONFIG, data.SNAPSHOT_TIMES)

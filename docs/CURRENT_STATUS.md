@@ -1,10 +1,14 @@
-# 当前状态：pilot流程核验通过，准备阶段7正式数据
+# 当前状态：阶段7正式data首次运行结束，source验证修复通过，待提交同步后重放
 
 ## 阶段7用户授权状态（2026-10-14）
 
-用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。**pilot已通过流程核验，准备正式搜索数据生成；正式模型、264episodes及15paneljobs尚未运行。** 八方法、一次正式GradientBoostingClassifier fit、train108/val36与30states/240panelrows范围保持[阶段7方法](arrival_restructure/stage7_learning_to_search.md)及[冻结协议](experiments/fixed_terminal_stage7_protocol.md)定义。Pilot模型的train/val使用同一pilot，仅验证流程，不作为正式训练或泛化证据；当前没有新fit、重训或调参。
+用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。**pilot已通过流程核验；正式data attempt1为33/36成功、3个val任务失败，原件归档已完成，source场景验证最小修复已通过主审及33项检查；正式模型、264episodes及15paneljobs尚未运行。** 八方法、一次正式GradientBoostingClassifier fit、train108/val36与30states/240panelrows范围保持[阶段7方法](arrival_restructure/stage7_learning_to_search.md)及[冻结协议](experiments/fixed_terminal_stage7_protocol.md)定义。Pilot模型的train/val使用同一pilot，仅验证流程，不作为正式训练或泛化证据；没有新增fit、重训或调参。
 
-主对话已接受C三episode和D隔离panel的实际退出、完整产物、请求守恒/最终检查、模型hash及无残留任务证据，紧凑记录见[运行状态](evidence/fixed_terminal_stage7/run_status.md)与[pilot执行证据](evidence/fixed_terminal_stage7/pilot_execution.json)。已授权下一步依次为正式data36jobs→Step7.1主审→一次正式模型fit并冻结→264episodes（workers20、threads1）→15隔离paneljobs（worker1）→严格summary、文档与结果包。正式run_sourceSHA将在本轮文档提交后设置真实最新SHA，实际启动时间尚未知；继续沿用当前chat heartbeat `7-learning-to-search`，不重复创建。
+主对话已接受C三episode和D隔离panel流程。正式data attempt1源码为`c143d7fec71013063ef28091ae67e26be1bc312a`，11:19:01启动，wrapper/dispatcher PID3473436/3473437，149.636576 s、exit1、132context（train108/val24），全部任务终态且无残留；analyze未启动。三失败case在仿真前旧source比较中退出。全36场景对照仅发现4个有限SOC float末位差（max1.1102230246251565e-16），config、times、类型及离散字段exact，证据见[source场景比较](evidence/fixed_terminal_stage7/source_scenario_comparison.json)。
+
+主对话限定修复仅允许旧generator/source比较中同类型有限`requests[*].soc` abs≤1e-12、relative0，其余scenario/config exact；实际执行仍采用stored原SOC/场景，不以Linux重建替换。这是artifact兼容性验证，非物理容差或test调参，旧snapshot比较规则不变。11:26:12已将旧data/state/progress/72job logs及launch logs完整归档到ROOT/data_attempt1，936files SHA/bytes匹配，保留33成功与3失败原件，pilot不动。
+
+源码修复已通过主审及data/models33项验证（8.09 s、exit0，日志`tmp_stage7_preflight/checks/source_soc_pytest_20261014_1.log`）；提交推送与Syncthing核对后，已授权只重放一次完整36任务同矩阵，严查144context和分析，再进行Step7.1主审及唯一正式fit；提交推送、Syncthing核对与attempt2尚未完成。后续264episodes（workers20、threads1）、15隔离paneljobs（worker1）、严格summary、文档与结果包顺序保持不变；继续沿用当前chat heartbeat `7-learning-to-search`。完整失败/归档及pilot事实见[运行状态](evidence/fixed_terminal_stage7/run_status.md)和[pilot执行证据](evidence/fixed_terminal_stage7/pilot_execution.json)。
 
 阶段6停止扩展当前学习排序方案的结论及阶段1–6全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次只执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。Pilot并发计时和不同profile只用于流程与耗时预估，不证明方法差异。
 

@@ -42,3 +42,9 @@ Panel每方法独立生成catalogue和partial pool，原snapshot、物理与cata
 ## 正式实验前确定计算接受口径（2026-10-14）
 
 主对话在正式data、训练和test开始前确定上述主门槛，没有读取当前pilot的功效或据test结果调整。原因来自阶段7用户计划的真实partial展开/剪枝目标：方法可能保持同样的最终unique rollouts，却减少大量候选检查；阶段6的rollout+wall双10%条件因此保留作辅助，阶段7主条件改为实际candidate_checks+完整wall双10%。COMPUTE_REDUCTION_TARGET仍为.10，指标描述性；质量门槛、模型、搜索、训练、种子与评价矩阵全部不变。本段只记录接受口径，不给出A/B/C结果。
+
+## 旧source场景一致性验证的限定修复（2026-10-14）
+
+正式data attempt1的三val任务在仿真前因旧source比较失败；[全36场景对照](../evidence/fixed_terminal_stage7/source_scenario_comparison.json)仅发现4个`requests[*].soc`有限float末位差，max1.1102230246251565e-16，config、times、类型与离散字段一致。主对话已审查并接受最小源码修复：旧generator/source比较仅允许同类型有限SOC float的abs≤1e-12、relative0；所有其他scenario字段与config exact。实际仿真仍使用stored原SOC/场景，保留原source artifact字节，不用Linux重建值替换。
+
+这一比较规则仅用于source artifact兼容性验证，不作为物理、安全、能源或研究参数容差，也不是test调参；搜索、模型、data种子与冻结矩阵保持原定义。旧snapshot artifact float比较维持原规则。源码修复已通过主审及data/models33项验证（8.09 s、exit0）；提交推送与同步核对尚待完成；attempt1已完整归档，随后只重放一次完整36任务，先核对144context及分析，再由主对话进行Step7.1审查和唯一正式fit。当前未启动attempt2或正式训练，执行事实见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。

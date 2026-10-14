@@ -31,10 +31,16 @@ full_reference仅有限catalogue上的128宽度参考，不能称为global optim
 
 ## 当前执行状态
 
-实现与小样本核验阶段。尚未启动正式服务器数据生成、模型训练、episodes或panels；结果和A/B/C结论待实际证据后更新。
+Pilot已通过流程核验；正式data attempt1已终态，33/36成功、3val失败，132/144context，原件归档完成，source验证修复已通过主审及33项检查。analyze、attempt2、正式模型训练、episodes及panels尚未启动；实际失败及恢复状态见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。
 
 训练只有一个class时，记录实际positive/negative计数，并诚实使用constant DummyClassifier诊断回退，一次fit与冻结hash仍保留；非单class使用预定GradientBoostingClassifier固定参数。该回退不能报告为学习模型存在有效信号，最终研究解释由主对话依据实际证据给出；不额外重训或根据test调整。
 
 ## 主计算条件预先确定的理由（2026-10-14）
 
 该口径由主对话在正式data、训练及test开始前确定，未读取当前pilot功效，也不依据test。阶段7检验真实partial展开/剪枝，候选检查可能显著减少而最终rollout数量持平；因此使用candidate_checks+完整wall作为primary，保留rollout+wall作辅助。COMPUTE_REDUCTION_TARGET=.10仍为描述性阈值。质量条件保持配对每场F不增、aggregate E不增、aggregate N比例不降（epsilon0）、间隔/未认证0和最终执行验证通过；模型、搜索、训练、seed、物理与任务矩阵均不变。当前pilot继续使用`ee6d`源码；本地接受口径修订不改变该运行。正式来源提交在pilot终态之后另行记录。
+
+## source artifact一致性检查修复范围（2026-10-14）
+
+[全36场景对照原件](../evidence/fixed_terminal_stage7/source_scenario_comparison.json)显示config、times、类型与离散字段exact，仅三val场景的4个SOC float末位不同（max1.1102230246251565e-16）。主对话限定修复的旧generator/source比较仅允许同类型且finite的`requests[*].soc`绝对差≤1e-12、relative0，其他scenario字段及config全部exact；实际执行严格采用stored原SOC/场景并保留原source字节，不以Linux重建场景替换。该规则是source artifact兼容性验证，非物理容差、非test调参；旧snapshot artifact float容差仍原规则，物理、搜索、模型、数据种子与任务矩阵不变。
+
+Attempt1已归档到输出ROOT/data_attempt1，保留33成功与3失败、旧data/state/progress、全部36job日志及launch logs。源码修复已通过主审及data/models33项验证（8.09 s、exit0）；提交推送和Syncthing核对后，只启动一次完整36任务重放；严格核对144context后执行分析，再进行Step7.1主审及唯一正式fit。当前归档已完成，提交推送、Syncthing核对与attempt2尚未完成，不将132context当作正式训练完整证据。

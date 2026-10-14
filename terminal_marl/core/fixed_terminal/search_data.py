@@ -5,8 +5,10 @@ does not establish a branch's infeasibility, counterfactual value or global meri
 Internal nodes inherit leaf linkage; they do not receive fabricated rollouts.
 """
 from collections import Counter
+from copy import deepcopy
 from dataclasses import asdict
 from hashlib import sha256
+from math import isfinite
 import json
 import os
 from pathlib import Path
@@ -98,6 +100,40 @@ def compare_source_snapshot(env, source_snapshot):
     return compare_continuation_artifact(stored, canonical_json(visible_snapshot(env)), "$.snapshot")
 
 
+def compare_source_scenario(stored, rebuilt):
+    """Allow only finite float SOC roundoff in old input artifacts.
+
+    Normalize a comparison copy, never the scenario used by the simulator.
+    All non-SOC values, types, structure and order remain exactly checked.
+    """
+    from terminal_marl.scripts.evaluate_fixed_terminal_stage5 import compare_continuation_artifact
+    if (type(stored) is not dict or type(rebuilt) is not dict
+            or type(stored.get("requests")) is not list or type(rebuilt.get("requests")) is not list
+            or len(stored["requests"]) != len(rebuilt["requests"])):
+        raise ValueError("scenario artifact requests structure mismatch")
+    normalized = deepcopy(rebuilt)
+    differences = []
+    for index, (old, new) in enumerate(zip(stored["requests"], rebuilt["requests"])):
+        path = f"scenario.requests[{index}].soc"
+        if type(old) is not dict or type(new) is not dict or "soc" not in old or "soc" not in new:
+            raise ValueError("scenario artifact request structure mismatch at "+path)
+        left, right = old["soc"], new["soc"]
+        if type(left) is not float or type(right) is not float or not isfinite(left) or not isfinite(right):
+            raise ValueError("scenario SOC requires same-type finite floats at "+path)
+        audit = compare_continuation_artifact(left, right, path)
+        if not audit["exact_match"]:
+            differences.append({"path": path, "stored": left, "rebuilt": right,
+                                "abs_difference": audit["max_abs_difference"]})
+        normalized["requests"][index]["soc"] = left
+    compare_continuation_artifact(stored, normalized, "scenario", exact=True)
+    return {"exact_match": not differences, "float_difference_count": len(differences),
+            "max_abs_difference": max((r["abs_difference"] for r in differences), default=0.),
+            "absolute_tolerance": 1e-12, "relative_tolerance": 0.,
+            "scope": "artifact_only_scenario.requests[i].soc; all_other_fields_types_structure_order_exact; stored_values_used_for_simulation",
+            "differing_paths": [r["path"] for r in differences], "differences": differences,
+            "exact_match_definition": "parsed_types_and_values_equal; not_bitwise_file_equality"}
+
+
 def generate_context(env, output, metadata, source_snapshot=None):
     output = Path(output)
     snapshot = visible_snapshot(env)
@@ -123,6 +159,7 @@ def generate_context(env, output, metadata, source_snapshot=None):
               "source_snapshot": str(source_snapshot) if source_snapshot else None,
               "source_snapshot_equal": True if source_snapshot else None,
               "source_snapshot_comparison": snapshot_audit,
+              "source_scenario_comparison": metadata.get("source_input", {}).get("source_scenario_comparison"),
               "trace_source": "new_instrumented_partial_search; historical_logs_have_no_partial_nodes"}
     record["files"] = {name+".json": file_hash(output/(name+".json")) for name in ("snapshot", "trace", "features", "labels", "leaves")}
     write_json(output/"context.json", record)
@@ -141,8 +178,9 @@ def _source_input(directory, split, seed, load, soc, config, times):
     if len(matches) != 1:
         raise ValueError("stage4 frozen scenario input missing or duplicated")
     path, row = matches[0]
-    if row["config"] != canonical_json(asdict(config)) or row["times"] != list(times):
-        raise ValueError("stage4 frozen config or times mismatch")
+    from terminal_marl.scripts.evaluate_fixed_terminal_stage5 import compare_continuation_artifact
+    compare_continuation_artifact(row["config"], canonical_json(asdict(config)), "$.config", exact=True)
+    compare_continuation_artifact(row["times"], list(times), "$.times", exact=True)
     return path, row
 
 
@@ -162,9 +200,9 @@ def generate_scenario_data(output, split, seed, load, soc, *, source_stage4=None
         s = dict(row["scenario"])
         s["requests"] = tuple(Request(**r) for r in s["requests"])
         selected_scenario = Scenario(**s)
-        if canonical_json(asdict(generate_scenario(config, seed, load, soc))) != row["scenario"]:
-            raise ValueError("stage4 frozen scenario differs from the frozen generator")
-        source_meta = {"kind": "reused_stage4_frozen_input", "path": str(path), "sha256": file_hash(path)}
+        scenario_audit = compare_source_scenario(row["scenario"], canonical_json(asdict(generate_scenario(config, seed, load, soc))))
+        source_meta = {"kind": "reused_stage4_frozen_input", "path": str(path), "sha256": file_hash(path),
+                       "source_scenario_comparison": scenario_audit}
     else:
         selected_scenario = scenario or generate_scenario(config, seed, load, soc)
         source_meta = {"kind": "reconstructed_frozen_stage4_generator" if not smoke else "independent_pilot_smoke", "path": None}
@@ -174,7 +212,8 @@ def generate_scenario_data(output, split, seed, load, soc, *, source_stage4=None
     write_json(output/"frozen_input.json", {"schema": "fixed-terminal-stage7-trace-input-v1", "split": split,
         "source_commit": os.environ.get("TERMINAL_SOURCE_COMMIT"), "trace_widths": list(TRACE_WIDTHS),
         "seed": seed, "load": load, "soc": soc, "scenario": asdict(selected_scenario), "config": asdict(config),
-        "times": times, "prefix": "joint_window", "source": source_meta, "smoke_only": smoke})
+        "times": times, "prefix": "joint_window", "source": source_meta, "smoke_only": smoke,
+        "source_scenario_comparison": source_meta.get("source_scenario_comparison")})
     next_decision, records = 0., []
     for target in times:
         while env.time < target-1e-9:
@@ -189,7 +228,8 @@ def generate_scenario_data(output, split, seed, load, soc, *, source_stage4=None
         "source_commit": os.environ.get("TERMINAL_SOURCE_COMMIT"), "trace_widths": list(TRACE_WIDTHS),
         "contexts": records, "split": split, "seed": seed, "load": load, "soc": soc,
         "scenario": asdict(selected_scenario), "config": asdict(config), "times": times,
-        "prefix_decisions_before_snapshot": True, "source": source_meta, "smoke_only": smoke})
+        "prefix_decisions_before_snapshot": True, "source": source_meta, "smoke_only": smoke,
+        "source_scenario_comparison": source_meta.get("source_scenario_comparison")})
     return records
 
 
