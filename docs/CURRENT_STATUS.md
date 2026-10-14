@@ -1,8 +1,12 @@
-# 当前状态：阶段7实现与小样本核验
+# 当前状态：阶段7服务器pilot流程核验
 
 ## 阶段7用户授权状态（2026-10-14）
 
-用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。当前进入真实partial计划搜索的学习展开/剪枝/beam宽度实现与小样本核验；尚未启动正式stage7数据、训练或评价。八方法、一次GradientBoostingClassifier、train108/val36、test264episodes及30states/240panelrows范围冻结于[阶段7方法](arrival_restructure/stage7_learning_to_search.md)与[协议](experiments/fixed_terminal_stage7_protocol.md)。阶段6停止扩展当前学习排序方案的结论及全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次仅执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。
+用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。真实partial计划搜索的学习展开/剪枝/beam宽度实现与本地核验已完成，服务器pilot流程核验已启动；正式stage7数据、训练、episodes与panels仍未启动。八方法、一次GradientBoostingClassifier、train108/val36、test264episodes及30states/240panelrows范围冻结于[阶段7方法](arrival_restructure/stage7_learning_to_search.md)与[协议](experiments/fixed_terminal_stage7_protocol.md)。阶段6停止扩展当前学习排序方案的结论及全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次仅执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。
+
+Pilot来源为`ee6d78cf230f7d632027b766cd134ccb80ebaa91`；最新接受口径预注册提交`b4d3b6e4847fe182d2c7a356f67301fe7fefd705`已推送。A数据与B smoke模型/分析流程exit0；B train/val使用同一pilot，仅验证流程。C三episode并行、threads1，截至2026-10-14 10:41:38北京时间，beam_adaptive与hybrid各5个输出文件已生成，最终exit/hash验收待核对；full_reference仍运行，elapsed2:53，输出增长且stderr为空。D initial_dense两state/16方法行隔离panel尚未启动，须C全部退出与完整产物、守恒、最终检查/hash验收并确认无残留任务后开展。当前chat heartbeat `7-learning-to-search`已创建，约5分钟后复查；Luna持续监控已结束。详情、PID、输出路径和后续正式执行顺序见[阶段7运行状态](evidence/fixed_terminal_stage7/run_status.md)。本段不评价pilot科学功效。
+
+本地检查分为三次：整合71项通过（13.21 s）、接受口径23项通过（4.16 s）、另一次summary/package14项通过（1.97 s）；不累计成一次套件。
 
 
 ## 阶段6研究验收完成（2026-10-14）

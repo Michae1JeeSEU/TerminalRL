@@ -2,9 +2,26 @@
 
 更新日期：2026-10-14。用户单独授权[阶段7Learning to Search计划](../../fixed_terminal_stage7_learning_to_search_plan.md)。阶段6历史验收结论保留。
 
-当前处于实现及针对性小样本核验，尚未启动正式stage7数据、训练、episodes或panels，不填造PID、进度或结果。小样本为fixture/pilot证据，不代替正式矩阵。运行启动、source SHA、PID/log、预计耗时与实际退出由后续执行证据更新。
+实现及本地核验已完成，服务器pilot流程验证已启动；正式stage7数据、训练、episodes及panels仍未启动。以下服务器事实由主对话提供，最新C阶段观测时间为2026-10-14 10:41:38北京时间；pilot仅用于流程与估时，不代替正式矩阵或研究功效评价。
 
 冻结输出：服务器`/home/user/training_outputs/terminal/stage7_learning_to_search_20261014`；本地`D:\7_codespace\training_outputs\terminal\stage7_learning_to_search_20261014`。data36jobs(108train/36valcontexts)，单模型一次fit，264episodes，15隔离paneljobs(30states/240rows)，strict summary；具体协议见[冻结协议](../../experiments/fixed_terminal_stage7_protocol.md)。
+
+## 当前服务器pilot流程状态
+
+Pilot源码为`ee6d78cf230f7d632027b766cd134ccb80ebaa91`；接受口径与summary/protocol预注册提交为`b4d3b6e4847fe182d2c7a356f67301fe7fefd705`，已推送。`pilot_launch_logs/launch.json`记录启动前23个本地/服务器源码文件SHA及bytes一致。当前pilot继续使用前者，没有因本地口径修订改变运行。
+
+| 阶段 | 已观测事实 | 当前状态 |
+|---|---|---|
+| A：数据流程 | seed7001、medium/medium、默认horizon240，t0/5/15/90共4context；每context六个有限JSON、109维features、真实trace widths3/5/8/128；exit0，23.47 s，RSS174548 kB | 流程执行完成 |
+| B：smoke模型与分析 | 单独smoke GradientBoostingClassifier fit；train/val使用同一pilot，仅用于流程，smoke_only=true、fit_count1、roundtrip=true；exit0，2.53 s，RSS262916 kB。分析`pilot/analysis/bottleneck.json` exit0，.21 s，RSS77800 kB | 流程执行完成；正式models尚未训练 |
+| C：episode流程 | 三任务并行、每进程threads1；beam_adaptive medium/medium PID3469033，hybrid medium/medium PID3469035，full_reference high/high PID3469036，均seed7001、standard | 见下方带时间观测；全阶段终态验收尚未完成 |
+| D：隔离panel流程 | initial_dense两state、16方法行 | 尚未启动 |
+
+截至10:41:38，beam_adaptive与hybrid已生成各5个输出文件，最终exit、hash及完整验收待核对；full_reference仍在运行，elapsed2:53，decisions/events/frozen输出增长，stderr为空。C全部任务须先核对实际退出、48条decisions、5个预期文件、请求守恒、最终执行检查及模型hash，并确认无残留任务，才启动D隔离panel。
+
+四次主动查询预算已用完，Luna已结束持续监控，没有保留睡眠worker。主对话已成功创建当前chat的heartbeat `7-learning-to-search`，约5分钟后复查。pilot完成后的已授权接续顺序为正式data36jobs与Step7.1主审、唯一正式模型fit并冻结、264episodes、15隔离paneljobs、严格summary及交付；这些正式步骤目前均未启动。
+
+本地检查分别为整合71项通过（13.21 s）、接受口径23项通过（4.16 s）、另一次summary/package14项通过（1.97 s）。这是三次独立运行，不累计成一次套件。以下保留实现、小样本及口径确定的历史记录。
 
 ## 实现与小样本证据
 
