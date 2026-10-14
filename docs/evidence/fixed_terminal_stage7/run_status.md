@@ -2,15 +2,25 @@
 
 更新日期：2026-10-14。用户单独授权[阶段7Learning to Search计划](../../fixed_terminal_stage7_learning_to_search_plan.md)。阶段6历史验收结论保留。
 
-**正式data完成、Step7.1已通过主审，唯一正式模型已完成冻结并通过单决策API接缝；264episodes已正常唯一启动并通过核验，运行未终态；15隔离paneljobs未启动且不重叠。** 数据、分析和fit实际源码均为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`。下文保留attempt1失败、936files归档及全部pilot事实；pilot证据见[pilot_execution.json](pilot_execution.json)，正式数据/分析见[data_analysis_evidence.json](data_analysis_evidence.json)，模型冻结见[model_freeze.json](model_freeze.json)。
+**正式264episodes已完成终态核验（264unique、0jobfailed、exit0）；15隔离paneljobs已正常唯一启动，运行未终态，phase无重叠；严格summary尚未生成、A/B/C未判断。** 数据、分析、唯一fit/冻结、API接缝、EP及panel实际source均为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`，后续docs SHA不改写actual run来源。下文保留attempt1失败、936files归档及全部pilot事实。
 
 冻结输出：服务器`/home/user/training_outputs/terminal/stage7_learning_to_search_20261014`；本地`D:\7_codespace\training_outputs\terminal\stage7_learning_to_search_20261014`。data36jobs(108train/36valcontexts)，单模型一次fit，264episodes，15隔离paneljobs(30states/240rows)，strict summary；具体协议见[冻结协议](../../experiments/fixed_terminal_stage7_protocol.md)。
 
-## attempt2、Step7.1与正式模型冻结（2026-10-14）
+## 正式EP终态与隔离panel启动
+
+EP终态原件见[episodes_terminal.json](episodes_terminal.json)。外层启动11:55:32.967143、内部dispatcher启动11:55:33.018977北京时间分别记录；12:34:44.727322结束。264唯一任务全部completed、0failed、exit0，dispatcher duration2351.708353 s、外层time2351.77 s（39.2分钟），20workers/threads1，264个progress唯一记录；各场48decisions，共12,672条，1,320个预期文件齐全、finite、无重复/缺失，final_check全部feasible、请求守恒通过。四个正式模型hash与冻结值相同，EP无残留进程。
+
+全八方法累计请求结局N/E/F/C=4524/197/16/3791。任务0failed是dispatcher运行结果，**不表示0能源失败**；本组实际存在16个failed_energy请求。最终每arm质量、计算指标和A/B/C结论仍待严格summary与主对话审查，不在运行状态中提前解释方法效益。
+
+Panel唯一启动原件见[panels_launch.json](panels_launch.json)。13:36:16.418133北京时间正常启动，time wrapper PID3487053、dispatcher PID3487054、worker PID3487062，worker1、数值库threads1，source仍c892。启动前26个runtime文件本地/服务器SHA及四个模型hash一致，没有其他研究进程；EP在12:34:44已终态，两phase无重叠。
+
+13:36:33.714555观测为0completed、1running、14pending、0failed，共15；首场low/high/7301 t0 snapshot、8arm JSON与full_values非空，stderr0，主对话已接受启动核验。Panel尚未终态，strict summary未生成。T0=52分钟（pilot138.64 s×15×1.5），预计14:28:16.418133北京时间完成；主对话将同一heartbeat更新到估时完成复查，无常驻monitor，不重复创建。日志位于ROOT/formal_panel_launch_logs，state/progress为ROOT/execution_panels.json、progress_panels.jsonl，准确路径保存在collector。
+
+## attempt2、Step7.1、正式模型及EP启动历史（2026-10-14）
 
 正式episodes唯一启动原件见[episode_launch.json](episode_launch.json)。26个运行源码文件本地/服务器SHA匹配，四个正式模型hash仍冻结；actual EPsource=`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`，与纯文档整理并行，后续docs SHA不可改写该来源。2026-10-14 11:55:32.967143北京时间启动，time wrapper PID3478486、dispatcher PID3478487，20workers、数值库threads1。
 
-11:56:11.124682的启动观测为9completed、20running、235pending、0failed，共264；stderr0，首批frozen_input、decisions与events非空，主对话已接受启动核验。稍后progress13行仅为followup观察，不表示全体完成。T0=100分钟，预计13:35:32.967143北京时间结束；完整log/state/progress路径保留于collector，位于ROOT/formal_episode_launch_logs及ROOT/execution_episodes.json、progress_episodes.jsonl。Luna已结束持续监控，无睡眠worker；主对话已通过工具成功更新同一heartbeat：11:59:40北京时间设置96分钟间隔，已安排约13:36复查（初估目标13:35:33），不重复创建。15隔离paneljobs尚未启动，须与episodes phase不重叠。
+11:56:11.124682的历史启动观测为9completed、20running、235pending、0failed，共264；stderr0，首批frozen_input、decisions与events非空，主对话接受启动核验。稍后progress13行仅为followup观察，不表示当时全体完成。初始T0=100分钟、目标13:35:32.967143；11:59:40曾设置同heartbeat96分钟间隔，约13:36复查。实际EP于12:34:44.727322结束、39.2分钟，终态见上方；原估时与观察保留为历史，后续panel遵守不重叠约束。
 
 正式data attempt2于11:35:09北京时间启动，wrapper/dispatcher PID3475605/3475606，source c892，workers20、threads1，attempt2初估T0=6分钟（149.6 s×36/33×2约5.5分钟，取6分钟）。36/36任务成功、exit0，dispatcher156.193307 s、外层time156.24 s；144context（train108/val36）完整finite、109维、trace3/5/8/128正确，source hash及stored scenario/SOC/config/times均无不匹配。Generator/source audit为33场exact、3场SOC末位roundoff，共4处、max1.1102230246251565e-16；实际执行使用stored场景。首轮失败原件保留在data_attempt1，不混入attempt2。
 
@@ -57,7 +67,7 @@ Pilot源码为`ee6d78cf230f7d632027b766cd134ccb80ebaa91`；接受口径与summar
 
 D于10:59:09.958310北京时间启动；结束时间11:01:28.598310由开始时间加elapsed138.64 s派生（derived），不是直接wait时间戳。collector另记录完成观测11:02:34，最后汇集观测11:03:14；实际stdout/stderr日志路径保留在JSON。D仍使用pilot的`ee6d78cf230f7d632027b766cd134ccb80ebaa91`版本。
 
-继续沿用当前chat的heartbeat `7-learning-to-search`，不重复创建。已授权的正式data重放→Step7.1主审→一次正式fit/冻结及API接缝已按上文完成；后续264episodes（workers20、threads1）→15隔离paneljobs（worker1）→严格summary、文档和结果包尚待启动。Attempt1来源c143、attempt2/analysis/fit来源c892分别保留；EP实际source仍为已推送的c892，后续纯文档SHA不可改写actual run、既有数据或模型来源。Pilot训练val同pilot仅为流程，正式模型只fit一次，无重训或调参。
+继续沿用当前chat的heartbeat `7-learning-to-search`，不重复创建。正式data重放→Step7.1主审→一次正式fit/冻结及API接缝→264episodes已完成；15隔离paneljobs运行未终态，之后才进行严格summary、文档与结果包。Attempt1来源c143、attempt2/analysis/fit及EP/panel来源c892分别保留；后续纯文档SHA不可改写actual run来源。Pilot训练val同pilot仅为流程，正式模型只fit一次，无重训、EP重跑或调参。
 
 首次正式data attempt1历史初估T0=10 min：medium pilot四context23.47 s×36jobs/20workers约42 s理想耗时，再乘约6倍SOC/load异质系数与约2倍负载/尾部余量，约8.5 min，取10 min。服务器预检为28CPU、约28GB可用内存，data采用workers20、数值库threads1。隔离formal panels初估138.64 s×15jobs×1.5约52 min，后续按实际隔离同状态任务耗时更新，不扩展矩阵。以上是排程预估，不是pilot性能结论。
 
@@ -74,7 +84,7 @@ D于10:59:09.958310北京时间启动；结束时间11:01:28.598310由开始时�
 - 真实小样本接缝：复用core已生成的smoke模型`tmp_stage7_preflight/core_cli_smoke/models`，没有新增fit；`tmp_stage7_eval_seam`保存一个horizon2的hybrid episode及同snapshot八方法panel。episode累计unique rollouts12、expanded nodes13、candidate checks325，最终验证可行、模型hash不变；raw summary为1episode/1generation/1state/8rows，状态明确为`fixture_or_pilot_incomplete`。
 - 检查覆盖独立partial pool、共享root科学值一致而各次runtime不同、请求与J/work重新汇总、common full_reference退化分层、缺失/重复/缓存/最终验证异常、36/264/15任务矩阵、显式cwd/threads1、exit与产物核验、phase互斥、一次fit的context identity/hash绑定及ZIP CRC/entry hash/manifest引用aux。单class diagnostic Dummy只在训练positive/negative计数证实单class时接受。
 
-目前数据、分析、唯一fit与API接缝均已终态，无残留；失败attempt1 PID与全部记录仍保留。264episodes已正常唯一启动并通过核验，仍运行未终态；15正式panel未启动且不重叠；最终A/B/C研究判断待主对话读取正式评价证据后给出。
+数据、分析、唯一fit、API接缝及264episodes均已终态；失败attempt1 PID与全部原件仍保留。15隔离paneljobs已正常唯一启动、运行未终态，两个phase无重叠。Strict summary尚未生成，最终A/B/C研究判断待主对话读取完整正式评价证据后给出。
 
 ## 正式实验前确定接受口径（2026-10-14）
 

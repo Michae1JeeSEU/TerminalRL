@@ -1,0 +1,73 @@
+{
+  "status": "completed",
+  "actions": [
+    "Read execution_episodes.json, progress_episodes.jsonl, formal episode launch logs, and server process/resource state.",
+    "Streamed each of 264 decisions.jsonl files line by line and parsed result/events/requests/frozen_input JSON without retaining all nodes in memory.",
+    "Checked formal model hashes and read panels preflight state without launching panels."
+  ],
+  "artifacts": {
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "state": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/execution_episodes.json",
+    "progress": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/progress_episodes.jsonl",
+    "launch_logs": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_episode_launch_logs",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "started_utc": "2026-10-14T03:55:33.018977+00:00",
+    "finished_utc": "2026-10-14T04:34:44.727322+00:00",
+    "started_beijing": "2026-10-14T11:55:33.018977+08:00",
+    "finished_beijing": "2026-10-14T12:34:44.727322+08:00"
+  },
+  "checks": {
+    "phase": "episodes",
+    "state_status": "completed",
+    "tasks": 264,
+    "workers": 20,
+    "counts": {"total": 264, "completed": 264, "failed": 0, "pending": 0, "running": 0},
+    "unique_job_names": 264,
+    "duplicate_job_names": [],
+    "progress_lines": 264,
+    "progress_unique_names": 264,
+    "progress_status_counts": {"completed": 264},
+    "dispatcher_exit_code": 0,
+    "dispatcher_duration_seconds": 2351.708353118971,
+    "time_exit_status": 0,
+    "time_wall_seconds": 2351.77,
+    "time_user_seconds": 41182.47,
+    "time_system_seconds": 28.17,
+    "time_max_rss_kb": 614512,
+    "required_files_per_episode": 5,
+    "nonempty_required_files": 1320,
+    "expected_nonempty_required_files": 1320,
+    "missing_outputs": [],
+    "duplicate_outputs": [],
+    "file_errors": [],
+    "decision_counts": {"48": 264},
+    "decision_parse_or_finite_errors": 0,
+    "final_check_status_counts": {"feasible": 12672},
+    "request_conservation_bad": [],
+    "summary_conservation_bad": [],
+    "spacing_or_uncertainty_fields": {"summary.spacing_uncertified_pair_ticks=0": 264},
+    "request_outcome_counts": {"censored": 3791, "emergency_landed": 197, "failed_energy": 16, "normal_landed": 4524},
+    "by_arm_cost_seconds": {
+      "beam_adaptive": {"count": 33, "total": 6319.4402699889615, "median": 123.7701076650992, "max": 1033.903557070531},
+      "beam_b3": {"count": 33, "total": 1513.639264402911, "median": 37.75864476710558, "max": 160.67859108839184},
+      "beam_b5": {"count": 33, "total": 1950.7284828219563, "median": 46.389631611295044, "max": 162.6720069926232},
+      "beam_b8": {"count": 33, "total": 3032.6973828943446, "median": 67.33096475433558, "max": 331.32291421853006},
+      "full_reference": {"count": 33, "total": 8299.50441719871, "median": 151.56027767527848, "max": 1052.333009628579},
+      "hybrid": {"count": 33, "total": 6167.278415246867, "median": 114.76701922807842, "max": 982.0724156582728},
+      "learned_beam_width": {"count": 33, "total": 6318.3923376668245, "median": 118.91807795129716, "max": 988.4622122310102},
+      "learned_pruning": {"count": 33, "total": 7618.624034170993, "median": 139.89715212676674, "max": 1220.655127295293}
+    },
+    "model_hashes_unchanged": true,
+    "model_hashes": {
+      "gradient_boost_expand.joblib": "4fbd7c98a19d1c4228fa8e008d8aa48f545b48caf239b4a608682a5ef9f66ec2",
+      "manifest.json": "1c40e855f56db25f45b84b5e3658c9bb2ea222f2084c9672efd1ff9f9687f8cb",
+      "protocol.json": "39aba26704270e47822e62d956ae57b0ee7e4d28f5094c59d72c1b0bc09bce91",
+      "training.json": "5c6258f5821ff9bcf395395db511b3ee3422fb1d9cfdce8223f310f7ba891f09"
+    },
+    "residual_study_processes": [],
+    "resources_at_observation": {"nproc": 28, "loadavg": [0.880859375, 0.353515625, 0.4052734375], "available_ram_bytes": 28072370176},
+    "panels_preflight": {"execution_panels_exists": false, "progress_panels_exists": false, "panels_dir_exists": false, "phase_lock_exists": false}
+  },
+  "deviations": [],
+  "unresolved": []
+}

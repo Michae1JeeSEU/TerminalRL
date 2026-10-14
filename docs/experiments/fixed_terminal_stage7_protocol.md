@@ -31,7 +31,7 @@ full_reference仅有限catalogue上的128宽度参考，不能称为global optim
 
 ## 当前执行状态
 
-Pilot已通过流程核验；attempt1的33成功/3失败与936files完整归档。c892来源的唯一完整attempt2及analysis已完成，36/36成功、144context（108/36），Step7.1主审通过。一次正式fit已完成冻结、144context与四文件hash核验通过，正式模型单决策API接缝已通过；264episodes已正常唯一启动并通过核验，运行未终态；15隔离paneljobs未启动且不重叠。实际执行事实见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。
+Pilot已通过流程核验；attempt1的33成功/3失败与936files完整归档。c892来源的唯一完整attempt2及analysis已完成，36/36成功、144context（108/36），Step7.1主审通过。一次正式fit已完成冻结、144context与四文件hash核验通过，正式模型单决策API接缝已通过；264episodes已完成终态核验（264unique、0jobfailed、exit0）；15隔离paneljobs已正常唯一启动、运行未终态，phase无重叠，严格summary未生成。实际执行事实见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。
 
 训练只有一个class时，记录实际positive/negative计数，并诚实使用constant DummyClassifier诊断回退，一次fit与冻结hash仍保留；非单class使用预定GradientBoostingClassifier固定参数。该回退不能报告为学习模型存在有效信号，最终研究解释由主对话依据实际证据给出；不额外重训或根据test调整。
 
@@ -49,4 +49,4 @@ Attempt1已归档到输出ROOT/data_attempt1，保留33成功与3失败、旧dat
 
 数据、分析及唯一正式fit源码为c892d82a77ec4647e0c9f77fe3f73786ae57bab2；后续文档checkpoint不改该来源。模型为预定GradientBoostingClassifier，fit_count1、smoke_only=false、roundtrip=true、threshold.5、test_read=false，val report-only；完整参数、train108/val36的144context SHA与四文件hash见[模型冻结证据](../evidence/fixed_terminal_stage7/model_freeze.json)。没有据类别不平衡或val metrics改参数、权重、阈值或重训。
 
-一次顺序boosting fit没有独立副本可并行，threads1；data与episodes保持20进程，panels保持隔离1进程。原fit T0=5 min，实际wall96.33 s；正式264episodes初估T0=100 min（pilot最慢full/high-high366.67 s×264/20约80.7 min，再乘1.25余量），15paneljobs初估约52 min（138.64 s×15×1.5），仅用于排程。正式模型一次train t0 hybrid API接缝已通过，没有新增fit、episode或panel；已推送c892运行源码固定且数据/模型/接缝主审通过，EP已获授权与纯文档整理并行；actual EPsource仍c892，后续文档SHA不改写实际运行来源。11:55:32.967143北京时间启动，wrapper/dispatcher PID3478486/3478487，20workers/threads1，启动验证通过；11:56:11为9完成/20运行/235待启动/0失败，共264，尚未终态，原件见[episode_launch.json](../evidence/fixed_terminal_stage7/episode_launch.json)。
+一次顺序boosting fit没有独立副本可并行，threads1；data与episodes保持20进程，panels保持隔离1进程。原fit T0=5 min，实际wall96.33 s；正式264episodes初估T0=100 min（pilot最慢full/high-high366.67 s×264/20约80.7 min，再乘1.25余量），15paneljobs初估约52 min（138.64 s×15×1.5），仅用于排程。正式模型一次train t0 hybrid API接缝已通过，没有新增fit、episode或panel；已推送c892运行源码固定且数据/模型/接缝主审通过，EP已获授权与纯文档整理并行；actual EPsource仍c892，后续文档SHA不改写实际运行来源。EP于12:34:44.727322北京时间完成，duration2351.708353 s、time2351.77 s，原件见[episodes_terminal.json](../evidence/fixed_terminal_stage7/episodes_terminal.json)。Panel于13:36:16.418133正常唯一启动，worker1/threads1、source c892，初估T0=52分钟，预计14:28:16；启动原件见[panels_launch.json](../evidence/fixed_terminal_stage7/panels_launch.json)。EP0jobfailed不表示能源失败为0；全八方法累计failed_energy16，每arm指标及A/B/C待严格summary和主审。

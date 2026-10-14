@@ -1,0 +1,57 @@
+{
+  "status": "running",
+  "actions": [
+    "Read-only preflight confirmed no existing panel state/output/lock, no study process, 28 CPUs, available RAM 28128178176 bytes, and 26 runtime dependency SHA matches.",
+    "Launched the sole approved panels phase with Popen argument list, cwd /home/user/projects/terminal, start_new_session, one worker, fixed thread environment, and independent /usr/bin/time logging."
+  ],
+  "artifacts": {
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "wrapper_pid": 3487053,
+    "dispatcher_pid": 3487054,
+    "worker_pid": 3487062,
+    "started_utc": "2026-10-14T05:36:16.418133+00:00",
+    "started_beijing": "2026-10-14T13:36:16.418133+08:00",
+    "observed_utc": "2026-10-14T05:36:33.714555+00:00",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "t0_seconds": 3120,
+    "estimated_end_utc": "2026-10-14T06:28:16.418133+00:00",
+    "estimated_end_beijing": "2026-10-14T14:28:16.418133+08:00",
+    "command": [
+      "/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.scripts.run_fixed_terminal_stage7",
+      "--phase", "panels", "--models", "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/models",
+      "--output", "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014", "--workers", "1", "--execute"
+    ],
+    "logs": {
+      "launch": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_panel_launch_logs/launch.json",
+      "stdout": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_panel_launch_logs/formal_panels.stdout.log",
+      "stderr": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_panel_launch_logs/formal_panels.stderr.log",
+      "time": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_panel_launch_logs/formal_panels.time.log",
+      "state": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/execution_panels.json",
+      "progress": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/progress_panels.jsonl"
+    }
+  },
+  "checks": {
+    "source_file_count": 26,
+    "source_sha_mismatch_count": 0,
+    "formal_model_hashes_match": true,
+    "dispatcher_status": "running",
+    "phase": "panels",
+    "tasks": 15,
+    "workers": 1,
+    "counts_at_observation": {"total": 15, "pending": 14, "running": 1, "completed": 0, "failed": 0},
+    "peak_running": 1,
+    "state_source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "phase_lock_exists": true,
+    "formal_stderr_bytes": 0,
+    "first_panel": {
+      "name": "panels-low-high-7301-standard",
+      "frozen_input_bytes": 11552,
+      "t0_arm_json_nonempty": ["beam_adaptive", "beam_b3", "beam_b5", "beam_b8", "full_reference", "hybrid", "learned_beam_width", "learned_pruning"],
+      "t0_snapshot_bytes": 4586,
+      "t0_full_values_bytes": 29997
+    },
+    "no_startup_error_observed": true
+  },
+  "deviations": [],
+  "unresolved": ["Panels remain running; parent should use the T0 estimate/heartbeat for later terminal verification. No summary or additional phase was launched."]
+}
