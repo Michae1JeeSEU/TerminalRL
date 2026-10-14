@@ -1,16 +1,14 @@
 # 阶段6执行记录：研究验收完成
 
-## 阶段7用户授权状态（2026-10-14）
+## 阶段7研究验收完成（2026-10-14）
 
-用户已单独授权[阶段7Learning to Search计划](fixed_terminal_stage7_learning_to_search_plan.md)。**正式data完成，Step7.1已通过主对话审查；唯一正式模型已完成冻结并通过主审，正式模型单决策接缝也已通过；264episodes已完成终态核验（264unique、0jobfailed、exit0）；15隔离paneljobs已唯一启动，运行未终态，两个phase无重叠；严格summary尚未生成、A/B/C未判断。** 数据/分析实际源码为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`；36/36任务exit0，144context（train108/val36）、stored scenario/SOC/config/times与source hash核验通过。完整字段及边界见[搜索瓶颈记录](evidence/fixed_terminal_stage7/search_bottleneck.md)与[数据/分析证据](evidence/fixed_terminal_stage7/data_analysis_evidence.json)。
+[阶段7用户计划](fixed_terminal_stage7_learning_to_search_plan.md)的36datajobs（108train/36valcontext）、唯一GB fit、264episodes、15generation/30states/240rows与严格summary全部完成，四模型hash不变。**B未成立，按A停止扩展当前Learning to Search配置；C未观察到新选中值超过有限full参考。** 保留传统联合优化、beam_adaptive的工程参考及full/B3/B5/B8质量成本tradeoff，不泛称所有learning方法普遍无效，不自动新增模型、训练、Q/value路线或下一阶段。
 
-首次data的33成功/3失败、132context和全部日志保留在ROOT/data_attempt1，936files SHA/bytes一致；旧source仅SOC末位差的兼容性修复及失败事实继续见[运行状态](evidence/fixed_terminal_stage7/run_status.md)。Step7.1的negative只表示未贡献有限width128最佳叶，不是反事实无价值；312,713个eligible节点含train与val，positive1.463%，accuracy不能独证学习有效。不修改参数、class weight、threshold、dataset或矩阵，不预判A/B/C。
+每方法33场/1,066请求，均有2次能源失败、共16次；间隔违反/未认证均0、最终执行检查feasible，0jobfailed不能写成0能源失败。对adaptive三学习全局质量门槛通过，但共同非退化同状态candidate checks与完整wall均减10%的primary门槛都未通过；对full计算通过、在线质量失败，15全局比较均无同时成立。按冻结J精度，pruning/hybrid对adaptive各有2次全J配对loss，不能写成每场全J不退化。完整结论、全部七J分量、加权正常delay/energy、成本、泛化与边界见[阶段7结果](evidence/fixed_terminal_stage7/results.md)。
 
-一次正式fit已使用c892源码、ROOT/data/train、ROOT/data/val和ROOT/models完成，无smoke，fit86.591769 s、wall96.33 s；四文件hash及144context绑定见[模型冻结证据](evidence/fixed_terminal_stage7/model_freeze.json)。正式EP外层11:55:32.967143、内部dispatcher11:55:33.018977北京时间开始，12:34:44.727322结束，duration2351.708353 s、time2351.77 s（39.2分钟），workers20/threads1，48decisions各场，共12,672条，1,320个预期文件齐全、finite、final feasible与守恒通过，四模型hash不变，无残留EP任务。全八方法累计N/E/F/C=4524/197/16/3791；0jobfailed不表示0能源失败，最终每arm指标待严格summary。原件见[EP终态](evidence/fixed_terminal_stage7/episodes_terminal.json)。
+研究运行源码（data/model/EP/panel/summary）均为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`，后续文档SHA不改写actual run来源。结论限定单GB seed7401、固定catalogue8/cap8/scan48、partial3/5/8/128、109维、test7301–7303同profile及6初态变体、已到达FCFS闭合有限reference。首次33成功/3失败的SOC source验证问题及936files归档、全部pilot与一次formalfit事实保留于[运行状态](evidence/fixed_terminal_stage7/run_status.md)。**研究验收已完成，最终版本提交与ZIP打包尚待实际交付，未提前宣称推送或包校验完成。**
 
-15隔离paneljobs于13:36:16.418133北京时间正常唯一启动，wrapper/dispatcher/worker PID3487053/3487054/3487062，worker1/threads1；13:36:33观测0完成/1运行/14待启动/0失败，首场t0 snapshot、8arm JSON与full_values非空，stderr0。T0=52分钟，预计14:28:16完成，仍未终态；原件见[panel启动](evidence/fixed_terminal_stage7/panels_launch.json)。Data、模型、EP及panel实际source均保持c892，后续文档SHA不改写actual run来源；沿用当前chat heartbeat按估时完成复查，无常驻monitor。初EP100分钟估计保留为历史，实际39.2分钟已记录。模型、种子、物理与范围保持[阶段7方法](arrival_restructure/stage7_learning_to_search.md)及[协议](experiments/fixed_terminal_stage7_protocol.md)定义；后续继续既定汇总与研究验收，不扩展实验或重跑EP，当前尚无最终研究结论。
-
-阶段6停止扩展当前学习排序方案的结论及阶段1–6全部历史证据保留；本次只执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。Pilot训练val同pilot仅为流程，data多width累计进程测时及不同profile/并发episode只作排程预估，不证明方法差异。
+阶段1–6历史结论、证据与用户计划保持原样；旧文档中“不自动启动下一阶段”属于当时边界。本次阶段7结论不自动授权新研究；后续传统优化或其他路线须另定范围。
 
 ## 阶段6研究验收完成（2026-10-14）
 

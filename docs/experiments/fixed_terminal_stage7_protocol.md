@@ -1,5 +1,14 @@
 # 阶段7冻结协议
 
+## 最终研究验收状态（2026-10-14）
+
+正式36datajobs/144context、唯一GB fit、264episodes、15generation/30states/240rows与strict summary全部完成，模型四文件hash不变。主对话已审查完整正式证据：B未成立，按A停止当前Learning to Search配置扩展；240chosen都在full有限pool，没有超过finitefullbest的新selectedvalue，C未观察。传统联合优化与beam_adaptive为strong工程参考，full/B3/B5/B8质量成本tradeoff及全部实验资产保留。
+
+三学习对adaptive全局在线质量门槛通过，但非退化同状态candidate checks+完整wall双10%门槛都未达到；对full计算通过而在线质量失败，15全局比较无同时满足。每方法33场/1066请求，各2次能源失败、共16，间隔违反/未认证0、最终checks feasible，不能把0jobfailed写成0能源失败或把质量门槛等同全J每场不退化。七J分量、请求加权正常delay/energy、所有分组与冻结比较精度见[正式结果](../evidence/fixed_terminal_stage7/results.md)。
+
+所有运行source保持c892d82a77ec4647e0c9f77fe3f73786ae57bab2；一次fit、种子、模型参数、阈值、data、几何、方法及接受门槛均未随test结果改变。结论只覆盖单GB seed7401、固定8holder/cap8/scan48、partial3/5/8/128、109维、7301–7303同profile与6初态变体、已到达FCFS闭合有限reference，不泛称所有learning方法无效，不扩展Q/value/模型或新训练，不自动进入下一阶段。研究验收完成，最终文档版本与ZIP待实际交付；下文的准备/启动/未终态描述保留为当时执行历史，不代表当前状态。
+
+
 授权来源：[用户阶段7计划](../fixed_terminal_stage7_learning_to_search_plan.md)。方法定义见[方法](../arrival_restructure/stage7_learning_to_search.md)。阶段1–6历史结果保持原样，阶段6停止扩展学习排序是本阶段出发点。
 
 ## 冻结参数与任务矩阵

@@ -2,9 +2,19 @@
 
 更新日期：2026-10-14。用户单独授权[阶段7Learning to Search计划](../../fixed_terminal_stage7_learning_to_search_plan.md)。阶段6历史验收结论保留。
 
-**正式264episodes已完成终态核验（264unique、0jobfailed、exit0）；15隔离paneljobs已正常唯一启动，运行未终态，phase无重叠；严格summary尚未生成、A/B/C未判断。** 数据、分析、唯一fit/冻结、API接缝、EP及panel实际source均为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`，后续docs SHA不改写actual run来源。下文保留attempt1失败、936files归档及全部pilot事实。
+**正式数据、唯一fit、264episodes、15generation/30states/240rows与strict summary全部完成，主对话研究验收完成；B未成立，按A停止当前配置扩展，C未观察。** Data/model/EP/panel/summary实际source均为`c892d82a77ec4647e0c9f77fe3f73786ae57bab2`，后续docs SHA不改写actual run来源。最终文档提交与ZIP打包待实际交付，未提前记录完成；研究结果见[results.md](results.md)。下文保留全部失败、pilot和运行中历史。
 
 冻结输出：服务器`/home/user/training_outputs/terminal/stage7_learning_to_search_20261014`；本地`D:\7_codespace\training_outputs\terminal\stage7_learning_to_search_20261014`。data36jobs(108train/36valcontexts)，单模型一次fit，264episodes，15隔离paneljobs(30states/240rows)，strict summary；具体协议见[冻结协议](../../experiments/fixed_terminal_stage7_protocol.md)。
+
+## 最终panel、strict summary及交付准备
+
+Panel内部dispatcher于13:36:16.467834北京时间开始，13:47:19.739465结束；duration663.271637 s、time663.32 s（11.1分钟）、exit0，15唯一任务全部成功，30states/240rows完整finite/semantic检查通过、final_check全部feasible，四模型hash未变，无phase lock或残留进程。外层启动13:36:16.418133与内部开始分别记录；原件见[panels_terminal.json](panels_terminal.json)。初始T0=52分钟保留为历史，实际11.1分钟已记录。
+
+唯一strict summary于14:30:02.756629启动，PID3491350；终态观测14:33:02.342107，time exit0、wall179.74 s、RSS1728872 kB、stderr0。Schema fixed-terminal-stage7-summary-v1、status completed、allow_incomplete=false，无missing formal paths；36datajobs、144context SHA/108train36val、fit_count1冻结核验、264episodes及15generation/30states/240rows均通过，模型四文件hash不变，无lock或残留进程。原件见[summary_execution.json](summary_execution.json)。完整summary20,348,580 bytes，SHA256=`ec2bfd0a09c6abad466c6580900f1733f2480ffe263414020874750576f6fdae`，留在结果目录；Git只保存紧凑投影/CSV，不复制全summary或node traces。
+
+本地最终summary/package14项测试通过，2.46 s、exit0，日志`tmp_stage7_preflight/checks/final_summary_package_tests_20261014.log`；这是独立执行验证，不追加新实验。Package CLI dry-run按真实raw重新汇总及portable summary校对，ready、writes=false、392.403 s，检查4463个source files（本轮最终新增docs之前），没有创建delivery ZIP。最终版本提交、实际包内容/CRC/hash与推送状态待后续真实交付记录，不能把dry-run写成打包完成。
+
+主对话已接受正式研究证据并给出最终A/B/C判断；每方法仍有2次能源失败、合计16，0jobfailed不是0能源失败。后续不自动新训练、扩模型/Q/value、重跑EP或下一阶段，运行与数据资产保留。完整质量、计算、回退/C和泛化边界见results.md，所有先前启动进度描述以下保留为历史观察。
 
 ## 正式EP终态与隔离panel启动
 

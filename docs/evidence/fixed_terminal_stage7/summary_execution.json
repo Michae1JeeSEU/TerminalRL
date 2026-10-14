@@ -1,0 +1,55 @@
+{
+  "status": "completed",
+  "actions": [
+    "After panels terminal checks passed, launched the single strict summary command without --allow-incomplete; summary output directory was absent before launch.",
+    "Read summary.json, all five CSV outputs, independent time/stdout/stderr logs, model hashes, execution records, locks, and residual-process state."
+  ],
+  "artifacts": {
+    "summary": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/summary",
+    "summary_json": {"bytes": 20348580, "sha256": "ec2bfd0a09c6abad466c6580900f1733f2480ffe263414020874750576f6fdae"},
+    "launch_pid": 3491350,
+    "started_utc": "2026-10-14T06:30:02.756629+00:00",
+    "finished_observed_utc": "2026-10-14T06:33:02.342107+00:00",
+    "logs": {
+      "launch": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_summary_launch_logs/launch.json",
+      "stdout": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_summary_launch_logs/formal_summary.stdout.log",
+      "stderr": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_summary_launch_logs/formal_summary.stderr.log",
+      "time": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_summary_launch_logs/formal_summary.time.log"
+    }
+  },
+  "checks": {
+    "schema": "fixed-terminal-stage7-summary-v1",
+    "summary_status": "completed",
+    "allow_incomplete": false,
+    "source_commits_observed": ["c892d82a77ec4647e0c9f77fe3f73786ae57bab2"],
+    "missing_formal_paths": 0,
+    "counts": {"generations": 15, "timing_panels": 30, "timing_rows": 240, "episodes": 264},
+    "training_data": {"generation_count": 36, "train_contexts": 108, "val_contexts": 36, "context_hashes_match": true, "test_read": false},
+    "training": {"model_class": "GradientBoostingClassifier", "fit_count": 1, "fit_seconds": 86.59176866151392, "one_class_dummy": false, "roundtrip_predictions_equal": true, "test_read": false, "threshold": 0.5, "trace_widths": [3, 5, 8, 128], "splits": {"train": [4101, 4102, 4103], "val": [4201]}, "parameters": {"n_estimators": 100, "max_depth": 3, "learning_rate": 0.05, "random_state": 7401}},
+    "execution": {
+      "data": {"status": "completed", "total": 36, "completed": 36, "failed": 0, "exit_code": 0, "model_hashes_unchanged": true},
+      "episodes": {"status": "completed", "total": 264, "completed": 264, "failed": 0, "exit_code": 0, "model_hashes_unchanged": true},
+      "panels": {"status": "completed", "total": 15, "completed": 15, "failed": 0, "exit_code": 0, "model_hashes_unchanged": true}
+    },
+    "csv_outputs": {
+      "episodes.csv": {"bytes": 1014429, "lines": 265},
+      "fallback.csv": {"bytes": 540352, "lines": 321},
+      "groups.csv": {"bytes": 352987, "lines": 161},
+      "paired.csv": {"bytes": 243299, "lines": 496},
+      "same_state.csv": {"bytes": 353591, "lines": 451}
+    },
+    "time": {"exit_status": 0, "wall_seconds": 179.74, "user_seconds": 176.25, "system_seconds": 2.88, "max_rss_kb": 1728872},
+    "stdout_bytes": 206,
+    "stderr_bytes": 0,
+    "residual_study_processes": [],
+    "locks": {"dot_phase_lock": false, "phase_lock": false},
+    "model_hashes": {
+      "gradient_boost_expand.joblib": "4fbd7c98a19d1c4228fa8e008d8aa48f545b48caf239b4a608682a5ef9f66ec2",
+      "manifest.json": "1c40e855f56db25f45b84b5e3658c9bb2ea222f2084c9672efd1ff9f9687f8cb",
+      "protocol.json": "39aba26704270e47822e62d956ae57b0ee7e4d28f5094c59d72c1b0bc09bce91",
+      "training.json": "5c6258f5821ff9bcf395395db511b3ee3422fb1d9cfdce8223f310f7ba891f09"
+    }
+  },
+  "deviations": [],
+  "unresolved": []
+}

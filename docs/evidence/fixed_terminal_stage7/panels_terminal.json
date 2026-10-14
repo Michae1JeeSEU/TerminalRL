@@ -1,0 +1,54 @@
+{
+  "status": "completed",
+  "actions": [
+    "Recorded the previously completed read-only panels terminal verification; no new server query, relaunch, summary, or raw artifact scan was performed for this collector."
+  ],
+  "artifacts": {
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "state": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/execution_panels.json",
+    "progress": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/progress_panels.jsonl",
+    "launch_logs": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_panel_launch_logs",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "started_utc": "2026-10-14T05:36:16.467834+00:00",
+    "finished_utc": "2026-10-14T05:47:19.739465+00:00",
+    "finished_beijing": "2026-10-14T13:47:19.739465+08:00"
+  },
+  "checks": {
+    "state_status": "completed",
+    "jobs_total": 15,
+    "jobs_completed": 15,
+    "jobs_failed": 0,
+    "unique_job_names": 15,
+    "progress_lines": 15,
+    "progress_completed": 15,
+    "states": 30,
+    "arm_rows": 240,
+    "expected_arm_rows": 240,
+    "context_status_counts": {"completed": 30},
+    "context_times": {"0.0": 15, "60.0": 15},
+    "required_files_missing_or_empty": 0,
+    "finite_json_errors": 0,
+    "semantic_errors": 0,
+    "final_check_status_counts": {"feasible": 240},
+    "domain_summary_count": 30,
+    "generation_model_hash_equal_count": 15,
+    "dispatcher_exit_code": 0,
+    "dispatcher_duration_seconds": 663.2716374872252,
+    "time_exit_status": 0,
+    "time_wall_seconds": 663.32,
+    "time_max_rss_kb": 691040,
+    "stderr_bytes": 0,
+    "residual_study_processes": [],
+    "locks": {"dot_phase_lock": false, "phase_lock": false},
+    "model_hashes_match": true,
+    "model_hashes": {
+      "gradient_boost_expand.joblib": "4fbd7c98a19d1c4228fa8e008d8aa48f545b48caf239b4a608682a5ef9f66ec2",
+      "manifest.json": "1c40e855f56db25f45b84b5e3658c9bb2ea222f2084c9672efd1ff9f9687f8cb",
+      "protocol.json": "39aba26704270e47822e62d956ae57b0ee7e4d28f5094c59d72c1b0bc09bce91",
+      "training.json": "5c6258f5821ff9bcf395395db511b3ee3422fb1d9cfdce8223f310f7ba891f09"
+    },
+    "verification_observed_utc": "2026-10-14T06:29:35.100139+00:00"
+  },
+  "deviations": [],
+  "unresolved": []
+}
