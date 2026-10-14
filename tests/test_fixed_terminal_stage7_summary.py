@@ -111,9 +111,11 @@ def test_partial_links_exact_cache_and_final_validation_rejected(tmp_path, monke
             r["degenerate"] = True
             r["work"]["root_rollout_count"] = 1
             r["timing"]["total"] = .1
+            r["search"]["counters"]["candidate_checks"] = 60
         elif r["arm"] in summary.REFERENCES:
             r["work"]["root_rollout_count"] = 10
             r["timing"]["total"] = 1.
+            r["search"]["counters"]["candidate_checks"] = 100
     pairs = summary.same_state_comparisons(rows)
     subset = [r for r in pairs["pairs"] if r["arm"] == "learned_pruning"]
     assert subset and all(not r["degenerate"] and r["method_pool_single_root"] for r in subset)
@@ -163,3 +165,30 @@ def test_model_single_fit_binds_exact_context_hashes(tmp_path):
     data["splits"]["val"][0]["context_hash"] = "changed-raw-bytes"
     with pytest.raises(ValueError, match="context identity/hash"):
         summary.model_training_evidence(tmp_path, data)
+
+
+def test_primary_partial_compute_can_pass_with_unchanged_rollouts():
+    rows = []
+    for arm in ("learned_pruning", "beam_adaptive", "full_reference"):
+        learned = arm == "learned_pruning"
+        rows.append({"arm": arm, "seed": 7301, "load": "low", "soc": "high", "variant": "standard", "time": 0.,
+            "degenerate": False, "pool_count": 12, "timing": {"total": 8. if learned else 10.},
+            "work": {"root_rollout_count": 12}, "chosen_value": {"J": [0, 1, 0, 0, 0., 0., 0.]},
+            "search": {"counters": {"candidate_checks": 80 if learned else 100, "expanded_nodes": 6 if learned else 10}}})
+    result = summary.same_state_comparisons(rows)
+    groups = [r for r in result["groups"] if r["reference"] == "beam_adaptive" and r["stratum"] == "nondegenerate" and r["scope"] == r["axis"] == "all"]
+    assert len(groups) == 1
+    group = groups[0]
+    assert group["primary_compute_condition_passed"] and group["compute_condition_passed"]
+    assert not group["rollout_wall_condition_passed"]
+    assert group["wall_ratio"] == group["candidate_check_ratio"] == .8
+    assert group["unique_rollout_ratio"] == 1. and group["expanded_node_ratio"] == .6
+    assert group["arm_candidate_checks"] == group["arm_candidate_checks_mean"] == 80
+    assert group["arm_expanded_nodes"] == group["arm_expanded_nodes_mean"] == 6
+    assert group["arm_unique_rollouts"] == group["arm_unique_rollouts_mean"] == 12
+    pair = next(r for r in result["pairs"] if r["reference"] == "beam_adaptive")
+    assert pair["primary_compute_condition_passed"] and not pair["rollout_wall_condition_passed"]
+    # Zero reference check denominator cannot establish a compute reduction.
+    rows[1]["search"]["counters"]["candidate_checks"] = 0
+    zero = next(r for r in summary.same_state_comparisons(rows)["groups"] if r["reference"] == "beam_adaptive" and r["stratum"] == "nondegenerate" and r["scope"] == r["axis"] == "all")
+    assert zero["candidate_check_ratio"] is None and not zero["primary_compute_condition_passed"]

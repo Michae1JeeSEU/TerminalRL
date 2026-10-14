@@ -23,7 +23,7 @@ Data每context保存snapshot/context/trace/features/labels/leaves，node trace�
 
 质量按配对每场F不增、aggregate E不增、aggregate N/全部请求比例不降（epsilon0）、间隔违反/未认证0与最终执行验证通过。保留所有normal/emergency/failed/censored结局、全部J分量、正常条件delay/energy，不能把真实能源失败写成零。
 
-非退化同状态计算要求累计unique exact rollout与完整wall均至少降10%。完整wall包括初次与回退所有catalogue生成、partial展开和checks、features、inference、rollouts、最终检查/submit、应急、bookkeeping；加载、IO、环境step及事后analysis labels单列。缓存仅同decision同方法内部。对5传统reference分别输出指标；重点比较beam_adaptive，不把相对full收益直接解释为学习增量。
+主计算接受条件`primary_compute_condition_passed`要求共同非退化同状态的实际candidate_checks与完整wall均至少降10%；共同退化状态由full_reference单根定义，方法自身单根指标另外保留。`compute_condition_passed`为该主条件别名，主条件只在nondegenerate分层判断。累计unique exact rollout与wall的旧双10%条件保留为辅助`rollout_wall_condition_passed`，不作为阶段7唯一门槛。expanded_nodes、unique_rollouts及candidate_checks各自报告ratio、总计与均值，不能把主条件成立解释为所有搜索资源同时降低。完整wall包括初次与回退所有catalogue生成、partial展开和checks、features、inference、rollouts、最终检查/submit、应急、bookkeeping；加载、IO、环境step及事后analysis labels单列。缓存仅同decision同方法内部。对5传统reference分别输出指标；重点比较beam_adaptive判断学习增量，full_reference作为次级参照，不把相对full收益直接解释为学习增量。
 
 full_reference仅有限catalogue上的128宽度参考，不能称为global optimum。事后精确值标注学习新root、是否超过有限reference最佳和reference最佳保留率；不能据事后full值触发在线回退。C类现象不自动授权长期Q或扩大value路线。
 
@@ -34,3 +34,7 @@ full_reference仅有限catalogue上的128宽度参考，不能称为global optim
 实现与小样本核验阶段。尚未启动正式服务器数据生成、模型训练、episodes或panels；结果和A/B/C结论待实际证据后更新。
 
 训练只有一个class时，记录实际positive/negative计数，并诚实使用constant DummyClassifier诊断回退，一次fit与冻结hash仍保留；非单class使用预定GradientBoostingClassifier固定参数。该回退不能报告为学习模型存在有效信号，最终研究解释由主对话依据实际证据给出；不额外重训或根据test调整。
+
+## 主计算条件预先确定的理由（2026-10-14）
+
+该口径由主对话在正式data、训练及test开始前确定，未读取当前pilot功效，也不依据test。阶段7检验真实partial展开/剪枝，候选检查可能显著减少而最终rollout数量持平；因此使用candidate_checks+完整wall作为primary，保留rollout+wall作辅助。COMPUTE_REDUCTION_TARGET=.10仍为描述性阈值。质量条件保持配对每场F不增、aggregate E不增、aggregate N比例不降（epsilon0）、间隔/未认证0和最终执行验证通过；模型、搜索、训练、seed、物理与任务矩阵均不变。当前pilot继续使用`ee6d`源码；本地接受口径修订不改变该运行。正式来源提交在pilot终态之后另行记录。

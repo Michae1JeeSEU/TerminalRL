@@ -33,8 +33,12 @@ test=7301/7302/7303，pilot=7001。正式33场：9load/SOC×3seed，加medium/me
 
 Panel每方法独立生成catalogue和partial pool，原snapshot、物理与catalogue域相同，不要求pool相同。方法按scenario/time旋转顺序，单线程逐个执行，无跨方法缓存。所有方法完成后才为新根与缺失chosen value补精确label，analysis_cost单列，不计方法成本；比较full_reference有限池最佳、根贡献和是否出现新高值，不宣称global oracle。
 
-质量门槛对每个传统reference分别核对：配对每场F不增、aggregate E不增、aggregate正常比例不降（epsilon_normal=0），间隔/未认证为0且最终执行验证通过。计算门槛为非退化同状态累计unique rollout及完整wall都≤reference的90%；同时报告单根和非退化分层、总和/均值、>5s比例、expanded nodes、candidate checks、全部时间分量及恢复率。重点对full_reference与beam_adaptive分别核对；并发episode wall不能解释为纯方法成本或同状态因果。A/B/C解释由主对话审查证据后给出。
+质量门槛对每个传统reference分别核对：配对每场F不增、aggregate E不增、aggregate正常比例不降（epsilon_normal=0），间隔/未认证为0且最终执行验证通过。主计算门槛`primary_compute_condition_passed`冻结为共同非退化同状态的实际candidate_checks和完整wall均≤reference的90%；共同退化分层由full_reference的pool_count==1定义，窄方法自身单根另列。旧unique rollout与wall双90%条件保留为辅助`rollout_wall_condition_passed`，不能作为本阶段唯一门槛；`compute_condition_passed`为主门槛别名。expanded_nodes、unique_rollouts、candidate_checks分别报告ratio、总计与均值，并报告单根/非退化分层、>5s比例、各时间分量和恢复率，不能据主门槛声称所有资源同时降低。重点比较beam_adaptive识别学习增量，full_reference比较为次级参照；并发episode wall不能解释为纯方法成本或同状态因果。A/B/C解释由主对话审查证据后给出。
 
 不自动扩大value、长期Q、模型、teacher动作模仿、actor/PPO、offline RL、GNN/attention或改变几何。
 
 训练只有一个class时，记录实际positive/negative计数，并诚实使用constant DummyClassifier诊断回退，一次fit与冻结hash仍保留；非单class使用预定GradientBoostingClassifier固定参数。该回退不能报告为学习模型存在有效信号，最终研究解释由主对话依据实际证据给出；不额外重训或根据test调整。
+
+## 正式实验前确定计算接受口径（2026-10-14）
+
+主对话在正式data、训练和test开始前确定上述主门槛，没有读取当前pilot的功效或据test结果调整。原因来自阶段7用户计划的真实partial展开/剪枝目标：方法可能保持同样的最终unique rollouts，却减少大量候选检查；阶段6的rollout+wall双10%条件因此保留作辅助，阶段7主条件改为实际candidate_checks+完整wall双10%。COMPUTE_REDUCTION_TARGET仍为.10，指标描述性；质量门槛、模型、搜索、训练、种子与评价矩阵全部不变。本段只记录接受口径，不给出A/B/C结果。

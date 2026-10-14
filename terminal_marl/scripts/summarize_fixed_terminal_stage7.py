@@ -8,7 +8,7 @@ from math import isclose
 from pathlib import Path
 
 from terminal_marl.configs.fixed_terminal_stage1 import DEFAULT_CONFIG
-from terminal_marl.configs.fixed_terminal_stage7 import ARMS, scenario_jobs, panel_scenario_jobs, PANEL_TIMES, SNAPSHOT_TIMES, TRACE_WIDTHS
+from terminal_marl.configs.fixed_terminal_stage7 import ARMS, scenario_jobs, panel_scenario_jobs, PANEL_TIMES, SNAPSHOT_TIMES, TRACE_WIDTHS, COMPUTE_REDUCTION_TARGET
 from hashlib import sha256
 from terminal_marl.core.fixed_terminal.reference import value_comparison_key
 from terminal_marl.scripts.evaluate_fixed_terminal_stage4 import timing_summary
@@ -481,6 +481,7 @@ def paired_episodes(rows):
 def same_state_comparisons(rows):
     by_key = {(r["arm"],)+scenario_key(r)+(r["time"],): r for r in rows}
     pairs, groups = [], []
+    threshold = 1. - COMPUTE_REDUCTION_TARGET
     for row in (r for r in rows if r["arm"] in LEARNING_ARMS):
         for reference in REFERENCES:
             other = by_key.get((reference,)+scenario_key(row)+(row["time"],))
@@ -491,10 +492,21 @@ def same_state_comparisons(rows):
             reference_degenerate = by_key[("full_reference",)+scenario_key(row)+(row["time"],)]["degenerate"]
             a, b = row["timing"]["total"], other["timing"]["total"]
             x, y = row["work"]["root_rollout_count"], other["work"]["root_rollout_count"]
+            checks, ref_checks = (r["search"]["counters"]["candidate_checks"] for r in (row, other))
+            expanded, ref_expanded = (r["search"]["counters"]["expanded_nodes"] for r in (row, other))
+            primary_passed = bool(not reference_degenerate and b > 0 and ref_checks > 0 and a <= threshold*b and checks <= threshold*ref_checks)
             pairs.append({"arm": row["arm"], "reference": reference, **{k: row[k] for k in ("seed", "load", "soc", "variant", "time")},
                           "degenerate": reference_degenerate, "method_pool_single_root": row["pool_count"] == 1, "arm_pool_count": row["pool_count"], "reference_pool_count": other["pool_count"],
                           "arm_seconds": a, "reference_seconds": b, "arm_rollouts": x, "reference_rollouts": y,
                           "wall_ratio": a/b if b else None, "rollout_ratio": x/y if y else None,
+                          "arm_unique_rollouts": x, "reference_unique_rollouts": y, "unique_rollout_ratio": x/y if y else None,
+                          "arm_candidate_checks": checks, "reference_candidate_checks": ref_checks,
+                          "candidate_check_ratio": checks/ref_checks if ref_checks else None,
+                          "arm_expanded_nodes": expanded, "reference_expanded_nodes": ref_expanded,
+                          "expanded_node_ratio": expanded/ref_expanded if ref_expanded else None,
+                          "primary_compute_condition_passed": primary_passed, "compute_condition_passed": primary_passed,
+                          "rollout_wall_condition_passed": bool(b > 0 and y > 0 and a <= threshold*b and x <= threshold*y),
+                          "threshold": threshold, "descriptive_only": True,
                           "arm_search_counters": row["search"]["counters"], "reference_search_counters": other["search"]["counters"],
                           "arm_work": row["work"], "reference_work": other["work"],
                           "raw_J_delta_arm_minus_reference": [u-v for u, v in zip(row["chosen_value"]["J"], other["chosen_value"]["J"])]})
@@ -503,11 +515,25 @@ def same_state_comparisons(rows):
             for stratum in ("all", "nondegenerate", "degenerate"):
                 chosen = [r for r in pairs if r["arm"] == arm and r["reference"] == reference and (stratum == "all" or r["degenerate"] == (stratum == "degenerate"))]
                 for (scope, axis, name), selected in sorted(group_rows(chosen).items()):
-                    totals = {k: sum(r[k] for r in selected) for k in ("arm_seconds", "reference_seconds", "arm_rollouts", "reference_rollouts")}
+                    totals = {k: sum(r[k] for r in selected) for k in ("arm_seconds", "reference_seconds", "arm_rollouts", "reference_rollouts", "arm_candidate_checks", "reference_candidate_checks", "arm_expanded_nodes", "reference_expanded_nodes")}
                     a, b, x, y = (totals[k] for k in ("arm_seconds", "reference_seconds", "arm_rollouts", "reference_rollouts"))
+                    checks, ref_checks = (totals[k] for k in ("arm_candidate_checks", "reference_candidate_checks"))
+                    expanded, ref_expanded = (totals[k] for k in ("arm_expanded_nodes", "reference_expanded_nodes"))
+                    primary_passed = bool(stratum == "nondegenerate" and b > 0 and ref_checks > 0 and a <= threshold*b and checks <= threshold*ref_checks)
                     groups.append({"arm": arm, "reference": reference, "stratum": stratum, "scope": scope, "axis": axis, "group": name,
                                    "states": len(selected), **totals, "wall_ratio": a/b if b else None, "rollout_ratio": x/y if y else None,
-                                   "compute_condition_passed": bool(b > 0 and y > 0 and a <= .9*b and x <= .9*y),
+                                   "primary_compute_condition_passed": primary_passed, "compute_condition_passed": primary_passed,
+                                   "primary_compute_scope": "common_full_reference_nondegenerate_states; actual_candidate_checks_AND_complete_wall",
+                                   "rollout_wall_condition_passed": bool(b > 0 and y > 0 and a <= threshold*b and x <= threshold*y),
+                                   "arm_unique_rollouts": x, "reference_unique_rollouts": y, "unique_rollout_ratio": x/y if y else None,
+                                   "candidate_check_ratio": checks/ref_checks if ref_checks else None,
+                                   "expanded_node_ratio": expanded/ref_expanded if ref_expanded else None,
+                                   "arm_unique_rollouts_mean": x/len(selected) if selected else None,
+                                   "reference_unique_rollouts_mean": y/len(selected) if selected else None,
+                                   "arm_candidate_checks_mean": checks/len(selected) if selected else None,
+                                   "reference_candidate_checks_mean": ref_checks/len(selected) if selected else None,
+                                   "arm_expanded_nodes_mean": expanded/len(selected) if selected else None,
+                                   "reference_expanded_nodes_mean": ref_expanded/len(selected) if selected else None,
                                    "arm_seconds_mean": a/len(selected) if selected else None,
                                    "reference_seconds_mean": b/len(selected) if selected else None,
                                    "arm_over_5s_proportion": sum(r["arm_seconds"] > 5 for r in selected)/len(selected) if selected else None,
@@ -516,7 +542,7 @@ def same_state_comparisons(rows):
                                    "reference_search_counter_totals": sum_numeric([r["reference_search_counters"] for r in selected]),
                                    "arm_work_totals": sum_numeric([r["arm_work"] for r in selected]),
                                    "reference_work_totals": sum_numeric([r["reference_work"] for r in selected]),
-                                   "threshold": .90, "descriptive_only": True})
+                                   "threshold": threshold, "descriptive_only": True})
     return {"pairs": pairs, "groups": groups}
 
 
