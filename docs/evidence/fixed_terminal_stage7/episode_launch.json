@@ -1,0 +1,53 @@
+{
+  "status": "running",
+  "actions": [
+    "Rechecked 26 stage7 runtime Python/config/direct dependency files against /home/user/projects/terminal; all local/server SHA256 values matched.",
+    "Rechecked the four formal model hashes, output roots, phase lock, resources, and matching study processes.",
+    "Launched the sole approved episodes phase with Popen argument list, cwd /home/user/projects/terminal, start_new_session, 20 workers, fixed thread environment, and /usr/bin/time -v independent logging."
+  ],
+  "artifacts": {
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "wrapper_pid": 3478486,
+    "dispatcher_pid": 3478487,
+    "started_utc": "2026-10-14T03:55:32.967143+00:00",
+    "started_beijing": "2026-10-14T11:55:32.967143+08:00",
+    "observed_utc": "2026-10-14T03:56:11.124682+00:00",
+    "estimated_t0_seconds": 6000,
+    "estimated_end_utc": "2026-10-14T05:35:32.967143+00:00",
+    "estimated_end_beijing": "2026-10-14T13:35:32.967143+08:00",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "command": [
+      "/home/user/envs/terminal_env/bin/python", "-m", "terminal_marl.scripts.run_fixed_terminal_stage7",
+      "--phase", "episodes", "--models", "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/models",
+      "--output", "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014", "--workers", "20", "--execute"
+    ],
+    "logs": {
+      "launch": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_episode_launch_logs/launch.json",
+      "stdout": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_episode_launch_logs/formal_episode.stdout.log",
+      "stderr": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_episode_launch_logs/formal_episode.stderr.log",
+      "time": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_episode_launch_logs/formal_episode.time.log",
+      "state": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/execution_episodes.json",
+      "progress": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/progress_episodes.jsonl"
+    }
+  },
+  "checks": {
+    "source_file_count": 26,
+    "source_sha_mismatch_count": 0,
+    "formal_model_hashes_match": true,
+    "dispatcher_status": "running",
+    "phase": "episodes",
+    "tasks": 264,
+    "workers": 20,
+    "counts_at_observation": {"total": 264, "pending": 235, "running": 20, "completed": 9, "failed": 0},
+    "peak_running": 20,
+    "state_source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "phase_lock_exists": true,
+    "progress_lines_at_followup": 13,
+    "formal_stderr_bytes": 0,
+    "middle_artifacts_observed": {"episode_directories": 21, "frozen_input_nonempty": true, "decision_jsonl_nonempty": true, "events_jsonl_nonempty": true},
+    "sample_finished_returncodes": [0],
+    "no_startup_error_observed": true
+  },
+  "deviations": [],
+  "unresolved": ["Formal episodes remain running; per T0 > 60 minutes, continuous monitoring stops after startup verification and parent should use heartbeat for later completion check."]
+}

@@ -1,0 +1,54 @@
+{
+  "status": "completed",
+  "actions": [
+    "Read-only preflight confirmed 28 CPUs, available RAM 28125544448 bytes, no study process, completed data input, and absent ROOT/models before launch.",
+    "Launched the single approved formal fit with /home/user/envs/terminal_env/bin/python -m terminal_marl.scripts.train_fixed_terminal_stage7 --train /home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train --val /home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val --output /home/user/training_outputs/terminal/stage7_learning_to_search_20261014/models.",
+    "Used cwd /home/user/projects/terminal, start_new_session, /usr/bin/time -v, and OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, OPENBLAS_NUM_THREADS=1."
+  ],
+  "artifacts": {
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "pid": 3476873,
+    "started_utc": "2026-10-14T03:43:40.751676+00:00",
+    "logs": {
+      "launch": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/launch.json",
+      "stdout": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/formal_train.stdout.log",
+      "stderr": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/formal_train.stderr.log",
+      "time": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/formal_train.time.log"
+    },
+    "models": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/models",
+    "model_files": {
+      "gradient_boost_expand.joblib": {"bytes": 146876, "sha256": "4fbd7c98a19d1c4228fa8e008d8aa48f545b48caf239b4a608682a5ef9f66ec2"},
+      "manifest.json": {"bytes": 5621, "sha256": "1c40e855f56db25f45b84b5e3658c9bb2ea222f2084c9672efd1ff9f9687f8cb"},
+      "protocol.json": {"bytes": 51175, "sha256": "39aba26704270e47822e62d956ae57b0ee7e4d28f5094c59d72c1b0bc09bce91"},
+      "training.json": {"bytes": 55126, "sha256": "5c6258f5821ff9bcf395395db511b3ee3422fb1d9cfdce8223f310f7ba891f09"}
+    }
+  },
+  "checks": {
+    "stdout_status": "completed",
+    "model_class": "GradientBoostingClassifier",
+    "manifest_status": "completed",
+    "smoke_only": false,
+    "fit_count": 1,
+    "one_class_dummy": false,
+    "feature_dim": 109,
+    "trace_widths": [3, 5, 8, 128],
+    "training": {"n_estimators": 100, "max_depth": 3, "learning_rate": 0.05, "random_state": 7401},
+    "threshold": 0.5,
+    "roundtrip_predictions_equal": true,
+    "validation_use": "report_only; no_threshold_parameter_or_checkpoint_selection",
+    "test_read": false,
+    "train_contexts": {"count": 108, "unique_paths": 108, "unique_sha": 108, "scenario_seeds": [4101, 4102, 4103], "times": [0.0, 5.0, 15.0, 90.0], "context_files_found": 108, "sha_mismatch_count": 0},
+    "val_contexts": {"count": 36, "unique_paths": 36, "unique_sha": 36, "scenario_seeds": [4201], "times": [0.0, 5.0, 15.0, 90.0], "context_files_found": 36, "sha_mismatch_count": 0},
+    "metrics": {
+      "train": {"negative": 225103, "positive": 3413, "nodes": 228516, "accuracy": 0.9911297239580599, "brier": 0.00679020312341179, "precision": 0.9832635983263598, "recall": 0.41312628186346323},
+      "val": {"negative": 83035, "positive": 1162, "nodes": 84197, "accuracy": 0.991793056759742, "brier": 0.0073096283435574, "precision": 0.9289617486338798, "recall": 0.4388984509466437}
+    },
+    "timing": {"fit_seconds": 86.59176866151392, "user_seconds": 95.31, "system_seconds": 0.96, "wall_seconds": 96.33, "max_rss_kb": 2204180, "time_exit_status": 0},
+    "stderr_bytes": 0,
+    "residual_matching_processes": [],
+    "manifest_dependency_hashes_match_actual_files": true
+  },
+  "deviations": [],
+  "unresolved": []
+}

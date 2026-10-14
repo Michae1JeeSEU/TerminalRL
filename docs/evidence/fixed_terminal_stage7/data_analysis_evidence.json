@@ -1,0 +1,2381 @@
+{
+  "schema": "fixed-terminal-stage7-data-analysis-evidence-v1",
+  "status": "data_complete_Step7_1_review_accepted",
+  "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+  "provenance": {
+    "raw_bottleneck": {
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage7_learning_to_search_20261014\\analysis\\bottleneck.json",
+      "sha256": "b042e518293a2c9fc108a1439871ef9cc0444c3429517fe151ad0fcc6b625c8a",
+      "bytes": 140767
+    },
+    "data_attempt2_collector": {
+      "path": "tmp_stage7_preflight/checks/formal_data_attempt2_20261014.json",
+      "sha256": "b6453769db872e7f262fbcaea73b4a0f7c9fea714cdbb362f9df5af25f65ae3b",
+      "bytes": 3355
+    },
+    "data_attempt1_archive_collector": {
+      "path": "tmp_stage7_preflight/checks/data_attempt1_archive_20261014.json",
+      "sha256": "67ee09c25ac3627aaf8d495fe4d8d6808153e5fb5c42b59374f525c1319aac30",
+      "bytes": 1787
+    },
+    "formal_model_seam_collector": {
+      "path": "tmp_stage7_preflight/checks/formal_model_seam_20261014.json",
+      "sha256": "d4df9c2411298d579648d30154284fdb148ea353453f7ca80e8995ba87e13151",
+      "bytes": 2579
+    }
+  },
+  "execution_observations": {
+    "status": "completed",
+    "observed_at": "2026-10-14T11:40:40+08:00",
+    "source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "data": {
+      "wrapper_pid": 3475605,
+      "dispatcher_pid": 3475606,
+      "started_at": "2026-10-14T11:35:09+08:00",
+      "state": {
+        "tasks": 36,
+        "workers": 20,
+        "total": 36,
+        "completed": 36,
+        "failed": 0,
+        "pending": 0,
+        "running": 0,
+        "exit_code": 0,
+        "duration_seconds": 156.1933067953214
+      },
+      "time": {
+        "elapsed_wall": "2:36.24",
+        "max_rss_kb": 175404,
+        "exit_status": 0,
+        "user_seconds": 2000.81,
+        "system_seconds": 5.31
+      },
+      "unique_finished_events": 36,
+      "stderr_size": 0
+    },
+    "verification": {
+      "unique_cases": 36,
+      "train_cases": 27,
+      "val_cases": 9,
+      "contexts": 144,
+      "train_contexts": 108,
+      "val_contexts": 36,
+      "required_files_per_context": [
+        "snapshot.json",
+        "context.json",
+        "trace.json",
+        "features.json",
+        "labels.json",
+        "leaves.json"
+      ],
+      "missing_context_files": [],
+      "json_parse_errors": [],
+      "nonfinite_json_values": [],
+      "feature_dim_bad": [],
+      "trace_width_bad": [],
+      "source_commit_values": [
+        "c892d82a77ec4647e0c9f77fe3f73786ae57bab2"
+      ],
+      "source_artifact_hash_mismatches": [],
+      "stored_scenario_or_config_times_mismatches": [],
+      "source_audit": {
+        "exact_match_true": 33,
+        "exact_match_false": 3,
+        "float_difference_total": 4,
+        "float_difference_count_distribution": {
+          "0": 33,
+          "1": 2,
+          "2": 1
+        },
+        "differing_paths": {
+          "high-low-4201": [
+            "scenario.requests[23].soc",
+            "scenario.requests[41].soc"
+          ],
+          "high-medium-4201": [
+            "scenario.requests[41].soc"
+          ],
+          "medium-low-4201": [
+            "scenario.requests[23].soc"
+          ]
+        }
+      },
+      "duplicate_cases": [],
+      "residual_python_research_processes": []
+    },
+    "analysis": {
+      "pid": 3476384,
+      "started_at": "2026-10-14T11:40:20+08:00",
+      "output": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/analysis",
+      "bottleneck": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/analysis/bottleneck.json",
+      "schema": "fixed-terminal-stage7-bottleneck-v1",
+      "context_count": 144,
+      "nonfinite_values": 0,
+      "time": {
+        "elapsed_wall": "0:05.19",
+        "max_rss_kb": 128716,
+        "exit_status": 0
+      },
+      "totals": {
+        "contexts": 144,
+        "retained_evaluated_roots": 1501,
+        "expanded_nodes": 60489,
+        "child_attempts": 528613,
+        "partial_check_attempts": 528613,
+        "partial_candidate_checks": 1613909,
+        "candidate_checks": 2068942,
+        "batch_checks": 469181,
+        "rollouts": 1501,
+        "simulation_steps": 322515
+      }
+    },
+    "artifacts": {
+      "data_root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data",
+      "analysis_root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/analysis",
+      "data_logs": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_data_launch_logs",
+      "data_launch_json": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_data_launch_logs/launch.json",
+      "analysis_launch_json": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_data_launch_logs/analysis_attempt2.launch.json"
+    },
+    "deviations": [],
+    "unresolved": []
+  },
+  "attempt1_archive_observations": {
+    "status": "completed",
+    "observed_at": "2026-10-14T11:26:12+08:00",
+    "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "archive_root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data_attempt1",
+    "source_commit": "c143d7fec71013063ef28091ae67e26be1bc312a",
+    "preconditions": {
+      "study_processes": [],
+      "state": {
+        "tasks": 36,
+        "completed": 33,
+        "failed": 3,
+        "pending": 0,
+        "running": 0,
+        "exit_code": 1
+      },
+      "phase_lock_absent": true,
+      "archive_target_absent_before_move": true,
+      "source_and_destination_contained_in_root": true,
+      "source_symlinks": false,
+      "destination_conflicts": false
+    },
+    "moved": {
+      "execution_state": "data_attempt1/execution_data.json",
+      "progress": "data_attempt1/progress_data.jsonl",
+      "data": "data_attempt1/data",
+      "formal_data_launch_logs": "data_attempt1/formal_data_launch_logs",
+      "state_named_job_logs": "data_attempt1/logs",
+      "state_named_job_log_count": 72,
+      "file_count_sha_bytes_manifest": 936
+    },
+    "checks": {
+      "archive_manifest": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data_attempt1/archive_manifest.json",
+      "all_moved_files_sha256_and_bytes_match": true,
+      "state_hash_preserved": true,
+      "progress_hash_preserved": true,
+      "generation_count": 33,
+      "context_count": 132,
+      "failed_stderr_nonempty": {
+        "val-medium-low-4201": 887,
+        "val-high-medium-4201": 887,
+        "val-high-low-4201": 887
+      },
+      "source_remainders": {
+        "data": false,
+        "formal_data_launch_logs": false,
+        "execution_data.json": false,
+        "progress_data.jsonl": false,
+        "logs_directory": true
+      },
+      "residual_study_processes": []
+    },
+    "deviations": [],
+    "unresolved": []
+  },
+  "analysis": {
+    "schema": "fixed-terminal-stage7-bottleneck-v1",
+    "totals": {
+      "contexts": 144,
+      "retained_evaluated_roots": 1501,
+      "unlinked_best_anchors": 66,
+      "training_positive": 4575,
+      "training_negative_noncontribution": 308138,
+      "expanded_nodes": 60489,
+      "child_attempts": 528613,
+      "partial_check_attempts": 528613,
+      "partial_check_cache_hits": 137515,
+      "final_root_check_attempts": 18728,
+      "final_root_check_cache_hits": 6649,
+      "catalogue_candidate_checks": 7869,
+      "live_fcfs_candidate_checks": 9830,
+      "partial_batch_checks": 391098,
+      "partial_candidate_checks": 1613909,
+      "final_root_batch_checks": 12079,
+      "final_root_candidate_checks": 69247,
+      "closed_root_batch_checks": 3002,
+      "closed_root_candidate_checks": 248011,
+      "continuation_candidate_checks": 120076,
+      "continuation_batch_checks": 63002,
+      "candidate_checks": 2068942,
+      "batch_checks": 469181,
+      "learned_pruned_nodes": 0,
+      "rollout_cache_hits": 0,
+      "rollouts": 1501,
+      "simulation_steps": 322515,
+      "root_validation_calls": 3002,
+      "continuation_submission_calls": 63002
+    },
+    "depths": {
+      "0": {
+        "nodes": 576,
+        "positive": 544,
+        "negative_noncontribution": 32,
+        "eligible_training": 488,
+        "training_positive": 456,
+        "training_negative_noncontribution": 32,
+        "linked_to_evaluated_leaf": 576,
+        "check_cache_hits": 0,
+        "validated_noncontribution_ratio": null
+      },
+      "1": {
+        "nodes": 4012,
+        "positive": 868,
+        "negative_noncontribution": 3144,
+        "eligible_training": 3380,
+        "training_positive": 652,
+        "training_negative_noncontribution": 2728,
+        "linked_to_evaluated_leaf": 1804,
+        "check_cache_hits": 3009,
+        "validated_nodes": 4012,
+        "actual_batch_checks": 1003,
+        "validated_noncontribution": 3144,
+        "actual_check_noncontribution": 786,
+        "cached_revisit_noncontribution": 2358,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.7836490528414756
+      },
+      "2": {
+        "nodes": 22478,
+        "positive": 885,
+        "negative_noncontribution": 21593,
+        "eligible_training": 17926,
+        "training_positive": 689,
+        "training_negative_noncontribution": 17237,
+        "linked_to_evaluated_leaf": 1869,
+        "check_cache_hits": 15847,
+        "validated_nodes": 22478,
+        "actual_batch_checks": 6631,
+        "validated_noncontribution": 21593,
+        "actual_check_noncontribution": 6489,
+        "cached_revisit_noncontribution": 15104,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9606281697659934
+      },
+      "3": {
+        "nodes": 65282,
+        "positive": 633,
+        "negative_noncontribution": 64649,
+        "eligible_training": 55910,
+        "training_positive": 593,
+        "training_negative_noncontribution": 55317,
+        "linked_to_evaluated_leaf": 1272,
+        "check_cache_hits": 19441,
+        "validated_nodes": 65282,
+        "actual_batch_checks": 45841,
+        "validated_noncontribution": 64649,
+        "actual_check_noncontribution": 45757,
+        "cached_revisit_noncontribution": 18892,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9903036058944272
+      },
+      "4": {
+        "nodes": 102645,
+        "positive": 723,
+        "negative_noncontribution": 101922,
+        "eligible_training": 79352,
+        "training_positive": 645,
+        "training_negative_noncontribution": 78707,
+        "linked_to_evaluated_leaf": 1479,
+        "check_cache_hits": 23675,
+        "validated_nodes": 102645,
+        "actual_batch_checks": 78970,
+        "validated_noncontribution": 101922,
+        "actual_check_noncontribution": 78830,
+        "cached_revisit_noncontribution": 23092,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9929563057138682
+      },
+      "5": {
+        "nodes": 96280,
+        "positive": 673,
+        "negative_noncontribution": 95607,
+        "eligible_training": 68316,
+        "training_positive": 669,
+        "training_negative_noncontribution": 67647,
+        "linked_to_evaluated_leaf": 1234,
+        "check_cache_hits": 21742,
+        "validated_nodes": 96280,
+        "actual_batch_checks": 74538,
+        "validated_noncontribution": 95607,
+        "actual_check_noncontribution": 74340,
+        "cached_revisit_noncontribution": 21267,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9930099709181553
+      },
+      "6": {
+        "nodes": 95244,
+        "positive": 733,
+        "negative_noncontribution": 94511,
+        "eligible_training": 50296,
+        "training_positive": 562,
+        "training_negative_noncontribution": 49734,
+        "linked_to_evaluated_leaf": 1474,
+        "check_cache_hits": 21464,
+        "validated_nodes": 95244,
+        "actual_batch_checks": 73780,
+        "validated_noncontribution": 94511,
+        "actual_check_noncontribution": 73438,
+        "cached_revisit_noncontribution": 21073,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9923039771534164
+      },
+      "7": {
+        "nodes": 80068,
+        "positive": 586,
+        "negative_noncontribution": 79482,
+        "eligible_training": 37045,
+        "training_positive": 309,
+        "training_negative_noncontribution": 36736,
+        "linked_to_evaluated_leaf": 1374,
+        "check_cache_hits": 18253,
+        "validated_nodes": 80068,
+        "actual_batch_checks": 61815,
+        "validated_noncontribution": 79482,
+        "actual_check_noncontribution": 61483,
+        "cached_revisit_noncontribution": 17999,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9926812209621821
+      },
+      "8": {
+        "nodes": 62604,
+        "positive": 403,
+        "negative_noncontribution": 62201,
+        "eligible_training": 0,
+        "linked_to_evaluated_leaf": 1148,
+        "check_cache_hits": 14084,
+        "validated_nodes": 62604,
+        "actual_batch_checks": 48520,
+        "validated_noncontribution": 62201,
+        "actual_check_noncontribution": 48248,
+        "cached_revisit_noncontribution": 13953,
+        "unknown_validation": 0,
+        "validated_noncontribution_ratio": 0.9935627116478181
+      }
+    },
+    "timing_seconds": {
+      "generation": 803.319040922448,
+      "features": 0.0,
+      "inference": 0.0,
+      "exact_rollout": 558.0167317986488,
+      "final_validation_and_emergency": 0.0,
+      "dataset_features": 94.04492286592722,
+      "trace_and_label_seconds": 1457.1756829954684,
+      "serialization_seconds": 51.38084870483726,
+      "context_seconds_before_metadata_write": 1508.7125373836607
+    },
+    "training_positive_fraction": 0.014630028172797422,
+    "label_scope": "real_processed_lineage_prefix_contribution_to_any_best_retained_width128_leaf; zero_is_not_counterfactual_infeasibility_or_no_value",
+    "waste_scope": "observed_validated_noncontribution_to_retained_best_leaf; includes_unknown_and_cached_revisits_separately; not_proven_counterfactual_waste",
+    "contexts": [
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4101/t0",
+        "scenario_group": [
+          4101,
+          "high",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.21428571428571427
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4101/t15",
+        "scenario_group": [
+          4101,
+          "high",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 8,
+        "best_retained_fraction": 0.5714285714285714
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4101/t5",
+        "scenario_group": [
+          4101,
+          "high",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4101/t90",
+        "scenario_group": [
+          4101,
+          "high",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4102/t0",
+        "scenario_group": [
+          4102,
+          "high",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.21428571428571427
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4102/t15",
+        "scenario_group": [
+          4102,
+          "high",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 8,
+        "best_retained_fraction": 0.5714285714285714
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4102/t5",
+        "scenario_group": [
+          4102,
+          "high",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4102/t90",
+        "scenario_group": [
+          4102,
+          "high",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4103/t0",
+        "scenario_group": [
+          4103,
+          "high",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.21428571428571427
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4103/t15",
+        "scenario_group": [
+          4103,
+          "high",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 8,
+        "best_retained_fraction": 0.5714285714285714
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4103/t5",
+        "scenario_group": [
+          4103,
+          "high",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-high-4103/t90",
+        "scenario_group": [
+          4103,
+          "high",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4101/t0",
+        "scenario_group": [
+          4101,
+          "high",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 10,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4101/t15",
+        "scenario_group": [
+          4101,
+          "high",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4101/t5",
+        "scenario_group": [
+          4101,
+          "high",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4101/t90",
+        "scenario_group": [
+          4101,
+          "high",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 10,
+        "distinct_leaf_J_keys": 8,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.1
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4102/t0",
+        "scenario_group": [
+          4102,
+          "high",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 7,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4102/t15",
+        "scenario_group": [
+          4102,
+          "high",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 3,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4102/t5",
+        "scenario_group": [
+          4102,
+          "high",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4102/t90",
+        "scenario_group": [
+          4102,
+          "high",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 7,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4103/t0",
+        "scenario_group": [
+          4103,
+          "high",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4103/t15",
+        "scenario_group": [
+          4103,
+          "high",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 3,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4103/t5",
+        "scenario_group": [
+          4103,
+          "high",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-low-4103/t90",
+        "scenario_group": [
+          4103,
+          "high",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 8,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.23076923076923078
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4101/t0",
+        "scenario_group": [
+          4101,
+          "high",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 10,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4101/t15",
+        "scenario_group": [
+          4101,
+          "high",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 8,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.375
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4101/t5",
+        "scenario_group": [
+          4101,
+          "high",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4101/t90",
+        "scenario_group": [
+          4101,
+          "high",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4102/t0",
+        "scenario_group": [
+          4102,
+          "high",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 10,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4102/t15",
+        "scenario_group": [
+          4102,
+          "high",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 6,
+        "best_retained_fraction": 0.42857142857142855
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4102/t5",
+        "scenario_group": [
+          4102,
+          "high",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4102/t90",
+        "scenario_group": [
+          4102,
+          "high",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 7,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4103/t0",
+        "scenario_group": [
+          4103,
+          "high",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 10,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4103/t15",
+        "scenario_group": [
+          4103,
+          "high",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.2857142857142857
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4103/t5",
+        "scenario_group": [
+          4103,
+          "high",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/high-medium-4103/t90",
+        "scenario_group": [
+          4103,
+          "high",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 8,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4101/t0",
+        "scenario_group": [
+          4101,
+          "low",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4101/t15",
+        "scenario_group": [
+          4101,
+          "low",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4101/t5",
+        "scenario_group": [
+          4101,
+          "low",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4101/t90",
+        "scenario_group": [
+          4101,
+          "low",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4102/t0",
+        "scenario_group": [
+          4102,
+          "low",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4102/t15",
+        "scenario_group": [
+          4102,
+          "low",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4102/t5",
+        "scenario_group": [
+          4102,
+          "low",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4102/t90",
+        "scenario_group": [
+          4102,
+          "low",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4103/t0",
+        "scenario_group": [
+          4103,
+          "low",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4103/t15",
+        "scenario_group": [
+          4103,
+          "low",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4103/t5",
+        "scenario_group": [
+          4103,
+          "low",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 6,
+        "best_retained_fraction": 0.46153846153846156
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4103/t90",
+        "scenario_group": [
+          4103,
+          "low",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4101/t0",
+        "scenario_group": [
+          4101,
+          "low",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4101/t15",
+        "scenario_group": [
+          4101,
+          "low",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4101/t5",
+        "scenario_group": [
+          4101,
+          "low",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4101/t90",
+        "scenario_group": [
+          4101,
+          "low",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4102/t0",
+        "scenario_group": [
+          4102,
+          "low",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4102/t15",
+        "scenario_group": [
+          4102,
+          "low",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4102/t5",
+        "scenario_group": [
+          4102,
+          "low",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4102/t90",
+        "scenario_group": [
+          4102,
+          "low",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4103/t0",
+        "scenario_group": [
+          4103,
+          "low",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4103/t15",
+        "scenario_group": [
+          4103,
+          "low",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4103/t5",
+        "scenario_group": [
+          4103,
+          "low",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.23076923076923078
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-low-4103/t90",
+        "scenario_group": [
+          4103,
+          "low",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4101/t0",
+        "scenario_group": [
+          4101,
+          "low",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4101/t15",
+        "scenario_group": [
+          4101,
+          "low",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4101/t5",
+        "scenario_group": [
+          4101,
+          "low",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4101/t90",
+        "scenario_group": [
+          4101,
+          "low",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4102/t0",
+        "scenario_group": [
+          4102,
+          "low",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4102/t15",
+        "scenario_group": [
+          4102,
+          "low",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4102/t5",
+        "scenario_group": [
+          4102,
+          "low",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4102/t90",
+        "scenario_group": [
+          4102,
+          "low",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4103/t0",
+        "scenario_group": [
+          4103,
+          "low",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4103/t15",
+        "scenario_group": [
+          4103,
+          "low",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4103/t5",
+        "scenario_group": [
+          4103,
+          "low",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 6,
+        "best_retained_fraction": 0.46153846153846156
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-medium-4103/t90",
+        "scenario_group": [
+          4103,
+          "low",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.2222222222222222
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4101/t0",
+        "scenario_group": [
+          4101,
+          "medium",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4101/t15",
+        "scenario_group": [
+          4101,
+          "medium",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4101/t5",
+        "scenario_group": [
+          4101,
+          "medium",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4101/t90",
+        "scenario_group": [
+          4101,
+          "medium",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4102/t0",
+        "scenario_group": [
+          4102,
+          "medium",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4102/t15",
+        "scenario_group": [
+          4102,
+          "medium",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4102/t5",
+        "scenario_group": [
+          4102,
+          "medium",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4102/t90",
+        "scenario_group": [
+          4102,
+          "medium",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4103/t0",
+        "scenario_group": [
+          4103,
+          "medium",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4103/t15",
+        "scenario_group": [
+          4103,
+          "medium",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4103/t5",
+        "scenario_group": [
+          4103,
+          "medium",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-high-4103/t90",
+        "scenario_group": [
+          4103,
+          "medium",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4101/t0",
+        "scenario_group": [
+          4101,
+          "medium",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4101/t15",
+        "scenario_group": [
+          4101,
+          "medium",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4101/t5",
+        "scenario_group": [
+          4101,
+          "medium",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4101/t90",
+        "scenario_group": [
+          4101,
+          "medium",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4102/t0",
+        "scenario_group": [
+          4102,
+          "medium",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4102/t15",
+        "scenario_group": [
+          4102,
+          "medium",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4102/t5",
+        "scenario_group": [
+          4102,
+          "medium",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4102/t90",
+        "scenario_group": [
+          4102,
+          "medium",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 5,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4103/t0",
+        "scenario_group": [
+          4103,
+          "medium",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4103/t15",
+        "scenario_group": [
+          4103,
+          "medium",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4103/t5",
+        "scenario_group": [
+          4103,
+          "medium",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-low-4103/t90",
+        "scenario_group": [
+          4103,
+          "medium",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 12,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3333333333333333
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4101/t0",
+        "scenario_group": [
+          4101,
+          "medium",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4101/t15",
+        "scenario_group": [
+          4101,
+          "medium",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4101/t5",
+        "scenario_group": [
+          4101,
+          "medium",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4101/t90",
+        "scenario_group": [
+          4101,
+          "medium",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4102/t0",
+        "scenario_group": [
+          4102,
+          "medium",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4102/t15",
+        "scenario_group": [
+          4102,
+          "medium",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4102/t5",
+        "scenario_group": [
+          4102,
+          "medium",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4102/t90",
+        "scenario_group": [
+          4102,
+          "medium",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4103/t0",
+        "scenario_group": [
+          4103,
+          "medium",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4103/t15",
+        "scenario_group": [
+          4103,
+          "medium",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4103/t5",
+        "scenario_group": [
+          4103,
+          "medium",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/medium-medium-4103/t90",
+        "scenario_group": [
+          4103,
+          "medium",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-high-4201/t0",
+        "scenario_group": [
+          4201,
+          "high",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.21428571428571427
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-high-4201/t15",
+        "scenario_group": [
+          4201,
+          "high",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 8,
+        "best_retained_fraction": 0.5714285714285714
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-high-4201/t5",
+        "scenario_group": [
+          4201,
+          "high",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-high-4201/t90",
+        "scenario_group": [
+          4201,
+          "high",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 5,
+        "best_retained_fraction": 0.38461538461538464
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-low-4201/t0",
+        "scenario_group": [
+          4201,
+          "high",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 9,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-low-4201/t15",
+        "scenario_group": [
+          4201,
+          "high",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-low-4201/t5",
+        "scenario_group": [
+          4201,
+          "high",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-low-4201/t90",
+        "scenario_group": [
+          4201,
+          "high",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.3333333333333333
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-medium-4201/t0",
+        "scenario_group": [
+          4201,
+          "high",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 10,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07142857142857142
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-medium-4201/t15",
+        "scenario_group": [
+          4201,
+          "high",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 9,
+        "best_retained_fraction": 0.6923076923076923
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-medium-4201/t5",
+        "scenario_group": [
+          4201,
+          "high",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/high-medium-4201/t90",
+        "scenario_group": [
+          4201,
+          "high",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 0.07692307692307693
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-high-4201/t0",
+        "scenario_group": [
+          4201,
+          "low",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-high-4201/t15",
+        "scenario_group": [
+          4201,
+          "low",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-high-4201/t5",
+        "scenario_group": [
+          4201,
+          "low",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-high-4201/t90",
+        "scenario_group": [
+          4201,
+          "low",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-low-4201/t0",
+        "scenario_group": [
+          4201,
+          "low",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-low-4201/t15",
+        "scenario_group": [
+          4201,
+          "low",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-low-4201/t5",
+        "scenario_group": [
+          4201,
+          "low",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-low-4201/t90",
+        "scenario_group": [
+          4201,
+          "low",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-medium-4201/t0",
+        "scenario_group": [
+          4201,
+          "low",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 14,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-medium-4201/t15",
+        "scenario_group": [
+          4201,
+          "low",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-medium-4201/t5",
+        "scenario_group": [
+          4201,
+          "low",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 13,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.3076923076923077
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/low-medium-4201/t90",
+        "scenario_group": [
+          4201,
+          "low",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 4,
+        "best_retained_fraction": 0.4444444444444444
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-high-4201/t0",
+        "scenario_group": [
+          4201,
+          "medium",
+          "high"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-high-4201/t15",
+        "scenario_group": [
+          4201,
+          "medium",
+          "high"
+        ],
+        "time": 15.0,
+        "retained_leaves": 2,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-high-4201/t5",
+        "scenario_group": [
+          4201,
+          "medium",
+          "high"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-high-4201/t90",
+        "scenario_group": [
+          4201,
+          "medium",
+          "high"
+        ],
+        "time": 90.0,
+        "retained_leaves": 2,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-low-4201/t0",
+        "scenario_group": [
+          4201,
+          "medium",
+          "low"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 6,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-low-4201/t15",
+        "scenario_group": [
+          4201,
+          "medium",
+          "low"
+        ],
+        "time": 15.0,
+        "retained_leaves": 1,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 1,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-low-4201/t5",
+        "scenario_group": [
+          4201,
+          "medium",
+          "low"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 3,
+        "best_retained_leaves": 12,
+        "best_retained_fraction": 0.8571428571428571
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-low-4201/t90",
+        "scenario_group": [
+          4201,
+          "medium",
+          "low"
+        ],
+        "time": 90.0,
+        "retained_leaves": 9,
+        "distinct_leaf_J_keys": 4,
+        "best_retained_leaves": 3,
+        "best_retained_fraction": 0.3333333333333333
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-medium-4201/t0",
+        "scenario_group": [
+          4201,
+          "medium",
+          "medium"
+        ],
+        "time": 0.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 5,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 0.14285714285714285
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-medium-4201/t15",
+        "scenario_group": [
+          4201,
+          "medium",
+          "medium"
+        ],
+        "time": 15.0,
+        "retained_leaves": 2,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 1.0
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-medium-4201/t5",
+        "scenario_group": [
+          4201,
+          "medium",
+          "medium"
+        ],
+        "time": 5.0,
+        "retained_leaves": 14,
+        "distinct_leaf_J_keys": 2,
+        "best_retained_leaves": 13,
+        "best_retained_fraction": 0.9285714285714286
+      },
+      {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val/medium-medium-4201/t90",
+        "scenario_group": [
+          4201,
+          "medium",
+          "medium"
+        ],
+        "time": 90.0,
+        "retained_leaves": 2,
+        "distinct_leaf_J_keys": 1,
+        "best_retained_leaves": 2,
+        "best_retained_fraction": 1.0
+      }
+    ],
+    "context_projection": "all144 contexts with original identity/retained_leaf/J_distribution fields; per_context_depth_details_remain_in_raw_bottleneck"
+  },
+  "primary_review": {
+    "Step7_1_accepted": true,
+    "actual_uncached_partial_node_batch_check_calls": 391098,
+    "actual_uncached_partial_node_batch_check_calls_noncontribution": 389371,
+    "partial_node_batch_call_unit": "391098 actual uncached partial-node batch calls; separate from1613909 partial candidate calls",
+    "cached_partial_check_revisits": 137515,
+    "unknown_validation": 0,
+    "eligible_nodes_all_train_plus_val": 312713,
+    "eligible_positive_nodes": 4575,
+    "eligible_negative_nodes": 308138,
+    "contexts_distinct_J_more_than_one": 89,
+    "contexts_distinct_J_equal_one": 55,
+    "single_retained_leaf_contexts": 24,
+    "unlinked_best_anchors": 66,
+    "unlinked_anchor_unit": "anchors; not_contexts",
+    "interpretation_scope": "finite_width128_best_leaf_contribution; not_counterfactual_no_value; no_A_B_C_conclusion"
+  },
+  "current_phase": {
+    "formal_model_fit": "completed_once_frozen_and_primary_review_accepted; one_decision_API_seam_passed; formal_episodes_running_startup_verified",
+    "formal_model_terminal_evidence": "model_freeze.json",
+    "formal_model_source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "formal_model_smoke": false,
+    "formal_train_path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train",
+    "formal_val_path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/val",
+    "formal_model_output": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/models",
+    "formal_episodes_started": true,
+    "formal_panels_started": false,
+    "formal_model_seam_primary_review_accepted": true,
+    "formal_episodes_launch_authorized": true,
+    "formal_episodes_source_commit": "c892d82a77ec4647e0c9f77fe3f73786ae57bab2",
+    "formal_episodes_startup_verification": "accepted_by_primary_dialogue; running_not_terminal; exact_collector_in_episode_launch.json",
+    "formal_episodes_launch_evidence": "episode_launch.json"
+  },
+  "scheduling_estimates": {
+    "formal_fit_T0_seconds": 300,
+    "formal_fit_basis": "2.53s smoke /9689rows *312713 upper_bound =~82s; *3 margin then round_to5min; runtime_estimate_only",
+    "episodes_T0_seconds": 6000,
+    "episodes_basis": "366.67s slowest_pilot_full_high_high *264/20 =~80.7min; *1.25 =~100min; profiles/concurrency_not_method_evidence",
+    "episodes_workers": 20,
+    "numerical_threads": 1,
+    "panels_T0_seconds": 3120,
+    "panels_basis": "138.64s *15 *1.5 =~52min; isolated_workers1",
+    "panels_workers": 1,
+    "episode_launch_preconditions": "pushed_frozen_runtime_c892_and_data_model_seam_primary_review_passed; unique_launch_parallel_to_docs_startup_verified; later_docs_SHA_must_not_rewrite_actual_run_source",
+    "data_attempt2_T0_seconds": 360,
+    "data_attempt2_basis": "149.6s attempt1*36/33*2 ~=5.5min rounded6min; historical_attempt1_T0_10min_preserved"
+  },
+  "constraints": "do_not_change_parameters_class_weight_threshold_dataset_seed_or_matrix; accuracy_alone_is_not_evidence_of_useful_learning",
+  "formal_model_seam_observations": {
+    "status": "completed",
+    "actions": [
+      "Read the existing train/low-high-4101/frozen_input.json and constructed FixedTerminalEnv with DEFAULT_CONFIG and its stored scenario at t0.",
+      "Loaded only gradient_boost_expand from the formal ROOT/models through evaluate_fixed_terminal_stage7.load_scorers(..., smoke=false).",
+      "Called observed_clone(env) and evaluate_fixed_terminal_stage7._apply(clone, 'hybrid', scorers) exactly once; no full episode, panel, tuning, or retraining was run."
+    ],
+    "artifacts": {
+      "output": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_model_seam",
+      "decision": {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_model_seam/decision.json",
+        "bytes": 205668,
+        "sha256": "f356d39a46b55296a3a2eef042bcf06b15eed39f35b953dc9fc780ac1c41438e"
+      },
+      "validation": {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_model_seam/validation.json",
+        "bytes": 202771,
+        "sha256": "3f10e73a15d4e067ca4727f19c7c96d301e44a1cf21a034d7ea8fdefd8f3f76f"
+      },
+      "logs": {
+        "stdout": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/seam.stdout.log",
+        "stderr": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/seam.stderr.log",
+        "time": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/formal_train_launch_logs/seam.time.log"
+      }
+    },
+    "checks": {
+      "outer_exit_code": 0,
+      "time_exit_status": 0,
+      "wall_seconds": 1.1,
+      "user_seconds": 1.06,
+      "system_seconds": 0.03,
+      "max_rss_kb": 135760,
+      "stderr_bytes": 0,
+      "source": {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/data/train/low-high-4101/frozen_input.json",
+        "sha256": "1628a2d2bc8a3893a3828da906585d3471be7a56336a667484642d838fcf45a7",
+        "snapshot_time": 0.0,
+        "config_matches_default": true
+      },
+      "scorer": {
+        "name": "gradient_boost_expand",
+        "kind": "expand",
+        "feature_dim": 109,
+        "feature_api_accepted_109_dimensions": true
+      },
+      "decision": {
+        "arm": "hybrid",
+        "time": 0.0,
+        "method": "hybrid",
+        "budget": 5,
+        "pool_count": 5
+      },
+      "final_check": {
+        "status": "feasible",
+        "reason": "joint_normal_batch",
+        "searched": 0
+      },
+      "model_hashes_unchanged": true,
+      "original_environment_snapshot_unchanged": true,
+      "decision_json_finite_parse": true,
+      "validation_json_finite_parse": true,
+      "residual_matching_processes": []
+    },
+    "deviations": [],
+    "unresolved": []
+  }
+}

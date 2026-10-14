@@ -31,7 +31,7 @@ full_reference仅有限catalogue上的128宽度参考，不能称为global optim
 
 ## 当前执行状态
 
-Pilot已通过流程核验；正式data attempt1已终态，33/36成功、3val失败，132/144context，原件归档完成，source验证修复已通过主审及33项检查。analyze、attempt2、正式模型训练、episodes及panels尚未启动；实际失败及恢复状态见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。
+Pilot已通过流程核验；attempt1的33成功/3失败与936files完整归档。c892来源的唯一完整attempt2及analysis已完成，36/36成功、144context（108/36），Step7.1主审通过。一次正式fit已完成冻结、144context与四文件hash核验通过，正式模型单决策API接缝已通过；264episodes已正常唯一启动并通过核验，运行未终态；15隔离paneljobs未启动且不重叠。实际执行事实见[运行状态](../evidence/fixed_terminal_stage7/run_status.md)。
 
 训练只有一个class时，记录实际positive/negative计数，并诚实使用constant DummyClassifier诊断回退，一次fit与冻结hash仍保留；非单class使用预定GradientBoostingClassifier固定参数。该回退不能报告为学习模型存在有效信号，最终研究解释由主对话依据实际证据给出；不额外重训或根据test调整。
 
@@ -43,4 +43,10 @@ Pilot已通过流程核验；正式data attempt1已终态，33/36成功、3val�
 
 [全36场景对照原件](../evidence/fixed_terminal_stage7/source_scenario_comparison.json)显示config、times、类型与离散字段exact，仅三val场景的4个SOC float末位不同（max1.1102230246251565e-16）。主对话限定修复的旧generator/source比较仅允许同类型且finite的`requests[*].soc`绝对差≤1e-12、relative0，其他scenario字段及config全部exact；实际执行严格采用stored原SOC/场景并保留原source字节，不以Linux重建场景替换。该规则是source artifact兼容性验证，非物理容差、非test调参；旧snapshot artifact float容差仍原规则，物理、搜索、模型、数据种子与任务矩阵不变。
 
-Attempt1已归档到输出ROOT/data_attempt1，保留33成功与3失败、旧data/state/progress、全部36job日志及launch logs。源码修复已通过主审及data/models33项验证（8.09 s、exit0）；提交推送和Syncthing核对后，只启动一次完整36任务重放；严格核对144context后执行分析，再进行Step7.1主审及唯一正式fit。当前归档已完成，提交推送、Syncthing核对与attempt2尚未完成，不将132context当作正式训练完整证据。
+Attempt1已归档到输出ROOT/data_attempt1，保留33成功与3失败、旧data/state/progress、全部36job日志及launch logs。源码修复已通过主审及data/models33项验证（8.09 s、exit0），提交推送与Syncthing核对后已完成唯一完整36任务重放，严格核对144context并执行分析。Step7.1及唯一正式fit/冻结已通过主审；首次132context仍只作失败历史证据，不混入完整训练分母。
+
+## 正式模型冻结与评价准备（2026-10-14）
+
+数据、分析及唯一正式fit源码为c892d82a77ec4647e0c9f77fe3f73786ae57bab2；后续文档checkpoint不改该来源。模型为预定GradientBoostingClassifier，fit_count1、smoke_only=false、roundtrip=true、threshold.5、test_read=false，val report-only；完整参数、train108/val36的144context SHA与四文件hash见[模型冻结证据](../evidence/fixed_terminal_stage7/model_freeze.json)。没有据类别不平衡或val metrics改参数、权重、阈值或重训。
+
+一次顺序boosting fit没有独立副本可并行，threads1；data与episodes保持20进程，panels保持隔离1进程。原fit T0=5 min，实际wall96.33 s；正式264episodes初估T0=100 min（pilot最慢full/high-high366.67 s×264/20约80.7 min，再乘1.25余量），15paneljobs初估约52 min（138.64 s×15×1.5），仅用于排程。正式模型一次train t0 hybrid API接缝已通过，没有新增fit、episode或panel；已推送c892运行源码固定且数据/模型/接缝主审通过，EP已获授权与纯文档整理并行；actual EPsource仍c892，后续文档SHA不改写实际运行来源。11:55:32.967143北京时间启动，wrapper/dispatcher PID3478486/3478487，20workers/threads1，启动验证通过；11:56:11为9完成/20运行/235待启动/0失败，共264，尚未终态，原件见[episode_launch.json](../evidence/fixed_terminal_stage7/episode_launch.json)。
