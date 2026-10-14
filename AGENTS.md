@@ -20,7 +20,11 @@
 
 ## 阶段7用户授权状态（2026-10-14）
 
-用户已单独授权[阶段7Learning to Search计划](docs/fixed_terminal_stage7_learning_to_search_plan.md)。当前进入真实partial计划搜索的学习展开/剪枝/beam宽度实现与小样本核验；尚未启动正式stage7数据、训练或评价。八方法、一次GradientBoostingClassifier、train108/val36、test264episodes及30states/240panelrows范围冻结于[阶段7方法](docs/arrival_restructure/stage7_learning_to_search.md)与[协议](docs/experiments/fixed_terminal_stage7_protocol.md)。阶段6停止扩展当前学习排序方案的结论及全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次仅执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。
+用户已单独授权[阶段7Learning to Search计划](docs/fixed_terminal_stage7_learning_to_search_plan.md)。**pilot已通过流程核验，准备正式搜索数据生成；正式模型、264episodes及15paneljobs尚未运行。** 八方法、一次正式GradientBoostingClassifier fit、train108/val36与30states/240panelrows范围保持[阶段7方法](docs/arrival_restructure/stage7_learning_to_search.md)及[冻结协议](docs/experiments/fixed_terminal_stage7_protocol.md)定义。Pilot模型的train/val使用同一pilot，仅验证流程，不作为正式训练或泛化证据；当前没有新fit、重训或调参。
+
+主对话已接受C三episode和D隔离panel的实际退出、完整产物、请求守恒/最终检查、模型hash及无残留任务证据，紧凑记录见[运行状态](docs/evidence/fixed_terminal_stage7/run_status.md)与[pilot执行证据](docs/evidence/fixed_terminal_stage7/pilot_execution.json)。已授权下一步依次为正式data36jobs→Step7.1主审→一次正式模型fit并冻结→264episodes（workers20、threads1）→15隔离paneljobs（worker1）→严格summary、文档与结果包。正式run_sourceSHA将在本轮文档提交后设置真实最新SHA，实际启动时间尚未知；继续沿用当前chat heartbeat `7-learning-to-search`，不重复创建。
+
+阶段6停止扩展当前学习排序方案的结论及阶段1–6全部历史证据保留；旧文档中“不自动启动下一阶段”描述的是当时边界，本次只执行新用户计划明确授权的阶段7，不自动扩展长期Q、模型或改变几何。Pilot并发计时和不同profile只用于流程与耗时预估，不证明方法差异。
 
 ## 阶段6研究验收完成（2026-10-14）
 

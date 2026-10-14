@@ -2,11 +2,11 @@
 
 更新日期：2026-10-14。用户单独授权[阶段7Learning to Search计划](../../fixed_terminal_stage7_learning_to_search_plan.md)。阶段6历史验收结论保留。
 
-实现及本地核验已完成，服务器pilot流程验证已启动；正式stage7数据、训练、episodes及panels仍未启动。以下服务器事实由主对话提供，最新C阶段观测时间为2026-10-14 10:41:38北京时间；pilot仅用于流程与估时，不代替正式矩阵或研究功效评价。
+**pilot已通过流程核验，准备正式搜索数据生成；正式模型、264episodes及15paneljobs尚未运行。** 主对话已读取并接受C、D实际collector，最新观测分别为2026-10-14 10:57:03.524406与11:03:14北京时间。原观测、来源与四个smoke模型文件SHA保存于[pilot执行证据](pilot_execution.json)。pilot只用于流程与估时，不代替正式矩阵或研究功效评价。
 
 冻结输出：服务器`/home/user/training_outputs/terminal/stage7_learning_to_search_20261014`；本地`D:\7_codespace\training_outputs\terminal\stage7_learning_to_search_20261014`。data36jobs(108train/36valcontexts)，单模型一次fit，264episodes，15隔离paneljobs(30states/240rows)，strict summary；具体协议见[冻结协议](../../experiments/fixed_terminal_stage7_protocol.md)。
 
-## 当前服务器pilot流程状态
+## 已通过的服务器pilot流程
 
 Pilot源码为`ee6d78cf230f7d632027b766cd134ccb80ebaa91`；接受口径与summary/protocol预注册提交为`b4d3b6e4847fe182d2c7a356f67301fe7fefd705`，已推送。`pilot_launch_logs/launch.json`记录启动前23个本地/服务器源码文件SHA及bytes一致。当前pilot继续使用前者，没有因本地口径修订改变运行。
 
@@ -14,12 +14,26 @@ Pilot源码为`ee6d78cf230f7d632027b766cd134ccb80ebaa91`；接受口径与summar
 |---|---|---|
 | A：数据流程 | seed7001、medium/medium、默认horizon240，t0/5/15/90共4context；每context六个有限JSON、109维features、真实trace widths3/5/8/128；exit0，23.47 s，RSS174548 kB | 流程执行完成 |
 | B：smoke模型与分析 | 单独smoke GradientBoostingClassifier fit；train/val使用同一pilot，仅用于流程，smoke_only=true、fit_count1、roundtrip=true；exit0，2.53 s，RSS262916 kB。分析`pilot/analysis/bottleneck.json` exit0，.21 s，RSS77800 kB | 流程执行完成；正式models尚未训练 |
-| C：episode流程 | 三任务并行、每进程threads1；beam_adaptive medium/medium PID3469033，hybrid medium/medium PID3469035，full_reference high/high PID3469036，均seed7001、standard | 见下方带时间观测；全阶段终态验收尚未完成 |
-| D：隔离panel流程 | initial_dense两state、16方法行 | 尚未启动 |
+| C：episode流程 | 三任务并行、每进程threads1；beam_adaptive medium/medium PID3469033，hybrid medium/medium PID3469035，full_reference high/high PID3469036，均seed7001、standard | 各exit0、48条decisions、5个预期文件、请求守恒、四模型文件hash与B baseline一致，无残留任务；主对话已验收 |
+| D：隔离panel流程 | initial_dense两state（t0/t60）、16方法行，PID3471129；time exit0，wall138.64 s，RSS688280 kB | 24个有限可解析JSON，全部final_check=feasible，原snapshot不变/catalogue一致，四模型hash与B baseline匹配，stderr0且无残留进程；主对话已验收 |
 
-截至10:41:38，beam_adaptive与hybrid已生成各5个输出文件，最终exit、hash及完整验收待核对；full_reference仍在运行，elapsed2:53，decisions/events/frozen输出增长，stderr为空。C全部任务须先核对实际退出、48条decisions、5个预期文件、请求守恒、最终执行检查及模型hash，并确认无残留任务，才启动D隔离panel。
+| C方法/场景 | wall秒 / RSS kB | 请求数 | N/E/F/C |
+|---|---|---|---|
+| beam_adaptive medium/medium | 87.80 / 149484 | 28 | 20/0/0/8 |
+| hybrid medium/medium | 89.56 / 239056 | 28 | 20/0/0/8 |
+| full_reference high/high | 366.67 / 388056 | 57 | 21/0/0/36 |
 
-四次主动查询预算已用完，Luna已结束持续监控，没有保留睡眠worker。主对话已成功创建当前chat的heartbeat `7-learning-to-search`，约5分钟后复查。pilot完成后的已授权接续顺序为正式data36jobs与Step7.1主审、唯一正式模型fit并冻结、264episodes、15隔离paneljobs、严格summary及交付；这些正式步骤目前均未启动。
+这三个pilot case的energy_failure_request_ids均为空、spacing violations/uncertified均0、not_arrived0且请求守恒；这些事实仅限定上述三个case，不泛化为正式实验零能源失败。三任务使用不同profile并且并发运行，计时仅用于估时，不证明方法差异。
+
+D于10:59:09.958310北京时间启动；结束时间11:01:28.598310由开始时间加elapsed138.64 s派生（derived），不是直接wait时间戳。collector另记录完成观测11:02:34，最后汇集观测11:03:14；实际stdout/stderr日志路径保留在JSON。D仍使用pilot的`ee6d78cf230f7d632027b766cd134ccb80ebaa91`版本。
+
+继续沿用当前chat的heartbeat `7-learning-to-search`，不重复创建。已授权下一步依次为正式data36jobs→Step7.1主审→一次正式GradientBoostingClassifier fit并冻结→264episodes（workers20、threads1）→15隔离paneljobs（worker1）→严格summary、文档和结果包。正式run_sourceSHA将在本轮文档提交后设置真实最新SHA；实际launch时间尚未知。这些正式步骤目前均未启动，smoke模型的train/val使用同一pilot仍仅为流程检查，没有新增fit、重训或调参。
+
+正式data初估T0=10 min：medium pilot四context23.47 s×36jobs/20workers约42 s理想耗时，再乘约6倍SOC/load异质系数与约2倍负载/尾部余量，约8.5 min，取10 min。服务器预检为28CPU、约28GB可用内存，data采用workers20、数值库threads1。隔离formal panels初估138.64 s×15jobs×1.5约52 min，后续按实际隔离同状态任务耗时更新，不扩展矩阵。以上是排程预估，不是pilot性能结论。
+
+### 10:41:38运行中历史观测
+
+当时beam_adaptive与hybrid已生成各5个输出文件，最终exit/hash尚待核对；full_reference仍运行，elapsed2:53，输出增长、stderr为空。四次主动查询后Luna结束持续监控，主对话创建heartbeat等待复查。该记录保留为运行中历史状态，已被上面的C、D终态核验接续。
 
 本地检查分别为整合71项通过（13.21 s）、接受口径23项通过（4.16 s）、另一次summary/package14项通过（1.97 s）。这是三次独立运行，不累计成一次套件。以下保留实现、小样本及口径确定的历史记录。
 

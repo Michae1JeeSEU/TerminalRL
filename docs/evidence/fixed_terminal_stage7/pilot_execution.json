@@ -1,0 +1,623 @@
+{
+  "schema": "fixed-terminal-stage7-pilot-execution-v1",
+  "status": "pilot_flow_verified",
+  "scope": "workflow_and_runtime_estimation_only; no_formal_training_test_or_efficacy_conclusion",
+  "primary_review": {
+    "accepted": true,
+    "reviewer": "primary_dialogue",
+    "C_and_D_collectors_reviewed": true
+  },
+  "source_commits": {
+    "pilot": "ee6d78cf230f7d632027b766cd134ccb80ebaa91",
+    "accepted_compute_protocol": "b4d3b6e4847fe182d2c7a356f67301fe7fefd705",
+    "formal_run_source_commit": null,
+    "formal_source_assignment": "actual_latest_SHA_after_documentation_commit"
+  },
+  "provenance": {
+    "C": {
+      "local_collector": "tmp_stage7_preflight/checks/c_heartbeat_20261014.json",
+      "sha256": "17cc5f8c6e8a19199a1ef0dd2078c1f422284de0f804e0399ff049eaf3a8ddec",
+      "collector_observed_at": "2026-10-14T10:57:03.524406+08:00"
+    },
+    "D": {
+      "local_collector": "tmp_stage7_preflight/checks/d_panels_20261014.json",
+      "sha256": "4848ee76a45d7b4ca7ba3ccacbe3c2d41fb46a3ae92e15299d686bb057910ac8",
+      "collector_observed_at": "2026-10-14T11:03:14+08:00"
+    }
+  },
+  "output_roots": {
+    "server": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+    "local": "D:\\7_codespace\\training_outputs\\terminal\\stage7_learning_to_search_20261014"
+  },
+  "observations": {
+    "C": {
+      "schema": "stage7-C-heartbeat-check-v1",
+      "status": "completed",
+      "observed_at": "2026-10-14T10:57:03.524406+08:00",
+      "root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014",
+      "launch": {
+        "launch_json": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot_launch_logs/launch.json",
+        "C_phases": [
+          {
+            "phase": "C_beam_episode",
+            "pid": 3469033,
+            "started_at": "2026-10-14T10:38:44.392236+08:00",
+            "output": "pilot/episodes/beam_adaptive-medium-medium-7001-standard"
+          },
+          {
+            "phase": "C_hybrid_episode",
+            "pid": 3469035,
+            "started_at": "2026-10-14T10:38:44.393032+08:00",
+            "output": "pilot/episodes/hybrid-medium-medium-7001-standard"
+          },
+          {
+            "phase": "C_full_episode",
+            "pid": 3469036,
+            "started_at": "2026-10-14T10:38:44.393520+08:00",
+            "output": "pilot/episodes/full_reference-high-high-7001-standard"
+          }
+        ],
+        "residual_processes": []
+      },
+      "episodes": {
+        "beam_adaptive": {
+          "pid": 3469033,
+          "exit_status": 0,
+          "wall": "1:27.80",
+          "max_rss_kb": 149484,
+          "decision_count": 48,
+          "last_decision_time": 235,
+          "requests_jsonl_lines": 28,
+          "result_requests_count": 28,
+          "request_count_match": true,
+          "request_conservation": true,
+          "energy_failure_request_ids": [],
+          "model_hashes_unchanged": true,
+          "final_submit_count": 48,
+          "final_validation_calls": 96,
+          "files": [
+            "decisions.jsonl",
+            "events.jsonl",
+            "frozen_input.json",
+            "requests.jsonl",
+            "result.json"
+          ],
+          "timing_quartiles_seconds": {
+            "total": {
+              "p25": 0.9672255581,
+              "median": 1.7759747617,
+              "p75": 2.7441596687,
+              "max": 3.5488154739
+            },
+            "generation": {
+              "p25": 0.01639897,
+              "median": 0.7746960698,
+              "p75": 1.7016319148,
+              "max": 2.1925727613
+            },
+            "exact_rollout": {
+              "p25": 0.76760427,
+              "median": 0.9768680744,
+              "p75": 1.1206967719,
+              "max": 2.0018444574
+            }
+          }
+        },
+        "hybrid": {
+          "pid": 3469035,
+          "exit_status": 0,
+          "wall": "1:29.56",
+          "max_rss_kb": 239056,
+          "decision_count": 48,
+          "last_decision_time": 235,
+          "requests_jsonl_lines": 28,
+          "result_requests_count": 28,
+          "request_count_match": true,
+          "request_conservation": true,
+          "energy_failure_request_ids": [],
+          "model_hashes_unchanged": true,
+          "final_submit_count": 48,
+          "final_validation_calls": 96,
+          "files": [
+            "decisions.jsonl",
+            "events.jsonl",
+            "frozen_input.json",
+            "requests.jsonl",
+            "result.json"
+          ],
+          "timing_quartiles_seconds": {
+            "total": {
+              "p25": 1.0022637872,
+              "median": 1.7500171401,
+              "p75": 2.8237887574,
+              "max": 3.2978539597
+            },
+            "generation": {
+              "p25": 0.015913479,
+              "median": 0.7588416142,
+              "p75": 1.6436878014,
+              "max": 2.071129987
+            },
+            "exact_rollout": {
+              "p25": 0.7688116226,
+              "median": 0.988672493,
+              "p75": 1.1241126573,
+              "max": 2.3559339354
+            }
+          }
+        },
+        "full_reference": {
+          "pid": 3469036,
+          "exit_status": 0,
+          "wall": "6:06.67",
+          "max_rss_kb": 388056,
+          "decision_count": 48,
+          "last_decision_time": 235,
+          "requests_jsonl_lines": 57,
+          "result_requests_count": 57,
+          "request_count_match": true,
+          "request_conservation": true,
+          "energy_failure_request_ids": [],
+          "model_hashes_unchanged": true,
+          "final_submit_count": 48,
+          "final_validation_calls": 96,
+          "files": [
+            "decisions.jsonl",
+            "events.jsonl",
+            "frozen_input.json",
+            "requests.jsonl",
+            "result.json"
+          ],
+          "timing_quartiles_seconds": {
+            "total": {
+              "p25": 4.2178296484,
+              "median": 4.7889006259,
+              "p75": 12.4355199616,
+              "max": 15.7347919885
+            },
+            "generation": {
+              "p25": 1.0932742208,
+              "median": 3.0858012307,
+              "p75": 8.2523099175,
+              "max": 10.9279878289
+            },
+            "exact_rollout": {
+              "p25": 2.6617912864,
+              "median": 3.7110348362,
+              "p75": 4.1932500293,
+              "max": 7.8984434996
+            }
+          }
+        }
+      },
+      "model_hash_check": {
+        "path": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot/models",
+        "files_checked": 4,
+        "all_match_b_baseline": true,
+        "model_hashes_unchanged_in_results": {
+          "beam_adaptive": true,
+          "hybrid": true,
+          "full_reference": true
+        }
+      },
+      "D_check": {
+        "panels_root_exists": false,
+        "panel_processes_observed": []
+      },
+      "deviations": [
+        "Initial collector attempt failed before remote reads due a local variable-name collision; corrected read-only collection succeeded."
+      ],
+      "unresolved": []
+    },
+    "D": {
+      "status": "completed",
+      "observed_at": "2026-10-14T11:03:14+08:00",
+      "scope": "single authorized smoke panel pilot D; no formal data/fit/test",
+      "source_commit": "ee6d78cf230f7d632027b766cd134ccb80ebaa91",
+      "command": [
+        "/home/user/envs/terminal_env/bin/python",
+        "-m",
+        "terminal_marl.scripts.evaluate_fixed_terminal_stage7",
+        "--mode",
+        "panels",
+        "--seed",
+        "7001",
+        "--load",
+        "medium",
+        "--soc",
+        "medium",
+        "--variant",
+        "initial_dense",
+        "--models",
+        "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot/models",
+        "--output",
+        "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot/panels/medium-medium-7001-initial_dense",
+        "--smoke"
+      ],
+      "cwd": "/home/user/projects/terminal",
+      "environment": {
+        "TERMINAL_SOURCE_COMMIT": "ee6d78cf230f7d632027b766cd134ccb80ebaa91",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "process": {
+        "pid": 3471129,
+        "started_at": "2026-10-14T10:59:09.958310+08:00",
+        "ended_at_derived_from_start_plus_elapsed": "2026-10-14T11:01:28.598310+08:00",
+        "completion_observed_at": "2026-10-14T11:02:34+08:00",
+        "residual_panel_processes": [],
+        "time_exit_status": 0,
+        "time_log": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot_launch_logs/D_panels.time.log",
+        "stdout_log": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot_launch_logs/D_panels.stdout.log",
+        "stderr_log": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot_launch_logs/D_panels.stderr.log"
+      },
+      "prelaunch_environment_observation": {
+        "observed_at": "2026-10-14T10:59:01.584432+08:00",
+        "nproc": 28,
+        "mem_available_bytes": 28134141952,
+        "load_average_1_5_15": [
+          0.01,
+          0.07,
+          0.21
+        ],
+        "other_research_processes_observed": []
+      },
+      "time": {
+        "elapsed_wall": "2:18.64",
+        "user_seconds": 138.13,
+        "system_seconds": 0.47,
+        "cpu_percent": 99,
+        "max_rss_kb": 688280
+      },
+      "artifacts": {
+        "output_root": "/home/user/training_outputs/terminal/stage7_learning_to_search_20261014/pilot/panels/medium-medium-7001-initial_dense",
+        "schema": "fixed-terminal-stage7-generation-v1",
+        "variant": "initial_dense",
+        "smoke_only": true,
+        "times": [
+          0,
+          60
+        ],
+        "json_file_count": 24,
+        "json_parse_errors": [],
+        "nonfinite_json_paths": [],
+        "required_per_state": [
+          "arm JSON for 8 arms",
+          "full_values.json",
+          "snapshot.json",
+          "summary.json"
+        ],
+        "generation_json": "generation.json",
+        "frozen_input": "frozen_input.json"
+      },
+      "checks": {
+        "all_json_finite_and_parseable": true,
+        "states": {
+          "t0": {
+            "time": 0,
+            "aircraft_count": 23,
+            "row_count": 8,
+            "information_scope": "already_arrived_only; no pending IDs, draws, or arrival times",
+            "identical_snapshot_and_catalogue_domain": true,
+            "original_environment_unchanged": true,
+            "arms": {
+              "full_reference": {
+                "final_check": "feasible",
+                "timing_total": 11.542310402728617,
+                "candidate_checks": 50620,
+                "batch_checks": 6707,
+                "rollouts": 14,
+                "unique_rollouts": 14,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 736,
+                "pool_count": 14,
+                "chosen_in_full_pool": true
+              },
+              "learned_pruning": {
+                "final_check": "feasible",
+                "timing_total": 11.571974517777562,
+                "candidate_checks": 50628,
+                "batch_checks": 6715,
+                "rollouts": 14,
+                "unique_rollouts": 14,
+                "learned_pruned_nodes": 50,
+                "expanded_nodes": 746,
+                "pool_count": 14,
+                "chosen_in_full_pool": true
+              },
+              "learned_beam_width": {
+                "final_check": "feasible",
+                "timing_total": 11.969679315574467,
+                "candidate_checks": 50620,
+                "batch_checks": 6707,
+                "rollouts": 14,
+                "unique_rollouts": 14,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 765,
+                "pool_count": 14,
+                "chosen_in_full_pool": true
+              },
+              "hybrid": {
+                "final_check": "feasible",
+                "timing_total": 11.562083382159472,
+                "candidate_checks": 50623,
+                "batch_checks": 6710,
+                "rollouts": 14,
+                "unique_rollouts": 14,
+                "learned_pruned_nodes": 19,
+                "expanded_nodes": 746,
+                "pool_count": 14,
+                "chosen_in_full_pool": true
+              },
+              "beam_b3": {
+                "final_check": "feasible",
+                "timing_total": 2.91174756642431,
+                "candidate_checks": 9790,
+                "batch_checks": 485,
+                "rollouts": 5,
+                "unique_rollouts": 5,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 29,
+                "pool_count": 5,
+                "chosen_in_full_pool": true
+              },
+              "beam_b5": {
+                "final_check": "feasible",
+                "timing_total": 4.046644705347717,
+                "candidate_checks": 13389,
+                "batch_checks": 697,
+                "rollouts": 7,
+                "unique_rollouts": 7,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 43,
+                "pool_count": 7,
+                "chosen_in_full_pool": true
+              },
+              "beam_b8": {
+                "final_check": "feasible",
+                "timing_total": 5.882506285794079,
+                "candidate_checks": 18698,
+                "batch_checks": 1007,
+                "rollouts": 10,
+                "unique_rollouts": 10,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 63,
+                "pool_count": 10,
+                "chosen_in_full_pool": false
+              },
+              "beam_adaptive": {
+                "final_check": "feasible",
+                "timing_total": 13.24289736058563,
+                "candidate_checks": 53652,
+                "batch_checks": 6805,
+                "rollouts": 16,
+                "unique_rollouts": 16,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 871,
+                "pool_count": 16,
+                "chosen_in_full_pool": false
+              }
+            }
+          },
+          "t60": {
+            "time": 60,
+            "aircraft_count": 28,
+            "row_count": 8,
+            "information_scope": "already_arrived_only; no pending IDs, draws, or arrival times",
+            "identical_snapshot_and_catalogue_domain": true,
+            "original_environment_unchanged": true,
+            "arms": {
+              "full_reference": {
+                "final_check": "feasible",
+                "timing_total": 8.304446148686111,
+                "candidate_checks": 16512,
+                "batch_checks": 3389,
+                "rollouts": 13,
+                "unique_rollouts": 13,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 347,
+                "pool_count": 13,
+                "chosen_in_full_pool": true
+              },
+              "learned_pruning": {
+                "final_check": "feasible",
+                "timing_total": 9.850850799120963,
+                "candidate_checks": 19108,
+                "batch_checks": 3537,
+                "rollouts": 17,
+                "unique_rollouts": 17,
+                "learned_pruned_nodes": 28,
+                "expanded_nodes": 352,
+                "pool_count": 17,
+                "chosen_in_full_pool": true
+              },
+              "learned_beam_width": {
+                "final_check": "feasible",
+                "timing_total": 8.175316473469138,
+                "candidate_checks": 16512,
+                "batch_checks": 3389,
+                "rollouts": 13,
+                "unique_rollouts": 13,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 360,
+                "pool_count": 13,
+                "chosen_in_full_pool": true
+              },
+              "hybrid": {
+                "final_check": "feasible",
+                "timing_total": 8.31424798630178,
+                "candidate_checks": 16512,
+                "batch_checks": 3389,
+                "rollouts": 13,
+                "unique_rollouts": 13,
+                "learned_pruned_nodes": 8,
+                "expanded_nodes": 352,
+                "pool_count": 13,
+                "chosen_in_full_pool": true
+              },
+              "beam_b3": {
+                "final_check": "feasible",
+                "timing_total": 1.2589742103591561,
+                "candidate_checks": 2684,
+                "batch_checks": 185,
+                "rollouts": 2,
+                "unique_rollouts": 2,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 13,
+                "pool_count": 2,
+                "chosen_in_full_pool": true
+              },
+              "beam_b5": {
+                "final_check": "feasible",
+                "timing_total": 2.199800720438361,
+                "candidate_checks": 4270,
+                "batch_checks": 325,
+                "rollouts": 4,
+                "unique_rollouts": 4,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 21,
+                "pool_count": 4,
+                "chosen_in_full_pool": true
+              },
+              "beam_b8": {
+                "final_check": "feasible",
+                "timing_total": 3.7618597419932485,
+                "candidate_checks": 6678,
+                "batch_checks": 535,
+                "rollouts": 7,
+                "unique_rollouts": 7,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 33,
+                "pool_count": 7,
+                "chosen_in_full_pool": true
+              },
+              "beam_adaptive": {
+                "final_check": "feasible",
+                "timing_total": 8.171376829966903,
+                "candidate_checks": 16512,
+                "batch_checks": 3389,
+                "rollouts": 13,
+                "unique_rollouts": 13,
+                "learned_pruned_nodes": 0,
+                "expanded_nodes": 414,
+                "pool_count": 13,
+                "chosen_in_full_pool": true
+              }
+            }
+          }
+        },
+        "models": {
+          "manifest_model_hashes_unchanged": true,
+          "match_manifest": true,
+          "sha256": {
+            "gradient_boost_expand.joblib": "0f13d3872397339e3a48d64bf026eed73cfe8ff0091a5d4d8dd09bf81440d6b3",
+            "manifest.json": "e6a1dce9b94ea5876b5796260168b42081411242b9df6553d20da7e5fd839c39",
+            "protocol.json": "445cbee9c378473d14d00f11b24d592928051d20e6560b33dee8d88cf6a43259",
+            "training.json": "2850bd6742deb7745fdd8afb643e5f07c3eea7447fb7c8cb0fc8dbf3f2ded6ec"
+          }
+        }
+      },
+      "deviations": [],
+      "unresolved": []
+    }
+  },
+  "additional_primary_observations": {
+    "A": {
+      "seed": 7001,
+      "load": "medium",
+      "soc": "medium",
+      "horizon": 240,
+      "times": [
+        0,
+        5,
+        15,
+        90
+      ],
+      "contexts": 4,
+      "finite_json_files_per_context": 6,
+      "feature_dim": 109,
+      "trace_widths": [
+        3,
+        5,
+        8,
+        128
+      ],
+      "exit_code": 0,
+      "wall_seconds": 23.47,
+      "max_rss_kb": 174548
+    },
+    "B": {
+      "model_class": "GradientBoostingClassifier",
+      "train_val_same_pilot": true,
+      "smoke_only": true,
+      "fit_count": 1,
+      "roundtrip_predictions_equal": true,
+      "exit_code": 0,
+      "wall_seconds": 2.53,
+      "max_rss_kb": 262916,
+      "analysis": {
+        "artifact": "pilot/analysis/bottleneck.json",
+        "exit_code": 0,
+        "wall_seconds": 0.21,
+        "max_rss_kb": 77800
+      }
+    },
+    "C": {
+      "beam_adaptive": {"request_count": 28, "N": 20, "E": 0, "F": 0, "C": 8, "spacing_violations": 0, "spacing_uncertified": 0, "not_arrived": 0, "conservation_ok": true},
+      "hybrid": {"request_count": 28, "N": 20, "E": 0, "F": 0, "C": 8, "spacing_violations": 0, "spacing_uncertified": 0, "not_arrived": 0, "conservation_ok": true},
+      "full_reference": {"request_count": 57, "N": 21, "E": 0, "F": 0, "C": 36, "spacing_violations": 0, "spacing_uncertified": 0, "not_arrived": 0, "conservation_ok": true},
+      "source": "primary_dialogue_read_synced_pilot_results",
+      "scope": "these_three_pilot_cases_only; different_profiles_not_a_method_comparison"
+    },
+    "D": {
+      "stderr_bytes": 0,
+      "four_model_hashes_match_B_baseline": true
+    },
+    "energy_failure_scope": "empty energy_failure_request_ids only in these three pilot C cases; no_generalization"
+  },
+  "planned_formal": {
+    "started": false,
+    "actual_launch_time": null,
+    "data": {
+      "scenario_jobs": 36,
+      "train_contexts": 108,
+      "val_contexts": 36,
+      "workers": 20,
+      "threads": 1,
+      "T0_seconds": 600,
+      "estimate_basis": "23.47s*36/20=42.246s ideal; *6 profile heterogeneity *2 load/tail margin=506.952s (~8.5min), rounded to10min; scheduling estimate only"
+    },
+    "Step7_1_review": "primary_review_after_data",
+    "training": {
+      "formal_fit_count_planned": 1,
+      "formal_fit_started": false,
+      "freeze_required": true
+    },
+    "episodes": {
+      "jobs": 264,
+      "workers": 20,
+      "threads": 1,
+      "started": false
+    },
+    "panels": {
+      "jobs": 15,
+      "workers": 1,
+      "threads": 1,
+      "started": false,
+      "initial_estimate_seconds": 3120,
+      "estimate_basis": "138.64s*15*1.5=3119.4s (~52min); update using actual isolated timing without matrix expansion"
+    },
+    "follow_on": [
+      "strict_summary",
+      "evidence_documents",
+      "package_delivery"
+    ],
+    "server_preflight_basis": {
+      "cpus": 28,
+      "available_memory": "about28GB"
+    },
+    "heartbeat": "reuse_current_chat_7-learning-to-search"
+  },
+  "interpretation": "pilot timing used for workflow and estimates only; concurrent episodes and different profiles do not establish method differences"
+}
