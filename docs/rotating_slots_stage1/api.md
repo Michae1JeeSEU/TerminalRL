@@ -217,7 +217,8 @@ records. Relevant fields are identity/status, `soc`, `p/v/a/jerk`,
 `service_class`, `ring/slot/pad_id`, `version`, `emergency`, `trajectory_hash`,
 `energy_j`, cumulative `peak_seconds`, `release_time`, `touchdown_time`,
 `service_end`, `admitted`, `fixture`, elapsed phase times, and
-`battery_power_w`. A version change matters when preparing a later plan.
+`battery_power_w`. Optional `normal_final_touchdown_soc` stores the authoritative
+normal-final endpoint forecast. A version change matters when preparing a later plan.
 
 `snapshot.requests` contains revealed requests, including ones already acted
 on; it is not an external waiting queue or the unreleased manifest. Check
@@ -346,6 +347,18 @@ Eligibility, declaration, soft planning, and candidate rejection alone do not
 charge that cost. Actual power and joules are unchanged by the cost. Normal
 touchdown requires SOC ≥0.25; emergency touchdown requires physical energy
 feasibility and may be reported below that reserve.
+
+For an otherwise valid normal final, the reserve comparison uses
+`required_soc = math.fsum((.25, holding_soc_used, flight_soc_used))` directly:
+the canonical exact-25% boundary is accepted, while one ULP below the required
+SOC is rejected with `LANDING_RESERVE`. At actual maneuver start, the fixed
+final's forecast is `.25 + (start_soc - math.fsum((.25, remaining_final_soc_used)))`.
+The `maneuver_started` event records `start_soc`, `required_soc`, and
+`predicted_touchdown_soc`; the aircraft stores the forecast in
+`normal_final_touchdown_soc` and uses it at the exact normal-final endpoint.
+Integrated joules and peak seconds retain their ordinary accumulation. This
+numeric boundary convention adds no reserve epsilon, charging, or energy-model
+change.
 
 Airborne statuses are `INBOUND`, `HOLD_OUTER/MIDDLE/INNER`, `TRANSFER_O_M/M_I`,
 `FINAL_NORMAL`, `FINAL_EMERGENCY`, and `VERTICAL_DESCENT`. `LANDED_SERVICE` and

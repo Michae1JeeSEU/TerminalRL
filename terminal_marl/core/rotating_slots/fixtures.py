@@ -557,6 +557,16 @@ def run_energy(case, e):
         r = submit(e, w, (p,))
         e.check(r.accepted is (case == "E10"), "normalreserve tested atcompletedtouchdown", case == "E10", [soc, soc-whole.soc_used, asdict(r)])
         if case != "E10": e.check(r.reason == "LANDING_RESERVE", "belowreserve explicitreason", "LANDING_RESERVE", r.reason)
+        if case == "E10":
+            advance(e, w, p.end_time)
+            a = w.aircraft["a"]
+            touchdown = [x for x in w.events if x["type"] == "touchdown" and x["aircraft_id"] == "a"]
+            e.check(a.status == "LANDED_SERVICE" and a.soc == .25
+                    and a.normal_final_touchdown_soc == .25 and touchdown
+                    and touchdown[-1]["details"]["below_reserve"] is False
+                    and w.metrics()["landing_below_reserve"] == 0,
+                    "exactreserve normalfinal executes complete descent to canonicaltouchdownSOC", .25,
+                    {"aircraft": a.to_dict(), "touchdown": touchdown, "metrics": w.metrics()})
     elif case == "E11":
         w, p = single_final(e, emergency=True, soc=.30)
         e.check(submit(e, w, (p,)).accepted, "lowreserve rescueaccepted", True, "accepted")

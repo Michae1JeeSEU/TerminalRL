@@ -721,3 +721,38 @@ def test_future_support_checks_current_active_target_before_next_source():
     assert witness["witness_time"]==current.end_time
     assert witness["predicted_soc"]==pytest.approx(.35-1e-6)
     assert w.active["a"] is current and w.soft["a"] is next_plan
+
+
+@pytest.mark.parametrize("boundary",["below","exact","above"])
+def test_normal_final_reserve_canonical_float_boundary_executes_touchdown(boundary):
+    p=final()
+    q=integrate_energy(p,p.start_time,p.end_time)
+    required_soc=math.fsum((.25,q.soc_used))
+    initial_soc={"below":math.nextafter(required_soc,-math.inf),
+                 "exact":required_soc,"above":math.nextafter(required_soc,math.inf)}[boundary]
+    w=RotatingSlotWorld()
+    w.seed_hold("a","inner",0,initial_soc)
+    result=w.submit((p,))
+    if boundary=="below":
+        assert result.reason=="LANDING_RESERVE"
+        assert result.details["required_soc"]==required_soc
+        assert not w.active and w.aircraft["a"].soc==initial_soc
+        return
+    assert result.accepted
+    expected=.25+(initial_soc-required_soc)
+    assert w.aircraft["a"].normal_final_touchdown_soc==expected
+    started=next(e for e in w.events if e["type"]=="maneuver_started")
+    assert started["details"]["start_soc"]==initial_soc
+    assert started["details"]["required_soc"]==required_soc
+    assert started["details"]["predicted_touchdown_soc"]==expected
+    w.advance(p.end_time)
+    a=w.aircraft["a"]
+    assert a.status=="LANDED_SERVICE" and a.touchdown_time==p.end_time
+    assert a.soc==expected and a.soc >= .25
+    if boundary=="exact": assert a.soc==.25
+    touchdown=next(e for e in w.events if e["type"]=="touchdown")
+    assert touchdown["details"]["soc"]==expected
+    assert touchdown["details"]["below_reserve"] is False
+    assert w.metrics()["landing_below_reserve"]==0
+    assert a.energy_j==pytest.approx(q.joules,abs=1e-5)
+    assert a.peak_seconds==pytest.approx(q.peak_seconds,abs=1e-5)

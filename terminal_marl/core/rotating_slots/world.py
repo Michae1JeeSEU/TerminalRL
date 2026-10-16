@@ -83,6 +83,7 @@ class AircraftState:
     final_time: float = 0.
     descent_time: float = 0.
     battery_power_w: float = 0.
+    normal_final_touchdown_soc: float | None = None
 
     def to_dict(self):
         return asdict(self)
@@ -623,8 +624,12 @@ class RotatingSlotWorld:
                 return self._reject("SOC_INSUFFICIENT", a.id)
             if a.peak_seconds + holding.peak_seconds + energy.peak_seconds > 120:
                 return self._reject("PEAK_BUDGET", a.id)
-            if p.kind == "FINAL_NORMAL" and remaining < .25:
-                return self._reject("LANDING_RESERVE", a.id, predicted_soc=remaining)
+            if p.kind == "FINAL_NORMAL":
+                required_soc = math.fsum((.25, holding.soc_used, energy.soc_used))
+                predicted_soc = .25 + (a.soc-required_soc)
+                if a.soc < required_soc:
+                    return self._reject("LANDING_RESERVE", a.id, predicted_soc=predicted_soc,
+                                        required_soc=required_soc)
             soft[a.id] = p
         try:
             slots, pads, times = self._calendar_stage(soft, plans)
@@ -728,8 +733,18 @@ class RotatingSlotWorld:
                             declaration_ring=e.declaration_ring or a.ring,
                             start_time=self.time, start_ring=a.ring, state="FINAL_EMERGENCY")
             status = ("TRANSFER_O_M" if p.source_ring == "outer" else "TRANSFER_M_I") if p.kind == "TRANSFER" else p.kind
-            self.aircraft[a.id] = replace(a, status=status, emergency=e, trajectory_hash=p.trajectory_hash)
-            self._event("maneuver_started", a.id, trajectory_hash=p.trajectory_hash, dependencies=sorted(deps))
+            start_details = {}
+            touchdown_soc = None
+            if p.kind == "FINAL_NORMAL":
+                energy = self._energy(p, self.time, p.end_time)
+                required_soc = math.fsum((.25, energy.soc_used))
+                touchdown_soc = .25 + (a.soc-required_soc)
+                start_details = {"start_soc": a.soc, "required_soc": required_soc,
+                                 "predicted_touchdown_soc": touchdown_soc}
+            self.aircraft[a.id] = replace(a, status=status, emergency=e, trajectory_hash=p.trajectory_hash,
+                                         normal_final_touchdown_soc=touchdown_soc)
+            self._event("maneuver_started", a.id, trajectory_hash=p.trajectory_hash,
+                        dependencies=sorted(deps), **start_details)
 
     def _fail(self, aircraft_id, reason):
         self.failed, self.failure_time = True, self.time
@@ -777,8 +792,14 @@ class RotatingSlotWorld:
             status = a.status
             if p.pad_id is not None and end >= p.end_time-13.5:
                 status = "VERTICAL_DESCENT"
+            soc = a.soc-q.soc_used
+            # The fixed normal final has an authoritative start SOC and complete
+            # energy forecast; preserve its additive reserve boundary at touchdown.
+            if (p.kind == "FINAL_NORMAL" and end == p.end_time
+                    and a.normal_final_touchdown_soc is not None):
+                soc = a.normal_final_touchdown_soc
             self.aircraft[key] = replace(a, p=s.p, v=s.v, a=s.a, jerk=s.jerk,
-                soc=a.soc-q.soc_used, energy_j=a.energy_j+q.joules,
+                soc=soc, energy_j=a.energy_j+q.joules,
                 peak_seconds=a.peak_seconds+q.peak_seconds, status=status,
                 airborne_time=a.airborne_time+duration,
                 holding_time=a.holding_time+(duration if a.status.startswith("HOLD") else 0),
