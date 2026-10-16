@@ -1,0 +1,454 @@
+# 正式规范配置：规则和数值已冻结；尚未表示当前仓库已经适配或通过验收。
+# 文献能源代理模型不是EH216-S实机标定。
+schema_version: rotating_slots_stage1_v1_0
+document_status: FORMAL_FOR_IMPLEMENTATION
+scope: stage1_scenario_implementation_and_qualification_only
+contract_file: fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md
+implementation_status: NOT_QUALIFIED_BY_THIS_DOCUMENT
+coordinates:
+  frame: local_ENU
+  height_reference: AGL
+  terrain: flat
+  site_elevation_msl_m: 0.0
+  gravity_mps2: 9.80665
+  wind_mps:
+  - 0.0
+  - 0.0
+  - 0.0
+  position_noise_m: 0.0
+vehicle:
+  profile_id: eh216s_reference_pm16_v1_0
+  model_claim: public_performance_constrained_research_surrogate_not_validated_digital_twin
+  homogeneous: true
+  fixed_flight_mass_kg: 620.0
+  mass_status: REF_MTOW_DESIGN_fixed_mass
+  reference_tcds: TC0078A_Rev0_2023-10-12
+  rotor_count: 16
+  coaxial_pairs: 8
+  rotor_diameter_m: 1.575
+  max_height_agl_m: 120.0
+  max_height_msl_m: 1000.0
+  max_horizontal_speed_mps: 25.0
+  metadata_never_exceed_speed_mps: 29.166666666666664
+  metadata_design_speed_mps: 36.11111111111111
+  min_horizontal_speed_inbound_transfer_mps: 2.0
+  max_horizontal_acceleration_norm_mps2: 1.5
+  max_lateral_acceleration_mps2: 1.5
+  max_vertical_acceleration_mps2: 1.0
+  max_climb_speed_mps: 2.0
+  max_descent_speed_mps: 2.0
+  max_horizontal_jerk_mps3: 1.0
+  max_vertical_jerk_mps3: 0.5
+  max_independent_yaw_rate_degps: 12.0
+  yaw_equals_velocity_heading_required: false
+  emergency_envelope_relaxation: false
+airspace:
+  fixed: true
+  boundary_radius_m: 900.0
+  min_height_agl_m: 0.0
+  max_height_agl_m: 120.0
+  rotation_direction: clockwise
+  common_angular_speed_radps: 0.035
+  rings:
+  - id: outer
+    radius_m: 600.0
+    height_agl_m: 110.0
+    slot_count: 37
+    initial_phase_rad: 0.0
+  - id: middle
+    radius_m: 450.0
+    height_agl_m: 70.0
+    slot_count: 28
+    initial_phase_rad: 0.0
+  - id: inner
+    radius_m: 300.0
+    height_agl_m: 30.0
+    slot_count: 18
+    initial_phase_rad: 0.0
+  slot_design_min_chord_m: 100.0
+  legacy_max_active_cap_enabled: false
+entry:
+  gate_angles_rad:
+  - 0.0
+  - 1.5707963267948966
+  - 3.141592653589793
+  - 4.71238898038469
+  gate_probabilities:
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  radius_m: 900.0
+  height_agl_m: 110.0
+  initial_horizontal_speed_mps: 21.0
+  inward_to_clockwise_tangent_angle_deg: 45.0
+  initial_acceleration_mps2:
+  - 0.0
+  - 0.0
+  - 0.0
+  alternative_gate_retry: false
+  direct_spawn_into_slot: false
+  admission_required_before_insertion: true
+  allow_post_admission_reroute: false
+  normal_freeflow_reserve_screen_required: true
+  whole_fleet_recovery_certificate_required: false
+  initial_vertical_speed_mps: 0.0
+motion_rules:
+  arbitrary_transfer_initiation_phase: true
+  whole_lap_wait_action: false
+  same_ring_slot_change: false
+  cooperative_slot_hopping: false
+  outward_avoidance: false
+  normal_departure_can_create_slot_vacancy: true
+  inward_transfer_radius_nonincreasing: true
+  normal_height_nonincreasing: true
+  reverse_rotation: false
+  minimum_trajectory_continuity: C2
+  started_maneuver_target_change: false
+  future_unstarted_plan_editable: true
+  final_and_vertical_descent_atomic: true
+  hover_waiting: false
+  vertical_descent_horizontal_speed_zero_allowed: true
+  normal_allowed_edges:
+  - - outer
+    - middle
+  - - middle
+    - inner
+  - - inner
+    - pad
+  emergency_allowed_edges:
+  - - outer
+    - pad
+  - - middle
+    - pad
+  - - inner
+    - pad
+  emergency_height_nonincreasing: true
+  emergency_radius_nonincreasing: true
+  future_dependency_integrity_required: true
+pads:
+  count: 6
+  layout_radius_m: 100.0
+  ground_height_agl_m: 0.0
+  initial_phase_rad: 0.0
+  all_service_classes_compatible: true
+  independent_emergency_pad: false
+  service_preemptible: false
+  service_starts_at: touchdown
+  free_at: service_completed_and_ground_cleared
+  service_includes_ground_clearance: true
+  departure_flights_simulated: false
+  charging_simulated: false
+  service_classes:
+    short:
+      duration_s: 60.0
+      probability: 0.2
+    standard:
+      duration_s: 120.0
+      probability: 0.6
+    long:
+      duration_s: 240.0
+      probability: 0.2
+  final_capture_height_agl_m: 15.0
+  final_capture_horizontal_speed_mps: 0.0
+  final_capture_vertical_speed_mps: -0.5
+  nominal_vertical_descent_speed_mps: 1.5
+  touchdown_horizontal_speed_mps: 0.0
+  touchdown_vertical_speed_mps: 0.0
+  service_parameters_source: DESIGN_synthetic_service_workload
+  service_entity_participates_in_airborne_separation: true
+  normal_future_availability_reservable: true
+  emergency_requires_currently_free_uncommitted_pad: true
+  emergency_soft_reservation_preemption: true
+  emergency_preemption_of_started_maneuver: false
+  emergency_reservation_from: emergency_final_start
+  emergency_reservation_until: touchdown_plus_service_duration
+  vertical_descent_profile:
+    id: c2_vertical_descent_15m_13p5s_v1_0
+    blend_polynomial: 10*u^3-15*u^4+6*u^5
+    start_height_agl_m: 15.0
+    total_duration_s: 13.5
+    segments:
+    - kind: blend_velocity
+      duration_s: 4.0
+      vz_start_mps: -0.5
+      vz_end_mps: -1.5
+      height_loss_m: 4.0
+    - kind: constant_velocity
+      duration_s: 5.166666666666667
+      vz_mps: -1.5
+      height_loss_m: 7.75
+    - kind: blend_velocity
+      duration_s: 4.333333333333333
+      vz_start_mps: -1.5
+      vz_end_mps: 0.0
+      height_loss_m: 3.25
+    endpoint_acceleration_mps2: 0.0
+    height_by: analytic_integral_of_velocity
+    hover_waiting_allowed: false
+    profile_source: DESIGN_not_OEM_landing_program
+  mission_priority_constant: 1
+safety:
+  metric: euclidean_3d_center_distance
+  hard_separation_m: 80.0
+  additional_plan_buffer_m: 0.0
+  allow_undershoot_m: 0.0
+  distance_interval_target_width_m: 0.001
+  approve_condition: certified_distance_lower_bound_ge_80_or_exact_equality_proof
+  unknown_is_rejected: true
+  continuous_validation_required: true
+  stable_slot_structural_certificates: true
+  automatic_collision_avoidance_rewriting_enabled: false
+  checked_committed_executed_same_trajectory: true
+  check_stable_continuation_after_candidate_end: true
+  no_horizon_disappearance: true
+energy:
+  profile_id: eh216s_lit_proxy_v1_0
+  model_status: FROZEN_RESEARCH_SURROGATE_NOT_OEM_CALIBRATED
+  source_models:
+  - Pradeep_Wei_2019_DOI_10.2514_1.I010710
+  - Pradeep_et_al_2022_DOI_10.3389_fpace.2022.1064142
+  SOC_definition: charge_fraction
+  reference_capacity_Ah: 252.0
+  battery_model: constant_equivalent_voltage
+  equivalent_voltage_V: 85.0
+  equivalent_voltage_source: DESIGN_not_measured_pack_mean_voltage
+  derived_equivalent_capacity_kWh: 21.42
+  air_density_kgpm3: 1.225
+  effective_horizontal_drag_area_m2: 2.11
+  effective_vertical_drag_area_m2: 1.47
+  drag_parameter_source: LIT_PROXY_EH184_2019_Cd_equal_1
+  coaxial_chi: 1.0
+  rotor_disk_area_convention: N16_individual_disks_then_1_plus_chi_induced_power
+  minimum_axial_descent_ratio: -0.28
+  effective_hover_for_domain: sqrt_2_times_single_rotor_hover_speed
+  induced_root_branch: vi_ge_max_0_minus_Vn
+  induced_root_bisections: 80
+  induced_root_relative_residual_tolerance: 1.0e-08
+  profile_solidity: 0.055
+  profile_mean_drag_coefficient: 0.0089
+  profile_Fp: 0.97
+  profile_tip_speed_mps: 120.48
+  profile_parameter_source: LIT_PROXY_2022_Table_1_concept_quadrotor
+  motor_drive_efficiency: 0.9
+  efficiency_source: DESIGN_constant
+  reference_max_battery_current_A: 2016.0
+  reference_motor_continuous_power_kW_each: 5.8
+  reference_motor_max_power_kW_each: 18.0
+  terminal_visit_peak_duration_budget_s: 120.0
+  initial_peak_duration_used_s: 0.0
+  peak_budget_scope: entire_terminal_visit_not_reset_between_maneuvers
+  peak_budget_source: DESIGN_conservative_cumulative_use_of_2min_reference
+  normal_landing_reserve: 0.25
+  normal_reserve_check_event: touchdown_completed_before_service
+  normal_final_requires_predicted_touchdown_reserve: true
+  low_reserve_emergency_landing_counted_separately: true
+  energy_failure_soc: 0.0
+  regen_allowed: false
+  negative_power_clipping_allowed: false
+  auxiliary_load_simulated: false
+  ground_service_energy_simulated: false
+  voltage_sag_simulated: false
+  SOH_simulated: false
+  prediction_execution_same_model: true
+  constant_phase_soc_drain_replacement_allowed: false
+  integration_max_segment_s: 0.2
+  reference_program: energy_reference_v1_0.py
+emergency:
+  independent_pad: false
+  trigger_absolute_soc: 0.35
+  trigger_rescue_reference_plus_hold_s: 10.0
+  trigger_expression: soc_at_decision_state<=0.35 OR soc_at_decision_state-qE-qHold10<=0.25
+  qE_reference: minimum_energy_dynamically_feasible_direct_rescue_to_six_pads_ignoring_traffic
+  qE_is_immediate_safe_landing_certificate: false
+  trigger_source: DESIGN_not_OEM_trigger
+  monitor_every_execution_step_and_event: true
+  full_search_every_execution_step: false
+  during_committed_maneuver: mark_pending_evaluate_endpoint_then_start_after_completion
+  declared_latched: true
+  eligible_actions_after_declaration:
+  - hold_current_slot
+  - continue_committed_maneuver
+  - start_emergency_final
+  inner_immediate_normal_final_before_declaration_allowed: true
+  emergency_requires_physical_energy_to_touchdown: true
+  emergency_requires_normal_reserve: false
+  no_free_pad_action: hold_current_slot_and_consume_energy_until_resource_event_or_failure
+  batch_safety_required: true
+  cost_equivalent_delay_seconds:
+    inner: 1200.0
+    middle: 2400.0
+    outer: 3600.0
+  charge_cost_at: first_actual_emergency_final_start_once
+  cost_ring: actual_start_ring
+  cost_multiplies_physical_energy: false
+  expensive_rescue_may_be_skipped_for_score: false
+  whole_fleet_future_zero_failure_guarantee: false
+timing:
+  physics_sample_dt_s: 0.2
+  reference_state_update_dt_s: 0.2
+  energy_max_segment_s: 0.2
+  scheduler_period_s: 5.0
+  heartbeat_origin_s: 0.0
+  scheduler_event_triggers:
+  - request_released
+  - inbound_completed
+  - transfer_completed
+  - source_slot_cleared
+  - pad_service_completed
+  - emergency_triggered
+  - commit_invalidated
+  - decision_late
+  merge_same_timestamp_events_before_one_decision: true
+  default_preview_horizon_s: 240.0
+  preview_is_physical_limit: false
+  commitment: until_current_maneuver_complete
+  truncate_safety_at_preview_end: false
+  simulated_communication_latency_s: 0.0
+  latency_injection_tests_s:
+  - 0.2
+  - 1.2
+  - 5.2
+  exact_events_between_samples: true
+  future_start_events_supported: true
+  wall_clock_budget_is_stage1_algorithm_choice: false
+demand_diagnostics:
+  distribution: Poisson_process_exponential_interarrival
+  rates_per_hour:
+  - 60.0
+  - 120.0
+  - 180.0
+  rates_are_measured_capacity_classes: false
+  normal_initial_soc:
+    distribution: truncated_normal
+    mean: 0.75
+    std: 0.08
+    lower: 0.6
+    upper: 0.9
+    source: DESIGN_synthetic_not_empirical
+  arrival_window_s: 3600.0
+  max_drain_time_s: 1800.0
+  default_initial_state: empty
+  reroute_cost_equivalent_delay_seconds_per_request: 600.0
+  reroute_cost_status: DESIGN_generalized_cost_not_measured_external_energy
+  failed_admission_resample_SOC: false
+  unborn_manifest_visible_to_scheduler: false
+  seeds:
+  - 11
+  - 23
+  - 47
+  - 71
+  - 101
+  closed_loop_diagnostic_driver: scripted_deterministic_test_driver_not_selected_research_baseline
+failure:
+  temporary_pad_busy_is_terminal_failure: false
+  not_found_is_infeasibility_proof: false
+  physical_failure_stop_episode: true
+  physical_failure_types:
+  - ENERGY_FAILURE
+  - EXECUTED_HARD_SEPARATION_VIOLATION
+  post_failure_remaining_aircraft: CENSORED_DUE_TO_FAILURE
+  post_failure_unreleased_manifest: UNRELEASED_AT_FAILURE
+  delete_failed_aircraft_and_continue_as_normal: false
+  failure_cost_equivalent_delay_seconds_per_aircraft: 1000000
+  require_offered_admitted_rerouted_conservation: true
+  report_episode_failure_and_admitted_failure_rates: true
+  truncated_cost_is_lower_bound: true
+execution:
+  backend: lightweight_CPU_deterministic_authoritative_trajectory
+  mandatory_BlueSky_dependency: false
+  headless_simulation_supported: true
+  CUDA_required: false
+  claim_full_6DOF: false
+  empirical_OEM_energy_calibration_claim: false
+  qualification_required_before_stage2: true
+visualization:
+  mandatory_existing_local_platform: true
+  reuse_requirement: audit_real_local_entry_then_extend_existing_telemetry_adapter
+  new_simplified_viewer_may_replace_existing_platform_acceptance: false
+  server_gui_required: false
+  benchmark_viewer_enabled: false
+  replay_sample_dt_s: 0.2
+  exact_events_included: true
+  authoritative_trajectory_parameters_included: true
+  required_views:
+  - top_down
+  - side
+  - 3d
+  required_controls:
+  - pause
+  - single_step
+  - seek
+  - jump_event
+  - select_aircraft
+  - follow_aircraft
+  playback_speeds:
+  - 0.25
+  - 1.0
+  - 4.0
+  - 10.0
+  required_overlays:
+  - rings_slots_ids_states
+  - SOC
+  - task_service_class
+  - current_commit
+  - future_soft_plan_dependencies
+  - six_pad_countdowns
+  - emergency_and_cost
+  - rejection_reason
+  - minimum_3d_separation
+  - energy_failure
+  required_charts:
+  - speed
+  - acceleration
+  - jerk
+  - battery_power
+  - SOC
+  per_aircraft_pair_protection_ball_radius_m: 40.0
+  actual_trajectory_visual_smoothing_allowed: false
+  researcher_visual_acceptance_mandatory: true
+  replay_bundle_required:
+  - manifest
+  - config_hash
+  - code_commit
+  - trajectory_hashes
+  - trajectory_parameters
+  - states
+  - events
+  - metrics
+  - automatic_assertions
+  - screenshots
+  - visual_acceptance_record
+qualification:
+  test_matrix: contract_section_16_94_cases
+  position_endpoint_tolerance_m: 0.01
+  velocity_endpoint_tolerance_mps: 0.01
+  acceleration_endpoint_tolerance_mps2: 0.02
+  event_time_tolerance_s: 0.001
+  energy_dt_relative_tolerance: 0.005
+  continuous_min_distance_dt_tolerance_m: 0.05
+  dt_sweep_s:
+  - 0.2
+  - 0.1
+  - 0.05
+  test_catalog_file: acceptance_catalog_v1_0.json
+  scenario_results_generated_by_this_config: false
+  formula_relative_tolerance: 1.0e-06
+  scheduler_period_diagnostic_sweep_s:
+  - 1.0
+  - 5.0
+  - 10.0
+  benchmark_initial_counts:
+  - 10
+  - 30
+  - 60
+  - 83
+  benchmark_repeats: 5
+  all_test_scenarios_energy_failure_free_required: false
+  known_feasible_positive_scenarios_hard_violation_free_required: true
+  stages:
+  - IMPLEMENTATION_IN_PROGRESS
+  - AUTOMATION_COMPLETE
+  - VIEWER_INTEGRATED
+  - RESEARCHER_VISUAL_ACCEPTED
+  - STAGE1_ACCEPTED

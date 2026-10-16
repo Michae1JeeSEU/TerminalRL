@@ -1,0 +1,853 @@
+{
+  "schema": "ft_rs_acceptance_catalog_v1_0",
+  "kind": "normative_test_catalog_not_results",
+  "count": 94,
+  "cases": [
+    {
+      "id": "A01",
+      "group": "A 几何、机型和槽位",
+      "title": "固定配置",
+      "fixture_requirement": "三环、四门、六pad初始化",
+      "expected": "半径、高度、方向、角速度和资源数与YAML完全一致；不继承旧默认值",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A02",
+      "group": "A 几何、机型和槽位",
+      "title": "解析槽位",
+      "fixture_requirement": "在任意非网格时刻查询槽位",
+      "expected": "p/v/a与解析圆周解一致；重规划不重置相位",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A03",
+      "group": "A 几何、机型和槽位",
+      "title": "共同角速度",
+      "fixture_requirement": "连续运行至少三圈",
+      "expected": "指定两槽位相对角度恒定，各环线速度分别21/15.75/10.5",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A04",
+      "group": "A 几何、机型和槽位",
+      "title": "槽位弦长",
+      "fixture_requirement": "全槽位稳定占用",
+      "expected": "相邻弦长及跨环下界符合第2节；稳定状态不产生80m违反",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A05",
+      "group": "A 几何、机型和槽位",
+      "title": "槽位容量语义",
+      "fixture_requirement": "83槽位与额外在途飞机",
+      "expected": "只按槽位预约约束，不把83或历史60误作总空中硬上限",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A06",
+      "group": "A 几何、机型和槽位",
+      "title": "旋转方向",
+      "fixture_requirement": "提供逆向稳定或转移候选",
+      "expected": "以角向运动拒绝；不能以yaw朝向混淆平移方向",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A07",
+      "group": "A 几何、机型和槽位",
+      "title": "相同机型",
+      "fixture_requirement": "混合三类服务任务",
+      "expected": "全部质量、性能和能源参数相同；只有地面服务时长不同",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A08",
+      "group": "A 几何、机型和槽位",
+      "title": "性能输入无效",
+      "fixture_requirement": "名义环速、加速度或高度越界",
+      "expected": "加载或计划验证失败；不静默裁剪后继续使用原证书",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A09",
+      "group": "A 几何、机型和槽位",
+      "title": "pad几何",
+      "fixture_requirement": "同时占用六个pad",
+      "expected": "相邻pad距离100m；不同pad不因全局着陆锁被串行化",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B01",
+      "group": "B 运动、转移与落地",
+      "title": "非固定角度",
+      "fixture_requirement": "在37°和133°提供已知可行跨环轨迹",
+      "expected": "正常获批并执行；不要求到0或π",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B02",
+      "group": "B 运动、转移与落地",
+      "title": "局部保持",
+      "fixture_requirement": "保持1秒后资源条件改变",
+      "expected": "允许事件重决策；不强制补足一整圈",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B03",
+      "group": "B 运动、转移与落地",
+      "title": "追未来槽位",
+      "fixture_requirement": "目标槽位在飞行中持续移动",
+      "expected": "末端匹配未来p/v/a，不能追现在位置再瞬移入座",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B04",
+      "group": "B 运动、转移与落地",
+      "title": "有空但不可达",
+      "fixture_requirement": "槽位空闲但要求过早到达",
+      "expected": "拒绝该时间候选，不违反速度/加速度赶点",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B05",
+      "group": "B 运动、转移与落地",
+      "title": "正常跳环",
+      "fixture_requirement": "Outer直接申请Inner或pad且无应急资格",
+      "expected": "拒绝非法正常边",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B06",
+      "group": "B 运动、转移与落地",
+      "title": "同环换位",
+      "fixture_requirement": "占位机申请另一个本环槽位",
+      "expected": "拒绝；不隐式调速或协同让座",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B07",
+      "group": "B 运动、转移与落地",
+      "title": "起终连续",
+      "fixture_requirement": "INBOUND/TRANSFER/FINAL与前后段连接",
+      "expected": "位置、速度、加速度连续且checked==executed",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B08",
+      "group": "B 运动、转移与落地",
+      "title": "向外及回头",
+      "fixture_requirement": "r增加、角向逆行或折返的候选",
+      "expected": "拒绝；正常圆周航向变化180°不误判",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B09",
+      "group": "B 运动、转移与落地",
+      "title": "无悬停等待",
+      "fixture_requirement": "提供正时长空中v=0段",
+      "expected": "拒绝；合法持续垂直下降的水平v=0不拒绝",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B10",
+      "group": "B 运动、转移与落地",
+      "title": "最后15m",
+      "fixture_requirement": "给定正确15m衔接状态",
+      "expected": "13.5s解析剖面到地，v/a为0，SOC包含全过程",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B11",
+      "group": "B 运动、转移与落地",
+      "title": "降落平滑限值",
+      "fixture_requirement": "逐段解析检查13.5s垂降",
+      "expected": "速度、加速度、jerk全部满足包线；无穿地清零",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B12",
+      "group": "B 运动、转移与落地",
+      "title": "当前承诺不可改",
+      "fixture_requirement": "跨环中到达新请求并提交改目标指令",
+      "expected": "拒绝修改活动机动，允许重排不破坏依赖的未来动作",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B13",
+      "group": "B 运动、转移与落地",
+      "title": "轨迹生成完整性",
+      "fixture_requirement": "fixture自带可行轨迹但普通粗样本未命中",
+      "expected": "诊断生成器NOT_FOUND；不得称环境物理不可行或篡改几何",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C01",
+      "group": "C 准入、预约和服务",
+      "title": "四门随机",
+      "fixture_requirement": "固定seed重复请求生成",
+      "expected": "四门等概率分布定义固定；单个请求不反复换门",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C02",
+      "group": "C 准入、预约和服务",
+      "title": "SOC分布",
+      "fixture_requirement": "正常请求的大样本及边界输入",
+      "expected": "使用截断正态，所有值在0.60—0.90；不重抽困难请求",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C03",
+      "group": "C 准入、预约和服务",
+      "title": "外环满分流",
+      "fixture_requirement": "外环无当前或已承诺未来可用槽位",
+      "expected": "不出生、不悬停，分流一次并计600成本",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C04",
+      "group": "C 准入、预约和服务",
+      "title": "未来槽位释放",
+      "fixture_requirement": "Outer满但已承诺离开先于入场汇合",
+      "expected": "允许验证未来槽位；不能只看当前满而拒绝",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C05",
+      "group": "C 准入、预约和服务",
+      "title": "下层空闲",
+      "fixture_requirement": "Outer不可接纳、内层有空位",
+      "expected": "仍分流，不跳过Outer",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C06",
+      "group": "C 准入、预约和服务",
+      "title": "预约非空闲",
+      "fixture_requirement": "空槽已经承诺给在途机",
+      "expected": "拒绝冲突的第二预约",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C07",
+      "group": "C 准入、预约和服务",
+      "title": "源清空",
+      "fixture_requirement": "离开飞机尚在源移动参考80m内",
+      "expected": "保持DEPARTING保护，不能立即FREE",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C08",
+      "group": "C 准入、预约和服务",
+      "title": "局部依赖",
+      "fixture_requirement": "已开始入场依赖另一机未来离开",
+      "expected": "该释放不得裸取消；只允许等价安全原子替换",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C09",
+      "group": "C 准入、预约和服务",
+      "title": "联合冲突",
+      "fixture_requirement": "两候选各自可行但同占槽或轨迹相交",
+      "expected": "批次拒绝或明确安全子集，不能逐机分别批准整个冲突批次",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C10",
+      "group": "C 准入、预约和服务",
+      "title": "服务计时",
+      "fixture_requirement": "三类飞机分别接地",
+      "expected": "从接地开始计60/120/240s，不从final启动或15m开始",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C11",
+      "group": "C 准入、预约和服务",
+      "title": "六pad并行",
+      "fixture_requirement": "构造六条彼此安全的进近",
+      "expected": "允许并行；逐条/联合安全检查仍执行",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C12",
+      "group": "C 准入、预约和服务",
+      "title": "正常未来pad",
+      "fixture_requirement": "pad现在忙但在轨迹需要前已清空",
+      "expected": "允许预约；不在15m等待",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C13",
+      "group": "C 准入、预约和服务",
+      "title": "服务不可抢占",
+      "fixture_requirement": "应急到来时某pad正SERVICE",
+      "expected": "不能删除或缩短服务；选择真正可用pad或等待",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C14",
+      "group": "C 准入、预约和服务",
+      "title": "同刻事件",
+      "fixture_requirement": "服务结束、请求和启动时刻相同",
+      "expected": "按合同事件顺序结算，资源原子使用且结果确定",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C15",
+      "group": "C 准入、预约和服务",
+      "title": "地面实体",
+      "fixture_requirement": "飞行轨迹贴近尚未CLEARED飞机",
+      "expected": "继续检查80m，不因已落地从安全机群中提前删除",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D01",
+      "group": "D 连续安全与数值",
+      "title": "唯一80m",
+      "fixture_requirement": "分别构造80、80.5、79.999、78m已知最小距",
+      "expected": "80/80.5通过，后两者拒绝；无82m暗阈值或78m容忍",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D02",
+      "group": "D 连续安全与数值",
+      "title": "采样间冲突",
+      "fixture_requirement": "两输出采样点均安全，中间距离低于80",
+      "expected": "连续验证发现并拒绝",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D03",
+      "group": "D 连续安全与数值",
+      "title": "未来交叉",
+      "fixture_requirement": "目标不同但跨环/应急曲线途中相交",
+      "expected": "全过程拒绝，不能仅验证末端座位",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D04",
+      "group": "D 连续安全与数值",
+      "title": "不可证明",
+      "fixture_requirement": "区间上下界跨80且达到数值停止条件",
+      "expected": "UNKNOWN并拒绝；不当安全",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D05",
+      "group": "D 连续安全与数值",
+      "title": "高度真实",
+      "fixture_requirement": "俯视相交但真实3D距≥80及其相反例",
+      "expected": "严格按三维距离判断，不按画面像素或单独高度差",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D06",
+      "group": "D 连续安全与数值",
+      "title": "后续稳定段",
+      "fixture_requirement": "本候选结束后才与另一活动机动冲突",
+      "expected": "继续检查后续稳定目标，发现冲突",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D07",
+      "group": "D 连续安全与数值",
+      "title": "审批执行同一",
+      "fixture_requirement": "批准后修改一个轨迹系数或时间",
+      "expected": "hash失配并拒绝执行，不能沿用原证书",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "D08",
+      "group": "D 连续安全与数值",
+      "title": "缓存一致",
+      "fixture_requirement": "同一fixture启用/禁用缓存",
+      "expected": "结果、事件、能耗在规定数值容差内一致",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E01",
+      "group": "E 能源、储备与故障",
+      "title": "文献代理公式",
+      "fixture_requirement": "调用配套参考脚本的全部检查点",
+      "expected": "生产内核与同一公式数值对齐；单位J/W/Ah无混淆",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E02",
+      "group": "E 能源、储备与故障",
+      "title": "转弯功率",
+      "fixture_requirement": "同速直线与环飞分别求功率",
+      "expected": "转弯推力变化被计入，不仅按距离扣电",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E03",
+      "group": "E 能源、储备与故障",
+      "title": "变速功率",
+      "fixture_requirement": "同一21m/s状态增加切向加速度",
+      "expected": "功率相应变化；不重复计算ma·v",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E04",
+      "group": "E 能源、储备与故障",
+      "title": "下降非充电",
+      "fixture_requirement": "正常与应急完成垂降",
+      "expected": "功率为正、SOC非增；不把势能全部变为充电",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E05",
+      "group": "E 能源、储备与故障",
+      "title": "模型域",
+      "fixture_requirement": "深轴向下降超出规定有效域",
+      "expected": "ENERGY_MODEL_DOMAIN拒绝，不零截断掩盖",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E06",
+      "group": "E 能源、储备与故障",
+      "title": "瞬时功率",
+      "fixture_requirement": "要求超电流或轴功率候选",
+      "expected": "提交前拒绝；应急不放宽限制",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E07",
+      "group": "E 能源、储备与故障",
+      "title": "峰值累计",
+      "fixture_requirement": "多段各小于120s但合计峰值超过120s",
+      "expected": "跨段累计并拒绝超预算部分，不能段间归零",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E08",
+      "group": "E 能源、储备与故障",
+      "title": "接地25%",
+      "fixture_requirement": "final启动SOC>25但预计接地<25",
+      "expected": "不能批准为正常降落；可走符合条件应急",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E09",
+      "group": "E 能源、储备与故障",
+      "title": "15m不是储备点",
+      "fixture_requirement": "到15m恰25%且垂降继续耗电",
+      "expected": "正常储备判定失败；13.5s能耗不得漏计",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E10",
+      "group": "E 能源、储备与故障",
+      "title": "恰好25%接地",
+      "fixture_requirement": "构造完整预测接地SOC=0.25",
+      "expected": "正常储备通过；无10%二次门槛",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E11",
+      "group": "E 能源、储备与故障",
+      "title": "低储备救援",
+      "fixture_requirement": "应急安全接地SOC在0和0.25之间",
+      "expected": "计应急成功及below_reserve，不计耗尽，不伪称正常",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E12",
+      "group": "E 能源、储备与故障",
+      "title": "真实耗尽",
+      "fixture_requirement": "无可用救援且SOC在两步之间到0",
+      "expected": "定位失败时刻并停止物理episode；其他机截尾而非成功",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E13",
+      "group": "E 能源、储备与故障",
+      "title": "无全局保证准入",
+      "fixture_requirement": "局部入场和单机参考可行但未提供全机群备用方案",
+      "expected": "不得仅因缺少旧全局证书拒绝；将来失败如实报告",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "E14",
+      "group": "E 能源、储备与故障",
+      "title": "请求守恒",
+      "fixture_requirement": "包含分流、正常、应急、失败和未揭示需求",
+      "expected": "第14节三条守恒关系成立，属性不重复计数",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F01",
+      "group": "F 应急完整链",
+      "title": "三环应急",
+      "fixture_requirement": "分别在Outer/Middle/Inner触发并存在空pad",
+      "expected": "均可平滑直接final到15m再垂降；不要求中途占下层槽位",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F02",
+      "group": "F 应急完整链",
+      "title": "内环穿越安全",
+      "fixture_requirement": "Outer应急穿过Middle/Inner飞机附近",
+      "expected": "与所有相关轨迹连续检查80m；无隐形走廊",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F03",
+      "group": "F 应急完整链",
+      "title": "高电禁止捷径",
+      "fixture_requirement": "健康外环飞机无应急资格却申请直达pad",
+      "expected": "拒绝，不因付罚分就购买跳环权限",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F04",
+      "group": "F 应急完整链",
+      "title": "提前触发",
+      "fixture_requirement": "预测救援耗能大但SOC尚未到0.35",
+      "expected": "第二触发式可提前触发；不等耗尽才救援",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F05",
+      "group": "F 应急完整链",
+      "title": "非心跳应急",
+      "fixture_requirement": "应急条件在t=2.2出现",
+      "expected": "该步/事件触发处置，不等t=5",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F06",
+      "group": "F 应急完整链",
+      "title": "活动机动应急",
+      "fixture_requirement": "跨环过程中预测目标状态紧迫",
+      "expected": "记录pending，保持当前轨迹，完成后从所在环启动",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F07",
+      "group": "F 应急完整链",
+      "title": "当前空pad",
+      "fixture_requirement": "pad仅有可撤销未开始普通预约",
+      "expected": "允许原子重排；不可撤销final依赖不得被覆盖",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F08",
+      "group": "F 应急完整链",
+      "title": "暂忙后释放",
+      "fixture_requirement": "全部pad暂忙但之后在可救时间内释放",
+      "expected": "保持源槽位并耗电，释放事件后救援；不立即报最终失败",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F09",
+      "group": "F 应急完整链",
+      "title": "忙至不可救",
+      "fixture_requirement": "全部pad占用超过可救截止",
+      "expected": "报告pad截止失败；持续记录直到真实失败或截尾，不删除",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F10",
+      "group": "F 应急完整链",
+      "title": "抢一个pad",
+      "fixture_requirement": "两架应急均要唯一空pad",
+      "expected": "只批准兼容子集，另一架保留等待/失败状态",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F11",
+      "group": "F 应急完整链",
+      "title": "代价一次性",
+      "fixture_requirement": "三环应急启动并成功/失败分别回放",
+      "expected": "I/M/O只收1200/2400/3600一次；真实能耗不乘罚分",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F12",
+      "group": "F 应急完整链",
+      "title": "不能为罚分不救",
+      "fixture_requirement": "唯一合法机会是高代价Outer直达",
+      "expected": "仍尝试救援；不因罚分主动等耗尽",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F13",
+      "group": "F 应急完整链",
+      "title": "声明不可洗白",
+      "fixture_requirement": "声明后请求普通切环来减少起飞环罚分",
+      "expected": "拒绝新的普通切环；不能改名取消声明",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "F14",
+      "group": "F 应急完整链",
+      "title": "inner正常优先",
+      "fixture_requirement": "触发但尚未声明且有立即满足储备正常final",
+      "expected": "允许直接正常落地，避免无必要应急标签",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G01",
+      "group": "G 时间、性能与信息",
+      "title": "五秒心跳",
+      "fixture_requirement": "无事件稳定盘旋100s",
+      "expected": "只按5s调用常规决策；0.2s执行不调用完整调度",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G02",
+      "group": "G 时间、性能与信息",
+      "title": "事件合并",
+      "fixture_requirement": "同刻出现多个请求/释放/完成",
+      "expected": "状态更新后一次联合决策，不按UI刷新重复调度",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G03",
+      "group": "G 时间、性能与信息",
+      "title": "非网格事件",
+      "fixture_requirement": "服务结束/汇入/耗尽在0.2s网格之间",
+      "expected": "使用精确时刻，不向网格取整",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G04",
+      "group": "G 时间、性能与信息",
+      "title": "三档步长",
+      "fixture_requirement": "同一已提交脚本用0.2/0.1/0.05s重放",
+      "expected": "运动解析一致；安全分类一致，能量积分收敛",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G05",
+      "group": "G 时间、性能与信息",
+      "title": "周期敏感性",
+      "fixture_requirement": "同一确定性测试驱动在1/5/10s心跳",
+      "expected": "报告决策次数、CPU和结局变化；不要求不同动作周期结局相同",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G06",
+      "group": "G 时间、性能与信息",
+      "title": "迟到命令",
+      "fixture_requirement": "注入0.2/1.2/5.2s模拟计算时延",
+      "expected": "不停表，旧计划重验证，无瞬移或冻结SOC",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G07",
+      "group": "G 时间、性能与信息",
+      "title": "240s不是消失",
+      "fixture_requirement": "活动承诺/服务超过预览边界",
+      "expected": "仍保留资源和能量；不得在边界提前释放",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G08",
+      "group": "G 时间、性能与信息",
+      "title": "未来信息隔离",
+      "fixture_requirement": "读取预生成manifest中的未到达请求",
+      "expected": "调度快照不可访问；仅重放/审计可看完整清单",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "G09",
+      "group": "G 时间、性能与信息",
+      "title": "CPU基准",
+      "fixture_requirement": "N=10/30/60及83占位和在途规模",
+      "expected": "关闭viewer，分别记录采样/能源/验证/决策/序列化开销，不输出虚构时限PASS",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V01",
+      "group": "V 本地既有可视化验收",
+      "title": "原平台接入",
+      "fixture_requirement": "通过仓库既有viewer入口加载ReplayBundle",
+      "expected": "运行清单记录实际入口和适配器，非另一个网页替代",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V02",
+      "group": "V 本地既有可视化验收",
+      "title": "真实三维几何",
+      "fixture_requirement": "俯视/侧视/3D观察全部对象",
+      "expected": "三环高度、pad和15m衔接清楚；纵向放大明确标注",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V03",
+      "group": "V 本地既有可视化验收",
+      "title": "旋转座位",
+      "fixture_requirement": "连续回放三圈与暂停拖动",
+      "expected": "槽位ID稳定旋转，速度和相对相位不漂移",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V04",
+      "group": "V 本地既有可视化验收",
+      "title": "正常流转",
+      "fixture_requirement": "四门持续到达、保持、两次转移、着陆",
+      "expected": "全过程可观察，无瞬移、掉头、悬停等待或整圈锁定",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V05",
+      "group": "V 本地既有可视化验收",
+      "title": "目标选择与拒绝",
+      "fixture_requirement": "显示多个目标及不可达/冲突候选",
+      "expected": "拒绝轨迹仅诊断显示，不能与实际已飞轨迹混淆",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V06",
+      "group": "V 本地既有可视化验收",
+      "title": "六pad服务",
+      "fixture_requirement": "并行落地并覆盖三类服务",
+      "expected": "倒计时从接地启动，未清空不变空闲，应急不缩短服务",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V07",
+      "group": "V 本地既有可视化验收",
+      "title": "三环应急展示",
+      "fixture_requirement": "分别回放O/M/I直达和跨环冲突拒绝",
+      "expected": "路径、15m垂降、资格、费用清楚可查",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V08",
+      "group": "V 本地既有可视化验收",
+      "title": "忙pad到失败",
+      "fixture_requirement": "全部忙与释放及时两组对照",
+      "expected": "看到保持耗电、救援或失败事件；失败不是飞机静默消失",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V09",
+      "group": "V 本地既有可视化验收",
+      "title": "安全阈值展示",
+      "fixture_requirement": "回放80m边界及采样间冲突反例",
+      "expected": "显示真实最近机对、最小3D距离和时刻，保护球语义正确",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V10",
+      "group": "V 本地既有可视化验收",
+      "title": "动力学SOC曲线",
+      "fixture_requirement": "选中转移/下降飞机",
+      "expected": "速度、加速度、jerk、功率、SOC与日志一致，地面不伪充电",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V11",
+      "group": "V 本地既有可视化验收",
+      "title": "交互重放一致",
+      "fixture_requirement": "暂停/逐步/跳转/拖动/多倍速/跟随机",
+      "expected": "同一时刻状态不变，UI不重算或平滑掩盖真实轨迹",
+      "required": true,
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "V12",
+      "group": "V 本地既有可视化验收",
+      "title": "负责人目视记录",
+      "fixture_requirement": "自动通过后负责人逐个观察场景",
+      "expected": "单独记录意见和认可；未观察不能填整体PASS",
+      "required": true,
+      "status": "NOT_RUN"
+    }
+  ]
+}
