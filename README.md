@@ -1,5 +1,7 @@
 # TerminalRL
 
+**当前实施主线：FT-RS-S1-1.0 旋转槽位阶段1。** 固定合同、配置与94项规范目录见 `new10.16/`；新实现与既有 PyVista 回放入口见 [旋转槽位阶段1说明](docs/rotating_slots_stage1/README.md)。自动验证与研究负责人目视验收分别记录，未观察的可视化保持 PENDING。下文 `core/fixed_terminal`、旧阶段1–7和旧 checkpoint 属于保留的历史研究资产，不自动用于新合同。
+
 ## 阶段7研究验收完成（2026-10-14）
 
 [阶段7用户计划](docs/fixed_terminal_stage7_learning_to_search_plan.md)的36datajobs（108train/36valcontext）、唯一GB fit、264episodes、15generation/30states/240rows与严格summary全部完成，四模型hash不变。**B未成立，按A停止扩展当前Learning to Search配置；C未观察到新选中值超过有限full参考。** 保留传统联合优化、beam_adaptive的工程参考及full/B3/B5/B8质量成本tradeoff，不泛称所有learning方法普遍无效，不自动新增模型、训练、Q/value路线或下一阶段。

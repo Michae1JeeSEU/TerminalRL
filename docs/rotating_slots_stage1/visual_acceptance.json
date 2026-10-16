@@ -1,0 +1,14 @@
+{
+  "schema": "FT-RS-S1-1.0-visual-acceptance",
+  "automation_status": "NOT_REPORTED_BY_THIS_RECORD",
+  "visualization_integration_status": "IMPLEMENTED_PENDING_VERIFICATION",
+  "researcher_visual_acceptance": "PENDING",
+  "observer": null,
+  "observed_at": null,
+  "bundle": null,
+  "code_commit": null,
+  "observations": [],
+  "required_views": ["top_down", "side", "3d"],
+  "required_cases": ["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"],
+  "note": "Automated checks and generated screenshots do not constitute researcher observation."
+}

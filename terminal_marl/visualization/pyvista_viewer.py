@@ -191,7 +191,7 @@ def _vertex_cells(point_count: int) -> np.ndarray:
 class Terminal3DViewer:
     """Interactive 3D renderer which consumes immutable world snapshots only."""
 
-    def __init__(self, initial: WorldRenderSnapshot, config: VisualizationConfig) -> None:
+    def __init__(self, initial: WorldRenderSnapshot, config: VisualizationConfig, *, off_screen: bool = False) -> None:
         try:
             import pyvista as pv
         except ImportError as error:  # pragma: no cover - depends on local optional package
@@ -201,7 +201,8 @@ class Terminal3DViewer:
             ) from error
         self._pv = pv
         self._config = config
-        self._plotter = pv.Plotter(window_size=(1280, 860), title="Terminal MARL 3D Viewer")
+        plotter_options = {"off_screen": True} if off_screen else {}
+        self._plotter = pv.Plotter(window_size=(1280, 860), title="Terminal MARL 3D Viewer", **plotter_options)
         self._plotter.set_background("white")
         self._ring_meshes: dict[str, object] = {}
         self._target_ring_meshes: dict[str, object] = {}
