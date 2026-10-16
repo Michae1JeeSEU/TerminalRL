@@ -1,10 +1,10 @@
-# 2026-10-16 正式诊断部分结果：benchmark 与 dt
+# 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic
 
-截至 **2026-10-16 13:46:50 UTC（北京时间 21:46:50）**，正式 61 项矩阵已完成全部 40 项 benchmark 和 3 项 dt，另有 15 项 traffic 与 3 项 scheduler 运行中。已完成的 43 个物理回放另行检查后均为 PASS、零问题、连续间隔 `CERTIFIED`。本报告只整理这 43 项；正式退出标记与 `diagnostics.json` 尚未生成，94 项目录仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**，尚无完整流量性能或运行结局结论。
+截至 **2026-10-16 16:09:14 UTC（北京时间 10 月 17 日 00:09:14）**，正式 61 项矩阵已完成全部 40 项 benchmark、3 项 dt 及 3 项 traffic，共 46 项；另有 12 项 traffic 与 3 项 scheduler 运行中，未观察到软件错误。16:18:43 UTC 的审计复查确认，新增三个 traffic 回放均 PASS，连同既有 43 项共 46 项回放检查 PASS、零问题、连续间隔 `CERTIFIED`。正式退出标记与 `diagnostics.json` 尚未生成，94 项目录仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
 
 ## 数据与测量条件
 
-结果来自服务器输出的本地同步副本：`D:\7_codespace\training_outputs\terminal\rotating_slots_formal_f67b5c8_20261016\diagnostics\<job>\result.json`。43 项均记录源码提交 `f67b5c8462433ba701191c493a37e4a8e472334e`、源码集合 SHA-256 `110be32211d37e82772d806d86ae599d0a58a32e01af3465be836a58de902750`、配置语义 hash `0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53`。
+结果来自服务器输出的本地同步副本：`D:\7_codespace\training_outputs\terminal\rotating_slots_formal_f67b5c8_20261016\diagnostics\<job>\result.json`。46 项均记录源码提交 `f67b5c8462433ba701191c493a37e4a8e472334e`、源码集合 SHA-256 `110be32211d37e82772d806d86ae599d0a58a32e01af3465be836a58de902750`、配置语义 hash `0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53`。
 
 服务器为 Intel Core i7-14700，28 个逻辑 CPU、20 个物理核；正式矩阵使用 20 workers。Python 3.12.3、NumPy 2.5.1、SciPy 1.18.1、PyYAML 6.0.3；psutil 未安装，RSS 来自 `resource.ru_maxrss`。OMP、OpenBLAS、MKL、NumExpr、VECLIB 线程均为 1，已记录的两个 OpenBLAS 线程池也均为 1。viewer 在计时仿真中关闭；cProfile 全程启用，使用 `process_time` 时钟。
 
@@ -14,7 +14,7 @@
 /home/user/envs/terminal_env/bin/python -m terminal_marl.scripts.run_stage1_diagnostics --output /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --workers 20 --code-commit f67b5c8462433ba701191c493a37e4a8e472334e
 ```
 
-启动与状态快照见 [服务器核验目录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。本次算术汇总另存为 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
+最新状态见 [00:09 服务器快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1608/summary.md)，此前 benchmark/dt 快照见 [21:46 核验记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。benchmark/dt 算术汇总保存在 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
 
 ## 1 秒 benchmark
 
@@ -66,10 +66,43 @@
 
 最大能源差为 `9.313225746154785e-8 J`，按 `(max−min)/min` 计算的相对差为 `6.744915891461807e-15`。相对 dt=0.2 s，三个最终位置的欧氏差均为 0 m；五个事件的类型、飞机 ID 与顺序一致，最大事件时差为 `3.410605131648481e-12 s`（dt=0.1 的服务结束事件），接地时差为 0 s。三份最小距离结果均为 `CERTIFIED`，区间宽度 `0.0007648839403344709 m`，小于 0.001 m，见证时刻均为 `58.366943359375 s`。这些对照只对应此固定脚本，尚不覆盖运行中的流量或 scheduler 敏感性结果。
 
+## 三个已完成 traffic 结果
+
+三个新 job 均属于到达率 60 场景，ID 为 `traffic_rate60_seed11`、`traffic_rate60_seed23`、`traffic_rate60_seed71`。下表直接取各 `result.json` 的实际 metrics；`failed` 为 `failed_before_landing`，`simtime` 为实际仿真停止时刻。job 的 `COMPLETED` 表示该次脚本已结束，包含物理失败导致提前终止的运行。
+
+| seed | planned | offered | unreleased | admitted | rerouted | normal | emergency | failed | censored | simtime / s | truncated |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 11 | 73 | 33 | 40 | 27 | 6 | 18 | 1 | 1 | 7 | 1391.8134693898965 | true |
+| 23 | 52 | 52 | 0 | 50 | 2 | 47 | 3 | 0 | 0 | 5400 | false |
+| 71 | 72 | 28 | 44 | 24 | 4 | 12 | 3 | 1 | 8 | 1207.924968881649 | true |
+
+seed 23 完成 3600 s 到达窗口及 1800 s drain；seed 11、71 则在能源失败时提前终止，尚未释放的请求分别为 40、44。两个截尾结果均记录 `cost_is_lower_bound=true`，其实际累计代价是截尾下界，不能与完整窗口结果直接求均值比较。三个结果均记录 `conservation=true`。
+
+两个失败事件的实际时间线如下，依据对应飞机自身的 events 与序列化轨迹；[failure_timelines_v2.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1608/failure_timelines_v2.json)保留进一步记录。
+
+| seed / 飞机 | middle→inner 转移完成与应急声明 / s | `ENERGY_FAILURE` / s | 失败位置及阶段 |
+|---|---|---|---|
+| 11 / req_000019 | 1187.2060507520548 | 1391.8134693898965 | inner 稳定等待，SOC=0 |
+| 71 / req_000015 | 963.485330669024 | 1207.924968881649 | inner 稳定等待，SOC=0 |
+
+两架飞机均在完成跨环转移后、尚未启动任何应急 final 时失败。本次事件与回放检查支持两次在应急等待中能源耗尽的物理结局，没有已批准转移意外违反间隔的证据；这不等于宣布全部实现正确，以下共享数值内核的边界仍适用。
+
+本次使用的 `DeterministicDriver` 是验收驱动器，不是选定的研究 baseline 或优化器；这三个先结束的结果不代表全部 15 个 traffic 场景的统计结论。其余 traffic 和 scheduler 结果仍待完成。
+
 ## 已完成回放检查与剩余边界
 
 [43 项检查索引](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_43_report.json)记录了每项实际命令、退出码、审计文件和日志；43 项退出码均为 0、PASS、零问题、连续间隔 `CERTIFIED`。检查命令形式为本地 `venv\Scripts\python.exe -m terminal_marl.scripts.run_stage1_tests --audit <job的replay目录> --output <对应审计目录>`，完整实际参数以索引为准。
 
 43 项的物理 episode 终态均为 `IN_PROGRESS`：benchmark 在 1 s 结束时仍有 holding/在途飞机；dt 的目标飞机已于 143.5 s 接地、203.5 s 完成服务，但 seed 的 `other_ground` 服务需 300 s，尚未结束。这与 job 已完成、回放检查 PASS 属于不同含义。
 
-这里的独立检查是分离于 World 的记录重算与约束核对，仍共享冻结的轨迹、能源和连续间隔数值内核，不是独立实测 oracle。点质量能源替代模型及重建参考程序的边界见 [sources](sources.md) 和 [qualification](qualification.md)。余下 18 项运行中结果及正式报告完成后，才能消费已有 40 项 benchmark 的正式 G09 证据并更新合并；本报告不改变 G09 或人工 V12 状态。
+新增三个 traffic 回放的独立检查于 2026-10-16 16:12:50 UTC 在服务器并行启动，每项设置 1800 s 超时，输出位于正式运行父目录的 `independent_audits/<job>`。命令、PID 和日志位置见 [启动核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1608/audit_batch/startup.txt)，[16:18:43 UTC 查询](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1608/audit_batch/query2.txt)确认三个审计均已结束：
+
+| traffic seed | 审计退出时刻 / UTC（2026-10-16） | 退出码 | 审计 | 物理结局 |
+|---|---|---|---|---|
+| 11 | 16:14:38 | 0 | PASS、0 issues、CERTIFIED | ENERGY_FAILURE |
+| 23 | 16:16:35 | 0 | PASS、0 issues、CERTIFIED | COMPLETE |
+| 71 | 16:15:34 | 0 | PASS、0 issues、CERTIFIED | ENERGY_FAILURE |
+
+三份审计的守恒等式均为 true，`documented_hard_failure_runs` 均为 0。合并后的 [46 项检查索引](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_46_report.json)保留原 43 项记录并加入三个 traffic 的实际产物，不重跑已有检查。审计 PASS 表示记录与约束检查通过，物理能源失败仍保留为能源失败。
+
+这里的独立检查是分离于 World 的记录重算与约束核对，仍共享冻结的轨迹、能源和连续间隔数值内核，不是独立实测 oracle。点质量能源替代模型及重建参考程序的边界见 [sources](sources.md) 和 [qualification](qualification.md)。余下 15 项运行中结果及正式报告完成后，才能消费已有 40 项 benchmark 的正式 G09 证据并更新合并；本报告不改变 G09 或人工 V12 状态。
