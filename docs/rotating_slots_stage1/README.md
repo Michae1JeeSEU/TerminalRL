@@ -13,6 +13,8 @@ contract and never automatically loaded by the new stage 1 entry points.
 See [schema and scheduling API](api.md), [migration](migration.md), and
 [sources and model limits](sources.md).
 
+[2026-10-16 中文交付与观察指南](rebuild_20261016.md) records the current evidence snapshot and local replay commands.
+
 From the repository root, install `requirements-rotating-slots.txt` in the local
 environment. On this Windows checkout use `venv\Scripts\python.exe` in place of
 `python` if Python is absent from PATH. The documented module entry points are:
