@@ -306,7 +306,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
             self._extra_names.add(name)
         overlay=self.controller.overlays()
         if overlay["fixture_banner"]:
-            self._plotter.add_text(overlay["fixture_banner"],position=(10,785),font_size=10,
+            self._plotter.add_text(overlay["fixture_banner"],position=(10,803),font_size=10,
                 color="darkred",name="rs-fixture-banner")
         else:
             self._plotter.remove_actor("rs-fixture-banner",render=False)

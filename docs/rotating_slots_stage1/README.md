@@ -10,7 +10,8 @@ The implementation lives in `terminal_marl/core/rotating_slots/`. The old
 `terminal_marl/core/fixed_terminal/` model, its checkpoints, prior staged research
 and old viewer launchers are archived research assets, incompatible with this
 contract and never automatically loaded by the new stage 1 entry points.
-See [migration](migration.md) and [sources and model limits](sources.md).
+See [schema and scheduling API](api.md), [migration](migration.md), and
+[sources and model limits](sources.md).
 
 From the repository root, install `requirements-rotating-slots.txt` in the local
 environment. On this Windows checkout use `venv\Scripts\python.exe` in place of

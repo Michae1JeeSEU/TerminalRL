@@ -448,6 +448,78 @@ class RotatingSlotWorld:
                                  plan_hash=p.trajectory_hash, committed=p is current)
         return slots, pads, times
 
+    def _future_support_witness(self, plan):
+        """Forecast known emergency disposition before binding a soft release.
+
+        This screens the current target and scheduled source timestamps only;
+        emergency handling still guards changes that this forecast cannot prove.
+        """
+        if plan.kind == "FINAL_EMERGENCY" or plan.start_time <= self.time:
+            return None
+        a = self.aircraft[plan.aircraft_id]
+        current = self.active.get(a.id)
+        source_time, predicted_soc = self.time, a.soc
+        checkpoints = []
+        if current is not None:
+            rest = self._energy(current, self.time, current.end_time)
+            predicted_soc -= rest.soc_used
+            source_time = current.end_time
+            checkpoints.append((source_time, predicted_soc, "current_target"))
+        if plan.start_time > source_time:
+            hold = make_stable_plan(a.id, plan.source_ring, plan.source_slot,
+                start_time=source_time, end_time=plan.start_time,
+                source_version=plan.source_version, config=self.config)
+            predicted_soc -= self._energy(hold, source_time, plan.start_time).soc_used
+        checkpoints.append((plan.start_time, predicted_soc, "scheduled_start"))
+        for t, soc, witness in checkpoints:
+            q, _ = self._reference(plan.source_ring, plan.source_slot, t, plan.source_version)
+            hold = make_stable_plan("reference_hold", plan.source_ring, plan.source_slot,
+                                   start_time=t, end_time=t+10, config=self.config)
+            qhold = self._energy(hold, t, t+10).soc_used
+            if soc <= .35 or (q is not None and soc-q-qhold <= .25):
+                return {"supporting_aircraft_id": a.id, "trajectory_hash": plan.trajectory_hash,
+                        "witness": witness, "witness_time": t, "predicted_soc": soc,
+                        "q_e": q, "q_hold": qhold}
+        return None
+
+    def _release_supports(self, ring, slot, aircraft_id, slots, soft):
+        supports = set()
+        for reservation in slots.reservations:
+            if (reservation.resource != (ring, slot) or reservation.aircraft_id == aircraft_id
+                    or not reservation.plan_hash):
+                continue
+            supports.add(reservation.plan_hash)
+            # An active plan's target reservation can end at its soft successor's
+            # source clear; that successor is the release supporting this claim.
+            current = self.active.get(reservation.aircraft_id)
+            future = soft.get(reservation.aircraft_id)
+            if (current is not None and future is not None
+                    and reservation.plan_hash == current.trajectory_hash
+                    and reservation.resource == (current.target_ring, current.target_slot)
+                    and reservation.resource == (future.source_ring, future.source_slot)):
+                supports.add(future.trajectory_hash)
+        return supports
+
+    def _future_dependency_witness(self, dependencies, soft, slots):
+        by_hash = {p.trajectory_hash: p for p in soft.values()}
+        pending, seen = set(dependencies), set()
+        while pending:
+            plan_hash = min(pending)
+            pending.remove(plan_hash)
+            if plan_hash in seen:
+                continue
+            seen.add(plan_hash)
+            plan = by_hash.get(plan_hash)
+            if plan is None:
+                continue
+            witness = self._future_support_witness(plan)
+            if witness is not None:
+                return witness
+            if plan.target_ring is not None:
+                pending.update(self._release_supports(plan.target_ring, plan.target_slot,
+                                                     plan.aircraft_id, slots, soft)-seen)
+        return None
+
     def submit(self, plans, *, cancel=(), simulated_latency=0.):
         if simulated_latency < 0:
             return self._reject("INVALID_INPUT")
@@ -573,6 +645,16 @@ class RotatingSlotWorld:
                     self.cpu["validation"] += walltime.perf_counter() - start_cpu
                     return self._reject(result.reason, pair=[x.aircraft_id, y.aircraft_id], validation=result.details)
         self.cpu["validation"] += walltime.perf_counter() - start_cpu
+        # Bind a future release only after forecasting its known emergency
+        # disposition. Unprotected soft plans remain editable and preemptible.
+        binding = set(redirects.values())
+        for p in plans:
+            if p.start_time <= self.time+1e-9 and p.target_ring is not None:
+                binding.update(self._release_supports(p.target_ring, p.target_slot,
+                                                      p.aircraft_id, slots, soft))
+        witness = self._future_dependency_witness(binding, soft, slots)
+        if witness is not None:
+            return self._reject("FUTURE_EMERGENCY_DISPOSITION", **witness)
         removed = [old for key,old in self.soft.items() if key not in soft or soft[key].trajectory_hash != old.trajectory_hash]
         self.soft, self.slots, self.pads, self._source_clear = soft, slots, pads, times
         for old in removed:
@@ -617,15 +699,24 @@ class RotatingSlotWorld:
                 self._event("commit_invalidated", a.id, reason="STALE_STATE")
                 del self.soft[a.id]
                 continue
+            binding = (self._release_supports(p.target_ring, p.target_slot, a.id,
+                                             self.slots, self.soft)
+                       if p.target_ring is not None else set())
+            witness = self._future_dependency_witness(binding, self.soft, self.slots)
+            if witness is not None:
+                self._reject("FUTURE_EMERGENCY_DISPOSITION", a.id, **witness)
+                self._event("commit_invalidated", a.id, reason="FUTURE_EMERGENCY_DISPOSITION", **witness)
+                result = self.cancel(a.id)
+                if not result.accepted:
+                    self._emergency_conflict(a.id, result)
+                continue
             self.active[a.id] = p
             del self.soft[a.id]
             self.slots.mark_committed(p.trajectory_hash)
             self.pads.mark_committed(p.trajectory_hash)
-            deps = set()
-            if p.target_ring is not None:
-                for r in self.slots.reservations:
-                    if r.resource == (p.target_ring, p.target_slot) and r.aircraft_id != a.id and r.plan_hash:
-                        deps.add(r.plan_hash)
+            deps = (self._release_supports(p.target_ring, p.target_slot, a.id,
+                                          self.slots, self.soft)
+                    if p.target_ring is not None else set())
             self.dependencies[p.trajectory_hash] = tuple(sorted(deps))
             e = a.emergency
             if p.kind == "FINAL_NORMAL" and a.ring == "inner" and not e.declared:
@@ -1075,6 +1166,11 @@ class RotatingSlotWorld:
             if conflict:
                 last = self._reject(conflict.reason, r.id)
                 continue
+            binding = self._release_supports("outer", p.target_slot, r.id, self.slots, self.soft)
+            witness = self._future_dependency_witness(binding, self.soft, self.slots)
+            if witness is not None:
+                last = self._reject("FUTURE_EMERGENCY_DISPOSITION", r.id, **witness)
+                continue
             self.aircraft[r.id] = a
             self.active[r.id] = p
             try:
@@ -1086,8 +1182,7 @@ class RotatingSlotWorld:
                 continue
             self.slots, self.pads, self._source_clear = slots, pads, times
             self.trajectories[p.trajectory_hash] = p.to_dict()
-            deps = {x.plan_hash for x in slots.reservations if x.aircraft_id != r.id and
-                    x.resource == ("outer", p.target_slot) and x.plan_hash}
+            deps = self._release_supports("outer", p.target_slot, r.id, slots, self.soft)
             self.dependencies[p.trajectory_hash] = tuple(sorted(deps))
             self._event("admitted", r.id, trajectory_hash=p.trajectory_hash, dependencies=sorted(deps))
             return self._result(True)

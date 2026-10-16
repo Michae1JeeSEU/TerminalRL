@@ -598,3 +598,126 @@ def test_scheduler_observation_does_not_disclose_future_manifest_cardinality():
         w.advance(0,action)
         observations.append(current)
     assert observations[0]==observations[1]
+
+
+def test_public_admission_does_not_bind_predictably_emergency_future_release():
+    from terminal_marl.core.rotating_slots.trajectory import make_stable_plan
+    w=RotatingSlotWorld(manifest=ArrivalManifest((ArrivalRequest("r",0,0,.85,"short"),)))
+    q,_=w._reference("outer",1,0.)
+    hold=make_stable_plan("reference_hold","outer",1,start_time=0.,end_time=10.)
+    qhold=integrate_energy(hold,0.,10.).soc_used
+    for pad in range(6):
+        w.seed_service(f"busy_{pad}",pad,remaining=200.)
+    w.seed_hold("departing","outer",1,max(.35,q+qhold+.25)+1e-8)
+    departure=generate_transfer("departing","outer",1,1,.001).plan
+    inbound=generate_inbound("r",0,1,0,durations=[55.]).plan
+    assert departure is not None and inbound is not None
+    observed=[]
+    def action(snapshot,port):
+        if snapshot.time != 0.: return
+        assert not port.aircraft["departing"].emergency.eligible
+        assert port.submit((departure,)).accepted
+        slots=tuple(w.slots.reservations)
+        result=port.admit("r",inbound)
+        observed.append(result)
+        assert "r" not in w.active and not w.dependencies
+        assert w.slots.reservations==slots
+        assert w.soft["departing"] is departure
+    w.advance(.002,action)
+    assert len(observed)==1 and observed[0].reason=="FUTURE_EMERGENCY_DISPOSITION"
+    details=observed[0].details
+    assert details["supporting_aircraft_id"]=="departing"
+    assert details["witness_time"]==.001 and details["witness"]=="scheduled_start"
+    assert details["predicted_soc"]-details["q_e"]-details["q_hold"] <= .25
+    assert w.time==pytest.approx(.002) and not w.failed
+    assert w.aircraft["r"].status=="REROUTED"
+    assert w.aircraft["departing"].emergency.declared
+    assert "departing" not in w.soft
+    assert not any(e["type"]=="emergency_dependency_conflict" for e in w.events)
+    assert w.metrics()["conservation"]
+
+
+def test_starting_transfer_cannot_bind_future_alert_inner_normal_final_atomically():
+    w=RotatingSlotWorld()
+    w.seed_hold("landing","inner",0,.35)
+    w.seed_hold("incoming","middle",1,.85)
+    future=generate_final("landing","inner",0,5,.001,durations=[35.]).plan
+    incoming=generate_transfer("incoming","middle",1,0,0.,durations=[40.]).plan
+    assert future is not None and incoming is not None
+    assert w.submit((future,)).accepted
+    before=w.snapshot()
+    slots,pads=w.slots.reservations,w.pads.reservations
+    dependencies=dict(w.dependencies)
+    result=w.submit((incoming,))
+    assert result.reason=="FUTURE_EMERGENCY_DISPOSITION",result
+    assert result.details["supporting_aircraft_id"]=="landing"
+    assert w.snapshot().aircraft==before.aircraft
+    assert w.slots.reservations==slots and w.pads.reservations==pads
+    assert w.dependencies==dependencies and w.soft=={"landing":future} and not w.active
+
+
+def test_binding_checks_downstream_future_release_in_chain():
+    w=RotatingSlotWorld(manifest=ArrivalManifest((ArrivalRequest("r",0,0,.85,"short"),)))
+    q,_=w._reference("inner",0,0.)
+    hold=make_stable_plan("reference_hold","inner",0,start_time=0.,end_time=10.)
+    qhold=integrate_energy(hold,0.,10.).soc_used
+    w.seed_hold("inner","inner",0,max(.35,q+qhold+.25)+1e-8)
+    w.seed_hold("middle","middle",1,.85)
+    w.seed_hold("outer","outer",1,.85)
+    inner=generate_final("inner","inner",0,5,.003,durations=[35.]).plan
+    middle=generate_transfer("middle","middle",1,0,.001,durations=[40.]).plan
+    outer=generate_transfer("outer","outer",1,1,.002,durations=[40.]).plan
+    inbound=generate_inbound("r",0,1,0.,durations=[55.]).plan
+    assert all(p is not None for p in (inner,middle,outer,inbound))
+    assert w.submit((inner,middle,outer)).accepted
+    results=[]
+    def action(snapshot,port):
+        if snapshot.time==0.:
+            assert not port.aircraft["inner"].emergency.eligible
+            results.append(port.admit("r",inbound))
+    w.advance(0.,action)
+    assert results[0].reason=="FUTURE_EMERGENCY_DISPOSITION"
+    assert results[0].details["supporting_aircraft_id"]=="inner"
+    assert "r" not in w.active and not w.dependencies
+
+
+def test_protected_future_release_replacement_checks_predicted_emergency_atomically():
+    w=RotatingSlotWorld(manifest=ArrivalManifest((ArrivalRequest("r",0,0,.85,"short"),)))
+    q,_=w._reference("outer",1,0.)
+    hold=make_stable_plan("reference_hold","outer",1,start_time=0.,end_time=10.)
+    qhold=integrate_energy(hold,0.,10.).soc_used
+    w.seed_hold("departing","outer",1,max(.35,q+qhold+.25)+1e-8)
+    old=generate_transfer("departing","outer",1,1,.000001).plan
+    candidate=generate_transfer("departing","outer",1,1,.001,durations=[39.9])
+    if candidate.status != "FEASIBLE":
+        candidate=generate_transfer("departing","outer",1,1,.001,durations=[39.5])
+    replacement=candidate.plan
+    inbound=generate_inbound("r",0,1,0.,durations=[55.]).plan
+    assert old is not None and candidate.status=="FEASIBLE" and inbound is not None
+    assert w._protect_times(replacement)[0] <= w._protect_times(old)[0]
+    assert w.submit((old,)).accepted
+    results=[]
+    w.advance(0.,lambda snapshot,port:results.append(port.admit("r",inbound)))
+    assert results[0].accepted
+    slots,pads=w.slots.reservations,w.pads.reservations
+    dependencies=dict(w.dependencies)
+    result=w.submit((replacement,))
+    assert result.reason=="FUTURE_EMERGENCY_DISPOSITION",result
+    assert w.slots.reservations==slots and w.pads.reservations==pads
+    assert w.dependencies==dependencies and w.soft["departing"] is old
+    assert w.active["r"] is inbound
+
+
+def test_future_support_checks_current_active_target_before_next_source():
+    w=RotatingSlotWorld()
+    current=transfer()
+    q=integrate_energy(current,current.start_time,current.end_time).soc_used
+    w.seed_hold("a","outer",0,.35+q-1e-6)
+    assert w.submit((current,)).accepted
+    next_plan=generate_transfer("a","middle",0,0,current.end_time+1,source_version=1).plan
+    assert next_plan is not None and w.submit((next_plan,)).accepted
+    witness=w._future_support_witness(next_plan)
+    assert witness["witness"]=="current_target"
+    assert witness["witness_time"]==current.end_time
+    assert witness["predicted_soc"]==pytest.approx(.35-1e-6)
+    assert w.active["a"] is current and w.soft["a"] is next_plan
