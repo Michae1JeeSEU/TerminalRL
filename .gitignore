@@ -63,3 +63,4 @@ coverage/
 # Keep diagnostic logs under the unignored evidence trees
 !.tmp/**/*.log
 !results/**/*.log
+/artifacts/rotating_slots/
