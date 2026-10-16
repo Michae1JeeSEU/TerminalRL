@@ -205,12 +205,16 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
         self._extra_names = set()
         self._curve_charts = []
         self._chart_selected = None
+        # Widget constructors can invoke callbacks before returning a widget.
+        self._time_widget = None
+        self._pause_widget = None
+        self._speed_widget = None
         super().__init__(controller.snapshot(), VisualizationConfig(enabled=True,show_trajectories=True,
             show_labels=True,show_target_geometry=False,playback_speed=1.),off_screen=off_screen)
-        widget=self._plotter.add_slider_widget(lambda t:self.draw(controller.seek(t)),controller.bundle.time_bounds,
+        self._time_widget=self._plotter.add_slider_widget(lambda t:self.draw(controller.seek(t)),controller.bundle.time_bounds,
             value=controller.time,title="Replay time (s)",pointa=(.18,.055),pointb=(.71,.055),color="gray",
             title_height=.016,slider_width=.015,tube_width=.003)
-        widget.GetRepresentation().SetLabelHeight(.015)
+        self._time_widget.GetRepresentation().SetLabelHeight(.015)
         self._plotter.add_key_event("space", self.toggle_pause)
         self._plotter.add_key_event("Right",lambda:self.draw(controller.step()))
         self._plotter.add_key_event("n",lambda:self.draw(controller.jump_event(1)))
@@ -226,13 +230,15 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
     def _add_interaction_controls(self):
         # Reuse picking, replace legacy playback choices with the contract set.
         self._plotter.enable_point_picking(self._select_uav,left_clicking=False,picker="point",show_message=False,show_point=False)
-        self._plotter.add_checkbox_button_widget(lambda value:setattr(self.controller,"paused",value),value=True,
+        self._pause_widget=self._plotter.add_checkbox_button_widget(lambda value:setattr(self.controller,"paused",value),
+            value=self.controller.paused,
             position=(10,820),size=18)
         self._plotter.add_text("Pause: Space; step: Right; events: p/n; views: 1/2/3; follow: f; paths: t; slots: l",
             position=(35,825),font_size=9,color="black",name="replay-controls")
-        widget=self._plotter.add_text_slider_widget(lambda label:self.controller.set_speed(float(label[:-1])),
-            ["0.25x","1x","4x","10x"],value=1.,pointa=(.76,.945),pointb=(.97,.945),color="gray")
-        representation=widget.GetRepresentation()
+        self._speed_widget=self._plotter.add_text_slider_widget(lambda label:self.controller.set_speed(float(label[:-1])),
+            ["0.25x","1x","4x","10x"],value=float(self.controller.speeds.index(self.controller.speed)),
+            pointa=(.76,.945),pointb=(.97,.945),color="gray")
+        representation=self._speed_widget.GetRepresentation()
         representation.SetTitleHeight(.018)
         representation.SetSliderWidth(.012)
         representation.SetTubeWidth(.002)
@@ -244,6 +250,30 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
 
     def toggle_pause(self):
         self.controller.paused = not self.controller.paused
+        self._sync_controls()
+
+    def _sync_controls(self):
+        """Reflect controller state without emitting widget interaction events."""
+        time_widget=getattr(self,"_time_widget",None)
+        if time_widget is not None:
+            representation=time_widget.GetRepresentation()
+            if representation.GetValue()!=self.controller.time:
+                representation.SetValue(self.controller.time)
+        pause_widget=getattr(self,"_pause_widget",None)
+        if pause_widget is not None:
+            representation=pause_widget.GetRepresentation()
+            state=int(self.controller.paused)
+            if representation.GetState()!=state:
+                representation.SetState(state)
+        speed_widget=getattr(self,"_speed_widget",None)
+        if speed_widget is not None:
+            representation=speed_widget.GetRepresentation()
+            value=float(self.controller.speeds.index(self.controller.speed))
+            if representation.GetValue()!=value:
+                representation.SetValue(value)
+            label=f"{self.controller.speed:g}x"
+            if representation.GetTitleText()!=label:
+                representation.SetTitleText(label)
 
     def cycle_trajectories(self):
         options=("all","selected","hidden")
@@ -269,6 +299,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
 
     def draw(self, snapshot=None):
         snapshot = snapshot or self.controller.snapshot()
+        self._sync_controls()
         # Clear cumulative viewer history before a backward seek: the archive
         # is cumulative up to the requested time, never the last rendered time.
         self._terminal_event_keys.clear(); self._terminal_events.clear()

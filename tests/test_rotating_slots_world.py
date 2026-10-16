@@ -756,3 +756,152 @@ def test_normal_final_reserve_canonical_float_boundary_executes_touchdown(bounda
     assert w.metrics()["landing_below_reserve"]==0
     assert a.energy_j==pytest.approx(q.joules,abs=1e-5)
     assert a.peak_seconds==pytest.approx(q.peak_seconds,abs=1e-5)
+
+
+@pytest.mark.parametrize("physics_dt",[.2,.1,.05])
+def test_normal_final_phase_times_match_serialized_segments_for_each_dt(physics_dt):
+    p=final()
+    serialized=p.to_dict()
+    descent_start=next(s["start_time"] for s in serialized["segments"] if s["kind"]=="DESCENT")
+    assert descent_start-p.start_time==130.
+    assert p.end_time-descent_start==13.5
+    q=integrate_energy(p,p.start_time,p.end_time)
+    w=RotatingSlotWorld(physics_dt=physics_dt)
+    w.seed_hold("a","inner",0,math.fsum((.25,q.soc_used)))
+    assert w.submit((p,)).accepted
+    w.advance(p.end_time)
+    a=w.aircraft["a"]
+    assert not w.failed and a.status=="LANDED_SERVICE" and a.soc==.25
+    assert a.final_time==pytest.approx(130.,abs=1e-10)
+    assert a.descent_time==pytest.approx(13.5,abs=1e-10)
+    assert a.airborne_time==pytest.approx(a.final_time+a.descent_time,abs=1e-10)
+    assert a.holding_time==a.transfer_time==0.
+    junction=next(frame for frame in w.records if frame["time"]==descent_start)
+    assert junction["aircraft"][0]["status"]=="VERTICAL_DESCENT"
+    assert junction["aircraft"][0]["final_time"]==pytest.approx(130.,abs=1e-10)
+    assert junction["aircraft"][0]["descent_time"]==0.
+    assert a.touchdown_time==p.end_time
+    assert a.p==pytest.approx(p.state(p.end_time).p,abs=1e-12)
+    assert a.energy_j==pytest.approx(q.joules,abs=1e-5)
+    assert a.peak_seconds==pytest.approx(q.peak_seconds,abs=1e-5)
+
+
+@pytest.mark.parametrize("ring",["inner","middle","outer"])
+def test_emergency_final_phase_times_follow_one_finite_executed_plan(ring):
+    p=final(emergency=True,ring=ring)
+    descent_start=next(s.start_time for s in p.segments if s.kind=="DESCENT")
+    q=integrate_energy(p,p.start_time,p.end_time)
+    w=RotatingSlotWorld()
+    w.seed_hold("a",ring,0,.85,emergency=True)
+    assert w.submit((p,)).accepted
+    w.advance(p.end_time)
+    a=w.aircraft["a"]
+    assert not w.failed and a.status=="LANDED_SERVICE"
+    assert a.final_time==pytest.approx(descent_start-p.start_time,abs=1e-10)
+    assert a.descent_time==pytest.approx(p.end_time-descent_start,abs=1e-10)
+    assert a.airborne_time==pytest.approx(a.final_time+a.descent_time,abs=1e-10)
+    assert a.touchdown_time==p.end_time
+    assert a.soc==pytest.approx(.85-q.soc_used,abs=1e-12)
+    assert a.energy_j==pytest.approx(q.joules,abs=1e-5)
+    assert a.peak_seconds==pytest.approx(q.peak_seconds,abs=1e-5)
+    junction=next(frame for frame in w.records if frame["time"]==descent_start)
+    assert junction["aircraft"][0]["status"]=="VERTICAL_DESCENT"
+    started=[e for e in w.events if e["type"]=="maneuver_started"]
+    assert len(started)==1 and started[0]["details"]["trajectory_hash"]==p.trajectory_hash
+
+
+def test_descent_junction_is_visited_from_nextafter_without_overshooting_until():
+    p=final()
+    descent_start=next(s.start_time for s in p.segments if s.kind=="DESCENT")
+    before=math.nextafter(descent_start,-math.inf)
+    w=RotatingSlotWorld()
+    w.seed_hold("a","inner",0,.85)
+    assert w.submit((p,)).accepted
+    w.advance(descent_start-.2)
+    # Isolate the representable timestamp immediately preceding the junction.
+    w._advance_energy(before)
+    assert w.time==before and w.aircraft["a"].status=="FINAL_NORMAL"
+    w.advance(before)
+    assert w.time==before and w.aircraft["a"].status=="FINAL_NORMAL"
+    assert w.aircraft["a"].descent_time==0.
+    assert not any(frame["time"]>=descent_start for frame in w.records)
+    w.advance(descent_start)
+    assert w.time==descent_start and w.aircraft["a"].status=="VERTICAL_DESCENT"
+    assert w.aircraft["a"].final_time==pytest.approx(130.,abs=1e-10)
+    assert w.aircraft["a"].descent_time==0.
+    assert w.records[-1]["time"]==descent_start
+    w.advance(descent_start)
+    assert w.time==descent_start  # Repeated advance does not loop on the junction.
+
+
+def test_final_phase_counters_split_an_interval_crossing_the_segment_junction():
+    p=final()
+    descent_start=next(s.start_time for s in p.segments if s.kind=="DESCENT")
+    w=RotatingSlotWorld()
+    w.seed_hold("a","inner",0,.85)
+    assert w.submit((p,)).accepted
+    w._advance_energy(descent_start-.1)
+    assert w.aircraft["a"].status=="FINAL_NORMAL"
+    w._advance_energy(descent_start+.1)
+    a=w.aircraft["a"]
+    assert a.status=="VERTICAL_DESCENT"
+    assert a.final_time==pytest.approx(130.,abs=1e-10)
+    assert a.descent_time==pytest.approx(.1,abs=1e-10)
+
+
+def test_normal_final_executes_exact_touchdown_from_nextafter_without_early_settlement():
+    p=final()
+    before=math.nextafter(p.end_time,-math.inf)
+    q=integrate_energy(p,p.start_time,p.end_time)
+    w=RotatingSlotWorld()
+    w.seed_hold("a","inner",0,math.fsum((.25,q.soc_used)))
+    assert w.submit((p,)).accepted
+    w.advance(p.end_time-.2)
+    w._advance_energy(before)
+    w.advance(before)
+    a=w.aircraft["a"]
+    assert w.time==before and a.status=="VERTICAL_DESCENT"
+    assert a.touchdown_time is None and w.active["a"] is p
+    assert not any(e["type"]=="touchdown" for e in w.events)
+    w.advance(p.end_time)
+    a=w.aircraft["a"]
+    assert w.time==p.end_time and a.status=="LANDED_SERVICE"
+    assert a.touchdown_time==p.end_time and a.soc==.25
+    endpoint=p.state(p.end_time)
+    assert (a.p,a.v,a.a,a.jerk)==(endpoint.p,endpoint.v,endpoint.a,endpoint.jerk)
+    touchdown=next(e for e in w.events if e["type"]=="touchdown")
+    assert touchdown["time"]==p.end_time and touchdown["details"]["soc"]==.25
+    assert a.final_time==pytest.approx(130.,abs=1e-10)
+    assert a.descent_time==pytest.approx(13.5,abs=1e-10)
+
+
+def test_soft_successor_waits_for_exact_active_endpoint_before_starting():
+    w=RotatingSlotWorld()
+    w.seed_hold("a","outer",0,.85)
+    current=transfer()
+    assert w.submit((current,)).accepted
+    candidate=generate_transfer("a","middle",0,0,current.end_time,source_version=1)
+    assert candidate.status=="FEASIBLE",candidate
+    successor=candidate.plan
+    assert w.submit((successor,)).accepted
+    before=math.nextafter(current.end_time,-math.inf)
+    w.advance(current.end_time-.2)
+    w._advance_energy(before)
+    w.advance(before)
+    assert w.time==before and w.active["a"] is current and w.soft["a"] is successor
+    assert w.aircraft["a"].version==0
+    assert not any(e["type"]=="transfer_completed" for e in w.events)
+    assert not any(e["type"]=="commit_invalidated" for e in w.events)
+    assert not any(e["type"]=="maneuver_started" and
+                   e["details"]["trajectory_hash"]==successor.trajectory_hash for e in w.events)
+    w.advance(current.end_time)
+    assert w.time==current.end_time and w.active["a"] is successor and "a" not in w.soft
+    a=w.aircraft["a"]
+    assert a.version==successor.source_version==1
+    assert a.status=="TRANSFER_M_I" and a.trajectory_hash==successor.trajectory_hash
+    completed=next(e for e in w.events if e["type"]=="transfer_completed")
+    started=next(e for e in w.events if e["type"]=="maneuver_started" and
+                 e["details"]["trajectory_hash"]==successor.trajectory_hash)
+    assert completed["time"]==started["time"]==current.end_time
+    assert w.events.index(completed)<w.events.index(started)
+    assert not any(e["type"]=="commit_invalidated" for e in w.events)

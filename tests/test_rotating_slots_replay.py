@@ -8,7 +8,7 @@ from pathlib import Path
 from terminal_marl.core.rotating_slots.config import load_config, DEFAULT_CONFIG
 from terminal_marl.core.rotating_slots.replay import ReplayBundle, ReplayArchive, BufferedStateJSONLSink
 from terminal_marl.core.rotating_slots.trajectory import make_stable_plan
-from terminal_marl.visualization.rotating_slots_replay import ReplayController
+from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer
 
 
 def record():
@@ -297,3 +297,61 @@ def test_frozen_censored_aircraft_remains_in_current_physical_pair(tmp_path):
     distance,a,b=controller.overlays()["minimum_current_3d_pair"]
     assert distance==0. and {a,b}=={"u1","censored"}
     assert {u.position for u in controller.snapshot().uavs}=={(0.,0.,0.)}
+
+
+class _ControlRepresentation:
+    def __init__(self,value=0.,state=0,title=""):
+        self.value,self.state,self.title=value,state,title
+        self.writes=[]
+    def GetValue(self): return self.value
+    def GetState(self): return self.state
+    def GetTitleText(self): return self.title
+    def SetValue(self,value): self.value=value; self.writes.append(("value",value))
+    def SetState(self,state): self.state=state; self.writes.append(("state",state))
+    def SetTitleText(self,title): self.title=title; self.writes.append(("title",title))
+
+
+class _ControlWidget:
+    def __init__(self,representation): self.representation=representation
+    def GetRepresentation(self): return self.representation
+    def InvokeEvent(self,*args): raise AssertionError("sync must not invoke interaction callbacks")
+
+
+def test_widget_sync_handles_early_initialization_and_writes_only_changed_state(tmp_path):
+    viewer=object.__new__(RotatingSlotsReplayViewer)
+    viewer.controller=ReplayController(bundle(tmp_path))
+    viewer._sync_controls()  # Constructors may invoke draw before assignment.
+    time=_ControlRepresentation(value=-1.)
+    pause=_ControlRepresentation(state=0)
+    speed=_ControlRepresentation(value=0.,title="0.25x")
+    viewer._time_widget=_ControlWidget(time)
+    viewer._pause_widget=_ControlWidget(pause)
+    viewer._speed_widget=_ControlWidget(speed)
+    viewer._sync_controls()
+    assert (time.value,pause.state,speed.value,speed.title)==(0.,1,1.,"1x")
+    writes=[list(r.writes) for r in (time,pause,speed)]
+    viewer._sync_controls()
+    assert [r.writes for r in (time,pause,speed)]==writes
+    viewer.toggle_pause()
+    assert not viewer.controller.paused and pause.state==0
+    viewer.toggle_pause()
+    assert viewer.controller.paused and pause.state==1
+    for value,index,label in ((.25,0.,"0.25x"),(1.,1.,"1x"),(4.,2.,"4x"),(10.,3.,"10x")):
+        viewer.controller.set_speed(value); viewer._sync_controls()
+        assert (speed.value,speed.title)==(index,label)
+
+
+def test_time_widget_tracks_seek_step_event_and_playback(tmp_path):
+    viewer=object.__new__(RotatingSlotsReplayViewer)
+    viewer.controller=ReplayController(bundle(tmp_path))
+    representation=_ControlRepresentation(value=-1.)
+    viewer._time_widget=_ControlWidget(representation)
+    controller=viewer.controller
+    states=[controller.seek(.137),controller.step(),controller.jump_event()]
+    for snapshot in states:
+        controller.seek(snapshot.time); viewer._sync_controls()
+        assert representation.GetValue()==snapshot.time==controller.time
+    controller.paused=False
+    snapshot=controller.advance(.1)
+    viewer._sync_controls()
+    assert representation.GetValue()==snapshot.time==pytest.approx(.43)

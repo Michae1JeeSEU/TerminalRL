@@ -243,6 +243,17 @@ deterministic emergency handling runs before the callback when
 A request left undecided after its release callback is rerouted at that
 timestamp; ordinary demand does not wait unadmitted at the boundary.
 
+Execution takes the final-to-descent boundary from the first serialized
+`DESCENT` segment's `start_time`. `final_time` and `descent_time` accumulate
+the actual execution interval's overlap with those phases. Active-plan
+endpoints and scheduled soft starts are visited at their exact stored times;
+these plans are not settled or started early through an epsilon comparison.
+A query immediately before such a boundary does not cross it, and completion
+of the current maneuver is settled before an equal-time successor starts.
+These guarantees concern the serialized phase junction, active endpoint, and
+soft start; other scheduler/resource-event tolerances retain their existing
+implementation behavior.
+
 ## Commands and resource dependencies
 
 The port delegates these public operations to the executor:

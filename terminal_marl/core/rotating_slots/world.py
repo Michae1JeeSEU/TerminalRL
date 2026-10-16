@@ -685,7 +685,7 @@ class RotatingSlotWorld:
         for aircraft_id, p in sorted(tuple(self.soft.items())):
             if selected is not None and aircraft_id not in selected:
                 continue
-            if p.start_time > self.time + 1e-9:
+            if p.start_time > self.time:
                 continue
             a = self.aircraft[aircraft_id]
             normal_exception = (p.kind == "FINAL_NORMAL" and a.ring == "inner" and
@@ -758,6 +758,13 @@ class RotatingSlotWorld:
         self._event(reason, aircraft_id, p=a.p, soc=a.soc)
         self._event("episode_stopped", unreleased=len(self.manifest.requests)-self._manifest_index)
 
+    @staticmethod
+    def _descent_start(plan):
+        """Use the executed final's serialized phase junction."""
+        if plan.kind in {"FINAL_NORMAL", "FINAL_EMERGENCY"}:
+            return next(s.start_time for s in plan.segments if s.kind == "DESCENT")
+        return None
+
     def _advance_energy(self, end):
         initial, duration = self.time, end-self.time
         results, fail_at = {}, None
@@ -790,8 +797,15 @@ class RotatingSlotWorld:
             a = self.aircraft[key]
             s = p.state(end)
             status = a.status
-            if p.pad_id is not None and end >= p.end_time-13.5:
-                status = "VERTICAL_DESCENT"
+            descent_start = self._descent_start(p)
+            if descent_start is not None:
+                final_duration = max(0., min(end, descent_start)-max(initial, p.start_time))
+                descent_duration = max(0., min(end, p.end_time)-max(initial, descent_start))
+                if end >= descent_start:
+                    status = "VERTICAL_DESCENT"
+            else:
+                final_duration = duration if a.status.startswith("FINAL") else 0.
+                descent_duration = duration if a.status == "VERTICAL_DESCENT" else 0.
             soc = a.soc-q.soc_used
             # The fixed normal final has an authoritative start SOC and complete
             # energy forecast; preserve its additive reserve boundary at touchdown.
@@ -804,8 +818,8 @@ class RotatingSlotWorld:
                 airborne_time=a.airborne_time+duration,
                 holding_time=a.holding_time+(duration if a.status.startswith("HOLD") else 0),
                 transfer_time=a.transfer_time+(duration if a.status.startswith("TRANSFER") else 0),
-                final_time=a.final_time+(duration if a.status.startswith("FINAL") else 0),
-                descent_time=a.descent_time+(duration if a.status == "VERTICAL_DESCENT" else 0),
+                final_time=a.final_time+final_duration,
+                descent_time=a.descent_time+descent_duration,
                 battery_power_w=evaluate_power(s.v,s.a,self.config).battery_w)
         if fail_at:
             self._fail(fail_at[1], "ENERGY_FAILURE")
@@ -846,7 +860,7 @@ class RotatingSlotWorld:
         triggered = False
         # Touchdown/completion precede services/releases at the same timestamp.
         for key, p in sorted(tuple(self.active.items())):
-            if p.end_time > self.time+1e-8:
+            if p.end_time > self.time:
                 continue
             a = self.aircraft[key]
             del self.active[key]
@@ -884,7 +898,7 @@ class RotatingSlotWorld:
             self.requests[request.id] = request
             self._event("request_released", request.id)
             triggered = True
-        if any(p.start_time <= self.time+1e-8 for p in self.soft.values()):
+        if any(p.start_time <= self.time for p in self.soft.values()):
             triggered = True
         return triggered
 
@@ -1074,14 +1088,21 @@ class RotatingSlotWorld:
                         self.reroute(key, "NO_PLAN_FOUND")
                 self.cpu["decision"] += walltime.perf_counter()-cpu
                 self._record()
-            if self.time >= until-1e-9:
+            descent_starts = [self._descent_start(p) for p in self.active.values()]
+            descent_starts = [t for t in descent_starts if t is not None]
+            active_ends = [p.end_time for p in self.active.values()]
+            soft_starts = [p.start_time for p in self.soft.values()]
+            # A positive phase interval must reach its exact junction, even if
+            # accumulated step roundoff is smaller than the usual stop tolerance.
+            if (self.time >= until-1e-9
+                    and not any(self.time < t <= until for t in descent_starts+active_ends+soft_starts)):
                 break
             next_times = [until, self.time+self.physics_dt, self._next_heartbeat]
             if self._manifest_index < len(self.manifest.requests):
                 next_times.append(self.manifest.requests[self._manifest_index].release_time)
-            next_times.extend(p.end_time for p in self.active.values() if p.end_time > self.time+1e-8)
-            next_times.extend(p.end_time-13.5 for p in self.active.values() if p.pad_id is not None and p.end_time-13.5 > self.time+1e-8)
-            next_times.extend(p.start_time for p in self.soft.values() if p.start_time > self.time+1e-8)
+            next_times.extend(t for t in active_ends if t > self.time)
+            next_times.extend(t for t in descent_starts if t > self.time)
+            next_times.extend(t for t in soft_starts if t > self.time)
             next_times.extend(a.service_end for a in self.aircraft.values() if a.status == "LANDED_SERVICE" and a.service_end > self.time+1e-8)
             next_times.extend(x[0] for x in self._source_clear.values() if x[0] > self.time+1e-8)
             next_time = min(next_times)
