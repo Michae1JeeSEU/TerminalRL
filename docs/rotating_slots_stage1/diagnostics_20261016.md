@@ -1,6 +1,14 @@
 # 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic/scheduler
 
-截至 **服务器时钟 2026-10-17 04:36:17 UTC（该时钟换算 UTC+8 为 12:36:17）**，正式 61 项矩阵已完成全部 40 项 benchmark、3 项 dt、14 项 traffic 及 3 项 scheduler，共 60 项；仅 `traffic_rate180_seed71` 仍运行，1 个 worker 忙碌。本轮有效快照来自更正后的本地采集记录，服务器时钟比本地约慢 75 秒，本地观测约为北京时间 12:37:32；后文服务器日志时刻保留原时钟。服务器 04:41:51 UTC 的后续查询确认新增三项审计通过，累计 60 项 PASS；正式退出标记和正确输出目录中的 `diagnostics/diagnostics.json` 尚未生成，94 项目录仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
+**2026-10-17 08:39 UTC 本轮 heartbeat 的服务器直接核验受阻，服务器当前运行状态及同步新鲜度未知。** 最近有效直接快照仍为服务器时钟 04:36:17 UTC：当时确认正式矩阵 60/61 已完成，仅 `traffic_rate180_seed71` 运行；04:41:51 UTC 的后续查询确认累计 60 项回放审计 PASS。08:47 UTC 读取的本地同步副本仍有 60 个 `COMPLETED` 结果，尚未见最后一项结果、退出标记或总报告；这不等于服务器当前状态。以下 benchmark、dt、traffic 和 scheduler 表格及结论保持基于既有产物，94 项目录仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
+
+## 本轮核验受阻与本地副本
+
+默认沙箱尝试记录了名称解析失败；随后 `require_escalated` 尝试是另一阶段的观测。后一次尝试的本地时间为 08:46:12.8376080–08:46:17.9373448 UTC，已建立至 `192.168.30.12:22` 的 TCP 连接，随后返回 `kex_exchange_identification: Connection closed by remote host`，退出码 255；在取得服务器 SSH 身份、完成认证及执行命令之前连接已关闭。见 [后一次 stderr](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt2.stderr.txt)、[时间与退出码](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt2.meta.json)及[默认沙箱尝试](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt1.stderr.txt)。不能据此将正式仿真判为失败、卡死或仍在运行。
+
+[本地同步副本快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/local_sync_snapshot.json)于 08:47:27.496810–08:47:27.542142 UTC 读取：目录 61 个 ID、60 个 `COMPLETED`，`traffic_rate180_seed71/result.json` 尚未在副本中出现，父目录 `diagnostics.exit` 与 `diagnostics/diagnostics.json` 也未出现。该 job 的 progress 记录为仿真 1265 s、wall `71462.03031056374 s`，其自身 `observed_at` 为 06:33:37.137329 UTC；states 最后完整记录为 `1274.8430578523012 s`、`failed=false`，文件 mtime 为 06:44:48.234987 UTC、大小 `345396929 bytes`。这些字段只表明本地副本在此前直接检查后记录了进展；当前服务器状态、同步是否新鲜以及任务停止时刻均不能由它们确定。
+
+同一 heartbeat 已保存并读回为 `ACTIVE`，约北京时间 **17:46–17:47** 复查 SSH 是否恢复；这是访问恢复复查，不是任务完成 ETA。下次仅进行一次有界连接核验，不调整服务器或正式任务。后续仍需直接核验最后一项、退出状态与正式总报告，保留已通过的 60 项审计，完成最后回放检查及 G09 消费、严格合并与人工 V12 接续；不重复既有审计。
 
 ## 数据与测量条件
 
@@ -14,7 +22,7 @@
 /home/user/envs/terminal_env/bin/python -m terminal_marl.scripts.run_stage1_diagnostics --output /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --workers 20 --code-commit f67b5c8462433ba701191c493a37e4a8e472334e
 ```
 
-最新状态见 [本轮更正后的服务器快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/summary.md)，此前 benchmark/dt 快照见 [21:46 核验记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。benchmark/dt 算术汇总保存在 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
+最近有效直接状态见 [此前更正后的服务器快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/summary.md)，此前 benchmark/dt 快照见 [21:46 核验记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。benchmark/dt 算术汇总保存在 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
 
 ## 1 秒 benchmark
 
