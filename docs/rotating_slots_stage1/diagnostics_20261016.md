@@ -1,14 +1,32 @@
 # 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic/scheduler
 
-**2026-10-17 08:39 UTC 本轮 heartbeat 的服务器直接核验受阻，服务器当前运行状态及同步新鲜度未知。** 最近有效直接快照仍为服务器时钟 04:36:17 UTC：当时确认正式矩阵 60/61 已完成，仅 `traffic_rate180_seed71` 运行；04:41:51 UTC 的后续查询确认累计 60 项回放审计 PASS。08:47 UTC 读取的本地同步副本仍有 60 个 `COMPLETED` 结果，尚未见最后一项结果、退出标记或总报告；这不等于服务器当前状态。以下 benchmark、dt、traffic 和 scheduler 表格及结论保持基于既有产物，94 项目录仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
+**2026-10-17 10:25 UTC 的服务器核验确认原正式 attempt 已中断。** 用户确认服务器曾断电并已恢复；SSH 已恢复，服务器重启后原诊断进程不存在。已有 60 个 `COMPLETED` 结果和 60 项通过的回放审计保留，最后的 `traffic_rate180_seed71` 没有结果或完整 replay，原退出标记与正式 `diagnostics.json` 也未生成。本次中断不记作该场景的物理 `ENERGY_FAILURE` 或实现故障结果。单项恢复现已启动并生成 progress/states，完整报告仍待完成。以下 benchmark、dt、traffic 和 scheduler 表格及结论仍基于既有产物；94 项目录保持 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
 
-## 本轮核验受阻与本地副本
+## 断电中断、同步恢复与单项重跑
 
-默认沙箱尝试记录了名称解析失败；随后 `require_escalated` 尝试是另一阶段的观测。后一次尝试的本地时间为 08:46:12.8376080–08:46:17.9373448 UTC，已建立至 `192.168.30.12:22` 的 TCP 连接，随后返回 `kex_exchange_identification: Connection closed by remote host`，退出码 255；在取得服务器 SSH 身份、完成认证及执行命令之前连接已关闭。见 [后一次 stderr](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt2.stderr.txt)、[时间与退出码](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt2.meta.json)及[默认沙箱尝试](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/connection_check_attempt1.stderr.txt)。不能据此将正式仿真判为失败、卡死或仍在运行。
+[重启后直接核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_snapshot.json)记录服务器于北京时间 18:16:28 启动；10:25 UTC 查询时，旧 PID `3703967`、`3703969`、`3703989` 均不存在，也没有匹配的诊断进程。61 个目录中 60 项结果为 `COMPLETED`，仅 `traffic_rate180_seed71` 缺少 `result.json` 与 `replay/replay.json`，父目录 `diagnostics.exit` 和 `diagnostics/diagnostics.json` 均不存在。这次直接观测取代此前 SSH 不可达时的未知状态；此前默认沙箱的名称解析失败与提权后 SSH 握手关闭是不同阶段的历史观测，不能用其判定仿真的物理结局。
 
-[本地同步副本快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0839/local_sync_snapshot.json)于 08:47:27.496810–08:47:27.542142 UTC 读取：目录 61 个 ID、60 个 `COMPLETED`，`traffic_rate180_seed71/result.json` 尚未在副本中出现，父目录 `diagnostics.exit` 与 `diagnostics/diagnostics.json` 也未出现。该 job 的 progress 记录为仿真 1265 s、wall `71462.03031056374 s`，其自身 `observed_at` 为 06:33:37.137329 UTC；states 最后完整记录为 `1274.8430578523012 s`、`failed=false`，文件 mtime 为 06:44:48.234987 UTC、大小 `345396929 bytes`。这些字段只表明本地副本在此前直接检查后记录了进展；当前服务器状态、同步是否新鲜以及任务停止时刻均不能由它们确定。
+原 job 最后 progress 自身时间为 06:33:37.137329 UTC，记录仿真 1265 s、wall `71462.03031056374 s`。最终保留的 `states.jsonl` 为 **345685317 bytes**、mtime 06:46:58.951994 UTC，最后可见完整状态时间为 `1274.8430578523012 s`，文件尾不是完整 JSON 行；这些不是可恢复的完整 world checkpoint，也不能用 mtime 推断精确断电时刻。[本地重新哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/local_hash_parity.json)与[服务器只读哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_partial_sha.json)一致，states SHA-256 为 `5dea16f8cd568ad9353060e1ac6825534133b41630dbcc19300c248fe4bed025`；当前本地 27 个冻结源码/配置文件实算 SHA 与服务器及 f67 provenance 全部一致。
 
-同一 heartbeat 已保存并读回为 `ACTIVE`，约北京时间 **17:46–17:47** 复查 SSH 是否恢复；这是访问恢复复查，不是任务完成 ETA。下次仅进行一次有界连接核验，不调整服务器或正式任务。后续仍需直接核验最后一项、退出状态与正式总报告，保留已通过的 60 项审计，完成最后回放检查及 G09 消费、严格合并与人工 V12 接续；不重复既有审计。
+用户授权下的同步修复已完成：[服务器更名记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/syncthing_repair/server_rename_repair.json)保留 11 个历史路径的内容、mtime 与 SHA，仅将非法名称改为 Windows 兼容名称；[本地忽略配置记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/syncthing_repair/local_ignore_repair.json)在本地 `.stignore` 原 448-byte 前缀之后追加 28 个精确临时测试/cache 排除项。该配置不提交 Git，未删除文件或更改 ACL，原有 receive-only 本地额外文件保留。服务器 10:32 UTC 和本地 10:36:37 UTC 的快照均见 code/results 为 `idle`、errors/pullErrors/needTotalItems 为 0；这不要求两端全目录文件数量相同。
+
+冻结内核没有完整 world checkpoint 恢复功能，原 CLI 不支持 resume，原路径重跑还会与既有 job 目录冲突。恢复编排使用新增的 [wrapper](../../scripts/server/recover_rotating_slots_diagnostics.py)，独立编排提交为 `3068e6ad8a5ffe12c8ac8ba212c1f2f72f6782f0`，脚本 SHA-256 为 `ae62823d50b32a4b540b2fb5c8c9e0d016e8155e26e1954e96e40eb980ba5836`；它在冻结 27 文件 glob 之外，物理数值代码仍为 f67。对应[定向验证记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/wrapper_tests.txt)为 33 PASS，包含真实 0.2 s 独立 pilot 的输出路径 smoke；该 pilot 不是正式矩阵结果或 G09 证据。
+
+恢复协议先验证精确 61 项目录、60 项来源的 provenance/SHA 与 replay，再只将 `traffic_rate180_seed71` 按原冻结参数从仿真 0 重跑，输出到新的 `/home/user/training_outputs/terminal/rotating_slots_recovery_f67b5c8_20261017/diagnostics`。原输出所有字节、60 个结果对象及既有审计保留；单个独立 job 使用 1 worker，数值库线程均为 1。只有新项真实 `COMPLETED` 且 replay 验证通过，才将原 60 项与新 1 项按规范顺序形成完整 `diagnostics.json`，其中显式记录恢复来源、实际命令和两次 attempt 的计时，不将中断前 wall 拼成连续运行耗时。
+
+[服务器只读预检](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_preflight/preflight_observation.json)已于 10:39:59.942–10:40:42.901 UTC 完成：`PREFLIGHT_PASSED`、退出码 0，精确目录 61 项、已验证来源 60 项，唯一重跑项为 `traffic_rate180_seed71`；stderr 为空，预检未创建目标 `diagnostics` 目录。
+
+[实际启动记录](../../../training_outputs/terminal/rotating_slots_recovery_f67b5c8_20261017/parent/launch.json)确认单项恢复于服务器时钟 2026-10-17 10:47:24.664872 UTC 启动，wrapper PID `7697`、Python PID `7698`；工作目录仍为 `/home/user/projects/terminal`。实际命令如下：
+
+```bash
+/home/user/envs/terminal_env/bin/python scripts/server/recover_rotating_slots_diagnostics.py --source /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --output /home/user/training_outputs/terminal/rotating_slots_recovery_f67b5c8_20261017/diagnostics --code-commit f67b5c8462433ba701191c493a37e4a8e472334e --recovery-commit 3068e6ad8a5ffe12c8ac8ba212c1f2f72f6782f0 --workers 1
+```
+
+新 root 的 `parent/recovery.log`、`parent/recovery.exit` 分别保存日志及退出标记，`parent/launch.json` 保存启动命令与进程记录。[原始启动后核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.stdout)及[本地时间包围记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.meta.json)确认：服务器快照时钟 10:50:13.097697–10:50:13.118350 UTC，7697/7698 仍运行、cwd/命令正确；`recovery_manifest.json` 为 `RUNNING`，仅重跑 seed 71、复用 60 项、1 worker。progress 自身时间 10:49:16.553638 UTC 记录仿真 `64.55795671792151/5400 s`、wall `70.699175142 s`，failed 0、`truncated=false`、`conservation=true`；states 为 1844750 bytes，最后完整状态时间 `77.00000000000003 s`、`failed=false`，退出标记未出现且日志为空。相同 SSH 调用的本地时间为 10:49:28.677594–10:49:29.051304 UTC，exit 0、stderr 为空；该次服务器时钟约比本地快 44.24 s，不沿用断电前的时钟差。
+
+同一 heartbeat 已更新并读回 `ACTIVE`，约北京时间 **10 月 17 日 22:50** 首次复查。观察间隔为 4 小时，依据是该 seed 不同阶段成本不均且此前多小时仍持续推进；这是首次观察安排，不是任务完成 ETA，不能用当前低占用的初始化进度外推。实际唤醒可有数分钟误差；本地电脑及 Codex 应用需保持运行。
+
+完成后只对新的最后一项执行独立回放审计并合并原 60 项索引，避免重复已有审计；G09 消费新恢复 root 的正式 `diagnostics.json`，其中原 40 项 benchmark 仍来自旧 root，不重跑。严格合并和 V12 人工验收仍待后续真实证据。
 
 ## 数据与测量条件
 
@@ -22,7 +40,7 @@
 /home/user/envs/terminal_env/bin/python -m terminal_marl.scripts.run_stage1_diagnostics --output /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --workers 20 --code-commit f67b5c8462433ba701191c493a37e4a8e472334e
 ```
 
-最近有效直接状态见 [此前更正后的服务器快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/summary.md)，此前 benchmark/dt 快照见 [21:46 核验记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。benchmark/dt 算术汇总保存在 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
+断电前的有效直接状态见 [此前更正后的服务器快照](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/summary.md)，此前 benchmark/dt 快照见 [21:46 核验记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/summary.md)。benchmark/dt 算术汇总保存在 [partial_report_aggregates.json](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261016_1346/partial_report_aggregates.json)，仅派生汇总，不替代或创建正式 `diagnostics.json`。
 
 ## 1 秒 benchmark
 
