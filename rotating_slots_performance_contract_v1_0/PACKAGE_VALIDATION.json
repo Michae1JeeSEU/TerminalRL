@@ -1,0 +1,75 @@
+{
+  "schema": "ft_rs_spec_package_validation_v1_0",
+  "contract_id": "FT-RS-S1-PERF-1.0",
+  "status": "PASS",
+  "scope": "normative_package_structure_and_cross_reference_only",
+  "checks": [
+    {
+      "name": "reference_identity",
+      "passed": true
+    },
+    {
+      "name": "active_policy_identity",
+      "passed": true
+    },
+    {
+      "name": "catalog_count_70",
+      "passed": true
+    },
+    {
+      "name": "unique_case_ids",
+      "passed": true
+    },
+    {
+      "name": "all_cases_unexecuted",
+      "passed": true
+    },
+    {
+      "name": "all_catalog_ids_in_markdown",
+      "passed": true
+    },
+    {
+      "name": "six_windows",
+      "passed": true
+    },
+    {
+      "name": "traffic_matrix_15",
+      "passed": true
+    },
+    {
+      "name": "candidate_duration_57",
+      "passed": true
+    },
+    {
+      "name": "no_template_placeholder",
+      "passed": true
+    },
+    {
+      "name": "fenced_code_balanced",
+      "passed": true
+    },
+    {
+      "name": "thresholds_marked_as_normative",
+      "passed": true
+    },
+    {
+      "name": "simulation_constraints_unchanged",
+      "passed": true
+    },
+    {
+      "name": "no_old_free_pad_prefilter",
+      "passed": true
+    },
+    {
+      "name": "no_fake_simulation_results",
+      "passed": true
+    }
+  ],
+  "check_count": 15,
+  "simulation_code_implemented": false,
+  "simulation_tests_run": false,
+  "benchmark_measurements_run": false,
+  "traffic_seed_rerun": false,
+  "visualization_observed": false,
+  "research_qualification_status": "NOT_RUN"
+}

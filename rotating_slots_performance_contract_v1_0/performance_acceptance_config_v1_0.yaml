@@ -1,0 +1,307 @@
+# 性能验收配置；不得作为物理配置覆盖文件加载。
+schema: ft_rs_s1_perf_acceptance_config_v1_0
+contract_id: FT-RS-S1-PERF-1.0
+document_role: performance_specification_not_physical_configuration
+specification_status: FORMAL
+implementation_status: NOT_STARTED
+reference:
+  repository: Michae1JeeSEU/TerminalRL
+  branch_context: codex/arrival-restructure
+  commit: 1c5afd37c891a0ed4776f64367fc7264db3c1c54
+  policy_id: upstream_capacity_only_pad_arrival_v1_20261018
+  historical_core_commit: f67b5c8462433ba701191c493a37e4a8e472334e
+  previous_audit_commit: b936f6ef7b47156f9c3d13ee941580a5da902ebe
+  amendment_path: docs/rotating_slots_stage1/amendment_20261018.md
+  physical_configuration_path: new10.16/fixed_terminal_rotating_slots_stage1_config_v1_0.yaml
+  old_results_are_primary_timing_baseline: false
+  policy_changes_are_performance_gains: false
+scope:
+  phase: stage1_performance_qualification
+  simulation_rules_change_allowed: false
+  new_scheduling_solver_allowed: false
+  learning_training_allowed: false
+  bluesky_migration_allowed: false
+  repository_write_done_by_this_package: false
+  automatic_stage2_start: false
+frozen_semantic_assertions:
+  hard_separation_m: 80.0
+  additional_plan_buffer_m: 0.0
+  physics_dt_s: 0.2
+  scheduler_period_s: 5.0
+  default_preview_s: 240.0
+  normal_touchdown_reserve: 0.25
+  absolute_emergency_trigger_soc: 0.35
+  reference_holding_s: 10.0
+  terminal_peak_budget_s: 120.0
+  induced_root_bisections: 80
+  reference_phase_bins: 24
+  final_duration_grid_s:
+  - 20
+  - 25
+  - 30
+  - 35
+  - 40
+  - 45
+  - 50
+  - 55
+  - 60
+  - 65
+  - 70
+  - 75
+  - 80
+  - 85
+  - 90
+  - 95
+  - 100
+  - 105
+  - 110
+  - 115
+  - 120
+  - 125
+  - 130
+  - 135
+  - 140
+  - 145
+  - 150
+  - 155
+  - 160
+  - 165
+  - 170
+  - 175
+  - 180
+  - 185
+  - 190
+  - 195
+  - 200
+  - 205
+  - 210
+  - 215
+  - 220
+  - 225
+  - 230
+  - 235
+  - 240
+  - 245
+  - 250
+  - 255
+  - 260
+  - 265
+  - 270
+  - 275
+  - 280
+  - 285
+  - 290
+  - 295
+  - 300
+  stable_slots_by_ring:
+    outer: 37
+    middle: 28
+    inner: 18
+  ground_pads: 6
+  effective_admission_policy: upstream_wait_when_not_proven_capacity_full
+  pad_protected_interval: descent_start_to_touchdown_plus_service
+  full_emergency_reference_refresh_cadence_change: false
+  reference_traffic_independent: true
+  unknown_acceptance_allowed: false
+  candidate_policy_change_allowed: false
+  historical_free_now_emergency_prefilter_allowed: false
+  reference_may_omit_busy_pads: false
+variants:
+  R0_SERIAL_BENCH:
+    semantics: R0
+    optimized: false
+    inner_workers: 0
+    profiler: 'off'
+    recording: full
+  R0_SERIAL_PROFILE:
+    semantics: R0
+    optimized: false
+    inner_workers: 0
+    profiler: bounded_cprofile
+    recording: full
+  OPT_SERIAL_BENCH:
+    semantics: R0
+    optimized: true
+    inner_workers: 0
+    profiler: 'off'
+    recording: full
+  OPT_PARALLEL_BENCH:
+    semantics: R0
+    optimized: true
+    inner_workers_grid:
+    - 1
+    - 2
+    - 4
+    - 6
+    profiler: 'off'
+    recording: full
+numerical_comparison:
+  interpretation: regression_comparison_only_not_physical_tolerance
+  discrete_results_exact: true
+  trajectory_payload_and_hash_exact: true
+  position_component_atol_m: 1.0e-07
+  velocity_component_atol_mps: 1.0e-08
+  acceleration_component_atol_mps2: 1.0e-08
+  jerk_component_atol_mps3: 1.0e-08
+  regular_event_time_atol_s: 1.0e-08
+  failure_localization_time_atol_s: 1.0e-05
+  power_atol_W: 1.0e-05
+  power_rtol: 1.0e-10
+  energy_atol_J: 0.001
+  energy_rtol: 1.0e-10
+  soc_and_qe_atol: 1.0e-10
+  peak_time_atol_s: 1.0e-07
+  criterion: abs_diff <= max(atol, rtol*abs(reference))
+  no_branch_flip_within_tolerance: true
+  no_loss_of_peak_conservatism: true
+  boundary_ambiguity_action: fallback_to_frozen_reference_query
+  certificate_status_exact: true
+  certificate_internal_counters_exact: false
+checkpoint:
+  schema_to_implement: ft_rs_checkpoint_v1_0
+  safe_cut_only: true
+  request_interval_sim_s: 30.0
+  request_interval_wall_s: 300.0
+  keep_last_complete: 2
+  corpus_capture_recent_checkpoints: 8
+  pin_corpus_milestones: true
+  atomic_write: true
+  fsync_required: true
+  float_roundtrip_lossless: true
+  infinite_times: typed_tag_not_null
+  preserve_container_order: true
+  preserve_advance_invocation_cursor: true
+  preserve_authoritative_trace_prefix: true
+  replay_is_checkpoint: false
+  cold_and_warm_restore_parity_required: true
+observability:
+  heartbeat_wall_s: 30
+  slow_operation_wall_s: 300
+  stack_dump_no_progress_wall_s: 1800
+  benchmark_profiler: 'off'
+  profile_mode_scope: frozen_short_windows_or_task_batches
+  instrumentation_wall_overhead_max_ratio: 0.05
+  timeout_status: PERFORMANCE_TIMEOUT
+  timeout_is_physical_failure: false
+  per_parent_and_process_tree_cpu_required: true
+  cpu_scope_must_include_spawn_ipc_serialization: true
+cache:
+  bounded: true
+  serial_rebuildable_budget_MiB: 512
+  per_worker_rebuildable_budget_MiB: 256
+  canonical_template_capacity: 72
+  cache_eviction_changes_candidates: false
+  lazy_qe_policy_in_release: false
+  approximate_phase_cache_allowed: false
+benchmark:
+  input_seed: 20261018
+  paired_window_sim_s: 10.0
+  sustained_window_sim_s: 60.0
+  repeats: 3
+  pair_order:
+  - AB
+  - BA
+  - AB
+  primary_cache_start: empty_derived_caches_after_restore
+  warmup_excluded_from_cold_primary: false
+  reference_single_window_wall_timeout_s: 7200
+  min_complete_pairs_per_window: 3
+  windows:
+  - id: W71-A
+    rate_per_hour: 180
+    seed: 71
+    requested_start_s: 300
+  - id: W71-B
+    rate_per_hour: 180
+    seed: 71
+    requested_start_s: 900
+  - id: W71-C
+    rate_per_hour: 180
+    seed: 71
+    requested_start_s: 1200
+  - id: W60
+    rate_per_hour: 60
+    seed: 23
+    requested_start_s: 600
+  - id: W120
+    rate_per_hour: 120
+    seed: 11
+    requested_start_s: 600
+  - id: W180
+    rate_per_hour: 180
+    seed: 11
+    requested_start_s: 540
+  unavailable_window_replacement: last_saved_natural_cut_at_least_60s_before_stop; same_seed_duplicates_move_back_at_least_30s
+  unavailable_window_other_seed_substitution: false
+  structural_counts:
+  - 10
+  - 30
+  - 60
+  - 83
+  structural_duration_sim_s: 30.0
+  max_repeat_wall_ratio_before_noisy: 1.25
+  whole_group_reruns_for_noise: 1
+  quantile_definition: nearest_rank
+  profile_on_off_windows_min: 3
+traffic:
+  rates_per_hour:
+  - 60
+  - 120
+  - 180
+  seeds:
+  - 11
+  - 23
+  - 47
+  - 71
+  - 101
+  case_count: 15
+  arrival_window_s: 3600.0
+  drain_s: 1800.0
+  oracle_policy_id: upstream_capacity_only_pad_arrival_v1_20261018
+  full_equivalence_chain_required: true
+  old_f67_oracle_substitution: false
+  zero_physical_failure_required: false
+  same_physical_outcome_as_reference_required: true
+  initial_full_pairs:
+  - traffic_rate60_seed23
+  - traffic_rate120_seed11
+  - traffic_rate180_seed71
+performance_gates:
+  threshold_status: new_normative_engineering_targets_not_measured_results
+  serial_geometric_mean_speedup_min: 2.0
+  serial_per_window_median_ratio_max: 1.1
+  serial_per_window_small_time_allowance_s: 0.05
+  serial_per_window_formula: O_i <= max(1.10*B_i, B_i+0.05)
+  selected_sustained_each_median_wall_per_sim_s_max: 10.0
+  selected_sustained_geomean_wall_per_sim_s_max: 5.0
+  full_traffic_each_end_to_end_effective_wall_s_max: 7200
+  parallel_process_tree_cpu_ratio_to_optimized_serial_max: 1.5
+  serial_peak_RSS_GiB_max: 2.0
+  parallel_tree_peak_RSS_GiB_max: 8.0
+  selected_backend_rule: among qualified variants minimum geometric mean wall; within 5% choose lower full
+    CPU then fewer workers
+  automatic_threshold_relaxation_allowed: false
+parallel:
+  parent_world_writers: 1
+  max_child_workers_per_job: 6
+  native_threads_per_process: 1
+  preserve_original_reduction_order: true
+  worker_fault_is_not_not_found: true
+  max_processes_per_job: 7
+  measure_ipc: true
+  no_orphan_children: true
+  legacy_f67_wrapper_may_bypass_source_guard: false
+acceptance:
+  additional_catalog_count: 70
+  original_catalog_count: 94
+  counts_are_independent_test_sum: false
+  original_catalog_effective_mapping_required: true
+  existing_pyvista_required: true
+  human_observation_required: true
+  human_status_before_observation: HUMAN_PENDING
+  final_status_requires_all:
+  - AUTO_EQUIVALENCE_PASSED
+  - PERFORMANCE_QUALIFIED
+  - VISUAL_ACCEPTED
+  final_status: PERF_ACCEPTED
+  initial_result_status: NOT_RUN

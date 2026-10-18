@@ -1,0 +1,125 @@
+{
+  "schema": "ft_rs_s1_perf_source_index_v1_0",
+  "contract_id": "FT-RS-S1-PERF-1.0",
+  "review_date": "2026-10-18",
+  "reference_commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+  "sources": [
+    {
+      "id": "S1",
+      "type": "commit",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": null,
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/commit/1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "review_scope": "本次复核时的分支HEAD，作为固定R0，不视分支名为immutable"
+    },
+    {
+      "id": "S2",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "docs/rotating_slots_stage1/amendment_20261018.md",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/docs/rotating_slots_stage1/amendment_20261018.md",
+      "review_scope": "有效规则及旧证据隔离"
+    },
+    {
+      "id": "S3",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/world.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/world.py",
+      "review_scope": "本轮重读应急、执行循环、最新final与deadline处理；其他接口依据前次阅读及提交diff",
+      "git_blob_sha": "d3ac06bca1abcab16f6e1690361d24e42c161ddd"
+    },
+    {
+      "id": "S4",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/trajectory.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/trajectory.py",
+      "review_scope": "前轮全文已读；本轮Git blob与前轮一致",
+      "git_blob_sha": "ff9f8ec101ed1c51ab2545784809f1186cd8d858"
+    },
+    {
+      "id": "S5",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/energy.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/energy.py",
+      "review_scope": "前轮全文已读；本轮Git blob与前轮一致",
+      "git_blob_sha": "b43d3731aa1ba4039ceb918b6c93652ed1c32f47"
+    },
+    {
+      "id": "S6",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/safety.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/safety.py",
+      "review_scope": "前轮主要验证实现已读；本轮Git blob与前轮一致",
+      "git_blob_sha": "13d7dcc882aff3eb384c515b2c53a81b621ea975"
+    },
+    {
+      "id": "S7",
+      "type": "file",
+      "commit": "b936f6ef7b47156f9c3d13ee941580a5da902ebe",
+      "path": "scripts/server/parallel_rotating_slots_runtime.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/b936f6ef7b47156f9c3d13ee941580a5da902ebe/scripts/server/parallel_rotating_slots_runtime.py",
+      "review_scope": "前轮已读的冻结f67并行执行参考，不是R0合格运行结果"
+    },
+    {
+      "id": "S8",
+      "type": "file",
+      "commit": "b936f6ef7b47156f9c3d13ee941580a5da902ebe",
+      "path": "scripts/server/recover_rotating_slots_parallel.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/b936f6ef7b47156f9c3d13ee941580a5da902ebe/scripts/server/recover_rotating_slots_parallel.py",
+      "review_scope": "旧恢复wrapper的计时/来源边界"
+    },
+    {
+      "id": "S9",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/qualification.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/qualification.py",
+      "review_scope": "本轮读取来源收集与报告非有限值序列化",
+      "git_blob_sha": "6694081fd2469d08811490098afe4088d8890053"
+    },
+    {
+      "id": "S9-driver",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "terminal_marl/core/rotating_slots/driver.py",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/terminal_marl/core/rotating_slots/driver.py",
+      "review_scope": "本轮读取同gate FIFO与验收驱动",
+      "git_blob_sha": "8abcd413480b5e98ff111fce161535fc8bbe3557"
+    },
+    {
+      "id": "S10",
+      "type": "file",
+      "commit": "1c5afd37c891a0ed4776f64367fc7264db3c1c54",
+      "path": "docs/rotating_slots_stage1/README.md",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/1c5afd37c891a0ed4776f64367fc7264db3c1c54/docs/rotating_slots_stage1/README.md",
+      "review_scope": "本轮提交diff中的有效策略与既有平台修订；旧版本正文此前已读"
+    },
+    {
+      "id": "S10-history",
+      "type": "file",
+      "commit": "b936f6ef7b47156f9c3d13ee941580a5da902ebe",
+      "path": "docs/rotating_slots_stage1/diagnostics_20261016.md",
+      "url": "https://github.com/Michae1JeeSEU/TerminalRL/blob/b936f6ef7b47156f9c3d13ee941580a5da902ebe/docs/rotating_slots_stage1/diagnostics_20261016.md",
+      "review_scope": "前轮已读的历史诊断记录；不得进入新policy速度基线"
+    }
+  ],
+  "observed_core_git_blobs": {
+    "terminal_marl/core/rotating_slots/world.py": "d3ac06bca1abcab16f6e1690361d24e42c161ddd",
+    "terminal_marl/core/rotating_slots/trajectory.py": "ff9f8ec101ed1c51ab2545784809f1186cd8d858",
+    "terminal_marl/core/rotating_slots/energy.py": "b43d3731aa1ba4039ceb918b6c93652ed1c32f47",
+    "terminal_marl/core/rotating_slots/safety.py": "13d7dcc882aff3eb384c515b2c53a81b621ea975",
+    "terminal_marl/core/rotating_slots/driver.py": "8abcd413480b5e98ff111fce161535fc8bbe3557",
+    "terminal_marl/core/rotating_slots/diagnostics.py": "a4c55f271d3746ba6a880ffc1d74e3348429dc65",
+    "terminal_marl/core/rotating_slots/qualification.py": "6694081fd2469d08811490098afe4088d8890053",
+    "terminal_marl/core/rotating_slots/replay.py": "7269701af9896d687e1de8924b58cb4b0aa4180a",
+    "terminal_marl/core/rotating_slots/resources.py": "bbb28269a84ae026ecd6d3da0ffac848485a945f",
+    "terminal_marl/core/rotating_slots/config.py": "82902fc9aeb80a5728f3739a3af01daf9199e1d9",
+    "terminal_marl/core/rotating_slots/demand.py": "cc8e1e85cbec830c25529a186676a62f2004bbc4"
+  },
+  "review_is_full_simulation_execution": false,
+  "new_acceptance_thresholds_are_measured_source_results": false
+}
