@@ -1,8 +1,10 @@
 # P0/P1 runtime integration
 
 The executable entry is `scripts/server/run_rotating_slots_performance.py`.
-Only `preflight`, `capture`, and `micro` are implemented. There is no performance
-qualification, full traffic campaign, window comparison, or publication command.
+`preflight`, `capture`, `micro`, and `traffic` are implemented. `traffic` executes
+one real episode; it does not orchestrate a campaign or establish performance
+qualification. Speed and wall measurements are reported as observed outcomes
+under the user's current scope, rather than mandatory speedup thresholds.
 
 The script imports only standard-library modules before loading the external
 `performance` helper package. Bootstrap verifies the supplied helper deployment
@@ -63,18 +65,54 @@ For server execution use the synchronized source/reference/manifest and a new
 output under `$HOME/training_outputs/terminal`. These examples are local bounded
 smokes; they do not authorize a formal server run. `--kernel OPT` explicitly
 selects current core code and still enforces frozen semantic preflight. P1
-parallel execution is available only for R0, using `--inner-workers 1..6` with
+parallel execution uses the same six-pad ReferencePool for R0 or OPT, using `--inner-workers 1..6` with
 explicit `--core-budget` and `--process-budget` (at least workers and workers+1).
 
 On Linux the pool starts before the heartbeat thread; its own sampler is created
 only after the workers. Pool resources include startup, tasks, IPC, serialization
 and join according to the adapter's accounting. The pool is joined before replay
-packaging and source verification. Serial measurements explicitly report parent
-CPU only; they do not claim complete process-tree accounting.
+packaging and source verification. Serial execution now uses OwnedProcessMetrics
+for actual parent RSS and process CPU, with no owned worker processes. Its sampler
+starts only in the serial branch. Parallel workers are initialized and registered
+before heartbeat/RSS threads. The pool sampler finishes at worker join before
+the later heartbeat join; the serial sampler finishes after heartbeat join.
+Both resource intervals exclude bootstrap and replay export. Separate main-entry
+parent CPU includes bootstrap/config/core loading and replay work, and adds
+joined owned-child CPU exactly once when accounting is complete. Final result
+serialization and stdout follow that CPU snapshot.
 The full 0.1-second RSS sample series is saved as `rss_samples.jsonl`; the recent
 in-memory sample window is not the only retained evidence. Parallel prefixes are
-explicitly labelled `prefix_execution=R0_PARALLEL` with references to bounded
-equivalence tests. This label does not claim full P4 qualification.
+labelled `prefix_execution=R0_PARALLEL` or `OPT_PARALLEL` according to the actual
+selected kernel. The historical evidence listed in the result remains bounded
+R0/OPT inner-hold micro evidence and R0 small-prefix evidence; the backend label
+does not establish full-traffic or P4 qualification.
+
+## One complete traffic episode
+
+`traffic` requires the same reference/deployment/commit/output and explicit
+inner-worker/core/process/wall budgets as capture. It accepts only rates
+`60,120,180` and seeds `11,23,47,71,101`. From a new world it generates exactly
+one `ArrivalManifest.generate(seed, rate, 3600.)`, then calls the existing observed
+advance for `arrival_window` at original target 3600 and `drain_window` at original
+target 5400. The workload kind is `full_traffic` and the reported target is always
+5400. There is no `--capture-until` argument and no capture-limit suspension in
+this path. A real physical failure stops the episode; an exhausted cumulative
+soft wall budget still saves at a natural cut and reports `PERFORMANCE_TIMEOUT`.
+Neither case is relabelled a successful complete episode.
+
+The original driver, manifest RNG, physics/scheduler cadence, root/peak numeric
+limits, SOC and records are unchanged. Existing normal 30sim/300wall checkpoints
+and retained terminal cuts are used. `COMPLETED_EPISODE` is reported only after
+both original invocations complete without physical failure. The result and
+validated ReplayBundle retain the real manifest, records, metrics and stop reason.
+
+Traffic accepts `--checkpoint`, `--cache-mode` and `--crash-evidence` with the same
+indexed-pair/source-ledger checks as capture. It can resume only a matching
+`full_traffic` workload and the exact same implementation identity. A capture
+prefix is a different workload and is rejected. The original cursor/outer phase
+is restored, demand is not regenerated, and the source attempt's final consumed
+wall total is carried forward. No migration registration or identity rewrite is
+performed by this runner.
 
 ## Capture and resume behavior
 
@@ -153,7 +191,12 @@ instrumentation failures.
 
 Capture is benchmark-only. Micro accepts `--mode profile` for its explicitly
 bounded <=0.4-second invocation and writes a separate `micro.prof` using the
-process-CPU timer. Profiling never wraps an entire capture episode.
+process-CPU timer. Traffic also accepts `--mode benchmark|profile`; serial profile
+writes `traffic.prof` around rollout and record flush, including normal checkpoint
+work, with restore/bootstrap/replay export outside the profiler. Profile results
+set `profile_timing_performance_eligible=false` and cannot supply benchmark timing.
+Parallel profile is explicitly rejected before creating an attempt: the bounded
+worker-profiler task cap is not used to truncate a traffic episode.
 
 ## Observed bounded evidence
 
@@ -164,6 +207,14 @@ ReplayBundle equality from zero, actual unmodified R0 hook-off/hook-on and
 resume parity, source/commit mislabels, budget and milestone rejection, bounded
 profile output, OPT/R0 frozen-byte config binding and service-event parity, and
 soft timeout classification.
+
+The 2026-10-19 runner suite also checks real OPT serial versus one-worker pool
+ReplayBundle equality at 0.2 simulated seconds, joined pool accounting, nonempty
+RSS samples and serial CPU accounting. Traffic orchestration tests use synthetic
+phase cuts with a real world, arrival manifest, checkpoint store and resource
+sampler. They check the original 3600/5400 targets, profile/benchmark output,
+physical-failure termination and same-workload resume admission. These tests do
+not measure a complete physical traffic episode or qualify traffic speed.
 
 Retention regression coverage uses deterministic clocks with many wall-only
 requests between simulation requests and milestones. Synthetic runner cuts check
@@ -188,5 +239,20 @@ Initial observed local outputs:
   ```powershell
   venv/Scripts/python.exe -m pytest tests/test_rotating_slots_performance_runner.py -q --basetemp=artifacts/performance_p1_runner_tests_20261018c
   ```
+- `artifacts/rotating_slots/runner_traffic_tests_20261019a.log`: preserved first
+  traffic-suite failure, **16 passed, 1 failed in 92.75 seconds**. The test read
+  an encoded checkpoint cursor directly. The assertion now decodes it with the
+  existing `StateCodec`; checkpoint schema and production behavior are unchanged.
+- `artifacts/rotating_slots/runner_traffic_tests_20261019b.log` and matching
+  `runner_traffic_tests_20261019b/`: full rerun, **18 passed in 102.08 seconds**,
+  exit 0, including the actual OPT serial/pool micro. Parent and CLI child
+  interpreters use isolated mode and disable bytecode before application imports:
+
+  ```powershell
+  venv/Scripts/python.exe -I -B -c 'import sys; sys.dont_write_bytecode = True; sys.path.insert(0, "."); import pytest; raise SystemExit(pytest.main(["tests/test_rotating_slots_performance_runner.py", "-q", "-x", "--basetemp=artifacts/rotating_slots/runner_traffic_tests_20261019b"]))'
+  ```
+- `artifacts/rotating_slots/runner_traffic_tests_20261019c.log` and matching
+  `runner_traffic_tests_20261019c/`: actual OPT serial/pool micro after the
+  descriptive evidence-label update, **1 passed in 10.68 seconds**, exit 0.
 
 No 600-second capture or server job was started by this implementation task.

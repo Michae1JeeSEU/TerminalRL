@@ -15,7 +15,7 @@ COMMIT = "1c5afd37c891a0ed4776f64367fc7264db3c1c54"
 
 
 def invoke(command, manifest, *extra, expected=0):
-    args = [sys.executable, "-B", str(SCRIPT), command, "--reference", str(REFERENCE),
+    args = [sys.executable, "-I", "-B", str(SCRIPT), command, "--reference", str(REFERENCE),
             "--deployment-manifest", str(manifest), "--implementation-commit", COMMIT, *map(str, extra)]
     process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert process.returncode == expected, (process.stdout, process.stderr)
@@ -53,12 +53,12 @@ def semantic_bundle(path):
 
 
 def test_cli_help_only_implemented_commands():
-    process = subprocess.run([sys.executable, "-B", str(SCRIPT), "--help"], cwd=ROOT,
+    process = subprocess.run([sys.executable, "-I", "-B", str(SCRIPT), "--help"], cwd=ROOT,
                              capture_output=True, text=True, timeout=30)
     assert process.returncode == 0
-    assert "{preflight,capture,micro}" in process.stdout
-    for command in ("preflight", "capture", "micro"):
-        sub = subprocess.run([sys.executable, "-B", str(SCRIPT), command, "--help"], cwd=ROOT,
+    assert "{preflight,capture,micro,traffic}" in process.stdout
+    for command in ("preflight", "capture", "micro", "traffic"):
+        sub = subprocess.run([sys.executable, "-I", "-B", str(SCRIPT), command, "--help"], cwd=ROOT,
                              capture_output=True, text=True, timeout=30)
         assert sub.returncode == 0
 
@@ -106,6 +106,7 @@ def test_isolated_R0_real_hold_nohook_hook_and_cold_warm_restore(manifest):
     # replacements of reference, energy, emergency monitoring or propagation.
     code = r'''
 import json, pathlib, sys, copy
+sys.dont_write_bytecode = True
 reference, helper = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 sys.path.insert(0, str(helper / "terminal_marl/core/rotating_slots"))
 sys.path.insert(0, str(reference))
@@ -338,3 +339,119 @@ def test_final_heartbeat_reports_post_rollout_failure(tmp_path, monkeypatch):
     assert heartbeat["status"] == document(output / "attempt_ledger.json")["status"] == report["status"]
     assert heartbeat["finished_utc"] == report["finished_utc"]
     assert heartbeat["last_complete_sim_time"] == report["physical_outcome"]["sim_time"]
+
+
+def traffic_args(tmp_path, *extra):
+    from terminal_marl.core.rotating_slots.performance import runner
+    return runner.parser().parse_args([
+        "traffic", "--reference", str(REFERENCE), "--deployment-manifest", str(tmp_path / "deployment.json"),
+        "--implementation-commit", COMMIT, "--output", str(tmp_path / "traffic"),
+        *map(str, budget()), "--rate", "60", "--seed", "11", *map(str, extra)])
+
+
+def test_traffic_parser_fixed_manifest_target_and_serial_profile(tmp_path):
+    from terminal_marl.core.rotating_slots.performance import runner
+    args = traffic_args(tmp_path)
+    runner._validate_run_args(args)
+    assert runner._target(args) == 5400.
+    assert runner._workload(args) == {"kind": "full_traffic", "rate_per_hour": 60, "seed": 11,
+        "arrival_window_s": 3600., "external_phase_targets": [3600., 5400.]}
+    assert args.mode == "benchmark" and not hasattr(args, "capture_until")
+    assert traffic_args(tmp_path, "--mode", "profile").mode == "profile"
+    for invalid in (("--rate", 30), ("--seed", 12), ("--capture-until", .4)):
+        with pytest.raises(SystemExit):
+            traffic_args(tmp_path, *invalid)
+    args.kernel, args.inner_workers, args.core_budget, args.process_budget = "OPT", 2, 2, 3
+    runner._validate_run_args(args)
+    args.mode = "profile"
+    with pytest.raises(ValueError, match="parallel profile"):
+        runner._validate_run_args(args)
+
+
+@pytest.mark.parametrize("mode,physical_failure", [("benchmark", False), ("profile", False), ("benchmark", True)])
+def test_traffic_outer_phases_without_capture_limit(tmp_path, monkeypatch, mode, physical_failure):
+    """Real world/manifest/store, synthetic phase cuts; no 5400-second physics claim."""
+    import time
+    from types import SimpleNamespace
+    from terminal_marl.core.rotating_slots import config, demand, driver, replay, world
+    from terminal_marl.core.rotating_slots.performance import runner
+    from terminal_marl.core.rotating_slots.performance.checkpoint import AdvanceCursor, CheckpointIdentity, POLICY_ID
+    from terminal_marl.core.rotating_slots.performance.checkpoint import StateCodec
+    cfg = config.load_config()
+    identity = CheckpointIdentity(POLICY_ID, cfg.config_hash, cfg.profile_hash, cfg.raw_hash,
+                                 "rules", "candidates", "numerics", "synthetic-traffic-phases")
+    monkeypatch.setattr(runner, "_checkpoint_identity", lambda runtime: identity)
+    monkeypatch.setattr(runner, "_verify_finish", lambda *a: {})
+    generated, invocations = [], []
+    original_generate = demand.ArrivalManifest.generate
+    def generate(seed, rate, window):
+        generated.append((seed, rate, window))
+        return original_generate(seed, rate, window)
+    monkeypatch.setattr(demand.ArrivalManifest, "generate", generate)
+    class PhaseCuts:
+        patch = original_source = generated_source = "synthetic outer-phase traffic fixture"
+        def run(self, w, target, effective, hook, *, outer_phase):
+            invocations.append((outer_phase, target))
+            w.time = target
+            if physical_failure:
+                w.failed, w.failure_time = True, target
+            w._record()
+            hook(w, AdvanceCursor(target, "returned", outer_phase), effective)
+    bundle = SimpleNamespace(write=lambda *a, **kw: "synthetic", validate=lambda *a: None)
+    runtime = {"source": {"runner_execution_sha256": identity.implementation_sha256,
+        "kernel_commit": COMMIT, "imported_module_paths": {}}, "config": cfg,
+        "world_module": world, "driver_module": driver,
+        "replay_module": SimpleNamespace(BufferedStateJSONLSink=replay.BufferedStateJSONLSink, ReplayBundle=bundle),
+        "observed": PhaseCuts(), "started_cpu": time.process_time()}
+    args = traffic_args(tmp_path, "--kernel", "OPT", "--mode", mode)
+    result = runner.execute(args, runtime, time.perf_counter(), runner._utc())
+    assert generated == [(11, 60, 3600.)]
+    assert invocations == [("arrival_window", 3600.)] + ([] if physical_failure else [("drain_window", 5400.)])
+    assert result["status"] == ("PHYSICAL_FAILURE" if physical_failure else "COMPLETED_EPISODE")
+    assert result["target_sim_time"] == 5400. and result["workload"]["kind"] == "full_traffic"
+    assert result["execution_backend"] == "OPT_SERIAL"
+    assert all("capture_limit" not in cut["reasons"] for cut in result["cuts"])
+    assert result["resources"]["resources"]["cpu_complete"]
+    assert result["resources"]["resources"]["worker_pids"] == []
+    assert result["resources"]["resources"]["rss_sample_count"] > 0
+    assert (args.output / "rss_samples.jsonl").stat().st_size > 0
+    assert (args.output / "traffic.prof").is_file() is (mode == "profile")
+    assert result["profile_timing_performance_eligible"] is (mode == "benchmark")
+    for path in result["checkpoints"]:
+        assert document(Path(path).with_suffix(".runner.json"))["workload"] == result["workload"]
+    if physical_failure:
+        # Read the real saved pair and prior ledger without advancing/restoring
+        # this synthetic fixture. Workload/implementation admission is shared
+        # with the existing real capture cold/warm recovery tests.
+        resume_args = deepcopy(args)
+        resume_args.checkpoint = Path(result["checkpoints"][-1])
+        resume_args.output = tmp_path / "resumed-traffic"
+        payload, sidecar, prior_wall, accounting = runner._resume_metadata(resume_args, runtime)
+        assert prior_wall == document(args.output / "attempt_ledger.json")["cumulative_effective_wall_s"]
+        assert accounting == "COMPLETE" and sidecar["workload"]["kind"] == "full_traffic"
+        assert StateCodec().decode(payload["cursor"])["original_target"] == 3600.
+        resume_args.rate = 120
+        with pytest.raises(ValueError, match="sidecar/source/workload mismatch"):
+            runner._resume_metadata(resume_args, runtime)
+    (tmp_path / "traffic_fixture_evidence.json").write_text(json.dumps({
+        "scope": "synthetic outer-phase orchestration, real manifest/store/resources; no traffic performance proof",
+        "generated": generated, "invocations": invocations, "result": str(args.output / "result.json")}, indent=2), encoding="utf8")
+
+
+def test_real_OPT_micro_serial_pool_interface_and_records(manifest, tmp_path):
+    """Run only after the kernel-aware ReferencePool bytes are stable."""
+    serial, parallel = tmp_path / "opt-serial", tmp_path / "opt-parallel"
+    for path, workers in ((serial, 0), (parallel, 1)):
+        output = invoke("micro", manifest, "--output", path, *budget(workers), "--kernel", "OPT",
+                        "--fixture", "inner-hold", "--until", .2)
+        assert output["status"] == "COMPLETED_MICRO", output
+    a, b = document(serial / "result.json"), document(parallel / "result.json")
+    assert semantic_bundle(serial / "replay") == semantic_bundle(parallel / "replay")
+    assert a["execution_backend"] == "OPT_SERIAL" and b["execution_backend"] == "OPT_PARALLEL"
+    assert b["source_identity"]["prefix_execution"] == "OPT_PARALLEL"
+    assert b["resources"]["execution_backend"] == "OPT_PARALLEL"
+    assert b["resources"]["closed_and_joined"] and b["resources"]["pad_tasks_completed"] > 0
+    for result in (a, b):
+        resources = result["resources"]["resources"]
+        assert resources["cpu_complete"] and resources["rss_sample_count"] > 0
+        assert result["timing"]["process_tree_cpu_s"] >= result["timing"]["parent_process_cpu_s"]

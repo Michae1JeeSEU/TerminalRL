@@ -1,12 +1,12 @@
 """P0/P1 runtime integration. No core imports until byte-verified bootstrap.
 
 Run through scripts/server/run_rotating_slots_performance.py in a fresh process.
-The public CLI implements preflight, capture and bounded micro only.
+The public CLI implements preflight, capture, full traffic and bounded micro.
 """
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from datetime import datetime, timezone
 from hashlib import sha256
 import importlib
@@ -40,7 +40,7 @@ def _sha(path):
 def parser():
     result = argparse.ArgumentParser(description="FT-RS-S1-PERF-1.0 P0/P1 runner (not performance qualification)")
     commands = result.add_subparsers(dest="command", required=True)
-    for name in ("preflight", "capture", "micro"):
+    for name in ("preflight", "capture", "micro", "traffic"):
         command = commands.add_parser(name)
         command.add_argument("--reference", type=Path, required=True, help="byte-verified frozen R0 export")
         command.add_argument("--kernel", choices=("R0", "OPT"), default="R0")
@@ -55,16 +55,20 @@ def parser():
             command.add_argument("--core-budget", type=int, required=True)
             command.add_argument("--process-budget", type=int, required=True)
             command.add_argument("--wall-budget", type=float, required=True, help="soft budget checked at natural cuts")
-        if name == "capture":
+        if name in ("capture", "traffic"):
             command.add_argument("--rate", type=int, choices=(60, 120, 180), required=True)
             command.add_argument("--seed", type=int, choices=(11, 23, 47, 71, 101), required=True)
-            command.add_argument("--milestones", type=float, nargs="*", default=[])
-            command.add_argument("--capture-until", type=float, required=True,
-                                 help="request natural suspension; >= latest milestone + 60 seconds")
             command.add_argument("--checkpoint", type=Path, help="resume a complete checkpoint+runner sidecar in a NEW attempt")
             command.add_argument("--crash-evidence", type=Path,
                                  help="explicit JSON evidence for a crashed source attempt; timing remains INCOMPLETE")
             command.add_argument("--cache-mode", choices=("cold", "warm"), default="cold")
+        if name == "capture":
+            command.add_argument("--milestones", type=float, nargs="*", default=[])
+            command.add_argument("--capture-until", type=float, required=True,
+                                 help="request natural suspension; >= latest milestone + 60 seconds")
+        if name == "traffic":
+            command.add_argument("--mode", choices=("benchmark", "profile"), default="benchmark",
+                                 help="profile records the serial rollout only; never a benchmark timing")
         if name == "micro":
             command.add_argument("--fixture", choices=("empty", "inner-hold", "service-events"), default="inner-hold")
             command.add_argument("--until", type=float, default=.4, help="fixed micro invocation target in (0,.4]")
@@ -204,25 +208,34 @@ def _validate_run_args(args):
             or args.process_budget < 1 or args.process_budget < args.inner_workers + 1
             or args.core_budget < max(1, args.inner_workers)):
         raise ValueError("invalid wall/process/core budget")
-    if args.inner_workers and args.kernel != "R0":
-        raise ValueError("P1 inner workers implement R0_PARALLEL only")
+    if args.inner_workers and getattr(args, "mode", "benchmark") == "profile":
+        raise ValueError("parallel profile is not supported; use serial --inner-workers 0")
     if args.output.exists():
         raise FileExistsError(args.output)
+    if args.command in ("capture", "traffic") and (args.rate not in (60, 120, 180) or args.seed not in (11, 23, 47, 71, 101)):
+        raise ValueError("traffic requires the frozen rates and seeds")
     if args.command == "capture":
         if (not math.isfinite(args.capture_until) or not 0 < args.capture_until <= 5400
                 or any(not math.isfinite(x) or x < 0 or x > 5340 for x in args.milestones)):
             raise ValueError("invalid capture request/milestone")
         if args.milestones and args.capture_until < max(args.milestones) + 60:
             raise ValueError("capture-until must be >= latest milestone + 60 simulated seconds")
-    elif not math.isfinite(args.until) or not 0 < args.until <= .4:
+    elif args.command == "micro" and (not math.isfinite(args.until) or not 0 < args.until <= .4):
         raise ValueError("micro invocation must be in (0,.4] simulated seconds")
 
 
 def _workload(args):
-    if args.command == "capture":
-        return {"kind": "full_traffic_prefix", "rate_per_hour": args.rate, "seed": args.seed,
+    if args.command in ("capture", "traffic"):
+        return {"kind": "full_traffic" if args.command == "traffic" else "full_traffic_prefix",
+                "rate_per_hour": args.rate, "seed": args.seed,
                 "arrival_window_s": 3600., "external_phase_targets": [3600., 5400.]}
     return {"kind": "micro_fixture", "fixture": args.fixture, "original_target": args.until}
+
+
+def _target(args):
+    if args.command == "traffic":
+        return 5400.
+    return args.capture_until if args.command == "capture" else args.until
 
 
 class AttemptLedger:
@@ -275,8 +288,8 @@ def _resume_metadata(args, runtime):
             raise ValueError("crash evidence must identify source attempt/PID and confirm it is no longer running")
         accounting = "INCOMPLETE"
     payload = load_checkpoint(checkpoint, expected_identity=_checkpoint_identity(runtime))
-    if args.capture_until <= sidecar["cut"]["actual_sim_time"]:
-        raise ValueError("resumed capture-until must be later than the saved natural cut")
+    if _target(args) <= sidecar["cut"]["actual_sim_time"]:
+        raise ValueError("resumed target must be later than the saved natural cut")
     return payload, sidecar, previous["cumulative_effective_wall_s"], accounting
 
 
@@ -305,18 +318,21 @@ def execute(args, runtime, started_wall, started_utc):
     from .measurements import Measurements, PassiveHeartbeat
     from .observation import CutRequests, SuspendAtCut
     _validate_run_args(args)
-    runtime["source"]["prefix_execution"] = "R0_PARALLEL" if args.inner_workers else args.kernel + "_SERIAL"
+    backend = args.kernel + ("_PARALLEL" if args.inner_workers else "_SERIAL")
+    runtime["source"]["prefix_execution"] = backend
     runtime["source"]["prefix_equivalence_evidence"] = {
-        "scope": "bounded_real_R0_inner_hold_and_small_prefix_only_not_full_P4",
+        "scope": "bounded_real_R0_OPT_inner_hold_micro_and_R0_small_prefix_only_not_full_traffic_or_P4",
         "tests": ["test_real_R0_micro_serial_pool_full_records_equal",
-                  "test_isolated_R0_real_hold_nohook_hook_and_cold_warm_restore"],
+                  "test_isolated_R0_real_hold_nohook_hook_and_cold_warm_restore",
+                  "test_real_OPT_micro_serial_pool_interface_and_records"],
         "qualification_status": "NOT_QUALIFIED"}
     root = args.output.resolve()
     identity = _checkpoint_identity(runtime)
     workload = _workload(args)
-    measurements = Measurements("benchmark" if args.command == "capture" else args.mode)
+    mode = getattr(args, "mode", "benchmark")
+    measurements = Measurements(mode)
     prior_wall, accounting, resume, resume_evidence = 0., "COMPLETE", None, None
-    if args.command == "capture" and args.checkpoint:
+    if args.command in ("capture", "traffic") and args.checkpoint:
         with measurements.span("checkpoint_load_validate"):
             payload, resume_evidence, prior_wall, accounting = _resume_metadata(args, runtime)
         with measurements.span("checkpoint_restore_copy"):
@@ -327,7 +343,7 @@ def execute(args, runtime, started_wall, started_utc):
         root.mkdir(parents=True, exist_ok=False)
         sink = runtime["replay_module"].BufferedStateJSONLSink(root / "states.jsonl")
         world = runtime["world_module"].RotatingSlotWorld(config=runtime["config"], state_sink=sink)
-        if args.command == "capture":
+        if args.command in ("capture", "traffic"):
             demand = importlib.import_module("terminal_marl.core.rotating_slots.demand")
             # Whole immutable demand is generated once; no shorter window changes RNG.
             world.manifest = demand.ArrivalManifest.generate(args.seed, args.rate, 3600.)
@@ -348,7 +364,7 @@ def execute(args, runtime, started_wall, started_utc):
     store = CheckpointStore(root / "checkpoints")
     checkpoints, cut_evidence = [], []
     current_cursor = resume.cursor if resume else None
-    stop_reason, failure, pool, resource_report = None, None, None, None
+    stop_reason, failure, pool, resource_report, serial_metrics = None, None, None, None, None
     last_saved = None
 
     def save(w, cur, effective, evidence, *, pinned=False):
@@ -383,7 +399,7 @@ def execute(args, runtime, started_wall, started_utc):
         # saving so the same natural cut keeps every retention classification.
         pending_cut = evidence
 
-    requested = [] if args.command == "micro" else [x for x in args.milestones if x > world.time]
+    requested = [x for x in getattr(args, "milestones", []) if x > world.time]
     cuts = CutRequests(capture_due, start_sim=world.time, requested_sim=requested)
     class LedgerHeartbeat(PassiveHeartbeat):
         def emit(self):
@@ -434,21 +450,24 @@ def execute(args, runtime, started_wall, started_utc):
                         expected_core_root=core_directory, expected_core_manifest=core_manifest,
                         semantic_identity=runtime["source"]["semantic_fingerprint"],
                         process_budget=args.process_budget, core_budget=args.core_budget,
-                        exclusive_process_accounting=True, mode="benchmark", rss_series_path=root / "rss_samples.jsonl")
+                        exclusive_process_accounting=True, kernel=args.kernel,
+                        mode="benchmark", rss_series_path=root / "rss_samples.jsonl")
                 stack.enter_context(pool)
                 stack.enter_context(install_parallel_reference(world, pool))
+            else:
+                from .process_metrics import OwnedProcessMetrics
+                serial_metrics = OwnedProcessMetrics(exclusive=True, rss_series_path=root / "rss_samples.jsonl")
+                stack.callback(lambda: serial_metrics.finish(joined=True))
             # Linux fork pool and worker registration happen before either thread.
             stack.enter_context(heartbeat)
             stack.enter_context(_active_query_context(world, heartbeat))
             heartbeat.publish(complete_sim_time=world.time, context={"phase": "ready"})
-            with measurements.span("rollout_and_record_flush"):
+            profile = (measurements.profile_batch(root / ("traffic.prof" if args.command == "traffic" else "micro.prof"))
+                       if mode == "profile" else nullcontext())
+            with measurements.span("rollout_and_record_flush"), profile:
                 try:
                     if args.command == "micro":
-                        if args.mode == "profile":
-                            with measurements.profile_batch(root / "micro.prof"):
-                                runtime["observed"].run(world, args.until, driver, hook, outer_phase="micro")
-                        else:
-                            runtime["observed"].run(world, args.until, driver, hook, outer_phase="micro")
+                        runtime["observed"].run(world, args.until, driver, hook, outer_phase="micro")
                         stop_reason = stop_reason or "COMPLETED_MICRO"
                     else:
                         phases = (("arrival_window", 3600.), ("drain_window", 5400.))
@@ -481,6 +500,9 @@ def execute(args, runtime, started_wall, started_utc):
         failure = {"type": type(exc).__name__, "message": str(exc)}
         if pool is not None:
             resource_report = pool.summary()
+    if serial_metrics is not None:
+        resource_report = {"execution_backend": backend, "workers": 0, "closed_and_joined": True,
+                           "resources": serial_metrics.finish(joined=True)}
     replay = None
     try:
         with measurements.span("replay_bundle_and_verify"):
@@ -511,6 +533,11 @@ def execute(args, runtime, started_wall, started_utc):
     measured["execution_phase_parent_cpu_s"] = measured["parent_process_cpu_s"]
     measured["end_to_end_wall_s"] = consumed["attempt_consumed_wall_s"]
     measured["parent_process_cpu_s"] = time.process_time() - runtime["started_cpu"]
+    joined_cpu = None if resource_report is None else resource_report.get("resources", {}).get("joined_children_cpu_seconds")
+    if joined_cpu is not None and resource_report["resources"].get("cpu_complete") is True:
+        measured["process_tree_cpu_s"] = measured["parent_process_cpu_s"] + joined_cpu
+        measured["process_tree_cpu_coverage"] = (
+            "main-entry parent CPU plus owned workers through join; final result JSON/stdout excluded")
     output = {"schema": "ft_rs_performance_attempt_v1_0", "pid": os.getpid(),
               "started_utc": started_utc, "finished_utc": finished_utc, "command": list(sys.argv),
               "subcommand": args.command, "workload": workload, "source_identity": runtime["source"],
@@ -518,7 +545,7 @@ def execute(args, runtime, started_wall, started_utc):
               "physical_outcome": {"failed": world.failed, "failure_time": world.failure_time,
                                    "episode_complete": stop_reason == "COMPLETED_EPISODE",
                                    "sim_time": world.time, "metrics": world.metrics()},
-              "target_sim_time": args.capture_until if args.command == "capture" else args.until,
+              "target_sim_time": _target(args),
               "current_phase": None if current_cursor is None else current_cursor.outer_phase,
               "original_advance_target": None if current_cursor is None else current_cursor.original_target,
               "checkpoints": [str(root / "checkpoints" / x["file"]) for x in store.entries],
@@ -527,8 +554,10 @@ def execute(args, runtime, started_wall, started_utc):
               "wall_accounting": consumed["wall_accounting"], "soft_wall_budget_s": args.wall_budget,
               "hard_timeout_enforced": False, "timeout_acceptance": "INCOMPLETE_SOFT_SAFE_BOUNDARY_ONLY",
               "inner_workers": args.inner_workers,
-              "execution_backend": "R0_PARALLEL" if args.inner_workers else args.kernel + "_SERIAL",
+              "execution_backend": backend, "mode": mode,
+              "profile_timing_performance_eligible": mode == "benchmark",
               "resources": resource_report,
+              "resource_scope": "RSS/resource CPU span pool startup through worker join, or serial sampler start through rollout/flush and heartbeat join. Bootstrap/replay export are outside RSS sampling; main-entry parent CPU is separate. No unrelated children may be created/reaped during sampling.",
               "replay_path": str(root / "replay") if replay is not None else None,
               "replay_scope": "full_episode" if stop_reason == "COMPLETED_EPISODE" else "complete_observed_prefix",
               "recorded_state_count": world._record_count, "event_count": len(world.events),
