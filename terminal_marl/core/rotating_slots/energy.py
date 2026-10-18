@@ -1,5 +1,6 @@
 """Appendix A research surrogate; charge-fraction SOC and shared quadrature."""
 from dataclasses import dataclass
+from collections import OrderedDict
 from functools import lru_cache, wraps
 import math
 import sys
@@ -7,8 +8,8 @@ import bisect
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import brentq
-from .config import load_config
-from .trajectory import Interval, _intrinsic_bounds_from_polar
+from .config import load_config, Config
+from .trajectory import Interval, Segment, _intrinsic_bounds_from_polar
 
 @dataclass(frozen=True)
 class VehicleProfile:
@@ -50,9 +51,9 @@ class EnergyResult:
 
 # Pure scalar acceleration state: never part of a world or checkpoint.
 _ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-r0-bisection-v1'
-_ROOT_CACHE_MAX_ENTRIES = 32768
-_ROOT_CACHE_MAX_BYTES = 8 * 1024 * 1024
-_ROOT_CACHE = {}
+_ROOT_CACHE_MAX_ENTRIES = 65536
+_ROOT_CACHE_MAX_BYTES = 32 * 1024 * 1024
+_ROOT_CACHE = OrderedDict()
 _ROOT_CACHE_PAYLOAD_BYTES = 0
 _ROOT_CACHE_ENABLED = True
 _ROOT_CACHE_REQUESTS = _ROOT_CACHE_COMPUTES = _ROOT_CACHE_HITS = _ROOT_CACHE_EVICTIONS = 0
@@ -108,18 +109,18 @@ def _memoize_root(function):
         if eligible and (result is None or type(result) is float):
             cost = _root_entry_bytes(key, result)
             # A result that cannot fit even alone is always recomputed.
-            if _ROOT_CACHE_MAX_ENTRIES > 0 and cost + sys.getsizeof({}) <= _ROOT_CACHE_MAX_BYTES:
+            if _ROOT_CACHE_MAX_ENTRIES > 0 and cost + sys.getsizeof(OrderedDict()) <= _ROOT_CACHE_MAX_BYTES:
                 while len(_ROOT_CACHE) >= _ROOT_CACHE_MAX_ENTRIES:
-                    oldest = next(iter(_ROOT_CACHE))
-                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, _ROOT_CACHE.pop(oldest))
+                    oldest, value = _ROOT_CACHE.popitem(last=False)
+                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, value)
                     _ROOT_CACHE_EVICTIONS += 1
                 _ROOT_CACHE[key] = result
                 _ROOT_CACHE_PAYLOAD_BYTES += cost
                 # Include dict allocation after growth, not an average per entry.
                 while (_ROOT_CACHE and sys.getsizeof(_ROOT_CACHE) + _ROOT_CACHE_PAYLOAD_BYTES
                        > _ROOT_CACHE_MAX_BYTES):
-                    oldest = next(iter(_ROOT_CACHE))
-                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, _ROOT_CACHE.pop(oldest))
+                    oldest, value = _ROOT_CACHE.popitem(last=False)
+                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, value)
                     _ROOT_CACHE_EVICTIONS += 1
                 if not _ROOT_CACHE:
                     _ROOT_CACHE.clear()  # Release the now-empty dict allocation.
@@ -297,6 +298,109 @@ def integrate_energy(plan,start,end,max_dt=.2,config=None):
         return EnergyResult(total,total/(c.energy.equivalent_voltage_V*c.energy.reference_capacity_Ah*3600),peak,True,error_j=error)
     except ValueError as exc: return EnergyResult(total,total/(85*252*3600),peak,False,'ENERGY_MODEL_DOMAIN',str(exc),error)
 
+# Exact duplicate top-level peak queries only; recursive nodes are not cached.
+_PEAK_CACHE_POLICY = 'peak-r0-order-depth26-width1e-7-v1'
+_PEAK_CACHE_MAX_ENTRIES = 4096
+_PEAK_CACHE_MAX_BYTES = 16 * 1024 * 1024
+_PEAK_CACHE = OrderedDict()
+_PEAK_CACHE_PAYLOAD_BYTES = 0
+_PEAK_CACHE_ENABLED = True
+_PEAK_CACHE_REQUESTS = _PEAK_CACHE_COMPUTES = _PEAK_CACHE_HITS = _PEAK_CACHE_EVICTIONS = 0
+_PEAK_CACHE_NON_TOP_COMPUTES = 0
+
+
+def peak_cache_clear():
+    """Discard only derived peak answers and their performance counters."""
+    global _PEAK_CACHE_PAYLOAD_BYTES, _PEAK_CACHE_NON_TOP_COMPUTES
+    global _PEAK_CACHE_REQUESTS, _PEAK_CACHE_COMPUTES, _PEAK_CACHE_HITS, _PEAK_CACHE_EVICTIONS
+    _PEAK_CACHE.clear()
+    _PEAK_CACHE_PAYLOAD_BYTES = _PEAK_CACHE_NON_TOP_COMPUTES = 0
+    _PEAK_CACHE_REQUESTS = _PEAK_CACHE_COMPUTES = _PEAK_CACHE_HITS = _PEAK_CACHE_EVICTIONS = 0
+
+
+def peak_cache_set_enabled(enabled):
+    global _PEAK_CACHE_ENABLED
+    if type(enabled) is not bool:
+        raise TypeError('peak cache enabled flag must be bool')
+    _PEAK_CACHE_ENABLED = enabled
+
+
+def peak_cache_stats():
+    """Detached counters; actual_computes counts top-level original evaluations."""
+    return {'enabled': _PEAK_CACHE_ENABLED, 'logical_requests': _PEAK_CACHE_REQUESTS,
+            'actual_computes': _PEAK_CACHE_COMPUTES, 'hits': _PEAK_CACHE_HITS,
+            'non_top_level_computes': _PEAK_CACHE_NON_TOP_COMPUTES,
+            'actual_node_computes': _PEAK_CACHE_COMPUTES + _PEAK_CACHE_NON_TOP_COMPUTES,
+            'evictions': _PEAK_CACHE_EVICTIONS, 'entries': len(_PEAK_CACHE),
+            'estimated_bytes': sys.getsizeof(_PEAK_CACHE) + _PEAK_CACHE_PAYLOAD_BYTES,
+            'max_entries': _PEAK_CACHE_MAX_ENTRIES, 'max_bytes': _PEAK_CACHE_MAX_BYTES,
+            'policy': _PEAK_CACHE_POLICY, 'eviction_policy': 'FIFO'}
+
+
+def _peak_exact_key(value):
+    """Immutable, type-tagged values; no rounding, sorting or identity shortcut."""
+    if value is None: return ('none',)
+    if type(value) is bool: return ('bool', value)
+    if type(value) is int: return ('int', value)
+    if type(value) is float and math.isfinite(value): return ('float.hex', value.hex())
+    if type(value) is str: return ('str', value)
+    if type(value) in (tuple, list):
+        return ('tuple' if type(value) is tuple else 'list', tuple(_peak_exact_key(x) for x in value))
+    if type(value) is dict:
+        return ('dict', tuple((_peak_exact_key(k), _peak_exact_key(v)) for k, v in value.items()))
+    raise TypeError('unsupported exact peak cache key value')
+
+
+def _peak_owned_bytes(value):
+    # The key contains only immutable tuples/scalars. Counting shared objects
+    # repeatedly is conservative relative to recursive deduplicated accounting.
+    return sys.getsizeof(value) + (sum(_peak_owned_bytes(x) for x in value) if type(value) is tuple else 0)
+
+
+def _memoize_peak(function):
+    @wraps(function)
+    def cached(s, a, b, threshold, c, depth=0):
+        global _PEAK_CACHE_PAYLOAD_BYTES, _PEAK_CACHE_NON_TOP_COMPUTES
+        global _PEAK_CACHE_REQUESTS, _PEAK_CACHE_COMPUTES, _PEAK_CACHE_HITS, _PEAK_CACHE_EVICTIONS
+        if type(depth) is not int or depth != 0:
+            _PEAK_CACHE_NON_TOP_COMPUTES += 1
+            return function(s, a, b, threshold, c, depth)
+        _PEAK_CACHE_REQUESTS += 1
+        key = None
+        if (_PEAK_CACHE_ENABLED and type(s) is Segment and type(c) is Config
+                and all(type(x) is float and math.isfinite(x) for x in (a, b, threshold))):
+            try:
+                key = (_PEAK_CACHE_POLICY, _peak_exact_key((s.start_time, s.duration, s.r, s.theta, s.z, s.kind)),
+                       _peak_exact_key(c.to_dict()), a.hex(), b.hex(), threshold.hex(), depth)
+            except (TypeError, ValueError, AttributeError, OverflowError, RecursionError):
+                # Unsupported/tampered payloads retain original evaluation.
+                key = None
+        if key is not None and key in _PEAK_CACHE:
+            _PEAK_CACHE_HITS += 1
+            return _PEAK_CACHE[key]
+        _PEAK_CACHE_COMPUTES += 1
+        result = function(s, a, b, threshold, c, depth)
+        if key is not None and type(result) is float:
+            cost = _peak_owned_bytes(key) + sys.getsizeof(result)
+            if _PEAK_CACHE_MAX_ENTRIES > 0 and cost + sys.getsizeof(OrderedDict()) <= _PEAK_CACHE_MAX_BYTES:
+                while len(_PEAK_CACHE) >= _PEAK_CACHE_MAX_ENTRIES:
+                    oldest, value = _PEAK_CACHE.popitem(last=False)
+                    _PEAK_CACHE_PAYLOAD_BYTES -= _peak_owned_bytes(oldest) + sys.getsizeof(value)
+                    _PEAK_CACHE_EVICTIONS += 1
+                _PEAK_CACHE[key] = result
+                _PEAK_CACHE_PAYLOAD_BYTES += cost
+                while (_PEAK_CACHE and sys.getsizeof(_PEAK_CACHE) + _PEAK_CACHE_PAYLOAD_BYTES
+                       > _PEAK_CACHE_MAX_BYTES):
+                    oldest, value = _PEAK_CACHE.popitem(last=False)
+                    _PEAK_CACHE_PAYLOAD_BYTES -= _peak_owned_bytes(oldest) + sys.getsizeof(value)
+                    _PEAK_CACHE_EVICTIONS += 1
+                if not _PEAK_CACHE:
+                    _PEAK_CACHE.clear()
+        return result
+    return cached
+
+
+@_memoize_peak
 def _peak_measure(s,a,b,threshold,c,depth=0):
     polar=s.polar_bounds(a,b)
     bounds=power_bounds(_intrinsic_bounds_from_polar(polar,1),_intrinsic_bounds_from_polar(polar,2),c)
@@ -309,3 +413,5 @@ def _peak_measure(s,a,b,threshold,c,depth=0):
         return b-a
     mid=(a+b)/2
     return _peak_measure(s,a,mid,threshold,c,depth+1)+_peak_measure(s,mid,b,threshold,c,depth+1)
+
+_peak_measure_uncached = _peak_measure.__wrapped__

@@ -280,6 +280,16 @@ def _cold_cache_snapshot(world):
                  and observed["entries"] >= 0, "invalid optional root cache observation")
         numerical["energy._ROOT_CACHE"] = dict(observed, present=True)
         empty = empty and observed["entries"] == 0
+    peak_stats = getattr(energy_module, "peak_cache_stats", None)
+    if peak_stats is None:
+        numerical["energy._PEAK_CACHE"] = {"present": False, "entries": 0}
+    else:
+        _require(callable(peak_stats), "unexpected optional peak cache observer")
+        observed = peak_stats()
+        _require(isinstance(observed, dict) and type(observed.get("entries")) is int
+                 and observed["entries"] >= 0, "invalid optional peak cache observation")
+        numerical["energy._PEAK_CACHE"] = dict(observed, present=True)
+        empty = empty and observed["entries"] == 0
     world_caches = {name: len(getattr(world, name)) for name in ("_q_cache", "_energy_cache", "_reference_templates")}
     config_module = importlib.import_module(core + ".config")
     parse_cache = config_module._default_config.cache_info()._asdict()

@@ -76,10 +76,11 @@ CPU 单列，不能替代完整 child 生命周期；不累加嵌套 `world.cpu`
 保留并重查。实际 `ReplayBundle.validate` 已由每次 window CLI 执行，不用
 record/replay 代替 checkpoint 或额外改变物理步。
 
-冷缓存检查必须包含原五个数值 cache。仅额外允许已知的
-`energy._ROOT_CACHE` 观察项：`present` 为 bool 且 `entries=0`；R0 可明确报告
-`present=false`，OPT 可报告 `present=true`。未出现该可选项仍兼容；warm 或
-其他未审查 cache key 均拒绝，不把任意额外项作为自动获批的缓存。
+冷缓存检查必须包含原五个数值 cache。仅额外允许已审查的
+`energy._ROOT_CACHE` 和 `energy._PEAK_CACHE` 观察项：`present` 为 bool 且
+`entries=0`；peak 的 entries 必须是 built-in int，不接受 bool 冒充整数零。
+R0 可明确报告 `present=false`，OPT 可报告 `present=true`。未出现可选项仍兼容；
+warm 或其他未审查 cache key 均拒绝，不把任意额外项作为自动获批的缓存。
 
 R0 或 OPT 三次 rollout wall 的 `max/min > 1.25` 时整组六项标记 `NOISY`，
 保存 load/memory 复查，再完整重做这一组六项一次。两组全部保留；固定使用
@@ -130,7 +131,29 @@ collector CPU/RSS、持久化与离线 summarize。该测试仅替换 preflight 
 及 deadline 测试，结果为 `41 passed, 6 skipped in 12.74s`，退出码 0。
 新 basetemp 是 `artifacts/rotating_slots/paired_tests_20261018a`，日志是
 `artifacts/rotating_slots/paired_tests_20261018a.log`。六项 skip 为 paired 的
-两项 Linux 集成检查及 deadline 的四项 Linux 检查。Linux 联合检查和真实
+两项 Linux 集成检查及 deadline 的四项 Linux 检查。在该次本地检查时 Linux 联合检查和真实
 W71-A 六作业 diagnostic subset 尚未执行。新的 helper/入口会改变部署指纹，
 实际运行必须重新生成与其精确匹配的 deployment 和已登记 migration pair，
 不能沿用旧 identity。
+
+
+后续主对话已复核旧 root-only 版本的 Linux `root_paired` 联合检查：stdout 为
+`120 passed in 13.82s`，nodeids 有 120 项；metadata 中测试计数字段却为 0。
+保留这项矛盾，不改写原 metadata，也不把 0 当作实际执行数量。该记录发生在本轮
+OrderedDict/root 扩容及 peak cache 应用之前，不代表当前新版本已完成 Linux
+检查。新 known-PEAK 白名单及对应测试纳入本轮本地六文件 batch；实际结果另行
+记录，Linux/opt-in 集成仍需显式执行。
+
+
+本轮本地六文件复测已退出 0：`116 passed, 3 skipped in 58.28s`，使用 venv
+`-I -B`，在导入 pytest 前禁写 bytecode 并显式设置项目 import 路径；basetemp
+为 `artifacts/rotating_slots/energy_cache_tests_20261018b`，相同前缀外置保存实际
+命令、stdout/stderr、exit 和独立 R0/OPT 证据。范围为 root/peak reuse、energy
+queries、physics、windows、paired；三项 skip 为 opt-in window 与两项 Linux
+paired 检查。新的 known-PEAK whitelist、warm/unknown 拒绝和字段类型检查已在
+该本地批次执行；当前版本 Linux/实际 common-window 测量仍未完成。
+
+首次 `energy_cache_tests_20261018a` 的 `115 passed, 3 skipped, 1 error in 49.35s`
+及完整日志保留。主对话诊断错误仅在 synthetic unresolved trace 的 tuple 序列化，
+将 `.pair()` 调用改为 `exact([v,a])` 后完整重跑；没有为测试改变 kernel、缓存预算
+或物理/数值政策。旧 Linux 120/nodeids120/metadata0 的矛盾记录继续保留。

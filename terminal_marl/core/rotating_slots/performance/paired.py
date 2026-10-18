@@ -288,13 +288,16 @@ def window_result(case, job, campaign, record, *, require_final_accounting=True)
                     'safety._NUMERIC_CERTIFICATES','safety._PLAN_CERTIFICATES'}
     observed_cache=cold.get('module_numerical_caches',{})
     optional_root=observed_cache.get('energy._ROOT_CACHE')
+    optional_peak=observed_cache.get('energy._PEAK_CACHE')
     require(result.get('cache_mode')=='cold' and cold.get('all_named_acceleration_caches_empty') is True and
             cold.get('module_caches_cleared') is False and
             set(cold.get('world_entries',{}))=={'_q_cache','_energy_cache','_reference_templates'} and
             all(v==0 for v in cold['world_entries'].values()) and required_cache<=set(observed_cache) and
-            set(observed_cache)<=required_cache|{'energy._ROOT_CACHE'} and
+            set(observed_cache)<=required_cache|{'energy._ROOT_CACHE','energy._PEAK_CACHE'} and
             all(v.get('currsize',v.get('entries'))==0 for v in observed_cache.values()) and
-            (optional_root is None or (optional_root.get('entries')==0 and type(optional_root.get('present')) is bool)),
+            (optional_root is None or (optional_root.get('entries')==0 and type(optional_root.get('present')) is bool)) and
+            (optional_peak is None or (type(optional_peak.get('entries')) is int and optional_peak['entries']==0
+                                       and type(optional_peak.get('present')) is bool)),
             'cold-cache evidence missing/nonempty/unknown')
     start=result.get('start_sim_time'); stop=result.get('actual_stop_sim_time'); delta=result.get('actual_sim_delta_s')
     require(all(finite(v) for v in (start,stop,delta)) and float(start).hex()==float(frozen['cut']['actual_sim_time']).hex() and

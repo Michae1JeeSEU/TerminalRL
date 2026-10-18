@@ -4,6 +4,7 @@ Run after applying the accompanying patch. These are function-level checks,
 not common-window performance qualification.
 """
 import ast
+from collections import OrderedDict
 from copy import deepcopy
 from hashlib import sha256
 import json
@@ -154,8 +155,9 @@ def owned_bytes(value,seen=None):
 
 
 def test_caps_churn_fifo_and_owned_bytes(empty_cache,monkeypatch):
-    assert en.root_cache_stats()['max_entries']==32768
-    assert en.root_cache_stats()['max_bytes']==8*1024*1024
+    assert type(en._ROOT_CACHE) is OrderedDict
+    assert en.root_cache_stats()['max_entries']==65536
+    assert en.root_cache_stats()['max_bytes']==32*1024*1024
     # Smaller limits exercise the same insertion/eviction code with bounded cost.
     monkeypatch.setattr(en,'_ROOT_CACHE_MAX_ENTRIES',17)
     monkeypatch.setattr(en,'_ROOT_CACHE_MAX_BYTES',5000)
@@ -169,22 +171,38 @@ def test_caps_churn_fifo_and_owned_bytes(empty_cache,monkeypatch):
     before=stats['actual_computes']
     en._root(0.,.1,1.,3)
     assert en.root_cache_stats()['actual_computes']==before+1
-    monkeypatch.setattr(en,'_ROOT_CACHE_MAX_BYTES',100)
+    monkeypatch.setattr(en,'_ROOT_CACHE_MAX_BYTES',sys.getsizeof(OrderedDict())+32)
     en.root_cache_clear()
     for _ in range(2): en._root(1.,.1,20.,3)
     assert en.root_cache_stats()['entries']==0
     assert en.root_cache_stats()['actual_computes']==2
+    assert en.root_cache_stats()['estimated_bytes']<=en.root_cache_stats()['max_bytes']
 
 
 def test_default_caps_under_churn(empty_cache):
-    for i in range(40000):
+    for i in range(90000):
         en._root(float(i)/7.,.1,float(i+1),1)
         if i%4096==0:
             stats=en.root_cache_stats()
-            assert stats['entries']<=32768
-            assert owned_bytes(en._ROOT_CACHE)<=stats['estimated_bytes']<=8*1024*1024
+            assert stats['entries']<=65536
+            assert owned_bytes(en._ROOT_CACHE)<=stats['estimated_bytes']<=32*1024*1024
     stats=en.root_cache_stats()
-    assert stats['evictions']>0 and stats['actual_computes']==40000
+    assert stats['evictions']>0 and stats['actual_computes']==90000
+    assert owned_bytes(en._ROOT_CACHE)<=stats['estimated_bytes']<=stats['max_bytes']
+
+
+def test_ordered_fifo_hits_do_not_reorder_entries(empty_cache,monkeypatch):
+    monkeypatch.setattr(en,'_ROOT_CACHE_MAX_ENTRIES',3)
+    rows=[(float(i),0.,20.,3) for i in range(4)]
+    for args in rows[:3]: en._root(*args)
+    original_keys=tuple(en._ROOT_CACHE)
+    en._root(*rows[0])
+    assert tuple(en._ROOT_CACHE)==original_keys
+    en._root(*rows[3])
+    assert tuple(en._ROOT_CACHE)[:2]==original_keys[1:]
+    assert original_keys[0] not in en._ROOT_CACHE
+    assert en.root_cache_stats()['hits']==1 and en.root_cache_stats()['evictions']==1
+    stats=en.root_cache_stats()
     assert owned_bytes(en._ROOT_CACHE)<=stats['estimated_bytes']<=stats['max_bytes']
 
 
