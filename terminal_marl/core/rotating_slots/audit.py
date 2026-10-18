@@ -26,6 +26,7 @@ TERMINAL=FAILURES|{"CLEARED","REROUTED","CENSORED_DUE_TO_FAILURE"}
 KNOWN=AIRBORNE|TERMINAL|{"LANDED_SERVICE"}
 MANEUVERS=frozenset(("INBOUND","TRANSFER","FINAL_NORMAL","FINAL_EMERGENCY"))
 FEE={"inner":1200.,"middle":2400.,"outer":3600.}
+UPSTREAM_POLICY="upstream_capacity_only_pad_arrival_v1_20261018"
 
 
 def _rows(path):
@@ -78,6 +79,11 @@ def audit_replay(bundle_path,output=None):
         config=load_config(root/"config.yaml")
         metrics=json.loads((root/"metrics.json").read_bytes())
         if not isinstance(metrics,dict): raise ValueError("metrics must be an object")
+        policy=metrics.get("policy_id")
+        upstream_policy=policy==UPSTREAM_POLICY
+        if policy is not None and not upstream_policy:
+            issue("UNKNOWN_POLICY","archive declares an unsupported demand/resource policy",policy_id=policy)
+        report["policy_id"]=policy or "legacy_immediate_admission_departure_pad"
         if metrics.get("fixture_only"):
             report.update(status="NOT_PHYSICAL_EPISODE",physical_outcome="ANALYTIC_VISUAL_FIXTURE",
                           continuous_separation="NOT_AUDITED",counts={"state_frames":archive.state_count})
@@ -111,6 +117,16 @@ def audit_replay(bundle_path,output=None):
             elif kind=="rerouted":
                 if aid in reroutes: issue("DUPLICATE_REROUTE","reroute charged twice",aircraft_id=aid)
                 reroutes[aid]=t
+                if upstream_policy:
+                    evidence=details.get("capacity_evidence",())
+                    if details.get("reason")!="OUTER_CAPACITY" or len(evidence)!=37 or {e.get("slot") for e in evidence}!=set(range(37)):
+                        issue("CAPACITY_EVIDENCE","new-policy reroute lacks complete outer-capacity evidence",aircraft_id=aid)
+                    for entry in evidence:
+                        reservations=entry.get("reservations",())
+                        if not reservations or any(r.get("end") is not None or r.get("resource")!=["outer",entry.get("slot")] for r in reservations):
+                            issue("CAPACITY_EVIDENCE","capacity reroute uses a finite release or wrong resource",aircraft_id=aid)
+            elif kind=="PAD_DEADLINE_MISSED" and upstream_policy:
+                issue("OBSOLETE_PAD_PROOF","departure-time pad deadline proof is not valid under arrival-time reservations")
             elif kind=="touchdown":
                 if aid in touchdowns: issue("DUPLICATE_TOUCHDOWN","aircraft landed twice",aircraft_id=aid)
                 touchdowns[aid]=t
@@ -205,6 +221,19 @@ def audit_replay(bundle_path,output=None):
             if len(current)!=len(rows): issue("DUPLICATE_AIRCRAFT","duplicate physical/reference entity in one frame",time=t)
             if {r["id"] for r in frame.get("requests",())}!=revealed:
                 issue("REVEALED_REQUESTS","snapshot requests differ from release ledger",time=t)
+            if upstream_policy:
+                pending={r["id"]:r for r in frame.get("upstream",())}
+                if frame.get("policy_id")!=policy or set(pending)!=revealed-set(current):
+                    issue("UPSTREAM_LEDGER","external queue does not match revealed unresolved requests",time=t)
+                for aid,r in pending.items():
+                    immutable=requests.get(aid,{})
+                    if any(r.get(k)!=immutable.get(k) for k in ("release_time","gate_id","initial_soc","service_class","vehicle_profile_id")):
+                        issue("UPSTREAM_REQUEST_CHANGED","external queue changed immutable request",aircraft_id=aid,time=t)
+                    if not _near(r.get("wait_seconds"),t-float(immutable.get("release_time",t)),1e-6):
+                        issue("UPSTREAM_WAIT","external waiting duration disagrees with release time",aircraft_id=aid,time=t)
+                    expected_status="CENSORED_UPSTREAM" if frame.get("failed") else "WAITING"
+                    if r.get("status")!=expected_status:
+                        issue("UPSTREAM_STATUS","external queue has wrong censoring state",aircraft_id=aid,time=t)
             for aid,a in current.items():
                 status=a.get("status")
                 if status not in KNOWN: issue("UNKNOWN_STATUS","unrecognized physical lifecycle status",aircraft_id=aid,status=status,time=t)
@@ -222,8 +251,21 @@ def audit_replay(bundle_path,output=None):
                         if abs(t)>1e-9: issue("LATE_FIXTURE","fixture appeared after episode origin",aircraft_id=aid,time=t)
                     else:
                         request=requests.get(aid)
-                        if request is None or aid not in releases or not _near(t,releases[aid],1e-6):
-                            issue("UNEXPLAINED_ENTITY","new aircraft is neither initial fixture nor immediate revealed demand",aircraft_id=aid,time=t)
+                        insertion=(admissions if a.get("admitted") else reroutes).get(aid) if upstream_policy else releases.get(aid)
+                        if request is None or aid not in releases or insertion is None or not _near(t,insertion,1e-6):
+                            issue("UNEXPLAINED_ENTITY","new aircraft is neither initial fixture nor matching demand outcome",aircraft_id=aid,time=t)
+                        if upstream_policy and request:
+                            if not _near(a.get("release_time"),request["release_time"],1e-6) or not _near(a.get("upstream_wait_seconds"),t-request["release_time"],1e-6):
+                                issue("ADMISSION_WAIT","retained release/wait disagrees with event times",aircraft_id=aid,time=t)
+                            if a.get("admitted") and not _near(a.get("admission_time"),t,1e-6):
+                                issue("ADMISSION_TIME","actual entry time differs from insertion event",aircraft_id=aid,time=t)
+                            if not a.get("admitted"):
+                                outcomes=[e for e in events if e.get("type")=="rerouted" and e.get("aircraft_id")==aid]
+                                for entry in outcomes[0].get("details",{}).get("capacity_evidence",()) if outcomes else ():
+                                    for reservation in entry.get("reservations",()):
+                                        owner=current.get(reservation.get("aircraft_id"))
+                                        if owner is None or owner.get("status") not in AIRBORNE:
+                                            issue("CAPACITY_OWNER","capacity evidence owner is not a retained airborne entity",aircraft_id=aid,time=t)
                         if request and not _near(a["soc"],request["initial_soc"],1e-7):
                             issue("INITIAL_SOC","arrival SOC differs from frozen request",aircraft_id=aid,time=t)
                         if not _near(a.get("energy_j",0),0,.05) or not _near(a.get("peak_seconds",0),0,1e-6):
@@ -251,6 +293,8 @@ def audit_replay(bundle_path,output=None):
                         issue("ADMISSION_CHANGED","admission identity changed after insertion",aircraft_id=aid,time=t)
                     if bool(old.get("fixture"))!=bool(a.get("fixture")):
                         issue("FIXTURE_CHANGED","fixture identity changed after insertion",aircraft_id=aid,time=t)
+                    if upstream_policy and any(old.get(k)!=a.get(k) for k in ("release_time","admission_time","upstream_wait_seconds")):
+                        issue("ADMISSION_CHANGED","immutable entry/wait identity changed after insertion",aircraft_id=aid,time=t)
                     if old.get("status") in TERMINAL and old.get("status")!=a.get("status"):
                         issue("TERMINAL_CHANGED","terminal status changed",aircraft_id=aid,time=t)
                     if old.get("emergency",{}).get("declared") and not a.get("emergency",{}).get("declared"):
@@ -309,7 +353,8 @@ def audit_replay(bundle_path,output=None):
         required=float(r["release_time"])<stop-1e-8 or (not stop_failure and float(r["release_time"])<=stop+1e-8)
         if required and aid not in releases: issue("MISSING_RELEASE","manifest request preceding stop was never revealed",aircraft_id=aid)
     for aid,t in releases.items():
-        if aid not in final or (aid in admissions)==(aid in reroutes):
+        waiting=upstream_policy and aid not in final and aid not in admissions and aid not in reroutes
+        if not waiting and (aid not in final or (aid in admissions)==(aid in reroutes)):
             issue("REQUEST_OUTCOME","revealed request does not have exactly one retained outcome",aircraft_id=aid)
     fixtures=[a for a in final.values() if a.get("fixture")]
     admitted=[a for a in final.values() if a.get("admitted")]
@@ -347,8 +392,11 @@ def audit_replay(bundle_path,output=None):
         "landing_below_reserve":sum(float(a["soc"])<.25 for a in landed),
         "energy_failures":sum(a.get("status")=="ENERGY_FAILURE" for a in final.values()),
         "censored":sum(a.get("status")=="CENSORED_DUE_TO_FAILURE" for a in final.values())}
+    waiting_ids=set(releases)-set(final) if upstream_policy else set()
+    if upstream_policy:
+        counts.update(upstream_waiting=len(waiting_ids),censored_upstream=len(waiting_ids) if stop_failure else 0)
     equations=(counts["planned_manifest"]==counts["manifest_offered"]+counts["unreleased"],
-               counts["offered"]==counts["admitted"]+counts["rerouted"],
+               counts["offered"]==counts["admitted"]+counts["rerouted"]+len(waiting_ids),
                counts["admitted"]==counts["physically_landed"]+counts["failed_before_landing"]+counts["airborne_or_censored"])
     report["conservation_equations"]=list(equations)
     if not all(equations): issue("CONSERVATION","independently derived conservation equations fail")
@@ -360,6 +408,11 @@ def audit_replay(bundle_path,output=None):
     expected_costs={"cost_reroute":600.*len(reroutes),
         "cost_emergency":sum(FEE.get(ring,0.) for _,ring in emergency_starts.values()),
         "cost_failure":1000000.*len(failures)}
+    if upstream_policy:
+        waits=sum((admissions.get(aid,reroutes.get(aid,stop))-release) for aid,release in releases.items())
+        expected_costs["cost_upstream_wait"]=waits
+        if not _near(metrics.get("upstream_wait_time"),waits,1e-6):
+            issue("UPSTREAM_WAIT_METRIC","waiting metric differs from release/outcome event ledger",expected=waits)
     expected_energy=sum(float(a.get("energy_j",0)) for a in final.values())
     expected_airtime=sum(float(a.get("airborne_time",0)) for a in final.values())
     expected_costs.update(energy_j=expected_energy,energy_kwh=expected_energy/3600000,
@@ -370,7 +423,7 @@ def audit_replay(bundle_path,output=None):
     for a in admitted:
         charged=bool(a.get("emergency",{}).get("charged"))
         if charged!=(a["id"] in emergency_starts): issue("EMERGENCY_FEE_LEDGER","charged flag differs from actual emergency start ledger",aircraft_id=a["id"])
-    if bool(metrics.get("truncated"))!=bool(stop_failure) or bool(metrics.get("cost_is_lower_bound"))!=bool(stop_failure):
+    if bool(metrics.get("truncated"))!=bool(stop_failure) or bool(metrics.get("cost_is_lower_bound"))!=bool(stop_failure or waiting_ids):
         issue("FAILURE_CENSORING_METRIC","truncation/lower-bound flags do not match actual failure ledger")
     if stop_failure and not _near(metrics.get("first_failure_time"),stop_failure[0],1e-6):
         issue("FAILURE_TIME_METRIC","reported failure time differs from the stopping event")
@@ -381,7 +434,7 @@ def audit_replay(bundle_path,output=None):
         "peak_seconds":a.get("peak_seconds",0),"soc":a.get("soc"),"status":a.get("status")}
         for aid,a in initial.items() if a.get("fixture")]
     if not stop_failure:
-        ongoing=counts["unreleased"] or any(a.get("status") in PHYSICAL for a in admitted)
+        ongoing=counts["unreleased"] or waiting_ids or any(a.get("status") in PHYSICAL for a in admitted)
         report["physical_outcome"]="IN_PROGRESS" if ongoing else "COMPLETE"
     separation_errors=("SEPARATION_UNKNOWN","UNREPORTED_HARD_SEPARATION","LATE_HARD_FAILURE","UNEXPLAINED_HARD_FAILURE")
     report["continuous_separation"]="FAILED" if any(i["code"] in separation_errors for i in report["issues"]) else "DOCUMENTED_HARD_FAILURE" if documented_hard else "CERTIFIED"

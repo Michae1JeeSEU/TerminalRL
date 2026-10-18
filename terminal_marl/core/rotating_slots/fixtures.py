@@ -477,7 +477,7 @@ def run_resources(case, e):
         e.check(r.accepted is (case == "C12") and w.aircraft["busy"] == before,
                 "normalfuture availability vs nonpreemptiblecurrent service", case == "C12", asdict(r))
         if case == "C12": e.check(p.end_time-13.5 > 30, "padclear before15m", ">30", p.end_time-13.5)
-        else: e.check(r.reason == "PAD_NOT_CURRENTLY_FREE", "emergencycannot shortenservice", "PAD_NOT_CURRENTLY_FREE", r.reason)
+        else: e.check(r.reason == "RESOURCE_CONFLICT", "emergencycannot overlapservice at arrival", "RESOURCE_CONFLICT", r.reason)
     elif case == "C14":
         reqs = (ArrivalRequest("x", .35, 0, .75, "short"), ArrivalRequest("y", .35, 1, .75, "long"))
         w = world(e, manifest=ArrivalManifest(reqs)); service(e, w, "service", remaining=.35)
@@ -723,12 +723,12 @@ def run_emergency(case, e):
         advance(e, w, 250 if case == "F08" else 0)
         a = w.aircraft["rescue"]
         if case == "F08":
-            e.check(abs(a.emergency.start_time-.35) < .001 and a.touchdown_time is not None and not w.failed,
-                    "busytemporary waitthenreleaseevent rescue", .35, a.to_dict())
+            e.check(abs(a.emergency.start_time) < .001 and a.touchdown_time is not None and not w.failed,
+                    "depart while service busy; pad clears before protected arrival", 0., a.to_dict())
         else:
             proofs = [x for x in w.events if x["type"] == "PAD_DEADLINE_MISSED"]
-            e.check(a.emergency.deadline_missed and a.id in w.aircraft and a.status == "HOLD_INNER" and not w.failed,
-                    "deadlineproof retainsphysicalaircraft", "PAD_DEADLINE_MISSED beforephysicalfailure", [a.to_dict(), proofs])
+            e.check(not a.emergency.deadline_missed and not proofs and a.id in w.aircraft and a.status == "HOLD_INNER" and not w.failed,
+                    "no departure-time deadline proof under arrival-based pad reservations", "EMERGENCY_WAITING without global infeasibility claim", [a.to_dict(), proofs])
             advance(e, w, 30)
             e.check(w.failed and w.aircraft["rescue"].status == "ENERGY_FAILURE", "deadline followeduntilrealphysicalfailure", "ENERGY_FAILURE", w.metrics())
     elif case in ("F10", "F13"):

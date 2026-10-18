@@ -8,9 +8,12 @@ class DeterministicDriver:
 
     def __call__(self, snapshot, world):
         self.calls.append(snapshot.time)
-        for request in snapshot.requests:
-            if request.id not in world.aircraft:
+        blocked_gates = set()
+        for request in sorted(snapshot.requests, key=lambda r: (r.release_time, r.id)):
+            if request.id not in world.aircraft and request.gate_id not in blocked_gates:
                 world.admit(request.id)
+                if request.id not in world.aircraft:
+                    blocked_gates.add(request.gate_id)
         for a in snapshot.aircraft:
             if (a.id in world.active or a.id in world.soft or a.emergency.declared or
                     a.emergency.eligible or a.emergency.pending):

@@ -184,6 +184,38 @@ def analytic_record(plans, *, duration=None):
         "events": [], "metrics": {"fixture_only": True}, "rejections": []}
 
 
+AMENDMENT_SOURCE = "docs/rotating_slots_stage1/amendment_20261018.md"
+AMENDED_CRITERIA = {
+    "C05": ("Capacity-only reroute; otherwise external waiting",
+            "37 permanently occupied outer slots with no recorded release; middle and inner capacity remains empty",
+            "Only proven OUTER_CAPACITY reroutes; other unresolved requests remain upstream without a physical aircraft or resampling"),
+    "C13": ("Emergency pad protection follows the descent interval",
+            "Current ground service ends after the candidate emergency final's protected descent interval begins; reject the overlapping reservation",
+            "Departure may precede service release; overlapping protected arrival or any trajectory/energy violation is rejected without shortening service"),
+    "F08": ("Early emergency departure before a future pad release",
+            "All pads initially busy but released before the chosen final reaches the protected descent interval",
+            "A certified rescue may depart immediately and use the pad after release; retain full service, safety, energy and peak checks"),
+    "F09": ("Unresolved emergency without an invalid departure-time deadline proof",
+            "No candidate passes the bounded rescue search; retain the physical waiting aircraft and follow it to the actual failure/censoring outcome",
+            "Do not emit the obsolete PAD_DEADLINE_MISSED proof or claim global infeasibility; preserve EMERGENCY_WAITING until an actual disposition"),
+}
+
+
+def _execution_case(case):
+    """Overlay only execution criteria; catalogue() remains the frozen original."""
+    from .world import POLICY_ID
+    result = dict(case, policy_id=POLICY_ID, effective_criteria_source=AMENDMENT_SOURCE)
+    if case["id"] in AMENDED_CRITERIA:
+        for key, value in zip(("title", "fixture_requirement", "expected"), AMENDED_CRITERIA[case["id"]]):
+            result["legacy_catalogue_"+key] = case[key]
+            result[key] = value
+    return result
+
+
+def _case_policy_fields(case):
+    return {k: v for k, v in case.items() if k in ("policy_id", "effective_criteria_source") or k.startswith("legacy_catalogue_")}
+
+
 def _job(args):
     case, output, command = args
     limit_threads()
@@ -210,7 +242,8 @@ def _job(args):
     except Exception as exc:
         status, reason = "FAIL", reason+f"; replay_archive: {type(exc).__name__}: {exc}"
         (root/"replay_error.log").write_text(traceback.format_exc(), encoding="utf8")
-    write_json(root/"fixture.json", {"seed": e.seed, "actions": e.actions, "attempted_plans": e.attempted_plans})
+    write_json(root/"fixture.json", {"seed": e.seed, "actions": e.actions, "attempted_plans": e.attempted_plans,
+                                   **_case_policy_fields(case)})
     write_json(root/"assertions.json", e.assertions)
     write_json(root/"observations.json", e.observations)
     write_json(root/"environment.json", info)
@@ -223,6 +256,7 @@ def _job(args):
         "environment_path": str((root/"environment.json").resolve()), "replay_paths": e.replay_paths,
         "code_sha256": info["code_sha256"], "config_hash": info["config_hash"], "code_commit": info["code_commit"],
         "command": command, "researcher_visual_acceptance": "PENDING" if case["id"].startswith("V") else "NOT_APPLICABLE"}
+    result.update(_case_policy_fields(case))
     write_json(root/"result.json", result)
     return result
 
@@ -240,7 +274,7 @@ def run_catalogue(output, *, cases=None, workers=1, command=None):
     if workers < 1: raise ValueError("workers must bepositive")
     root = Path(output).resolve(); root.mkdir(parents=True, exist_ok=True)
     if (root/"results.json").exists(): raise FileExistsError("use a freshoutputdirectory")
-    all_cases = catalogue(); ids = [r["id"] for r in all_cases]
+    all_cases = [_execution_case(r) for r in catalogue()]; ids = [r["id"] for r in all_cases]
     selected = set(ids if cases is None else cases)
     if len(selected-set(ids)): raise ValueError("unknown caseIDs: "+str(sorted(selected-set(ids))))
     requested = [r for r in all_cases if r["id"] in selected]
@@ -269,6 +303,7 @@ def run_catalogue(output, *, cases=None, workers=1, command=None):
     visual = [r for r in results if r["id"].startswith("V") and r["id"] != "V12"]
     result = {"schema": "FT-RS-S1-1.0-qualification-results", "catalogue_is_results": False,
         "cases": results, "coverage": coverage,
+        "policy_id": all_cases[0]["policy_id"], "effective_criteria_source": AMENDMENT_SOURCE,
         "automatic_status": "AUTOMATION_COMPLETE" if all(r["status"] == "PASS" for r in automatic) else "IMPLEMENTATION_IN_PROGRESS",
         "visualization_integration_status": "ADAPTER_CHECKS_COMPLETE" if all(r["status"] == "PASS" for r in visual) else "NOT_COMPLETE",
         "researcher_visual_acceptance": "PENDING", "stage1_status": "NOT_ACCEPTED",
@@ -282,7 +317,7 @@ def merge_reports(paths, output):
     from .config import load_config
     canonical = load_config().config_hash
     normative = catalogue(); known = {r["id"] for r in normative}
-    observed, hashes, commits = {}, set(), set()
+    observed, hashes, commits, policies = {}, set(), set(), set()
     sources = []
     for path in paths:
         source = Path(path).resolve()
@@ -299,10 +334,17 @@ def merge_reports(paths, output):
             if row.get("config_hash") != canonical: raise ValueError("canonicalconfigurationhash mismatch: "+identity)
             if not row.get("code_sha256") or not row.get("code_commit"): raise ValueError("missingcodeprovenance: "+identity)
             hashes.add(row["code_sha256"]); commits.add(row["code_commit"])
+            policies.add(row.get("policy_id"))
             if identity in observed and observed[identity] != row: raise ValueError("conflictingexecutedcase: "+identity)
             if identity == "V12" and row["status"] != "HUMAN_PENDING": raise ValueError("V12 cannot be automaticallyapproved")
             observed[identity] = row
     if len(hashes) > 1 or len(commits) > 1: raise ValueError("codehash/commit mismatch across executedreports")
+    if len(policies) > 1: raise ValueError("policy mismatch across executed reports")
+    policy = next(iter(policies), None)
+    if policy is not None:
+        from .world import POLICY_ID
+        if policy != POLICY_ID: raise ValueError("unsupported execution policy")
+        normative = [_execution_case(r) for r in normative]
     rows = [observed.get(r["id"], {**r, "status": "NOT_RUN", "reason": "noexecutedevidence inmergedreports"}) for r in normative]
     result = {"schema": "FT-RS-S1-1.0-qualification-results", "catalogue_is_results": False,
         "cases": rows, "sources": sources, "coverage": task_coverage([r["id"] for r in normative], list(observed.values())),
@@ -311,6 +353,8 @@ def merge_reports(paths, output):
         "visualization_integration_status": "ADAPTER_CHECKS_COMPLETE" if all(r["status"] == "PASS" for r in rows if r["id"].startswith("V") and r["id"] != "V12") else "NOT_COMPLETE",
         "researcher_visual_acceptance": "PENDING", "stage1_status": "NOT_ACCEPTED",
         "code_sha256": next(iter(hashes), None), "code_commit": next(iter(commits), None), "config_hash": canonical}
+    if policy is not None:
+        result.update(policy_id=policy, effective_criteria_source=AMENDMENT_SOURCE)
     target = Path(output).resolve(); target.mkdir(parents=True, exist_ok=True)
     if (target/"results.json").exists(): raise FileExistsError("refusingtooverwrite mergedreport")
     write_json(target/"results.json", result)

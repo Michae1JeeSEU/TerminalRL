@@ -107,7 +107,8 @@ def _diagnostic_job(job):
             w.advance(job["window"], callback)
             window_metrics = w.metrics() if abs(w.time-job["window"]) <= .001 and not w.failed else None
             if not w.failed: w.advance(job["window"]+job["drain"], callback)
-            clear = not w.failed and all(a.status in ("CLEARED", "REROUTED") for a in w.aircraft.values())
+            clear = (not w.failed and not w.metrics()["upstream_waiting"] and
+                     all(a.status in ("CLEARED", "REROUTED") for a in w.aircraft.values()))
             clear_time = max([job["window"], *(a.service_end for a in w.aircraft.values() if a.service_end is not None)]) if clear else None
             result.update(manifest=manifest.to_dict(), metrics=w.metrics(), decision_times=w.decision_times,
                           world_cpu_seconds=w.cpu, simulated_seconds=w.time,

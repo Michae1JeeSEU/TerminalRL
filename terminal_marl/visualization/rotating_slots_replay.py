@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from itertools import combinations
+import json
 import math
 import time as clock
 from types import MappingProxyType
@@ -21,6 +22,7 @@ _INVISIBLE = {"CLEARED", "COMPLETED", "REROUTED", "UNRELEASED_AT_FAILURE"}
 _HOLD = {"HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "HOLD", "HOLDING", "STABLE"}
 _ACTIVE_MANEUVER = {"INBOUND", "TRANSFER_O_M", "TRANSFER_M_I", "FINAL_NORMAL",
                     "FINAL_EMERGENCY", "VERTICAL_DESCENT"}
+_UPSTREAM_POLICY = "upstream_capacity_only_pad_arrival_v1_20261018"
 
 
 def _separation_evidence(metrics):
@@ -37,6 +39,27 @@ def _separation_evidence(metrics):
         "witness_time": value.get("witness_time", value.get("time")),
         "witness_distance_m": value.get("witness_distance_m"),
         "pair": value.get("pair"), "status": value.get("status")}
+
+
+def _diagnostic_text(record):
+    details = _plain(record.get("details", {}))
+    reason = record.get("reason", details.get("reason", "not recorded"))
+    # Geometry is already drawn separately; retain the recorded diagnostic fields.
+    detail_text = {k: v for k, v in details.items() if k != "trajectory_points"}
+    return f"reason={reason}; details={json.dumps(detail_text, ensure_ascii=False, sort_keys=True)}"
+
+
+def _time_text(value):
+    return "unknown" if value is None else f"{value:.3f}s"
+
+
+def _hud_layout(window_size, line_count):
+    """Pixel anchor for a top-aligned HUD below controls, above the timeline."""
+    _, height = window_size
+    top = max(80, int(height) - 115)
+    available = max(40, top - 75)
+    font_size = max(5, min(8, int(available / max(1, line_count) / 1.6)))
+    return (10, top), font_size
 
 
 class ReplayController:
@@ -119,12 +142,70 @@ class ReplayController:
             for i in range(ring.slot_count):
                 occupant = next((a for a in aircraft if a.get("ring") == ring.id and a.get("slot") == i
                     and a.get("status") in _HOLD), None)
-                reservations = [r for r in frame.get("slots", ()) if tuple(r["resource"]) == (ring.id, i)
-                    and float(r["start"]) <= self.time < float(r["end"] if r.get("end") is not None else math.inf)]
-                departing = any(r.get("kind") in ("departure", "source", "departure_protection") for r in reservations)
-                state = "DEPARTING" if departing else "OCCUPIED" if occupant else "RESERVED" if reservations else "FREE"
+                reservations = self._reservations(frame.get("slots", ()), (ring.id, i))
+                active = [r for r in reservations if not r["future_interval"]]
+                departing = any(r.get("kind") in ("departure", "source", "departure_protection")
+                    and r["commitment"] != "SOFT_UNSTARTED_REMOVABLE" for r in active)
+                firm = [r for r in reservations if r["commitment"] != "SOFT_UNSTARTED_REMOVABLE"]
+                state = ("DEPARTING" if departing else "OCCUPIED" if occupant else "RESERVED" if firm
+                         else "SOFT" if reservations else "FREE")
                 result.append({"id": f"{ring.id}:{i}", "phase": slot_phase(ring.id, i, self.time, config),
-                    "position": slot_state(ring.id, i, self.time, config).p, "state": state})
+                    "position": slot_state(ring.id, i, self.time, config).p, "state": state,
+                    "occupant_id": str(occupant["id"]) if occupant else None, "reservations": reservations})
+        return tuple(result)
+
+    def _reservations(self, rows, resource):
+        """Unexpired calendar entries, with maneuver and resource clocks separated."""
+        result = []
+        for row in rows:
+            key = tuple(row["resource"]) if isinstance(resource, tuple) else row["resource"]
+            end = float(row["end"]) if row.get("end") is not None else math.inf
+            if key != resource or self.time >= end:
+                continue
+            view = _plain(row)
+            start = float(row["start"])
+            future = start > self.time
+            committed = row.get("committed") is True
+            legacy = "committed" not in row and not future
+            commitment = ("COMMITTED" if committed else "RECORDED_OCCUPANCY" if row.get("kind") == "occupied" and not future
+                          else "LEGACY_RECORDED_INTERVAL" if legacy
+                          else "SOFT_UNSTARTED_REMOVABLE")
+            plan = self._plans.get(row.get("plan_hash"))
+            maneuver = plan if plan and plan.kind not in ("STABLE", "GROUND") else None
+            view.update(owner_id=str(row["aircraft_id"]), owner_uid=self.uid_by_id.get(str(row["aircraft_id"])),
+                interval_start=start, interval_end=None if math.isinf(end) else end,
+                future_interval=future, commitment=commitment,
+                maneuver_start=maneuver.start_time if maneuver else None,
+                maneuver_kind=maneuver.kind if maneuver else None,
+                maneuver_started=bool(committed and maneuver and maneuver.start_time <= self.time),
+                descent_start=min((s.start_time for s in maneuver.segments if s.kind == "DESCENT"), default=None) if maneuver else None,
+                touchdown_time=maneuver.end_time if maneuver and maneuver.kind in ("FINAL_NORMAL", "FINAL_EMERGENCY") else None)
+            result.append(view)
+        return sorted(result, key=lambda r: (r["interval_start"], r["owner_id"], r.get("kind", "")))
+
+    def pads_at(self):
+        frame = self.bundle.sampled_state(self.time)
+        aircraft = self.aircraft_at()
+        result = []
+        for i in range(self.bundle.config.pads.count):
+            rows = self._reservations(frame.get("pads", ()), i)
+            occupant = next((a for a in aircraft if a.get("pad_id") == i
+                             and a.get("status") in ("SERVICE", "LANDED_SERVICE")), None)
+            owner = str(occupant["id"]) if occupant else None
+            firm = [r for r in rows if r["commitment"] != "SOFT_UNSTARTED_REMOVABLE"]
+            # The current service clock belongs only to its actual occupant.
+            service_end = occupant.get("service_end") if occupant else None
+            if occupant and service_end is None:
+                service_end = max((r["interval_end"] for r in rows if r["owner_id"] == owner
+                    and not r["future_interval"] and r["interval_end"] is not None), default=None)
+            next_reservation = next((r for r in firm if r["owner_id"] != owner), None)
+            result.append({"id": i, "state": "occupied" if occupant else "reserved" if firm else "soft_pending" if rows else "free",
+                "occupant_id": owner, "occupied_by": self.uid_by_id.get(owner),
+                "reserved_by": next_reservation["owner_uid"] if next_reservation else None,
+                "reservation_owner_id": next_reservation["owner_id"] if next_reservation else None,
+                "service_end": service_end,
+                "service_remaining": max(0., float(service_end) - self.time) if service_end is not None else 0.,
+                "reservations": rows})
         return tuple(result)
 
     def overlays(self):
@@ -134,16 +215,111 @@ class ReplayController:
         pairs = [(math.dist(a["p"], b["p"]), a["id"], b["id"]) for a, b in combinations(physical, 2)]
         current_min = min(pairs, default=None)
         episode_metrics = _plain(self.bundle.data["metrics"])
+        policy = frame.get("policy_id", self.bundle.data.get("policy_id", frame.get("metrics", {}).get("policy_id",
+            episode_metrics.get("policy_id"))))
+        upstream = _plain(frame.get("upstream", ()))
         return {"minimum_current_3d_pair": current_min, "minimum_current_time": self.time,
             "logged_metrics": _plain(frame.get("metrics", {})),
             "episode_metrics": episode_metrics,
             "separation_evidence": _separation_evidence(episode_metrics),
             "fixture_banner": "ANALYTIC FIXTURE - no physical episode outcome" if episode_metrics.get("fixture_only") else None,
+            "policy_id": policy,
+            "admission_model": ("AMENDED: capacity-only reroute; unsafe requests wait upstream (no physical aircraft / external energy model)"
+                if policy == _UPSTREAM_POLICY else "OLD MODEL: immediate admission or reroute; no upstream waiting queue recorded"
+                if policy is None else "Recorded admission policy: " + str(policy)),
+            "upstream_requests": upstream,
+            "upstream_waiting_count": frame.get("metrics", {}).get("upstream_waiting", len(upstream)),
+            "pad_resources": self.pads_at(),
+            "future_slot_reservations": [r for s in self.slots_at() for r in s["reservations"] if r["future_interval"]],
             "current_commits": [a for a in aircraft if a.get("trajectory_hash") and a.get("status") in _ACTIVE_MANEUVER],
             "future_soft_dependencies": [r for r in (*frame.get("slots", ()), *frame.get("pads", ()))
-                if float(r["start"]) > self.time and not r.get("committed", False)],
+                if not r.get("committed", False) and (float(r["start"]) > self.time or
+                    r.get("plan_hash") in self._plans and self._plans[r["plan_hash"]].start_time > self.time)],
             "diagnostic_rejections_not_executed": [r for r in self.bundle.data.get("rejections", ()) if r["time"] <= self.time],
             "events": [e for e in self.bundle.data["events"] if e["time"] <= self.time]}
+
+    def resource_overlay_lines(self):
+        lines = []
+        for pad in self.pads_at():
+            owner = f'UID={pad["occupied_by"]} ({pad["occupant_id"]})'
+            if pad["occupant_id"] is not None:
+                lines.append(f'P{pad["id"]} SERVICE {owner}; service end={_time_text(pad["service_end"])}; '
+                             f'remaining={pad["service_remaining"]:.3f}s')
+            else:
+                lines.append(f'P{pad["id"]} {pad["state"].upper()}' +
+                    (f' UID={pad["reserved_by"]} ({pad["reservation_owner_id"]})' if pad["reservation_owner_id"] else ""))
+            for row in pad["reservations"]:
+                if row["owner_id"] == pad["occupant_id"] and not row["future_interval"]:
+                    continue
+                lines.append(f'  {row["commitment"]} UID={row["owner_uid"]} ({row["owner_id"]}); '
+                    f'maneuver start={_time_text(row["maneuver_start"])}; '
+                    f'pad interval=[{_time_text(row["interval_start"])}, {_time_text(row["interval_end"])}); '
+                    f'descent={_time_text(row["descent_start"])}; touchdown={_time_text(row["touchdown_time"])}')
+        futures = [r for slot in self.slots_at() for r in slot["reservations"] if r["future_interval"]]
+        futures.sort(key=lambda r: (r["owner_id"] != self.selected_id, r["interval_start"]))
+        for row in futures[:4]:
+            lines.append(f'Slot {row["resource"]} {row["commitment"]} UID={row["owner_uid"]} ({row["owner_id"]}); '
+                f'interval=[{_time_text(row["interval_start"])}, {_time_text(row["interval_end"])}); '
+                f'maneuver start={_time_text(row["maneuver_start"])}')
+        if len(futures) > 4:
+            lines.append(f'{len(futures)-4} further future slot intervals recorded (selected aircraft shown first).')
+        return lines
+
+    def hud_lines(self, *, details=False):
+        """Bounded display text; full recorded diagnostics remain in overlays()."""
+        overlay = self.overlays()
+        minimum = overlay["minimum_current_3d_pair"]
+        pair = (f'{minimum[0]:.3f}m ({minimum[1]}, {minimum[2]})' if minimum else "no pair")
+        policy = ("AMENDED: capacity-only reroute; unsafe entry waits upstream" if overlay["policy_id"] == _UPSTREAM_POLICY
+                  else "OLD MODEL: immediate admission / reroute" if overlay["policy_id"] is None
+                  else f'Policy: {overlay["policy_id"]}')
+        evidence = overlay["separation_evidence"]
+        bound = lambda x: "unknown" if x is None else f"{x:.3f}"
+        lines = [f't={self.time:.3f}s | physical display aircraft={len([a for a in self.aircraft_at() if a.get("status") not in _INVISIBLE])}',
+            policy, f'Current 3D minimum: {pair}',
+            f'{evidence["label"]}: [{bound(evidence["lower_bound_m"])}, {bound(evidence["upper_bound_m"])}]m',
+            f'Slots F free / R committed incl.future / O occupied / D departing / S soft; paths t; details d',
+            f'Actual maneuvers={len(overlay["current_commits"])}; future SOFT unstarted/removable={len(overlay["future_soft_dependencies"])}']
+        for pad in overlay["pad_resources"]:
+            prefix = f'P{pad["id"]} '
+            if pad["occupant_id"] is not None:
+                lines.append(prefix + f'SERVICE UID={pad["occupied_by"]}; end={bound(pad["service_end"])}s; remaining={pad["service_remaining"]:.1f}s')
+            else:
+                lines.append(prefix + pad["state"].upper() + (f' UID={pad["reserved_by"]}' if pad["reserved_by"] is not None else ""))
+            future = next((r for r in pad["reservations"] if r["owner_id"] != pad["occupant_id"]), None)
+            if future:
+                label = "COMMITTED" if future["commitment"] == "COMMITTED" else "SOFT unstarted/removable" if future["commitment"] == "SOFT_UNSTARTED_REMOVABLE" else "recorded"
+                lines.append(f'  P{pad["id"]} {label} UID={future["owner_uid"]}: flight start={bound(future["maneuver_start"])}; '
+                    f'descent={bound(future["descent_start"])}; touch={bound(future["touchdown_time"])}; service end={bound(future["interval_end"])}s')
+        if overlay["policy_id"] == _UPSTREAM_POLICY or overlay["upstream_requests"]:
+            lines.append(f'Upstream unresolved={overlay["upstream_waiting_count"]}; external requests only (no physical aircraft/energy simulation)')
+            if overlay["upstream_requests"]:
+                request = overlay["upstream_requests"][0]
+                lines.append(f'Upstream {request["id"]}: {request.get("status")}; wait={request.get("wait_seconds", 0):.1f}s; reason={request.get("reason")}')
+        if self.selected_id is not None:
+            selected = next((a for a in self.aircraft_at() if str(a["id"]) == self.selected_id), None)
+            if selected:
+                lines.append(f'Selected UID={self.uid_by_id[self.selected_id]} {self.selected_id}: {selected.get("status")}; SOC={selected["soc"]:.4f}')
+        rejections = overlay["diagnostic_rejections_not_executed"]
+        if rejections:
+            latest = rejections[-1]
+            lines.append(f'Diagnostic rejects={len(rejections)}; latest {latest.get("aircraft_id")}: {latest.get("reason", "not recorded")}')
+        if details:
+            selected_rows = [r for r in overlay["future_slot_reservations"] if self.selected_id is None or r["owner_id"] == self.selected_id]
+            for row in selected_rows[:2]:
+                lines.append(f'Slot {row["resource"]} {row["commitment"]} UID={row["owner_uid"]}; interval '
+                    f'[{bound(row["interval_start"])}, {bound(row["interval_end"])})')
+            if rejections:
+                # A bounded excerpt is sufficient for the HUD; API retains all fields.
+                lines.append("Reject detail: " + _diagnostic_text(rejections[-1])[:180])
+        attention = [e for e in overlay["events"] if str(e["type"]).lower() in
+                     ("energy_failure", "rerouted", "executed_hard_separation_violation")]
+        if attention and len(lines) < 21:
+            event = attention[-1]
+            lines.append(f'Latest {event["type"]}: {event.get("aircraft_id")} t={event["time"]:.3f}s; reason={event.get("details", {}).get("reason", "not recorded")}')
+        lines = lines[:21]
+        lines.append("Details d: " + ("ON (bounded excerpt; full data in overlay API)" if details else "OFF; toggle for slot intervals / diagnostic excerpt"))
+        return lines
 
     def snapshot(self):
         c = self.bundle.config
@@ -154,14 +330,9 @@ class ReplayController:
         gates = tuple(GateRenderState(i, (c.entry.radius_m*math.cos(a), c.entry.radius_m*math.sin(a),c.entry.height_agl_m),
             (c.entry.radius_m*math.cos(a), c.entry.radius_m*math.sin(a),c.entry.height_agl_m)) for i,a in enumerate(c.entry.gate_angles_rad))
         pads = []
-        for i in range(c.pads.count):
-            rows = [r for r in frame.get("pads", ()) if r["resource"] == i and r["start"] <= self.time < (r["end"] if r.get("end") is not None else math.inf)]
-            occupant = next((a for a in aircraft if a.get("pad_id") == i and a.get("status") in ("SERVICE", "LANDED_SERVICE")), None)
-            owner = str(occupant["id"]) if occupant else str(rows[0]["aircraft_id"]) if rows else None
-            uid = self.uid_by_id.get(owner)
-            end = max((float(r["end"]) for r in rows if r.get("end") is not None), default=self.time)
-            pads.append(LandingZoneRenderState(i, pad_position(i,c), "occupied" if occupant else "reserved" if rows else "free",
-                uid if rows and not occupant else None, uid if occupant else None, max(0.,end-self.time)))
+        for pad in self.pads_at():
+            pads.append(LandingZoneRenderState(pad["id"], pad_position(pad["id"], c), pad["state"],
+                pad["reserved_by"], pad["occupied_by"], pad["service_remaining"]))
         uavs = []
         for a in aircraft:
             if a.get("status") in _INVISIBLE:
@@ -205,6 +376,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
         self._extra_names = set()
         self._curve_charts = []
         self._chart_selected = None
+        self.show_details = False
         # Widget constructors can invoke callbacks before returning a widget.
         self._time_widget = None
         self._pause_widget = None
@@ -222,6 +394,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
         self._plotter.add_key_event("f",lambda:setattr(controller,"follow",not controller.follow))
         self._plotter.add_key_event("t",self.cycle_trajectories)
         self._plotter.add_key_event("l",self.cycle_slot_labels)
+        self._plotter.add_key_event("d",self.toggle_details)
         for key,view in (("1","top_down"),("2","side"),("3","3d")):
             self._plotter.add_key_event(key,lambda v=view:self.set_view(v))
         self.set_view("3d")
@@ -247,6 +420,17 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
         super()._select_uav(picked_point,picker)
         self.controller.select(self.controller.id_by_uid.get(self._selected_uid),follow=self.controller.follow)
         self.draw()
+
+    def _update_landing_zones(self, snapshot):
+        super()._update_landing_zones(snapshot)
+        for pad in snapshot.landing_zones:
+            if pad.status == "soft_pending":
+                self._lz_actors[pad.lz_id].GetProperty().SetColor(self._pv.Color("purple").float_rgb)
+
+    def _landing_zone_status_line(self, pad):
+        if pad.status == "soft_pending":
+            return f"P{pad.lz_id}: SOFT unstarted/removable"
+        return super()._landing_zone_status_line(pad)
 
     def toggle_pause(self):
         self.controller.paused = not self.controller.paused
@@ -285,6 +469,18 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
         self.controller.slot_labels=modes[(modes.index(self.controller.slot_labels)+1)%len(modes)]
         self.draw()
 
+    def toggle_details(self):
+        self.show_details = not self.show_details
+        self.draw()
+
+    def _draw_hud(self):
+        lines = self.controller.hud_lines(details=self.show_details)
+        position, font_size = _hud_layout(self._plotter.window_size, len(lines))
+        actor = self._plotter.add_text("\n".join(lines), position=position, font_size=font_size,
+            color="black", name="rs-overlay")
+        actor.GetTextProperty().SetVerticalJustificationToTop()
+        return actor
+
     def set_view(self, view, *, vertical_exaggeration=1.):
         if view not in ("top_down","side","3d") or vertical_exaggeration <= 0:
             raise ValueError("invalid view or exaggeration")
@@ -312,7 +508,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
             self._plotter.remove_actor(name,render=False)
         self._extra_names.clear()
         slots=self.controller.slots_at()
-        colors={"FREE":"gray","RESERVED":"gold","OCCUPIED":"seagreen","DEPARTING":"darkorange"}
+        colors={"FREE":"gray","RESERVED":"gold","OCCUPIED":"seagreen","DEPARTING":"darkorange","SOFT":"purple"}
         selected_aircraft=next((a for a in self.controller.aircraft_at() if str(a["id"])==self.controller.selected_id),None)
         selected_ring=selected_aircraft.get("ring") if selected_aircraft else "outer"
         for state,color in colors.items():
@@ -373,35 +569,7 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
                 self._plotter.add_mesh(self._pv.Arrow(start=start,direction=direction,scale=100),color="orange",
                     name=name,pickable=False,render=False)
                 self._extra_names.add(name)
-        minimum=overlay["minimum_current_3d_pair"]
-        text=[f"t={snapshot.time:.3f}s | aircraft={len(snapshot.uavs)} | service={snapshot.service_count} | cleared={snapshot.completed_count}",
-            "Slot: F free / R reserved / O occupied / D departing; label mode="+self.controller.slot_labels,
-            "Paths: normal blue / emergency red / future SOFT purple / rejected diagnostic magenta",
-            "Pair balls radius 40 m; hard centre distance 80 m",
-            f"Current true 3D minimum: {minimum} at {self.controller.time:.3f}s"]
-        evidence=overlay["separation_evidence"]
-        text.append(f'{evidence["label"]}: [{evidence["lower_bound_m"]}, {evidence["upper_bound_m"]}] m; '
-            f'witness t={evidence["witness_time"]}s d={evidence["witness_distance_m"]}m pair={evidence["pair"]}')
-        text.append(f'Actual commits={len(overlay["current_commits"])} | future SOFT reservations={len(overlay["future_soft_dependencies"])}')
-        text.append("Pads 0-2: "+" / ".join(f'{p.lz_id}:{p.status} {p.service_remaining:.1f}s' for p in snapshot.landing_zones[:3]))
-        text.append("Pads 3-5: "+" / ".join(f'{p.lz_id}:{p.status} {p.service_remaining:.1f}s' for p in snapshot.landing_zones[3:]))
-        rejected=overlay["diagnostic_rejections_not_executed"]
-        text.append(f'DIAGNOSTIC only, not executed: {len(rejected)} rejections'+
-            (f'; latest {rejected[-1].get("aircraft_id")}: {rejected[-1].get("reason")}' if rejected else ""))
-        if selected_aircraft:
-            a=selected_aircraft; emergency=a.get("emergency",{})
-            text.extend([f'Selected {a["id"]}: {a.get("status")} | {a.get("service_class")} | SOC={a["soc"]:.4f}',
-                f'Ring={a.get("ring")} slot={a.get("slot")} | current commit={str(a.get("trajectory_hash"))[:12] if a.get("status") in _ACTIVE_MANEUVER else "none (stable or terminal)"}',
-                f'Emergency={emergency.get("state",emergency.get("declared"))} | charged={emergency.get("charged",False)} | emergency cost={overlay["logged_metrics"].get("cost_emergency",0)}s'])
-            for r in overlay["future_soft_dependencies"]:
-                if str(r["aircraft_id"])==str(a["id"]):
-                    text.append(f'SOFT {r["resource"]} starts {r["start"]:.3f}s; depends '+str([str(x)[:12] for x in r.get("dependencies",())]))
-        for event in overlay["events"]:
-            if str(event["type"]).lower() in ("energy_failure","rerouted","executed_hard_separation_violation"):
-                text.append(f'{event["type"]}: {event.get("aircraft_id")} t={event["time"]:.3f}s p={event.get("details",{}).get("p")}')
-        import textwrap
-        lines=[line for paragraph in text for line in textwrap.wrap(paragraph.replace("|", ";"),width=105)]
-        self._plotter.add_text("\n".join(lines),position=(10,605),font_size=7,color="black",name="rs-overlay")
+        self._draw_hud()
         selected=self.controller.selected_id
         if selected != self._chart_selected:
             for chart in self._curve_charts: self._plotter.remove_chart(chart)

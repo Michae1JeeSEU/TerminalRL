@@ -1,6 +1,12 @@
 # FT-RS-S1-1.0 stage 1
 
-This is the active implementation track for the frozen rotating-slot contract.
+This is the rotating-slot stage 1 implementation track. The user-authorized
+[2026-10-18 amendment](amendment_20261018.md) adds upstream waiting when a safe
+entry is temporarily unavailable and permits departure before pad service ends
+when the protected descent/service interval starts after release. It takes
+precedence over conflicting earlier execution rules; the frozen originals and
+historical f67 results remain unchanged. Old results do not validate the amended
+policy `upstream_capacity_only_pad_arrival_v1_20261018`.
 The canonical inputs are the unchanged files in `new10.16/`: the operating
 contract, YAML configuration and 94-case acceptance catalog. A normative catalog
 is not a test result. Automation, viewer integration and researcher acceptance
@@ -14,6 +20,9 @@ See [schema and scheduling API](api.md), [migration](migration.md), and
 [sources and model limits](sources.md).
 
 [2026-10-16 中文交付与观察指南](rebuild_20261016.md) records the current evidence snapshot and local replay commands.
+The [amendment evidence](amendment_20261018.md#最终有效准则执行与受控小回放)
+records eight executed cases under the effective Oct18 criteria and a controlled
+small replay. Neither is a new full-density traffic matrix or full stage acceptance.
 
 From the repository root, install `requirements-rotating-slots.txt` in the local
 environment. On this Windows checkout use `venv\Scripts\python.exe` in place of
@@ -49,7 +58,10 @@ No smoothing filter, physics stepping or trajectory re-generation occurs on seek
 Controls: pause checkbox/Space, execution/event sample step with Right, previous/
 next event with p/n, time slider for seek, 0.25/1/4/10 speed slider, right-click an
 aircraft for selection, f to follow, t to cycle all/selected/hidden trajectories,
-1/2/3 for top/side/3D, and l to cycle selected-ring/all/hidden slot labels.
+1/2/3 for top/side/3D, l to cycle selected-ring/all/hidden slot labels, and d to
+toggle bounded resource/diagnostic detail. The default HUD keeps time, policy,
+current separation and six pad states visible; full recorded details remain in
+the controller's overlay API.
 All slot states remain visible as coloured points. `set_view(..., vertical_exaggeration=...)` labels the
 display scale; minimum distances always use true ENU coordinates. Protection
 balls have radius **40 m each**, representing an **80 m centre separation**.

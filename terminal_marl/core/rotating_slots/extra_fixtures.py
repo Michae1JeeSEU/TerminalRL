@@ -47,7 +47,7 @@ def cumulative_peak(e):
 
 
 def mixed_conservation(e):
-    """One scripted world with all requested outcomes, without a new policy."""
+    """One world with physical outcomes plus explicitly censored external demand."""
     from .fixtures import world, seed, feasible, submit, advance
     requests=(ArrivalRequest("rerouted_request",0.,0,.8,"short"),
               ArrivalRequest("unrevealed_request",1000.,2,.8,"long"))
@@ -74,6 +74,8 @@ def mixed_conservation(e):
             e.action("reroute",{"request_id":"rerouted_request","reason":"SCRIPTED_CONSERVATION_FIXTURE"})
             result=wrld.reroute("rerouted_request","SCRIPTED_CONSERVATION_FIXTURE")
             e.observe("reroute",asdict(result))
+            e.check(not result.accepted and result.reason=="REROUTE_REQUIRES_OUTER_CAPACITY",
+                    "arbitrary policy deletion is forbidden; request remains external",False,result.accepted)
     advance(e,w,target_failure+1.,scripted)
     metrics=w.metrics()
     e.check(w.failed and w.aircraft["normal"].touchdown_time is not None and
@@ -83,17 +85,17 @@ def mixed_conservation(e):
     e.check(abs(w.time-target_failure)<1e-5,"named energy failure occurs1s after latest touchdown",
         target_failure,w.time)
     e.check(metrics["normal_landed"]==1 and metrics["emergency_landed"]==1 and
-        metrics["rerouted"]==1 and metrics["energy_failures"]==1 and metrics["censored"]==1 and metrics["unreleased"]==1,
-        "one world contains all required mutually counted outcomes",[1,1,1,1,1,1],
-        [metrics[k] for k in ("normal_landed","emergency_landed","rerouted","energy_failures","censored","unreleased")])
+        metrics["rerouted"]==0 and metrics["censored_upstream"]==1 and metrics["energy_failures"]==1 and metrics["censored"]==1 and metrics["unreleased"]==1,
+        "real landings/failure retain censored physical and external populations",[1,1,0,1,1,1,1],
+        [metrics[k] for k in ("normal_landed","emergency_landed","rerouted","censored_upstream","energy_failures","censored","unreleased")])
     # Fixture seeds are explicit initial offered demand, separate from the
     # immutable manifest. Include them on both sides of the first equation.
     e.check(metrics["planned_manifest"]==metrics["manifest_offered"]+metrics["unreleased"],
         "planned manifest equals revealed plus unreleased",metrics["planned_manifest"],
         metrics["manifest_offered"]+metrics["unreleased"])
-    e.check(metrics["offered"]==metrics["admitted"]+metrics["rerouted"],
-        "offered including named initial fixtures equals admitted plus rerouted",metrics["offered"],
-        metrics["admitted"]+metrics["rerouted"])
+    e.check(metrics["offered"]==metrics["admitted"]+metrics["rerouted"]+metrics["upstream_waiting"],
+        "offered equals admitted plus capacity rerouted plus external waiting",metrics["offered"],
+        metrics["admitted"]+metrics["rerouted"]+metrics["upstream_waiting"])
     e.check(metrics["admitted"]==metrics["normal_landed"]+metrics["emergency_landed"]+
         metrics["failed_before_landing"]+metrics["airborne_or_censored"],
         "admitted equals physical landings plus failures plus airborne/censored",metrics["admitted"],

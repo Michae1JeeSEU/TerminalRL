@@ -71,7 +71,7 @@ def test_exact_service_ground_soc_freeze_and_same_time_merge():
     assert w.decision_times == [0.,.35]
     kinds=[e["type"] for e in w.events if e["time"]==.35]
     assert kinds[:3] == ["pad_service_completed","request_released","request_released"]
-    assert w.metrics()["cost_reroute"]==1200
+    assert w.metrics()["cost_reroute"]==0 and w.metrics()["upstream_waiting"]==2
     assert w.metrics()["conservation"]
 
 
@@ -180,7 +180,7 @@ def test_busy_pad_emergency_cannot_preempt_service_or_delete_aircraft():
     w.seed_hold("a","inner",0,.35,emergency=True)
     p=final(emergency=True)
     before=w.snapshot()
-    assert w.submit((p,)).reason=="PAD_NOT_CURRENTLY_FREE"
+    assert w.submit((p,)).reason=="RESOURCE_CONFLICT"
     assert w.snapshot().aircraft==before.aircraft
     assert w.aircraft["service"].service_end==200.
     assert w.aircraft["a"].status=="HOLD_INNER"
@@ -229,9 +229,9 @@ def test_admission_low_energy_does_not_resample_or_retry_gate():
     outcomes=[]
     w.advance(0,lambda s,world: outcomes.append(world.admit("r",candidate.plan)))
     assert not outcomes[0].accepted
-    assert w.aircraft["r"].status=="REROUTED" and w.aircraft["r"].soc==.10
+    assert "r" not in w.aircraft and w.snapshot().to_dict()["upstream"][0]["initial_soc"]==.10
     assert w.manifest.requests[0] == request
-    assert w.metrics()["cost_reroute"]==600 and w.metrics()["conservation"]
+    assert w.metrics()["cost_reroute"]==0 and w.metrics()["upstream_waiting"]==1 and w.metrics()["conservation"]
 
 
 def test_energy_failure_off_grid_stops_and_censors_without_deletion():
@@ -292,24 +292,22 @@ def test_all_busy_then_exact_release_rescue_and_below_reserve_landing():
     w.seed_hold("rescue","inner",0,.30)
     w.advance(250)
     a=w.aircraft["rescue"]
-    assert a.emergency.declared and a.emergency.start_time==pytest.approx(.35)
+    assert a.emergency.declared and a.emergency.start_time==pytest.approx(0.)
     assert a.touchdown_time is not None and 0 < a.soc < .25
     assert w.metrics()["emergency_landed"]==1 and w.metrics()["landing_below_reserve"]==1
     assert w.metrics()["cost_emergency"]==1200 and not w.failed
 
 
-def test_deadline_proof_includes_complete_descent_energy_before_hold_exhaustion():
+def test_departure_time_pad_deadline_is_not_a_valid_new_policy_proof():
     w=RotatingSlotWorld()
     for pad in range(6):
         w.seed_service(f"pad_{pad}",pad,remaining=2.)
     w.seed_hold("rescue","inner",0,.023)
     w.advance(0)
     a=w.aircraft["rescue"]
-    assert a.emergency.deadline_missed and a.status=="HOLD_INNER" and not w.failed
-    event=next(e for e in w.events if e["type"]=="PAD_DEADLINE_MISSED")
-    d=event["details"]
-    assert d["wait_soc"] < a.soc
-    assert d["wait_soc"]+d["complete_rescue_energy_lower_bound_soc"] >= a.soc
+    assert not a.emergency.deadline_missed and a.status=="HOLD_INNER" and not w.failed
+    assert not any(e["type"]=="PAD_DEADLINE_MISSED" for e in w.events)
+    assert a.emergency.state=="EMERGENCY_WAITING"
 
 
 def test_simultaneous_emergencies_one_pad_and_irreversible_declaration():
@@ -575,10 +573,10 @@ def test_scheduler_callback_port_hides_future_audit_and_freezes_current_mappings
         with pytest.raises(AttributeError):
             port.config.airspace.common_angular_speed_radps=.1
         assert port.reject("fixture_rejection","visible").reason=="fixture_rejection"
-        assert port.reroute("visible").accepted
+        assert port.reroute("visible").reason=="REROUTE_REQUIRES_OUTER_CAPACITY"
         seen.append(port.metrics()["rerouted"])
     w.advance(0,action)
-    assert seen==[1]
+    assert seen==[0] and w.metrics()["upstream_waiting"]==1
     assert w.metrics()["planned_manifest"]==2 and w.metrics()["unreleased"]==1
     audit=w.to_dict()
     assert audit["states"][-1]["metrics"]["unreleased"]==1
@@ -624,13 +622,14 @@ def test_public_admission_does_not_bind_predictably_emergency_future_release():
         assert w.slots.reservations==slots
         assert w.soft["departing"] is departure
     w.advance(.002,action)
-    assert len(observed)==1 and observed[0].reason=="FUTURE_EMERGENCY_DISPOSITION"
-    details=observed[0].details
+    assert len(observed)==1 and observed[0].status=="WAITING"
+    assert observed[0].details["reason_categories"]==["FUTURE_EMERGENCY_DISPOSITION"]
+    details=observed[0].details["attempts"][0]
     assert details["supporting_aircraft_id"]=="departing"
     assert details["witness_time"]==.001 and details["witness"]=="scheduled_start"
     assert details["predicted_soc"]-details["q_e"]-details["q_hold"] <= .25
     assert w.time==pytest.approx(.002) and not w.failed
-    assert w.aircraft["r"].status=="REROUTED"
+    assert "r" not in w.aircraft and w.metrics()["upstream_waiting"]==1
     assert w.aircraft["departing"].emergency.declared
     assert "departing" not in w.soft
     assert not any(e["type"]=="emergency_dependency_conflict" for e in w.events)
@@ -676,8 +675,8 @@ def test_binding_checks_downstream_future_release_in_chain():
             assert not port.aircraft["inner"].emergency.eligible
             results.append(port.admit("r",inbound))
     w.advance(0.,action)
-    assert results[0].reason=="FUTURE_EMERGENCY_DISPOSITION"
-    assert results[0].details["supporting_aircraft_id"]=="inner"
+    assert results[0].status=="WAITING" and results[0].details["reason_categories"]==["FUTURE_EMERGENCY_DISPOSITION"]
+    assert results[0].details["attempts"][0]["supporting_aircraft_id"]=="inner"
     assert "r" not in w.active and not w.dependencies
 
 

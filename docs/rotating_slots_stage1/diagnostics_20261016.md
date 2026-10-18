@@ -1,12 +1,14 @@
 # 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic/scheduler
 
-按用户 2026-10-18 授权，现交付本阶段结论；最后一个 seed 作为后补，不阻塞当前结论。后台 20 inner workers 的单项恢复继续，以下研究表格保留既有真实结果，不生成缺失项或伪造完整 61 项报告。
+本页保留旧 f67 模型的真实诊断结果。2026-10-18 用户授权的准入等待与 pad 到达规则见[修订记录](amendment_20261018.md)，与本页旧测量分开解释。最后一个旧 seed 后补，后台 20 inner workers 的恢复仅补旧矩阵；以下表格不生成缺失项，也不作为新规则验证。
+
+新规则已另有[有效准则 8 项结果](../../artifacts/rotating_slots/upstream_policy_20261018/qualification_changed_amended/results.json)及[受控小包汇总](../../artifacts/rotating_slots/upstream_policy_20261018/small_multi_aircraft_summary.json)。前者为 8 PASS、86 NOT_RUN、10 replay 有效，阶段 `NOT_ACCEPTED`；后者为最多 4 架 airborne 的具名示范，143.7 s 时物理仍 `IN_PROGRESS`，不能与下文旧高密度 traffic 混成同一实验统计。示范实际运行 ignored helper、启动 source hash 未捕获且期间有小修改的边界，以及 62/74/5/1 各轮定向检查的适用范围，均见[修订记录](amendment_20261018.md#最终有效准则执行与受控小回放)。
 
 ## 本阶段结论（基于 60 项已完成诊断）
 
 物理、几何、资源、应急、守恒和权威轨迹执行已实现；已有测试与回放支持被测场景的一致性，具备下一阶段基线设计、接口开发和小规模实验的工程基础。结论不扩展为实机认证、全状态安全证明或大规模 RL 吞吐已经合格，符合[合同最终边界](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#最终执行边界)。
 
-[当前验收记录](../../artifacts/rotating_slots/qualification_f67b5c8_partial_20261016/results.json)仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。G09 对应的 40 项 benchmark 已完成 8 组×5 次，CPU 性能及热点报告如下；`NOT_RUN` 是其消费完整 `diagnostics.json` 的包装流程尚未收口，不表示这 40 项实验没有执行，也不据此改写为 93 PASS。[合同 §17.3–17.4](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#173-cpu性能验收)要求性能证据但不设绝对吞吐门槛；V12 必须单独观察认可，当前不宣布 `STAGE1_ACCEPTED`。
+旧[部分合并原件](../../artifacts/rotating_slots/qualification_f67b5c8_partial_20261016/results.json)保留 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。2026-10-18 已另有[独立 G09 消费结果](../../../training_outputs/terminal/rotating_slots_g09_f67b5c8_20261018/results.json)：唯一执行行 G09 为 `PASS`，验证旧 40 项 benchmark，不依赖完整 `diagnostics.json` 或最后一个 traffic。未改写旧 partial，未执行原 catalogue fixture，未产生新版本 94 项全通过记录。[合同 §17.3–17.4](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#173-cpu性能验收)要求计时证据而不设绝对吞吐门槛；G09 不认证新版准入/pad 规则或新吞吐，V12 仍须负责人观察认可，当前不宣布 `STAGE1_ACCEPTED`。
 
 60 项正式诊断由 40 benchmark、3 dt、3 scheduler 和 14 traffic 组成，[对应 60 项独立审计](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_60_report.json)全部 PASS、零问题、连续间隔均 `CERTIFIED`。已审计记录未见批准轨迹执行中的未预测硬违规；独立审计是分离于 World 的记录重算与约束检查，仍共享数值内核，不是独立实测 oracle。
 
@@ -20,13 +22,13 @@ dt 固定脚本的相对能源差为 `6.744915891461807e-15`（低于 0.5%），
 
 ### 后补核查
 
-最后 seed 在后台继续，现有 heartbeat 的约北京时间 11:09 复查安排保持。取得完整结果后核对物理结局，补最后一项审计、形成完整 15 项统计，保留已通过的 60 项审计。若仅增加计数则增补；若发现批准轨迹或守恒实现违反，则修订受影响结论。完整正式报告、G09 包装与严格合并正常收口，V12 另行认可后再判断正式验收，本次范围调整不豁免这些要求。
+最后一个旧 seed 在后台继续；先前约北京时间 11:09 的 heartbeat 是已过去的历史安排，不作为当前有效调度。取得真实完整结果后核对物理结局，补最后一项审计、形成旧模型完整 15 项统计，保留既有 60 项审计。G09 的旧 benchmark 证据已独立收口，旧矩阵终态和严格合并仍须自身证据；新规则的执行结果不从旧矩阵外推。
 
 ## 断电中断、同步恢复与单项重跑
 
 [重启后直接核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_snapshot.json)记录服务器于北京时间 18:16:28 启动；10:25 UTC 查询时，旧 PID `3703967`、`3703969`、`3703989` 均不存在，也没有匹配的诊断进程。61 个目录中 60 项结果为 `COMPLETED`，仅 `traffic_rate180_seed71` 缺少 `result.json` 与 `replay/replay.json`，父目录 `diagnostics.exit` 和 `diagnostics/diagnostics.json` 均不存在。这次直接观测取代此前 SSH 不可达时的未知状态；此前默认沙箱的名称解析失败与提权后 SSH 握手关闭是不同阶段的历史观测，不能用其判定仿真的物理结局。
 
-原 job 最后 progress 自身时间为 06:33:37.137329 UTC，记录仿真 1265 s、wall `71462.03031056374 s`。最终保留的 `states.jsonl` 为 **345685317 bytes**、mtime 06:46:58.951994 UTC，最后可见完整状态时间为 `1274.8430578523012 s`，文件尾不是完整 JSON 行；这些不是可恢复的完整 world checkpoint，也不能用 mtime 推断精确断电时刻。[本地重新哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/local_hash_parity.json)与[服务器只读哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_partial_sha.json)一致，states SHA-256 为 `5dea16f8cd568ad9353060e1ac6825534133b41630dbcc19300c248fe4bed025`；当前本地 27 个冻结源码/配置文件实算 SHA 与服务器及 f67 provenance 全部一致。
+原 job 最后 progress 自身时间为 06:33:37.137329 UTC，记录仿真 1265 s、wall `71462.03031056374 s`。最终保留的 `states.jsonl` 为 **345685317 bytes**、mtime 06:46:58.951994 UTC，最后可见完整状态时间为 `1274.8430578523012 s`，文件尾不是完整 JSON 行；这些不是可恢复的完整 world checkpoint，也不能用 mtime 推断精确断电时刻。[本地重新哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/local_hash_parity.json)与[服务器只读哈希](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_partial_sha.json)一致，states SHA-256 为 `5dea16f8cd568ad9353060e1ac6825534133b41630dbcc19300c248fe4bed025`；该次历史核验时本地 27 个冻结源码/配置文件 SHA 与服务器及 f67 provenance 全部一致，不代表 2026-10-18 规则修订后的磁盘状态。
 
 用户授权下的同步修复已完成：[服务器更名记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/syncthing_repair/server_rename_repair.json)保留 11 个历史路径的内容、mtime 与 SHA，仅将非法名称改为 Windows 兼容名称；[本地忽略配置记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/syncthing_repair/local_ignore_repair.json)在本地 `.stignore` 原 448-byte 前缀之后追加 28 个精确临时测试/cache 排除项。该配置不提交 Git，未删除文件或更改 ACL，原有 receive-only 本地额外文件保留。服务器 10:32 UTC 和本地 10:36:37 UTC 的快照均见 code/results 为 `idle`、errors/pullErrors/needTotalItems 为 0；这不要求两端全目录文件数量相同。
 
@@ -50,7 +52,7 @@ dt 固定脚本的相对能源差为 `6.744915891461807e-15`（低于 0.5%），
 
 第二个 attempt 最后 progress 自身时间为 2026-10-18 01:17:19.908905 UTC，仿真 `1265 s`、wall `52154.054037665 s`；states 最后完整状态为 `1268.9574332323343 s`、`failed=false`，文件尾不以 newline 结束。它们不是完整 checkpoint，不将两个 attempt 的 wall 拼接，也不据文件末时刻推断精确断电时刻。此前 10 月 17 日 22:50 的首次复查安排已是历史记录，当前不沿用它作为未来调度。
 
-用户已授权多核重跑。新增 [并行运行层](../../scripts/server/parallel_rotating_slots_runtime.py)、[并行恢复入口](../../scripts/server/recover_rotating_slots_parallel.py)、[有界 probe](../../scripts/server/probe_rotating_slots_parallel.py)及[对应测试](../../tests/test_rotating_slots_parallel_runtime.py)独立执行层提交为 `b936f6ef7b47156f9c3d13ee941580a5da902ebe`，已推送。冻结 27 个 core/配置/平台文件及其 f67 指纹、原恢复 wrapper 均未改动；整个新运行的身份应同时记录 f67 core 和新执行层，不能只称 f67 实现。
+用户已授权多核重跑。新增 [并行运行层](../../scripts/server/parallel_rotating_slots_runtime.py)、[并行恢复入口](../../scripts/server/recover_rotating_slots_parallel.py)、[有界 probe](../../scripts/server/probe_rotating_slots_parallel.py)及[对应测试](../../tests/test_rotating_slots_parallel_runtime.py)独立执行层提交为 `b936f6ef7b47156f9c3d13ee941580a5da902ebe`，已推送。该执行层启动核验时冻结 27 文件及 f67 指纹、原 wrapper 均未改动，运行身份同时记录 f67 core 和新执行层。2026-10-18 的当前磁盘已发生规则/显示修订，不能沿用历史 parity 作为此刻源码一致的声明。
 
 并行范围仅为同一查询的六个独立 pad 应急 reference 候选；同一步可合并多机查询，使用持久 spawn 进程池且每数值库线程为 1。返回值按原 query/pad 顺序归并、保持原最小值 tie-break；World 时间推进、SOC/资源提交及所有物理事件仍在父进程按冻结顺序执行。独立 job 数仍为 1，`--inner-workers` 表示该 job 内的候选 worker 数；保持 seed 71、rate 180、3600 s 到达窗口与 1800 s drain，从仿真 0 在新目录重跑，不覆盖前两个 attempt。父进程 CPU/profile 与子进程已完成 pad 任务的 CPU/profile 分开标注，worker RSS 是进程生命周期峰值；父 profile 不代表全部进程开销。新 runner 向旧校验返回实际 JSON 对象，统一 pad 整数键与 JSON 字符串键的表示，不改变物理值；该收尾接口处理不是新的计时结论。
 
@@ -83,9 +85,9 @@ world 分支使用上述固定九机、`callback=False` 合成 fixture；同一 
 
 [最后一次启动补核](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/startup_check2.stdout)与[本地时间包围记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/startup_check2.meta.json)的本地结束时间为 2026-10-18 02:09:06.6546405 UTC，SSH exit 0、stderr 为空；服务器快照时钟为 02:09:52.994722–02:09:53.004143 UTC。6274/6275 及当时 6 个 spawn 子进程仍存在。progress 自身于 02:05:18.248286 UTC 写入仿真 `64.5579567 s`、wall `63.559856218 s`，failed 0、`conservation=true`、`truncated=false`；states 最后完整状态已到 `90.8 s`、`failed=false`，文件为 2560677 bytes、mtime 02:09:31.203105 UTC、以完整 newline 结束。wall 属于该 progress 的写入时刻，不能与较晚 states 快照混用。补核时仍无 result/replay、正式报告或退出标记，日志为 0 bytes。
 
-同一 heartbeat 已通过工具更新并确认为 `ACTIVE`，目标为本地 UTC **2026-10-18 03:09:06（北京时间 11:09 左右）**，按最后启动补核的本地结束时刻 02:09:06.6546405 UTC 之后 1 小时设置；实际调度可有数分钟偏差。此安排用于较早观察新并行执行的阶段进展：旧单核在数小时观察窗口中仍有推进，合成 pilot 显示加速，但密度和阶段成本不均，不能据此给出全程完成 ETA。本地电脑及 Codex 应用需保持运行。
+历史 heartbeat 曾设置为 `ACTIVE`，目标为本地 UTC **2026-10-18 03:09:06（北京时间 11:09 左右）**，用于启动后一小时复查；该时刻已过去，不作为当前有效调度或全程 ETA。
 
-完成后只对新的最后一项执行独立回放审计并合并原 60 项索引，避免重复已有审计；G09 消费最终通过核验的恢复输出 root 的正式 `diagnostics.json`，其中原 40 项 benchmark 仍来自旧 root，不重跑。严格合并和 V12 人工验收仍待后续真实证据。
+2026-10-18 03:32 UTC 的[修订前直接快照](../../artifacts/rotating_slots/user_observations_20261018/live_frozen_pre_edit/snapshot.stdout)确认父进程 `6275` 和 20 个 worker 存续，progress 395 s、较晚 states 约 419.8 s，尚无最后一项完整 result/replay。旧进程/worker 在修订前已载入 f67 模块；以后若 PID 或 worker 改变，须核查载入来源，不能仅用启动 metadata 或当前磁盘冒充新的运行版本核验。旧项完成后只审计新增回放并合并原 60 项索引；独立 G09 已消费旧 40 包，不等待该项，不重复仿真。严格合并和 V12 人工认可仍需相应版本的真实证据。
 
 ## 数据与测量条件
 
@@ -238,4 +240,14 @@ rate 60 的五个 seed 已齐：23、47、101 完成 3600 s 到达窗口及 1800
 
 上一轮新增四项回放审计于 2026-10-17 00:26:20 UTC 在服务器启动，[00:28:54 UTC 查询](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0025/audit_batch/query1.txt)确认全部退出码 0、PASS、零问题、连续间隔 `CERTIFIED`，守恒等式均 true，`documented_hard_failure_runs` 均为 0；四项物理结局均为 `ENERGY_FAILURE`。[57 项检查索引](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_57_report.json)保留旧 53 项记录并加入四项，57 个唯一 job 均 PASS、零问题，无重复或意外项，当时尚余四项。本轮三个新完成回放于服务器 04:39:04 UTC 启动独立审计，输出仍为 `independent_audits/<job>`；见 [启动核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/audit_batch/startup.txt)。[04:41:51 UTC 查询](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/heartbeat_20261017_0429/audit_batch/query1.txt)确认三项均退出码 0、PASS、零问题、连续间隔 `CERTIFIED`，守恒等式均为 true，`documented_hard_failure_runs` 均为 0，物理结局均保留为 `ENERGY_FAILURE`。[60 项检查索引](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_60_report.json)保留旧 57 项记录，累计 60 个唯一 job 均 PASS、零问题、连续间隔 `CERTIFIED`、退出码 0，无重复或意外项；61 项目录中仅剩 `traffic_rate180_seed71` 未纳入。
 
-这里的独立检查是分离于 World 的记录重算与约束核对，仍共享冻结的轨迹、能源和连续间隔数值内核，不是独立实测 oracle。点质量能源替代模型及重建参考程序的边界见 [sources](sources.md) 和 [qualification](qualification.md)。最后一个 traffic 及正式报告、回放检查完成后，才能消费已有 40 项 benchmark 的正式 G09 证据并更新合并；本报告不改变 G09 或人工 V12 状态。
+这里的独立检查是分离于 World 的记录重算与约束核对，仍共享冻结的轨迹、能源和连续间隔数值内核，不是独立实测 oracle。点质量能源替代模型及重建参考程序的边界见 [sources](sources.md) 和 [qualification](qualification.md)。独立 G09 已直接消费并验证旧 40 包，详见下节；最后一个 traffic 和完整旧矩阵统计另行收口。旧物理结局及审计不改写为新规则结论，人工 V12 仍未完成。
+
+## 2026-10-18 独立 G09 既有 benchmark 验证
+
+[实际结果](../../../training_outputs/terminal/rotating_slots_g09_f67b5c8_20261018/results.json)为标准 qualification report，94 条目录记录中仅 G09 执行并 `PASS`，其余 93 条为 `NOT_RUN`。对应单行文件为 [G09/result.json](../../../training_outputs/terminal/rotating_slots_g09_f67b5c8_20261018/G09/result.json)，不是新跑整套 catalogue。[服务器控制记录](../../../training_outputs/terminal/rotating_slots_g09_control_20261018/launch.json)记录启动时间 `2026-10-18T03:39:57.094739156Z`，[退出文件](../../../training_outputs/terminal/rotating_slots_g09_control_20261018/exit)记录 `03:39:58.572378291Z`、退出码 0；[本地封存](../../artifacts/rotating_slots/user_observations_20261018/g09_server_validation/summary.md)保留 SSH 观测及同步路径。两端时钟分别保留，不相减当作运行耗时。
+
+本次从原 diagnostics 的 `jobs.json` 选取 N10/30/60/83 × stable/inflight_attempt × r0–r4，40/40 均 `COMPLETED`，无 missing、unexpected、duplicates、failures 或 pending。验证器逐项核对冻结参数、实际 airborne=N+inflight 与 inflight admitted、正 wall/CPU/RSS、分项 profile、viewer 关闭/零 CPU、统一源码/配置身份及 source-hash 聚合，并对 40 个真实 ReplayBundle 验证内容 hash、权威轨迹、metrics、录制状态和准入事件。新增仿真数为 0，`original_catalogue_fixture_executed=false`；没有伪造 `FROZEN_FORMAL_MATRIX` 报告，也没有生成无关 analytic replay。
+
+被测来源仍为 `f67b5c8462433ba701191c493a37e4a8e472334e`，`code_sha256=110be32211d37e82772d806d86ae599d0a58a32e01af3465be836a58de902750`，配置语义 hash 为 `0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53`。独立[验证器](../../scripts/server/qualify_rotating_slots_benchmarks.py)文件 SHA 为 `f61653f6f3beb2e4a6975e3701dbf61699dbde958023e45a7891d666cf61fe0e`；执行环境源码集合 hash 为 `e5684cc43b6d6f602b75f9ec06e93f3426f5315c51ead064aeb1376dd7948746`，`current_source_matches_measured_source=false`，环境 commit 为 `UNAVAILABLE_SET_TERMINAL_CODE_COMMIT`，未借旧 commit 标签冒充当前环境。完整实际命令、环境和来源 mapping 保留在结果的 `verifier` / `source_evidence` 中。
+
+结果汇总保留 8 组各 5 次 wall/CPU/RSS 的 median 与 nearest-rank P95、原 exclusive 分项和 individual inclusive 函数值，不将 inclusive 时间相加。上文历史计时表保持不变。G09 表示这些旧测量记录齐全且与归档一致，没有绝对吞吐通过门槛；它不表明稳态、实时性能、大规模 RL 吞吐或 2026-10-18 新规则的性能合格。旧 partial 原件保持，V12 人工认可与新规则执行验证仍需各自证据。

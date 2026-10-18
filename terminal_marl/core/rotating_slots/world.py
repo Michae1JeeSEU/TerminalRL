@@ -24,6 +24,7 @@ AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M"
             "TRANSFER_M_I", "FINAL_NORMAL", "FINAL_EMERGENCY", "VERTICAL_DESCENT"}
 HOLD = {"outer": "HOLD_OUTER", "middle": "HOLD_MIDDLE", "inner": "HOLD_INNER"}
 SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
+POLICY_ID = "upstream_capacity_only_pad_arrival_v1_20261018"
 
 
 class EmergencyDependencyConflict(RuntimeError):
@@ -84,6 +85,8 @@ class AircraftState:
     descent_time: float = 0.
     battery_power_w: float = 0.
     normal_final_touchdown_soc: float | None = None
+    admission_time: float | None = None
+    upstream_wait_seconds: float = 0.
 
     def to_dict(self):
         return asdict(self)
@@ -98,12 +101,14 @@ class WorldSnapshot:
     pads: tuple
     metrics: object
     failed: bool = False
+    upstream: tuple = ()
 
     def to_dict(self):
         return {"time": self.time, "aircraft": [a.to_dict() for a in self.aircraft],
                 "requests": [r.to_dict() for r in self.requests],
                 "slots": [r.to_dict() for r in self.slots], "pads": [r.to_dict() for r in self.pads],
-                "metrics": thaw(self.metrics), "failed": self.failed}
+                "metrics": thaw(self.metrics), "failed": self.failed,
+                "policy_id": POLICY_ID, "upstream": thaw(self.upstream)}
 
 
 class _Traffic:
@@ -215,6 +220,7 @@ class RotatingSlotWorld:
         self.time = 0.
         self.aircraft = {}
         self.requests = {}
+        self.upstream_reasons = {}
         self.slots, self.pads = SlotCalendar(), PadCalendar()
         self.active, self.soft = {}, {}
         self.dependencies = {}
@@ -353,7 +359,16 @@ class RotatingSlotWorld:
     def _snapshot(self,metrics):
         return WorldSnapshot(self.time, tuple(self.aircraft[k] for k in sorted(self.aircraft)),
                              tuple(self.requests[k] for k in sorted(self.requests)), self.slots.reservations,
-                             self.pads.reservations, freeze(metrics), self.failed)
+                             self.pads.reservations, freeze(metrics), self.failed,
+                             tuple(freeze(r) for r in self._upstream_rows()))
+
+    def _upstream_rows(self):
+        return [dict(r.to_dict(), status="CENSORED_UPSTREAM" if self.failed else "WAITING",
+                     wait_seconds=max(0., self.time-r.release_time),
+                     **self.upstream_reasons.get(r.id, {"reason": "AWAITING_DECISION",
+                         "reason_categories": [], "last_attempt_time": None}))
+                for r in sorted(self.requests.values(), key=lambda r: (r.release_time, r.id))
+                if r.id not in self.aircraft]
 
     def _record(self):
         # Replay/audit output retains demand conservation totals. Scheduling
@@ -427,7 +442,8 @@ class RotatingSlotWorld:
             if a.ring is not None:
                 departure = current or future
                 end = times[departure.trajectory_hash][0] if departure is not None else math.inf
-                slots.reserve((a.ring, a.slot), a.id, min(a.release_time, self.time), end,
+                entered = a.admission_time if a.admission_time is not None else a.release_time
+                slots.reserve((a.ring, a.slot), a.id, min(entered, self.time), end,
                               kind="source" if departure else "occupied",
                               plan_hash=departure.trajectory_hash if departure else None,
                               committed=current is not None)
@@ -443,7 +459,7 @@ class RotatingSlotWorld:
                     slots.reserve((p.target_ring, p.target_slot), a.id, capture, end, kind="target",
                                   plan_hash=p.trajectory_hash, committed=p is current)
                 if p.pad_id is not None:
-                    start = p.start_time if p.kind == "FINAL_EMERGENCY" else p.end_time - 13.5
+                    start = p.end_time - 13.5
                     pads.reserve(p.pad_id, a.id, start, p.end_time + SERVICE_SECONDS[a.service_class],
                                  kind="emergency" if p.kind == "FINAL_EMERGENCY" else "final",
                                  plan_hash=p.trajectory_hash, committed=p is current)
@@ -592,12 +608,11 @@ class RotatingSlotWorld:
             if emergency:
                 if p.start_time != self.time:
                     return self._reject("EMERGENCY_MUST_START_NOW", a.id)
-                for r in self.pads.reservations:
-                    if r.resource == p.pad_id and r.end > self.time and (r.start <= self.time or r.committed):
-                        return self._reject("PAD_NOT_CURRENTLY_FREE", a.id)
                 # Ordinary soft final may be preempted transactionally.
                 for other_id, old in tuple(soft.items()):
-                    if old.pad_id == p.pad_id and old.kind == "FINAL_NORMAL":
+                    if (old.pad_id == p.pad_id and old.kind == "FINAL_NORMAL" and
+                            old.end_time-13.5 < p.end_time+SERVICE_SECONDS[a.service_class] and
+                            p.end_time-13.5 < old.end_time+SERVICE_SECONDS[self.aircraft[other_id].service_class]):
                         if old.trajectory_hash in protected:
                             return self._reject("RESOURCE_DEPENDENCY", a.id)
                         del soft[other_id]
@@ -634,7 +649,10 @@ class RotatingSlotWorld:
         try:
             slots, pads, times = self._calendar_stage(soft, plans)
         except (ResourceConflict, ValueError) as exc:
-            return self._reject("RESOURCE_CONFLICT", detail=str(exc))
+            blocking = [r.to_dict() for p in plans if p.pad_id is not None
+                        for r in self.pads.conflicts(p.pad_id, p.end_time-13.5,
+                            p.end_time+SERVICE_SECONDS[self.aircraft[p.aircraft_id].service_class], p.aircraft_id)]
+            return self._reject("RESOURCE_CONFLICT", detail=str(exc), blocking_reservations=blocking)
         traffic = [self._traffic(a, soft) for a in self.aircraft.values()
                    if a.status in AIRBORNE or a.status == "LANDED_SERVICE"]
         start_cpu = walltime.perf_counter()
@@ -1010,7 +1028,8 @@ class RotatingSlotWorld:
                     self._emergency_conflict(key, result)
             a = self.aircraft[key]
             self.aircraft[key] = replace(a, emergency=replace(a.emergency, state="EMERGENCY_WAITING"))
-            self._prove_pad_deadline(a)
+            # A rescue may depart before a pad is free. Waiting until its release
+            # is not a mandatory energy cost and cannot prove a missed deadline.
 
     def _emergency_conflict(self, aircraft_id, result):
         old = self.soft.get(aircraft_id)
@@ -1029,8 +1048,14 @@ class RotatingSlotWorld:
             if result.plan is None or result.status != "FEASIBLE":
                 self._reject(result.reason or result.status, a.id, pad_id=pad, candidate=True)
                 continue
-            if self.submit((result.plan,)).accepted:
+            before = len(self.rejections)
+            accepted = self.submit((result.plan,))
+            if accepted.accepted:
                 return True
+            self._event("final_attempt_rejected", a.id, pad_id=pad,
+                        trajectory_hash=result.plan.trajectory_hash, emergency=emergency,
+                        reason=accepted.reason, validation=accepted.details,
+                        rejection_indices=list(range(before, len(self.rejections))))
         return False
 
     def try_final(self,aircraft,emergency=False):
@@ -1038,29 +1063,8 @@ class RotatingSlotWorld:
         return self._try_final(aircraft,emergency)
 
     def _prove_pad_deadline(self, a):
-        if a.emergency.deadline_missed:
-            return
-        # Every legal rescue includes exactly the same complete descent. Its
-        # positive energy is a universal lower bound on complete rescue energy;
-        # the preceding final cannot regenerate. This is proof, not NOT_FOUND.
-        releases = []
-        for pad in range(6):
-            blockers = [r for r in self.pads.reservations if r.resource == pad and r.committed and r.end > self.time]
-            if not blockers:
-                return
-            releases.append(max(r.end for r in blockers))
-        earliest = min(releases)
-        hold = self._stable(a, self.time, earliest)
-        q = self._energy(hold, self.time, earliest)
-        _,reference = self._reference(a.ring,a.slot,self.time,a.version)
-        if reference is None:
-            return
-        descent = self._energy(reference,reference.end_time-13.5,reference.end_time)
-        if q.valid and descent.valid and q.soc_used+descent.soc_used >= a.soc:
-            self.aircraft[a.id] = replace(a, emergency=replace(a.emergency, deadline_missed=True, state="PAD_DEADLINE_MISSED"))
-            self._event("PAD_DEADLINE_MISSED", a.id, earliest_fixed_release=earliest,
-                        wait_soc=q.soc_used, complete_rescue_energy_lower_bound_soc=descent.soc_used,
-                        proof="waiting_to_any_committed_pad_release_plus_mandatory_descent_exceeds_soc")
+        """Legacy hook retained for callers; the old departure-time proof is invalid."""
+        return None
 
     def advance(self, until, decision_callback=None):
         if until < self.time:
@@ -1082,10 +1086,6 @@ class RotatingSlotWorld:
                 if callback and callback is not False:
                     callback(self.snapshot(), self._scheduler_port)
                 self._start_due()
-                # A request cannot remain waiting at a boundary after this event.
-                for key in sorted(tuple(self.requests)):
-                    if key not in self.aircraft:
-                        self.reroute(key, "NO_PLAN_FOUND")
                 self.cpu["decision"] += walltime.perf_counter()-cpu
                 self._record()
             descent_starts = [self._descent_start(p) for p in self.active.values()]
@@ -1112,15 +1112,46 @@ class RotatingSlotWorld:
             self._record()
         return self.snapshot()
 
-    def reroute(self, request_id, reason="NO_PLAN_FOUND"):
+    def _outer_capacity(self):
+        """Only perpetual reservations without any recorded release prove capacity."""
+        evidence = []
+        for slot in range(37):
+            reservations = [r for r in self.slots.reservations if r.resource == ("outer", slot)
+                            and r.end > self.time]
+            if not reservations or any(math.isfinite(r.end) for r in reservations):
+                return None
+            if any(r.aircraft_id not in self.aircraft or self.aircraft[r.aircraft_id].status not in AIRBORNE
+                   for r in reservations):
+                return None
+            evidence.append({"slot": slot, "reservations": [r.to_dict() for r in reservations]})
+        return evidence
+
+    def _wait_upstream(self, request_id, attempts, reason="NO_PLAN_FOUND"):
+        categories = sorted({a["reason"] for a in attempts})
+        self.upstream_reasons[request_id] = {"reason": reason, "reason_categories": categories,
+                                             "last_attempt_time": self.time}
+        self._event("admission_waiting", request_id, reason=reason, reason_categories=categories,
+                    attempts=attempts, policy_id=POLICY_ID)
+        return ValidationResult(False, "WAITING", reason,
+                                {"attempts": attempts, "reason_categories": categories})
+
+    def reroute(self, request_id, reason="OUTER_CAPACITY"):
+        if self.failed:
+            return self._reject("EPISODE_STOPPED", request_id)
         if request_id not in self.requests or request_id in self.aircraft:
             return self._reject("INVALID_REROUTE", request_id)
+        capacity = self._outer_capacity()
+        if capacity is None:
+            return self._reject("REROUTE_REQUIRES_OUTER_CAPACITY", request_id)
         r = self.requests[request_id]
         self.aircraft[r.id] = AircraftState(r.id, "REROUTED", r.initial_soc, (), (), (), (),
-                                           r.service_class, admitted=False, release_time=r.release_time)
+                                           r.service_class, admitted=False, release_time=r.release_time,
+                                           upstream_wait_seconds=max(0., self.time-r.release_time))
         self.costs["reroute"] += 600
-        self._event("rerouted", r.id, reason=reason)
-        return self._result(True)
+        self.upstream_reasons.pop(r.id, None)
+        self._event("rerouted", r.id, reason="OUTER_CAPACITY", capacity_evidence=capacity,
+                    upstream_wait_seconds=max(0., self.time-r.release_time), policy_id=POLICY_ID)
+        return self._result(True, "OUTER_CAPACITY", capacity_evidence=capacity)
 
     def _freeflow_screen(self, inbound, initial_soc):
         """Construct one complete single-aircraft normal reference; no fleet certificate."""
@@ -1152,11 +1183,26 @@ class RotatingSlotWorld:
         return self._result(False, "INITIAL_ENERGY_SCREEN", stage="freeflow_reference")
 
     def admit(self, request_id, plan=None):
+        if self.failed:
+            return self._reject("EPISODE_STOPPED", request_id)
         r = self.requests.get(request_id)
         if r is None or request_id in self.aircraft:
             return self._reject("INVALID_REQUEST", request_id)
-        if abs(r.release_time-self.time) > 1e-8:
-            return self._reject("ADMISSION_MUST_BE_IMMEDIATE", request_id)
+        if r.release_time > self.time+1e-8:
+            return self._reject("REQUEST_NOT_RELEASED", request_id)
+        earlier = [q for q in self.requests.values() if q.gate_id == r.gate_id and q.id not in self.aircraft
+                   and (q.release_time, q.id) < (r.release_time, r.id)]
+        if earlier:
+            return self._wait_upstream(r.id, [], "UPSTREAM_FIFO_WAIT")
+        if self._outer_capacity() is not None:
+            rerouted = self.reroute(r.id)
+            return ValidationResult(False, "REROUTED", "OUTER_CAPACITY", rerouted.details)
+        attempts = []
+        def rejected(reason, p, stage, **details):
+            evidence = {"slot": p.target_slot, "trajectory_hash": p.trajectory_hash,
+                        "stage": stage, "reason": reason, **details}
+            attempts.append(evidence)
+            return self._reject(reason, r.id, **{k: v for k, v in evidence.items() if k != "reason"})
         candidates = [plan] if plan is not None else None
         if candidates is None:
             candidates = []
@@ -1164,10 +1210,24 @@ class RotatingSlotWorld:
                 c = generate_inbound(r.id, r.gate_id, slot, self.time, config=self.config)
                 if c.plan is not None and c.status == "FEASIBLE":
                     candidates.append(c.plan)
+                else:
+                    failures = c.details.get("attempts", ())
+                    reason_counts = {}
+                    for failure in failures:
+                        why = failure.get("reason", "UNKNOWN")
+                        reason_counts[why] = reason_counts.get(why, 0)+1
+                    summary = {"status": c.status, "attempt_count": len(failures),
+                               "reason_counts": reason_counts,
+                               "duration_grid": {"start": 20, "stop_inclusive": 180, "step": 5},
+                               "phase_options_per_duration": 2}
+                    evidence = {"slot": slot, "trajectory_hash": None, "stage": "generation",
+                                "reason": c.reason or c.status, "validation": summary}
+                    attempts.append(evidence)
+                    self._reject(evidence["reason"], r.id, slot=slot, stage="generation", validation=summary)
         last = self._result(False, "NO_PLAN_FOUND")
         for p in candidates:
             if p.aircraft_id != r.id or p.kind != "INBOUND" or p.start_time != self.time or p.target_ring != "outer":
-                last = self._reject("INVALID_INBOUND", r.id)
+                last = rejected("INVALID_INBOUND", p, "input")
                 continue
             theta = r.gate_id*math.pi/2
             s0 = p.state(self.time)
@@ -1175,26 +1235,28 @@ class RotatingSlotWorld:
             expected_v = (21*(-math.cos(theta)+math.sin(theta))/math.sqrt(2),
                           21*(-math.sin(theta)-math.cos(theta))/math.sqrt(2),0.)
             if math.dist(s0.p,expected_p) > .01 or math.dist(s0.v,expected_v) > .01 or math.dist(s0.a,(0.,0.,0.)) > .02:
-                last = self._reject("INVALID_ENTRY_STATE",r.id)
+                last = rejected("INVALID_ENTRY_STATE", p, "entry_state")
                 continue
             result = validate_plan(p, config=self.config)
             if not result.accepted:
-                last = self._reject(result.reason, r.id)
+                last = rejected(result.reason, p, "plan", validation=result.details)
                 continue
             q = self._energy(p, p.start_time, p.end_time)
             if not q.valid or r.initial_soc-q.soc_used <= 0 or q.peak_seconds > 120:
-                last = self._reject("SOC_INSUFFICIENT", r.id)
+                last = rejected("SOC_INSUFFICIENT", p, "inbound_energy", energy=asdict(q))
                 continue
             screen = self._freeflow_screen(p, r.initial_soc)
             if not screen.accepted:
-                last = self._reject(screen.reason, r.id)
+                last = rejected(screen.reason, p, "freeflow_reference", validation=screen.details)
                 continue
             s = p.state(self.time)
             a = AircraftState(r.id, "INBOUND", r.initial_soc, s.p, s.v, s.a, s.jerk,
-                              r.service_class, release_time=r.release_time, trajectory_hash=p.trajectory_hash,
+                               r.service_class, release_time=r.release_time, trajectory_hash=p.trajectory_hash,
+                               admission_time=self.time, upstream_wait_seconds=max(0., self.time-r.release_time),
                               battery_power_w=evaluate_power(s.v,s.a,self.config).battery_w)
             traffic = _Traffic(a.id, p, (), self.time, math.inf)
             conflict = None
+            conflict_pair = None
             horizon = max([p.end_time, *(x.end_time for x in self.active.values()),
                            *(x.end_time for x in self.soft.values())])+2*math.pi/.035
             for b in self.aircraft.values():
@@ -1204,14 +1266,15 @@ class RotatingSlotWorld:
                 result = validate_separation(traffic, other, self.time, min(horizon, other.end_time), config=self.config)
                 if not result.accepted:
                     conflict = result
+                    conflict_pair = [r.id, b.id]
                     break
             if conflict:
-                last = self._reject(conflict.reason, r.id)
+                last = rejected(conflict.reason, p, "traffic", pair=conflict_pair, validation=conflict.details)
                 continue
             binding = self._release_supports("outer", p.target_slot, r.id, self.slots, self.soft)
             witness = self._future_dependency_witness(binding, self.soft, self.slots)
             if witness is not None:
-                last = self._reject("FUTURE_EMERGENCY_DISPOSITION", r.id, **witness)
+                last = rejected("FUTURE_EMERGENCY_DISPOSITION", p, "future_emergency", **witness)
                 continue
             self.aircraft[r.id] = a
             self.active[r.id] = p
@@ -1220,16 +1283,19 @@ class RotatingSlotWorld:
             except (ResourceConflict, ValueError) as exc:
                 del self.aircraft[r.id]
                 del self.active[r.id]
-                last = self._reject("SLOT_CONFLICT", r.id, detail=str(exc))
+                last = rejected("SLOT_CONFLICT", p, "resources", detail=str(exc))
                 continue
             self.slots, self.pads, self._source_clear = slots, pads, times
             self.trajectories[p.trajectory_hash] = p.to_dict()
             deps = self._release_supports("outer", p.target_slot, r.id, slots, self.soft)
             self.dependencies[p.trajectory_hash] = tuple(sorted(deps))
-            self._event("admitted", r.id, trajectory_hash=p.trajectory_hash, dependencies=sorted(deps))
+            self.upstream_reasons.pop(r.id, None)
+            self._event("admitted", r.id, trajectory_hash=p.trajectory_hash, dependencies=sorted(deps),
+                        release_time=r.release_time, admission_time=self.time,
+                        upstream_wait_seconds=max(0., self.time-r.release_time), policy_id=POLICY_ID,
+                        prior_rejections=attempts)
             return self._result(True)
-        self.reroute(r.id, last.reason)
-        return last
+        return self._wait_upstream(r.id, attempts)
 
     def _scheduler_metrics(self):
         return {key:value for key,value in self.metrics().items()
@@ -1246,10 +1312,14 @@ class RotatingSlotWorld:
         airborne = len(admitted)-len(landed)-len(failed)
         normal = sum(not a.emergency.charged for a in landed)
         emergency = len(landed)-normal
-        return {"planned_manifest": len(self.manifest.requests), "offered": offered,
+        upstream = self._upstream_rows()
+        wait = sum(a.upstream_wait_seconds for a in values)+sum(r["wait_seconds"] for r in upstream)
+        return {"policy_id": POLICY_ID, "planned_manifest": len(self.manifest.requests), "offered": offered,
                 "manifest_offered": self._manifest_index, "fixture_count": sum(a.fixture for a in values),
                 "unreleased": len(self.manifest.requests)-self._manifest_index,
                 "admitted": len(admitted), "rerouted": rerouted, "physically_landed": len(landed),
+                "upstream_waiting": len(upstream), "censored_upstream": len(upstream) if self.failed else 0,
+                "upstream_wait_time": wait, "cost_upstream_wait": wait,
                 "normal_landed": normal, "emergency_landed": emergency,
                 "landing_below_reserve": sum(a.soc < .25 for a in landed),
                 "failed_before_landing": len(failed), "airborne_or_censored": airborne,
@@ -1268,16 +1338,16 @@ class RotatingSlotWorld:
                 "pad_busy_seconds": dict(self.pad_busy_seconds),
                 "decision_count": len(self.decision_times), "cost_reroute": self.costs["reroute"],
                 "cost_emergency": self.costs["emergency"], "cost_failure": self.costs["failure"],
-                "total_cost": sum(a.airborne_time for a in values)+sum(self.costs.values()),
-                "truncated": self.failed, "cost_is_lower_bound": self.failed,
+                "total_cost": sum(a.airborne_time for a in values)+sum(self.costs.values())+wait,
+                "truncated": self.failed, "cost_is_lower_bound": self.failed or bool(upstream),
                 "first_failure_time": self.failure_time,
                 "minimum_separation": self.minimum_separation,
-                "conservation": offered == len(admitted)+rerouted and len(admitted) == len(landed)+len(failed)+airborne}
+                "conservation": offered == len(admitted)+rerouted+len(upstream) and len(admitted) == len(landed)+len(failed)+airborne}
 
     def to_dict(self):
         self._record()
         self.flush_records()
-        result = {"time": self.time, "config_hash": self.config.config_hash,
+        result = {"time": self.time, "config_hash": self.config.config_hash, "policy_id": POLICY_ID,
                 "manifest": self.manifest.to_dict(), "states": list(self.records),
                 "events": list(self.events), "trajectories": dict(self.trajectories),
                 "metrics": self.metrics(), "rejections": list(self.rejections),

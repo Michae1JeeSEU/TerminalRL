@@ -16,6 +16,32 @@ def test_catalogue94_is_explicit_and_unique():
     assert all(r["status"] == "NOT_RUN" for r in rows)
 
 
+def test_amended_execution_metadata_preserves_frozen_catalogue_and_merge(tmp_path,monkeypatch):
+    from terminal_marl.core.rotating_slots import fixtures,qualification
+    from terminal_marl.core.rotating_slots.world import POLICY_ID
+    original_bytes=qualification.CATALOGUE.read_bytes()
+    original={r["id"]:r for r in catalogue()}
+    def minimal(case,e):
+        e.check(True,"metadata-only pipeline fixture",True,True)
+    monkeypatch.setattr(fixtures,"execute_case",minimal)
+    first=run_catalogue(tmp_path/"f08",cases=["F08"])
+    second=run_catalogue(tmp_path/"f09",cases=["F09"])
+    assert first["policy_id"]==second["policy_id"]==POLICY_ID
+    for name,report in (("F08",first),("F09",second)):
+        row=next(r for r in report["cases"] if r["id"]==name)
+        assert row["status"]=="PASS" and row["policy_id"]==POLICY_ID
+        assert row["legacy_catalogue_expected"]==original[name]["expected"]
+        assert row["expected"]!=row["legacy_catalogue_expected"]
+        assert row["effective_criteria_source"].endswith("amendment_20261018.md")
+        stored=json.loads(Path(row["fixture_path"]).read_bytes())
+        assert stored["policy_id"]==POLICY_ID
+    merged=merge_reports([tmp_path/"f08/results.json",tmp_path/"f09/results.json"],tmp_path/"merge")
+    assert merged["policy_id"]==POLICY_ID
+    assert next(r for r in merged["cases"] if r["id"]=="F08")==next(r for r in first["cases"] if r["id"]=="F08")
+    assert qualification.CATALOGUE.read_bytes()==original_bytes
+    assert catalogue()==list(original.values())
+
+
 def test_actual_assertions_have_paths_and_unselected_cases_do_not_pass(tmp_path):
     result = run_catalogue(tmp_path/"catalogue", cases=["A01", "D01", "D02", "D04", "V12"])
     by_id = {r["id"]: r for r in result["cases"]}
