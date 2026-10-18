@@ -41,8 +41,34 @@ foreach ($taskRelative in $taskFiles) {
     if ($taskHash -notmatch '^[a-f0-9]{64}$') { throw "Invalid computed hash: $taskRelative" }
     $taskExpected[$taskRelative] = $taskHash
 }
+$taskLocalPython = Join-Path $taskProject 'venv/Scripts/python.exe'
+$taskFixtureCode = @'
+import sys
+sys.dont_write_bytecode=True
+import hashlib,json,pathlib
+root=pathlib.Path(sys.argv[1]).resolve(); commit=sys.argv[2]
+sys.path.insert(0,str(root/'terminal_marl/core/rotating_slots'))
+from performance import provenance
+fixture=provenance.implementation_fingerprint(root,modules={})
+fixture['implementation_commit']=commit
+data=(json.dumps(fixture,sort_keys=True,indent=2,allow_nan=False)+'\n').encode('utf8')
+file_sha=hashlib.sha256(data).hexdigest()
+relative='artifacts/rotating_slots/final_pass_linux_tests_20261019a/runner_test_deployment_'+commit+'_'+file_sha+'.json'
+path=root/relative; created=False
+if path.exists():
+    assert path.read_bytes()==data,'existing fixture metadata differs; refusing overwrite'
+else:
+    with path.open('xb') as stream: stream.write(data)
+    created=True
+print(json.dumps({'relative_path':relative,'file_sha256':file_sha,'implementation_sha256':fixture['implementation_sha256'],'implementation_commit':commit,'created':created}))
+'@
+$taskFixtureJson = & $taskLocalPython -I -B -c $taskFixtureCode $taskProject $taskCommit
+if ($LASTEXITCODE -ne 0) { throw 'Local read-only-production fixture generation failed' }
+$taskFixture = ($taskFixtureJson -join "`n") | ConvertFrom-Json
+$taskFixtureRequest = [ordered]@{relative_path=$taskFixture.relative_path; file_sha256=$taskFixture.file_sha256;
+    implementation_sha256=$taskFixture.implementation_sha256; implementation_commit=$taskCommit}
 $taskRequest = [ordered]@{schema='final_pass_linux_tests_source_v1'; implementation_commit=$taskCommit;
-    driver_relative=$taskDriver; driver_sha256=$taskExpected[$taskDriver]; tests=$taskTests; files=$taskExpected}
+    driver_relative=$taskDriver; driver_sha256=$taskExpected[$taskDriver]; tests=$taskTests; files=$taskExpected; runner_fixture=$taskFixtureRequest}
 $taskJson = $taskRequest | ConvertTo-Json -Depth 6 -Compress
 $taskRequestBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($taskJson))
 $taskRoundTrip = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($taskRequestBase64)) | ConvertFrom-Json
@@ -50,6 +76,7 @@ foreach ($taskRelative in $taskFiles) {
     if ($taskRoundTrip.files.$taskRelative -ne $taskExpected[$taskRelative]) { throw "Base64 roundtrip mismatch: $taskRelative" }
 }
 if (@($taskRoundTrip.tests).Count -ne 14 -or $taskRoundTrip.driver_sha256 -ne $taskExpected[$taskDriver]) { throw 'Test/driver roundtrip mismatch' }
+if ($taskRoundTrip.runner_fixture.relative_path -ne $taskFixture.relative_path -or $taskRoundTrip.runner_fixture.file_sha256 -ne $taskFixture.file_sha256 -or $taskRoundTrip.runner_fixture.implementation_sha256 -ne $taskFixture.implementation_sha256) { throw 'Fixture roundtrip mismatch' }
 # Tiny gate only: verify the synced driver bytes, then run that actual file.
 $taskGate = @'
 import sys
@@ -62,6 +89,9 @@ relative='artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_tests.py
 assert request['driver_relative']==relative
 driver=pathlib.Path('/home/user/projects/terminal')/relative
 assert hashlib.sha256(driver.read_bytes()).hexdigest()==request['driver_sha256']==request['files'][relative]
+project=driver.parents[3]
+fixture=(project/request['runner_fixture']['relative_path']).resolve()
+assert fixture.is_relative_to(project) and hashlib.sha256(fixture.read_bytes()).hexdigest()==request['runner_fixture']['file_sha256'],'fixture not synced or byte mismatch'
 sys.argv=[str(driver),'--request-base64',sys.argv[2]]
 runpy.run_path(str(driver),run_name='__main__')
 '@
@@ -75,7 +105,6 @@ if ($LocalCheckOnly) {
     $taskParseTokens = $null; $taskParseErrors = $null
     $null = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$taskParseTokens,[ref]$taskParseErrors)
     if ($taskParseErrors.Count -ne 0) { throw ($taskParseErrors | Out-String) }
-    $taskLocalPython = Join-Path $taskProject 'venv/Scripts/python.exe'
     $taskAst = 'import sys;sys.dont_write_bytecode=True;import ast,base64;ast.parse(base64.b64decode(sys.argv[1]).decode());print("REMOTE_GATE_AST_OK")'
     & $taskLocalPython -I -B -c $taskAst $taskGateBase64
     if ($LASTEXITCODE -ne 0) { throw 'Tiny gate AST check failed' }
@@ -85,7 +114,8 @@ if ($LocalCheckOnly) {
         source_hash_count=$taskExpected.Count; driver_sha256=$taskExpected[$taskDriver]; test_file_count=14;
         final_command_characters=$taskCommand.Length; command_character_limit_exclusive=30000;
         powershell_ast_errors=$taskParseErrors.Count; base64_roundtrip=$true; shell_arguments_single_quoted=$true;
-        server_output='/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b';
+        server_output='/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019c';
+        runner_fixture=$taskFixtureRequest; local_fixture_metadata_created=[bool]$taskFixture.created;
         remote_output_existence_checked=$false; server_executed=$false; pytest_executed=$false} | ConvertTo-Json
     exit 0
 }

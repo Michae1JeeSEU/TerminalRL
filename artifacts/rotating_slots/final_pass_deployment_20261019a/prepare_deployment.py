@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = Path(__file__).resolve().parent
 BASE = Path('D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1')
 SERVER = '/home/user/training_outputs/terminal/rotating_slots_perf_v1'
-SUITE = 'final_pass_linux_tests_20261019b'
+SUITE = 'final_pass_linux_tests_20261019c'
 REFERENCE = ROOT / 'artifacts/rotating_slots/performance_reference_r0'
 CORPUS = BASE / 'corpus_frozen_retention_20261018a/corpus_manifest.json'
 CORPUS_SHA = '91d35ee0e74d0b0082d3c30d5c5ce6134b1e8d37d4da213166f01221156ee9b2'
@@ -138,6 +138,22 @@ def fresh_suite(provenance, deployment, commit):
     # The Linux harness adds its own drivers/tests explicitly. Production
     # discovery remains the existing provenance inventory, without these extras.
     baseline = provenance.implementation_fingerprint(ROOT, modules={})['actual_source_files_sha256']
+    fixture_before=read(folder/'runner_fixture_preflight.json')
+    fixture_after=read(folder/'runner_fixture_finish.json')
+    declared=request['runner_fixture']; fixture_path=(ROOT/declared['relative_path']).resolve()
+    check(fixture_path.parent==(ROOT/'artifacts/rotating_slots/final_pass_linux_tests_20261019a').resolve() and
+          fixture_path.name.startswith('runner_test_deployment_') and fixture_path.suffix=='.json', 'runner fixture path differs')
+    fixture=read(fixture_path)
+    check(fixture_before==fixture_after and fixture_before['fixture']==fixture and
+          fixture_before['relative_path']==declared['relative_path'] and
+          fixture_before['file_sha256']==declared['file_sha256']==sha(fixture_path) and
+          fixture_before['production_map_equal'] is True and
+          fixture_before['implementation_commit']==fixture['implementation_commit']==declared['implementation_commit']==commit and
+          fixture_before['implementation_sha256']==fixture['implementation_sha256']==declared['implementation_sha256']==provenance.digest(baseline) and
+          fixture['actual_source_files_sha256']==baseline and fixture['extra_paths']==[] and fixture['imported_module_paths']=={},
+          'locally supplied runner fixture evidence differs')
+    check(declared['relative_path'] not in initial['deployment']['extra_paths'] and declared['relative_path'] not in tested,
+          'metadata fixture must not enter source inventory')
     harness_extras = set(initial['deployment']['extra_paths']) - set(baseline)
     allowed_extras = {'artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_tests.py',
                       'artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_linux_tests.ps1', *run['tests']}
@@ -157,7 +173,8 @@ def fresh_suite(provenance, deployment, commit):
           not re.search(r'\b\d+ (?:failed|skipped|error|errors|xfailed|xpassed)\b', log),
           'suite log is not an all-collected-tests pass; raw log tail:\n' + log[-2500:])
     required = [folder / n for n in ('run_metadata.json', 'stdout.log', 'stderr.log', 'numericexitcode.txt',
-        'source_gate.json', 'source_preflight.json', 'source_finish.json', 'pytest_argv.json', 'pytest_collection.json')]
+        'source_gate.json', 'source_preflight.json', 'source_finish.json', 'pytest_argv.json', 'pytest_collection.json',
+        'runner_fixture_preflight.json', 'runner_fixture_finish.json')]
     patterns = ('bernstein_equivalence*/provenance.json', 'root_reuse*/evidence.json',
         'peak_reuse*/evidence.json', 'energy_queries*/provenance.json', 'equivalence*/comparison_provenance.json',
         'test_real_cold_window_fixture_*/fixture_evidence.json',

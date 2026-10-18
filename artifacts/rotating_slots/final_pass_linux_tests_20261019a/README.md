@@ -1,10 +1,11 @@
 # Prepared final Linux joint verification
 
 This harness has historical Linux attempt a evidence; the current rerun targets
-the unique output b below. The three files are a direct synced Python driver, a small PowerShell
+the unique output c below. The three files are a direct synced Python driver, a small PowerShell
 launcher and this README. There is no giant embedded copy of the test driver.
 
-Local readiness check (no SSH, pytest, output creation or Linux proof):
+Local readiness check (may create only the immutable test-fixture metadata JSON;
+no SSH, pytest, test/server output creation or Linux proof):
 
 ```powershell
 pwsh -NoProfile -File artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_linux_tests.ps1 -LocalCheckOnly
@@ -33,7 +34,7 @@ adding another ten), then enables RUN_WINDOW_INTEGRATION=1. Its inherited CPU
 affinity is recorded, not changed. Existing fresh -I -B test children remain in
 place. It invokes pytest once, with -q -x -p no:cacheprovider and basetemp under:
 
-/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b
+/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019c
 
 The directory must be new. No output is overwritten. The test list is exactly
 Bernstein precompute, root reuse, peak reuse, energy queries, P2, Cartesian
@@ -72,5 +73,28 @@ assertion. The primary diagnosed substring matching of inherited -c test source;
 the bounded test fix recognizes the actual multiprocessing tracker bootstrap
 argv instead. Production kernel code is unchanged by this fix. The existing
 driver/launcher artifact paths remain final_pass_linux_tests_20261019a; only the
-new remote output is final_pass_linux_tests_20261019b. Current LocalCheckOnly is
+new remote output is final_pass_linux_tests_20261019c. Current LocalCheckOnly is
 not a Linux rerun and generates no approval or performance pass claim.
+
+Historical output b is also retained: 263 collected, 223 passed and one error in
+41.65s. Worker lifecycle and deadline tests passed; the runner test's local-only
+deployment creation request was rejected under SSH as designed. The production
+runner/provenance restriction remains unchanged. Current output c uses a local
+fresh -I -B provenance.implementation_fingerprint(root,modules={}) test fixture,
+labelled with actual local HEAD. Its immutable JSON filename includes commit and
+file hash; an existing filename must have identical bytes. LocalCheckOnly may
+create this metadata file beside the existing a harness, and reports whether it
+did. It is excluded from production/source extra_paths and is not a Git artifact.
+
+The request carries fixture relative path, file SHA and implementation SHA.
+Syncthing transports that file naturally; the script never uploads it. The tiny
+remote gate requires its bytes to be present before creating server output c.
+The driver verifies fixture commit and exact modules={} production map before
+and after tests and sets only runner-test fixture/expected-commit environment
+variables. SSH variables are retained. The runner test reads the same fixture
+bytes and uses real CLI preflight without server creation. With no fixture on
+SSH it fails clearly; local tests without these variables keep local CLI
+creation. Fixed R0 reference/kernel expectations remain unchanged, and the
+mislabel negative test's expected commit is independent of forged contents.
+runner_fixture_preflight.json and runner_fixture_finish.json preserve this
+separate input evidence; the metadata JSON is not added to source inventory.

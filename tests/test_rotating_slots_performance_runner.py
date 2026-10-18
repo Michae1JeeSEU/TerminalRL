@@ -2,6 +2,7 @@
 from copy import deepcopy
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,11 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/server/run_rotating_slots_performance.py"
 REFERENCE = ROOT / "artifacts/rotating_slots/performance_reference_r0"
 COMMIT = "1c5afd37c891a0ed4776f64367fc7264db3c1c54"
+TEST_IMPLEMENTATION_COMMIT = os.environ.get("ROTATING_SLOTS_TEST_IMPLEMENTATION_COMMIT", COMMIT)
 
 
 def invoke(command, manifest, *extra, expected=0):
     args = [sys.executable, "-I", "-B", str(SCRIPT), command, "--reference", str(REFERENCE),
-            "--deployment-manifest", str(manifest), "--implementation-commit", COMMIT, *map(str, extra)]
+            "--deployment-manifest", str(manifest), "--implementation-commit", TEST_IMPLEMENTATION_COMMIT, *map(str, extra)]
     process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert process.returncode == expected, (process.stdout, process.stderr)
     return json.loads(process.stdout)
@@ -26,6 +28,19 @@ def invoke(command, manifest, *extra, expected=0):
 def manifest(tmp_path):
     if not (REFERENCE / ".reference_manifest.json").is_file():
         pytest.fail("fixed R0 export is required; create via P0 export_reference locally")
+    provided = os.environ.get("ROTATING_SLOTS_TEST_DEPLOYMENT_MANIFEST")
+    if provided:
+        if "ROTATING_SLOTS_TEST_IMPLEMENTATION_COMMIT" not in os.environ:
+            pytest.fail("provided runner test deployment requires an independent expected implementation commit")
+        path = Path(provided)
+        if not path.is_file():
+            pytest.fail("provided runner test deployment missing; wait for its Syncthing input")
+        assert json.loads(path.read_bytes())["implementation_commit"] == TEST_IMPLEMENTATION_COMMIT
+        result = invoke("preflight", path)
+        assert result["status"] == "PREFLIGHT_OK"
+        return path
+    if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT") or os.environ.get("SSH_TTY"):
+        pytest.fail("remote runner tests require ROTATING_SLOTS_TEST_DEPLOYMENT_MANIFEST; server manifest creation remains disabled")
     path = tmp_path / "deployment.json"
     result = invoke("preflight", path, "--write-deployment-manifest")
     assert result["status"] == "PREFLIGHT_OK"
@@ -208,6 +223,7 @@ def test_OPT_and_R0_bind_identical_frozen_config_bytes(manifest, tmp_path):
 
 
 def test_source_mislabel_and_forged_byte_manifest_rejected_before_output(manifest, tmp_path):
+    # invoke uses independent TEST_IMPLEMENTATION_COMMIT, never the forged file.
     wrong = deepcopy(document(manifest)); wrong["implementation_commit"] = "f67b5c8462433ba701191c493a37e4a8e472334e"
     path = tmp_path / "wrong_commit.json"; path.write_text(json.dumps(wrong))
     output = tmp_path / "must-not-exist"

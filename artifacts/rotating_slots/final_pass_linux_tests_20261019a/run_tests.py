@@ -15,7 +15,7 @@ import time
 import traceback
 
 PROJECT=Path('/home/user/projects/terminal')
-OUTPUT=Path('/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b')
+OUTPUT=Path('/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019c')
 DRIVER='artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_tests.py'
 LAUNCHER='artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_linux_tests.ps1'
 TESTS=tuple('tests/test_rotating_slots_performance_'+name+'.py' for name in (
@@ -52,6 +52,21 @@ def verify_request(encoded,root):
     assert actual[DRIVER]==request['driver_sha256']
     return request,actual
 
+def verify_runner_fixture(request,root,provenance):
+    declared=request['runner_fixture']; relative=declared['relative_path']
+    path=(root/relative).resolve()
+    assert not Path(relative).is_absolute() and path.parent==(root/DRIVER).parent.resolve()
+    assert path.name.startswith('runner_test_deployment_') and path.suffix=='.json'
+    assert sha(path)==declared['file_sha256'],'runner test fixture bytes differ or have not synced'
+    fixture=json.loads(path.read_bytes())
+    assert fixture['implementation_commit']==declared['implementation_commit']==request['implementation_commit']
+    production=provenance.implementation_fingerprint(root,modules={})
+    assert fixture['extra_paths']==[] and fixture['imported_module_paths']=={}
+    assert fixture['actual_source_files_sha256']==production['actual_source_files_sha256']
+    assert fixture['implementation_sha256']==production['implementation_sha256']==declared['implementation_sha256']
+    return dict(relative_path=relative,path=str(path),file_sha256=sha(path),implementation_commit=fixture['implementation_commit'],
+                implementation_sha256=fixture['implementation_sha256'],fixture=fixture,production_map_equal=True)
+
 def environment():
     result={'utc':utc(),'pid':os.getpid(),'ppid':os.getppid(),'platform':sys.platform,
         'load_average':list(os.getloadavg()),'allowed_logical_cpus':sorted(os.sched_getaffinity(0)),
@@ -82,12 +97,16 @@ def main():
     if args.local_check:
         root=Path(__file__).resolve().parents[3]
         request,actual=verify_request(args.request_base64,root)
+        sys.path.insert(0,str(root/'terminal_marl/core/rotating_slots'))
+        from performance import provenance
+        fixture=verify_runner_fixture(request,root,provenance)
         ast.parse(Path(__file__).read_text(encoding='utf8'))
         assert len(TESTS)==14 and all((root/path).is_file() for path in TESTS)
         print(json.dumps({'status':'LOCAL_STATIC_CHECK_PASSED','source_hash_count':len(actual),
             'test_file_count':len(TESTS),'driver_sha256':request['driver_sha256'],
             'implementation_commit':request['implementation_commit'],'pytest_executed':False,
-            'server_executed':False,'output_created':False})); return 0
+            'server_executed':False,'test_or_server_output_created':False,'runner_fixture':fixture['relative_path'],
+            'runner_fixture_verified':True})); return 0
     assert sys.platform=='linux' and sys.flags.isolated and sys.dont_write_bytecode
     assert not OUTPUT.exists(),'refusing existing final-pass output'
     OUTPUT.mkdir(parents=True,exist_ok=False)
@@ -119,6 +138,10 @@ def main():
                 from performance import provenance as imported_provenance
                 provenance=imported_provenance
                 assert not any(n=='terminal_marl' or n.startswith('terminal_marl.') for n in sys.modules),'core imported before preflight'
+                fixture=verify_runner_fixture(request,PROJECT,provenance)
+                write(OUTPUT/'runner_fixture_preflight.json',fixture)
+                os.environ['ROTATING_SLOTS_TEST_DEPLOYMENT_MANIFEST']=fixture['path']
+                os.environ['ROTATING_SLOTS_TEST_IMPLEMENTATION_COMMIT']=request['implementation_commit']
                 reference=provenance._verify_export(PROJECT/'artifacts/rotating_slots/performance_reference_r0')
                 assert len(reference['actual_source_files_sha256'])==24
                 extras=list(request['files'])
@@ -152,6 +175,8 @@ def main():
                         finish.update(source_gate_sha256=gate_after,source_unchanged=gate_after==expected)
                         after=provenance._source_files(PROJECT,extra_paths=extras,modules={})[0]
                         reference_after=provenance._verify_export(PROJECT/'artifacts/rotating_slots/performance_reference_r0',reference)
+                        fixture_after=verify_runner_fixture(request,PROJECT,provenance)
+                        write(OUTPUT/'runner_fixture_finish.json',fixture_after)
                         finish.update(source_files_sha256=after,source_manifest_sha256=provenance.digest(after),
                             source_inventory_scope='test harness file inventory with explicit extras and modules={}; not production mixed-core import proof',
                             source_unchanged=gate_after==expected and after==deployment['actual_source_files_sha256'],reference=reference_after)
