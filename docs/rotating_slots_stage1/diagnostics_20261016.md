@@ -1,6 +1,26 @@
 # 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic/scheduler
 
-**2026-10-18 重启后核验确认单核恢复 attempt 也已因第二次断电中断。** 用户已确认第二次断电；原 `7697/7698` 及匹配 recovery 进程均不存在，第二个 attempt 未生成 result/replay、退出标记或正式报告。已有 60 个 `COMPLETED` 结果和 60 项通过的回放审计保持，最后的 `traffic_rate180_seed71` 仍待完整结果。独立并行执行层已提交推送，服务器有界 pilot 已 `MATCH`、零差异；主对话选择 20 inner workers，正式单项并行恢复已启动并生成中间产物，最终完成仍待核验。不将外部中断记作新的物理失败，也不将合成 pilot 的计时当作整项任务结论。以下 benchmark、dt、traffic 和 scheduler 表格及结论仍基于既有产物；94 项目录保持 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
+按用户 2026-10-18 授权，现交付本阶段结论；最后一个 seed 作为后补，不阻塞当前结论。后台 20 inner workers 的单项恢复继续，以下研究表格保留既有真实结果，不生成缺失项或伪造完整 61 项报告。
+
+## 本阶段结论（基于 60 项已完成诊断）
+
+物理、几何、资源、应急、守恒和权威轨迹执行已实现；已有测试与回放支持被测场景的一致性，具备下一阶段基线设计、接口开发和小规模实验的工程基础。结论不扩展为实机认证、全状态安全证明或大规模 RL 吞吐已经合格，符合[合同最终边界](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#最终执行边界)。
+
+[当前验收记录](../../artifacts/rotating_slots/qualification_f67b5c8_partial_20261016/results.json)仍为 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。G09 对应的 40 项 benchmark 已完成 8 组×5 次，CPU 性能及热点报告如下；`NOT_RUN` 是其消费完整 `diagnostics.json` 的包装流程尚未收口，不表示这 40 项实验没有执行，也不据此改写为 93 PASS。[合同 §17.3–17.4](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#173-cpu性能验收)要求性能证据但不设绝对吞吐门槛；V12 必须单独观察认可，当前不宣布 `STAGE1_ACCEPTED`。
+
+60 项正式诊断由 40 benchmark、3 dt、3 scheduler 和 14 traffic 组成，[对应 60 项独立审计](../../artifacts/rotating_slots/diagnostic_audits_f67b5c8_20261016/batch_60_report.json)全部 PASS、零问题、连续间隔均 `CERTIFIED`。已审计记录未见批准轨迹执行中的未预测硬违规；独立审计是分离于 World 的记录重算与约束检查，仍共享数值内核，不是独立实测 oracle。
+
+14 项 traffic 中，rate 60 的 seed 23/47/101 完整运行至 5400 s，另 11 项为 `ENERGY_FAILURE` 截尾。11 项均在已完成中→内环转移后，于内环应急等待中 SOC 耗尽，未启动应急 final。当前确定性验收 driver 不能保证全部需求完成或全部应急救回；这不证明场景失效或全局没有可行调度，driver 也不是正式研究 baseline。保留失败、未释放、截尾及成本下界，不以混合完整/截尾成本均值比较方法。[合同 §17.2](../../new10.16/fixed_terminal_rotating_slots_stage1_operating_contract_v1_0.md#172-正向与负向样例的pass含义)区分物理结局与实现违反，后文保留各项原始指标。
+
+dt 固定脚本的相对能源差为 `6.744915891461807e-15`（低于 0.5%），最大事件时差为 `3.410605131648481e-12 s`（低于 0.001 s）；该结果不替代其他流量或状态的验证。scheduler 三周期是单一 seed 的截尾对照，不能据此选择最佳周期。
+
+现有运行成本偏高，会影响后续大量 RL 实验。20 inner workers 的合成 pilot 约 4.33× 总段、5.77× 接续段加速只适用于本次小样本，不保证真实完整 seed 的收益或总体 ETA。下一阶段先测真实在线耗时和基线预算；性能慢不等于物理场景必然失败，当前也不承诺大规模 RL 吞吐足够。
+
+合同固定的 3 个来流率×5 个 seed 对应预定 15 项 traffic；当前 14/15 并非完整预定集合，rate 180 为 4/5。尚缺 `traffic_rate180_seed71` 这一同协议重复，它不是为新增某条核心规则而单独设计的验收样例；但长期运行可能反映困难实例，存在选择偏差边界，不能把已完成项的失败比例当作总体概率。缺失项不记为成功、失败或负样本，不删除冻结 seed，也不修改合同、YAML、目录或结果状态。
+
+### 后补核查
+
+最后 seed 在后台继续，现有 heartbeat 的约北京时间 11:09 复查安排保持。取得完整结果后核对物理结局，补最后一项审计、形成完整 15 项统计，保留已通过的 60 项审计。若仅增加计数则增补；若发现批准轨迹或守恒实现违反，则修订受影响结论。完整正式报告、G09 包装与严格合并正常收口，V12 另行认可后再判断正式验收，本次范围调整不豁免这些要求。
 
 ## 断电中断、同步恢复与单项重跑
 
