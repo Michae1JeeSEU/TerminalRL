@@ -1,4 +1,4 @@
-"""Real serial common-state windows; no paired experiment or qualification.
+"""Real common-state windows; no performance qualification.
 
 Use the stdlib CLI bootstrap in a fresh ``python -I -B`` process. Frozen source
 streams remain absolute, read-only dependencies; a replay is never a checkpoint.
@@ -70,6 +70,9 @@ def parser():
     command.add_argument("--duration", type=int, choices=(10, 60), required=True)
     command.add_argument("--kernel", choices=("R0", "OPT"), required=True)
     command.add_argument("--mode", choices=("benchmark", "profile"), default="benchmark")
+    command.add_argument("--inner-workers", type=int, choices=(0, 1, 2, 4, 6), default=0)
+    command.add_argument("--core-budget", type=int, help="explicit kernel CPU budget for parallel execution")
+    command.add_argument("--process-budget", type=int, help="kernel plus worker budget; external collector is separate")
     command.add_argument("--reference", type=Path, required=True)
     command.add_argument("--deployment-manifest", type=Path, required=True)
     command.add_argument("--implementation-commit", required=True)
@@ -77,6 +80,43 @@ def parser():
                          help="required only when the exact checkpoint implementation changes")
     command.add_argument("--output", type=Path, required=True, help="new attempt directory only")
     return result
+
+
+def _parallel_settings(args):
+    workers = getattr(args, "inner_workers", 0)
+    core, processes = getattr(args, "core_budget", None), getattr(args, "process_budget", None)
+    _require(type(workers) is int and workers in (0, 1, 2, 4, 6), "unsupported inner-worker count")
+    if workers:
+        _require(args.mode != "profile", "parallel profile is unsupported; use inner-workers 0")
+        _require(type(core) is int and type(processes) is int, "parallel requires explicit core/process budgets")
+    core = 1 if core is None else core
+    processes = 1 if processes is None else processes
+    _require(type(core) is int and type(processes) is int and core >= max(1, workers)
+             and processes >= workers + 1, "invalid kernel core/process budget")
+    return workers, core, processes
+
+
+def _open_reference_pool(args, runtime, root, measurements):
+    from .parallel import ReferencePool
+    workers, core, processes = _parallel_settings(args)
+    directory = runtime["core_root"] / "terminal_marl/core/rotating_slots"
+    manifest = {path.name: _sha(path) for path in directory.glob("*.py")}
+    with measurements.span("worker_initialization"):
+        pool = ReferencePool(workers, config=runtime["config"], expected_core_root=directory,
+            expected_core_manifest=manifest, semantic_identity=runtime["source"]["semantic_fingerprint"],
+            process_budget=processes, core_budget=core, exclusive_process_accounting=True,
+            kernel=args.kernel, mode="benchmark", rss_series_path=root / "rss_samples.jsonl")
+    try:
+        summary = pool.summary()
+        _require(summary["worker_startup_coverage_complete"] is True, "incomplete worker startup coverage")
+        for startup in summary["observed_worker_startups"]:
+            for snapshot in (startup["cache_reset"]["after"], startup["cache_after_world_construction"]):
+                _require(snapshot and all(value.get("currsize", value.get("entries")) == 0
+                         for value in snapshot.values()), "worker startup cache was not empty")
+    except BaseException:
+        pool.abort()
+        raise
+    return pool
 
 
 def validate_manifest(document, expected_digest, window, duration):
@@ -328,6 +368,7 @@ def _final_cache_observation(world, *, rollout_failure=None):
 
 def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
     """Restore then resume the original invocation to its first eligible hook."""
+    workers, core_budget, process_budget = _parallel_settings(args)
     started_wall = time.perf_counter() if started_wall is None else started_wall
     started_cpu = time.process_time() if started_cpu is None else started_cpu
     started_utc = runtime.get("started_utc", runner._utc())
@@ -365,7 +406,8 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
              "observation shim changed; cursor rebinding is forbidden")
     _require(restored.cursor.phase == "loop_start", "window must resume an unfinished original invocation")
     start_sim, nominal_stop = world.time, world.time + args.duration
-    runtime["source"]["prefix_execution"] = args.kernel + "_SERIAL"
+    backend = args.kernel + ("_PARALLEL" if workers else "_SERIAL")
+    runtime["source"]["prefix_execution"] = backend
     atomic_write_json(root / "source_identity.json", runtime["source"])
     for filename, text in (("observation.patch", runtime["observed"].patch),
                            ("observation_original.py", runtime["observed"].original_source),
@@ -436,39 +478,50 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
 
     start_counts = _counts(world, driver)
     resource_report = None
+    pool = metrics = parallel_metadata = None
     rollout_wall = rollout_cpu = None
     # Rollout starts immediately after cold restore, including all subsequent
     # observer/setup work, periodic saves and final record flushing.
     try:
         with ExitStack() as stack:
-            from .process_metrics import OwnedProcessMetrics
-            metrics = OwnedProcessMetrics(exclusive=True, rss_series_path=root / "rss_samples.jsonl")
-            stack.callback(lambda: metrics.finish(joined=True))
+            # Pool construction and registration precede heartbeat/sampler threads.
+            if workers:
+                from .parallel import install_parallel_reference
+                pool = _open_reference_pool(args, runtime, root, measurements)
+                stack.enter_context(pool)
+                stack.enter_context(install_parallel_reference(world, pool))
+            else:
+                from .process_metrics import OwnedProcessMetrics
+                metrics = OwnedProcessMetrics(exclusive=True, rss_series_path=root / "rss_samples.jsonl")
+                stack.callback(lambda: metrics.finish(joined=True))
             stack.enter_context(heartbeat)
             stack.enter_context(runner._active_query_context(world, heartbeat))
             heartbeat.publish(complete_sim_time=world.time, context={"phase": "ready", "window": args.window})
-            try:
-                with measurements.span("rollout_and_record_flush"):
-                    try:
-                        if args.mode == "profile":
-                            with measurements.profile_batch(root / "window.prof"):
-                                runtime["observed"].resume(restored, hook)
-                        else:
+            with measurements.span("rollout_and_record_flush"):
+                try:
+                    if args.mode == "profile":
+                        with measurements.profile_batch(root / "window.prof"):
                             runtime["observed"].resume(restored, hook)
-                    except SuspendAtCut:
-                        _require(status != "RUNNING", "unexpected unclassified suspension")
-                    finally:
-                        world.flush_records()
-            finally:
-                rollout_wall = time.perf_counter() - rollout_started_wall
-                rollout_cpu = time.process_time() - rollout_started_cpu
-            resource_report = metrics.finish(joined=True)
+                    else:
+                        runtime["observed"].resume(restored, hook)
+                except SuspendAtCut:
+                    _require(status != "RUNNING", "unexpected unclassified suspension")
+                finally:
+                    world.flush_records()
     except Exception as exc:
         status, failure = "IMPLEMENTATION_FAILURE", {"type": type(exc).__name__, "message": str(exc)}
         # A failure between natural cuts cannot be serialized as a new complete
         # state. Keep the last complete normal checkpoint and cursor evidence.
-        if "metrics" in locals():
+    finally:
+        # ExitStack has closed/aborted and joined the pool before timing stops.
+        if pool is not None:
+            summary = pool.summary()
+            resource_report = summary["resources"]
+            parallel_metadata = {key: value for key, value in summary.items() if key != "resources"}
+        elif metrics is not None:
             resource_report = metrics.finish(joined=True)
+        rollout_wall = time.perf_counter() - rollout_started_wall
+        rollout_cpu = time.process_time() - rollout_started_cpu
     if status == "RUNNING":
         status = "INSUFFICIENT_CONTINUATION"
     end_counts = _counts(world, driver)
@@ -504,8 +557,9 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
     timing.update(rollout_wall_s=rollout_wall, rollout_parent_process_cpu_s=rollout_cpu,
                   total_wall_s=time.perf_counter() - started_wall,
                   total_parent_process_cpu_s=time.process_time() - started_cpu,
-                  worker_cpu_s=0., serial_no_workers=True,
-                  timing_scope="rollout begins after cold restore; includes natural checkpoints, observation and record flush")
+                  worker_cpu_s=(resource_report.get("joined_children_cpu_seconds") if workers and resource_report else
+                                None if workers else 0.), serial_no_workers=not bool(workers),
+                  timing_scope="after cold restore through pool initialization, rollout, record flush and worker join")
     output = {"schema": "ft_rs_common_window_v1_0", "pid": os.getpid(), "status": status,
         "command": list(sys.argv), "started_utc": started_utc, "finished_utc": runner._utc(),
         "source_identity": runtime["source"], "final_imported_module_paths": imported,
@@ -523,14 +577,16 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
                              "episode_complete": False, "metrics": world.metrics()},
         "start_counts": start_counts, "end_counts": end_counts, "timing": timing,
         "resources": resource_report, "resource_qualification": "INCOMPLETE",
-        "resource_scope": "parent-only serial; sample peak is a lower bound, lifetime HWM is an upper bound",
-        "inner_workers": 0, "execution_backend": args.kernel + "_SERIAL", "mode": args.mode,
+        "resource_scope": "kernel plus registered workers; PID sweep and lifetime HWM estimates, not strict RSS bounds; external collector excluded",
+        "parallel": parallel_metadata, "core_budget": core_budget, "process_budget": process_budget,
+        "inner_workers": workers, "execution_backend": backend, "mode": args.mode,
         "profile_timing_performance_eligible": False if args.mode == "profile" else None,
         "cache_mode": "cold", "cold_cache_evidence": cold_cache_evidence,
         "final_cache_observation": final_cache_observation,
         "cache_warmup_excluded": False, "migration_id": migration_id,
         "replay_path": replay_path, "replay_scope": "diagnostic_prefix_after_implementation_failure" if failure else "complete_observed_prefix_not_full_episode",
         "failure": failure, "hard_timeout_enforced": False, "external_diagnostic_budget_enforced": False,
+        "external_guard_scope": "none inside window CLI; a known collector may independently guard its owned kernel child",
         "performance_status": "NOT_QUALIFIED", "human_status": "HUMAN_PENDING"}
     atomic_write_json(root / "result.json", output)
     return output
@@ -540,6 +596,7 @@ def main(argv=None, *, helper_root=None):
     args = parser().parse_args(argv)
     started_wall, started_cpu, started_utc = time.perf_counter(), time.process_time(), runner._utc()
     try:
+        _parallel_settings(args)
         _require(not args.output.exists(), "output already exists; overwrite is forbidden")
         runtime = runner.bootstrap(args, Path(helper_root or Path(__file__).resolve().parents[4]))
         runtime["started_utc"] = started_utc

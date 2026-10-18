@@ -14,6 +14,13 @@ component gate；即使该 component 返回 `PASS`，整体仍为
 `--output`。只支持真实 Linux 新进程 `python -I -B`，不支持覆写已有 campaign。
 stdout 输出完整 summary，campaign 内也保存 `summary.json`。
 
+`--report-only` 按 `user_scope_amendment_20261019.md` 保存
+`report_only_single_group_v1` 策略：每窗只执行首个 AB/BA/AB 六项，噪声为观察值，
+不会自动追加第二组。summary 把旧阈值结论保存为 `historical_component_gate`，
+当前 `component_gate=REPORT_ONLY`；完整性、语义和缺失证据错误仍返回失败。
+`summarize` 消费保存的策略，report-only 不要求 noisy retry，额外第二组仍拒绝。
+不带此 flag 或旧 campaign 缺少策略字段时，保留历史一次 noise retry 规则和 gate。
+
 默认严格按 W71-A、W71-B、W71-C、W60、W120、W180 顺序，每窗口三次配对：
 
 | repeat | 实际启动顺序 |
@@ -61,9 +68,25 @@ snapshot 的绝对 `time.process_time()` 包含 collector 启动/import 成本�
 stdout 输出位于该 snapshot 之后，明确不在此累计内；未知 child CPU 保留为
 null 与 incomplete，不用零冒充完整成本。child rollout
 CPU 单列，不能替代完整 child 生命周期；不累加嵌套 `world.cpu` 或 profile
-累计值。采样 RSS 是父+当前 child 的同时 sweep 下界；OS lifetime HWM 的和
-只作为声明的上界，不能称为实际同时峰值。此前子进程可能使 HWM 上界更松。
+累计值。采样 RSS 与 OS lifetime HWM sum 都是估计，不声明严格上下界或实际
+同时峰值；collector+kernel 的采样与 kernel+workers 的采样分别保留，不把未
+对齐时刻的 peaks 相加。此前子进程也可能影响 lifetime HWM。
 这些资源原值不代表其他完整合同资源门槛已经获得资格。
+
+`collect()` 保留原 `logical_cpu` 调用，并允许显式 `cpu_affinity` 列表；child
+检查请求为实际 allowed CPU 的子集，固定 native1/nice10/fresh `-I -B`。
+kind=`window` 只运行已知 windows CLI 的 `window`，kind=`runner` 只运行已知
+runner CLI 的 `traffic`；都要求唯一 `--output`，不接受任意脚本。
+这一 callable 支持后续固定串并行 job；本 paired campaign 的默认命令仍为 serial。
+collector 自身额外一个进程，与 kernel 加 worker 数分列，不新增进程数量 gate。
+`collector_uses_pool=false` 和 legacy `no_pool=true` 都仅描述 collector；实际
+kernel 的 pool 从 `inner_worker_count` 观察，未成功 spawn 时 kernel 与 kernel 加
+worker 的实际进程数量均为 0。
+对于真实 kernel，exit0 之外还读取自己指定的 result：资源 `cpu_complete=true`，
+并行还需 `closed_and_joined=true`，才声明 descendant CPU 完整。Linux wait 后
+RUSAGE_CHILDREN 包含由 kernel 已回收的 workers；异常、硬超时或缺失 join 证据
+保留已回收 CPU 的 lower-bound 观测，完整 CPU 为 null/incomplete，不能声称拥有
+未回收 orphan CPU。已知 stdlib 小 fixture 不创建 descendants，单独标明该范围。
 
 ## 结果核验、噪声与汇总
 
@@ -83,9 +106,9 @@ peak 和 metadata 的 entries 必须是 built-in int，不接受 bool 冒充整�
 R0 可明确报告 `present=false`，OPT 可报告 `present=true`。未出现可选项仍兼容；
 warm 或其他未审查 cache key 均拒绝，不把任意额外项作为自动获批的缓存。
 
-R0 或 OPT 三次 rollout wall 的 `max/min > 1.25` 时整组六项标记 `NOISY`，
+历史默认策略中，R0 或 OPT 三次 rollout wall 的 `max/min > 1.25` 时整组六项标记 `NOISY`，
 保存 load/memory 复查，再完整重做这一组六项一次。两组全部保留；固定使用
-第二组而不选择较快组。第二组仍 NOISY 时不可用于通过 gate，不继续重试。
+第二组而不选择较快组。第二组仍 NOISY 时不可用于通过旧 gate，不继续重试。
 非噪声组不允许额外 retry。
 
 每窗口保存三次 R0/OPT 原值、median、nearest-rank P95（n=3，即最大值）、
@@ -101,6 +124,22 @@ hash，重新计算噪声与最终 component gate。缺失、错误 campaign 或
 
 ## 验证范围
 
+2026-10-19 本轮窗口/collector 集成本地 batch 为
+`84 passed, 3 skipped in 21.47s`，numeric exit 0（wrapper 22.117351s）。
+执行 windows、paired 两文件和既有真实 pool1 reference/emergency 等价小样本，
+fresh venv `-I -B` 且导入 pytest 前禁 bytecode。新检查覆盖 known runner/window CLI、
+显式 affinity、pool join/resource 证据、缺结果时保留 CPU lower bound、report-only
+首组噪声与 saved policy，以及拒绝额外 retry。聚合与 completion evidence fixtures
+均明确 synthetic，不是 Linux 或真实 traffic 的性能结论。
+实际命令和 PID 在 `artifacts/rotating_slots/window_collector_tests_20261019a.launch.json`，
+stdout/stderr/numeric exit 同前缀；basetemp 为同前缀目录。未设置
+`RUN_WINDOW_INTEGRATION`；三项 skip 为 opt-in window 和两个 Linux-only paired 检查。
+Linux 联合窗口/guard/orchestration、完整 traffic 及串并行测量尚未由本批次执行。
+随后修正 failed-spawn 的 kernel 加 worker 总数为 0，并新增明确的
+`collector_uses_pool=false` 标签；仅复跑该既有 failed-spawn 测试，
+`1 passed in 0.22s`、numeric exit 0。原始命令/stdout/stderr/exit 保留于
+`artifacts/rotating_slots/collector_failed_spawn_tests_20261019a.*`，没有重复完整 batch。
+
 新增测试覆盖固定顺序、36 项 coverage、缺失/额外 collector、hash 变化、
 profile/cold/CPU/environment/guard/timeline 错误、噪声阈值、一次整组 retry、
 second NOISY 和速度/逐窗阈值。汇总测试使用明确 synthetic metadata/data
@@ -115,10 +154,11 @@ service-events fixture 仍保留其已披露 admission seam 限制。
 Linux 另有一个真正执行 `paired()` 的 tiny orchestration 测试：单窗口
 diagnostic 顺序启动六个实际 `-I -B` child，经过真实 kernel guard、完整
 collector CPU/RSS、持久化与离线 summarize。该测试仅替换 preflight 和内部
-`window_command` 为明确标记的 synthetic 结果 emitter，不经过真实 physics
+collector 调用 seam：真实 stdlib child 结束后由测试父进程复制明确 synthetic
+结果，不经过真实 physics
 或 CLI admission，不把 fixture 中的 wall 常量当作性能数据。生产命令构造
-没有新增 emitter/绕过验证的 CLI 选项。正式全六窗之前仍需真实冻结 W71-A
-六作业 diagnostic subset 验证实际 window CLI 链路。
+没有新增 emitter/绕过验证的 CLI 选项。首次正式 W71-A AB/BA/AB 组同时提供实际
+window CLI 链路检查，遇完整性错误即停止，不另增一轮 diagnostic campaign。
 
 历史准备阶段只把新模块预加载到测试进程，没有 apply tracked source。Windows
 本地最后一次 draft 测试结果为 `25 passed, 2 skipped in 11.19s`，日志位于

@@ -188,6 +188,31 @@ def test_diagnostic_subset_cannot_pass_and_extra_retry_rejected(tmp_path):
     assert p.summarize(tmp_path)['component_gate']=='INVALID_OR_INCOMPLETE'
 
 
+def test_report_only_retains_noisy_first_group_and_saved_policy(tmp_path):
+    campaign=fixture_campaign(tmp_path,windows=('W71-A',),diagnostic=True)
+    campaign['measurement_policy']=p.REPORT_ONLY_POLICY
+    fixture_group(tmp_path,campaign,'W71-A',r0=(2.,2.,3.),opt=(4.,4.,4.))
+    result=p.summarize(tmp_path)
+    assert result['errors']==[] and result['component_gate']=='REPORT_ONLY'
+    assert result['historical_component_gate']=='NOT_PASSED'
+    assert result['report_only'] and result['noise_is_advisory']
+    assert result['measurement_policy']==p.REPORT_ONLY_POLICY
+    assert result['amended_scope_status']=='INTEGRITY_COMPLETE_REPORT_ONLY'
+    assert len(result['retained_groups']['W71-A'])==1
+    assert result['windows'][0]['status']=='NOISY'
+    assert result['windows'][0]['median_wall_speedup']==.5
+    fixture_group(tmp_path,campaign,'W71-A',2)
+    assert p.summarize(tmp_path)['component_gate']=='INVALID_OR_INCOMPLETE'
+
+
+def test_unknown_saved_measurement_policy_rejected(tmp_path):
+    campaign=fixture_campaign(tmp_path)
+    campaign['measurement_policy']='unknown'
+    write(tmp_path/'campaign.json',campaign)
+    with pytest.raises(p.PairedError,match='saved measurement policy'):
+        p.summarize(tmp_path)
+
+
 @pytest.mark.parametrize('case',['absent','present-empty','not-present-empty','warm','unknown'])
 def test_known_optional_root_cache_strict_compatibility(tmp_path,case):
     campaign=fixture_campaign(tmp_path,windows=('W71-A',),diagnostic=True)
@@ -275,7 +300,10 @@ def test_real_small_collector_child_isolated_native_one_full_cpu(tmp_path,kind,c
     assert result['resources']['cpu_complete'] and result['joined_child_cpu_s']>=0
     assert result['process_tree_cpu_s']==result['collector_parent_cpu_s']+result['joined_child_cpu_s']
     assert result['resources']['rss_sample_count']>=1
-    assert 'upper bound' in result['rss_scope'] and 'lower bounds' in result['rss_scope']
+    assert 'not strict bounds' in result['rss_scope'] and 'separate' in result['rss_scope']
+    assert result['external_collector_process_count']==1
+    assert result['kernel_and_workers_process_count']==1
+    assert result['observed_reaped_child_cpu_lower_bound_s']==result['joined_child_cpu_s']
     env=p.read(tmp_path/'collector/runtime_environment.json')
     assert env['isolated'] and env['dont_write_bytecode'] and env['core_modules_before_cli']==[]
     assert all(value=='1' for value in env['thread_environment'].values())
@@ -285,6 +313,58 @@ def test_failed_spawn_has_no_fabricated_numeric_exit(tmp_path):
     result=p.collect(tmp_path/'collector',project=ROOT,logical_cpu=0,kind='success',python=tmp_path/'missing_python',budget=3.)
     assert result['returncode'] is None and result['no_child_exitcode']
     assert not (tmp_path/'collector/numericexitcode.txt').exists()
+    assert result['owned_kernel_child_count']==result['kernel_process_count']==result['kernel_and_workers_process_count']==0
+    assert result['collector_uses_pool'] is False and result['no_pool'] is True
+
+
+@pytest.mark.parametrize('kind,entry,command',[
+    ('window','run_rotating_slots_performance_windows.py','window'),
+    ('runner','run_rotating_slots_performance.py','traffic')])
+def test_collector_known_cli_and_explicit_affinity(tmp_path,kind,entry,command):
+    argv=[str(ROOT/'scripts/server'/entry),command,'--output',str(tmp_path/'attempt')]
+    affinity,result=p._collector_inputs(ROOT,0,[3,1],kind,argv)
+    assert affinity==[1,3] and result==str((tmp_path/'attempt/result.json').resolve())
+    assert p._collector_inputs(ROOT,7,None,'success',None)==([7],None)
+    for bad in ([],[1,1],[True],[1.,2],[-1]):
+        with pytest.raises(p.PairedError,match='affinity'):
+            p._collector_inputs(ROOT,0,bad,kind,argv)
+    for bad in ([str(tmp_path/entry),command,'--output',str(tmp_path)],
+                [argv[0],'other','--output',str(tmp_path)],argv+['--output',str(tmp_path)]):
+        with pytest.raises(p.PairedError): p._collector_inputs(ROOT,0,[1],kind,bad)
+
+
+@pytest.mark.parametrize('kind',['window','runner'])
+def test_descendant_completion_requires_own_join_and_resource_evidence(tmp_path,kind):
+    raw={'cpu_complete':True,'joined_children_cpu_seconds':1.25}
+    pool={'closed_and_joined':True}
+    result={'inner_workers':2,'failure':None,'resources':raw,'parallel':pool}
+    if kind=='runner': result['resources']=dict(pool,resources=raw)
+    target=tmp_path/'result.json'; write(target,result)
+    observed=p._kernel_accounting(kind,0,target)
+    assert observed['complete'] and observed['workers']==2 and observed['kernel_resources']==raw
+    assert not p._kernel_accounting(kind,-getattr(signal,'SIGALRM',14),target)['complete']
+    if kind=='runner': result['resources']['closed_and_joined']=False
+    else: result['parallel']['closed_and_joined']=False
+    write(target,result)
+    assert not p._kernel_accounting(kind,0,target)['complete']
+    result['inner_workers']=0; raw['cpu_complete']=False
+    write(target,result)
+    assert not p._kernel_accounting(kind,0,target)['complete']
+    target.unlink()
+    assert not p._kernel_accounting(kind,0,target)['complete']
+
+
+def test_incomplete_real_kernel_keeps_reaped_cpu_without_full_cpu_claim(tmp_path,monkeypatch):
+    # A real short child, with deliberately missing own kernel result evidence.
+    cpu=min(__import__('os').sched_getaffinity(0)) if sys.platform=='linux' else 0
+    monkeypatch.setattr(p,'_collector_inputs',lambda *args:([cpu],str(tmp_path/'missing/result.json')))
+    original=p._kernel_accounting
+    monkeypatch.setattr(p,'_kernel_accounting',lambda kind,code,path:original('window',code,path))
+    result=p.collect(tmp_path/'collector',project=ROOT,logical_cpu=0,kind='success')
+    assert result['returncode']==0 and result['joined_child_cpu_s'] is None
+    assert result['observed_reaped_child_cpu_lower_bound_s']>=0
+    assert result['process_tree_cpu_s'] is None and not result['resources']['cpu_complete']
+    assert result['resources']['owned_pid_cpu_complete']
 
 
 @pytest.mark.skipif(sys.platform!='linux',reason='requires actual Linux SIGALRM kernel timer')
@@ -309,26 +389,23 @@ def test_real_six_child_orchestration_persistence_and_offline_summarize(tmp_path
                         'validation':{'cursor':frozen['cursor'],'identity':frozen['identity']}}],
             'sources':{'fixture':{'workload':frozen['workload']}}}
     monkeypatch.setattr(p,'preflight',lambda *args:(corpus,campaign['target_execution_sha256'],{'scope':'synthetic-orchestration-only'}))
-    emitter=tmp_path/'synthetic_emitter.py'
-    emitter.write_text('''import sys
-sys.dont_write_bytecode=True
-import json,pathlib
-source,target=map(pathlib.Path,sys.argv[1:3])
-assert not target.exists()
-target.mkdir(parents=True)
-for name in ("result.json","input_identity.json"):
- (target/name).write_bytes((source/name).read_bytes())
-(target/"replay").mkdir()
-for path in (source/"replay").iterdir(): (target/"replay"/path.name).write_bytes(path.read_bytes())
-''',encoding='utf8')
-    def command(args,project,job,case):
-        source=template_root/job['relative_case']
-        return [str(emitter),str(source),str(case)]
-    monkeypatch.setattr(p,'window_command',command)
+    original_collect=p.collect
+    def synthetic_collect(logs,**kwargs):
+        # The real bounded stdlib child exercises lifecycle/guard/environment.
+        # Parent-side copied output is explicitly synthetic, not a real CLI run.
+        import shutil
+        record=original_collect(logs,project=kwargs['project'],logical_cpu=kwargs['logical_cpu'],kind='success')
+        argv=kwargs['cli_argv']; case=Path(argv[argv.index('--output')+1])
+        source=template_root/case.relative_to(args.output)
+        shutil.copytree(source,case)
+        return record
+    monkeypatch.setattr(p,'collect',synthetic_collect)
     for name in p.THREADS: monkeypatch.setenv(name,'1')
     args=Namespace(output=tmp_path/'actual-controller',logical_cpu=min(os.sched_getaffinity(0)),
                    diagnostic_windows=['W71-A'],implementation_commit=campaign['implementation_commit'],
-                   corpus_sha256=campaign['corpus_sha256'])
+                   corpus_sha256=campaign['corpus_sha256'],corpus_manifest=tmp_path/'corpus.json',
+                   reference=tmp_path/'reference',deployment_manifest=tmp_path/'deployment.json',
+                   r0_migration_approval=tmp_path/'R0.json',opt_migration_approval=tmp_path/'OPT.json')
     # Rebind fixture expected affinity to the actual explicitly selected CPU.
     # The real child wrapper produces that environment; emitter writes no logs.
     result=p.paired(args,ROOT)

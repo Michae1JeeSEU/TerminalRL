@@ -25,6 +25,8 @@ MEMBERS = ("states.jsonl","events.jsonl","rejections.jsonl","trajectories.json",
 THREADS = ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS",
            "VECLIB_MAXIMUM_THREADS","BLIS_NUM_THREADS")
 BUDGET = 7200.
+HISTORICAL_POLICY = 'historical_noise_retry_v1'
+REPORT_ONLY_POLICY = 'report_only_single_group_v1'
 
 
 class PairedError(ValueError):
@@ -135,7 +137,9 @@ environment={'pid':os.getpid(),'isolated':bool(sys.flags.isolated),'dont_write_b
  'thread_environment':{n:os.environ[n] for n in request['thread_variables']},
  'core_modules_before_cli':[n for n in sys.modules if n=='terminal_marl' or n.startswith('terminal_marl.')]}
 if linux:
- os.sched_setaffinity(0,{request['logical_cpu']})
+ requested=set(request['cpu_affinity'])
+ if not requested<=os.sched_getaffinity(0): raise RuntimeError('requested CPU affinity is unavailable')
+ os.sched_setaffinity(0,requested)
  old=os.getpriority(os.PRIO_PROCESS,0)
  if old>10: raise RuntimeError('inherited nice exceeds 10')
  if old<10: os.nice(10-old)
@@ -143,11 +147,11 @@ if linux:
  sys.path.insert(0,str(pathlib.Path(request['project'])/'terminal_marl/core/rotating_slots'))
  from performance.deadline import LinuxWallDeadline
 else:
- if request['kind']=='window': raise RuntimeError('real paired windows require Linux')
+ if request['kind'] in ('window','runner'): raise RuntimeError('real kernel collectors require Linux')
  environment.update(affinity=None,nice=None,linux_deadline='SKIPPED_UNSUPPORTED_PLATFORM')
 pathlib.Path(request['environment']).write_text(json.dumps(environment,indent=2)+'\n',encoding='utf8')
 def work():
- if request['kind']=='window':
+ if request['kind'] in ('window','runner'):
   sys.argv=request['cli_argv']
   try: runpy.run_path(sys.argv[0],run_name='__main__')
   except SystemExit as exc:
@@ -176,15 +180,67 @@ def classify(returncode, pid, records, ended):
     return 'EXIT_ZERO' if returncode==0 else 'IMPLEMENTATION_OR_STARTUP_ERROR'
 
 
-def collect(logs, *, project, logical_cpu, cli_argv=None, kind="window", budget=BUDGET, python=None):
+def _collector_inputs(project, logical_cpu, cpu_affinity, kind, cli_argv):
+    require(kind in ('window','runner','success','nonzero','deadline'), 'unknown collector kind')
+    affinity = [logical_cpu] if cpu_affinity is None else list(cpu_affinity)
+    require(affinity and all(type(value) is int and value >= 0 for value in affinity)
+            and len(affinity) == len(set(affinity)), 'invalid CPU affinity list')
+    affinity = sorted(affinity)
+    output = None
+    if kind in ('window','runner'):
+        entry = 'run_rotating_slots_performance_windows.py' if kind == 'window' else 'run_rotating_slots_performance.py'
+        require(type(cli_argv) is list and len(cli_argv) >= 2 and all(type(value) is str for value in cli_argv),
+                'known CLI argv required')
+        require(Path(cli_argv[0]).resolve() == (Path(project)/'scripts/server'/entry).resolve()
+                and cli_argv[1] == ('window' if kind == 'window' else 'traffic'), 'collector requires exact known kernel CLI')
+        require(cli_argv.count('--output') == 1, 'exact kernel output path required')
+        index = cli_argv.index('--output')
+        require(index+1 < len(cli_argv), 'missing kernel output value')
+        output = str(Path(cli_argv[index+1]).resolve()/'result.json')
+    return affinity, output
+
+
+def _kernel_accounting(kind, returncode, result_path):
+    """Completion evidence for descendants; exit zero alone proves no joins."""
+    if kind not in ('window','runner'):
+        return {'complete': True, 'workers': 0, 'kernel_resources': None,
+                'reason': 'known bounded stdlib fixture creates no descendants'}
+    observed = {'complete': False, 'workers': None, 'kernel_resources': None,
+                'reason': 'kernel completion/join evidence unavailable'}
+    try:
+        result = read(result_path)
+        require(isinstance(result, dict), 'invalid kernel result')
+        workers = result.get('inner_workers')
+        require(type(workers) is int and 0 <= workers <= 6, 'invalid kernel worker observation')
+        container = result.get('resources') or {}
+        require(isinstance(container, dict), 'invalid kernel resource observation')
+        resources = container.get('resources', {}) if kind == 'runner' else container
+        pool = container if kind == 'runner' else result.get('parallel') or {}
+        require(isinstance(resources, dict) and isinstance(pool, dict), 'invalid kernel pool/resource observation')
+        observed.update(workers=workers, kernel_resources=resources,
+                        pool_closed_and_joined=pool.get('closed_and_joined') if workers else True)
+        observed['complete'] = (returncode == 0 and result.get('failure') is None and
+            resources.get('cpu_complete') is True and
+            (not workers or pool.get('closed_and_joined') is True))
+        observed['reason'] = ('successful own result confirms joined workers and complete kernel resources'
+                              if observed['complete'] else 'exit/error or incomplete pool/resource evidence')
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        observed['error'] = {'type': type(exc).__name__, 'message': str(exc)}
+    return observed
+
+
+def collect(logs, *, project, logical_cpu=None, cpu_affinity=None, cli_argv=None, kind="window", budget=BUDGET, python=None):
     """One owned child from spawn through join; never invent a failed spawn exit."""
+    affinity, result_path = _collector_inputs(project, logical_cpu, cpu_affinity, kind, cli_argv)
     logs=Path(logs); logs.mkdir(parents=True,exist_ok=False)
     start_cpu=time.process_time(); started=time.monotonic()
-    request={"kind":kind,"project":str(project),"logical_cpu":logical_cpu,"cli_argv":cli_argv,"budget":budget,
+    request={"kind":kind,"project":str(project),"logical_cpu":logical_cpu,"cpu_affinity":affinity,"cli_argv":cli_argv,"budget":budget,
              "thread_variables":THREADS,"environment":str(logs/'runtime_environment.json'),"deadlines":str(logs/'deadlines')}
     command=[str(python or sys.executable),'-I','-B','-c',CHILD,json.dumps(request)]
     record={"command":command,"started_utc":utc(),"pid":None,"returncode":None,"status":"LAUNCHING",
-            "no_pool":True,"owned_kernel_child_count":1,"guard_wall_budget_s":budget}
+            # Legacy no_pool describes this collector, not the owned kernel.
+            "no_pool":True,"collector_uses_pool":False,"owned_kernel_child_count":1,"guard_wall_budget_s":budget,
+            "external_collector_process_count":1,"requested_cpu_affinity":affinity,"kernel_result_path":result_path}
     atomic_write_json(logs/'collector.json',record)
     metrics=OwnedProcessMetrics(exclusive=True,rss_series_path=logs/'rss_samples.jsonl')
     child=None; joined=False
@@ -206,22 +262,39 @@ def collect(logs, *, project, logical_cpu, cli_argv=None, kind="window", budget=
             child.wait(); joined=True
         report=metrics.finish(joined=joined or child is None)
     ended=time.monotonic()
+    kernel = _kernel_accounting(kind, record['returncode'], result_path)
+    observed_cpu = report['joined_children_cpu_seconds']
+    complete = report['cpu_complete'] and kernel['complete']
+    # Linux joined rusage propagates descendants reaped by the kernel. Windows
+    # held kernel handles do not; add only its separately verified joined workers.
+    full_cpu = observed_cpu if complete else None
+    if complete and os.name == 'nt' and kernel['workers']:
+        worker_cpu = kernel['kernel_resources'].get('joined_children_cpu_seconds')
+        complete = finite(worker_cpu)
+        full_cpu = observed_cpu + worker_cpu if complete else None
+    report = dict(report, owned_pid_cpu_complete=report['cpu_complete'], cpu_complete=bool(complete),
+                  descendant_cpu_complete=bool(complete),
+                  descendant_accounting_note=kernel['reason'])
     guards=[read(path) for path in sorted((logs/'deadlines').glob('deadline_*.json'))]
     record.update(finished_utc=utc(),finished_monotonic_s=ended,full_child_wall_s=ended-started,
+                  owned_kernel_child_count=int(child is not None),
                   collector_parent_cpu_s=time.process_time()-start_cpu,resources=report,guard_records=guards,
                   guard_scope='kernel child CLI; wrapper setup precedes arming; no other process is signalled',
-                  joined_child_cpu_s=report['joined_children_cpu_seconds'],
-                  process_tree_cpu_s=(time.process_time()-start_cpu+report['joined_children_cpu_seconds'])
-                    if report['joined_children_cpu_seconds'] is not None else None,
-                  cpu_scope='collector spawn/logging through join + full joined child CPU; rollout CPU is separate',
-                  rss_scope='contemporaneous parent+owned child samples are lower bounds; lifetime HWM sum is a declared upper bound')
+                  joined_child_cpu_s=full_cpu, observed_reaped_child_cpu_lower_bound_s=observed_cpu,
+                  process_tree_cpu_s=(time.process_time()-start_cpu+full_cpu) if full_cpu is not None else None,
+                  kernel_completion_evidence=kernel, kernel_resources=kernel['kernel_resources'],
+                  inner_worker_count=kernel['workers'], kernel_process_count=1 if child is not None else 0,
+                  kernel_and_workers_process_count=(0 if child is None else
+                      1+kernel['workers'] if kernel['workers'] is not None else None),
+                  cpu_scope='extra collector plus joined kernel; descendants complete only with own successful pool/resource proof; observed reaped CPU retained on incomplete paths',
+                  rss_scope='collector+kernel PID sweep and lifetime HWM estimates, not strict bounds; kernel+worker samples separate, no unmatched peaks summed')
     record['status']=classify(record['returncode'],record['pid'],guards,ended)
     if record['returncode'] is not None:
         (logs/'numericexitcode.txt').write_text(str(record['returncode'])+'\n',encoding='utf8')
     record['evidence_files_sha256']={path.relative_to(logs).as_posix():sha(path) for path in sorted(logs.rglob('*'))
                                     if path.is_file() and path.name!='collector.json'}
     record['collector_parent_cpu_s']=time.process_time()-start_cpu
-    record['process_tree_cpu_s']=(record['collector_parent_cpu_s']+report['joined_children_cpu_seconds']) if report['joined_children_cpu_seconds'] is not None else None
+    record['process_tree_cpu_s']=(record['collector_parent_cpu_s']+full_cpu) if full_cpu is not None else None
     atomic_write_json(logs/'collector.json',record)
     return record
 
@@ -348,6 +421,9 @@ def summarize(root):
     root=Path(root); campaign=read(root/'campaign.json')
     require(campaign.get('schema')=='ft_rs_serial_paired_campaign_v1' and campaign.get('duration_s')==10 and
             campaign.get('repeat_order')==[[r,k] for r,k in ORDER], 'campaign schema/protocol changed')
+    policy=campaign.get('measurement_policy',HISTORICAL_POLICY)
+    require(policy in (HISTORICAL_POLICY,REPORT_ONLY_POLICY),'unknown saved measurement policy')
+    report_only=policy==REPORT_ONLY_POLICY
     selected=campaign.get('windows',[])
     require(selected==[w for w in IDS if w in selected] and len(selected)==len(set(selected)) and selected,
             'unknown/duplicate/reordered campaign windows')
@@ -360,7 +436,7 @@ def summarize(root):
             rows,noisy=group_result(root,window,1,campaign)
             expected_paths.add(root/f'windows/{window}/group-1/group.json')
             retained[window]=[{'group':1,'status':'NOISY' if noisy else 'COMPLETED_GROUP','raw':rows}]
-            if noisy:
+            if noisy and not report_only:
                 retry,still_noisy=group_result(root,window,2,campaign)
                 expected_paths.add(root/f'windows/{window}/group-2/group.json')
                 retained[window].append({'group':2,'status':'NOISY' if still_noisy else 'COMPLETED_GROUP','raw':retry})
@@ -384,9 +460,16 @@ def summarize(root):
         errors.append({'message':'campaign full process-lifetime CPU/child coverage missing or inconsistent'})
     output=aggregate(groups,full_coverage=not errors and not campaign.get('diagnostic_subset') and selected==list(IDS)) if groups else {
         'component_gate':'NOT_PASSED','performance_status':'NOT_QUALIFIED','human_status':'HUMAN_PENDING','windows':[]}
+    if report_only:
+        output['historical_component_gate']=output['component_gate']
+        output['component_gate']='REPORT_ONLY'
     if errors: output['component_gate']='INVALID_OR_INCOMPLETE'
     output.update(schema='ft_rs_serial_paired_summary_v1',campaign=str(root),errors=errors,retained_groups=retained,
-                  selected_group_policy='initial unless NOISY; then mandatory whole-group retry exactly once; retain both',
+                  measurement_policy=policy,report_only=report_only,
+                  amended_scope_status=('INTEGRITY_COMPLETE_REPORT_ONLY' if not errors else 'INVALID_OR_INCOMPLETE') if report_only else None,
+                  noise_is_advisory=report_only,
+                  selected_group_policy=('initial AB/BA/AB group only; noise advisory; no retry' if report_only else
+                      'initial unless NOISY; then mandatory whole-group retry exactly once; retain both'),
                   campaign_status=campaign.get('status'),diagnostic_subset=bool(campaign.get('diagnostic_subset')),
                   full_expected_window_count=6,full_expected_initial_job_count=36,
                   source_campaign_sha256=sha(root/'campaign.json'))
@@ -445,7 +528,8 @@ def window_command(args, project, job, case):
 
 
 def paired(args, project):
-    started_cpu=time.process_time(); joined_cpu=0.; joined_cpu_complete=True; launched_children=0
+    started_cpu=time.process_time(); joined_cpu=0.; observed_cpu=0.; joined_cpu_complete=True; launched_children=0
+    report_only=bool(getattr(args,'report_only',False))
     for name in THREADS: os.environ[name]='1'
     corpus,targets,evidence=preflight(args,project)
     selected=tuple(w for w in IDS if args.diagnostic_windows is None or w in args.diagnostic_windows)
@@ -453,6 +537,7 @@ def paired(args, project):
     root=args.output.resolve(); root.mkdir(parents=True,exist_ok=False)
     campaign={'schema':'ft_rs_serial_paired_campaign_v1','status':'RUNNING','started_utc':utc(),'command':list(sys.argv),
         'duration_s':10,'windows':list(selected),'diagnostic_subset':args.diagnostic_windows is not None,
+        'measurement_policy':REPORT_ONLY_POLICY if report_only else HISTORICAL_POLICY,
         'repeat_order':[[r,k] for r,k in ORDER],'logical_cpu':args.logical_cpu,'implementation_commit':args.implementation_commit,
         'corpus_sha256':args.corpus_sha256,'semantic_fingerprint':corpus['semantic_fingerprint'],'target_execution_sha256':targets,
         'preflight':evidence,'frozen_windows':{row['window']:{'cut':row['cut'],'cursor':row['validation']['cursor'],
@@ -462,7 +547,7 @@ def paired(args, project):
     failure=None
     try:
         for window in selected:
-            for group in (1,2):
+            for group in ((1,) if report_only else (1,2)):
                 jobs=plan((window,),group); directory=root/f'windows/{window}/group-{group}'
                 metadata={'window':window,'group':group,'jobs':jobs,'status':'RUNNING','load_before':system_snapshot(args.logical_cpu)}
                 atomic_write_json(directory/'group.json',metadata)
@@ -478,6 +563,8 @@ def paired(args, project):
                     record['job']=job
                     if record['pid'] is not None: launched_children+=1
                     if record.get('joined_child_cpu_s') is not None: joined_cpu+=record['joined_child_cpu_s']
+                    if finite(record.get('observed_reaped_child_cpu_lower_bound_s')):
+                        observed_cpu+=record['observed_reaped_child_cpu_lower_bound_s']
                     if record['pid'] is not None and not record['resources'].get('cpu_complete'): joined_cpu_complete=False
                     if record['status']=='EXIT_ZERO' and (case/'result.json').is_file():
                         result=read(case/'result.json'); record['status']=result.get('status','IMPLEMENTATION_FAILURE')
@@ -513,7 +600,7 @@ def paired(args, project):
         campaign.update(finished_utc=utc(),failure=failure,collector_process_lifetime_cpu_s=parent_lifetime_cpu,
                         collector_run_interval_cpu_s=parent_lifetime_cpu-started_cpu,
                         full_joined_kernel_children_cpu_s=joined_cpu if joined_cpu_complete else None,
-                        observed_joined_children_cpu_lower_bound_s=joined_cpu,
+                        observed_joined_children_cpu_lower_bound_s=observed_cpu,
                         full_child_cpu_complete=joined_cpu_complete,started_kernel_child_count=launched_children,
                         total_process_tree_cpu_s=parent_lifetime_cpu+joined_cpu if joined_cpu_complete else None,
                         total_cpu_scope='time.process_time absolute at final accounting snapshot: collector process startup/imports included; plus every full joined serial kernel child. Final campaign/summary JSON serialization and stdout emission occur after this snapshot and are excluded; run interval and rollout CPU are separate')
@@ -533,6 +620,7 @@ def parser():
     command.add_argument('--implementation-commit',required=True)
     command.add_argument('--logical-cpu',type=int,required=True)
     command.add_argument('--diagnostic-windows',nargs='+',choices=IDS)
+    command.add_argument('--report-only',action='store_true',help='one AB/BA/AB group; performance and noise are observations')
     command=commands.add_parser('summarize')
     command.add_argument('--campaign',type=Path,required=True)
     command.add_argument('--output',type=Path,help='optional new summary JSON; never overwrite')

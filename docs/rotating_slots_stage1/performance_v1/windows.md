@@ -1,14 +1,17 @@
-# 真实串行共同状态窗口入口
+# 真实共同状态窗口入口
 
-`scripts/server/run_rotating_slots_performance_windows.py` 只执行一个真实串行窗口。
-当前结果始终为 `NOT_QUALIFIED / HUMAN_PENDING`。本入口没有 paired orchestration、
-并行后端、外部诊断预算或硬超时 collector；不能据此宣布合同性能验收通过。
+`scripts/server/run_rotating_slots_performance_windows.py` 执行一个真实共同状态窗口，
+默认纯串行，也可显式使用已有 ReferencePool。当前结果仍为
+`NOT_QUALIFIED / HUMAN_PENDING`。外部 collector 的诊断预算独立于窗口入口。
 
 唯一子命令是 `window`。必须提供 `--corpus-manifest`、预期 canonical
 `--corpus-sha256`、六个固定 ID 之一的 `--window`、`--duration {10,60}`、
 `--kernel {R0,OPT}`、`--reference`、`--deployment-manifest`、
 `--implementation-commit` 和全新 `--output`。`--mode {benchmark,profile}`
-默认为 benchmark。只有 implementation identity 确实改变时才提供
+默认为 benchmark。`--inner-workers {0,1,2,4,6}` 默认 0；非零必须显式提供
+`--core-budget` 和 `--process-budget`，分别至少为 worker 数和 worker 数加一。
+process budget 指 kernel 加 workers，外部 collector 另列。parallel profile 在
+bootstrap 和创建 attempt 前拒绝。只有 implementation identity 确实改变时才提供
 `--migration-approval`。通过 `python -I -B` 启动脚本；脚本在导入 helper
 之前也设置 `sys.dont_write_bytecode=True`。
 
@@ -65,10 +68,17 @@ evidence 都被拒绝。消费者不生成 approval；`qualified=true` 也不代
 `Measurements` 单列输入/归档验证、checkpoint load、cold restore/copy、正常
 checkpoint capture/save/flush、rollout、输出 ReplayBundle 验证和 finish verify。
 rollout wall 与真实 `time.process_time` CPU 从恢复完成后开始，包含后续 observer
-准备、正常 checkpoint、记录和 flush；窗口内部 cache 预热全部计入。total wall
-与 total parent CPU 从 bootstrap 前开始。纯 serial 没有 worker。已有
-`OwnedProcessMetrics` 仅采样 parent；sample peak 是下界，OS lifetime HWM 是
-上界，两者不互相冒充。资源资格仍标记 `INCOMPLETE`。
+准备、pool 初始化、正常 checkpoint、记录、flush 与 worker join；错误路径也先
+关闭/终止并 join 自有 pool，再停止 rollout 计时。窗口内部 cache 预热全部计入。
+total wall 与 total parent CPU 从 bootstrap 前开始。纯 serial 没有 worker。
+R0/OPT 并行均消费 bootstrap 验证的实际 core root、文件 manifest、配置和语义
+identity；pool 在 heartbeat 和采样线程前创建。parent 冷快照在 pool 之前，worker
+startup 的 reset 后及 world 构造后空缓存证据单独核验并记录，不清除暖 parent
+模块来制造冷恢复。startup/pids/join 状态在 `parallel`，`resources` 保持 flat
+`OwnedProcessMetrics` 报告；worker CPU 单列，失败或缺失不填零。
+资源的 PID sweep sum 与 lifetime HWM sum 均为估计，非严格 RSS 上下界，不相加
+冒充同时峰值。它们覆盖 kernel 加已登记 workers，不包含额外 collector。
+`external_guard_scope` 明确窗口自身没有硬 guard；资源资格仍为 `INCOMPLETE`。
 
 恢复完成后，入口写出 `cold_cache_report.json`：world 的三个派生 cache、
 `trajectory.poly_bounds`、`energy._integrable_plan/_segment_table`、
@@ -102,10 +112,21 @@ patch/原始/生成源码、独立 heartbeat、RSS samples、完整状态 prefix
 
 benchmark 不启用 cProfile。profile 只在 rollout 的真实续跑调用中使用现有
 `Measurements.profile_batch`，保存 `window.prof`；cold restore 不在 profile
-内。profile 结果明确禁止用于主性能资格。两模式的输入、advance、driver、
+内。profile 只支持纯 serial，结果明确禁止用于主性能资格。两模式的输入、advance、driver、
 应急和物理记录语义相同。
 
 ## 有界验证
+
+2026-10-19 窗口/collector 集成本地定向 batch 已退出 0：
+`84 passed, 3 skipped in 21.47s`（wrapper 22.117351s）。实际范围为 windows、paired
+两个测试文件及既有 `parallel::test_real_reference_and_emergency_equivalence[1]`。
+使用 venv `-I -B`，导入 pytest 前禁写 bytecode，`RUN_WINDOW_INTEGRATION` 未设置。
+命令、PID、stdout/stderr 和 numeric exit 保留于
+`artifacts/rotating_slots/window_collector_tests_20261019a.*`，basetemp 为同前缀目录。
+pool1 小样本执行了真实 reference/emergency 等价和 join；窗口 startup wiring 是
+明确 synthetic 单测。三项 skip 是 opt-in window、Linux SIGALRM 和 Linux six-child
+orchestration。本批次未执行新增 R0 parallel window 分支、真实冻结 traffic、Linux
+窗口或性能测量；其结果须由后续稳定源码的实际运行记录。
 
 `tests/test_rotating_slots_performance_windows.py` 默认运行纯 parser、canonical
 manifest、选择/后缀、source/target/shim/helper/evidence 审批负向测试，以及新 CLI
@@ -131,6 +152,9 @@ fixture 从原目标 3600 的非网格自然切点生成真实 checkpoint，以�
 末态再次冷恢复和不中断同原目标的完整记录一致；再比较 profile/benchmark。
 该 fixture 在测试进程里替换 corpus admission 输入，执行器和 checkpoint/record/
 ReplayBundle 路径保持真实；它不是冻结 traffic 语料，也不构成性能资格。
+当前 opt-in fixture 另含 R0 pool1 分支，核对空 startup、worker join、flat resource
+计数与相同完整记录。本地默认不执行它，须在稳定源码的 Linux 联合检查中启用；
+既有独立 ReferencePool 小样本的通过不能替代实际窗口链路证据。
 
 2026-10-18 本地最终执行命令（PowerShell）：
 

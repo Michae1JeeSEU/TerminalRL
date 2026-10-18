@@ -26,6 +26,52 @@ SEMANTICS = {k: "a" * 64 for k in windows.IDENTITY_KEYS}
 SEMANTICS["policy_id"] = provenance.R0_POLICY_ID
 
 
+def test_parallel_settings_keep_serial_default_and_reject_before_attempt(tmp_path):
+    from argparse import Namespace
+    assert windows._parallel_settings(Namespace(mode='benchmark'))==(0,1,1)
+    for workers in (1,2,4,6):
+        args=Namespace(mode='benchmark',inner_workers=workers,core_budget=workers,process_budget=workers+1)
+        assert windows._parallel_settings(args)==(workers,workers,workers+1)
+        args.core_budget=None
+        with pytest.raises(windows.WindowError,match='explicit'): windows._parallel_settings(args)
+    output=tmp_path/'must-not-create'
+    code=windows.main(['window','--corpus-manifest',str(tmp_path/'unused.json'),'--corpus-sha256','a'*64,
+        '--window','W71-A','--duration','10','--kernel','OPT','--reference',str(REFERENCE),
+        '--deployment-manifest',str(tmp_path/'unused-deployment.json'),'--implementation-commit','b'*40,
+        '--output',str(output),'--mode','profile','--inner-workers','1','--core-budget','1','--process-budget','2'])
+    assert code==2 and not output.exists()
+
+
+def test_reference_pool_wiring_and_readonly_startup_proof(tmp_path,monkeypatch):
+    from argparse import Namespace
+    from performance import parallel
+    from performance.measurements import Measurements
+    core=tmp_path/'verified/terminal_marl/core/rotating_slots'; core.mkdir(parents=True)
+    (core/'config.py').write_bytes(b'fixture core bytes')
+    empty={'energy._ROOT_CACHE':{'entries':0,'present':False},'trajectory.poly_bounds':{'currsize':0}}
+    startup={'cache_reset':{'after':deepcopy(empty)},'cache_after_world_construction':deepcopy(empty)}
+    received={}
+    class FixturePool:
+        aborted=False
+        def __init__(self,workers,**kwargs): received.update(kwargs,workers=workers)
+        def summary(self): return {'worker_startup_coverage_complete':True,'observed_worker_startups':[startup]}
+        def abort(self): self.aborted=True
+    monkeypatch.setattr(parallel,'ReferencePool',FixturePool)
+    config=object(); semantic={'fixture':'exact'}
+    runtime={'core_root':tmp_path/'verified','config':config,'source':{'semantic_fingerprint':semantic}}
+    args=Namespace(kernel='R0',mode='benchmark',inner_workers=2,core_budget=2,process_budget=3)
+    instance=windows._open_reference_pool(args,runtime,tmp_path,Measurements('benchmark'))
+    assert not instance.aborted and received['config'] is config
+    assert received['kernel']=='R0' and received['workers']==2
+    assert received['expected_core_root']==core and received['semantic_identity'] is semantic
+    assert received['expected_core_manifest']=={'config.py':sha256(b'fixture core bytes').hexdigest()}
+    assert received['core_budget']==2 and received['process_budget']==3
+    assert startup['cache_reset']['after']==empty
+    startup['cache_after_world_construction']['energy._ROOT_CACHE']['entries']=1
+    with pytest.raises(windows.WindowError,match='not empty'):
+        windows._open_reference_pool(args,runtime,tmp_path,Measurements('benchmark'))
+
+
 def test_final_cache_observation_keeps_warm_root_counters(monkeypatch):
     from terminal_marl.core.rotating_slots import energy
     FixtureWorld = type("FixtureWorld", (), {"__module__": "terminal_marl.core.rotating_slots.world"})
@@ -220,6 +266,9 @@ args = argparse.Namespace(kernel="R0", reference=reference, deployment_manifest=
  implementation_commit="1c5afd37c891a0ed4776f64367fc7264db3c1c54", output=output,
  window="W71-A", duration=10, mode=sys.argv[5], migration_approval=None,
  corpus_sha256="a"*64, corpus_manifest=output.parent / (output.name+"-fixture-corpus.json"))
+parallel_fixture=len(sys.argv)>6 and sys.argv[6]=="parallel"
+if parallel_fixture:
+ args.inner_workers=1; args.core_budget=1; args.process_budget=2
 runtime = runner.bootstrap(args, root)
 source_identity = runner._checkpoint_identity(runtime)
 source_metadata = json.loads(json.dumps(runtime["source"]))
@@ -303,6 +352,18 @@ if injected_failure:
  print(json.dumps({"status":result["status"],"last_complete":heartbeat["last_complete_sim_time"]}))
  raise SystemExit(0)
 assert result["status"]=="COMPLETED_WINDOW",result
+assert result["execution_backend"]==("R0_PARALLEL" if parallel_fixture else "R0_SERIAL")
+assert result["inner_workers"]==int(parallel_fixture)
+if parallel_fixture:
+ assert result["parallel"]["closed_and_joined"]
+ assert result["parallel"]["worker_startup_coverage_complete"]
+ assert len(result["parallel"]["worker_pids"])==1
+ assert result["resources"]["cpu_complete"]
+ assert result["timing"]["worker_cpu_s"]>=0
+ assert "resources" not in result["parallel"]
+ for startup in result["parallel"]["observed_worker_startups"]:
+  for snapshot in (startup["cache_reset"]["after"],startup["cache_after_world_construction"]):
+   assert all(value.get("currsize",value.get("entries"))==0 for value in snapshot.values())
 final_observation=result["final_cache_observation"]
 assert final_observation["status"]=="OBSERVED"
 assert final_observation["snapshot_scope"]=="after rollout and record flush, before replay export"
@@ -366,6 +427,7 @@ def test_real_cold_window_fixture_profile_and_benchmark_same_records(tmp_path):
     assert process.returncode == 0, (process.stdout, process.stderr)
     evidence = []
     for name, mode, extra in (("benchmark", "benchmark", []), ("profile", "profile", []),
+                               ("parallel", "benchmark", ["parallel"]),
                                ("migration", "benchmark", ["migration"])):
         output = tmp_path / name
         child = subprocess.run([sys.executable, "-I", "-B", "-c", FIXTURE_CHILD,
@@ -383,6 +445,7 @@ def test_real_cold_window_fixture_profile_and_benchmark_same_records(tmp_path):
         assert result["terminal_checkpoint"] and Path(result["terminal_checkpoint"]).exists()
     assert (tmp_path / "benchmark/states.jsonl").read_bytes() == (tmp_path / "profile/states.jsonl").read_bytes()
     assert (tmp_path / "benchmark/states.jsonl").read_bytes() == (tmp_path / "migration/states.jsonl").read_bytes()
+    assert (tmp_path / "benchmark/states.jsonl").read_bytes() == (tmp_path / "parallel/states.jsonl").read_bytes()
     missing = subprocess.run([sys.executable, "-I", "-B", "-c", FIXTURE_CHILD,
         str(ROOT), str(REFERENCE), str(deployment), str(tmp_path / "missing-approval"), "benchmark", "missing_approval"],
         cwd=ROOT, capture_output=True, text=True, timeout=120)
