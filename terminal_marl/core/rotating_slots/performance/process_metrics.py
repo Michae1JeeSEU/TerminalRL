@@ -1,7 +1,7 @@
 """OS process accounting for an exclusively owned spawn-pool lifetime.
 
-RSS is sampled contemporaneously, never a sum of process lifetime maxima.
-The sampling maximum is a lower bound on the true instantaneous maximum.
+RSS sweeps and lifetime HWM sums are estimates with different OS accounting.
+Neither is asserted to strictly bound the true instantaneous aggregate RSS.
 """
 from __future__ import annotations
 
@@ -203,18 +203,18 @@ class OwnedProcessMetrics:
                     import resource
                     parent_peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024
                     # ru_maxrss for CHILDREN is their maximum, not their sum.
-                    # Multiplying by the owned worker count is conservative,
-                    # including child teardown after the final live RSS sweep.
+                    # Multiplication is an estimate, not proof of an RSS bound:
+                    # ru_maxrss and statm may account resident pages differently.
                     child_max = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss*1024
                     rss_upper = parent_peak+len(self.pids)*child_max
-                    rss_upper_source = "parent lifetime HWM + owned worker count * maximum reaped child HWM; " \
-                        "past unrelated reaped children may make this looser"
+                    rss_upper_source = "estimate: parent lifetime HWM + owned worker count * maximum reaped child HWM; " \
+                        "past unrelated reaped children may contribute; not a proven RSS upper bound"
                 elif os.name == "nt":
                     peaks = [_windows_memory(h)[1] for h in self.handles.values()]
                     if len(peaks) != len(self.pids) or any(x <= 0 for x in peaks):
                         raise OSError("post-exit lifetime HWM unavailable")
                     rss_upper = _rss(os.getpid(), peak=True)+sum(peaks)
-                    rss_upper_source = "sum of parent and exited owned worker OS lifetime HWM; NOT simultaneous RSS"
+                    rss_upper_source = "estimate: sum of parent and exited owned worker OS lifetime HWM; not simultaneous RSS or a proven bound"
             except (OSError, ValueError) as exc:
                 rss_upper_error = str(exc)
             self.result = {"wall_seconds": time.perf_counter()-self.start_wall,
@@ -224,18 +224,25 @@ class OwnedProcessMetrics:
                 "cpu_source": "RUSAGE_CHILDREN delta after join" if sys.platform.startswith("linux")
                     else "held OS handles/GetProcessTimes" if os.name == "nt" else "unavailable",
                 "coverage": "parent + owned worker lifetimes: spawn, initializer, IPC, serialization, join; "
-                    "requires no unrelated child creation/reaping; no resource_tracker is spawned by Linux fork",
+                    "requires no unrelated child creation/reaping; no claim for unjoined grandchildren or external collectors",
+                "external_controller_included": False,
+                "external_controller_note": "launchers/collectors outside the parent+registered-worker scope require separate process/RSS/CPU reporting",
                 "rss_samples_recent": list(self.samples), "rss_sample_count": self.sample_count,
                 "rss_recent_sample_capacity": self.samples.maxlen,
                 "rss_full_series_path": self.rss_series_path,
                 "rss_sample_interval_seconds": self.interval,
                 "sampled_peak_simultaneous_rss_bytes": self.sampled_peak,
+                "sampled_peak_rss_sweep_sum_bytes": self.sampled_peak,
+                "lifetime_hwm_sum_estimate_bytes": rss_upper,
+                "lifetime_hwm_estimate_source": rss_upper_source,
+                "lifetime_hwm_estimate_error": rss_upper_error,
                 "sum_lifetime_peak_upper_bound_bytes": rss_upper,
                 "rss_upper_bound_source": rss_upper_source, "rss_upper_bound_error": rss_upper_error,
-                "rss_limit_gate": "upper bound <= limit proves compliance; sampled lower bound > limit proves "
-                    "failure; otherwise unresolved (lower bound below limit alone never proves compliance)",
-                "rss_error": "lower bound; sequential per-PID reads within each synchronous sweep; "
-                    "spikes between sweeps and inaccessible/exited PID RSS may be missed; no finite upper error bound",
+                "rss_legacy_field_note": "simultaneous/upper_bound field names retained as aliases only; estimates, not strict bounds",
+                "rss_is_strict_bound": False,
+                "rss_limit_gate": "report-only; neither RSS estimate proves limit compliance or failure",
+                "rss_error": "sequential per-PID reads within each synchronous sweep; differing statm/HWM accounting and "
+                    "time skew can prevent strict enclosure; spikes and inaccessible/exited PID RSS may be missed",
                 "worker_pids": sorted(self.pids), "errors": list(self.errors)}
             return self.result
         finally:

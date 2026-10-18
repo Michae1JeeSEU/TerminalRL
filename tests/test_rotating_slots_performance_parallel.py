@@ -168,7 +168,7 @@ def test_benchmark_does_not_create_profiler_or_profile_files(tmp_path, monkeypat
 
 def test_budget_identity_and_source_fail_closed(tmp_path):
     for kwargs in ({"workers": 7}, {"workers": 0}, {"process_budget": 1},
-                   {"core_budget": 0}, {"exclusive_process_accounting": False}):
+                   {"core_budget": 0}, {"exclusive_process_accounting": False}, {"kernel": "UNKNOWN"}):
         with pytest.raises(ValueError):
             pool(**kwargs)
     with pytest.raises(ValueError, match="policy_id"):
@@ -223,6 +223,7 @@ def test_frozen_r0_import_root_with_external_helper():
         pytest.skip("P0 R0 source export is not present")
     code = r'''
 import hashlib, json, pathlib, sys
+sys.dont_write_bytecode=True
 root, helper = map(pathlib.Path, sys.argv[1:])
 sys.path.insert(0, str(root))
 import terminal_marl.core.rotating_slots as package
@@ -271,5 +272,31 @@ def test_resource_samples_are_bounded_and_full_series_is_explicit(tmp_path):
     assert len(path.read_text().splitlines()) == result["rss_sample_count"]
     assert result["sampled_peak_simultaneous_rss_bytes"] >= max(
         x["simultaneous_rss_bytes"] for x in result["rss_samples_recent"])
-    assert "lower bound" in result["rss_error"]
-    assert "otherwise unresolved" in result["rss_limit_gate"]
+    assert result["sampled_peak_rss_sweep_sum_bytes"] == result["sampled_peak_simultaneous_rss_bytes"]
+    assert result["lifetime_hwm_sum_estimate_bytes"] == result["sum_lifetime_peak_upper_bound_bytes"]
+    assert result["rss_is_strict_bound"] is False
+    assert "report-only" in result["rss_limit_gate"] and "neither" in result["rss_limit_gate"]
+    assert "strict enclosure" in result["rss_error"]
+
+
+def test_kernel_label_changes_only_summary_metadata():
+    rows=[]
+    for kernel in ("R0", "OPT"):
+        with pool(kernel=kernel) as executor:
+            rows.append(executor.summary())
+    assert rows[0]["identity"] == rows[1]["identity"]
+    for kernel,row in zip(("R0","OPT"),rows):
+        assert row["kernel"]==kernel and row["execution_backend"]==kernel+"_PARALLEL"
+        assert row["prefix_execution"]==kernel+"_PARALLEL"
+
+
+def test_rss_estimates_do_not_assert_hwm_encloses_sweep(monkeypatch):
+    from terminal_marl.core.rotating_slots.performance import process_metrics as pm
+    # Inject an accounting mismatch; these synthetic bytes are not RSS evidence.
+    monkeypatch.setattr(pm,"_rss",lambda pid,peak=False: 1 if peak else 2**60)
+    metrics=pm.OwnedProcessMetrics(exclusive=True,defer_sampler=True)
+    result=metrics.finish(joined=True)
+    assert result["lifetime_hwm_sum_estimate_bytes"]<result["sampled_peak_rss_sweep_sum_bytes"]
+    assert result["rss_is_strict_bound"] is False
+    assert "report-only" in result["rss_limit_gate"]
+    assert result["external_controller_included"] is False

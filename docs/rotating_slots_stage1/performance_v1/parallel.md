@@ -1,4 +1,4 @@
-# R0 reference-pad execution adapter
+# Reference-pad execution adapter
 
 `terminal_marl/core/rotating_slots/performance/parallel.py` implements the six
 independent pad bodies of R0 `_reference`. It does not replace
@@ -23,6 +23,9 @@ The policy must be `upstream_capacity_only_pad_arrival_v1_20261018`.
 Also supply `process_budget`, `core_budget`, and
 `exclusive_process_accounting=True`. Worker counts are integers from 1 to 6.
 A pool with one worker includes IPC and is not the serial baseline.
+The optional `kernel` label defaults to `R0` and accepts `R0`/`OPT`. It changes
+summary `kernel`/`execution_backend`/`prefix_execution` metadata only; the selected
+source root and byte manifest continue to determine the actual implementation.
 
 Use the pool context outside the binding context:
 
@@ -54,6 +57,13 @@ multiprocessing children. Create the pool before heartbeat/sampler threads.
 Workers start eagerly through bounded ready tasks; the RSS sampler starts only
 after processes have been created. This Linux choice must be recorded as the
 actual execution backend; Windows spawn tests do not establish Linux evidence.
+The constructor passes its explicit parent PID and a context-matched W-party
+Barrier to every initializer. Exactly W ready tasks must report distinct PIDs
+equal to the registered live-worker set. Linux workers bind the tested parent
+death helper before their core-import statements and report unsupported status
+on Windows. Only named derived numerical caches are cleared at startup,
+including optional root/peak/Bernstein metadata; enable/policy flags and parent
+caches are retained. See [worker_lifecycle.md](worker_lifecycle.md) for the scope.
 
 The parent and workers constrain native libraries to one thread with
 `threadpoolctl` and environment limits. Linux requires `threadpoolctl` because
@@ -94,21 +104,25 @@ interval is 0.1 wall seconds (configurable from 0.01 to 5). Only 512 recent
 samples, the sample count and cumulative sampled maximum are retained in memory.
 An optional `rss_series_path` writes the full series to a new append-only JSONL
 file. Registering already known processes does not add extra query-rate samples.
-The reported sampled
-simultaneous maximum is a lower bound: reads within a sweep are sequential,
-transient peaks between sweeps can be missed, and no finite upper error bound
-is asserted. It is never a sum of per-process lifetime peaks. OS read failures
-and exited/inaccessible PIDs remain explicit in the samples.
+`sampled_peak_rss_sweep_sum_bytes` reports the largest observed sum of sequential
+per-PID reads. Time skew within a sweep, missed transient peaks and inaccessible
+PIDs mean it is not asserted to be a strict bound on instantaneous aggregate RSS.
+The legacy `sampled_peak_simultaneous_rss_bytes` remains an alias for compatibility.
 
-The separate `sum_lifetime_peak_upper_bound_bytes` is conservatively above
-simultaneous RSS and is explicitly not a simultaneous measurement. Linux uses
-the parent's OS lifetime high-water mark plus worker count times the maximum
-reaped-child high-water mark (past children can make this loose). Windows reads
-exited workers' retained OS handles where the OS provides peak working sets;
-otherwise the upper bound is unavailable. An upper bound below the memory limit
-can prove compliance; a sampled lower bound above it proves failure. A sampled
-lower bound below the limit with no sufficiently low upper bound is unresolved
-and must not pass the memory gate.
+`lifetime_hwm_sum_estimate_bytes` separately reports the Linux parent lifetime
+HWM plus worker count times maximum reaped-child HWM, or the Windows sum of held
+process peak working sets where available. HWM/statm accounting may differ, so
+this estimate is not guaranteed to enclose the observed sweep sum or actual RSS.
+The legacy `sum_lifetime_peak_upper_bound_bytes` and `rss_upper_bound_*` names are
+retained as explicitly estimated aliases, not proof of an upper bound.
+`rss_limit_gate` is report-only and neither estimate proves limit compliance or
+failure. Unsupported values remain unavailable. No speed/RSS target is added.
+
+The accounting scope is this parent and explicitly registered owned workers.
+An external launcher/paired collector adds processes, CPU and RSS outside this
+scope and must be reported separately. A forced parent exit does not prove
+complete accounting for unjoined grandchildren. The full series and unavailable
+PID observations remain necessary evidence rather than a lifetime-HWM substitute.
 
 Exceptions, process death, serialization failures and query/source/profile
 mismatches propagate as implementation failures. No result is changed to
@@ -125,3 +139,11 @@ benchmark profiler exclusion, and normal/error/cancel lifecycle. It does not
 claim P4 qualification, six-window performance, full-traffic equivalence, or
 P5/P6 acceptance. Linux execution and source-isolated runner evidence must be
 collected separately from the local Windows tests.
+
+The bounded lifecycle integration was checked locally with the parallel,
+worker_lifecycle and deadline files: 40 passed, 5 Linux-only tests skipped in
+60.25s, exit 0. Raw evidence and source hashes are under
+artifacts/rotating_slots/worker_lifecycle_tests_20261019a. The observed spawn
+startup sets covered every requested 1/2/4/6 worker and retained parent caches;
+Linux kernel/process-inventory evidence remains separate. This result adds no
+full P4, RSS-limit or performance-ratio acceptance claim.

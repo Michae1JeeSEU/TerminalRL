@@ -1,4 +1,4 @@
-"""R0 six-pad parallel execution adapter; the parent retains world ownership.
+"""Six-pad parallel execution adapter; the parent retains world ownership.
 
 No core imports at module import time: spawn children select and verify the
 frozen import root before importing the R0 numerical implementation.
@@ -20,8 +20,11 @@ import time
 THREADS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
            "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "BLIS_NUM_THREADS")
 POLICY_ID = "upstream_capacity_only_pad_arrival_v1_20261018"
-_WORLD = _IDENTITY = None
+_WORLD = _IDENTITY = _READY_BARRIER = _STARTUP = None
 _PATCH_LOCK = threading.Lock()
+_OPTIONAL_ACCELERATORS = (("energy", "root", "root_cache"),
+                          ("energy", "peak", "peak_cache"),
+                          ("trajectory", "bernstein", "_BERNSTEIN_METADATA"))
 
 
 def _metrics_class():
@@ -59,16 +62,101 @@ def _config_identity(config):
 def _implementation_identity():
     directory = Path(__file__).resolve().parent
     return {name: sha256((directory/name).read_bytes()).hexdigest()
-            for name in ("parallel.py", "process_metrics.py")}
+            for name in ("parallel.py", "process_metrics.py", "deadline.py")}
 
 
-def _worker_init(root, manifest, config_path, identity, cache_enabled):
-    global _WORLD, _IDENTITY
+def _deadline_module(identity):
+    """Use the real package helper, including its relative checkpoint import."""
+    directory = Path(__file__).resolve().parent
+    helper_root = str(directory.parent)
+    if helper_root not in sys.path:
+        sys.path.insert(0, helper_root)
+    module = importlib.import_module("performance.deadline")
+    path = Path(module.__file__).resolve()
+    if path != directory / "deadline.py" or sha256(path.read_bytes()).hexdigest() != identity["implementation_files_sha256"]["deadline.py"]:
+        raise ValueError("worker deadline helper source identity mismatch")
+    return module
+
+
+def _worker_cache_snapshot():
+    """Observe only the named pure numerical accelerators in this worker."""
+    result = {}
+    for module_name, names in (("trajectory", ("poly_bounds",)),
+                               ("energy", ("_integrable_plan", "_segment_table")),
+                               ("safety", ("_NUMERIC_CERTIFICATES", "_PLAN_CERTIFICATES"))):
+        module = importlib.import_module("terminal_marl.core.rotating_slots." + module_name)
+        for name in names:
+            cache = getattr(module, name)
+            key = module_name + "." + name
+            if hasattr(cache, "cache_info") and hasattr(cache, "cache_clear"):
+                result[key] = dict(cache.cache_info()._asdict(), present=True)
+            elif type(cache) is dict:
+                result[key] = {"present": True, "entries": len(cache)}
+            else:
+                raise RuntimeError("unexpected worker acceleration cache: " + key)
+    for module_name, prefix, cache_name in _OPTIONAL_ACCELERATORS:
+        module = importlib.import_module("terminal_marl.core.rotating_slots." + module_name)
+        clear = getattr(module, prefix + "_cache_clear", None)
+        observe = getattr(module, prefix + "_cache_stats", None)
+        key = module_name + "." + cache_name
+        if clear is None and observe is None:
+            result[key] = {"present": False, "entries": 0}
+        else:
+            if not callable(clear) or not callable(observe):
+                raise RuntimeError("optional worker cache requires clear/stats pair: " + key)
+            value = observe()
+            if not isinstance(value, dict) or type(value.get("entries")) is not int or value["entries"] < 0:
+                raise RuntimeError("invalid optional worker cache observation: " + key)
+            result[key] = dict(value, present=True)
+    return result
+
+
+def _clear_worker_accelerators():
+    before = _worker_cache_snapshot()
+    for module_name, names in (("trajectory", ("poly_bounds",)),
+                               ("energy", ("_integrable_plan", "_segment_table")),
+                               ("safety", ("_NUMERIC_CERTIFICATES", "_PLAN_CERTIFICATES"))):
+        module = importlib.import_module("terminal_marl.core.rotating_slots." + module_name)
+        for name in names:
+            cache = getattr(module, name)
+            if hasattr(cache, "cache_clear"):
+                cache.cache_clear()
+            else:
+                cache.clear()
+    for module_name, prefix, cache_name in _OPTIONAL_ACCELERATORS:
+        module = importlib.import_module("terminal_marl.core.rotating_slots." + module_name)
+        clear = getattr(module, prefix + "_cache_clear", None)
+        if clear is not None:
+            clear()
+    after = _worker_cache_snapshot()
+    if any(value.get("currsize", value.get("entries")) != 0 for value in after.values()):
+        raise RuntimeError("worker numerical accelerator reset was not empty")
+    for key in before:
+        for flag in ("enabled", "policy", "max_entries", "max_bytes"):
+            if flag in before[key] and after[key].get(flag) != before[key][flag]:
+                raise RuntimeError("worker cache reset changed policy: " + key + "." + flag)
+    return {"before": before, "after": after,
+            "scope": "named pure numerical caches only; config/Gauss/canonical policy retained"}
+
+
+def _worker_init(root, manifest, config_path, identity, cache_enabled, expected_parent_pid, ready_barrier):
+    global _WORLD, _IDENTITY, _READY_BARRIER, _STARTUP
+    sys.dont_write_bytecode = True
     for name in THREADS:
         os.environ[name] = "1"
     if _implementation_identity() != identity["implementation_files_sha256"]:
         raise ValueError("worker parallel helper source identity mismatch")
-    # The helper is flat-imported before this point and has imported no core.
+    inherited_core_modules = sum(name.startswith("terminal_marl.core.rotating_slots.")
+        and ".performance" not in name for name in sys.modules)
+    if sys.platform.startswith("linux"):
+        deadline = _deadline_module(identity)
+        deadline.bind_owned_worker_to_parent(expected_parent_pid)
+        parent_death = {"status": "BOUND_TO_EXPECTED_PARENT", "supported": True,
+                        "helper_sha256": identity["implementation_files_sha256"]["deadline.py"]}
+    else:
+        parent_death = {"status": "UNSUPPORTED_PLATFORM", "supported": False}
+    # Binding precedes the worker's core-import statements. Fork may already
+    # contain inherited core modules, which are explicitly reported below.
     sys.path.insert(0, str(Path(root).resolve().parents[2]))
     _assert_source(root, manifest)
     from terminal_marl.core.rotating_slots.config import load_config
@@ -90,8 +178,17 @@ def _worker_init(root, manifest, config_path, identity, cache_enabled):
         if sys.platform.startswith("linux"):
             raise RuntimeError("Linux fork native thread verification requires threadpoolctl")
         globals()["_NATIVE_THREADPOOLS"] = "unavailable; environment set before numerical imports"
+    cache_reset = _clear_worker_accelerators()
     _WORLD = RotatingSlotWorld(config=config, cache_enabled=cache_enabled)
     _IDENTITY = identity
+    _READY_BARRIER = ready_barrier
+    _STARTUP = {"expected_parent_pid": expected_parent_pid, "actual_parent_pid": os.getppid(),
+        "dont_write_bytecode": sys.dont_write_bytecode,
+        "isolated": bool(sys.flags.isolated),
+        "parent_death": parent_death, "inherited_core_modules_before_binding": inherited_core_modules,
+        "binding_before_worker_core_import_statements": True,
+        "cache_reset": cache_reset, "cache_after_world_construction": _worker_cache_snapshot(),
+        "canonical_phase_bins": _WORLD.REFERENCE_PHASE_BINS}
 
 
 def _pad_task(task):
@@ -146,9 +243,12 @@ def _pad_task(task):
 
 
 def _ready_task(identity):
-    if _WORLD is None or identity != _IDENTITY:
+    if _WORLD is None or identity != _IDENTITY or _READY_BARRIER is None or _STARTUP is None:
         raise ValueError("worker startup identity mismatch")
-    return {"pid": os.getpid(), "native_threadpools": _NATIVE_THREADPOOLS}
+    # W tasks block until W distinct workers have entered; a fast worker cannot
+    # report another startup before all parties arrive. Timeout propagates.
+    _READY_BARRIER.wait(timeout=30)
+    return dict(_STARTUP, pid=os.getpid(), native_threadpools=_NATIVE_THREADPOOLS)
 
 
 def _spawn_module():
@@ -175,7 +275,8 @@ class ReferencePool:
     def __init__(self, workers, *, config, expected_core_root, expected_core_manifest,
                  semantic_identity, process_budget, core_budget,
                  exclusive_process_accounting, mode="benchmark", profile_directory=None,
-                 max_profile_tasks=6, rss_sample_interval=.1, rss_series_path=None, cache_enabled=True):
+                 max_profile_tasks=6, rss_sample_interval=.1, rss_series_path=None, cache_enabled=True,
+                 kernel="R0"):
         if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 6:
             raise ValueError("workers must be an integer in [1, 6]")
         if any(isinstance(x, bool) or not isinstance(x, int) for x in (process_budget, core_budget)):
@@ -184,6 +285,8 @@ class ReferencePool:
             raise ValueError("worker allocation exceeds explicit process/core budget")
         if mode not in ("benchmark", "profile"):
             raise ValueError("mode must be benchmark or profile")
+        if kernel not in ("R0", "OPT"):
+            raise ValueError("kernel label must be R0 or OPT")
         if mode == "profile" and (profile_directory is None or not 1 <= max_profile_tasks <= 1000):
             raise ValueError("profile requires an output directory and bounded task count")
         required = {"policy_id", "effective_rules_hash", "candidate_policy_hash", "numerical_policy_hash"}
@@ -198,6 +301,7 @@ class ReferencePool:
                          "core_manifest": self.manifest, "core_root": self.root,
                          "implementation_files_sha256": _implementation_identity()}
         self.config, self.cache_enabled, self.workers = config, cache_enabled, workers
+        self.kernel = kernel
         self.mode, self.max_profile_tasks = mode, max_profile_tasks
         self.profile_directory = Path(profile_directory).resolve() if profile_directory else None
         if self.profile_directory:
@@ -235,17 +339,26 @@ class ReferencePool:
                     raise RuntimeError("Linux fork native thread verification requires threadpoolctl")
             module = _spawn_module()
             self._task = module._pad_task
+            self.parent_pid = os.getpid()
+            context = mp.get_context(self.start_method)
+            ready_barrier = context.Barrier(workers)
             self.executor = ProcessPoolExecutor(max_workers=workers,
-                mp_context=mp.get_context(self.start_method), initializer=module._worker_init,
-                initargs=(self.root, self.manifest, config.path, self.identity, cache_enabled))
+                mp_context=context, initializer=module._worker_init,
+                initargs=(self.root, self.manifest, config.path, self.identity, cache_enabled,
+                          self.parent_pid, ready_barrier))
             ready = []
             for _ in range(workers):
                 ready.append(self.executor.submit(module._ready_task, self.identity))
                 self._register_workers()
             self.metrics.begin_sampling()
             for future in ready:
-                row = future.result()
+                row = future.result(timeout=35)
                 self.worker_startups[row["pid"]] = row
+            self._register_workers()
+            live = {p.pid for p in self.executor._processes.values() if p.is_alive()}
+            if (len(self.worker_startups) != workers or
+                    set(self.worker_startups) != self.worker_pids or self.worker_pids != live):
+                raise RuntimeError("startup reports do not cover exactly the registered live workers")
         except BaseException:
             if hasattr(self, "executor"):
                 self.abort()
@@ -317,8 +430,8 @@ class ReferencePool:
             raise
 
     def summary(self):
-        return {"schema": "r0-pad-parallel-1.0", "execution_backend": "R0_PARALLEL",
-            "prefix_execution": "R0_PARALLEL", "profiler_mode": self.mode,
+        return {"schema": "r0-pad-parallel-1.0", "execution_backend": self.kernel + "_PARALLEL",
+            "prefix_execution": self.kernel + "_PARALLEL", "kernel": self.kernel, "profiler_mode": self.mode,
             "profiler_timer": "process_time" if self.mode == "profile" else None,
             "workers": self.workers, "process_budget": self.process_budget, "core_budget": self.core_budget,
             "native_thread_limits": {name: "1" for name in THREADS}, "start_method": self.start_method,
@@ -328,6 +441,9 @@ class ReferencePool:
             "actual_worker_cache_hits": self.worker_cache_hits,
             "worker_pids": sorted(self.worker_pids), "failures": list(self.failures),
             "observed_worker_startups": list(self.worker_startups.values()),
+            "expected_parent_pid": self.parent_pid,
+            "worker_startup_coverage_complete": len(self.worker_startups) == self.workers
+                and set(self.worker_startups) == self.worker_pids,
             "resources": self.resource_summary,
             "accounting_note": "worker template initialization and cache reuse are actual counts; "
                 "they need not equal serial work; no per-function table in benchmark"}
