@@ -1,7 +1,8 @@
 """Appendix A research surrogate; charge-fraction SOC and shared quadrature."""
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import lru_cache, wraps
 import math
+import sys
 import bisect
 import numpy as np
 from scipy.integrate import quad
@@ -47,6 +48,86 @@ class EnergyResult:
     reason: str = ''
     error_j: float = 0.
 
+# Pure scalar acceleration state: never part of a world or checkpoint.
+_ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-r0-bisection-v1'
+_ROOT_CACHE_MAX_ENTRIES = 32768
+_ROOT_CACHE_MAX_BYTES = 8 * 1024 * 1024
+_ROOT_CACHE = {}
+_ROOT_CACHE_PAYLOAD_BYTES = 0
+_ROOT_CACHE_ENABLED = True
+_ROOT_CACHE_REQUESTS = _ROOT_CACHE_COMPUTES = _ROOT_CACHE_HITS = _ROOT_CACHE_EVICTIONS = 0
+
+
+def root_cache_clear():
+    """Worker/cold reset of this derived cache and its performance counters."""
+    global _ROOT_CACHE_PAYLOAD_BYTES
+    global _ROOT_CACHE_REQUESTS, _ROOT_CACHE_COMPUTES, _ROOT_CACHE_HITS, _ROOT_CACHE_EVICTIONS
+    _ROOT_CACHE.clear()
+    _ROOT_CACHE_PAYLOAD_BYTES = 0
+    _ROOT_CACHE_REQUESTS = _ROOT_CACHE_COMPUTES = _ROOT_CACHE_HITS = _ROOT_CACHE_EVICTIONS = 0
+
+
+def root_cache_set_enabled(enabled):
+    """Disable lookup/insertion without changing the scalar evaluator or policy."""
+    global _ROOT_CACHE_ENABLED
+    if type(enabled) is not bool:
+        raise TypeError('root cache enabled flag must be bool')
+    _ROOT_CACHE_ENABLED = enabled
+
+
+def root_cache_stats():
+    """Detached performance data; bytes conservatively count shared key objects."""
+    return {'enabled': _ROOT_CACHE_ENABLED, 'logical_requests': _ROOT_CACHE_REQUESTS,
+            'actual_computes': _ROOT_CACHE_COMPUTES, 'hits': _ROOT_CACHE_HITS,
+            'evictions': _ROOT_CACHE_EVICTIONS, 'entries': len(_ROOT_CACHE),
+            'estimated_bytes': sys.getsizeof(_ROOT_CACHE) + _ROOT_CACHE_PAYLOAD_BYTES,
+            'max_entries': _ROOT_CACHE_MAX_ENTRIES, 'max_bytes': _ROOT_CACHE_MAX_BYTES,
+            'policy': _ROOT_CACHE_POLICY, 'eviction_policy': 'FIFO'}
+
+
+def _root_entry_bytes(key, value):
+    # Keys contain only a tuple of immutable str/int fields; values float/None.
+    return sys.getsizeof(key) + sum(sys.getsizeof(item) for item in key) + sys.getsizeof(value)
+
+
+def _memoize_root(function):
+    @wraps(function)
+    def cached(vp, vn, rhs, bisections=80):
+        global _ROOT_CACHE_PAYLOAD_BYTES
+        global _ROOT_CACHE_REQUESTS, _ROOT_CACHE_COMPUTES, _ROOT_CACHE_HITS, _ROOT_CACHE_EVICTIONS
+        _ROOT_CACHE_REQUESTS += 1
+        eligible = (_ROOT_CACHE_ENABLED and type(bisections) is int and bisections > 0
+                    and all(type(x) is float and math.isfinite(x) for x in (vp, vn, rhs)))
+        key = ((_ROOT_CACHE_POLICY, vp.hex(), vn.hex(), rhs.hex(), bisections)
+               if eligible else None)
+        if eligible and key in _ROOT_CACHE:
+            _ROOT_CACHE_HITS += 1
+            return _ROOT_CACHE[key]
+        _ROOT_CACHE_COMPUTES += 1
+        result = function(vp, vn, rhs, bisections)
+        if eligible and (result is None or type(result) is float):
+            cost = _root_entry_bytes(key, result)
+            # A result that cannot fit even alone is always recomputed.
+            if _ROOT_CACHE_MAX_ENTRIES > 0 and cost + sys.getsizeof({}) <= _ROOT_CACHE_MAX_BYTES:
+                while len(_ROOT_CACHE) >= _ROOT_CACHE_MAX_ENTRIES:
+                    oldest = next(iter(_ROOT_CACHE))
+                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, _ROOT_CACHE.pop(oldest))
+                    _ROOT_CACHE_EVICTIONS += 1
+                _ROOT_CACHE[key] = result
+                _ROOT_CACHE_PAYLOAD_BYTES += cost
+                # Include dict allocation after growth, not an average per entry.
+                while (_ROOT_CACHE and sys.getsizeof(_ROOT_CACHE) + _ROOT_CACHE_PAYLOAD_BYTES
+                       > _ROOT_CACHE_MAX_BYTES):
+                    oldest = next(iter(_ROOT_CACHE))
+                    _ROOT_CACHE_PAYLOAD_BYTES -= _root_entry_bytes(oldest, _ROOT_CACHE.pop(oldest))
+                    _ROOT_CACHE_EVICTIONS += 1
+                if not _ROOT_CACHE:
+                    _ROOT_CACHE.clear()  # Release the now-empty dict allocation.
+        return result
+    return cached
+
+
+@_memoize_root
 def _root(vp,vn,rhs,bisections=80):
     lo=max(0.,-vn); hi=max(1.,lo+1.,math.sqrt(rhs)*2+abs(vn))
     f=lambda vi:vi*math.hypot(vp,vn+vi)-rhs
@@ -57,6 +138,8 @@ def _root(vp,vn,rhs,bisections=80):
         if f(mid)>0: hi=mid
         else: lo=mid
     return (lo+hi)/2
+
+_root_uncached = _root.__wrapped__
 
 def evaluate_power(v,a,config=None):
     c=config or load_config(); e=c.energy; m=c.vehicle.fixed_flight_mass_kg; rho=e.air_density_kgpm3

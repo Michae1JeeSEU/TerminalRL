@@ -267,6 +267,19 @@ def _cold_cache_snapshot(world):
                 _require(type(cache) is dict, "unexpected module acceleration cache")
                 numerical[key] = {"entries": len(cache)}
                 empty = empty and not cache
+    # R0 predates this optional OPT cache. Absence is valid and empty; named
+    # caches above remain required and are never cleared to manufacture coldness.
+    energy_module = importlib.import_module(core + ".energy")
+    root_stats = getattr(energy_module, "root_cache_stats", None)
+    if root_stats is None:
+        numerical["energy._ROOT_CACHE"] = {"present": False, "entries": 0}
+    else:
+        _require(callable(root_stats), "unexpected optional root cache observer")
+        observed = root_stats()
+        _require(isinstance(observed, dict) and type(observed.get("entries")) is int
+                 and observed["entries"] >= 0, "invalid optional root cache observation")
+        numerical["energy._ROOT_CACHE"] = dict(observed, present=True)
+        empty = empty and observed["entries"] == 0
     world_caches = {name: len(getattr(world, name)) for name in ("_q_cache", "_energy_cache", "_reference_templates")}
     config_module = importlib.import_module(core + ".config")
     parse_cache = config_module._default_config.cache_info()._asdict()
