@@ -89,8 +89,16 @@ Optional `--milestones 300 900 ...` requests pinned natural cuts.
 `--capture-until` must be at least 60 simulated seconds after the latest milestone
 so a future 60-second window remains possible. Non-grid times defer to an
 existing cut. Automatic requests use the checkpoint helper's 30sim/300wall
-cadence. The store retains recent eight corpus cuts, latest two complete
-checkpoints, and pinned milestones. Reaching the requested prefix ends with
+cadence. A wall-only or milestone save resets the wall timer but does not postpone
+the next simulation request; the simulation timer advances only when its own
+request is due, anchored at the actual natural cut. The store retains the latest
+eight simulation-interval cuts, latest two complete checkpoints of any kind, and
+all pinned milestone/terminal cuts. Wall-only and terminal-only saves do not count
+as simulation-interval corpus cuts. Requests that coincide at one hook share one
+checkpoint and retain all applicable reasons and pins. The index's `milestone`
+field is populated only for `requested_milestone` cuts and preserves the complete
+`requested_sim_times` evidence list, including a coincident periodic request.
+Reaching the requested prefix ends with
 `SUSPENDED_CAPTURE`; it is never labelled a completed 5400-second episode.
 
 Resume supplies `--checkpoint path/to/checkpoint-N.json`, the same seed/rate and
@@ -137,7 +145,11 @@ do not establish the contract's full timeout acceptance requirement.
 The passive 30wall heartbeat reports last complete simulation time, current
 advance phase/target, checkpoint/cache context and active reference ring/slot/time.
 It lists the six queried pads as a group; it does not claim individual worker
-stack capture. Observer write failures propagate as instrumentation failures.
+stack capture. After the observer thread joins and replay/source checks finish,
+the final heartbeat records the ledger's terminal status, stop reason, final
+simulation time and the same finish UTC as the result, including implementation
+failures discovered after rollout. Observer write failures propagate as
+instrumentation failures.
 
 Capture is benchmark-only. Micro accepts `--mode profile` for its explicitly
 bounded <=0.4-second invocation and writes a separate `micro.prof` using the
@@ -152,6 +164,14 @@ ReplayBundle equality from zero, actual unmodified R0 hook-off/hook-on and
 resume parity, source/commit mislabels, budget and milestone rejection, bounded
 profile output, OPT/R0 frozen-byte config binding and service-event parity, and
 soft timeout classification.
+
+Retention regression coverage uses deterministic clocks with many wall-only
+requests between simulation requests and milestones. Synthetic runner cuts check
+the latest eight simulation cuts plus latest two saves and all pins, including
+periodic/milestone/physical-failure collisions and a non-grid milestone sharing a
+cut with a different periodic request. These synthetic cuts test retention and
+terminal metadata; the existing actual R0 hook and replay checks cover physical
+parity.
 
 Initial observed local outputs:
 

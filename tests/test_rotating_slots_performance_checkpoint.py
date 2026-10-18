@@ -170,6 +170,42 @@ def test_E04_non_grid_request_does_not_split_step():
     assert "self._advance_energy(next_time)" in observed.generated_source
 
 
+def test_wall_and_milestone_cuts_keep_independent_simulation_cadence():
+    from types import SimpleNamespace
+    wall = [0.]
+    captured = []
+    requests = CutRequests(lambda w, c, d, e: captured.append(e),
+                           clock=lambda: wall[0], requested_sim=(15., 90., 95.))
+    world = SimpleNamespace(time=0.)
+    for second in range(1, 362):
+        world.time = float(second)
+        wall[0] = second * 300.
+        requests(world, cursor(400.), False)
+        assert requests.last_sim == float(second // 30 * 30)
+        assert requests.last_wall == wall[0]
+    periodic = [e for e in captured if "simulation_interval" in e["reasons"]]
+    assert [e["actual_sim_time"] for e in periodic] == list(range(30, 361, 30))
+    assert periodic[2]["reasons"] == ["simulation_interval", "wall_interval", "requested_milestone"]
+    assert periodic[2]["requested_sim_times"] == [90., 90.]
+    assert requests.requested_sim == []
+
+
+def test_frequent_wall_and_simulation_cuts_preserve_original_physics():
+    baseline = small_event_world(); baseline.advance(1., False)
+    world = small_event_world()
+    wall = [0.]
+    def clock():
+        wall[0] += 300.
+        return wall[0]
+    cuts = CutRequests(lambda *args: None, clock=clock, sim_interval=.3,
+                       requested_sim=(.33, .8))
+    make_observed_advance(RotatingSlotWorld).run(world, 1., False, cuts)
+    assert len(cuts.captures) >= 5
+    assert [e["actual_sim_time"] for e in cuts.captures
+            if "simulation_interval" in e["reasons"]] == [.4, .8]
+    assert semantic(world) == semantic(baseline)
+
+
 def test_E09_cold_warm_cache_and_policy_table():
     world = mixed_world()
     payload = checkpoint(world)

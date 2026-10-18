@@ -358,8 +358,10 @@ def execute(args, runtime, started_wall, started_utc):
             return
         with measurements.span("checkpoint_capture_save_flush"):
             payload = capture_checkpoint(w, identity=identity, cursor=cur, driver=effective)
-            path = store.save(payload, pinned=pinned, corpus=True,
-                              milestone=evidence.get("requested_sim_times") if pinned else None)
+            reasons = evidence["reasons"]
+            milestone = (evidence["requested_sim_times"] if "requested_milestone" in reasons else None)
+            path = store.save(payload, pinned=pinned, corpus="simulation_interval" in reasons,
+                              milestone=milestone)
             snapshot = ledger.flush()
             sidecar = {"schema": "ft_rs_runner_checkpoint_v1_0", "checkpoint_sha256": _sha(path),
                        "runner_execution_sha256": runtime["source"]["runner_execution_sha256"],
@@ -373,8 +375,13 @@ def execute(args, runtime, started_wall, started_utc):
             ledger.flush()
         checkpoints.append(str(path)); cut_evidence.append(evidence); last_saved = key
 
+    pending_cut = None
+
     def capture_due(w, cur, effective, evidence):
-        save(w, cur, effective, evidence, pinned="requested_milestone" in evidence["reasons"])
+        nonlocal pending_cut
+        # Coalesce simultaneous interval/milestone/terminal requests before
+        # saving so the same natural cut keeps every retention classification.
+        pending_cut = evidence
 
     requested = [] if args.command == "micro" else [x for x in args.milestones if x > world.time]
     cuts = CutRequests(capture_due, start_sim=world.time, requested_sim=requested)
@@ -386,25 +393,29 @@ def execute(args, runtime, started_wall, started_utc):
     heartbeat = LedgerHeartbeat(root / "heartbeat.json")
 
     def hook(w, cur, effective):
-        nonlocal current_cursor, stop_reason
+        nonlocal current_cursor, stop_reason, pending_cut
         current_cursor = cur
         heartbeat.publish(complete_sim_time=w.time,
                           context={"phase": cur.outer_phase, "advance_target": cur.original_target,
                                    "last_checkpoint": checkpoints[-1] if checkpoints else None,
                                    "cache_entries": {"q": len(w._q_cache), "energy": len(w._energy_cache)}})
         heartbeat.check_health()
+        pending_cut = None
         cuts(w, cur, effective)
-        if w.failed:
-            save(w, cur, effective, {"requested_sim_times": [], "actual_sim_time": w.time,
-                 "simulation_deferral_s": [], "reasons": ["physical_failure"]}, pinned=True)
-            return
         budget_reached = prior_wall + time.perf_counter() - started_wall >= args.wall_budget
         capture_reached = args.command == "capture" and w.time >= args.capture_until
-        if budget_reached or capture_reached or cur.phase == "returned":
-            evidence = {"requested_sim_times": [], "actual_sim_time": w.time,
-                        "simulation_deferral_s": [], "reasons": ["soft_wall_budget" if budget_reached else
-                        "capture_limit" if capture_reached else "invocation_returned"]}
-            save(w, cur, effective, evidence, pinned=True)
+        terminal_reason = ("physical_failure" if w.failed else "soft_wall_budget" if budget_reached else
+                           "capture_limit" if capture_reached else
+                           "invocation_returned" if cur.phase == "returned" else None)
+        if pending_cut is not None or terminal_reason is not None:
+            evidence = pending_cut or {"requested_sim_times": [], "actual_sim_time": w.time,
+                                      "simulation_deferral_s": [], "reasons": []}
+            if terminal_reason is not None:
+                evidence["reasons"].append(terminal_reason)
+            save(w, cur, effective, evidence,
+                 pinned=terminal_reason is not None or "requested_milestone" in evidence["reasons"])
+        if w.failed:
+            return
         if budget_reached:
             stop_reason = "PERFORMANCE_TIMEOUT"
             raise SuspendAtCut()
@@ -486,13 +497,22 @@ def execute(args, runtime, started_wall, started_utc):
         world.state_sink.close()
     ledger.status = stop_reason
     consumed = ledger.flush()
+    finished_utc = _utc()
+    # The observer thread has joined. Publish the final passive status after
+    # replay/source checks so failures there cannot leave a RUNNING heartbeat.
+    final_heartbeat = _read(heartbeat.path) if heartbeat.path.exists() else {}
+    final_heartbeat.update(status=consumed["status"], stop_reason=stop_reason,
+                           last_complete_sim_time=world.time, finished_utc=finished_utc,
+                           wall_accounting=consumed["wall_accounting"],
+                           cumulative_effective_wall_s=consumed["cumulative_effective_wall_s"])
+    _write(heartbeat.path, final_heartbeat)
     measured = measurements.snapshot()
     measured["execution_phase_wall_s"] = measured["end_to_end_wall_s"]
     measured["execution_phase_parent_cpu_s"] = measured["parent_process_cpu_s"]
     measured["end_to_end_wall_s"] = consumed["attempt_consumed_wall_s"]
     measured["parent_process_cpu_s"] = time.process_time() - runtime["started_cpu"]
     output = {"schema": "ft_rs_performance_attempt_v1_0", "pid": os.getpid(),
-              "started_utc": started_utc, "finished_utc": _utc(), "command": list(sys.argv),
+              "started_utc": started_utc, "finished_utc": finished_utc, "command": list(sys.argv),
               "subcommand": args.command, "workload": workload, "source_identity": runtime["source"],
               "final_imported_module_paths": imported, "status": stop_reason, "stop_reason": stop_reason,
               "physical_outcome": {"failed": world.failed, "failure_time": world.failure_time,

@@ -75,8 +75,8 @@ def select_windows(sources):
                   else "preferred_unavailable_or_short")
         physical_short = (stop - (preferred[0]["actual_sim_time"] if preferred else requested) < 60.)
         if selected is None and source["status"] == "PHYSICAL_FAILURE" and physical_short:
-            # Only saved natural corpus cuts may replace an unavailable pin.
-            available = [c for c in cuts if c["corpus"] and eligible(c)]
+            # Every validated saved natural cut is eligible, including wall-only cuts.
+            available = [c for c in cuts if eligible(c)]
             available.sort(key=lambda c: c["actual_sim_time"], reverse=True)
             if available:
                 _require(len(available) == 1 or available[0]["actual_sim_time"] != available[1]["actual_sim_time"],
@@ -181,7 +181,13 @@ def read_source(campaign, case, reference_manifest, semantics):
         cut = sidecar["cut"]
         _require(cut in result.get("cuts", []), case + ": checkpoint cut absent from terminal result")
         requests = cut["requested_sim_times"]
-        _require(entry["milestone"] == (requests if "requested_milestone" in cut["reasons"] else None) and
+        # Older captures pinned terminal cuts with milestone=[] rather than None.
+        # Accept those retained bytes only for an empty, explicitly terminal request.
+        terminal_reasons = {"physical_failure", "capture_limit", "soft_wall_budget", "invocation_returned"}
+        legacy_terminal = (entry["pinned"] is True and requests == [] and
+                           bool(cut["reasons"]) and set(cut["reasons"]) <= terminal_reasons and
+                           entry["milestone"] == [])
+        _require((entry["milestone"] == (requests if "requested_milestone" in cut["reasons"] else None) or legacy_terminal) and
                  ("requested_milestone" not in cut["reasons"] or entry["pinned"] is True), case + ": milestone/index mismatch")
         _require(all(_number(t) and t <= cut["actual_sim_time"] for t in requests) and
                  cut["simulation_deferral_s"] == [cut["actual_sim_time"] - t for t in requests],

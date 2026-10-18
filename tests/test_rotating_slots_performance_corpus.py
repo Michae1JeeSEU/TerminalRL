@@ -51,6 +51,37 @@ def test_physical_early_stop_latest_cut_60_and_same_seed_30_boundaries():
     assert all("availability_only" in r["selection_reason"] for r in rows[:3])
 
 
+def test_physical_fallback_includes_saved_wall_only_cut():
+    sources = selection_sources()
+    sources["rate180_seed71"] = {"status": "PHYSICAL_FAILURE", "stop_time": 250., "workload": {"seed": 71},
+        "cuts": [dict(cut(t), corpus=False, reasons=["wall_interval"]) for t in (130., 160., 189., 190., 190.001)]}
+    rows = corpus.select_windows(sources)
+    assert [r["cut"]["actual_sim_time"] for r in rows[:3]] == [190., 160., 130.]
+    assert all(r["cut"]["corpus"] is False for r in rows[:3])
+
+
+def test_captured_20261018_retained_metadata_leaves_w71_c_unavailable():
+    # Metadata transcribed from inspection_snapshot_2026-10-18T101744.586507Z.json
+    # in capture_b1153a3_20261018b; this fixture does not fabricate checkpoint restoration.
+    sources = selection_sources()
+    failure_time = 805.0489065963134
+    sources["rate180_seed71"] = {"status": "PHYSICAL_FAILURE", "stop_time": failure_time,
+        "workload": {"seed": 71}, "cuts": [cut(300., [300.], True)] +
+        [dict(cut(t), reasons=["wall_interval"]) for t in
+         (742.7224418640137, 750.2, 761.3407909379929, 775.2, 788.264136505127, 798.7)] +
+        [dict(cut(failure_time, pinned=True), reasons=["physical_failure"],
+              cursor={"original_target": 3600., "phase": phase, "outer_phase": "arrival_window"})
+         for phase in ("loop_start", "returned")]}
+    sources["rate60_seed23"]["stop_time"] = 660.
+    sources["rate120_seed11"]["stop_time"] = 660.
+    sources["rate180_seed11"]["stop_time"] = 600.
+    rows = corpus.select_windows(sources)
+    assert [r["status"] for r in rows] == ["AVAILABLE", "AVAILABLE", "UNAVAILABLE", "AVAILABLE", "AVAILABLE", "AVAILABLE"]
+    assert [r["cut"]["actual_sim_time"] if r["cut"] else None for r in rows] == [300., 742.7224418640137, None, 600., 600., 540.]
+    assert rows[2]["stop_sim_time"] == failure_time
+    assert rows[2]["original_requested_sim_time"] == 1200.
+
+
 def test_unavailable_no_short_or_arbitrary_suspended_substitution():
     sources = selection_sources()
     sources["rate180_seed71"] = {"status": "PHYSICAL_FAILURE", "stop_time": 59.999, "cuts": [cut(0.)], "workload": {"seed": 71}}
@@ -140,6 +171,88 @@ def campaign(tmp_path, reference_data):
             write(root / n, value)
         (campaign / (case + ".exitcode.txt")).write_text("0\n")
     return campaign
+
+
+@pytest.fixture(params=["physical_failure", "capture_limit"])
+def terminal_cut_fixture(campaign, request):
+    # Actual terminal cut shape/time from the 2026-10-18 capture inspection.
+    reason = request.param
+    case = "rate180_seed71" if reason == "physical_failure" else "rate120_seed11"
+    stop = 805.0489065963134 if reason == "physical_failure" else 660.
+    root = campaign / case
+    index_path = root / "checkpoints/checkpoint_index.json"
+    index = corpus._read(index_path)
+    if reason == "physical_failure":
+        index["entries"] = index["entries"][:1]
+    source = root / "checkpoints" / index["entries"][0]["file"]
+    sequence = len(index["entries"])
+    target = root / "checkpoints" / f"checkpoint-{sequence:08d}.json"
+    target.write_bytes(source.read_bytes())
+    sidecar = corpus._read(source.with_suffix(".runner.json"))
+    sidecar["cut"] = {"requested_sim_times": [], "actual_sim_time": stop,
+                      "simulation_deferral_s": [], "reasons": [reason]}
+    write(target.with_suffix(".runner.json"), sidecar)
+    index["entries"].append({"sequence": sequence, "file": target.name, "sha256": corpus._sha(target),
+                             "pinned": True, "corpus": True, "milestone": []})
+    write(index_path, index)
+    result = corpus._read(root / "result.json")
+    if reason == "physical_failure":
+        result["cuts"] = result["cuts"][:1]
+        result["checkpoints"] = result["checkpoints"][:1]
+    result["cuts"].append(sidecar["cut"])
+    result["checkpoints"].append(str(target))
+    if reason == "physical_failure":
+        result["status"] = result["stop_reason"] = "PHYSICAL_FAILURE"
+        result["physical_outcome"].update(sim_time=stop, failed=True, failure_time=stop)
+        ledger = corpus._read(root / "attempt_ledger.json")
+        ledger["status"] = "PHYSICAL_FAILURE"
+        write(root / "attempt_ledger.json", ledger)
+    write(root / "result.json", result)
+    return campaign, case, index_path, target
+
+
+@pytest.mark.parametrize("milestone", [[], None])
+def test_terminal_cut_legacy_and_current_index_forms(terminal_cut_fixture, reference_data, milestone):
+    campaign, case, index_path, target = terminal_cut_fixture
+    index = corpus._read(index_path)
+    index["entries"][-1]["milestone"] = milestone
+    write(index_path, index)
+    root = campaign / case
+    immutable = [index_path, target, target.with_suffix(".runner.json"), root / "result.json",
+                 root / "attempt_ledger.json", root / "source_identity.json"]
+    before = {str(path): corpus._sha(path) for path in immutable}
+    observed = corpus.read_source(campaign, case, *reference_data)
+    assert observed["cuts"][-1]["requested_sim_times"] == []
+    assert observed["cuts"][-1]["pinned"] is True
+    assert {str(path): corpus._sha(path) for path in immutable} == before
+
+
+@pytest.mark.parametrize("mutation", ["nonempty", "string", "unpinned_empty", "wall_only_empty", "mixed_reason_empty", "nonempty_requests"])
+def test_terminal_cut_index_compatibility_is_narrow(terminal_cut_fixture, reference_data, mutation):
+    campaign, case, index_path, target = terminal_cut_fixture
+    index = corpus._read(index_path)
+    entry = index["entries"][-1]
+    sidecar = corpus._read(target.with_suffix(".runner.json"))
+    if mutation == "nonempty":
+        entry["milestone"] = [sidecar["cut"]["actual_sim_time"]]
+    elif mutation == "string":
+        entry["milestone"] = "[]"
+    elif mutation == "unpinned_empty":
+        entry["pinned"] = False
+    elif mutation == "wall_only_empty":
+        sidecar["cut"]["reasons"] = ["wall_interval"]
+    elif mutation == "mixed_reason_empty":
+        sidecar["cut"]["reasons"].append("unexpected_reason")
+    elif mutation == "nonempty_requests":
+        sidecar["cut"]["requested_sim_times"] = [sidecar["cut"]["actual_sim_time"]]
+        sidecar["cut"]["simulation_deferral_s"] = [0.]
+    result = corpus._read(campaign / case / "result.json")
+    result["cuts"][-1] = sidecar["cut"]
+    write(campaign / case / "result.json", result)
+    write(target.with_suffix(".runner.json"), sidecar)
+    write(index_path, index)
+    with pytest.raises(corpus.CorpusError, match="milestone/index mismatch"):
+        corpus.read_source(campaign, case, *reference_data)
 
 
 @pytest.mark.parametrize("mutation,match", [("running", "terminal"), ("timeout", "terminal"), ("exit", "exit code"),

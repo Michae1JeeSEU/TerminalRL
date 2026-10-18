@@ -28,7 +28,7 @@ Selection follows `W71-A`, `W71-B`, `W71-C`, `W60`, `W120`, `W180`, with preferr
 requested milestones 300, 900, 1200, 600, 600, and 540 seconds. The recorded
 natural cut for a preferred pinned request is selected only if at least 60
 actual simulated seconds remain through the observed terminal stop. Only a real
-physical failure permits substitution: choose the latest saved natural corpus
+physical failure permits substitution: choose the latest validated saved natural
 cut at least 60 seconds before that stop, then move backward to maintain at
 least 30 seconds between cuts with the same workload seed already selected in
 the fixed order, including seed 11 across rates 120 and 180. A preferred cut
@@ -38,6 +38,9 @@ Missing a required pin after its 60-second suffix was observed is also missing
 evidence and does not permit substitution.
 No wall timing enters selection. Insufficient distinct cuts yield `UNAVAILABLE`
 and an `INCOMPLETE` manifest, with exit code 2.
+The retained index's `corpus` flag does not exclude an otherwise validated saved
+natural cut: a wall-only checkpoint can be the latest eligible cut. The elapsed
+wall duration and measured execution speed do not enter the selection rule.
 
 Before publishing a complete manifest, the helper verifies the fixed R0 export,
 semantic and physical configuration identities, full 3600-second generated
@@ -50,6 +53,15 @@ the decoded world time and cursor, and cold-restores it using the existing
 checkpoint implementation. Restore verifies the source stream prefix offset and
 hash, frame boundaries/counts, and pending frame against the saved world.
 It does not advance the restored world.
+
+Older runner output represented a pinned terminal checkpoint with `milestone=[]`
+even when its sidecar had no requested milestone. The reader accepts this exact
+representation only when `requested_sim_times=[]`, the entry is pinned, and its
+nonempty reasons contain only `physical_failure`, `capture_limit`,
+`soft_wall_budget`, or `invocation_returned`. The current `milestone=null` form
+is also accepted. Other milestone lists and flags still fail validation, as do
+timeout attempts. This compatibility check never rewrites captured bytes, hashes,
+source identities, or schemas.
 
 `inputs/<window>/` contains byte-for-byte copies of the selected checkpoint and
 runner sidecar. These bytes deliberately retain their original absolute source
@@ -80,10 +92,12 @@ atomic completion and no overwrite, bounded command-line size, and an actual
 frozen R0 replay plus checkpoint restore at 0.2 seconds within a 0.4-second
 fixture. That compact fixture is not a six-window campaign or equivalence proof.
 
-Observed local check (exit 0): **28 passed in 27.04 seconds**.
+Observed local check (exit 0): **46 passed in 32.46 seconds**. This includes
+old/new terminal metadata forms, narrow compatibility negatives, saved wall-only
+fallback cuts, and selection over the actual retained W71 metadata.
 
 ```powershell
-venv/Scripts/python.exe -B -m pytest tests/test_rotating_slots_performance_corpus.py -q --basetemp=artifacts/rotating_slots/performance_corpus_tests_20261018e
+venv/Scripts/python.exe -B -m pytest tests/test_rotating_slots_performance_corpus.py -q --basetemp=artifacts/rotating_slots/corpus_terminal_tests_20261018a
 ```
 
 Linux component validation also completed on the real terminal
@@ -93,8 +107,40 @@ replay prefix from 0 through 660 seconds. Cold restoration performed no advance,
 and the source `states.jsonl` bytes remained unchanged. The component result is
 `VALID`, exit 0, at
 `/home/user/training_outputs/terminal/rotating_slots_perf_v1/corpus_component_w60_20261018d/component_result.json`.
-The six-window corpus has not yet been frozen. The 28 tests and this component
-check do not constitute completion of the contract's 70 acceptance cases.
+All four captures have ended, as recorded in
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/capture_b1153a3_20261018b/inspection_snapshot_2026-10-18T101744.586507Z.json`
+at 2026-10-18 10:17:44 UTC. Their parent exit files contain zero and the recorded
+process snapshot has no matching capture processes. `rate60_seed23` and
+`rate120_seed11` stopped at 660 simulated seconds; `rate180_seed11` stopped at
+600 seconds. Their preferred pins are 600, 600, and 540 seconds respectively.
+
+`rate180_seed71` physically failed at 805.0489065963134 seconds. The retained
+index contains the 300-second pin, natural cuts at 742.7224418640137, 750.2,
+761.3407909379929, 775.2, 788.264136505127, and 798.7 seconds, plus two terminal
+checkpoints at the failure time (`loop_start` and `returned`). Only the pin and
+the 742.7224418640137-second cut are at least 60 seconds before that stop.
+Fixed-order selection therefore yields W71-A at 300 seconds, W71-B at
+742.7224418640137 seconds, and W71-C `UNAVAILABLE`. Earlier replacement cuts
+were not retained; this capture does not provide six distinct usable inputs.
+
+The terminal metadata also exposed the old `milestone=[]` representation, now
+covered by the reader compatibility tests. A fresh capture after the runner's
+retention correction is pending. The six-window corpus remains unfrozen,
+`NOT_QUALIFIED`, and `HUMAN_PENDING`; neither the metadata selection fixture nor
+the earlier Linux component restoration completes the contract's 70 acceptance
+cases or constitutes P2 qualification.
+
+The server freeze helper subsequently ran from 2026-10-18 10:24:11.777 UTC
+through 10:24:22.879 UTC and wrote
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/corpus_incomplete_retention_20261018a/corpus_manifest.json`.
+Its status is `INCOMPLETE`, with canonical `manifest_sha256`
+`c8624968b6c75abbee6476bf00d0e5f18e7db90f8c45743eec061563f5c9cd80`.
+This is actual server validation, separate from the retained-metadata test
+fixture: all four source replays were validated through their observed stops,
+and the five available inputs (W71-A, W71-B, W60, W120, W180) were cold-restored
+without advancing their worlds. W71-C remains `UNAVAILABLE`, so this manifest
+does not freeze a complete six-window corpus or grant performance qualification.
+The CLI exit status is unconfirmed; this record makes no exit-code claim.
 
 During validation, hashes for the frozen reference's 24 source files remained
 unchanged. Ten extra `.pyc` files with 07:32 inspection-time timestamps were

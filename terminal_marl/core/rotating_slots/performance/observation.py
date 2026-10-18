@@ -133,7 +133,11 @@ class CutRequests:
                     "wall_since_last_capture_s": now - self.last_wall, "reasons": reasons}
         # Bookkeeping is passive and updated before a capture callback may
         # request suspension. The callback owns persisting this observer state.
-        self.last_sim, self.last_wall = world.time, now
+        # Wall-only and milestone saves must not postpone the independent
+        # simulation request cadence used for corpus retention.
+        if "simulation_interval" in reasons:
+            self.last_sim = world.time
+        self.last_wall = now
         self.requested_sim = [t for t in self.requested_sim if t > world.time]
         self.captures.append(evidence)
         self.on_capture(world, cursor, driver, evidence)

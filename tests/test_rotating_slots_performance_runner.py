@@ -242,3 +242,99 @@ def test_soft_budget_saved_at_original_safe_cut_not_physical_failure(manifest, t
     assert report["original_advance_target"] == 3600.
     assert report["physical_outcome"]["sim_time"] == .2
     assert report["checkpoints"] and not report["hard_timeout_enforced"]
+
+
+def synthetic_capture(tmp_path, monkeypatch, *, physical_failure=False, finish_failure=False):
+    """Exercise runner retention with synthetic cuts, not a physical campaign."""
+    from types import SimpleNamespace
+    import time
+    from terminal_marl.core.rotating_slots import config, driver, replay, world
+    from terminal_marl.core.rotating_slots.performance import observation, runner
+    from terminal_marl.core.rotating_slots.performance.checkpoint import AdvanceCursor, CheckpointIdentity, POLICY_ID
+    wall = [0.]
+    original_requests = observation.CutRequests
+    monkeypatch.setattr(observation, "CutRequests", lambda *a, **kw:
+                        original_requests(*a, **kw, clock=lambda: wall[0]))
+    cfg = config.load_config()
+    identity = CheckpointIdentity(POLICY_ID, cfg.config_hash, cfg.profile_hash, cfg.raw_hash,
+                                  "rules", "candidates", "numerics", "synthetic-retention")
+    monkeypatch.setattr(runner, "_checkpoint_identity", lambda runtime: identity)
+    def verify_finish(*args):
+        if finish_failure:
+            raise RuntimeError("injected finish verification failure")
+        return {}
+    monkeypatch.setattr(runner, "_verify_finish", verify_finish)
+    class SyntheticCuts:
+        patch = original_source = generated_source = "synthetic retention fixture"
+        def run(self, w, target, effective, hook, *, outer_phase):
+            for second in range(1, 361):
+                w.time = float(second)
+                wall[0] = second * 300.
+                if physical_failure and second == 360:
+                    w.failed, w.failure_time = True, w.time
+                w._record()
+                hook(w, AdvanceCursor(target, "loop_start", outer_phase), effective)
+                if w.failed:
+                    break
+    # Packaging is outside this synthetic retention fixture. Existing fresh-
+    # process tests exercise actual R0 replay validation and physical parity.
+    bundle = SimpleNamespace(write=lambda *a, **kw: "synthetic", validate=lambda *a: None)
+    runtime = {"source": {"runner_execution_sha256": "synthetic-retention", "kernel_commit": COMMIT,
+                           "imported_module_paths": {}}, "config": cfg,
+               "world_module": world, "driver_module": driver,
+               "replay_module": SimpleNamespace(BufferedStateJSONLSink=replay.BufferedStateJSONLSink,
+                                               ReplayBundle=bundle),
+               "observed": SyntheticCuts(), "started_cpu": time.process_time()}
+    args = SimpleNamespace(command="capture", output=tmp_path / "synthetic", inner_workers=0,
+                           kernel="R0", core_budget=1, process_budget=1, wall_budget=10000.,
+                           capture_until=420. if physical_failure else 360.,
+                           milestones=[29.9, 91.] + ([360.] if physical_failure else []),
+                           checkpoint=None, rate=60, seed=23)
+    report = runner.execute(args, runtime, time.perf_counter(), runner._utc())
+    entries = document(args.output / "checkpoints/checkpoint_index.json")["entries"]
+    pairs = [(entry, document(args.output / "checkpoints" /
+                             Path(entry["file"]).with_suffix(".runner.json"))) for entry in entries]
+    return args.output, report, pairs
+
+
+@pytest.mark.parametrize("physical_failure", [False, True])
+def test_periodic_corpus_survives_wall_cuts_and_terminal_collision(tmp_path, monkeypatch, physical_failure):
+    output, report, pairs = synthetic_capture(tmp_path, monkeypatch, physical_failure=physical_failure)
+    status = "PHYSICAL_FAILURE" if physical_failure else "SUSPENDED_CAPTURE"
+    assert report["status"] == status
+    periodic = [(entry, sidecar) for entry, sidecar in pairs if entry["corpus"]]
+    # The old 30s corpus cut survives independently because it is also pinned.
+    assert [sidecar["cut"]["actual_sim_time"] for _, sidecar in periodic] == [30.] + list(range(150, 361, 30))
+    assert [sidecar["cut"]["actual_sim_time"] for _, sidecar in pairs[-2:]] == [359., 360.]
+    pinned = [(entry, sidecar) for entry, sidecar in pairs if entry["pinned"]]
+    assert [sidecar["cut"]["actual_sim_time"] for _, sidecar in pinned] == [30., 91., 360.]
+    assert len(pairs) == 11
+    for entry, sidecar in pairs:
+        reasons = sidecar["cut"]["reasons"]
+        assert entry["corpus"] == ("simulation_interval" in reasons)
+        assert (entry["milestone"] is not None) == ("requested_milestone" in reasons)
+        if entry["milestone"] is not None:
+            assert entry["milestone"] == sidecar["cut"]["requested_sim_times"]
+    # A non-grid milestone collides with a distinct periodic request at 30s.
+    assert pinned[0][0]["milestone"] == [30., 29.9]
+    terminal, sidecar = pairs[-1]
+    assert terminal["corpus"] and terminal["pinned"]
+    assert sidecar["cut"]["reasons"] == ["simulation_interval", "wall_interval"] + (
+        ["requested_milestone", "physical_failure"] if physical_failure else ["capture_limit"])
+    assert terminal["milestone"] == ([360., 360.] if physical_failure else None)
+    assert sidecar["cut"]["requested_sim_times"] == ([360., 360.] if physical_failure else [360.])
+    ledger, heartbeat = document(output / "attempt_ledger.json"), document(output / "heartbeat.json")
+    assert heartbeat["status"] == heartbeat["stop_reason"] == ledger["status"] == status
+    assert heartbeat["last_complete_sim_time"] == report["physical_outcome"]["sim_time"] == 360.
+    assert heartbeat["finished_utc"] == report["finished_utc"]
+    assert heartbeat["cumulative_effective_wall_s"] == ledger["cumulative_effective_wall_s"]
+
+
+def test_final_heartbeat_reports_post_rollout_failure(tmp_path, monkeypatch):
+    output, report, _ = synthetic_capture(tmp_path, monkeypatch, finish_failure=True)
+    assert report["status"] == "IMPLEMENTATION_FAILURE"
+    assert report["failure"]["message"] == "injected finish verification failure"
+    heartbeat = document(output / "heartbeat.json")
+    assert heartbeat["status"] == document(output / "attempt_ledger.json")["status"] == report["status"]
+    assert heartbeat["finished_utc"] == report["finished_utc"]
+    assert heartbeat["last_complete_sim_time"] == report["physical_outcome"]["sim_time"]
