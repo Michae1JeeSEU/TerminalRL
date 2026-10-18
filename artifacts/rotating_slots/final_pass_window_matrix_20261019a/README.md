@@ -1,0 +1,99 @@
+# Fixed final window matrices — preparation only
+
+This artifact is not launched or integrated. run_matrix.py is a thin fixed
+driver using existing performance.paired.collect and the existing real window
+CLI. There is no new systemd wrapper, scheduler, automatic backend selection,
+retry, tuning loop or numerical performance acceptance threshold.
+
+Modes are plan, self-check, parallel, sustained and summarize. The script must
+be an explicit deployment.extra_paths member before the deployment is finalized;
+it uses existing verify_deployment before and after, honoring all expected
+extras, and records its own SHA separately. The real window CLI independently
+validates R0/corpus/migration/runtime identity. Preparation changes no source,
+physical configuration, tests, server or Git state.
+
+parallel is exactly the six frozen windows in contract order, each at worker
+counts 1/2/4/6 once, 10 simulated seconds, OPT benchmark: 24 new jobs. Serial
+backend 0 is separately read from all three initial OPT trials in an already
+completed six-window paired --report-only campaign; all R0 trials remain retained
+and verified by paired.summarize. No baseline is rerun or selected by fastest
+sample. Each parallel window/backend has n=1, so no empirical tail inference is
+made. Medians with n=1 retain that sole sample. The printed 0/1/2/4/6 table shows
+validity and geometric OPT-serial rollout ratios over the actually present
+windows; incomplete coverage remains explicit. No backend is chosen by code.
+
+sustained requires an explicit primary-selected --inner-workers 0/1/2/4/6. It
+runs exactly six windows x three repetitions x 60 simulated seconds: 18 fresh
+jobs. It compares each frozen input/cursor/start identity and compares the three
+60s replay/timeline results within a window. It does not compare complete 10s
+and 60s replay hashes or divide 10s wall times by 60s wall times. A separate full
+60s R0/OPT oracle comparison remains pending; this driver does not add that matrix.
+Each raw result retains nominal duration and its actual simulated delta. Each
+window reports median rollout-wall/actual-sim and end-to-end-wall/actual-sim
+computed per sample before taking the median. A backend's geometric mean of
+these window rollout medians includes an explicit covered-window count; this is
+available for sustained without inventing an equal-duration serial comparison.
+
+Each collect call sequentially joins its one fresh -I -B kernel. The kernel uses
+the first max(1,W) CPUs from six explicit primary-approved physical P-core IDs;
+the kernel parent shares W cores with its W workers and receives W+1 process
+budget. The extra matrix/paired collector process is separately reported. The
+collector sets native numerical threads to one and nice10. Physical core IDs
+are checked for uniqueness and topology is recorded; no core/backend is chosen
+automatically. Each window has an independent Linux deadline, default 1800 wall
+seconds. A matching PERFORMANCE_TIMEOUT is retained separately and the remaining
+fixed jobs continue. Integrity/physical/implementation errors stop the matrix
+without fallback. Exit codes are 0 for all completed windows, 1 for a finished
+fixed matrix containing timeouts, and 2 for an integrity/source/physical stop.
+
+Raw collector records, actual argv/stdout/stderr/deadlines/RSS series and all
+window outputs remain in each job directory. Completion checks include cold
+start, all requested worker startups/joins and complete successful kernel CPU.
+Ten-second results must match all six R0/OPT serial replay members and exact
+start/stop/delta float.hex values. Sixty-second repetitions match one another.
+Rollout and end-to-end wall, rollout-parent CPU, full kernel+workers CPU and
+collector CPU are separate fields. Validation CPU is separately observed. The
+matrix process CPU field covers through its final snapshot, excludes the final
+write/print tail, and must not be added to overlapping per-job collector CPU.
+Timeout paths retain observed reaped CPU with incomplete accounting labels.
+Collector+kernel RSS and kernel+worker RSS estimates remain separate; lifetime
+HWM and sequential PID sweep values are not strict bounds or RSS-limit PASS.
+
+All real input paths, the exact commit/digests, six CPU IDs and a new output
+under /home/user/training_outputs/terminal are required. New experiment output
+must not already exist or overlap frozen input/reference/baseline directories.
+The following are argument templates, not executed commands or real result paths;
+replace every angle-bracket value with primary-reviewed existing input paths.
+
+```bash
+/home/user/envs/terminal_env/bin/python -I -B artifacts/rotating_slots/final_pass_window_matrix_20261019a/run_matrix.py parallel \
+  --corpus-manifest '<CORPUS_JSON>' --corpus-sha256 '<CORPUS_SHA256>' \
+  --reference '<R0_EXPORT_DIRECTORY>' --deployment-manifest '<DEPLOYMENT_JSON>' \
+  --implementation-commit '<EXACT_COMMIT>' --r0-migration-approval '<R0_APPROVAL_JSON>' \
+  --opt-migration-approval '<OPT_APPROVAL_JSON>' --serial-campaign '<COMPLETED_REPORT_ONLY_CAMPAIGN>' \
+  --cpus 0 2 4 6 8 10 --output '<NEW_TRAINING_OUTPUT>' --budget 1800
+```
+
+Use the same explicit arguments with `plan --plan-for parallel` to inspect all
+24 argv arrays without execution. For the sustained plan use
+`plan --plan-for sustained --inner-workers <PRIMARY_CHOICE>`; actual sustained
+uses `sustained --inner-workers <PRIMARY_CHOICE>`. CPU IDs shown above are a
+template requiring the primary's actual machine approval. summarize needs only
+`summarize --output '<EXISTING_MATRIX_OUTPUT>'`; it verifies retained evidence
+hashes and prints a fresh table, without another simulation or overwriting data.
+
+The local self-check needs no physical inputs or helper imports:
+
+```powershell
+.\venv\Scripts\python.exe -I -B artifacts/rotating_slots/final_pass_window_matrix_20261019a/run_matrix.py self-check
+```
+
+It checks 24/18 plan counts, order, unique cases, fixed CLI argv and aggregation
+using explicitly synthetic times. It writes a new self_check.json beside the
+script (or a new --self-check-output path) and refuses to overwrite it. Those
+values are not physics or performance observations. Plan prints only, self-check
+writes only its own artifact, and summarize reads an existing output; none runs
+a kernel. Actual launch requires primary review and authorization.
+The sustained aggregate self-check includes 60.2/60.4/60.6 actual simulated
+seconds and deliberately varying wall times, checking the median of per-sample
+ratios rather than nominal-60 division or a ratio of medians.
