@@ -1,6 +1,6 @@
 # 2026-10-16 正式诊断部分结果：benchmark、dt 与部分 traffic/scheduler
 
-**2026-10-17 10:25 UTC 的服务器核验确认原正式 attempt 已中断。** 用户确认服务器曾断电并已恢复；SSH 已恢复，服务器重启后原诊断进程不存在。已有 60 个 `COMPLETED` 结果和 60 项通过的回放审计保留，最后的 `traffic_rate180_seed71` 没有结果或完整 replay，原退出标记与正式 `diagnostics.json` 也未生成。本次中断不记作该场景的物理 `ENERGY_FAILURE` 或实现故障结果。单项恢复现已启动并生成 progress/states，完整报告仍待完成。以下 benchmark、dt、traffic 和 scheduler 表格及结论仍基于既有产物；94 项目录保持 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
+**2026-10-18 重启后核验确认单核恢复 attempt 也已因第二次断电中断。** 用户已确认第二次断电；原 `7697/7698` 及匹配 recovery 进程均不存在，第二个 attempt 未生成 result/replay、退出标记或正式报告。已有 60 个 `COMPLETED` 结果和 60 项通过的回放审计保持，最后的 `traffic_rate180_seed71` 仍待完整结果。独立并行执行层已提交推送，服务器有界 pilot 已 `MATCH`、零差异；主对话选择 20 inner workers，正式单项并行恢复已启动并生成中间产物，最终完成仍待核验。不将外部中断记作新的物理失败，也不将合成 pilot 的计时当作整项任务结论。以下 benchmark、dt、traffic 和 scheduler 表格及结论仍基于既有产物；94 项目录保持 **92 PASS、G09 `NOT_RUN`、V12 `HUMAN_PENDING`**。
 
 ## 断电中断、同步恢复与单项重跑
 
@@ -22,11 +22,50 @@
 /home/user/envs/terminal_env/bin/python scripts/server/recover_rotating_slots_diagnostics.py --source /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --output /home/user/training_outputs/terminal/rotating_slots_recovery_f67b5c8_20261017/diagnostics --code-commit f67b5c8462433ba701191c493a37e4a8e472334e --recovery-commit 3068e6ad8a5ffe12c8ac8ba212c1f2f72f6782f0 --workers 1
 ```
 
-新 root 的 `parent/recovery.log`、`parent/recovery.exit` 分别保存日志及退出标记，`parent/launch.json` 保存启动命令与进程记录。[原始启动后核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.stdout)及[本地时间包围记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.meta.json)确认：服务器快照时钟 10:50:13.097697–10:50:13.118350 UTC，7697/7698 仍运行、cwd/命令正确；`recovery_manifest.json` 为 `RUNNING`，仅重跑 seed 71、复用 60 项、1 worker。progress 自身时间 10:49:16.553638 UTC 记录仿真 `64.55795671792151/5400 s`、wall `70.699175142 s`，failed 0、`truncated=false`、`conservation=true`；states 为 1844750 bytes，最后完整状态时间 `77.00000000000003 s`、`failed=false`，退出标记未出现且日志为空。相同 SSH 调用的本地时间为 10:49:28.677594–10:49:29.051304 UTC，exit 0、stderr 为空；该次服务器时钟约比本地快 44.24 s，不沿用断电前的时钟差。
+新 root 的 `parent/recovery.log`、`parent/recovery.exit` 分别保存日志及退出标记，`parent/launch.json` 保存启动命令与进程记录。[原始启动后核验](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.stdout)及[本地时间包围记录](../../artifacts/rotating_slots/server_diagnostics_f67b5c8_20261016/recovery_20261017_1022/server_launch/verification2.meta.json)记录当时状态：2026-10-17 服务器快照时钟 10:50:13.097697–10:50:13.118350 UTC，7697/7698 仍运行、cwd/命令正确；`recovery_manifest.json` 为 `RUNNING`，仅重跑 seed 71、复用 60 项、1 worker。progress 自身时间 10:49:16.553638 UTC 记录仿真 `64.55795671792151/5400 s`、wall `70.699175142 s`，failed 0、`truncated=false`、`conservation=true`；states 为 1844750 bytes，最后完整状态时间 `77.00000000000003 s`、`failed=false`，退出标记未出现且日志为空。相同 SSH 调用的本地时间为 10:49:28.677594–10:49:29.051304 UTC，exit 0、stderr 为空；该次服务器时钟约比本地快 44.24 s，不沿用断电前的时钟差。
 
-同一 heartbeat 已更新并读回 `ACTIVE`，约北京时间 **10 月 17 日 22:50** 首次复查。观察间隔为 4 小时，依据是该 seed 不同阶段成本不均且此前多小时仍持续推进；这是首次观察安排，不是任务完成 ETA，不能用当前低占用的初始化进度外推。实际唤醒可有数分钟误差；本地电脑及 Codex 应用需保持运行。
+### 第二次断电与单 seed 并行执行准备
 
-完成后只对新的最后一项执行独立回放审计并合并原 60 项索引，避免重复已有审计；G09 消费新恢复 root 的正式 `diagnostics.json`，其中原 40 项 benchmark 仍来自旧 root，不重跑。严格合并和 V12 人工验收仍待后续真实证据。
+用户确认服务器发生第二次断电并恢复。[重启后原始核验](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/server_after_powerloss/corrected.stdout)的服务器时钟为 2026-10-18 01:41:44 UTC，boot ID 为 `059f1258-c9ef-4254-b9e0-95282ffe1ff6`、uptime 约 300 s；`7697/7698` 均不存在，也没有匹配的 recovery 进程。[实际 parent 路径补证](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/server_after_powerloss/sync_parent.stdout)确认单核恢复目录的 `parent/launch.json` 仍在、`parent/recovery.log` 为 0 bytes、`parent/recovery.exit` 未生成；该 attempt 的 result、replay 和正式报告也均不存在。此次核验的服务器时钟约领先本地 46.55 s，不沿用旧时钟差。原正式目录的 60 项完成包及 60 项既有审计保持，单核恢复 attempt 也按外部断电中断记录，不记作新的物理 `ENERGY_FAILURE` 或已观察到的实现失败。
+
+第二个 attempt 最后 progress 自身时间为 2026-10-18 01:17:19.908905 UTC，仿真 `1265 s`、wall `52154.054037665 s`；states 最后完整状态为 `1268.9574332323343 s`、`failed=false`，文件尾不以 newline 结束。它们不是完整 checkpoint，不将两个 attempt 的 wall 拼接，也不据文件末时刻推断精确断电时刻。此前 10 月 17 日 22:50 的首次复查安排已是历史记录，当前不沿用它作为未来调度。
+
+用户已授权多核重跑。新增 [并行运行层](../../scripts/server/parallel_rotating_slots_runtime.py)、[并行恢复入口](../../scripts/server/recover_rotating_slots_parallel.py)、[有界 probe](../../scripts/server/probe_rotating_slots_parallel.py)及[对应测试](../../tests/test_rotating_slots_parallel_runtime.py)独立执行层提交为 `b936f6ef7b47156f9c3d13ee941580a5da902ebe`，已推送。冻结 27 个 core/配置/平台文件及其 f67 指纹、原恢复 wrapper 均未改动；整个新运行的身份应同时记录 f67 core 和新执行层，不能只称 f67 实现。
+
+并行范围仅为同一查询的六个独立 pad 应急 reference 候选；同一步可合并多机查询，使用持久 spawn 进程池且每数值库线程为 1。返回值按原 query/pad 顺序归并、保持原最小值 tie-break；World 时间推进、SOC/资源提交及所有物理事件仍在父进程按冻结顺序执行。独立 job 数仍为 1，`--inner-workers` 表示该 job 内的候选 worker 数；保持 seed 71、rate 180、3600 s 到达窗口与 1800 s drain，从仿真 0 在新目录重跑，不覆盖前两个 attempt。父进程 CPU/profile 与子进程已完成 pad 任务的 CPU/profile 分开标注，worker RSS 是进程生命周期峰值；父 profile 不代表全部进程开销。新 runner 向旧校验返回实际 JSON 对象，统一 pad 整数键与 JSON 字符串键的表示，不改变物理值；该收尾接口处理不是新的计时结论。
+
+[本地定向验证](../../artifacts/rotating_slots/parallel_runtime_20261018_implementation/pytest_v3.log)为 11 PASS、28.37 s；随后修改的九机三环测试在同一 world/pool 内按 0→0.4→0.8 s 推进，[受影响测试](../../artifacts/rotating_slots/parallel_runtime_20261018_implementation/pytest_mixed_9_continuation.log)为 PASS、136.39 s，逐段物理 metrics、状态、事件、拒绝记录与轨迹完全相等，并检查真实 worker 与清理。这是固定合成 fixture，不是实际 seed 71 后段的替身。[服务器 pilot 终态](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/server_probe/query2.stdout)及[读取时间记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/server_probe/query2.meta.json)确认：服务器时钟 2026-10-18 01:56:56.289812992 UTC 以退出码 0 结束，`MATCH`、零差异，所有 worker 已退出且池已关闭，观测到的 native 数值库线程均为 1。[原始 probe.json](../../../training_outputs/terminal/rotating_slots_parallel_probe_b936f6e_20261018/probe/probe.json) 的 SHA-256 为 `f171e41081f18698d198d3e268ec6660b5e34eda98db9e4775d9ab2690483ea4`。reference 分支仅执行 1235 s 附近的 9 个查询（3 环×3 slot），cold、exact-cache 和 t+0.2 s 推进三轮在 1/20/27 inner workers 下均与串行结果精确相等；这不是全部 81 个代表查询的覆盖。
+
+world 分支使用上述固定九机、`callback=False` 合成 fixture；同一 world/pool 先推进 0→0.4 s，再继续至 0.8 s，逐段物理 metrics、状态、事件、拒绝记录与轨迹均精确相等。墙钟计时如下，单位为秒；首段包含 fixture 构造与 spawn 冷启动，接续段复用同一 world/pool：
+
+| 执行方式 | 首段 0→0.4 s | 接续 0.4→0.8 s | 两段合计 |
+|---|---:|---:|---:|
+| 原 World 串行 | 30.485965 | 15.873037 | 46.359002 |
+| 1 inner worker | 31.275495 | 15.941934 | 47.217428 |
+| 20 inner workers | 7.943274 | 2.752622 | 10.695896 |
+| 27 inner workers | 9.221554 | 3.633975 | 12.855529 |
+
+按本次原始计时计算，20 workers 的两段合计相对串行为 **4.3343×**，接续段为 **5.7665×**；27 workers 接续段比 20 workers 多用 **32.02%** 墙钟时间。主对话据该次观测选择正式恢复使用 **20 inner workers**。这是一轮合成小样本观测，未重复统计显著性，不代表实际 seed 71 后段或整个任务的加速比/ETA；exact-cache 命中计时也不作为仿真推进收益。CPU 仍按父进程与子进程已完成 pad 任务分开记录，该和不穷尽所有子进程启动、初始化、序列化等 CPU 开销。完整计时见[派生汇总](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/server_probe/timing_summary.json)。
+
+### 正式单项并行恢复：已启动
+
+[正式预检](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_preflight/preflight.stdout)及[命令/退出记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_preflight/preflight.meta.json)确认：服务器时钟 2026-10-18 02:00:54.278692–02:01:37.371005 UTC，`PREFLIGHT_PASSED`、退出码 0，验证原 60 项完成结果，独立 job 数 1、`inner_workers=20`，当时未创建目标 diagnostics。27 个冻结文件及独立执行文件 SHA 均匹配。
+
+[实际启动原始记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/launch.stdout)及[本地时间记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/launch.meta.json)确认正式并行恢复于服务器时钟 **2026-10-18 02:03:33.423002 UTC** 启动，wrapper PID `6274`、Python PID `6275`，cwd 为 `/home/user/projects/terminal`。本地 SSH 调用区间为 02:02:46.6715999–02:03:37.0964589 UTC，exit 0、stderr 为空。运行元数据记录的 CLI 如下，正式运行未设置 600/900 s 总 timeout：
+
+```bash
+/home/user/envs/terminal_env/bin/python /home/user/projects/terminal/scripts/server/recover_rotating_slots_parallel.py --source /home/user/training_outputs/terminal/rotating_slots_formal_f67b5c8_20261016/diagnostics --output /home/user/training_outputs/terminal/rotating_slots_parallel_recovery_b936f6e_20261018/diagnostics --code-commit f67b5c8462433ba701191c493a37e4a8e472334e --recovery-commit b936f6ef7b47156f9c3d13ee941580a5da902ebe --inner-workers 20 --superseded-attempt /home/user/training_outputs/terminal/rotating_slots_recovery_f67b5c8_20261017/diagnostics
+```
+
+新 root 为 `/home/user/training_outputs/terminal/rotating_slots_parallel_recovery_b936f6e_20261018`；父目录控制文件为 `parent/launch.json`、`parent/recovery.log`、`parent/recovery.exit`。同步的 [parallel_execution.json](../../../training_outputs/terminal/rotating_slots_parallel_recovery_b936f6e_20261018/diagnostics/parallel_execution.json)实际字段记录 `status=RUNNING`、`supplied_execution_commit=b936f6ef7b47156f9c3d13ee941580a5da902ebe`、`core_commit=f67b5c8462433ba701191c493a37e4a8e472334e`、`inner_workers=20`、`independent_jobs=1`；[recovery_manifest.json](../../../training_outputs/terminal/rotating_slots_parallel_recovery_b936f6e_20261018/diagnostics/recovery_manifest.json)记录 `reused_result_count=60`、`reexecuted_job_ids=[traffic_rate180_seed71]`、`workers=1`、`checkpoint_resume=false`、`restart_from_simulated_time=0`。两种 worker 字段分别描述内部候选池与独立 job 数。`replacement_reason=user_authorized_multicore_replacement` 及 `superseded_attempt` 指向上一个单核恢复目录；单核 attempt 已因第二次断电中断，未人为 kill 它来完成本次替换。
+
+首次启动核验于服务器时钟 02:04:23.437264 UTC 完成，实际观察到 **6 个 spawn 子进程**，不把配置上限 20 当作当时已生成的进程数；池按任务需要扩展。此时 progress 的已写 snapshot 仍为仿真 0，但 states 最后完整记录已到约 `32.8 s`、`failed=false`，因此不能据 progress 0 判断未推进。`recovery.exit` 与正式 `diagnostics.json` 尚未出现；启动与中间产物已成立，最终完成仍待核验。
+
+[最后一次启动补核](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/startup_check2.stdout)与[本地时间包围记录](../../artifacts/rotating_slots/parallel_seed_recovery_20261018/formal_launch/startup_check2.meta.json)的本地结束时间为 2026-10-18 02:09:06.6546405 UTC，SSH exit 0、stderr 为空；服务器快照时钟为 02:09:52.994722–02:09:53.004143 UTC。6274/6275 及当时 6 个 spawn 子进程仍存在。progress 自身于 02:05:18.248286 UTC 写入仿真 `64.5579567 s`、wall `63.559856218 s`，failed 0、`conservation=true`、`truncated=false`；states 最后完整状态已到 `90.8 s`、`failed=false`，文件为 2560677 bytes、mtime 02:09:31.203105 UTC、以完整 newline 结束。wall 属于该 progress 的写入时刻，不能与较晚 states 快照混用。补核时仍无 result/replay、正式报告或退出标记，日志为 0 bytes。
+
+同一 heartbeat 已通过工具更新并确认为 `ACTIVE`，目标为本地 UTC **2026-10-18 03:09:06（北京时间 11:09 左右）**，按最后启动补核的本地结束时刻 02:09:06.6546405 UTC 之后 1 小时设置；实际调度可有数分钟偏差。此安排用于较早观察新并行执行的阶段进展：旧单核在数小时观察窗口中仍有推进，合成 pilot 显示加速，但密度和阶段成本不均，不能据此给出全程完成 ETA。本地电脑及 Codex 应用需保持运行。
+
+完成后只对新的最后一项执行独立回放审计并合并原 60 项索引，避免重复已有审计；G09 消费最终通过核验的恢复输出 root 的正式 `diagnostics.json`，其中原 40 项 benchmark 仍来自旧 root，不重跑。严格合并和 V12 人工验收仍待后续真实证据。
 
 ## 数据与测量条件
 
