@@ -11,10 +11,11 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
+from uuid import uuid4
 
 R0_COMMIT = "1c5afd37c891a0ed4776f64367fc7264db3c1c54"
 R0_POLICY_ID = "upstream_capacity_only_pad_arrival_v1_20261018"
@@ -188,14 +189,27 @@ def export_reference(repo_root, destination):
     if destination.exists():
         return _verify_export(destination, manifest)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".r0-export-") as temporary:
-        temporary = Path(temporary)
+    # tempfile's owner-only Windows DACL survives rename and prevents a regular
+    # Syncthing account reading the published export. An ordinary directory
+    # inherits the same parent permissions as other project source directories.
+    stage_name = ".r0-export-" + uuid4().hex
+    temporary = destination.parent / stage_name
+    temporary.mkdir(exist_ok=False)
+    try:
         for path, data in entries.items():
             target = temporary / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
         (temporary / REFERENCE_MANIFEST).write_text(json.dumps(manifest, indent=2), encoding="utf8")
         temporary.rename(destination)
+    finally:
+        if temporary.exists():
+            # Cleanup is restricted to the exact unique staging child created
+            # above. A changed path or symlink must never redirect rmtree.
+            if (temporary.resolve() != temporary or temporary.parent != destination.parent or temporary.name != stage_name
+                    or temporary.is_symlink()):
+                raise ProvenanceError("REFERENCE_UNSAFE_STAGING_CLEANUP")
+            shutil.rmtree(temporary)
     return _verify_export(destination, manifest)
 
 

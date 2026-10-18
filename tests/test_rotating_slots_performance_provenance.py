@@ -1,10 +1,12 @@
 """Bounded P0 checks; catalogue IDs describe scope, not completed qualification."""
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -66,6 +68,111 @@ def test_a01_mixed_import_and_changed_reference_rejected(reference, copied_sourc
     target.write_bytes(target.read_bytes() + b"\n# changed\n")
     with pytest.raises(ProvenanceError, match="REFERENCE_BYTES_MISMATCH"):
         run_reference(copied_source)
+
+
+def test_export_staging_cleanup_on_population_and_publish_failure(tmp_path, monkeypatch):
+    destination = tmp_path / "reference"
+    untouched = tmp_path / "unrelated"
+    untouched.mkdir(); (untouched / "keep.txt").write_text("keep")
+    write_bytes = Path.write_bytes
+    def fail_population(path, data):
+        if path.name == "world.py":
+            raise OSError("injected export population failure")
+        return write_bytes(path, data)
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "write_bytes", fail_population)
+        with pytest.raises(OSError, match="population failure"):
+            export_reference(ROOT, destination)
+    assert not destination.exists() and not list(tmp_path.glob(".r0-export-*"))
+    rename = Path.rename
+    def fail_publish(path, target):
+        if path.name.startswith(".r0-export-"):
+            assert path.parent == destination.parent
+            raise OSError("injected export publish failure")
+        return rename(path, target)
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "rename", fail_publish)
+        with pytest.raises(OSError, match="publish failure"):
+            export_reference(ROOT, destination)
+    assert not destination.exists() and not list(tmp_path.glob(".r0-export-*"))
+    assert (untouched / "keep.txt").read_text() == "keep"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows inherited DACL regression")
+def test_export_stage_and_published_tree_inherit_project_reader_acl(monkeypatch):
+    # pytest's own tmp directories may intentionally have owner-only ACLs. Use
+    # an ordinary mkdir child of the project artifact parent for this ACL test.
+    parent = (ROOT / "artifacts/rotating_slots" / ("reference-acl-test-" + uuid4().hex)).resolve()
+    parent.mkdir(exist_ok=False)
+    destination = parent / "reference"
+    def acl(path):
+        import ctypes
+        from ctypes import wintypes
+        security = ctypes.WinDLL("advapi32", use_last_error=True)
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        security.GetFileSecurityW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p,
+                                             wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
+        required = wintypes.DWORD()
+        security.GetFileSecurityW(str(path), 4, None, 0, ctypes.byref(required))
+        assert required.value > 0, ctypes.get_last_error()
+        descriptor = ctypes.create_string_buffer(required.value)
+        assert security.GetFileSecurityW(str(path), 4, descriptor, len(descriptor), ctypes.byref(required))
+        control, revision = ctypes.c_ushort(), wintypes.DWORD()
+        security.GetSecurityDescriptorControl.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_ushort),
+                                                          ctypes.POINTER(wintypes.DWORD)]
+        assert security.GetSecurityDescriptorControl(descriptor, ctypes.byref(control), ctypes.byref(revision))
+        present, defaulted, dacl = wintypes.BOOL(), wintypes.BOOL(), ctypes.c_void_p()
+        security.GetSecurityDescriptorDacl.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.BOOL),
+                                                       ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.BOOL)]
+        assert security.GetSecurityDescriptorDacl(descriptor, ctypes.byref(present), ctypes.byref(dacl), ctypes.byref(defaulted))
+        assert present.value and dacl.value
+        class ACL(ctypes.Structure):
+            _fields_ = [("revision", ctypes.c_ubyte), ("reserved", ctypes.c_ubyte),
+                        ("size", ctypes.c_ushort), ("count", ctypes.c_ushort), ("reserved2", ctypes.c_ushort)]
+        security.GetAce.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p)]
+        security.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR)]
+        kernel.LocalFree.argtypes = [ctypes.c_void_p]
+        kernel.LocalFree.restype = ctypes.c_void_p
+        rows = []
+        for index in range(ctypes.cast(dacl, ctypes.POINTER(ACL)).contents.count):
+            entry = ctypes.c_void_p()
+            assert security.GetAce(dacl, index, ctypes.byref(entry))
+            header = ctypes.cast(entry, ctypes.POINTER(ctypes.c_ubyte))
+            if header[0] != 0:  # ACCESS_ALLOWED_ACE; object-specific ACEs are not reader proof.
+                continue
+            mask = ctypes.cast(entry.value + 4, ctypes.POINTER(wintypes.DWORD)).contents.value
+            sid = wintypes.LPWSTR()
+            assert security.ConvertSidToStringSidW(entry.value + 8, ctypes.byref(sid))
+            try:
+                rows.append({"sid": sid.value, "allow": True, "inherited": bool(header[1] & 0x10),
+                             "read_execute": mask & 0x200A9 == 0x200A9})
+            finally:
+                kernel.LocalFree(ctypes.cast(sid, ctypes.c_void_p))
+        return {"protected": bool(control.value & 0x1000), "rules": rows}
+    def has_reader(data):
+        return any(row["sid"] in ("S-1-5-32-545", "S-1-5-11") and row["allow"]
+                   and row["inherited"] and row["read_execute"] for row in data["rules"])
+    observed = []
+    rename = Path.rename
+    def inspect_publish(path, target):
+        if path.name.startswith(".r0-export-"):
+            observed.append(acl(path))
+        return rename(path, target)
+    try:
+        assert has_reader(acl(parent)), "test parent must inherit ordinary project reader permissions"
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, "rename", inspect_publish)
+            manifest = export_reference(ROOT, destination)
+        assert manifest["source_sha256"] == R0_SOURCE_SHA256
+        assert len(observed) == 1 and observed[0]["protected"] is False and has_reader(observed[0])
+        for path in (destination, destination / "terminal_marl/core/rotating_slots/world.py"):
+            permissions = acl(path)
+            assert permissions["protected"] is False and has_reader(permissions)
+        assert verify_reference(ROOT, destination) == manifest
+    finally:
+        assert parent.parent == (ROOT / "artifacts/rotating_slots").resolve()
+        assert parent.name.startswith("reference-acl-test-") and not parent.is_symlink()
+        shutil.rmtree(parent)
 
 
 def test_a02_policy_and_amendment_separate_from_config(copied_source):
