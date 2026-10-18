@@ -1,11 +1,13 @@
 """Continuous interval certificates. Unresolved boxes always reject as UNKNOWN."""
 import math
 import heapq
+import sys
+from collections import OrderedDict
 from fractions import Fraction
 from .config import load_config
 from .geometry import slot_state, slot_phase, ring_config, pad_position
-from .models import ValidationResult
-from .trajectory import Interval, digest, _intrinsic_bounds_from_polar
+from .models import ValidationResult, KinematicState
+from .trajectory import Interval, digest, _intrinsic_bounds_from_polar, TrajectoryPlan
 from .energy import evaluate_power, power_bounds
 
 _NUMERIC_CERTIFICATES={}
@@ -133,7 +135,85 @@ def validate_plan(plan,config=None,use_cache=True):
         _PLAN_CERTIFICATES[exact_key]=dict(details)
     return ValidationResult(True,'SAFE','',details)
 
-def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_interval=1e-7):
+class _ExecutionQueryCache:
+    """Bounded pure-query values for one physical execution interval only.
+
+    Keep actual base-plan objects alive; identity is never substituted by a
+    payload hash. Estimate cache-owned containers, bindings, keys and values;
+    authoritative plan payloads remain owned by the caller and are not copied.
+    FIFO eviction changes only recomputation, never a certificate or pair order.
+    """
+    def __init__(self, plans, *, max_entries=4096, max_bytes=8*1024*1024):
+        if not 1<=max_entries<=4096 or not 8192<=max_bytes<=8*1024*1024:
+            raise ValueError('execution query cache limits exceed the private budget')
+        self.max_entries=max_entries; self.max_bytes=max_bytes
+        self._plans={id(p):p for p in plans if type(p) is TrajectoryPlan}
+        self._values=OrderedDict()
+        self._binding_bytes=(4096+sys.getsizeof(self._plans)+sys.getsizeof(self._values)+
+            sum(sys.getsizeof(key)+sys.getsizeof(plan) for key,plan in self._plans.items()))
+        # If even bindings exceed the budget, retain no bindings or query data.
+        if self._binding_bytes>max_bytes:
+            self._plans.clear()
+            self._binding_bytes=4096+sys.getsizeof(self._plans)+sys.getsizeof(self._values)
+        self.estimated_bytes=self._binding_bytes
+        self.counts={'state_hits':0,'state_misses':0,'bounds_hits':0,'bounds_misses':0,
+                     'bypasses':0,'oversized_values':0,'evictions':0}
+
+    @property
+    def entries(self): return len(self._values)
+
+    @staticmethod
+    def _value_bytes(value):
+        if type(value) is KinematicState:
+            return sys.getsizeof(value)+sum(_ExecutionQueryCache._value_bytes(getattr(value,k))
+                                            for k in ('p','v','a','jerk'))
+        if type(value) is tuple:
+            return sys.getsizeof(value)+sum(_ExecutionQueryCache._value_bytes(x) for x in value)
+        return sys.getsizeof(value)
+
+    def _query(self, plan, kind, times, derivative=0):
+        eligible=(self._plans.get(id(plan)) is plan and
+                  all(type(t) is float and math.isfinite(t) for t in times) and
+                  (kind=='state' or type(derivative) is int))
+        if not eligible:
+            self.counts['bypasses']+=1
+            return plan.state(times[0]) if kind=='state' else plan.bounds(*times,derivative)
+        key=(id(plan),kind,*(t.hex() for t in times),derivative)
+        found=self._values.get(key)
+        if found is not None:
+            self.counts[kind+'_hits']+=1
+            return found[0]
+        self.counts[kind+'_misses']+=1
+        value=plan.state(times[0]) if kind=='state' else plan.bounds(*times,derivative)
+        # These are the immutable original return forms, never mutable boxes.
+        immutable=(type(value) is KinematicState if kind=='state' else
+                   type(value) is tuple and all(type(pair) is tuple and
+                       all(type(x) is float for x in pair) for pair in value))
+        if not immutable:
+            self.counts['bypasses']+=1
+            return value
+        # 512 covers the entry's mapping/record bookkeeping conservatively;
+        # keys/values are charged recursively, including repeated references.
+        cost=512+self._value_bytes(key)+self._value_bytes(value)
+        if self._binding_bytes+cost>self.max_bytes:
+            self.counts['oversized_values']+=1
+            return value
+        while self._values and (len(self._values)>=self.max_entries or
+                                 self.estimated_bytes+cost>self.max_bytes):
+            _,(_,previous_cost)=self._values.popitem(last=False)
+            self.estimated_bytes-=previous_cost
+            self.counts['evictions']+=1
+        self._values[key]=(value,cost)
+        self.estimated_bytes+=cost
+        return value
+
+    def state(self, plan, time): return self._query(plan,'state',(time,))
+
+    def bounds(self, plan, start, end, derivative=0):
+        return self._query(plan,'bounds',(start,end),derivative)
+
+
+def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_interval=1e-7,*,_query_cache=None):
     c=config or load_config(); hard=c.safety.hard_separation_m
     if end<start or not all(math.isfinite(t) for t in (start,end)): return ValidationResult(False,'INVALID','INVALID_TIME')
     exact=_constant_vertical_offset(plan_a,plan_b,start,end)
@@ -154,13 +234,23 @@ def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_int
     def check(a,b,depth):
         nonlocal best_upper,min_lower,count
         count+=1; mid=(a+b)/2
-        sa=plan_a.state(mid); sb=plan_b.state(mid); d=math.dist(sa.p,sb.p); best_upper=min(best_upper,d)
+        if _query_cache is None:
+            sa=plan_a.state(mid); sb=plan_b.state(mid)
+        else:
+            sa=_query_cache.state(plan_a,mid); sb=_query_cache.state(plan_b,mid)
+        d=math.dist(sa.p,sb.p); best_upper=min(best_upper,d)
         dlow=math.nextafter(d-4*math.ulp(d),-math.inf); dhigh=math.nextafter(d+4*math.ulp(d),math.inf)
         if dhigh<hard: return ValidationResult(False,'UNSAFE','HARD_SEPARATION',{'witness_time':mid,'distance_m':d,'upper_bound_m':dhigh})
-        ba=plan_a.bounds(a,b,0); bb=plan_b.bounds(a,b,0)
+        if _query_cache is None:
+            ba=plan_a.bounds(a,b,0); bb=plan_b.bounds(a,b,0)
+        else:
+            ba=_query_cache.bounds(plan_a,a,b,0); bb=_query_cache.bounds(plan_b,a,b,0)
         rel=tuple((Interval(*x)-Interval(*y)).pair() for x,y in zip(ba,bb)); lower=_norm_lower(rel)
         # Taylor enclosure at midpoint reduces dependency on common motion.
-        va=plan_a.bounds(a,b,1); vb=plan_b.bounds(a,b,1)
+        if _query_cache is None:
+            va=plan_a.bounds(a,b,1); vb=plan_b.bounds(a,b,1)
+        else:
+            va=_query_cache.bounds(plan_a,a,b,1); vb=_query_cache.bounds(plan_b,a,b,1)
         vr=tuple((Interval(*x)-Interval(*y)).pair() for x,y in zip(va,vb)); lower=max(lower,math.nextafter(dlow-math.nextafter(_norm_upper(vr),math.inf)*(b-a)/2,-math.inf))
         if lower>=hard:
             min_lower=min(min_lower,lower); return None

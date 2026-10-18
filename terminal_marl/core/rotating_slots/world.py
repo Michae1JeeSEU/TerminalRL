@@ -17,7 +17,7 @@ from .resources import PadCalendar, ResourceConflict, SlotCalendar
 from .trajectory import (generate_final, generate_inbound, generate_transfer,
                          make_ground_plan, make_stable_plan, slot_state)
 from .energy import evaluate_power, integrate_energy
-from .safety import validate_plan, validate_separation
+from .safety import validate_plan, validate_separation, _ExecutionQueryCache
 
 
 AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M",
@@ -848,10 +848,12 @@ class RotatingSlotWorld:
         if len(bodies) < 2:
             return
         bases = {a.id: self._base(a) for a in bodies}
+        query_options = ({"_query_cache": _ExecutionQueryCache(bases.values())}
+                         if getattr(self,"cache_enabled",False) else {})
         first = None
         for a,b in combinations(bodies,2):
             x,y = bases[a.id],bases[b.id]
-            result = validate_separation(x,y,self.time,end,config=self.config)
+            result = validate_separation(x,y,self.time,end,config=self.config,**query_options)
             upper = result.details.get("upper_bound_m", result.details.get("distance_m"))
             if upper is not None and (self.minimum_separation is None or upper < self.minimum_separation["upper_bound_m"]):
                 self.minimum_separation = {"upper_bound_m": upper, "lower_bound_m": result.details.get("lower_bound_m"),
@@ -863,7 +865,7 @@ class RotatingSlotWorld:
             lo,hi = self.time,result.details.get("witness_time",end)
             while hi-lo > .00001:
                 mid=(lo+hi)/2
-                check=validate_separation(x,y,self.time,mid,config=self.config)
+                check=validate_separation(x,y,self.time,mid,config=self.config,**query_options)
                 if check.accepted:
                     lo=mid
                 else:

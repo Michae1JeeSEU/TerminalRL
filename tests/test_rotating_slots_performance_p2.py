@@ -217,9 +217,9 @@ def test_execution_base_constructions_and_pair_coverage(monkeypatch,n):
         assert (w.snapshot(),dict(w.active),dict(w.soft)) == before
         return result
     original_separation=world.validate_separation
-    def separation(a,b,start,end,config):
+    def separation(a,b,start,end,config,**kwargs):
         pairs.append((a.aircraft_id,b.aircraft_id,start,end))
-        return original_separation(a,b,start,end,config=config)
+        return original_separation(a,b,start,end,config=config,**kwargs)
     monkeypatch.setattr(w,"_base",base)
     monkeypatch.setattr(world,"validate_separation",separation)
     w._check_execution(.2)
@@ -242,7 +242,7 @@ def test_execution_bisection_queries_counted_separately(monkeypatch):
     def base(a):
         bases.append(a.id)
         return original(a)
-    def separation(a,b,start,end,config):
+    def separation(a,b,start,end,config,**kwargs):
         (full if end==1. else bisection).append((start,end))
         return ValidationResult(end<.375,'SAFE' if end<.375 else 'UNSAFE',
                                 details={'witness_time':end})
