@@ -159,6 +159,24 @@ server run was executed for this revision.
 
 ## Remaining scope
 
+Before the execution-reuse change, the Linux joint run at
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/cartesian_energy_linux_tests_20261018c`
+reported **75 passed in 7.29s**, exit 0. Its energy provenance records
+`semantic_exact_match: true`, `cache_counts_required_equal: false` and
+`first_repeat_exact_match: true`. Comparisons are R0 versus OPT within Linux;
+Linux oracle values need not equal Windows values. The actual stdout SHA256 is
+`595f230d5d7adaf1841db3cc9b6e7fc8892967d40a4ec407422197d8154dfbca`.
+
+The sibling `window_diagnostic_f3aae12_20261018a/summary.json` records three
+exit-0 completed W71-A cases from 300 to 310, with all six replay members byte
+exact across them. R0 benchmark, OPT benchmark and OPT profile rollout wall
+times were respectively `10.612530878002872`, `9.297192607999023` and
+`64.61778041099751` seconds; summary SHA256 is
+`58b7febd94d8b1f1407c55eac9b20f0df36b5dd465aafa169b1c7d86a246ad8e`.
+This is one diagnostic pair (benchmark ratio about 1.1415), not the six-window,
+three-repeat qualification; profile timing is separate. These historical
+Linux checks were read for documentation and were not rerun for this edit.
+
 This fixed, nonrandom characterization does not cover 20 shapes per maneuver,
 inbound or middle→inner transfer, middle/inner emergency sources, phase wrap
 and both sides of all 24 phase-bin boundaries, comprehensive success/rejection

@@ -98,4 +98,21 @@ segment、1043 组区间（每组比较 0—3 阶）、745 个 state 查询，
 sin 计数包含原 `Interval.cos` 内部移相后的 sin 调用；表中各方法调用可能
 嵌套，不将它们相加为独占成本。输入 jet 的每个端点 `float.hex` 保持不变，
 四阶输出均与原全量 `_cartesian` 对应结果精确相同。上述计数不含 polar jet
-构建，只量当前有界实现删除的重复工作；尚未测量新实现的真实窗口速度。
+构建，只量当前有界实现删除的重复工作；这些函数级计数不构成真实窗口性能资格。
+
+后续 Linux 联合检查位于
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/cartesian_energy_linux_tests_20261018c`：
+`stdout.log` 实际记录 `75 passed in 7.29s`，`numericexitcode.txt` 为 0；
+component 的 `comparison_provenance.json` 为 `exact_match=true`，energy 的
+`provenance.json` 为 `semantic_exact_match=true`、`cache_counts_required_equal=false`。
+Linux 只比较同平台独立 R0/OPT，不要求输出字节等于 Windows 数值结果。
+stdout SHA256 为 `595f230d5d7adaf1841db3cc9b6e7fc8892967d40a4ec407422197d8154dfbca`。
+
+`window_diagnostic_f3aae12_20261018a/summary.json`（同一 training output 父目录）
+记录三项均 `COMPLETED_WINDOW`、exit 0，从 300 推进到 310；R0 benchmark、
+OPT benchmark、OPT profile 的 rollout wall 分别为
+`10.612530878002872`、`9.297192607999023`、`64.61778041099751` 秒。
+六个 replay 成员在三项间 byte exact。summary SHA256 为
+`58b7febd94d8b1f1407c55eac9b20f0df36b5dd465aafa169b1c7d86a246ad8e`。
+这仅是一对诊断观察（benchmark 比约 1.1415），未完成六窗口三重复，profile
+不计入速度比较；仍为 `NOT_QUALIFIED / HUMAN_PENDING`。
