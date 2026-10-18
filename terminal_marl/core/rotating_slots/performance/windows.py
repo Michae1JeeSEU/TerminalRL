@@ -290,6 +290,21 @@ def _cold_cache_snapshot(world):
             "observation_timing_scope": "checkpoint_cold_restore_copy", "module_caches_cleared": False}
 
 
+def _final_cache_observation(world, *, rollout_failure=None):
+    """Read named counters after stopped rollout timing; never reset caches."""
+    scope = "after rollout and record flush, before replay export"
+    unavailable = {"status": "UNAVAILABLE", "snapshot_scope": scope}
+    if rollout_failure is not None:
+        return dict(unavailable, reason="rollout failed before final cache observation",
+                    rollout_failure=dict(rollout_failure))
+    try:
+        observed = _cold_cache_snapshot(world)
+    except Exception as exc:
+        return dict(unavailable, error={"type": type(exc).__name__, "message": str(exc)})
+    observed["observation_timing_scope"] = scope
+    return dict(observed, status="OBSERVED", snapshot_scope=scope)
+
+
 def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
     """Restore then resume the original invocation to its first eligible hook."""
     started_wall = time.perf_counter() if started_wall is None else started_wall
@@ -436,6 +451,7 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
     if status == "RUNNING":
         status = "INSUFFICIENT_CONTINUATION"
     end_counts = _counts(world, driver)
+    final_cache_observation = _final_cache_observation(world, rollout_failure=failure)
     replay_path, imported = None, runtime["source"]["imported_module_paths"]
     try:
         with measurements.span("output_replay_bundle_and_validate"):
@@ -490,6 +506,7 @@ def execute_window(args, runtime, *, started_wall=None, started_cpu=None):
         "inner_workers": 0, "execution_backend": args.kernel + "_SERIAL", "mode": args.mode,
         "profile_timing_performance_eligible": False if args.mode == "profile" else None,
         "cache_mode": "cold", "cold_cache_evidence": cold_cache_evidence,
+        "final_cache_observation": final_cache_observation,
         "cache_warmup_excluded": False, "migration_id": migration_id,
         "replay_path": replay_path, "replay_scope": "diagnostic_prefix_after_implementation_failure" if failure else "complete_observed_prefix_not_full_episode",
         "failure": failure, "hard_timeout_enforced": False, "external_diagnostic_budget_enforced": False,

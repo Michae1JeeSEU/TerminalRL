@@ -26,6 +26,46 @@ SEMANTICS = {k: "a" * 64 for k in windows.IDENTITY_KEYS}
 SEMANTICS["policy_id"] = provenance.R0_POLICY_ID
 
 
+def test_final_cache_observation_keeps_warm_root_counters(monkeypatch):
+    from terminal_marl.core.rotating_slots import energy
+    FixtureWorld = type("FixtureWorld", (), {"__module__": "terminal_marl.core.rotating_slots.world"})
+    world = FixtureWorld()
+    world._q_cache = {}; world._energy_cache = {}; world._reference_templates = {}
+    enabled = energy.root_cache_stats()["enabled"]
+    try:
+        energy.root_cache_clear(); energy.root_cache_set_enabled(True)
+        energy._root(1., 0., 20.); energy._root(1., 0., 20.)
+        before = energy.root_cache_stats()
+        observed = windows._final_cache_observation(world)
+        assert observed["status"] == "OBSERVED"
+        assert observed["snapshot_scope"] == "after rollout and record flush, before replay export"
+        assert observed["observation_timing_scope"] == observed["snapshot_scope"]
+        assert not observed["module_caches_cleared"]
+        assert not observed["all_named_acceleration_caches_empty"]
+        assert observed["module_numerical_caches"]["energy._ROOT_CACHE"] == dict(before, present=True)
+        assert before["entries"] == before["actual_computes"] == before["hits"] == 1
+        assert energy.root_cache_stats() == before
+        monkeypatch.delattr(energy, "root_cache_stats")
+        absent = windows._final_cache_observation(world)
+        assert absent["module_numerical_caches"]["energy._ROOT_CACHE"] == {"present": False, "entries": 0}
+    finally:
+        energy.root_cache_clear(); energy.root_cache_set_enabled(enabled)
+
+
+def test_final_cache_observation_does_not_fabricate_counts_on_failure(monkeypatch):
+    def broken(world):
+        raise RuntimeError("test-only cache observer failure")
+    monkeypatch.setattr(windows, "_cold_cache_snapshot", broken)
+    observed = windows._final_cache_observation(object())
+    assert observed["status"] == "UNAVAILABLE"
+    assert observed["error"] == {"type": "RuntimeError", "message": "test-only cache observer failure"}
+    assert "module_numerical_caches" not in observed
+    failure = {"type": "ValueError", "message": "test-only rollout failure"}
+    failed = windows._final_cache_observation(object(), rollout_failure=failure)
+    assert failed["status"] == "UNAVAILABLE" and failed["rollout_failure"] == failure
+    assert "error" not in failed and "module_numerical_caches" not in failed
+
+
 def seal(document):
     document["manifest_sha256"] = provenance.digest({k: v for k, v in document.items() if k != "manifest_sha256"})
     return document
@@ -252,6 +292,8 @@ if injected_failure:
 result=windows.execute_window(args,runtime)
 if injected_failure:
  assert result["status"]=="IMPLEMENTATION_FAILURE",result
+ assert result["final_cache_observation"]["status"]=="UNAVAILABLE"
+ assert "module_numerical_caches" not in result["final_cache_observation"]
  heartbeat=json.loads((output/"heartbeat.json").read_bytes())
  assert heartbeat["last_complete_sim_time"]==.35
  assert result["last_complete_sim_time"]==.35 and result["actual_stop_sim_time"]==.473
@@ -261,6 +303,17 @@ if injected_failure:
  print(json.dumps({"status":result["status"],"last_complete":heartbeat["last_complete_sim_time"]}))
  raise SystemExit(0)
 assert result["status"]=="COMPLETED_WINDOW",result
+final_observation=result["final_cache_observation"]
+assert final_observation["status"]=="OBSERVED"
+assert final_observation["snapshot_scope"]=="after rollout and record flush, before replay export"
+assert final_observation["observation_timing_scope"]==final_observation["snapshot_scope"]
+assert final_observation["module_caches_cleared"] is False
+assert result["cold_cache_evidence"]["observation_timing_scope"]=="checkpoint_cold_restore_copy"
+for name in ("trajectory.poly_bounds","energy._integrable_plan","energy._segment_table"):
+ info=final_observation["module_numerical_caches"][name]
+ assert all(type(info[field]) is int and info[field]>=0 for field in ("hits","misses","currsize"))
+root_observation=final_observation["module_numerical_caches"]["energy._ROOT_CACHE"]
+assert root_observation["present"] is False and root_observation["entries"]==0
 assert bool(result["migration_id"]) is migration_fixture
 assert result["original_advance_target"]==3600. and result["outer_phase"]=="arrival_window"
 assert result["start_sim_time"]==.35 and result["actual_sim_delta_s"]>=10.

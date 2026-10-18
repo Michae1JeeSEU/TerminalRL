@@ -77,6 +77,21 @@ rollout wall 与真实 `time.process_time` CPU 从恢复完成后开始，包含
 模块 cache；若 source archive/restore 验证已预热任何数值 cache，则拒绝进入
 rollout，保留报告供主对话判断，不能把非空缓存标成全冷。
 
+`result.json` 另有独立的 `final_cache_observation`。它在 rollout wall/CPU
+计时停止、记录 flush 和资源采样结束之后、ReplayBundle 导出之前，只读调用同一
+命名缓存 observer。`snapshot_scope` 精确为
+`after rollout and record flush, before replay export`，`observation_timing_scope`
+也标记这个时点；原 `cold_cache_evidence` 及其冷恢复时点保持不变。末次观察可以是
+非空，`all_named_acceleration_caches_empty=false` 不代表冷恢复失败。入口没有为这次
+观察清缓存或启用 cProfile，也没有增加 world 或 checkpoint 语义字段。
+
+该观察包含 `poly_bounds` 等已有 LRU 的 hits/misses/currsize、world 缓存大小，
+以及存在时 scalar root 缓存的逻辑请求、实际求根、命中、淘汰、entry 和估算字节。
+固定 R0 没有 root 缓存时仍明确记录 `present=false, entries=0`。rollout 实现失败
+时该观察为 `UNAVAILABLE`，保留原错误，不填充伪造的末态统计；observer 自身报错也
+记录 `UNAVAILABLE` 和具体异常类型/消息，不把诊断错误改写为物理结果。若后续
+ReplayBundle 导出失败，已经取得的观察仍只代表上述导出前时点，不代表成功终态。
+
 每 30 sim 秒或 300 wall 秒通过原自然切点请求正常保存。末态 checkpoint 及
 sidecar 保留完整续跑状态；实现失败时保留最近完整 checkpoint，尚无新 checkpoint
 则明确引用原冻结 checkpoint。实现失败后的 live replay 仅作 diagnostic。
@@ -94,7 +109,21 @@ benchmark 不启用 cProfile。profile 只在 rollout 的真实续跑调用中�
 
 `tests/test_rotating_slots_performance_windows.py` 默认运行纯 parser、canonical
 manifest、选择/后缀、source/target/shim/helper/evidence 审批负向测试，以及新 CLI
-字节进入 execution SHA 的检查。该层不生成 deployment 或导入 core。
+字节进入 execution SHA 的检查。另有有界单测直接导入 core，验证最终 observer
+保留已暖 root entry/counter、支持 R0 缺少可选缓存，并在异常时不编造计数；这些
+单测不生成 deployment。opt-in service-events fixture 也检查最终观察的命名计数和
+时点，并检查注入 rollout 失败时观察不可用。
+
+本次最终观察变更的本地定向验证已退出 0：`41 passed, 1 skipped in 5.06s`，
+实际执行 `performance_windows` 与 `root_reuse` 两个测试文件；日志、命令、numeric
+exit 及独立 R0/OPT root 结果保留在
+`artifacts/rotating_slots/cache_observation_tests_20261018a*`。跳过的是
+`RUN_WINDOW_INTEGRATION != "1"` 的 opt-in fixture，原因
+`requires stable implementation fingerprint`，不是平台限制。
+完整 Linux integration 仍须待源码/文档稳定后显式设置
+`RUN_WINDOW_INTEGRATION=1`。未来若应用已准备的 peak-cache patch，必须只把其
+可选 observer hunk 重定位到当前 `windows.py`；不得用旧 draft 整文件覆盖本次最终
+观察变更。
 
 `RUN_WINDOW_INTEGRATION=1` 启用一个独立 `python -I -B` service-events 小 fixture。
 fixture 从原目标 3600 的非网格自然切点生成真实 checkpoint，以真实冷恢复和
