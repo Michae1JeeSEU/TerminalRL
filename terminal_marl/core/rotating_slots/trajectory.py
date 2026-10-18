@@ -4,8 +4,10 @@ Coefficients are in normalized local time. Certificates operate on polynomial
 enclosures and trigonometric intervals, never on the execution sample grid.
 """
 from dataclasses import dataclass, replace
+from collections import OrderedDict
 from functools import lru_cache
 import math
+import sys
 import numpy as np
 from .config import load_config, digest
 from .geometry import slot_phase, slot_state, ring_config, pad_position
@@ -16,8 +18,7 @@ def poly(c,u,k=0):
     for _ in range(k): c=tuple(i*c[i] for i in range(1,len(c)))
     return sum(x*u**i for i,x in enumerate(c))
 
-@lru_cache(maxsize=16384)
-def poly_bounds(c,lo,hi,k=0,scale=1.):
+def _poly_bounds_uncached(c,lo,hi,k=0,scale=1.):
     """Power-to-Bernstein hull on the requested subinterval (outward padded)."""
     c=tuple(c)
     for _ in range(k): c=tuple(i*c[i] for i in range(1,len(c)))
@@ -27,6 +28,103 @@ def poly_bounds(c,lo,hi,k=0,scale=1.):
     bern=[sum(power[j]*math.comb(i,j)/math.comb(n,j) for j in range(i+1)) for i in range(n+1)]
     error=32*np.finfo(float).eps*sum(abs(x) for x in c)*max(1.,abs(lo),abs(hi))**n
     return (math.nextafter((min(bern)-error)*scale,-math.inf), math.nextafter((max(bern)+error)*scale,math.inf))
+
+
+class _BernsteinMetadataCache:
+    """FIFO coefficient-only metadata; no interval certificates or world state."""
+    __slots__=('entries','entry_bytes','hits','misses','evictions','bypasses',
+               'enabled','max_entries','max_bytes')
+    POLICY='original_bernstein_product_order_v1'
+    FIXED_BYTES=4096
+    def __init__(self,max_entries=4096,max_bytes=16*1024*1024):
+        self.entries=OrderedDict(); self.entry_bytes=0
+        self.hits=self.misses=self.evictions=self.bypasses=0
+        self.enabled=True; self.max_entries=max_entries; self.max_bytes=max_bytes
+        if type(max_entries) is not int or not 1<=max_entries<=4096: raise ValueError('invalid metadata entry limit')
+        if type(max_bytes) is not int or self.owned_bytes()>max_bytes or max_bytes>16*1024*1024: raise ValueError('invalid metadata byte limit')
+    @staticmethod
+    def _size(value):
+        # Deliberately count repeated immutable references repeatedly: conservative.
+        return sys.getsizeof(value)+(sum(_BernsteinMetadataCache._size(x) for x in value) if isinstance(value,tuple) else 0)
+    def owned_bytes(self):
+        # Includes the cache object, current dict allocation, all retained records,
+        # and conservative fixed allowance for scalar fields/counters/containers.
+        return self.FIXED_BYTES+sys.getsizeof(self)+sys.getsizeof(self.entries)+self.entry_bytes
+    def clear(self):
+        self.entries.clear(); self.entry_bytes=0
+        self.hits=self.misses=self.evictions=self.bypasses=0
+    def stats(self):
+        return dict(entries=len(self.entries),bytes=self.owned_bytes(),max_entries=self.max_entries,
+                    max_bytes=self.max_bytes,hits=self.hits,misses=self.misses,
+                    evictions=self.evictions,bypasses=self.bypasses,enabled=self.enabled,policy=self.POLICY)
+    def get(self,c,k):
+        if not self.enabled:
+            self.bypasses+=1; return None
+        # The integer itself disambiguates distinct builtin ints sharing float.hex.
+        key=(self.POLICY,k,tuple((type(x).__name__,float(x).hex(),x if type(x) is int else None) for x in c))
+        if key in self.entries:
+            self.hits+=1; return self.entries[key][0]
+        self.misses+=1
+        for _ in range(k): c=tuple(i*c[i] for i in range(1,len(c)))
+        if not c: record=(c,(),(),(),0)
+        else:
+            n=len(c)-1
+            products=tuple(tuple(c[j]*math.comb(j,i) for j in range(i,n+1)) for i in range(n+1))
+            numerator=tuple(tuple(math.comb(i,j) for j in range(i+1)) for i in range(n+1))
+            denominator=tuple(math.comb(n,j) for j in range(n+1))
+            record=(c,products,numerator,denominator,sum(abs(x) for x in c))
+        # Pair tuple and recorded size integer are owned too; 128 overcharges
+        # their scalar size bookkeeping, including the temporary zero placeholder.
+        size=self._size((key,(record,0)))+128
+        empty_bytes=self.FIXED_BYTES+sys.getsizeof(self)+sys.getsizeof(OrderedDict())
+        if empty_bytes+size>self.max_bytes:
+            self.bypasses+=1; return None
+        while self.entries and (len(self.entries)>=self.max_entries or self.owned_bytes()+size>self.max_bytes):
+            _,(_,old_size)=self.entries.popitem(last=False); self.entry_bytes-=old_size; self.evictions+=1
+        self.entries[key]=(record,size); self.entry_bytes+=size
+        # Account for dict growth after insertion, deterministically evict FIFO.
+        while self.entries and self.owned_bytes()>self.max_bytes:
+            _,(_,old_size)=self.entries.popitem(last=False); self.entry_bytes-=old_size; self.evictions+=1
+        if key not in self.entries:
+            self.bypasses+=1; return None
+        return record
+
+_BERNSTEIN_METADATA=_BernsteinMetadataCache()
+
+def bernstein_cache_clear():
+    """Clear only coefficient metadata and its counters; leave poly_bounds LRU."""
+    _BERNSTEIN_METADATA.clear()
+
+def bernstein_cache_stats(): return _BERNSTEIN_METADATA.stats()
+
+def bernstein_cache_enable(enabled=True):
+    """Set only metadata policy; an already cached interval remains unchanged."""
+    if type(enabled) is not bool: raise TypeError('enabled must be builtin bool')
+    _BERNSTEIN_METADATA.enabled=enabled
+
+def _bernstein_eligible(c,lo,hi,k,scale):
+    if type(c) is not tuple or len(c)>128 or type(k) is not int or not 0<=k<=3: return False
+    if any(type(x) is not float or not math.isfinite(x) for x in (lo,hi,scale)): return False
+    try: return all(type(x) in (int,float) and math.isfinite(x) for x in c)
+    except OverflowError: return False
+
+@lru_cache(maxsize=16384)
+def poly_bounds(c,lo,hi,k=0,scale=1.):
+    """Original arithmetic with bounded reusable coefficient-only metadata."""
+    if not _bernstein_eligible(c,lo,hi,k,scale): return _poly_bounds_uncached(c,lo,hi,k,scale)
+    try: metadata=_BERNSTEIN_METADATA.get(c,k)
+    except (OverflowError,ValueError): return _poly_bounds_uncached(c,lo,hi,k,scale)
+    if metadata is None: return _poly_bounds_uncached(c,lo,hi,k,scale)
+    c,products,numerator,denominator,absolute_sum=metadata
+    if not c: return (0.,0.)
+    n=len(c)-1; width=hi-lo
+    lo_powers=tuple(lo**p for p in range(n+1))
+    width_powers=tuple(width**p for p in range(n+1))
+    power=[sum(products[i][j-i]*lo_powers[j-i]*width_powers[i] for j in range(i,n+1)) for i in range(n+1)]
+    bern=[sum(power[j]*numerator[i][j]/denominator[j] for j in range(i+1)) for i in range(n+1)]
+    error=32*np.finfo(float).eps*absolute_sum*max(1.,abs(lo),abs(hi))**n
+    return (math.nextafter((min(bern)-error)*scale,-math.inf), math.nextafter((max(bern)+error)*scale,math.inf))
+
 
 def hermite(p0,v0,a0,p1,v1,a1,T):
     c0=p0; c1=v0*T; c2=a0*T*T/2

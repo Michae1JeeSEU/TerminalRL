@@ -232,6 +232,32 @@ def test_known_optional_peak_cache_strict_compatibility(tmp_path,case):
     assert bool(result['errors']) is (case not in ('absent','present-empty','not-present-empty'))
 
 
+@pytest.mark.parametrize('case',['absent','present-empty','not-present-empty','warm','unknown',
+                                'present-not-bool','missing-present','missing-entries','bool-entries'])
+def test_known_optional_bernstein_metadata_cache_strict_compatibility(tmp_path,case):
+    campaign=fixture_campaign(tmp_path,windows=('W71-A',),diagnostic=True)
+    fixture_group(tmp_path,campaign,'W71-A')
+    for job in p.plan(('W71-A',)):
+        attempt=tmp_path/job['relative_case']; result=p.read(attempt/'result.json')
+        cache=result['cold_cache_evidence']['module_numerical_caches']
+        cache['energy._ROOT_CACHE']={'present':True,'entries':0}
+        cache['energy._PEAK_CACHE']={'present':True,'entries':0}
+        key='trajectory._BERNSTEIN_METADATA'
+        if case=='present-empty': cache[key]={'present':True,'entries':0}
+        if case=='not-present-empty': cache[key]={'present':False,'entries':0}
+        if case=='warm': cache[key]={'present':True,'entries':1}
+        if case=='unknown': cache[key+'_UNREVIEWED']={'present':True,'entries':0}
+        if case=='present-not-bool': cache[key]={'present':'false','entries':0}
+        if case=='missing-present': cache[key]={'entries':0}
+        if case=='missing-entries': cache[key]={'present':True}
+        if case=='bool-entries': cache[key]={'present':False,'entries':False}
+        write(attempt/'result.json',result)
+        record_path=attempt.parent/'collector/collector.json'; record=p.read(record_path)
+        record['result_sha256']=p.sha(attempt/'result.json'); write(record_path,record)
+    result=p.summarize(tmp_path)
+    assert bool(result['errors']) is (case not in ('absent','present-empty','not-present-empty'))
+
+
 def test_guard_classification_requires_exact_armed_signal_pid_and_deadline():
     alarm=getattr(signal,'SIGALRM',14)
     record={'state':'ARMED','pid':123,'expiry_signal':alarm,'deadline_monotonic_seconds':2.}

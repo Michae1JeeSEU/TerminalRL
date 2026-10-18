@@ -193,6 +193,47 @@ def test_independent_r0_exact_peak_measure(isolated):
     assert repeat['non_top_level_computes']>=first['non_top_level_computes']+1
 
 
+def test_fresh_default_disabled_bypasses_key_and_owned_byte_work(tmp_path):
+    code=r'''
+import sys
+sys.dont_write_bytecode=True
+import json
+sys.path.insert(0,ROOT)
+from terminal_marl.core.rotating_slots import energy as en, trajectory as tr
+from terminal_marl.core.rotating_slots.config import load_config
+assert sys.flags.isolated and sys.dont_write_bytecode
+assert en.peak_cache_stats()['enabled'] is False
+def forbidden(*args,**kwargs):
+    raise AssertionError('disabled peak cache performed key/owned-byte work')
+en._peak_exact_key=forbidden
+en._peak_owned_bytes=forbidden
+s=tr.Segment(0.,1.,(123.,),(0.,),(20.,))
+c=load_config();state=s.state(.137)
+tangent=float(en.evaluate_power(state.v,state.a,c).shaft_w)
+answers=[]
+for a,b,threshold in ((.137,.371,1e9),(.137,.137+4e-8,tangent)):
+    actual=en._peak_measure(s,a,b,threshold,c)
+    expected=en._peak_measure_uncached(s,a,b,threshold,c)
+    assert actual.hex()==expected.hex()
+    answers.append(actual.hex())
+stats=en.peak_cache_stats()
+assert stats['enabled'] is False
+assert stats['logical_requests']==stats['actual_computes']==2
+assert stats['hits']==stats['entries']==0
+print(json.dumps({'default_disabled':True,'key_and_owned_work_bypassed':True,
+                  'results_hex':answers,'stats':stats},allow_nan=False))
+'''
+    command=[sys.executable,'-I','-B','-c','ROOT='+repr(str(ROOT))+'\n'+code]
+    result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,timeout=120)
+    (tmp_path/'default_disabled.stdout.json').write_text(result.stdout,encoding='utf8')
+    (tmp_path/'default_disabled.stderr.txt').write_text(result.stderr,encoding='utf8')
+    (tmp_path/'default_disabled.process.json').write_text(json.dumps(
+        {'command':command,'numeric_exit':result.returncode},indent=2),encoding='utf8')
+    assert result.returncode==0,(result.stdout,result.stderr)
+    observed=json.loads(result.stdout)
+    assert observed['default_disabled'] and observed['key_and_owned_work_bypassed']
+
+
 def test_unchanged_peak_body_defaults_and_semantics():
     def peak(path):
         node=deepcopy(next(n for n in ast.parse(path.read_text(encoding='utf8')).body

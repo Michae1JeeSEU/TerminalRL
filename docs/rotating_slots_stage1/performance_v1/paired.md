@@ -77,8 +77,9 @@ CPU 单列，不能替代完整 child 生命周期；不累加嵌套 `world.cpu`
 record/replay 代替 checkpoint 或额外改变物理步。
 
 冷缓存检查必须包含原五个数值 cache。仅额外允许已审查的
-`energy._ROOT_CACHE` 和 `energy._PEAK_CACHE` 观察项：`present` 为 bool 且
-`entries=0`；peak 的 entries 必须是 built-in int，不接受 bool 冒充整数零。
+`energy._ROOT_CACHE`、`energy._PEAK_CACHE` 与已命名的
+`trajectory._BERNSTEIN_METADATA` 观察项：`present` 为 bool 且 `entries=0`；
+peak 和 metadata 的 entries 必须是 built-in int，不接受 bool 冒充整数零。
 R0 可明确报告 `present=false`，OPT 可报告 `present=true`。未出现可选项仍兼容；
 warm 或其他未审查 cache key 均拒绝，不把任意额外项作为自动获批的缓存。
 
@@ -157,3 +158,39 @@ paired 检查。新的 known-PEAK whitelist、warm/unknown 拒绝和字段类型
 及完整日志保留。主对话诊断错误仅在 synthetic unresolved trace 的 tuple 序列化，
 将 `.pair()` 调用改为 `exact([v,a])` 后完整重跑；没有为测试改变 kernel、缓存预算
 或物理/数值政策。旧 Linux 120/nodeids120/metadata0 的矛盾记录继续保留。
+
+
+Bernstein metadata 候选阶段只增加上述 known-key 观察和严格白名单；warm、unknown、
+missing 和字段类型负向 fixtures 已准备，不把任意新增 cache key 自动批准。
+现有 final-cache observer 保持原函数体，读取同一只读快照；worker reset 接入仍为
+后续待定范围，本补丁不修改 parallel。artifact 隔离候选测试不能替代应用版联合
+检查、真实 common-window 测量或 C/P 资格。
+
+
+本次 metadata 白名单的九个 synthetic 候选 case 已通过 artifact-only canonical
+paired import 执行：`9 passed, 36 deselected in 3.25s`，退出 0。显式路径检查确认
+仅 paired 使用命名 artifact，其余 helper 来自实际当前树；实际源码未应用。
+metadata 数值候选仍沿用原 9380 查询矩阵，八个候选测试 `8 passed in 7.12s`，
+不把这些隔离结果当作应用版 physics/window、真实测量或 C/P 资格。
+
+
+当前状态：Bernstein known-key 观察及严格白名单已应用；最终 observer 原函数体保留。
+peak cache 默认关闭，仍有显式启用入口；其观察项存在但冷 entry 为零仍符合原检查。
+上述 artifact 候选测试是历史隔离证据，不冒充当前应用版验证。当前目标本地 batch
+覆盖 Bernstein、peak/root、P2、Cartesian、execution reuse、energy queries、
+windows 与 paired，实际结果见下段；`RUN_WINDOW_INTEGRATION` 本次不设置，
+Linux 联合集成和实际测量后续单独核验。
+
+本轮范围按 `user_scope_amendment_20261019.md`：完成一次集成、测量与回归并报告
+收益/退化和未覆盖项；原程序 gate/历史状态保留为观察值，不因未达到 2× 再反复
+寻优，也不伪写原合同 `PERF_ACCEPTED`。物理、安全、等价和完整记录要求不变。
+
+
+当前应用版目标 batch 已退出 0：`164 passed, 3 skipped in 74.06s`，wrapper
+74.672s；九文件范围及实际命令见
+`artifacts/rotating_slots/final_kernel_tests_20261019a.launch.json`，stdout/exit
+在同前缀外置文件。未设置 artifact override，Bernstein 9380 查询及 repeat 使用
+实际 trajectory 源码并与独立 R0 精确一致；fresh 默认-off peak 检查也通过。
+三项 skip 是 opt-in window fixture 和两项 Linux-only paired 检查；本次没有执行
+Linux 联合集成、真实串并行 traffic 或新的 common-window 测量，生命周期集成及
+后续一次测量/回归/人工观察工作仍由各自真实证据验收。

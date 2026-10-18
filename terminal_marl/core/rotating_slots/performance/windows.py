@@ -290,6 +290,17 @@ def _cold_cache_snapshot(world):
                  and observed["entries"] >= 0, "invalid optional peak cache observation")
         numerical["energy._PEAK_CACHE"] = dict(observed, present=True)
         empty = empty and observed["entries"] == 0
+    trajectory_module = importlib.import_module(core + ".trajectory")
+    metadata_stats = getattr(trajectory_module, "bernstein_cache_stats", None)
+    if metadata_stats is None:
+        numerical["trajectory._BERNSTEIN_METADATA"] = {"present": False, "entries": 0}
+    else:
+        _require(callable(metadata_stats), "unexpected optional Bernstein metadata observer")
+        observed = metadata_stats()
+        _require(isinstance(observed, dict) and type(observed.get("entries")) is int
+                 and observed["entries"] >= 0, "invalid optional Bernstein metadata observation")
+        numerical["trajectory._BERNSTEIN_METADATA"] = dict(observed, present=True)
+        empty = empty and observed["entries"] == 0
     world_caches = {name: len(getattr(world, name)) for name in ("_q_cache", "_energy_cache", "_reference_templates")}
     config_module = importlib.import_module(core + ".config")
     parse_cache = config_module._default_config.cache_info()._asdict()
