@@ -127,5 +127,32 @@ uses fresh `-I -B`, bytecode disabled before imports, numerical threads 1 and
 nice target 10, and records before/after source/R0 evidence, logs, UTC and exit
 status under the fixed new server output
 `/home/user/training_outputs/terminal/rotating_slots_perf_v1/execution_reuse_linux_tests_20261018a`.
-Expected collection is 131 tests. No Linux run or passing result is claimed
-by this preparation.
+The subsequently completed Linux run recorded `131 passed in 48.31s`, exit 0,
+from `2026-10-18T15:03:13.405107Z` to `2026-10-18T15:04:01.851609Z`.
+Its `source_finish.json` reports unchanged source and the exact 24-source-file
+R0 export plus manifest (25 files). The semantic provenance in
+`pytest/execution_reuse0/provenance.json` reports `semantic_exact_match: true`;
+R0 and OPT result SHA256 are both
+`8c610848d64d7c484af7375d029e6e06393574992ca76eac7a3b48fe336b9c8f`.
+The logs, metadata, source checks and provenance are under
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/execution_reuse_linux_tests_20261018a`.
+
+The later W71-A diagnostic for `7a4a5d9` is under
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/window_diagnostic_7a4a5d9_20261018a`.
+Its `summary.json` SHA256 is
+`6dc312d684566eb5b5d2d50462858a19dea9d096130dcddde155c9081b61c96f`.
+The three cases all exited 0 with `COMPLETED_WINDOW`, cold named acceleration
+caches, actual start 300 and stop 310, and six replay data members exactly
+matching R0. The summary records the following rollout measurements:
+
+| Case | Rollout wall seconds | Rollout CPU seconds |
+| --- | ---: | ---: |
+| R0 benchmark | 10.633948864997365 | 10.622163745 |
+| OPT benchmark | 8.475264565000543 | 8.463118884 |
+| OPT profile | 48.827325296995696 | 48.777353922 |
+
+The R0/OPT benchmark ratio is approximately 1.2547× for this single pair.
+This is a diagnostic, with neither three formal repeats nor all six windows;
+it is not a formal performance result. Profile timing is instrumentation
+evidence only, and nested cumulative profile values must not be added.
+The status remains `NOT_QUALIFIED / HUMAN_PENDING`.
