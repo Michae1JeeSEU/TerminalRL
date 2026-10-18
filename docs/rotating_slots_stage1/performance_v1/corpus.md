@@ -5,6 +5,67 @@ for performance contract §15.2. The existing runner still exposes only
 `preflight`, `capture`, and `micro`. This helper does not run paired windows,
 qualify implementation equivalence, or report speedups.
 
+## Current input freeze: 2026-10-18 13:39 UTC
+
+The six-window input corpus is now **FROZEN**, with performance status
+**NOT_QUALIFIED** and human status **HUMAN_PENDING**. This completes the input
+freezing prerequisite only. P2 implementation has started; no paired-window
+2x speedup, six-window 60-simulated-second gate, complete 15-case traffic result,
+performance 70-case or stage-1 94-case acceptance, or human observation qualification is
+established by this freeze. The existing deadline primitive remains
+unintegrated; its separate Linux result is 19 passed, with no skips, and does
+not grant full-system hard-timeout qualification or validate this input corpus.
+
+The actual freeze CLI exited zero and published
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/corpus_frozen_retention_20261018a/corpus_manifest.json`.
+The local synced evidence is
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/corpus_frozen_retention_20261018a/corpus_manifest.json`.
+Its canonical `manifest_sha256`, recomputed by the primary agent, is
+`91d35ee0e74d0b0082d3c30d5c5ce6134b1e8d37d4da213166f01221156ee9b2`.
+The collector ran from `2026-10-18T13:38:57.694497+00:00` through
+`2026-10-18T13:39:11.670506+00:00`. All six inputs were AVAILABLE and cold-restored
+without advancing; all four complete observed replay prefixes validated.
+All 12 copied checkpoint/sidecar files compared equal to their sources.
+
+| Window | Actual natural cut (simulated seconds) | Checkpoint SHA-256 |
+| --- | ---: | --- |
+| W71-A | 300 | `d325b286341a537e5a185e1102da42ec7db1893456f64e1fb2bf7e2b23f7e144` |
+| W71-B | 720.9445824868908 | `4966bee23ff39a5329489db8946c90a013aa0c7e541bfbae90763a5463397dec` |
+| W71-C | 690.8000000000002 | `819611169de90aa65cf9e5211409848aea188f3730aefb5d883ed4c870455dcb` |
+| W60 | 600 | `1ffef40e7684bddf77af04b041086e29cee3ed9c3cd36696ddc89e2cff2b9cec` |
+| W120 | 600 | `c25ab05afa881333fd7e6af8bac891c4fad8bd28e4832a5c2d8b69185de6853d` |
+| W180 | 540 | `12d50dcc7b802aab073c6a349029e5293b1ade539f16196f718d028a5aaef9d7` |
+
+Only W71-B and W71-C use availability substitutions. Their preferred cuts lack
+the required 60-second suffix because the actual physical stop occurs at
+805.0489065963134 simulated seconds. Selection uses the latest available
+validated natural cuts subject to the fixed order and 30-second spacing.
+Execution speed and wall duration did not trigger either substitution.
+
+The corrected-retention capture completed at `2026-10-18T13:26:32.666674+00:00`,
+with `10376.555592586996` seconds of wall time. Its terminal physical failure
+was `req_000009`, `ENERGY_FAILURE`, SOC zero, at 805.0489065963134 simulated
+seconds. The six semantic files were byte-identical to the older capture,
+with 4242 states and 14745 events. The retained index has 11 checkpoints:
+eight periodic, the 300-second pin, and two terminal checkpoints. These retained
+cuts provide the additional W71 input missing in the historical attempt below.
+The local inspection evidence is
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/capture_retention_d7893f5_20261018a/inspection_20261018T133619Z.json`;
+the completed attempt exited zero and all six inspected PIDs were gone.
+
+The older capture consumed `10732.656527067` wall seconds; together the two
+captures consumed `21109.21211965399` seconds. Supervisor CPU is excluded.
+These capture costs do not replace the formal traffic budget or demonstrate
+performance acceptance. The completed capture's heartbeat was deleted to
+prevent duplicate wakeups. Frozen checkpoint copies retain their original
+absolute source stream dependencies; preserve those immutable source streams.
+
+The earlier `INCOMPLETE` manifest and component results below remain historical
+evidence. They were not rewritten or retrospectively counted as a complete
+freeze.
+
+## Helper protocol and selection rules
+
 Run it only after all four source attempts have completed and their parent
 `<case>.exitcode.txt` files contain zero. Use a new output directory, separate
 from both the capture campaign and frozen reference:
@@ -92,6 +153,8 @@ atomic completion and no overwrite, bounded command-line size, and an actual
 frozen R0 replay plus checkpoint restore at 0.2 seconds within a 0.4-second
 fixture. That compact fixture is not a six-window campaign or equivalence proof.
 
+## Earlier component and incomplete capture evidence
+
 Observed local check (exit 0): **46 passed in 32.46 seconds**. This includes
 old/new terminal metadata forms, narrow compatibility negatives, saved wall-only
 fallback cuts, and selection over the actual retained W71 metadata.
@@ -124,8 +187,9 @@ Fixed-order selection therefore yields W71-A at 300 seconds, W71-B at
 were not retained; this capture does not provide six distinct usable inputs.
 
 The terminal metadata also exposed the old `milestone=[]` representation, now
-covered by the reader compatibility tests. A fresh capture after the runner's
-retention correction is pending. The six-window corpus remains unfrozen,
+covered by the reader compatibility tests. At that inspection, a fresh capture
+after the runner's retention correction was pending. The six-window corpus was
+unfrozen,
 `NOT_QUALIFIED`, and `HUMAN_PENDING`; neither the metadata selection fixture nor
 the earlier Linux component restoration completes the contract's 70 acceptance
 cases or constitutes P2 qualification.
