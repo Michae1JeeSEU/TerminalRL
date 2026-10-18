@@ -1,7 +1,7 @@
 # Prepared final Linux joint verification
 
-Preparation only. No SSH, pytest or server job was executed while creating these
-files. The three files are a direct synced Python driver, a small PowerShell
+This harness has historical Linux attempt a evidence; the current rerun targets
+the unique output b below. The three files are a direct synced Python driver, a small PowerShell
 launcher and this README. There is no giant embedded copy of the test driver.
 
 Local readiness check (no SSH, pytest, output creation or Linux proof):
@@ -33,7 +33,7 @@ adding another ten), then enables RUN_WINDOW_INTEGRATION=1. Its inherited CPU
 affinity is recorded, not changed. Existing fresh -I -B test children remain in
 place. It invokes pytest once, with -q -x -p no:cacheprovider and basetemp under:
 
-/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019a
+/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b
 
 The directory must be new. No output is overwritten. The test list is exactly
 Bernstein precompute, root reuse, peak reuse, energy queries, P2, Cartesian
@@ -65,3 +65,12 @@ failure. It does not send signals to unrelated jobs, discover/kill processes
 recursively, alter the test matrix or claim complete accounting after an
 external interruption. This is functional/numerical/lifecycle verification;
 performance values remain observations without a numerical pass threshold.
+
+Historical attempt final_pass_linux_tests_20261019a is retained untouched: exit1,
+195 passed and one failed in 34.70s, stopping at the worker lifecycle tracker
+assertion. The primary diagnosed substring matching of inherited -c test source;
+the bounded test fix recognizes the actual multiprocessing tracker bootstrap
+argv instead. Production kernel code is unchanged by this fix. The existing
+driver/launcher artifact paths remain final_pass_linux_tests_20261019a; only the
+new remote output is final_pass_linux_tests_20261019b. Current LocalCheckOnly is
+not a Linux rerun and generates no approval or performance pass claim.

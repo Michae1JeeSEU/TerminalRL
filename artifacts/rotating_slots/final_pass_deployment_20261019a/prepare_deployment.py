@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = Path(__file__).resolve().parent
 BASE = Path('D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1')
 SERVER = '/home/user/training_outputs/terminal/rotating_slots_perf_v1'
-SUITE = 'final_pass_linux_tests_20261019a'
+SUITE = 'final_pass_linux_tests_20261019b'
 REFERENCE = ROOT / 'artifacts/rotating_slots/performance_reference_r0'
 CORPUS = BASE / 'corpus_frozen_retention_20261018a/corpus_manifest.json'
 CORPUS_SHA = '91d35ee0e74d0b0082d3c30d5c5ce6134b1e8d37d4da213166f01221156ee9b2'
@@ -139,8 +139,8 @@ def fresh_suite(provenance, deployment, commit):
     # discovery remains the existing provenance inventory, without these extras.
     baseline = provenance.implementation_fingerprint(ROOT, modules={})['actual_source_files_sha256']
     harness_extras = set(initial['deployment']['extra_paths']) - set(baseline)
-    allowed_extras = {f'artifacts/rotating_slots/{SUITE}/run_tests.py',
-                      f'artifacts/rotating_slots/{SUITE}/run_linux_tests.ps1', *run['tests']}
+    allowed_extras = {'artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_tests.py',
+                      'artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_linux_tests.ps1', *run['tests']}
     check(harness_extras == allowed_extras - set(baseline), 'unexpected harness-only extra source')
     check({k: v for k, v in tested.items() if k not in harness_extras} == baseline,
           'production source inventory differs from fresh Linux suite')

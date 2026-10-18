@@ -85,7 +85,7 @@ if ($LocalCheckOnly) {
         source_hash_count=$taskExpected.Count; driver_sha256=$taskExpected[$taskDriver]; test_file_count=14;
         final_command_characters=$taskCommand.Length; command_character_limit_exclusive=30000;
         powershell_ast_errors=$taskParseErrors.Count; base64_roundtrip=$true; shell_arguments_single_quoted=$true;
-        server_output='/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019a';
+        server_output='/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b';
         remote_output_existence_checked=$false; server_executed=$false; pytest_executed=$false} | ConvertTo-Json
     exit 0
 }

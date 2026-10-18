@@ -1,5 +1,6 @@
 """Real worker lifecycle tests; Linux evidence requires actual Linux execution."""
 from hashlib import sha256
+from inspect import getsource
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,16 @@ from terminal_marl.core.rotating_slots.performance.provenance import R0_COMMIT, 
 
 ROOT=Path(__file__).resolve().parents[1]
 REFERENCE=ROOT/'artifacts/rotating_slots/performance_reference_r0'
+
+
+def _is_resource_tracker_cmdline(raw):
+    """Recognize the real multiprocessing bootstrap, not inherited test text."""
+    argv=raw.split(b'\0')
+    try: index=argv.index(b'-c')
+    except ValueError: return False
+    return index+1<len(argv) and argv[index+1].startswith(
+        b'from multiprocessing.resource_tracker import main;main(')
+
 
 PRELUDE=r'''
 import sys
@@ -44,7 +55,7 @@ def descendants(pid):
     return result
 def write(value):
     output.write_text(json.dumps(value,sort_keys=True,indent=2)+'\n',encoding='utf8')
-'''
+'''+getsource(_is_resource_tracker_cmdline)+'\n'
 
 
 def run_child(code,output,*extra,timeout=180):
@@ -55,6 +66,15 @@ def run_child(code,output,*extra,timeout=180):
     output.with_suffix('.process.json').write_text(json.dumps({'command':command,'returncode':result.returncode},indent=2)+'\n',encoding='utf8')
     assert result.returncode==0,result.stderr
     return json.loads(output.read_text(encoding='utf8'))
+
+
+def test_resource_tracker_bootstrap_classifier_excludes_inherited_source():
+    prefix=b'from multiprocessing.resource_tracker import main;main('
+    actual=b'/usr/bin/python\0-I\0-B\0-c\0'+prefix+b'7)\0'
+    inherited=b'/usr/bin/python\0-I\0-B\0-c\0import sys\n# '+prefix+b'7)\nassert b"resource_tracker"\0'
+    assert _is_resource_tracker_cmdline(actual) is True
+    assert _is_resource_tracker_cmdline(inherited) is False
+    assert _is_resource_tracker_cmdline(b'/usr/bin/python\0/tmp/resource_tracker_test.py\0') is False
 
 
 @pytest.mark.parametrize('workers',[1,2,4,6])
@@ -95,12 +115,18 @@ with pool(workers) as executor:
             assert all(row['cache_reset']['before'][name].get('currsize',row['cache_reset']['before'][name].get('entries'))>0 for name in mandatory)
         else: assert row['parent_death']['status']=='UNSUPPORTED_PLATFORM'
     actual=descendants(os.getpid()) if sys.platform=='linux' else None
+    command_evidence={}
     if actual is not None:
+        raw_commands={pid:pathlib.Path('/proc',str(pid),'cmdline').read_bytes() for pid in actual}
+        command_evidence={str(pid):[part.decode('utf8',errors='replace') for part in raw.split(b'\0') if part]
+                          for pid,raw in raw_commands.items()}
+        output.with_name('observed_worker_cmdlines.json').write_text(json.dumps(command_evidence,indent=2)+'\n',encoding='utf8')
         assert actual==registered
         assert 1+len(actual)==1+workers
-        assert not any(b'resource_tracker' in pathlib.Path('/proc',str(pid),'cmdline').read_bytes() for pid in actual)
+        assert not any(_is_resource_tracker_cmdline(raw) for raw in raw_commands.values())
     assert parallel._worker_cache_snapshot()==before
     running={'registered_worker_pids':sorted(registered),'actual_descendants':None if actual is None else sorted(actual),
+             'observed_worker_cmdline_argv':command_evidence,
              'strict_one_plus_workers_proved':sys.platform=='linux','start_method':executor.start_method}
 after=parallel._worker_cache_snapshot()
 assert after==before

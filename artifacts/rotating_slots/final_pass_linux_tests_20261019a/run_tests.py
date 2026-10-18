@@ -15,7 +15,7 @@ import time
 import traceback
 
 PROJECT=Path('/home/user/projects/terminal')
-OUTPUT=Path('/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019a')
+OUTPUT=Path('/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_linux_tests_20261019b')
 DRIVER='artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_tests.py'
 LAUNCHER='artifacts/rotating_slots/final_pass_linux_tests_20261019a/run_linux_tests.ps1'
 TESTS=tuple('tests/test_rotating_slots_performance_'+name+'.py' for name in (
