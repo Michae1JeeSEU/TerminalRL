@@ -143,3 +143,62 @@ SHA 由真实 CLI 拒绝为 `DEPLOYMENT_BYTES_MISMATCH`，未创建输出。
 checkpoint 输入；`load_checkpoint`、恢复、driver、observer、记录、ReplayBundle
 和生产迁移校验未被替换。真实 CLI 的来源/workload 验证未放宽。真实冻结
 traffic 的端到端执行尚未在 Windows 验证，其原 Linux 绝对 source 依赖继续保留。
+
+## Linux 执行器测试与真实冻结 checkpoint 冷恢复预检
+
+Linux 执行器测试输出为
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/window_runtime_linux_tests_20261018a`，
+同步本地目录为
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/window_runtime_linux_tests_20261018a`。
+实际 `run_metadata.txt` 记录 UTC 开始时间 `2026-10-18T13:59:36.367754Z`、
+结束时间 `2026-10-18T13:59:39.998062Z`、`RUN_WINDOW_INTEGRATION=1`、
+`sha_match=True` 和 R0 导出总文件数 25（24 个源文件加 manifest）。
+`numericexitcode.txt` 为 0，`stdout.log` 为 `30 passed in 3.42s`，没有 skip。
+这里仍是上述 service-events 测试 seam：测试内替换 `windows.validate_inputs`，
+不代表真实冻结 traffic 已推进 10/60 sim 秒，也不提供真实窗口速度证据。
+
+本轮实际部署与显式迁移登记保存在
+`D:/7_codespace/terminal/artifacts/rotating_slots/window_deployment_fe66ee4_20261018a`，
+服务器对应目录为
+`/home/user/projects/terminal/artifacts/rotating_slots/window_deployment_fe66ee4_20261018a`。
+其中 `deployment.json` 绑定 implementation commit
+`fe66ee4b24f7a71ce0d39d0ecf4862034d07aaa7`，`R0/preflight.json`、
+`OPT/preflight.json` 记录两个独立 byte-verified runtime；
+`R0_migration_approval.json`、`OPT_migration_approval.json` 分别登记两个冻结 R0
+source implementation 到目标实现的精确 identity pair。冻结来源 implementation 为：
+
+- `36562efb3e1fc1d06abc6cf98ad83109a5d2a73c4d4937ef4712a4646fbdd341`；
+- `b3f2bec1a5f71d795a772d945adcbd20d93e1a534aaafcd4df42b763a968db81`。
+
+目标 execution SHA 为：
+
+- R0：`ebd388961bb4e021b49dcc34e72f8223a333296680885aa91845970515ad65d4`；
+- OPT：`71585196c485cf3f0ab1d9c46e2e25a10605228e3bd4d45c5e6b65c97af31b98`。
+
+这些登记只允许已经复核的 implementation 差异；checkpoint helper、原/生成
+shim 和其余 `CheckpointIdentity` 字段保持一致，不迁移语义或改写原 source
+绝对路径。`artifact_manifest.json` 保存输出与 supporting evidence 的 SHA、
+命令、时间和限定授权范围。登记本身仍为 `NOT_QUALIFIED / HUMAN_PENDING`。
+
+真实冻结 checkpoint 的 Linux 预检汇总为
+`/home/user/training_outputs/terminal/rotating_slots_perf_v1/window_migration_preflight_fe66ee4_20261018a/summary.json`，
+同步本地文件为
+`D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/window_migration_preflight_fe66ee4_20261018a/summary.json`。
+批次 UTC 开始于 `2026-10-18T14:07:35.799055Z`，最后一项结束于
+`2026-10-18T14:08:32.776466Z`；summary 收尾时间 `ended_utc` 为
+`2026-10-18T14:08:32.776859Z`。R0 与 OPT 各覆盖 W71-A、W71-B、W71-C、
+W60、W120、W180，共 12 项，全部 `exit_code=0`、`status=ok`。
+
+12 项均报告 world、cursor、default/effective callback 和 callback shared 状态
+round-trip 精确；world time、phase、outer phase、原 advance target 精确；
+state stream 除新 attempt 路径外，其 committed count、offset、pending frame/
+SHA、prefix SHA 和 time 全部精确；原 checkpoint、sidecar 和 stream prefix
+hash 不变；指定 world 与模块数值 cache 全为 0，且 `module_caches_cleared=false`；
+结束时 source/deployment verification 通过。主对话已读取全部 summary 并抽查
+`OPT/W71-A/result.json` 的逐字段结果。
+
+这 12 项只执行真实冻结 payload 的校验、显式 implementation 迁移、冷恢复及
+再次捕获比对，没有调用 `world.advance`、`world.snapshot` 或 `world.to_dict`。它们提供真实
+checkpoint 迁移与冷恢复证据，不是实际 10 sim 秒 rollout 或性能加速测量。
+真实窗口推进、完整交通与性能资格仍待对应运行，当前状态保持
+`NOT_QUALIFIED / HUMAN_PENDING`。
