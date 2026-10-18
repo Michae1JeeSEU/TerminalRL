@@ -5,7 +5,7 @@ from fractions import Fraction
 from .config import load_config
 from .geometry import slot_state, slot_phase, ring_config, pad_position
 from .models import ValidationResult
-from .trajectory import Interval, digest
+from .trajectory import Interval, digest, _intrinsic_bounds_from_polar
 from .energy import evaluate_power, power_bounds
 
 _NUMERIC_CERTIFICATES={}
@@ -77,7 +77,7 @@ def validate_plan(plan,config=None,use_cache=True):
         counts['intervals']+=1; counts['max_depth']=max(depth,counts['max_depth'])
         if s.kind=='GROUND': return None
         polar=s.polar_bounds(a,b); r,theta,z=polar
-        vb=s.intrinsic_bounds(a,b,1); ab=s.intrinsic_bounds(a,b,2); jb=s.intrinsic_bounds(a,b,3)
+        vb=_intrinsic_bounds_from_polar(polar,1); ab=_intrinsic_bounds_from_polar(polar,2); jb=_intrinsic_bounds_from_polar(polar,3)
         # Polynomial coordinate enclosures include floating evaluation padding;
         # 1e-9 is solely algebraic roundoff on exact endpoint equalities, never
         # an allowance on the 80m separation boundary.

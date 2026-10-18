@@ -7,7 +7,7 @@ import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import brentq
 from .config import load_config
-from .trajectory import Interval
+from .trajectory import Interval, _intrinsic_bounds_from_polar
 
 @dataclass(frozen=True)
 class VehicleProfile:
@@ -215,7 +215,8 @@ def integrate_energy(plan,start,end,max_dt=.2,config=None):
     except ValueError as exc: return EnergyResult(total,total/(85*252*3600),peak,False,'ENERGY_MODEL_DOMAIN',str(exc),error)
 
 def _peak_measure(s,a,b,threshold,c,depth=0):
-    bounds=power_bounds(s.intrinsic_bounds(a,b,1),s.intrinsic_bounds(a,b,2),c)
+    polar=s.polar_bounds(a,b)
+    bounds=power_bounds(_intrinsic_bounds_from_polar(polar,1),_intrinsic_bounds_from_polar(polar,2),c)
     if bounds is not None:
         low,high=bounds['shaft_w']
         if low>threshold: return b-a

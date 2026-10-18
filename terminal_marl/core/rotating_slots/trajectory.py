@@ -80,6 +80,15 @@ def _cartesian(r,th,z):
     tt=[0,r[0]*th[1],2*r[1]*th[1]+r[0]*th[2],3*r[2]*th[1]+3*r[1]*th[2]+r[0]*th[3]-r[0]*th[1]*th[1]*th[1]]
     return tuple((rr[k]*co-tt[k]*si,rr[k]*si+tt[k]*co,z[k]) for k in range(4))
 
+def _intrinsic_bounds_from_polar(polar,derivative=1):
+    """Derive rotation-invariant motion bounds from a read-only polar jet."""
+    r,t,z=polar
+    if derivative==1: values=(r[1],r[0]*t[1],z[1])
+    elif derivative==2: values=(r[2]-r[0]*t[1]*t[1],2*r[1]*t[1]+r[0]*t[2],z[2])
+    elif derivative==3: values=(r[3]-3*r[1]*t[1]*t[1]-3*r[0]*t[1]*t[2],3*r[2]*t[1]+3*r[1]*t[2]+r[0]*t[3]-r[0]*t[1]*t[1]*t[1],z[3])
+    else: raise ValueError('intrinsic bounds support derivatives 1,2,3')
+    return tuple(x.pair() for x in values)
+
 @dataclass(frozen=True)
 class Segment:
     start_time: float
@@ -107,12 +116,7 @@ class Segment:
         Horizontal norms and power are rotation invariant in this no-wind,
         isotropic-drag model; separation still uses global Cartesian bounds.
         """
-        r,t,z=self.polar_bounds(start,end)
-        if derivative==1: values=(r[1],r[0]*t[1],z[1])
-        elif derivative==2: values=(r[2]-r[0]*t[1]*t[1],2*r[1]*t[1]+r[0]*t[2],z[2])
-        elif derivative==3: values=(r[3]-3*r[1]*t[1]*t[1]-3*r[0]*t[1]*t[2],3*r[2]*t[1]+3*r[1]*t[2]+r[0]*t[3]-r[0]*t[1]*t[1]*t[1],z[3])
-        else: raise ValueError('intrinsic bounds support derivatives 1,2,3')
-        return tuple(x.pair() for x in values)
+        return _intrinsic_bounds_from_polar(self.polar_bounds(start,end),derivative)
     def to_dict(self): return {'start_time':self.start_time,'duration':self.duration,'r':list(self.r),'theta':list(self.theta),'z':list(self.z),'kind':self.kind}
 
 @dataclass(frozen=True)

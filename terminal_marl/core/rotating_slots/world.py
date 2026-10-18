@@ -845,9 +845,12 @@ class RotatingSlotWorld:
     def _check_execution(self, end):
         """Check the full physical interval, with exact stable structural proofs."""
         bodies = [a for a in self.aircraft.values() if a.status in AIRBORNE or a.status == "LANDED_SERVICE"]
+        if len(bodies) < 2:
+            return
+        bases = {a.id: self._base(a) for a in bodies}
         first = None
         for a,b in combinations(bodies,2):
-            x,y = self._base(a),self._base(b)
+            x,y = bases[a.id],bases[b.id]
             result = validate_separation(x,y,self.time,end,config=self.config)
             upper = result.details.get("upper_bound_m", result.details.get("distance_m"))
             if upper is not None and (self.minimum_separation is None or upper < self.minimum_separation["upper_bound_m"]):
