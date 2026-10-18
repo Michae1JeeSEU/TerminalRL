@@ -80,6 +80,18 @@ def _cartesian(r,th,z):
     tt=[0,r[0]*th[1],2*r[1]*th[1]+r[0]*th[2],3*r[2]*th[1]+3*r[1]*th[2]+r[0]*th[3]-r[0]*th[1]*th[1]*th[1]]
     return tuple((rr[k]*co-tt[k]*si,rr[k]*si+tt[k]*co,z[k]) for k in range(4))
 
+def _cartesian_component(r,th,z,derivative=0):
+    """Compute one Cartesian derivative from the unchanged read-only polar jet."""
+    k=(0,1,2,3)[derivative]
+    co=th[0].cos() if isinstance(th[0],Interval) else math.cos(th[0])
+    si=th[0].sin() if isinstance(th[0],Interval) else math.sin(th[0])
+    if k==0: rr=r[0]; tt=0
+    elif k==1: rr=r[1]; tt=r[0]*th[1]
+    elif k==2: rr=r[2]-r[0]*th[1]*th[1]; tt=2*r[1]*th[1]+r[0]*th[2]
+    elif k==3: rr=r[3]-3*r[1]*th[1]*th[1]-3*r[0]*th[1]*th[2]; tt=3*r[2]*th[1]+3*r[1]*th[2]+r[0]*th[3]-r[0]*th[1]*th[1]*th[1]
+    else: raise TypeError('Cartesian derivative must be an integer index')
+    return (rr*co-tt*si,rr*si+tt*co,z[k])
+
 def _intrinsic_bounds_from_polar(polar,derivative=1):
     """Derive rotation-invariant motion bounds from a read-only polar jet."""
     r,t,z=polar
@@ -109,7 +121,7 @@ class Segment:
     def polar_bounds(self,start,end):
         lo=max(0.,(start-self.start_time)/self.duration); hi=min(1.,(end-self.start_time)/self.duration)
         return tuple(tuple(Interval(*poly_bounds(c,lo,hi,k,1/self.duration**k)) for k in range(4)) for c in (self.r,self.theta,self.z))
-    def bounds(self,start,end,derivative=0): return tuple(x.pair() for x in _cartesian(*self.polar_bounds(start,end))[derivative])
+    def bounds(self,start,end,derivative=0): return tuple(x.pair() for x in _cartesian_component(*self.polar_bounds(start,end),derivative))
     def intrinsic_bounds(self,start,end,derivative=1):
         """Motion in the instantaneous orthonormal radial/tangential frame.
 
