@@ -180,7 +180,7 @@ def fresh_suite(provenance, deployment, commit):
         'test_real_cold_window_fixture_*/fixture_evidence.json',
         'test_real_startup_all_workers_*/startup.json',
         'test_reconstruction_matches_in*/reconstruction.json',
-        'test_real_owner_death_exits_exa*/parent_death.json',
+        'test_real_owner_death_ex*/parent_death.json',
         'test_deadline_helper_identity_*/source_identity.json')
     anchors = []
     for pattern in patterns:
