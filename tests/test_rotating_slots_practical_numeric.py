@@ -44,6 +44,18 @@ def test_stable_analytic_path_and_generic_traffic_boxes():
     b=tr.make_stable_plan('b','outer',1)
     result=sf.validate_separation(a,b,0.,1000.)
     assert result.accepted and result.details['method']=='common_rotation_structure_with_roundoff_enclosure'
+    ta=_Traffic('a',a,(),0.,1000.); tb=_Traffic('b',b,(),0.,1000.)
+    for left,right in ((ta,tb),(a,tb)):
+        en.reset_practical_numeric_stats()
+        result=sf.validate_separation(left,right,0.,1000.)
+        assert result.accepted and result.details['method']=='common_rotation_structure_with_roundoff_enclosure'
+        stats=en.practical_numeric_stats()
+        assert stats.get('separation_fine_intervals',0)==0
+        assert stats.get('separation_box_intervals',0)==0
+    future=tr.make_stable_plan('b','outer',0,5.,10.)
+    future_traffic=_Traffic('b',b,(future,),0.,10.)
+    result=sf.validate_separation(ta,future_traffic,0.,10.)
+    assert not result.accepted and result.status=='UNSAFE'
     x=raw_plan('x',(tr.Segment(0.,10.,(100.,),(0.,),(10.,)),))
     y=raw_plan('y',(tr.Segment(0.,10.,(400.,),(0.,),(10.,)),))
     tx=_Traffic('x',x,(),0.,10.); ty=_Traffic('y',y,(),0.,10.)

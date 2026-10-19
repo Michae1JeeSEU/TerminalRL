@@ -294,8 +294,19 @@ def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_int
     fallback=lambda a,b: validate_separation_original(plan_a,plan_b,a,b,c,max_depth,min_interval,_query_cache=_query_cache)
     if end<=start or not all(math.isfinite(t) for t in (start,end)):
         return fallback(start,end)
+    # Submission wraps holds in _Traffic. Only an exact wrapper with no future
+    # plans represents its canonical stable base for the entire query window.
+    from .world import _Traffic
+    def stable_base(plan):
+        if _canonical_stable(plan,c): return plan
+        if type(plan) is _Traffic and not plan.plans and _canonical_stable(plan.base,c): return plan.base
+        return None
+    stable_a=stable_base(plan_a); stable_b=stable_base(plan_b)
+    if stable_a is not None and stable_b is not None:
+        _numeric_count('separation_analytic_calls')
+        return validate_separation_original(stable_a,stable_b,start,end,c,max_depth,min_interval,_query_cache=_query_cache)
     # Preserve exact boundary and analytic common-rotation proofs.
-    if _constant_vertical_offset(plan_a,plan_b,start,end) is not None or (_canonical_stable(plan_a,c) and _canonical_stable(plan_b,c)):
+    if _constant_vertical_offset(plan_a,plan_b,start,end) is not None:
         _numeric_count('separation_analytic_calls')
         return fallback(start,end)
     def bounds(p,a,b,k):
