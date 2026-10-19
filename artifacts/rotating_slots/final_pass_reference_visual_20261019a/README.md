@@ -10,20 +10,28 @@ At most two independent R0 children run together. The outer thread pool only run
 
 Each R0/OPT pair compares actual bytes of `config.yaml` plus six physical members: states, events, rejections, trajectories, manifest, metrics. All member comparisons, differing-file records, first differing byte and raw paths are retained, without rounding or repairing differences. Fresh scenario relative replay names must match; reused V08 paths are mapped in F09→F08 order to OPT V08's recorded replay list, without renaming files. A path-count or bytes difference stops rather than regenerating/retrying. Parent source maps and fixed R0 export are checked before/after; viewer archive files are checked before/after each read.
 
-Only V01 smoke is currently authorized:
+Historical V01 smoke command (already executed; its existing output must not be overwritten):
 
 ```powershell
 & 'D:\7_codespace\terminal\venv\Scripts\python.exe' -I -B 'D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_reference_visual_20261019a\run_reference_visual.py' --output 'D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_reference_visual_20261019a\_smoke' --cases V01 --workers 1
 ```
 
-`--help` writes nothing. Output must be a new child directory of this artifact directory. The default case list is the exact six groups; do not execute it until primary review/authorization. Do not rerun all92 or all11 V cases.
+`--help` writes nothing. Output must be a new child directory of this artifact directory. The default case list is the exact six groups; its separately authorized completed run is recorded below. Do not rerun all92 or all11 V cases.
 
 Evidence: `invocation.json`, source/reference before maps, each fresh child's exact `child_argv.json`, original `reference_evidence.json`, captured scenario stdout, actual known child numeric exit, process timing/error, scenario assertions/environment/results, comparison JSON and final summary/numeric exit. The existing helper does not expose successful child stderr; no empty stderr evidence is fabricated. A helper-reported failed returncode or timeout text/output is preserved; unknown child exit is null and has no numeric child file. Main success is an explicit conjunction of selected-case count, material completion, viewer/bytes comparisons and unchanged source/reference; it directly returns numeric0 only for that conjunction. This is material preparation and does not sign human acceptance or performance qualification.
 
-## Executed smoke only
+## Historical V01 smoke
 
 On 2026-10-19, the exact V01 command above completed from 07:26:26.372500 to 07:26:35.791793 UTC (outer wall9.406s). Parent PID29888 and the isolated R0 child PID30048 both returned0. The original `threshold_crossing` executed five physical/fixture assertions, all true, and returned the actual `_smoke/V01/threshold_replay` path. Two common-viewer bundle validations, both seek/event snapshot round-trips and all seven member byte comparisons succeeded, with no recorded differences. Parent source and the fixed24-file R0 export were unchanged before/after. The R0 evidence records16 imported modules and source digest `cd76b4c14b0a48d6d2a71ec7c63ce77010e6ea019b545807635b926eb2984891`.
 
-Raw outer argv/PID/time/exit/stdout/stderr are `_smoke.launch.json`, `_smoke.process.json`, `_smoke.numericexitcode.txt`, `_smoke.stdout.log`, `_smoke.stderr.log`. Detailed results are `_smoke/summary.json` (SHA256 `8223ff4a82a353aa61acd554f9b473d1807fd26b186538345cbdff89f6b0dd88`) and `_smoke/V01/comparison.json` (SHA256 `188f7e20d38a5cef1a5ea2d50aeb147cddf0dd1cbf51c5976d30f122dd245a5a`). Script SHA at this run was `6e5b23b588a49de5db5005a9a845765caeffc565994af7ae53c1427e75dbc1da`. AST and `--help` checks also completed successfully. No other group, UI, full V suite or full92 rerun was executed; original V failures remain unchanged and human status remains pending.
+Raw outer argv/PID/time/exit/stdout/stderr are `_smoke.launch.json`, `_smoke.process.json`, `_smoke.numericexitcode.txt`, `_smoke.stdout.log`, `_smoke.stderr.log`. Detailed results are `_smoke/summary.json` (SHA256 `8223ff4a82a353aa61acd554f9b473d1807fd26b186538345cbdff89f6b0dd88`) and `_smoke/V01/comparison.json` (SHA256 `188f7e20d38a5cef1a5ea2d50aeb147cddf0dd1cbf51c5976d30f122dd245a5a`). Script SHA at this run was `6e5b23b588a49de5db5005a9a845765caeffc565994af7ae53c1427e75dbc1da`. AST and `--help` checks also completed successfully. At that smoke stage, no other group, UI, full V suite or full92 rerun was executed; original V failures remain unchanged and human status remains pending.
 
 After this smoke, the startup environment list was completed with `BLIS_NUM_THREADS=1`, bringing it to six native-thread variables. Physical generation and comparison logic did not change. Only AST and the exact six-variable list were checked after this addition; the physical smoke was not rerun. Its original script fingerprint above remains the identity of the executed evidence.
+
+## Completed six-group material run
+
+The authorized fixed run is retained under `materials_20261019a/summary.json`: `R0_SCENARIO_MATERIAL`, success=true, numeric0, source/reference/original_V_failures_unchanged=true. `launch_20261019a.completion.json` records UTC07:32:03.3051019–07:33:51.3698495, outer108.0647476s and exit0. This is material preparation wall time, not a simulation speed measurement.
+
+V01/V02/V04/V06 each used a fresh R0 child and exited0. V07 reused existing R0 F01's three archives; V08 reused F09 then F08, one archive each. The six case `comparison.json` files record9 pairs,18 validations and63 config-plus-six-physical-member byte comparisons, all equal; every seek/event snapshot round-trip and archive-readonly check succeeded. Source names and paths are read from each comparison, including `threshold_replay`, `three_laps_replay`, and V08 F08/replay_00→OPT V08/replay_01. No archive was renamed or relabeled.
+
+The original R0 V01–V11 import failures remain unchanged: the fixed24-file export has no visualization package, so those failed before scenario execution; their fallback analytic archives are not the intended visual scenarios. These new/existing physical materials, inspected by the common current viewer, do not change those V results to PASS or establish success of the whole original92 run. They provide manual-review inputs only, with `HUMAN_PENDING` and no human sign-off. The updated human worksheet is `docs/rotating_slots_stage1/performance_v1/visual_review_20261019.md`.

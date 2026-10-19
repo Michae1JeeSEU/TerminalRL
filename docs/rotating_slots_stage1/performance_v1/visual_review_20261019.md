@@ -17,11 +17,19 @@ R0 根：[final_pass_period_reference_local_20261019a](D:/7_codespace/terminal/a
 
 身份材料从各 bundle 的 `replay.json`、`config.yaml`、`trajectories.json` 和对应 case 的 `environment.json`读取。已读 G04/replay_00：R0 code_commit=`1c5afd37c891a0ed4776f64367fc7264db3c1c54`，OPT code_commit=`afb61940886add31e472738bf9ba654199c9fa1c`；共同 config_hash=`0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53`，config bytes SHA256=`2e49138901459a13d815bfe10d141457344026d35f82683b1c8170e9d726540e`。归档声明的身份与实际观察时使用的viewer源码身份须分别填写，不能只写当前HEAD。
 
+## 六组场景材料（独立于原V结果）
+
+[materials summary](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/summary.json)记录 `R0_SCENARIO_MATERIAL`、success=true、numeric0，source/reference/original_V_failures_unchanged均为true。[外层completion](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/launch_20261019a.completion.json)记录 UTC07:32:03.3051019–07:33:51.3698495、108.0647476s、exit0；这是材料作业耗时，不是模拟速度。四组V01/V02/V04/V06为fresh R0子进程且child exit0；V07只读复用R0 F01的三个回放，V08按F09再F08复用各一个回放，未改原身份/路径。共9对、18次validate、63个config加六physical成员bytes比较，无差异；全部seek round-trip和只读检查一致。这是共同既有viewer的材料证据，不把原V01–V11改成PASS，也不代表R0原92整组成功。
+
+固定24文件R0导出没有visualization，原V01–V11在UI导入时失败，早于场景执行；失败路径最后生成的fallback `analytic_replay`不是这些视觉场景材料，原失败保留。本轮四组直接调用R0原`execute_scenario`，后两组复用已真实执行的R0物理归档，均不改R0或注入当前kernel。
+
+场景与实际路径列表以各comparison的`R0_paths/OPT_paths`为准：[V01](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V01/comparison.json)、[V02](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V02/comparison.json)、[V04](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V04/comparison.json)、[V06](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V06/comparison.json)、[V07](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V07/comparison.json)、[V08](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V08/comparison.json)。V02保留`three_laps_replay`（三圈解析稳定fixture），V06为真实六pad着陆/服务材料；V01保留`threshold_replay`（诊断拒绝fixture），不能当作执行不安全飞行。V03/V11映V02，V05/V09映V01，V10映V04；别名不增加运行数或验收项。
+
 ## 两个可直接执行的本地命令
 
 在 PowerShell 中分别执行；命令会打开交互窗口，本文编写时未运行。使用项目现有 venv/PyVista；入口依赖说明见[requirements-visualization.txt](D:/7_codespace/terminal/requirements-visualization.txt)。脚本经stdin交给 `-I -B`，在任何项目导入前设置 `dont_write_bytecode` 和显式 `sys.path`，避免隔离模式直接 `-m` 找不到本地包。两命令使用相同既有viewer分别读取归档，不启动仿真。
 
-R0，G04 dt=.2，初始 t=30：
+R0，V04真实正常全流程，初始 t=35（gate0入场完成/跨环开始）：
 
 ```powershell
 @'
@@ -30,8 +38,8 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, r"D:\7_codespace\terminal")
 import runpy
 sys.argv = ["terminal_marl.scripts.open_stage1_replay",
-    r"D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_period_reference_local_20261019a\G04\replay_00",
-    "--time", "30"]
+    r"D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_reference_visual_20261019a\materials_20261019a\V04\replay_00",
+    "--time", "35"]
 runpy.run_module("terminal_marl.scripts.open_stage1_replay", run_name="__main__")
 '@ | & 'D:\7_codespace\terminal\venv\Scripts\python.exe' -I -B -
 ```
@@ -45,13 +53,13 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, r"D:\7_codespace\terminal")
 import runpy
 sys.argv = ["terminal_marl.scripts.open_stage1_replay",
-    r"D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_regression_local_20261019a\G04\replay_00",
-    "--time", "30"]
+    r"D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_regression_local_20261019a\V04\replay_00",
+    "--time", "35"]
 runpy.run_module("terminal_marl.scripts.open_stage1_replay", run_name="__main__")
 '@ | & 'D:\7_codespace\terminal\venv\Scripts\python.exe' -I -B -
 ```
 
-观察正常入场/跨环时，将两命令中的 `G04\replay_00` 同时改为 `G05\replay_00`，初始 `--time` 改为 `35`；仍保持相同case、replay编号和时刻。另外两档分别改为 `replay_01/02`，不能将不同dt/period当作R0/OPT一对。交互使用 Space暂停、Right单步、p/n跳事件、时间滑条seek、1/2/3切换俯视/侧视/三维、f跟随、t轨迹、l槽标签、d详情；共同查看指定时刻以及相邻帧，记录实际看到的事件和差异。窗口关闭才结束交互。
+查看其他材料时，只将两命令的bundle路径替换为下表同一对R0/OPT实际路径，并将`--time`设为同一定位时刻；F08复用源的`replay_00`对应OPT V08的`replay_01`，不能只靠同名目录配对。G04/G05历史三档回放与t30截图仍保留在上节路径。交互使用Space暂停、Right单步、p/n跳事件、时间滑条seek、1/2/3三视图、f跟随、t轨迹、l槽标签、d详情；查看定位时刻及相邻帧，记录实际事件和差异，关闭窗口结束交互。
 
 ## 最低八类人工记录
 
@@ -59,14 +67,14 @@ runpy.run_module("terminal_marl.scripts.open_stage1_replay", run_name="__main__"
 
 | 类别 / 关联条目 | 现有材料与真实定位 | 材料状态及未覆盖事实 | 人工状态 | 观察结论 / 异常（留空） |
 | --- | --- | --- | --- | --- |
-| 正常入场与跨环 / H02 | [R0 G05/00](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_period_reference_local_20261019a/G05/replay_00)、[OPT G05/00](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/G05/replay_00)；r在0/35/75/115/183.5/243.5s的事件 | AVAILABLE；观察入场、两次跨环、final及服务，原始事件轴不重生成 | HUMAN_PENDING | |
-| 有上游等待的准入 / H02 | 本作业单已核实的G05在t=0立即admit | MATERIAL_PENDING；未定位该类别的成对材料，不能将立即准入当等待 | HUMAN_PENDING | |
-| 服务未结束前出发至未来pad / H02 | G04有other_ground在pad3，a去pad0 | MATERIAL_PENDING；这不证明同一未来pad的保护下降区间及RESERVED显示 | HUMAN_PENDING | |
-| 外环应急穿越内部空域 / H03 | G04是inner normal final；G05正常单请求 | MATERIAL_PENDING；未定位外环应急成对事件/回放 | HUMAN_PENDING | |
-| 繁忙资源下救援等待及失败 / H03 | 已核实G04/G05无此救援等待失败事件 | MATERIAL_PENDING；不以普通ground服务或正常着陆替代 | HUMAN_PENDING | |
-| checkpoint续跑接缝 / H04 | 已有G04/G05回放未标为本类别的成对续跑接缝材料 | MATERIAL_PENDING；需实际接缝定位及前后seek/单步/跳事件/flush对照，当前不造时间 | HUMAN_PENDING | |
-| 原始候选拒绝的解释 / H03 | [R0 G05拒绝](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_period_reference_local_20261019a/G05/replay_00/rejections.jsonl)、[OPT G05拒绝](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/G05/replay_00/rejections.jsonl)；t=0，r，generation NOT_FOUND，原reason_counts | AVAILABLE（局部）；对照详情overlay与原行；不把搜索耗尽说成物理失败/全局不可行，完整应急失败解释仍缺 | HUMAN_PENDING | |
-| 同一对飞机80m附近连续距离 / H03 | G04的连续minimum证书见[observations](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/G04/observations.json)：126.3420680482248–126.34283293216514m，witness 58.366943359375s | MATERIAL_PENDING；该距离不是80m附近；不能仅凭渲染帧证明连续80m证书 | HUMAN_PENDING | |
+| 正常入场与跨环 / H02 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V04/replay_00) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V04/replay_00)；gate0 t=0准入、35入场完成、75/115跨环完成、183.5接地、243.5服务完成 | AVAILABLE；真实四门正常全流程；共同查看三视图和事件轴 | HUMAN_PENDING | |
+| 有上游等待的准入 / H02 | [R0 E14](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_regression_local_20261019a/E14/replay_00) / [OPT E14](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/E14/replay_00)；rerouted_request t0 WAITING/AWAITING_DECISION，t143.5仍WAITING，t144.50000000000577 CENSORED_UPSTREAM，从未admit | AVAILABLE（partial scripted waiting only）；upstream_wait_time=144.50000000000577，auto_emergency=False、not_a_research_baseline=True、scripted_conservation，物理failure终止；等待后准入未覆盖。C05是OUTER_CAPACITY立即reroute，不能替代本行 | HUMAN_PENDING | |
+| 服务未结束前出发至未来pad / H02 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_regression_local_20261019a/F08/replay_00) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V08/replay_01)（R0 F08→OPT V08第二对）；rescue t0 commit/start，pad0–5 t=.35服务结束，source clear29.21084213256836；DESCENT130–143.5，t143.5 emergency touchdown pad0 | AVAILABLE；记录service_end=263.5，归档到约250，未执行至该清场时刻。是否正确显示未来committed RESERVED须人看；不虚构protected event | HUMAN_PENDING | |
+| 外环应急穿越内部空域 / H03 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_regression_local_20261019a/F01/replay_00) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V07/replay_00)（R0 F01外环→OPT V07第一对）；a t0出发，source clear40.13527965545654，DESCENT195–208.5，touchdown208.5 | AVAILABLE；V07另两对是middle/inner。核对真实位置、应急源环、SOC/功率/peak及代价，不能只看截图 | HUMAN_PENDING | |
+| 繁忙资源下救援等待及失败 / H03 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_regression_local_20261019a/F09/replay_00) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V08/replay_00)（R0 F09→OPT V08第一对）；rescue初始HOLD_INNER/EMERGENCY_WAITING；SOC_INSUFFICIENT t0共12条，约2/5/10/15s各6条；t19.117346166184838 ENERGY_FAILURE、SOC0 | AVAILABLE；这是物理能量失败，非预算timeout；对照等待状态、拒绝原行与终止事件 | HUMAN_PENDING | |
+| checkpoint续跑接缝 / H04 | 尚未定位当前成对续跑接缝材料 | MATERIAL_PENDING；服务器接缝材料仍待完成；不造时间或用普通seek往返替代实际续跑接缝 | HUMAN_PENDING | |
+| 原始候选拒绝的解释 / H03 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_regression_local_20261019a/F09/replay_00) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V08/replay_00)的SOC_INSUFFICIENT原行与ENERGY_FAILURE；另见[R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V01/threshold_replay) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V01/threshold_replay)的t0 diagnostic_crossing_rejected/HARD_SEPARATION | AVAILABLE；分别核对资源繁忙时的能量拒绝与诊断安全拒绝。G05 generation NOT_FOUND材料仍在；搜索耗尽不等于全局不可行 | HUMAN_PENDING | |
+| 同一对飞机80m附近连续距离 / H03 | [R0](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_reference_visual_20261019a/materials_20261019a/V01/threshold_replay) / [OPT](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_regression_local_20261019a/V01/threshold_replay)；cross_a/cross_b，t0诊断拒绝，witness t=.05，distance79.999m，bounds79.99899999999624–79.99900000000007m | AVAILABLE（diagnostic fixture）；fixture_only / diagnostic_only_not_executed，未执行unsafe飞行；连续证书与原始拒绝详情共同查看，渲染帧本身不证明连续安全 | HUMAN_PENDING | |
 
 查看每一可用对时，三视图都核对真实三维位置、权威轨迹、当前/未来slot与pad预约、SOC/功率/peak、源环与拒绝原因；有相应场景才检查上游队列、服务倒计时和未来committed pad的 `RESERVED`。缺少的显示/材料如实记录，不据截图相同填通过。
 
