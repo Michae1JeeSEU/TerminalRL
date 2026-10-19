@@ -1,0 +1,194 @@
+{
+  "scope": "old single-pass sustained oracle interruption facts only; no new run or acceptance decision",
+  "status": "STOPPED_ON_SOURCE_ERROR",
+  "numeric_exit": 2,
+  "finished_server_utc": "2026-10-19T17:49:38.124928+00:00",
+  "outer_error": {
+    "type": "ValueError",
+    "message": "outer fixed file inventory changed"
+  },
+  "completion": {
+    "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/completion.json",
+    "sha256": "e2bde13b089631e4d1801da888d1306ef3151d1a8101a7fe8db0b4951bf1f1ba"
+  },
+  "root_numeric_exit": {
+    "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/numericexitcode.txt",
+    "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+  },
+  "launch_numeric_exit": {
+    "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a_launch/numericexitcode.txt",
+    "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+  },
+  "completed_existing_rows": [
+    {
+      "window": "W71-A",
+      "row_status": "ORACLE_EXACT",
+      "R0_rollout_wall_s": 175.01734341998235,
+      "R0_sample_size": 1,
+      "OPT_comparison_pairs": 3,
+      "physical_member_comparisons": 18,
+      "exact_timeline_equal": true,
+      "row": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-A/R0/row.json",
+        "sha256": "9f4af4bab4fdf1294194699fc81232667d364f41582368315d9b3c6c760fb806"
+      },
+      "result": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-A/R0/attempt/result.json",
+        "sha256": "9065c010432cec327d42155ab4e5c25df2b574ef275dd8b10e3aefa051e388b5"
+      }
+    },
+    {
+      "window": "W71-B",
+      "row_status": "ORACLE_EXACT",
+      "R0_rollout_wall_s": 1994.411032767006,
+      "R0_sample_size": 1,
+      "OPT_comparison_pairs": 3,
+      "physical_member_comparisons": 18,
+      "exact_timeline_equal": true,
+      "row": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-B/R0/row.json",
+        "sha256": "d7c49379ce1877c41a771e327bdea7b43ab149e95630f8f863f880e4ea9c1232"
+      },
+      "result": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-B/R0/attempt/result.json",
+        "sha256": "faf02d19abaeffb566b1792e3cf789ad1e79f36eb851b2d5f59c65739b3a7573"
+      }
+    },
+    {
+      "window": "W71-C",
+      "row_status": "ORACLE_EXACT",
+      "R0_rollout_wall_s": 2175.6804914230015,
+      "R0_sample_size": 1,
+      "OPT_comparison_pairs": 3,
+      "physical_member_comparisons": 18,
+      "exact_timeline_equal": true,
+      "row": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-C/R0/row.json",
+        "sha256": "c69897ea9215fed21fcbcd718782143200ca0e893caa259b4418003950c6bd5b"
+      },
+      "result": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-C/R0/attempt/result.json",
+        "sha256": "15948aaa05b92a3c1e4073fc19edb53e1c1501336735dcb85bed0f59c7d6ba4a"
+      }
+    },
+    {
+      "window": "W60",
+      "row_status": "ORACLE_EXACT",
+      "R0_rollout_wall_s": 12.90339039202081,
+      "R0_sample_size": 1,
+      "OPT_comparison_pairs": 3,
+      "physical_member_comparisons": 18,
+      "exact_timeline_equal": true,
+      "row": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W60/R0/row.json",
+        "sha256": "351abc484415313b875149c399cb6d42bce59b4a6888b52a3d4ec70ce8a589e2"
+      },
+      "result": {
+        "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W60/R0/attempt/result.json",
+        "sha256": "0ffd18e2227b0fff283f93b87577fab76f7a4b46041607e59c42d88ff693064c"
+      }
+    }
+  ],
+  "existing_comparison_pairs": 12,
+  "existing_physical_member_comparisons": 72,
+  "R0_samples_per_completed_window": 1,
+  "W120": {
+    "status": "IMPLEMENTATION_FAILURE",
+    "failure": {
+      "type": "ProvenanceError",
+      "message": "DEPLOYMENT_BYTES_CHANGED_DURING_RUN: terminal_marl/core/rotating_slots/audit.py"
+    },
+    "collector_returncode": 1,
+    "row_exists": false,
+    "actual_sim_delta_s_observed": 60.0,
+    "rollout_wall_s_observed": 596.62691618799,
+    "qualifying_sample": false,
+    "result": {
+      "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W120/R0/attempt/result.json",
+      "sha256": "c91c1142fa64581c6d100eb13f3e25a8f4a8c34e7f65e690301735267373371e"
+    },
+    "collector": {
+      "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W120/R0/collector/collector.json",
+      "sha256": "f0b740c71ad60e5cc0010d59d361825b3f512ad0f6ade574a40a6a293132f966"
+    }
+  },
+  "W180": {
+    "status": "NOT_RUN",
+    "row_exists": false,
+    "result_exists": false
+  },
+  "source_finish": {
+    "path": "D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/source_finish.json",
+    "exists": false,
+    "sha256": null
+  },
+  "terminal_observation": {
+    "source": {
+      "path": "D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a_progress_2.json",
+      "sha256": "3a8768ec2ad51c848c7a7c1e626e973e05471989886683376704a1d012c28265"
+    },
+    "local_utc_start": "2026-10-19T18:11:41.7505638Z",
+    "local_utc_end": "2026-10-19T18:11:42.1517773Z",
+    "server_utc": "2026-10-19T18:12:30.666815Z",
+    "native_ssh_exit": 0,
+    "matching_process_count": 0,
+    "scope": "observation timestamps, not execution completion/monotonic wall"
+  },
+  "later_source_followup": {
+    "authority": "primary independent local comparison reported in this task; not newly executed by this document worker",
+    "baseline": {
+      "path": "D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_deployment_20261019a/deployment.json",
+      "sha256": "85298b6a7dbe8610abf97f2103a9009edbba1d192a5e72f1786b286c113f4f5b"
+    },
+    "baseline_source_count": 523,
+    "changed_paths_reported": [
+      "terminal_marl/core/rotating_slots/audit.py",
+      "terminal_marl/core/rotating_slots/energy.py",
+      "terminal_marl/core/rotating_slots/performance/checkpoint.py",
+      "terminal_marl/core/rotating_slots/replay.py",
+      "terminal_marl/core/rotating_slots/safety.py",
+      "terminal_marl/core/rotating_slots/trajectory.py",
+      "terminal_marl/core/rotating_slots/world.py"
+    ],
+    "observed_later_commits": [
+      "c59aa6b",
+      "e343c77897169ff390c5026ed77c27aa9ea4ba8a"
+    ],
+    "specific_write_or_commit_timing_attribution": null,
+    "new_implementation_evaluation": null,
+    "baseline_deployment_commit": "4623e38d9b13238f6ca886229c603a5626285698"
+  },
+  "automation_and_remaining_scope": {
+    "authority": "primary task report",
+    "automation_2_deleted_tool_success": true,
+    "all_automatic_work_completed": false,
+    "traffic_status": "NOT_RUN",
+    "traffic_cases": 15,
+    "traffic_jobs": 30,
+    "planned_R0_workers": 4,
+    "planned_OPT_workers": 6,
+    "traffic_launched": false,
+    "old_traffic_not_continued": true,
+    "version_direction_pending_user": true,
+    "human_status": "HUMAN_PENDING",
+    "index94_review_scope": "EVIDENCE_INDEX_REVIEWED is index fidelity only, not final criteria acceptance",
+    "map70": "historical snapshot unchanged"
+  },
+  "static_interface_check": {
+    "checker": {
+      "path": "D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/check_sustained_oracle.py",
+      "sha256": "fc11db2c9e995b50ea0ba7d0c7222533bba8b318b40a70fd8d94f7b8f1ffc9f7"
+    },
+    "summarize_present": true,
+    "summarize_called_this_task": false
+  },
+  "documents_sha256": {
+    "D:/7_codespace/terminal/docs/rotating_slots_stage1/performance_v1/final_pass_results_20261019.md": "54d9981b91560e35a1b49b6342009e9cce43029ee22b1e361f70f0f90c6b46b3",
+    "D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/README.md": "9b49b5a2240f205f820851e718b0a42feff3087175bf9a4456a0c13b18c706b6"
+  },
+  "document_worker_actions": {
+    "physics_executed": false,
+    "ssh_executed": false,
+    "git_write_executed": false
+  }
+}

@@ -94,6 +94,23 @@ workers 6 最大 kernel+workers RSS sweep 为 3460562944 bytes。collector+kerne
 
 完整 joined kernel+workers CPU 合计 **17077.706637 s**，collector 至最终快照 CPU 为 **20.48264844 s**；后者与逐 job collector 重叠，不能重复相加，最终 write/print 尾部未计。最大 kernel+workers RSS sweep 为 **3613859840 bytes（约 3.365669 GiB）**，仍是采样/HWM 估计，非严格资源上界。
 
+## 旧单轮 60 sim oracle 的中断终态
+
+[oracle completion](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/completion.json) 于服务器 UTC 2026-10-19 17:49:38.124928 记录 **STOPPED_ON_SOURCE_ERROR**；[根退出码](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/numericexitcode.txt) 与 [launch 退出码](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a_launch/numericexitcode.txt) 均为 2，outer error 为 `ValueError: outer fixed file inventory changed`。[终态采集记录](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a_progress_2.json) 的本地采集区间为 UTC 18:11:41.7505638–18:11:42.1517773，服务器观测为 18:12:30.666815，native SSH exit 0、匹配进程 0；这些采集时刻不冒充运行结束时刻或 monotonic wall。
+
+| 窗口 | 既有记录状态 | R0 rollout wall（秒） | 对照范围/限制 |
+| --- | --- | ---: | --- |
+| W71-A | [ORACLE_EXACT](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-A/R0/row.json) | 175.01734341998235 | 三份OPT、18成员及float.hex时间线同；R0仅n=1 |
+| W71-B | [ORACLE_EXACT](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-B/R0/row.json) | 1994.411032767006 | 三份OPT、18成员及float.hex时间线同；R0仅n=1 |
+| W71-C | [ORACLE_EXACT](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W71-C/R0/row.json) | 2175.6804914230015 | 三份OPT、18成员及float.hex时间线同；R0仅n=1 |
+| W60 | [ORACLE_EXACT](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W60/R0/row.json) | 12.90339039202081 | 三份OPT、18成员及float.hex时间线同；R0仅n=1 |
+| W120 | [IMPLEMENTATION_FAILURE](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a/windows/W120/R0/attempt/result.json)；collector exit 1、无row | 不作合格样本 | `ProvenanceError: DEPLOYMENT_BYTES_CHANGED_DURING_RUN: terminal_marl/core/rotating_slots/audit.py` |
+| W180 | NOT_RUN | — | 无result/row |
+
+四窗合计 12 pairs / 72 个物理成员字节及 SHA 相同，精确时间线相同；这不是六窗完整 oracle 或正式速度重复表。W120 虽记录 actual delta=60 和 rollout=596.62691618799 s，因上述 IMPLEMENTATION_FAILURE 不纳入合格样本。`source_finish.json` 实际缺失，不补造来源结束证明；[小型事实摘要](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/interruption_review_20261020.json) 分开记录原始产物、终态采集及主对话后续源码比较的来源。
+
+主对话按原 523-source map 对后续本地源码作只读比较，记录 7 个差异：`audit.py`、`energy.py`、`performance/checkpoint.py`、`replay.py`、`safety.py`、`trajectory.py`、`world.py`（均在 `terminal_marl/core/rotating_slots/` 下）。`c59aa6b` / `e343c77897169ff390c5026ed77c27aa9ea4ba8a` 是观察到的后续工作状态；不据此断言哪条写命令或提交时刻造成运行变化，也不评价新实现。原 deployment manifest 保持不变，后续 HEAD 不冒用原部署 `4623e38d9b13238f6ca886229c603a5626285698`。此前已审 36 paired / 24 parallel / 18 OPT sustained 及单核 0.993079、六worker相对R0 1.5312 的事实保留，本次中断不撤销这些先前证据。
+
 ## 此快照仍待测的范围
 
-本次文档更新快照中，固定并行 24 项与 sustained 18 项已完成；独立完整 60 sim R0/OPT 对照仍未得结论。[独立 oracle 准备说明](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/README.md) 原准备版本为 873a888；预检校验器修复后待重新预检及正式运行，不记作已 launch 或完成。15 case / 30 traffic 仍未运行；新增 70 catalogue 映射与八类人工观察仍待主审/HUMAN_PENDING。上述窗口实测不能替代完整 traffic 或人工签收。历史 `required_geometric_speedup=2.0`、`historical_component_gate=NOT_PASSED`、`performance_status=NOT_QUALIFIED` 字段按原值保存；按用户修订，本轮只报告数字，不以追过这些历史数字门槛追加优化。是否最终签收由主对话在其余既定证据和人工观察完成后决定。
+本次快照中，独立 60 sim oracle 已中断，仅四窗有既有对照，六窗完整结论仍缺。15 case / 30 jobs traffic 为 NOT_RUN；主对话原预定 R0 4 workers / OPT 6 workers，但未 launch。共享源码已变且版本方向待用户确认，本轮不再推进旧 traffic；主对话已删除旧 automation-2（工具成功），这不表示自动工作全部完成。70 映射仍是旧快照；94 新索引的 EVIDENCE_INDEX_REVIEWED 只表示索引忠实性已复核，不是全部准则 PASS。八类人工观察仍 HUMAN_PENDING；相对后续优化版本的选择留待用户决定，本报告不代作选择。历史 `required_geometric_speedup=2.0`、`historical_component_gate=NOT_PASSED`、`performance_status=NOT_QUALIFIED` 字段按原值保存；按用户修订，本轮只报告数字，不以追过这些历史数字门槛追加优化。是否最终签收由主对话在其余既定证据和人工观察完成后决定。
