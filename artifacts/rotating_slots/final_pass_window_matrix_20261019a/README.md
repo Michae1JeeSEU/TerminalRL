@@ -1,9 +1,17 @@
-# Fixed final window matrices — preparation only
+# Fixed final window matrices — parallel run recorded
 
-This artifact is not launched or integrated. run_matrix.py is a thin fixed
+The fixed parallel matrix has completed; primary selected workers 6. run_matrix.py is a thin fixed
 driver using existing performance.paired.collect and the existing real window
 CLI. There is no new systemd wrapper, scheduler, automatic backend selection,
 retry, tuning loop or numerical performance acceptance threshold.
+
+## 实际固定矩阵结果（2026-10-19）
+
+[实际 completion](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_parallel_matrix_20261019a/completion.json) 为 FIXED_MATRIX_FINISHED，24/24 项 COMPLETED_WINDOW、collector exit 0、CPU complete/worker join，六成员 hash 和 exact timeline 与原 serial baseline 相同；[source finish](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_parallel_matrix_20261019a/source_finish.json) 记录源未变，[launch numeric exit](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_parallel_matrix_20261019a_launch/numericexitcode.txt) 为 0。相对 OPT serial 的六窗 rollout 几何比（0/1/2/4/6）为 1 / 0.9943168158489465 / 1.2547395282256242 / 1.4362188916975185 / 1.5418654506300054。每个并行配置 n=1，baseline 原三样本保留，不声称统计显著。
+
+主对话选择 workers 6，六窗本轮 rollout 均最快；逐窗 kernel+workers CPU / OPT serial 比为 0.9915–1.0836，最大 kernel+workers RSS sweep 为 3460562944 bytes。collector+kernel 与 kernel+workers RSS 重复包含父进程，不能相加；sweep/HWM 非严格上界。相对 R0 serial 的同六窗几何比为 1.5311947907087373，与相对 OPT serial 的约 1.54 区分。数值仅报告，不追历史门槛。
+
+本更新快照中 sustained 18 项尚未启动，独立完整 60 sim R0/OPT oracle 仍 pending，traffic 未运行，八类人工观察仍 HUMAN_PENDING。下方模板和历史 synthetic self-check 是准备/接口说明，不是这些待测项目的执行证据。
 
 Modes are plan, self-check, parallel, sustained and summarize. The script must
 be an explicit deployment.extra_paths member before the deployment is finalized;
