@@ -75,6 +75,25 @@ campaign 最终 accounting snapshot 的 36 个 joined kernel CPU 合计为 4855.
 
 workers 6 最大 kernel+workers RSS sweep 为 3460562944 bytes。collector+kernel 与 kernel+workers 两种 RSS 口径重复包含 kernel 父进程，不能相加或把不同时刻峰值拼成总量。矩阵记录完整 joined kernel CPU 合计 3259.455650 s，矩阵 collector 至最终快照 CPU 为 7.954110060 s；后者与逐 job collector CPU 重叠，不相加，且最终 write/print 尾部仍未计入。RSS sweep/HWM 估计不构成严格资源上界或资源资格通过。
 
+## 六 worker 持续窗口实测
+
+[sustained completion](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c/completion.json) 记录 `FIXED_MATRIX_FINISHED`、error=null，六窗各三次，共 18/18 COMPLETED_WINDOW；同窗三份六物理成员 hash 和精确时间线相同。全部为冷启动，六 worker startup/join、CPU complete、7200 wall 秒 guard 正常 DISARMED，physical failed=false、failure=null。[source finish](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c/source_finish.json) 为 source_unchanged=true，[外层退出记录](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c_launch/numericexitcode.txt) 为 0。matrix 起始 UTC 2026-10-19 11:41:36.329447，completion 结束 UTC 15:02:52.360019（北京时间 23:02:52.360019）；时区表示不改变同一时刻，不将这些 UTC 时刻之差作为 monotonic wall 测量。
+
+下表 rollout wall 为原三次观测（秒，显示三位小数），delta 为每次实际 sim 秒；W71-A 的原值为 60.199999999999704，表中简写 60.2。先对每个样本计算 wall/actual-delta，再取同窗中位数，未用名义 60 秒代替实际 delta。
+
+| 窗口 | 三次 rollout wall（秒） | 实际 delta（sim秒） | median wall/actual-sim |
+| --- | --- | ---: | ---: |
+| W71-A | 139.802 / 141.207 / 140.000 | 60.2 | 2.325580626 |
+| W71-B | 1427.486 / 1453.426 / 1427.200 | 60.05541751310943 | 23.769485495 |
+| W71-C | 1549.346 / 1533.150 / 1542.699 | 60 | 25.711647918 |
+| W60 | 10.073 / 10.060 / 10.116 | 60 | 0.167875445 |
+| W120 | 380.679 / 379.167 / 378.391 | 60 | 6.319450778 |
+| W180 | 481.800 / 490.527 / 491.665 | 60 | 8.175457167 |
+
+六个窗口上述中位数的几何平均为 **4.8062896750216 wall秒/sim秒**。原每窗 ≤10 wall秒/sim秒的历史数字对照中，W71-B、W71-C 高于 10；按用户修订只报告实测，不追加调优，也不称全部性能资格 PASS。同窗三重复相同只说明 OPT6 重复结果一致，不能替代完整 60 sim R0/OPT 对照；此处不计算 10 sim/60 sim 速度比。
+
+完整 joined kernel+workers CPU 合计 **17077.706637 s**，collector 至最终快照 CPU 为 **20.48264844 s**；后者与逐 job collector 重叠，不能重复相加，最终 write/print 尾部未计。最大 kernel+workers RSS sweep 为 **3613859840 bytes（约 3.365669 GiB）**，仍是采样/HWM 估计，非严格资源上界。
+
 ## 此快照仍待测的范围
 
-本次文档更新采用固定并行 24 jobs 已完成、主对话选择后端 6 后的快照：sustained 18 jobs 尚未启动，独立完整 60 sim 的 R0/OPT oracle 仍 pending，15 case / 30 traffic 未运行；均无本报告可引用结果。不能据上述名义 10 sim 结果推断持续表现或完整 traffic 结论；八类人工观察仍 HUMAN_PENDING。历史 `required_geometric_speedup=2.0`、`historical_component_gate=NOT_PASSED`、`performance_status=NOT_QUALIFIED` 字段按原值保存；按用户修订，本轮只报告数字，不以追过这些历史数字门槛追加优化。是否最终签收由主对话在其余既定证据和人工观察完成后决定。
+本次文档更新快照中，固定并行 24 项与 sustained 18 项已完成；独立完整 60 sim R0/OPT 对照仍未得结论。[独立 oracle 准备说明](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/README.md) 原准备版本为 873a888；预检校验器修复后待重新预检及正式运行，不记作已 launch 或完成。15 case / 30 traffic 仍未运行；新增 70 catalogue 映射与八类人工观察仍待主审/HUMAN_PENDING。上述窗口实测不能替代完整 traffic 或人工签收。历史 `required_geometric_speedup=2.0`、`historical_component_gate=NOT_PASSED`、`performance_status=NOT_QUALIFIED` 字段按原值保存；按用户修订，本轮只报告数字，不以追过这些历史数字门槛追加优化。是否最终签收由主对话在其余既定证据和人工观察完成后决定。

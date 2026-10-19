@@ -37,6 +37,13 @@ def require(ok, message):
         raise ValueError(message)
 
 
+def check_thread_observation(observed, recorded_names):
+    """Six collector fields are observed; seven variables are set at launch."""
+    require(tuple(recorded_names) == THREADS[:-1], 'collector thread observation policy differs')
+    require(observed == dict.fromkeys(recorded_names, '1'), 'recorded thread environment differs')
+    return True
+
+
 def read(path):
     return json.loads(Path(path).read_bytes())
 
@@ -130,7 +137,7 @@ def checked_window(case, rec, window, kernel, workers, campaign, targets, expect
         and guards[0]['budget_seconds'] == BUDGET, 'guard completion differs')
     require(env['pid'] == rec['pid'] and env['isolated'] and env['dont_write_bytecode'] and env['nice'] == 10
         and env['affinity'] == affinity and env['core_modules_before_cli'] == []
-        and env['thread_environment'] == dict.fromkeys(THREADS, '1'), 'fresh process environment differs')
+        and check_thread_observation(env['thread_environment'], p.THREADS), 'fresh process environment differs')
     require(rec['resources']['cpu_complete'] and rec['kernel_completion_evidence']['complete']
         and result['resources']['cpu_complete'], 'successful joined CPU proof incomplete')
     if workers:
@@ -332,6 +339,23 @@ def self_check(output):
     require(output.parent == Path(__file__).resolve().parent and not output.exists(), 'fresh local artifact self-check directory required')
     output.mkdir()
     require([j['window'] for j in jobs()] == list(IDS) and len(jobs()) == 6 and BUDGET == 7200, 'six fixed jobs/budget')
+    recorded = THREADS[:-1]
+    observed = dict.fromkeys(recorded, '1')
+    require(check_thread_observation(observed, recorded), 'six observed fields rejected')
+    thread_negatives = 0
+    for name in recorded:
+        for mutation in ('missing', 'non1'):
+            changed = dict(observed)
+            if mutation == 'missing':
+                changed.pop(name)
+            else:
+                changed[name] = '2'
+            try:
+                check_thread_observation(changed, recorded)
+            except ValueError:
+                thread_negatives += 1
+    require(thread_negatives == 12 and len(THREADS) == 7 and
+        dict.fromkeys(THREADS, '1')['OMP_THREAD_LIMIT'] == '1', 'thread observation negatives/launch settings differ')
     for job in jobs():
         argv = command(job)
         for flag, value in (('--kernel', 'R0'), ('--duration', '60'), ('--inner-workers', '0'), ('--core-budget', '1'), ('--process-budget', '1')):
@@ -365,8 +389,11 @@ def self_check(output):
     save(output / 'self_check.json', dict(status='SELF_CHECK_PASSED', driver_sha256=sha(__file__),
         synthetic_only=True, replay_validation_executed=False, physics_executed=False, subprocess_executed=False,
         job_count=6, budget_seconds=BUDGET, commands=[command(j) for j in jobs()],
+        observed_thread_names=list(recorded), launch_thread_environment=dict.fromkeys(THREADS, '1'),
+        missing_or_non1_thread_rejections=thread_negatives,
         checks=['fixed R0 commands/order', 'equal six members', 'one-ULP timeline rejected',
-            'member byte difference rejected', 'missing third OPT rejected', 'timeout cannot be exact']))
+            'member byte difference rejected', 'missing third OPT rejected', 'timeout cannot be exact',
+            'six recorded thread fields accepted; each missing/non1 rejected; seven launch variables remain1']))
     print(json.dumps(dict(status='SELF_CHECK_PASSED', output=str(output), physics_executed=False)))
     return 0
 

@@ -1,6 +1,6 @@
 # 固定六窗完整 60 sim R0/OPT 对照准备
 
-`check_sustained_oracle.py` 只补既定完整窗口数值/离散对照，不寻优。正式运行顺序固定为 W71-A、W71-B、W71-C、W60、W120、W180，每窗一个 fresh R0_SERIAL、0 worker、名义 60 sim；不重跑 OPT，也不生成三重复速度主表。CPU 0、nice 10、七个原生线程变量均为 1，原 collector 为每个 `-I -B` kernel 独立提供 7200 wall 秒 Linux guard。没有后台启动器、retry 或新调度器。
+`check_sustained_oracle.py` 只补既定完整窗口数值/离散对照，不寻优。正式运行顺序固定为 W71-A、W71-B、W71-C、W60、W120、W180，每窗一个 fresh R0_SERIAL、0 worker、名义 60 sim；不重跑 OPT，也不生成三重复速度主表。CPU 0、nice 10、外层设置七个原生线程变量均为 1（含 OMP_THREAD_LIMIT）。冻结 collector 的 p.THREADS 只观测六字段：OMP/OPENBLAS/MKL/NUMEXPR/VECLIB/BLIS；检查器严格要求这六个已记录值均为字符串 1，不虚称记录了第七项。原 collector 为每个 `-I -B` kernel 独立提供 7200 wall 秒 Linux guard。没有后台启动器、retry 或新调度器。
 
 正式入口使用原 window CLI，固定 corpus、R0 导出、R0 migration approval 和部署 `4623e38d9b13238f6ca886229c603a5626285698`；`--kernel R0 --duration 60 --mode benchmark --inner-workers 0 --core-budget 1 --process-budget 1`。新输出仅为 `/home/user/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_oracle_20261019a`，拒绝覆盖。新增 driver 不在冻结 523-source map/extra_paths 中；外层复用 traffic_pass 的 `modules={}` 固定文件核验并单列自身 SHA，不改部署。原 window 的运行时导入、配置、semantics、helper、shim、迁移及来源结束校验照常执行。
 
@@ -27,3 +27,7 @@ CPU 保留 joined kernel 与 collector 各自口径；外层 CPU 与逐 job coll
 ```
 
 同一 Linux 入口以 `summarize` 只读检查保存的 row evidence SHA 并打印既有结果，不重跑 kernel、不改写汇总。缺完整 OPT 终态时，不应启动正式 `run`。是否实际启动及最终签收由主对话决定。
+
+## 预检校验器修复（2026-10-20）
+
+历史 `preflight_20261020a.json` 保留，未 launch、无 R0 物理样本；原检查器将七项启动设置当成六项 collector 观测要求。按主对话限定修复，环境观测现在严格与原 `p.THREADS` 六字段相等；来源、语义、affinity、cold 及其他校验保持。外层仍设置七变量全为 1。旧 self-check 保留；新 `self_check_20261020b/self_check.json` 绑定当前 driver SHA，六字段全 1 接受，每个字段缺失或非 1 共 12 个负例均拒绝，并检查七项启动设置不变。实际已完成 W71-A repeat1 的六字段只读核对见同目录 `actual_thread_observation.json`；它不是新的物理执行。AST/help/局部自检均 exit 0；修复后待主审、重新预检及正式运行，尚无完整 60 sim R0/OPT 对照结论。

@@ -1,6 +1,6 @@
-# Fixed final window matrices — parallel run recorded
+# Fixed final window matrices — parallel and sustained runs recorded
 
-The fixed parallel matrix has completed; primary selected workers 6. run_matrix.py is a thin fixed
+The fixed parallel and sustained matrices have completed; primary selected workers 6. run_matrix.py is a thin fixed
 driver using existing performance.paired.collect and the existing real window
 CLI. There is no new systemd wrapper, scheduler, automatic backend selection,
 retry, tuning loop or numerical performance acceptance threshold.
@@ -11,7 +11,9 @@ retry, tuning loop or numerical performance acceptance threshold.
 
 主对话选择 workers 6，六窗本轮 rollout 均最快；逐窗 kernel+workers CPU / OPT serial 比为 0.9915–1.0836，最大 kernel+workers RSS sweep 为 3460562944 bytes。collector+kernel 与 kernel+workers RSS 重复包含父进程，不能相加；sweep/HWM 非严格上界。相对 R0 serial 的同六窗几何比为 1.5311947907087373，与相对 OPT serial 的约 1.54 区分。数值仅报告，不追历史门槛。
 
-本更新快照中 sustained 18 项尚未启动，独立完整 60 sim R0/OPT oracle 仍 pending，traffic 未运行，八类人工观察仍 HUMAN_PENDING。下方模板和历史 synthetic self-check 是准备/接口说明，不是这些待测项目的执行证据。
+本更新快照中 sustained 六窗 × 三重复共 18/18 已完成：[completion](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c/completion.json) 为 FIXED_MATRIX_FINISHED/error=null，同窗三份六成员 hash 与 exact timeline 相同，冷启动/六 worker startup及join/CPU complete/7200 guard DISARMED、physical failed=false。[source finish](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c/source_finish.json) 为源未变，[launch exit](D:/7_codespace/training_outputs/terminal/rotating_slots_perf_v1/final_pass_sustained_20261019c_launch/numericexitcode.txt) 为 0。各样本先 wall/actual-sim、再窗口中位与六窗几何平均，得到 4.8062896750216 wall秒/sim秒；W71-B/C 高于原每窗≤10历史数字，按用户修订只报告，不调优或宣称全部性能资格通过。
+
+持续作业完整 kernel+workers CPU 为 17077.706637 s，collector 最终快照为 20.48264844 s，后者不与逐 job collector 重复相加且不含最终 write/print 尾；kernel+workers RSS sweep 最大 3613859840 bytes（约 3.365669 GiB），非严格上界。[完整 60 sim R0/OPT oracle](D:/7_codespace/terminal/artifacts/rotating_slots/final_pass_sustained_oracle_20261019a/README.md) 仍未得结论，原准备版本为 873a888，预检校验器修复后待重新预检及运行，未记为已启动；OPT三重复一致不能替代该对照。traffic 未运行，70映射与八类人工观察仍 pending/HUMAN_PENDING。下方模板及 historical synthetic self-check 不作为待测项目的执行证据。
 
 Modes are plan, self-check, parallel, sustained and summarize. The script must
 be an explicit deployment.extra_paths member before the deployment is finalized;
