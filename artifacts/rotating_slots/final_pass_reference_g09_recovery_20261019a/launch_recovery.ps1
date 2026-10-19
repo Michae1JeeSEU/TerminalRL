@@ -4,8 +4,8 @@ if ($LocalCheckOnly -and $Supervise) { throw 'Choose one mode.' }
 $taskBase = 'D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_reference_g09_recovery_20261019a'
 $taskPython = 'D:\7_codespace\terminal\venv\Scripts\python.exe'
 $taskDriver = Join-Path $taskBase 'recover_g09.py'
-$taskOutput = Join-Path $taskBase 'run_20261019a'
-$taskPrefix = Join-Path $taskBase 'launch_20261019a'
+$taskOutput = Join-Path $taskBase 'run_20261019b'
+$taskPrefix = Join-Path $taskBase 'launch_20261019b'
 foreach ($taskRequired in @($taskPython, $taskDriver, 'D:\7_codespace\terminal\artifacts\rotating_slots\performance_reference_r0\.reference_manifest.json', 'D:\7_codespace\terminal\artifacts\rotating_slots\final_pass_reference_regression_local_20261019a\G09\benchmark')) {
     if (-not (Test-Path -LiteralPath $taskRequired)) { throw "Missing fixed input: $taskRequired" }
 }
