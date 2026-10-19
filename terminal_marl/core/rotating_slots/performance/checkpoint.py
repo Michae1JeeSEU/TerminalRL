@@ -26,6 +26,7 @@ decision_times auto_emergency cpu cache_hits reference_counts minimum_separation
 pad_busy_seconds""".split())
 CACHE_FIELDS = frozenset(("_q_cache", "_energy_cache", "_reference_templates"))
 RUNTIME_FIELDS = frozenset(("state_sink", "decision_callback", "_scheduler_port"))
+OPTIONAL_RUNTIME_FIELDS = frozenset(("_practical_runtime",))
 _MIGRATIONS = {}
 
 
@@ -249,7 +250,9 @@ def capture_checkpoint(world, *, identity, cursor, driver=None):
     """Capture only at a caller-certified natural cut; never advances the world."""
     core = type(world).__module__.rsplit(".", 1)[0]
     cls = importlib.import_module(core + ".world").RotatingSlotWorld
-    if type(world) is not cls or set(world.__dict__) != WORLD_FIELDS | CACHE_FIELDS | RUNTIME_FIELDS:
+    required = WORLD_FIELDS | CACHE_FIELDS | RUNTIME_FIELDS
+    if (type(world) is not cls or not required <= set(world.__dict__)
+            or set(world.__dict__) - required - OPTIONAL_RUNTIME_FIELDS):
         raise CheckpointError("unknown/missing world fields or world type")
     if (identity.config_hash != world.config.config_hash or identity.profile_hash != world.config.profile_hash
             or identity.physical_config_bytes_sha256 != world.config.raw_hash):
@@ -259,13 +262,17 @@ def capture_checkpoint(world, *, identity, cursor, driver=None):
     codec = StateCodec(core)
     effective = world.decision_callback if driver is None else driver
     default = _driver_state(world.decision_callback, core, codec)
-    return {"schema": SCHEMA, "kind": "resumable_world", "identity": asdict(identity),
+    result = {"schema": SCHEMA, "kind": "resumable_world", "identity": asdict(identity),
             "cursor": codec.encode(dict(asdict(cursor))),
             "world": codec.encode({k: v for k, v in world.__dict__.items() if k in WORLD_FIELDS}),
             "derived_caches": codec.encode({k: world.__dict__[k] for k in sorted(CACHE_FIELDS)}),
             "default_callback": default, "effective_callback": _driver_state(effective, core, codec),
             "callback_shared": effective is world.decision_callback,
             "state_stream": None if world.state_sink is None else _capture_sink(world.state_sink, codec)}
+    optional = {k: world.__dict__[k] for k in OPTIONAL_RUNTIME_FIELDS if k in world.__dict__}
+    if optional:
+        result["optional_runtime"] = codec.encode(optional)
+    return result
 
 
 def atomic_write_json(path, value):
@@ -307,7 +314,10 @@ def load_checkpoint(path, *, expected_identity, migration_id=None):
 
 
 def _validate_payload(payload, expected, migration_id):
-    _keys(payload, ("schema", "kind", "identity", "cursor", "world", "derived_caches",
+    if not isinstance(payload, dict):
+        raise CheckpointError("unexpected/missing checkpoint fields")
+    _keys({k:v for k,v in payload.items() if k != "optional_runtime"},
+          ("schema", "kind", "identity", "cursor", "world", "derived_caches",
                     "default_callback", "effective_callback", "callback_shared", "state_stream"), "checkpoint")
     if payload["schema"] != SCHEMA or payload["kind"] != "resumable_world":
         raise CheckpointError("replay/fixture is not a resumable checkpoint")
@@ -396,6 +406,30 @@ def restore_checkpoint(payload, *, expected_identity, cache_mode="cold", new_att
     if (config_module.digest(config.to_dict()) != config.config_hash
             or config_module.digest({k: config.to_dict()[k] for k in ("vehicle", "energy", "coordinates")}) != config.profile_hash):
         raise CheckpointError("configuration content hash mismatch")
+    optional = codec.decode(payload["optional_runtime"]) if "optional_runtime" in payload else {}
+    if type(optional) is not dict or set(optional) - OPTIONAL_RUNTIME_FIELDS:
+        raise CheckpointError("unknown optional runtime fields")
+    if "_practical_runtime" in optional:
+        runtime = optional["_practical_runtime"]
+        expected_fields = {"enabled", "soc_threshold", "telemetry_period", "emergency_period",
+                           "reference_cache_path", "base_plans", "monitor", "imminent", "table",
+                           "counters", "precompute_seconds"}
+        if (type(runtime) is not dict or set(runtime) != expected_fields
+                or type(runtime["enabled"]) is not bool
+                or any(type(runtime[name]) is not dict for name in
+                       ("base_plans", "monitor", "imminent", "table", "counters"))
+                or runtime["reference_cache_path"] is not None
+                   and type(runtime["reference_cache_path"]) is not str):
+            raise CheckpointError("invalid optional runtime state")
+        try:
+            if (not .35 <= runtime["soc_threshold"] <= 1
+                    or not state["physics_dt"] <= runtime["telemetry_period"] <= 1
+                    or not 0 < runtime["emergency_period"] <= 1
+                    or not math.isfinite(runtime["precompute_seconds"])
+                    or runtime["precompute_seconds"] < 0):
+                raise ValueError("invalid runtime options")
+        except (TypeError, ValueError) as exc:
+            raise CheckpointError("invalid optional runtime options") from exc
     plan_class = codec.classes["trajectory.TrajectoryPlan"]
     try:
         if type(state["trajectories"]) is not dict:
@@ -438,6 +472,17 @@ def restore_checkpoint(payload, *, expected_identity, cache_mode="cold", new_att
     world.decision_callback = default
     world._scheduler_port = importlib.import_module(core + ".world").SchedulerPort(world)
     world.state_sink = None
+    if optional:
+        world.__dict__.update(optional)
+        if cache_mode == "cold" and "_practical_runtime" in optional:
+            # Monitor timestamps retain cadence; recomputable plans and sampled
+            # reference cells are genuinely cold even in a practical checkpoint.
+            world._practical_runtime["base_plans"] = {}
+            world._practical_runtime["table"] = {}
+    elif hasattr(world, "configure_practical_runtime"):
+        # Legacy checkpoints contain the same authoritative physical state;
+        # practical execution obtains derived defaults without a schema migration.
+        world.configure_practical_runtime()
     if metadata is not None:
         root = Path(new_attempt_dir).resolve()
         source = Path(metadata["path"]).resolve()

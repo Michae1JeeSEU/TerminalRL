@@ -482,7 +482,7 @@ def test_state_sink_requires_callable_without_changing_default_recording():
         RotatingSlotWorld(state_sink="states.jsonl")
     w=RotatingSlotWorld()
     w.advance(.6)
-    assert len(w.records)==4
+    assert [frame["time"] for frame in w.records] == [0., .6]
     assert "states_streamed" not in w.to_dict()
 
 

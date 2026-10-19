@@ -159,6 +159,13 @@ def audit_replay(bundle_path,output=None):
     if not math.isfinite(sample_dt) or not 0<sample_dt<=.2:
         issue("SAMPLE_DT","declared execution sample interval is outside (0,.2]",sample_dt=sample_dt)
         sample_dt=.2
+    try:
+        telemetry_dt=float(archive.index.get("telemetry_dt_s",sample_dt))
+    except (TypeError,ValueError):
+        telemetry_dt=math.nan
+    if not math.isfinite(telemetry_dt) or not sample_dt<=telemetry_dt<=1.:
+        issue("TELEMETRY_DT","declared telemetry interval is outside [physics_dt,1]",telemetry_dt=telemetry_dt)
+        telemetry_dt=sample_dt
     def plan_for(a,t):
         h=a.get("trajectory_hash")
         p=plans.get(h)
@@ -283,8 +290,8 @@ def audit_replay(bundle_path,output=None):
             if previous is not None:
                 pt=float(previous["time"]);dt=t-pt
                 before={str(a["id"]):a for a in previous.get("aircraft",())}
-                if dt>sample_dt+1e-6:
-                    issue("SAMPLING_GAP","frame interval exceeds declared execution sample maximum",interval=[pt,t])
+                if dt>telemetry_dt+1e-6:
+                    issue("SAMPLING_GAP","frame interval exceeds declared telemetry maximum",interval=[pt,t])
                 for aid,old in before.items():
                     a=current.get(aid)
                     if a is None:

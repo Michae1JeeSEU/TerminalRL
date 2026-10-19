@@ -315,13 +315,51 @@ def descent_segments(pad_id,start_time,config=None):
 def _candidate(aircraft_id,kind,start,source_ring,source_slot,target_ring,target_slot,pad_id,version,segments,c):
     return TrajectoryPlan(str(aircraft_id),kind,start,segments[-1].end_time,source_ring,source_slot,target_ring,target_slot,pad_id,version,c.profile_hash,'',tuple(segments),c.config_hash)
 
-def _search(builder,durations,c):
+_TRANSFER_FEASIBILITY = OrderedDict()
+_TRANSFER_FEASIBILITY_LIMIT = 4096
+
+def _transfer_endpoints_match(plan,c):
+    # A cache entry proves only invariant single-aircraft numerics. Check the
+    # actual generated epoch's endpoints before using it; large absolute clocks
+    # can otherwise introduce position roundoff beyond metadata tolerances.
+    for t,ring,slot in ((plan.start_time,plan.source_ring,plan.source_slot),
+                        (plan.end_time,plan.target_ring,plan.target_slot)):
+        actual=plan.state(t); expected=slot_state(ring,slot,t,c)
+        for name,tol in (('p',1e-6),('v',1e-7),('a',1e-7)):
+            if math.dist(getattr(actual,name),getattr(expected,name))>tol: return False
+    return True
+
+def _search(builder,durations,c,*,_transfer_cache_context=None):
     from .safety import validate_plan
+    from .energy import _ConfigIdentity, _numeric_count
     failed=[]
     for T in (tuple(durations) if durations is not None else tuple(range(20,181,5))):
         if not math.isfinite(T) or T<=0: return CandidateResult('INVALID_INPUT',reason='duration must be positive finite')
-        for plan in builder(float(T)):
+        for branch,plan in enumerate(builder(float(T))):
+            key=None
+            if _transfer_cache_context is not None:
+                _numeric_count('transfer_feasibility_calls')
+                key=(_ConfigIdentity(c),c.config_hash,c.profile_hash,*_transfer_cache_context,float(T),branch,
+                     tuple((s.duration,s.r,s.theta[1:],s.z,s.kind) for s in plan.segments))
+                cached=_TRANSFER_FEASIBILITY.get(key)
+                if cached is not None and _transfer_endpoints_match(plan,c):
+                    _numeric_count('transfer_feasibility_hits')
+                    accepted,reason,details=cached
+                    if accepted:
+                        return CandidateResult('FEASIBLE',plan,details=dict(details,trajectory_hash=plan.trajectory_hash,profile_hash=plan.profile_hash))
+                    failed.append({'duration':T,'reason':reason})
+                    continue
+                _numeric_count('transfer_feasibility_computes')
             validation=validate_plan(plan,c)
+            # Only this internal builder opts in. INVALID metadata failures can
+            # depend on the absolute epoch and must never poison an invariant
+            # entry. Rejected numeric details contain absolute witness times;
+            # retain only the reason consumed by the duration search.
+            if key is not None and validation.status!='INVALID':
+                details={k:v for k,v in validation.details.items() if k not in ('trajectory_hash','profile_hash')} if validation.accepted else {}
+                if key not in _TRANSFER_FEASIBILITY and len(_TRANSFER_FEASIBILITY)>=_TRANSFER_FEASIBILITY_LIMIT:
+                    _TRANSFER_FEASIBILITY.popitem(last=False)
+                _TRANSFER_FEASIBILITY[key]=(validation.accepted,validation.reason,details)
             if validation.accepted: return CandidateResult('FEASIBLE',plan,details=validation.details)
             failed.append({'duration':T,'reason':validation.reason})
     return CandidateResult('NOT_FOUND',reason='candidate duration/phase search exhausted; no infeasibility proof',details={'attempts':failed})
@@ -335,13 +373,16 @@ def generate_transfer(aircraft_id,source_ring,source_slot,target_slot,start_time
         th0=slot_phase(source_ring,source_slot,start_time,c); slot_phase(target,target_slot,start_time,c)
         w=c.airspace.common_angular_speed_radps
         def builder(T):
-            raw=slot_phase(target,target_slot,start_time+T,c)-(th0-w*T)
+            # The shared slot clock cancels exactly. Build local angular
+            # coefficients independently of absolute epoch/rotation so the
+            # single-aircraft certificate and energy tables are reusable.
+            raw=slot_phase(target,target_slot,0.,c)-slot_phase(source_ring,source_slot,0.,c)
             # Nearest clockwise phase offset; also a neighboring unwrapped offset.
             delta=raw%(2*math.pi)
             for d in (delta if delta<=math.pi else delta-2*math.pi,delta-2*math.pi):
-                s=Segment(start_time,T,hermite(a.radius_m,0,0,b.radius_m,0,0,T),hermite(th0,-w,0,th0-w*T+d,-w,0,T),hermite(a.height_agl_m,0,0,b.height_agl_m,0,0,T))
+                s=Segment(start_time,T,hermite(a.radius_m,0,0,b.radius_m,0,0,T),(th0,-w*T,0.,10*d,-15*d,6*d),hermite(a.height_agl_m,0,0,b.height_agl_m,0,0,T))
                 yield _candidate(aircraft_id,'TRANSFER',start_time,source_ring,source_slot,target,target_slot,None,source_version,(s,),c)
-        return _search(builder,durations,c)
+        return _search(builder,durations,c,_transfer_cache_context=(source_ring,source_slot,target,target_slot))
     except (ValueError,TypeError,IndexError) as exc: return CandidateResult('INVALID_INPUT',reason=str(exc))
 
 def generate_inbound(aircraft_id,gate_id,target_slot,start_time,source_version=0,config=None,durations=None):

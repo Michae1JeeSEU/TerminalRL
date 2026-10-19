@@ -8,10 +8,11 @@ from .config import load_config
 from .geometry import slot_state, slot_phase, ring_config, pad_position
 from .models import ValidationResult, KinematicState
 from .trajectory import Interval, digest, _intrinsic_bounds_from_polar, TrajectoryPlan
-from .energy import evaluate_power, power_bounds
+from .energy import evaluate_power, power_bounds, _numeric_count
 
 _NUMERIC_CERTIFICATES={}
 _PLAN_CERTIFICATES={}
+_SEGMENT_CERTIFICATES={}
 
 def _norm_upper(box): return sum((Interval(a,b).square() for a,b in box),Interval(0)).sqrt().hi
 def _norm_lower(box):
@@ -20,11 +21,13 @@ def _norm_lower(box):
 def _close(a,b,tol): return math.dist(a,b)<=tol
 
 def validate_plan(plan,config=None,use_cache=True):
+    _numeric_count('validate_plan_calls')
     c=config or load_config()
     if plan.profile_hash!=c.profile_hash or plan.config_hash!=c.config_hash: return ValidationResult(False,'INVALID','PROFILE_HASH_MISMATCH')
     if plan.trajectory_hash!=digest(plan._payload()): return ValidationResult(False,'INVALID','TRAJECTORY_HASH_MISMATCH')
     exact_key=(plan.trajectory_hash,c.config_hash)
     if use_cache and exact_key in _PLAN_CERTIFICATES:
+        _numeric_count('plan_certificate_hits')
         return ValidationResult(True,'SAFE','',dict(_PLAN_CERTIFICATES[exact_key]))
     allowed=('INBOUND','TRANSFER','FINAL_NORMAL','FINAL_EMERGENCY','STABLE','GROUND')
     if plan.kind not in allowed: return ValidationResult(False,'INVALID','UNKNOWN_MANEUVER')
@@ -68,14 +71,16 @@ def validate_plan(plan,config=None,use_cache=True):
                 matches.append(_close(first.p,p,1e-6) and _close(first.v,v,1e-7) and _close(first.a,(0,0,0),1e-7))
             if not any(matches): return ValidationResult(False,'INVALID','ENTRY_STATE_MISMATCH')
     except (ValueError,TypeError,AttributeError) as exc: return ValidationResult(False,'INVALID','INVALID_METADATA',{'error':str(exc)})
-    numeric_key=(c.profile_hash,plan.kind,plan.source_ring,tuple((s.duration,s.r,s.theta[1:],s.z,s.kind) for s in plan.segments))
+    numeric_key=(c.config_hash,plan.kind,plan.source_ring,tuple((s.duration,s.r,s.theta[1:],s.z,s.kind) for s in plan.segments))
     if use_cache and numeric_key in _NUMERIC_CERTIFICATES:
+        _numeric_count('numeric_certificate_hits')
         details=dict(_NUMERIC_CERTIFICATES[numeric_key],trajectory_hash=plan.trajectory_hash,profile_hash=plan.profile_hash)
         if len(_PLAN_CERTIFICATES)>=512: _PLAN_CERTIFICATES.pop(next(iter(_PLAN_CERTIFICATES)))
         _PLAN_CERTIFICATES[exact_key]=dict(details)
         return ValidationResult(True,'SAFE','',details)
     counts={'intervals':0,'max_depth':0,'power_intervals':0}
     def check(s,a,b,depth):
+        _numeric_count('plan_interval_computes')
         counts['intervals']+=1; counts['max_depth']=max(depth,counts['max_depth'])
         if s.kind=='GROUND': return None
         polar=s.polar_bounds(a,b); r,theta,z=polar
@@ -124,8 +129,19 @@ def validate_plan(plan,config=None,use_cache=True):
         mid=(a+b)/2
         return check(s,a,mid,depth+1) or check(s,mid,b,depth+1)
     for s in plan.segments:
+        # Canonical descents were checked exactly against the frozen builder
+        # above. Their constraints and power do not depend on pad angle/time.
+        segment_key=(c.config_hash,plan.kind,plan.source_ring,s.duration,s.r,s.theta[1:],s.z,s.kind)
+        if s.kind=='DESCENT' and plan.kind.startswith('FINAL'):
+            segment_key=(c.config_hash,'canonical_descent',s.duration,s.r,s.theta[1:],s.z)
+        if use_cache and segment_key in _SEGMENT_CERTIFICATES:
+            _numeric_count('segment_certificate_hits')
+            continue
         result=check(s,s.start_time,s.end_time,0)
         if result is not None: return result
+        if use_cache:
+            if len(_SEGMENT_CERTIFICATES)>=1024: _SEGMENT_CERTIFICATES.pop(next(iter(_SEGMENT_CERTIFICATES)))
+            _SEGMENT_CERTIFICATES[segment_key]=True
     certificate=dict(counts,method='outward_polynomial_Bernstein_intrinsic_frame_and_induced_root_intervals')
     details=dict(certificate,trajectory_hash=plan.trajectory_hash,profile_hash=plan.profile_hash)
     if use_cache:
@@ -213,7 +229,9 @@ class _ExecutionQueryCache:
         return self._query(plan,'bounds',(start,end),derivative)
 
 
-def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_interval=1e-7,*,_query_cache=None):
+def validate_separation_original(plan_a,plan_b,start,end,config=None,max_depth=32,min_interval=1e-7,*,_query_cache=None):
+    """Unmodified decision path for offline comparisons, without broad phases."""
+    _numeric_count('separation_original_calls')
     c=config or load_config(); hard=c.safety.hard_separation_m
     if end<start or not all(math.isfinite(t) for t in (start,end)): return ValidationResult(False,'INVALID','INVALID_TIME')
     exact=_constant_vertical_offset(plan_a,plan_b,start,end)
@@ -232,6 +250,7 @@ def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_int
             return ValidationResult(safe,'SAFE' if safe else 'UNSAFE','' if safe else 'HARD_SEPARATION',{'minimum_distance_m':d,'lower_bound_m':low,'upper_bound_m':high,'method':'common_rotation_structure_with_roundoff_enclosure'})
     best_upper=math.inf; min_lower=math.inf; count=0
     def check(a,b,depth):
+        _numeric_count('separation_fine_intervals')
         nonlocal best_upper,min_lower,count
         count+=1; mid=(a+b)/2
         if _query_cache is None:
@@ -260,6 +279,65 @@ def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_int
     result=check(start,end,0)
     if result is not None: return result
     return ValidationResult(True,'SAFE','',{'lower_bound_m':min_lower,'upper_bound_m':best_upper,'intervals':count,'method':'continuous_interval_relative_velocity','checked_until':end})
+
+
+def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_interval=1e-7,*,_query_cache=None):
+    """Conservative pair broad phases, then the original interval checker.
+
+    Displacement bounds are derived from actual trajectory position enclosures,
+    including future segments, rather than assuming a validated speed limit or
+    continuity for arbitrary, not-yet-validated input plans.
+    Both position boxes are evaluated over the *same* time slab.
+    """
+    _numeric_count('separation_calls')
+    c=config or load_config(); hard=c.safety.hard_separation_m
+    fallback=lambda a,b: validate_separation_original(plan_a,plan_b,a,b,c,max_depth,min_interval,_query_cache=_query_cache)
+    if end<=start or not all(math.isfinite(t) for t in (start,end)):
+        return fallback(start,end)
+    # Preserve exact boundary and analytic common-rotation proofs.
+    if _constant_vertical_offset(plan_a,plan_b,start,end) is not None or (_canonical_stable(plan_a,c) and _canonical_stable(plan_b,c)):
+        _numeric_count('separation_analytic_calls')
+        return fallback(start,end)
+    def bounds(p,a,b,k):
+        return p.bounds(a,b,k) if _query_cache is None else _query_cache.bounds(p,a,b,k)
+    mid=(start+end)/2
+    sa=plan_a.state(mid) if _query_cache is None else _query_cache.state(plan_a,mid)
+    sb=plan_b.state(mid) if _query_cache is None else _query_cache.state(plan_b,mid)
+    distance=math.dist(sa.p,sb.p)
+    ba=bounds(plan_a,start,end,0); bb=bounds(plan_b,start,end,0)
+    witness_upper=math.nextafter(distance+8*math.ulp(distance),math.inf)
+    def displacement(box,state):
+        delta=tuple((Interval(*x)-value).pair() for x,value in zip(box,state.p))
+        return _norm_upper(delta)
+    reach=displacement(ba,sa)+displacement(bb,sb)
+    box_lower=_norm_lower(tuple((Interval(*x)-Interval(*y)).pair() for x,y in zip(ba,bb)))
+    lower=max(box_lower,math.nextafter(distance-8*math.ulp(distance)-math.nextafter(reach,math.inf),-math.inf))
+    if lower>=hard:
+        _numeric_count('separation_displacement_accepts')
+        return ValidationResult(True,'SAFE','',{'lower_bound_m':lower,'upper_bound_m':witness_upper,'witness_time':mid,'method':'certified_maximum_displacement','checked_until':end})
+    cuts={start,end}
+    # _Traffic exposes base/plans and conservative bounds across junctions.
+    # No world import or assumption about the current active plan is needed.
+    for p in (plan_a,plan_b):
+        contained=(p,) if isinstance(p,TrajectoryPlan) else (getattr(p,'base',None),*getattr(p,'plans',()))
+        for plan in contained:
+            if plan is None: continue
+            for s in getattr(plan,'segments',()):
+                cuts.update(t for t in (s.start_time,s.end_time) if start<t<end)
+    cuts.update(start+(end-start)*i/8 for i in range(1,8))
+    cuts=sorted(cuts); minimum=math.inf; fine=0
+    for a,b in zip(cuts,cuts[1:]):
+        _numeric_count('separation_box_intervals')
+        ba=bounds(plan_a,a,b,0); bb=bounds(plan_b,a,b,0)
+        low=_norm_lower(tuple((Interval(*x)-Interval(*y)).pair() for x,y in zip(ba,bb)))
+        if low>=hard:
+            _numeric_count('separation_box_accepts'); minimum=min(minimum,low)
+            continue
+        fine+=1; result=fallback(a,b)
+        if not result.accepted: return result
+        minimum=min(minimum,result.details.get('lower_bound_m',hard))
+        witness_upper=min(witness_upper,result.details.get('upper_bound_m',math.inf))
+    return ValidationResult(True,'SAFE','',{'lower_bound_m':minimum,'upper_bound_m':witness_upper,'method':'segmented_spacetime_boxes_with_original_fallback','fine_slabs':fine,'checked_until':end})
 
 def _canonical_stable(plan,c):
     try:

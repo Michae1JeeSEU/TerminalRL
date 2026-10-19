@@ -178,6 +178,7 @@ class ReplayBundle:
                  "files": hashes,
                  "pose_source": "TrajectoryPlan.state(t)", "telemetry_source": "recorded samples and exact events",
                  "sample_dt_s": source.get("sample_dt_s", config.timing.physics_sample_dt_s),
+                 "telemetry_dt_s": source.get("telemetry_dt_s", source.get("sample_dt_s", config.timing.physics_sample_dt_s)),
                  "screenshots": [], "human_acceptance": "PENDING"}
         if "states_count" in source:
             index["states_count"] = int(source["states_count"])

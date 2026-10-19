@@ -280,12 +280,13 @@ def test_A07_real_inner_hold_hook_on_off_and_interruption():
     assert semantic(enabled) == semantic(plain) == semantic(restored.world)
     assert cuts == [(.2, "loop_start"), (.4, "loop_start"), (.4, "returned")]
     aircraft = plain.aircraft["real-inner-hold"]
-    assert aircraft.soc < .9 and aircraft.emergency.q_e is not None
+    assert aircraft.soc < .9 and aircraft.emergency.q_e is None
+    assert plain.practical_runtime_stats()["counters"]["soc_gate_skips"] > 0
     assert plain.auto_emergency is enabled.auto_emergency is restored.world.auto_emergency is True
     for world in (enabled, restored.world):
         actual = world.aircraft["real-inner-hold"]
         assert actual.soc.hex() == aircraft.soc.hex()
-        assert actual.emergency.q_e.hex() == aircraft.emergency.q_e.hex()
+        assert actual.emergency.q_e is aircraft.emergency.q_e is None
         assert actual.trajectory_hash == aircraft.trajectory_hash
         assert world.events == plain.events and world.rejections == plain.rejections
         assert world.decision_times == plain.decision_times

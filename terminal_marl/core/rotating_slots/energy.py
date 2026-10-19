@@ -5,6 +5,7 @@ from functools import lru_cache, wraps
 import math
 import sys
 import bisect
+import time
 import numpy as np
 from scipy.integrate import quad
 from scipy.optimize import brentq
@@ -50,7 +51,7 @@ class EnergyResult:
     error_j: float = 0.
 
 # Pure scalar acceleration state: never part of a world or checkpoint.
-_ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-r0-bisection-v1'
+_ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-tolerance-v2'
 _ROOT_CACHE_MAX_ENTRIES = 65536
 _ROOT_CACHE_MAX_BYTES = 32 * 1024 * 1024
 _ROOT_CACHE = OrderedDict()
@@ -58,12 +59,33 @@ _ROOT_CACHE_PAYLOAD_BYTES = 0
 _ROOT_CACHE_ENABLED = True
 _ROOT_CACHE_REQUESTS = _ROOT_CACHE_COMPUTES = _ROOT_CACHE_HITS = _ROOT_CACHE_EVICTIONS = 0
 
+_PRACTICAL_STATS = {}
+
+class _ConfigIdentity:
+    """Retain the immutable config as part of a bounded cache's identity key."""
+    __slots__=('config',)
+    def __init__(self,config): self.config=config
+    def __hash__(self): return id(self.config)
+    def __eq__(self,other): return type(other) is _ConfigIdentity and self.config is other.config
+
+def _numeric_count(name, value=1):
+    _PRACTICAL_STATS[name] = _PRACTICAL_STATS.get(name, 0) + value
+
+def practical_numeric_stats():
+    """Process-local operation counts and actual precomputation wall seconds."""
+    return dict(_PRACTICAL_STATS)
+
+def reset_practical_numeric_stats():
+    """Reset observations only; reusable derived numerical data remain warm."""
+    _PRACTICAL_STATS.clear()
+
 
 def root_cache_clear():
     """Worker/cold reset of this derived cache and its performance counters."""
     global _ROOT_CACHE_PAYLOAD_BYTES
     global _ROOT_CACHE_REQUESTS, _ROOT_CACHE_COMPUTES, _ROOT_CACHE_HITS, _ROOT_CACHE_EVICTIONS
     _ROOT_CACHE.clear()
+    _root_bracket.cache_clear()
     _ROOT_CACHE_PAYLOAD_BYTES = 0
     _ROOT_CACHE_REQUESTS = _ROOT_CACHE_COMPUTES = _ROOT_CACHE_HITS = _ROOT_CACHE_EVICTIONS = 0
 
@@ -128,21 +150,44 @@ def _memoize_root(function):
     return cached
 
 
-@_memoize_root
-def _root(vp,vn,rhs,bisections=80):
+@lru_cache(maxsize=65536)
+def _root_bracket(vp,vn,rhs,bisections=80):
+    """Certified endpoints on the monotone vi >= max(0,-vn) branch.
+
+    Stop well inside the frozen 1e-8 residual requirement. Interval consumers
+    use these endpoints, never an arbitrary padding around an approximate root.
+    """
+    _numeric_count('root_bracket_computes')
     lo=max(0.,-vn); hi=max(1.,lo+1.,math.sqrt(rhs)*2+abs(vn))
     f=lambda vi:vi*math.hypot(vp,vn+vi)-rhs
     if f(lo)>max(1.,rhs)*1e-12: return None
     while f(hi)<0: hi*=2
     for _ in range(bisections):
+        _numeric_count('root_iterations')
         mid=(lo+hi)/2
         if f(mid)>0: hi=mid
         else: lo=mid
-    return (lo+hi)/2
+        if hi-lo<=1e-11*max(1.,mid) and abs(f(mid))<=1e-11*max(1.,rhs): break
+    # Certify the final signs using outward interval arithmetic: rounded f
+    # evaluations used for iteration alone are insufficient for root bounds.
+    def enclosure(vi):
+        return Interval(vi)*(Interval(vp).square()+(Interval(vn)+vi).square()).sqrt()-rhs
+    branch=max(0.,-vn)
+    while lo>branch and enclosure(lo).hi>0:
+        lo=max(branch,math.nextafter(lo,-math.inf))
+    while enclosure(hi).lo<0:
+        hi=math.nextafter(hi,math.inf)
+    return math.nextafter(lo,-math.inf),math.nextafter(hi,math.inf)
+
+@_memoize_root
+def _root(vp,vn,rhs,bisections=80):
+    bracket=_root_bracket(vp,vn,rhs,bisections)
+    return None if bracket is None else (bracket[0]+bracket[1])/2
 
 _root_uncached = _root.__wrapped__
 
 def evaluate_power(v,a,config=None):
+    _numeric_count('power_calls')
     c=config or load_config(); e=c.energy; m=c.vehicle.fixed_flight_mass_kg; rho=e.air_density_kgpm3
     try:
         vx,vy,vz=map(float,v); ax,ay,az=map(float,a)
@@ -175,6 +220,7 @@ def power_bounds(v,a,config=None):
     On vi >= max(0,-Vn), vi*hypot(Vp,Vn+vi) is monotone in vi.
     Its bounding roots therefore enclose all instantaneous physical roots.
     """
+    _numeric_count('power_bounds_calls')
     c=config or load_config(); e=c.energy; rho=e.air_density_kgpm3; m=c.vehicle.fixed_flight_mass_kg
     v=tuple(Interval(*x) if not isinstance(x,Interval) else x for x in v); a=tuple(Interval(*x) if not isinstance(x,Interval) else x for x in a)
     vh=_norm(v[:2]); vz_abs=Interval(0. if v[2].lo<=0<=v[2].hi else min(abs(v[2].lo),abs(v[2].hi)),max(abs(v[2].lo),abs(v[2].hi)))
@@ -187,17 +233,17 @@ def power_bounds(v,a,config=None):
     ratio=vn/(2*rhs).sqrt()
     # The lower bound root may lie off the selected branch for the enclosing
     # box. Zero is then a conservative lower bound, never an accepted root.
-    lower=_root(vp.hi,vn.hi,rhs.lo)
-    lower=0. if lower is None else lower
-    upper=_root(vp.lo,vn.lo,rhs.hi)
-    upper=max(0.,-vn.lo) if upper is None else upper
-    vi=Interval(math.nextafter(max(0.,lower-1e-10),-math.inf),math.nextafter(upper+1e-10,math.inf))
+    lower=_root_bracket(vp.hi,vn.hi,rhs.lo)
+    upper=_root_bracket(vp.lo,vn.lo,rhs.hi)
+    vi=Interval(max(0.,lower[0]) if lower is not None else 0.,
+                upper[1] if upper is not None else math.nextafter(max(0.,-vn.lo),math.inf))
     pp=c.vehicle.rotor_count*rho/8*e.profile_solidity*e.profile_mean_drag_coefficient*area*e.profile_tip_speed_mps**3*e.profile_Fp
     shaft=(1+e.coaxial_chi)*T*vi+dot+pp; battery=shaft/e.motor_drive_efficiency
     return {'battery_w':battery.pair(),'shaft_w':shaft.pair(),'current_a':(battery/e.equivalent_voltage_V).pair(),'axial_descent_ratio':ratio.pair(),'positive_upward_thrust':True}
 
 def _power_array(s,t,c):
     """Vector evaluation of exactly the same scalar Appendix A equations."""
+    _numeric_count('power_array_calls')
     u=(t-s.start_time)/s.duration
     values=[]
     for coeff in (s.r,s.theta,s.z):
@@ -220,13 +266,20 @@ def _power_array(s,t,c):
     if np.any(vn/np.sqrt(2*rhs)<e.minimum_axial_descent_ratio): raise ValueError('axial descent ratio outside model domain')
     left=np.maximum(0.,-vn); right=np.maximum.reduce((np.ones_like(left),left+1,2*np.sqrt(rhs)+np.abs(vn)))
     if np.any(left*np.hypot(vp,vn+left)-rhs>np.maximum(1.,rhs)*1e-12): raise ValueError('induced root branch unavailable')
-    for _ in range(80):
+    for _ in range(e.induced_root_bisections):
+        _numeric_count('vector_root_iterations')
         mid=(left+right)/2; positive=mid*np.hypot(vp,vn+mid)>rhs
         right=np.where(positive,mid,right); left=np.where(positive,left,mid)
+        if np.all((right-left<=1e-11*np.maximum(1.,mid)) &
+                  (np.abs(mid*np.hypot(vp,vn+mid)-rhs)<=1e-11*np.maximum(1.,rhs))): break
     vi=(left+right)/2
+    if np.any(np.abs(vi*np.hypot(vp,vn+vi)-rhs)>e.induced_root_relative_residual_tolerance*np.maximum(1.,rhs)):
+        raise ValueError('induced root did not converge')
     pp=c.vehicle.rotor_count*rho/8*e.profile_solidity*e.profile_mean_drag_coefficient*area*e.profile_tip_speed_mps**3*e.profile_Fp
     shaft=(1+e.coaxial_chi)*thrust*vi+work+pp
     if np.any(shaft<=0): raise ValueError('nonpositive power')
+    if np.any(shaft>c.vehicle.rotor_count*e.reference_motor_max_power_kW_each*1000) or np.any(shaft/e.motor_drive_efficiency/e.equivalent_voltage_V>e.reference_max_battery_current_A):
+        raise ValueError('power exceeds frozen limit')
     return shaft/e.motor_drive_efficiency
 
 @lru_cache(maxsize=512)
@@ -254,27 +307,84 @@ def _quadrature_cells(s,left,right,c,depth=0):
 def _segment_table(duration,r,theta,z,max_dt,profile_hash):
     # Isotropic drag/gravity make power invariant under absolute time and
     # horizontal rotation. The cache key deliberately omits theta's constant.
-    from .trajectory import Segment
+    began=time.perf_counter(); _numeric_count('energy_table_computes')
     s=Segment(0.,duration,r,(0.,)+theta[1:],z)
     n=max(1,math.ceil(duration/max_dt)); knots=np.linspace(0.,duration,n+1)
     values,errors=_quadrature_cells(s,knots[:-1],knots[1:],load_config())
+    _numeric_count('precompute_seconds',time.perf_counter()-began)
     return knots,np.concatenate(([0.],np.cumsum(values))),np.concatenate(([0.],np.cumsum(errors)))
 
-def _segment_joules(s,lo,hi,max_dt,c):
-    theta=(0.,)+s.theta[1:]
-    knots,energy,errors=_segment_table(s.duration,s.r,theta,s.z,max_dt,c.profile_hash)
-    a=lo-s.start_time; b=hi-s.start_time
-    ia=bisect.bisect_left(knots,a); ib=bisect.bisect_right(knots,b)-1
-    if ia>ib:
-        value,error=_quadrature_cells(s,np.asarray([lo]),np.asarray([hi]),c)
-        return float(value[0]),float(error[0])
-    value=float(energy[ib]-energy[ia]); error=float(errors[ib]-errors[ia])
-    for x,y in ((a,float(knots[ia])),(float(knots[ib]),b)):
-        if y>x:
-            v,e=_quadrature_cells(s,np.asarray([s.start_time+x]),np.asarray([s.start_time+y]),c); value+=float(v[0]); error+=float(e[0])
+@lru_cache(maxsize=8192)
+def _segment_primitive(duration,r,theta,z,max_dt,profile_hash,t):
+    _numeric_count('energy_primitive_computes')
+    knots,energy,errors=_segment_table(duration,r,theta,z,max_dt,profile_hash)
+    i=min(len(knots)-1,bisect.bisect_right(knots,t)-1)
+    value=float(energy[i]); error=float(errors[i])
+    if t>knots[i]:
+        s=Segment(0.,duration,r,theta,z)
+        v,e=_quadrature_cells(s,np.asarray([knots[i]]),np.asarray([t]),load_config())
+        value+=float(v[0]); error+=float(e[0])
     return value,error
 
+def _segment_joules(s,lo,hi,max_dt,c):
+    key=(s.duration,s.r,(0.,)+s.theta[1:],s.z,max_dt,c.profile_hash)
+    _numeric_count('energy_primitive_calls',2)
+    a,ea=_segment_primitive(*key,max(0.,lo-s.start_time))
+    b,eb=_segment_primitive(*key,min(s.duration,hi-s.start_time))
+    return b-a,ea+eb
+
+@lru_cache(maxsize=128)
+def _stable_power_cached(radius,angular_speed,config_key):
+    c=config_key.config
+    _numeric_count('stable_power_computes')
+    return evaluate_power((0.,radius*angular_speed,0.),(-radius*angular_speed**2,0.,0.),c)
+
+def stable_power(ring,config=None):
+    """Power for a canonical slot; invariant under slot phase and absolute time."""
+    from .geometry import ring_config
+    c=config or load_config(); _numeric_count('stable_power_calls')
+    return _stable_power_cached(ring_config(ring,c).radius_m,-c.airspace.common_angular_speed_radps,_ConfigIdentity(c))
+
+@lru_cache(maxsize=256)
+def _peak_table(duration,r,theta,z,threshold,config_key):
+    """Cumulative upper measure, reusing the same threshold crossing enclosure.
+
+    Unresolved leaves count wholly as peak, as in _peak_measure. Subinterval
+    queries intersect this fixed coverage, so overlapping queries are additive.
+    """
+    c=config_key.config
+    began=time.perf_counter(); _numeric_count('peak_table_computes')
+    s=Segment(0.,duration,r,theta,z); active=[]
+    def visit(a,b,depth):
+        _numeric_count('peak_table_nodes')
+        polar=s.polar_bounds(a,b)
+        bounds=power_bounds(_intrinsic_bounds_from_polar(polar,1),_intrinsic_bounds_from_polar(polar,2),c)
+        if bounds is not None:
+            low,high=bounds['shaft_w']
+            if high<=threshold: return
+            above=low>threshold
+        else: above=False
+        if above or b-a<1e-7 or depth>=26:
+            if active and active[-1][1]==a: active[-1]=(active[-1][0],b)
+            else: active.append((a,b))
+            return
+        mid=(a+b)/2; visit(a,mid,depth+1); visit(mid,b,depth+1)
+    visit(0.,duration,0)
+    starts=tuple(a for a,b in active); ends=tuple(b for a,b in active)
+    prefix=(0.,)+tuple(np.cumsum([b-a for a,b in active]))
+    _numeric_count('precompute_seconds',time.perf_counter()-began)
+    return starts,ends,prefix
+
+def _segment_peak(s,lo,hi,threshold,c):
+    _numeric_count('peak_primitive_calls',2)
+    starts,ends,prefix=_peak_table(s.duration,s.r,(0.,)+s.theta[1:],s.z,threshold,_ConfigIdentity(c))
+    def primitive(t):
+        i=bisect.bisect_right(ends,t)
+        return prefix[i]+(max(0.,t-starts[i]) if i<len(starts) else 0.)
+    return max(0.,primitive(hi-s.start_time)-primitive(lo-s.start_time))
+
 def integrate_energy(plan,start,end,max_dt=.2,config=None):
+    _numeric_count('integrate_energy_calls')
     c=config or load_config()
     if not 0<max_dt<=.2: raise ValueError('energy maximum segment must be in (0,0.2]')
     if not math.isfinite(start) or not math.isfinite(end) or end<start: raise ValueError('invalid integration interval')
@@ -289,12 +399,20 @@ def integrate_energy(plan,start,end,max_dt=.2,config=None):
             lo=max(start,s.start_time); hi=min(end,s.end_time)
             if s.kind=='GROUND': continue
             if s.kind=='STABLE':
-                st=s.state((lo+hi)/2); result=evaluate_power(st.v,st.a,c)
+                if len(s.r)==1 and len(s.z)==1 and len(s.theta)==2:
+                    _numeric_count('stable_power_calls')
+                    # TrajectoryPlan validation establishes the canonical clock;
+                    # avoid duration division reintroducing epoch-dependent ulps.
+                    omega=(-c.airspace.common_angular_speed_radps if isinstance(plan,TrajectoryPlan)
+                           else s.theta[1]/s.duration)
+                    result=_stable_power_cached(s.r[0],omega,_ConfigIdentity(c))
+                else:
+                    st=s.state((lo+hi)/2); result=evaluate_power(st.v,st.a,c)
                 if not result.valid: return EnergyResult(total,total/(85*252*3600),peak,False,result.status,result.reason,error)
                 total+=result.battery_w*(hi-lo); peak+=(hi-lo) if result.shaft_w>threshold else 0.
                 continue
             value,err=_segment_joules(s,lo,hi,max_dt,c); total+=value; error+=err
-            peak+=_peak_measure(s,lo,hi,threshold,c)
+            peak+=_segment_peak(s,lo,hi,threshold,c)
         return EnergyResult(total,total/(c.energy.equivalent_voltage_V*c.energy.reference_capacity_Ah*3600),peak,True,error_j=error)
     except ValueError as exc: return EnergyResult(total,total/(85*252*3600),peak,False,'ENERGY_MODEL_DOMAIN',str(exc),error)
 

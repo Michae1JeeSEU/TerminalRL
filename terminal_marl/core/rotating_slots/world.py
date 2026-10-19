@@ -8,6 +8,8 @@ from collections import OrderedDict
 from itertools import combinations
 from types import MappingProxyType
 import math
+import json
+from pathlib import Path
 import time as walltime
 
 from .config import freeze, load_config, thaw
@@ -15,8 +17,8 @@ from .demand import ArrivalManifest, ArrivalRequest
 from .models import ValidationResult
 from .resources import PadCalendar, ResourceConflict, SlotCalendar
 from .trajectory import (generate_final, generate_inbound, generate_transfer,
-                         make_ground_plan, make_stable_plan, slot_state)
-from .energy import evaluate_power, integrate_energy
+                         make_ground_plan, make_stable_plan, slot_state, TrajectoryPlan)
+from .energy import evaluate_power, integrate_energy, stable_power
 from .safety import validate_plan, validate_separation, _ExecutionQueryCache
 
 
@@ -205,7 +207,7 @@ class RotatingSlotWorld:
     REFERENCE_PHASE_BINS = 24
 
     def __init__(self, config=None, manifest=None, physics_dt=.2, scheduler_period=5., cache_enabled=True,
-                 state_sink=None):
+                 state_sink=None, practical_runtime=True, reference_cache_path=None):
         self.config = config or load_config()
         if not 0 < physics_dt <= .2 or scheduler_period <= 0:
             raise ValueError("physics_dt must be in (0,.2], scheduler_period positive")
@@ -250,7 +252,81 @@ class RotatingSlotWorld:
         self.costs = {"reroute": 0., "emergency": 0., "failure": 0.}
         self.pad_busy_seconds = {j:0. for j in range(6)}
         self._scheduler_port=SchedulerPort(self)
-        self._record()
+        self.configure_practical_runtime(practical_runtime, reference_cache_path=reference_cache_path)
+        self._record(force=True)
+
+    def configure_practical_runtime(self, enabled=True, *, reference_cache_path=None,
+                                    soc_threshold=.35, telemetry_period=1., emergency_period=1.):
+        """Configure optional derived work; physical and resource rules stay fixed."""
+        if type(enabled) is not bool or not .35 <= soc_threshold <= 1:
+            raise ValueError("invalid practical runtime configuration")
+        if not self.physics_dt <= telemetry_period <= 1 or not 0 < emergency_period <= 1:
+            raise ValueError("runtime periods must be in (0,1]")
+        old = getattr(self, "_practical_runtime", {})
+        self._practical_runtime = dict(enabled=enabled, soc_threshold=float(soc_threshold),
+            telemetry_period=float(telemetry_period), emergency_period=float(emergency_period),
+            reference_cache_path=None if reference_cache_path is None else str(reference_cache_path),
+            base_plans=old.get("base_plans", {}), monitor=old.get("monitor", {}),
+            imminent=old.get("imminent", {}),
+            table=old.get("table", {}), counters=old.get("counters", {}),
+            precompute_seconds=old.get("precompute_seconds", 0.))
+        for name in ("monitor_calls", "monitor_throttled", "soc_gate_skips", "projected_bound_skips",
+                     "exact_reference_calls", "table_hits", "table_misses", "table_uncertain",
+                     "table_samples", "table_loaded", "table_identity_rejected", "base_plan_hits", "imminent_hint_checks"):
+            self._practical_runtime["counters"].setdefault(name, 0)
+        if reference_cache_path is not None:
+            self._load_reference_table()
+        return self
+
+    def _runtime_enabled(self):
+        return getattr(self, "_practical_runtime", {}).get("enabled", False)
+
+    def _table_identity(self):
+        return dict(schema="emergency_piecewise_v1", config_hash=self.config.config_hash,
+                    profile_hash=self.config.profile_hash, bins=240, soc_error_budget=2e-5,
+                    sampling="endpoints_midpoint_same_duration", reference_policy="canonical_exact_v1")
+
+    def _load_reference_table(self):
+        rt = self._practical_runtime
+        path = Path(rt["reference_cache_path"])
+        if not path.exists():
+            return
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if data.get("identity") != self._table_identity():
+                raise ValueError("reference identity mismatch")
+            table = data["table"]
+            if not isinstance(table, dict):
+                raise ValueError("invalid table")
+            for key, samples in table.items():
+                ring, cell = key.split(":")
+                if ring not in HOLD or not 0 <= int(cell) < 240 or len(samples) != 3:
+                    raise ValueError("invalid table cell")
+                for q, duration in samples:
+                    if q is not None and (not math.isfinite(q) or q < 0 or duration is None or not math.isfinite(duration)):
+                        raise ValueError("invalid sample")
+            rt["table"].update(table)
+            rt["counters"]["table_loaded"] += len(table)
+        except (OSError, ValueError, TypeError, KeyError):
+            rt["counters"]["table_identity_rejected"] += 1
+
+    def flush_reference_table(self):
+        """Persist only lazily sampled cells, with physical/profile identity."""
+        rt = getattr(self, "_practical_runtime", {})
+        if rt.get("reference_cache_path") is None:
+            return
+        path = Path(rt["reference_cache_path"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(path.name + ".tmp")
+        temporary.write_text(json.dumps(dict(identity=self._table_identity(), table=rt["table"]),
+                                        separators=(",", ":"), allow_nan=False), encoding="utf-8")
+        temporary.replace(path)
+
+    def practical_runtime_stats(self):
+        rt = getattr(self, "_practical_runtime", {})
+        return dict(enabled=rt.get("enabled", False), counters=dict(rt.get("counters", {})),
+                    table_cells=len(rt.get("table", {})), precompute_seconds=rt.get("precompute_seconds", 0.),
+                    soc_error_budget=2e-5, telemetry_period=rt.get("telemetry_period", self.physics_dt))
 
     def _event(self, kind, aircraft_id=None, **details):
         self.events.append({"time": self.time, "type": kind, "aircraft_id": aircraft_id, "details": details})
@@ -293,10 +369,28 @@ class RotatingSlotWorld:
     def _base(self, a):
         if a.id in self.active:
             return self.active[a.id]
-        if a.ring is not None and a.status in AIRBORNE:
-            return self._stable(a)
-        return make_ground_plan(a.id, a.pad_id, start_time=self.time,
-                                end_time=a.service_end or self.time + 1000, config=self.config)
+        if not self._runtime_enabled():
+            if a.ring is not None and a.status in AIRBORNE:
+                return self._stable(a)
+            return make_ground_plan(a.id, a.pad_id, start_time=self.time,
+                                    end_time=a.service_end or self.time + 1000, config=self.config)
+        rt = self._practical_runtime
+        key = (a.id, a.version, a.status, a.ring, a.slot, a.pad_id, a.trajectory_hash)
+        if key in rt["base_plans"]:
+            p = rt["base_plans"][key]
+            rt["counters"]["base_plan_hits"] += 1
+            return p
+        archive = self.trajectories.get(a.trajectory_hash)
+        p = None
+        if archive is not None and archive["kind"] in ("STABLE", "GROUND"):
+            p = TrajectoryPlan.from_dict(archive, config=self.config)
+        if p is None:
+            p = (self._stable(a) if a.ring is not None and a.status in AIRBORNE else
+                 make_ground_plan(a.id, a.pad_id, start_time=self.time,
+                                  end_time=a.service_end or self.time + 1000, config=self.config))
+        rt["base_plans"] = {k:v for k,v in rt["base_plans"].items() if k[0] != a.id}
+        rt["base_plans"][key] = p
+        return p
 
     def _traffic(self, a, soft=None, extra=None):
         plans = []
@@ -331,7 +425,7 @@ class RotatingSlotWorld:
                 raise ValueError(f"unsafe fixture: {result.reason}")
         self.aircraft[aircraft_id] = a
         self.trajectories[p.trajectory_hash] = p.to_dict()
-        self._record()
+        self._record(force=True)
         return a
 
     def seed_service(self, aircraft_id, pad_id=0, remaining=60., service_class="short", soc=.5):
@@ -350,7 +444,7 @@ class RotatingSlotWorld:
                           service_end=remaining, fixture=True, trajectory_hash=p.trajectory_hash)
         self.aircraft[aircraft_id] = a
         self.trajectories[p.trajectory_hash] = p.to_dict()
-        self._record()
+        self._record(force=True)
         return a
 
     def snapshot(self):
@@ -370,7 +464,14 @@ class RotatingSlotWorld:
                 for r in sorted(self.requests.values(), key=lambda r: (r.release_time, r.id))
                 if r.id not in self.aircraft]
 
-    def _record(self):
+    def _record(self, force=False):
+        if not force and self._runtime_enabled():
+            period = self._practical_runtime["telemetry_period"]
+            on_tick = abs(self.time/period-round(self.time/period)) <= 1e-8
+            event_now = bool(self.events and abs(self.events[-1]["time"]-self.time) <= 1e-8)
+            junction = any(self._descent_start(p) == self.time for p in self.active.values())
+            if not (on_tick or event_now or junction or self.failed):
+                return
         # Replay/audit output retains demand conservation totals. Scheduling
         # snapshots deliberately omit unrevealed manifest cardinalities.
         record = self._snapshot(self.metrics()).to_dict()
@@ -494,6 +595,9 @@ class RotatingSlotWorld:
                                    start_time=t, end_time=t+10, config=self.config)
             qhold = self._energy(hold, t, t+10).soc_used
             if soc <= .35 or (q is not None and soc-q-qhold <= .25):
+                if self._runtime_enabled():
+                    self._practical_runtime["imminent"][a.id] = dict(time=t,
+                        ring=plan.source_ring, slot=plan.source_slot, version=plan.source_version)
                 return {"supporting_aircraft_id": a.id, "trajectory_hash": plan.trajectory_hash,
                         "witness": witness, "witness_time": t, "predicted_soc": soc,
                         "q_e": q, "q_hold": qhold}
@@ -692,7 +796,7 @@ class RotatingSlotWorld:
         # A submit within emergency handling must not start another aircraft's
         # scheduled ordinary maneuver before that aircraft receives disposition.
         self._start_due(ids)
-        self._record()
+        self._record(force=True)
         return self._result(True)
 
     def cancel(self, aircraft_id):
@@ -838,7 +942,9 @@ class RotatingSlotWorld:
                 transfer_time=a.transfer_time+(duration if a.status.startswith("TRANSFER") else 0),
                 final_time=a.final_time+final_duration,
                 descent_time=a.descent_time+descent_duration,
-                battery_power_w=evaluate_power(s.v,s.a,self.config).battery_w)
+                battery_power_w=(stable_power(a.ring,self.config).battery_w
+                    if p.kind == "STABLE" and self._runtime_enabled()
+                    else evaluate_power(s.v,s.a,self.config).battery_w))
         if fail_at:
             self._fail(fail_at[1], "ENERGY_FAILURE")
 
@@ -950,49 +1056,153 @@ class RotatingSlotWorld:
             return self._q_cache[key]
         choices = []
         for pad in range(6):
-            phase = (pad*math.pi/3 - math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])) % (2*math.pi)
-            phase_bin=min(self.REFERENCE_PHASE_BINS-1,int(phase/(2*math.pi)*self.REFERENCE_PHASE_BINS))
-            duration=self._canonical_reference_duration(ring,phase_bin)
-            result=None
-            if duration is not None:
-                self.reference_counts["template_instantiation"]+=1
-                result=generate_final("reference",ring,slot,pad,t,emergency=True,
-                                      source_version=version,config=self.config,durations=[duration])
-            if result is None or result.plan is None or result.status!="FEASIBLE":
-                self.reference_counts["fallback_search"] += 1
-                self._last_reference_fallback={"ring":ring,"slot":slot,"query_time":t,"pad_id":pad,
-                    "phase_bin":phase_bin,"canonical_duration":duration,
-                    "reason":"canonical template missing or invalid at exact current phase"}
-                cpu=walltime.perf_counter()
-                result = generate_final("reference", ring, slot, pad, t, emergency=True,
-                                        source_version=version, config=self.config)
-                self.cpu["reference_fallback_search"]+=walltime.perf_counter()-cpu
-            if result.plan is not None and result.status == "FEASIBLE":
-                q = self._energy(result.plan, t, result.plan.end_time)
-                if q.valid:
-                    choices.append((q.soc_used, result.plan))
+            q, plan = self._reference_pad(ring, slot, pad, t, version)
+            if q is not None:
+                choices.append((q, plan))
         result = min(choices, key=lambda x: x[0]) if choices else (None, None)
         if self.cache_enabled:
             self._store_cache(self._q_cache,key,result,self.Q_CACHE_CAPACITY)
         return result
 
+    def _reference_pad(self, ring, slot, pad, t, version=0):
+        phase = (pad*math.pi/3 - math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])) % (2*math.pi)
+        phase_bin=min(self.REFERENCE_PHASE_BINS-1,int(phase/(2*math.pi)*self.REFERENCE_PHASE_BINS))
+        duration=self._canonical_reference_duration(ring,phase_bin)
+        result=None
+        if duration is not None:
+            self.reference_counts["template_instantiation"]+=1
+            result=generate_final("reference",ring,slot,pad,t,emergency=True,
+                                  source_version=version,config=self.config,durations=[duration])
+        if result is None or result.plan is None or result.status!="FEASIBLE":
+            self.reference_counts["fallback_search"] += 1
+            self._last_reference_fallback={"ring":ring,"slot":slot,"query_time":t,"pad_id":pad,
+                "phase_bin":phase_bin,"canonical_duration":duration,
+                "reason":"canonical template missing or invalid at exact current phase"}
+            cpu=walltime.perf_counter()
+            result = generate_final("reference", ring, slot, pad, t, emergency=True,
+                                    source_version=version, config=self.config)
+            self.cpu["reference_fallback_search"]+=walltime.perf_counter()-cpu
+        if result.plan is not None and result.status == "FEASIBLE":
+            q = self._energy(result.plan, t, result.plan.end_time)
+            if q.valid:
+                return q.soc_used, result.plan
+        return None, None
+
+    def _monitor_reference(self, ring, slot, t, version, soc, qhold):
+        """Use sampled interpolation only outside the critical reserve margin.
+
+        No sampled estimate certifies trajectory safety or planned reserve.
+        Switches, uncovered cells, excessive sampled residual, and energy-critical
+        queries use the unchanged exact reference. Rescue plans pass submit().
+        """
+        rt = self._practical_runtime
+        counts = rt["counters"]
+        phase0 = -math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])
+        estimates, uncertain = [], False
+        width = 2*math.pi/240
+        for pad in range(6):
+            phase = (pad*math.pi/3 + phase0) % (2*math.pi)
+            cell = min(239, int(phase/width))
+            key = f"{ring}:{cell}"
+            samples = rt["table"].get(key)
+            if samples is None:
+                counts["table_misses"] += 1
+                uncertain = True  # first uncovered query always uses exact result
+                cpu = walltime.perf_counter()
+                samples = []
+                for fraction in (0., .5, 1.):
+                    # Clockwise slot0 angle=-omega*t, relative pad0 phase=+omega*t.
+                    sample_t = ((cell+fraction)*width)/self.config.airspace.common_angular_speed_radps
+                    q, plan = self._reference_pad(ring, 0, 0, sample_t)
+                    samples.append([q, None if plan is None else plan.segments[0].duration])
+                    counts["table_samples"] += 1
+                rt["table"][key] = samples
+                rt["precompute_seconds"] += walltime.perf_counter()-cpu
+            values = [row[0] for row in samples]
+            durations = [row[1] for row in samples]
+            if any(q is None for q in values) or len(set(durations)) != 1:
+                uncertain = True
+                continue
+            residual = abs(values[1]-(values[0]+values[2])/2)
+            if residual > 2e-5:
+                uncertain = True
+                continue
+            u = (phase-cell*width)/width
+            j = 0 if u <= .5 else 1
+            fraction = 2*u-j
+            estimates.append(values[j] + fraction*(values[j+1]-values[j]))
+        q = min(estimates) if len(estimates) == 6 else None
+        # The sampled residual is an explicit allowance, not a certified global
+        # bound. Critical decisions always request the original exact routine.
+        critical = q is None or soc > .35 or soc-q-qhold-.25 <= 2e-5 + .002
+        if uncertain or critical:
+            counts["table_uncertain"] += 1
+            counts["exact_reference_calls"] += 1
+            return self._reference(ring, slot, t, version)[0]
+        counts["table_hits"] += 1
+        return q
+
     def _update_emergency(self):
         triggered = False
         start_cpu = walltime.perf_counter()
+        practical = self._runtime_enabled()
+        rt = getattr(self, "_practical_runtime", {})
         for key, a in sorted(tuple(self.aircraft.items())):
             if a.status not in AIRBORNE or a.emergency.declared or a.status.startswith("FINAL") or a.status == "VERTICAL_DESCENT":
                 continue
             p = self.active.get(key)
-            if p is not None:
-                if p.pad_id is not None:
+            if p is not None and p.pad_id is not None:
+                continue
+            known_imminent = False
+            force_exact = practical and a.emergency.reference_missing
+            if practical:
+                hint = rt["imminent"].get(key)
+                query_ring = a.ring if p is None else p.target_ring
+                query_slot = a.slot if p is None else p.target_slot
+                known_imminent = bool(hint and a.version <= hint["version"]
+                    and query_ring == hint["ring"] and query_slot == hint["slot"]
+                    and self.time >= hint["time"]-self.physics_dt-1e-8)
+                counts = rt["counters"]
+                counts["monitor_calls"] += 1
+                signature = (a.version, a.status, None if p is None else p.trajectory_hash)
+                previous = rt["monitor"].get(key)
+                urgent = (known_imminent or a.soc <= rt["soc_threshold"] or a.emergency.eligible or a.emergency.pending
+                          or a.emergency.reference_missing)
+                if p is not None:
+                    # Accepted plans cannot exceed this frozen current ceiling.
+                    # Subtracting an upper bound gives a conservative SOC floor.
+                    worst = (p.end_time-self.time)*self.config.energy.reference_max_battery_current_A/(self.config.energy.reference_capacity_Ah*3600)
+                    urgent = urgent or a.soc-worst <= rt["soc_threshold"]
+                event_now = bool(self.events and self.events[-1]["time"] == self.time)
+                if (not urgent and not event_now and previous is not None and previous[1] == signature
+                        and self.time-previous[0] < rt["emergency_period"]-1e-8):
+                    counts["monitor_throttled"] += 1
                     continue
+                rt["monitor"][key] = (self.time, signature)
+                if not (known_imminent or force_exact) and a.soc > rt["soc_threshold"] and (p is None or a.soc-worst > rt["soc_threshold"]):
+                    counts["soc_gate_skips"] += 1
+                    if p is not None:
+                        counts["projected_bound_skips"] += 1
+                    continue
+            if p is not None:
                 ring, slot, t = p.target_ring, p.target_slot, p.end_time
                 soc = a.soc-self._energy(p, self.time, t).soc_used
             else:
                 ring, slot, t, soc = a.ring, a.slot, self.time, a.soc
-            q, _ = self._reference(ring, slot, t, a.version)
+            if practical and not (known_imminent or force_exact) and soc > rt["soc_threshold"]:
+                rt["counters"]["soc_gate_skips"] += 1
+                continue
             hold = make_stable_plan("reference_hold", ring, slot, start_time=t, end_time=t+10, config=self.config)
             qhold = self._energy(hold, t, t+10).soc_used
+            if practical and (known_imminent or force_exact):
+                if known_imminent:
+                    rt["counters"]["imminent_hint_checks"] += 1
+                rt["counters"]["exact_reference_calls"] += 1
+                q, _ = self._reference(ring, slot, t, a.version)
+            elif practical:
+                q = self._monitor_reference(ring, slot, t, a.version, soc, qhold)
+            else:
+                q, _ = self._reference(ring, slot, t, a.version)
             alert = soc <= .35 or (q is not None and soc-q-qhold <= .25)
             old = a.emergency
             e = replace(old, q_e=q, reference_missing=q is None)
@@ -1043,7 +1253,7 @@ class RotatingSlotWorld:
         details = {"trajectory_hash": old.trajectory_hash if old else None,
                    "dependent_started_plans": dependencies, "validation": result.details}
         self._event("emergency_dependency_conflict", aircraft_id, reason=result.reason, **details)
-        self._record()
+        self._record(force=True)
         raise EmergencyDependencyConflict(aircraft_id, result.reason, details)
 
     def _try_final(self, a, emergency):
@@ -1084,7 +1294,7 @@ class RotatingSlotWorld:
             if triggers or heartbeat or not self._initial_settled:
                 self._initial_settled = True
                 self.decision_times.append(self.time)
-                self._record()
+                self._record(force=True)
                 cpu = walltime.perf_counter()
                 if self.auto_emergency:
                     self.handle_emergencies()
@@ -1092,7 +1302,7 @@ class RotatingSlotWorld:
                     callback(self.snapshot(), self._scheduler_port)
                 self._start_due()
                 self.cpu["decision"] += walltime.perf_counter()-cpu
-                self._record()
+                self._record(force=True)
             descent_starts = [self._descent_start(p) for p in self.active.values()]
             descent_starts = [t for t in descent_starts if t is not None]
             active_ends = [p.end_time for p in self.active.values()]
@@ -1103,6 +1313,9 @@ class RotatingSlotWorld:
                     and not any(self.time < t <= until for t in descent_starts+active_ends+soft_starts)):
                 break
             next_times = [until, self.time+self.physics_dt, self._next_heartbeat]
+            if self._runtime_enabled():
+                period = self._practical_runtime["telemetry_period"]
+                next_times.append((math.floor((self.time+1e-8)/period)+1)*period)
             if self._manifest_index < len(self.manifest.requests):
                 next_times.append(self.manifest.requests[self._manifest_index].release_time)
             next_times.extend(t for t in active_ends if t > self.time)
@@ -1115,6 +1328,8 @@ class RotatingSlotWorld:
             if not self.failed:
                 self._advance_energy(next_time)
             self._record()
+        self._record(force=True)
+        self.flush_reference_table()
         return self.snapshot()
 
     def _outer_capacity(self):
@@ -1350,7 +1565,7 @@ class RotatingSlotWorld:
                 "conservation": offered == len(admitted)+rerouted+len(upstream) and len(admitted) == len(landed)+len(failed)+airborne}
 
     def to_dict(self):
-        self._record()
+        self._record(force=True)
         self.flush_records()
         result = {"time": self.time, "config_hash": self.config.config_hash, "policy_id": POLICY_ID,
                 "manifest": self.manifest.to_dict(), "states": list(self.records),
@@ -1364,8 +1579,10 @@ class RotatingSlotWorld:
                     "energy_capacity":self.ENERGY_CACHE_CAPACITY,
                     "canonical_template_count":len(self._reference_templates),
                     "canonical_template_capacity":3*self.REFERENCE_PHASE_BINS,
-                    "canonical_templates_always_memoized":True},
-                "sample_dt_s": self.physics_dt, "execution_dt": self.physics_dt}
+                    "canonical_templates_always_memoized":True,
+                    "practical_runtime":self.practical_runtime_stats()},
+                "sample_dt_s": self.physics_dt, "execution_dt": self.physics_dt,
+                "telemetry_dt_s": (self._practical_runtime["telemetry_period"] if self._runtime_enabled() else self.physics_dt)}
         if self.state_sink is not None:
             result["states_streamed"] = True
             result["states_count"] = self._record_count
