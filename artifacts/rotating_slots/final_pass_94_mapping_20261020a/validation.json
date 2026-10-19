@@ -1,0 +1,84 @@
+{
+  "status": "STATIC_MAPPING_CHECKED",
+  "primary_review": "EVIDENCE_INDEX_REVIEWED",
+  "command": [
+    "D:\\ProgramData\\anaconda3\\python.exe",
+    "-I",
+    "-B",
+    "-"
+  ],
+  "exit_code": 0,
+  "previous_generation_attempts": [
+    {
+      "exit_code": 1,
+      "traceback": "File <stdin>, line 104, in <module>; File <stdin>, line 18, in mdlink; AssertionError",
+      "outputs_written": false,
+      "primary_diagnosis": "pre-write exists check of the same new mapping internal link; not missing input",
+      "approved_fix": "only the fixed new mapping absolute internal link is constructed before write; all existing links still checked and the new link checked after write"
+    }
+  ],
+  "case_count": 94,
+  "order_and_unique": true,
+  "original_status_NOT_RUN_count": 94,
+  "criteria_text_changed_by_oct18_ids": [
+    "C05",
+    "C13",
+    "F08",
+    "F09"
+  ],
+  "requirement_hashes_recomputed": true,
+  "source_result_id_status_path_SHA_checked": true,
+  "input_file_count": 973,
+  "input_files_unchanged": true,
+  "markdown_case_rows": 94,
+  "existing_local_links_checked": 377,
+  "new_internal_mapping_link_exists_after_write": true,
+  "physics_or_replay_validation_executed": false,
+  "output_sha256": {
+    "D:\\7_codespace\\terminal\\artifacts\\rotating_slots\\final_pass_94_mapping_20261020a\\mapping.json": "7ad0d46d213596fb4cd37770a954be6f6f96377b745e949f7613eed184e0b930",
+    "D:\\7_codespace\\terminal\\docs\\rotating_slots_stage1\\performance_v1\\final_pass_94_mapping_20261020.md": "692d2af5a808895241d3a9662ff0c60ba4ad34ff8c6c226b37756ceca8bbcc27"
+  },
+  "acceptance_decision": "NOT_MADE_BY_THIS_INDEX",
+  "primary_independent_review": {
+    "evidence_source": "primary agent report in this task; not a newly executed case run",
+    "execution_flags": [
+      "-I",
+      "-B"
+    ],
+    "exact_command_supplied": false,
+    "exit_code": 0,
+    "requirement_case_count": 94,
+    "source_result_count": 188,
+    "source_result_fields_checked": [
+      "path",
+      "sha256",
+      "id",
+      "status",
+      "assertion_count"
+    ],
+    "changed_requirement_text_ids": [
+      "C05",
+      "C13",
+      "F08",
+      "F09"
+    ],
+    "scope": "index fidelity only; no final criteria acceptance; no physical or replay validation rerun",
+    "physics_executed": false
+  },
+  "post_review_edit_static_check": {
+    "command": [
+      "D:\\ProgramData\\anaconda3\\python.exe",
+      "-I",
+      "-B",
+      "-"
+    ],
+    "exit_code": 0,
+    "case_count": 94,
+    "markdown_checked_rows": 94,
+    "existing_local_links_checked": 377,
+    "requirement_hashes_recomputed": true,
+    "observed_case_data_unchanged": true,
+    "input_files_unchanged": true,
+    "physics_executed": false
+  }
+}
