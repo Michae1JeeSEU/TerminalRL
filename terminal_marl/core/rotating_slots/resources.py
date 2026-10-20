@@ -72,6 +72,13 @@ class ResourceCalendar:
     def mark_committed(self, plan_hash):
         self._entries = [replace(r, committed=True) if r.plan_hash == plan_hash else r for r in self._entries]
 
+    def isolate(self, aircraft_id, time):
+        """End this entity's managed occupancy now, retaining its past intervals."""
+        released = sum(r.aircraft_id == aircraft_id and r.end > time for r in self._entries)
+        self._entries = [replace(r, end=time) if r.aircraft_id == aircraft_id and r.end > time else r
+                         for r in self._entries if r.aircraft_id != aircraft_id or r.start < time]
+        return released
+
     def active(self, resource, time):
         return tuple(r for r in self._entries if r.resource == resource and r.start <= time < r.end)
 

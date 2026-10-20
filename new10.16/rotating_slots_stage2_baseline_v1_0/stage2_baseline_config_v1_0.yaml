@@ -1,0 +1,209 @@
+# FT-RS-S2-1.0: specification, not a claim that repository code already supports it.
+# Load the effective Stage1 implementation + authorized amendments, then this
+# explicit Stage2 overlay. Do not blindly re-enable contradictory legacy YAML.
+schema_version: rotating_slots_stage2_baseline_v1_0
+contract_id: FT-RS-S2-1.0
+status: FORMAL_FOR_IMPLEMENTATION
+implementation_status: NOT_EXECUTED_BY_THIS_DELIVERY
+contract_file: rotating_slots_stage2_baseline_contract_v1_0.md
+reference_repository: Michae1JeeSEU/TerminalRL
+reference_branch: codex/arrival-restructure
+reference_commit: 740452a4769ea8873acb4250ad1d090e7b2f8d51
+base_contract_id: FT-RS-S1-1.0
+base_rule_amendment: upstream_capacity_only_pad_arrival_v1_20261018
+experiment_policy_id: rs_s2_loss_continue_throughput_v1_0
+rules:
+  inherit_current_geometry_vehicle_energy_and_safety: true
+  hard_separation_m: 80.0
+  extra_safety_buffer_m: 0.0
+  normal_touchdown_reserve: 0.25
+  visit_peak_budget_s: 120.0
+  physics_dt_s: 0.2
+  normal_scheduler_period_s: 5.0
+  preserve_current_emergency_monitor: true
+  emergency_and_admission_shared: true
+  pad_protection_start: descent_start
+  pad_protection_end: service_completed
+  emergency_requires_currently_free_pad: false
+  information: revealed_global_state_only
+  future_manifest_visible: false
+  public_dispatch_order:
+    - settle_events_and_isolate_energy_losses
+    - shared_emergency_monitor_and_rescue
+    - shared_gate_fifo_admission
+    - normal_scheduler
+    - atomic_commit
+failure:
+  continue_after_energy_mission_failure: true
+  post_failure_model: abstract_isolation_no_cascade
+  energy_failure_reasons: [BATTERY_DEPLETED, PEAK_BUDGET_EXHAUSTED]
+  failure_penalty_once: 1000000.0
+  failed_aircraft_terminal_status: ENERGY_MISSION_FAILED
+  retain_failure_record_and_last_state: true
+  remove_failed_entity_from_future_traffic_at_actual_failure_time: true
+  release_own_future_reservations_atomically: true
+  revalidate_affected_dependencies: true
+  do_not_change_other_active_trajectories: true
+  model_wreckage_or_secondary_accidents: false
+  count_post_failure_throughput_separately: true
+  safety_violation_stops_invalid_run: true
+  numerical_error_is_not_energy_depletion: true
+  timeout_is_not_physical_failure: true
+methods:
+  - id: energy_slack
+    implementation: priority_sequential_multistep_columns
+    candidate_policy: shared_multistep_columns_v1
+    unknown_reference_priority: after_negative_before_nonnegative_known_slack
+    tie_break: [original_release_time, aircraft_id]
+    joint_backtracking: false
+    maximum_prefix_repairs: 1
+  - id: rh_cp_sat
+    implementation: rolling_horizon_joint_finite_columns
+    candidate_policy: shared_multistep_columns_v1
+    num_search_workers: 1
+    random_seed: 71
+    solver_wall_budget_total_s: 2.0
+    lexicographic_phase_max_shares_s: [0.3, 0.8, 0.3, 0.4, 0.2]
+    conflict_refinement_max_rounds: 3
+    hint: own_valid_previous_plan_or_own_timed_energy_slack_construction
+    fallback: verified_incumbent_else_existing_legal_commitments
+    global_continuous_optimality_claim: false
+excluded_research_methods: [fcfs, beam, single_step_joint, oracle, exhaustive_search, rl, world_model]
+planning:
+  horizon_s: 240.0
+  maximum_new_normal_maneuvers: {outer: 3, middle: 2, inner: 1}
+  complete_committed_maneuvers_beyond_horizon: true
+  terminal_reference_time_cap_s: 900.0
+  terminal_unknown_time_s: 901.0
+  maximum_new_moving_columns_per_aircraft: 8
+  extra_columns: [KEEP, WAIT]
+  maximum_columns_same_first_target: 2
+  first_action_submission_window_s: 5.0
+  future_prediction_suffix_has_execution_authority: false
+  preserve_protected_soft_dependencies: true
+  candidate_start_offsets_s: [0.0, 5.0, 10.0, 15.0, 20.0, 30.0]
+  maximum_extra_resource_aligned_start_times: 2
+  maximum_duration_alternatives_per_target_and_start: 2
+  use_existing_duration_domain: true
+  maximum_new_trajectory_attempts_per_aircraft_per_decision: 64
+  maximum_new_trajectory_attempts_per_decision: 2048
+  aircraft_generation_order: slack_then_round_robin
+  candidate_single_vehicle_time_geometry_invariant_reuse: true
+  normal_reference_cold_build: nonrecursive_deterministic_single_aircraft_normal_chain
+  candidate_end_at_predicted_emergency_disposition: true
+  predicted_failure_releases_capacity: false
+  no_full_world_rollout_in_search: true
+  read_only_evaluation_required: true
+  final_commit_prefix_validation_required: true
+objective:
+  id: reliability_throughput_secondary_energy_v1
+  evaluation_lexicographic_minimize:
+    - energy_mission_failure_count
+    - negative_successful_touchdowns
+    - emergency_cost_plus_reroute_cost
+    - total_terminal_energy_J
+    - airborne_plus_upstream_time_s
+  successful_touchdown_includes_emergency: true
+  successful_touchdown_does_not_require_service_completion: true
+  initial_ground_aircraft_excluded_from_success_count: true
+  emergency_cost: {inner: 1200.0, middle: 2400.0, outer: 3600.0}
+  reroute_cost: 600.0
+  online_lexicographic_minimize:
+    - projected_energy_exposure_count
+    - negative_projected_touchdowns_within_horizon
+    - unfinished_energy_urgency_sum
+    - estimated_time_to_touchdown_sum
+    - predicted_horizon_energy_sum
+  online_urgency_values: {inner: 1, middle: 2, outer: 3, unknown: 3}
+  predicted_risk_is_real_failure: false
+  solver_objective_time_quantum_s: 0.1
+  solver_objective_energy_quantum_Wh: 1.0
+  round_physical_trajectory_times_or_ledgers: false
+  legacy_scalar_cost_reported_but_not_primary: true
+initial_scenario:
+  id: S2_BUSY36_RATE180_SEED71
+  initial_time_s: 0.0
+  holding_aircraft: {outer: 14, middle: 12, inner: 10}
+  slot_selection_formula: floor(k*M/n)
+  initial_soc:
+    distribution: truncated_normal
+    mean: 0.75
+    std: 0.08
+    low: 0.60
+    high: 0.90
+    seed: 2071
+  service_class_probabilities: {short: 0.2, standard: 0.6, long: 0.2}
+  initial_service_class_seed: 2072
+  initial_peak_used_s: 0.0
+  initial_measured_energy_J: 0.0
+  synthetic_fixture_not_stationary_sample: true
+  report_initial_normal_reference_feasibility: true
+  resample_soc_or_remove_aircraft_after_reference_failure: false
+  initial_ground_services:
+    - {pad_id: 0, service_class: standard, remaining_s: 30.0, soc: 0.60}
+    - {pad_id: 2, service_class: standard, remaining_s: 60.0, soc: 0.60}
+    - {pad_id: 4, service_class: standard, remaining_s: 90.0, soc: 0.60}
+demand:
+  arrival_rate_per_hour: 180.0
+  arrival_seed: 71
+  release_window_s: [0.0, 3600.0]
+  release_window_right_open: true
+  arrival_process: existing_poisson_manifest_generator
+  gate_probabilities: [0.25, 0.25, 0.25, 0.25]
+  soc_distribution: inherit_stage1_truncated_normal_0p60_to_0p90
+  same_materialized_manifest_for_both_methods: true
+  upstream_energy_outside_model: true
+  request_outcome_resampling: false
+timing:
+  measure_wall_and_process_cpu_per_decision: true
+  normal_planning_soft_budget_s: 5.0
+  normal_planning_watchdog_s: 30.0
+  real_time_reference_deadline_s: 5.0
+  logical_clock_quality_experiment: true
+  inject_observed_wall_latency_into_motion: false
+  real_time_certified_by_this_experiment: false
+  common_emergency_and_admission_reported_separately_and_in_total: true
+  report_quantiles: [0.50, 0.95, 0.99]
+  report_max_mean_overrun_and_noop_calls: true
+  profiler_in_main_experiment: false
+  live_rendering_in_main_experiment: false
+experiment:
+  id: stage2_first_campaign_v1
+  repetitions_per_method: 1
+  target_observation_s: 3600.0
+  drain_s: 0.0
+  first_report_s: 60.0
+  continue_same_run_after_first_report: true
+  checkpoint_interval_sim_s: 60.0
+  reporting_times_s: [60.0, 300.0, 600.0, 1200.0, 1800.0, 2400.0, 3000.0, 3600.0]
+  campaign_wall_budget_s: 36000.0
+  preparation_max_wall_s: 3600.0
+  compute_stop_campaign_elapsed_s: 34200.0
+  archive_reserve_s: 1800.0
+  budget_counts_tests_precomputation_audit_and_exports: true
+  budget_excludes_human_coding_and_reading: true
+  budget_survives_runner_restart: true
+  desired_parallel_episode_processes: 2
+  cores_per_episode: 1
+  numerical_library_threads: 1
+  reference_workers_per_episode: 0
+  cpu_binding: distinct_physical_cores_when_available
+  insufficient_core_fallback: alternating_same_60s_blocks
+  comparison_time_if_incomplete: last_60s_boundary_completed_by_both
+  budget_exhaustion_status: BUDGET_LIMITED
+  extrapolate_partial_touchdown_count_as_full_hour: false
+  automatic_parameter_sweep_or_repeated_optimization: false
+visualization:
+  backend: existing_local_PyVista_platform
+  tentative_suffix_separate_from_active: true
+  show_failed_isolated_aircraft_marker_and_ledger: true
+  show_normal_scheduler_and_dispatch_wall: true
+  require_real_human_review: true
+  default_review_status: HUMAN_PENDING
+acceptance:
+  targeted_tests_catalog: stage2_targeted_tests_v1_0.json
+  expected_test_count: 28
+  cpsat_must_beat_slack: false
+  fixed_speedup_required: false
+  formal_status_separate_from_implemented_status: true
+  one_hour_completion_may_be_budget_limited: true

@@ -1,0 +1,32 @@
+{
+  "scope": "Generated document/config/catalog consistency ONLY; no repository code changed, no scenario/solver experiment run.",
+  "contract_id": "FT-RS-S2-1.0",
+  "checks": {
+    "yaml_parses": true,
+    "only_two_research_baselines": true,
+    "initial_airborne_count_36": true,
+    "initial_ground_count_3": true,
+    "energy_failure_continues": true,
+    "safety_invalid_stops": true,
+    "target_3600_and_no_drain": true,
+    "10h_budget": true,
+    "archive_budget_sums": true,
+    "lex_solver_shares_sum_2s": true,
+    "test_ids_contiguous": true,
+    "physical_rule_80m_unchanged": true,
+    "multi_step_outer_depth_3": true,
+    "no_solver_latency_safety_claim": true,
+    "no_partial_to_full_hour_extrapolation": true,
+    "all_research_tests_unrun": true
+  },
+  "checks_passed": 16,
+  "repository_tests_run": false,
+  "stage2_experiments_run": false,
+  "human_visual_review_done": false,
+  "files_sha256": {
+    "IMPLEMENTATION_TASK.md": "492072169023a5ef60b406a73100dabc68f537928c1ebc5d38ff53fc2c525d06",
+    "rotating_slots_stage2_baseline_contract_v1_0.md": "d7d1d982992bd52a0fb4f9b4922f97fa0ee0655e733f11ad9d2be87df1c9419b",
+    "stage2_baseline_config_v1_0.yaml": "0ef8f24b0b978f6f233e1847fc63e8698e5821f46bcbf7feb8ad2e35c26523c0",
+    "stage2_targeted_tests_v1_0.json": "884df1e054606f0185497e55786788ee4bcdb5edac8e5178aac684a7f87b4d17"
+  }
+}

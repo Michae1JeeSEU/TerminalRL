@@ -46,12 +46,40 @@ def make_observed_advance(world_class):
     No core module is imported here. The generated function retains the exact
     globals of the supplied class, including an isolated R0's core instances.
     """
-    original = textwrap.dedent(inspect.getsource(world_class.advance))
+    selected = world_class.advance
+    original = textwrap.dedent(inspect.getsource(selected))
     tree = ast.parse(original)
     function = tree.body[0]
     if not isinstance(function, ast.FunctionDef) or function.name != "advance":
         raise CheckpointError("unexpected advance source")
     loops = [node for node in function.body if isinstance(node, ast.While)]
+    wrapped = False
+    if not loops:
+        # Stage2 adds an explicit public policy/error wrapper. Only this exact
+        # wrapper is eligible: silently bypassing an arbitrary wrapper could
+        # skip execution logic. Historical isolated R0 classes need no _advance.
+        expected_wrapper = ast.parse('''def advance(self, until, decision_callback=None, *, settle_only_at_end=None):
+    if settle_only_at_end is None:
+        settle_only_at_end = self._stage2_enabled()
+    try:
+        return self._advance(until, decision_callback, settle_only_at_end=settle_only_at_end)
+    except (RuntimeError, ValueError, ArithmeticError) as exc:
+        if self._stage2_enabled() and not self.terminated_invalid:
+            self._fail(None, str(exc))
+        raise
+''').body[0]
+        if ast.dump(function, include_attributes=False) != ast.dump(expected_wrapper, include_attributes=False):
+            raise CheckpointError("unrecognized advance control flow")
+        selected = getattr(world_class, "_advance", None)
+        if selected is None:
+            raise CheckpointError("advance wrapper lacks its implementation")
+        original = textwrap.dedent(inspect.getsource(selected))
+        tree = ast.parse(original)
+        function = tree.body[0]
+        if not isinstance(function, ast.FunctionDef) or function.name != "_advance":
+            raise CheckpointError("unexpected advance implementation source")
+        loops = [node for node in function.body if isinstance(node, ast.While)]
+        wrapped = True
     if len(loops) != 1 or not isinstance(function.body[-1], ast.Return):
         raise CheckpointError("unrecognized advance control flow")
     loop = loops[0]
@@ -59,8 +87,13 @@ def make_observed_advance(world_class):
     expected = ast.parse("self._record()").body[0]
     if ast.dump(last, include_attributes=False) != ast.dump(expected, include_attributes=False):
         raise CheckpointError("advance no longer ends its loop with _record")
-    if (len(function.args.args) != 3 or function.args.vararg or function.args.kwarg
-            or function.args.kwonlyargs):
+    keyword_args = function.args.kwonlyargs
+    implementation_args = ast.parse(
+        "def _advance(self, until, decision_callback=None, *, settle_only_at_end=False): pass").body[0].args
+    supported_keyword = (wrapped and ast.dump(function.args, include_attributes=False)
+                         == ast.dump(implementation_args, include_attributes=False))
+    if (len(function.args.args) != 3 or function.args.posonlyargs or function.args.vararg or function.args.kwarg
+            or (wrapped and not supported_keyword) or (not wrapped and keyword_args)):
         raise CheckpointError("unexpected advance signature")
     lines = original.splitlines(keepends=True)
     # Insertion offsets are derived from the AST, but original statements are
@@ -68,7 +101,8 @@ def make_observed_advance(world_class):
     signature = lines[0].rstrip("\r\n")
     if not signature.endswith("):"):
         raise CheckpointError("multiline advance signature unsupported")
-    lines[0] = signature[:-2] + ", *, _performance_hook=None, _performance_outer_phase='episode'):\n"
+    separator = ", " if keyword_args else ", *, "
+    lines[0] = signature[:-2] + separator + "_performance_hook=None, _performance_outer_phase='episode'):\n"
     after_loop_record = last.end_lineno
     before_return = function.body[-1].lineno - 1
     generated = []
@@ -88,12 +122,12 @@ def make_observed_advance(world_class):
             ])
     source = "".join(generated)
     source_hash = sha256(source.encode()).hexdigest()
-    namespace = dict(world_class.advance.__globals__)
+    namespace = dict(selected.__globals__)
     namespace.update(_performance_cursor=AdvanceCursor, _performance_source_hash=source_hash)
     exec(compile(source, "<R0+OBS:" + source_hash + ">", "exec"), namespace)
     patch = "".join(difflib.unified_diff(original.splitlines(True), source.splitlines(True),
                                        fromfile="R0/advance", tofile="R0+OBS/advance"))
-    return ObservedAdvance(namespace["advance"], original, source, patch,
+    return ObservedAdvance(namespace[function.name], original, source, patch,
                            sha256(original.encode()).hexdigest(), source_hash)
 
 

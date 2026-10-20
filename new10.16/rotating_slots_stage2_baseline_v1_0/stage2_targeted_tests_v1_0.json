@@ -1,0 +1,175 @@
+{
+  "contract_id": "FT-RS-S2-1.0",
+  "status": "REQUIREMENTS_NOT_EXECUTION_RESULTS",
+  "test_count": 28,
+  "tests": [
+    {
+      "id": "T01",
+      "scenario": "36空中＋3服务初态",
+      "expected_behavior": "槽位、80m、守恒正确；初始地面不计新落地",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T02",
+      "scenario": "单机正常多步",
+      "expected_behavior": "明确O→M→I→pad预测；只执行下一机动",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T03",
+      "scenario": "相同SOC但剩余正常需求不同",
+      "expected_behavior": "Energy-slack排序有区别，不退化为最低SOC",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T04",
+      "scenario": "参考UNKNOWN",
+      "expected_behavior": "不是0成本、无限余量或已发生失败",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T05",
+      "scenario": "两机争槽/争pad",
+      "expected_behavior": "不重复占资源，WAIT仍占槽",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T06",
+      "scenario": "两机目标不同、途中相交",
+      "expected_behavior": "联合方案被排除",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T07",
+      "scenario": "只有一起离开才可行",
+      "expected_behavior": "不被单机永久holding预筛删除",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T08",
+      "scenario": "忙pad在下降前释放",
+      "expected_behavior": "可以预约；仅接地晚于释放不够",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T09",
+      "scenario": "下游资源不同使第一步最优选择改变",
+      "expected_behavior": "CP实际使用至少两个阶段的预测，不只是单步排序",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T10",
+      "scenario": "完整预测安全但提交前缀依赖未提交离开",
+      "expected_behavior": "不批准该前缀，不强制锁死整条链",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T11",
+      "scenario": "已开始轨迹/受保护soft",
+      "expected_behavior": "不被重规划、应急或预算到期非法修改",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T12",
+      "scenario": "正常25%接地及120秒峰值边界",
+      "expected_behavior": "包含垂降；临界精化；不切环重置",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T13",
+      "scenario": "重复/反序候选评估",
+      "expected_behavior": "不改变真实SOC、事件或资源",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T14",
+      "scenario": "修改未揭示manifest后缀",
+      "expected_behavior": "当前规划输入和决定不因此改变",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T15",
+      "scenario": "solver返回UNKNOWN或时间到",
+      "expected_behavior": "不等于物理无解；使用已认证incumbent/KEEP",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T16",
+      "scenario": "目录8/64/2048预算耗尽",
+      "expected_behavior": "记录截断，不隐去飞机，不称全部物理方案已搜尽",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T17",
+      "scenario": "一架电池耗尽，其他仍正常",
+      "expected_behavior": "精确记失败、罚一次、隔离并继续；无全局censor",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T18",
+      "scenario": "同时两架失败",
+      "expected_behavior": "均记一次，时间继续推进，无零步长死循环",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T19",
+      "scenario": "失败关联预约/依赖",
+      "expected_behavior": "原子清理，不改其他active，不回写历史",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T20",
+      "scenario": "峰值预算失败与数值异常",
+      "expected_behavior": "分类不同；不能把模型错误作普通耗尽继续",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T21",
+      "scenario": "80m实际违反或权威轨迹不一致",
+      "expected_behavior": "停止为无效运行；不使用能源继续规则掩盖",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T22",
+      "scenario": "相同失败数、不同落地数",
+      "expected_behavior": "主排名优先更多落地；能量不能抵消失败/吞吐层",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T23",
+      "scenario": "不同失败数、更多失败后吞吐更高",
+      "expected_behavior": "更少失败者优先，并单报失败后吞吐",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T24",
+      "scenario": "3600边界及未完成",
+      "expected_behavior": "<=3600接地计数，>3600不计；pending不是失败",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T25",
+      "scenario": "目标量化",
+      "expected_behavior": "不舍入真实轨迹/SOC；层级和单位一致",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T26",
+      "scenario": "计时含候选和认证",
+      "expected_behavior": "solver时间不冒充完整调度；公共和仿真分开",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T27",
+      "scenario": "10小时预算触发",
+      "expected_behavior": "正常保存，标预算截尾；相同共同时间比较",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "T28",
+      "scenario": "检查点恢复与PyVista",
+      "expected_behavior": "绝对槽位相位不重置；预测、soft、active、失败显示区分",
+      "status": "NOT_RUN"
+    }
+  ]
+}

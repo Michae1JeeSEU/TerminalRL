@@ -17,12 +17,13 @@ from .schema import (WorldRenderSnapshot, RingRenderState, GateRenderState,
 from .pyvista_viewer import Terminal3DViewer
 
 _GROUNDED = {"LANDED_SERVICE", "CLEARED", "SERVICE", "COMPLETED"}
-_FROZEN = {"ENERGY_FAILURE", "CENSORED_DUE_TO_FAILURE", "EXECUTED_HARD_SEPARATION_VIOLATION"}
+_FROZEN = {"ENERGY_FAILURE", "ENERGY_MISSION_FAILED", "CENSORED_DUE_TO_FAILURE", "EXECUTED_HARD_SEPARATION_VIOLATION"}
 _INVISIBLE = {"CLEARED", "COMPLETED", "REROUTED", "UNRELEASED_AT_FAILURE"}
 _HOLD = {"HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "HOLD", "HOLDING", "STABLE"}
 _ACTIVE_MANEUVER = {"INBOUND", "TRANSFER_O_M", "TRANSFER_M_I", "FINAL_NORMAL",
                     "FINAL_EMERGENCY", "VERTICAL_DESCENT"}
 _UPSTREAM_POLICY = "upstream_capacity_only_pad_arrival_v1_20261018"
+_UPSTREAM_POLICIES = {_UPSTREAM_POLICY,"rs_s2_loss_continue_throughput_v1_0"}
 
 
 def _separation_evidence(metrics):
@@ -211,21 +212,27 @@ class ReplayController:
     def overlays(self):
         frame = self.bundle.sampled_state(self.time)
         aircraft = self.aircraft_at()
-        physical = [a for a in aircraft if a.get("status") not in _INVISIBLE]
+        physical = [a for a in aircraft if a.get("status") not in _INVISIBLE | {"ENERGY_MISSION_FAILED"}]
         pairs = [(math.dist(a["p"], b["p"]), a["id"], b["id"]) for a, b in combinations(physical, 2)]
         current_min = min(pairs, default=None)
         episode_metrics = _plain(self.bundle.data["metrics"])
         policy = frame.get("policy_id", self.bundle.data.get("policy_id", frame.get("metrics", {}).get("policy_id",
             episode_metrics.get("policy_id"))))
         upstream = _plain(frame.get("upstream", ()))
+        dispatch = [r for r in self.bundle.data.get("dispatch_timings", ()) if r["time"] <= self.time]
+        predictions = [r for r in self.bundle.data.get("tentative_predictions", ()) if r.get("as_of",0.)<=self.time]
         return {"minimum_current_3d_pair": current_min, "minimum_current_time": self.time,
+            "latest_dispatch_timing": _plain(dispatch[-1]) if dispatch else None,
+            "tentative_predictions": _plain(predictions),
+            "failed_isolated": [a for a in aircraft if a.get("status") == "ENERGY_MISSION_FAILED"],
+            "failure_archive": _plain(self.bundle.data.get("failure_archive", {})),
             "logged_metrics": _plain(frame.get("metrics", {})),
             "episode_metrics": episode_metrics,
             "separation_evidence": _separation_evidence(episode_metrics),
             "fixture_banner": "ANALYTIC FIXTURE - no physical episode outcome" if episode_metrics.get("fixture_only") else None,
             "policy_id": policy,
             "admission_model": ("AMENDED: capacity-only reroute; unsafe requests wait upstream (no physical aircraft / external energy model)"
-                if policy == _UPSTREAM_POLICY else "OLD MODEL: immediate admission or reroute; no upstream waiting queue recorded"
+                if policy in _UPSTREAM_POLICIES else "OLD MODEL: immediate admission or reroute; no upstream waiting queue recorded"
                 if policy is None else "Recorded admission policy: " + str(policy)),
             "upstream_requests": upstream,
             "upstream_waiting_count": frame.get("metrics", {}).get("upstream_waiting", len(upstream)),
@@ -270,7 +277,7 @@ class ReplayController:
         overlay = self.overlays()
         minimum = overlay["minimum_current_3d_pair"]
         pair = (f'{minimum[0]:.3f}m ({minimum[1]}, {minimum[2]})' if minimum else "no pair")
-        policy = ("AMENDED: capacity-only reroute; unsafe entry waits upstream" if overlay["policy_id"] == _UPSTREAM_POLICY
+        policy = ("AMENDED: capacity-only reroute; unsafe entry waits upstream" if overlay["policy_id"] in _UPSTREAM_POLICIES
                   else "OLD MODEL: immediate admission / reroute" if overlay["policy_id"] is None
                   else f'Policy: {overlay["policy_id"]}')
         evidence = overlay["separation_evidence"]
@@ -280,6 +287,12 @@ class ReplayController:
             f'{evidence["label"]}: [{bound(evidence["lower_bound_m"])}, {bound(evidence["upper_bound_m"])}]m',
             f'Slots F free / R committed incl.future / O occupied / D departing / S soft; paths t; details d',
             f'Actual maneuvers={len(overlay["current_commits"])}; future SOFT unstarted/removable={len(overlay["future_soft_dependencies"])}']
+        if self.bundle.index.get("experiment_policy_id"):
+            timing=overlay["latest_dispatch_timing"]
+            lines.append("Stage2 HUMAN_PENDING | tentative suffix has no execution authority")
+            lines.append(f'Isolated loss markers={len(overlay["failed_isolated"])}; abstract isolation, no accident cascade')
+            if timing:
+                lines.append(f'Normal wall={timing["normal_wall_s"]:.4f}s; full dispatch wall={timing["dispatch_wall_s"]:.4f}s')
         for pad in overlay["pad_resources"]:
             prefix = f'P{pad["id"]} '
             if pad["occupant_id"] is not None:
@@ -291,7 +304,7 @@ class ReplayController:
                 label = "COMMITTED" if future["commitment"] == "COMMITTED" else "SOFT unstarted/removable" if future["commitment"] == "SOFT_UNSTARTED_REMOVABLE" else "recorded"
                 lines.append(f'  P{pad["id"]} {label} UID={future["owner_uid"]}: flight start={bound(future["maneuver_start"])}; '
                     f'descent={bound(future["descent_start"])}; touch={bound(future["touchdown_time"])}; service end={bound(future["interval_end"])}s')
-        if overlay["policy_id"] == _UPSTREAM_POLICY or overlay["upstream_requests"]:
+        if overlay["policy_id"] in _UPSTREAM_POLICIES or overlay["upstream_requests"]:
             lines.append(f'Upstream unresolved={overlay["upstream_waiting_count"]}; external requests only (no physical aircraft/energy simulation)')
             if overlay["upstream_requests"]:
                 request = overlay["upstream_requests"][0]
@@ -552,6 +565,22 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
                 self._plotter.add_mesh(self._pv.lines_from_points(points),color="purple",opacity=.45,line_width=2,
                     name=name,pickable=False,render=False)
                 self._extra_names.add(name)
+        for index, prediction in enumerate(overlay["tentative_predictions"]):
+            if self.controller.trajectories=="hidden": break
+            if self.controller.trajectories=="selected" and prediction.get("aircraft_id")!=self.controller.selected_id: continue
+            for number, parameters in enumerate(prediction.get("plans", ())):
+                from ..core.rotating_slots.trajectory import TrajectoryPlan
+                plan=TrajectoryPlan.from_dict(parameters,config=self.controller.bundle.config)
+                points=np.array([plan.state(float(t)).p for t in np.linspace(plan.start_time,plan.end_time,61)])
+                name=f"rs-tentative-{index}-{number}"
+                self._plotter.add_mesh(self._pv.lines_from_points(points),color="teal",opacity=.18,line_width=1,
+                    name=name,pickable=False,render=False)
+                self._extra_names.add(name)
+        for failed in overlay["failed_isolated"]:
+            name="rs-isolated-"+str(failed["id"])
+            self._plotter.add_mesh(self._pv.Sphere(radius=9.,center=failed["p"]),color="black",
+                name=name,pickable=False,render=False)
+            self._extra_names.add(name)
         for index,rejection in enumerate(overlay["diagnostic_rejections_not_executed"]):
             points=rejection.get("details",{}).get("trajectory_points",())
             if len(points)>1:

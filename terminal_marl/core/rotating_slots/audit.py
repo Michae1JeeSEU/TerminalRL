@@ -27,6 +27,9 @@ KNOWN=AIRBORNE|TERMINAL|{"LANDED_SERVICE"}
 MANEUVERS=frozenset(("INBOUND","TRANSFER","FINAL_NORMAL","FINAL_EMERGENCY"))
 FEE={"inner":1200.,"middle":2400.,"outer":3600.}
 UPSTREAM_POLICY="upstream_capacity_only_pad_arrival_v1_20261018"
+STAGE2_POLICY="rs_s2_loss_continue_throughput_v1_0"
+LOSS_STATUS="ENERGY_MISSION_FAILED"
+LOSS_REASONS=frozenset(("BATTERY_DEPLETED","PEAK_BUDGET_EXHAUSTED"))
 
 
 def _rows(path):
@@ -80,7 +83,8 @@ def audit_replay(bundle_path,output=None):
         metrics=json.loads((root/"metrics.json").read_bytes())
         if not isinstance(metrics,dict): raise ValueError("metrics must be an object")
         policy=metrics.get("policy_id")
-        upstream_policy=policy==UPSTREAM_POLICY
+        stage2=policy==STAGE2_POLICY
+        upstream_policy=policy in (UPSTREAM_POLICY,STAGE2_POLICY)
         if policy is not None and not upstream_policy:
             issue("UNKNOWN_POLICY","archive declares an unsupported demand/resource policy",policy_id=policy)
         report["policy_id"]=policy or "legacy_immediate_admission_departure_pad"
@@ -94,11 +98,41 @@ def audit_replay(bundle_path,output=None):
             issue("MANIFEST_DUPLICATE","manifest request IDs are not unique")
         plans={h:TrajectoryPlan.from_dict(p,config=config) for h,p in json.loads((root/"trajectories.json").read_bytes()).items()}
         events=list(_rows(root/"events.jsonl"))
+        loss_archive={}
+        if stage2:
+            required={"decisions.jsonl","dispatch_timings.jsonl","failure_archive.json",
+                      "tentative_predictions.json","stage2_provenance.json"}
+            if not required <= archive.index["files"].keys():
+                raise ValueError("Stage2 replay is missing content-hashed members")
+            if (archive.index.get("experiment_policy_id")!=STAGE2_POLICY or
+                    metrics.get("experiment_policy_id")!=STAGE2_POLICY or
+                    metrics.get("base_policy_id")!=UPSTREAM_POLICY):
+                issue("STAGE2_POLICY","Stage2 archive and effective policy identity disagree")
+            if metrics.get("post_failure_model")!="abstract_isolation_no_cascade":
+                issue("POST_FAILURE_MODEL","Stage2 must declare its isolation abstraction")
+            loss_archive=json.loads((root/"failure_archive.json").read_bytes())
+            if not isinstance(loss_archive,dict): raise ValueError("failure archive must be keyed by aircraft ID")
+            for aid,record in loss_archive.items():
+                if (not isinstance(record,dict) or not isinstance(record.get("last_state"),dict)
+                        or record["last_state"].get("id")!=aid):
+                    raise ValueError("failure archive lacks an identified last physical state")
+                for row in record.get("reservations",()):
+                    if (not isinstance(row,dict) or row.get("aircraft_id")!=aid or
+                            row.get("end") is not None and not math.isfinite(float(row["end"]))):
+                        raise ValueError("failure archive has malformed own resource reservations")
+                for key in ("active","soft"):
+                    p=record.get(key)
+                    if p is not None and (not isinstance(p,dict) or plans.get(p.get("trajectory_hash")) is None
+                                          or plans[p["trajectory_hash"]].to_dict()!=p):
+                        raise ValueError("failure archive plan differs from immutable trajectory member")
     except (ValueError,KeyError,TypeError,AttributeError,OSError,OverflowError) as exc:
         issue("ARCHIVE_INVALID","archive integrity/schema validation failed",error=str(exc))
         return finish()
 
     releases={};admissions={};reroutes={};touchdowns={};starts={};emergency_starts={};failures=[];hard_pairs=[]
+    losses={};isolations={};invalid_events=[]
+    known=KNOWN|{LOSS_STATUS} if stage2 else KNOWN
+    terminal=TERMINAL|{LOSS_STATUS} if stage2 else TERMINAL
     last_event=-math.inf
     for event in events:
         try:
@@ -141,12 +175,40 @@ def audit_replay(bundle_path,output=None):
                     emergency_starts[aid]=(t,plan.source_ring)
             elif kind in FAILURES:
                 failures.append((t,aid,kind))
+                if stage2:
+                    issue("LEGACY_FAILURE_IN_STAGE2","Stage2 uses isolated energy reasons or invalid-stop events",aircraft_id=aid)
+            elif stage2 and kind=="aircraft_energy_failure":
+                if aid in losses:
+                    issue("DUPLICATE_ENERGY_LOSS","energy mission loss charged more than once",aircraft_id=aid)
+                reason=details.get("reason")
+                if reason not in LOSS_REASONS:
+                    issue("LOSS_REASON","unsupported energy mission failure reason",aircraft_id=aid,reason=reason)
+                losses[aid]=(t,reason)
+            elif stage2 and kind=="failure_isolated":
+                if aid in isolations: issue("DUPLICATE_ISOLATION","entity isolated twice",aircraft_id=aid)
+                isolations[aid]=(t,details)
+            elif stage2 and kind=="invalid_run_stopped":
+                invalid_events.append(event)
+                issue("INVALID_RUN","recorded run stopped for an execution/software/model error",reason=details.get("reason"),time=t)
             elif kind=="hard_separation_pair":
                 hard_pairs.append((t,frozenset((aid,details.get("other_id")))))
         except (KeyError,TypeError,ValueError,AttributeError) as exc:
             issue("EVENT_SCHEMA","malformed event",error=str(exc))
     if len(failures)>1: issue("MULTIPLE_PHYSICAL_FAILURES","episode continued through multiple physical failures")
     stop_failure=failures[0] if failures else None
+    if stage2:
+        for aid,(t,reason) in losses.items():
+            record=loss_archive.get(aid)
+            isolated=isolations.get(aid)
+            if not isinstance(record,dict) or not _near(record.get("time"),t,1e-7) or record.get("reason")!=reason:
+                issue("LOSS_ARCHIVE","permanent failure record disagrees with exact event",aircraft_id=aid)
+            if (isolated is None or not _near(isolated[0],t,1e-7)
+                    or isolated[1].get("reason")!=reason):
+                issue("ISOLATION_EVENT","loss lacks matching same-time isolation",aircraft_id=aid)
+            if aid in touchdowns or aid in reroutes:
+                issue("LOSS_DOUBLE_OUTCOME","failed task also claimed touchdown/reroute",aircraft_id=aid)
+        if set(loss_archive)!=set(losses) or set(isolations)!=set(losses):
+            issue("LOSS_IDENTITIES","failure archive, loss events and isolations identify different aircraft")
     if stop_failure:
         report["physical_outcome"]="HARD_SEPARATION_FAILURE" if stop_failure[2]=="EXECUTED_HARD_SEPARATION_VIOLATION" else "ENERGY_FAILURE"
 
@@ -212,6 +274,8 @@ def audit_replay(bundle_path,output=None):
     try:
         for frame in _rows(root/"states.jsonl"):
             t=float(frame["time"]);frame_count+=1
+            if stage2 and frame.get("failed") and not invalid_events:
+                issue("STAGE2_GLOBAL_STOP","isolated energy losses must not stop/censor the whole world",time=t)
             if previous is None and abs(t)>1e-9:
                 issue("MISSING_EPISODE_ORIGIN","physical episode recording does not start at t=0",time=t)
             if stop_failure and t>stop_failure[0]+1e-6:
@@ -243,7 +307,9 @@ def audit_replay(bundle_path,output=None):
                         issue("UPSTREAM_STATUS","external queue has wrong censoring state",aircraft_id=aid,time=t)
             for aid,a in current.items():
                 status=a.get("status")
-                if status not in KNOWN: issue("UNKNOWN_STATUS","unrecognized physical lifecycle status",aircraft_id=aid,status=status,time=t)
+                if status not in known: issue("UNKNOWN_STATUS","unrecognized physical lifecycle status",aircraft_id=aid,status=status,time=t)
+                if stage2 and status=="CENSORED_DUE_TO_FAILURE":
+                    issue("STAGE2_CENSORING","another aircraft was censored after an isolated task loss",aircraft_id=aid,time=t)
                 if not 0<=float(a["soc"])<=1:
                     issue("SOC_RANGE","SOC outside physical charge fraction",aircraft_id=aid,time=t)
                 if float(a.get("peak_seconds",0))>120+1e-5:
@@ -282,7 +348,36 @@ def audit_replay(bundle_path,output=None):
                             issue("MISSING_OUTCOME_EVENT","request state lacks matching admitted/rerouted event",aircraft_id=aid,time=t)
                 if status!="REROUTED":
                     p=plan_for(a,t)
-                    if p is not None: verify_pose(a,p,t)
+                    pose_time=losses.get(aid,(t,None))[0] if stage2 and status==LOSS_STATUS else t
+                    if p is not None: verify_pose(a,p,pose_time)
+                if stage2 and status==LOSS_STATUS:
+                    loss=losses.get(aid)
+                    if loss is None or t<loss[0]-1e-7:
+                        issue("LOSS_STATE","isolated terminal state has no preceding exact loss",aircraft_id=aid,time=t)
+                    else:
+                        lt,reason=loss
+                        if a.get("touchdown_time") is not None or a.get("service_end") is not None:
+                            issue("LOSS_LANDING","isolated task claims ground completion",aircraft_id=aid,time=t)
+                        if reason=="BATTERY_DEPLETED" and not _near(a.get("soc"),0.,1e-7):
+                            issue("UNEXPLAINED_BATTERY_LOSS","depleted task retains usable battery",aircraft_id=aid,time=t)
+                        if reason=="PEAK_BUDGET_EXHAUSTED" and not _near(a.get("peak_seconds"),120.,1e-5):
+                            issue("UNEXPLAINED_PEAK_LOSS","peak failure does not reach the cumulative budget",aircraft_id=aid,time=t)
+                        for resource in (*frame.get("slots",()),*frame.get("pads",())):
+                            end=resource.get("end")
+                            if resource.get("aircraft_id")==aid and (end is None or float(end)>lt+1e-7):
+                                issue("LOSS_RESOURCE_RETAINED","failed task still reserves future managed traffic",aircraft_id=aid,time=t)
+                        if abs(t-lt)<=1e-7:
+                            saved=loss_archive.get(aid,{}).get("last_state",{})
+                            for field in ("soc","energy_j","peak_seconds","airborne_time"):
+                                if not _near(saved.get(field),a.get(field),1e-6 if field!="energy_j" else .05):
+                                    issue("LOSS_LAST_STATE","failure archive does not preserve the failure-time ledger",aircraft_id=aid,field=field)
+                            for field in ("p","v","a","jerk"):
+                                if saved.get(field)!=a.get(field):
+                                    issue("LOSS_LAST_STATE","failure archive does not preserve the last kinematics",aircraft_id=aid,field=field)
+                            if saved.get("trajectory_hash")!=a.get("trajectory_hash"):
+                                issue("LOSS_LAST_STATE","failure archive changes the last authoritative trajectory",aircraft_id=aid)
+                if stage2 and aid in losses and t>=losses[aid][0]-1e-7 and status!=LOSS_STATUS:
+                    issue("LOSS_NOT_ISOLATED","failed task remains in another lifecycle state",aircraft_id=aid,time=t)
                 if not a.get("admitted") and status!="REROUTED":
                     issue("ADMISSION_FLAG","nonadmitted entity has a physical state",aircraft_id=aid,time=t)
                 if status in ("LANDED_SERVICE","CLEARED") and a.get("touchdown_time") is None:
@@ -302,10 +397,15 @@ def audit_replay(bundle_path,output=None):
                         issue("FIXTURE_CHANGED","fixture identity changed after insertion",aircraft_id=aid,time=t)
                     if upstream_policy and any(old.get(k)!=a.get(k) for k in ("release_time","admission_time","upstream_wait_seconds")):
                         issue("ADMISSION_CHANGED","immutable entry/wait identity changed after insertion",aircraft_id=aid,time=t)
-                    if old.get("status") in TERMINAL and old.get("status")!=a.get("status"):
+                    if old.get("status") in terminal and old.get("status")!=a.get("status"):
                         issue("TERMINAL_CHANGED","terminal status changed",aircraft_id=aid,time=t)
                     if old.get("emergency",{}).get("declared") and not a.get("emergency",{}).get("declared"):
                         issue("EMERGENCY_WASHED","latched declaration was removed",aircraft_id=aid,time=t)
+                    if stage2 and old.get("status")==LOSS_STATUS:
+                        for field in ("p","v","a","jerk","soc","energy_j","peak_seconds","trajectory_hash",
+                                      "airborne_time","holding_time","transfer_time","final_time","descent_time"):
+                            if old.get(field)!=a.get(field):
+                                issue("ISOLATED_STATE_CHANGED","failed task changed after isolation",aircraft_id=aid,time=t,field=field)
                     joules=soc_used=peak=0.
                     if old.get("status") in AIRBORNE:
                         p=plan_for(old,pt)
@@ -315,6 +415,16 @@ def audit_replay(bundle_path,output=None):
                             if not q.valid:
                                 issue("ENERGY_UNKNOWN","shared kernel rejects recorded interval",aircraft_id=aid,interval=[pt,t],reason=q.reason)
                             joules,soc_used,peak=q.joules,q.soc_used,q.peak_seconds
+                            if stage2 and aid in losses and abs(t-losses[aid][0])<=1e-7:
+                                reason=losses[aid][1]
+                                # A positive prefix immediately before the event
+                                # must still have capacity; no retroactive delay.
+                                probe=max(pt,t-1e-5)
+                                prefix=integrate_energy(p,pt,probe,max_dt=.2,config=config)
+                                if (reason=="BATTERY_DEPLETED" and float(old["soc"])-prefix.soc_used<=-1e-7
+                                        or reason=="PEAK_BUDGET_EXHAUSTED" and
+                                        float(old.get("peak_seconds",0))+prefix.peak_seconds>120.+1e-5):
+                                    issue("LATE_ENERGY_LOSS","physical exhaustion predates recorded loss time",aircraft_id=aid,time=t)
                             if old.get("trajectory_hash")!=a.get("trajectory_hash") and p.kind in MANEUVERS and t<p.end_time-1e-6:
                                 issue("ACTIVE_PLAN_CHANGED","current immutable maneuver changed before completion",aircraft_id=aid,time=t)
                     if not _near(float(a.get("energy_j",0))-float(old.get("energy_j",0)),joules,.05,1e-7):
@@ -364,9 +474,11 @@ def audit_replay(bundle_path,output=None):
         if not waiting and (aid not in final or (aid in admissions)==(aid in reroutes)):
             issue("REQUEST_OUTCOME","revealed request does not have exactly one retained outcome",aircraft_id=aid)
     fixtures=[a for a in final.values() if a.get("fixture")]
-    admitted=[a for a in final.values() if a.get("admitted")]
+    ground_ids={aid for aid,a in initial.items() if a.get("fixture") and a.get("status")=="LANDED_SERVICE"} if stage2 else set()
+    initial_airborne_ids={aid for aid,a in initial.items() if a.get("fixture") and aid not in ground_ids}
+    admitted=[a for a in final.values() if a.get("admitted") and a["id"] not in ground_ids]
     landed=[a for a in admitted if a.get("touchdown_time") is not None]
-    failed=[a for a in admitted if a.get("status") in FAILURES]
+    failed=[a for a in admitted if a.get("status") in (FAILURES|{LOSS_STATUS} if stage2 else FAILURES)]
     for a in landed:
         aid=a["id"]
         initial_service=initial[aid].get("fixture") and initial[aid].get("status")=="LANDED_SERVICE"
@@ -374,6 +486,14 @@ def audit_replay(bundle_path,output=None):
             issue("LANDING_LEDGER","landed entity lacks matching touchdown event",aircraft_id=aid)
         if a.get("status") not in ("LANDED_SERVICE","CLEARED"):
             issue("LANDING_STATUS","touchdown state has incompatible final status",aircraft_id=aid)
+        if stage2 and not a.get("emergency",{}).get("charged") and float(a["soc"])<.25-1e-7:
+            issue("NORMAL_LANDING_RESERVE","normal touchdown did not retain the physical reserve",aircraft_id=aid)
+        if stage2 and not initial_service:
+            plan=plans.get(a.get("trajectory_hash"))
+            if (plan is None or plan.kind not in ("FINAL_NORMAL","FINAL_EMERGENCY")
+                    or not _near(plan.end_time,a.get("touchdown_time"),1e-7)
+                    or plan.pad_id!=a.get("pad_id")):
+                issue("FABRICATED_TOUCHDOWN","successful touchdown is not the completed authoritative final",aircraft_id=aid)
     if stop_failure:
         if not _near(stop,stop_failure[0],1e-6): issue("FAILURE_STOP_TIME","episode does not stop at its failure event")
         for a in admitted:
@@ -388,20 +508,32 @@ def audit_replay(bundle_path,output=None):
             if not exhausted and not unavailable: issue("UNEXPLAINED_ENERGY_FAILURE","failure has positive usable SOC, peak budget and valid power")
         elif not documented_hard:
             issue("UNEXPLAINED_HARD_FAILURE","hard-failure event has no matching continuously detected physical violation")
-    elif failed: issue("MISSING_FAILURE_EVENT","physical failure state has no stopping event")
+    elif failed and not stage2: issue("MISSING_FAILURE_EVENT","physical failure state has no stopping event")
     counts={"planned_manifest":len(requests),"manifest_offered":len(releases),"unreleased":len(set(requests)-set(releases)),
-        "fixture_count":len(fixtures),"offered":len(releases)+len(fixtures),"admitted":len(admitted),
+        "fixture_count":len(fixtures),"offered":len(releases)+len(fixtures)-len(ground_ids),"admitted":len(admitted),
         "rerouted":sum(a.get("status")=="REROUTED" for a in final.values()),"physically_landed":len(landed),
         "failed_before_landing":len(failed),
         "airborne_or_censored":sum(a.get("status") in AIRBORNE|{"CENSORED_DUE_TO_FAILURE"} for a in admitted),
         "normal_landed":sum(not a.get("emergency",{}).get("charged") for a in landed),
         "emergency_landed":sum(bool(a.get("emergency",{}).get("charged")) for a in landed),
         "landing_below_reserve":sum(float(a["soc"])<.25 for a in landed),
-        "energy_failures":sum(a.get("status")=="ENERGY_FAILURE" for a in final.values()),
+        "energy_failures":len(losses) if stage2 else sum(a.get("status")=="ENERGY_FAILURE" for a in final.values()),
         "censored":sum(a.get("status")=="CENSORED_DUE_TO_FAILURE" for a in final.values())}
     waiting_ids=set(releases)-set(final) if upstream_policy else set()
     if upstream_policy:
         counts.update(upstream_waiting=len(waiting_ids),censored_upstream=len(waiting_ids) if stop_failure else 0)
+    if stage2:
+        if {a["id"] for a in failed}!=set(losses):
+            issue("LOSS_FINAL_LEDGER","retained failed tasks disagree with failure events")
+        first=min((t for t,_ in losses.values()),default=None)
+        before=sum(a["touchdown_time"]<first for a in landed) if first is not None else len(landed)
+        counts.update(initial_airborne_count=len(initial_airborne_ids),initial_ground_count=len(ground_ids),
+            F_energy_total=len(losses),F_battery=sum(reason=="BATTERY_DEPLETED" for _,reason in losses.values()),
+            F_peak=sum(reason=="PEAK_BUDGET_EXHAUSTED" for _,reason in losses.values()),
+            L_success=len(landed),L_normal=counts["normal_landed"],L_emergency=counts["emergency_landed"],
+            N_offered=counts["offered"],N_admitted_total=len(admitted),N_rerouted=counts["rerouted"],
+            N_upstream_pending=len(waiting_ids),N_airborne_pending=counts["airborne_or_censored"],
+            successful_touchdowns_before_first_failure=before,successful_touchdowns_after_first_failure=len(landed)-before)
     equations=(counts["planned_manifest"]==counts["manifest_offered"]+counts["unreleased"],
                counts["offered"]==counts["admitted"]+counts["rerouted"]+len(waiting_ids),
                counts["admitted"]==counts["physically_landed"]+counts["failed_before_landing"]+counts["airborne_or_censored"])
@@ -414,7 +546,7 @@ def audit_replay(bundle_path,output=None):
             issue("METRIC_COUNT","reported count differs from independent manifest/state ledger",metric=key,expected=value,actual=metrics.get(key))
     expected_costs={"cost_reroute":600.*len(reroutes),
         "cost_emergency":sum(FEE.get(ring,0.) for _,ring in emergency_starts.values()),
-        "cost_failure":1000000.*len(failures)}
+        "cost_failure":1000000.*(len(losses) if stage2 else len(failures))}
     if upstream_policy:
         waits=sum((admissions.get(aid,reroutes.get(aid,stop))-release) for aid,release in releases.items())
         expected_costs["cost_upstream_wait"]=waits
@@ -427,14 +559,57 @@ def audit_replay(bundle_path,output=None):
     for key,value in expected_costs.items():
         if not _near(metrics.get(key),value,.05,1e-7):
             issue("METRIC_LEDGER","reported metric differs from independently checked state/event ledger",metric=key,expected=value,actual=metrics.get(key))
+    if stage2:
+        primary=(len(losses),-len(landed),expected_costs["cost_emergency"]+expected_costs["cost_reroute"],
+                 expected_energy,expected_airtime+expected_costs.get("cost_upstream_wait",0.))
+        for key,value in (("C_legacy",expected_costs["total_cost"]),("E_terminal_J",expected_energy),
+                          ("W_unresolved_plus_airborne_seconds",primary[-1])):
+            if not _near(metrics.get(key),value,.05,1e-7):
+                issue("STAGE2_OBJECTIVE_LEDGER","Stage2 objective component differs from executed ledger",metric=key,expected=value)
+        actual=metrics.get("K_episode",())
+        if len(actual)!=5 or not all(_near(a,b,.05,1e-7) for a,b in zip(actual,primary)):
+            issue("STAGE2_PRIMARY_KEY","reliability/throughput lexicographic key disagrees with executed ledger",expected=primary)
+        report["primary_key"]=primary
+        if bool(metrics.get("has_energy_losses"))!=bool(losses) or bool(metrics.get("terminated_invalid"))!=bool(invalid_events):
+            issue("STAGE2_OUTCOME_FLAGS","loss and invalid-run flags disagree with independent event ledger")
+        released_resources=0
+        for aid,record in loss_archive.items():
+            if not isinstance(record,dict): continue
+            lt=losses.get(aid,(math.inf,None))[0]
+            own=record.get("reservations",())
+            n=sum(r.get("end") is None or float(r["end"])>lt for r in own)
+            released_resources+=n
+            isolated=isolations.get(aid)
+            if isolated and isolated[1].get("resources_released")!=n:
+                issue("ISOLATION_RESOURCE_COUNT","released resource count differs from failure-time own reservations",aircraft_id=aid)
+        if metrics.get("failure_resources_released")!=released_resources:
+            issue("ISOLATION_RESOURCE_COUNT","total resource release count differs from permanent failure archive")
+        cohorts={}
+        for name,ids in (("initial_airborne",initial_airborne_ids),
+                         ("new_requests",set(final)-{a["id"] for a in fixtures})):
+            rows=[a for a in admitted if a["id"] in ids]
+            cohorts[name]=dict(admitted=len(rows),success=sum(a.get("touchdown_time") is not None for a in rows),
+                failed=sum(a["id"] in losses for a in rows),airborne_pending=sum(a.get("status") in AIRBORNE for a in rows),
+                upstream_pending=len(waiting_ids) if name=="new_requests" else 0,
+                rerouted=len(reroutes) if name=="new_requests" else 0,
+                airborne_time_s=sum(float(a.get("airborne_time",0)) for a in rows))
+        actual_cohorts=metrics.get("cohorts",{})
+        for name,expected in cohorts.items():
+            actual=actual_cohorts.get(name,{})
+            if any(not _near(actual.get(k),v,1e-6) for k,v in expected.items()):
+                issue("COHORT_LEDGER","initial/new-request cohort statistics disagree with physical identities",cohort=name,expected=expected)
+        report["cohorts"]=cohorts
     for a in admitted:
         charged=bool(a.get("emergency",{}).get("charged"))
         if charged!=(a["id"] in emergency_starts): issue("EMERGENCY_FEE_LEDGER","charged flag differs from actual emergency start ledger",aircraft_id=a["id"])
-    if bool(metrics.get("truncated"))!=bool(stop_failure) or bool(metrics.get("cost_is_lower_bound"))!=bool(stop_failure or waiting_ids):
+    stopped=bool(invalid_events) if stage2 else bool(stop_failure)
+    if bool(metrics.get("truncated"))!=stopped or bool(metrics.get("cost_is_lower_bound"))!=bool(stopped or waiting_ids):
         issue("FAILURE_CENSORING_METRIC","truncation/lower-bound flags do not match actual failure ledger")
     if stop_failure and not _near(metrics.get("first_failure_time"),stop_failure[0],1e-6):
         issue("FAILURE_TIME_METRIC","reported failure time differs from the stopping event")
-    if not stop_failure and metrics.get("first_failure_time") is not None:
+    if stage2 and losses and not _near(metrics.get("first_failure_time"),min(t for t,_ in losses.values()),1e-7):
+        issue("FAILURE_TIME_METRIC","reported first task loss time differs from isolated event ledger")
+    if not stop_failure and not (stage2 and losses) and metrics.get("first_failure_time") is not None:
         issue("FAILURE_TIME_METRIC","nonfailed episode reports a failure time")
     report["counts"]=counts;report["derived_costs"]=expected_costs
     report["initial_fixture_baselines"]=[{"aircraft_id":aid,"energy_j":a.get("energy_j",0),
@@ -443,6 +618,10 @@ def audit_replay(bundle_path,output=None):
     if not stop_failure:
         ongoing=counts["unreleased"] or waiting_ids or any(a.get("status") in PHYSICAL for a in admitted)
         report["physical_outcome"]="IN_PROGRESS" if ongoing else "COMPLETE"
+    if stage2 and losses:
+        report["physical_outcome"]="ENERGY_LOSSES_CONTINUED"
+    if stage2 and invalid_events:
+        report["physical_outcome"]="INVALID_RUN"
     separation_errors=("SEPARATION_UNKNOWN","UNREPORTED_HARD_SEPARATION","LATE_HARD_FAILURE","UNEXPLAINED_HARD_FAILURE")
     report["continuous_separation"]="FAILED" if any(i["code"] in separation_errors for i in report["issues"]) else "DOCUMENTED_HARD_FAILURE" if documented_hard else "CERTIFIED"
     report["status"]="PASS" if report["issue_count"]==0 else "FAIL"

@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field, replace
 from collections import OrderedDict
 from itertools import combinations
 from types import MappingProxyType
+from hashlib import sha256
 import math
 import json
 from pathlib import Path
@@ -27,6 +28,79 @@ AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M"
 HOLD = {"outer": "HOLD_OUTER", "middle": "HOLD_MIDDLE", "inner": "HOLD_INNER"}
 SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
 POLICY_ID = "upstream_capacity_only_pad_arrival_v1_20261018"
+STAGE2_POLICY_ID = "rs_s2_loss_continue_throughput_v1_0"
+
+
+def emergency_threshold(soc, q_e, qhold):
+    """The shared public emergency predicate, without declaring an emergency."""
+    return soc <= .35 or (q_e is not None and soc-q_e-qhold <= .25)
+
+
+@dataclass(frozen=True)
+class PlanningSnapshot:
+    """Revealed immutable planning input; deliberately contains no manifest/world."""
+    time: float
+    version: str
+    config: object
+    aircraft: object
+    active: object
+    soft: object
+    requests: object
+    slots: tuple
+    pads: tuple
+    dependencies: object
+    source_clear: object
+    trajectories: object
+    energy_ledger: object
+    emergency_monitor: object = None
+
+
+@dataclass(frozen=True)
+class SubmissionEvaluation:
+    accepted: bool
+    status: str
+    reason: str
+    details: object
+    time: float
+    snapshot_version: str
+    plans: tuple
+    cancel: tuple
+    refinement_required: bool = False
+    _prepared: object = field(default=None, repr=False, compare=False)
+
+
+def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
+    """Certify prefixes in a detached visible-state projection, without execution.
+
+    This copies only the finite scheduling input and numerical ledger. It never
+    clones a world, possesses demand history, or runs an execution branch.
+    """
+    context = object.__new__(RotatingSlotWorld)
+    context.config, context.time = snapshot.config, snapshot.time
+    context.aircraft = dict(snapshot.aircraft)
+    context.active, context.soft = dict(snapshot.active), dict(snapshot.soft)
+    context.dependencies, context._source_clear = dict(snapshot.dependencies), dict(snapshot.source_clear)
+    context.slots, context.pads = SlotCalendar(), PadCalendar()
+    context.slots._entries, context.pads._entries = list(snapshot.slots), list(snapshot.pads)
+    context.trajectories = {h: thaw(v) for h,v in snapshot.trajectories.items()}
+    context._targeted_energy = thaw(snapshot.energy_ledger)
+    context.failed, context.events, context.rejections = False, [], []
+    context.cache_enabled, context.cache_hits = True, 0
+    context._energy_cache, context._q_cache = OrderedDict(), OrderedDict()
+    context._reference_templates = {}
+    context._last_reference_fallback = None
+    context.reference_counts = dict(initial_search=0, fallback_search=0, template_instantiation=0)
+    context.cpu = {k: 0. for k in ("energy", "validation", "reference_template_search", "reference_fallback_search")}
+    plans, cancel = tuple(plans), tuple(cancel)
+    prepared = context._prepare_submission(plans, cancel=cancel)
+    if isinstance(prepared, ValidationResult):
+        result, prepared = prepared, None
+    else:
+        result = context._result(True)
+    refined = (context.aircraft != dict(snapshot.aircraft)
+               or freeze(context._targeted_energy["executed"]) != snapshot.energy_ledger["executed"])
+    return SubmissionEvaluation(result.accepted, result.status, result.reason, freeze(result.details),
+                                snapshot.time, snapshot.version, plans, cancel, refined, prepared)
 
 
 class EmergencyDependencyConflict(RuntimeError):
@@ -110,7 +184,7 @@ class WorldSnapshot:
                 "requests": [r.to_dict() for r in self.requests],
                 "slots": [r.to_dict() for r in self.slots], "pads": [r.to_dict() for r in self.pads],
                 "metrics": thaw(self.metrics), "failed": self.failed,
-                "policy_id": POLICY_ID, "upstream": thaw(self.upstream)}
+                "policy_id": self.metrics.get("experiment_policy_id", POLICY_ID), "upstream": thaw(self.upstream)}
 
 
 class _Traffic:
@@ -179,6 +253,18 @@ class SchedulerPort:
     def snapshot(self):
         return self.__world.snapshot()
 
+    def build_planning_snapshot(self):
+        return self.__world.build_planning_snapshot()
+
+    def evaluate_submission(self, plans, *, cancel=(), snapshot=None):
+        return self.__world.evaluate_submission(plans, cancel=cancel, snapshot=snapshot)
+
+    def commit_validated_prefix(self, result, snapshot_version=None):
+        return self.__world.commit_validated_prefix(result, snapshot_version)
+
+    def refine_planning_boundary(self):
+        return self.__world.refine_planning_boundary()
+
     def metrics(self):
         return freeze(self.__world._scheduler_metrics())
 
@@ -207,8 +293,21 @@ class RotatingSlotWorld:
     REFERENCE_PHASE_BINS = 24
 
     def __init__(self, config=None, manifest=None, physics_dt=.2, scheduler_period=5., cache_enabled=True,
-                 state_sink=None, practical_runtime=True, reference_cache_path=None):
+                 state_sink=None, practical_runtime=True, reference_cache_path=None, experiment_policy_id=None):
         self.config = config or load_config()
+        if experiment_policy_id not in (None, STAGE2_POLICY_ID):
+            raise ValueError("unsupported experiment_policy_id")
+        if experiment_policy_id is not None:
+            self.experiment_policy_id = experiment_policy_id
+            self.has_energy_losses = False
+            self.terminated_invalid = False
+            self.failure_archive = {}
+            self.failure_resources_released = 0
+            self.dispatch_timings = []
+            self.admission_callback = None
+            self._pending_dispatch = False
+            self._refinement_time = None
+            self._monitor_timing_pending = (0., 0.)
         if not 0 < physics_dt <= .2 or scheduler_period <= 0:
             raise ValueError("physics_dt must be in (0,.2], scheduler_period positive")
         self.manifest = manifest or ArrivalManifest()
@@ -570,6 +669,65 @@ class RotatingSlotWorld:
     def snapshot(self):
         return self._snapshot(self._scheduler_metrics())
 
+    def _stage2_enabled(self):
+        return getattr(self, "experiment_policy_id", None) == STAGE2_POLICY_ID
+
+    def build_planning_snapshot(self):
+        ledger = freeze(self._energy_state())
+        runtime=getattr(self,"_practical_runtime",{})
+        emergency_monitor=freeze(dict(enabled=bool(runtime.get("enabled",False)),
+            soc_threshold=runtime.get("soc_threshold",.35),
+            imminent=dict(runtime.get("imminent",{})),monitor=dict(runtime.get("monitor",{}))))
+        needed = {a.trajectory_hash for a in self.aircraft.values() if a.status in AIRBORNE}
+        needed.update(p.trajectory_hash for p in (*self.active.values(), *self.soft.values()))
+        needed.update(r["trajectory_hash"] for rows in self._energy_state()["executed"].values() for r in rows)
+        trajectories = freeze({h: self.trajectories[h] for h in sorted(needed) if h in self.trajectories})
+        fields = (self.time, tuple(sorted(self.aircraft.items())), tuple(sorted(self.active.items())),
+                  tuple(sorted(self.soft.items())), self.slots.reservations, self.pads.reservations,
+                  tuple(sorted(self.dependencies.items())), tuple(sorted(self._source_clear.items())),
+                  tuple(sorted(self.requests.items())), thaw(ledger), self.failed, thaw(emergency_monitor))
+        version = sha256(repr(fields).encode()).hexdigest()
+        return PlanningSnapshot(self.time, version, self.config,
+            MappingProxyType(dict(self.aircraft)), MappingProxyType(dict(self.active)),
+            MappingProxyType(dict(self.soft)), MappingProxyType(dict(self.requests)),
+            self.slots.reservations, self.pads.reservations, freeze(self.dependencies),
+            freeze(self._source_clear), trajectories, ledger, emergency_monitor)
+
+    def evaluate_submission(self, plans, *, cancel=(), snapshot=None):
+        return evaluate_planning_snapshot(snapshot or self.build_planning_snapshot(), plans, cancel=cancel)
+
+    def refine_planning_boundary(self):
+        """One uniform executed-ledger refinement per decision timestamp."""
+        if getattr(self, "_refinement_time", None) != self.time:
+            for key,a in tuple(self.aircraft.items()):
+                if a.status in AIRBORNE:
+                    self._refine_executed_energy(key)
+            if self._stage2_enabled():
+                self._refinement_time = self.time
+        return self.build_planning_snapshot()
+
+    def commit_validated_prefix(self, result, snapshot_version=None):
+        if not isinstance(result, SubmissionEvaluation):
+            raise TypeError("SubmissionEvaluation required")
+        version = result.snapshot_version if snapshot_version is None else snapshot_version
+        if self.failed:
+            return self._reject("EPISODE_STOPPED")
+        if (result.time != self.time or result.snapshot_version != version
+                or self.build_planning_snapshot().version != version):
+            return self._reject("STALE_PLANNING_SNAPSHOT")
+        if not result.accepted:
+            return self._reject(result.reason, **thaw(result.details))
+        if result.refinement_required:
+            return self._reject("UNIFORM_REFINEMENT_REQUIRED")
+        # Revalidate the public result rather than trusting its opaque payload;
+        # callers cannot manufacture a bypass by constructing this dataclass.
+        checked = evaluate_planning_snapshot(self.build_planning_snapshot(), result.plans, cancel=result.cancel)
+        if not checked.accepted:
+            return self._reject(checked.reason, **thaw(checked.details))
+        if checked.refinement_required:
+            return self._reject("UNIFORM_REFINEMENT_REQUIRED")
+        return self._commit_submission(checked.plans, checked._prepared)
+
     def _snapshot(self,metrics):
         return WorldSnapshot(self.time, tuple(self.aircraft[k] for k in sorted(self.aircraft)),
                              tuple(self.requests[k] for k in sorted(self.requests)), self.slots.reservations,
@@ -684,6 +842,9 @@ class RotatingSlotWorld:
                     pads.reserve(p.pad_id, a.id, start, p.end_time + SERVICE_SECONDS[a.service_class],
                                  kind="emergency" if p.kind == "FINAL_EMERGENCY" else "final",
                                  plan_hash=p.trajectory_hash, committed=p is current)
+        isolated = {a.id for a in self.aircraft.values() if a.status == "ENERGY_MISSION_FAILED"}
+        for before, after in ((self.slots, slots), (self.pads, pads)):
+            after._entries.extend(r for r in before.reservations if r.aircraft_id in isolated)
         return slots, pads, times
 
     def _future_support_witness(self, plan):
@@ -714,7 +875,7 @@ class RotatingSlotWorld:
             hold = make_stable_plan("reference_hold", plan.source_ring, plan.source_slot,
                                    start_time=t, end_time=t+10, config=self.config)
             qhold = self._energy(hold, t, t+10).soc_used
-            if soc <= .35 or (q is not None and soc-q-qhold <= .25):
+            if emergency_threshold(soc, q, qhold):
                 if self._runtime_enabled():
                     self._practical_runtime["imminent"][a.id] = dict(time=t,
                         ring=plan.source_ring, slot=plan.source_slot, version=plan.source_version)
@@ -769,6 +930,19 @@ class RotatingSlotWorld:
             self._event("decision_late", latency=simulated_latency)
         if self.failed:
             return self._reject("EPISODE_STOPPED")
+        if self._stage2_enabled():
+            result = self.evaluate_submission(plans, cancel=cancel)
+            if result.refinement_required:
+                snapshot = self.refine_planning_boundary()
+                result = self.evaluate_submission(plans, cancel=cancel, snapshot=snapshot)
+            return self.commit_validated_prefix(result)
+        plans = tuple(plans)
+        prepared = self._prepare_submission(plans, cancel=cancel)
+        if isinstance(prepared, ValidationResult):
+            return prepared
+        return self._commit_submission(tuple(plans), prepared)
+
+    def _prepare_submission(self, plans, *, cancel=()):
         plans = tuple(plans)
         ids = [p.aircraft_id for p in plans]
         if len(ids) != len(set(ids)):
@@ -901,6 +1075,12 @@ class RotatingSlotWorld:
         witness = self._future_dependency_witness(binding, soft, slots)
         if witness is not None:
             return self._reject("FUTURE_EMERGENCY_DISPOSITION", **witness)
+        return (soft, slots, pads, times, redirects, dict(self._energy_state()["fine_plans"]))
+
+    def _commit_submission(self, plans, prepared):
+        soft, slots, pads, times, redirects, fine_plans = prepared
+        self._energy_state()["fine_plans"].update(fine_plans)
+        ids = [p.aircraft_id for p in plans]
         removed = [old for key,old in self.soft.items() if key not in soft or soft[key].trajectory_hash != old.trajectory_hash]
         self.soft, self.slots, self.pads, self._source_clear = soft, slots, pads, times
         for old in removed:
@@ -1002,6 +1182,10 @@ class RotatingSlotWorld:
                         dependencies=sorted(deps), **start_details)
 
     def _fail(self, aircraft_id, reason):
+        if self._stage2_enabled():
+            self.failed, self.terminated_invalid = True, True
+            self._event("invalid_run_stopped", aircraft_id, reason=reason)
+            return
         self.failed, self.failure_time = True, self.time
         self.costs["failure"] += 1000000.
         for key, a in tuple(self.aircraft.items()):
@@ -1013,6 +1197,41 @@ class RotatingSlotWorld:
         self._event(reason, aircraft_id, p=a.p, soc=a.soc)
         self._event("episode_stopped", unreleased=len(self.manifest.requests)-self._manifest_index)
 
+    def _isolate_energy_failures(self, failures):
+        """Apply the explicitly opted-in Stage2 task-loss abstraction atomically."""
+        for key, reason in failures:
+            if key in self.failure_archive:
+                continue
+            a = self.aircraft[key]
+            own_active, own_soft = self.active.pop(key, None), self.soft.pop(key, None)
+            hashes = {p.trajectory_hash for p in (own_active, own_soft) if p is not None}
+            reservations = tuple(r for r in (*self.slots.reservations, *self.pads.reservations)
+                                 if r.aircraft_id == key)
+            self.failure_archive[key] = dict(time=self.time, reason=reason, last_state=a.to_dict(),
+                active=None if own_active is None else own_active.to_dict(),
+                soft=None if own_soft is None else own_soft.to_dict(),
+                reservations=[r.to_dict() for r in reservations])
+            released = self.slots.isolate(key, self.time)+self.pads.isolate(key, self.time)
+            self.failure_resources_released += released
+            self.dependencies = {h: tuple(d for d in ds if d not in hashes)
+                                 for h, ds in self.dependencies.items() if h not in hashes}
+            self._source_clear = {h:v for h,v in self._source_clear.items() if h not in hashes}
+            self.aircraft[key] = replace(a, status="ENERGY_MISSION_FAILED",
+                soc=0. if reason == "BATTERY_DEPLETED" else max(0.,a.soc), battery_power_w=0.)
+            self.costs["failure"] += 1000000.
+            self.has_energy_losses = True
+            if self.failure_time is None:
+                self.failure_time = self.time
+            self._event("aircraft_energy_failure", key, reason=reason)
+            self._event("failure_isolated", key, reason=reason, resources_released=released)
+        self._pending_dispatch = True
+        try:
+            slots, pads, times = self._calendar_stage(self.soft, ())
+            self.slots, self.pads, self._source_clear = slots, pads, times
+        except (ValueError, KeyError) as exc:
+            self._fail(None, "POST_FAILURE_RECOVERY_ERROR")
+            raise RuntimeError("POST_FAILURE_RECOVERY_ERROR: "+str(exc)) from exc
+
     @staticmethod
     def _descent_start(plan):
         """Use the executed final's serialized phase junction."""
@@ -1023,6 +1242,10 @@ class RotatingSlotWorld:
     def _advance_energy(self, end):
         initial, duration = self.time, end-self.time
         results, fail_at = {}, None
+        failures = ()
+        if self._stage2_enabled():
+            end, failures = self._energy_failure_events(end)
+            duration = end-initial
         for a in tuple(self.aircraft.values()):
             if a.status not in AIRBORNE:
                 continue
@@ -1035,7 +1258,7 @@ class RotatingSlotWorld:
                 self._budget_energy(a.id,portions,reserve=any(part.kind == "FINAL_NORMAL" for part,_,_ in portions))
             a = self.aircraft[a.id]
             result = self._energy(p, initial, end)
-            if not result.valid or a.soc - result.soc_used <= 0 or a.peak_seconds + result.peak_seconds > 120:
+            if not self._stage2_enabled() and (not result.valid or a.soc - result.soc_used <= 0 or a.peak_seconds + result.peak_seconds > 120):
                 lo, hi = initial, end
                 for _ in range(35):
                     mid = (lo+hi)/2
@@ -1088,9 +1311,65 @@ class RotatingSlotWorld:
             self._record_energy_charge(key,p,initial,end,q)
         if fail_at:
             self._fail(fail_at[1], "ENERGY_FAILURE")
+        if failures:
+            self._isolate_energy_failures(failures)
+
+    def _energy_failure_events(self, end):
+        """Locate the first physical loss before checking later traffic geometry."""
+        initial, events = self.time, []
+        for a in tuple(self.aircraft.values()):
+            if a.status not in AIRBORNE:
+                continue
+            if not all(math.isfinite(x) for x in (a.soc,a.energy_j,a.peak_seconds,*a.p,*a.v,*a.a)):
+                raise RuntimeError("INVALID_PHYSICAL_STATE: "+a.id)
+            plan = self._base(a)
+            portions = self._execution_energy_portions(a,plan,end)
+            budget = self._budget_energy(a.id,portions,reserve=any(p.kind == "FINAL_NORMAL" for p,_,_ in portions))
+            if any(not q.valid for q in budget):
+                raise RuntimeError("ENERGY_MODEL_INVALID: "+a.id+": "+next(q.reason for q in budget if not q.valid))
+            a = self.aircraft[a.id]
+            total = self._energy(plan,initial,end)
+            if not total.valid or not all(math.isfinite(x) for x in (total.joules,total.soc_used,total.peak_seconds)):
+                raise RuntimeError("ENERGY_MODEL_INVALID: "+a.id+": "+total.reason)
+            for reason, exhausted in (
+                    ("BATTERY_DEPLETED", lambda q: a.soc-q.soc_used <= 0),
+                    ("PEAK_BUDGET_EXHAUSTED", lambda q: a.peak_seconds+q.peak_seconds > 120)):
+                if not exhausted(total):
+                    continue
+                lo, hi = initial, end
+                if exhausted(self._energy(plan,initial,initial)):
+                    hi = initial
+                else:
+                    for _ in range(40):
+                        mid = (lo+hi)/2
+                        q = self._energy(plan,initial,mid)
+                        if not q.valid:
+                            raise RuntimeError("ENERGY_MODEL_INVALID: "+a.id+": "+q.reason)
+                        if exhausted(q):
+                            hi = mid
+                        else:
+                            lo = mid
+                events.append((hi,a.id,reason))
+        if not events:
+            return end, ()
+        first = min(t for t,_,_ in events)
+        simultaneous = {}
+        for t,key,reason in sorted(events):
+            if abs(t-first) <= 1e-8:
+                simultaneous.setdefault(key,reason)
+        return first, tuple(sorted(simultaneous.items()))
 
     def _check_execution(self, end):
         """Check the full physical interval, with exact stable structural proofs."""
+        if self._stage2_enabled():
+            for key, a in self.aircraft.items():
+                if a.status not in AIRBORNE:
+                    continue
+                plan = self._base(a)
+                state = plan.state(self.time)
+                if ((key in self.active and a.trajectory_hash != plan.trajectory_hash)
+                        or math.dist(a.p,state.p) > 1e-7 or math.dist(a.v,state.v) > 1e-7):
+                    raise RuntimeError("AUTHORITATIVE_TRAJECTORY_MISMATCH: "+key)
         bodies = [a for a in self.aircraft.values() if a.status in AIRBORNE or a.status == "LANDED_SERVICE"]
         if len(bodies) < 2:
             return
@@ -1347,7 +1626,7 @@ class RotatingSlotWorld:
                 q = self._monitor_reference(ring, slot, t, a.version, soc, qhold)
             else:
                 q, _ = self._reference(ring, slot, t, a.version)
-            alert = soc <= .35 or (q is not None and soc-q-qhold <= .25)
+            alert = emergency_threshold(soc, q, qhold)
             old = a.emergency
             e = replace(old, q_e=q, reference_missing=q is None)
             if q is None and not old.reference_missing:
@@ -1425,13 +1704,46 @@ class RotatingSlotWorld:
         """Legacy hook retained for callers; the old departure-time proof is invalid."""
         return None
 
-    def advance(self, until, decision_callback=None):
+    def advance(self, until, decision_callback=None, *, settle_only_at_end=None):
+        if settle_only_at_end is None:
+            settle_only_at_end = self._stage2_enabled()
+        try:
+            return self._advance(until, decision_callback, settle_only_at_end=settle_only_at_end)
+        except (RuntimeError, ValueError, ArithmeticError) as exc:
+            if self._stage2_enabled() and not self.terminated_invalid:
+                self._fail(None, str(exc))
+            raise
+
+    def _advance(self, until, decision_callback=None, *, settle_only_at_end=False):
         if until < self.time:
             raise ValueError("time cannot run backward")
         callback = self.decision_callback if decision_callback is None else decision_callback
         while not self.failed:
             triggers = self._settle()
+            if settle_only_at_end and 0. < until-self.time <= 1e-9:
+                # Finish a positive roundoff-sized physical interval before
+                # settling the requested boundary. It is not a fresh dispatch.
+                if self._stage2_enabled():
+                    self._pending_dispatch = self._pending_dispatch or triggers
+                next_time = until
+                if self._stage2_enabled():
+                    next_time, _ = self._energy_failure_events(next_time)
+                self._check_execution(next_time)
+                if not self.failed:
+                    self._advance_energy(next_time)
+                self._record()
+                continue
+            if settle_only_at_end and self.time >= until:
+                if self._stage2_enabled():
+                    self._pending_dispatch = self._pending_dispatch or triggers
+                break
+            monitor_wall, monitor_cpu = walltime.perf_counter(), walltime.process_time()
             triggers = self._update_emergency() or triggers
+            monitor_wall, monitor_cpu = walltime.perf_counter()-monitor_wall, walltime.process_time()-monitor_cpu
+            if self._stage2_enabled():
+                pending_wall, pending_cpu = self._monitor_timing_pending
+                self._monitor_timing_pending = pending_wall+monitor_wall, pending_cpu+monitor_cpu
+                triggers = self._pending_dispatch or triggers
             heartbeat = self._next_heartbeat <= self.time+1e-8
             if heartbeat:
                 self._next_heartbeat = (math.floor((self.time+1e-8)/self.scheduler_period)+1)*self.scheduler_period
@@ -1440,11 +1752,34 @@ class RotatingSlotWorld:
                 self.decision_times.append(self.time)
                 self._record(force=True)
                 cpu = walltime.perf_counter()
+                process_cpu = walltime.process_time()
+                emergency_wall, emergency_cpu = walltime.perf_counter(), walltime.process_time()
                 if self.auto_emergency:
                     self.handle_emergencies()
+                emergency_wall = walltime.perf_counter()-emergency_wall
+                emergency_cpu = walltime.process_time()-emergency_cpu
+                admission_wall, admission_cpu = walltime.perf_counter(), walltime.process_time()
+                admission = getattr(self,"admission_callback",None)
+                if admission:
+                    admission(self.snapshot(), self._scheduler_port)
+                admission_wall = walltime.perf_counter()-admission_wall
+                admission_cpu = walltime.process_time()-admission_cpu
+                normal_wall, normal_cpu = walltime.perf_counter(), walltime.process_time()
                 if callback and callback is not False:
                     callback(self.snapshot(), self._scheduler_port)
                 self._start_due()
+                normal_wall = walltime.perf_counter()-normal_wall
+                normal_cpu = walltime.process_time()-normal_cpu
+                if self._stage2_enabled():
+                    mw, mc = self._monitor_timing_pending
+                    self.dispatch_timings.append(dict(time=self.time,
+                        emergency_wall_s=mw+emergency_wall, emergency_cpu_s=mc+emergency_cpu,
+                        admission_wall_s=admission_wall, admission_cpu_s=admission_cpu,
+                        normal_wall_s=normal_wall, normal_cpu_s=normal_cpu,
+                        dispatch_wall_s=mw+walltime.perf_counter()-cpu,
+                        dispatch_cpu_s=mc+walltime.process_time()-process_cpu))
+                    self._monitor_timing_pending = (0.,0.)
+                    self._pending_dispatch = False
                 self.cpu["decision"] += walltime.perf_counter()-cpu
                 self._record(force=True)
             descent_starts = [self._descent_start(p) for p in self.active.values()]
@@ -1468,6 +1803,8 @@ class RotatingSlotWorld:
             next_times.extend(a.service_end for a in self.aircraft.values() if a.status == "LANDED_SERVICE" and a.service_end > self.time+1e-8)
             next_times.extend(x[0] for x in self._source_clear.values() if x[0] > self.time+1e-8)
             next_time = min(next_times)
+            if self._stage2_enabled():
+                next_time, _ = self._energy_failure_events(next_time)
             self._check_execution(next_time)
             if not self.failed:
                 self._advance_energy(next_time)
@@ -1677,7 +2014,7 @@ class RotatingSlotWorld:
         emergency = len(landed)-normal
         upstream = self._upstream_rows()
         wait = sum(a.upstream_wait_seconds for a in values)+sum(r["wait_seconds"] for r in upstream)
-        return {"policy_id": POLICY_ID, "planned_manifest": len(self.manifest.requests), "offered": offered,
+        result = {"policy_id": POLICY_ID, "planned_manifest": len(self.manifest.requests), "offered": offered,
                 "manifest_offered": self._manifest_index, "fixture_count": sum(a.fixture for a in values),
                 "unreleased": len(self.manifest.requests)-self._manifest_index,
                 "admitted": len(admitted), "rerouted": rerouted, "physically_landed": len(landed),
@@ -1706,6 +2043,55 @@ class RotatingSlotWorld:
                 "first_failure_time": self.failure_time,
                 "minimum_separation": self.minimum_separation,
                 "conservation": offered == len(admitted)+rerouted+len(upstream) and len(admitted) == len(landed)+len(failed)+airborne}
+        if self._stage2_enabled():
+            result.update(self._stage2_metrics(values, upstream))
+        return result
+
+    def _stage2_metrics(self, values, upstream):
+        ground = {a.id for a in values if a.fixture and a.touchdown_time == 0. and a.airborne_time == 0.}
+        initial = {a.id for a in values if a.fixture and a.id not in ground}
+        admitted = [a for a in values if a.admitted and a.id not in ground]
+        landed = [a for a in admitted if a.touchdown_time is not None]
+        pending = [a for a in admitted if a.status in AIRBORNE]
+        failures = len(self.failure_archive)
+        rerouted = sum(a.status == "REROUTED" for a in values)
+        normal = sum(not a.emergency.charged for a in landed)
+        offered = len(initial)+self._manifest_index
+        before = sum(a.touchdown_time < self.failure_time for a in landed) if self.failure_time is not None else len(landed)
+        cohorts = {}
+        for name, ids in (("initial_airborne", initial), ("new_requests", {a.id for a in values if not a.fixture})):
+            rows = [a for a in admitted if a.id in ids]
+            cohorts[name] = dict(admitted=len(rows), success=sum(a.touchdown_time is not None for a in rows),
+                failed=sum(a.id in self.failure_archive for a in rows),
+                airborne_pending=sum(a.status in AIRBORNE for a in rows),
+                upstream_pending=len(upstream) if name == "new_requests" else 0,
+                rerouted=rerouted if name == "new_requests" else 0,
+                airborne_time_s=sum(a.airborne_time for a in rows))
+        key = (failures, -len(landed), self.costs["emergency"]+self.costs["reroute"],
+               sum(a.energy_j for a in values), sum(a.airborne_time for a in values)
+               +sum(a.upstream_wait_seconds for a in values)+sum(r["wait_seconds"] for r in upstream))
+        return dict(policy_id=STAGE2_POLICY_ID, base_policy_id=POLICY_ID,
+            experiment_policy_id=STAGE2_POLICY_ID, post_failure_model="abstract_isolation_no_cascade",
+            has_energy_losses=self.has_energy_losses, terminated_invalid=self.terminated_invalid,
+            initial_airborne_count=len(initial), initial_ground_count=len(ground),
+            offered=offered, admitted=len(admitted), physically_landed=len(landed),
+            normal_landed=normal, emergency_landed=len(landed)-normal,
+            landing_below_reserve=sum(a.soc < .25 for a in landed),
+            energy_failures=failures, failed_before_landing=failures,
+            F_energy_total=failures,
+            F_battery=sum(r["reason"] == "BATTERY_DEPLETED" for r in self.failure_archive.values()),
+            F_peak=sum(r["reason"] == "PEAK_BUDGET_EXHAUSTED" for r in self.failure_archive.values()),
+            L_success=len(landed), L_normal=normal, L_emergency=len(landed)-normal,
+            N_offered=offered, N_admitted_total=len(admitted), N_rerouted=rerouted,
+            N_upstream_pending=len(upstream), N_airborne_pending=len(pending),
+            emergency_unresolved=sum(a.emergency.declared and a.status in AIRBORNE for a in admitted),
+            airborne_or_censored=len(pending), successful_touchdowns_before_first_failure=before,
+            successful_touchdowns_after_first_failure=len(landed)-before,
+            failure_resources_released=self.failure_resources_released,
+            cohorts=cohorts, K_episode=key, E_terminal_J=key[-2], W_unresolved_plus_airborne_seconds=key[-1],
+            C_legacy=sum(self.costs.values())+key[-1],
+            conservation=(offered == len(admitted)+rerouted+len(upstream)
+                          and len(admitted) == len(landed)+failures+len(pending)))
 
     def to_dict(self):
         self._record(force=True)
@@ -1733,4 +2119,9 @@ class RotatingSlotWorld:
             result["states_complete"] = path is not None
             if path is not None:
                 result["states_jsonl"] = str(path)
+        if self._stage2_enabled():
+            result.update(policy_id=STAGE2_POLICY_ID, base_policy_id=POLICY_ID, experiment_policy_id=STAGE2_POLICY_ID,
+                          post_failure_model="abstract_isolation_no_cascade",
+                          failure_archive=dict(self.failure_archive), dispatch_timings=list(self.dispatch_timings),
+                          has_energy_losses=self.has_energy_losses, terminated_invalid=self.terminated_invalid)
         return result

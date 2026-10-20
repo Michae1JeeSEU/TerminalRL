@@ -129,6 +129,64 @@ def test_unknown_world_field_type_and_callback_fail_closed():
         checkpoint(RotatingSlotWorld(), lambda *_: None)
 
 
+class _LegacyObservationWorld:
+    """An isolated old-style executor with no private implementation method."""
+    def advance(self, until, decision_callback=None):
+        callback = decision_callback
+        while self.time < until:
+            self.time = min(until, self.time + .2)
+            self._record()
+        return self.snapshot()
+
+    def __init__(self):
+        self.time = 0.
+        self.records = []
+
+    def _record(self):
+        self.records.append(self.time)
+
+    def snapshot(self):
+        return self.time
+
+
+def test_observation_accepts_legacy_loop_without_private_advance():
+    observed = make_observed_advance(_LegacyObservationWorld)
+    world = _LegacyObservationWorld()
+    assert not hasattr(_LegacyObservationWorld,"_advance")
+    assert observed.run(world,.4) == .4
+    assert world.records == [.2,.4]
+    assert observed.function.__name__ == "advance"
+
+
+def test_observation_selects_exact_wrapper_implementation_and_retains_single_star():
+    import inspect
+    import textwrap
+    observed = make_observed_advance(RotatingSlotWorld)
+    assert observed.original_source == textwrap.dedent(inspect.getsource(RotatingSlotWorld._advance))
+    assert observed.function.__name__ == "_advance"
+    assert observed.generated_source.splitlines()[0].count("*") == 1
+    assert inspect.signature(observed.function).parameters["settle_only_at_end"].default is False
+
+
+@pytest.mark.parametrize("change",["unknown_wrapper","changed_default","extra_keyword"])
+def test_observation_rejects_unknown_wrapper_or_private_signature(monkeypatch,change):
+    import inspect
+    getsource = inspect.getsource
+    def changed(function):
+        source = getsource(function)
+        if change=="unknown_wrapper" and function is RotatingSlotWorld.advance:
+            return source.replace("return self._advance(","return self.other_advance(")
+        if function is RotatingSlotWorld._advance:
+            if change=="changed_default":
+                return source.replace("settle_only_at_end=False", "settle_only_at_end=True")
+            if change=="extra_keyword":
+                return source.replace("settle_only_at_end=False", "settle_only_at_end=False, extra=None")
+        return source
+    monkeypatch.setattr(inspect,"getsource",changed)
+    with pytest.raises(CheckpointError,match="unrecognized advance control flow|unexpected advance signature"):
+        make_observed_advance(RotatingSlotWorld)
+
+
 @pytest.mark.parametrize("phase", ["loop_start", "returned"])
 def test_E02_E03_E05_A07_observation_suspend_resume_same_events(phase):
     plain = small_event_world(); plain.advance(1., False)

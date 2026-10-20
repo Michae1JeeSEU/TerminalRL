@@ -165,6 +165,17 @@ class ReplayBundle:
                 continue
             rows = source.get(name, [])
             payloads[name + ".jsonl"] = b"".join(_json(row) + b"\n" for row in rows)
+        # Stage2 additions are separate, content-hashed members. Predictions
+        # never enter the authoritative trajectory archive or active calendar.
+        stage2 = source.get("metrics", {}).get("experiment_policy_id") == "rs_s2_loss_continue_throughput_v1_0"
+        stage2 = stage2 or source.get("experiment_policy_id") == "rs_s2_loss_continue_throughput_v1_0"
+        if stage2:
+            for name in ("decisions", "dispatch_timings"):
+                payloads[name+".jsonl"] = b"".join(_json(row)+b"\n" for row in source.get(name, ()))
+            for name in ("failure_archive", "tentative_predictions", "stage2_provenance"):
+                payloads[name+".json"] = _json(source.get(name, {} if name != "tentative_predictions" else []))
+            payloads["visual_acceptance.json"] = _json({"researcher_visual_acceptance":"HUMAN_PENDING",
+                "observer":None,"observed_at":None,"observations":[],"visualization_integration_status":"NOT_OBSERVED"})
         for name, content in payloads.items():
             (root / name).write_bytes(content)
         hashes = {name: sha256(content).hexdigest() for name, content in payloads.items()}
@@ -182,6 +193,9 @@ class ReplayBundle:
                  "screenshots": [], "human_acceptance": "PENDING"}
         if "states_count" in source:
             index["states_count"] = int(source["states_count"])
+        if stage2:
+            index.update(experiment_policy_id="rs_s2_loss_continue_throughput_v1_0",human_acceptance="HUMAN_PENDING",
+                         prediction_authority="TENTATIVE_ONLY")
         (root / "replay.json").write_bytes(_json(index))
         if eager is True or eager is None and not streamed:
             return cls.load(root)
@@ -196,6 +210,9 @@ class ReplayBundle:
             raise ValueError("unsupported replay schema; legacy replay is not imported")
         required = {"config.yaml", "manifest.json", "trajectories.json", "states.jsonl", "events.jsonl",
                     "metrics.json", "assertions.json", "visual_acceptance.json", "rejections.jsonl"}
+        if index.get("experiment_policy_id") == "rs_s2_loss_continue_throughput_v1_0":
+            required.update(("decisions.jsonl","dispatch_timings.jsonl","failure_archive.json",
+                             "tentative_predictions.json","stage2_provenance.json"))
         if not required <= index.get("files", {}).keys():
             raise ValueError("replay is missing required members")
         for name, expected in index["files"].items():
@@ -245,6 +262,11 @@ class ReplayBundle:
         index = json.loads((root / "replay.json").read_bytes())
         if index.get("schema") != "FT-RS-S1-1.0-ReplayBundle":
             raise ValueError("unsupported replay schema; legacy replay is not imported")
+        if index.get("experiment_policy_id") == "rs_s2_loss_continue_throughput_v1_0":
+            required={"decisions.jsonl","dispatch_timings.jsonl","failure_archive.json",
+                      "tentative_predictions.json","stage2_provenance.json"}
+            if not required <= index.get("files",{}).keys():
+                raise ValueError("Stage2 replay is missing required members")
         payloads = {}
         for name, expected in index["files"].items():
             if Path(name).name != name:
