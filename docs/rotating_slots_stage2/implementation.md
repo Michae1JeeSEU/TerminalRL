@@ -1,8 +1,9 @@
 # Stage2 campaign infrastructure
 
-本次正式运行的首次共同60秒观测、运行指纹、预算和待办检查见
-[first_campaign_status.md](first_campaign_status.md)。该记录是运行中的中间报告，
-其状态独立于下述实现和准备阶段证据。
+本轮正式运行已 **INVALID_STOP**，最后共同窗口840秒，完整3600秒结果未形成；
+失败恢复及CLI修复已通过统一服务器回归（218 passed、1 skipped）。实测质量、正常/完整dispatch耗时、840秒审计及
+首60秒历史见 [first_campaign_status.md](first_campaign_status.md)。
+下面保留实现接口和运行前验证说明，不能用旧测试通过覆盖本轮暴露的异常。
 
 This document describes implemented interfaces, not a completed campaign or a
 human acceptance record. The formal input is
@@ -174,11 +175,28 @@ resident60→120 continuation on an empty integration fixture, and replay/HUD
 data. These are bounded clause checks for T01/T22/T23/T24/T26/T27/T28; they do
 not independently constitute all28 formal tests. The empty continuation test
 does not measure busy36 performance, the PyVista adapter test does not certify
-human visual acceptance. Server validation and the formal run's first common
-60-second results are now recorded in [first_campaign_status.md](first_campaign_status.md).
-The formal run is continuing; the full3600-second or budget-limited terminal
-result has not yet formed. Later status must follow actual common-boundary,
-audit and budget artifacts.
+human visual acceptance. The pre-run server validation and the formal run's
+last common840-second results are recorded in [first_campaign_status.md](first_campaign_status.md).
+This run ended with `INVALID_STOP`, not a completed3600-second or budget-limited
+result. Its failure-recovery path exposed a coverage gap; the finite fixes are
+verified by the final scoped server regression (218 passed,1 skipped).
+Heartbeat was deleted and no run process remains.
+The primary agent verified the checkpoint-specific historical slot-overlap
+diagnosis, the local CLI fix (23 passed, including9 added CLI cases), and the
+slot-origin/local-isolation fix (27 world/audit tests passed).
+The original invalid run's exit0 record is retained, not rewritten.
+Final recovery validation collected219 tests:218 passed,1 skipped,0 failures/errors;
+pytest48.49s,process wall48.767s over UTC2026-10-20T19:49:20Z–19:50:09Z.
+The single skip remains the installed-OR-Tools missing-dependency negative case;
+both real-CP checks passed. The first recovery regression (217 passed,1 skipped,
+1 failed) is retained separately: its outdated upstream assertion used admission
+as the occupancy start instead of the actual target capture. The corrected test
+still checks original release/admission identities and preserves capture.
+The final evidence is `regression_final.log/xml/timing.txt` in the independent
+`stage2_recovery_validation_20261021` output directory; XML SHA256
+`73dd80fc156858d39cb94e82cc2950bec14a5d9f44cefa7cd88e75f41fed1d66`.
+This validates the finite fixes; it does not turn the original invalid840-second
+campaign into a completed3600-second run, and no formal campaign was rerun.
 
 Observed local validation during this implementation: campaign12 tests passed
 in3.36s; the existing replay/reservation35 tests passed in8.43s; their combined

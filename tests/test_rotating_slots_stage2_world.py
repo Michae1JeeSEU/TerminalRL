@@ -10,7 +10,8 @@ import pytest
 from terminal_marl.core.rotating_slots.config import thaw
 from terminal_marl.core.rotating_slots.demand import ArrivalManifest, ArrivalRequest
 from terminal_marl.core.rotating_slots.energy import EnergyResult, integrate_energy
-from terminal_marl.core.rotating_slots.trajectory import generate_final, generate_transfer
+from terminal_marl.core.rotating_slots.resources import SlotCalendar, ResourceConflict
+from terminal_marl.core.rotating_slots.trajectory import generate_final, generate_transfer, make_stable_plan
 from terminal_marl.core.rotating_slots.world import (
     RotatingSlotWorld, STAGE2_POLICY_ID, evaluate_planning_snapshot,
 )
@@ -78,6 +79,80 @@ def test_t19_releases_only_failed_resources_and_preserves_other_active():
     assert own and all(r.end <= failure_time for r in own)
     assert any(r.aircraft_id == "b" and r.end > .3 for r in w.slots.reservations)
     assert w.failure_archive["a"]["active"]["trajectory_hash"] == pa.trajectory_hash
+
+
+def reused_source_slot_resource_fixture():
+    """Resource unit fixture, not an assertion about an executed entry history.
+
+    The current departure and holding poses use real trajectories. The retained
+    calendar models a completed inbound whose admission predates slot capture.
+    """
+    w=world()
+    w.seed_service("ground",2,remaining=1000.)
+    departed=w.seed_hold("depart","outer",0)
+    lost=w.seed_hold("lost","middle",14)
+    plan=generate_transfer("depart","outer",0,0,0.,durations=[100.]).plan
+    successor=generate_transfer("depart","middle",0,0,105.,source_version=1).plan
+    assert plan and successor
+    clear,capture=w._protect_times(plan)
+    next_clear,next_capture=w._protect_times(successor)
+    now,entry_capture=70.,60.
+    assert clear<entry_capture<now<plan.end_time
+    k=plan.state(now)
+    w.aircraft["depart"]=replace(departed,status="TRANSFER_O_M",p=k.p,v=k.v,a=k.a,jerk=k.jerk,
+        trajectory_hash=plan.trajectory_hash)
+    hold=make_stable_plan("entered","outer",0,start_time=entry_capture,end_time=1000.,source_version=1)
+    k=hold.state(now)
+    w.aircraft["entered"]=replace(departed,id="entered",p=k.p,v=k.v,a=k.a,jerk=k.jerk,
+        version=1,trajectory_hash=hold.trajectory_hash,admission_time=0.)
+    k=w._base(lost).state(now)
+    w.aircraft["lost"]=replace(lost,p=k.p,v=k.v,a=k.a,jerk=k.jerk,soc=0.)
+    w.active={"depart":plan}
+    w.soft={"depart":successor}
+    w._source_clear={plan.trajectory_hash:(clear,capture),successor.trajectory_hash:(next_clear,next_capture)}
+    w.dependencies={plan.trajectory_hash:()}
+    w.slots=SlotCalendar()
+    w.slots.reserve(("outer",0),"depart",0.,clear,kind="source",plan_hash=plan.trajectory_hash,committed=True)
+    w.slots.reserve(("middle",0),"depart",capture,next_clear,kind="target",plan_hash=plan.trajectory_hash,committed=True)
+    w.slots.reserve(("inner",0),"depart",next_capture,kind="target",plan_hash=successor.trajectory_hash)
+    w.slots.reserve(("outer",0),"entered",entry_capture,kind="target",committed=True)
+    w.slots.reserve(("middle",14),"lost",0.)
+    for p in (plan,successor,hold):
+        w.trajectories[p.trajectory_hash]=p.to_dict()
+    w.time=now
+    return w,entry_capture
+
+
+def test_t19_isolation_preserves_survivor_intervals_after_source_slot_reuse():
+    w,capture=reused_source_slot_resource_fixture()
+    active,soft=dict(w.active),dict(w.soft)
+    source_clear=dict(w._source_clear)
+    slot_calendar,pad_calendar=w.slots,w.pads
+    slots=tuple(r for r in w.slots.reservations if r.aircraft_id!="lost")
+    pads=w.pads.reservations
+    w._isolate_energy_failures((("lost","BATTERY_DEPLETED"),))
+    assert w.active==active and w.soft==soft
+    assert w._source_clear==source_clear
+    assert w.slots is slot_calendar and w.pads is pad_calendar
+    assert all(w.active[k] is p for k,p in active.items())
+    assert tuple(r for r in w.slots.reservations if r.aircraft_id!="lost")==slots
+    assert w.pads.reservations==pads
+    assert next(r.start for r in w.slots.reservations if r.aircraft_id=="entered")==capture
+    w.advance(70.1)
+    assert w.time==70.1 and not w.failed and not w.terminated_invalid
+    assert w.active==active and w.soft==soft
+    assert not any(e["type"]=="invalid_run_stopped" for e in w.events)
+
+
+def test_rebuild_preserves_capture_origin_and_still_rejects_real_overlap():
+    w,capture=reused_source_slot_resource_fixture()
+    slots,pads,times=w._calendar_stage(w.soft,())
+    assert next(r.start for r in slots.reservations if r.aircraft_id=="entered")==capture
+    clear=w._source_clear[w.active["depart"].trajectory_hash][0]
+    w.slots._entries=[replace(r,start=clear-1.) if r.aircraft_id=="entered" else r
+                      for r in w.slots.reservations]
+    with pytest.raises(ResourceConflict,match="already reserved"):
+        w._calendar_stage(w.soft,())
 
 
 def test_t20_peak_loss_is_distinct_from_numerical_error(monkeypatch):

@@ -2,16 +2,31 @@
 
 依据是 `new10.16/rotating_slots_stage2_baseline_v1_0/stage2_targeted_tests_v1_0.json`
 的 28 项要求。下表定位当前测试代码及其有限断言，不把“有同名测试”写成整项合同验收通过。
-主对话已核对服务器最终日志、XML及其hash：**208 collected，207 passed，1 skipped，0 failure/error**。
-本次所列模块范围的自动验证通过；此表仍是有限断言映射，不把28项要求称为穷尽验收。
-正式实验仍在进行，首个60秒结果及审计见
-[first_campaign_status.md](first_campaign_status.md)；完整3600秒或预算截尾尚未形成。
+主对话已核对运行前服务器回归日志、XML及其hash：**208 collected，207 passed，1 skipped，0 failure/error**。
+该历史验证在所列模块范围通过；本轮随后发生失败恢复异常，旧207项通过不证明该异常路径已覆盖。
+此表仍是有限断言映射，不把28项要求称为穷尽验收。
+正式实验已 **INVALID_STOP**，最后共同840秒结果及该窗口审计见
+[first_campaign_status.md](first_campaign_status.md)；不是完整3600秒或预算截尾结果。
+失败恢复及CLI修复已通过统一服务器回归：**219 collected、218 passed、1 skipped、0 fail/error**；
+不改写原始失败记录，不将修复验证称为正式3600秒重跑。
 PyVista 人工观察保持 **HUMAN_PENDING**。
 
-最终回归使用已验证的服务器隔离环境，包含4个Stage2模块，以及既有独立audit、replay、world、
+修复后统一服务器首轮为217 passed、1 skipped、1 failed（pytest48.35秒/wall48.650秒）。
+主对话核对唯一失败来自旧upstream测试将占槽起点等同于admission，而非实际目标capture；
+对应断言更新仍保留release/admission检查，最终验证结果见下。此验证不替换本次INVALID_STOP的原始证据。
+
+修复后最终12模块验证UTC为 **2026-10-20T19:49:20Z–19:50:09Z**，pytest **48.49秒**、
+进程wall **48.767秒**，退出0；核心4、四个数值库线程均1，五个相关源码/测试hash本地与服务器一致。
+唯一skip为已安装OR-Tools时不适用的缺依赖负向测试；两个真实CP测试执行通过。
+独立输出目录为`D:\7_codespace\training_outputs\terminal\stage2_recovery_validation_20261021`，
+最终`regression_final.log/xml/timing.txt`与首轮失败的`regression.log/xml/timing.txt`分开保存。
+最终XML SHA256：`73dd80fc156858d39cb94e82cc2950bec14a5d9f44cefa7cd88e75f41fed1d66`。
+
+运行前回归使用已验证的服务器隔离环境，包含4个Stage2模块，以及既有独立audit、replay、world、
 upstream、targeted_world、practical_world、performance_checkpoint相关测试。
 运行UTC为 **2026-10-20T17:28:26Z–17:29:13Z**；pytest报告 **46.87秒**，进程实测 **47.135秒**。
-真实CP的T09 **1.696秒**、T15 **0.367秒**，两者均执行并通过，未跳过。
+该历史回归真实CP的T09 **1.696秒**、T15 **0.367秒**，两者均执行并通过，未跳过；
+修复后19:49最终回归中的两个真实CP测试也均通过，不混用两轮耗时。
 唯一跳过项仍是已安装OR-Tools条件下不适用的缺依赖负向测试；字面3600秒T24两参数已在服务器确认。
 
 产物在正式输出根目录的 `preparation/final_validation.log`、`final_validation.xml`、
@@ -75,6 +90,14 @@ CP有6条层级求解记录、3轮按需冲突补充，不安全暂定组合被�
 独立检查器另以 `test_self_consistent_stage2_corruption_is_rejected` 的9组参数核对：
 失败原因、重复失败、罚款、隔离后能量、双重成功、残留资源、末状态档案、初始地面计数和伪造接地。
 这些反例先重新计算文件hash再检查，覆盖内容自洽的假记录；不宣称独立实测能源模型正确。
+
+本次故障后新增的对应回归（已包含于218通过/1跳过的最终验证）：
+
+| 对应范围 | 新增测试与有限断言 |
+|---|---|
+| T19资源复用/隔离 | W `test_t19_isolation_preserves_survivor_intervals_after_source_slot_reuse` 保留幸存者active/soft对象、资源区间及capture起点，真实轨迹状态70→70.1继续；`test_rebuild_preserves_capture_origin_and_still_rejects_real_overlap` 保留capture，人工注入真实重叠仍拒绝。资源夹具不冒称完整历史inbound复现。 |
+| T21/T27无效状态交付 | `tests/test_rotating_slots_stage2_cli.py` 的 `test_run_resume_exit_follows_persisted_status_after_output` 用runner替身验证归档返回、JSON输出后读取持久化状态；run/resume×三种状态共6例，INVALID_STOP退出1、正常完成/预算截尾保持正常退出。不是新的正式运行。 |
+| CLI兼容边界 | 同模块 `test_invalid_stop_status_and_report_queries_still_succeed`（2例）与 `test_prepare_keeps_existing_output_and_exit_semantics`（1例）保留status/report查询与prepare输出/退出语义，合计9项CLI新增参数实例。 |
 
 可执行服务器针对性命令（无GUI、使用已验证的隔离环境）：
 

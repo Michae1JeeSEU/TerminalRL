@@ -821,8 +821,13 @@ class RotatingSlotWorld:
             if a.ring is not None:
                 departure = current or future
                 end = times[departure.trajectory_hash][0] if departure is not None else math.inf
-                entered = a.admission_time if a.admission_time is not None else a.release_time
-                slots.reserve((a.ring, a.slot), a.id, min(entered, self.time), end,
+                fallback = a.admission_time if a.admission_time is not None else a.release_time
+                # Admission precedes capture for inbound flights. Preserve the
+                # actual slot interval when rebuilding a reused source slot.
+                entered = min((r.start for r in self.slots.reservations
+                               if r.aircraft_id == a.id and r.resource == (a.ring,a.slot)),
+                              default=fallback)
+                slots.reserve((a.ring, a.slot), a.id, entered, end,
                               kind="source" if departure else "occupied",
                               plan_hash=departure.trajectory_hash if departure else None,
                               committed=current is not None)
@@ -1225,12 +1230,6 @@ class RotatingSlotWorld:
             self._event("aircraft_energy_failure", key, reason=reason)
             self._event("failure_isolated", key, reason=reason, resources_released=released)
         self._pending_dispatch = True
-        try:
-            slots, pads, times = self._calendar_stage(self.soft, ())
-            self.slots, self.pads, self._source_clear = slots, pads, times
-        except (ValueError, KeyError) as exc:
-            self._fail(None, "POST_FAILURE_RECOVERY_ERROR")
-            raise RuntimeError("POST_FAILURE_RECOVERY_ERROR: "+str(exc)) from exc
 
     @staticmethod
     def _descent_start(plan):

@@ -27,5 +27,7 @@ def main():
         result=dict(campaign=load_json(args.output/"campaign.json"),
             common_completed_time_s=common_boundary(args.output),elapsed_s=CampaignBudget(args.output/"budget.json").elapsed)
     print(json.dumps(result,indent=2,ensure_ascii=False))
+    if args.action in ("run","resume") and load_json(args.output/"campaign.json").get("status")=="INVALID_STOP":
+        raise SystemExit(1)
 
 if __name__=="__main__": main()

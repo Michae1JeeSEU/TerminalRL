@@ -54,13 +54,21 @@ def test_delayed_entry_does_not_backdate_hold_calendar_to_request_release():
     w.advance(5.,False)
     assert w.admit("delayed").accepted
     p=w.active["delayed"]
+    target=next(r for r in w.slots.reservations if r.aircraft_id=="delayed" and r.kind=="target")
+    capture=target.start
+    assert capture==w._source_clear[p.trajectory_hash][1]
+    assert target.resource==("outer",p.target_slot)
     # Narrow single-aircraft endpoint/settlement test, not a sampled replay.
     w._advance_energy(p.end_time);w._settle()
     assert w.aircraft["delayed"].status=="HOLD_OUTER"
     slots,_,_=w._calendar_stage(w.soft,())
     reservation=next(r for r in slots.reservations if r.aircraft_id=="delayed")
     assert w.aircraft["delayed"].release_time==0.
-    assert reservation.start==w.aircraft["delayed"].admission_time==5.
+    assert w.aircraft["delayed"].admission_time==5.
+    # Inbound admission starts before target-slot protection; rebuilding a
+    # completed inbound must preserve capture, without backdating to admission.
+    assert reservation.resource==target.resource
+    assert reservation.start==capture>w.aircraft["delayed"].admission_time
 
 
 def test_full_37_perpetual_capacity_only_and_finite_release_not_capacity(monkeypatch):
