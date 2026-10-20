@@ -725,7 +725,7 @@ def test_future_support_checks_current_active_target_before_next_source():
 @pytest.mark.parametrize("boundary",["below","exact","above"])
 def test_normal_final_reserve_canonical_float_boundary_executes_touchdown(boundary):
     p=final()
-    q=integrate_energy(p,p.start_time,p.end_time)
+    q=integrate_energy(p,p.start_time,p.end_time,fine=True)
     required_soc=math.fsum((.25,q.soc_used))
     initial_soc={"below":math.nextafter(required_soc,-math.inf),
                  "exact":required_soc,"above":math.nextafter(required_soc,math.inf)}[boundary]
@@ -764,7 +764,7 @@ def test_normal_final_phase_times_match_serialized_segments_for_each_dt(physics_
     descent_start=next(s["start_time"] for s in serialized["segments"] if s["kind"]=="DESCENT")
     assert descent_start-p.start_time==130.
     assert p.end_time-descent_start==13.5
-    q=integrate_energy(p,p.start_time,p.end_time)
+    q=integrate_energy(p,p.start_time,p.end_time,fine=True)
     w=RotatingSlotWorld(physics_dt=physics_dt)
     w.seed_hold("a","inner",0,math.fsum((.25,q.soc_used)))
     assert w.submit((p,)).accepted
@@ -851,7 +851,7 @@ def test_final_phase_counters_split_an_interval_crossing_the_segment_junction():
 def test_normal_final_executes_exact_touchdown_from_nextafter_without_early_settlement():
     p=final()
     before=math.nextafter(p.end_time,-math.inf)
-    q=integrate_energy(p,p.start_time,p.end_time)
+    q=integrate_energy(p,p.start_time,p.end_time,fine=True)
     w=RotatingSlotWorld()
     w.seed_hold("a","inner",0,math.fsum((.25,q.soc_used)))
     assert w.submit((p,)).accepted

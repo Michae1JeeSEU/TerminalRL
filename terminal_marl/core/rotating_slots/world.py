@@ -19,7 +19,7 @@ from .resources import PadCalendar, ResourceConflict, SlotCalendar
 from .trajectory import (generate_final, generate_inbound, generate_transfer,
                          make_ground_plan, make_stable_plan, slot_state, TrajectoryPlan)
 from .energy import evaluate_power, integrate_energy, stable_power
-from .safety import validate_plan, validate_separation, _ExecutionQueryCache
+from .safety import validate_plan, validate_separation, _ExecutionQueryCache, _execution_distance_screen
 
 
 AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M",
@@ -221,6 +221,7 @@ class RotatingSlotWorld:
         self._last_record_time = None
         self.time = 0.
         self.aircraft = {}
+        self._targeted_energy = {"fine_plans": {}, "executed": {}}
         self.requests = {}
         self.upstream_reasons = {}
         self.slots, self.pads = SlotCalendar(), PadCalendar()
@@ -342,17 +343,136 @@ class RotatingSlotWorld:
         """Record a test driver's rejected candidate through the public port."""
         return self._reject(reason,aircraft_id,**details)
 
-    def _energy(self, plan, start, end):
-        key = (getattr(plan, "trajectory_hash", id(plan)), float(start), float(end), self.config.profile_hash)
+    def _energy_state(self):
+        if not hasattr(self, "_targeted_energy"):
+            self._targeted_energy = {"fine_plans": {}, "executed": {}}
+        return self._targeted_energy
+
+    def _energy(self, plan, start, end, *, fine=None):
+        identity = getattr(plan, "trajectory_hash", id(plan))
+        state = self._energy_state()
+        if fine is None:
+            fine = state["fine_plans"].get(identity, False)
+        if fine and plan.kind not in ("STABLE", "GROUND"):
+            state["fine_plans"][identity] = True
+        key = (identity, float(start), float(end), self.config.profile_hash, bool(fine))
         if self.cache_enabled and key in self._energy_cache:
             self.cache_hits += 1
             return self._energy_cache[key]
         t = walltime.perf_counter()
-        value = integrate_energy(plan, start, end, max_dt=.2, config=self.config)
+        value = integrate_energy(plan, start, end, max_dt=1., config=self.config, fine=bool(fine))
         self.cpu["energy"] += walltime.perf_counter() - t
         if self.cache_enabled:
             self._store_cache(self._energy_cache,key,value,self.ENERGY_CACHE_CAPACITY)
         return value
+
+    @staticmethod
+    def _sum_energy(values):
+        from .energy import EnergyResult
+        values = tuple(values)
+        return EnergyResult(math.fsum(q.joules for q in values), math.fsum(q.soc_used for q in values),
+            math.fsum(q.peak_seconds for q in values), all(q.valid for q in values),
+            reason=next((q.reason for q in values if q.reason), ""),
+            error_j=math.fsum(q.error_j for q in values),
+            peak_error_s=math.fsum(q.peak_error_s for q in values))
+
+    def _energy_capacity(self):
+        return self.config.energy.equivalent_voltage_V*self.config.energy.reference_capacity_Ah*3600
+
+    def _refine_executed_energy(self, aircraft_id):
+        """Correct only numerical charges accumulated since this world's origin.
+
+        This correction and fine selection remain valid even if a later candidate
+        is rejected; time, physical trajectories and reservations do not change.
+        """
+        a = self.aircraft[aircraft_id]
+        delta_j, delta_peak = [], []
+        for record in self._energy_state()["executed"].get(aircraft_id, ()):
+            if record["fine"]:
+                continue
+            plan = TrajectoryPlan.from_dict(self.trajectories[record["trajectory_hash"]], config=self.config)
+            q = self._energy(plan, record["start"], record["end"], fine=True)
+            if not q.valid:
+                raise RuntimeError("ENERGY_REFINEMENT_INVALID: " + q.reason)
+            delta_j.append(q.joules-record["charged_j"])
+            delta_peak.append(q.peak_seconds-record["charged_peak"])
+            record.update(charged_j=q.joules, charged_peak=q.peak_seconds, error_j=q.error_j,
+                          peak_error_s=q.peak_error_s, fine=True)
+        correction = math.fsum(delta_j)
+        self.aircraft[aircraft_id] = replace(a, energy_j=a.energy_j+correction,
+            soc=a.soc-correction/self._energy_capacity(), peak_seconds=a.peak_seconds+math.fsum(delta_peak))
+        return correction
+
+    def _budget_energy(self, aircraft_id, portions, *, soc=None, peak=0., reserve=False):
+        """Select precision from whole committed/candidate budgets, never a step.
+
+        Full-plan error allocations plus executed allowances define the narrow
+        refinement band. Clearly feasible/infeasible remote budgets stay coarse.
+        """
+        portions = tuple(portions)
+        values = tuple(self._energy(p, start, end) for p, start, end in portions)
+        if not all(q.valid for q in values):
+            return values
+        history = ()
+        if aircraft_id is not None:
+            a = self.aircraft[aircraft_id]
+            soc, peak = a.soc, a.peak_seconds
+            history = self._energy_state()["executed"].get(aircraft_id, ())
+        total = self._sum_energy(values)
+        soc_width = (total.error_j+math.fsum(r["error_j"] for r in history))/self._energy_capacity()+1e-5
+        peak_width = total.peak_error_s+math.fsum(r["peak_error_s"] for r in history)+.05
+        remaining = soc-total.soc_used
+        near = abs(remaining) <= soc_width or (reserve and abs(remaining-.25) <= soc_width)
+        near |= abs(120.-peak-total.peak_seconds) <= peak_width
+        if not near:
+            return values
+        active = self.active.get(aircraft_id)
+        active_was_fine = (active is not None and
+                          self._energy_state()["fine_plans"].get(active.trajectory_hash,False))
+        correction = 0.
+        if aircraft_id is not None:
+            correction = self._refine_executed_energy(aircraft_id)
+        values = tuple(self._energy(p, start, end, fine=True) for p, start, end in portions)
+        if aircraft_id is not None:
+            a = self.aircraft[aircraft_id]
+            active = self.active.get(aircraft_id)
+            if (active is not None and active.kind == "FINAL_NORMAL" and a.normal_final_touchdown_soc is not None
+                    and (not active_was_fine or correction != 0.)):
+                rest = self._energy(active, self.time, active.end_time, fine=True)
+                required_soc = math.fsum((.25,rest.soc_used))
+                self.aircraft[aircraft_id] = replace(a, normal_final_touchdown_soc=.25+(a.soc-required_soc))
+        return values
+
+    def _record_energy_charge(self, aircraft_id, plan, start, end, q):
+        if plan.kind in ("STABLE", "GROUND") or not (q.error_j or q.peak_error_s):
+            return
+        state = self._energy_state()
+        records = state["executed"].setdefault(aircraft_id, [])
+        fine = state["fine_plans"].get(plan.trajectory_hash, False)
+        if (records and records[-1]["trajectory_hash"] == plan.trajectory_hash
+                and records[-1]["fine"] == fine and abs(records[-1]["end"]-start) <= 1e-9):
+            record = records[-1]
+            record.update(end=end, charged_j=math.fsum((record["charged_j"],q.joules)),
+                charged_peak=math.fsum((record["charged_peak"],q.peak_seconds)),
+                error_j=math.fsum((record["error_j"],q.error_j)),
+                peak_error_s=math.fsum((record["peak_error_s"],q.peak_error_s)))
+        else:
+            records.append(dict(trajectory_hash=plan.trajectory_hash,start=start,end=end,
+                charged_j=q.joules,charged_peak=q.peak_seconds,error_j=q.error_j,
+                peak_error_s=q.peak_error_s,fine=fine))
+
+    def _execution_energy_portions(self, a, plan, end):
+        """All already committed remaining flight, including a soft successor."""
+        future = self.soft.get(a.id)
+        current_end = plan.end_time if a.id in self.active else (future.start_time if future else end)
+        portions = [(plan, self.time, current_end)]
+        if future is not None:
+            if future.start_time > current_end:
+                hold = make_stable_plan(a.id,future.source_ring,future.source_slot,
+                    start_time=current_end,end_time=future.start_time,config=self.config)
+                portions.append((hold,current_end,future.start_time))
+            portions.append((future,future.start_time,future.end_time))
+        return portions
 
     @staticmethod
     def _store_cache(cache,key,value,capacity):
@@ -506,7 +626,7 @@ class RotatingSlotWorld:
             result = validate_separation(plan, source, hi, horizon, config=self.config)
             if not result.accepted:
                 return None, None
-            while hi - lo > .0005:
+            while hi - lo > .01:
                 mid = (lo + hi) / 2
                 if validate_separation(plan, source, mid, horizon, config=self.config).accepted:
                     hi = mid
@@ -517,7 +637,7 @@ class RotatingSlotWorld:
             target = make_stable_plan("target_reference", plan.target_ring, plan.target_slot,
                                       start_time=plan.start_time, end_time=horizon, config=self.config)
             lo, hi = plan.start_time, plan.end_time
-            while hi - lo > .0005:
+            while hi - lo > .01:
                 mid = (lo + hi) / 2
                 if validate_separation(plan, target, plan.start_time, mid, config=self.config).accepted:
                     lo = mid
@@ -724,18 +844,17 @@ class RotatingSlotWorld:
             result = validate_plan(p, config=self.config)
             if not result.accepted:
                 return self._reject(result.reason, a.id, validation=result.details)
-            from .energy import EnergyResult
-            holding = EnergyResult(0., 0., 0., True)
+            portions = []
             if p.start_time > source_time:
                 hold = make_stable_plan(a.id, source_ring, source_slot, start_time=source_time,
                                         end_time=p.start_time, source_version=source_version, config=self.config)
-                holding = self._energy(hold, source_time, p.start_time)
+                portions.append((hold, source_time, p.start_time))
             if current is not None:
-                rest = self._energy(current, self.time, current.end_time)
-                holding = EnergyResult(holding.joules+rest.joules, holding.soc_used+rest.soc_used,
-                                       holding.peak_seconds+rest.peak_seconds, holding.valid and rest.valid,
-                                       reason=holding.reason or rest.reason)
-            energy = self._energy(p, p.start_time, p.end_time)
+                portions.append((current, self.time, current.end_time))
+            portions.append((p, p.start_time, p.end_time))
+            estimates = self._budget_energy(a.id, portions, reserve=p.kind == "FINAL_NORMAL")
+            a = self.aircraft[a.id]
+            holding, energy = self._sum_energy(estimates[:-1]), estimates[-1]
             if not holding.valid or not energy.valid:
                 return self._reject(energy.reason or holding.reason, a.id)
             remaining = a.soc - holding.soc_used - energy.soc_used
@@ -837,6 +956,21 @@ class RotatingSlotWorld:
                 if not result.accepted:
                     self._emergency_conflict(a.id, result)
                 continue
+            energy = self._sum_energy(self._budget_energy(a.id, ((p,self.time,p.end_time),),
+                                                       reserve=p.kind == "FINAL_NORMAL"))
+            a = self.aircraft[a.id]
+            required_soc = math.fsum((.25 if p.kind == "FINAL_NORMAL" else 0.,energy.soc_used))
+            reason = (energy.reason if not energy.valid else
+                      "SOC_INSUFFICIENT" if a.soc-energy.soc_used <= 0 else
+                      "PEAK_BUDGET" if a.peak_seconds+energy.peak_seconds > 120 else
+                      "LANDING_RESERVE" if p.kind == "FINAL_NORMAL" and a.soc < required_soc else "")
+            if reason:
+                self._reject(reason,a.id,trajectory_hash=p.trajectory_hash)
+                self._event("commit_invalidated",a.id,reason=reason,trajectory_hash=p.trajectory_hash)
+                result = self.cancel(a.id)
+                if not result.accepted:
+                    self._emergency_conflict(a.id,result)
+                continue
             self.active[a.id] = p
             del self.soft[a.id]
             self.slots.mark_committed(p.trajectory_hash)
@@ -858,7 +992,6 @@ class RotatingSlotWorld:
             start_details = {}
             touchdown_soc = None
             if p.kind == "FINAL_NORMAL":
-                energy = self._energy(p, self.time, p.end_time)
                 required_soc = math.fsum((.25, energy.soc_used))
                 touchdown_soc = .25 + (a.soc-required_soc)
                 start_details = {"start_soc": a.soc, "required_soc": required_soc,
@@ -890,10 +1023,17 @@ class RotatingSlotWorld:
     def _advance_energy(self, end):
         initial, duration = self.time, end-self.time
         results, fail_at = {}, None
-        for a in self.aircraft.values():
+        for a in tuple(self.aircraft.values()):
             if a.status not in AIRBORNE:
                 continue
             p = self._base(a)
+            portions = self._execution_energy_portions(a,p,end)
+            state = self._energy_state()
+            if not (all(part.kind in ("STABLE","GROUND") or state["fine_plans"].get(part.trajectory_hash,False)
+                        for part,_,_ in portions)
+                    and all(record["fine"] for record in state["executed"].get(a.id,()))):
+                self._budget_energy(a.id,portions,reserve=any(part.kind == "FINAL_NORMAL" for part,_,_ in portions))
+            a = self.aircraft[a.id]
             result = self._energy(p, initial, end)
             if not result.valid or a.soc - result.soc_used <= 0 or a.peak_seconds + result.peak_seconds > 120:
                 lo, hi = initial, end
@@ -945,6 +1085,7 @@ class RotatingSlotWorld:
                 battery_power_w=(stable_power(a.ring,self.config).battery_w
                     if p.kind == "STABLE" and self._runtime_enabled()
                     else evaluate_power(s.v,s.a,self.config).battery_w))
+            self._record_energy_charge(key,p,initial,end,q)
         if fail_at:
             self._fail(fail_at[1], "ENERGY_FAILURE")
 
@@ -954,12 +1095,15 @@ class RotatingSlotWorld:
         if len(bodies) < 2:
             return
         bases = {a.id: self._base(a) for a in bodies}
+        screened = _execution_distance_screen(bases, self.time, end, self.config)
         query_options = ({"_query_cache": _ExecutionQueryCache(bases.values())}
                          if getattr(self,"cache_enabled",False) else {})
         first = None
         for a,b in combinations(bodies,2):
             x,y = bases[a.id],bases[b.id]
-            result = validate_separation(x,y,self.time,end,config=self.config,**query_options)
+            result = screened.get((a.id,b.id)) or screened.get((b.id,a.id))
+            if result is None:
+                result = validate_separation(x,y,self.time,end,config=self.config,**query_options)
             upper = result.details.get("upper_bound_m", result.details.get("distance_m"))
             if upper is not None and (self.minimum_separation is None or upper < self.minimum_separation["upper_bound_m"]):
                 self.minimum_separation = {"upper_bound_m": upper, "lower_bound_m": result.details.get("lower_bound_m"),
@@ -1375,9 +1519,7 @@ class RotatingSlotWorld:
 
     def _freeflow_screen(self, inbound, initial_soc):
         """Construct one complete single-aircraft normal reference; no fleet certificate."""
-        inbound_energy = self._energy(inbound, inbound.start_time, inbound.end_time)
-        soc = initial_soc-inbound_energy.soc_used
-        peak = inbound_energy.peak_seconds
+        portions = [(inbound, inbound.start_time, inbound.end_time)]
         ring, slot, t = "outer", inbound.target_slot, inbound.end_time
         for target_ring, count in (("middle", 28), ("inner", 18)):
             found = None
@@ -1391,14 +1533,15 @@ class RotatingSlotWorld:
             if found is None:
                 return self._result(False, "NO_PLAN_FOUND", stage="freeflow_reference")
             p, q = found
-            soc -= q.soc_used
-            peak += q.peak_seconds
+            portions.append((p,p.start_time,p.end_time))
             ring, slot, t = target_ring, p.target_slot, p.end_time
         for pad in range(6):
             candidate = generate_final("freeflow", ring, slot, pad, t, config=self.config)
             if candidate.plan is not None and candidate.status == "FEASIBLE":
-                q = self._energy(candidate.plan, t, candidate.plan.end_time)
-                if q.valid and soc-q.soc_used >= .25 and peak+q.peak_seconds <= 120:
+                p = candidate.plan
+                q = self._sum_energy(self._budget_energy(None, (*portions,(p,t,p.end_time)),
+                                                       soc=initial_soc,reserve=True))
+                if q.valid and initial_soc-q.soc_used >= .25 and q.peak_seconds <= 120:
                     return self._result(True)
         return self._result(False, "INITIAL_ENERGY_SCREEN", stage="freeflow_reference")
 
@@ -1461,7 +1604,7 @@ class RotatingSlotWorld:
             if not result.accepted:
                 last = rejected(result.reason, p, "plan", validation=result.details)
                 continue
-            q = self._energy(p, p.start_time, p.end_time)
+            q = self._sum_energy(self._budget_energy(None, ((p,p.start_time,p.end_time),),soc=r.initial_soc))
             if not q.valid or r.initial_soc-q.soc_used <= 0 or q.peak_seconds > 120:
                 last = rejected("SOC_INSUFFICIENT", p, "inbound_energy", energy=asdict(q))
                 continue

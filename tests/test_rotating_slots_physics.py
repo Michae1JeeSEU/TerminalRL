@@ -124,9 +124,11 @@ def test_quadrature_dt_convergence_and_execution_prediction_identity():
     assert all(x.valid for x in values)
     assert max(x.joules for x in values)/min(x.joules for x in values)-1<.005
     cut=p.segments[0].end_time+.371
+    whole=integrate_energy(p,p.start_time,p.end_time)
     a=integrate_energy(p,0,cut); b=integrate_energy(p,cut,p.end_time)
-    assert a.joules+b.joules==pytest.approx(values[0].joules,rel=1e-10)
-    assert a.peak_seconds+b.peak_seconds==pytest.approx(values[0].peak_seconds,abs=1e-5)
+    assert a.joules+b.joules==pytest.approx(whole.joules,rel=1e-10)
+    assert a.peak_seconds+b.peak_seconds==pytest.approx(whole.peak_seconds,abs=1e-5)
+    assert abs(whole.joules-values[0].joules)<=whole.error_j+values[0].error_j
 
 def fixture_plan(z,theta=(0.,),r=(100.,),duration=1.):
     c=load_config(); s=Segment(0,duration,r,theta,z,'FIXTURE')

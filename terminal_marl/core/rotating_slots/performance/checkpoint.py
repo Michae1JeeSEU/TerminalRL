@@ -26,7 +26,7 @@ decision_times auto_emergency cpu cache_hits reference_counts minimum_separation
 pad_busy_seconds""".split())
 CACHE_FIELDS = frozenset(("_q_cache", "_energy_cache", "_reference_templates"))
 RUNTIME_FIELDS = frozenset(("state_sink", "decision_callback", "_scheduler_port"))
-OPTIONAL_RUNTIME_FIELDS = frozenset(("_practical_runtime",))
+OPTIONAL_RUNTIME_FIELDS = frozenset(("_practical_runtime", "_targeted_energy"))
 _MIGRATIONS = {}
 
 
@@ -169,6 +169,11 @@ class StateCodec:
         if tag == "dataclass":
             _keys(value, ("$", "type", "fields"), "dataclass")
             cls = self.classes.get(value["type"])
+            if (value["type"] == "energy.EnergyResult" and cls is not None
+                    and [f.name for f in fields(cls)] == [name for name, _ in value["fields"]]+["peak_error_s"]):
+                # Only the known appended default is compatible. All existing
+                # fields retain exact constructor roundtrip checking below.
+                value = dict(value, fields=[*value["fields"], ["peak_error_s",self.encode(0.)]])
             if cls is None or [name for name, _ in value["fields"]] != [f.name for f in fields(cls)]:
                 raise CheckpointError("unknown dataclass type/fields")
             try:
@@ -409,6 +414,25 @@ def restore_checkpoint(payload, *, expected_identity, cache_mode="cold", new_att
     optional = codec.decode(payload["optional_runtime"]) if "optional_runtime" in payload else {}
     if type(optional) is not dict or set(optional) - OPTIONAL_RUNTIME_FIELDS:
         raise CheckpointError("unknown optional runtime fields")
+    if "_targeted_energy" in optional:
+        targeted = optional["_targeted_energy"]
+        if (type(targeted) is not dict or set(targeted) != {"fine_plans", "executed"}
+                or type(targeted["fine_plans"]) is not dict or type(targeted["executed"]) is not dict
+                or any(type(key) is not str or value is not True for key,value in targeted["fine_plans"].items())):
+            raise CheckpointError("invalid targeted energy state")
+        record_fields = {"trajectory_hash","start","end","charged_j","charged_peak","error_j","peak_error_s","fine"}
+        for aid,records in targeted["executed"].items():
+            if aid not in state["aircraft"] or type(records) is not list:
+                raise CheckpointError("invalid executed energy owner/records")
+            previous_end = -math.inf
+            for record in records:
+                if (type(record) is not dict or set(record) != record_fields
+                        or record["trajectory_hash"] not in state["trajectories"] or type(record["fine"]) is not bool
+                        or any(type(record[name]) not in (int,float) or not math.isfinite(record[name]) or record[name]<0
+                               for name in ("start","end","charged_j","charged_peak","error_j","peak_error_s"))
+                        or not previous_end <= record["start"] <= record["end"] <= state["time"]+1e-9):
+                    raise CheckpointError("invalid executed energy record")
+                previous_end = record["end"]
     if "_practical_runtime" in optional:
         runtime = optional["_practical_runtime"]
         expected_fields = {"enabled", "soc_threshold", "telemetry_period", "emergency_period",
@@ -479,10 +503,11 @@ def restore_checkpoint(payload, *, expected_identity, cache_mode="cold", new_att
             # reference cells are genuinely cold even in a practical checkpoint.
             world._practical_runtime["base_plans"] = {}
             world._practical_runtime["table"] = {}
-    elif hasattr(world, "configure_practical_runtime"):
+    if "_practical_runtime" not in optional and hasattr(world, "configure_practical_runtime"):
         # Legacy checkpoints contain the same authoritative physical state;
         # practical execution obtains derived defaults without a schema migration.
         world.configure_practical_runtime()
+    world._targeted_energy = optional.get("_targeted_energy", {"fine_plans": {}, "executed": {}})
     if metadata is not None:
         root = Path(new_attempt_dir).resolve()
         source = Path(metadata["path"]).resolve()

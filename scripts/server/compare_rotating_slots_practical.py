@@ -78,7 +78,7 @@ class CallCounts:
 
     def install(self, modules):
         targets = {
-            "energy": ("evaluate_power", "integrate_energy", "power_bounds", "_power_array", "_peak_measure", "_segment_table", "_peak_table"),
+            "energy": ("evaluate_power", "integrate_energy", "power_bounds", "_power_array", "_peak_measure", "_segment_table", "_peak_table", "_segment_initial", "_plan_numerical_policy"),
             "trajectory": ("generate_final", "generate_transfer", "generate_inbound"),
             "safety": ("validate_plan", "validate_separation"),
         }
@@ -89,7 +89,7 @@ class CallCounts:
                     continue
                 old = getattr(module, name)
                 miss = ((lambda args, kwargs, fn=old: fn.cache_info().misses)
-                        if name in ("_segment_table", "_peak_table") else None)
+                        if name in ("_segment_table", "_peak_table", "_segment_initial", "_plan_numerical_policy") else None)
                 wrapped = self.wrap(old, module_name + "." + name, miss)
                 for imported_name, imported in list(sys.modules.items()):
                     if imported_name.startswith(CORE) and imported is not None:
@@ -202,7 +202,7 @@ def run(args):
     report.update(status="completed" if abs(world.time-target) <= 1e-8 and not world.failed else "stopped",
         end_time=world.time, simulated_seconds=world.time-start, wall_seconds=wall_seconds,
         process_seconds=process_seconds, precompute_wall_seconds=counts.precompute_seconds,
-        precompute_scope="union of outer energy-table, peak-table and canonical-reference cache-miss calls; phase-LUT separately in practical_runtime, do not sum",
+        precompute_scope="union of outer initial-Gauss, plan-policy, energy-table, peak-table and canonical-reference cache-miss calls; phase-LUT separately in practical_runtime, do not sum",
         calls=dict(counts.calls), final_metrics=final, delta_metrics=numeric_delta(initial, final),
         final_status_counts=dict(Counter(a.status for a in world.aircraft.values())),
         driver_calls_final=list(restored.driver.calls) if restored.driver else [])
@@ -241,10 +241,43 @@ def window_intervals(frames, start, end):
             break
 
 
+def _select_energy_samples(spans, limit):
+    """Deterministic kind coverage followed by evenly spaced remaining spans."""
+    ordered=sorted(spans,key=lambda s:(s['kind'],s['aircraft_id'],s['trajectory_hash'],s['start'],s['end']))
+    chosen=[]; kinds=set()
+    for i,span in enumerate(ordered):
+        if len(chosen)>=limit: break
+        if span['kind'] not in kinds:
+            chosen.append(i); kinds.add(span['kind'])
+    remaining=[i for i in range(len(ordered)) if i not in chosen]
+    count=min(limit-len(chosen),len(remaining))
+    if count==1: chosen.append(remaining[len(remaining)//2])
+    elif count>1:
+        chosen.extend(remaining[round(i*(len(remaining)-1)/(count-1))] for i in range(count))
+    return [ordered[i] for i in sorted(chosen)]
+
+
 def audit(args):
+    audit_began=time.perf_counter(); audit_process_began=time.process_time()
+    energy_limit=getattr(args,'energy_samples',0)
+    minimum_tolerance=getattr(args,'minimum_tolerance_m',.01)
+    if energy_limit<0: raise ValueError('energy sample count must be nonnegative')
+    if not math.isfinite(minimum_tolerance) or minimum_tolerance<=0: raise ValueError('minimum tolerance must be positive finite')
     modules = load_core(args.source_root)
     root = Path(args.replay).resolve()
-    modules["replay"].ReplayBundle.validate(root)
+    try:
+        modules["replay"].ReplayBundle.validate(root)
+    except Exception as exc:
+        if not energy_limit: raise
+        report=dict(status='FAIL',source_root=str(Path(args.source_root).resolve()),replay_path=str(root),
+                    window=[args.start,args.end],checks={},failures=[dict(kind='replay_validation',reason=str(exc))],
+                    energy_mode='sampled_merged_execution',energy_sample_limit=energy_limit,energy_sample_count=0,
+                    energy_samples=[],minimum_tolerance_m=minimum_tolerance,
+                    audit_wall_seconds=time.perf_counter()-audit_began,
+                    audit_process_seconds=time.process_time()-audit_process_began)
+        write_json(args.output,report)
+        print(json.dumps(dict(status='FAIL',output=str(Path(args.output).resolve()),checks={})))
+        return 1
     config = modules["config"].load_config(root / "config.yaml")
     plans = {key: modules["trajectory"].TrajectoryPlan.from_dict(value, config=config)
              for key, value in json.loads((root / "trajectories.json").read_bytes()).items()}
@@ -252,6 +285,7 @@ def audit(args):
     failures, checks, runs, live, used = [], Counter(), [], {}, set()
     coverage_start = coverage_end = None
     max_energy_error = max_soc_error = max_peak_error = 0.
+    energy_spans=[]; energy_latest={}; sample_results=[]
     exact_start = exact_end = False
     def issue(kind, **details):
         failures.append(dict(kind=kind, **details))
@@ -274,6 +308,9 @@ def audit(args):
                 if a.get("status") not in physical:
                     continue
                 key = a["trajectory_hash"]
+                if energy_limit and key not in plans:
+                    issue('energy_sample_fields',aircraft_id=a.get('id'),hash=key,reason='trajectory is missing')
+                    continue
                 if key not in used:
                     result = safety.validate_plan(plans[key], config=config)
                     checks["plan_checks"] += 1
@@ -284,6 +321,26 @@ def audit(args):
                     continue
                 # Replay records exact event boundaries; no partial-window delta
                 # is compared with a complete-frame ledger delta.
+                if energy_limit:
+                    try:
+                        b=current[a['id']]
+                        fields=('energy_j','soc','peak_seconds')
+                        initial_ledger={name:float(a[name]) for name in fields}
+                        final_ledger={name:float(b[name]) for name in fields}
+                        if not all(math.isfinite(v) for row in (initial_ledger,final_ledger) for v in row.values()):
+                            raise ValueError('nonfinite ledger field')
+                        identity=(a['id'],key); previous=energy_latest.get(identity)
+                        if previous is not None and abs(previous['end']-lo)<=1e-8:
+                            if any(abs(previous['ledger_end'][name]-initial_ledger[name])>1e-9 for name in fields):
+                                raise ValueError('adjacent ledger boundary mismatch')
+                            previous['end']=hi; previous['ledger_end']=final_ledger
+                        else:
+                            span=dict(aircraft_id=a['id'],trajectory_hash=key,kind=plans[key].kind,
+                                      start=lo,end=hi,ledger_start=initial_ledger,ledger_end=final_ledger)
+                            energy_spans.append(span); energy_latest[identity]=span
+                    except (KeyError,TypeError,ValueError) as exc:
+                        issue('energy_sample_fields',aircraft_id=a.get('id'),hash=key,interval=[lo,hi],reason=str(exc))
+                    continue
                 b = current[a["id"]]
                 q = energy.integrate_energy(plans[key], lo, hi, max_dt=.2, config=config)
                 checks["energy_intervals"] += 1
@@ -294,7 +351,8 @@ def audit(args):
                 if not q.valid or de > max(.05,1e-7*abs(q.joules)) or ds > 1e-7 or dp > 1e-5:
                     issue("energy", aircraft_id=a["id"], interval=[lo,hi], valid=q.valid,
                           energy_error_j=de, soc_error=ds, peak_error_s=dp)
-            bodies = sorted((a for a in rows.values() if a.get("status") in physical), key=lambda a:a["id"])
+            bodies = sorted((a for a in rows.values() if a.get("status") in physical and
+                             (not energy_limit or a.get('trajectory_hash') in plans)), key=lambda a:a["id"])
             for a, b in combinations(bodies, 2):
                 pair = (a["id"],b["id"])
                 hashes = (a["trajectory_hash"],b["trajectory_hash"])
@@ -312,6 +370,50 @@ def audit(args):
         issue("window_coverage", observed=[coverage_start,coverage_end], expected=[args.start,args.end])
     if not exact_start or not exact_end:
         issue("window_boundary_frame_missing", exact_start=exact_start, exact_end=exact_end)
+    if energy_limit:
+        complete_energy={}
+        capacity=config.energy.equivalent_voltage_V*config.energy.reference_capacity_Ah*3600
+        if not energy_spans:
+            issue('energy_sample_uncertain',reason='no executed airborne ledger intervals are available')
+        for span in _select_energy_samples(energy_spans,energy_limit):
+            key=span['trajectory_hash']; plan=plans[key]
+            entry={k:span[k] for k in ('kind','aircraft_id','trajectory_hash','start','end','ledger_start','ledger_end')}
+            a,b=span['ledger_start'],span['ledger_end']
+            observed=dict(energy_j=b['energy_j']-a['energy_j'],soc_used=a['soc']-b['soc'],
+                          peak_seconds=b['peak_seconds']-a['peak_seconds'])
+            entry['observed']=observed
+            try:
+                if key not in complete_energy:
+                    complete_energy[key]=energy.integrate_energy(plan,plan.start_time,plan.end_time,max_dt=.2,config=config)
+                    checks['energy_complete_plan_integrations']+=1
+                full=complete_energy[key]
+                reference=energy.integrate_energy(plan,span['start'],span['end'],max_dt=.2,config=config)
+                checks['energy_sample_integrations']+=1
+                if not full.valid or not reference.valid:
+                    entry.update(status='FAIL',reason='frozen energy kernel rejected reference')
+                    issue('energy_sample_reference_invalid',sample=entry)
+                    sample_results.append(entry)
+                    continue
+                expected=dict(energy_j=float(reference.joules),soc_used=float(reference.soc_used),peak_seconds=float(reference.peak_seconds))
+                if not all(math.isfinite(v) for v in (*expected.values(),full.joules)):
+                    raise ValueError('nonfinite reference energy')
+                budget_j=max(1.,1e-6*abs(full.joules))
+                budgets=dict(energy_j=budget_j,soc_used=budget_j/capacity,peak_seconds=.01)
+                signed={name:observed[name]-expected[name] for name in expected}
+                errors={name:abs(value) for name,value in signed.items()}
+                passed=all(errors[name]<=budgets[name] for name in expected)
+                entry.update(status='PASS' if passed else 'FAIL',reference=expected,errors=errors,
+                             signed_errors=signed,budgets=budgets,complete_plan_energy_j=full.joules)
+                max_energy_error=max(max_energy_error,errors['energy_j'])
+                max_soc_error=max(max_soc_error,errors['soc_used'])
+                max_peak_error=max(max_peak_error,errors['peak_seconds'])
+                if not passed: issue('energy_sample_budget',sample=entry)
+            except Exception as exc:
+                entry.update(status='FAIL',reason=str(exc))
+                issue('energy_sample_uncertain',sample=entry)
+            sample_results.append(entry)
+        checks['energy_sample_count']=len(sample_results)
+        checks['energy_candidate_intervals']=len(energy_spans)
     bounds = []
     for h1,h2,lo,hi in runs:
         result = safety.validate_separation(plans[h1],plans[h2],lo,hi,config=config)
@@ -325,7 +427,7 @@ def audit(args):
             checks["minimum_pruned"] += 1
             minimum_lower = min(minimum_lower,lower)
             continue
-        value = safety.certified_minimum_distance(plans[h1],plans[h2],lo,hi,config=config,tolerance_m=.01)
+        value = safety.certified_minimum_distance(plans[h1],plans[h2],lo,hi,config=config,tolerance_m=minimum_tolerance)
         checks["minimum_refinements"] += 1
         minimum_lower = min(minimum_lower,value["lower_bound_m"])
         if value["upper_bound_m"] < best_upper:
@@ -336,7 +438,11 @@ def audit(args):
         checker_scope="selected frozen source; original continuous plan/separation and energy kernels; executed window only",
         replay_path=str(root), window=[args.start,args.end], checks=dict(checks), failures=failures,
         minimum_distance=None if not bounds else dict(lower_bound_m=minimum_lower,upper_bound_m=best_upper,witness=witness),
-        max_energy_error_j=max_energy_error,max_soc_error=max_soc_error,max_peak_error_s=max_peak_error)
+        max_energy_error_j=max_energy_error,max_soc_error=max_soc_error,max_peak_error_s=max_peak_error,
+        energy_mode='sampled_merged_execution' if energy_limit else 'strict_per_frame',
+        energy_sample_limit=energy_limit,energy_sample_count=len(sample_results),energy_samples=sample_results,
+        minimum_tolerance_m=minimum_tolerance,audit_wall_seconds=time.perf_counter()-audit_began,
+        audit_process_seconds=time.process_time()-audit_process_began)
     write_json(args.output, report)
     print(json.dumps(dict(status=report["status"], output=str(Path(args.output).resolve()), checks=dict(checks))))
     return 0 if not failures else 1
@@ -357,6 +463,8 @@ def main():
     check.add_argument("--start", type=float, required=True)
     check.add_argument("--end", type=float, required=True)
     check.add_argument("--output", required=True)
+    check.add_argument("--energy-samples",type=int,default=0,help="merged execution samples; 0 retains strict per-frame energy checking")
+    check.add_argument("--minimum-tolerance-m",type=float,default=.01,help="minimum-distance refinement tolerance only; hard separation remains 80m")
     args = parser.parse_args()
     return run(args) if args.command == "run" else audit(args)
 

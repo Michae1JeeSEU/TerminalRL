@@ -5,6 +5,7 @@ from functools import lru_cache, wraps
 import math
 import sys
 import bisect
+import heapq
 import time
 import numpy as np
 from scipy.integrate import quad
@@ -49,9 +50,10 @@ class EnergyResult:
     status: str = 'VALID'
     reason: str = ''
     error_j: float = 0.
+    peak_error_s: float = 0.
 
 # Pure scalar acceleration state: never part of a world or checkpoint.
-_ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-tolerance-v2'
+_ROOT_CACHE_POLICY = 'scalar-induced-positive-branch-residual-v3'
 _ROOT_CACHE_MAX_ENTRIES = 65536
 _ROOT_CACHE_MAX_BYTES = 32 * 1024 * 1024
 _ROOT_CACHE = OrderedDict()
@@ -115,19 +117,20 @@ def _root_entry_bytes(key, value):
 
 def _memoize_root(function):
     @wraps(function)
-    def cached(vp, vn, rhs, bisections=80):
+    def cached(vp, vn, rhs, bisections=80, tol=1e-8):
         global _ROOT_CACHE_PAYLOAD_BYTES
         global _ROOT_CACHE_REQUESTS, _ROOT_CACHE_COMPUTES, _ROOT_CACHE_HITS, _ROOT_CACHE_EVICTIONS
         _ROOT_CACHE_REQUESTS += 1
         eligible = (_ROOT_CACHE_ENABLED and type(bisections) is int and bisections > 0
-                    and all(type(x) is float and math.isfinite(x) for x in (vp, vn, rhs)))
-        key = ((_ROOT_CACHE_POLICY, vp.hex(), vn.hex(), rhs.hex(), bisections)
+                    and all(type(x) is float and math.isfinite(x) for x in (vp, vn, rhs, tol))
+                    and tol > 0)
+        key = ((_ROOT_CACHE_POLICY, vp.hex(), vn.hex(), rhs.hex(), bisections, tol.hex())
                if eligible else None)
         if eligible and key in _ROOT_CACHE:
             _ROOT_CACHE_HITS += 1
             return _ROOT_CACHE[key]
         _ROOT_CACHE_COMPUTES += 1
-        result = function(vp, vn, rhs, bisections)
+        result = function(vp, vn, rhs, bisections, tol)
         if eligible and (result is None or type(result) is float):
             cost = _root_entry_bytes(key, result)
             # A result that cannot fit even alone is always recomputed.
@@ -151,11 +154,11 @@ def _memoize_root(function):
 
 
 @lru_cache(maxsize=65536)
-def _root_bracket(vp,vn,rhs,bisections=80):
+def _root_bracket(vp,vn,rhs,bisections=80,tol=1e-8):
     """Certified endpoints on the monotone vi >= max(0,-vn) branch.
 
-    Stop well inside the frozen 1e-8 residual requirement. Interval consumers
-    use these endpoints, never an arbitrary padding around an approximate root.
+    Stop on the returned midpoint's configured residual. Interval consumers use
+    signed outward endpoints, never padding around an approximate scalar root.
     """
     _numeric_count('root_bracket_computes')
     lo=max(0.,-vn); hi=max(1.,lo+1.,math.sqrt(rhs)*2+abs(vn))
@@ -167,7 +170,8 @@ def _root_bracket(vp,vn,rhs,bisections=80):
         mid=(lo+hi)/2
         if f(mid)>0: hi=mid
         else: lo=mid
-        if hi-lo<=1e-11*max(1.,mid) and abs(f(mid))<=1e-11*max(1.,rhs): break
+        candidate=(lo+hi)/2
+        if abs(f(candidate))<=tol*max(1.,rhs): break
     # Certify the final signs using outward interval arithmetic: rounded f
     # evaluations used for iteration alone are insufficient for root bounds.
     def enclosure(vi):
@@ -177,12 +181,14 @@ def _root_bracket(vp,vn,rhs,bisections=80):
         lo=max(branch,math.nextafter(lo,-math.inf))
     while enclosure(hi).lo<0:
         hi=math.nextafter(hi,math.inf)
-    return math.nextafter(lo,-math.inf),math.nextafter(hi,math.inf)
+    return max(branch,math.nextafter(lo,-math.inf)),math.nextafter(hi,math.inf)
 
 @_memoize_root
-def _root(vp,vn,rhs,bisections=80):
-    bracket=_root_bracket(vp,vn,rhs,bisections)
-    return None if bracket is None else (bracket[0]+bracket[1])/2
+def _root(vp,vn,rhs,bisections=80,tol=1e-8):
+    bracket=_root_bracket(vp,vn,rhs,bisections,tol)
+    if bracket is None: return None
+    value=(bracket[0]+bracket[1])/2
+    return value if abs(value*math.hypot(vp,vn+value)-rhs)<=tol*max(1.,rhs) else None
 
 _root_uncached = _root.__wrapped__
 
@@ -199,12 +205,29 @@ def evaluate_power(v,a,config=None):
         dot=sum(x*y for x,y in zip(thrust,(vx,vy,vz))); vn=dot/T; vp=math.sqrt(max(0.,vx*vx+vy*vy+vz*vz-vn*vn))
         area=math.pi*(c.vehicle.rotor_diameter_m/2)**2; rhs=T/(c.vehicle.rotor_count*2*rho*area); ratio=vn/math.sqrt(2*rhs)
         if ratio<e.minimum_axial_descent_ratio: raise ValueError('axial descent ratio outside shallow-descent domain')
-        vi=_root(vp,vn,rhs,e.induced_root_bisections)
+        tol=e.induced_root_relative_residual_tolerance
+        vi=_root(vp,vn,rhs,e.induced_root_bisections,tol)
         if vi is None: raise ValueError('no root on positive-power induced branch')
         residual=abs(vi*math.hypot(vp,vn+vi)-rhs)/max(1.,rhs)
         if residual>e.induced_root_relative_residual_tolerance: raise ValueError('induced root did not converge')
         pp=c.vehicle.rotor_count*rho/8*e.profile_solidity*e.profile_mean_drag_coefficient*area*e.profile_tip_speed_mps**3*e.profile_Fp
         shaft=(1+e.coaxial_chi)*T*vi+dot+pp; battery=shaft/e.motor_drive_efficiency
+        max_shaft=min(c.vehicle.rotor_count*e.reference_motor_max_power_kW_each*1000,
+                      e.reference_max_battery_current_A*e.equivalent_voltage_V*e.motor_drive_efficiency)
+        bracket=_root_bracket(vp,vn,rhs,e.induced_root_bisections,tol)
+        shaft_box=(1+e.coaxial_chi)*Interval(T)*Interval(*bracket)+dot+pp
+        if shaft_box.lo<=0<=shaft_box.hi or shaft_box.lo<=max_shaft<=shaft_box.hi:
+            _numeric_count('power_limit_root_refinements')
+            fine_tol=min(tol,1e-14)
+            vi=_root(vp,vn,rhs,e.induced_root_bisections,fine_tol)
+            if vi is None: raise ValueError('fine induced root did not converge')
+            bracket=_root_bracket(vp,vn,rhs,e.induced_root_bisections,fine_tol)
+            shaft_box=(1+e.coaxial_chi)*Interval(T)*Interval(*bracket)+dot+pp
+            shaft=(1+e.coaxial_chi)*T*vi+dot+pp; battery=shaft/e.motor_drive_efficiency
+            residual=abs(vi*math.hypot(vp,vn+vi)-rhs)/max(1.,rhs)
+            if shaft_box.lo<=0: raise ValueError('nonpositive power cannot be excluded')
+            if shaft_box.hi>max_shaft:
+                return PowerResult(battery,shaft,battery/e.equivalent_voltage_V,'POWER_LIMIT','power limit cannot be excluded after fine root',vi,residual,ratio)
         if shaft<=0 or battery<=0: raise ValueError('nonpositive power; clipping is prohibited')
         if battery/e.equivalent_voltage_V>e.reference_max_battery_current_A or shaft>c.vehicle.rotor_count*e.reference_motor_max_power_kW_each*1000:
             return PowerResult(battery,shaft,battery/e.equivalent_voltage_V,'POWER_LIMIT','battery current or shaft power exceeds frozen limit',vi,residual,ratio)
@@ -214,7 +237,7 @@ def evaluate_power(v,a,config=None):
 
 def _norm(values): return sum((v.square() for v in values),Interval(0)).sqrt()
 
-def power_bounds(v,a,config=None):
+def power_bounds(v,a,config=None,*,fine=False):
     """Conservative interval extension of Appendix A, including induced root.
 
     On vi >= max(0,-Vn), vi*hypot(Vp,Vn+vi) is monotone in vi.
@@ -233,15 +256,16 @@ def power_bounds(v,a,config=None):
     ratio=vn/(2*rhs).sqrt()
     # The lower bound root may lie off the selected branch for the enclosing
     # box. Zero is then a conservative lower bound, never an accepted root.
-    lower=_root_bracket(vp.hi,vn.hi,rhs.lo)
-    upper=_root_bracket(vp.lo,vn.lo,rhs.hi)
+    tolerance=min(e.induced_root_relative_residual_tolerance,1e-12) if fine else e.induced_root_relative_residual_tolerance
+    lower=_root_bracket(vp.hi,vn.hi,rhs.lo,e.induced_root_bisections,tolerance)
+    upper=_root_bracket(vp.lo,vn.lo,rhs.hi,e.induced_root_bisections,tolerance)
     vi=Interval(max(0.,lower[0]) if lower is not None else 0.,
                 upper[1] if upper is not None else math.nextafter(max(0.,-vn.lo),math.inf))
     pp=c.vehicle.rotor_count*rho/8*e.profile_solidity*e.profile_mean_drag_coefficient*area*e.profile_tip_speed_mps**3*e.profile_Fp
     shaft=(1+e.coaxial_chi)*T*vi+dot+pp; battery=shaft/e.motor_drive_efficiency
     return {'battery_w':battery.pair(),'shaft_w':shaft.pair(),'current_a':(battery/e.equivalent_voltage_V).pair(),'axial_descent_ratio':ratio.pair(),'positive_upward_thrust':True}
 
-def _power_array(s,t,c):
+def _power_array(s,t,c,fine=False):
     """Vector evaluation of exactly the same scalar Appendix A equations."""
     _numeric_count('power_array_calls')
     u=(t-s.start_time)/s.duration
@@ -266,72 +290,156 @@ def _power_array(s,t,c):
     if np.any(vn/np.sqrt(2*rhs)<e.minimum_axial_descent_ratio): raise ValueError('axial descent ratio outside model domain')
     left=np.maximum(0.,-vn); right=np.maximum.reduce((np.ones_like(left),left+1,2*np.sqrt(rhs)+np.abs(vn)))
     if np.any(left*np.hypot(vp,vn+left)-rhs>np.maximum(1.,rhs)*1e-12): raise ValueError('induced root branch unavailable')
+    tolerance=min(e.induced_root_relative_residual_tolerance,1e-11) if fine else e.induced_root_relative_residual_tolerance
     for _ in range(e.induced_root_bisections):
         _numeric_count('vector_root_iterations')
         mid=(left+right)/2; positive=mid*np.hypot(vp,vn+mid)>rhs
         right=np.where(positive,mid,right); left=np.where(positive,left,mid)
-        if np.all((right-left<=1e-11*np.maximum(1.,mid)) &
-                  (np.abs(mid*np.hypot(vp,vn+mid)-rhs)<=1e-11*np.maximum(1.,rhs))): break
+        candidate=(left+right)/2
+        if np.all(np.abs(candidate*np.hypot(vp,vn+candidate)-rhs)<=tolerance*np.maximum(1.,rhs)): break
     vi=(left+right)/2
     if np.any(np.abs(vi*np.hypot(vp,vn+vi)-rhs)>e.induced_root_relative_residual_tolerance*np.maximum(1.,rhs)):
         raise ValueError('induced root did not converge')
     pp=c.vehicle.rotor_count*rho/8*e.profile_solidity*e.profile_mean_drag_coefficient*area*e.profile_tip_speed_mps**3*e.profile_Fp
     shaft=(1+e.coaxial_chi)*thrust*vi+work+pp
+    # Only samples whose valid root enclosure straddles a power boundary need
+    # scalar fine classification. This changes no power/domain limit.
+    low_shaft=(1+e.coaxial_chi)*thrust*left+work+pp
+    high_shaft=(1+e.coaxial_chi)*thrust*right+work+pp
+    maximum=min(c.vehicle.rotor_count*e.reference_motor_max_power_kW_each*1000,
+                e.reference_max_battery_current_A*e.equivalent_voltage_V*e.motor_drive_efficiency)
+    near=((low_shaft<=maximum)&(maximum<=high_shaft))|((low_shaft<=0)&(0<=high_shaft))
+    if np.any(near):
+        for i in np.flatnonzero(near):
+            result=evaluate_power((vx[i],vy[i],vz[i]),(ax[i],ay[i],az[i]),c)
+            if not result.valid: raise ValueError(result.reason)
+            shaft[i]=result.shaft_w
     if np.any(shaft<=0): raise ValueError('nonpositive power')
     if np.any(shaft>c.vehicle.rotor_count*e.reference_motor_max_power_kW_each*1000) or np.any(shaft/e.motor_drive_efficiency/e.equivalent_voltage_V>e.reference_max_battery_current_A):
         raise ValueError('power exceeds frozen limit')
     return shaft/e.motor_drive_efficiency
 
 @lru_cache(maxsize=512)
-def _integrable_plan(plan):
+def _integrable_plan(plan,config_key=None):
     # Shared approval cache prevents execution from integrating an unvalidated
     # rehashed trajectory or from bypassing limits with a STABLE/GROUND label.
     from .safety import validate_plan
-    return validate_plan(plan,load_config())
+    return validate_plan(plan,load_config() if config_key is None else config_key.config)
 
 _GAUSS={n:np.polynomial.legendre.leggauss(n) for n in (4,8)}
 
-def _quadrature_cells(s,left,right,c,depth=0):
+def _gauss_estimates(s,left,right,c,fine=False):
     mid=(left+right)/2; half=(right-left)/2; estimates=[]
     for n in (4,8):
         nodes,weights=_GAUSS[n]
-        estimates.append(half*np.sum(_power_array(s,(mid[:,None]+half[:,None]*nodes).ravel(),c).reshape(len(left),n)*weights,axis=1))
-    error=np.abs(estimates[1]-estimates[0]); bad=error>np.maximum(1e-5,2e-10*np.abs(estimates[1]))
+        samples=_power_array(s,(mid[:,None]+half[:,None]*nodes).ravel(),c,fine=fine)
+        estimates.append(half*np.sum(samples.reshape(len(left),n)*weights,axis=1))
+    return estimates[1],np.abs(estimates[1]-estimates[0])
+
+def _quadrature_cells(s,left,right,c,budgets,depth=0,fine=False):
+    """Refine against allocated whole-plan shares, never a fresh per-leaf floor."""
+    values,error=_gauss_estimates(s,left,right,c,fine)
+    bad=error>budgets
     if np.any(bad):
-        if depth>=12: raise ValueError('energy quadrature failed to converge')
-        lval,lerr=_quadrature_cells(s,left[bad],mid[bad],c,depth+1); rval,rerr=_quadrature_cells(s,mid[bad],right[bad],c,depth+1)
-        estimates[1][bad]=lval+rval; error[bad]=lerr+rerr
-    return estimates[1],error
+        if depth>=20: raise ValueError('energy quadrature failed allocated numerical budget')
+        mid=(left[bad]+right[bad])/2
+        lval,lerr=_quadrature_cells(s,left[bad],mid,c,budgets[bad]/2,depth+1,fine)
+        rval,rerr=_quadrature_cells(s,mid,right[bad],c,budgets[bad]/2,depth+1,fine)
+        values[bad]=lval+rval; error[bad]=lerr+rerr
+    return values,error
+
+@lru_cache(maxsize=512)
+def _segment_initial(duration,r,theta,z,max_dt,config_key,fine):
+    s=Segment(0.,duration,r,theta,z)
+    n=max(1,math.ceil(duration/max_dt)); knots=np.linspace(0.,duration,n+1)
+    values,errors=_gauss_estimates(s,knots[:-1],knots[1:],config_key.config,fine)
+    return knots,values,errors
 
 @lru_cache(maxsize=256)
-def _segment_table(duration,r,theta,z,max_dt,profile_hash):
-    # Isotropic drag/gravity make power invariant under absolute time and
-    # horizontal rotation. The cache key deliberately omits theta's constant.
+def _segment_table(duration,r,theta,z,max_dt,config_key,budget,fine=False):
+    # Isotropic power omits absolute time/angle; the complete immutable config,
+    # initial grid, allocated plan share, and precision remain in the cache key.
     began=time.perf_counter(); _numeric_count('energy_table_computes')
-    s=Segment(0.,duration,r,(0.,)+theta[1:],z)
-    n=max(1,math.ceil(duration/max_dt)); knots=np.linspace(0.,duration,n+1)
-    values,errors=_quadrature_cells(s,knots[:-1],knots[1:],load_config())
+    s=Segment(0.,duration,r,theta,z)
+    knots,initial,initial_errors=_segment_initial(duration,r,theta,z,max_dt,config_key,fine)
+    values=initial.copy(); errors=initial_errors.copy()
+    shares=budget*np.diff(knots)/duration
+    bad=errors>shares
+    if np.any(bad):
+        values[bad],errors[bad]=_quadrature_cells(s,knots[:-1][bad],knots[1:][bad],
+                                                config_key.config,shares[bad],fine=fine)
     _numeric_count('precompute_seconds',time.perf_counter()-began)
     return knots,np.concatenate(([0.],np.cumsum(values))),np.concatenate(([0.],np.cumsum(errors)))
 
 @lru_cache(maxsize=8192)
-def _segment_primitive(duration,r,theta,z,max_dt,profile_hash,t):
+def _segment_primitive(duration,r,theta,z,max_dt,config_key,budget,fine,t):
     _numeric_count('energy_primitive_computes')
-    knots,energy,errors=_segment_table(duration,r,theta,z,max_dt,profile_hash)
+    knots,energy,errors=_segment_table(duration,r,theta,z,max_dt,config_key,budget,fine)
+    t=min(duration,max(0.,t))
     i=min(len(knots)-1,bisect.bisect_right(knots,t)-1)
-    value=float(energy[i]); error=float(errors[i])
+    value=float(energy[i])
     if t>knots[i]:
         s=Segment(0.,duration,r,theta,z)
-        v,e=_quadrature_cells(s,np.asarray([knots[i]]),np.asarray([t]),load_config())
-        value+=float(v[0]); error+=float(e[0])
-    return value,error
+        share=budget*(t-knots[i])/duration
+        v,_=_quadrature_cells(s,np.asarray([knots[i]]),np.asarray([t]),config_key.config,
+                               np.asarray([share]),fine=fine)
+        value+=float(v[0])
+    # This is the allocated cumulative numerical-error allowance, not a strict
+    # interval certificate. Actual Gauss4/8 estimates qualify the complete table.
+    return value,budget*t/duration
 
-def _segment_joules(s,lo,hi,max_dt,c):
-    key=(s.duration,s.r,(0.,)+s.theta[1:],s.z,max_dt,c.profile_hash)
+def _shape(s):
+    return (s.duration,s.r,(0.,)+s.theta[1:],s.z,s.kind)
+
+def _constant_segment_power(shape,c,fine=False):
+    duration,r,theta,z,kind=shape
+    if kind=='GROUND': return 0.
+    if kind=='STABLE' and len(r)==1 and len(z)==1 and len(theta)==2:
+        result=_stable_power_cached(r[0],theta[1]/duration,_ConfigIdentity(c))
+        if not result.valid: raise ValueError(result.reason)
+        return result.battery_w
+    return None
+
+@lru_cache(maxsize=256)
+def _plan_numerical_policy(shapes,max_dt,config_key,fine,absolute_floor=True):
+    """One budget for all finite segments; reused by every query of the plan."""
+    c=config_key.config; duration=math.fsum(s[0] for s in shapes)
+    energies=[]
+    for shape in shapes:
+        constant=_constant_segment_power(shape,c,fine)
+        if constant is not None:
+            energies.append(constant*shape[0])
+        else:
+            initial=_segment_initial(*shape[:4],max_dt,config_key,fine)[1]
+            energies.append(math.fsum(map(float,initial)))
+    relative=2e-10 if fine else 1e-6
+    floor=(1e-5 if fine else 1.) if absolute_floor else 0.
+    budget=max(floor,relative*math.fsum(energies))
+    for attempt in range(6):
+        shares=tuple(budget*shape[0]/duration for shape in shapes)
+        final=[]; actual_error=0.
+        for shape,share,initial_energy in zip(shapes,shares,energies):
+            if _constant_segment_power(shape,c,fine) is not None:
+                final.append(initial_energy)
+            else:
+                table=_segment_table(*shape[:4],max_dt,config_key,share,fine)
+                final.append(float(table[1][-1])); actual_error+=float(table[2][-1])
+        final_target=max(floor,relative*math.fsum(final))
+        if actual_error<=final_target and budget<=final_target:
+            _numeric_count('energy_plan_policies')
+            return shares,tuple(final),actual_error,budget
+        budget=min(budget*.5 if actual_error>final_target else budget,final_target*(1-1e-12))
+    raise ValueError('whole-plan energy numerical budget did not converge')
+
+def _segment_joules(s,lo,hi,max_dt,c,budget=None,fine=False):
+    shape=_shape(s); identity=_ConfigIdentity(c)
+    if budget is None:
+        budget=_plan_numerical_policy((shape,),max_dt,identity,fine,False)[0][0]
+    key=(*shape[:4],max_dt,identity,budget,fine)
     _numeric_count('energy_primitive_calls',2)
     a,ea=_segment_primitive(*key,max(0.,lo-s.start_time))
     b,eb=_segment_primitive(*key,min(s.duration,hi-s.start_time))
-    return b-a,ea+eb
+    return b-a,max(0.,eb-ea)
 
 @lru_cache(maxsize=128)
 def _stable_power_cached(radius,angular_speed,config_key):
@@ -345,76 +453,128 @@ def stable_power(ring,config=None):
     c=config or load_config(); _numeric_count('stable_power_calls')
     return _stable_power_cached(ring_config(ring,c).radius_m,-c.airspace.common_angular_speed_radps,_ConfigIdentity(c))
 
-@lru_cache(maxsize=256)
-def _peak_table(duration,r,theta,z,threshold,config_key):
-    """Cumulative upper measure, reusing the same threshold crossing enclosure.
+def _coverage(intervals):
+    merged=[]
+    for a,b in sorted(intervals):
+        if merged and merged[-1][1]==a: merged[-1]=(merged[-1][0],b)
+        else: merged.append((a,b))
+    starts=tuple(a for a,b in merged); ends=tuple(b for a,b in merged)
+    prefix=(0.,)+tuple(np.cumsum([b-a for a,b in merged]))
+    return starts,ends,prefix
 
-    Unresolved leaves count wholly as peak, as in _peak_measure. Subinterval
-    queries intersect this fixed coverage, so overlapping queries are additive.
+def _coverage_primitive(coverage,t):
+    starts,ends,prefix=coverage
+    i=bisect.bisect_right(ends,t)
+    return float(prefix[i])+(max(0.,t-starts[i]) if i<len(starts) else 0.)
+
+@lru_cache(maxsize=256)
+def _peak_table(duration,r,theta,z,threshold,config_key,budget=.01,fine=False):
+    """Cumulative upper measure and additive unresolved-width measure.
+
+    Continuous power bounds classify intervals. The remaining unresolved total
+    width consumes the segment's share of one plan budget, including all leaves.
     """
-    c=config_key.config
-    began=time.perf_counter(); _numeric_count('peak_table_computes')
-    s=Segment(0.,duration,r,theta,z); active=[]
-    def visit(a,b,depth):
+    c=config_key.config; began=time.perf_counter(); _numeric_count('peak_table_computes')
+    s=Segment(0.,duration,r,theta,z); active=[]; pending=[]; unresolved=0.
+    def classify(a,b,depth):
         _numeric_count('peak_table_nodes')
         polar=s.polar_bounds(a,b)
-        bounds=power_bounds(_intrinsic_bounds_from_polar(polar,1),_intrinsic_bounds_from_polar(polar,2),c)
+        bounds=power_bounds(_intrinsic_bounds_from_polar(polar,1),
+                            _intrinsic_bounds_from_polar(polar,2),c,fine=fine)
         if bounds is not None:
             low,high=bounds['shaft_w']
             if high<=threshold: return
-            above=low>threshold
-        else: above=False
-        if above or b-a<1e-7 or depth>=26:
-            if active and active[-1][1]==a: active[-1]=(active[-1][0],b)
-            else: active.append((a,b))
-            return
-        mid=(a+b)/2; visit(a,mid,depth+1); visit(mid,b,depth+1)
-    visit(0.,duration,0)
-    starts=tuple(a for a,b in active); ends=tuple(b for a,b in active)
-    prefix=(0.,)+tuple(np.cumsum([b-a for a,b in active]))
+            if low>threshold:
+                active.append((a,b)); return
+        heapq.heappush(pending,(-(b-a),a,b,depth))
+    classify(0.,duration,0)
+    unresolved=math.fsum(-row[0] for row in pending)
+    nodes=1
+    while pending and unresolved>budget:
+        _,a,b,depth=heapq.heappop(pending)
+        if depth>=45 or nodes>=200000:
+            raise ValueError('peak unresolved width exceeds allocated numerical budget')
+        unresolved-=b-a
+        mid=(a+b)/2
+        classify(a,mid,depth+1); classify(mid,b,depth+1); nodes+=2
+        # The heap can reorder on insertion, so use its complete measure rather
+        # than treating newly appended heap positions as a contiguous suffix.
+        unresolved=math.fsum(-row[0] for row in pending)
+    uncertain=[(a,b) for _,a,b,_ in pending]
     _numeric_count('precompute_seconds',time.perf_counter()-began)
-    return starts,ends,prefix
+    _numeric_count('peak_unresolved_seconds',math.fsum(b-a for a,b in uncertain))
+    return _coverage(active+uncertain),_coverage(uncertain)
 
-def _segment_peak(s,lo,hi,threshold,c):
+def _segment_peak(s,lo,hi,threshold,c,budget=.01,fine=False,return_error=False):
     _numeric_count('peak_primitive_calls',2)
-    starts,ends,prefix=_peak_table(s.duration,s.r,(0.,)+s.theta[1:],s.z,threshold,_ConfigIdentity(c))
-    def primitive(t):
-        i=bisect.bisect_right(ends,t)
-        return prefix[i]+(max(0.,t-starts[i]) if i<len(starts) else 0.)
-    return max(0.,primitive(hi-s.start_time)-primitive(lo-s.start_time))
+    covered,uncertain=_peak_table(s.duration,s.r,(0.,)+s.theta[1:],s.z,threshold,_ConfigIdentity(c),budget,fine)
+    a,b=lo-s.start_time,hi-s.start_time
+    upper=max(0.,_coverage_primitive(covered,b)-_coverage_primitive(covered,a))
+    error=max(0.,_coverage_primitive(uncertain,b)-_coverage_primitive(uncertain,a))
+    return (upper,error) if return_error else upper
 
-def integrate_energy(plan,start,end,max_dt=.2,config=None):
+def integrate_energy(plan,start,end,max_dt=1.0,config=None,*,fine=False):
+    """Shared cumulative energy/peak estimates with a single finite-plan budget.
+
+    error_j is the allocated additive numerical-error allowance, not a rigorous
+    quadrature certificate. peak_seconds includes all unresolved threshold width;
+    peak_error_s reports that conservative measure's additive uncertainty width.
+    fine uses independent tighter tables, without changing the physical clock.
+    """
     _numeric_count('integrate_energy_calls')
     c=config or load_config()
-    if not 0<max_dt<=.2: raise ValueError('energy maximum segment must be in (0,0.2]')
+    if not 0<max_dt<=1.: raise ValueError('energy initial segment must be in (0,1]')
+    if type(fine) is not bool: raise TypeError('fine must be bool')
     if not math.isfinite(start) or not math.isfinite(end) or end<start: raise ValueError('invalid integration interval')
     from .trajectory import TrajectoryPlan
     if isinstance(plan,TrajectoryPlan):
-        validity=_integrable_plan(plan)
+        validity=_integrable_plan(plan,_ConfigIdentity(c))
         if not validity.accepted: return EnergyResult(0.,0.,0.,False,validity.status,validity.reason)
-    total=error=peak=0.
+    if start==end: return EnergyResult(0.,0.,0.,True)
+    total=error=peak=peak_error=0.
     threshold=c.vehicle.rotor_count*c.energy.reference_motor_continuous_power_kW_each*1000
+    capacity=c.energy.equivalent_voltage_V*c.energy.reference_capacity_Ah*3600
     try:
-        for s in plan.intervals(start,end):
+        intervals=tuple(plan.intervals(start,end))
+        complete=getattr(plan,'segments',None)
+        known=bool(complete) and all(isinstance(s,Segment) for s in complete)
+        finite=tuple(complete) if known else intervals
+        if finite:
+            shapes=tuple(_shape(s) for s in finite)
+            shares,_,_,_=_plan_numerical_policy(shapes,max_dt,_ConfigIdentity(c),fine,known)
+            energy_shares=dict(zip(shapes,shares))
+            finite_duration=math.fsum(s.duration for s in finite)
+        else:
+            energy_shares={}; finite_duration=0.
+        for s in intervals:
             lo=max(start,s.start_time); hi=min(end,s.end_time)
             if s.kind=='GROUND': continue
             if s.kind=='STABLE':
                 if len(s.r)==1 and len(s.z)==1 and len(s.theta)==2:
                     _numeric_count('stable_power_calls')
-                    # TrajectoryPlan validation establishes the canonical clock;
-                    # avoid duration division reintroducing epoch-dependent ulps.
                     omega=(-c.airspace.common_angular_speed_radps if isinstance(plan,TrajectoryPlan)
                            else s.theta[1]/s.duration)
                     result=_stable_power_cached(s.r[0],omega,_ConfigIdentity(c))
                 else:
                     st=s.state((lo+hi)/2); result=evaluate_power(st.v,st.a,c)
-                if not result.valid: return EnergyResult(total,total/(85*252*3600),peak,False,result.status,result.reason,error)
+                if not result.valid:
+                    return EnergyResult(total,total/capacity,peak,False,result.status,result.reason,error,peak_error)
                 total+=result.battery_w*(hi-lo); peak+=(hi-lo) if result.shaft_w>threshold else 0.
                 continue
-            value,err=_segment_joules(s,lo,hi,max_dt,c); total+=value; error+=err
-            peak+=_segment_peak(s,lo,hi,threshold,c)
-        return EnergyResult(total,total/(c.energy.equivalent_voltage_V*c.energy.reference_capacity_Ah*3600),peak,True,error_j=error)
-    except ValueError as exc: return EnergyResult(total,total/(85*252*3600),peak,False,'ENERGY_MODEL_DOMAIN',str(exc),error)
+            shape=_shape(s)
+            budget=energy_shares.get(shape)
+            if budget is None:
+                budget=_plan_numerical_policy((shape,),max_dt,_ConfigIdentity(c),fine,False)[0][0]
+            value,err=_segment_joules(s,lo,hi,max_dt,c,budget,fine); total+=value; error+=err
+            # Unknown wrappers receive per-segment relative shares without an
+            # absolute .01s floor repeated independently for each query/segment.
+            peak_budget=((1e-7 if fine else .01)*s.duration/finite_duration if known else
+                         min(1e-7 if fine else .01, (1e-7 if fine else .01)*s.duration/1000.))
+            upper,uncertainty=_segment_peak(s,lo,hi,threshold,c,peak_budget,fine,True)
+            peak+=upper; peak_error+=uncertainty
+        return EnergyResult(total,total/capacity,peak,True,error_j=error,peak_error_s=peak_error)
+    except ValueError as exc:
+        return EnergyResult(total,total/capacity,peak,False,'ENERGY_MODEL_DOMAIN',str(exc),error,peak_error)
 
 # Exact duplicate top-level peak queries only; recursive nodes are not cached.
 _PEAK_CACHE_POLICY = 'peak-r0-order-depth26-width1e-7-v1'

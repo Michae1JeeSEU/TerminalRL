@@ -2,12 +2,13 @@
 import math
 import heapq
 import sys
+import numpy as np
 from collections import OrderedDict
 from fractions import Fraction
 from .config import load_config
 from .geometry import slot_state, slot_phase, ring_config, pad_position
 from .models import ValidationResult, KinematicState
-from .trajectory import Interval, digest, _intrinsic_bounds_from_polar, TrajectoryPlan
+from .trajectory import Interval, digest, poly, _intrinsic_bounds_from_polar, TrajectoryPlan
 from .energy import evaluate_power, power_bounds, _numeric_count
 
 _NUMERIC_CERTIFICATES={}
@@ -20,8 +21,32 @@ def _norm_lower(box):
     return max(0.,value)
 def _close(a,b,tol): return math.dist(a,b)<=tol
 
+def _kinematic_witness(plan,segment,times):
+    """Point values witness rejection only; absence of a violation proves none."""
+    _numeric_count('early_check_calls')
+    if segment.kind=='GROUND': return None
+    for t in times:
+        state=segment.state(t); v=state.v; a=state.a; j=state.jerk
+        violations=[(math.hypot(*v[:2])>25.+1e-10,'HORIZONTAL_SPEED'),
+            (math.hypot(*a[:2])>1.5+1e-10,'HORIZONTAL_ACCELERATION'),
+            (abs(a[2])>1.+1e-10,'VERTICAL_ACCELERATION'),
+            (math.hypot(*j[:2])>1.+1e-10,'HORIZONTAL_JERK'),
+            (abs(j[2])>.5+1e-10,'VERTICAL_JERK'),(abs(v[2])>2.+1e-10,'VERTICAL_SPEED')]
+        u=(t-segment.start_time)/segment.duration
+        if plan.kind in ('INBOUND','TRANSFER','FINAL_NORMAL','FINAL_EMERGENCY'):
+            violations += [(poly(segment.r,u,1)/segment.duration>1e-9,'RADIUS_INCREASE'),
+                (poly(segment.theta,u,1)/segment.duration>1e-9,'REVERSE_ROTATION'),(v[2]>1e-9,'HEIGHT_INCREASE')]
+        if plan.kind in ('INBOUND','TRANSFER'):
+            violations.append((math.hypot(*v[:2])<2.-1e-10,'MIN_HORIZONTAL_SPEED'))
+        for violated,reason in violations:
+            if violated:
+                _numeric_count('kinematic_witness_rejects')
+                return ValidationResult(False,'UNSAFE',reason,{'witness_time':t})
+    return None
+
 def validate_plan(plan,config=None,use_cache=True):
     _numeric_count('validate_plan_calls')
+    _numeric_count('plan_interval_computes',0)
     c=config or load_config()
     if plan.profile_hash!=c.profile_hash or plan.config_hash!=c.config_hash: return ValidationResult(False,'INVALID','PROFILE_HASH_MISMATCH')
     if plan.trajectory_hash!=digest(plan._payload()): return ValidationResult(False,'INVALID','TRAJECTORY_HASH_MISMATCH')
@@ -83,6 +108,9 @@ def validate_plan(plan,config=None,use_cache=True):
         _numeric_count('plan_interval_computes')
         counts['intervals']+=1; counts['max_depth']=max(depth,counts['max_depth'])
         if s.kind=='GROUND': return None
+        if depth:
+            result=_kinematic_witness(plan,s,(a,(a+b)/2,b))
+            if result is not None: return result
         polar=s.polar_bounds(a,b); r,theta,z=polar
         vb=_intrinsic_bounds_from_polar(polar,1); ab=_intrinsic_bounds_from_polar(polar,2); jb=_intrinsic_bounds_from_polar(polar,3)
         # Polynomial coordinate enclosures include floating evaluation padding;
@@ -113,21 +141,15 @@ def validate_plan(plan,config=None,use_cache=True):
         if all(ok for ok,_ in checks): return None
         # Finite point checks can witness rejection, but never prove acceptance.
         for t in (a,(a+b)/2,b):
-            st=s.state(t); v=st.v; ac=st.a; j=st.jerk
-            violations=[(math.hypot(*v[:2])>25.+1e-10,'HORIZONTAL_SPEED'),(math.hypot(*ac[:2])>1.5+1e-10,'HORIZONTAL_ACCELERATION'),(abs(ac[2])>1.+1e-10,'VERTICAL_ACCELERATION'),(math.hypot(*j[:2])>1.+1e-10,'HORIZONTAL_JERK'),(abs(j[2])>.5+1e-10,'VERTICAL_JERK'),(abs(v[2])>2.+1e-10,'VERTICAL_SPEED')]
-            u=(t-s.start_time)/s.duration
-            from .trajectory import poly
-            if plan.kind in ('INBOUND','TRANSFER','FINAL_NORMAL','FINAL_EMERGENCY'):
-                violations += [(poly(s.r,u,1)/s.duration>1e-9,'RADIUS_INCREASE'),(poly(s.theta,u,1)/s.duration>1e-9,'REVERSE_ROTATION'),(v[2]>1e-9,'HEIGHT_INCREASE')]
-            if plan.kind in ('INBOUND','TRANSFER'): violations.append((math.hypot(*v[:2])<2.-1e-10,'MIN_HORIZONTAL_SPEED'))
-            power=evaluate_power(v,ac,c)
-            violations += [(not power.valid,power.status),(power.valid and power.current_a>2016,'BATTERY_CURRENT'),(power.valid and power.shaft_w>288000,'SHAFT_POWER')]
+            st=s.state(t); power=evaluate_power(st.v,st.a,c)
+            violations=[(not power.valid,power.status),(power.valid and power.current_a>2016,'BATTERY_CURRENT'),(power.valid and power.shaft_w>288000,'SHAFT_POWER')]
             for violation,reason in violations:
                 if violation: return ValidationResult(False,'UNSAFE',reason,{'witness_time':t})
         if depth>=24 or b-a<=1e-6:
             return ValidationResult(False,'UNKNOWN',next(reason for ok,reason in checks if not ok),{'interval':[a,b]})
         mid=(a+b)/2
         return check(s,a,mid,depth+1) or check(s,mid,b,depth+1)
+    pending=[]
     for s in plan.segments:
         # Canonical descents were checked exactly against the frozen builder
         # above. Their constraints and power do not depend on pad angle/time.
@@ -137,6 +159,13 @@ def validate_plan(plan,config=None,use_cache=True):
         if use_cache and segment_key in _SEGMENT_CERTIFICATES:
             _numeric_count('segment_certificate_hits')
             continue
+        pending.append((s,segment_key))
+    # Check every uncached segment before evaluating any segment's power.
+    # Structure and endpoint metadata above retain INVALID precedence.
+    for s,_ in pending:
+        result=_kinematic_witness(plan,s,tuple(s.start_time+s.duration*f for f in (0.,.25,.5,.75,1.)))
+        if result is not None: return result
+    for s,segment_key in pending:
         result=check(s,s.start_time,s.end_time,0)
         if result is not None: return result
         if use_cache:
@@ -365,6 +394,66 @@ def _canonical_ground(plan,c):
         expected=make_ground_plan(plan.aircraft_id,plan.pad_id,plan.start_time,plan.end_time,c)
         return plan.segments[0].to_dict()==expected.segments[0].to_dict()
     except (AttributeError,ValueError): return False
+
+
+_EXECUTION_SPEED_CERTIFICATES=OrderedDict()
+
+def _execution_distance_screen(plans,start,end,config=None):
+    """Safe pair exclusions for one <=.2s execution step, without position boxes.
+
+    A successful complete plan validation justifies the frozen 3D speed bound.
+    This helper never substitutes a current-distance test for future scheduling.
+    """
+    _numeric_count('execution_screen_calls')
+    c=config or load_config()
+    if not all(math.isfinite(t) for t in (start,end)): return {}
+    dt=end-start; rounding=min(1e-10,8*max(math.ulp(start),math.ulp(end),math.ulp(.2)))
+    if not 0<dt<=.2+rounding: return {}
+    records=[]
+    for aircraft_id,plan in plans.items():
+        if type(plan) is not TrajectoryPlan: continue
+        stable=_canonical_stable(plan,c); ground=_canonical_ground(plan,c)
+        if not stable and not ground and not (plan.start_time<=start and end<=plan.end_time): continue
+        try: position=plan.state(start).p
+        except (ValueError,TypeError,AttributeError,OverflowError): continue
+        if not all(math.isfinite(x) for x in position): continue
+        records.append((aircraft_id,plan,stable,ground,position))
+    if len(records)<2 or all(record[2] for record in records): return {}
+    positions=np.asarray([record[4] for record in records],dtype=float)
+    _numeric_count('execution_screen_state_calls',len(records))
+    delta=positions[:,None,:]-positions[None,:,:]
+    distances=np.sqrt(np.sum(delta*delta,axis=2))
+    speeds={}
+    for _,plan,_,ground,_ in records:
+        key=(id(plan),id(c)); cached=_EXECUTION_SPEED_CERTIFICATES.get(key)
+        if cached is not None and cached[0] is plan and cached[1] is c:
+            _numeric_count('execution_screen_certificate_hits')
+        else:
+            _numeric_count('execution_screen_validation_computes')
+            if not validate_plan(plan,c).accepted: continue
+            if len(_EXECUTION_SPEED_CERTIFICATES)>=512: _EXECUTION_SPEED_CERTIFICATES.popitem(last=False)
+            _EXECUTION_SPEED_CERTIFICATES[key]=(plan,c)
+        speeds[id(plan)]=0. if ground else math.nextafter(math.hypot(25.,2.),math.inf)
+    result={}; eps=np.finfo(float).eps
+    for i,(id_a,plan_a,stable_a,_,_) in enumerate(records):
+        for j in range(i+1,len(records)):
+            id_b,plan_b,stable_b,_,_=records[j]
+            _numeric_count('execution_screen_pairs')
+            if stable_a and stable_b: continue
+            if id(plan_a) not in speeds or id(plan_b) not in speeds: continue
+            distance=float(distances[i,j])
+            if not math.isfinite(distance): continue
+            # Pad subtraction/norm and endpoint position roundoff outward.
+            scale=max(1.,distance,float(np.max(np.abs(positions[[i,j]]))))
+            pad=64*eps*scale+8*math.ulp(distance)
+            travel=math.nextafter((speeds[id(plan_a)]+speeds[id(plan_b)])*dt,math.inf)
+            lower=math.nextafter(distance-pad-travel,-math.inf)
+            if lower<=c.safety.hard_separation_m: continue
+            _numeric_count('execution_screen_accepts')
+            result[(id_a,id_b)]=ValidationResult(True,'SAFE','',{
+                'lower_bound_m':lower,'upper_bound_m':math.nextafter(distance+pad,math.inf),
+                'witness_time':start,'checked_until':end,'method':'validated_execution_speed_distance_screen'})
+    return result
 
 def _constant_vertical_offset(a,b,start,end):
     try:
