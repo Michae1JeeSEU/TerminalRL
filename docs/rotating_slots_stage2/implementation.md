@@ -1,5 +1,9 @@
 # Stage2 campaign infrastructure
 
+本次正式运行的首次共同60秒观测、运行指纹、预算和待办检查见
+[first_campaign_status.md](first_campaign_status.md)。该记录是运行中的中间报告，
+其状态独立于下述实现和准备阶段证据。
+
 This document describes implemented interfaces, not a completed campaign or a
 human acceptance record. The formal input is
 `new10.16/rotating_slots_stage2_baseline_v1_0/`. The experiment policy is
@@ -170,9 +174,11 @@ resident60→120 continuation on an empty integration fixture, and replay/HUD
 data. These are bounded clause checks for T01/T22/T23/T24/T26/T27/T28; they do
 not independently constitute all28 formal tests. The empty continuation test
 does not measure busy36 performance, the PyVista adapter test does not certify
-human visual acceptance. Formal campaign results and server validation are
-currently pending the primary agent's recorded run; update the run-specific
-status from its actual common boundary, audit and budget artifacts.
+human visual acceptance. Server validation and the formal run's first common
+60-second results are now recorded in [first_campaign_status.md](first_campaign_status.md).
+The formal run is continuing; the full3600-second or budget-limited terminal
+result has not yet formed. Later status must follow actual common-boundary,
+audit and budget artifacts.
 
 Observed local validation during this implementation: campaign12 tests passed
 in3.36s; the existing replay/reservation35 tests passed in8.43s; their combined
@@ -214,7 +220,7 @@ mapping remains bounded rather than an exhaustive proof of all clauses.
 Evidence is `preparation/final_validation.log`, `final_validation.xml` and
 `final_validation.timing.txt` under the formal output root. XML SHA256:
 `7c8742a85742563c37c186fb899b238f5ea586ae03156dad4303e6a5d4c05402`.
-Formal run artifacts will use
+Formal run artifacts use
 `/home/user/training_outputs/terminal/stage2_first_campaign_v1_20261021`, synced
 to `D:\7_codespace\training_outputs\terminal\stage2_first_campaign_v1_20261021`.
 Human acceptance remains `HUMAN_PENDING`; the final source revision must come

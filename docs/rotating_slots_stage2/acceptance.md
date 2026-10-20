@@ -4,7 +4,9 @@
 的 28 项要求。下表定位当前测试代码及其有限断言，不把“有同名测试”写成整项合同验收通过。
 主对话已核对服务器最终日志、XML及其hash：**208 collected，207 passed，1 skipped，0 failure/error**。
 本次所列模块范围的自动验证通过；此表仍是有限断言映射，不把28项要求称为穷尽验收。
-正式成对运行结果当前待产生，PyVista 人工观察保持 **HUMAN_PENDING**。
+正式实验仍在进行，首个60秒结果及审计见
+[first_campaign_status.md](first_campaign_status.md)；完整3600秒或预算截尾尚未形成。
+PyVista 人工观察保持 **HUMAN_PENDING**。
 
 最终回归使用已验证的服务器隔离环境，包含4个Stage2模块，以及既有独立audit、replay、world、
 upstream、targeted_world、practical_world、performance_checkpoint相关测试。
