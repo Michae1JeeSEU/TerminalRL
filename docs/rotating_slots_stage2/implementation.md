@@ -1,9 +1,13 @@
 # Stage2 campaign infrastructure
 
-本轮正式运行已 **INVALID_STOP**，最后共同窗口840秒，完整3600秒结果未形成；
+原始首轮正式运行已 **INVALID_STOP**，最后共同窗口840秒，完整3600秒结果未形成；
 失败恢复及CLI修复已通过统一服务器回归（218 passed、1 skipped）。实测质量、正常/完整dispatch耗时、840秒审计及
 首60秒历史见 [first_campaign_status.md](first_campaign_status.md)。
 下面保留实现接口和运行前验证说明，不能用旧测试通过覆盖本轮暴露的异常。
+
+用户已授权修正版在独立目录从同一初态重新成对验证，完整继承旧轮已用预算；
+正常启动已确认、首个共同60秒已完成，仍在运行；接续heartbeat已创建，见
+[repaired_campaign_status.md](repaired_campaign_status.md)。
 
 This document describes implemented interfaces, not a completed campaign or a
 human acceptance record. The formal input is
