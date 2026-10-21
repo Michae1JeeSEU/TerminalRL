@@ -5,11 +5,21 @@
 主对话已核对运行前服务器回归日志、XML及其hash：**208 collected，207 passed，1 skipped，0 failure/error**。
 该历史验证在所列模块范围通过；本轮随后发生失败恢复异常，旧207项通过不证明该异常路径已覆盖。
 此表仍是有限断言映射，不把28项要求称为穷尽验收。
-正式实验已 **INVALID_STOP**，最后共同840秒结果及该窗口审计见
+原始首轮正式实验为 **INVALID_STOP**，最后共同840秒结果及该窗口审计见
 [first_campaign_status.md](first_campaign_status.md)；不是完整3600秒或预算截尾结果。
 失败恢复及CLI修复已通过统一服务器回归：**219 collected、218 passed、1 skipped、0 fail/error**；
 不改写原始失败记录，不将修复验证称为正式3600秒重跑。
 PyVista 人工观察保持 **HUMAN_PENDING**。
+
+当前修正版已经同一manifest完成 **3600秒**，状态 **COMPLETED_3600**，不是旧轮840秒拼接；
+完整结果与累计预算见 [repaired_campaign_status.md](repaired_campaign_status.md)。
+原始全窗口审计保留Slack12项/CP5项FAIL，全部PEAK_DELTA；连续间隔CERTIFIED、守恒true。
+主对话已只读重算17项，fine累计等于newpeak、分解残差0，确认当步差分审计未计既有累计误差预算。
+离线审计按既有整计划`peak_error_s`累计包络检查、逐帧累计及ground冻结，并新增篡改测试，保留1e-5；
+新增峰值精度测试与既有audit、Stage2 audit测试共 **25 passed**（pytest16.51秒、wall17.2622878秒）。
+双方原回放的新增`audit_3600_peak_precision.json`均 **PASS、issue_count=0**，连续间隔CERTIFIED，physical_outcome为ENERGY_LOSSES_CONTINUED；
+新增报告不覆盖原FAIL及campaign.archive_status。运行源码`2b045be`、数据及原报告不变，离线审计修复版本`4d06034`分列；没有重跑仿真。
+自动运行、修复测试和独立账本审计已完成；实时未认证、单seed损失抽象局限及HUMAN_PENDING保持，详见上述修正版记录和实际报告链接。
 
 修复后统一服务器首轮为217 passed、1 skipped、1 failed（pytest48.35秒/wall48.650秒）。
 主对话核对唯一失败来自旧upstream测试将占槽起点等同于admission，而非实际目标capture；

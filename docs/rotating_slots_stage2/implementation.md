@@ -1,13 +1,14 @@
 # Stage2 campaign infrastructure
 
-原始首轮正式运行已 **INVALID_STOP**，最后共同窗口840秒，完整3600秒结果未形成；
-失败恢复及CLI修复已通过统一服务器回归（218 passed、1 skipped）。实测质量、正常/完整dispatch耗时、840秒审计及
-首60秒历史见 [first_campaign_status.md](first_campaign_status.md)。
-下面保留实现接口和运行前验证说明，不能用旧测试通过覆盖本轮暴露的异常。
+修正版已 **COMPLETED_3600**，同一manifest完整运行结束，heartbeat已删除；
+完整质量、正常/dispatch耗时及候选记录见 [repaired_campaign_status.md](repaired_campaign_status.md)。
+原始3600秒审计为PEAK_DELTA：Slack12项、CP5项；主对话只读取证确认既有累计误差预算未纳入当步差分审计，
+离线审计修复测试 **25 passed**，原回放的新增3600秒审计双方 **PASS、0问题**；原FAIL及archive_status保留。
+运行源码为`2b045be`，离线审计修复为`4d06034`，没有重跑仿真；人工PyVista仍 **HUMAN_PENDING**。
 
-用户已授权修正版在独立目录从同一初态重新成对验证，完整继承旧轮已用预算；
-正常启动已确认、首个共同60秒已完成，仍在运行；接续heartbeat已创建，见
-[repaired_campaign_status.md](repaired_campaign_status.md)。
+原始首轮 **INVALID_STOP840**与运行前207/1、资源恢复后218/1测试均为历史证据，见
+[first_campaign_status.md](first_campaign_status.md)及[acceptance.md](acceptance.md)。
+修正版继承旧已用预算，不拼接旧840秒；本次审计校正不重跑或改写运行数据。
 
 This document describes implemented interfaces, not a completed campaign or a
 human acceptance record. The formal input is
@@ -89,10 +90,12 @@ Inner algorithm wall remains available separately in decision JSONL and
 `inner_algorithm_timing`.
 
 After outputs sync locally, an actual human may open an exported archive with
-the established PyVista adapter. Replace the path with an existing export:
+the established PyVista adapter. The example uses the repaired full-window
+Energy-slack archive; replace `energy_slack` with `rh_cp_sat` for the comparison.
+It has not been executed by the document update and does not sign human acceptance:
 
 ```powershell
-.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_first_campaign_v1_20261021\energy_slack\replay_0060')).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_repaired_campaign_v1_20261021\energy_slack\replay_3600')).run()"
 ```
 
 The preparation credit is supplied once and includes measured tests and earlier
