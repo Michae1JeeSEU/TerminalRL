@@ -1,10 +1,127 @@
-# Stage2 v3完整3600秒成对运行：RUNNING
+# Stage2 v3目标3600秒成对运行：BUDGET_LIMITED，共同1620秒
 
-用户已授权使用通过120秒切环复查的v3，重新从t0进行3600秒成对运行。当前记录为 **RUNNING**；
-最新检查已见双方`summary_1440.json`、`checkpoint_1440.json`及states文件，仍为RUNNING；
-双方summary payload已在本地解析，`time=1440`；这不代替最终审计或完整性验收。未观察到invalid、error或exception。
-此前[120秒pilot](transfer_fix_120s_status.md)已获用户 **HUMAN_CONFIRMED_TRANSFER_FIX**，仅限所观察的O→M/M→I问题；
-本次完整3600秒回放的人工状态仍为 **HUMAN_PENDING**，不预判全局最优性、实时性或长窗口表现。
+本轮已结束，状态为 **BUDGET_LIMITED**，最后共同完成窗口 **1620秒（3600目标的45%）**，退出0，原PID均已退出。
+运行wall12050.9秒；这是预算截尾，不是软件失败，也不是完成3600秒或达到容量目标。
+heartbeat `stage2-3600`已由工具成功删除，没有继续复查安排。
+运行源码仍为`bede731fdf871829bf92d792b3c9450a6317167f`，source hash为
+`5751ce59d0a828fdbc08a4c1041d0437b62ba774cc763061da3d82fd11448eea`，未改变源码、参数或协议。
+
+## 共同1620秒质量与实际移动
+
+以下数据来自双方`summary_1620.json`及`replay_1620`，不外推3600秒。
+
+| 质量/成本 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| normal / emergency / 总接地 | 13 / 40 / 53 | 14 / 42 / 56 |
+| failure；battery / peak | 39；39 / 0 | 37；37 / 0 |
+| admitted / 空中pending / 上游pending | 124 / 32 / 0 | 124 / 31 / 0 |
+| reroute / 尚未释放请求 | 0 / 84 | 0 / 84 |
+| 总终端能量J | 5418169537.261356 | 5292672592.06787 |
+| failure / emergency / reroute费用 | 39000000 / 94800 / 0 | 37000000 / 93600 / 0 |
+| 累计空中时间 / 上游等待秒 | 72967.780117 / 917.688036 | 70328.982773 / 530.696020 |
+| C_legacy | 39168685.46815275 | 37164459.67879288 |
+| 守恒 | true | true |
+
+| cohort：admitted / success / failed / air / upstream | Energy-slack | RH-CP-SAT |
+|---|---|---|
+| initial_airborne | 36 / 23 / 13 / 0 / 0 | 36 / 22 / 14 / 0 / 0 |
+| new_requests | 88 / 30 / 26 / 32 / 0 | 88 / 34 / 23 / 31 / 0 |
+
+| 实际开始 / 完成 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| O→M | 77 / 76 | 87 / 83 |
+| M→I | 39 / 38 | 53 / 53 |
+| 正常final开始 / 接地 | 13 / 13 | 14 / 14 |
+| 正常接地原身份：initial O / M / I / new | 3 / 7 / 3 / 0 | 0 / 4 / 8 / 2 |
+
+开始事件按轨迹hash关联`maneuver_started`，完成用`transfer_completed`或`touchdown`；
+原始ring来自fixture、new身份来自manifest，不以final时的inner状态推断原身份。
+CP在本单seed、共同1620秒内失败少2、总接地多3，不构成普遍优势。
+O→M/M→I已实际执行，但新请求正常接地仅0/2，正常落地大多仍来自初始积压，本窗口正常吞吐表现仍弱。
+
+## 正常与完整dispatch耗时
+
+全部记录按`time≤1620`筛选，N及分位数逐项匹配summary；非空提交调用另外计数，未将空提交排除后冒充全调用统计。
+
+| 正常callback wall秒 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| N / mean | 936 / 4.333239 | 968 / 5.062146 |
+| P50 / P95 / P99 | 4.259548 / 5.169030 / 5.686554 | 5.115233 / 5.778566 / 6.042736 |
+| max / >5秒 | 6.120553 / 84（8.9744%） | 6.170136 / 655（67.6653%） |
+| CPU累计秒 | 4052.325626 | 4891.378980 |
+
+| 完整dispatch wall秒 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| N / mean | 936 / 10.549335 | 968 / 10.447307 |
+| P50 / P95 / P99 | 10.386952 / 16.965216 / 18.357005 | 10.200791 / 17.023585 / 18.344938 |
+| max / >5秒 | 19.675170 / 834（89.1026%） | 19.788957 / 932（96.2810%） |
+| CPU累计秒 | 9865.123365 | 10094.947646 |
+
+| dispatch原字段：wall累计 / 均值秒 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| 公共应急监测+救援 | 5293.640231 / 5.655599 | 4839.195340 / 4.999169 |
+| 公共准入 | 524.619049 / 0.560490 | 373.634275 / 0.385986 |
+| 正常callback | 4055.911746 / 4.333239 | 4900.157259 / 5.062146 |
+
+正常之外的主要已记录成本是公共应急字段，日志未分别记录monitor与rescue，不进一步拆分归因。
+正常内部reference种子wall累计2740.975/2764.693秒（Slack/CP），Slack selection1037.049秒，
+CP hint1096.844、model401.313、validation315.872、cp_solve仅1.427385秒。
+这些阶段有包含关系，正常还包括executor的`_start_due`等边界工作，不能把嵌套阶段重复相加或将完整dispatch归因于CP求解器。
+本轮不构成实时保证。
+
+## 候选与决策记录
+
+| 计数 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| 决策 / 非空调用 / noop | 936 / 115 / 821 | 968 / 127 / 841 |
+| 提交前缀 / fallback | 129 / 0 | 153 / 0 |
+| commit_status ACCEPTED（含noop） | 936 | 968 |
+| 目录不完整 / 完整调用 | 936 / 0 | 968 / 0 |
+| CANDIDATE_WORK_CUTOFF / SOFT_BUDGET标签 | 936 / 63 | 968 / 626 |
+| 决策status | FEASIBLE936 | LEX_LIMITED680；CATALOG_LEX_OPTIMAL288 |
+| raw CP阶段status | 不适用 | OPTIMAL3322；UNKNOWN4 |
+| CP阶段validation | 不适用 | SAFE3057；UNSAFE265；未记录4 |
+| stale / watchdog | 0 / 0 | 0 / 0 |
+
+同次调用可有多个截断标签；所有catalog均有不完整飞机，不能声称全局最优或把未找到称为全局不可行。
+raw OPTIMAL/UNKNOWN仅为有限模型阶段状态；265条UNSAFE是被拒绝的阶段候选，不是已执行违规。
+commit ACCEPTED包含noop，不等于每次都有实际移动。
+
+## 审计、边界与人工状态
+
+双方[audit Slack](D:/7_codespace/training_outputs/terminal/stage2_transfer_fixed_campaign_v3_20261021/energy_slack/audit_1620.json)、
+[audit CP](D:/7_codespace/training_outputs/terminal/stage2_transfer_fixed_campaign_v3_20261021/rh_cp_sat/audit_1620.json)
+均 **PASS、issue_count=0、continuous_separation=CERTIFIED**，physical_outcome为ENERGY_LOSSES_CONTINUED。
+审计帧2241/2286、能量区间101261/99383、pair runs21924/22838，守恒检查全true。
+summary记录的最小间隔下界为80.0208148312702/80.00949917789727米；该字段来自summary，不冒充独立audit最小距离输出。
+审计属于使用共享冻结数值kernel的独立账本检查，不是独立现实能源模型oracle。
+主对话已核对实际[比较曲线](D:/7_codespace/training_outputs/terminal/stage2_transfer_fixed_campaign_v3_20261021/comparison_curves.png)及审计报告。
+
+两份replay首末帧顶层`time`均0→1620，索引帧数与audit一致；双方`checkpoint_1620.payload.time`均1620。
+方法根states末顶层时间为Slack1654.76620219529、CP1653，属于停止前未完成下一60秒块的尾段；
+正式对照与审计回放仅用共同1620，不拼接这些尾段。minimum_separation.time不是帧时间。
+本窗口人工仍 **HUMAN_PENDING**；[此前120秒用户确认](transfer_fix_120s_status.md)仅限该短窗口切环问题，不替代本窗口人工验收。
+
+在`D:\7_codespace\terminal`的PowerShell可分别打开本轮回放；以下入口沿用已验证API，本次未运行GUI：
+
+```powershell
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_transfer_fixed_campaign_v3_20261021\energy_slack\replay_1620')).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_transfer_fixed_campaign_v3_20261021\rh_cp_sat\replay_1620')).run()"
+```
+
+## 预算与描述统计记账
+
+冻结campaign累计 **34309.89667201042秒**（含归档），budget floor34309.895382642746秒；
+计算截止34200秒、总额36000秒保持不变。归档属于计算截止后的总预算内工作，不重置预算。
+[紧凑事实JSON](../../artifacts/rotating_slots_stage2_20261022/v3_final_1620_facts.json)及
+[一次性描述统计脚本](../../artifacts/rotating_slots_stage2_20261022/aggregate_v3_final.py)只在artifacts中保留，不随文档提交，未重跑audit或仿真。
+描述统计实际wall1.5647622秒，外层进程wall1.8909992秒；不把人工或排队等待计为计算。
+后处理保守记3秒，后续应承接的累计为 **34312.89667201042秒**，仍小于36000；不修改冻结budget或原始产物，
+这项记账不启动新实验。
+
+## 历史启动与1440秒中间记录
+
+以下保留各观察时点记录，RUNNING、待终态或heartbeat复查安排均为当时状态；当前以本页前部终态及heartbeat已删除为准。
 
 ## 最新RUNNING检查
 
