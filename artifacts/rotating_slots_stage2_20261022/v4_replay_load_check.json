@@ -1,0 +1,339 @@
+{
+  "schema": "v4_replay_controller_read_only_load_check_v1",
+  "started_utc": "2026-10-21T18:06:20.031013+00:00",
+  "checks": [
+    {
+      "method": "energy_slack",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0360",
+      "seeks": [
+        {
+          "requested_time_s": 0.0,
+          "controller_time_s": 0.0,
+          "render_time_field": "time",
+          "render_time_s": 0.0,
+          "sampled_state_time_s": 0.0,
+          "aircraft_count": 39,
+          "statuses": {
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 3,
+            "HOLD_INNER": 7,
+            "TRANSFER_M_I": 4,
+            "HOLD_MIDDLE": 8,
+            "TRANSFER_O_M": 5,
+            "HOLD_OUTER": 9
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 39,
+            "recent_conflict_uids": 0,
+            "terminal_events": 0
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.19009939953684807
+        },
+        {
+          "requested_time_s": 240.0,
+          "controller_time_s": 240.0,
+          "render_time_field": "time",
+          "render_time_s": 240.0,
+          "sampled_state_time_s": 240.0,
+          "aircraft_count": 56,
+          "statuses": {
+            "CLEARED": 12,
+            "HOLD_INNER": 15,
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 2,
+            "TRANSFER_M_I": 2,
+            "HOLD_MIDDLE": 14,
+            "VERTICAL_DESCENT": 1,
+            "HOLD_OUTER": 2,
+            "TRANSFER_O_M": 3,
+            "INBOUND": 2
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 44,
+            "recent_conflict_uids": 0,
+            "terminal_events": 12
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.1958007998764515
+        },
+        {
+          "requested_time_s": 270.0,
+          "controller_time_s": 270.0,
+          "render_time_field": "time",
+          "render_time_s": 270.0,
+          "sampled_state_time_s": 269.9999999999999,
+          "aircraft_count": 60,
+          "statuses": {
+            "CLEARED": 13,
+            "HOLD_INNER": 16,
+            "LANDED_SERVICE": 4,
+            "VERTICAL_DESCENT": 1,
+            "FINAL_NORMAL": 1,
+            "HOLD_MIDDLE": 16,
+            "TRANSFER_M_I": 1,
+            "TRANSFER_O_M": 1,
+            "HOLD_OUTER": 2,
+            "INBOUND": 5
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 47,
+            "recent_conflict_uids": 0,
+            "terminal_events": 14
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.1901709996163845
+        },
+        {
+          "requested_time_s": 300.0,
+          "controller_time_s": 300.0,
+          "render_time_field": "time",
+          "render_time_s": 300.0,
+          "sampled_state_time_s": 300.0,
+          "aircraft_count": 60,
+          "statuses": {
+            "CLEARED": 14,
+            "FINAL_NORMAL": 4,
+            "HOLD_INNER": 13,
+            "LANDED_SERVICE": 4,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 4,
+            "HOLD_MIDDLE": 13,
+            "HOLD_OUTER": 3,
+            "TRANSFER_O_M": 4
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 46,
+            "recent_conflict_uids": 0,
+            "terminal_events": 15
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.1980205001309514
+        },
+        {
+          "requested_time_s": 360.0,
+          "controller_time_s": 360.0,
+          "render_time_field": "time",
+          "render_time_s": 360.0,
+          "sampled_state_time_s": 360.0,
+          "aircraft_count": 64,
+          "statuses": {
+            "CLEARED": 18,
+            "LANDED_SERVICE": 5,
+            "HOLD_INNER": 17,
+            "FINAL_NORMAL": 1,
+            "HOLD_MIDDLE": 15,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 1,
+            "HOLD_OUTER": 2,
+            "TRANSFER_O_M": 2,
+            "INBOUND": 2
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 46,
+            "recent_conflict_uids": 0,
+            "terminal_events": 20
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.19221829995512962
+        }
+      ],
+      "time_bounds": [
+        0.0,
+        360.0
+      ],
+      "config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+      "service_profile": "service_half_v1",
+      "human_acceptance": "HUMAN_PENDING",
+      "state_frames": 566,
+      "load_wall_s": 11.851196100004017,
+      "status": "completed",
+      "index_unchanged": true,
+      "index_sha256": "ec463a6c81d7eb6653091e482687a4b2b0f5798fff2f36134ba64ddd3baa9374",
+      "wall_s": 12.817773099988699
+    },
+    {
+      "method": "rh_cp_sat",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0360",
+      "seeks": [
+        {
+          "requested_time_s": 0.0,
+          "controller_time_s": 0.0,
+          "render_time_field": "time",
+          "render_time_s": 0.0,
+          "sampled_state_time_s": 0.0,
+          "aircraft_count": 39,
+          "statuses": {
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 3,
+            "HOLD_INNER": 7,
+            "TRANSFER_M_I": 4,
+            "HOLD_MIDDLE": 8,
+            "TRANSFER_O_M": 5,
+            "HOLD_OUTER": 9
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 39,
+            "recent_conflict_uids": 0,
+            "terminal_events": 0
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.18357549980282784
+        },
+        {
+          "requested_time_s": 240.0,
+          "controller_time_s": 240.0,
+          "render_time_field": "time",
+          "render_time_s": 240.0,
+          "sampled_state_time_s": 240.0,
+          "aircraft_count": 56,
+          "statuses": {
+            "CLEARED": 13,
+            "HOLD_INNER": 13,
+            "LANDED_SERVICE": 2,
+            "TRANSFER_M_I": 5,
+            "HOLD_MIDDLE": 12,
+            "FINAL_NORMAL": 3,
+            "VERTICAL_DESCENT": 1,
+            "HOLD_OUTER": 2,
+            "TRANSFER_O_M": 3,
+            "INBOUND": 2
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 43,
+            "recent_conflict_uids": 0,
+            "terminal_events": 12
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.19408580008894205
+        },
+        {
+          "requested_time_s": 270.0,
+          "controller_time_s": 270.0,
+          "render_time_field": "time",
+          "render_time_s": 270.0,
+          "sampled_state_time_s": 269.99999999999994,
+          "aircraft_count": 60,
+          "statuses": {
+            "CLEARED": 14,
+            "HOLD_INNER": 16,
+            "LANDED_SERVICE": 5,
+            "HOLD_MIDDLE": 12,
+            "FINAL_NORMAL": 1,
+            "TRANSFER_M_I": 2,
+            "HOLD_OUTER": 2,
+            "TRANSFER_O_M": 3,
+            "INBOUND": 5
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 46,
+            "recent_conflict_uids": 0,
+            "terminal_events": 16
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.18991350010037422
+        },
+        {
+          "requested_time_s": 300.0,
+          "controller_time_s": 300.0,
+          "render_time_field": "time",
+          "render_time_s": 300.0,
+          "sampled_state_time_s": 300.0,
+          "aircraft_count": 60,
+          "statuses": {
+            "CLEARED": 15,
+            "HOLD_INNER": 14,
+            "FINAL_NORMAL": 4,
+            "HOLD_MIDDLE": 11,
+            "LANDED_SERVICE": 5,
+            "TRANSFER_M_I": 3,
+            "HOLD_OUTER": 3,
+            "TRANSFER_O_M": 5
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 45,
+            "recent_conflict_uids": 0,
+            "terminal_events": 17
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.19007060024887323
+        },
+        {
+          "requested_time_s": 360.0,
+          "controller_time_s": 360.0,
+          "render_time_field": "time",
+          "render_time_s": 360.0,
+          "sampled_state_time_s": 360.0,
+          "aircraft_count": 64,
+          "statuses": {
+            "CLEARED": 20,
+            "FINAL_NORMAL": 2,
+            "HOLD_INNER": 15,
+            "LANDED_SERVICE": 3,
+            "TRANSFER_M_I": 1,
+            "HOLD_MIDDLE": 16,
+            "VERTICAL_DESCENT": 1,
+            "HOLD_OUTER": 2,
+            "TRANSFER_O_M": 2,
+            "INBOUND": 2
+          },
+          "render_collection_counts": {
+            "rings": 3,
+            "gates": 4,
+            "landing_zones": 6,
+            "uavs": 44,
+            "recent_conflict_uids": 0,
+            "terminal_events": 20
+          },
+          "positions_and_soc_finite": true,
+          "wall_s": 0.1822333000600338
+        }
+      ],
+      "time_bounds": [
+        0.0,
+        360.0
+      ],
+      "config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+      "service_profile": "service_half_v1",
+      "human_acceptance": "HUMAN_PENDING",
+      "state_frames": 571,
+      "load_wall_s": 7.5337971998378634,
+      "status": "completed",
+      "index_unchanged": true,
+      "index_sha256": "092960bd66419aca18b544cf0e49ec57c82ca68011bbe308b0b2b7a79a28e8a2",
+      "wall_s": 8.473927199840546
+    }
+  ],
+  "gui_started": false,
+  "simulation_started": false,
+  "status": "completed",
+  "ended_utc": "2026-10-21T18:06:41.322122+00:00",
+  "wall_s": 21.29184960015118
+}
