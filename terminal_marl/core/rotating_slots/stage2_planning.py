@@ -279,6 +279,7 @@ class ReferenceProvider:
             targets=range(6 if current.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[current.ring],snapshot.config).slot_count)
             screen=self.screen(snapshot,current,current.time,budget)
             if screen is None: return NormalReference("UNKNOWN",identity=key)
+            yield None
             for duration in range(20,301 if current.ring=="inner" else 181,5):
                 for target in targets:
                     if screen[(target,duration)] is not None: continue
@@ -678,6 +679,40 @@ class CandidateProvider:
                 group["emitted"]=True
                 yield ("COLUMN",group["chain"],group["state"])
 
+    def _reference_seed(self,snapshot,a,node,reference,budget):
+        """Replay a normal reference with the path search's executable rules.
+
+        References measure normal energy even when that chain cannot be flown
+        with the current SOC, predicted emergency state, or fixed background.
+        They therefore enter the catalog only through this separate replay.
+        """
+        current,chain=node,()
+        for p in reference.plans:
+            if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
+                return chain,"UNKNOWN"
+            state=self._emergency_prediction(snapshot,a,current) if chain else "NONE"
+            if chain and current.ring!="inner" and state in ("ELIGIBLE","UNKNOWN"):
+                return chain,state
+            immediate=bool(chain and current.ring=="inner" and state in ("ELIGIBLE","UNKNOWN"))
+            if (p.source_ring,p.source_slot,p.source_version)!=(current.ring,current.slot,current.version) or p.start_time<current.time:
+                budget.screening["seed_state_rejected"]+=1
+                return None
+            if immediate and abs(p.start_time-current.time)>1.e-8:
+                return chain,state
+            if p.end_time>snapshot.time+900:
+                budget.screening["seed_horizon_rejected"]+=1
+                return (chain,state) if immediate else None
+            q=_move_energy(current,p,snapshot.config)
+            if not (current.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and current.peak+q[2]<=120.) or not math.isfinite(q[0]):
+                budget.screening["seed_energy_rejected"]+=1
+                return (chain,state) if immediate else None
+            chain=(*chain,p)
+            if p.pad_id is not None:
+                predicted=self._emergency_prediction(snapshot,a,current)
+                return chain,predicted+"_IMMEDIATE_NORMAL_EXCEPTION" if immediate else predicted
+            current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
+        return None
+
     def _offset_cursors(self,snapshot,a,node,budget,offset,include_aligned=True):
         """One offset's all-target cursors; only their next template is queued."""
         targets=range(6 if node.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[node.ring],snapshot.config).slot_count)
@@ -755,8 +790,8 @@ class CandidateProvider:
         start_hits=self.references.hits
         aircraft=_decision_aircraft(snapshot)
         refs={}; slacks={}; columns={}; incomplete=[]
-        # Round-robin candidate construction precedes any cold reference work.
-        # UNKNOWN priorities are deterministic until a complete chain is present.
+        # Complete normal references get the first bounded, ring-interleaved pass.
+        # Their full energy remains useful for slack even if replay is unsafe.
         for a in aircraft:
             node=_node(snapshot,a)
             key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id)
@@ -770,6 +805,37 @@ class CandidateProvider:
                 if c is not None and context.check_single(c).accepted: columns[a.id].append(c)
         ordered=sorted(aircraft,key=lambda a:slacks[a.id])
         counts={a.id:Counter(c.first_target for c in columns[a.id] if c.kind=="MOVE") for a in ordered}
+        def add_column(a,plans,emergency):
+            first=(plans[0].target_ring,plans[0].target_slot,plans[0].pad_id)
+            if counts[a.id][first]>=2 or len(columns[a.id])>=10: return
+            ref=(ReferenceProvider._reference(snapshot,_node(snapshot,a),plans,"catalog_minimum")
+                 if plans[-1].pad_id is not None else refs[a.id])
+            c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency,budget=budget)
+            if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
+                columns[a.id].append(c); counts[a.id][first]+=1
+                if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
+        by_ring={ring:[a for a in ordered if _node(snapshot,a).ring==ring]
+                 for ring in ("outer","middle","inner")}
+        seed_order=[group[index] for index in range(max(map(len,by_ring.values()),default=0))
+                    for group in by_ring.values() if index<len(group)]
+        with budget.measure("reference_seed_generation"):
+            for a in seed_order:
+                if not budget.available(): break
+                gen=self.references.build_steps(snapshot,a,_node(snapshot,a),budget)
+                # Spend this aircraft's bounded allowance on a complete chain
+                # before moving to the next ring. Alternative paths below keep
+                # their original primitive-level round-robin enumeration.
+                while budget.available(a.id):
+                    try: next(gen)
+                    except StopIteration as stop:
+                        reference=stop.value
+                        if reference.status=="KNOWN":
+                            refs[a.id]=reference
+                            seed=self._reference_seed(snapshot,a,_node(snapshot,a),reference,budget)
+                            if seed is not None: add_column(a,*seed)
+                        break
+        slacks={a.id:energy_slack(snapshot,a,refs[a.id]) for a in ordered}
+        ordered=sorted(ordered,key=lambda a:slacks[a.id])
         generators={a.id:self._paths(snapshot,a,_node(snapshot,a),budget,context,accepted_counts=counts[a.id]) for a in ordered}
         while generators and budget.available():
             for a in ordered:
@@ -778,14 +844,7 @@ class CandidateProvider:
                 try: tag,plans,emergency=next(gen)
                 except StopIteration: generators.pop(a.id,None); continue
                 if tag!="COLUMN": continue
-                first=(plans[0].target_ring,plans[0].target_slot,plans[0].pad_id)
-                if counts[a.id][first]>=2: continue
-                ref=(ReferenceProvider._reference(snapshot,_node(snapshot,a),plans,"catalog_minimum")
-                     if plans[-1].pad_id is not None else refs[a.id])
-                c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency,budget=budget)
-                if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
-                    columns[a.id].append(c); counts[a.id][first]+=1
-                    if ref.status=="KNOWN" and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
+                add_column(a,plans,emergency)
                 if len(columns[a.id])>=10: generators.pop(a.id,None); budget.truncations.add("MOVING_COLUMN_LIMIT")
         for a in ordered:
             if refs[a.id].status!="KNOWN":

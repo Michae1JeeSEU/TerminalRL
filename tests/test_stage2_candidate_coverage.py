@@ -155,3 +155,125 @@ def test_fixed_background_rejections_do_not_consume_accepted_first_target_cap(mo
     assert all(count <= 64 for count in budget.attempts.values())
     assert any(reason == "RESOURCE_CONFLICT" for _, ok, reason in checks if not ok)
     assert all(evaluate_planning_snapshot(snapshot, (c.plans[0],)).accepted for c in pad5)
+
+
+@pytest.fixture(scope="module")
+def reference_world():
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld
+    world=RotatingSlotWorld()
+    world.configure_practical_runtime(True)
+    for ring,slot in (("outer",0),("middle",9),("inner",17)):
+        world.seed_hold(ring,ring,slot,.9)
+    return world
+
+
+def test_reference_first_seeds_cover_every_ring_with_original_attempt_limits(monkeypatch,reference_world):
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider, EvaluationContext
+    snapshot=reference_world.build_planning_snapshot()
+    # Make this an attempt-budget regression independent of host CPU speed.
+    monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
+    provider=CandidateProvider()
+    monkeypatch.setattr(provider,"_paths",lambda *args,**kwargs:iter(()))
+    budget=PlanningBudget()
+    context=EvaluationContext(snapshot)
+    catalog=provider.get_columns(snapshot,budget,context)
+    for ring,depth in (("outer",3),("middle",2),("inner",1)):
+        moving=[c for c in catalog.columns[ring] if c.kind=="MOVE"]
+        assert len(moving)==1 and len(moving[0].plans)==depth
+        assert moving[0].plans[-1].pad_id is not None
+        assert context.check_single(moving[0]).accepted
+        assert evaluate_planning_snapshot(snapshot,(moving[0].plans[0],)).accepted
+        assert 0<budget.attempts[ring]<=64
+    assert sum(budget.attempts.values())<=2048
+    assert "reference_seed_generation" in budget.timings
+
+
+def test_reference_seed_rejection_keeps_full_reference_for_slack(monkeypatch):
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider, EvaluationContext
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld
+    monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
+    world=RotatingSlotWorld();world.seed_hold("inner","inner",0,.9)
+    snapshot=world.build_planning_snapshot()
+    references=ReferenceProvider()
+    reference=references.get(snapshot,snapshot.aircraft["inner"],budget=PlanningBudget())
+    assert reference.status=="KNOWN"
+    world.seed_service("busy",reference.plans[-1].pad_id,remaining=500.)
+    snapshot=world.build_planning_snapshot();context=EvaluationContext(snapshot)
+    checked=[];original=context.check_single
+    def record(column):
+        result=original(column);checked.append(result);return result
+    monkeypatch.setattr(context,"check_single",record)
+    provider=CandidateProvider(references)
+    monkeypatch.setattr(provider,"_paths",lambda *args,**kwargs:iter(()))
+    catalog=provider.get_columns(snapshot,PlanningBudget(),context)
+    assert checked and any(not r.accepted and r.reason=="RESOURCE_CONFLICT" for r in checked)
+    assert not any(c.kind=="MOVE" for c in catalog.columns["inner"])
+    node=_node(snapshot,snapshot.aircraft["inner"])
+    assert references.cache[(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,"inner")]==reference
+    from terminal_marl.core.rotating_slots.stage2_planning import energy_slack
+    assert catalog.slacks["inner"]==energy_slack(snapshot,snapshot.aircraft["inner"],reference)
+    assert catalog.slacks["inner"][0]!=1
+
+
+def test_reference_seed_completes_outer_before_next_aircraft_and_interleaves_rings(monkeypatch):
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld
+    monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
+    world=RotatingSlotWorld();world.configure_practical_runtime(True)
+    for name,ring,slot in (("o0","outer",0),("o1","outer",18),
+                           ("m0","middle",9),("i0","inner",0),("i1","inner",9)):
+        world.seed_hold(name,ring,slot,.9)
+    snapshot=world.build_planning_snapshot();provider=CandidateProvider()
+    monkeypatch.setattr(provider,"_paths",lambda *args,**kwargs:iter(()))
+    events=[];original=provider.references.build_steps
+    def record(snapshot,a,node,budget):
+        events.append(("start",a.id))
+        result=yield from original(snapshot,a,node,budget)
+        events.append(("finish",a.id,result.status))
+        return result
+    monkeypatch.setattr(provider.references,"build_steps",record)
+    catalog=provider.get_columns(snapshot,PlanningBudget())
+    # Inspect actual completed normal trajectories as well as visit order.
+    assert [event[1] for event in events if event[0]=="start"][:5]==["o0","m0","i0","o1","i1"]
+    assert events.index(("finish","o0","KNOWN"))<events.index(("start","i0"))<events.index(("start","o1"))
+    assert any(len(c.plans)==3 and c.plans[-1].pad_id is not None for c in catalog.columns["o0"] if c.kind=="MOVE")
+
+
+@pytest.mark.parametrize(("ring","soc","peak"),[("outer",.001,0.),("inner",.25,0.),("middle",.9,121.)])
+def test_reference_seed_replays_transfer_final_reserve_and_peak(monkeypatch,reference_world,ring,soc,peak):
+    from dataclasses import replace
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider
+    monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
+    snapshot=reference_world.build_planning_snapshot();a=snapshot.aircraft[ring]
+    reference=ReferenceProvider().get(snapshot,a,budget=PlanningBudget())
+    budget=PlanningBudget()
+    seed=CandidateProvider()._reference_seed(snapshot,a,replace(_node(snapshot,a),soc=soc,peak=peak),reference,budget)
+    assert seed is None and budget.screening["seed_energy_rejected"]==1
+    assert reference.status=="KNOWN" and reference.plans[-1].pad_id is not None
+
+
+def test_reference_seed_matches_emergency_truncation_and_immediate_inner_exception(monkeypatch,reference_world):
+    from dataclasses import replace
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider, HORIZON
+    monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
+    snapshot=reference_world.build_planning_snapshot();provider=CandidateProvider()
+    monkeypatch.setattr(provider,"_emergency_prediction",lambda *args:"UNKNOWN")
+    for ring in ("outer","middle"):
+        a=snapshot.aircraft[ring];node=_node(snapshot,a)
+        reference=ReferenceProvider().get(snapshot,a,budget=PlanningBudget())
+        seed=provider._reference_seed(snapshot,a,node,reference,PlanningBudget())
+        if ring=="outer":
+            assert seed==(reference.plans[:1],"UNKNOWN")
+        else:
+            assert seed==(reference.plans,"UNKNOWN_IMMEDIATE_NORMAL_EXCEPTION")
+            first=reference.plans[0]
+            delayed=trajectory.generate_final(a.id,"inner",first.target_slot,reference.plans[-1].pad_id,
+                first.end_time+5.,source_version=first.source_version+1,config=snapshot.config)
+            assert delayed.accepted
+            assert provider._reference_seed(snapshot,a,node,replace(reference,plans=(first,delayed.plan)),PlanningBudget())==(reference.plans[:1],"UNKNOWN")
+    a=snapshot.aircraft["outer"];node=_node(snapshot,a)
+    first=trajectory.generate_transfer(a.id,"outer",a.slot,0,HORIZON-20.,source_version=node.version,
+        config=snapshot.config,durations=(40,)).plan
+    assert first is not None
+    reference=ReferenceProvider().get(snapshot,a,budget=PlanningBudget())
+    assert provider._reference_seed(snapshot,a,node,replace(reference,plans=(first,*reference.plans[1:])),PlanningBudget())==((first,),"UNKNOWN")

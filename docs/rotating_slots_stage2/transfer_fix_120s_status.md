@@ -1,8 +1,9 @@
-# Stage2 跨环候选修复：120秒成对pilot进行中
+# Stage2 跨环候选修复：v2行为未获接受，v3实现中
 
 用户已人工观察旧3600秒回放，并明确不接受其调度行为。旧实现的人工状态更新为
 **HUMAN_REJECTED_BEHAVIOR**；这与已执行轨迹的数值审计通过是不同判断。
-本次修复实现和独立120秒成对pilot均为 **IN_PROGRESS**，新回放仍待人工观察；本文不预填结果或新版本哈希。
+v2的独立120秒成对pilot已结束，行为修复 **NOT ACCEPTED**；其实际结果保留在下文。
+当前v3早期参考链种子修订已完成下述本地及服务器验证，整体仍 **IN_PROGRESS**；120秒pilot尚未启动，不预填运行结果或新版本哈希，新回放人工观察仍 **HUMAN_PENDING**。
 
 ## 旧回放与只读反例
 
@@ -82,3 +83,75 @@ v2最终本地回归 **40 passed、2 skipped，19.43秒**；服务器回归 **10
 涵盖截至目前的诊断及测试，服务器实际prepare另计；这是待落实的记账口径，不是实测600秒或已启动记录。
 本次成本接续计入，
 不重置原10小时额度、34200秒计算截止或36000秒总上限，不重复计旧准备费用。
+
+## v2的120秒pilot实际结果：行为修复未获接受
+
+以下为运行后的当前记录；上文“尚未启动”“待freeze/推送”等属于运行前历史。
+候选v2运行源码为`b5201eb98deb53ca948c671ad894bae422f6fbac`，source hash为
+`b1121234ddb21c151b61ae2ccb23b39d9a210a047627888ae1e0254c7c4af294`，
+策略ID为`shared_multistep_columns_v2_geometry_screened`，见实际[provenance](D:/7_codespace/training_outputs/terminal/stage2_transfer_fix_120s_20261021/provenance.json)。
+运行UTC **2026-10-21T10:00:09Z–10:05:02Z**，退出0，共同窗口120秒，campaign状态为 **PARTIAL_REQUESTED_WINDOW**，
+不是完整3600秒结果。实际产物位于上述`stage2_transfer_fix_120s_20261021`输出目录。
+
+| 120秒指标 | Energy-slack | RH-CP-SAT |
+|---|---:|---:|
+| normal / emergency / failure | 6 / 0 / 0 | 6 / 0 / 0 |
+| O→M开始 / 完成 | 0 / 0 | 0 / 0 |
+| M→I开始 / 完成 | 3 / 3 | 4 / 3 |
+| 正常final开始 / 接地 | 7 / 6 | 7 / 6 |
+| 正常callback P95秒 | 4.62477 | 5.43019 |
+| 完整dispatch P95秒 | 5.17203 | 6.01185 |
+| 独立审计status / issue_count | PASS / 0 | PASS / 0 |
+
+移动计数来自`replay_0120`的events与trajectories哈希关联：开始使用`maneuver_started`，
+跨环完成使用`transfer_completed`，接地使用`touchdown`；normal/emergency/failure及时间分位数来自双方`summary_0120.json`。
+两份[Slack审计](D:/7_codespace/training_outputs/terminal/stage2_transfer_fix_120s_20261021/energy_slack/audit_0120.json)、
+[CP审计](D:/7_codespace/training_outputs/terminal/stage2_transfer_fix_120s_20261021/rh_cp_sat/audit_0120.json)
+均为连续间隔CERTIFIED、physical_outcome=IN_PROGRESS；该物理标签描述120秒窗口，不代表运行进程仍在进行。
+
+主对话根据双方O→M仍为0/0，判定本轮**行为修复NOT ACCEPTED**。审计PASS不代替行为验收，
+上述耗时也不构成实时保证。新120秒回放人工状态仍 **HUMAN_PENDING**，旧3600秒回放的人工结论仍为
+**HUMAN_REJECTED_BEHAVIOR**。
+代码来源归因保持前述结论：共享候选搜索由基线`6d7d20d8`引入，目前没有证据表明此前仿真加速禁止了安全切环，
+但没有穷尽排除全部历史性能优化问题。
+
+本轮结束的campaign累计记账为 **21488.54562318558秒**；后续工作必须继承该累计值，不重置原10小时预算。
+实际[budget](D:/7_codespace/training_outputs/terminal/stage2_transfer_fix_120s_20261021/budget.json)
+仍保留34200秒计算截止和36000秒总额。
+主对话正在实施早期参考链种子修订，尚未验证；该后续实现仍 **IN_PROGRESS**，此处不预填下一版结果、提交或成功结论。
+
+## v3早期参考链种子：中间probe与当前修订
+
+主对话反馈的primitive round-robin种子中间probe未满足完整参考链覆盖：本地outer/middle/inner有MOVE的飞机数为
+**0/0/5**，服务器为 **0/10/5**，服务器候选阶段约3.08秒。这些是中间probe观察，不是最终v3或120秒成对运行结果。
+
+当前修订将种子pass改为每机completion-first，在原每机64次尝试及共享3秒候选预算内优先完成该机参考链；
+飞机顺序采用确定性的outer、middle、inner交错，各环内按能量优先级排序。
+这是两方法共用候选排序的显式修订，不声称严格保持原合同枚举顺序；Energy-slack自身的求解选择优先级不变。
+其他算法规则、物理、安全、能源及尝试预算保持不变，动作仍须原认证；上述中间probe不构成最终v3验证，后续证据见下，pilot结果尚未形成。
+
+## v3最终本地证据与待启动pilot
+
+主对话已复核最终实现；本地针对性验证为 **47 passed、2 skipped，23秒**。服务器回归已完成，pilot尚未启动。
+一次冷启动[focused本地probe](../../artifacts/rotating_slots_stage2_20261021/transfer_diagnosis/probe_complete_chain_focused_local.json)
+的catalog耗时3.1557秒，outer/middle/inner分别有 **3/1/2** 条MOVE，均为完整链；物理尝试合计36次，单机最大10次，
+记录1次RESOURCE_CONFLICT拒绝。这是单次有限目录证据，不是120秒连续行为验证。
+
+使用同一catalog执行一次Energy-slack选择，见[selected artifact](../../artifacts/rotating_slots_stage2_20261021/transfer_diagnosis/probe_complete_chain_focused_local_selected.json)：
+选出outer/middle/inner各1条，`certified=true`且原前缀检查接受，总budget elapsed为4.7385秒。
+实际选择前缀为outer01→middle槽1（0–40秒）、middle00→inner槽17（0–40秒）、inner00→pad5（0–48.5秒）。
+这些本地结果不预判服务器验证或pilot成功，人工观察仍HUMAN_PENDING。
+
+服务器最终回归为 **108 passed、1 skipped，pytest20.82秒、wall21.0388秒，退出0**，
+UTC2026-10-21T10:22:39Z–10:23:00Z，见[log](D:/7_codespace/training_outputs/terminal/stage2_transfer_diagnosis_20261021/verification_v3.log)及
+[meta](D:/7_codespace/training_outputs/terminal/stage2_transfer_diagnosis_20261021/verification_v3.meta.json)。
+T09/T15单项执行确认仍待核对，不由该总数推造单项结果或最优性。
+服务器[focused probe](D:/7_codespace/training_outputs/terminal/stage2_transfer_diagnosis_20261021/probe_complete_chain_focused_server.json)
+已完成，`read_only=true`、`state_unchanged=true`；catalog耗时3.01019秒，完整MOVE为outer5、middle3、inner4，
+单机最大10次尝试，仍触发原3秒CANDIDATE_WORK_CUTOFF。单机检查为12 SAFE、3拒绝：middle01/02为RESOURCE_CONFLICT，
+inner02为HARD_SEPARATION。以上均不是已启动pilot或120秒连续行为结果。
+
+拟用独立输出目录`stage2_transfer_fix_120s_v3_20261021`，仍仅运行120秒；继承先前累计 **21488.54562318558秒**。
+当前针对性诊断/测试拟保守记300秒准备credit，另加实际prepare费用，不重置原预算。
+初始T0约5分钟，依据上一轮相同120秒pilot的293.79秒wall；拟两worker、物理核0/2、数值库线程1。
+上述目录、费用及执行配置均为待启动记录，不表示进程已正常启动。

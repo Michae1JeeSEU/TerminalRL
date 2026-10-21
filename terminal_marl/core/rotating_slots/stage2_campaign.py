@@ -199,7 +199,7 @@ def source_provenance():
         overlay_sha256=sha256((CONTRACT_DIR/"stage2_baseline_config_v1_0.yaml").read_bytes()).hexdigest(),
         base_config_hash=load_config().config_hash,base_config_bytes_sha256=load_config().raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
-        candidate_policy_id="shared_multistep_columns_v2_geometry_screened",objective_id="reliability_throughput_secondary_energy_v1")
+        candidate_policy_id="shared_multistep_columns_v3_reference_seed",objective_id="reliability_throughput_secondary_energy_v1")
 
 
 def freeze_provenance(path):
