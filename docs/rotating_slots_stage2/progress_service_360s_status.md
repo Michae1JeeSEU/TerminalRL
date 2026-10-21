@@ -1,12 +1,12 @@
 # 安全进展与服务情景修订：单次 360 秒验证
 
-记录日期：2026-10-22。当前状态：主对话已复核规划实现 diff 及三个旧快照修后输出；最终测试及服务器实际 CP 验证待完成。正式验证未启动，人工验收 `HUMAN_PENDING`。提交哈希、最终运行结果、审计及回放验收待完成后填写。
+记录日期：2026-10-22。当前状态：修复已提交并推送，服务器实际 CP 测试已通过；单次正式 360 秒验证已启动并完成初验，仍为 `RUNNING`。最终结果、审计及回放验收为 `PENDING`，人工验收 `HUMAN_PENDING`。
 
 ## 本轮授权与边界
 
 用户要求修复长期正常着陆偏低、优化逻辑及服务容量不足，并在修复后执行单次 360 秒验证。旧 1620 秒结果未通过用户的性能验收，旧证据继续保留。本轮不恢复或清零旧预算，也不追加种子、重试、搜索或消融矩阵。
 
-新输出根目录拟为 `$HOME/training_outputs/terminal/stage2_progress_service_360s_v4_20261022`，通过既有 Syncthing 链路同步。单轮真实总预算为 3600 秒，其中归档保留 300 秒，计算截止为累计 3300 秒；本轮测试、诊断及准备的实耗计入该预算。旧累计 34312.8967 秒预算记录独立保留。预算只在新 root 首次 prepare 时初始化，run/resume 不重新授时。
+新输出根目录为 `/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022`，通过既有 Syncthing 链路同步到 `D:/7_codespace/training_outputs/terminal/stage2_progress_service_360s_v4_20261022`。单轮真实总预算为 3600 秒，其中归档保留 300 秒，计算截止为累计 3300 秒；本轮测试、诊断及准备的实耗计入该预算。旧累计 34312.8967 秒预算记录独立保留，不与新预算拼接或改写。预算只在新 root 首次 prepare 时初始化，run/resume 不重新授时。
 
 ## 显式服务情景
 
@@ -59,12 +59,59 @@ KEEP 与两个 witness 的 reference 均为 UNKNOWN。前四个分量相同，�
 | energy_slack_0300_after_safe_progress.json | EnergySlack，300 秒 | EnergySlack | 2 / 2 | 6.3484 | ACCEPTED | true / true |
 | rh_cp_sat_0300_after_safe_progress.json | RH-CP-SAT，300 秒 | EnergySlack hint 选择路径 | 3 / 2 | 6.9058 | ACCEPTED | true / true |
 
-第三行读取 RH-CP-SAT 方法产生的旧状态，但本地实际调用 EnergySlack 选择器，并非本地 CP-SAT 求解。三个文件的 scope 都明确记录 `no local CP solver execution`；本地 venv 缺少 `ortools`，服务器实际 CP 验证仍待执行。
+第三行读取 RH-CP-SAT 方法产生的旧状态，但本地实际调用 EnergySlack 选择器，并非本地 CP-SAT 求解。三个文件的 scope 都明确记录 `no local CP solver execution`；本地 venv 缺少 `ortools`。服务器实际 CP 测试的独立结果见下文，不回填为这三个本地快照输出的求解证据。
 
 三次 normal 墙钟均超过 5 秒软预算，当前尚未达到该耗时目标。输出还存在 `incomplete` 候选覆盖记录；这些结果只表明该次有界目录与选择路径产生了可接受的进展动作，不能声称覆盖全部候选、全部飞机均可进展或已经证明全局最优。
 
-目前已有分开记录的测试证据：规划等新增/相关测试初步为 80 passed、2 skipped（最终批次结果待补）；服务情景及既有 physics/replay/performance checkpoint 兼容批次为 84 passed、14.07 秒。后者验证配置、资源时长和序列化兼容性，不能替代实际 CP 求解或正式 360 秒运行验收。
+本地测试分开记录：规划等新增/相关测试 80 passed、2 skipped，最后 safe-progress 针对性批次 12 passed；服务情景及既有 physics/replay/performance checkpoint 兼容批次为 84 passed、14.07 秒。服务批次验证配置、资源时长和序列化兼容性，不能替代实际 CP 求解或正式 360 秒运行验收。
+
+服务器验证目录为 `/home/user/training_outputs/terminal/stage2_progress_service_v4_validation_20261022`。主对话确认服务器批次为 119 passed、1 skipped、2 deselected，墙钟 33.674934149 秒，实际 T09/T15 CP 测试通过。JUnit 中跳过的是 `test_cp_dependency_missing_is_explicit`，message 为 `OR-Tools available`：服务器已安装 OR-Tools，因此缺失依赖分支测试跳过；两个依赖本地 provenance/Git 的测试在服务器特意排除，已在本地通过。此处记录测试结果，不等于正式 360 秒实验完成。
+
+## 冻结版本与正式运行初验
+
+修复提交 `1e205b92156f0c8fd72e1ccd6d58a6e847db3fbe` 已成功推送。冻结 source hash 为 `5405da7efd082467aa180cb8d3c370bbea83c0388ae06e813f232fdc38d9cc01`。主对话已核对服务 profile、manifest、source 和 config 与冻结身份匹配；运行期间不修改冻结源码。
+
+新 root 的 prepare 仅执行一次，退出码 0，墙钟约 2.852 秒。初始预算累计下界为 702.4992141723633 秒，包含保守准备 credit 700 秒：规划诊断及测试 450 秒、服务测试 85.81 秒、服务器测试约 33.675 秒，其余覆盖短检查及包装开销的保守余量。预算为总计 3600 秒、计算截止 3300 秒、归档保留 300 秒；原旧预算保持独立。
+
+工作目录为 `/home/user/projects/terminal`，实际启动命令为：
+
+```bash
+/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022 --target 360
+```
+
+服务器启动时间为 `2026-10-21T17:35:30.392775+00:00`。wrapper PID 122325、runner PID 122336；两个 worker PID 为 122339（CPU 0）和 122340（CPU 2），绑定不同物理核，线程数及数值库线程环境均为 1。运行日志为 root 下 `campaign.log`，计时为 `campaign.timing.txt`；真实 `exit_code.txt` 在终态生成，当前不预填退出码。
+
+UTC 17:37:04 的启动初验观察到 runner 已运行约 93.6 秒，两方法最新状态时间均为 23.466796875 秒，两个 `states.jsonl` 与 checkpoint 均非空，未见 failed/invalid/error。共同 60 秒边界尚未到达，状态仍为 `RUNNING`；进程及初始产物存在不能代替完成验收。
+
+初始预计墙钟 T0 取 1800 秒，依据旧 360 秒实际约 1082 秒及新增调度开销作保守估计，并非完成保证。该初始估计和上述启动初验保留，后续观察单独记录如下。
+
+## 共同 60 秒边界与后续调度
+
+本次本地读取窗口为 UTC `2026-10-21T17:38:45.7611370Z` 至 `2026-10-21T17:39:11.2291497Z`；服务器观察时间为同日 UTC `17:39:47Z`，runner 累计运行约 257 秒。两组时间分别保留，不用本地读取时间差替代服务器进程经过时间。
+
+两方法均已发布 `summary_0060.json` 和对应 checkpoint；checkpoint payload 时间为 60 秒，且存在 boundary summary。最新 states 时间分别为 EnergySlack 60.126953125 秒、RH-CP-SAT 60.60028076171875 秒。共同已完成边界为 60 秒，尚未完成目标 360 秒。
+
+| 方法 | 正常落地 | 应急落地 | 已声明应急 | 能量失败 | 空中待完成 | 上游等待 |
+|---|---:|---:|---:|---:|---:|---:|
+| EnergySlack | 3 | 0 | 0 | 0 | 38 | 0 |
+| RH-CP-SAT | 3 | 0 | 0 | 0 | 38 | 0 |
+
+本次检查未见 invalid 或 truncated 证据，真实终态 `exit_code.txt` 尚未生成，运行继续。持久预算下界为 1144.7631485462189 秒，包含 prepare 后经过的墙钟；该累计预算与 runner 的约 257 秒经过时间口径不同，不能用后者覆盖前者。
+
+以共同进度 `p=60/360` 和服务器 runner 经过时间约 257 秒粗估，总耗时 `T≈257/p=1542` 秒，剩余 `R≈1285` 秒。启动开销与后续调度密度会变化，该估计不是完成保证，亦不替代总预算约束。
+
+主对话已通过工具成功创建当前 thread 的 heartbeat：id `stage2-360`，状态 `ACTIVE`，约 20 分钟后复查；设置时从剩余估计中扣除了观察后约 1 分钟。等待由该 heartbeat 调度接续，不保留睡眠中的监控 worker。完成状态、结果产物及人工验收仍待后续复查。
+
+## 完成后本地回放
+
+以下 PowerShell 命令仅在相应 `replay_0360` 完成并同步到本地后可用。使用现有 viewer 类的 `-c` API；当前不把待生成回放标记为已可观看。
+
+```powershell
+Set-Location "D:/7_codespace/terminal"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\energy_slack\replay_0360')).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\rh_cp_sat\replay_0360')).run()"
+```
 
 ## 待补结果
 
-正式 360 秒命令、启动时间、PID、冻结 provenance、准备实耗 credit：待填写。两方法结果、共同完成边界、性能指标、审计及回放检查：待填写。最终提交哈希与推送状态：待填写。人工验收：`HUMAN_PENDING`。
+真实终态退出码、两方法结果、共同完成边界、性能指标、审计及回放检查：`PENDING`。后续状态文档提交及推送记录：待填写。人工验收：`HUMAN_PENDING`。
