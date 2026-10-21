@@ -318,6 +318,80 @@ def _candidate(aircraft_id,kind,start,source_ring,source_slot,target_ring,target
 _TRANSFER_FEASIBILITY = OrderedDict()
 _TRANSFER_FEASIBILITY_LIMIT = 4096
 
+# Rejection-only, coefficient-based geometry tables. These contain neither
+# TrajectoryPlans nor energy, separation, or feasibility certificates.
+_NORMAL_TEMPLATE_SCREENS = OrderedDict()
+
+
+def screen_normal_templates(source_ring, source_slot, start_time, config=None):
+    """Return witnessed-impossible (target, duration) templates, plus cache hit.
+
+    Evaluate the existing canonical Hermite polynomials and Cartesian motion
+    formulas at five local times. A violation is a necessary-condition failure;
+    an absent violation is UNKNOWN and must still use generate/validate_plan.
+    Both transfer angular branches must fail before a template is excluded.
+    This vectorized work constructs no Segment or TrajectoryPlan objects.
+    """
+    c = config or load_config()
+    source = ring_config(source_ring, c)
+    final = source_ring == 'inner'
+    durations = tuple(range(20, 301 if final else 181, 5))
+    phase = slot_phase(source_ring, source_slot, start_time, c) if final else None
+    key = (c.config_hash, source_ring, source_slot, phase)
+    if key in _NORMAL_TEMPLATE_SCREENS:
+        return _NORMAL_TEMPLATE_SCREENS[key], True
+    target_ring = None if final else {'outer': 'middle', 'middle': 'inner'}[source_ring]
+    target = None if final else ring_config(target_ring, c)
+    count = c.pads.count if final else target.slot_count
+    T = np.asarray(durations, dtype=float)[None, :, None]
+    if final:
+        angles = np.asarray([math.atan2(pad_position(k, c)[1], pad_position(k, c)[0])
+                             for k in range(count)])[:, None, None]
+        delta = (angles-phase) % (2*math.pi)-2*math.pi
+        r = hermite(source.radius_m, 0., 0., c.pads.layout_radius_m, 0., 0., T)
+        theta = hermite(phase, -c.airspace.common_angular_speed_radps, 0., phase+delta, 0., 0., T)
+        # final_height has duration-dependent degree; pad-independent vertical
+        # jets below use exactly the existing scalar polynomial builder.
+        heights = tuple(final_height(source.height_agl_m, t) for t in durations)
+    else:
+        raw = np.asarray([slot_phase(target_ring, k, 0., c)-slot_phase(source_ring, source_slot, 0., c)
+                          for k in range(count)])[:, None, None] % (2*math.pi)
+        delta = np.concatenate((np.where(raw <= math.pi, raw, raw-2*math.pi), raw-2*math.pi), axis=2)
+        r = hermite(source.radius_m, 0., 0., target.radius_m, 0., 0., T)
+        theta = (0., -c.airspace.common_angular_speed_radps*T, 0., 10*delta, -15*delta, 6*delta)
+        z = hermite(source.height_agl_m, 0., 0., target.height_agl_m, 0., 0., T)
+    shape = (count, len(durations), 1 if final else 2)
+    failed = np.zeros(shape, dtype=bool)
+    reason = np.full(shape, '', dtype=object)
+    for u in (0., .25, .5, .75, 1.):
+        radial = [poly(r, u, k)/T**k for k in range(4)]
+        angular = [poly(theta, u, k)/T**k for k in range(4)]
+        angular[0] = 0.  # Horizontal norms are rotation invariant.
+        vertical = ([np.asarray([poly(h, u, k)/t**k for h, t in zip(heights, durations)])[None, :, None]
+                     for k in range(4)] if final else [poly(z, u, k)/T**k for k in range(4)])
+        jets = _cartesian(radial, angular, vertical)
+        v, a, j = jets[1:]
+        checks = ((np.hypot(v[0], v[1]) > c.vehicle.max_horizontal_speed_mps+1.e-10, 'HORIZONTAL_SPEED'),
+                  (np.hypot(a[0], a[1]) > c.vehicle.max_horizontal_acceleration_norm_mps2+1.e-10, 'HORIZONTAL_ACCELERATION'),
+                  (np.abs(a[2]) > c.vehicle.max_vertical_acceleration_mps2+1.e-10, 'VERTICAL_ACCELERATION'),
+                  (np.hypot(j[0], j[1]) > c.vehicle.max_horizontal_jerk_mps3+1.e-10, 'HORIZONTAL_JERK'),
+                  (np.abs(j[2]) > c.vehicle.max_vertical_jerk_mps3+1.e-10, 'VERTICAL_JERK'),
+                  (np.abs(v[2]) > c.vehicle.max_descent_speed_mps+1.e-10, 'VERTICAL_SPEED'),
+                  (radial[1] > 1.e-9, 'RADIUS_INCREASE'),
+                  (angular[1] > 1.e-9, 'REVERSE_ROTATION'),
+                  (v[2] > 1.e-9, 'HEIGHT_INCREASE'))
+        if not final:
+            checks += ((np.hypot(v[0], v[1]) < 2.-1.e-10, 'MIN_HORIZONTAL_SPEED'),)
+        for violation, label in checks:
+            reason = np.where(violation & ~failed, label, reason)
+            failed |= violation
+    table = {(k, t): tuple(str(x) for x in reason[k, d]) if failed[k, d].all() else None
+             for k in range(count) for d, t in enumerate(durations)}
+    if len(_NORMAL_TEMPLATE_SCREENS) >= 128:
+        _NORMAL_TEMPLATE_SCREENS.popitem(last=False)
+    _NORMAL_TEMPLATE_SCREENS[key] = table
+    return table, False
+
 def _transfer_endpoints_match(plan,c):
     # A cache entry proves only invariant single-aircraft numerics. Check the
     # actual generated epoch's endpoints before using it; large absolute clocks

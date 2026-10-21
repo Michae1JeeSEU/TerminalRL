@@ -21,7 +21,8 @@ from .geometry import ring_config
 from .models import ValidationResult
 from .resources import Reservation
 from .safety import validate_separation
-from .trajectory import generate_transfer, generate_final, make_stable_plan, make_ground_plan
+from .trajectory import (generate_transfer, generate_final, make_stable_plan, make_ground_plan,
+                         screen_normal_templates)
 
 HORIZON = 240.0
 OFFSETS = (0., 5., 10., 15., 20., 30.)
@@ -39,6 +40,7 @@ class PlanningBudget:
     wall_start: float = field(default_factory=time.perf_counter)
     cpu_start: float = field(default_factory=time.process_time)
     attempts: Counter = field(default_factory=Counter)
+    screening: Counter = field(default_factory=Counter)
     timings: dict = field(default_factory=dict)
     truncations: set = field(default_factory=set)
     _timing_stack: list = field(default_factory=list, repr=False)
@@ -234,6 +236,16 @@ class ReferenceProvider:
         self.hits = 0
         self.templates = {}
 
+    def screen(self, snapshot, node, start, budget):
+        if not budget.available(): return None
+        with budget.measure("geometry_template_screen"):
+            table, hit = screen_normal_templates(node.ring, node.slot, start, snapshot.config)
+        budget.screening["grid_calls"] += 1
+        budget.screening["cache_hits"] += int(hit)
+        budget.screening["templates"] += len(table)
+        budget.screening["witness_rejected"] += sum(value is not None for value in table.values())
+        return table
+
     def generate(self,snapshot,a,node,target,start,duration,budget):
         key=(snapshot.config.config_hash,a.id,node.ring,node.slot,node.version,target,start,duration)
         if key in self.templates:
@@ -265,8 +277,11 @@ class ReferenceProvider:
         for _ in range({"outer":3,"middle":2,"inner":1}[node.ring]):
             found=[]
             targets=range(6 if current.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[current.ring],snapshot.config).slot_count)
+            screen=self.screen(snapshot,current,current.time,budget)
+            if screen is None: return NormalReference("UNKNOWN",identity=key)
             for duration in range(20,301 if current.ring=="inner" else 181,5):
                 for target in targets:
+                    if screen[(target,duration)] is not None: continue
                     ok,p=self.generate(snapshot,aircraft,current,target,current.time,duration,budget)
                     if not ok: return NormalReference("UNKNOWN",identity=key)
                     yield None
@@ -525,98 +540,213 @@ class CandidateProvider:
         if rows is None: return None
         return PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
 
-    def _paths(self,snapshot,a,node,budget,context,prefix=()):
-        """Partial chains ordered by arrival estimate, energy and signature."""
-        frontier=[]; deferred=[]; serial=0;root_counts=Counter()
-        def key(n,chain):
-            r=ring_config(n.ring,snapshot.config)
-            lower=max((r.radius_m-100)/25,(r.height_agl_m-15)/2)+13.5
-            refkey=(snapshot.config.config_hash,n.ring,n.slot,n.time,n.version,a.id)
-            ref=self.references.cache.get(refkey)
-            eta=n.time+(ref.duration if ref and ref.status=="KNOWN" else lower)
-            energy=self.references._reference(snapshot,node,chain,"ordering").energy_j if chain else 0.
-            signature=tuple((p.target_ring or "pad",p.target_slot if p.target_slot is not None else p.pad_id,p.start_time,p.end_time) for p in chain)
-            return eta,energy,signature
-        heapq.heappush(frontier,(key(node,prefix),serial,node,prefix,None))
-        while (frontier or deferred) and budget.available(a.id):
-            if not frontier:
-                heapq.heappush(frontier,heapq.heappop(deferred))
-            _,_,current,chain,cursor=heapq.heappop(frontier)
-            if chain and root_counts[(chain[0].target_ring,chain[0].target_slot,chain[0].pad_id)]>=2: continue
-            if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
-                yield ("COLUMN",chain,"UNKNOWN"); continue
-            state="NONE"
-            if chain:
-                state=self._emergency_prediction(snapshot,a,current)
-                if current.ring!="inner" and state in ("ELIGIBLE","UNKNOWN"):
-                    root_counts[(chain[0].target_ring,chain[0].target_slot,chain[0].pad_id)]+=1
-                    yield ("COLUMN",chain,state); continue
-            immediate_only=bool(chain and current.ring=="inner" and state in ("ELIGIBLE","UNKNOWN"))
-            cursor=cursor or self._successors(snapshot,a,current,budget,root_counts if not chain else None,immediate_only)
-            emitted=False;exhausted=False
-            while budget.available(a.id):
-                try: p=next(cursor)
-                except StopIteration: exhausted=True;break
-                yield ("ATTEMPT",None,None)
-                if p is None: continue
-                q=_move_energy(current,p,snapshot.config)
-                if current.soc-q[1] < (.25 if p.pad_id is not None else 0.) or current.peak+q[2]>120: continue
-                plans=(*chain,p)
-                serial+=1
-                if p.pad_id is not None:
-                    root_counts[(plans[0].target_ring,plans[0].target_slot,plans[0].pad_id)]+=1
-                    emitted=True
-                    predicted=self._emergency_prediction(snapshot,a,current)
-                    yield ("COLUMN",plans,predicted+"_IMMEDIATE_NORMAL_EXCEPTION" if immediate_only else predicted)
-                else:
-                    child=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
-                    heapq.heappush(frontier,(key(child,plans),serial,child,plans,None))
-                serial+=1
-                # A cursor is unconstructed work, not a partial chain. Resume it
-                # after the materialized frontier finishes, in parent-key order.
-                heapq.heappush(deferred,(key(current,chain),serial,current,chain,cursor))
-                break
-            if immediate_only and not emitted and (exhausted or not budget.available(a.id)):
-                yield ("COLUMN",chain,state)
+    @staticmethod
+    def _remaining_lower(snapshot, ring):
+        """Queue heuristic from necessary canonical/grid times, not a certificate.
 
-    def _successors(self,snapshot,a,node,budget,root_counts=None,immediate_only=False):
+        This strengthens the original geometric heuristic by summing the
+        necessary minimum duration of each remaining canonical maneuver.
+        """
+        original=ring_config(ring,snapshot.config)
+        geometric=max((original.radius_m-100)/25,(original.height_agl_m-15)/2)+13.5
+        remaining=13.5
+        while ring is not None:
+            source=ring_config(ring,snapshot.config)
+            next_ring={"outer":"middle","middle":"inner","inner":None}[ring]
+            target=ring_config(next_ring,snapshot.config) if next_ring else None
+            radius=target.radius_m if target else snapshot.config.pads.layout_radius_m
+            # The canonical radial quintic has r''(1/4)=-5.625*dr/T^2.
+            # Centripetal acceleration has the same sign at that point.
+            seconds=max(20.,math.sqrt(5.625*(source.radius_m-radius)/snapshot.config.vehicle.max_horizontal_acceleration_norm_mps2))
+            if target:
+                # The canonical transfer's midpoint vertical speed is
+                # -1.875*dz/T. Finals use their own existing height profile.
+                seconds=max(seconds,1.875*(source.height_agl_m-target.height_agl_m)/snapshot.config.vehicle.max_descent_speed_mps)
+            remaining+=5*math.ceil((seconds-1.e-10)/5.)
+            ring=next_ring
+        return max(geometric,remaining)
+
+    def _paths(self,snapshot,a,node,budget,context,prefix=(),accepted_counts=None):
+        """Materialized chains and unconstructed all-target work share one heap."""
+        frontier=[]; serial=0;groups=[]
+        root_counts=accepted_counts if accepted_counts is not None else Counter()
+        lower={ring:self._remaining_lower(snapshot,ring) for ring in ("outer","middle","inner")}
+        def chain_signature(chain):
+            return tuple((p.target_ring or "pad",p.target_slot if p.target_slot is not None else p.pad_id,p.start_time,p.end_time) for p in chain)
+        def emitted_column(plans):
+            # Catalog construction supplies accepted counts, updated only after
+            # check_single succeeds. Standalone enumeration has no such caller
+            # and bounds its own emitted columns instead.
+            if accepted_counts is None:
+                p=plans[0]
+                root_counts[(p.target_ring,p.target_slot,p.pad_id)]+=1
+        def estimate(n):
+            ref=self.references.cache.get((snapshot.config.config_hash,n.ring,n.slot,n.time,n.version,a.id))
+            return n.time+(ref.duration if ref and ref.status=="KNOWN" else lower[n.ring])
+        def push_state(n,chain,energy):
+            nonlocal serial
+            serial+=1
+            heapq.heappush(frontier,((estimate(n),energy,chain_signature(chain)),serial,"STATE",n,chain,energy,None))
+        def push_cursor(current,chain,energy,group,cursor):
+            nonlocal serial
+            target=cursor["target"]
+            first=(None,None,target) if current.ring=="inner" else ({"outer":"middle","middle":"inner"}[current.ring],target,None)
+            if not chain and root_counts[first]>=2: return
+            if cursor["aligned_end"] is None and group["feasible"][(target,cursor["start"])]>=2: return
+            descriptor=self._next_descriptor(snapshot,a,current,budget,cursor,group["seen"],group["immediate"])
+            if descriptor is None: return
+            target,start,duration,base=descriptor
+            next_ring=None if current.ring=="inner" else {"outer":"middle","middle":"inner"}[current.ring]
+            end=start+duration+(13.5 if next_ring is None else 0.)
+            eta=end+(lower[next_ring] if next_ring is not None else 0.)
+            signature=(*chain_signature(chain),(next_ring or "pad",target,start,end))
+            serial+=1; group["remaining"]+=1
+            heapq.heappush(frontier,((eta,energy,signature),serial,"TEMPLATE",current,chain,energy,(descriptor,group,cursor)))
+        initial_energy=self.references._reference(snapshot,node,prefix,"ordering").energy_j if prefix else 0.
+        push_state(node,prefix,initial_energy)
+        while frontier and budget.available(a.id):
+            _,_,tag,current,chain,energy,work=heapq.heappop(frontier)
+            if chain and root_counts[(chain[0].target_ring,chain[0].target_slot,chain[0].pad_id)]>=2: continue
+            if tag=="STATE":
+                if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
+                    emitted_column(chain)
+                    yield ("COLUMN",chain,"UNKNOWN"); continue
+                state=self._emergency_prediction(snapshot,a,current) if chain else "NONE"
+                if chain and current.ring!="inner" and state in ("ELIGIBLE","UNKNOWN"):
+                    emitted_column(chain)
+                    yield ("COLUMN",chain,state); continue
+                immediate=bool(chain and current.ring=="inner" and state in ("ELIGIBLE","UNKNOWN"))
+                group=dict(feasible=Counter(),remaining=0,emitted=False,immediate=immediate,state=state,chain=chain,seen=set(),enumerating=True)
+                groups.append(group)
+                offsets=tuple(offset for offset in OFFSETS if not immediate or offset==0.)
+                if offsets:
+                    serial+=1
+                    heapq.heappush(frontier,((estimate(current)+offsets[0],energy,chain_signature(chain)),serial,"ENUMERATE",current,chain,energy,(group,offsets,0)))
+                else:
+                    group["enumerating"]=False
+                    if immediate:
+                        group["emitted"]=True
+                        yield ("COLUMN",chain,state)
+                continue
+            if tag=="ENUMERATE":
+                group,offsets,index=work
+                for cursor in self._offset_cursors(snapshot,a,current,budget,offsets[index],include_aligned=index==0):
+                    push_cursor(current,chain,energy,group,cursor)
+                if index+1<len(offsets) and budget.available(a.id):
+                    serial+=1
+                    heapq.heappush(frontier,((estimate(current)+offsets[index+1],energy,chain_signature(chain)),serial,"ENUMERATE",current,chain,energy,(group,offsets,index+1)))
+                else:
+                    group["enumerating"]=False
+                if not group["remaining"] and not group["enumerating"] and group["immediate"]:
+                    group["emitted"]=True
+                    yield ("COLUMN",chain,group["state"])
+                yield ("SCREEN",None,None)
+                continue
+            descriptor,group,cursor=work
+            group["remaining"]-=1
+            target,start,duration,base=descriptor
+            aligned=self._aligned_by_node.setdefault((a.id,current.ring,current.slot,current.time,current.version),set())
+            first=(None,None,target) if current.ring=="inner" else ({"outer":"middle","middle":"inner"}[current.ring],target,None)
+            allowed=(group["feasible"][(target,start)]<2 and
+                     (bool(chain) or root_counts[first]<2) and
+                     (start==base or start in aligned or len(aligned)<2))
+            if allowed:
+                ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                if not ok: break
+                yield ("ATTEMPT",None,None)
+                if p is not None and p.end_time<=snapshot.time+900:
+                    group["feasible"][(target,start)]+=1
+                    if start!=base and start not in aligned:
+                        aligned.add(start); self.aligned_starts.append((a.id,current.ring,current.slot,current.time,start))
+                    q=_move_energy(current,p,snapshot.config)
+                    if current.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and current.peak+q[2]<=120:
+                        plans=(*chain,p)
+                        if p.pad_id is not None:
+                            emitted_column(plans)
+                            group["emitted"]=True
+                            predicted=self._emergency_prediction(snapshot,a,current)
+                            yield ("COLUMN",plans,predicted+"_IMMEDIATE_NORMAL_EXCEPTION" if group["immediate"] else predicted)
+                        else:
+                            child=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
+                            push_state(child,plans,energy+q[0])
+            push_cursor(current,chain,energy,group,cursor)
+            if not group["remaining"] and not group["enumerating"] and group["immediate"] and not group["emitted"]:
+                group["emitted"]=True
+                yield ("COLUMN",chain,group["state"])
+        for group in groups:
+            if group["immediate"] and not group["emitted"]:
+                group["emitted"]=True
+                yield ("COLUMN",group["chain"],group["state"])
+
+    def _offset_cursors(self,snapshot,a,node,budget,offset,include_aligned=True):
+        """One offset's all-target cursors; only their next template is queued."""
         targets=range(6 if node.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[node.ring],snapshot.config).slot_count)
         rows=snapshot.pads if node.ring=="inner" else snapshot.slots
         next_ring=None if node.ring=="inner" else {"outer":"middle","middle":"inner"}[node.ring]
         opportunities=sorted({(r.end,str(r.resource),r.resource) for r in rows
                               if math.isfinite(r.end) and r.end>node.time and
-                              (next_ring is None or (isinstance(r.resource,tuple) and r.resource[0]==next_ring))})[:2]
-        aligned_used=self._aligned_by_node.setdefault((a.id,node.ring,node.slot,node.time,node.version),set())
-        for offset in OFFSETS:
+                              (next_ring is None or (isinstance(r.resource,tuple) and r.resource[0]==next_ring))})[:2] if include_aligned else ()
+        self._aligned_by_node.setdefault((a.id,node.ring,node.slot,node.time,node.version),set())
+        base=node.time+offset
+        screen=self.references.screen(snapshot,node,base,budget)
+        if screen is None: return
+        for target in targets:
+            yield dict(target=target,start=base,base=base,aligned_end=None,screen=screen,
+                       durations=iter(range(20,301 if node.ring=="inner" else 181,5)))
+            resource=target if node.ring=="inner" else (next_ring,target)
+            for end,_,r in opportunities:
+                if r!=resource: continue
+                yield dict(target=target,start=end,base=base,
+                           aligned_end=end if node.ring=="inner" else None,screen=screen,
+                           durations=iter(range(20,301 if node.ring=="inner" else 181,5)))
+
+    def _next_descriptor(self,snapshot,a,node,budget,cursor,seen,immediate_only=False):
+        aligned=self._aligned_by_node[(a.id,node.ring,node.slot,node.time,node.version)]
+        target,base=cursor["target"],cursor["base"]
+        for duration in cursor["durations"]:
+            if not budget.available(a.id): return None
+            start=cursor["aligned_end"]-duration if cursor["aligned_end"] is not None else cursor["start"]
+            if start<node.time or start>snapshot.time+900: continue
+            if immediate_only and abs(start-node.time)>1.e-8: continue
+            if start!=base and start not in aligned and len(aligned)>=2: continue
+            if (target,start,duration) in seen: continue
+            seen.add((target,start,duration))
+            # Transfer geometry is epoch invariant. Aligned final epochs
+            # remain UNKNOWN; every retained item uses the original generator.
+            if (start==base or node.ring!="inner") and cursor["screen"][(target,duration)] is not None: continue
+            budget.screening["descriptors_queued"]+=1
+            return target,start,duration,base
+        return None
+
+    def _descriptors(self,snapshot,a,node,budget,immediate_only=False):
+        # Compatibility iterator. The heap search advances these cursors after
+        # the precise generator result, rather than enqueuing their full grids.
+        seen=set()
+        for index,offset in enumerate(OFFSETS):
             if immediate_only and offset!=0.: break
-            for target in targets:
-                first=(None,None,target) if node.ring=="inner" else ({"outer":"middle","middle":"inner"}[node.ring],target,None)
-                if root_counts is not None and root_counts[first]>=2: continue
-                # Finite release opportunities; pad alignment uses descent start.
-                resource=target if node.ring=="inner" else ({"outer":"middle","middle":"inner"}[node.ring],target)
-                aligned=[end for end,_,r in opportunities if r==resource]
-                feasible_durations=Counter()
-                for duration in range(20,301 if node.ring=="inner" else 181,5):
-                    if root_counts is not None and root_counts[first]>=2: break
-                    if feasible_durations.get(node.time+offset,0)>=2 and not aligned: break
-                    starts={node.time+offset}
-                    for end in aligned:
-                        start=end-duration if node.ring=="inner" else end
-                        if immediate_only and abs(start-node.time)>1.e-8: continue
-                        if start>=node.time and (start in aligned_used or len(aligned_used)<2): starts.add(start)
-                    for start in sorted(starts):
-                        if root_counts is not None and root_counts[first]>=2: break
-                        if feasible_durations[start]>=2: continue
-                        if start > snapshot.time+900: continue
-                        ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
-                        if not ok: return
-                        if p is None or p.end_time>snapshot.time+900:
-                            yield None; continue
-                        if start!=node.time+offset and start not in aligned_used:
-                            aligned_used.add(start)
-                            self.aligned_starts.append((a.id,node.ring,node.slot,node.time,start))
-                        feasible_durations[start]+=1
-                        yield p
+            for cursor in self._offset_cursors(snapshot,a,node,budget,offset,include_aligned=index==0):
+                while budget.available(a.id):
+                    descriptor=self._next_descriptor(snapshot,a,node,budget,cursor,seen,immediate_only)
+                    if descriptor is None: break
+                    yield descriptor
+
+    def _successors(self,snapshot,a,node,budget,root_counts=None,immediate_only=False):
+        # Compatibility iterator: the path search itself queues descriptors so
+        # an early target's subtree cannot hide the rest of the source frontier.
+        feasible=Counter()
+        for target,start,duration,base in self._descriptors(snapshot,a,node,budget,immediate_only):
+            first=(None,None,target) if node.ring=="inner" else ({"outer":"middle","middle":"inner"}[node.ring],target,None)
+            if feasible[(target,start)]>=2 or (root_counts is not None and root_counts[first]>=2): continue
+            aligned=self._aligned_by_node[(a.id,node.ring,node.slot,node.time,node.version)]
+            if start!=base and start not in aligned and len(aligned)>=2: continue
+            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            if not ok: return
+            if p is None or p.end_time>snapshot.time+900:
+                yield None; continue
+            feasible[(target,start)]+=1
+            if start!=base and start not in aligned:
+                aligned.add(start); self.aligned_starts.append((a.id,node.ring,node.slot,node.time,start))
+            yield p
 
     def get_columns(self,snapshot,budget=None,context=None):
         budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget)
@@ -639,8 +769,8 @@ class CandidateProvider:
                 c=self._column(snapshot,a,previous,"MOVE",context,refs[a.id])
                 if c is not None and context.check_single(c).accepted: columns[a.id].append(c)
         ordered=sorted(aircraft,key=lambda a:slacks[a.id])
-        generators={a.id:self._paths(snapshot,a,_node(snapshot,a),budget,context) for a in ordered}
         counts={a.id:Counter(c.first_target for c in columns[a.id] if c.kind=="MOVE") for a in ordered}
+        generators={a.id:self._paths(snapshot,a,_node(snapshot,a),budget,context,accepted_counts=counts[a.id]) for a in ordered}
         while generators and budget.available():
             for a in ordered:
                 gen=generators.get(a.id)
@@ -844,6 +974,7 @@ class NormalSchedulerCallback:
         record={"time":snapshot.time,"method":self.scheduler.method,"status":result.status,
                 "objective":result.objective,"columns":sum(map(len,catalog.columns.values())),
                 "aircraft":len(catalog.columns),"attempts":dict(catalog.attempts),"catalog_incomplete":catalog.incomplete,
+                "geometry_screening":dict(budget.screening),
                 "truncations":sorted(budget.truncations),"timings":dict(budget.timings),
                 "wall_s":budget.elapsed,"cpu_s":time.process_time()-budget.cpu_start,
                 "deadline_miss":budget.elapsed>5.,"submitted":len(result.prefix) if commit and commit.accepted else 0,

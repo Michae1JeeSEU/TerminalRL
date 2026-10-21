@@ -201,3 +201,16 @@ UTC02:04:18的启动核验已确认wrapper99045、runner99053、tracker99056、w
 正常P95为4.5017359/5.0432798秒，完整dispatch P95为5.0589809/5.7453142秒。
 两份60秒审计PASS0项、CERTIFIED、IN_PROGRESS仅覆盖历史60秒，不替代原始3600秒审计。
 初始T0约5小时只是旧840秒用4033 wall秒的粗估；运行已结束，不保留ETA或ACTIVE heartbeat承诺。
+
+## 后续人工复查：HUMAN_REJECTED_BEHAVIOR
+
+用户随后人工观察回放，指出几乎无O→M、M→I，初始inner少量降落且pad长期空闲，并明确不接受旧实现行为。
+本轮人工状态因此更新为 **HUMAN_REJECTED_BEHAVIOR**；上文HUMAN_PENDING为归档时的历史状态。
+前120秒两方法确无跨环开始/完成；真实busy t0只读probe另给出通过原检查的outer00→middle1/26/27、
+middle00→inner17、inner00→pad5动作。主对话确认候选按目标ID穷举duration、未扫描parent被deferred子树压住，
+共用catalog在3秒或64次尝试前只覆盖低号槽位/pad，属于候选供应/展开实现缺陷。
+其他目标仍有真实资源及安全间隔拒绝；不是PyVista显示或CP求解时间不足的问题。
+旧审计PASS仅覆盖已执行轨迹，不能证明调度行为合理；本文件的旧运行数值、来源和审计记录均保留。
+进近本身确需耗时（t0已开始的两次正常final在63.5秒接地），但不能仅以此解释pad5整轮无normal，
+因为初始inner00已有通过原检查的pad5动作。修复及独立120秒成对pilot仍IN_PROGRESS，新回放人工观察待进行，
+见[跨环候选修复120秒记录](transfer_fix_120s_status.md)；不预写修复成功或新实验结果。
