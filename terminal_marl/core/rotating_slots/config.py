@@ -11,6 +11,9 @@ import yaml
 DEFAULT_CONFIG = Path(__file__).resolve().parents[3] / 'new10.16' / 'fixed_terminal_rotating_slots_stage1_config_v1_0.yaml'
 # Semantic digest of the supplied normative payload (comments/format excluded).
 CANONICAL_CONFIG_HASH = '0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53'
+SERVICE_HALF_CONFIG = DEFAULT_CONFIG.with_name('fixed_terminal_rotating_slots_stage2_service_half_v1.yaml')
+SERVICE_HALF_CONFIG_HASH = '5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87'
+SERVICE_PROFILE_PATHS = {'baseline': DEFAULT_CONFIG, 'service_half_v1': SERVICE_HALF_CONFIG}
 
 def digest(value):
     return sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
@@ -49,6 +52,9 @@ class Config:
     config_hash: str
     profile_hash: str
     path: str
+    @property
+    def service_profile(self):
+        return 'service_half_v1' if self.config_hash == SERVICE_HALF_CONFIG_HASH else 'baseline'
     def __getattr__(self, key): return getattr(self.sections, key)
     def __getitem__(self, key): return self.sections[key]
     def to_dict(self): return self.sections.to_dict()
@@ -93,8 +99,8 @@ def _parse_config(path):
         if isinstance(v,list): return all(finite(x) for x in v)
         return not isinstance(v,float) or math.isfinite(v)
     if not finite(data): raise ValueError('nonfinite configuration')
-    if digest(data) != CANONICAL_CONFIG_HASH:
-        raise ValueError('configuration differs from frozen FT-RS-S1-1.0 payload')
+    if digest(data) not in (CANONICAL_CONFIG_HASH, SERVICE_HALF_CONFIG_HASH):
+        raise ValueError('configuration differs from frozen FT-RS-S1-1.0 payload or authorized service_half_v1 variant')
     return Config(Section(data),sha256(raw).hexdigest(),digest(data),digest({k:data[k] for k in ('vehicle','energy','coordinates')}),str(path.resolve()))
 
 @lru_cache(maxsize=1)
@@ -104,3 +110,14 @@ def load_config(path=None):
     # Explicit files are always read again so editing a supplied path cannot
     # silently return a previously cached canonical configuration.
     return _default_config() if path is None else _parse_config(path)
+
+
+def load_service_profile(profile='baseline'):
+    """Select one complete frozen payload; the canonical default is unchanged."""
+    if profile not in SERVICE_PROFILE_PATHS:
+        raise ValueError('unknown service profile: '+str(profile))
+    return load_config(SERVICE_PROFILE_PATHS[profile])
+
+
+def service_duration(config, service_class):
+    return float(config.pads.service_classes[service_class].duration_s)

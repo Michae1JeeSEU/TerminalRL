@@ -38,7 +38,7 @@ def test_T02_actual_outer_middle_inner_pad_and_only_first_committed(outer_catalo
     w,snapshot,provider,context,catalog,budget=outer_catalog
     moving=[c for c in catalog.columns["o"] if c.kind=="MOVE"]
     assert moving
-    chain=moving[0].plans
+    chain=next(c.plans for c in moving if c.plans[-1].pad_id is not None)
     assert [p.source_ring for p in chain]==["outer","middle","inner"]
     assert chain[-1].pad_id is not None and len(chain)==3
     result=EnergySlackScheduler().plan(snapshot,catalog,context,PlanningBudget())
@@ -68,7 +68,7 @@ def test_T04_reference_unknown_is_not_zero_or_failure():
     assert r.status=="UNKNOWN" and r.soc_required is None and r.energy_j is None
     cat=CandidateProvider().get_columns(s,b)
     assert len(cat.columns["o"])==2
-    assert cat.columns["o"][0].objective[:4]==(0,0,3,901.)
+    assert cat.columns["o"][0].objective[:4]==(0,0,3,901.+CandidateProvider._remaining_lower(s,"outer"))
     assert not w.failed
 
 

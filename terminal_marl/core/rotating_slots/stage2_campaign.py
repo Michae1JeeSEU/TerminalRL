@@ -22,7 +22,7 @@ import sys
 import time
 import traceback
 
-from .config import load_config
+from .config import load_config, load_service_profile, service_duration
 from .demand import ArrivalManifest, ArrivalRequest
 from .performance.checkpoint import (StateCodec, WORLD_FIELDS, CACHE_FIELDS,
     OPTIONAL_RUNTIME_FIELDS, RUNTIME_FIELDS, CheckpointError, _capture_sink, _stream_bytes)
@@ -64,21 +64,30 @@ def load_json(path):
 class CampaignBudget:
     """Persisted real campaign epoch, including earlier measured test costs.
 
-    Restarts retain the original epoch; no second 10-hour allowance is created.
+    Restarts retain the original epoch and limits. The default is ten hours;
+    explicit shorter validation limits may be supplied only at first creation.
     A persisted elapsed lower bound also prevents a clock rollback granting time.
     """
-    def __init__(self, path, preparation_wall_seconds=0., clock=time.time):
+    def __init__(self, path, preparation_wall_seconds=0., clock=time.time, *,
+                 total_seconds=None, archive_reserve_seconds=None):
         self.path, self.clock = Path(path), clock
         if self.path.exists():
             self.data = load_json(self.path)
             if preparation_wall_seconds:
                 raise ValueError("preparation credit may only be supplied at first creation")
+            if total_seconds is not None or archive_reserve_seconds is not None:
+                raise ValueError("campaign budget limits may only be supplied at first creation")
         else:
-            if not 0 <= preparation_wall_seconds <= 3600:
-                raise ValueError("preparation credit must be within [0,3600]")
+            total=36000. if total_seconds is None else float(total_seconds)
+            reserve=1800. if archive_reserve_seconds is None else float(archive_reserve_seconds)
+            if not (math.isfinite(total) and math.isfinite(reserve) and 0 < reserve < total):
+                raise ValueError("campaign total and archive reserve must be finite and 0 < reserve < total")
+            preparation_limit=min(3600.,total-reserve)
+            if not 0 <= preparation_wall_seconds <= preparation_limit:
+                raise ValueError("preparation credit exceeds preparation/compute allocation")
             self.data = dict(schema="stage2_wall_budget_v1", started_epoch=clock()-preparation_wall_seconds,
                 credited_tests_wall_s=preparation_wall_seconds, elapsed_floor_s=preparation_wall_seconds,
-                total_s=36000., compute_stop_s=34200., preparation_limit_s=3600.)
+                total_s=total, compute_stop_s=total-reserve, preparation_limit_s=preparation_limit)
             self.persist()
         self._start_mono = time.monotonic()
         self._initial_elapsed = max(self.data["elapsed_floor_s"], self.clock()-self.data["started_epoch"])
@@ -109,8 +118,8 @@ def read_manifest(path):
                            value["seed"], value["rate_per_hour"], value["arrival_window"])
 
 
-def busy_fixture(manifest=None, *, state_sink=None):
-    world = RotatingSlotWorld(manifest=manifest, state_sink=state_sink,
+def busy_fixture(manifest=None, *, state_sink=None, config=None):
+    world = RotatingSlotWorld(config=config, manifest=manifest, state_sink=state_sink,
                               experiment_policy_id=STAGE2_POLICY_ID)
     soc_rng, service_rng = random.Random(2071), random.Random(2072)
     normal = NormalDist(.75, .08)
@@ -123,6 +132,7 @@ def busy_fixture(manifest=None, *, state_sink=None):
             service = "short" if u < .2 else "standard" if u < .8 else "long"
             world.seed_hold(f"initial_{ring}_{k:02d}",ring, k*slots//count, soc, service)
     for pad, remaining in ((0,30.), (2,60.), (4,90.)):
+        remaining *= service_duration(world.config, "standard") / 120.
         world.seed_service(f"initial_ground_pad{pad}",pad,remaining,"standard",.60)
     return world
 
@@ -182,7 +192,7 @@ def environment_lock():
         numerical_threads=1,cp_workers=1,solver_seed=71)
 
 
-def source_provenance():
+def source_provenance(service_profile="baseline"):
     """Local-only freeze operation; campaign execution never runs Git."""
     files = sorted((ROOT/"terminal_marl/core/rotating_slots").glob("*.py"))
     files += [ROOT/"terminal_marl/core/rotating_slots/performance/checkpoint.py"]
@@ -191,19 +201,23 @@ def source_provenance():
               for p in files if p.is_file()}
     def git(*args):
         return subprocess.check_output(["git",*args],cwd=ROOT,stderr=subprocess.DEVNULL).decode().strip()
+    config=load_service_profile(service_profile)
+    original=load_service_profile("baseline")
     return dict(revision=git("rev-parse","HEAD"),workspace_status_short=git("status","--short"),
         tracked_diff=git("diff","--binary","HEAD","--",
         "terminal_marl/core/rotating_slots","terminal_marl/visualization/rotating_slots_replay.py",
         "scripts/server/run_rotating_slots_stage2.py"),source_files=source,source_hash=digest(source),
         contract_sha256=sha256((CONTRACT_DIR/"rotating_slots_stage2_baseline_contract_v1_0.md").read_bytes()).hexdigest(),
         overlay_sha256=sha256((CONTRACT_DIR/"stage2_baseline_config_v1_0.yaml").read_bytes()).hexdigest(),
-        base_config_hash=load_config().config_hash,base_config_bytes_sha256=load_config().raw_hash,
+        base_config_hash=config.config_hash,base_config_bytes_sha256=config.raw_hash,
+        service_profile=config.service_profile,effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
+        original_config_hash=original.config_hash,original_config_bytes_sha256=original.raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
-        candidate_policy_id="shared_multistep_columns_v3_reference_seed",objective_id="reliability_throughput_secondary_energy_v1")
+        candidate_policy_id="shared_multistep_columns_v4_safe_progress",objective_id="reliability_throughput_progress_tail_v2")
 
 
-def freeze_provenance(path):
-    value=source_provenance()
+def freeze_provenance(path, service_profile="baseline"):
+    value=source_provenance(service_profile)
     atomic_json(path,value)
     return value
 
@@ -216,8 +230,13 @@ def verify_source_provenance(provenance):
             raise RuntimeError("source differs from local frozen provenance: "+relative)
     if digest(provenance["source_files"]) != provenance["source_hash"]:
         raise RuntimeError("source provenance aggregate mismatch")
-    if (provenance["base_config_hash"] != load_config().config_hash
-        or provenance["base_config_bytes_sha256"] != load_config().raw_hash
+    config=load_service_profile(provenance.get("service_profile","baseline"))
+    original=load_service_profile("baseline")
+    if (provenance["base_config_hash"] != config.config_hash
+        or provenance["base_config_bytes_sha256"] != config.raw_hash
+        or provenance.get("effective_config_path",Path(config.path).relative_to(ROOT).as_posix()) != Path(config.path).relative_to(ROOT).as_posix()
+        or provenance.get("original_config_hash",original.config_hash) != original.config_hash
+        or provenance.get("original_config_bytes_sha256",original.raw_hash) != original.raw_hash
         or provenance["contract_sha256"] != sha256((CONTRACT_DIR/"rotating_slots_stage2_baseline_contract_v1_0.md").read_bytes()).hexdigest()
         or provenance["overlay_sha256"] != sha256((CONTRACT_DIR/"stage2_baseline_config_v1_0.yaml").read_bytes()).hexdigest()):
         raise RuntimeError("configuration/contract differs from frozen provenance")
@@ -233,15 +252,20 @@ class Stage2Codec(StateCodec):
 
 
 def checkpoint_identity(provenance, manifest_hash):
-    return dict(policy_id=STAGE2_POLICY_ID,source_hash=provenance["source_hash"],
+    identity=dict(policy_id=STAGE2_POLICY_ID,source_hash=provenance["source_hash"],
         base_config_hash=provenance["base_config_hash"],overlay_sha256=provenance["overlay_sha256"],
         manifest_sha256=manifest_hash)
+    if "service_profile" in provenance: identity["service_profile"]=provenance["service_profile"]
+    return identity
 
 
 def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS|RUNTIME_FIELDS|RUNTIME_EXTRA
     if set(vars(world)) != expected:
         raise CheckpointError("Stage2 world field inventory mismatch: "+str(set(vars(world))^expected))
+    if (world.config.config_hash != identity["base_config_hash"]
+        or world.config.service_profile != identity.get("service_profile",world.config.service_profile)):
+        raise CheckpointError("Stage2 checkpoint configuration identity mismatch")
     codec = Stage2Codec()
     state = {k:v for k,v in vars(world).items() if k not in RUNTIME_FIELDS|RUNTIME_EXTRA}
     payload = dict(schema=SCHEMA,identity=identity,time=world.time,
@@ -263,7 +287,8 @@ def restore_checkpoint(path, scheduler, identity, *, stream_copy=None):
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS
     if set(state) != expected or state["experiment_policy_id"] != STAGE2_POLICY_ID:
         raise CheckpointError("Stage2 checkpoint world inventory/policy mismatch")
-    if state["config"].config_hash != identity["base_config_hash"] or state["time"] != payload["time"]:
+    if (state["config"].config_hash != identity["base_config_hash"] or state["time"] != payload["time"]
+        or state["config"].service_profile != identity.get("service_profile",state["config"].service_profile)):
         raise CheckpointError("Stage2 checkpoint configuration/time mismatch")
     if digest(state["manifest"].to_dict()) != identity["manifest_sha256"]:
         raise CheckpointError("Stage2 checkpoint manifest mismatch")
@@ -395,10 +420,12 @@ def physical_cores():
     return list(groups.values())
 
 
-def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None):
+def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None, service_profile="baseline",
+                     campaign_wall_budget_seconds=None, archive_reserve_seconds=None):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     if (root/"campaign.json").exists(): raise ValueError("campaign already prepared; use resume")
-    budget=CampaignBudget(root/"budget.json",preparation_wall_seconds)
+    budget=CampaignBudget(root/"budget.json",preparation_wall_seconds,total_seconds=campaign_wall_budget_seconds,
+                          archive_reserve_seconds=archive_reserve_seconds)
     lock=environment_lock()
     if (root/"environment.lock.json").exists() and load_json(root/"environment.lock.json") != lock:
         raise RuntimeError("resolved environment changed after first successful validation")
@@ -408,21 +435,45 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None)
     if not provenance_file.is_file():
         raise ValueError("prepare requires locally frozen provenance JSON; use local freeze-provenance first")
     provenance=load_json(provenance_file);verify_source_provenance(provenance)
+    config=load_service_profile(service_profile)
+    if (provenance.get("service_profile","baseline") != service_profile
+        or provenance["base_config_hash"] != config.config_hash):
+        raise ValueError("requested service profile differs from frozen provenance")
     atomic_json(root/"provenance.json",provenance)
-    world=busy_fixture(manifest)
+    (root/"config.yaml").write_bytes(Path(config.path).read_bytes())
+    config=load_config(root/"config.yaml")
+    world=busy_fixture(manifest,config=config)
     atomic_json(root/"fixture.json",dict(aircraft=[a.to_dict() for a in world.aircraft.values()],
         slots=world.slots.to_dict(),pads=world.pads.to_dict(),synthetic_fixture=True,
         geometry_validation="seed_hold/seed_service continuous certification",metrics=episode_metrics(world)))
-    references=initial_references(world,max(0.,min(180.,3600.-budget.elapsed)))
+    references=initial_references(world,max(0.,min(180.,budget.data["preparation_limit_s"]-budget.elapsed)))
     atomic_json(root/"initial_references.json",references)
     budget.persist()
-    if budget.elapsed > 3600.: raise RuntimeError("preparation exceeded one-hour campaign allocation")
+    if budget.elapsed > budget.data["preparation_limit_s"]: raise RuntimeError("preparation exceeded campaign allocation")
     campaign=dict(schema="stage2_first_campaign_v1",identity=checkpoint_identity(provenance,digest(manifest.to_dict())),
+        service_profile=service_profile,config_path="config.yaml",config_bytes_sha256=config.raw_hash,
         preparation_wall_s=budget.elapsed,environment_lock_sha256=digest(lock),
         fixture_sha256=sha256((root/"fixture.json").read_bytes()).hexdigest(),
         status="PREPARED",human_review="HUMAN_PENDING",target_s=3600.)
     atomic_json(root/"campaign.json",campaign)
     return campaign
+
+
+def campaign_config(root, campaign):
+    """Use materialized experiment bytes, with legacy baseline archive support."""
+    path=Path(root)/campaign.get("config_path","config.yaml")
+    if "config_path" in campaign:
+        if not path.resolve().is_relative_to(Path(root).resolve()):
+            raise ValueError("campaign configuration path escapes campaign")
+        config=load_config(path)
+    else:
+        config=load_service_profile(campaign.get("service_profile","baseline"))
+    if (config.config_hash != campaign["identity"]["base_config_hash"]
+        or config.raw_hash != campaign.get("config_bytes_sha256",config.raw_hash)
+        or config.service_profile != campaign.get("service_profile","baseline")
+        or config.service_profile != campaign["identity"].get("service_profile",config.service_profile)):
+        raise ValueError("campaign configuration identity/content mismatch")
+    return config
 
 
 def run_episode_block(root, method, target, cpu=None, connection=None):
@@ -435,6 +486,7 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
     root=Path(root);directory=root/method;directory.mkdir(exist_ok=True)
     campaign=load_json(root/"campaign.json");identity=campaign["identity"]
     verify_source_provenance(load_json(root/"provenance.json"))
+    config=campaign_config(root,campaign)
     budget=CampaignBudget(root/"budget.json")
     if budget.compute_remaining <= 0: return
     startup=time.perf_counter()
@@ -444,7 +496,9 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
     if numbered or latest.exists(): world=restore_checkpoint(numbered[-1] if numbered else latest,scheduler,identity)
     else:
         sink=BufferedStateJSONLSink(directory/"states.jsonl")
-        world=busy_fixture(read_manifest(root/"manifest.json"),state_sink=sink)
+        fixture_kwargs=dict(state_sink=sink)
+        if "service_profile" in campaign: fixture_kwargs["config"]=config
+        world=busy_fixture(read_manifest(root/"manifest.json"),**fixture_kwargs)
         if "fixture_sha256" in campaign:
             frozen=load_json(root/"fixture.json")
             if sha256((root/"fixture.json").read_bytes()).hexdigest()!=campaign["fixture_sha256"]:
@@ -554,6 +608,7 @@ def resource_observation():
 def export_episode(root, method, boundary):
     from .stage2_planning import NormalSchedulerCallback
     root=Path(root);directory=root/method
+    config=campaign_config(root,load_json(root/"campaign.json"))
     archive=directory/f"replay_{boundary:04d}"
     if archive.exists(): return str(archive)
     scheduler=NormalSchedulerCallback(method)
@@ -570,7 +625,7 @@ def export_episode(root, method, boundary):
             for aid,plans in scheduler.provider.previous.items()]
         record["stage2_provenance"]=load_json(root/"provenance.json")
         ReplayBundle.write(archive,record=record,code_commit=record["stage2_provenance"]["revision"],
-            command="run_rotating_slots_stage2.py",seed=71,eager=False)
+            config_path=config.path,command="run_rotating_slots_stage2.py",seed=71,eager=False)
     finally:
         if world.state_sink is not None: world.state_sink.close()
     return str(archive)
@@ -647,17 +702,17 @@ def run_campaign(root, *, target=3600., export=True):
     atomic_json(root/"campaign.json",campaign)
     if export and common:
         for method in METHODS:
-            if budget.elapsed>=36000: break
+            if budget.elapsed>=budget.data["total_s"]: break
             job=ctx.Process(target=_archive_episode,args=(str(root),method,common));job.start()
-            while job.is_alive() and budget.elapsed<36000: job.join(timeout=.5)
+            while job.is_alive() and budget.elapsed<budget.data["total_s"]: job.join(timeout=.5)
             if job.is_alive():
                 job.terminate();job.join()
                 atomic_json(root/method/"archive_status.json",dict(status="NOT_RUN_OR_INCOMPLETE_BUDGET",elapsed_s=budget.elapsed))
     # Plotting is bounded by the same archive allocation in the supervisor.
     result=report_campaign(root,plots=False)
-    if budget.elapsed<36000:
+    if budget.elapsed<budget.data["total_s"]:
         plot_job=ctx.Process(target=report_campaign,args=(str(root),));plot_job.start()
-        while plot_job.is_alive() and budget.elapsed<36000: plot_job.join(timeout=.5)
+        while plot_job.is_alive() and budget.elapsed<budget.data["total_s"]: plot_job.join(timeout=.5)
         if plot_job.is_alive(): plot_job.terminate();plot_job.join()
     budget.persist()
     campaign.update(campaign_wall_s=budget.elapsed,archive_status={m:load_json(root/m/"archive_status.json")

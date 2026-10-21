@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 import time as walltime
 
-from .config import freeze, load_config, thaw
+from .config import freeze, load_config, thaw, service_duration
 from .demand import ArrivalManifest, ArrivalRequest
 from .models import ValidationResult
 from .resources import PadCalendar, ResourceConflict, SlotCalendar
@@ -26,6 +26,7 @@ from .safety import validate_plan, validate_separation, _ExecutionQueryCache, _e
 AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M",
             "TRANSFER_M_I", "FINAL_NORMAL", "FINAL_EMERGENCY", "VERTICAL_DESCENT"}
 HOLD = {"outer": "HOLD_OUTER", "middle": "HOLD_MIDDLE", "inner": "HOLD_INNER"}
+# Legacy import compatibility only; execution reads the frozen configuration.
 SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
 POLICY_ID = "upstream_capacity_only_pad_arrival_v1_20261018"
 STAGE2_POLICY_ID = "rs_s2_loss_continue_throughput_v1_0"
@@ -620,7 +621,7 @@ class RotatingSlotWorld:
             plans.append(extra)
         base = self._base(a)
         final = plans[-1] if plans else base
-        end = (final.end_time + SERVICE_SECONDS[a.service_class]) if final.pad_id is not None else math.inf
+        end = (final.end_time + service_duration(self.config, a.service_class)) if final.pad_id is not None else math.inf
         if a.status == "LANDED_SERVICE":
             end = a.service_end
         return _Traffic(a.id, base, plans, self.time, end)
@@ -844,7 +845,7 @@ class RotatingSlotWorld:
                                   plan_hash=p.trajectory_hash, committed=p is current)
                 if p.pad_id is not None:
                     start = p.end_time - 13.5
-                    pads.reserve(p.pad_id, a.id, start, p.end_time + SERVICE_SECONDS[a.service_class],
+                    pads.reserve(p.pad_id, a.id, start, p.end_time + service_duration(self.config, a.service_class),
                                  kind="emergency" if p.kind == "FINAL_EMERGENCY" else "final",
                                  plan_hash=p.trajectory_hash, committed=p is current)
         isolated = {a.id for a in self.aircraft.values() if a.status == "ENERGY_MISSION_FAILED"}
@@ -1014,8 +1015,8 @@ class RotatingSlotWorld:
                 # Ordinary soft final may be preempted transactionally.
                 for other_id, old in tuple(soft.items()):
                     if (old.pad_id == p.pad_id and old.kind == "FINAL_NORMAL" and
-                            old.end_time-13.5 < p.end_time+SERVICE_SECONDS[a.service_class] and
-                            p.end_time-13.5 < old.end_time+SERVICE_SECONDS[self.aircraft[other_id].service_class]):
+                            old.end_time-13.5 < p.end_time+service_duration(self.config, a.service_class) and
+                            p.end_time-13.5 < old.end_time+service_duration(self.config, self.aircraft[other_id].service_class)):
                         if old.trajectory_hash in protected:
                             return self._reject("RESOURCE_DEPENDENCY", a.id)
                         del soft[other_id]
@@ -1053,7 +1054,7 @@ class RotatingSlotWorld:
         except (ResourceConflict, ValueError) as exc:
             blocking = [r.to_dict() for p in plans if p.pad_id is not None
                         for r in self.pads.conflicts(p.pad_id, p.end_time-13.5,
-                            p.end_time+SERVICE_SECONDS[self.aircraft[p.aircraft_id].service_class], p.aircraft_id)]
+                            p.end_time+service_duration(self.config, self.aircraft[p.aircraft_id].service_class), p.aircraft_id)]
             return self._reject("RESOURCE_CONFLICT", detail=str(exc), blocking_reservations=blocking)
         traffic = [self._traffic(a, soft) for a in self.aircraft.values()
                    if a.status in AIRBORNE or a.status == "LANDED_SERVICE"]
@@ -1417,7 +1418,7 @@ class RotatingSlotWorld:
             del self.active[key]
             self.dependencies.pop(p.trajectory_hash, None)
             if p.pad_id is not None:
-                service_end = p.end_time+SERVICE_SECONDS[a.service_class]
+                service_end = p.end_time+service_duration(self.config, a.service_class)
                 self.aircraft[key] = replace(a, status="LANDED_SERVICE", ring=None, slot=None,
                     pad_id=p.pad_id, touchdown_time=p.end_time, service_end=service_end, version=a.version+1,
                     battery_power_w=0.)

@@ -179,10 +179,10 @@ def test_reference_first_seeds_cover_every_ring_with_original_attempt_limits(mon
     catalog=provider.get_columns(snapshot,budget,context)
     for ring,depth in (("outer",3),("middle",2),("inner",1)):
         moving=[c for c in catalog.columns[ring] if c.kind=="MOVE"]
-        assert len(moving)==1 and len(moving[0].plans)==depth
-        assert moving[0].plans[-1].pad_id is not None
-        assert context.check_single(moving[0]).accepted
-        assert evaluate_planning_snapshot(snapshot,(moving[0].plans[0],)).accepted
+        full=next(c for c in moving if c.plans[-1].pad_id is not None)
+        assert len(full.plans)==depth and len(moving)<=8
+        assert context.check_single(full).accepted
+        assert evaluate_planning_snapshot(snapshot,(full.plans[0],)).accepted
         assert 0<budget.attempts[ring]<=64
     assert sum(budget.attempts.values())<=2048
     assert "reference_seed_generation" in budget.timings
@@ -204,6 +204,9 @@ def test_reference_seed_rejection_keeps_full_reference_for_slack(monkeypatch):
         result=original(column);checked.append(result);return result
     monkeypatch.setattr(context,"check_single",record)
     provider=CandidateProvider(references)
+    # This test isolates the complete reference's rejection and slack value;
+    # the separate safe-progress pass may legitimately use another free pad.
+    monkeypatch.setattr(provider,"_progress_steps",lambda *args,**kwargs:iter(()))
     monkeypatch.setattr(provider,"_paths",lambda *args,**kwargs:iter(()))
     catalog=provider.get_columns(snapshot,PlanningBudget(),context)
     assert checked and any(not r.accepted and r.reason=="RESOURCE_CONFLICT" for r in checked)

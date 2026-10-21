@@ -17,6 +17,7 @@ import heapq
 import json
 
 from .energy import integrate_energy, stable_power, practical_numeric_stats
+from .config import service_duration
 from .geometry import ring_config
 from .models import ValidationResult
 from .resources import Reservation
@@ -390,7 +391,7 @@ class EvaluationContext:
                 end = self.protect_times(plans[k+1])[0] if k+1 < len(plans) else math.inf
                 rows.append(Reservation((p.target_ring,p.target_slot), a.id, capture, end))
             if p.pad_id is not None:
-                rows.append(Reservation(("pad",p.pad_id), a.id, p.end_time-13.5, p.end_time+SERVICE_SECONDS[a.service_class]))
+                rows.append(Reservation(("pad",p.pad_id), a.id, p.end_time-13.5, p.end_time+service_duration(self.snapshot.config,a.service_class)))
         if a.status == "LANDED_SERVICE":
             rows.append(Reservation(("pad",a.pad_id), a.id, self.snapshot.time,a.service_end))
         return tuple(rows)
@@ -404,7 +405,7 @@ class EvaluationContext:
             base = (make_stable_plan(a.id,a.ring,a.slot,self.snapshot.time,self.snapshot.time+901,config=self.snapshot.config)
                     if a.ring is not None else make_ground_plan(a.id,a.pad_id,self.snapshot.time,a.service_end or self.snapshot.time+901,config=self.snapshot.config))
         final = plans[-1] if plans else base
-        end = final.end_time+SERVICE_SECONDS[a.service_class] if final.pad_id is not None else math.inf
+        end = final.end_time+service_duration(self.snapshot.config,a.service_class) if final.pad_id is not None else math.inf
         if a.status == "LANDED_SERVICE": end = a.service_end
         return _Traffic(a.id,base,plans,self.snapshot.time,end)
 
@@ -528,15 +529,18 @@ class CandidateProvider:
             tailtime=max(snapshot.time+HORIZON,current.time)
             tailkey=(snapshot.config.config_hash,current.ring,current.slot,tailtime,current.version,a.id)
             ref=self.references.cache.get(tailkey,NormalReference("UNKNOWN",identity=tailkey))
-            if ref.status!="KNOWN" and budget is not None and budget.available(a.id):
-                tailnode=PlanningNode(current.ring,current.slot,tailtime,min(soc_h,current.soc),max(peak_h,current.peak),current.version,current.error_j,current.peak_error_s)
-                ref=self.references.get(snapshot,a,node=tailnode,budget=budget)
+            # Constructing a partial column never starts a recursive reference
+            # search. The source-reference pass below does not populate these
+            # horizon-tail epochs; only an existing exact cache hit is KNOWN.
             reference=ref
             known = ref is not None and ref.status == "KNOWN"
             future_soc=min(soc_h,current.soc);future_peak=max(peak_h,current.peak)
             urgent = not known or future_soc-.25-ref.soc_required < 0 or 120.-future_peak < ref.peak_required
             u = ({"inner":1,"middle":2,"outer":3}[ring] if known else 3) if urgent else 0
-            tau = min(900.,HORIZON+ref.duration) if known else 901.
+            # Authorized progress-tail objective v2: UNKNOWN stays U=3 and
+            # strictly worse than known tau, with a necessary-time heuristic
+            # from the actual predicted terminal ring (not a certificate).
+            tau = min(900.,HORIZON+ref.duration) if known else 901.+self._remaining_lower(snapshot,ring)
         rows = context.resources(a,plans)
         if rows is None: return None
         return PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
@@ -607,7 +611,6 @@ class CandidateProvider:
         push_state(node,prefix,initial_energy)
         while frontier and budget.available(a.id):
             _,_,tag,current,chain,energy,work=heapq.heappop(frontier)
-            if chain and root_counts[(chain[0].target_ring,chain[0].target_slot,chain[0].pad_id)]>=2: continue
             if tag=="STATE":
                 if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
                     emitted_column(chain)
@@ -670,6 +673,10 @@ class CandidateProvider:
                         else:
                             child=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
                             push_state(child,plans,energy+q[0])
+                            # Retain executable progress independently of a
+                            # later pad/slot conflict, then continue this chain.
+                            emitted_column(plans)
+                            yield ("COLUMN",plans,self._emergency_prediction(snapshot,a,child))
             push_cursor(current,chain,energy,group,cursor)
             if not group["remaining"] and not group["enumerating"] and group["immediate"] and not group["emitted"]:
                 group["emitted"]=True
@@ -783,6 +790,65 @@ class CandidateProvider:
                 aligned.add(start); self.aligned_starts.append((a.id,node.ring,node.slot,node.time,start))
             yield p
 
+    @staticmethod
+    def _current_progress_reservation_conflict(snapshot,a,node,target,start,duration):
+        """Prefer independently available current targets in the progress pass.
+
+        A row may be released by another decision, so skipping it here says
+        nothing about joint feasibility. This independent first pass leaves
+        such moves to the unfiltered reference/multistep joint enumeration.
+        Transfer capture precedes end_time; overlap even after end_time is a
+        guaranteed current-reservation dependency for this single step.
+        """
+        next_ring={"outer":"middle","middle":"inner","inner":None}[node.ring]
+        resource=target if next_ring is None else (next_ring,target)
+        rows=snapshot.pads if next_ring is None else snapshot.slots
+        lo=start+duration
+        hi=lo+13.5+service_duration(snapshot.config,a.service_class) if next_ring is None else math.inf
+        return any(r.resource==resource and r.aircraft_id!=a.id
+                   and lo<r.end and r.start<hi for r in rows)
+
+    def _progress_steps(self,snapshot,a,node,budget,context):
+        """Immediate primitives in end-time order, yielding after each attempt.
+
+        Only one accepted progress column per aircraft is needed in this pass.
+        The caller owns the half-wall allocation and round-robin scheduling;
+        full references and multistep expansion retain the remaining budget.
+        """
+        heap=[];serial=0;seen=set()
+        def push(cursor):
+            nonlocal serial
+            descriptor=self._next_descriptor(snapshot,a,node,budget,cursor,seen,True)
+            if descriptor is None: return
+            target,start,duration,_=descriptor
+            serial+=1
+            heapq.heappush(heap,(start+duration,target,serial,descriptor,cursor))
+        for cursor in self._offset_cursors(snapshot,a,node,budget,0.,include_aligned=False):
+            push(cursor)
+        yield ("SCREEN",None,None)
+        while heap and budget.available(a.id):
+            _,_,_,descriptor,cursor=heapq.heappop(heap)
+            target,start,duration,_=descriptor
+            if self._current_progress_reservation_conflict(snapshot,a,node,target,start,duration):
+                budget.screening["progress_existing_reservation_skipped"]+=1
+                push(cursor)
+                continue
+            before=budget.attempts[a.id]
+            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            budget.screening["progress_attempts"]+=budget.attempts[a.id]-before
+            if not ok: return
+            push(cursor)
+            if p is not None:
+                q=_move_energy(node,p,snapshot.config)
+                if node.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and node.peak+q[2]<=120:
+                    terminal=(PlanningNode(p.target_ring,p.target_slot,p.end_time,node.soc-q[1],node.peak+q[2],
+                                          node.version+1,node.error_j+q[3],node.peak_error_s+q[4])
+                              if p.target_ring is not None else node)
+                    yield ("COLUMN",(p,),self._emergency_prediction(snapshot,a,terminal))
+                    continue
+                budget.screening["progress_energy_rejected"]+=1
+            yield ("ATTEMPT",None,None)
+
     def get_columns(self,snapshot,budget=None,context=None):
         budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget)
         self.aligned_starts=[]
@@ -790,8 +856,7 @@ class CandidateProvider:
         start_hits=self.references.hits
         aircraft=_decision_aircraft(snapshot)
         refs={}; slacks={}; columns={}; incomplete=[]
-        # Complete normal references get the first bounded, ring-interleaved pass.
-        # Their full energy remains useful for slack even if replay is unsafe.
+        # Immediate progress and full references share the same fixed budget.
         for a in aircraft:
             node=_node(snapshot,a)
             key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id)
@@ -807,17 +872,50 @@ class CandidateProvider:
         counts={a.id:Counter(c.first_target for c in columns[a.id] if c.kind=="MOVE") for a in ordered}
         def add_column(a,plans,emergency):
             first=(plans[0].target_ring,plans[0].target_slot,plans[0].pad_id)
-            if counts[a.id][first]>=2 or len(columns[a.id])>=10: return
+            full=plans[-1].pad_id is not None
+            # A retained prefix cannot hide a later certified complete chain.
+            # Replace only a same-first-target partial; keep another safe
+            # prefix when the complete suffix fails its background check.
+            replaceable=next((c for c in reversed(columns[a.id]) if c.kind=="MOVE"
+                              and c.first_target==first and c.plans[-1].pad_id is None),None) if full else None
+            if (counts[a.id][first]>=2 or len(columns[a.id])>=10) and replaceable is None: return False
             ref=(ReferenceProvider._reference(snapshot,_node(snapshot,a),plans,"catalog_minimum")
                  if plans[-1].pad_id is not None else refs[a.id])
-            c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency,budget=budget)
+            c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency)
             if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
+                if counts[a.id][first]>=2 or len(columns[a.id])>=10:
+                    columns[a.id].remove(replaceable)
+                    counts[a.id][first]-=1
                 columns[a.id].append(c); counts[a.id][first]+=1
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
+                return True
+            return False
         by_ring={ring:[a for a in ordered if _node(snapshot,a).ring==ring]
                  for ring in ("outer","middle","inner")}
         seed_order=[group[index] for index in range(max(map(len,by_ring.values()),default=0))
                     for group in by_ring.values() if index<len(group)]
+        progress={a.id:self._progress_steps(snapshot,a,_node(snapshot,a),budget,context) for a in seed_order
+                  if _node(snapshot,a).time<=snapshot.time+5. and a.id not in snapshot.soft}
+        progress_start=Counter(budget.attempts)
+        with budget.measure("safe_progress_generation"):
+            while progress and budget.available() and budget.elapsed<min(budget.candidate_seconds,budget.soft_seconds)/2:
+                for a in seed_order:
+                    if budget.elapsed>=min(budget.candidate_seconds,budget.soft_seconds)/2: break
+                    gen=progress.get(a.id)
+                    if gen is None: continue
+                    # The same half allocation reserves physical attempts too,
+                    # including under deterministic-clock regression tests.
+                    if (budget.attempts[a.id]-progress_start[a.id]>=budget.max_per_aircraft//2
+                        or sum(budget.attempts.values())-sum(progress_start.values())>=budget.max_attempts//2):
+                        progress.pop(a.id,None);continue
+                    try: tag,plans,emergency=next(gen)
+                    except StopIteration: progress.pop(a.id,None);continue
+                    if tag=="COLUMN":
+                        budget.screening["progress_columns_checked"]+=1
+                        if add_column(a,plans,emergency):
+                            budget.screening["progress_retained"]+=1
+                            progress.pop(a.id,None)
+            if progress: budget.screening["progress_pass_cutoff"]+=1
         with budget.measure("reference_seed_generation"):
             for a in seed_order:
                 if not budget.available(): break
@@ -855,7 +953,7 @@ class CandidateProvider:
                 if len(self.references.cache)>4096: self.references.cache.pop(next(iter(self.references.cache)))
             slacks[a.id]=energy_slack(snapshot,a,refs[a.id])
             columns[a.id][:2]=[self._column(snapshot,a,(),k,context,refs[a.id],budget=budget) for k in ("KEEP","WAIT")]
-            if len(columns[a.id])<3 or a.id in generators: incomplete.append(a.id)
+            if len(columns[a.id])<3 or a.id in generators or budget.truncations: incomplete.append(a.id)
         return CandidateCatalog(MappingProxyType({k:tuple(v) for k,v in columns.items()}),MappingProxyType(slacks),
                                 MappingProxyType(dict(budget.attempts)),tuple(incomplete),self.references.hits-start_hits)
 
