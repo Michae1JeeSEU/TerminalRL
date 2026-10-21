@@ -214,6 +214,10 @@ def audit_replay(bundle_path,output=None):
 
     used=set();initial={};previous=None;last=None;frame_count=0;event_index=0;revealed=set();seen_event_times=set()
     pair_runs={};pair_checks=0;documented_hard=0;energy_intervals=0
+    # One additive physical envelope per aircraft, independent of recorded
+    # subsequent ledger values. The kernel allocates peak_error_s over the
+    # complete plan; summing returned widths does not grant .01s per frame.
+    peak_envelopes={};peak_checks=0;peak_max_width=0.;peak_step_mismatches_inside=0;peak_static_checks=0
     try:
         sample_dt=float(archive.index.get("sample_dt_s",.2))
     except (TypeError,ValueError):
@@ -274,6 +278,7 @@ def audit_replay(bundle_path,output=None):
     try:
         for frame in _rows(root/"states.jsonl"):
             t=float(frame["time"]);frame_count+=1
+            peak_step_mismatches={}
             if stage2 and frame.get("failed") and not invalid_events:
                 issue("STAGE2_GLOBAL_STOP","isolated energy losses must not stop/censor the whole world",time=t)
             if previous is None and abs(t)>1e-9:
@@ -316,6 +321,8 @@ def audit_replay(bundle_path,output=None):
                     issue("PEAK_BUDGET","visit-cumulative peak duration exceeds the physical budget",aircraft_id=aid,time=t)
                 if aid not in initial:
                     initial[aid]=a.copy()
+                    baseline=float(a.get("peak_seconds",0)) if a.get("fixture") else 0.
+                    peak_envelopes[aid]=(baseline,baseline)
                     if not _near(a.get("airborne_time",0),0,1e-6):
                         issue("INITIAL_AIRBORNE_TIME","initial accumulated flight time was not executed in this episode",aircraft_id=aid)
                     if not math.isfinite(float(a.get("energy_j",0))) or float(a.get("energy_j",0))<0 or not 0<=float(a.get("peak_seconds",0))<=120:
@@ -406,7 +413,7 @@ def audit_replay(bundle_path,output=None):
                                       "airborne_time","holding_time","transfer_time","final_time","descent_time"):
                             if old.get(field)!=a.get(field):
                                 issue("ISOLATED_STATE_CHANGED","failed task changed after isolation",aircraft_id=aid,time=t,field=field)
-                    joules=soc_used=peak=0.
+                    joules=soc_used=peak=0.;peak_width=0.;peak_valid=False
                     if old.get("status") in AIRBORNE:
                         p=plan_for(old,pt)
                         if p is not None:
@@ -415,6 +422,7 @@ def audit_replay(bundle_path,output=None):
                             if not q.valid:
                                 issue("ENERGY_UNKNOWN","shared kernel rejects recorded interval",aircraft_id=aid,interval=[pt,t],reason=q.reason)
                             joules,soc_used,peak=q.joules,q.soc_used,q.peak_seconds
+                            peak_width=q.peak_error_s;peak_valid=q.valid
                             if stage2 and aid in losses and abs(t-losses[aid][0])<=1e-7:
                                 reason=losses[aid][1]
                                 # A positive prefix immediately before the event
@@ -431,8 +439,16 @@ def audit_replay(bundle_path,output=None):
                         issue("ENERGY_DELTA","recorded joules disagree with integrated physical interval",aircraft_id=aid,interval=[pt,t])
                     if not _near(float(old["soc"])-float(a["soc"]),soc_used,1e-7):
                         issue("SOC_DELTA","SOC change disagrees with integrated physical interval",aircraft_id=aid,interval=[pt,t])
-                    if not _near(float(a.get("peak_seconds",0))-float(old.get("peak_seconds",0)),peak,1e-5):
-                        issue("PEAK_DELTA","cumulative peak duration reset or disagrees with shared kernel",aircraft_id=aid,interval=[pt,t])
+                    peak_delta=float(a.get("peak_seconds",0))-float(old.get("peak_seconds",0))
+                    if old.get("status") not in AIRBORNE or dt<=0.:
+                        peak_static_checks+=1
+                        if not _near(peak_delta,0.,1e-5):
+                            issue("PEAK_DELTA","peak ledger changed without a positive airborne interval",aircraft_id=aid,interval=[pt,t])
+                    elif peak_valid:
+                        lower,upper=peak_envelopes[aid]
+                        peak_envelopes[aid]=(lower+peak-peak_width,upper+peak)
+                        if not _near(peak_delta,peak,1e-5):
+                            peak_step_mismatches[aid]=True
                     expected_air=dt if old.get("status") in AIRBORNE else 0.
                     if not _near(float(a.get("airborne_time",0))-float(old.get("airborne_time",0)),expected_air,1e-6):
                         issue("AIRBORNE_TIME","recorded accumulated airborne time disagrees with physical interval",aircraft_id=aid,interval=[pt,t])
@@ -448,6 +464,20 @@ def audit_replay(bundle_path,output=None):
                         live[pair]=(pair[0],pair[1],*hashes,pt,t)
                 for run in pair_runs.values(): check_run(run)
                 pair_runs=live
+            for aid,a in current.items():
+                lower,upper=peak_envelopes[aid]
+                value=float(a.get("peak_seconds",0))
+                peak_checks+=1
+                peak_max_width=max(peak_max_width,upper-lower)
+                within=(all(math.isfinite(x) for x in (value,lower,upper)) and
+                        lower-1e-5<=value<=upper+1e-5)
+                if not within:
+                    issue("PEAK_DELTA","cumulative peak ledger lies outside the shared-kernel numerical envelope",
+                          aircraft_id=aid,interval=[float(previous["time"]) if previous is not None else t,t],
+                          recorded_peak_s=value,lower_peak_s=lower,upper_peak_s=upper,
+                          envelope_width_s=upper-lower)
+                elif aid in peak_step_mismatches:
+                    peak_step_mismatches_inside+=1
             # Seed singleton runs for initial/new physical pairs so an archive
             # ending on its first frame cannot silently evade separation.
             current_physical=[a for a in current.values() if a.get("status") in PHYSICAL and a.get("trajectory_hash") in plans]
@@ -460,7 +490,11 @@ def audit_replay(bundle_path,output=None):
     except (KeyError,TypeError,ValueError,AttributeError,OverflowError,OSError) as exc:
         issue("STATE_SCHEMA","cannot interpret physical replay state",error=str(exc))
     report.update(state_frames=frame_count,used_plans=len(used),energy_intervals=energy_intervals,
-                  continuous_pair_runs=pair_checks,documented_hard_failure_runs=documented_hard)
+                  continuous_pair_runs=pair_checks,documented_hard_failure_runs=documented_hard,
+                  peak_check_scope="shared-kernel existing additive peak_error_s envelope; precision-switch events not reconstructed",
+                  peak_envelope_checks=peak_checks,peak_envelope_max_width_s=peak_max_width,
+                  peak_step_mismatch_within_envelope_count=peak_step_mismatches_inside,
+                  peak_static_ledger_checks=peak_static_checks)
     if last is None: return finish()
     stop=float(last["time"]);final={a["id"]:a for a in last.get("aircraft",())}
     for i,event in enumerate(events):
