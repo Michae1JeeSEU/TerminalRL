@@ -1,0 +1,65 @@
+Track B search log (2026-10-13; timezone Asia/Shanghai)
+
+Scope: published low-altitude/UAM macro-micro traffic flow, MFD/fundamental diagrams, airspace capacity, congestion/perimeter control, dynamic airspace configuration. Vertiport scheduling was excluded as the primary topic. One conventional-aircraft MFD paper is retained as transfer background.
+
+Query class: problem / capacity
+- Query used: urban air mobility macroscopic traffic flow model airspace capacity published DOI PDF
+- Query used: low-altitude airspace capacity micro macro traffic flow journal DOI
+- Primary records opened: ScienceDirect records for Safadi et al. (10.1016/j.trc.2023.104141), Cummings and Mahmassani (10.1016/j.trc.2023.104467), and Wang et al. (10.1016/j.trc.2022.103776); official TUM page for Peksa et al. (10.1109/ITSC60802.2025.11423788).
+
+Query class: method / MFD and control
+- Query used: UAM macroscopic fundamental diagram airspace congestion paper DOI
+- Query used: structured urban airspace MFD feedback control AIAA 2024 PDF
+- Primary records opened: NASA NTRS 20240007458 and public PDF for Chour et al. (10.2514/6.2024-4575); ScienceDirect record for Safadi et al.; SAGE record for Knoop et al. (10.1177/03611981241265683).
+
+Query class: baseline / transfer and airspace restrictions
+- Query used: Macroscopic Fundamental Diagram for Airplane Traffic Empirical Findings PDF
+- Query used: 4-D system fundamental diagram UAM airspace restrictions Cummings Mahmassani DOI
+- Primary records opened: TU Delft repository/PDF and SAGE publisher record for Knoop et al.; SAGE publisher record for Cummings and Mahmassani (10.1177/03611981221103237). The latter was not included in the final ten because a public full text was not located.
+
+Query class: recent / dynamic management
+- Query used: urban low-altitude air transport management Bridging dynamic traffic control and static network equilibrium authors 2025
+- Query used: 2025 UAM airspace partitioning macroscopic realistic network DOI
+- Primary records opened: ScienceDirect record for Weng et al. (10.1016/j.trc.2025.105237) and official TUM publication page for Peksa et al. (10.1109/ITSC60802.2025.11423788).
+
+Query class: Chinese formal publication
+- Query used: 低空交通 流量 容量 空域 构形 交通运输工程 期刊 无人机
+- Query used: 有人机 无人机 混合低空交通 微观 宏观 耦合 框架
+- Primary record opened: official Journal of Transportation Engineering and Information page for Liu, Bao and Qiu, DOI 10.19961/j.cnki.1672-4747.2025.12.002. The official issue page exposed a PDF download endpoint; B08.pdf was downloaded and parsed.
+
+Query class: UAS network flow
+- Query used: Traffic Flow Analysis for Package Delivery Drones using a Queueing Model DOI PDF
+- Primary records opened: NASA NTRS citation 20230014065 and public NTRS PDF endpoint; Crossref API confirmed DOI 10.1109/DASC58513.2023.10311198.
+
+Access notes:
+- Public files downloaded and checked for %PDF header: B01 (TU Delft repository), B08 (official journal endpoint), B09 (NASA NTRS), B10 (NASA NTRS).
+- B03/B04/B05/B06/B07 did not yield a legally downloadable publisher or institutional PDF during this pass; they are marked ABSTRACT_ONLY or METADATA_ONLY in track_B.json. HAL B04 page was reachable in indexed search, but direct file/document requests returned service-unavailable or anti-bot HTML, so no local copy is claimed.
+
+Extension search (2026-10-13; B11/B12 and verification rechecks)
+
+Query class: named MFD feedback-control papers / primary metadata
+- Query used: "Traffic flow modeling and feedback control for future Low-Altitude Air city Transport: An MFD-based approach" DOI PDF
+- Query used: site:sciencedirect.com "Traffic flow modeling and feedback control for future Low-Altitude Air city Transport: An MFD-based approach"
+- Query used: "Integrated departure and boundary control for low-altitude air city transport systems" DOI
+- Query used: site:sciencedirect.com "Integrated departure and boundary control for low-altitude air city transport systems"
+- Primary records opened: ScienceDirect records for B11 (PII S0968090X21003806) and B12 (PII S0191261524001449); official Technion records for both; TRID record for B12.
+
+Query class: legal institutional/full-text access attempts
+- Query used: site:technion.ac.il "Traffic flow modeling and feedback control for future"
+- Query used: site:cris.technion.ac.il "Traffic flow modeling and feedback control"
+- Query used: site:infoscience.epfl.ch "Integrated departure and boundary control for low-altitude air city transport systems"
+- Query used: "Integrated departure and boundary control for low-altitude air city transport systems" filetype:pdf
+- Query used: "e5713524-a485-4052-9d1d-008bd4d47207" pdf
+- Access attempts: ScienceDirect publisher PDF endpoints for B11 and B12 returned HTTP 403; Technion pages exposed metadata/abstract but no public PDF; EPFL Infoscience official record URL returned HTTP 405; ResearchGate showed a request-full-text page without a file. No paywall bypass was attempted.
+
+Query class: article-preview facts / limitations
+- Query used: site:sciencedirect.com/science/article/pii/S0968090X21003806 "multi-region" "boundary"
+- Query used: site:sciencedirect.com/science/article/pii/S0191261524001449 "departure delay" "boundary delay"
+- Query used: site:sciencedirect.com/science/article/pii/S0191261524001449 "limitation" "future research"
+- Publisher page indexed excerpts were used only to record method/author-stated concerns in B11/B12; both remain ABSTRACT_ONLY because no full PDF/accepted manuscript was obtained.
+
+Verification rechecks:
+- B01 SAGE official page: online first 2024-08-24; Volume 2679 Issue 2 issue published February 2025. track_B.json uses issue year 2025 and records online-first 2024 in notes.
+- B08 official article page and official issue PDF page 1 match title, full authors, and DOI 10.19961/j.cnki.1672-4747.2025.12.002. Core method/conclusion and author limitations were rechecked from B08.pdf at the page locations recorded in verification_rechecks.B08.
+- B09.pdf full-text search found only the author’s upper-bound statements (PDF p.1 abstract and p.3 uniform-spacing paragraph); no lower-bound phrase was found. The record now preserves the p.3 context without interpreting the result beyond the author’s wording.
+- B03 notes now point to B06 for the static SO-equilibrium comparison. B07 wording is restricted to airspace partitioning/NMFD homogenization; whether the partition switches dynamically remains unconfirmed without full text.

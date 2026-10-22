@@ -1,0 +1,43 @@
+剩余全文获取状态（按用户要求停止追索）
+更新日期：2026-10-22
+
+目前仅A06、C03仍为ABSTRACT_ONLY；按用户要求不再追索，不以取得两篇全文作为继续修订或研究推进的前提。旧结论仍按已核验摘要和可见节选限界使用；摘要没有提及某方法，不能据此判断全文未采用。旧获取失败记录是历史访问状态，并非本次重新尝试的结果。
+
+一、保持摘要证据的两篇
+
+A06 | Comparing Urban Air Mobility Network Airspaces: Experiments and Insights
+DOI：https://doi.org/10.1177/03611981231185146
+原证据状态：已核验出版元数据、SAGE摘要和可见节选；旧记录中的SAGE全文/PDF无访问权限或403，其他公开入口未取得全文。当前没有本地全文文件，reading_status保持ABSTRACT_ONLY。作者明确限制和完整实验条件未经全文核验，不补写。
+处理：停止追索；后续仅在摘要支持范围内使用。
+
+C03 | Vertiport Planning for Urban Aerial Mobility: An Adaptive Discretization Approach
+DOI：https://doi.org/10.1287/msom.2022.1148
+原证据状态：已核验出版元数据及摘要/可见节选，未取得本地可解析全文，reading_status保持ABSTRACT_ONLY；具体访问记录见evidence/track_C.json的access_attempts。设施规划层面的摘要结论不能扩展为战术执行、能量或闭环的完整作者边界。
+处理：停止追索；后续仅在摘要支持范围内使用。
+
+二、已读HTML而无本地全文文件
+
+A08 | Decentralized deconfliction of aerial robots in high intensity traffic structures
+DOI：https://doi.org/10.1002/rob.22340
+公开HTML正文已全文阅读，reading_status为FULL_TEXT；没有本地PDF/TXT不等于没有读过，不计为第三篇缺全文，也不要求额外下载。
+
+三、本次12篇已补齐全文：ID与本地PDF映射
+
+下列PDF均位于supplement/，仅作为本地资料，不纳入本轮Git提交；提取文本为extracted/supplement_<ID>.txt。对应全文证据见evidence/supplement_*.json及主track。
+
+A03 | supplement/1-s2.0-S0376042121000312-main.pdf
+B02 | supplement/1-s2.0-S0968090X22002054-main.pdf
+B03 | supplement/1-s2.0-S0968090X23002681-main.pdf
+B04 | supplement/1-s2.0-S0968090X23004576-main.pdf
+B05 | supplement/1-s2.0-S0968090X23001304-main.pdf
+B06 | supplement/1-s2.0-S0968090X25002414-main.pdf
+B07 | supplement/Airspace_Partitioning_for_Urban_Air_Mobility_A_Macroscopic_Approach_with_a_Realistic_Network.pdf
+B11 | supplement/1-s2.0-S0968090X21003806-main.pdf
+B12 | supplement/1-s2.0-S0191261524001449-main.pdf
+C02 | supplement/1-s2.0-S0968090X21003302-main.pdf
+C04 | supplement/Urban air mobility  from complex tactical conflict resolution to network design and fairness insights.pdf
+C06 | supplement/1-s2.0-S0307904X23003062-main.pdf
+
+B07六页全部视觉读完；正文无法直接提取，TXT是可提取页眉加人工页码阅读笔记，非逐字全文。A09仍以originals/A09_article.pdf为主文，originals/A09.pdf为补充学位论文，不另增文献条目。
+
+当前总计：33条中31条FULL_TEXT（30篇本地主文PDF加A08公开HTML）、2条ABSTRACT_ONLY（A06、C03）。originals/19个PDF与supplement/12个PDF合计31个，覆盖30篇主文及1篇补充学位论文。

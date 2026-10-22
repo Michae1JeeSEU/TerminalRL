@@ -1,0 +1,65 @@
+# Track C literature search and access log
+
+Scope: strategic+tactical deconfliction, vertiport scheduling/trajectory optimization, and hierarchical or distributed UAM traffic management. The search was restricted to published or formally published papers, with open author/publisher copies downloaded where legally available. Preprints are identified separately in track_C.json.
+
+## Query classes and exact queries
+
+### Problem / research question
+
+- urban air mobility strategic tactical deconfliction trajectory optimization vertiport scheduling DOI journal
+- "Strategic and Tactical Path Planning for Urban Air Mobility" pdf
+- "Urban air mobility: from complex tactical conflict resolution" authors
+- "Simulated Evaluation of Strategic Conflict Management Capabilities for Urban Air Mobility Operations" DOI
+
+### Method / system design
+
+- UAM vertiport arrival departure scheduling trajectory optimization published paper DOI
+- "Automated flight planning of high-density urban air mobility" pdf author manuscript
+- "Vertiport Planning for Urban Aerial Mobility" pdf Wang Jacquillat Vaze
+- "Automated Flight Planning System" UAM Tampa Bay DOI journal authors
+- "Airspace Flight Planning System" UAM authors DOI
+- "Airspace Flight Planning System" urban air mobility Tampa Bay published
+
+### Baseline / optimization and conflict-management comparison
+
+- urban air traffic management strategic tactical conflict resolution rule based optimization multi UAV published journal
+- "Integrated Conflict Management for UAM With Strategic Demand Capacity Balancing and Learning-Based Tactical Deconfliction" authors
+- "Integrated Conflict Management for UAM" pdf Wei
+- "Integrated Conflict Management for UAM" accepted manuscript pdf
+- 10.1109/TITS.2024.3351049 pdf
+- "A heuristic approach for scheduling advanced air mobility aircraft at vertiports" DOI
+
+### Recent / 2023–2026
+
+- 2023 2024 urban air mobility traffic management trajectory deconfliction vertiport scheduling paper DOI
+- "A collaborative system of systems simulation of urban air mobility" authors DOI
+- "Real-time traffic simulation and management for large-scale urban air mobility" Weng authors
+- 10.1016/j.trc.2025.105477 authors
+- "Introducing digital air-traffic controllers for urban-air mobility to ensure safe and energy-efficient flight operations" DOI
+
+## Primary-source and access attempts
+
+- C01 primary MDPI article: https://www.mdpi.com/2504-446X/7/1/11 . OA publisher PDF downloaded from https://mdpi-res.com/d_attachment/drones/drones-07-00011/article_deploy/drones-07-00011-v2.pdf . PDF passed %PDF and pypdf extraction (18 pages).
+- C02 primary DOI/ScienceDirect: https://doi.org/10.1016/j.trc.2021.103324 and https://www.sciencedirect.com/science/article/pii/S0968090X21003302 . Publisher result states open access and exposed abstract/preview. Direct publisher PDF (/pdfft endpoint) returned a Cloudflare access page; ResearchGate full-text landing page was visible but no direct lawful PDF was saved. ABSTRACT_ONLY.
+- C03 primary INFORMS page: https://pubsonline.informs.org/doi/10.1287/msom.2022.1148 . Metadata and abstract were accessible; complete article/PDF was not available from the primary page in this run. ABSTRACT_ONLY.
+- C04 primary Taylor & Francis page: https://www.tandfonline.com/doi/abs/10.1080/10556788.2023.2241148 . Metadata and abstract were visible; full page/PDF returned 403. ABSTRACT_ONLY.
+- C05 primary IEEE record: https://doi.org/10.1109/TITS.2024.3351049 . Publisher metadata was verified; article page was blocked. Public arXiv author preprint downloaded from https://arxiv.org/pdf/2305.10556 and read completely (13 pages). Findings are labelled preprint version.
+- C06 primary ScienceDirect: https://www.sciencedirect.com/science/article/pii/S0307904X23003062 and author repository metadata at https://intellectum.unisabana.edu.co . Repository bitstream attempt https://intellectum.unisabana.edu.co/server/api/core/bitstreams/52315192-8cb3-4a50-a355-e184cd83a7bf/content returned HTML/bot content (15040 bytes), not a PDF. ABSTRACT_ONLY.
+- C07 primary Springer OA page/DOI: https://doi.org/10.1007/s13272-024-00802-1 . OA PDF downloaded and read completely (14 pages).
+- C08 primary Springer OA page/DOI: https://doi.org/10.1007/s13272-024-00796-w . OA PDF downloaded and read completely (16 pages).
+- C09 primary NASA NTRS record: https://ntrs.nasa.gov/citations/20240007388 and AIAA DOI https://doi.org/10.2514/6.2024-3854 . NASA public PDF downloaded from https://ntrs.nasa.gov/api/citations/20240007388/downloads/AIAA_Aviation_2024_HanbongLee_v3.pdf and read completely (12 pages).
+- C10 primary ScienceDirect page: https://www.sciencedirect.com/science/article/pii/S0968090X25004814 and public arXiv record https://arxiv.org/abs/2412.01235 . Publisher full text was not downloaded; arXiv v2 PDF was downloaded and read completely (26 pages). Findings are labelled preprint version and are not merged with publisher-only preview metadata.
+- C11 specified candidate: arXiv https://arxiv.org/abs/2508.15395 . ScienceDirect primary article page/search result https://www.sciencedirect.com/science/article/pii/S0968090X25003742 and Crossref DOI metadata confirm formal publication as Transportation Research Part C: Emerging Technologies, volume 182, article 105370, 2026, DOI 10.1016/j.trc.2025.105370. The public arXiv v1/v2 PDF was downloaded and read completely (31 pages); findings are labelled author-preprint version.
+
+## Retrieval command record
+
+- Windows `Invoke-WebRequest` with the URLs above was used for public PDFs after ordinary sandbox network requests failed. All saved PDF files were checked for `%PDF` header and parsed with bundled pypdf.
+- Additional C11 verification query: `"Integrated take-off management and trajectory optimization for merging control in urban air mobility corridors"`; `"arXiv:2508.15395" published DOI`; `"Integrated take-off management" Liu Pan Tan Zhong Chen DOI`. Crossref response returned journal-article, published 2026-01, volume 182, page/article 105370, and DOI 10.1016/j.trc.2025.105370.
+
+## Full-text correction audit
+
+- C01 was re-read at §4–§6: both cases are in Naples and surroundings; the air-taxi case is Capodichino airport to Naples business centre/port, and the medical case is Monte di Procida to Procida island. The method is BIT*/OMPL for strategic planning and three tactical levels (velocity scaling, local RRT, global RRT). Unsupported Rome–Naples wording was removed.
+- C05 Table III/IV and §VI were rechecked. The text now states only the supported comparison that DCB+MARL has lower ground delay than DCB+rule at the three matched demand levels; it does not compare that delay to the no-intervention row.
+- C07 was re-read at §2 and §4.4: 15 aircraft is the current walkthrough count; 15 aircraft/hour and 30% workload are related DLR simulation results. The current walkthrough does not provide the C08 trajectory-tool separation parameters, so those values were removed from C07.
+- C08 was re-read at §2.2.8 and §3: the framework defines slot-based and trajectory-based approaches, but the reported 4-hour Hamburg study applies slot-based management; the JSON was corrected accordingly.
+- C09, C10, and C11 numerical values and author-stated future/limitation passages were rechecked against their listed sections and tables; no unsupported cross-paper values are retained in those fields.

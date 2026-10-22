@@ -1,0 +1,201 @@
+[
+  {
+    "id": "A03",
+    "title": "Designing airspace for urban air mobility: A review of concepts and approaches",
+    "doi": "10.1016/j.paerosci.2021.100726",
+    "metadata_verification": "Publisher PDF p.1: title, Aleksandar Bauranov and Jasenka Rakas, Progress in Aerospace Sciences 125 (2021) 100726, DOI and available-online 8 June 2021 match old record.",
+    "method": "综述学术、政府与产业UAM空域方案，以清空/禁飞包络叠加的逻辑归纳影响物理空域几何的四组因素：safety、social、system、vehicle；按这些因素定性评估方案（§3 pp.3–8，§4 pp.8–22，Tables 6/12/13）。Fig.26 p.23给出结构从少到多的谱系 Free flight → TBO → Layers → Cells → Zones → Corridors/Tubes → Lanes；这是综述比较框架，未提出或运行新的联合调度/战术轨迹优化器。",
+    "scenario": "覆盖政府/研究机构的FAA UAM、NASA UTM/UTFC、MITRE、SESAR/DLR U-Space、METROPOLIS、ONERA、Singapore、China UOMS、JAXA及Amazon/Airbus/Boeing/Embraer-X/Uber产业方案（§4）。不同方案的设备、分离和容量条件不同，非统一实验。METROPOLIS有Full Mix、Layers、Zones、Tubes四个子概念；Zones含同心环及径向连接，按飞行距离灵活选高度，不是本文新建终端区环形调度模型（pp.12–15）。",
+    "findings": [
+      "安全不是“越多结构越好”的单调规律。§5 pp.22–23认为无结构自由飞行直接航路效率/容量较高但依赖自主避碰且有碰撞/第三方风险；过多结构又集中流量，降低容量、效率乃至安全。Fig.27的碰撞风险和第三方风险为定性U形，容量和航路效率随结构增强下降，技术复杂度下降、包容性上升（p.23）。",
+      "METROPOLIS比较在Table9 p.15将Layers的安全/第三方风险/噪声列为第1，Full Mix容量/效率第1；Tubes安全/第三方风险/容量/效率均第4。此排名引自所综述研究，并非本综述新仿真或一般定理。",
+      "§4.3 p.21把方案粗分三组：依赖现有技术可先行实施的NASA/FAA/SESAR及部分DLR；专用交通管理和layers/tubes/lanes等结构、需增强CNS的UTFC/MITRE/METROPOLIS/ONERA/Singapore/Airbus/Embraer-X；依赖高度独立航空器/先进传感与电池的Amazon/Boeing（p.22）。",
+      "§4.1.6 p.12的DLR方案已有按能力划cell、性能椭球动态分离、FCFS预定义时隙审批，战术监视与advisory，管理系统根据计划任务和空域需求随时间调整segments；§4.2.4 p.20的Embraer-X已有动态routes/corridors/geofences与4D授权一致性监视。因此不能把本文所覆盖方案统称为完全静态、无管理—运行联动；但本文未给出这种联动的优化模型/闭环实验。",
+      "社会/规划公平性主要是公共接受度、隐私、噪声、空域权利及access inequalities，并非运营方延误公平分配机制（Abstract p.1；§5 pp.23–24；§6 p.24）。地面基础设施和起降点需纳入城市规划，但未排程gate/pad/charging或建立空地队列。",
+      "能源部分§3.4.3 pp.7–8讨论电池续航限制、低巡航高度/较浅下降可能节能与噪声/容量冲突，引述单机研究；未引入随机SOC或SOC随等待/轨迹演化的联合调度约束。"
+    ],
+    "quantitative_findings": [
+      "本文未提供统一容量、效率或冲突率的新数值仿真；Table9 p.15为1最好到4最差的定性排序：Full Mix/Layers/Zones/Tubes安全2/1/3/4、第三方风险2/1/3/4、容量1/2/3/4、效率1/2/3/4、噪声2/1/4/3。",
+      "§3.1.1 p.4列举文献中的不同候选分离：0.3NM或0.1NM水平与100ft垂直，以及0.36NM水平/450ft垂直；这些互不统一，非作者在实验中验证的普遍标准。",
+      "§4.1.7 p.12引述METROPOLIS：最低巡航高度300ft AGL且高于最高建筑100ft(UAV)/500ft(PAV)，最高6500ft；提到1min间隔、PAV 250m及50m垂直间隔。本文未重新验证这些参数，尤其不能用所述数值推导统一换算关系。",
+      "§3.3.2 p.6引述GPS城市测量：常见路径偏差约2m、个别5m或更多，城市峡谷研究可超过20m；§5 p.23用GPS约5m、ADS-B带宽及detect-and-avoid不成熟作为可实施性限制。这些为综述引用证据，非本文新测量。"
+    ],
+    "author_limitations": [
+      "作者对被综述概念的明确限制（§4.3 p.21、§6 p.24）：多局限于避物的狭义安全、假定尚未成熟技术可用、社会因素考虑不足；抽象网络忽略bird strikes等风险及地面现实（§5 p.23）。",
+      "§5 p.22指出自由飞行要求自主能力且难包容低装备航空器，当前只适于接触其他航空器/物体机会较少的有限地理区域；§5 p.23判断短中期更可能采用分隔空域。",
+      "§6 p.24明确未来研究风险与失控/阵风、数据权利和匿名化、ADS-B/DAA与围栏越界接管及技术检查、安全协议、心理声学噪声、社区参与、地面基础设施/土地及空域权利/不平等。",
+      "阅读观察而非作者自述方法局限：本篇为异质概念的叙述性定性评估，未给统一仿真基准或上述因素的数值权重/效用标定。表格与正文有个别表述差异，例如§4.2.3 p.19称Boeing free-flight performance-based routes，Table13 p.22的Structure填Tubes；不可把表格标签作为唯一分类依据。"
+    ],
+    "evidence_locations": [
+      "PDF p.1: title/DOI/abstract；pp.3–8 §3 and Table6: 四组因素、clearance envelope、能源和CNS。",
+      "PDF pp.8–12 §4.1.1–4.1.7: 政府方案；pp.12–15 Figures14–17/Table9: METROPOLIS四概念与引述排名。",
+      "PDF pp.15–21 §4.1.8–4.2.5: ONERA/Singapore/UOMS/JAXA及产业方案；p.21 §4.3/Table12及p.22 Table13: 方案因素对照。",
+      "PDF pp.22–24 §5–6，p.23 Fig26/27（已渲染目视核对）: 结构谱系与非单调风险、技术/社会/规划限制。"
+    ],
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/supplement/1-s2.0-S0376042121000312-main.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/supplement_A03.txt",
+    "version": "publisher",
+    "reading_status": "FULL_TEXT",
+    "reading_coverage": "27页PDF全部成功提取；正文pp.1–24（方法、概念评估、讨论、结论）全文阅读；pp.24–27参考文献。目视核对p.23 Fig26/27。",
+    "old_claim_corrections": [
+      "原ABSTRACT_ONLY/未取得全文改为用户补充publisher PDF已阅读全文；元数据标题DOI均一致。",
+      "旧摘要“更严格管道/航路以降低容量换安全”的笼统概括需加限制：§5及Fig27明确过度结构化也增加冲突/第三方风险，METROPOLIS中Tubes安全排名最差；Layers是该引述比较中的折中优选。",
+      "旧“无可核验数值”应改为无新统一仿真实验，但全文有Table9定性排名及引述文献的分离、导航误差等数值，不可当本篇新实验。",
+      "原“全文未合法取得故不可补写限制”已过时；现在可精确定位§4.3/§5/§6。"
+    ]
+  },
+  {
+    "id": "C02",
+    "title": "Automated flight planning of high-density urban air mobility",
+    "doi": "10.1016/j.trc.2021.103324",
+    "metadata_verification": "PDF p.1 title/DOI, Hualong Tang, Yu Zhang, Vahid Mohmoodian, Hadi Charkhgard; Transportation Research Part C 131 (2021) 103324; available online 16 August 2021 match old record.",
+    "method": "AFPS顺序连接LAMS与LTMS：LAMS由LiDAR城市3D地图/障碍包络、各飞行层visibility graph及最短路生成每对vertiport的备选分层路径，预存交点；LTMS给定OD和起飞时间、速度，检测4D冲突并以flight-level assignment分层化解（§3 pp.5–12）。一模型最小化全体飞行generalized flying cost之和；另一模型采用Nash Social Welfare最大化运营方相对最坏参考成本的收益乘积，转成mixed-integer SOCP求解。同一可行约束，公平改变目标。不是起飞时刻/速度联合决策；§2.5 p.5明确departure displacement与speed control未包含。",
+    "scenario": "Tampa Bay 30个vertiport（选址来自Wu/Zhang已有研究），7机场禁飞区，建筑集群以cuboid近似；10层500–1400ft、100ft垂直间隔；垂直爬升至选定层、水平巡航至目的地后垂直下降（§4 p.12 Table1）。130knots巡航、1000fpm爬升/下降、0.3NM最小间隔；45min模拟，5min/takeoff或3min/takeoff，每个vertiport按密度向随机目的地发飞行、起飞时刻在2min窗口均匀生成；分别270/450架次；运营方2/4/6家及NHHI=0.01/0.1/0.25/0.5（§4.1 pp.13–14）。",
+    "findings": [
+      "网络构形与冲突分层是预处理后规划的体系集成：LAMS预生成按层绕障路径，LTMS选择层以消除既定时空请求冲突，未在同一优化中改变城市空域几何/vertiport位置，也未实装战术轨迹反馈（§3 Fig1 pp.5–6；§5 p.17–18）。",
+      "冲突分pure intersection、同向共线、反向共线三型；利用速度、交角、水平分离映成最小过点时间间隔，反向重叠用重叠段两端条件（§3.2.1 pp.7–8 eq1–3）。这是给定速度/线性外推及指定高度下的战略安全约束，不是机载不确定DAA或全动力学执行验证。",
+      "公平以每个运营方的收益而非每架次同权成本定义；参考成本为该运营方所属航班在可选层的最坏成本之和。UBR把相对参考收益除以可取得最大差值。实验所有运营方权重w=1；因可行集离散，作者明确UBR不保证完全相等（§3.2.2 p.10）。",
+      "§4.2 pp.14–15中两模型均求至最优且返回无冲突4D计划；乘积模型在所测市场份额条件下改善UBR公平，总系统成本略增，差异随市场集中度/需求密度增强。结果依赖相对简单网络，层位变化主要增加短暂爬升/下降（p.14）。",
+      "电池监测与充电排程被作者定义为战术运营决定，依赖充电pad和下一任务距离；当前规划以飞行成本/不同阶段能耗作路线评价，不跟踪SOC状态/电量随机性/充电资源，不实现因能源约束而更新计划的闭环。§5 pp.17–18明确需要未来closed-loop把聚合战术决定转为飞行规划约束。",
+      "未对起降pad/gate/charging作资源占用与队列调度；vertiport为OD与垂直出入点。起飞时刻给定，ground holding与speed control均属未来策略，而非本文已使用动作。"
+    ],
+    "quantitative_findings": [
+      "§4 p.12 Table1/§4.1 p.13：30 vertiports、10飞行层(500–1400ft, 100ft间隔)、130knots巡航、1000fpm垂直速度、0.3NM最小分离；45min内270或450飞行，2/4/6运营方，4个NHHI。",
+      "§4.2 p.14：3min/takeoff、4运营方、NHHI=0.5的例子，乘积模型平均飞行9.74min vs 求和模型9.73min；100ft一层爬升只需6s，而全旅程平均大于9min，故不能把微小时间差普遍推广到复杂障碍/更高巡航层。",
+      "§4.2 p.15/Fig11：求和模型系统成本5min/takeoff为2653，3min/takeoff为4380；乘积与求和模型差不超过0.5%。原文未在该句给成本物理单位，不改写为延误分钟/能耗kWh。",
+      "PDF p.16 Tables2/3：5min/takeoff、4运营方、NHHI=0.5，求和UBR为0.986/0.987/0.918/0.962；乘积0.968/0.971/1.000/0.994。此例表明公平改善不等于每家收益均上升。",
+      "PDF p.16 Fig13（已渲染）：5min/takeoff图纵轴0–1.6s，3min/takeoff图纵轴0–1600s；高密度低NHHI部分乘积模型点约千秒级。作者§5 p.17仅称大多数实例仍在seconds以内，不能称所有高密度情形实时。",
+      "§4.2 p.14：求和模型用Gurobi，乘积SOCP用CPLEX12.10，Core i7-4790 3.6GHz/16GB RAM；公平和效率比较同时有求解器差别，耗时不是严格同求解器算法对照。"
+    ],
+    "author_limitations": [
+      "§2.5 p.5和§5 p.17：departure displacement、speed control为ongoing work，战略规划与含不确定性的战术解冲突结合也为ongoing work。",
+      "§4.2 p.14：算例路径网络相对简单、爬升/下降占总时间小；作者预期更复杂障碍或更高飞行层会有更大模型差异，此为展望而非已验证结果。",
+      "§5 p.17：成本函数需随运营商商业利益认识完善；天气模式应加入规划，目前高分辨率可靠城市天气数据不足。",
+      "§5 pp.17–18：监测电池和充电排程依赖充电能力和任务连接，未来需将这些战术决定聚合进入规划模型形成closed-loop；当前并无该闭环。",
+      "模型明示假设（§3.2 pp.7–10，§4 p.12）：起飞时刻/航速已给，巡航定层，按线性外推检测冲突；分离安全结论在此设定内，正文未提供通信/跟踪误差、风或动态SOC下的实飞验证。"
+    ],
+    "evidence_locations": [
+      "PDF pp.1–2 title/DOI/Abstract/Introduction: 电池监测与充电属于tactical scheduling，区分本文planning与单机fuel-efficient trajectory。",
+      "PDF pp.5–7 §2.5/§3.1/Fig1–4: layered near-free visibility graph route generation、预处理数据库及LAMS→LTMS。",
+      "PDF pp.7–10 §3.2.1–3.2.2/Fig5–6/eq1–11: 三类冲突、固定出发时间、层决策、NSW/UBR与参考点。",
+      "PDF pp.11–12 §3.2.3/§4/Table1: SOCP及Tampa参数；pp.13–16 §4.1–4.2/Figs8–13/Tables2–3及p.17 Tables4–5: 实验与比较；pp.17–18 §5: 未来闭环/不确定性/天气。"
+    ],
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/supplement/1-s2.0-S0968090X21003302-main.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/supplement_C02.txt",
+    "version": "publisher",
+    "reading_status": "FULL_TEXT",
+    "reading_coverage": "19页全部提取；正文pp.1–18全文阅读（pp.18–19参考文献）；目视核对p.16 Fig13/Tables2–3。",
+    "old_claim_corrections": [
+      "原ABSTRACT_ONLY改为FULL_TEXT，标题/DOI一致。",
+      "旧“总延误”用语需改为generalized flying/system cost；本模型起飞时刻给定、仅分层解冲突，没有把departure delay作为决策，§4.2平均飞行时间比较也不是地面延误。",
+      "旧“公平同时小幅成本增加”已核验≤0.5%，但不是各运营方收益必增；UBR也不保证相等。",
+      "旧“主要秒级”只能保留大多数实例的作者限定，高密度低NHHI Fig13含约千秒级乘积求解；不能泛称实时。",
+      "已有显式战略路径/分层优化，但含不确定性战术耦合和电池/充电回馈闭环是未来工作；不可把AFPS体系图当已实现闭环。"
+    ]
+  },
+  {
+    "id": "C04",
+    "title": "Urban air mobility: from complex tactical conflict resolution to network design and fairness insights",
+    "doi": "10.1080/10556788.2023.2241148",
+    "metadata_verification": "Publisher PDF cover p.1 and article p.2: Mercedes Pelegrín, Claudia D’Ambrosio, Rémi Delmas, Youssef Hamadi; Optimization Methods and Software 38(6) (2023) 1311–1343, DOI; published online 08 Aug 2023 match old record. PDF includes cover, so article p.1311 = PDF p.2.",
+    "method": "在固定有向track网络与给定无冲突战略nominal schedule基础上，对扰动后仍在飞行/待起飞的整个剩余计划做centralized global MILP战术重排，联合地面holding和节点处速度调整，最小化非优先航班各巡航waypoint相对原时间的绝对偏差，并以大权重优先保护新priority flight起飞（§3 pp.7–9；§5 pp.13–17 eq9）。推导追随/合并/发散/分流危险区域时间分离，使用earliest/latest通过时间间隔的端点保证区间内安全；与仅允许直接冲突航班调整的local版本及arrival-delay variance fair版本比较。固定路径/拓扑，不联合优化network design，所谓design insights来自三类拓扑/性能参数实验。",
+    "scenario": "三种合成单巡航高度track网络：Grid 8 vertiports、Airport 4+机场hub共5、Metroplex两中心3和6共9且单廊连接。每种2套战略计划，5个10min需求batch，视最后到达约50min时域；Grid约93/103 trips、Airport45/43、Metroplex115/117（§6.1 pp.17–19 Table1）。扰动三型：随机漂移/延误、新priority trip、固定直线noncooperative intruder；MILP在扰动/检测后调用，优化从当时至受影响航班全到达的剩余时域。",
+    "findings": [
+      "§4 pp.9–13建立危险区域时间分离，考虑节点转弯角，不只是经典直线相交；边内速度恒定/禁止超越，节点可改变速度，测试每1min默认飞行时间插breakpoint。分离约束充分而非必要（p.12），会保守排除一些空间安全解。",
+      "既有战略层计划仅为输入/实例生成；当前战术层不重新设计corridor、不更改航路或巡航高度；短时域假设graph不变（p.8）。它确实将airborne speed changes与ground holds一体优化，故不能说“调度和轨迹完全分离”；但不是完整飞行动力学/加速度连续轨迹优化或在线网络重构。",
+      "global方案一次考虑显式冲突与调整后可能诱发的冲突，并可调整初始未直接冲突的航班；local版本把非冲突航班时间固定为nominal，其计算更快但解质量/可行性较差（§6.3.4 pp.26–29）。这里比较的是同MILP的受限版本，不是对所有分布式算法的实测普遍否定。",
+      "公平版本按航班而非运营方，最小化非priority航班到达延误离均差平方和，继续以M高权保护priority；不是Nash福利或服务位公平。作者发现更均等的延误可显著增加总延误和速度变更；priority/intruder多数公平改善由增加原低延误航班延误实现（§6.3.5 pp.29–31）。",
+      "网络设计结论是条件性的拓扑敏感性：Airport随机/priority对非优先交通调整更大；Metroplex受intruder更重，短距离及单瓶颈使priority delay难靠提高航速消除（§6.3.1–3 pp.22–26）。未优化网络建设成本或给出网络设计闭环。",
+      "起降pad由独立take-off/landing图节点及容量/分离抽象，不排taxiways/gates/charging；地面延误为尚未起飞的holds，已在空中者只能调速，未定义空中hold队列或改道。爬升/降落速度固定，SOC状态/能量消耗未在模型中，§7 p.32将well-defined energy consumption model明确列未来工作。"
+    ],
+    "quantitative_findings": [
+      "§6.2 pp.20–21：默认巡航150mph、climb90mph，D=0.5NM，vertiport至cruise高度间距1.5NM（按原文，不改单位）；速度范围[-5%,+5%]或[-5%,+10%]，即142.5–157.5或142.5–165mph。arrival interval宽terr=1min；vertiport一到达/一起飞每min，考虑窗口及分离需至少2min blocking。priority M=10000。",
+      "§6.1–6.2 pp.19–21：随机漂移(0,0.25]min、至多1架漂移，地面延误1/2/3架或1漂移+1延误；priority/intruder各一次1新航班，5随机路径/时刻；intruder预见r=1/5/10min。总测试random60、priority60、intruder180（3拓扑×2schedule×2速度限×相应扰动）。",
+      "PDF p.22 Table2：随机扰动60测试1不可行（Metroplex ±5%例），平均CPU0.27s/最大1.65s；放宽正向速度5%到10%后目标平均改善45.90%，最大75.23%；该唯一不可行例变可行并0.14s解决（p.21）。",
+      "PDF p.23 Table3：priority60测试均可行，平均CPU0.32s/最大1.81s；55%测试priority被延误，即45%无延误；作者p.5称65%不超过1min（含零延误）。Grid/Airport/Metroplex priority最大延误14/5/8min，非priority总偏差平均157.66/763.94/775.54min。",
+      "PDF p.25 Table4（已目视核对）：intruder180测试128不可行，52可行（约28.9%）；r=1/5/10各60测试中不可行55/45/28，故r=10仍28/60=46.7%不可行（计算值，分母明确）。作者p.26写over15%是28/180总测试口径，不能解释成r=10组内仅15%。将正向速度上限提至10%共10实例由不可行变可行。",
+      "PDF p.29 §6.3.4：local intruder仅3/180可行，与global可行52/180对照；local Grid/Airport priority解均超过35min延误。",
+      "PDF p.30 Table6：random/priority/intruder fair模型相对原模型按逐实例百分比后平均的公平增益35.06%/39.87%/45.29%，总arrival delay劣化478.76%/430.39%/397.72%；平均总arrival delay原→fair为9.74→37.62、35.93→65.39、35.43→77.50min。不能从这些平均值比值重新得到并替换原百分比。",
+      "PDF p.31 Fig11/正文：约半数原模型解平均每架次调速不超过2次，fair约半数需至13次；最大平均每架次调速fair19.3 vs 原18.2。硬件§6.2 p.20为16-core i9-9880H 2.30GHz/Ubuntu18.04, AMPL/CPLEX12.10。",
+      "原文表述歧义需保留：p.25 Table4 Grid CPU mean=0.60s却max=0.20s，为原PDF本身不一致，不应据此选值作结论；整体CPU 0.17s/最大0.37s在Table5。"
+    ],
+    "author_limitations": [
+      "§3 p.8：只考虑短期战术过程，graph保持不变；固定单层巡航，起降与巡航层分开。§5 p.16：climb speed固定以反映vertiport critical/有限可用动作；边内匀速、仅节点调速。",
+      "§4 p.12：危险区分离条件充分而非必要，属于保守近似；§6.2 pp.20–21：on-demand立即调用/立即检测，测试只1新priority/intruder，未覆盖多个同时大扰动。",
+      "§6.3.3 pp.24–26及§7 p.32：合作程度下降时速度/地面holding动作不足，priority可有不可接受延误，intruder大多数不可行；需要rerouting、hovering或退出corridor等补充动作（引言p.5及结果），本文未实施这些动作。",
+      "§6.3.4 p.26：作者称相关可对比研究稀少，故采用自家local版本比较；不能等同于全面benchmark。",
+      "§7 p.32明确未来：well-defined energy consumption model以区分加减速影响；轨迹聚类发送共同调整；以对未来新扰动robustness为目标；noncooperative intruder轨迹不确定性（如球半径）；多巡航高度复杂拓扑。",
+      "§7 p.32及§6.3.5：公平在此战术层的适宜性仍存问题，作者以公平与总延误同等重要为条件判断其收益不抵代价；这是所选离均差目标和实例下观察。"
+    ],
+    "evidence_locations": [
+      "PDF pp.1–2：cover及title/DOI；pp.3–6 §1及主要结论。",
+      "PDF pp.7–9 §3/Fig3：固定track、固定altitude、nominal schedule、三扰动与空/地可用动作。",
+      "PDF pp.9–13 §4/Figs4–6/eq1–8：追随与三类非追随冲突、保守危险区、转弯角关系。",
+      "PDF pp.13–17 §5/eq9：全局时刻重排、速度bounds、固定爬升、优先权/地面hold及区间语义。",
+      "PDF pp.17–21 §6.1–6.2/Figs7–8/Table1：拓扑、schedule、扰动生成、性能/安全参数与测试规模。",
+      "PDF pp.21–26 §6.3.1–6.3.3/Tables2–5：各用例结果；pp.26–29 §6.3.4/Figs9–10：local对照；pp.29–31 §6.3.5/eq10/Table6/Fig11：公平目标和代价；pp.31–32 §7：结论、能耗与多层/不确定性未来工作。"
+    ],
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/supplement/Urban air mobility  from complex tactical conflict resolution to network design and fairness insights.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/supplement_C04.txt",
+    "version": "publisher",
+    "reading_status": "FULL_TEXT",
+    "reading_coverage": "34页全部提取；正文PDF pp.2–32全文阅读；pp.33–34作者简介/参考文献。目视核对PDF p.25 Table4/5。",
+    "old_claim_corrections": [
+      "原ABSTRACT_ONLY改FULL_TEXT，标题DOI一致。",
+      "旧“网络设计和公平性见解”应精确为对固定3拓扑的战术解冲突性能分析，不是网络设计与战术共同决策；但ground delay/airborne speed确实同一MILP联合优化。",
+      "旧数值空缺已可补：random59/60可行、priority60/60、intruder52/180；不能宣传普遍可保证可执行安全。",
+      "公平是航班到达延误离均差目标，不是运营方Nash公平；在测试中总延误/调速代价很大，不可泛化“公平可低代价实现”。",
+      "本模型没有能源状态，作者p.32明确能耗模型属未来工作；并非已处理SOC或能源安全的“energy-efficient”调速。"
+    ]
+  },
+  {
+    "id": "C06",
+    "title": "A heuristic approach for scheduling advanced air mobility aircraft at vertiports",
+    "doi": "10.1016/j.apm.2023.07.009",
+    "metadata_verification": "PDF p.1 title/DOI/authors Julián Alberto Espejo-Díaz, Edgar Alfonso-Lizarazo, Jairo R. Montoya-Torres; Applied Mathematical Modelling123 (2023)871–890; available online7 July2023 match old record.",
+    "method": "将单vertiport起飞与着陆相反流向的四阶段流程作为blocking hybrid flowshop：taxiway1→gates→taxiway2→TLOF pads（离场），到场逆序。MILP同时指派各阶段并行服务位并排序，施加单组件排他、下游未空则占当前组件阻塞、同TLOF最小分离；两个独立目标分别最小makespan（作为throughput代理）及相对外生T_j的绝对偏差和（§3–4 pp.5–8）。H1为随机初始种子+first available component+最长idle位置插入改善；H2以overall slack time种子并按最大偏差近目标插入改善（§5 pp.8–11）。",
+    "scenario": "单vertiport，合成实例n=10/20/30/40/50，departure比例30%/50%/70%；三布局各1条taxiway1及1条taxiway2，gate/TLOF分别2/2、3/3、4/4。处理时间均匀采样：TLOF15–90s，gate30–600s，taxiway5–90s；同pad分离90s。T_j ~ U[β_j, β_j+β_jτ]，β_j=四阶段处理时间和，τ=0.3n；启发式100000迭代，MILP限1800s。Python heuristic vs IBM CPLEX，i7-10870H2.2GHz16GB（§6 pp.11–13，Table2）。",
+    "findings": [
+      "服务位耦合不是只排pad：arrival从final approach fix到TLOF、再taxiway2/gate/taxiway1，departure逆向，blocking使下游拥堵向上游传递；组件内等待仍占原组件，不允许额外缓冲队列（§3.1 p.5；§4.2 p.7）。空中进近以固定processing time表示，无航路合流/避碰轨迹/空中排队控制。",
+      "本文提到电池不能忽略：§3.3 p.6明确目标时刻可体现着陆剩余电量，§4 p.6亦说可借target times观察battery。实际模型电池以预先已知目标时刻的动机/外生输入体现；未提供动态SOC、等待耗电、轨迹能耗状态更新，也无电量硬截止约束（§4.1–4.3 pp.6–8变量与约束）。实验T_j是上述随机生成而非由SOC/放电模型计算。不能写成“未考虑电池”，亦不能说已保证能源可行。",
+      "细读模型语义：D_ji定义为阶段离开/完成时刻；makespan约束departure用D_j4，arrival用D_j1（§4.2 p.8 eq18–19）；target偏差eq25–28用departure D_4j、arrival D_1j（作者下标顺序排印如此，p.8已渲染核对）。因此其arrival目标约束针对完整arrival地面流程最终stage1完成，不能直接当成触地截止时刻。",
+      "安全通过组件排他/阻塞与同pad90s分离表示。没有动力学/速度重规划、时变跟踪误差、异质飞行包线或weather实验，亦无多vertiport空域网络优化。loading/unloading不得跳过，阶段机器相同，T_j预先已知（§4 p.6假设）。",
+      "小实例MILP优于启发式；较大实例受限求解耗时且gap很大，heuristic有实用优势，但大实例没有可靠近优保证。§6.3 p.13明确缺乏准确lower bounds，不能将“good results”改写为已知接近最优。",
+      "§7 pp.17–18将额外aircraft routing/capacity analysis、旁路TLOF到staging以跳过装卸、异质尺寸飞机/gate/pad、其他目标及更强exact algorithms列未来。"
+    ],
+    "quantitative_findings": [
+      "§6.1 p.12：示例5起飞5着陆、3gate/3pad/两类taxiway各1，同pad90s间隔；makespan模型解1118s。用目标偏差模型的另例total deviation908s，makespan1203s。",
+      "§6.3 p.13：MILP仅n=10实例证得最优，部分n=40和全部n=50在1800s内无可行解；n>10的CPLEX下界/最优性gap弱。makespan启发式在已知n=10最优解对比中平均RE_MILP=21.11%，大实例不能从弱下界推断近优性。",
+      "PDF p.14 Table3（small 2gate/2pad），n=10、7dep/3arr：makespan MILP1175s，CPU8.15s，gap0%；H1 1429s，CPU62.28s，RE21.62%。同例deviation MILP121s，CPU9.62s，H2 140s，CPU65.64s。",
+      "PDF p.14 Table3 small n=50、25dep/25arr：MILP两个目标均1800s未得可行解；H1 makespan8238s，CPU283.61s；H2 deviation16552s，CPU283.52s。是100000次迭代设定下计算时间，不能称毫秒或普遍实时。",
+      "§6.3 p.17–18 Tables6/7：对H1/NEH与H2/EDD，均改造满足相同blocking和pad separation；30个实例、50%起飞，n10–50、三布局，按作者描述汇总。Table6 small/medium/large H1均值5126.40/3691.54/2048.78s，对NEH7367.72/5581.68/3162.94s；H2 16042.23/8953.21/5356.21s，对EDD26564.29/15235.68/9632.23s。",
+      "Table6原列Difference H1为43.72%/51.20%/54.38%，H2为65.59%/70.17%/79.83%；这些数值以提出算法作分母（例如(7367.72−5126.40)/5126.40），不能称相对baseline降低了这些百分比。直接保留原均值最安全。Table7平均RDI H1=0.361/0.298/0.287、H2=0.261/0.257/0.224。"
+    ],
+    "author_limitations": [
+      "§6.3 p.13明确：缺乏准确lower bounds以评价heuristic performance；CPLEX不证最优时无法知道heuristic距最优多远，经典HFS下界未含blocking/separation，尤其小实例差距大。",
+      "§4 p.6显式假设：所有航班都经过gate装/卸，阶段内基础设施identical，takeoff/landing target提前已知。§3.4 p.6 final approach开始后不能抢占暂停再恢复。",
+      "§7 p.17：aircraft routing、vertiport capacity analysis及额外taxiway绕过不需gate服务的aircraft是未来扩展；本次固定四阶段并非所有可能地面布局/运行协议。",
+      "§7 pp.17–18：研究最大tardiness/late operations数量等目标，以及不同尺寸eVTOL和gate/TLOF、exact algorithms如Benders decomposition。",
+      "由已列变量/约束核对的模型边界（非作者自称缺陷）：电池仅通过外生target time可体现，目标偏差为软惩罚而非SOC下界/硬landing deadline；没有能源/轨迹随等待反馈或充电排程。"
+    ],
+    "evidence_locations": [
+      "PDF p.1 title/DOI/abstract；pp.4–6 §3/Fig1–2：四阶段反向流、blocking、pad separation及battery-based target动机。",
+      "PDF pp.6–8 §4.1–4.3/eq1–29：机器指派/排序、阶段完成时间、完整arrival流程makespan和target软偏差；p.8已渲染核对eq18–29。",
+      "PDF pp.8–11 §5/Fig3/Algorithm1：H1/H2种子、FAVC、插入改进与迭代。",
+      "PDF pp.11–13 §6.1–6.3/Figs4–5/Table2：实例生成参数/设定、示例及下界限制；pp.14–16 Tables3–5：CPLEX/heuristic比较；pp.17–18 §6.3–§7/Tables6–7：NEH/EDD比较与未来方向，p.18表已渲染核对。"
+    ],
+    "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/supplement/1-s2.0-S0307904X23003062-main.pdf",
+    "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/supplement_C06.txt",
+    "version": "publisher",
+    "reading_status": "FULL_TEXT",
+    "reading_coverage": "20页全部提取；正文pp.1–18全文阅读，pp.18–20参考文献；目视核对p.8公式及p.18 Tables6–7。",
+    "old_claim_corrections": [
+      "原ABSTRACT_ONLY改FULL_TEXT，标题DOI一致，旧模型/资源范围基本准确，现可给详细参数与限制。",
+      "“启发式较好的解质量”须保留相对时限MILP/NEH/EDD的比较条件；小实例与真最优平均makespan偏差21.11%，大实例缺好下界，不能声称近最优。",
+      "电池不是完全未考虑：作者明确以target times反映剩余battery的动机，但本次并非动态SOC/能源安全调度，target实验是随机时间生成。",
+      "“到达/降落时刻”需按公式区分：arrival指标用最后地面stage1完成，非直接pad touchdown时刻；且目标偏差是软目标，无最晚着陆硬截止。",
+      "“queues”需精确：模型不允许额外队列缓冲，飞机可在当前资源等待并阻塞，故不能简化为无等待或有显式空中等待队列。",
+      "公平、网络设计、连续战术轨迹不在模型，routing为未来扩展；本篇已联排地面多类服务位，不宜把服务位/地面阻塞遗漏。"
+    ]
+  }
+]

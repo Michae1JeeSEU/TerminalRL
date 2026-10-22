@@ -1,0 +1,944 @@
+{
+  "documents": [
+    {
+      "id": "B02",
+      "title": "Complexity optimal air traffic assignment in multi-layer transport network for Urban Air Mobility operations",
+      "authors": [
+        "Zhengyi Wang",
+        "Daniel Delahaye",
+        "Jean-Loup Farges",
+        "Sameer Alam"
+      ],
+      "year": 2022,
+      "doi": "10.1016/j.trc.2022.103776",
+      "metadata_verification": "Title/authors/DOI checked against supplied PDF p.1; no network lookup in this pass",
+      "venue": "Transportation Research Part C: Emerging Technologies, 142, 103776",
+      "local_pdf": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\supplement\\1-s2.0-S0968090X22002054-main.pdf",
+      "local_text": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\extracted\\supplement_B02.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "page_count": 23,
+      "reading_scope": "All PDF pages including methods, experiments, discussion/conclusion and appendices/references; page numbers below are PDF 1-based.",
+      "evidence_type": "user_supplied_fulltext",
+      "old_claim_corrections": [
+        {
+          "fact": "Old ABSTRACT_ONLY and blank local paths are superseded by supplied23-page publisher full text; old fulltext-access limitation is historical.",
+          "pdf_pages": [
+            1,
+            23
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Old abstract-based90.44%/92.12% values verified at Table3/Table4; their baselines and efficiency tradeoffs are now specified. No evidence here to relabel these as real-conflict reductions.",
+          "pdf_pages": [
+            13
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Full text includes explicit path range/endurance bounds and energy-weighted efficiency budget, so describing the work as ignoring energy is incorrect.",
+          "pdf_pages": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "location": ""
+        }
+      ],
+      "reading_method": "pypdf page-labelled full-text extraction; equations and tables read in context. Rotated-text warning from extraction is retained as a parsing caveat, not a claim of missing PDF pages.",
+      "method": [
+        {
+          "fact": "Static strategic path-flow assignment on a fixed 3D bidirectional graph; decision variables are each OD demand proportion assigned to feasible paths. Network complexity is sum of node costs. Density-weighted WMMSE fits a 3D LDS separately for convergent and divergent flow around each node; dominant eigenvalue real-part magnitude is multiplied by incident energy-weighted flow.",
+          "pdf_pages": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "location": "Sections 2–3, Eqs.(1)–(17), problem P1"
+        },
+        {
+          "fact": "Two phases: SA probabilistic path-complexity-based neighborhood first, then DA transfers flow between largest/smallest marginal-cost paths. Numerical differentiation estimates derivatives; line-search transfer interval discretized to Nd points.",
+          "pdf_pages": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "location": "Section 4, Algorithm 1, Eqs.(18)–(34)"
+        }
+      ],
+      "scenario": [
+        {
+          "fact": "Singapore parcel-delivery network: 63 nodes, 110 links, 24 OD pairs, 3 horizontal layers; 3 droneports, 5 delivery stations, 55 waypoints; adjacent layers 15 m apart with vertical connections. Case1 symmetric two-way demand increasing with OD index; case2 imbalanced stochastic demands.",
+          "pdf_pages": [
+            10,
+            11,
+            12
+          ],
+          "location": "Section 5, Figs.6–8"
+        },
+        {
+          "fact": "Single flow-characteristic assumption; free-flow horizontal speed 120 km/h and vertical 5 km/h, horizontal grid 0.3 km, vertical grid 0.002 km, grid width 0.03 km, three lateral points per side; beta=3; range 20 km and endurance 2000 s.",
+          "pdf_pages": [
+            2,
+            4,
+            12
+          ],
+          "location": "Sections 2.1,3.2, Table2"
+        }
+      ],
+      "execution_constraints": [
+        {
+          "fact": "DFS generates cycle-free candidate paths; every path must be shorter than vehicle maximum range and its nominal travel time less than endurance. Recharging/refueling and maintenance assumed at delivery stations as well as droneports; otherwise maximum range/endurance must also cover return trip.",
+          "pdf_pages": [
+            3,
+            4
+          ],
+          "location": "Section2.2 Eqs.(2),(3)"
+        },
+        {
+          "fact": "P1 enforces nonnegative/conserved OD shares, positive path flow either zero or >= meaningful-flow threshold, and total weighted energy <= beta times shortest-energy assignment baseline. Energy coefficients depend on horizontal/climb/descent distance; this is network operational efficiency, not an individual SOC state.",
+          "pdf_pages": [
+            4,
+            5,
+            6
+          ],
+          "location": "Eqs.(4)–(12), P1"
+        },
+        {
+          "fact": "Authors state volume-segment vehicle separation can be assured during tactical CD&R; strategic assignment seeks to make remaining conflicts easier. Algorithm simulation module computes aggregate flow pattern and LDS objective; reported experiment outputs are assignment/complexity/efficiency metrics, rather than an implemented microscopic CD&R feedback loop.",
+          "pdf_pages": [
+            2,
+            7,
+            12,
+            13,
+            15,
+            16,
+            17,
+            18
+          ],
+          "location": "Introduction; Fig4; Section5 Tables3–4 and Figs14–19"
+        }
+      ],
+      "time_windows_and_geometry": [
+        {
+          "fact": "Demand is assigned for a period; time-varying dynamic assignment is explicitly future research. Fixed-route volume-segment graph is input; assignment alters path shares. Layer-number/capacity tradeoff is discussed as network construction background.",
+          "pdf_pages": [
+            10,
+            16,
+            17,
+            19
+          ],
+          "location": "Sections5,6"
+        }
+      ],
+      "findings": [
+        {
+          "fact": "Optimized two-way OD demand tends to take different paths, lowers node complexity especially in central/vertical-connection nodes, and redistributes flows across layers. Lower layer remains main congested layer in presented allocations.",
+          "pdf_pages": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "location": "Sections5.2–5.4 Figs14–19"
+        },
+        {
+          "fact": "Authors compare SA+DA against AON, SA, DA, MSA, MSA+DA on same aggregate simulation module. Complexity-reduction figures are LDS-based objective reductions relative to initial random assignment, not measured collision/LOS reductions.",
+          "pdf_pages": [
+            12,
+            13
+          ],
+          "location": "Tables3–4; Section3 objective definition"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "fact": "100 random-seed experiments per non-AON algorithm; Java, i7-8750H laptop,32 GB DDR4; reported +/- values are95% confidence intervals.",
+          "pdf_pages": [
+            12
+          ],
+          "location": "Section5.1"
+        },
+        {
+          "fact": "Case1 proposed:13.62+/-0.52 s, complexity65005.20+/-3552.16 vs initial680081.00+/-2000.58; reduction90.44%+/-0.53%; avg travel323.83+/-2.52 s, length10.27+/-0.08 km, weighted energy184.68+/-1.43. AON:248.00s,7.16km,130.27 energy and25.12% complexity reduction.",
+          "pdf_pages": [
+            13
+          ],
+          "location": "Table3"
+        },
+        {
+          "fact": "Case2 proposed:14.12+/-0.33 s, complexity52450.41+/-2376.11 vs initial665702.86+/-2017.43; reduction92.12%+/-0.35%; avg travel328.58+/-1.84 s, length10.39+/-0.06 km, weighted energy179.49+/-1.11. AON:258.21s,7.48km,131.06 energy and23.32% complexity reduction.",
+          "pdf_pages": [
+            13
+          ],
+          "location": "Table4"
+        },
+        {
+          "fact": "DA phase after SA takes7.76+/-0.43 s and7.83+/-0.39 s; authors report DA-phase CPU reductions82.02%+/-1.14% and80.47%+/-1.34%. These are phase-specific, distinct from total two-phase runtimes in tables.",
+          "pdf_pages": [
+            13
+          ],
+          "location": "Section5.1 text"
+        }
+      ],
+      "author_limitations": [
+        {
+          "fact": "Selection/construction of delivery sites and network in Singapore limited by operational and geographic restrictions.",
+          "pdf_pages": [
+            19
+          ],
+          "location": "Conclusion"
+        },
+        {
+          "fact": "Future work: dynamic assignment with time-varying demand; multiobjective noise/delay; parallel acceleration; multiclass traffic and larger networks.",
+          "pdf_pages": [
+            19
+          ],
+          "location": "Conclusion"
+        },
+        {
+          "fact": "Authors describe NP-hard, high-dimensional/nonseparable formulation and seek heuristic good-quality solutions in reasonable time; SA/DA convergence depends on initial solution and non-strict convexity.",
+          "pdf_pages": [
+            6,
+            9
+          ],
+          "location": "P1 discussion; Section4.3"
+        }
+      ],
+      "evidence_locations": [
+        "p1 title,DOI",
+        "pp2–6 network/assumptions/P1/LDS",
+        "pp7–10 algorithm",
+        "pp10–18 experimental setup/results; Table2 p12, Tables3–4 p13",
+        "p19 conclusion and future work",
+        "pp19–22 WMMSE/SVD and LDS proofs/typical situations;pp22–23 references"
+      ]
+    },
+    {
+      "id": "B03",
+      "title": "A quasi-dynamic air traffic assignment model for mitigating air traffic complexity and congestion for high-density UAM operations",
+      "authors": [
+        "Zhengyi Wang",
+        "Daniel Delahaye",
+        "Jean-Loup Farges",
+        "Sameer Alam"
+      ],
+      "year": 2023,
+      "doi": "10.1016/j.trc.2023.104279",
+      "metadata_verification": "Title/authors/DOI checked against supplied PDF p.1; no network lookup in this pass",
+      "venue": "Transportation Research Part C: Emerging Technologies, 154, 104279",
+      "local_pdf": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\supplement\\1-s2.0-S0968090X23002681-main.pdf",
+      "local_text": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\extracted\\supplement_B03.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "page_count": 25,
+      "reading_scope": "All PDF pages including methods, experiments, discussion/conclusion and appendices/references; page numbers below are PDF 1-based.",
+      "evidence_type": "user_supplied_fulltext",
+      "old_claim_corrections": [
+        {
+          "fact": "Supplied file is publisher-formatted ScienceDirect article with DOI, received/revised/accepted dates, not the HAL accepted postprint previously listed. ABSTRACT_ONLY becomes FULL_TEXT.",
+          "pdf_pages": [
+            1
+          ],
+          "location": ""
+        },
+        {
+          "fact": "143.47s and32.20% reduction verified; travel-time/path-length increase relative to initialization is numerically stated, so the authors phrase without degrading efficiency should not be read as literal zero increase.",
+          "pdf_pages": [
+            15,
+            16
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Rolling horizon is pre-flight time-discretized optimization using known demand and residual propagation; this is not evidence of online sensed-demand/microscopic collision feedback.",
+          "pdf_pages": [
+            4,
+            10,
+            11,
+            20
+          ],
+          "location": ""
+        }
+      ],
+      "reading_method": "pypdf page-labelled extraction of all25 pages; all method/experiment/discussion/appendix text read.",
+      "method": [
+        {
+          "fact": "QATA supplies path-flow patterns to operators in pre-flight planning. Planning horizon discretized into equal intervals; time-varying OD demand assumed available in advance from PSU/SDSP. Node coordinates and predesigned paths fixed.",
+          "pdf_pages": [
+            3,
+            4
+          ],
+          "location": "Sections2.1–2.2"
+        },
+        {
+          "fact": "Time-delayed propagation uses free-flow travel time to grid points and weighted mixture of flows from preceding intervals; flows uniformly distributed among parallel corridors. Link inflow and outflow capacity constraints allow average speed to be specified independent of density.",
+          "pdf_pages": [
+            5,
+            6
+          ],
+          "location": "Eqs.(8)–(15)"
+        },
+        {
+          "fact": "Objective weights LDS complexity and congestion; complexity is sum of absolute negative real eigenvalue parts of density-weighted3D WMMSE LDS. Congestion includes linear energy-weighted flow and quadratic flow; weight chosen to balance cost magnitudes.",
+          "pdf_pages": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "location": "Eqs.(16)–(23)"
+        },
+        {
+          "fact": "Simulation-based rolling horizon decomposes intervals into modified SATA; horizon length and shift both Td, retaining residual flows up to Nmax previous intervals. Optimization repeatedly updates these interval variables in outer loops. PSA uses incremental parallel LDS-cost evaluations and random inter-path transfer neighborhood.",
+          "pdf_pages": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "location": "Section3 Figs7–8 Algorithms1–2"
+        }
+      ],
+      "scenario": [
+        {
+          "fact": "Predesigned Singapore parcel network:332nodes,745links,7vertiports,12delivery sites,84ODs, five layers at150/175/200/225/250ft, limited vertical links; diverse K-shortest candidate paths. Six peak-hour demand periods09:00–15:00.",
+          "pdf_pages": [
+            13,
+            14,
+            16
+          ],
+          "location": "Fig9/Table2; Section4; Fig10 caption lists through13:00–14:00 whereas text/504=6x84 indicate6 intervals"
+        },
+        {
+          "fact": "Same vehicle type; horizontal54km/h, vertical15km/h; three lateral corridors per side, horizontal grids0.15km, vertical0.001km,width0.03km; link capacity15000veh/h, meaningful threshold20veh/h; energy coefficients0.2/1/0.02 for horizontal/up/down; objective phi0.9.",
+          "pdf_pages": [
+            13,
+            14
+          ],
+          "location": "Table3"
+        }
+      ],
+      "execution_constraints": [
+        {
+          "fact": "Conserved/nonnegative path-flow shares, meaningful positive flow threshold, link inflow/outflow capacity; fixed network and nominal speeds. Formulation Eqs4–15 constrains aggregate assigned flows, rather than individual flight collision-free trajectories or pad queues.",
+          "pdf_pages": [
+            4,
+            5,
+            6
+          ],
+          "location": "Sections2.1–2.3"
+        },
+        {
+          "fact": "Energy enters congestion cost through distance and flight-phase factors; coefficient choices use relative weights. No individual battery/SOC dynamics are introduced in this formulation.",
+          "pdf_pages": [
+            6
+          ],
+          "location": "Eqs16–18"
+        },
+        {
+          "fact": "Authors explicitly place microscopic optimization of individual flights based on QATA output in future research; centralized strategy can coexist with decentralized/federated CD&R. The paper does not report a closed loop where microscopic CD&R measurements reoptimize assignment.",
+          "pdf_pages": [
+            2,
+            20
+          ],
+          "location": "Introduction; Section5.1; experiment outputs Sections4.1.3–4.1.5"
+        }
+      ],
+      "complexity_vs_conflicts": [
+        {
+          "fact": "Toy example with100flow per upstream link,1km density-point spacing,10m/s speed: merging complexity about6, symmetric crossing about0. Authors explain crossing may be vertically separated and symmetry cancels metric; they cite other BlueSky studies for relative capacity/tactical deconfliction, rather than measuring conflict/LOS counts in their network experiments.",
+          "pdf_pages": [
+            9
+          ],
+          "location": "Fig6 and associated text"
+        },
+        {
+          "fact": "Full-network outcomes are cost, path/link allocation, avg travel time/length; reductions in complexity and congestion do not directly establish quantitative LOS/collision reduction.",
+          "pdf_pages": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "location": "Table4,Figs13–20; metric definitions pp6–9"
+        }
+      ],
+      "findings": [
+        {
+          "fact": "PSA allocates OD demand over multiple candidate paths and produces different patterns over time, uses middle layers more, spreads congestion over network. Some individual links become more congested even though total congestion declines.",
+          "pdf_pages": [
+            16,
+            17,
+            18,
+            20
+          ],
+          "location": "Sections4.1.3–4.1.5,Figs13–20"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "fact": "100different-seed experiments; Java on i7-12700H,16GB DDR5. PSA runtime143.47+/-3.74s and objective67157.45+/-146.87 versus initial99081.42+/-368.48; reduction32.20%+/-0.29%,95%CI.",
+          "pdf_pages": [
+            13,
+            15,
+            16
+          ],
+          "location": "Table4,Section4.1.2"
+        },
+        {
+          "fact": "PSA complexity302743.55+/-1574.53 vs585380.95+/-3627.11; congestion40981.22+/-36.90 vs45048.14+/-27.92; travel1233.61+/-0.48s vs1201.94+/-0.41s; length18.28+/-0.01km vs17.84+/-0.01km. DA travel1198.18+/-0.38s,length17.78+/-0.01km; its runtime502.15+/-6.68s and objective94361.08+/-236.84.",
+          "pdf_pages": [
+            15
+          ],
+          "location": "Table4"
+        },
+        {
+          "fact": "Parallelization tested1–20threads,10000transition timings per thread count; no substantial improvement beyond8threads; nearly3x speedup.20thread transition time(9729+/-2.5)x10^-5s at95%CI; each covers504OD-interval operations, average<0.2ms/operation.",
+          "pdf_pages": [
+            14,
+            15
+          ],
+          "location": "Section4.1.1,Fig11"
+        },
+        {
+          "fact": "Almost all optimized nodes complexity<2000 in illustrated case; improvement concentrated in middle layers.",
+          "pdf_pages": [
+            18
+          ],
+          "location": "Figs17–18 text"
+        }
+      ],
+      "author_limitations": [
+        {
+          "fact": "Private PSU/USS incentives to share information for centralized UTM are not guaranteed/clear; future federated mixed-entity/traffic scenario requires mature technology.",
+          "pdf_pages": [
+            20
+          ],
+          "location": "Section5.1"
+        },
+        {
+          "fact": "Future integration of Lagrangian individual-flight optimization using QATA output could enhance solution quality and computational efficiency.",
+          "pdf_pages": [
+            20
+          ],
+          "location": "Section5.1"
+        },
+        {
+          "fact": "Predesigned route alternatives limited by dense low-altitude obstructions; conventional DTA assumptions of convex/analytic cost do not fully hold; comparison intentionally representative rather than exhaustive.",
+          "pdf_pages": [
+            9,
+            13,
+            15
+          ],
+          "location": "Sections3.1,4,4.1.2"
+        }
+      ],
+      "evidence_locations": [
+        "p1 title/DOI/publisher format",
+        "pp2–3 UTM scope, prior static assumptions and contribution",
+        "pp4–9 fixed graph, flow propagation, capacity,energy,LDS",
+        "pp10–12 rolling-horizon/PSA;Fig8 and Algorithms1–2",
+        "pp13–15 topology/settings/performance Tables2–4",
+        "pp16–20 allocation/congestion outputs and limitations",
+        "pp21–23 WMMSE/SVD and DA/PM comparison algorithms;pp23–25 references"
+      ]
+    },
+    {
+      "id": "B04",
+      "title": "Airspace Congestion, flow Relations, and 4-D fundamental Diagrams for advanced urban air mobility",
+      "authors": [
+        "Christopher Cummings",
+        "Hani Mahmassani"
+      ],
+      "year": 2024,
+      "doi": "10.1016/j.trc.2023.104467",
+      "metadata_verification": "Title/authors/DOI checked against supplied PDF p.1; no network lookup",
+      "venue": "Transportation Research Part C: Emerging Technologies, 159, 104467",
+      "local_pdf": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\supplement\\1-s2.0-S0968090X23004576-main.pdf",
+      "local_text": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\extracted\\supplement_B04.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "page_count": 21,
+      "reading_scope": "All PDF pages including methods, experiments, discussions/conclusions and references. Page numbers PDF 1-based.",
+      "evidence_type": "user_supplied_fulltext",
+      "reading_method": "pypdf full-text read plus visual inspection of rendered PDF pp13,14,16,17,18 for graph labels and fit values; all methods/results/discussion/conclusion text read.",
+      "method": [
+        {
+          "fact": "Theoretical macroscopic chain: gas-kinetic density -> predicted pairwise conflicts -> average actual/effective speed loss -> effective flow k*effective speed. Conflict is a predicted intrusion into ellipsoidal separation requirement, counted per aircraft pair, not a collision or realized LOS.",
+          "pdf_pages": [
+            3,
+            4,
+            6,
+            7
+          ],
+          "location": "Sections3.1–3.5,Eqs1–15"
+        },
+        {
+          "fact": "Uniformly random headings underpin relative speed sqrt(2)*actual speed; conflicts proportional to actual speed, cross-sectional separation measure, lookahead time,airspace size and density squared. Although gas analogy generalizable, equations simplified to2D.",
+          "pdf_pages": [
+            4,
+            5,
+            6
+          ],
+          "location": "Section3.3 Eqs3–4"
+        },
+        {
+          "fact": "Actual speed v=vmax/(1+sqrt(2)*b*Dsep*k*T); effective speed subtracts sqrt(2)*a*Dsep*v*k*T from free-flow effective speed; a>=b. Speed-loss parameters depend on CD&R method,relative heading,separation volume,density and speed; calibrated a,b=constant*k*Dsep^2*vmax.",
+          "pdf_pages": [
+            6,
+            7,
+            14
+          ],
+          "location": "Eqs7,10,12,16"
+        },
+        {
+          "fact": "Microscopic simulator tracks 3D aircraft ascent/transit/descent but study measurements use smaller central region to exclude vertiport takeoff/landing effects. All transit flights same altitude, no vertical detours; decentralized nonlinear optimization resolves aircraft in sequence starting with most conflicted, using heading and speed; hovering permitted.",
+          "pdf_pages": [
+            11,
+            12,
+            13
+          ],
+          "location": "Section5.1"
+        }
+      ],
+      "scenario": [
+        {
+          "fact": "Separate random origin/destination vertiports alternate around circle enclosing central region to approximate random headings; normal-distributed start times produce rise/fall of density. Experiments use unstructured AAM airspace; study confined to transit.",
+          "pdf_pages": [
+            11,
+            12
+          ],
+          "location": "Section5.1"
+        },
+        {
+          "fact": "Each simulation5000s (~83min), measures aggregated in300s(5min) windows; multiple runs per parameter level. Prediction count experiment disables resolution but keeps detection; speed/flow experiments enable resolution. Text states5spacing and5maximum-speed levels; figures show speed80,100,120,150,180mph and spacing0.1111,0.2222,0.3333,0.4444,0.5556miles.",
+          "pdf_pages": [
+            13,
+            14,
+            16,
+            17,
+            18
+          ],
+          "location": "Sections5.2–5.4,Figs12–20"
+        }
+      ],
+      "findings": [
+        {
+          "fact": "Theoretical and simulated data show nonlinear decreasing actual/effective speed vs density; increasing spacing increases conflicts,speed loss and lowers capacity/critical density. Increasing maximum speed raises low-density speeds/throughput but lowers critical density; speeds converge at high density.",
+          "pdf_pages": [
+            8,
+            9,
+            10,
+            11,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "location": "Sections4–6,Figs3–20"
+        },
+        {
+          "fact": "Authors propose using resulting flow models for capacity/travel-time predictions and future ATFM; this study itself estimates models rather than solves an assignment/rolling control optimization.",
+          "pdf_pages": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "location": "Sections6–7"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "fact": "Conflict-density fit Fig12:spacing0.5556/0.4444/0.3333miles -> R2 .912/.889/.869. Fig13:180/150/120/100/80mph -> R2 .819/.810/.914/.925/.922.",
+          "pdf_pages": [
+            13,
+            14
+          ],
+          "location": "Figs12–13 visually read legends"
+        },
+        {
+          "fact": "Actual speed-density Fig15 spacing0.5556/0.4444/0.3333/0.2222/0.1111miles -> R2 .888/.931/.802/.914/.567; Fig16 speed180/150/120/100/80mph -> R2 .833/.735/.847/.888/.954.",
+          "pdf_pages": [
+            16
+          ],
+          "location": "Figs15–16 visually read legends"
+        },
+        {
+          "fact": "Effective speed-density Fig17 same descending spacing sequence -> R2 .864/.885/.709/.926/.657; Fig18 same descending speed sequence -> R2 .836/.747/.828/.864/.930.",
+          "pdf_pages": [
+            17
+          ],
+          "location": "Figs17–18 visually read legends"
+        },
+        {
+          "fact": "Effective flow-density Fig19 same descending spacing sequence -> R2 .870/.927/.524/.963/.971; Fig20 same descending speed sequence -> R2 .906/.844/.854/.870/.933. Thus reported generally high fit is not uniform across settings.",
+          "pdf_pages": [
+            18
+          ],
+          "location": "Figs19–20 visually read legends"
+        },
+        {
+          "fact": "Fig20 plotted predicted throughput maxima visually about42,40,37,35,34veh/(hr*sq mile) for180,150,120,100,80mph, with respective critical-density locations roughly0.4,0.45,0.5,0.6,0.7veh/cubic mile. These are coarse figure readings, not tabulated calibrated parameters; figure density and throughput units retained verbatim.",
+          "pdf_pages": [
+            18
+          ],
+          "location": "Fig20 approximate visual read; do not treat as precise reported capacities"
+        }
+      ],
+      "author_limitations": [
+        {
+          "fact": "Average speed-loss-per-conflict remains a calibration requirement despite reducing other calibration burden. Values can be calibrated across spacing/speed contexts; authors say low-density data could suffice but displayed validation spans low-to-high densities.",
+          "pdf_pages": [
+            14,
+            19
+          ],
+          "location": "Sections5.3,7"
+        },
+        {
+          "fact": "Models only apply to unstructured random-heading airspace; structured corridor extension requires changing relative-speed term and testing.",
+          "pdf_pages": [
+            4,
+            18,
+            19,
+            20
+          ],
+          "location": "Sections3.3,6,7"
+        },
+        {
+          "fact": "All simulation validation effectively2D with altitude detours forbidden; does not reflect actual aircraft ability to change altitude. Simplified simulator lacks aircraft physics/accelerations and reduces individual-trajectory fidelity.",
+          "pdf_pages": [
+            12,
+            19,
+            20
+          ],
+          "location": "Sections5.1,7"
+        },
+        {
+          "fact": "High-density observed AAM data unavailable, hence simulation validation rather than real-world empirical validation.",
+          "pdf_pages": [
+            11
+          ],
+          "location": "Section5.1"
+        }
+      ],
+      "scope_boundaries": [
+        {
+          "fact": "No takeoff/landing resource bottleneck calibration: central measurement region intentionally excludes ascent/descent traffic near vertiports. Energy needs appear as an application of predicted travel speed; model equations do not introduce battery/SOC inventory.",
+          "pdf_pages": [
+            11,
+            17
+          ],
+          "location": "Sections5.1,6;Eqs1–16"
+        },
+        {
+          "fact": "5min windows are measurement aggregation; lookahead T in gas model is conflict-search window. These differ from a rolling assignment time window.",
+          "pdf_pages": [
+            3,
+            4,
+            13,
+            14
+          ],
+          "location": "Sections3.1,3.3,5.2,5.4"
+        },
+        {
+          "fact": "Model is multidimensional in theory and article title says4-D, but experiment altitude is fixed for transit. Density axes retain veh/cubic mile even in these effectively2D experiments; do not silently reinterpret the figure units.",
+          "pdf_pages": [
+            12,
+            13,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "location": "Section5.1,figures,limitations"
+        }
+      ],
+      "evidence_locations": [
+        "p1 title/DOI",
+        "pp3–7 variable definitions/theory/Eqs1–16",
+        "pp8–11 theoretical patterns (arbitrary numeric values,not calibrated operational capacities)",
+        "pp11–14 simulation setup/calibration",
+        "pp13–18 Figs12–20 measured conflicts,actual/effective speed,throughput",
+        "pp17–20 implications/author limitations/future work",
+        "pp20–21 references"
+      ],
+      "old_claim_corrections": [
+        {
+          "fact": "ABSTRACT_ONLY and missing paths superseded by supplied21-page publisher fulltext. Full text confirms framework already includes microscopic conflicts and resolution-dependent speed losses; it should not be described as density-only with no collision-avoidance mechanism.",
+          "pdf_pages": [
+            3,
+            7,
+            12,
+            13,
+            14
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Full text provides quantitative goodness-of-fit evidence; some R2 values as low as.524/.567/.657 mean a blanket all-fits-high statement is too strong.",
+          "pdf_pages": [
+            16,
+            17,
+            18
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Validation is effectively2D and excludes terminal-area measurement despite broad4-D title; these are explicitly stated boundaries, not inferred omissions.",
+          "pdf_pages": [
+            11,
+            12,
+            19,
+            20
+          ],
+          "location": ""
+        }
+      ]
+    },
+    {
+      "id": "B07",
+      "title": "Airspace Partitioning for Urban Air Mobility: A Macroscopic Approach with a Realistic Network",
+      "authors": [
+        "Magdalena Peksa",
+        "Mehdi Keyvan-Ekbatani",
+        "Klaus Bogenberger"
+      ],
+      "year": 2025,
+      "doi": "10.1109/ITSC60802.2025.11423788",
+      "metadata_verification": "Title/authors/DOI checked against supplied PDF p.1; no network lookup",
+      "venue": "2025 IEEE 28th International Conference on Intelligent Transportation Systems (ITSC), pp. 2995-3000",
+      "local_pdf": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\supplement\\Airspace_Partitioning_for_Urban_Air_Mobility_A_Macroscopic_Approach_with_a_Realistic_Network.pdf",
+      "local_text": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\extracted\\supplement_B07.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "page_count": 6,
+      "reading_scope": "All PDF pages including methods, experiments, discussions/conclusions and references. Page numbers PDF 1-based.",
+      "evidence_type": "user_supplied_fulltext",
+      "reading_method": "PDF body not text-extractable: pypdf produced1881 bytes of headers/footers only. Rendered all6 pages using Poppler at1800px and visually read every page. local_text contains original header/footer extraction plus explicitly labelled manual page-by-page reading notes, not a verbatim OCR transcription.",
+      "rendered_pages": "D:\\7_codespace\\terminal\\research\\low_altitude_phd_20261013\\qa\\supplement_B07\\page-[1-6].png",
+      "method": [
+        {
+          "fact": "Static partitioning of single-layer one-way corridor graph into internally homogeneous connected regions for NMFD use. First DBSCAN seeds spatial clusters using Haversine distance, then seeded-region-growing assigns adjacent links by density difference and proximity; theta weights homogeneity vs spatial compactness.",
+          "pdf_pages": [
+            1,
+            2
+          ],
+          "location": "Methods,Eq1,Algorithm1/Fig1"
+        },
+        {
+          "fact": "Second stage GA assigns initial cells to Kdisjoint connected regions, minimizing sum of within-region variance of cell-average density; each region has upper bound kappa cells. This is partition of existing links/aggregation regions, not redesign of physical corridors.",
+          "pdf_pages": [
+            2
+          ],
+          "location": "Eq2 and constraints"
+        },
+        {
+          "fact": "BlueSky microscopic trajectories -> link density -> partition algorithm -> regional NMFD. Region average flow/density length-weighted over links. Analysis only en-route; terminal-area traffic not modeled; more corridor structures such as lanes/passing zones left future.",
+          "pdf_pages": [
+            2,
+            3
+          ],
+          "location": "Methods,Eq3"
+        },
+        {
+          "fact": "Fixed altitude and horizontal separation only. Tactical decentralized pairwise state-based conflict detection with linear lookahead; speed-based resolution decelerates one aircraft of conflict pair. Variable avoidance spacing h(v)=s_h+tau*v replaces fixed multiplier spacing; strategic departure headways use shifted exponential minimum s_h/u_f+tau, and additionally delay flights too close at same origin.",
+          "pdf_pages": [
+            3
+          ],
+          "location": "Separation Management,Fig2,Eq4"
+        }
+      ],
+      "scenario": [
+        {
+          "fact": "NYC network from existing FAA helicopter routes with17vertiports; edges oriented so path exists between each vertiport pair. Demand estimated from2023taxi/TNC dataset with263zones, separated weekday/nonworkday patterns, OSM road shortest paths and time-saving eligibility.",
+          "pdf_pages": [
+            3,
+            4
+          ],
+          "location": "CaseStudyIII.A"
+        },
+        {
+          "fact": "Demand-estimation assumptions:driving24km/h,Manhattan15km/h;30PSPA alternate air paths/pair for mean distance,100km/h cruise;5min boarding/disembarking,60s takeoff,75s landing,access/egress<=10min. These fixed components estimate demand/time savings, not simulated terminal traffic.",
+          "pdf_pages": [
+            4
+          ],
+          "location": "III.A"
+        },
+        {
+          "fact": "Morning workday flights scheduled08:00–11:00,simulation empties around11:30;7%baseline demand except Washington Square5% because short outgoing link cannot support long departure queues. Homogeneous hover-capable EurocopterEC-135; shortest-path Dijkstra routing,54knots(100km/h),altitude500m,tau20s,s_h200m;4stochastic scenarios with same settings.",
+          "pdf_pages": [
+            4
+          ],
+          "location": "III.B"
+        }
+      ],
+      "findings": [
+        {
+          "fact": "Initial3regions include two lightly loaded regions with similar density; rerunning same procedure atK2 merges these and preserves congested central Region2. Authors state congestion spatial distribution stable across simulated period, hence static regions suffice in this case.",
+          "pdf_pages": [
+            5
+          ],
+          "location": "III.C,Figs4–6"
+        },
+        {
+          "fact": "Well-shaped low-scatter NMFDs obtained as regions largely homogeneously congested. Regions1/3 remain free flow; central Region2 develops congestion and declining branch.",
+          "pdf_pages": [
+            5,
+            6
+          ],
+          "location": "Fig7"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "fact": "Partition snapshot10:15 with4minmeasurement interval; DBSCAN MinPts3,epsilon~2.5km,theta0.2; initialK3,kappa3cells;rerunK2,kappa6cells.",
+          "pdf_pages": [
+            5
+          ],
+          "location": "III.C"
+        },
+        {
+          "fact": "Trajectories stored every5s and aggregated over4min for flow/density; free regions average density<=0.5aircraft/km. Central Region2 critical density~0.7–0.9aircraft/km,capacity~60aircraft/h. These are regional length-weighted NMFD values under stated routing/separation/demand settings.",
+          "pdf_pages": [
+            5,
+            6
+          ],
+          "location": "III.C,Fig7"
+        },
+        {
+          "fact": "Four stochastic scenarios; maximum measured ground speed slightly>100km/h due to altitude effect. No scalar percent scatter reduction or comparative control improvement reported in result text; Fig7 provides region curves.",
+          "pdf_pages": [
+            4,
+            5,
+            6
+          ],
+          "location": "III.B–C,Fig7"
+        }
+      ],
+      "author_limitations": [
+        {
+          "fact": "Terminal areas not modeled; only en-route corridor flight. Additional lanes/passing zones left future.",
+          "pdf_pages": [
+            2,
+            3
+          ],
+          "location": "Methods"
+        },
+        {
+          "fact": "Detailed mode-choice analysis beyond scope; simple time-saving criterion determines UAM-eligible fraction of taxi demand.",
+          "pdf_pages": [
+            4
+          ],
+          "location": "III.A"
+        },
+        {
+          "fact": "Ongoing/future work:other parameter configurations,new routing strategies, gating/perimeter controls to mitigate oversaturation inRegion2. This article demonstrates partition/NMFD estimation, not such a controller.",
+          "pdf_pages": [
+            5
+          ],
+          "location": "Conclusions andOutlook"
+        }
+      ],
+      "online_partition_and_constraints": [
+        {
+          "fact": "Methods explicitly says static partition.10:15snapshot and offline rerunK3->K2 are reported, not an online update triggered within the flight simulation. Physical graph remains given; partition changes link group labels.",
+          "pdf_pages": [
+            1,
+            2,
+            5
+          ],
+          "location": "Methods;III.C"
+        },
+        {
+          "fact": "Scenario defines flight origins,destinations,departure times,maximum speed and ordered waypoints, but deliberately excludes waypoint arrival times because avoidance maneuvers change them.",
+          "pdf_pages": [
+            4
+          ],
+          "location": "III.B"
+        },
+        {
+          "fact": "Minimum origin departure separation is enforced; measurement excludes terminal areas. Paper does not introduce battery/SOC model in methods/setup. Takeoff/landing fixed times are demand-estimation inputs only.",
+          "pdf_pages": [
+            3,
+            4
+          ],
+          "location": "Methods/III.A–B"
+        }
+      ],
+      "evidence_locations": [
+        "p1=printed2995:title,DOI10.1109/ITSC60802.2025.11423788;abstract;static/single-layer scope",
+        "p2=2996:DBSCAN/SRG Eq1,GA Eq2,Algorithm1/Fig1,graph/region constraints",
+        "p3=2997:en-route-only,Eq3 NMFD,h(v),Fig2,Eq4 departure law,17vertiports",
+        "p4=2998:2023taxi preprocessing/demand assumptions,simulation setup,Fig3",
+        "p5=2999:snapshot/partition parameters,K3->K2,Figs4–6,critical density/capacity,conclusion",
+        "p6=3000:Fig7NMFDs,acknowledgment/references"
+      ],
+      "old_claim_corrections": [
+        {
+          "fact": "Old abstract uncertainty whether dynamic switching supported is resolved: explicitly static partition; two algorithm runs withK3/K2 assess offline region count. Not online airspace configuration change.",
+          "pdf_pages": [
+            1,
+            2,
+            5
+          ],
+          "location": ""
+        },
+        {
+          "fact": "Old missing numerical details now replaced by explicit17vertiports,4runs,K3/K2,capacity~60aircraft/h,critical density~0.7–0.9aircraft/km and their scenario conditions.",
+          "pdf_pages": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "location": ""
+        },
+        {
+          "fact": "ABSTRACT_ONLY superseded by FULL_TEXT_VISUAL reading. Raw local text extraction is incomplete due to PDF encoding/body content; handwritten reading notes are labelled and not claimed verbatim.",
+          "pdf_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "location": ""
+        }
+      ]
+    }
+  ],
+  "reading_date": "2026-10-22",
+  "source_policy": "Only supplied PDFs; no network; original track_B.json unchanged",
+  "page_numbering": "PDF pages, 1-based",
+  "status": "COMPLETED",
+  "checks": {
+    "document_ids": [
+      "B02",
+      "B03",
+      "B04",
+      "B07"
+    ],
+    "pdf_pages_read": {
+      "B02": 23,
+      "B03": 25,
+      "B04": 21,
+      "B07": 6
+    },
+    "B07_visual_read": "all6renderedpages",
+    "original_track_modified": false,
+    "network_used": false,
+    "git_used": false
+  }
+}

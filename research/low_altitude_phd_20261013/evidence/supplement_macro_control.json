@@ -1,0 +1,519 @@
+{
+  "scope": "Local publisher full-text reading of B12, B11, B05 and B06; factual extraction only; no research-route selection. All page numbers are 1-based PDF pages, coinciding with printed article pages.",
+  "documents": [
+    {
+      "id": "B12",
+      "title": "Integrated departure and boundary control for low-altitude air city transport systems",
+      "authors": [
+        "Yazan Safadi",
+        "Nikolas Geroliminis",
+        "Jack Haddad"
+      ],
+      "year": 2024,
+      "venue": "Transportation Research Part B 189 (2024) 103020",
+      "doi": "10.1016/j.trb.2024.103020",
+      "metadata_verification": "Title, authors, journal, volume, article number and DOI verified directly on PDF p.1; available online 13 August 2024.",
+      "local_pdf": "research/low_altitude_phd_20261013/supplement/1-s2.0-S0191261524001449-main.pdf",
+      "local_text": "research/low_altitude_phd_20261013/extracted/supplement_B12.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "parsed_pages": 20,
+      "method": {
+        "control_model": "A new accumulation-based control model separates traveling aircraft, ground departure queues and aerial boundary queues. Equations (4)-(8) describe internal/external demand, interregional transfer, boundary-buffer entry and release; states and controls have bounds (14)-(19). The model is written for one-layer multi-region control, with the same modeling methodology intended for multilayer cases and a footnote requiring attention to traffic assignment across layers (pp.6-8, Section 2.4).",
+        "plant": "The microscopic LAAT-Flow plant and macroscopic control model are different. The plant is adopted from Safadi et al. 2023 and uses position/velocity dynamics, bounded speed/acceleration, waypoints and decentralized artificial-potential-field collision avoidance based on Lyapunov-like functions, safety/avoidance/detection spaces (pp.4-5, Sections 2.1-2.2).",
+        "mfd_identification": "Aircraft trajectories are aggregated using generalized Edie definitions to estimate flow/density/speed and regional accumulation/outflow/production. Repeated microscopic simulations identify regional/network airspace states; the unimodal outflow function G(n)=(1/a1)n exp[-(1/a2)(n/a3)^a2] is curve-fitted (pp.5-6, Sections 2.3-2.4).",
+        "optimization": "MPC minimizes weighted squared accumulation plus deviations of departure and boundary control inputs from their reference values; the latter are proxies for departure/boundary delays. At each control step measured plant states initialize the finite-horizon optimization, the first input is applied, then feedback repeats. Direct multiple shooting, Euler discretization, MATLAB R2023b, CasADi and IPOPT implement the controller (pp.7-8, Equations 9-23/Algorithm 1; p.12).",
+        "macro_to_micro_departure": "Algorithm 2 sets delay Delta_td,i=min(max(0,Delta_tC*(1-ud,i)),tf-tk) for queued/inactive aircraft whose departure is in the next control interval, adds the delay to individual departure time and updates individual queue status/index sets (p.9).",
+        "macro_to_micro_boundary": "Boundary input uI determines the ratio allowed to pass; remaining crossing aircraft are assigned a temporary waypoint in a buffer above the region within the same layer and hover. uO determines the ratio discharged. The command system randomly detects aircraft about to cross and applies the queue assignment. Algorithm 3 uses DetBouQueues for counts and ClearToReEnter to check sufficient safety space before reentry (pp.3,9-10; Fig.1/Algorithm 3).",
+        "actual_feedback": "Microscopic trajectory-derived traffic variables and individual states/status/departure times feed the macroscopic model and command subsystem; at each MPC step the current plant accumulation/queues reset initial states. TCPre actuates departure command before aircraft evolution and TCPost actuates boundary command afterward (pp.4-5,8,11,17,19; Fig.2/Algorithms 1,4/Appendix B).",
+        "time_scales": "Microscopic simulation 0.5 s; MFD aggregation 60 s; command/control step 60 s; MPC discretization 60 s, prediction horizon 5 steps (300 s). The general framework requires control step >= MFD estimation interval (pp.8-9,11-12, Table 1).",
+        "queue_delay_accounting": "Control model includes bounded ground departure and aerial boundary queues. Actual performance is TTS=TTT+TDD+TBD, computed directly by summing plant travel time, ground departure delay and boundary delay, rather than treating the quadratic MPC objective as measured TTS (pp.6-8,13,15, Figs.6-9).",
+        "energy": "Energy is a qualitative reason for greater boundary-queue penalties: hovering consumes energy. Objective (13) does not contain a battery/SOC state or a quantified energy cost, and p.15 identifies energy consumption as a separate ongoing study. This is an observed formulation scope, not an author-declared universal limitation (pp.7,12,15).",
+        "safety": "Microscopic APF maintains safety/avoidance spaces and speed saturation; the authors state conflict-free/convergence properties inherited from the model, while ClearToReEnter checks sufficient safety space. The control optimization itself imposes aggregate state/queue/input bounds (pp.5,7-10)."
+      },
+      "scenario": {
+        "geometry": "Fixed 1.5 km x 1.5 km x 120 m network, city-center region 1 and periphery region 2, no predetermined flight-route structure. Ground origins/destinations are uniform random and aircraft perform VTOL. Fig.3 caption says 'divided into 3 layers'; Section 3.2 says 'two separate layers', with a takeoff/landing layer and a flight layer including a buffer zone. Both descriptions are retained because the PDF does not present them identically (pp.11-12).",
+        "aircraft": "Same parameters for every aircraft: maximum speed 20 m/s, acceleration 5 m/s^2, safety radius 15 m, avoidance radius 22.5 m, detection radius 45.5 m (p.11, Table 1 p.12).",
+        "demand_and_comparison": "1 h simulation with trapezoidal demand/warm-up/cool-down. Table 1 lists qm in 0.1..3.7 aircraft/s for airspace identification. Reported NC/DC/BC/DBC comparison uses identical qm=2.5 aircraft/s, versus identified network capacity 2.3 aircraft/s, hence oversaturated. Warm-up ends around 900 s and cooldown starts 2700 s (pp.11-13).",
+        "bounds_and_targets": "Region accumulation and corresponding departure/boundary-queue upper bounds are 99 and 405 aircraft; critical accumulations 33 and 135 aircraft; controls bounded [0,1], reference controls 1 (p.12).",
+        "weights": "Per-strategy weights are separately calibrated by examining and normalizing objective terms. For DBC wn=0.0004, departure weights 5.4924/22.1800, boundary weights 95.4707; authors connect larger boundary penalties with hovering energy and airspace effects (p.12)."
+      },
+      "findings": [
+        {
+          "claim": "Under the stated oversaturated comparison, DBC maintains stable free flow and has the highest speed profile/outflow. DC avoids gridlock but displays unstable behavior; NC and BC reach congestion/gridlock. Region 2 remains free-flowing; region 1 governs network congestion.",
+          "location": "pp.12-13, Section 3.2, Figs.4-6"
+        },
+        {
+          "claim": "Actual macroscopic control actions are converted into individual departure times and buffer waypoints, with microscopic feedback to the controller. The work therefore demonstrates a concrete macro/micro control loop in simulation.",
+          "location": "pp.4-5,8-10, Fig.2, Algorithms 1-3"
+        },
+        {
+          "claim": "TTS comparisons include both ground and aerial waiting, not only flight travel time. DBC activates departure control earlier than DC and relaxes during cooldown, whereas DC continues delaying aircraft.",
+          "location": "pp.13,15, Figs.6-9"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "result": "DC reduces TTS by 32%, BC by 6.7%, and DBC by 40%, each relative to NC.",
+          "conditions": "Same 3D VTOL network, 1 h trapezoid, qm=2.5 aircraft/s > identified Gm=2.3 aircraft/s; separate calibrated MPC weights per strategy.",
+          "location": "p.13 Section 3.2; p.15 Figs.7-8"
+        },
+        {
+          "result": "Normalized to NC TTS, ground departure-delay share rises from 2.5% (DC) to 4.1% (DBC); DBC adds 0.4% boundary delay and achieves 8 percentage points further TTS reduction relative to the NC-normalized scale.",
+          "conditions": "DC and DBC free-flow cases; percentages in Fig.8 use the same NC TTS denominator and are not within-strategy time shares summing to 100%.",
+          "location": "p.15 Section 3.2, Fig.8"
+        },
+        {
+          "result": "Critical regional accumulations 33/135 aircraft, accumulation upper bounds 99/405; capacity 2.3 aircraft/s.",
+          "conditions": "Fixed simulated network identification and controller settings, not empirical flight measurements.",
+          "location": "p.12 Section 3.2"
+        }
+      ],
+      "author_limitations": [
+        {
+          "limitation": "Objective-function weight calibration is difficult for a larger number of regions; current weights match the tested simulation settings and need further calibration for different scenarios.",
+          "location": "p.16 Section 4"
+        },
+        {
+          "limitation": "Controller performance is evaluated with a specific demand distribution; different distributions across regions need testing.",
+          "location": "p.16 Section 4"
+        },
+        {
+          "limitation": "MPC should be compared with other control methods for the combined departure/boundary problem.",
+          "location": "p.16 Section 4"
+        },
+        {
+          "limitation": "Only one aircraft-command actuation approach with a specific random queuing setup is demonstrated, and the case study has limited airspace structure; other actuation methods and airspace structures need investigation.",
+          "location": "p.16 Section 4"
+        },
+        {
+          "limitation": "Hovering at buffers may introduce conflicts and increased battery use; energy consumption is stated to be under separate ongoing investigation. Behavioral value of time, waiting/moving tradeoffs and schedule delays may inform future weights.",
+          "location": "p.3 Introduction; p.12 Section 3.2; p.15 Section 4"
+        },
+        {
+          "limitation": "Departure-queue equation simplification assumes airports/vertiports saturated or oversaturated during rush hours; a more general conservation model could be substituted.",
+          "location": "p.7 footnote 2"
+        }
+      ],
+      "evidence_locations": [
+        "p.1 metadata",
+        "pp.4-5 Sections 2.1-2.3/Fig.2, plant and MFD feedback",
+        "pp.6-8 Section 2.4/Equations 4-23, queue and optimization model",
+        "pp.8-10 Algorithms 1-3, MPC and individual actuation",
+        "pp.11-12 Section 3.1/Table 1/Section 3.2, geometry and parameters",
+        "pp.13-15 Figs.4-9, outcomes and TTS decomposition",
+        "pp.15-16 Section 4, limits and future work",
+        "pp.17-19 Appendix B/Algorithm 4, simulation feedback structure"
+      ],
+      "old_claim_corrections": [
+        {
+          "old": "ABSTRACT_ONLY; quantitative network, aircraft and delay results unverified.",
+          "correction": "Publisher full text read; exact scenario, controller sampling, algorithmic actuation, TTS gains and author limitations now page-supported."
+        },
+        {
+          "old": "Boundary hover buffer may create conflicts and battery cost, based only on introduction excerpt.",
+          "correction": "Confirmed on p.3 and connected to higher MPC penalties on p.12; p.15 leaves quantified energy to separate work. It must not be characterized as an SOC-constrained control study."
+        },
+        {
+          "old": "Generic macroscopic inputs transformed to microscopic commands.",
+          "correction": "Algorithms 2 and 3 give explicit individual time shifts, temporary hover waypoints, counts and safety-checked reentry; Fig.2 and Algorithm 1 give plant-state feedback."
+        }
+      ],
+      "root_judgment_items": [
+        "Fig.3's '3 layers' versus Section 3.2's 'two separate layers' is an internal description difference; use the exact cited descriptions if layer count matters.",
+        "Algorithm 3 line 12 decrements nO after entry assignment although the surrounding entry counter is nI; preserve original algorithm and do not silently repair its notation."
+      ]
+    },
+    {
+      "id": "B11",
+      "title": "Traffic flow modeling and feedback control for future Low-Altitude Air city Transport: An MFD-based approach",
+      "authors": [
+        "Jack Haddad",
+        "Boris Mirkin",
+        "Kfir Assor"
+      ],
+      "year": 2021,
+      "venue": "Transportation Research Part C 133 (2021) 103380",
+      "doi": "10.1016/j.trc.2021.103380",
+      "metadata_verification": "Title, authors, journal, volume, article number and DOI verified on PDF p.1; available online 17 November 2021.",
+      "local_pdf": "research/low_altitude_phd_20261013/supplement/1-s2.0-S0968090X21003806-main.pdf",
+      "local_text": "research/low_altitude_phd_20261013/extracted/supplement_B11.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "parsed_pages": 20,
+      "method": {
+        "mfd_source": "Separate microscopic simulations follow Xue and Do 2019: double-integrator aircraft share future trajectories over a look-ahead horizon; coordinated maneuvers minimize deviation, solved as nonlinear integer programming with BARON. Generalized Edie variables are aggregated over 30 s, then averaged over each stationary-loading run into one MFD point (pp.5-6, Section 2.1).",
+        "structural_model": "Proposes L fixed vertical layers, each partitioned into virtual regions with conditional borders and groups of individual virtual horizontal/interlayer gateways. Aircraft conservation with direction-specific accumulations produces a multi-region/layer MFD model. Gateway commands multiply nonlinear flow weighting factors and regional MFDs; demand is an uncontrolled disturbance (pp.6-8, Sections 2.2-3.1, Equations 1-5).",
+        "control": "Partially linearized local dynamics retain nonlinear interregional terms, state delays and known input delays; unknown parameters/demand are covered by assumptions A1-A4. Continuous decentralized adaptive state-feedback MRAC is implemented with event-driven sample-and-hold of local gateway commands. Detector rule compares present, last-held and delayed inputs against fixed thresholds; event times are not a fixed control period (pp.9-12, Equations 6-17).",
+        "feedback_path": "Local regional states/tracking errors and stable reference-model states enter decentralized controllers. Signals traverse delayed actuation channels to aggregate regional dynamics. State-delay terms also represent communication uncertainty. Theorem 1 guarantees bounded closed-loop signals/asymptotic tracking under A1-A4; appendix establishes a positive interevent-time lower bound (pp.9-12, Fig.5, Theorem 1; pp.16-18 Appendix/Remark 5).",
+        "macro_to_micro_scope": "Section 3 represents control as commands of individual virtual traffic gateways. Section 5 evaluates the aggregated partially linearized three-region model (18). It does not present an aircraft-by-aircraft command conversion algorithm comparable to B12 Algorithms 2-3. The microscopic simulation in Section 2.1 is used to extract MFD, not the closed-loop control-test plant (pp.5-6,8,12-15).",
+        "queue_delay_accounting": "For MFD extraction an aircraft unable to lift off safely hovers outside the square and chooses another lift-off time several seconds later. Section 5 reports regional tracking errors, control signals, demands and aggregated disturbance signals; it supplies no TTS/ground-vs-air queue comparison in that experiment. 'Delay' in control equations refers to input/state/communication delays and must not be mistaken for measured passenger/aircraft waiting delay (pp.6,9-15).",
+        "energy": "Energy consumption is mentioned as an operational motivation (p.2), while the mathematical control/test model contains no battery/SOC state or energy objective (pp.8-15); this is observed formulation scope, not an author-declared limitation.",
+        "safety": "MFD-generation microscopic model preserves a 15 m well-clear distance, 30 s lookahead, safe lift-off admission, coordinated conflict resolution. Aggregate control theorem concerns signal boundedness/tracking under model assumptions; it is not a separate individual-aircraft separation theorem (pp.5-6,11-12)."
+      },
+      "scenario": {
+        "mfd_generation": "100 m-edge square; origins/destinations on different edges; 15 m well-clear distance; lookahead 30 s; speed <=20 m/s; acceleration <=5 m/s^2. Each constant-inflow run lasts 30 min, flow up to 65 aircraft/min. One case-study MFD is published (p.6).",
+        "control_test": "Three aggregate regions, two in first layer and one in second. G1(n)=(vf1*n/A1)exp[-(1/a1)(n/ncr1)^a1], G2=0.8 G1, G3=1.2 G1; ncr1=80 aircraft, a1=0.73; normalized MFD and time-scaled partially linearized dynamics about n0=0.85 ncr. Parameters/disturbances unknown to controller; same controller/reference settings used without retuning across tested threshold cases (pp.12-14, Figs.6-7/Remark 4).",
+        "control_timing": "Event driven, local sample/hold with fixed detector thresholds; no universal fixed sampling interval claimed. Simulation input delays h12=3,h13=0.1,h21=3,h23=0.2,h31=1,h32=0.7 after normalization/time scaling (pp.10,13).",
+        "disturbances": "Bounded time-varying square-wave demands with offsets (0.13,0.2,0.3), amplitudes (-0.1,0.1,0.13), frequencies (0.29,0.25,0.21) in normalized/scaled test; r=(1,1.2,1.3), Ar=-1. Two detector-threshold parameter sets are compared (pp.13,15)."
+      },
+      "findings": [
+        {
+          "claim": "Simulation supports an MFD connecting trip completion and aircraft accumulation; safety-driven slowing/rerouting can lead to a congested branch. The published MFD uses stationary loading rather than transient-demand hysteresis tests.",
+          "location": "pp.5-6 Section 2.1/Fig.3; p.16 Section 6"
+        },
+        {
+          "claim": "A multi-layer, multi-region aggregate model and decentralized event-driven adaptive boundary control are developed; formal results address uncertain interconnections and delayed signals under assumptions A1-A4.",
+          "location": "pp.7-12 Sections 3-4, Theorem 1"
+        },
+        {
+          "claim": "The numerical control demonstration concerns tracking errors/control/demand/disturbance histories for three aggregate regions under two threshold sets, with no retuning between tested cases.",
+          "location": "pp.13-15 Remark 4/Figs.8-11"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "result": "ncr1=80 aircraft; G2=0.8G1 and G3=1.2G1; MFD shape exponent a1=0.73; operation point 0.85 ncr.",
+          "conditions": "Chosen parameters for the three-region aggregate simulation, not measured critical accumulations for three real airspaces.",
+          "location": "pp.12-13 Section 5/Fig.7"
+        },
+        {
+          "result": "MFD construction covers stationary inflows up to 65 aircraft/min over 30-min runs, with 30-s aggregation before run averaging.",
+          "conditions": "100 m square, 15 m well clear, 20 m/s maximum speed, 5 m/s^2 acceleration, 30-s lookahead.",
+          "location": "p.6 Section 2.1/Fig.3"
+        },
+        {
+          "result": "Theorem 1: all closed-loop signals bounded and tracking errors approach zero asymptotically; Appendix Remark 5 derives positive lower bound on interevent times (avoids Zeno behavior).",
+          "conditions": "Mathematical result under Equations 6,11 and assumptions A1-A4, not a numerical percentage improvement.",
+          "location": "p.12 Theorem 1; pp.16-18 proof/Remark 5"
+        }
+      ],
+      "author_limitations": [
+        {
+          "limitation": "Only one MFD-extraction case study is presented, derived from different stationary network loadings; different drone/operational parameters and microscopic control algorithms require investigation.",
+          "location": "p.16 Section 6"
+        },
+        {
+          "limitation": "Dynamic loading with time-dependent demand and MFD hysteresis are future/ongoing work.",
+          "location": "p.16 Section 6"
+        },
+        {
+          "limitation": "Inflow supply functions and capacity sharing among upstream regions are future modeling additions.",
+          "location": "p.16 Section 6"
+        },
+        {
+          "limitation": "Physical meaning and analytical relationships for accumulation-dependent input delays h_i(n_i) and MFD require future investigation.",
+          "location": "p.8 Principal observations"
+        },
+        {
+          "limitation": "Alternative event-detector rules (relative, adaptive, switching thresholds) should be investigated/compared; current synthesis restricts attention to state-feedback Lyapunov design, while output-feedback variants are discussed as possible extensions.",
+          "location": "p.11 Remark 1; p.12 Remark 3"
+        }
+      ],
+      "evidence_locations": [
+        "p.1 metadata",
+        "pp.5-6 microscopic MFD construction and Fig.3",
+        "pp.6-8 fixed multilayer/region/gateway design and nonlinear conservation dynamics",
+        "pp.9-12 delayed/event-driven MRAC, Fig.5, assumptions and theorem",
+        "pp.12-15 three-region simulation/Figs.6-11",
+        "p.16 conclusions/future work",
+        "pp.16-18 proof and non-Zeno property"
+      ],
+      "old_claim_corrections": [
+        {
+          "old": "ABSTRACT_ONLY; three-region scenario and MFD parameters incompletely verified.",
+          "correction": "Full publisher PDF confirms 3 aggregate regions over 2 layers, exact chosen MFD and normalized test parameters, and threshold comparison."
+        },
+        {
+          "old": "Adaptive boundary feedback robust to devices/communication anomalies.",
+          "correction": "Formal scope is delayed uncertain aggregate dynamics with assumptions A1-A4 and virtual-gateway actuation. Section 5 is not an integrated micro aircraft closed-loop simulation and does not numerically test every possible device/cyber fault."
+        }
+      ],
+      "root_judgment_items": [
+        "Do not conflate input/state communication delays with TTS or actual waiting delay.",
+        "Do not conflate separate microscopic MFD identification and aggregate MRAC testing with B12's demonstrated command-subsystem feedback loop."
+      ]
+    },
+    {
+      "id": "B05",
+      "title": "Macroscopic Fundamental Diagrams for Low-Altitude Air city Transport",
+      "authors": [
+        "Yazan Safadi",
+        "Rao Fu",
+        "Quan Quan",
+        "Jack Haddad"
+      ],
+      "year": 2023,
+      "venue": "Transportation Research Part C 152 (2023) 104141",
+      "doi": "10.1016/j.trc.2023.104141",
+      "metadata_verification": "Title, authors, DOI, journal, volume and article number verified on p.1; available online 17 May 2023.",
+      "local_pdf": "research/low_altitude_phd_20261013/supplement/1-s2.0-S0968090X23001304-main.pdf",
+      "local_text": "research/low_altitude_phd_20261013/extracted/supplement_B05.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "parsed_pages": 26,
+      "method": {
+        "microscopic": "Adapts Quan et al.'s distributed APF/Lyapunov-like collision avoidance. Position-velocity dynamics obey p_dot=v and v_dot=-L(v-vc); filtered position xi=p+L^-1 v converts motion into a single-integrator form. Velocity command combines an integral Lyapunov attraction term and barrier repulsion with saturation. Waypoint and destination-plane controllers are both implemented, including extension of destination lines to 3D planes (pp.3-7, Equations 1-23).",
+        "assumptions_and_safety": "All aircraft fully controllable VTOL multicopters, capable of hovering; avoidance radius > safety radius and sufficient detection range (Assumption 1); static waypoint separation >= sum of avoidance radii (Assumption 2); initial filtered-position separation > sum of safety radii (Assumption 3); goal arrival/exit criteria (Assumptions 4/5). Safety and avoidance spaces are centered on filtered positions, detection sphere on actual position. Claimed conflict-free and convergence properties rely on these conditions and referenced proofs (pp.2,4-7).",
+        "mfd": "Generalized Edie definitions extend to 2D/3D; sums of traveled distance/time over fixed spatial domain and aggregation window yield flow/density/speed. Trip completion is separately G=Nexit/Delta_tMFD. Simulation-step integration adapts aggregation when an aircraft is present for only part of a window. Exponential G(N) curves are fitted to simulation output (pp.7-8 Equations 24-30; pp.12,18 Tables 1-2).",
+        "feedback_and_control_scope": "Microscopic positions/filtered positions drive local APF control every simulation step and trajectories feed synchronized macro-variable estimation. This paper identifies MFDs; it does not feed an MFD-based network controller back into departure/boundary actuators. Such control is explicitly future work. Simulation Algorithm 3 nevertheless has a safety-admission queue: if departure origin is within summed safety radii of an active aircraft, actual departure is postponed by Headway and status becomes Queued (pp.8-10,20,22-24).",
+        "time_scales": "Simulation 0.5 s and MFD aggregation 60 s; 1.5 h default runs, 0.5 h for 3D example. Dynamic trapezoidal inflows include loading/unloading, enabling hysteresis analysis (p.10, Fig.6; pp.11-12).",
+        "configuration": "Fixed geometry per run, no airways/intersections and free multidirectional routes. Independent case studies change network sizes, radii, heterogeneity, controller type and 2D/3D dimensionality; this is scenario comparison rather than dynamic reconfiguration of region boundaries (pp.9-11,14-16).",
+        "queue_delay_energy_scope": "Appendix includes safety-induced departure queuing and planned/actual departure/arrival fields; reported experiments emphasize MFD curves, not TTS or battery/SOC accounting. No energy state/cost occurs in the presented plant/controller formulas. This is observed scope rather than a specific author limitation (pp.4-8,10-20,22-24)."
+      },
+      "scenario": {
+        "default": "Unstructured boundary-to-boundary uniformly random OD, default vmax=20 m/s, amax=5 m/s^2, rs=15 m, ra=22.5 m, rd=45.5 m. Simulation implemented in MATLAB R2021b on 2.8 GHz Intel i7/32 GB RAM (pp.8-10).",
+        "six_examples": [
+          "Example 1: 2x2 km 2D waypoint network, peak inflow 0.2..2.1 aircraft/s (pp.10-12).",
+          "Example 2: 2x2,1x1,0.5x0.5 km networks with all other aircraft settings unchanged; different peak-inflow sweeps (p.13).",
+          "Example 3: rs=10,15,20 m, corresponding avoidance/detection radii; peak inflow sweeps 0.5..3.5,0.2..2.1,0.1..1.3 aircraft/s respectively (pp.13-14).",
+          "Example 4: 0.5x0.5 km heterogeneous traffic; rs uniform [10,20] m and/or vmax uniform [10,30] m/s, independent draws per aircraft/scenario; peak inflow 0.1..1.5 aircraft/s (pp.10,14-16).",
+          "Example 5: same 0.5x0.5 km, rs15/vmax20, waypoint versus destination-line approaches; peak inflow 0.1..1.2 aircraft/s (pp.14-18).",
+          "Example 6: 0.5x0.5x0.1 km 3D waypoint flight, 1800 s; prose peak inflow 0.1..1.0 aircraft/s, figure captions list 120,240,...,3600 aircraft/h (pp.11,16,19-20)."
+        ]
+      },
+      "findings": [
+        {
+          "claim": "Full unimodal MFD shapes with congested branches arise across tested sizes, safety radii, aircraft heterogeneity, control algorithms and 2D/3D settings. Increasing safety radius lowers critical density and capacity; heterogeneous radius/speed increases Speed-MFD scatter.",
+          "location": "pp.11-18 Section 4.2/Figs.7-17"
+        },
+        {
+          "claim": "Dynamic loading shows hysteresis: local congestion spots reduce mean speed/flow and may dissipate without complete network gridlock. Three-dimensional travel has more possible paths and greater scatter around critical state, with congestion appearing/dissolving more frequently; tested high-accumulation 3D cases need not gridlock.",
+          "location": "p.12 Section 4.2.1/Fig.8; p.16 Section 4.2.6/Figs.16-17"
+        },
+        {
+          "claim": "Destination-line capacity exceeds waypoint capacity because destination lines relax the requirement to arrive at a particular point.",
+          "location": "pp.15-16 Section 4.2.5; p.18 Table 1"
+        },
+        {
+          "claim": "At gridlock, absolute flow Q may remain nonzero because aircraft continue local avoidance/search movement, while trip completion outflow G reaches zero. Therefore Q and G should not be equated.",
+          "location": "pp.16,18 Section 4.3"
+        },
+        {
+          "claim": "Normalized flow-density curves do not coincide perfectly across sizes: N1/N2 show two congestion spots whereas smaller N3 shows one, according to the authors' inspection of simulation videos.",
+          "location": "p.13 Section 4.2.2/Fig.10"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "result": "Example 1 observed critical point (229 aircraft,1.8667 aircraft/s), while the fitted curve peak is (283.86 aircraft,1.47 aircraft/s).",
+          "conditions": "2x2 km waypoint, rs15/vmax20; observed points and fitted maximum are explicitly different.",
+          "location": "p.12 Section 4.2.1/Fig.9"
+        },
+        {
+          "result": "Peak inflow below 1.5 aircraft/s gives free flow with dissipating instantaneous congestion; at 1.6 aircraft/s a hysteresis loop occurs; above 1.8 aircraft/s the reported network gridlocks.",
+          "conditions": "Example 1's dynamic trapezoidal demand/2x2 km network; exact prose says 'above 1.8' and Fig.8(c) shows 1.8.",
+          "location": "p.12 Section 4.2.1/Fig.8"
+        },
+        {
+          "result": "Fitted (critical accumulation, maximum outflow): 2x2 km (283.86,1.47),1x1 km (80.49,0.80),0.5x0.5 km (21.57,0.45), units aircraft and aircraft/s.",
+          "conditions": "Waypoint, rs15 m,vmax20 m/s; not measured empirical capacities.",
+          "location": "pp.13,18 Section 4.2.2/Table 2"
+        },
+        {
+          "result": "For 2x2 km waypoint, rs10/15/20 m yield fitted critical accumulations 525.39/283.86/169.69 and maximum outflows 3.05/1.47/0.89 aircraft/s.",
+          "conditions": "vmax20 m/s; corresponding avoidance/detection radii adjusted.",
+          "location": "p.18 Table 2; pp.13-14 Section 4.2.3"
+        },
+        {
+          "result": "0.5x0.5 km, heterogeneous rs only: (18.68,0.38); heterogeneous vmax only: (22.01,0.41); both: (18.53,0.32), units aircraft and aircraft/s.",
+          "conditions": "Uniform rs in [10,20] m and/or vmax in [10,30] m/s, compared with homogeneous (21.57,0.45).",
+          "location": "pp.14-16 Section 4.2.4; p.18 Table 2"
+        },
+        {
+          "result": "Waypoint versus destination-line fitted (critical accumulation, maximum outflow)=(21.57,0.45) versus (22.62,0.54).",
+          "conditions": "0.5x0.5 km, rs15 m,vmax20 m/s.",
+          "location": "p.18 Table 1"
+        },
+        {
+          "result": "3D 0.5x0.5x0.1 km fitted critical accumulation 42.00 aircraft, maximum outflow 1.10 aircraft/s.",
+          "conditions": "Waypoint,rs15 m,vmax20 m/s; Table 2 fitted peak, not the maximal inflow used.",
+          "location": "p.18 Table 2"
+        }
+      ],
+      "author_limitations": [
+        {
+          "limitation": "All tested networks have unstructured airspace. Other structures, e.g. structured airspace, and their capacity effects are future work.",
+          "location": "p.20 Section 5"
+        },
+        {
+          "limitation": "Artificial Potential Field is the collision-free method used; additional microscopic/collision-avoidance approaches should be tested and compared.",
+          "location": "pp.19-20 Section 5"
+        },
+        {
+          "limitation": "Advanced MFD-based network control concepts/strategies are future work using this simulation environment and estimated MFDs.",
+          "location": "p.20 Section 5"
+        },
+        {
+          "limitation": "The hysteresis mechanism is stated to be under ongoing investigation.",
+          "location": "p.12 Section 4.2.1"
+        }
+      ],
+      "evidence_locations": [
+        "p.1 metadata",
+        "pp.3-7 microscopic controller/assumptions/Equations 1-23",
+        "pp.7-8 MFD definitions/Equations 24-30",
+        "pp.9-11 setup and six-example overview",
+        "pp.11-18 complete results and fitted Tables 1-2",
+        "pp.19-20 conclusions/future work",
+        "pp.22-24 Appendix B/Algorithms 1-7 including safety queue and aggregation"
+      ],
+      "old_claim_corrections": [
+        {
+          "old": "ABSTRACT_ONLY; no verified numerical capacities or complete settings.",
+          "correction": "Full text supplies six examples, exact fitted capacities/critical accumulations, observed-vs-fitted distinction, heterogeneity and dynamic-loading results."
+        },
+        {
+          "old": "Real-time synchronized micro/macro plant framework described generically.",
+          "correction": "Confirmed synchronized simulation/aggregation, but this article does not implement MFD-based departure/boundary feedback; such control is future work. It does implement local safety-induced admission queues."
+        },
+        {
+          "old": "Different aircraft and 2D/3D settings mentioned only abstractly.",
+          "correction": "Heterogeneous radii AND speeds, transient demand hysteresis, and 3D runs are actual experiments and must not be claimed absent."
+        }
+      ],
+      "root_judgment_items": [
+        "Table 2 capacities are fitted values and differ from individual observed critical/maximum points; preserve that distinction.",
+        "Example 6 inflow prose and figure captions differ at lower range/step (0.1 aircraft/s versus caption starting 120 aircraft/h); cite the specific source rather than silently harmonizing."
+      ]
+    },
+    {
+      "id": "B06",
+      "title": "Urban low-altitude air transport management: Bridging dynamic traffic control and static network equilibrium",
+      "authors": [
+        "Canqiang Weng",
+        "Tianlu Pan",
+        "Can Chen",
+        "Renxin Zhong"
+      ],
+      "year": 2025,
+      "venue": "Transportation Research Part C 178 (2025) 105237",
+      "doi": "10.1016/j.trc.2025.105237",
+      "metadata_verification": "Title, authors, journal, volume, article number and DOI verified p.1; available online 26 June 2025.",
+      "local_pdf": "research/low_altitude_phd_20261013/supplement/1-s2.0-S0968090X25002414-main.pdf",
+      "local_text": "research/low_altitude_phd_20261013/extracted/supplement_B06.txt",
+      "version": "publisher",
+      "reading_status": "FULL_TEXT",
+      "parsed_pages": 24,
+      "method": {
+        "static_planning": "Aggregates UAM trips by OD, takeoff vertiport and landing vertiport. Travel cost includes constant accessing/cruising/egressing time and flow-dependent takeoff/landing waiting time. Elastic demand SO assignment minimizes travel cost minus inverse-demand integral, subject to flow conservation/nonnegativity; SO link flows are aggregated to regional endogenous/exogenous demand (pp.6-8, Equations 1-5). Network planning here means optimizing flows on a given network, not constructing/reconfiguring topology (p.2 footnote 2).",
+        "dynamic_models": "Regional point queues satisfy Qdot=g-q with q=s*v, v in [0,1] and bounded queue lengths. Four regional accumulations satisfy MFD-based conservation. Modified Boundary Control (MBC) couples endogenous/exogenous outflow shares ui,i+ui,j=1, so aggregate G(n) is not reduced by metering. This differs from controlling only cross-boundary transfer (pp.8-10, Equations 6-11).",
+        "planning_control_connection": "Derives s*=SO regional demand and chooses desired accumulation by the increasing/free-flow inverse MFD at sums of internal+cross demand. A maximum-throughput queue controller bounds admitted flow; MBC uij=min(qij/Gi(ni),1), uii=1-uij regulates the aggregate model. Equilibrium is updated when the assumed steady-state demand pattern changes. Proposition 2 proves convergence for oversaturated demand from an uncongested initial state (pp.10-13, Equations 12-20/Algorithm 1; Appendix C pp.22-23).",
+        "mfd_source": "Uses prior microscopic simulation (Weng et al.2024) integrating collision avoidance/route guidance, calculates macroscopic variables from collision-free trajectories, fits flow-density data in a 1x1x1 km cube, then scales critical/jam accumulation by four for 2x2x1 km regions. Fitted alpha=.016,beta=1.136,Kcr=27.6,Kjam=200; case-study ncr=110.4,njam=800 (pp.13-14,Fig.8). The main planning/control experiments evolve aggregate equations (6),(10), not a live micro plant in Algorithm 1.",
+        "macro_to_micro": "Section 2.3.2 proposes customized speed/route guidance to manipulate relative endogenous/exogenous outflow. Appendix A supplies a separate microscopic experiment showing the direction of flow response to differential speed limits. The detailed MBC mechanism is explicitly future work; Appendix A concludes conditionally that if MBC uij can be mapped to speed limit vmij, microscopic implementation becomes possible (p.10; pp.20-21).",
+        "actual_feedback": "Main controller uses regional accumulation ni in Gi(ni), current admitted queue outflow qij and current demand/queue length. Algorithm 1 updates the queue and accumulation via model equations and recomputes SO when the steady-state demand function changes. The Appendix A test observes completion flows after an imposed speed switch; it is not presented as an implemented closed-loop uij-to-speed mapping (pp.12-13 Algorithm 1; pp.20-21).",
+        "time_scales": "Two timescales: piecewise stable within-day patterns and short-term dynamic control. Numerical examples concatenate 0..60 and 60..120 min patterns; desired equilibrium updated at pattern change. A precise numerical integration/control sampling interval is not specified in the read main setup/Algorithm 1. Appendix A uses 0..450 and 450..900 s speed phases and examines transition 450..600 s (pp.6,10,13,15,17,20-21).",
+        "safety_and_energy_scope": "Assumption 3 gives each aircraft sufficient mobility/intelligence to avoid collisions and stay within region during cruise; main equations impose aggregate free-flow/jam constraints rather than individual separation. Appendix A uses safety radius 50 m/detection 200 m in a collision-avoidance simulator. No battery/SOC state or energy objective in models/experiments (p.5 Assumption 3; pp.6-13; p.20).",
+        "queue_costs": "Static takeoff/landing waits grow with vertiport flow; main dynamic queues represent admission demand on the ground aggregated across vertiports, with separate endogenous/exogenous subqueues. Remark 2 discusses balancing subqueue lengths and two independent takeoff platforms or boarding management for separation. It does not define B12-style aerial buffer queues (pp.6-8)."
+      },
+      "scenario": {
+        "network": "Cross-sea/river conceptual two-region system, full-mix airspace and fixed vertiport positions. Aircraft cross regions only during cruise. Eight vertiports and four OD pairs; two airspace regions each 2x2x1 km. No dynamic change of region topology is tested (pp.4-5,13-14).",
+        "assumptions": "Central control can monitor/control individual passengers' vertiport selection and aircraft trajectories when needed; each vertiport supports simultaneous independent takeoff/landing; aircraft have collision-avoidance/stay-in-region ability; demand decomposes into periodically constant stable patterns (pp.5-6).",
+        "costs": "Constant travel costs 41..64 min depending on link; variable takeoff/landing costs rho*(f/c)^sigma with rho60,sigma4,c=30 vehicles/min for every vertiport (p.13).",
+        "main_tests": "Two 120-min macro experiments: workday-to-holiday and reverse. Same queue/MBC controllers for proposed variable-SO equilibrium and baseline fixed initial-pattern SO equilibrium; 20% peak above desired demand, 0.5% Gaussian noise (pp.15-18).",
+        "appendix_micro_test": "Two regions each containing 9 hexagonal cells of side250 m,height100 m. Region1 receives endogenous and exogenous inflows both0.5 vehicles/s; random OD; rd200 m,rs50 m. Both types vmax20 m/s until450 s, then endogenous10/exogenous30 m/s until900 s; approximate mean speed is equal across phases (p.20)."
+      },
+      "findings": [
+        {
+          "claim": "Proposed variable SO target adjusts the allowed admission rate and desired free-flow accumulation to a changed demand pattern. Maximum-throughput demand management filters demand noise when the queue is active; the stated MBC converges under Proposition 2 conditions.",
+          "location": "pp.10-13 Sections 3.1-3.3/Propositions 1-2; pp.16-18 results"
+        },
+        {
+          "claim": "Workday-to-holiday variable target admits more demand/reduces queues compared with fixed-workday SO baseline. Reverse switch lowers the desired state and capacity benchmark; fixed holiday target becomes unreachable under lower workday demand and queue management becomes inactive, allowing demand noise through.",
+          "location": "pp.15-18 Sections 4.2.1-4.2.2/Figs.10-13"
+        },
+        {
+          "claim": "Appendix A demonstrates a correlation between changed individual speed limits and regional completion-flow splits: endogenous completion flow falls and exogenous completion flow rises during450..600 s after the speed switch. This is evidence of microscopic controllability potential, not a completed quantitative MBC-to-speed mapping.",
+          "location": "pp.20-21 Appendix A/Figs.14-15"
+        }
+      ],
+      "quantitative_findings": [
+        {
+          "result": "Average queuing time reduced42.3%, maximum queue length reduced52.6%, maximum trip-completion flow increased26.9%.",
+          "conditions": "Workday-to-holiday120-min macro simulation; proposed switches workday to holiday SO at60 min; baseline holds workday SO throughout; same controllers,20% peak demand excess and0.5% Gaussian noise.",
+          "location": "p.16 Section 4.2.1/Figs.10-11"
+        },
+        {
+          "result": "Workday s*=(.108,.245,.160,.048) vehicles/s; holiday s*=(.157,.30,.245,.114). Desired accumulations workday(43.6,36.3),holiday(82.8,69.0) vehicles.",
+          "conditions": "Eight-vertiport/four-OD static elastic-demand assignment and common calibrated MFD; neither target is set to the critical110.4 vehicles.",
+          "location": "p.15 Section 4.2"
+        },
+        {
+          "result": "MFD alpha=.016,beta1.136,Kcr27.6,Kjam200 from1 km cube; larger regional ncr110.4,njam800.",
+          "conditions": "Prior microscopic trajectories fitted then spatially scaled, not a direct empirical fit of actual city flight data.",
+          "location": "pp.13-14 Section 4.1/Fig.8"
+        },
+        {
+          "result": "Appendix microscopic test switches equal20 m/s limits to10/30 m/s endogenous/exogenous at450 s, with both inflows.5 vehicles/s and duration900 s; observed completion-flow changes occur450..600 s.",
+          "conditions": "Separate two-region9-hex-cell example; no tabulated percentage gain or closed-loop macro mapping reported.",
+          "location": "pp.20-21 Appendix A/Figs.14-15"
+        }
+      ],
+      "author_limitations": [
+        {
+          "limitation": "Detailed microscopic mechanism of MBC is left for future work; speed-control/route-guidance implementation is proposed and illustrated experimentally.",
+          "location": "p.10 Section 2.3.2; pp.20-21 Appendix A"
+        },
+        {
+          "limitation": "Independent takeoff/landing assumption disregards interaction between these operations; advanced collision-avoidance capabilities are assumed to permit system-level management.",
+          "location": "pp.5-6 Assumptions 2-3 and explanations"
+        },
+        {
+          "limitation": "Demand is simplified as a sequence of stable/periodically constant patterns.",
+          "location": "p.6 Section 2.1"
+        },
+        {
+          "limitation": "Static planning treats access/cruise/egress time as constant and overlooks congestion-induced cruising-time increases; authors state admitted planning demand is guaranteed not to produce congestion and waits dominate cruising increase.",
+          "location": "p.6 Section 2.2"
+        },
+        {
+          "limitation": "Proposed simple MBC guarantees convergence for oversaturated demand with initially uncongested states; advanced controllers such as MPC could improve transient performance.",
+          "location": "p.13 Proposition 2/Section 3.3"
+        }
+      ],
+      "evidence_locations": [
+        "p.1 metadata",
+        "pp.4-6 motivating scenario/assumptions",
+        "pp.6-8 SO assignment and queue equations",
+        "pp.8-10 MFD conservation/MBC definition/microscopic implementation scope",
+        "pp.10-13 equilibrium derivation/controller/Algorithm 1",
+        "pp.13-15 setup/calibration/demand/targets",
+        "pp.15-18 results/Figs.10-13",
+        "pp.20-21 separate micro example/Figs.14-15",
+        "pp.21-23 proposition proofs"
+      ],
+      "old_claim_corrections": [
+        {
+          "old": "ABSTRACT_ONLY; no verified percentage gains, region size or sample details.",
+          "correction": "Full text supplies two macro demand-switch experiments, exact comparison conditions,42.3%/52.6%/26.9% results and prior-micro-derived MFD calibration."
+        },
+        {
+          "old": "Flow-based two-region numerical paper; microscopic execution not verified.",
+          "correction": "There IS a separate Appendix A microscopic differential-speed example with collision avoidance/route guidance. However, p.10 leaves detailed MBC implementation future and p.21 explicitly conditions execution on obtaining the uij-to-speed mapping; neither 'no micro experiment' nor 'fully closed-loop micro implementation' is accurate."
+        },
+        {
+          "old": "Author limitations and all hypotheses unavailable.",
+          "correction": "Full text gives observability/controllability, independent takeoff/landing, capable avoidance, piecewise-stable demand and constant cruise-time assumptions, with exact theorem conditions."
+        }
+      ],
+      "root_judgment_items": [
+        "Appendix A describes phases0..450 and450..900 s, then calls its second phase0..900 s in a later sentence; use surrounding phase description and report the discrepancy if exact protocol reproduction is needed.",
+        "Main equilibrium feasibility relies on the stated assumption that SO demand does not produce air congestion; do not describe the result as unrestricted convergence under arbitrary demand/initial congestion.",
+        "Equation18's surrounding prose states v=1 when undersaturated although the printed formula yields v=g/s*<1; the flow conclusion q=g is consistent. Preserve the formula rather than silently treating the v=1 prose as a universal policy."
+      ]
+    }
+  ],
+  "checks": {
+    "extraction_tool": "pypdf PdfReader, bundled Python",
+    "page_counts": {
+      "B12": 20,
+      "B11": 20,
+      "B05": 26,
+      "B06": 24
+    },
+    "read_sections": "All four publisher PDFs: metadata, introduction/context, full method, simulation setup/results, discussions/conclusions, appendices, tables and figure captions. Extraction is not a substitute for visual quantitative graph digitization; numerical claims above are text/table values, and no graph-derived precise values were invented.",
+    "network_access": "None",
+    "unchanged_sources": "Original PDFs, track_B.json and existing critiques/reports left unchanged. Only assigned extracted TXT files and this new JSON were written.",
+    "visual_checks": "Rendered in memory with pdfplumber/pypdfium2 and inspected: B05 p.18 Tables 1-2 and Fig.15; B12 p.15 Figs.7-8 including NC-normalized delay shares; B11 p.6 Fig.3 and its full method text; B06 p.12 Equations18-20 and p.21 Fig.15/conditional microscopic mapping statement. No PNG files written."
+  }
+}
