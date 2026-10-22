@@ -1,0 +1,49 @@
+{
+  "schema": "stage2-v5-replay-load-check-v1",
+  "run_root": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022",
+  "controller_api": "ReplayBundle.load(path) -> ReplayController(bundle) -> seek(t)",
+  "gui_viewer_constructed": false,
+  "human_visual_acceptance": "HUMAN_PENDING",
+  "seek_times_s": [0, 270, 300, 360, 396, 420, 450, 480],
+  "methods": {
+    "energy_slack": {
+      "replay_path": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/energy_slack/replay_0480",
+      "time_bounds_s": [0, 480],
+      "audit_path": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/energy_slack/audit_0480.json",
+      "audit_status": "PASS",
+      "audit_issues": [],
+      "seeks": [
+        {"time_s": 0, "controller_time_s": 0, "time_exact": true, "aircraft_count": 39, "snapshot_uav_count": 39, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 270, "controller_time_s": 270, "time_exact": true, "aircraft_count": 60, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 300, "controller_time_s": 300, "time_exact": true, "aircraft_count": 60, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 360, "controller_time_s": 360, "time_exact": true, "aircraft_count": 64, "snapshot_uav_count": 48, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 396, "controller_time_s": 396, "time_exact": true, "aircraft_count": 67, "snapshot_uav_count": 48, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 420, "controller_time_s": 420, "time_exact": true, "aircraft_count": 67, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 450, "controller_time_s": 450, "time_exact": true, "aircraft_count": 70, "snapshot_uav_count": 50, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 480, "controller_time_s": 480, "time_exact": true, "aircraft_count": 70, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true}
+      ]
+    },
+    "rh_cp_sat": {
+      "replay_path": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/rh_cp_sat/replay_0480",
+      "time_bounds_s": [0, 480],
+      "audit_path": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/rh_cp_sat/audit_0480.json",
+      "audit_status": "PASS",
+      "audit_issues": [],
+      "seeks": [
+        {"time_s": 0, "controller_time_s": 0, "time_exact": true, "aircraft_count": 39, "snapshot_uav_count": 39, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 270, "controller_time_s": 270, "time_exact": true, "aircraft_count": 60, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 300, "controller_time_s": 300, "time_exact": true, "aircraft_count": 60, "snapshot_uav_count": 45, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 360, "controller_time_s": 360, "time_exact": true, "aircraft_count": 64, "snapshot_uav_count": 46, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 396, "controller_time_s": 396, "time_exact": true, "aircraft_count": 67, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 420, "controller_time_s": 420, "time_exact": true, "aircraft_count": 67, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 450, "controller_time_s": 450, "time_exact": true, "aircraft_count": 70, "snapshot_uav_count": 48, "finite_xyz": true, "finite_snapshot_xyz": true},
+        {"time_s": 480, "controller_time_s": 480, "time_exact": true, "aircraft_count": 70, "snapshot_uav_count": 47, "finite_xyz": true, "finite_snapshot_xyz": true}
+      ]
+    }
+  },
+  "comparison_curves": {
+    "path": "D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/comparison_curves.png",
+    "exists": true,
+    "bytes": 246961
+  }
+}
