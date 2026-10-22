@@ -1,6 +1,6 @@
 # Stage2 quality/rescue v5：诊断与配对实验协议
 
-正式配对状态：**NOT_LAUNCHED**；实现与预检状态：**VERIFIED_FOR_LAUNCH**；人工回放验收：**HUMAN_PENDING**。主对话已验收当前实现，正式运行待提交版本后启动。本文不代表 v5 配对实验已经启动或取得结果。
+正式配对状态：**RUNNING**；实现与预检状态：**VERIFIED_FOR_LAUNCH**；人工回放验收：**HUMAN_PENDING**。源码提交 `77c3d16c4a4cb65467dc6e0e30686906e9d2ec32` 已推送，正式配对于 `2026-10-22T04:35:22.908098+00:00` 启动。此前预检阶段的 `NOT_LAUNCHED` 状态已结束；当前尚无最终质量结果。
 
 ## 当前诊断
 
@@ -39,7 +39,23 @@
 
 对正常剩余耗电未知的候选，slack 采用 `(SOC − 0.25) / holding_rate − remaining_normal_time_lower_bound`。这里的 lower bound 及 UNKNOWN slack 仅是候选排序提示；不能替代真实能耗、储备、资源和分离认证，也不能据正 slack 宣称正常着陆可行。
 
-首次 Slack callback 约 25.6 秒，已超过旧 5 秒参考线。主对话据此在 prepare 前将本轮总 wall time 上限确定为 **6 小时**：计算最多 5.5 小时，归档预留 0.5 小时，取代此前 4 小时草案。预检时间计入本轮计算成本，拟保守扣计 900 秒预检 credit，最终须核对实际成本。旧运行约 365 次决策；若每次约 25–30 秒，再计监控开销，初始总耗时 `T0` 粗估约 3 小时。该外推不能覆盖本轮交通密度、事件数和每次规划成本的变化，须据有效运行进度更新。是否达到双方完整 480 秒、实际停止位置及归档完整性仍须据运行结果记录，预算不是完成保证。预算与应急策略同时改变，配对结果只支持这一组合设置下的比较，不能单独归因于任一改动。
+首次 Slack callback 约 25.6 秒，已超过旧 5 秒参考线。主对话据此在 prepare 前将本轮总 wall time 上限确定为 **6 小时**：计算最多 5.5 小时，归档预留 0.5 小时，取代此前 4 小时草案。预检时间计入本轮计算成本，保守计入 900 秒预检 credit；这覆盖已知预检成本，不代表恰好测得 900 秒。旧运行约 365 次决策；若每次约 25–30 秒，再计监控开销，初始总耗时 `T0` 粗估约 3 小时。该外推不能覆盖本轮交通密度、事件数和每次规划成本的变化，须据有效运行进度更新。是否达到双方完整 480 秒、实际停止位置及归档完整性仍须据运行结果记录，预算不是完成保证。预算与应急策略同时改变，配对结果只支持这一组合设置下的比较，不能单独归因于任一改动。
+
+## 正式运行启动记录
+
+唯一正式输出根目录为 `/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022`，同步本地目录为 `D:/7_codespace/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022`。服务器工作目录为 `/home/user/projects/terminal`，运行命令为：
+
+```bash
+/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022 --target 480
+```
+
+wrapper PID 为 136680，runner PID 为 136682；方法 worker PID 为 136685（CPU 0）和 136686（CPU 2），每进程数值库线程为 1。运行日志为 `campaign.log`；实际终态须核对 `exit_code.txt`、`campaign.timing.txt` 和完整输出。
+
+prepare 的原始进程 wall 为 **2.738124370574951 秒**，退出码 0；预算记录的 `elapsed_floor_s=902.4746096134186` 包含 900 秒 credit，不能读成 prepare 实测耗时 902 秒。总预算为 21600 秒，compute stop 为 19800 秒，归档预留 1800 秒。fixture、manifest 和 environment lock 的字节 SHA-256 均与旧 v4 输入相同；完整值及本轮 source/config hash 见 [验证事实](../../artifacts/rotating_slots_stage2_20261022/v5_validation_facts.json)。
+
+启动复查快照：服务器 UTC 为 `2026-10-22T04:38:03.486070+00:00`，本地 UTC 观测为 `2026-10-22T04:37:12.8979462+00:00`，两时钟观测相差约 50.6 秒；runner 累计约 160 秒。最新状态的仿真时间为 Slack **17 秒**、CP **14.208984375 秒**，两方法 checkpoint 仍为 0 秒，尚无 60 秒 summary。该次复查未见 error、invalid、退出或终态 timing；这些启动证据不代表最终成功。
+
+按 `T0=10800` 秒和累计 160 秒，当前粗估剩余 `R=10640` 秒，仍须随有效进度重估。当前对话 heartbeat `stage2-v5-480s` 已成功创建为 **ACTIVE**，间隔 177 分钟，预计约 `2026-10-22T07:35Z`（北京时间 15:35）唤醒复查；这是复查时间，非完成保证。源码已冻结，本轮后续只读结果并更新研究记录。
 
 ## 已有检查与待填记录
 
@@ -58,18 +74,18 @@
 
 CP 进行了 17 轮 refinement、40 次 phase 调用，solver 累计 wall 为 **0.082583327 秒**；其 hint 已认证，目标从 `[0, -5, 93, 30822, 618430825.2220923]` 变为最终 `[0, -7, 87, 29195, 588758213.9691724]`，记录 `strict_improvement_over_hint=true`。这是同一 callback 内相对已认证 hint 的预测目标改进；其中预测着陆项不是已发生 touchdown。该单次观察不能用于宣称某方法优于另一方法，也不能代表 480 秒轨迹表现。
 
-当前没有 v5 正式实验结果；测试通过不能代替配对回放和人工验收。
+当前正式运行进行中，尚无 v5 最终实验结果；测试通过不能代替配对回放和人工验收。
 
 | 待填项目 | 当前值 |
 | --- | --- |
-| v5 source commit | `PENDING`（正式运行尚未启动） |
+| v5 source commit | `77c3d16c4a4cb65467dc6e0e30686906e9d2ec32`，已推送 |
 | 当前分支与 3 个代码/4 个测试的本地 SHA-256 | 见 [v5_validation_facts.json](../../artifacts/rotating_slots_stage2_20261022/v5_validation_facts.json)；分支 `codex/arrival-restructure` |
-| fixture / manifest hash | `PENDING`（须与配对输入核对） |
-| 输出绝对路径 | `$HOME/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022`（拟定） |
+| fixture / manifest hash | 已核对与旧 v4 字节相同；完整 SHA-256 见验证事实 |
+| 输出绝对路径 | `/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022` |
 | 首次 callback 预检时间 | `2026-10-22T04:15:35.383385+00:00` 至 `2026-10-22T04:16:16.938426+00:00` |
 | 修复后 callback 预检时间 | `2026-10-22T12:26:11.089043+08:00` 至 `2026-10-22T12:27:09.329736+08:00` |
-| 本轮预检累计成本 | 拟扣计 900 秒 credit；实际总成本待最终核对 |
-| 正式开始、停止时间；命令；PID/job ID | `NOT_LAUNCHED` |
-| 两方法实际仿真边界、计算 wall time | `PENDING` |
+| 本轮预检累计成本 | 保守计入 900 秒 credit；prepare 原始 wall 为 2.738124370574951 秒 |
+| 正式开始时间 | `2026-10-22T04:35:22.908098+00:00`；状态 `RUNNING` |
+| 停止时间及完整仿真边界 | `PENDING` |
 | 归档时间与完整性 | `PENDING` |
 | 人工回放结论与观察时间 | `HUMAN_PENDING` |

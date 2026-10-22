@@ -1,13 +1,13 @@
 {
   "schema": "stage2_v5_validation_facts_v1",
-  "recorded_utc": "2026-10-22T04:30:01.249820+00:00",
-  "formal_pair_status": "NOT_LAUNCHED",
+  "recorded_utc": "2026-10-22T04:40:49.913384+00:00",
+  "formal_pair_status": "RUNNING",
   "implementation_status": "VERIFIED_FOR_LAUNCH",
   "human_visual_acceptance": "HUMAN_PENDING",
   "source": {
     "branch": "codex/arrival-restructure",
-    "commit": null,
-    "commit_status": "PENDING_COMMIT",
+    "commit": "77c3d16c4a4cb65467dc6e0e30686906e9d2ec32",
+    "commit_status": "COMMITTED_AND_PUSHED",
     "hash_algorithm": "SHA-256",
     "hash_scope": "Current local bytes; not an assertion that every preceding test used these exact bytes.",
     "files": [
@@ -46,7 +46,13 @@
         "sha256": "ff89a7f5721110a20094e46a7086da0cfd6081ac9e6031ee0f9669bcb9366bec",
         "bytes": 7835
       }
-    ]
+    ],
+    "pushed": true,
+    "push_evidence": "Primary agent confirmed successful push.",
+    "aggregate_source_hash": "2886bb2c146c34a968c8d5eaed408f7c6873801663ce023f7dc2dd773146011d",
+    "effective_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+    "provenance_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_480s_v5_20261022\\provenance.json",
+    "code_frozen_for_run": true
   },
   "validation_runs": [
     {
@@ -343,7 +349,7 @@
       "rh_cp_sat"
     ],
     "simulation_seconds_per_method": 480,
-    "fixture_manifest": "Same frozen input as preceding paired study; final hash check pending.",
+    "fixture_manifest": "Fixture, manifest and environment lock byte SHA-256 match old v4.",
     "service_profile": "service_half_v1",
     "service_seconds": {
       "short": 30,
@@ -354,11 +360,35 @@
     "total_budget_s": 21600,
     "compute_budget_s": 19800,
     "archive_reserve_s": 1800,
-    "planned_preflight_credit_s": 900,
-    "preflight_credit_actual_final_check": "PENDING",
+    "preflight_credit_actual_final_check": "Conservative 900-second accounting credit covers known preflight work; not an exact 900-second measurement.",
     "initial_T0_estimate_s": 10800,
     "initial_T0_basis": "Roughly 365 prior decisions * 25-30 seconds plus monitor overhead; density, event count and per-decision costs may differ.",
-    "old_run_and_cost_accounting": "Retained separately; not added to or overwritten by the new run."
+    "old_run_and_cost_accounting": "Retained separately; not added to or overwritten by the new run.",
+    "actual_output_root": "/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022",
+    "local_output_root": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_480s_v5_20261022",
+    "input_hashes": [
+      {
+        "file": "fixture.json",
+        "sha256": "a79f08a1498ae2fc7389a0cb4e04e5b2a17d0f606fab5228122dd93c4c093999",
+        "old_v4_sha256": "a79f08a1498ae2fc7389a0cb4e04e5b2a17d0f606fab5228122dd93c4c093999",
+        "bytes_identical_to_v4": true
+      },
+      {
+        "file": "manifest.json",
+        "sha256": "10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6",
+        "old_v4_sha256": "10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6",
+        "bytes_identical_to_v4": true
+      },
+      {
+        "file": "environment.lock.json",
+        "sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+        "old_v4_sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+        "bytes_identical_to_v4": true
+      }
+    ],
+    "credited_tests_wall_s": 900.0,
+    "elapsed_floor_s_after_prepare": 902.4746096134186,
+    "budget_evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_480s_v5_20261022\\budget.json"
   },
   "diagnostic_evidence": [
     {
@@ -375,5 +405,69 @@
     "The final CP smoke improves lexicographically over its certified hint; it does not establish cross-method superiority or 480-second outcomes.",
     "Strong emergency priority may leave normal pad capacity idle when urgent rescue is not yet feasible; urgency is an estimate, not a feasibility certificate.",
     "Budget and rescue policy change together; this paired design does not isolate their independent causal contributions."
-  ]
+  ],
+  "preparation": {
+    "evidence_type": "newly_run",
+    "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_480s_v5_20261022\\preparation.timing.txt",
+    "started_utc": "2026-10-22T04:34:47.803433+00:00",
+    "ended_utc": "2026-10-22T04:34:50.541557+00:00",
+    "wall_s": 2.738124370574951,
+    "exit_code": 0,
+    "accounting_note": "Process wall and budget elapsed floor are distinct; the latter includes the 900-second credit."
+  },
+  "run_startup": {
+    "evidence_type": "newly_run",
+    "status": "RUNNING",
+    "server_started_utc": "2026-10-22T04:35:22.908098+00:00",
+    "cwd": "/home/user/projects/terminal",
+    "command": "/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022 --target 480",
+    "wrapper_pid": 136680,
+    "runner_pid": 136682,
+    "workers": [
+      {
+        "pid": 136685,
+        "cpu": 0
+      },
+      {
+        "pid": 136686,
+        "cpu": 2
+      }
+    ],
+    "numeric_threads_per_worker": 1,
+    "log_path": "/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/campaign.log",
+    "terminal_exit_path": "/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/exit_code.txt",
+    "terminal_timing_path": "/home/user/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022/campaign.timing.txt",
+    "latest_observation": {
+      "evidence": "Primary agent server observation; no additional server call by documentation worker.",
+      "server_utc": "2026-10-22T04:38:03.486070+00:00",
+      "local_utc": "2026-10-22T04:37:12.8979462+00:00",
+      "observed_clock_difference_s_approx": 50.6,
+      "runner_elapsed_s_approx": 160,
+      "states_simulation_time_s": {
+        "energy_slack": 17.0,
+        "rh_cp_sat": 14.208984375
+      },
+      "checkpoint_boundary_s": {
+        "energy_slack": 0,
+        "rh_cp_sat": 0
+      },
+      "summary_0060_present": false,
+      "error_or_invalid_observed": false,
+      "terminal_exit_or_timing_present": false,
+      "initial_T0_s": 10800,
+      "estimated_remaining_s": 10640,
+      "estimate_note": "Rough initial estimate minus observed elapsed; not a measured completion guarantee."
+    },
+    "heartbeat": {
+      "id": "stage2-v5-480s",
+      "status": "ACTIVE",
+      "creation_confirmed": true,
+      "interval_minutes": 177,
+      "created_local_utc_approx": "2026-10-22T04:38:28Z",
+      "next_check_utc_approx": "2026-10-22T07:35Z",
+      "next_check_beijing_approx": "2026-10-22T15:35+08:00",
+      "purpose": "Resume current thread and verify completion/progress; continue previously authorized analysis."
+    },
+    "final_quality_results_available": false
+  }
 }
