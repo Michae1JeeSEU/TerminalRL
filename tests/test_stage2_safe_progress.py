@@ -154,21 +154,21 @@ def test_progress_pass_does_not_spend_on_far_future_active_endpoint(monkeypatch)
     assert catalog.columns["o"] and snapshot.active["o"].end_time==40.
 
 
-def test_two_prefix_slots_can_be_replaced_by_a_valid_complete_chain(monkeypatch):
+def test_two_prefix_slots_retain_useful_partial_and_valid_complete_chain(monkeypatch):
     monkeypatch.setattr(PlanningBudget,"elapsed",property(lambda self:0.))
     world=world_with_holds(("o","outer",0));snapshot=world.build_planning_snapshot()
     a=snapshot.aircraft["o"];provider=CandidateProvider()
     reference=provider.references.get(snapshot,a,budget=PlanningBudget())
     assert len(reference.plans)==3
     # Existing depth1 plus progress depth2 exhaust the first-target allowance;
-    # the original complete seed must still enter through checked replacement.
+    # checked replacement retains the useful depth2 partial with the full seed.
     provider.previous["o"]=reference.plans[:1]
     monkeypatch.setattr(provider,"_progress_steps",lambda *args,**kwargs:iter((("COLUMN",reference.plans[:2],"NONE"),)))
     monkeypatch.setattr(provider,"_paths",lambda *args,**kwargs:iter(()))
     catalog=provider.get_columns(snapshot,PlanningBudget())
     moving=[c for c in catalog.columns["o"] if c.kind=="MOVE"]
     assert len(moving)==2 and all(c.first_target==moving[0].first_target for c in moving)
-    assert any(len(c.plans)==1 for c in moving)
+    assert any(len(c.plans)==2 and c.plans[-1].pad_id is None for c in moving)
     assert any(len(c.plans)==3 and c.plans[-1].pad_id is not None for c in moving)
 
 

@@ -6,7 +6,7 @@ OR-Tools is an optional import, but is mandatory when selecting the CP method.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, field, replace
 from collections import Counter
 from itertools import combinations
@@ -15,6 +15,7 @@ import math
 import time
 import heapq
 import json
+import hashlib
 
 from .energy import integrate_energy, stable_power, practical_numeric_stats
 from .config import service_duration
@@ -30,13 +31,25 @@ OFFSETS = (0., 5., 10., 15., 20., 30.)
 SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
 PHASE_SHARES = (.3, .8, .3, .4, .2)
 QUALITY_BUDGET_PROFILE = "quality_v5"
-CANDIDATE_POLICY_ID = "shared_multistep_columns_v5_quality_budget"
+CANDIDATE_POLICY_ID = "shared_multistep_columns_v6_reuse_diversity"
 QUALITY_BUDGET_SETTINGS = MappingProxyType(dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
     hint_seconds=3.,solver_seconds=8.,solver_reserve_seconds=8.))
 LEGACY_BUDGET_PROFILE = "legacy_v4"
 UNKNOWN_SLACK_SOURCE = "holding_margin_minus_remaining_time_lower_v5"
 QUALITY_MAX_REFINEMENT_ROUNDS = 64
 QUALITY_HINT_VALIDATION_RESERVE_SECONDS = .5
+VALIDATION_CACHE_LIMIT = 8192
+MAX_BATCH_CONFLICTS = 16
+
+
+def _v6(snapshot):
+    from .rescue_rules import RESCUE_PROFILE_V6
+    return (getattr(snapshot,"emergency_monitor",None) or {}).get("rescue_rule_profile")==RESCUE_PROFILE_V6
+
+
+def _bounded_put(cache,key,value,limit=VALIDATION_CACHE_LIMIT):
+    cache[key]=value
+    if len(cache)>limit: cache.pop(next(iter(cache)))
 
 
 @dataclass
@@ -326,6 +339,18 @@ class ReferenceProvider:
         self.cache = {}
         self.hits = 0
         self.templates = {}
+        self.energy = {}
+        self.energy_stats = Counter()
+
+    def move_energy(self,node,plan,config):
+        key=(config.config_hash,node,plan.trajectory_hash)
+        if key in self.energy:
+            self.energy_stats["hits"]+=1
+            return self.energy[key]
+        self.energy_stats["misses"]+=1
+        q=_move_energy(node,plan,config)
+        if all(math.isfinite(x) for x in q): _bounded_put(self.energy,key,q)
+        return q
 
     def screen(self, snapshot, node, start, budget):
         if not budget.available(): return None
@@ -339,7 +364,7 @@ class ReferenceProvider:
 
     def generate(self,snapshot,a,node,target,start,duration,budget):
         key=(snapshot.config.config_hash,a.id,node.ring,node.slot,node.version,target,start,duration)
-        if key in self.templates:
+        if self.templates.get(key) is not None:
             self.hits+=1
             return True,self.templates[key]
         if not budget.available(a.id): return False,None
@@ -355,8 +380,11 @@ class ReferenceProvider:
         p=_generate(snapshot,a.id,node,target,start,duration)
         used=1 if node.ring=="inner" else practical_numeric_stats().get("transfer_feasibility_calls",0)-before
         budget.attempts[a.id]+=used
-        self.templates[key]=p
-        if len(self.templates)>4096: self.templates.pop(next(iter(self.templates)))
+        # A bounded template miss is not an infeasibility certificate. Retain
+        # only constructed plans, so an UNKNOWN/NOT_FOUND cannot poison reuse.
+        if p is not None:
+            self.templates[key]=p
+            if len(self.templates)>4096: self.templates.pop(next(iter(self.templates)))
         return True,p
 
     def build_steps(self,snapshot,aircraft,node,budget):
@@ -378,13 +406,13 @@ class ReferenceProvider:
                     if not ok: return NormalReference("UNKNOWN",identity=key)
                     yield None
                     if p is not None:
-                        q=_move_energy(current,p,snapshot.config)
+                        q=self.move_energy(current,p,snapshot.config)
                         if math.isfinite(q[0]): found.append((p.end_time,q[0],target,p))
                 if found: break
             if not found: return NormalReference("UNKNOWN",identity=key)
             p=min(found,key=lambda row:row[:3])[3]; plans.append(p)
             if p.pad_id is not None: break
-            q=_move_energy(current,p,snapshot.config)
+            q=self.move_energy(current,p,snapshot.config)
             current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
         r=self._reference(snapshot,node,tuple(plans),"cold_bounded_normal") if plans and plans[-1].pad_id is not None else NormalReference("UNKNOWN",identity=key)
         if r.status=="KNOWN": self.cache[key]=r
@@ -428,15 +456,28 @@ def _generate(snapshot, aircraft_id, node, target, start, duration):
 
 class EvaluationContext:
     """Private trajectory/calendar checks, with no permanent-hold prefilter."""
-    def __init__(self, snapshot, prefix_evaluator=None, budget=None):
+    def __init__(self, snapshot, prefix_evaluator=None, budget=None, validation_cache=None):
         self.snapshot = snapshot
         self.prefix_evaluator = prefix_evaluator
-        self.protection = dict(snapshot.source_clear)
-        self.pairs = {}
+        self.cache=validation_cache if validation_cache is not None else {}
+        self.cache_stats=Counter()
+        # Include the full immutable scheduling input, rather than the world
+        # version alone: resources, SOC and fixed traffic are validation inputs.
+        self.snapshot_key=hashlib.sha256(repr((snapshot,HORIZON)).encode()).hexdigest()
+        previous=self.cache.get("snapshot_key")
+        if previous is not None and previous!=self.snapshot_key: self.cache_stats["snapshot_invalidations"]+=1
+        self.cache["snapshot_key"]=self.snapshot_key
+        self.protection=self.cache.setdefault("protection",{})
+        for key,value in snapshot.source_clear.items():
+            _bounded_put(self.protection,(snapshot.config.config_hash,key),value)
+        self.pairs=self.cache.setdefault("pairs",{})
+        self.singles=self.cache.setdefault("singles",{})
+        self.energies=self.cache.setdefault("energies",{})
         self.decisions = {a.id for a in _decision_aircraft(snapshot)}
         self.budget=budget
         self.rejection_reasons=Counter()
         self.rejections_by_aircraft={}
+        self.pad_rejections={}
 
     def _time_ok(self): return self.budget is None or self.budget.evaluation_available()
 
@@ -449,10 +490,18 @@ class EvaluationContext:
             self.rejection_reasons[reason]+=1
             for c in columns:
                 self.rejections_by_aircraft.setdefault(c.aircraft_id,Counter())[reason]+=1
+                for pad in {p.pad_id for p in c.plans if getattr(p,"pad_id",None) is not None}:
+                    row=self.pad_rejections.setdefault(pad,Counter())
+                    row["unknown_count" if result.status=="UNKNOWN" else "explicit_conflict_count"]+=1
+                    row["reason:"+reason]+=1
         return result
 
     def protect_times(self, p):
-        if p.trajectory_hash in self.protection: return self.protection[p.trajectory_hash]
+        key=(self.snapshot.config.config_hash,p.trajectory_hash)
+        if key in self.protection:
+            self.cache_stats["protection_hits"]+=1
+            return self.protection[key]
+        self.cache_stats["protection_misses"]+=1
         horizon = p.end_time+2*math.pi/.035
         clear, capture = p.start_time, p.start_time
         if p.source_ring is not None:
@@ -472,8 +521,18 @@ class EvaluationContext:
                 if validate_separation(p, base, p.start_time, mid, self.snapshot.config).accepted: lo = mid
                 else: hi = mid
             capture = lo
-        self.protection[p.trajectory_hash] = (clear, capture)
+        _bounded_put(self.protection,key,(clear,capture))
         return clear, capture
+
+    def energy_portions(self,portions):
+        key=(self.snapshot.config.config_hash,tuple((p.trajectory_hash,s,e) for p,s,e in portions))
+        if key in self.energies:
+            self.cache_stats["energy_hits"]+=1
+            return self.energies[key]
+        self.cache_stats["energy_misses"]+=1
+        value=_energy_portions(portions,self.snapshot.config)
+        if all(math.isfinite(x) for x in value): _bounded_put(self.energies,key,value)
+        return value
 
     def all_plans(self, aircraft_id, plans):
         fixed = tuple(p for p in (self.snapshot.active.get(aircraft_id), self.snapshot.soft.get(aircraft_id)) if p is not None)
@@ -518,8 +577,11 @@ class EvaluationContext:
 
     def check_pair(self, a, b):
         if not self._time_ok(): return self._time_rejection()
-        key = tuple(sorted((a.signature,b.signature)))
-        if key in self.pairs: return self.pairs[key]
+        key = (self.snapshot_key,tuple(sorted(((a.signature,a.resources),(b.signature,b.resources)))))
+        if key in self.pairs:
+            self.cache_stats["pair_hits"]+=1
+            return self.pairs[key]
+        self.cache_stats["pair_misses"]+=1
         if self.resource_conflict(a,b):
             result = ValidationResult(False,"CONFLICT","RESOURCE_CONFLICT")
         else:
@@ -532,12 +594,26 @@ class EvaluationContext:
                 if math.isfinite(t.end_time): endpoints.append(t.end_time)
             end = max(endpoints)+2*math.pi/.035
             end = min(end,ta.end_time,tb.end_time)
-            result = (validate_separation(ta,tb,self.snapshot.time,end,self.snapshot.config)
-                      if end > self.snapshot.time else ValidationResult(True,"SAFE"))
-        self.pairs[key] = result
+            if end>self.snapshot.time:
+                with (self.budget.measure("trajectory_validation") if self.budget else nullcontext()):
+                    result=validate_separation(ta,tb,self.snapshot.time,end,self.snapshot.config)
+            else: result=ValidationResult(True,"SAFE")
+        if result.status!="UNKNOWN": _bounded_put(self.pairs,key,result)
         return result
 
     def check_single(self, column):
+        if not self._time_ok(): return self._observe(self._time_rejection(),(column,))
+        key=((self.snapshot_key,column.signature,column.resources)
+             if all(getattr(p,"trajectory_hash",None) for p in column.plans) else None)
+        if key is not None and key in self.singles:
+            self.cache_stats["single_hits"]+=1
+            return self._observe(self.singles[key],(column,))
+        self.cache_stats["single_misses"]+=1
+        result=self._check_single(column)
+        if key is not None and result.status!="UNKNOWN": _bounded_put(self.singles,key,result)
+        return result
+
+    def _check_single(self, column):
         # Only the first action that prefix() would actually submit is guarded;
         # a future normal-final suffix cannot suppress an inward transfer.
         if (column.kind=="MOVE" and column.plans and column.aircraft_id not in self.snapshot.soft
@@ -545,8 +621,13 @@ class EvaluationContext:
             and column.plans[0].start_time<=self.snapshot.time+5.+1.e-8):
             from .world import emergency_priority_blocker, STAGE2_POLICY_ID
             if (self.snapshot.emergency_monitor or {}).get("experiment_policy_id")==STAGE2_POLICY_ID:
+                kwargs={}
+                if _v6(self.snapshot):
+                    from .rescue_rules import RESCUE_PROFILE_V6
+                    kwargs=dict(profile=RESCUE_PROFILE_V6,proposed_plan=column.plans[0],
+                        protected_plans=tuple(self.snapshot.soft.values()))
                 blocked=emergency_priority_blocker(self.snapshot.aircraft,self.snapshot.active,
-                    self.snapshot.config,column.aircraft_id)
+                    self.snapshot.config,column.aircraft_id,**kwargs)
                 if blocked:
                     return self._observe(ValidationResult(False,"REJECTED","EMERGENCY_PRIORITY_WAIT",blocked),(column,))
         # Other decision aircraft are deliberately absent here. Joint checks
@@ -561,14 +642,41 @@ class EvaluationContext:
         return ValidationResult(True,"SAFE")
 
     def check_batch(self, columns):
+        result,conflicts=self.check_batch_conflicts(columns,max_conflicts=1)
+        return result,conflicts[0] if conflicts else ()
+
+    def check_batch_conflicts(self, columns, max_conflicts=MAX_BATCH_CONFLICTS):
+        """Collect explicit conflicts; uncertainty never becomes an exclusion.
+
+        The legacy first-conflict API remains available for hint construction.
+        Selected CP batches amortize single checks and add several cuts at once.
+        """
+        columns=tuple(columns); conflicts=[]; unknown=None; first=None
+        max_conflicts=max(1,min(MAX_BATCH_CONFLICTS,max_conflicts))
         for c in columns:
-            if not self._time_ok(): return self._observe(self._time_rejection(),columns),()
+            if not self._time_ok():
+                unknown=self._observe(self._time_rejection(),columns); break
             r = self.check_single(c)
-            if not r.accepted: return r, (c,)
+            if not r.accepted:
+                if r.status=="UNKNOWN": unknown=r
+                else:
+                    conflicts.append((c,)); first=first or r
+                    if len(conflicts)>=max_conflicts: break
+        if len(conflicts)>=max_conflicts:
+            self.cache_stats["batch_conflicts"]+=len(conflicts)
+            return first,tuple(conflicts)
         for a,b in combinations(columns,2):
+            if not self._time_ok():
+                unknown=self._observe(self._time_rejection(),columns); break
             r = self.check_pair(a,b)
-            if not r.accepted: return self._observe(r,(a,b)), (a,b)
-        return ValidationResult(True,"SAFE"), ()
+            if not r.accepted:
+                self._observe(r,(a,b))
+                if r.status=="UNKNOWN": unknown=r
+                else:
+                    conflicts.append((a,b)); first=first or r
+                    if len(conflicts)>=max_conflicts: break
+        self.cache_stats["batch_conflicts"]+=len(conflicts)
+        return first or unknown or ValidationResult(True,"SAFE"),tuple(conflicts)
 
     def prefix(self, columns):
         out = []
@@ -582,9 +690,10 @@ class EvaluationContext:
     def check_commit_prefix(self, columns):
         if not self._time_ok(): return self._observe(self._time_rejection(),columns)
         prefix = self.prefix(columns)
-        if self.prefix_evaluator is not None: return self._observe(self.prefix_evaluator(prefix),columns)
-        from .world import evaluate_planning_snapshot
-        return self._observe(evaluate_planning_snapshot(self.snapshot,prefix),columns)
+        with (self.budget.measure("prefix_validation") if self.budget else nullcontext()):
+            if self.prefix_evaluator is not None: return self._observe(self.prefix_evaluator(prefix),columns)
+            from .world import evaluate_planning_snapshot
+            return self._observe(evaluate_planning_snapshot(self.snapshot,prefix),columns)
 
 
 class CandidateProvider:
@@ -593,9 +702,24 @@ class CandidateProvider:
         self.previous = {}
         self.aligned_starts=[]
         self._aligned_by_node={}
+        self.validation_cache={}
 
     @staticmethod
-    def _emergency_prediction(snapshot,a,node):
+    def _stop_prediction(snapshot,state):
+        return state=="RESCUE_REQUIRED" if _v6(snapshot) else state in ("ELIGIBLE","UNKNOWN")
+
+    def _emergency_prediction(self,snapshot,a,node):
+        if _v6(snapshot):
+            from .rescue_rules import assess_rescue, normal_energy_lower_bound
+            rate=stable_power(node.ring,snapshot.config).current_a/(snapshot.config.energy.reference_capacity_Ah*3600.)
+            key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id)
+            reference=self.references.cache.get(key)
+            assessment=assess_rescue(node.soc,rate,
+                normal_energy_lower_bound=normal_energy_lower_bound(snapshot.config,node.ring),
+                normal_path_soc=reference.soc_required if reference and reference.status=="KNOWN" else None)
+            if assessment.rescue_required: return "RESCUE_REQUIRED"
+            if assessment.normal_status=="UNKNOWN": return "WARNING_UNKNOWN" if assessment.warning else "UNKNOWN"
+            return "WARNING" if assessment.warning else "KNOWN_CLEAR"
         from .world import emergency_threshold
         if emergency_threshold(node.soc,None,0.): return "ELIGIBLE"
         monitor=getattr(snapshot,"emergency_monitor",None) or {}
@@ -615,7 +739,7 @@ class CandidateProvider:
         current = node
         energy, peak = 0.,0.
         for p in plans:
-            q = _move_energy(current,p,snapshot.config)
+            q = self.references.move_energy(current,p,snapshot.config)
             energy += q[0]; peak += q[2]
             if p.target_ring is not None:
                 current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
@@ -633,7 +757,7 @@ class CandidateProvider:
         if not landed and cursor < snapshot.time+HORIZON:
             hold = make_stable_plan(a.id,ring,slot,cursor,snapshot.time+HORIZON,config=snapshot.config)
             portions.append((hold,cursor,snapshot.time+HORIZON))
-        qh = _energy_portions(portions,snapshot.config)
+        qh = context.energy_portions(portions)
         soc_h = a.soc-qh[1]; peak_h = a.peak_seconds+qh[2]
         f = int(soc_h <= 0 or peak_h > 120.)
         l = int(landed and allplans[-1].end_time <= snapshot.time+HORIZON)
@@ -706,10 +830,10 @@ class CandidateProvider:
                     emitted_column(chain)
                     yield ("COLUMN",chain,"UNKNOWN"); continue
                 state=self._emergency_prediction(snapshot,a,current) if chain else "NONE"
-                if chain and current.ring!="inner" and state in ("ELIGIBLE","UNKNOWN"):
+                if chain and current.ring!="inner" and self._stop_prediction(snapshot,state):
                     emitted_column(chain)
                     yield ("COLUMN",chain,state); continue
-                immediate=bool(chain and current.ring=="inner" and state in ("ELIGIBLE","UNKNOWN"))
+                immediate=bool(chain and current.ring=="inner" and self._stop_prediction(snapshot,state))
                 group=dict(feasible=Counter(),remaining=0,emitted=False,immediate=immediate,state=state,chain=chain,seen=set(),enumerating=True)
                 groups.append(group)
                 offsets=tuple(offset for offset in OFFSETS if not immediate or offset==0.)
@@ -752,7 +876,7 @@ class CandidateProvider:
                     group["feasible"][(target,start)]+=1
                     if start!=base and start not in aligned:
                         aligned.add(start); self.aligned_starts.append((a.id,current.ring,current.slot,current.time,start))
-                    q=_move_energy(current,p,snapshot.config)
+                    q=self.references.move_energy(current,p,snapshot.config)
                     if current.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and current.peak+q[2]<=120:
                         plans=(*chain,p)
                         if p.pad_id is not None:
@@ -788,9 +912,9 @@ class CandidateProvider:
             if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
                 return chain,"UNKNOWN"
             state=self._emergency_prediction(snapshot,a,current) if chain else "NONE"
-            if chain and current.ring!="inner" and state in ("ELIGIBLE","UNKNOWN"):
+            if chain and current.ring!="inner" and self._stop_prediction(snapshot,state):
                 return chain,state
-            immediate=bool(chain and current.ring=="inner" and state in ("ELIGIBLE","UNKNOWN"))
+            immediate=bool(chain and current.ring=="inner" and self._stop_prediction(snapshot,state))
             if (p.source_ring,p.source_slot,p.source_version)!=(current.ring,current.slot,current.version) or p.start_time<current.time:
                 budget.screening["seed_state_rejected"]+=1
                 return None
@@ -799,7 +923,7 @@ class CandidateProvider:
             if p.end_time>snapshot.time+900:
                 budget.screening["seed_horizon_rejected"]+=1
                 return (chain,state) if immediate else None
-            q=_move_energy(current,p,snapshot.config)
+            q=self.references.move_energy(current,p,snapshot.config)
             if not (current.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and current.peak+q[2]<=120.) or not math.isfinite(q[0]):
                 budget.screening["seed_energy_rejected"]+=1
                 return (chain,state) if immediate else None
@@ -929,7 +1053,7 @@ class CandidateProvider:
             if not ok: return
             push(cursor)
             if p is not None:
-                q=_move_energy(node,p,snapshot.config)
+                q=self.references.move_energy(node,p,snapshot.config)
                 if node.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and node.peak+q[2]<=120:
                     terminal=(PlanningNode(p.target_ring,p.target_slot,p.end_time,node.soc-q[1],node.peak+q[2],
                                           node.version+1,node.error_j+q[3],node.peak_error_s+q[4])
@@ -938,6 +1062,60 @@ class CandidateProvider:
                     continue
                 budget.screening["progress_energy_rejected"]+=1
             yield ("ATTEMPT",None,None)
+
+    def _previous_chain(self,snapshot,a,node,budget):
+        """Trim executed/fixed prefixes without moving any certified epoch."""
+        previous=self.previous.get(a.id,())
+        fixed={p.trajectory_hash for p in (snapshot.active.get(a.id),snapshot.soft.get(a.id)) if p is not None}
+        plans=tuple(p for p in previous if p.trajectory_hash not in fixed and p.end_time>node.time+1.e-8)
+        if not plans: return ()
+        current=node
+        for p in plans:
+            if (p.config_hash!=snapshot.config.config_hash or p.aircraft_id!=a.id or
+                (p.source_ring,p.source_slot,p.source_version)!=(current.ring,current.slot,current.version) or
+                p.start_time<current.time-1.e-8):
+                budget.screening["previous_state_invalidations"]+=1
+                return ()
+            q=self.references.move_energy(current,p,snapshot.config)
+            if not (all(math.isfinite(x) for x in q) and current.soc-q[1]>=(.25 if p.pad_id is not None else 0.)
+                    and current.peak+q[2]<=120.):
+                budget.screening["previous_energy_invalidations"]+=1
+                return ()
+            if p.target_ring is not None:
+                current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],
+                    current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
+        budget.screening["previous_chain_hits"]+=1
+        budget.screening["previous_prefix_trimmed"]+=len(previous)-len(plans)
+        return plans
+
+    @staticmethod
+    def _retain_column(columns,column):
+        """Bound alternatives while retaining full chains and useful progress."""
+        if column.signature in {c.signature for c in columns}: return False
+        moves=[c for c in columns if c.kind=="MOVE" and c.plans]
+        same=[c for c in moves if c.first_target==column.first_target]
+        if len(columns)<10 and len(same)<2:
+            columns.append(column); return True
+        full=lambda c:c.plans[-1].pad_id is not None
+        full_count=sum(full(c) for c in moves); partial_count=len(moves)-full_count
+        choices=same if len(same)>=2 else moves
+        choices=[c for c in choices if not (full(c) and full_count==1 and not full(column))
+            and not (not full(c) and partial_count==1 and full(column))]
+        if not choices: return False
+        # At capacity, preserve target/start coverage before adding durations.
+        counts=Counter((c.first_target,c.plans[0].start_time,full(c)) for c in moves)
+        def priority(c):
+            category_needed=(full(column) and full_count==0) or (not full(column) and partial_count==0)
+            same_category=full(c)==full(column)
+            duplicate=counts[(c.first_target,c.plans[0].start_time,full(c))]>1
+            return (category_needed,duplicate,c.first_target==column.first_target,not same_category,c.objective)
+        replaceable=max(choices,key=priority)
+        # A different duration alone does not evict a unique target/start.
+        new_coverage=(column.first_target,column.plans[0].start_time,full(column)) not in counts
+        missing_category=(full(column) and full_count==0) or (not full(column) and partial_count==0)
+        if not (new_coverage or missing_category or column.objective<replaceable.objective): return False
+        columns.remove(replaceable); columns.append(column)
+        return True
 
     def get_columns(self,snapshot,budget=None,context=None):
         budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget)
@@ -954,29 +1132,20 @@ class CandidateProvider:
             slacks[a.id]=energy_slack(snapshot,a,refs[a.id])
             columns[a.id]=[self._column(snapshot,a,(),"KEEP",context,refs[a.id])]
             columns[a.id].append(self._column(snapshot,a,(),"WAIT",context,refs[a.id]))
-            previous=self.previous.get(a.id,())
-            if previous and previous[0].start_time>=node.time and previous[0].source_version==node.version:
+            previous=self._previous_chain(snapshot,a,node,budget)
+            if previous:
                 c=self._column(snapshot,a,previous,"MOVE",context,refs[a.id])
                 if c is not None and context.check_single(c).accepted: columns[a.id].append(c)
+                else: budget.screening["previous_safety_invalidations"]+=1
         ordered=sorted(aircraft,key=lambda a:slacks[a.id])
         counts={a.id:Counter(c.first_target for c in columns[a.id] if c.kind=="MOVE") for a in ordered}
         def add_column(a,plans,emergency):
-            first=(plans[0].target_ring,plans[0].target_slot,plans[0].pad_id)
-            full=plans[-1].pad_id is not None
-            # A retained prefix cannot hide a later certified complete chain.
-            # Replace only a same-first-target partial; keep another safe
-            # prefix when the complete suffix fails its background check.
-            replaceable=next((c for c in reversed(columns[a.id]) if c.kind=="MOVE"
-                              and c.first_target==first and c.plans[-1].pad_id is None),None) if full else None
-            if (counts[a.id][first]>=2 or len(columns[a.id])>=10) and replaceable is None: return False
             ref=(ReferenceProvider._reference(snapshot,_node(snapshot,a),plans,"catalog_minimum")
                  if plans[-1].pad_id is not None else refs[a.id])
             c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency)
             if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
-                if counts[a.id][first]>=2 or len(columns[a.id])>=10:
-                    columns[a.id].remove(replaceable)
-                    counts[a.id][first]-=1
-                columns[a.id].append(c); counts[a.id][first]+=1
+                if not self._retain_column(columns[a.id],c): return False
+                counts[a.id].clear(); counts[a.id].update(x.first_target for x in columns[a.id] if x.kind=="MOVE")
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
                 return True
             return False
@@ -1096,7 +1265,9 @@ class RollingHorizonCPSATScheduler:
             if isinstance(context,EvaluationContext): context.budget=previous_budget
         hint_key=hint.objective if hint.certified else None
         incumbent=hint if hint.certified else None
-        exclusions=[]; nogoods=[]; records=[]; solve_used=0.; all_optimal=True; final_solver_key=None
+        exclusions=set(); single_exclusions=set(); nogoods=set(); model_single_results={}
+        records=[]; solve_used=0.; all_optimal=True; final_solver_key=None
+        batched_conflicts=0
         ids=tuple(candidates.columns)
         move_aircraft=sum(any(c.kind=="MOVE" and c.plans for c in columns) for columns in candidates.columns.values())
         skip_reason="EMPTY_CATALOG" if not ids else "NO_MOVE_OPTIONS" if not move_aircraft else None
@@ -1109,7 +1280,7 @@ class RollingHorizonCPSATScheduler:
                         if not budget.preparation_available(): resource_complete=False; break
                         for d in candidates.columns[j]:
                             if not budget.preparation_available(): resource_complete=False; break
-                            if context.resource_conflict(c,d): exclusions.append((c.signature,d.signature))
+                            if context.resource_conflict(c,d): exclusions.add(tuple(sorted((c.signature,d.signature))))
                         if not resource_complete: break
                     if not resource_complete: break
             for _ in range(max(0,budget.max_refinement_rounds-budget.refinement_rounds_used)):
@@ -1130,10 +1301,14 @@ class RollingHorizonCPSATScheduler:
                             v=model.NewBoolVar(f"x_{i}_{n}"); variables[c.signature]=v; lookup[c.signature]=c; vs.append(v)
                         model.AddExactlyOne(vs)
                     for a,b in exclusions: model.Add(variables[a]+variables[b]<=1)
+                    for key in single_exclusions: model.Add(variables[key]==0)
                     for keys in nogoods: model.Add(sum(variables[k] for k in keys)<=len(keys)-1)
                     for c in lookup.values():
                         if not budget.preparation_available(): model_complete=False; break
-                        r=context.check_single(c)
+                        r=model_single_results.get(c.signature)
+                        if r is None:
+                            r=context.check_single(c)
+                            if r.status!="UNKNOWN": model_single_results[c.signature]=r
                         if not r.accepted:
                             if r.status!="UNKNOWN": model.Add(variables[c.signature]==0)
                             else: model_complete=False
@@ -1168,8 +1343,14 @@ class RollingHorizonCPSATScheduler:
                     selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
                     rec["objective"]=solver.ObjectiveValue()
                     with budget.measure("selected_validation"):
-                        r,conflict=context.check_batch(selected)
+                        if hasattr(context,"check_batch_conflicts"):
+                            r,conflicts=context.check_batch_conflicts(selected)
+                        else:
+                            r,conflict=context.check_batch(selected)
+                            conflicts=(conflict,) if conflict and r.status!="UNKNOWN" else ()
                         evaluation=context.check_commit_prefix(selected) if r.accepted and budget.watchdog_ok() else None
+                    rec["batch_conflict_count"]=len(conflicts)
+                    batched_conflicts+=len(conflicts)
                     rec["validation_status"]=r.status; rec["validation_reason"]=r.reason
                     rec["prefix_status"]=getattr(evaluation,"status","NOT_CHECKED")
                     rec["prefix_reason"]=getattr(evaluation,"reason",None)
@@ -1178,8 +1359,19 @@ class RollingHorizonCPSATScheduler:
                             stop_reason="VALIDATION_UNKNOWN"; all_optimal=False; break
                         if r.accepted and (evaluation is None or evaluation.status=="UNKNOWN"):
                             stop_reason="PREFIX_VALIDATION_UNKNOWN"; all_optimal=False; break
-                        if len(conflict)==2: exclusions.append(tuple(c.signature for c in conflict))
-                        else: nogoods.append(tuple(c.signature for c in selected))
+                        if not r.accepted:
+                            for conflict in conflicts:
+                                if len(conflict)==2: exclusions.add(tuple(sorted(c.signature for c in conflict)))
+                                elif len(conflict)==1: single_exclusions.add(conflict[0].signature)
+                            if not conflicts:
+                                stop_reason="VALIDATION_NO_EXPLICIT_CONFLICT"; all_optimal=False; break
+                        else:
+                            # Prefix rejection is a joint transaction conflict;
+                            # UNKNOWN was handled above and must never be cut.
+                            nogoods.add(tuple(sorted(c.signature for c in selected)))
+                        rec["cumulative_pair_cuts"]=len(exclusions)
+                        rec["cumulative_single_cuts"]=len(single_exclusions)
+                        rec["cumulative_prefix_nogoods"]=len(nogoods)
                         invalid=True; all_optimal=False; break
                     key=_sum_key(selected)
                     proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
@@ -1214,6 +1406,9 @@ class RollingHorizonCPSATScheduler:
                                   "hint_objective":hint_key,"hint_certified":hint.certified,"final_objective":incumbent.objective,
                                   "strict_improvement_over_hint":None if hint_key is None else incumbent.objective<hint_key,
                                   "move_aircraft_count":move_aircraft,
+                                  "batched_conflicts":batched_conflicts,"pair_cuts":len(exclusions),
+                                  "single_cuts":len(single_exclusions),"prefix_nogoods":len(nogoods),
+                                  "model_single_cache_entries":len(model_single_results),
                                   "fallback":incumbent.status=="NO_VERIFIED_INCUMBENT"}))
 
 
@@ -1264,7 +1459,7 @@ class NormalSchedulerCallback:
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
-            context=EvaluationContext(snapshot,budget=budget)
+            context=EvaluationContext(snapshot,budget=budget,validation_cache=self.provider.validation_cache)
             with budget.measure("candidate_generation_and_single_vehicle"):
                 catalog=self.provider.get_columns(snapshot,budget,context)
             with budget.measure("selection"):
@@ -1280,6 +1475,25 @@ class NormalSchedulerCallback:
         if result.certified and budget.watchdog_ok():
             with budget.measure("commit"):
                 commit=port.commit_validated_prefix(result.evaluation,snapshot_version=snapshot.version)
+        evidence_report=None
+        report=getattr(port,"report_normal_evidence",None)
+        if _v6(snapshot) and callable(report):
+            rows=[]
+            for a in _decision_aircraft(snapshot):
+                node=_node(snapshot,a)
+                key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id)
+                reference=self.provider.references.cache.get(key)
+                if reference is not None and reference.status=="KNOWN":
+                    rows.append(dict(aircraft_id=a.id,source_ring=node.ring,source_slot=node.slot,
+                        source_version=node.version,source_time=node.time,normal_path_soc=reference.soc_required,
+                        normal_path_wait_seconds=0.,reference_status=reference.status,reference_source=reference.source))
+            if rows:
+                # Warning metadata changes the visible snapshot identity. Send
+                # it after the safety transaction, using a fresh version; the
+                # executor rejects rows whose source changed at commitment.
+                with budget.measure("normal_evidence_reporting"):
+                    current=build_planning_snapshot(port)
+                    evidence_report=report(tuple(rows),snapshot_version=current.version)
         self.last_result=result
         committed_prefix=result.prefix if commit is not None and commit.accepted else ()
         self.provider.previous={c.aircraft_id:tuple(p for p in c.plans if p not in committed_prefix) for c in result.selected if c.kind=="MOVE"}
@@ -1290,18 +1504,44 @@ class NormalSchedulerCallback:
             reference=columns[0].reference if columns else None
             source_status=catalog.slack_reference_statuses.get(aid)
             emergency=getattr(a,"emergency",None)
+            moving=[c for c in columns if c.kind=="MOVE" and c.plans]
+            full=sum(c.plans[-1].pad_id is not None for c in moving)
+            insufficient=[]
+            if not moving: insufficient.append("NO_SAFE_MOVE_OBSERVED")
+            if not full: insufficient.append("NO_COMPLETE_NORMAL_CHAIN_OBSERVED")
+            if source_status!="KNOWN": insufficient.append("NORMAL_REFERENCE_UNKNOWN")
+            if aid in catalog.incomplete: insufficient.append("BOUNDED_CATALOG_INCOMPLETE")
             aircraft_choices.append(dict(aircraft_id=aid,ring=a.ring,soc=a.soc,candidate_count=len(columns),
-                move_candidates=sum(c.kind=="MOVE" and bool(c.plans) for c in columns),
+                move_candidates=len(moving),full_normal_chain_count=full,partial_progress_count=len(moving)-full,
+                only_keep_wait=not moving,candidate_insufficiency_reasons=insufficient,
+                candidate_pad_ids=sorted({p.pad_id for c in moving for p in c.plans if p.pad_id is not None}),
+                selected_pad_ids=sorted({p.pad_id for p in selected.plans if p.pad_id is not None}) if selected else [],
                 immediate_move_candidates=sum(c.kind=="MOVE" and bool(c.plans) and c.plans[0].start_time<=snapshot.time+5.+1.e-8
                     and aid not in snapshot.soft for c in columns),
                 selected_kind=None if selected is None else selected.kind,
                 first_target=None if selected is None else selected.first_target,
                 emergency_declared=bool(getattr(emergency,"declared",False)),
                 emergency_eligible=bool(getattr(emergency,"eligible",False)),slack=catalog.slacks.get(aid),
+                emergency_warning=bool(getattr(emergency,"warning",False)),
+                normal_status=getattr(emergency,"normal_status","UNKNOWN"),normal_margin=getattr(emergency,"normal_margin",None),
                 source_reference_status=source_status,keep_tail_reference_status=getattr(reference,"status",None),
                 unknown_slack_source=UNKNOWN_SLACK_SOURCE if source_status is not None and source_status!="KNOWN" else None,
                 rejection_reasons=dict(context.rejections_by_aircraft.get(aid,{}))))
         solver_entered=bool(solver_history)
+        pad_opportunities={}
+        for pad in range(snapshot.config.pads.count):
+            available=[c for columns in catalog.columns.values() for c in columns
+                if any(p.pad_id==pad for p in c.plans)]
+            checked=[context.singles.get((context.snapshot_key,c.signature,c.resources)) for c in available]
+            rejected=context.pad_rejections.get(pad,{})
+            pad_opportunities[str(pad)]=dict(candidate_count=len(available),
+                full_chain_count=sum(c.plans[-1].pad_id is not None for c in available),
+                certified_single_count=sum(r is not None and r.accepted for r in checked),
+                selected_count=sum(any(p.pad_id==pad for p in c.plans) for c in result.selected),
+                submitted_count=sum(p.pad_id==pad for p in committed_prefix),
+                explicit_conflict_count=rejected.get("explicit_conflict_count",0),unknown_count=rejected.get("unknown_count",0),
+                rejection_reasons={key[7:]:value for key,value in rejected.items() if key.startswith("reason:")},
+                validation_status="EXAMINED" if any(r is not None for r in checked) or rejected else "UNKNOWN_NOT_EXAMINED")
         record={"time":snapshot.time,"method":self.scheduler.method,"status":result.status,
                 "candidate_policy_id":CANDIDATE_POLICY_ID,"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
                 "deadline_reference_seconds":5.,"hint_wall_s":budget.hint_wall_used,"solver_wall_s":budget.solver_wall_used,
@@ -1322,6 +1562,10 @@ class NormalSchedulerCallback:
                 "objective":result.objective,"columns":sum(map(len,catalog.columns.values())),
                 "aircraft":len(catalog.columns),"attempts":dict(catalog.attempts),"catalog_incomplete":catalog.incomplete,
                 "geometry_screening":dict(budget.screening),
+                "validation_cache":dict(context.cache_stats),"move_energy_cache":dict(self.provider.references.energy_stats),
+                "batched_conflicts":result.details.get("batched_conflicts",0),
+                "pad_opportunities":pad_opportunities,
+                "normal_evidence_report_status":getattr(evidence_report,"status","NOT_REPORTED"),
                 "truncations":sorted(budget.truncations),"timings":dict(budget.timings),
                 "wall_s":budget.elapsed,"cpu_s":time.process_time()-budget.cpu_start,
                 "deadline_miss":budget.elapsed>5.,"submitted":len(result.prefix) if commit and commit.accepted else 0,

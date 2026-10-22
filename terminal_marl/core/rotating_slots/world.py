@@ -21,6 +21,9 @@ from .trajectory import (generate_final, generate_inbound, generate_transfer,
                          make_ground_plan, make_stable_plan, slot_state, TrajectoryPlan)
 from .energy import evaluate_power, integrate_energy, stable_power
 from .safety import validate_plan, validate_separation, _ExecutionQueryCache, _execution_distance_screen
+from .rescue_rules import (LEGACY_PROFILE, RESCUE_PROFILE_V6, assess_rescue,
+    normal_energy_lower_bound, pad_opportunities_overlap, MONITOR_SECONDS_V6, RESCUE_LOOKAHEAD_SECONDS_V6,
+    RESCUE_DURATION_ALTERNATIVES_V6)
 
 
 AIRBORNE = {"INBOUND", "HOLD_OUTER", "HOLD_MIDDLE", "HOLD_INNER", "TRANSFER_O_M",
@@ -56,7 +59,7 @@ def emergency_priority(aircraft, config):
                 declaration_time=declared)
 
 
-def emergency_waiting_queue(aircraft, active, config):
+def emergency_waiting_queue(aircraft, active, config, *, profile=LEGACY_PROFILE):
     """Pure queue, including revealed thresholds before monitor flag refresh."""
     candidates = []
     for a in aircraft.values():
@@ -64,14 +67,24 @@ def emergency_waiting_queue(aircraft, active, config):
             continue
         priority = emergency_priority(a, config)
         if (a.emergency.eligible or a.emergency.declared
-                or emergency_threshold(a.soc, priority["q_e"],
-                                       10.*priority["holding_soc_per_second"])):
+                or (profile == RESCUE_PROFILE_V6 and a.emergency.pending)
+                or (profile != RESCUE_PROFILE_V6 and emergency_threshold(a.soc, priority["q_e"],
+                                       10.*priority["holding_soc_per_second"]))):
             candidates.append((priority["key"], a))
     return [a for _, a in sorted(candidates, key=lambda item: item[0])]
 
 
-def emergency_priority_blocker(aircraft, active, config, candidate_id):
+def emergency_priority_blocker(aircraft, active, config, candidate_id, *,
+                               profile=LEGACY_PROFILE, proposed_plan=None, protected_plans=()):
     """Pure normal-final priority guard for world or immutable planning inputs."""
+    if profile == RESCUE_PROFILE_V6:
+        if proposed_plan is None or proposed_plan.kind != "FINAL_NORMAL":
+            return None
+        for p in sorted(protected_plans, key=lambda p: (p.start_time, p.aircraft_id)):
+            if (p.aircraft_id != candidate_id and p.kind == "FINAL_EMERGENCY"
+                    and pad_opportunities_overlap(proposed_plan, p, aircraft, config)):
+                return dict(blocked_by=p.aircraft_id, protected_opportunity=p.trajectory_hash)
+        return None
     waiting = emergency_waiting_queue(aircraft, active, config)
     if not waiting:
         return None
@@ -126,6 +139,7 @@ def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
     context = object.__new__(RotatingSlotWorld)
     context.config, context.time = snapshot.config, snapshot.time
     context.experiment_policy_id = (snapshot.emergency_monitor or {}).get("experiment_policy_id")
+    context.rescue_rule_profile = (snapshot.emergency_monitor or {}).get("rescue_rule_profile", LEGACY_PROFILE)
     context.aircraft = dict(snapshot.aircraft)
     context.active, context.soft = dict(snapshot.active), dict(snapshot.soft)
     context.dependencies, context._source_clear = dict(snapshot.dependencies), dict(snapshot.source_clear)
@@ -178,6 +192,16 @@ class EmergencyStatus:
     q_e: float | None = None
     reference_missing: bool = False
     deadline_missed: bool = False
+    warning: bool = False
+    normal_status: str = "UNKNOWN"
+    normal_margin: float | None = None
+    rescue_wait_seconds: float | None = None
+    rescue_reason: str | None = None
+    rescue_slack_seconds: float | None = None
+    normal_path_soc: float | None = None
+    normal_path_wait_seconds: float = 0.
+    normal_estimate_epoch: float | None = None
+    normal_estimate_source: tuple | None = None
 
 
 @dataclass(frozen=True)
@@ -311,6 +335,9 @@ class SchedulerPort:
     def commit_validated_prefix(self, result, snapshot_version=None):
         return self.__world.commit_validated_prefix(result, snapshot_version)
 
+    def report_normal_evidence(self, rows, snapshot_version):
+        return self.__world.report_normal_evidence(rows, snapshot_version)
+
     def refine_planning_boundary(self):
         return self.__world.refine_planning_boundary()
 
@@ -348,6 +375,7 @@ class RotatingSlotWorld:
             raise ValueError("unsupported experiment_policy_id")
         if experiment_policy_id is not None:
             self.experiment_policy_id = experiment_policy_id
+            self.rescue_rule_profile = LEGACY_PROFILE
             self.has_energy_losses = False
             self.terminated_invalid = False
             self.failure_archive = {}
@@ -721,11 +749,17 @@ class RotatingSlotWorld:
     def _stage2_enabled(self):
         return getattr(self, "experiment_policy_id", None) == STAGE2_POLICY_ID
 
+    def _rescue_v6(self):
+        return getattr(self, "rescue_rule_profile", LEGACY_PROFILE) == RESCUE_PROFILE_V6
+
     def build_planning_snapshot(self):
         ledger = freeze(self._energy_state())
         runtime=getattr(self,"_practical_runtime",{})
         emergency_monitor=freeze(dict(enabled=bool(runtime.get("enabled",False)),
             experiment_policy_id=getattr(self,"experiment_policy_id",None),
+            rescue_rule_profile=getattr(self,"rescue_rule_profile",LEGACY_PROFILE),
+            protected_opportunities=tuple(sorted(p.trajectory_hash for p in
+                (*self.active.values(), *self.soft.values()) if p.kind == "FINAL_EMERGENCY")),
             soc_threshold=runtime.get("soc_threshold",.35),
             imminent=dict(runtime.get("imminent",{})),monitor=dict(runtime.get("monitor",{}))))
         needed = {a.trajectory_hash for a in self.aircraft.values() if a.status in AIRBORNE}
@@ -746,9 +780,68 @@ class RotatingSlotWorld:
     def evaluate_submission(self, plans, *, cancel=(), snapshot=None):
         return evaluate_planning_snapshot(snapshot or self.build_planning_snapshot(), plans, cancel=cancel)
 
+    def _normal_estimate(self, a, current=None):
+        """Five-second route estimate for warnings only; never a safety proof."""
+        e = a.emergency
+        if (e.normal_estimate_epoch is None or self.time-e.normal_estimate_epoch > 5.+1e-8
+                or e.normal_estimate_source is None or e.normal_path_soc is None):
+            return {}
+        ring, slot, version, source_time = e.normal_estimate_source
+        if current is None:
+            match = a.status in HOLD.values() and (a.ring,a.slot,a.version) == (ring,slot,version)
+        else:
+            match = (current.target_ring,current.target_slot,a.version+1,current.end_time) == (ring,slot,version,source_time)
+        if not match:
+            return {}
+        return dict(normal_path_soc=e.normal_path_soc, normal_path_wait_seconds=e.normal_path_wait_seconds)
+
+    def report_normal_evidence(self, rows, snapshot_version):
+        """Accept source-matched planner estimates after its commit transaction.
+
+        Warning metadata participates in snapshot identity. Callers therefore
+        report against a fresh snapshot, after committing their validated prefix.
+        This interface cannot grant rescue eligibility or normal feasibility.
+        """
+        if not self._rescue_v6():
+            return self._result(True, accepted_ids=(), ignored_ids=())
+        if snapshot_version != self.build_planning_snapshot().version:
+            return self._result(False,"STALE_PLANNING_SNAPSHOT")
+        accepted, ignored = [], []
+        for row in rows:
+            key = row.get("aircraft_id")
+            a = self.aircraft.get(key)
+            if a is None or a.status not in AIRBORNE or a.status.startswith("FINAL") or a.emergency.declared:
+                ignored.append(key)
+                continue
+            current = self.active.get(key)
+            source = ((a.ring,a.slot,a.version,self.time) if current is None else
+                      (current.target_ring,current.target_slot,a.version+1,current.end_time))
+            supplied = tuple(row.get(name) for name in ("source_ring","source_slot","source_version","source_time"))
+            q, wait = row.get("normal_path_soc"), row.get("normal_path_wait_seconds",0.)
+            if (source != supplied or not isinstance(q,(int,float)) or not math.isfinite(q) or q < 0
+                    or not isinstance(wait,(int,float)) or not math.isfinite(wait) or wait < 0):
+                ignored.append(key)
+                continue
+            soc = a.soc if current is None else a.soc-self._energy(current,self.time,current.end_time).soc_used
+            rate = stable_power(source[0],self.config).current_a/(self.config.energy.reference_capacity_Ah*3600.)
+            assessed = assess_rescue(soc,rate,normal_energy_lower_bound=normal_energy_lower_bound(self.config,source[0]),
+                                    normal_path_soc=q,normal_path_wait_seconds=wait)
+            e = replace(a.emergency, warning=assessed.warning, normal_status=assessed.normal_status,
+                normal_margin=assessed.normal_margin, normal_path_soc=q,normal_path_wait_seconds=wait,
+                normal_estimate_epoch=self.time,normal_estimate_source=source)
+            self.aircraft[key] = replace(a,emergency=e)
+            self._event("normal_path_estimate",key,estimate_status="PATH_ESTIMATE",normal_margin=assessed.normal_margin,
+                        estimate_epoch=self.time,source=source,normal_path_soc=q,normal_path_wait_seconds=wait)
+            if e.warning and not a.emergency.warning:
+                self._event("rescue_warning",key,normal_status=assessed.normal_status,
+                            normal_margin=assessed.normal_margin,soc=soc,estimate_status="PATH_ESTIMATE")
+            accepted.append(key)
+        return self._result(True,accepted_ids=tuple(accepted),ignored_ids=tuple(ignored))
+
     def _emergency_waiting_queue(self):
         """Read-only revealed waiting queue, shared by dispatch and evaluation."""
-        return emergency_waiting_queue(self.aircraft, self.active, self.config)
+        return emergency_waiting_queue(self.aircraft, self.active, self.config,
+                                       profile=getattr(self,"rescue_rule_profile",LEGACY_PROFILE))
 
     def _emergency_priority_wait(self, plan_or_aircraft_id):
         """Return a normal-final blocker without mutating scheduling state."""
@@ -760,11 +853,18 @@ class RotatingSlotWorld:
                else plan_or_aircraft_id.aircraft_id)
         # Only an urgent, undeclared inner-ring aircraft may use the existing
         # reserve-certified normal exception, and only ahead of other waiters.
-        return emergency_priority_blocker(self.aircraft, self.active, self.config, key)
+        return emergency_priority_blocker(self.aircraft, self.active, self.config, key,
+            profile=getattr(self,"rescue_rule_profile",LEGACY_PROFILE),
+            proposed_plan=None if isinstance(plan_or_aircraft_id,str) else plan_or_aircraft_id,
+            protected_plans=(*self.active.values(), *self.soft.values()))
 
     def _yield_normal_finals(self):
         """Attempt ordinary soft cancellations through the existing transaction."""
         if not self._stage2_enabled():
+            return
+        if self._rescue_v6():
+            # Rescue replacement/preemption is one complete validated batch in
+            # _prepare_submission; urgent presence alone cannot cancel a plan.
             return
         for key, plan in sorted(tuple(self.soft.items())):
             blocked = self._emergency_priority_wait(plan)
@@ -968,7 +1068,12 @@ class RotatingSlotWorld:
             hold = make_stable_plan("reference_hold", plan.source_ring, plan.source_slot,
                                    start_time=t, end_time=t+10, config=self.config)
             qhold = self._energy(hold, t, t+10).soc_used
-            if emergency_threshold(soc, q, qhold):
+            alert = (assess_rescue(soc, qhold/10., rescue_soc=q,
+                                  normal_energy_lower_bound=normal_energy_lower_bound(self.config, plan.source_ring),
+                                  declared=a.emergency.declared,
+                                  pending=a.emergency.pending).rescue_required
+                     if self._rescue_v6() else emergency_threshold(soc, q, qhold))
+            if alert:
                 if self._runtime_enabled():
                     self._practical_runtime["imminent"][a.id] = dict(time=t,
                         ring=plan.source_ring, slot=plan.source_slot, version=plan.source_version)
@@ -1089,7 +1194,8 @@ class RotatingSlotWorld:
             if a.emergency.declared and not emergency:
                 return self._reject("EMERGENCY_DECLARED", a.id)
             normal_exception = (p.kind == "FINAL_NORMAL" and source_ring == "inner" and
-                                current is None and p.start_time == self.time and not a.emergency.declared)
+                                current is None and p.start_time == self.time and not a.emergency.declared
+                                and not self._rescue_v6())
             priority_wait = self._emergency_priority_wait(p)
             if priority_wait is not None:
                 return self._reject("EMERGENCY_PRIORITY_WAIT", a.id, **priority_wait)
@@ -1100,7 +1206,7 @@ class RotatingSlotWorld:
             if p.kind.startswith("TRANSFER") and (source_ring, p.target_ring) not in (("outer", "middle"), ("middle", "inner")):
                 return self._reject("ILLEGAL_NORMAL_TOPOLOGY", a.id)
             if emergency:
-                if p.start_time != self.time:
+                if p.start_time != self.time and not self._rescue_v6():
                     return self._reject("EMERGENCY_MUST_START_NOW", a.id)
                 # Ordinary soft final may be preempted transactionally.
                 for other_id, old in tuple(soft.items()):
@@ -1186,6 +1292,14 @@ class RotatingSlotWorld:
             self.dependencies = {h: tuple(redirects.get(d,d) for d in ds) for h,ds in self.dependencies.items()}
         for p in plans:
             self.trajectories[p.trajectory_hash] = p.to_dict()
+            if self._rescue_v6() and p.kind == "FINAL_EMERGENCY":
+                a = self.aircraft[p.aircraft_id]
+                if not a.emergency.declared:
+                    self.aircraft[a.id] = replace(a, emergency=replace(a.emergency,
+                        declared=True, declaration_time=self.time, declaration_ring=a.ring,
+                        state="EMERGENCY_WAITING"))
+                    self._event("emergency_declared", a.id, ring=a.ring,
+                                reason=a.emergency.rescue_reason, trajectory_hash=p.trajectory_hash)
             self._event("plan_committed" if p.start_time == self.time else "soft_plan_reserved", p.aircraft_id,
                         trajectory_hash=p.trajectory_hash, start_time=p.start_time, end_time=p.end_time)
         # A submit within emergency handling must not start another aircraft's
@@ -1223,7 +1337,7 @@ class RotatingSlotWorld:
                 # the original certified departure, including geometric
                 # commitments not represented by an explicit slot dependency.
             normal_exception = (p.kind == "FINAL_NORMAL" and a.ring == "inner" and
-                                not a.emergency.declared and not a.emergency.pending)
+                                not a.emergency.declared and not a.emergency.pending and not self._rescue_v6())
             if p.kind != "FINAL_EMERGENCY" and (a.emergency.declared or
                     ((a.emergency.eligible or a.emergency.pending) and not normal_exception)):
                 self._reject("EMERGENCY_DISPOSITION_REQUIRED", a.id, trajectory_hash=p.trajectory_hash)
@@ -1231,8 +1345,13 @@ class RotatingSlotWorld:
                             trajectory_hash=p.trajectory_hash)
                 result = self.cancel(a.id)
                 if not result.accepted:
-                    self._emergency_conflict(a.id, result)
-                continue
+                    if self._rescue_v6():
+                        self._event("rescue_commitment_protected", a.id, reason=result.reason,
+                                    trajectory_hash=p.trajectory_hash)
+                    else:
+                        self._emergency_conflict(a.id, result)
+                else:
+                    continue
             # Energy was forecast at submission; revalidate the exact source/version.
             if a.id in self.active or a.version != p.source_version:
                 self._event("commit_invalidated", a.id, reason="STALE_STATE")
@@ -1273,6 +1392,9 @@ class RotatingSlotWorld:
                     if p.target_ring is not None else set())
             self.dependencies[p.trajectory_hash] = tuple(sorted(deps))
             e = a.emergency
+            if self._rescue_v6():
+                e = replace(e,normal_path_soc=None,normal_path_wait_seconds=0.,
+                            normal_estimate_epoch=None,normal_estimate_source=None)
             if p.kind == "FINAL_NORMAL" and a.ring == "inner" and not e.declared:
                 e=replace(e,eligible=False,pending=False,state="NONE")
             if p.kind == "FINAL_EMERGENCY" and not e.charged:
@@ -1292,7 +1414,7 @@ class RotatingSlotWorld:
             self.aircraft[a.id] = replace(a, status=status, emergency=e, trajectory_hash=p.trajectory_hash,
                                          normal_final_touchdown_soc=touchdown_soc)
             self._event("maneuver_started", a.id, trajectory_hash=p.trajectory_hash,
-                        dependencies=sorted(deps), **start_details)
+                        dependencies=sorted(deps), maneuver_kind=p.kind, **start_details)
 
     def _fail(self, aircraft_id, reason):
         if self._stage2_enabled():
@@ -1672,7 +1794,120 @@ class RotatingSlotWorld:
         counts["table_hits"] += 1
         return q
 
+    def _search_rescue_opportunity(self, a):
+        """Bounded exact candidate search; exhaustion means UNKNOWN, never impossible.
+
+        Pads receive one duration alternative each before the next alternative.
+        Every returned opportunity passed the entire replacement transaction;
+        current execution still revalidates it through submit().
+        """
+        if a.id in self.active or a.status not in HOLD.values():
+            return None
+        snapshot = self.build_planning_snapshot()
+        cache = getattr(self, "_rescue_search_cache", None)
+        if cache is None:
+            self._rescue_search_cache = cache = OrderedDict()
+        cache_key = (snapshot.version, a.id)
+        if cache_key in cache:
+            return cache[cache_key]
+        visible = dict(snapshot.aircraft)
+        visible[a.id] = replace(a, emergency=replace(a.emergency, eligible=True))
+        probe = replace(snapshot, aircraft=MappingProxyType(visible))
+        grid = tuple(range(20, 301, 5))
+        next_duration = {pad: 20. for pad in range(6)}
+        for alternative in range(RESCUE_DURATION_ALTERNATIVES_V6):
+            for pad in range(6):
+                first = generate_final(a.id, a.ring, a.slot, pad, self.time,
+                    emergency=True, source_version=a.version, config=self.config,
+                    durations=[d for d in grid if d >= next_duration[pad]])
+                if first.plan is None or first.status != "FEASIBLE":
+                    next_duration[pad] = 305.
+                    continue
+                duration = first.plan.segments[0].duration
+                next_duration[pad] = duration+5.
+                releases = sorted({start for r in self.pads.reservations
+                    if r.resource == pad and math.isfinite(r.end)
+                    for start in (r.end-duration,r.end)
+                    if self.time < start <= self.time+RESCUE_LOOKAHEAD_SECONDS_V6})[:2]
+                for start in (self.time, *releases):
+                    candidate = first if start == self.time else generate_final(a.id,
+                        a.ring, a.slot, pad, start, emergency=True, source_version=a.version,
+                        config=self.config, durations=[d for d in grid if d >= duration])
+                    if candidate.plan is None or candidate.status != "FEASIBLE":
+                        continue
+                    p = candidate.plan
+                    checked = evaluate_planning_snapshot(probe, (p,))
+                    self._event("rescue_opportunity_attempt", a.id, pad_id=pad,
+                        start_time=start, trajectory_hash=p.trajectory_hash,
+                        end_time=p.end_time, pad_window_start=p.end_time-13.5,
+                        pad_window_end=p.end_time+service_duration(self.config,a.service_class),
+                        alternative=alternative, status=checked.status,
+                        reason=checked.reason, validation=thaw(checked.details))
+                    if not checked.accepted:
+                        continue
+                    # Match the energy resolution certified by the projection.
+                    fine = checked._prepared[-1].get(p.trajectory_hash, False)
+                    q = self._energy(p, start, p.end_time, fine=fine)
+                    opportunity = (p, q.soc_used, start-self.time)
+                    self._store_cache(cache, cache_key, opportunity, 32)
+                    return opportunity
+        self._event("rescue_opportunity_search_exhausted", a.id, status="UNKNOWN",
+                    reason="bounded_search_exhausted_no_infeasibility_proof")
+        self._store_cache(cache, cache_key, None, 32)
+        return None
+
+    def _update_emergency_v6(self):
+        triggered = False
+        monitor = getattr(self, "_rescue_monitor_v6", None)
+        if monitor is None:
+            self._rescue_monitor_v6 = monitor = {}
+        for key, a in sorted(tuple(self.aircraft.items())):
+            if a.status not in AIRBORNE or a.emergency.declared or a.status.startswith("FINAL") or a.status == "VERTICAL_DESCENT":
+                continue
+            current = self.active.get(key)
+            signature = (a.version, a.status, None if current is None else current.trajectory_hash)
+            previous = monitor.get(key)
+            if previous is not None and previous[1] == signature and self.time-previous[0] < MONITOR_SECONDS_V6-1e-8:
+                continue
+            monitor[key] = (self.time, signature)
+            if current is not None:
+                ring, slot, t = current.target_ring, current.target_slot, current.end_time
+                soc = a.soc-self._energy(current, self.time, t).soc_used
+            else:
+                ring, slot, t, soc = a.ring, a.slot, self.time, a.soc
+            rate = stable_power(ring, self.config).current_a / (self.config.energy.reference_capacity_Ah*3600.)
+            # Physics monitoring classifies warnings only. Exact opportunity
+            # search runs at dispatch boundaries in handle_emergencies().
+            q, wait = a.emergency.q_e, a.emergency.rescue_wait_seconds or 0.
+            assessed = assess_rescue(soc, rate, rescue_soc=q, rescue_wait_seconds=wait,
+                normal_energy_lower_bound=normal_energy_lower_bound(self.config, ring),
+                rescue_feasible=False, declared=a.emergency.declared,
+                pending=a.emergency.pending, **self._normal_estimate(a,current))
+            old = a.emergency
+            required = assessed.rescue_required or old.eligible
+            e = replace(old, warning=assessed.warning, normal_status=assessed.normal_status,
+                normal_margin=assessed.normal_margin, q_e=q,
+                rescue_wait_seconds=a.emergency.rescue_wait_seconds,
+                rescue_slack_seconds=assessed.rescue_slack_seconds,
+                rescue_reason=assessed.rescue_reason or old.rescue_reason,
+                eligible=required and current is None, pending=required and current is not None)
+            self.aircraft[key] = replace(a, emergency=e)
+            if assessed.warning and not old.warning:
+                self._event("rescue_warning", key, normal_status=assessed.normal_status,
+                            normal_margin=assessed.normal_margin, soc=soc)
+            if required and not (old.eligible or old.pending):
+                self._event("emergency_triggered", key, pending=current is not None,
+                    q_e=q, reason=assessed.rescue_reason,
+                    rescue_wait_seconds=wait, rescue_slack_seconds=assessed.rescue_slack_seconds)
+                triggered = True
+        return triggered
+
     def _update_emergency(self):
+        if self._rescue_v6():
+            start_cpu = walltime.perf_counter()
+            result = self._update_emergency_v6()
+            self.cpu["emergency"] += walltime.perf_counter()-start_cpu
+            return result
         triggered = False
         start_cpu = walltime.perf_counter()
         practical = self._runtime_enabled()
@@ -1749,6 +1984,88 @@ class RotatingSlotWorld:
 
     def handle_emergencies(self):
         """Test-only deterministic rescue interface; all attempts pass submit()."""
+        if self._rescue_v6():
+            candidates = sorted((a for a in self.aircraft.values()
+                if a.status in HOLD.values() and a.id not in self.active and
+                (a.soc <= .35 or a.emergency.warning or a.emergency.eligible or a.emergency.pending or a.emergency.declared)),
+                key=lambda a: emergency_priority(a, self.config)["key"])
+            required_opportunities = []
+            for a in candidates:
+                if a.id in self.soft and self.soft[a.id].kind == "FINAL_EMERGENCY":
+                    continue
+                opportunity = self._search_rescue_opportunity(a)
+                rate = emergency_priority(a, self.config)["holding_soc_per_second"]
+                q, wait = (opportunity[1], opportunity[2]) if opportunity else (None, 0.)
+                assessed = assess_rescue(a.soc, rate,
+                    normal_energy_lower_bound=normal_energy_lower_bound(self.config, a.ring),
+                    rescue_soc=q, rescue_wait_seconds=wait, rescue_feasible=opportunity is not None,
+                    declared=a.emergency.declared, pending=a.emergency.pending, **self._normal_estimate(a))
+                old = a.emergency
+                required = assessed.rescue_required or old.eligible
+                e = replace(old, warning=assessed.warning, normal_status=assessed.normal_status,
+                    normal_margin=assessed.normal_margin, q_e=q, reference_missing=opportunity is None,
+                    rescue_wait_seconds=wait if opportunity else None,
+                    rescue_slack_seconds=assessed.rescue_slack_seconds,
+                    rescue_reason=assessed.rescue_reason or old.rescue_reason, eligible=required)
+                self.aircraft[a.id] = replace(a, emergency=e)
+                if assessed.warning and not old.warning:
+                    self._event("rescue_warning", a.id, normal_status=assessed.normal_status,
+                                normal_margin=assessed.normal_margin, soc=a.soc)
+                if required and not (old.eligible or old.pending or old.declared):
+                    self._event("emergency_triggered", a.id, pending=False,
+                        q_e=q, reason=assessed.rescue_reason, rescue_wait_seconds=wait,
+                        rescue_slack_seconds=assessed.rescue_slack_seconds,
+                        deadline_basis="certified_opportunity_estimate")
+                if not required:
+                    continue
+                if not old.declared:
+                    # Required disposition is already a rescue takeover, even
+                    # if a preceding rescue later consumes this opportunity.
+                    # Declaration counts now; start and charge still require
+                    # the actual maneuver to execute.
+                    e = replace(e,declared=True,declaration_time=self.time,
+                        declaration_ring=a.ring,state="EMERGENCY_WAITING",
+                        rescue_reason=e.rescue_reason or "EXISTING_RESCUE_ELIGIBILITY")
+                    self.aircraft[a.id] = replace(self.aircraft[a.id],emergency=e)
+                    self._event("emergency_declared",a.id,ring=a.ring,
+                                reason=e.rescue_reason,
+                                trajectory_hash=opportunity[0].trajectory_hash if opportunity else None)
+                priority = emergency_priority(self.aircraft[a.id], self.config)
+                urgency = (assessed.rescue_slack_seconds if assessed.rescue_slack_seconds is not None
+                           else priority["holding_seconds"])
+                fresh_key = (urgency, assessed.normal_margin if assessed.normal_margin is not None else math.inf,
+                             *priority["key"][1:])
+                required_opportunities.append((fresh_key, a.id, opportunity))
+            # All ordering uses this dispatch's exact opportunities, including
+            # their future hold costs. Probing itself protects no resources.
+            for fresh_key, key, opportunity in sorted(required_opportunities):
+                a = self.aircraft[key]
+                self._event("emergency_priority_selected", key,
+                            fresh_key=tuple(None if isinstance(v,float) and not math.isfinite(v) else v for v in fresh_key),
+                            rescue_wait_seconds=a.emergency.rescue_wait_seconds,
+                            rescue_slack_seconds=a.emergency.rescue_slack_seconds,
+                            normal_margin=a.emergency.normal_margin,
+                            **emergency_priority(a, self.config))
+                for attempt in range(2):
+                    if opportunity is None:
+                        break
+                    result = self.submit((opportunity[0],))
+                    if result.accepted:
+                        p = opportunity[0]
+                        self._event("rescue_opportunity_protected", a.id, pad_id=p.pad_id,
+                            trajectory_hash=p.trajectory_hash, start_time=p.start_time,
+                            end_time=p.end_time, pad_window_start=p.end_time-13.5,
+                            pad_window_end=p.end_time+service_duration(self.config,a.service_class))
+                        break
+                    self._event("rescue_commitment_protected", a.id, reason=result.reason,
+                                validation=result.details)
+                    # A preceding rescue may have changed calendars/traffic.
+                    # One fresh bounded search replaces a stale opportunity;
+                    # UNKNOWN retains all existing commitments.
+                    opportunity = self._search_rescue_opportunity(self.aircraft[key]) if attempt == 0 else None
+                # Preserve every existing commitment when a safe replacement
+                # could not be certified. No standalone speculative cancellation.
+            return
         if self._stage2_enabled():
             queue = self._emergency_waiting_queue()
             if queue:
@@ -1805,6 +2122,9 @@ class RotatingSlotWorld:
         raise EmergencyDependencyConflict(aircraft_id, result.reason, details)
 
     def _try_final(self, a, emergency):
+        if emergency and self._rescue_v6():
+            opportunity = self._search_rescue_opportunity(a)
+            return bool(opportunity is not None and self.submit((opportunity[0],)).accepted)
         for pad in range(6):
             result = generate_final(a.id, a.ring, a.slot, pad, self.time,
                                     emergency=emergency, source_version=a.version, config=self.config)
@@ -2168,6 +2488,12 @@ class RotatingSlotWorld:
                 "first_failure_time": self.failure_time,
                 "minimum_separation": self.minimum_separation,
                 "conservation": offered == len(admitted)+rerouted+len(upstream) and len(admitted) == len(landed)+len(failed)+airborne}
+        result.update(rescue_rule_profile=getattr(self,"rescue_rule_profile",LEGACY_PROFILE),
+            rescue_warning=sum(a.emergency.warning for a in values),
+            emergency_trigger_count=sum(e["type"] == "emergency_triggered" for e in self.events),
+            rescue_search_exhausted=sum(e["type"] == "rescue_opportunity_search_exhausted" for e in self.events),
+            protected_rescue_opportunities=sum(p.kind == "FINAL_EMERGENCY"
+                for p in (*self.active.values(), *self.soft.values())))
         if self._stage2_enabled():
             result.update(self._stage2_metrics(values, upstream))
         return result

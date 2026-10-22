@@ -34,6 +34,10 @@ SCHEMA = "ft_rs_stage2_campaign_checkpoint_v1"
 STAGE2_FIELDS = frozenset("""experiment_policy_id has_energy_losses terminated_invalid
 failure_archive failure_resources_released dispatch_timings _pending_dispatch _refinement_time
 _monitor_timing_pending""".split())
+STAGE2_FIELDS = STAGE2_FIELDS | frozenset(("rescue_rule_profile",))
+DERIVED_RESCUE_FIELDS = frozenset(("_rescue_search_cache", "_rescue_monitor_v6"))
+SCENARIO_PROFILES = ("legacy_busy_v5", "stress36_rate180_v1", "diagnostic18_rate120_v1")
+RESCUE_RULE_PROFILES = ("legacy_v5", "rescue_opportunity_v6")
 RUNTIME_EXTRA = frozenset(("admission_callback",))
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT_DIR = ROOT / "new10.16/rotating_slots_stage2_baseline_v1_0"
@@ -106,10 +110,13 @@ class CampaignBudget:
         atomic_json(self.path, self.data)
 
 
-def frozen_manifest():
-    source = ArrivalManifest.generate(seed=71, rate_per_hour=180., arrival_window=3600.)
+def frozen_manifest(scenario_profile="legacy_busy_v5"):
+    if scenario_profile not in SCENARIO_PROFILES:
+        raise ValueError("unknown scenario profile: "+scenario_profile)
+    rate = 120. if scenario_profile == "diagnostic18_rate120_v1" else 180.
+    source = ArrivalManifest.generate(seed=71, rate_per_hour=rate, arrival_window=3600.)
     # Existing generator has a closed final test; Stage2 explicitly right-opens it.
-    return ArrivalManifest(tuple(r for r in source.requests if r.release_time < 3600.), 71, 180., 3600.)
+    return ArrivalManifest(tuple(r for r in source.requests if r.release_time < 3600.), 71, rate, 3600.)
 
 
 def read_manifest(path):
@@ -118,13 +125,18 @@ def read_manifest(path):
                            value["seed"], value["rate_per_hour"], value["arrival_window"])
 
 
-def busy_fixture(manifest=None, *, state_sink=None, config=None):
+def busy_fixture(manifest=None, *, state_sink=None, config=None,
+                 scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
+    if scenario_profile not in SCENARIO_PROFILES or rescue_rule_profile not in RESCUE_RULE_PROFILES:
+        raise ValueError("unknown scenario/rescue rule profile")
     world = RotatingSlotWorld(config=config, manifest=manifest, state_sink=state_sink,
                               experiment_policy_id=STAGE2_POLICY_ID)
+    world.rescue_rule_profile = rescue_rule_profile
     soc_rng, service_rng = random.Random(2071), random.Random(2072)
     normal = NormalDist(.75, .08)
     lower, upper = normal.cdf(.60), normal.cdf(.90)
-    for ring, count in (("outer",14), ("middle",12), ("inner",10)):
+    counts = (("outer",6), ("middle",6), ("inner",6)) if scenario_profile == "diagnostic18_rate120_v1" else (("outer",14), ("middle",12), ("inner",10))
+    for ring, count in counts:
         slots = next(r.slot_count for r in world.config.airspace.rings if r.id == ring)
         for k in range(count):
             soc = normal.inv_cdf(lower + soc_rng.random()*(upper-lower))
@@ -192,7 +204,7 @@ def environment_lock():
         numerical_threads=1,cp_workers=1,solver_seed=71)
 
 
-def source_provenance(service_profile="baseline"):
+def source_provenance(service_profile="baseline", *, scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
     """Local-only freeze operation; campaign execution never runs Git."""
     from .stage2_planning import CANDIDATE_POLICY_ID, QUALITY_BUDGET_PROFILE, PlanningBudget
     files = sorted((ROOT/"terminal_marl/core/rotating_slots").glob("*.py"))
@@ -202,6 +214,8 @@ def source_provenance(service_profile="baseline"):
               for p in files if p.is_file()}
     def git(*args):
         return subprocess.check_output(["git",*args],cwd=ROOT,stderr=subprocess.DEVNULL).decode().strip()
+    if scenario_profile not in SCENARIO_PROFILES or rescue_rule_profile not in RESCUE_RULE_PROFILES:
+        raise ValueError("unknown scenario/rescue rule profile")
     config=load_service_profile(service_profile)
     original=load_service_profile("baseline")
     return dict(revision=git("rev-parse","HEAD"),workspace_status_short=git("status","--short"),
@@ -211,16 +225,18 @@ def source_provenance(service_profile="baseline"):
         contract_sha256=sha256((CONTRACT_DIR/"rotating_slots_stage2_baseline_contract_v1_0.md").read_bytes()).hexdigest(),
         overlay_sha256=sha256((CONTRACT_DIR/"stage2_baseline_config_v1_0.yaml").read_bytes()).hexdigest(),
         base_config_hash=config.config_hash,base_config_bytes_sha256=config.raw_hash,
-        service_profile=config.service_profile,effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
+        service_profile=config.service_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
+        effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
         original_config_hash=original.config_hash,original_config_bytes_sha256=original.raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
         candidate_policy_id=CANDIDATE_POLICY_ID,planning_budget_profile=QUALITY_BUDGET_PROFILE,
-        planning_budget=PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE).settings(),emergency_policy_id="energy_urgency_yield_v5",
+        planning_budget=PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE).settings(),
+        emergency_policy_id="rescue_opportunity_v6" if rescue_rule_profile=="rescue_opportunity_v6" else "energy_urgency_yield_v5",
         objective_id="reliability_throughput_progress_tail_v2")
 
 
-def freeze_provenance(path, service_profile="baseline"):
-    value=source_provenance(service_profile)
+def freeze_provenance(path, service_profile="baseline", **profiles):
+    value=source_provenance(service_profile, **profiles)
     atomic_json(path,value)
     return value
 
@@ -259,18 +275,22 @@ def checkpoint_identity(provenance, manifest_hash):
         base_config_hash=provenance["base_config_hash"],overlay_sha256=provenance["overlay_sha256"],
         manifest_sha256=manifest_hash)
     if "service_profile" in provenance: identity["service_profile"]=provenance["service_profile"]
+    for name in ("scenario_profile", "rescue_rule_profile"):
+        if name in provenance: identity[name]=provenance[name]
     return identity
 
 
 def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS|RUNTIME_FIELDS|RUNTIME_EXTRA
-    if set(vars(world)) != expected:
-        raise CheckpointError("Stage2 world field inventory mismatch: "+str(set(vars(world))^expected))
+    if set(vars(world))-DERIVED_RESCUE_FIELDS != expected:
+        raise CheckpointError("Stage2 world field inventory mismatch: "+str((set(vars(world))-DERIVED_RESCUE_FIELDS)^expected))
+    if world.rescue_rule_profile != identity.get("rescue_rule_profile","legacy_v5"):
+        raise CheckpointError("Stage2 checkpoint rescue rule profile mismatch")
     if (world.config.config_hash != identity["base_config_hash"]
         or world.config.service_profile != identity.get("service_profile",world.config.service_profile)):
         raise CheckpointError("Stage2 checkpoint configuration identity mismatch")
     codec = Stage2Codec()
-    state = {k:v for k,v in vars(world).items() if k not in RUNTIME_FIELDS|RUNTIME_EXTRA}
+    state = {k:v for k,v in vars(world).items() if k not in RUNTIME_FIELDS|RUNTIME_EXTRA|DERIVED_RESCUE_FIELDS}
     payload = dict(schema=SCHEMA,identity=identity,time=world.time,
         world=codec.encode(state),scheduler=codec.encode(scheduler.state_dict()),
         sink=None if world.state_sink is None else _capture_sink(world.state_sink,codec),
@@ -287,9 +307,13 @@ def restore_checkpoint(path, scheduler, identity, *, stream_copy=None):
         raise CheckpointError("Stage2 checkpoint identity/content mismatch")
     codec = Stage2Codec()
     state = codec.decode(payload["world"])
+    # Archives created before v6 had the implicit legacy rescue rule.
+    state.setdefault("rescue_rule_profile","legacy_v5")
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS
     if set(state) != expected or state["experiment_policy_id"] != STAGE2_POLICY_ID:
         raise CheckpointError("Stage2 checkpoint world inventory/policy mismatch")
+    if state["rescue_rule_profile"] != identity.get("rescue_rule_profile","legacy_v5"):
+        raise CheckpointError("Stage2 checkpoint rescue rule profile mismatch")
     if (state["config"].config_hash != identity["base_config_hash"] or state["time"] != payload["time"]
         or state["config"].service_profile != identity.get("service_profile",state["config"].service_profile)):
         raise CheckpointError("Stage2 checkpoint configuration/time mismatch")
@@ -340,7 +364,7 @@ def episode_rank(metrics):
 
 
 def quantiles(rows, field):
-    values=sorted(float(r[field]) for r in rows if field in r)
+    values=sorted(float(r[field]) for r in rows if r.get(field) is not None)
     if not values: return {"count":0,"p50":None,"p95":None,"p99":None,"max":None,"mean":None,"over_5s":0}
     def percentile(q):
         x=(len(values)-1)*q; lo=math.floor(x); hi=math.ceil(x)
@@ -351,11 +375,142 @@ def quantiles(rows, field):
         small_sample_notice="descriptive quantiles; unstable for small N")
 
 
+def pad_opportunity_samples(world):
+    """Direct pre-planning observations; future reservations are not ground service."""
+    offered=any(a.status.startswith("HOLD_") for a in world.aircraft.values())
+    rows=[]
+    for pad in range(world.config.pads.count):
+        ground=any(a.pad_id==pad and a.status=="LANDED_SERVICE" for a in world.aircraft.values())
+        approach=any(p.pad_id==pad for p in world.active.values())
+        future=any(r.resource==pad and r.start>world.time+1.e-8 for r in world.pads.reservations)
+        rows.append(dict(time=world.time,pad_id=pad,grounded_service=ground,ground_idle=not ground,
+            approach_reserved=approach,idle_without_active_approach=not (ground or approach),
+            future_calendar=future,emergency_protected=False,offered=offered,
+            reason="GROUNDED_SERVICE" if ground else "ACTIVE_APPROACH_RESERVED" if approach else
+                "FUTURE_CALENDAR" if future else "UNKNOWN"))
+    return rows
+
+
+def annotate_pad_opportunities(pads, row, protected=()):
+    """Attach this call's planning evidence to its pre-planning pad observations."""
+    evidence=row.get("pad_opportunities",{})
+    choices=row.get("aircraft_choices",())
+    known=bool(choices) and all("candidate_pad_ids" in c for c in choices)
+    candidate_pads={p for c in choices for p in c.get("candidate_pad_ids",())}
+    selected_pads={p for c in choices for p in c.get("selected_pad_ids",())}
+    for pad in pads:
+        pid=pad["pad_id"]
+        observed=evidence.get(str(pid),{}) if isinstance(evidence,dict) else {}
+        pad["planning_evidence"]=observed
+        pad["emergency_protected"]=pid in protected
+        if pad["reason"]!="UNKNOWN" or not pad["offered"]: continue
+        if pid in protected: pad["reason"]="EMERGENCY_PROTECTED"
+        elif observed.get("submitted_count",0): pad["reason"]="PLANNING_SUBMITTED"
+        elif observed.get("candidate_count",0): pad["reason"]="PLANNING_NOT_SUBMITTED"
+        elif observed.get("explicit_conflict_count",0): pad["reason"]="EXPLICIT_TRAJECTORY_CONFLICT_OBSERVED"
+        elif not known: pad["reason"]="UNKNOWN"
+        elif pid not in candidate_pads: pad["reason"]="CANDIDATE_NOT_FOUND"
+        elif pid not in selected_pads or not row.get("submitted",0): pad["reason"]="PLANNING_NOT_SUBMITTED"
+        else: pad["reason"]="PLANNING_SUBMITTED"
+    row["pad_opportunities"]=pads
+    return pads
+
+
+def rescue_observations(world, normal_rows, dispatch):
+    """Descriptive v6 table with explicit denominators and censored rescue waits."""
+    aircraft=[]; events={}
+    for event in world.events:
+        events.setdefault(event.get("aircraft_id"),[]).append(event)
+    # Identical to the existing _stage2_metrics initial-ground cohort definition.
+    initial_ground={a.id for a in world.aircraft.values()
+                    if a.fixture and a.touchdown_time==0. and a.airborne_time==0.}
+    for a in world.aircraft.values():
+        if a.id in initial_ground: continue
+        emergency=a.emergency; own=events.get(a.id,())
+        first=lambda kind: next((e["time"] for e in own if e["type"]==kind),None)
+        warning=first("rescue_warning"); triggered=first("emergency_triggered")
+        started=emergency.start_time
+        wait=None if triggered is None else max(0.,(world.time if started is None else started)-triggered)
+        aircraft.append(dict(aircraft_id=a.id,status=a.status,warning_time=warning,
+            declaration_time=emergency.declaration_time,rescue_trigger_time=triggered,rescue_start_time=started,
+            touchdown_time=a.touchdown_time,emergency_charged=emergency.charged,
+            low_reserve_touchdown=a.touchdown_time is not None and a.soc<.25,
+            rescue_wait_s=wait,rescue_wait_status=None if wait is None else "CENSORED" if started is None else "COMPLETED",
+            soc=a.soc,soc_reserve_margin=a.soc-.25,peak_remaining_s=120.-a.peak_seconds,
+            normal_margin=getattr(emergency,"normal_margin",None),normal_status=getattr(emergency,"normal_status","UNKNOWN")))
+    choices=[choice for row in normal_rows for choice in row.get("aircraft_choices",())]
+    coverage=[]
+    for aid in sorted({c["aircraft_id"] for c in choices}):
+        own=[c for c in choices if c["aircraft_id"]==aid]
+        coverage.append(dict(aircraft_id=aid,planning_observations=len(own),
+            with_move_candidate=sum(c.get("move_candidates",0)>0 for c in own),
+            with_immediate_move_candidate=sum(c.get("immediate_move_candidates",0)>0 for c in own),
+            selected_move=sum(c.get("selected_kind")=="MOVE" for c in own),
+            unknown_reference=sum(c.get("source_reference_status")!="KNOWN" for c in own)))
+    timings=[]
+    for row in normal_rows:
+        values=row.get("timings",{})
+        wall=lambda name: values[name][0] if name in values else None
+        total=lambda names: sum(values[name][0] for name in names if name in values) if any(name in values for name in names) else None
+        timings.append(dict(candidate_exclusive_wall_s=total(("candidate_generation_and_single_vehicle",
+                "safe_progress_generation","reference_seed_generation","geometry_template_screen")),
+            safety_validation_wall_s=total(("trajectory_validation","prefix_validation")),
+            selected_validation_overhead_wall_s=wall("selected_validation"),solver_wall_s=row.get("solver_wall_s")))
+    pads=[pad for row in normal_rows for pad in row.get("pad_opportunities",())]
+    completed=[r for r in aircraft if r["rescue_wait_status"]=="COMPLETED"]
+    censored=[r for r in aircraft if r["rescue_wait_status"]=="CENSORED"]
+    return dict(observation_status="OBSERVED" if world.rescue_rule_profile=="rescue_opportunity_v6" else "LEGACY_FIELDS_MAY_BE_UNKNOWN",
+        denominators=dict(dispatch_calls=len(dispatch),normal_calls=len(normal_rows),aircraft_planning_observations=len(choices),
+            pad_dispatch_samples=len(pads),ground_idle_offered_pad_samples=sum(p["ground_idle"] and p["offered"] for p in pads),
+            idle_without_active_approach_offered_pad_samples=sum(p["idle_without_active_approach"] and p["offered"] for p in pads),
+            approach_reserved_pad_samples=sum(p["approach_reserved"] for p in pads)),
+        initial_ground_excluded=len(initial_ground),
+        warning_aircraft=sum(r["warning_time"] is not None for r in aircraft),
+        declared_aircraft=sum(r["declaration_time"] is not None for r in aircraft),
+        rescue_started_aircraft=sum(r["rescue_start_time"] is not None for r in aircraft),
+        low_reserve_touchdowns=sum(r["low_reserve_touchdown"] for r in aircraft),
+        rescue_wait_completed=quantiles(completed,"rescue_wait_s"),rescue_wait_censored=quantiles(censored,"rescue_wait_s"),
+        candidate_exclusive_timing=quantiles(timings,"candidate_exclusive_wall_s"),
+        safety_validation_timing=quantiles(timings,"safety_validation_wall_s"),
+        selected_validation_overhead_timing=quantiles(timings,"selected_validation_overhead_wall_s"),
+        solver_timing=quantiles(timings,"solver_wall_s"),
+        emergency_protected_pad_samples=sum(p.get("emergency_protected",False) for p in pads),
+        future_calendar_emergency_protected_pad_samples=sum(p.get("emergency_protected",False) and p["future_calendar"] for p in pads),
+        pad_reason_counts={reason:sum(p["reason"]==reason for p in pads) for reason in sorted({p["reason"] for p in pads})},
+        aircraft=aircraft,candidate_coverage=coverage,
+        interpretation="CANDIDATE_NOT_FOUND and UNKNOWN provide no physical infeasibility certificate")
+
+
 def common_boundary(root):
     sets=[]
     for method in METHODS:
         sets.append({int(p.stem.split("_")[-1]) for p in (Path(root)/method).glob("summary_*.json")})
     return max(set.intersection(*sets),default=0)
+
+
+def rescue_comparison_tables(root):
+    """Read-only common-boundary tables, including explicit legacy unknowns."""
+    root=Path(root);boundary=common_boundary(root);campaign=load_json(root/"campaign.json")
+    rows=[]
+    for method in METHODS:
+        if not boundary: continue
+        summary=load_json(root/method/f"summary_{boundary:04d}.json")
+        metrics=summary["metrics"];observed=summary.get("rescue_observations",{})
+        row=dict(scenario_profile=campaign.get("scenario_profile","legacy_busy_v5"),method=method,time_s=boundary,
+            normal=metrics["L_normal"],emergency=metrics["L_emergency"],total=metrics["L_success"],
+            F=metrics["F_energy_total"],airborne_pending=metrics["N_airborne_pending"],upstream_pending=metrics["N_upstream_pending"])
+        for field in ("warning_aircraft","declared_aircraft","rescue_started_aircraft","low_reserve_touchdowns",
+                      "denominators","rescue_wait_completed","rescue_wait_censored","candidate_exclusive_timing",
+                      "safety_validation_timing","selected_validation_overhead_timing","solver_timing",
+                      "emergency_protected_pad_samples","future_calendar_emergency_protected_pad_samples",
+                      "pad_reason_counts","candidate_coverage","aircraft"):
+            row[field]=observed.get(field,"UNKNOWN")
+        for field in ("normal_timing","dispatch_timing"):
+            row[field]=summary.get(field,"UNKNOWN")
+        rows.append(row)
+    return dict(schema="stage2_rescue_v6_observational_tables_v1",common_time_s=boundary,
+        rescue_rule_profile=campaign.get("rescue_rule_profile","legacy_v5"),rows=rows,
+        interpretation="Single fixed seed, bounded common window; missing v6 evidence is UNKNOWN. No candidate is not proof of physical infeasibility.")
 
 
 def report_campaign(root, *, plots=True):
@@ -364,6 +519,7 @@ def report_campaign(root, *, plots=True):
     result=dict(comparison_time_s=boundary,target_observation_s=3600,human_review="HUMAN_PENDING",
         interpretation="one seed, synthetic initial backlog; partial windows are not one-hour capacity",
         methods=methods,ranking=sorted(methods,key=lambda m:tuple(methods[m]["metrics"]["K_episode"])))
+    if (root/"campaign.json").exists(): result["rescue_tables"]=rescue_comparison_tables(root)
     atomic_json(root/"comparison.json",result)
     if methods:
         fields=("method","T_common_s","failures","touchdowns","normal","emergency","reroutes",
@@ -424,7 +580,8 @@ def physical_cores():
 
 
 def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None, service_profile="baseline",
-                     campaign_wall_budget_seconds=None, archive_reserve_seconds=None):
+                     campaign_wall_budget_seconds=None, archive_reserve_seconds=None,
+                     scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     if (root/"campaign.json").exists(): raise ValueError("campaign already prepared; use resume")
     budget=CampaignBudget(root/"budget.json",preparation_wall_seconds,total_seconds=campaign_wall_budget_seconds,
@@ -433,7 +590,8 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
     if (root/"environment.lock.json").exists() and load_json(root/"environment.lock.json") != lock:
         raise RuntimeError("resolved environment changed after first successful validation")
     atomic_json(root/"environment.lock.json",lock)
-    manifest=frozen_manifest();atomic_json(root/"manifest.json",manifest.to_dict())
+    manifest=frozen_manifest() if scenario_profile=="legacy_busy_v5" else frozen_manifest(scenario_profile)
+    atomic_json(root/"manifest.json",manifest.to_dict())
     provenance_file=Path(provenance_path) if provenance_path is not None else root/"provenance.json"
     if not provenance_file.is_file():
         raise ValueError("prepare requires locally frozen provenance JSON; use local freeze-provenance first")
@@ -442,10 +600,17 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
     if (provenance.get("service_profile","baseline") != service_profile
         or provenance["base_config_hash"] != config.config_hash):
         raise ValueError("requested service profile differs from frozen provenance")
+    for name,value,default in (("scenario_profile",scenario_profile,"legacy_busy_v5"),
+                               ("rescue_rule_profile",rescue_rule_profile,"legacy_v5")):
+        if provenance.get(name,default)!=value:
+            raise ValueError("requested "+name+" differs from frozen provenance")
     atomic_json(root/"provenance.json",provenance)
     (root/"config.yaml").write_bytes(Path(config.path).read_bytes())
     config=load_config(root/"config.yaml")
-    world=busy_fixture(manifest,config=config)
+    profiles={}
+    if scenario_profile!="legacy_busy_v5": profiles["scenario_profile"]=scenario_profile
+    if rescue_rule_profile!="legacy_v5": profiles["rescue_rule_profile"]=rescue_rule_profile
+    world=busy_fixture(manifest,config=config,**profiles)
     atomic_json(root/"fixture.json",dict(aircraft=[a.to_dict() for a in world.aircraft.values()],
         slots=world.slots.to_dict(),pads=world.pads.to_dict(),synthetic_fixture=True,
         geometry_validation="seed_hold/seed_service continuous certification",metrics=episode_metrics(world)))
@@ -454,7 +619,8 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
     budget.persist()
     if budget.elapsed > budget.data["preparation_limit_s"]: raise RuntimeError("preparation exceeded campaign allocation")
     campaign=dict(schema="stage2_first_campaign_v1",identity=checkpoint_identity(provenance,digest(manifest.to_dict())),
-        service_profile=service_profile,config_path="config.yaml",config_bytes_sha256=config.raw_hash,
+        service_profile=service_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
+        config_path="config.yaml",config_bytes_sha256=config.raw_hash,
         preparation_wall_s=budget.elapsed,environment_lock_sha256=digest(lock),
         fixture_sha256=sha256((root/"fixture.json").read_bytes()).hexdigest(),
         status="PREPARED",human_review="HUMAN_PENDING",target_s=3600.)
@@ -476,6 +642,11 @@ def campaign_config(root, campaign):
         or config.service_profile != campaign.get("service_profile","baseline")
         or config.service_profile != campaign["identity"].get("service_profile",config.service_profile)):
         raise ValueError("campaign configuration identity/content mismatch")
+    for name,default,allowed in (("scenario_profile","legacy_busy_v5",SCENARIO_PROFILES),
+                                 ("rescue_rule_profile","legacy_v5",RESCUE_RULE_PROFILES)):
+        value=campaign.get(name,default)
+        if value not in allowed or value!=campaign["identity"].get(name,default):
+            raise ValueError("campaign "+name+" identity mismatch")
     return config
 
 
@@ -501,6 +672,8 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
         sink=BufferedStateJSONLSink(directory/"states.jsonl")
         fixture_kwargs=dict(state_sink=sink)
         if "service_profile" in campaign: fixture_kwargs["config"]=config
+        for name,default in (("scenario_profile","legacy_busy_v5"),("rescue_rule_profile","legacy_v5")):
+            if campaign.get(name,default)!=default: fixture_kwargs[name]=campaign[name]
         world=busy_fixture(read_manifest(root/"manifest.json"),**fixture_kwargs)
         if "fixture_sha256" in campaign:
             frozen=load_json(root/"fixture.json")
@@ -513,7 +686,14 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
         world.admission_callback=shared_fifo_admission
         save_checkpoint(latest,world,scheduler,identity)
     startup_wall=time.perf_counter()-startup
-    def normal(snapshot,port): return scheduler(port)
+    def normal(snapshot,port):
+        pads=pad_opportunity_samples(world)
+        protected={p.pad_id for p in (*world.active.values(),*world.soft.values()) if p.kind=="FINAL_EMERGENCY"}
+        result=scheduler(port)
+        if scheduler.records:
+            row=scheduler.records[-1]
+            annotate_pad_opportunities(pads,row,protected)
+        return result
     try:
         while True:
             block_target=target if connection is None else connection.recv()
@@ -563,6 +743,7 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
                 fallback_calls=sum(bool(r.get("fallback",False)) for r in normal_rows),
                 cp_status_counts={status:sum(s.get("status")==status for r in normal_rows for s in r.get("solver",()))
                     for status in sorted({s.get("status") for r in normal_rows for s in r.get("solver",())})},
+                rescue_observations=rescue_observations(world,normal_rows,dispatch),
                 pad_occupied_count=sum(any(a.pad_id==pad and a.status=="LANDED_SERVICE" for a in world.aircraft.values()) for pad in range(6)),
                 dispatch_wall_per_sim_second=sum(r["dispatch_wall_s"] for r in dispatch)/world.time,
                 event_frequency_hz=len(world.events)/world.time,
@@ -634,7 +815,7 @@ def export_episode(root, method, boundary):
     return str(archive)
 
 
-def run_campaign(root, *, target=3600., export=True):
+def run_campaign(root, *, target=3600., export=True, cpus=None):
     """Supervisor starts two single-core children or alternates shared blocks.
 
     Only complete 60-second checkpoints are compared. At the compute deadline,
@@ -649,7 +830,16 @@ def run_campaign(root, *, target=3600., export=True):
     if observed_lock != load_json(root/"environment.lock.json"):
         raise RuntimeError("environment differs from first validated exact lock")
     atomic_json(root/"resource_observation.json",resource_observation())
-    cores=physical_cores();parallel=len(cores)>=2
+    available=physical_cores()
+    requested=None if cpus is None else list(cpus)
+    if requested is not None and (len(requested)!=2 or len(set(requested))!=2 or any(c not in available for c in requested)):
+        raise ValueError("cpus must name two available distinct physical-core representatives")
+    if "requested_cpus" in campaign and requested is not None and requested!=campaign["requested_cpus"]:
+        raise ValueError("campaign CPU selection is frozen after first run")
+    cores=campaign.get("requested_cpus",requested) or available
+    if any(c not in available for c in cores): raise ValueError("frozen campaign CPU selection unavailable")
+    if requested is not None: campaign["requested_cpus"]=requested
+    parallel=len(cores)>=2
     campaign.update(status="RUNNING",execution_mode="two_processes_distinct_physical_cores" if parallel else "alternating_same_60s_blocks",
         physical_cores=cores[:2],thread_environment={name:"1" for name in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS")})
     atomic_json(root/"campaign.json",campaign)

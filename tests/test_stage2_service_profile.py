@@ -82,7 +82,7 @@ def test_half_fixture_preserves_manifest_soc_classes_and_airborne_state():
 def test_prepare_checkpoint_and_export_roundtrip_exact_config(tmp_path,monkeypatch):
     config=load_service_profile("service_half_v1")
     provenance=campaign.source_provenance("service_half_v1")
-    assert provenance["candidate_policy_id"]=="shared_multistep_columns_v5_quality_budget"
+    assert provenance["candidate_policy_id"]=="shared_multistep_columns_v6_reuse_diversity"
     assert provenance["planning_budget_profile"]=="quality_v5"
     assert provenance["planning_budget"]==dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
         hint_seconds=3.,solver_seconds=8.,solver_reserve_seconds=8.,max_per_aircraft=64,max_attempts=2048,
