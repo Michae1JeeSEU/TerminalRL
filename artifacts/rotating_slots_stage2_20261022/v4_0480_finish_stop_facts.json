@@ -1,0 +1,3298 @@
+{
+  "audit_0420": {
+    "energy_slack": {
+      "_source_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\audit_0420.json",
+      "bundle_path": "/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022/energy_slack/replay_0420",
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 36,
+          "airborne_pending": 14,
+          "airborne_time_s": 10657.04617360465,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 22,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 28,
+          "airborne_pending": 28,
+          "airborne_time_s": 6298.872895136447,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 0,
+          "upstream_pending": 0
+        }
+      },
+      "conservation_equations": [
+        true,
+        true,
+        true
+      ],
+      "continuous_pair_runs": 9019,
+      "continuous_separation": "CERTIFIED",
+      "counts": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "L_emergency": 0,
+        "L_normal": 22,
+        "L_success": 22,
+        "N_admitted_total": 64,
+        "N_airborne_pending": 42,
+        "N_offered": 64,
+        "N_rerouted": 0,
+        "N_upstream_pending": 0,
+        "admitted": 64,
+        "airborne_or_censored": 42,
+        "censored": 0,
+        "censored_upstream": 0,
+        "emergency_landed": 0,
+        "energy_failures": 0,
+        "failed_before_landing": 0,
+        "fixture_count": 39,
+        "initial_airborne_count": 36,
+        "initial_ground_count": 3,
+        "landing_below_reserve": 0,
+        "manifest_offered": 28,
+        "normal_landed": 22,
+        "offered": 64,
+        "physically_landed": 22,
+        "planned_manifest": 172,
+        "rerouted": 0,
+        "successful_touchdowns_after_first_failure": 0,
+        "successful_touchdowns_before_first_failure": 22,
+        "unreleased": 144,
+        "upstream_waiting": 0
+      },
+      "derived_costs": {
+        "airborne_time": 16955.9190687411,
+        "cost_emergency": 1200.0,
+        "cost_failure": 0.0,
+        "cost_reroute": 0.0,
+        "cost_upstream_wait": 9.525731653390686,
+        "energy_j": 1382417036.8864639,
+        "energy_kwh": 384.0047324684622,
+        "total_cost": 18165.44480039449
+      },
+      "documented_hard_failure_runs": 0,
+      "energy_intervals": 26952,
+      "initial_fixture_baselines": [
+        {
+          "aircraft_id": "initial_ground_pad0",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_ground_pad2",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_ground_pad4",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_inner_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8303316516109802,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6784783568232835,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6525321720731286,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.781670988414068,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8165234384791833,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7505525363330028,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6298641120726138,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7055653860019143,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7959982809543823,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7096804429660799,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_middle_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7753207063468395,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7180963597026129,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8870158813593636,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7042633572247368,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7140653005364664,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.882857925829321,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6960389986321246,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8599821353958802,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7470212641623719,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6116938075424241,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_10",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.796623008661126,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_11",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7277961708774346,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_outer_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6020158005159673,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8156874503238082,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6753100293905002,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6935861603655257,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8218897709957018,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7502594599255492,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7838062778800565,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7764383965345106,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8620054483914603,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.824159367108394,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_10",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7412066323812555,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_11",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8467475095381297,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_12",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7411166664910102,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_13",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8050424172877122,
+          "status": "HOLD_OUTER"
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "kernel_scope": "independent state/event ledger; shared frozen trajectory, energy and continuous-separation kernels; not an empirical energy oracle",
+      "peak_check_scope": "shared-kernel existing additive peak_error_s envelope; precision-switch events not reconstructed",
+      "peak_envelope_checks": 36312,
+      "peak_envelope_max_width_s": 0.0091552734375,
+      "peak_static_ledger_checks": 9293,
+      "peak_step_mismatch_within_envelope_count": 0,
+      "physical_outcome": "IN_PROGRESS",
+      "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+      "primary_key": [
+        0,
+        -22,
+        1200.0,
+        1382417036.8864639,
+        16965.44480039449
+      ],
+      "state_frames": 667,
+      "status": "PASS",
+      "used_plans": 237
+    },
+    "rh_cp_sat": {
+      "_source_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\audit_0420.json",
+      "bundle_path": "/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022/rh_cp_sat/replay_0420",
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 36,
+          "airborne_pending": 13,
+          "airborne_time_s": 10485.563064957836,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 23,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 28,
+          "airborne_pending": 27,
+          "airborne_time_s": 6207.703552359779,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 1,
+          "upstream_pending": 0
+        }
+      },
+      "conservation_equations": [
+        true,
+        true,
+        true
+      ],
+      "continuous_pair_runs": 8682,
+      "continuous_separation": "CERTIFIED",
+      "counts": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "L_emergency": 0,
+        "L_normal": 24,
+        "L_success": 24,
+        "N_admitted_total": 64,
+        "N_airborne_pending": 40,
+        "N_offered": 64,
+        "N_rerouted": 0,
+        "N_upstream_pending": 0,
+        "admitted": 64,
+        "airborne_or_censored": 40,
+        "censored": 0,
+        "censored_upstream": 0,
+        "emergency_landed": 0,
+        "energy_failures": 0,
+        "failed_before_landing": 0,
+        "fixture_count": 39,
+        "initial_airborne_count": 36,
+        "initial_ground_count": 3,
+        "landing_below_reserve": 0,
+        "manifest_offered": 28,
+        "normal_landed": 24,
+        "offered": 64,
+        "physically_landed": 24,
+        "planned_manifest": 172,
+        "rerouted": 0,
+        "successful_touchdowns_after_first_failure": 0,
+        "successful_touchdowns_before_first_failure": 24,
+        "unreleased": 144,
+        "upstream_waiting": 0
+      },
+      "derived_costs": {
+        "airborne_time": 16693.266617317615,
+        "cost_emergency": 2400.0,
+        "cost_failure": 0.0,
+        "cost_reroute": 0.0,
+        "cost_upstream_wait": 9.195074430059087,
+        "energy_j": 1357744703.7713263,
+        "energy_kwh": 377.15130660314617,
+        "total_cost": 19102.461691747674
+      },
+      "documented_hard_failure_runs": 0,
+      "energy_intervals": 26561,
+      "initial_fixture_baselines": [
+        {
+          "aircraft_id": "initial_ground_pad0",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_ground_pad2",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_ground_pad4",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6,
+          "status": "LANDED_SERVICE"
+        },
+        {
+          "aircraft_id": "initial_inner_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8303316516109802,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6784783568232835,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6525321720731286,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.781670988414068,
+          "status": "FINAL_NORMAL"
+        },
+        {
+          "aircraft_id": "initial_inner_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8165234384791833,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7505525363330028,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6298641120726138,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7055653860019143,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7959982809543823,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_inner_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7096804429660799,
+          "status": "HOLD_INNER"
+        },
+        {
+          "aircraft_id": "initial_middle_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7753207063468395,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7180963597026129,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8870158813593636,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7042633572247368,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7140653005364664,
+          "status": "TRANSFER_M_I"
+        },
+        {
+          "aircraft_id": "initial_middle_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.882857925829321,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6960389986321246,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8599821353958802,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7470212641623719,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6116938075424241,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_10",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.796623008661126,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_middle_11",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7277961708774346,
+          "status": "HOLD_MIDDLE"
+        },
+        {
+          "aircraft_id": "initial_outer_00",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6020158005159673,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_01",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8156874503238082,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_02",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6753100293905002,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_03",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.6935861603655257,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_04",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8218897709957018,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_05",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7502594599255492,
+          "status": "TRANSFER_O_M"
+        },
+        {
+          "aircraft_id": "initial_outer_06",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7838062778800565,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_07",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7764383965345106,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_08",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8620054483914603,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_09",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.824159367108394,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_10",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7412066323812555,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_11",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8467475095381297,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_12",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.7411166664910102,
+          "status": "HOLD_OUTER"
+        },
+        {
+          "aircraft_id": "initial_outer_13",
+          "energy_j": 0.0,
+          "peak_seconds": 0.0,
+          "soc": 0.8050424172877122,
+          "status": "HOLD_OUTER"
+        }
+      ],
+      "issue_count": 0,
+      "issues": [],
+      "kernel_scope": "independent state/event ledger; shared frozen trajectory, energy and continuous-separation kernels; not an empirical energy oracle",
+      "peak_check_scope": "shared-kernel existing additive peak_error_s envelope; precision-switch events not reconstructed",
+      "peak_envelope_checks": 36228,
+      "peak_envelope_max_width_s": 0.0091552734375,
+      "peak_static_ledger_checks": 9600,
+      "peak_step_mismatch_within_envelope_count": 0,
+      "physical_outcome": "IN_PROGRESS",
+      "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+      "primary_key": [
+        0,
+        -24,
+        2400.0,
+        1357744703.7713263,
+        16702.461691747674
+      ],
+      "state_frames": 668,
+      "status": "PASS",
+      "used_plans": 232
+    }
+  },
+  "comparison_0420_facts_artifact": {
+    "exists": true,
+    "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v4_emergency_0420_facts.json"
+  },
+  "finish": {
+    "accounting": {
+      "additional_authorized_wall_s": 900.0,
+      "additional_compute_wall_s": 600.0,
+      "archive_reserve_s": 300.0,
+      "base_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+      "campaign_identity": {
+        "base_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+        "manifest_sha256": "10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6",
+        "overlay_sha256": "0ef8f24b0b978f6f233e1847fc63e8698e5821f46bcbf7feb8ad2e35c26523c0",
+        "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+        "service_profile": "service_half_v1",
+        "source_hash": "5405da7efd082467aa180cb8d3c370bbea83c0388ae06e813f232fdc38d9cc01"
+      },
+      "compute_stop_s": 4033.926305055618,
+      "copied_evidence": [
+        {
+          "bytes": 230,
+          "path": "budget.json",
+          "sha256": "d342d92cf441e082b2261cbfe5ad9e863c977cdbb581c73010fbce6475ead48e"
+        },
+        {
+          "bytes": 1688,
+          "path": "campaign.json",
+          "sha256": "45d673a9c29218069a600b0f483b16fb6ea2708a7ff38c51546abbc1d412dad4"
+        },
+        {
+          "bytes": 228,
+          "path": "resume_0480.timing.txt",
+          "sha256": "034cda9c7b8b48b743f239624a0556ca57d16d77770e032619b2e0cb447971d7"
+        },
+        {
+          "bytes": 12,
+          "path": "resume_0480.exit_code.txt",
+          "sha256": "bde294368bfed77c2cddf8cec271d398aee9cdbab3b26e1059281bd33adb0120"
+        },
+        {
+          "bytes": 609,
+          "path": "comparison.csv",
+          "sha256": "1571a9e464b1b9b085fbb2297729945d47cc72238919b331e85162bad1bb9475"
+        },
+        {
+          "bytes": 54352,
+          "path": "comparison.json",
+          "sha256": "cb6fda51067d7b4f9059b758196270b454a277d52f8bf8377fc757dbc5d515cd"
+        },
+        {
+          "bytes": 255427,
+          "path": "comparison_curves.png",
+          "sha256": "e0660585a75f5d0992d79ea4abb114b8d2e232cfcb5c1a73e6578fa7d9cbe559"
+        },
+        {
+          "bytes": 27206,
+          "path": "energy_slack/summary_0420.json",
+          "sha256": "11d8f202700b40ba45bebc604564cfc3cd59900a2410db4c68bcf803c971857d"
+        },
+        {
+          "bytes": 34880598,
+          "path": "energy_slack/checkpoint_0420.json",
+          "sha256": "6e1e4150b9deb617ad8c66a89440fd8698dd652e49154bec34df9a2dc134bc34"
+        },
+        {
+          "bytes": 34880598,
+          "path": "energy_slack/checkpoint.json",
+          "sha256": "6e1e4150b9deb617ad8c66a89440fd8698dd652e49154bec34df9a2dc134bc34"
+        },
+        {
+          "bytes": 206,
+          "path": "energy_slack/archive_status.json",
+          "sha256": "99521b43c45765506cbcd38113debc0997a0d60ea23146461c290187bcc17481"
+        },
+        {
+          "bytes": 54040096,
+          "path": "energy_slack/states.jsonl",
+          "sha256": "334ed99f929f911fa6987d249f4498fb79489b4c6a49330f3a5096bea57aed44"
+        },
+        {
+          "bytes": 26884,
+          "path": "rh_cp_sat/summary_0420.json",
+          "sha256": "0085e8b39451110343c125b63310aa3dfc3ba1247b479a7ce949ba58db74f848"
+        },
+        {
+          "bytes": 32598061,
+          "path": "rh_cp_sat/checkpoint_0420.json",
+          "sha256": "0a7fc0ceff1e531b452389c85651d188ca0eb0ebc53b57068a5e0f2f443a3915"
+        },
+        {
+          "bytes": 32598061,
+          "path": "rh_cp_sat/checkpoint.json",
+          "sha256": "0a7fc0ceff1e531b452389c85651d188ca0eb0ebc53b57068a5e0f2f443a3915"
+        },
+        {
+          "bytes": 202,
+          "path": "rh_cp_sat/archive_status.json",
+          "sha256": "01845649a187de4c5b85d05e8cafb910e2ab356e0d9c269673fd0812f82fb60a"
+        },
+        {
+          "bytes": 53774276,
+          "path": "rh_cp_sat/states.jsonl",
+          "sha256": "8fd5e322fb9418ba531b721a443e9f48f0c7f040ab40a89764bb7fa72ab8938d"
+        }
+      ],
+      "current_utc": "2026-10-22T02:27:28.016411+00:00",
+      "elapsed_floor_s": 3463.9263050556183,
+      "environment_lock_sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+      "post_run_wait_excluded_from_new_compute": true,
+      "prelaunch_backup_overhead_credit_s": 30.0,
+      "previous_common_completed_time_s": 420.0,
+      "previous_live_budget_snapshot": {
+        "compute_stop_s": 3402.5826683044434,
+        "credited_tests_wall_s": 700.0,
+        "elapsed_floor_s": 3433.9263050556183,
+        "preparation_limit_s": 3300.0,
+        "schema": "stage2_wall_budget_v1",
+        "started_epoch": 1792632175.2209961,
+        "total_s": 3702.5826683044434
+      },
+      "previous_persisted_elapsed_s": 3433.9263050556183,
+      "previous_resume_end_utc": "2026-10-22T02:20:09.191574+00:00",
+      "previous_resume_runner_elapsed_s": 808.5670824050903,
+      "schema": "stage2_continuation_0480_finish_accounting_v1",
+      "service_profile": "service_half_v1",
+      "source_hash": "5405da7efd082467aa180cb8d3c370bbea83c0388ae06e813f232fdc38d9cc01",
+      "started_epoch": 1792632584.090105,
+      "total_s": 4333.926305055618
+    },
+    "accounting_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_accounting.json",
+    "budget": {
+      "compute_stop_s": 4033.926305055618,
+      "credited_tests_wall_s": 700.0,
+      "elapsed_floor_s": 4057.2937846183777,
+      "preparation_limit_s": 3300.0,
+      "schema": "stage2_wall_budget_v1",
+      "started_epoch": 1792632584.090105,
+      "total_s": 4333.926305055618
+    },
+    "budget_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\budget.json",
+    "campaign": {
+      "archive_status": {
+        "energy_slack": {
+          "audit_status": "PASS",
+          "audit_wall_s": 11.201867462019436,
+          "export_wall_s": 0.014177295030094683,
+          "replay": "/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022/energy_slack/replay_0420"
+        },
+        "rh_cp_sat": {
+          "audit_status": "PASS",
+          "audit_wall_s": 10.852945220016409,
+          "export_wall_s": 0.018821800011210144,
+          "replay": "/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022/rh_cp_sat/replay_0420"
+        }
+      },
+      "campaign_wall_s": 4057.2950098514557,
+      "common_completed_time_s": 420,
+      "config_bytes_sha256": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec",
+      "config_path": "config.yaml",
+      "environment_lock_sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+      "execution_mode": "two_processes_distinct_physical_cores",
+      "fixture_sha256": "a79f08a1498ae2fc7389a0cb4e04e5b2a17d0f606fab5228122dd93c4c093999",
+      "human_review": "HUMAN_PENDING",
+      "identity": {
+        "base_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+        "manifest_sha256": "10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6",
+        "overlay_sha256": "0ef8f24b0b978f6f233e1847fc63e8698e5821f46bcbf7feb8ad2e35c26523c0",
+        "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+        "service_profile": "service_half_v1",
+        "source_hash": "5405da7efd082467aa180cb8d3c370bbea83c0388ae06e813f232fdc38d9cc01"
+      },
+      "physical_cores": [
+        0,
+        2
+      ],
+      "preparation_wall_s": 702.5009150096448,
+      "real_time_observation": "MEASURED_NOT_CERTIFIED",
+      "schema": "stage2_first_campaign_v1",
+      "service_profile": "service_half_v1",
+      "status": "BUDGET_LIMITED",
+      "target_s": 3600.0,
+      "thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      }
+    },
+    "campaign_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\campaign.json",
+    "exit_code_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\resume_0480_finish.exit_code.txt",
+    "exit_code_text": "exit_code=0",
+    "finish_log_bytes": 85929,
+    "finish_log_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\resume_0480_finish.log",
+    "timing": {
+      "end_epoch": 1792636641.4293225,
+      "end_utc": "2026-10-22T02:37:21.429377+00:00",
+      "exit_code": 0,
+      "runner_elapsed_s": 587.9892094135284,
+      "runner_pid": 131226,
+      "start_epoch": 1792636053.440113,
+      "start_utc": "2026-10-22T02:27:33.440115+00:00",
+      "wrapper_pid": 131216
+    },
+    "timing_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\resume_0480_finish.timing.txt"
+  },
+  "finish_stop_boundary": {
+    "campaign_common_completed_time_s": 420,
+    "campaign_human_review": "HUMAN_PENDING",
+    "campaign_status": "BUDGET_LIMITED",
+    "energy_slack_checkpoint_0480_exists": false,
+    "energy_slack_checkpoint_0480_partial_bytes": 0,
+    "energy_slack_state_tail_time": 480.0,
+    "energy_slack_summary_0480_exists": false,
+    "rh_cp_sat_checkpoint_0480_boundary_summary_time": 480.0,
+    "rh_cp_sat_checkpoint_0480_payload_time": 480.0,
+    "rh_cp_sat_checkpoint_0480_world_time": 480.0,
+    "rh_cp_sat_replay_0480_exists": false,
+    "rh_cp_sat_replay_480_exists": false,
+    "rh_cp_sat_state_tail_time": 480.0,
+    "rh_cp_sat_summary_0480_file_exists": true
+  },
+  "hash_comparisons_0360_0420": {
+    "energy_slack": {
+      "checkpoint_0360.json": {
+        "accounting_copied_hash_equal": null,
+        "accounting_copied_sha256": null,
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0360.json",
+        "current_sha256": "b185cc0b4e11ceb28558abc70f414148e67e66adb1b1d614e59af263f545045f",
+        "finish_backup_exists": false,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\energy_slack\\checkpoint_0360.json",
+        "finish_backup_sha256": null,
+        "sha256_equal_if_both_present": null
+      },
+      "checkpoint_0420.json": {
+        "accounting_copied_hash_equal": true,
+        "accounting_copied_sha256": "6e1e4150b9deb617ad8c66a89440fd8698dd652e49154bec34df9a2dc134bc34",
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0420.json",
+        "current_sha256": "6e1e4150b9deb617ad8c66a89440fd8698dd652e49154bec34df9a2dc134bc34",
+        "finish_backup_exists": true,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\energy_slack\\checkpoint_0420.json",
+        "finish_backup_sha256": "6e1e4150b9deb617ad8c66a89440fd8698dd652e49154bec34df9a2dc134bc34",
+        "sha256_equal_if_both_present": true
+      },
+      "summary_0360.json": {
+        "accounting_copied_hash_equal": null,
+        "accounting_copied_sha256": null,
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0360.json",
+        "current_sha256": "47b0054a3197ae6e084c5e035d633ede2c704a55591929550958242370c03bae",
+        "finish_backup_exists": false,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\energy_slack\\summary_0360.json",
+        "finish_backup_sha256": null,
+        "sha256_equal_if_both_present": null
+      },
+      "summary_0420.json": {
+        "accounting_copied_hash_equal": true,
+        "accounting_copied_sha256": "11d8f202700b40ba45bebc604564cfc3cd59900a2410db4c68bcf803c971857d",
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0420.json",
+        "current_sha256": "11d8f202700b40ba45bebc604564cfc3cd59900a2410db4c68bcf803c971857d",
+        "finish_backup_exists": true,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\energy_slack\\summary_0420.json",
+        "finish_backup_sha256": "11d8f202700b40ba45bebc604564cfc3cd59900a2410db4c68bcf803c971857d",
+        "sha256_equal_if_both_present": true
+      }
+    },
+    "rh_cp_sat": {
+      "checkpoint_0360.json": {
+        "accounting_copied_hash_equal": null,
+        "accounting_copied_sha256": null,
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0360.json",
+        "current_sha256": "d9a355ece86800ba3035550840656ca47efb6e619ea85521e86ac38db4b02f20",
+        "finish_backup_exists": false,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\rh_cp_sat\\checkpoint_0360.json",
+        "finish_backup_sha256": null,
+        "sha256_equal_if_both_present": null
+      },
+      "checkpoint_0420.json": {
+        "accounting_copied_hash_equal": true,
+        "accounting_copied_sha256": "0a7fc0ceff1e531b452389c85651d188ca0eb0ebc53b57068a5e0f2f443a3915",
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0420.json",
+        "current_sha256": "0a7fc0ceff1e531b452389c85651d188ca0eb0ebc53b57068a5e0f2f443a3915",
+        "finish_backup_exists": true,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\rh_cp_sat\\checkpoint_0420.json",
+        "finish_backup_sha256": "0a7fc0ceff1e531b452389c85651d188ca0eb0ebc53b57068a5e0f2f443a3915",
+        "sha256_equal_if_both_present": true
+      },
+      "summary_0360.json": {
+        "accounting_copied_hash_equal": null,
+        "accounting_copied_sha256": null,
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0360.json",
+        "current_sha256": "709fd7e8200e30e7dde7be2dfac6107f1ee95aed95b985d4cc3f6f08dc974154",
+        "finish_backup_exists": false,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\rh_cp_sat\\summary_0360.json",
+        "finish_backup_sha256": null,
+        "sha256_equal_if_both_present": null
+      },
+      "summary_0420.json": {
+        "accounting_copied_hash_equal": true,
+        "accounting_copied_sha256": "0085e8b39451110343c125b63310aa3dfc3ba1247b479a7ce949ba58db74f848",
+        "current_exists": true,
+        "current_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0420.json",
+        "current_sha256": "0085e8b39451110343c125b63310aa3dfc3ba1247b479a7ce949ba58db74f848",
+        "finish_backup_exists": true,
+        "finish_backup_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\continuation_0480_finish_pre_run\\rh_cp_sat\\summary_0420.json",
+        "finish_backup_sha256": "0085e8b39451110343c125b63310aa3dfc3ba1247b479a7ce949ba58db74f848",
+        "sha256_equal_if_both_present": true
+      }
+    }
+  },
+  "method_files": {
+    "energy_slack": {
+      "checkpoint_0360": {
+        "bytes": 29569292,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0360.json",
+        "payload_time": 360.0,
+        "payload_world_time": null,
+        "top_time": null
+      },
+      "checkpoint_0420": {
+        "bytes": 34880598,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0420.json",
+        "payload_time": 420.0,
+        "payload_world_time": null,
+        "top_time": null
+      },
+      "checkpoint_0480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0480.json"
+      },
+      "checkpoint_0480_partial": {
+        "bytes": 0,
+        "exists": true,
+        "is_file": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\checkpoint_0480.json.partial"
+      },
+      "replay_0480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0480"
+      },
+      "replay_480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_480"
+      },
+      "states": {
+        "bytes": 57877099,
+        "exists": true,
+        "is_file": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\states.jsonl"
+      },
+      "summary_0360": {
+        "bytes": 23503,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0360.json",
+        "payload_time": null,
+        "payload_world_time": null,
+        "top_time": 360.0
+      },
+      "summary_0420": {
+        "bytes": 27206,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0420.json",
+        "payload_time": null,
+        "payload_world_time": null,
+        "top_time": 420.0
+      },
+      "summary_0480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0480.json"
+      }
+    },
+    "rh_cp_sat": {
+      "checkpoint_0360": {
+        "bytes": 29051598,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0360.json",
+        "payload_time": 360.0,
+        "payload_world_time": null,
+        "top_time": null
+      },
+      "checkpoint_0420": {
+        "bytes": 32598061,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0420.json",
+        "payload_time": 420.0,
+        "payload_world_time": null,
+        "top_time": null
+      },
+      "checkpoint_0480": {
+        "bytes": 39282980,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0480.json",
+        "payload_time": 480.0,
+        "payload_world_time": null,
+        "top_time": null
+      },
+      "checkpoint_0480_partial": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\checkpoint_0480.json.partial"
+      },
+      "replay_0480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0480"
+      },
+      "replay_480": {
+        "exists": false,
+        "is_file": false,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_480"
+      },
+      "states": {
+        "bytes": 58213655,
+        "exists": true,
+        "is_file": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\states.jsonl"
+      },
+      "summary_0360": {
+        "bytes": 23543,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0360.json",
+        "payload_time": null,
+        "payload_world_time": null,
+        "top_time": 360.0
+      },
+      "summary_0420": {
+        "bytes": 26884,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0420.json",
+        "payload_time": null,
+        "payload_world_time": null,
+        "top_time": 420.0
+      },
+      "summary_0480": {
+        "bytes": 30765,
+        "exists": true,
+        "is_file": true,
+        "json_valid": true,
+        "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0480.json",
+        "payload_time": null,
+        "payload_world_time": null,
+        "top_time": 480.0
+      }
+    }
+  },
+  "rh_cp_sat_0480": {
+    "boundary_summary": {
+      "advance_wall_s": 539.8937654980109,
+      "block_cpu_s": 539.886474277,
+      "block_wall_s": 539.8939510270138,
+      "cp_status_counts": {
+        "OPTIMAL": 245
+      },
+      "dispatch_timing": {
+        "count": 366,
+        "max": 12.558616891037673,
+        "mean": 6.27081720173948,
+        "over_5s": 360,
+        "over_5s_fraction": 0.9836065573770492,
+        "p50": 5.451039521081839,
+        "p95": 10.235508742727689,
+        "p99": 11.33850936307863,
+        "raw_s_count": 366,
+        "raw_s_max": 12.558616891037673,
+        "raw_s_mean": 6.27081720173948,
+        "raw_s_sum": 2295.1190958366496,
+        "small_sample_notice": "descriptive quantiles; unstable for small N"
+      },
+      "dispatch_wall_per_sim_second": 4.781498116326353,
+      "dispatch_wall_sum_s": 2295.1190958366496,
+      "episode_compute_wall_s": 2418.7991475900635,
+      "event_frequency_hz": 9.354166666666666,
+      "executor_non_dispatch_wall_s": 10.197853662946727,
+      "fallback_calls": 0,
+      "inner_algorithm_timing": {
+        "count": 366,
+        "max": 8.080683209002018,
+        "mean": 5.166868381105526,
+        "over_5s": 346,
+        "over_5s_fraction": 0.9453551912568307,
+        "p50": 5.080744817474624,
+        "p95": 5.544314400278381,
+        "p99": 5.949647190480029,
+        "raw_s_count": 366,
+        "raw_s_max": 8.080683209002018,
+        "raw_s_mean": 5.166868381105526,
+        "raw_s_sum": 1891.0738274846226,
+        "small_sample_notice": "descriptive quantiles; unstable for small N"
+      },
+      "method": "rh_cp_sat",
+      "metrics": {
+        "C_legacy": 25119.884425545388,
+        "E_terminal_J": 1556090057.0743637,
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "K_episode": [
+          0,
+          -28,
+          6000.0,
+          1556090057.0743637,
+          19119.884425545388
+        ],
+        "L_emergency": 3,
+        "L_normal": 25,
+        "L_success": 28,
+        "N_admitted_total": 67,
+        "N_airborne_pending": 39,
+        "N_offered": 67,
+        "N_rerouted": 0,
+        "N_upstream_pending": 0,
+        "W_unresolved_plus_airborne_seconds": 19119.884425545388,
+        "admitted": 67,
+        "airborne_or_censored": 39,
+        "airborne_time": 19110.68935111533,
+        "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+        "censored": 0,
+        "censored_upstream": 0,
+        "cohorts": {
+          "initial_airborne": {
+            "admitted": 36,
+            "airborne_pending": 9,
+            "airborne_time_s": 11143.348748632061,
+            "failed": 0,
+            "rerouted": 0,
+            "success": 27,
+            "upstream_pending": 0
+          },
+          "new_requests": {
+            "admitted": 31,
+            "airborne_pending": 30,
+            "airborne_time_s": 7967.3406024832675,
+            "failed": 0,
+            "rerouted": 0,
+            "success": 1,
+            "upstream_pending": 0
+          }
+        },
+        "conservation": true,
+        "cost_emergency": 6000.0,
+        "cost_failure": 0.0,
+        "cost_is_lower_bound": false,
+        "cost_reroute": 0.0,
+        "cost_upstream_wait": 9.195074430059087,
+        "decision_count": 366,
+        "emergency_declared": 16,
+        "emergency_landed": 3,
+        "emergency_unresolved": 13,
+        "energy_failures": 0,
+        "energy_j": 1556090057.0743637,
+        "energy_kwh": 432.2472380762121,
+        "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+        "failed_before_landing": 0,
+        "failure_resources_released": 0,
+        "first_failure_time": null,
+        "fixture_count": 39,
+        "has_energy_losses": false,
+        "holding_time": 13346.837984666066,
+        "human_review": "HUMAN_PENDING",
+        "initial_airborne_count": 36,
+        "initial_ground_count": 3,
+        "landing_below_reserve": 1,
+        "manifest_offered": 31,
+        "minimum_separation": {
+          "lower_bound_m": 80.53448484239895,
+          "pair": [
+            "initial_outer_12",
+            "initial_middle_10"
+          ],
+          "time": 213.89999999999995,
+          "upper_bound_m": 80.86409080514625
+        },
+        "normal_landed": 25,
+        "offered": 67,
+        "pad_busy_seconds": {
+          "0": 393.99999999999994,
+          "1": 384.0,
+          "2": 355.5,
+          "3": 325.5,
+          "4": 373.51431632577356,
+          "5": 349.00000000000006
+        },
+        "pad_deadline_missed": 0,
+        "pad_utilization_seconds": 2181.5143163257735,
+        "physical_airborne_count": 39,
+        "physically_landed": 28,
+        "planned_manifest": 172,
+        "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "rerouted": 0,
+        "slot_reservations_active": 36,
+        "successful_touchdowns_after_first_failure": 0,
+        "successful_touchdowns_before_first_failure": 28,
+        "terminated_invalid": false,
+        "total_cost": 25119.884425545388,
+        "truncated": false,
+        "unreleased": 141,
+        "upstream_wait_time": 9.195074430059087,
+        "upstream_waiting": 0
+      },
+      "nonempty_normal_timing": {
+        "count": 366,
+        "max": 8.081125196011271,
+        "mean": 5.167832854748742,
+        "over_5s": 346,
+        "over_5s_fraction": 0.9453551912568307,
+        "p50": 5.081471133977175,
+        "p95": 5.545442926246324,
+        "p99": 5.950575810851298,
+        "raw_s_count": 366,
+        "raw_s_max": 8.081125196011271,
+        "raw_s_mean": 5.167832854748742,
+        "raw_s_sum": 1891.4268248380395,
+        "small_sample_notice": "descriptive quantiles; unstable for small N"
+      },
+      "noop_calls": 289,
+      "normal_timing": {
+        "count": 366,
+        "max": 8.081125196011271,
+        "mean": 5.167832854748742,
+        "over_5s": 346,
+        "over_5s_fraction": 0.9453551912568307,
+        "p50": 5.081471133977175,
+        "p95": 5.545442926246324,
+        "p99": 5.950575810851298,
+        "raw_s_count": 366,
+        "raw_s_max": 8.081125196011271,
+        "raw_s_mean": 5.167832854748742,
+        "raw_s_sum": 1891.4268248380395,
+        "small_sample_notice": "descriptive quantiles; unstable for small N"
+      },
+      "pad_occupied_count": 4,
+      "post_failure_model": "abstract_isolation_no_cascade",
+      "process_startup_restore_wall_s": 4.111142217007,
+      "time": 480.0
+    },
+    "checkpoint_payload_time": 480.0,
+    "cp_status_counts": {
+      "OPTIMAL": 245
+    },
+    "declared_sets": {
+      "checkpoint_0420": [
+        "initial_middle_00",
+        "initial_middle_01",
+        "initial_middle_08",
+        "initial_middle_11",
+        "initial_outer_04",
+        "initial_outer_06",
+        "initial_outer_12",
+        "req_000001"
+      ],
+      "checkpoint_0480": [
+        "initial_middle_00",
+        "initial_middle_01",
+        "initial_middle_07",
+        "initial_middle_08",
+        "initial_middle_11",
+        "initial_outer_04",
+        "initial_outer_06",
+        "initial_outer_08",
+        "initial_outer_12",
+        "initial_outer_13",
+        "req_000001",
+        "req_000002",
+        "req_000005",
+        "req_000007",
+        "req_000008",
+        "req_000009"
+      ],
+      "new_declared_420_to_480": [
+        "initial_middle_07",
+        "initial_outer_08",
+        "initial_outer_13",
+        "req_000002",
+        "req_000005",
+        "req_000007",
+        "req_000008",
+        "req_000009"
+      ],
+      "unresolved_at_0480": [
+        "initial_middle_00",
+        "initial_middle_07",
+        "initial_middle_08",
+        "initial_middle_11",
+        "initial_outer_04",
+        "initial_outer_08",
+        "initial_outer_13",
+        "req_000001",
+        "req_000002",
+        "req_000005",
+        "req_000007",
+        "req_000008",
+        "req_000009"
+      ]
+    },
+    "emergency_landed": [
+      {
+        "aircraft_id": "initial_outer_12",
+        "below_reserve": false,
+        "declaration_time": 360.3124999999998,
+        "pad_id": 3,
+        "soc": 0.2561023515432004,
+        "start_time": 383.5,
+        "status": "LANDED_SERVICE",
+        "touchdown_events": [
+          {
+            "aircraft_id": "initial_outer_12",
+            "below_reserve": false,
+            "emergency": true,
+            "soc": 0.2561023515432004,
+            "time": 432.0,
+            "type": "touchdown"
+          }
+        ],
+        "touchdown_time": 432.0
+      },
+      {
+        "aircraft_id": "initial_middle_01",
+        "below_reserve": true,
+        "declaration_time": 310.1649601546728,
+        "pad_id": 4,
+        "soc": 0.1641726705050859,
+        "start_time": 410.28568367422645,
+        "status": "LANDED_SERVICE",
+        "touchdown_events": [
+          {
+            "aircraft_id": "initial_middle_01",
+            "below_reserve": true,
+            "emergency": true,
+            "soc": 0.1641726705050859,
+            "time": 458.78568367422645,
+            "type": "touchdown"
+          }
+        ],
+        "touchdown_time": 458.78568367422645
+      },
+      {
+        "aircraft_id": "initial_outer_06",
+        "below_reserve": false,
+        "declaration_time": 418.5,
+        "pad_id": 0,
+        "soc": 0.2807642688613894,
+        "start_time": 420.0,
+        "status": "LANDED_SERVICE",
+        "touchdown_events": [
+          {
+            "aircraft_id": "initial_outer_06",
+            "below_reserve": false,
+            "emergency": true,
+            "soc": 0.2807642688613894,
+            "time": 468.5,
+            "type": "touchdown"
+          }
+        ],
+        "touchdown_time": 468.5
+      }
+    ],
+    "emergency_landed_count": 3,
+    "landing_below_reserve_aircraft": [
+      "initial_middle_01"
+    ],
+    "metrics": {
+      "C_legacy": 25119.884425545388,
+      "E_terminal_J": 1556090057.0743637,
+      "F_battery": 0,
+      "F_energy_total": 0,
+      "F_peak": 0,
+      "K_episode": [
+        0,
+        -28,
+        6000.0,
+        1556090057.0743637,
+        19119.884425545388
+      ],
+      "L_emergency": 3,
+      "L_normal": 25,
+      "L_success": 28,
+      "N_admitted_total": 67,
+      "N_airborne_pending": 39,
+      "N_offered": 67,
+      "N_rerouted": 0,
+      "N_upstream_pending": 0,
+      "W_unresolved_plus_airborne_seconds": 19119.884425545388,
+      "admitted": 67,
+      "airborne_or_censored": 39,
+      "airborne_time": 19110.68935111533,
+      "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+      "censored": 0,
+      "censored_upstream": 0,
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 36,
+          "airborne_pending": 9,
+          "airborne_time_s": 11143.348748632061,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 27,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 31,
+          "airborne_pending": 30,
+          "airborne_time_s": 7967.3406024832675,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 1,
+          "upstream_pending": 0
+        }
+      },
+      "conservation": true,
+      "cost_emergency": 6000.0,
+      "cost_failure": 0.0,
+      "cost_is_lower_bound": false,
+      "cost_reroute": 0.0,
+      "cost_upstream_wait": 9.195074430059087,
+      "decision_count": 366,
+      "emergency_declared": 16,
+      "emergency_landed": 3,
+      "emergency_unresolved": 13,
+      "energy_failures": 0,
+      "energy_j": 1556090057.0743637,
+      "energy_kwh": 432.2472380762121,
+      "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+      "failed_before_landing": 0,
+      "failure_resources_released": 0,
+      "first_failure_time": null,
+      "fixture_count": 39,
+      "has_energy_losses": false,
+      "holding_time": 13346.837984666066,
+      "human_review": "HUMAN_PENDING",
+      "initial_airborne_count": 36,
+      "initial_ground_count": 3,
+      "landing_below_reserve": 1,
+      "manifest_offered": 31,
+      "minimum_separation": {
+        "lower_bound_m": 80.53448484239895,
+        "pair": [
+          "initial_outer_12",
+          "initial_middle_10"
+        ],
+        "time": 213.89999999999995,
+        "upper_bound_m": 80.86409080514625
+      },
+      "normal_landed": 25,
+      "offered": 67,
+      "pad_busy_seconds": {
+        "0": 393.99999999999994,
+        "1": 384.0,
+        "2": 355.5,
+        "3": 325.5,
+        "4": 373.51431632577356,
+        "5": 349.00000000000006
+      },
+      "pad_deadline_missed": 0,
+      "pad_utilization_seconds": 2181.5143163257735,
+      "physical_airborne_count": 39,
+      "physically_landed": 28,
+      "planned_manifest": 172,
+      "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+      "post_failure_model": "abstract_isolation_no_cascade",
+      "rerouted": 0,
+      "slot_reservations_active": 36,
+      "successful_touchdowns_after_first_failure": 0,
+      "successful_touchdowns_before_first_failure": 28,
+      "terminated_invalid": false,
+      "total_cost": 25119.884425545388,
+      "truncated": false,
+      "unreleased": 141,
+      "upstream_wait_time": 9.195074430059087,
+      "upstream_waiting": 0
+    },
+    "metrics_delta_vs_0360": {
+      "C_legacy": 10872.037952697145,
+      "E_terminal_J": 398726914.3671763,
+      "F_battery": 0,
+      "F_energy_total": 0,
+      "F_peak": 0,
+      "L_emergency": 3,
+      "L_normal": 5,
+      "L_success": 8,
+      "N_admitted_total": 6,
+      "N_airborne_pending": -2,
+      "N_offered": 6,
+      "N_rerouted": 0,
+      "N_upstream_pending": 0,
+      "W_unresolved_plus_airborne_seconds": 4872.037952697145,
+      "admitted": 6,
+      "airborne_or_censored": -2,
+      "airborne_time": 4872.037952697145,
+      "censored": 0,
+      "censored_upstream": 0,
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 0,
+          "airborne_pending": -8,
+          "airborne_time_s": 1546.3855501036287,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 8,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 6,
+          "airborne_pending": 6,
+          "airborne_time_s": 3325.652402593517,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 0,
+          "upstream_pending": 0
+        }
+      },
+      "cost_emergency": 6000.0,
+      "cost_failure": 0.0,
+      "cost_reroute": 0.0,
+      "cost_upstream_wait": 0.0,
+      "decision_count": 100,
+      "emergency_declared": 14,
+      "emergency_landed": 3,
+      "emergency_unresolved": 11,
+      "energy_failures": 0,
+      "energy_j": 398726914.3671763,
+      "energy_kwh": 110.7574762131045,
+      "failed_before_landing": 0,
+      "failure_resources_released": 0,
+      "fixture_count": 0,
+      "holding_time": 3592.9846460840326,
+      "initial_airborne_count": 0,
+      "initial_ground_count": 0,
+      "landing_below_reserve": 1,
+      "manifest_offered": 6,
+      "minimum_separation": {
+        "lower_bound_m": 0.0,
+        "time": 0.0,
+        "upper_bound_m": 0.0
+      },
+      "normal_landed": 5,
+      "offered": 6,
+      "pad_busy_seconds": {
+        "0": 98.5,
+        "1": 94.0756241914836,
+        "2": 75.0,
+        "3": 105.0,
+        "4": 105.14447036993568,
+        "5": 102.67609980634131
+      },
+      "pad_deadline_missed": 0,
+      "pad_utilization_seconds": 580.3961943677605,
+      "physical_airborne_count": -2,
+      "physically_landed": 8,
+      "planned_manifest": 0,
+      "rerouted": 0,
+      "slot_reservations_active": -2,
+      "successful_touchdowns_after_first_failure": 0,
+      "successful_touchdowns_before_first_failure": 8,
+      "total_cost": 10872.037952697145,
+      "unreleased": -6,
+      "upstream_wait_time": 0.0,
+      "upstream_waiting": 0
+    },
+    "metrics_delta_vs_0420": {
+      "C_legacy": 6017.422733797714,
+      "E_terminal_J": 198345353.3030374,
+      "F_battery": 0,
+      "F_energy_total": 0,
+      "F_peak": 0,
+      "L_emergency": 3,
+      "L_normal": 1,
+      "L_success": 4,
+      "N_admitted_total": 3,
+      "N_airborne_pending": -1,
+      "N_offered": 3,
+      "N_rerouted": 0,
+      "N_upstream_pending": 0,
+      "W_unresolved_plus_airborne_seconds": 2417.4227337977136,
+      "admitted": 3,
+      "airborne_or_censored": -1,
+      "airborne_time": 2417.4227337977136,
+      "censored": 0,
+      "censored_upstream": 0,
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 0,
+          "airborne_pending": -4,
+          "airborne_time_s": 657.7856836742249,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 4,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 3,
+          "airborne_pending": 3,
+          "airborne_time_s": 1759.6370501234887,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 0,
+          "upstream_pending": 0
+        }
+      },
+      "cost_emergency": 3600.0,
+      "cost_failure": 0.0,
+      "cost_reroute": 0.0,
+      "cost_upstream_wait": 0.0,
+      "decision_count": 54,
+      "emergency_declared": 8,
+      "emergency_landed": 3,
+      "emergency_unresolved": 5,
+      "energy_failures": 0,
+      "energy_j": 198345353.3030374,
+      "energy_kwh": 55.095931473065946,
+      "failed_before_landing": 0,
+      "failure_resources_released": 0,
+      "fixture_count": 0,
+      "holding_time": 1691.1004294166523,
+      "initial_airborne_count": 0,
+      "initial_ground_count": 0,
+      "landing_below_reserve": 1,
+      "manifest_offered": 3,
+      "minimum_separation": {
+        "lower_bound_m": 0.0,
+        "time": 0.0,
+        "upper_bound_m": 0.0
+      },
+      "normal_landed": 1,
+      "offered": 3,
+      "pad_busy_seconds": {
+        "0": 44.114178904672826,
+        "1": 50.28568367422645,
+        "2": 30.269849806341256,
+        "3": 60.0,
+        "4": 45.144470369935675,
+        "5": 55.00000000000006
+      },
+      "pad_deadline_missed": 0,
+      "pad_utilization_seconds": 284.81418275517626,
+      "physical_airborne_count": -1,
+      "physically_landed": 4,
+      "planned_manifest": 0,
+      "rerouted": 0,
+      "slot_reservations_active": -2,
+      "successful_touchdowns_after_first_failure": 0,
+      "successful_touchdowns_before_first_failure": 4,
+      "total_cost": 6017.422733797714,
+      "unreleased": -3,
+      "upstream_wait_time": 0.0,
+      "upstream_waiting": 0
+    },
+    "state_aircraft_count": 70,
+    "state_events_count": 4490,
+    "state_rejections_count": 5348,
+    "state_trajectories_count": 291,
+    "target_aircraft": {
+      "initial_middle_01": {
+        "events": {
+          "event_counts_all_times_le_480": {
+            "emergency_declared": 1,
+            "emergency_triggered": 1,
+            "final_attempt_rejected": 434,
+            "maneuver_started": 2,
+            "plan_committed": 2,
+            "touchdown": 1,
+            "transfer_completed": 1
+          },
+          "final_attempt_rejected_360_lt_t_le_480": {
+            "by_reason": {
+              "HARD_SEPARATION": {
+                "count": 164,
+                "first_time": 360.3124999999998,
+                "last_time": 410.28568367422645
+              },
+              "RESOURCE_CONFLICT": {
+                "count": 49,
+                "first_time": 360.3124999999998,
+                "last_time": 410.28568367422645
+              }
+            },
+            "count": 213
+          },
+          "selected_actual_events": [
+            {
+              "aircraft_id": "initial_middle_01",
+              "end_time": 40.0,
+              "start_time": 0.0,
+              "time": 0.0,
+              "trajectory_hash": "9670394b216271d34d5d61c232649893050511674f2fb598fbd4e5a3761ae87e",
+              "type": "plan_committed"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "dependencies": [],
+              "time": 0.0,
+              "trajectory_hash": "9670394b216271d34d5d61c232649893050511674f2fb598fbd4e5a3761ae87e",
+              "type": "maneuver_started"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "pending": false,
+              "q_e": 0.07115282597305654,
+              "time": 310.1649601546728,
+              "type": "emergency_triggered"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "ring": "inner",
+              "time": 310.1649601546728,
+              "type": "emergency_declared"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "end_time": 458.78568367422645,
+              "start_time": 410.28568367422645,
+              "time": 410.28568367422645,
+              "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+              "type": "plan_committed"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "dependencies": [],
+              "time": 410.28568367422645,
+              "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+              "type": "maneuver_started"
+            },
+            {
+              "aircraft_id": "initial_middle_01",
+              "below_reserve": true,
+              "emergency": true,
+              "soc": 0.1641726705050859,
+              "time": 458.78568367422645,
+              "type": "touchdown"
+            }
+          ]
+        },
+        "reservations_420": [
+          {
+            "aircraft_id": "initial_middle_01",
+            "committed": true,
+            "dependencies": [],
+            "end": 518.7856836742264,
+            "kind": "emergency",
+            "plan_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+            "resource": 4,
+            "start": 445.28568367422645
+          }
+        ],
+        "reservations_480": [
+          {
+            "aircraft_id": "initial_middle_01",
+            "committed": true,
+            "dependencies": [],
+            "end": 518.7856836742264,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 4,
+            "start": 458.78568367422645
+          }
+        ],
+        "state_420": {
+          "airborne_time": 420.0,
+          "aircraft_id": "initial_middle_01",
+          "descent_time": 0.0,
+          "emergency": {
+            "charged": true,
+            "declaration_ring": "inner",
+            "declaration_time": 310.1649601546728,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "start_ring": "inner",
+            "start_time": 410.28568367422645,
+            "state": "FINAL_EMERGENCY"
+          },
+          "final_time": 9.714316325773552,
+          "holding_time": 370.28568367422645,
+          "present": true,
+          "ring": "inner",
+          "slot": 2,
+          "soc": 0.21818222091733233,
+          "status": "FINAL_EMERGENCY",
+          "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+          "transfer_time": 40.0
+        },
+        "state_480": {
+          "airborne_time": 458.78568367422645,
+          "aircraft_id": "initial_middle_01",
+          "descent_time": 13.5,
+          "emergency": {
+            "charged": true,
+            "declaration_ring": "inner",
+            "declaration_time": 310.1649601546728,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "start_ring": "inner",
+            "start_time": 410.28568367422645,
+            "state": "FINAL_EMERGENCY"
+          },
+          "final_time": 35.0,
+          "holding_time": 370.28568367422645,
+          "pad_id": 4,
+          "present": true,
+          "service_end": 518.7856836742264,
+          "soc": 0.1641726705050859,
+          "status": "LANDED_SERVICE",
+          "touchdown_time": 458.78568367422645,
+          "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+          "transfer_time": 40.0
+        }
+      },
+      "initial_middle_11": {
+        "events": {
+          "event_counts_all_times_le_480": {
+            "emergency_declared": 1,
+            "emergency_triggered": 1,
+            "final_attempt_rejected": 530,
+            "maneuver_started": 2,
+            "plan_committed": 2,
+            "transfer_completed": 1
+          },
+          "final_attempt_rejected_360_lt_t_le_480": {
+            "by_reason": {
+              "HARD_SEPARATION": {
+                "count": 275,
+                "first_time": 360.3124999999998,
+                "last_time": 448.76984980634126
+              },
+              "RESOURCE_CONFLICT": {
+                "count": 148,
+                "first_time": 360.3124999999998,
+                "last_time": 449.99999999999994
+              }
+            },
+            "count": 423
+          },
+          "selected_actual_events": [
+            {
+              "aircraft_id": "initial_middle_11",
+              "end_time": 88.5,
+              "start_time": 48.5,
+              "time": 48.5,
+              "trajectory_hash": "9efd876625fea99993376457bd660b866f79f95c4f2d504b22fc888d627f36ba",
+              "type": "plan_committed"
+            },
+            {
+              "aircraft_id": "initial_middle_11",
+              "dependencies": [
+                "08680e5fa85873a16c465898ed3887cb0ad6967670b73e439ac53b8b8ebd05f0"
+              ],
+              "time": 48.5,
+              "trajectory_hash": "9efd876625fea99993376457bd660b866f79f95c4f2d504b22fc888d627f36ba",
+              "type": "maneuver_started"
+            },
+            {
+              "aircraft_id": "initial_middle_11",
+              "pending": false,
+              "q_e": 0.07146316877328379,
+              "time": 331.5310817930876,
+              "type": "emergency_triggered"
+            },
+            {
+              "aircraft_id": "initial_middle_11",
+              "ring": "inner",
+              "time": 331.5310817930876,
+              "type": "emergency_declared"
+            },
+            {
+              "aircraft_id": "initial_middle_11",
+              "end_time": 503.49999999999994,
+              "start_time": 449.99999999999994,
+              "time": 449.99999999999994,
+              "trajectory_hash": "485d402e0a2530f3d8b402fcce093a48c594fc069c8d20794deb2058c59cc211",
+              "type": "plan_committed"
+            },
+            {
+              "aircraft_id": "initial_middle_11",
+              "dependencies": [],
+              "time": 449.99999999999994,
+              "trajectory_hash": "485d402e0a2530f3d8b402fcce093a48c594fc069c8d20794deb2058c59cc211",
+              "type": "maneuver_started"
+            }
+          ]
+        },
+        "reservations_420": [],
+        "reservations_480": [
+          {
+            "aircraft_id": "initial_middle_11",
+            "committed": true,
+            "dependencies": [],
+            "end": 623.5,
+            "kind": "emergency",
+            "plan_hash": "485d402e0a2530f3d8b402fcce093a48c594fc069c8d20794deb2058c59cc211",
+            "resource": 1,
+            "start": 489.99999999999994
+          }
+        ],
+        "state_420": {
+          "airborne_time": 420.0,
+          "aircraft_id": "initial_middle_11",
+          "descent_time": 0.0,
+          "emergency": {
+            "charged": false,
+            "declaration_ring": "inner",
+            "declaration_time": 331.5310817930876,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 380.0,
+          "present": true,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.24347240392651742,
+          "status": "HOLD_INNER",
+          "trajectory_hash": "4298cbd69f22a36463da830a8f0b27e8c7f275705498fbaf9f994acb5ccdd82e",
+          "transfer_time": 40.0
+        },
+        "state_480": {
+          "airborne_time": 480.0,
+          "aircraft_id": "initial_middle_11",
+          "descent_time": 0.0,
+          "emergency": {
+            "charged": true,
+            "declaration_ring": "inner",
+            "declaration_time": 331.5310817930876,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "start_ring": "inner",
+            "start_time": 449.99999999999994,
+            "state": "FINAL_EMERGENCY"
+          },
+          "final_time": 30.000000000000057,
+          "holding_time": 409.99999999999994,
+          "present": true,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.17406542368043512,
+          "status": "FINAL_EMERGENCY",
+          "trajectory_hash": "485d402e0a2530f3d8b402fcce093a48c594fc069c8d20794deb2058c59cc211",
+          "transfer_time": 40.0
+        }
+      }
+    },
+    "world_time": 480.0
+  },
+  "schema": "stage2_v4_0480_finish_stop_facts_v1",
+  "scope": {
+    "authoritative_480": "rh_cp_sat_checkpoint_0480_only",
+    "energy_slack_480_status": "state480_only_non_authoritative_no_summary_or_complete_checkpoint",
+    "git_modified": false,
+    "read_only_existing_evidence": true,
+    "server_access": false,
+    "simulation_started": false
+  },
+  "source_root": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022",
+  "state_stream_tails": {
+    "energy_slack": {
+      "bytes": 57877099,
+      "last_time": 480.0,
+      "top_keys": [
+        "aircraft",
+        "failed",
+        "metrics",
+        "pads",
+        "policy_id",
+        "requests",
+        "slots",
+        "time",
+        "upstream"
+      ]
+    },
+    "rh_cp_sat": {
+      "bytes": 58213655,
+      "last_time": 480.0,
+      "top_keys": [
+        "aircraft",
+        "failed",
+        "metrics",
+        "pads",
+        "policy_id",
+        "requests",
+        "slots",
+        "time",
+        "upstream"
+      ]
+    }
+  },
+  "summaries": {
+    "energy_slack": {
+      "360": {
+        "advance_wall_s": 319.49850744899595,
+        "block_cpu_s": 319.3825968020001,
+        "block_wall_s": 328.2569115579827,
+        "cp_status_counts": {},
+        "dispatch_timing": {
+          "count": 265,
+          "max": 7.967190650000703,
+          "mean": 5.372208197081883,
+          "over_5s": 236,
+          "over_5s_fraction": 0.8905660377358491,
+          "p50": 5.125038221012801,
+          "p95": 6.312733833817765,
+          "p99": 7.065873540088069,
+          "raw_s_count": 265,
+          "raw_s_max": 7.967190650000703,
+          "raw_s_mean": 5.372208197081883,
+          "raw_s_sum": 1423.635172226699,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_per_sim_second": 3.9545421450741642,
+        "dispatch_wall_sum_s": 1423.635172226699,
+        "episode_compute_wall_s": 1510.339686272957,
+        "event_frequency_hz": 2.7583333333333333,
+        "executor_non_dispatch_wall_s": 11.45268796099117,
+        "fallback_calls": 0,
+        "inner_algorithm_timing": {
+          "count": 265,
+          "max": 7.966638187994249,
+          "mean": 5.090366153086245,
+          "over_5s": 203,
+          "over_5s_fraction": 0.7660377358490567,
+          "p50": 5.0537937030312605,
+          "p95": 5.6486197180231095,
+          "p99": 6.329861654571723,
+          "raw_s_count": 265,
+          "raw_s_max": 7.966638187994249,
+          "raw_s_mean": 5.090366153086245,
+          "raw_s_sum": 1348.947030567855,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "method": "energy_slack",
+        "metrics": {
+          "C_legacy": 14454.671117228876,
+          "E_terminal_J": 1176711930.8510003,
+          "F_battery": 0,
+          "F_energy_total": 0,
+          "F_peak": 0,
+          "K_episode": [
+            0,
+            -20,
+            0.0,
+            1176711930.8510003,
+            14454.671117228876
+          ],
+          "L_emergency": 0,
+          "L_normal": 20,
+          "L_success": 20,
+          "N_admitted_total": 61,
+          "N_airborne_pending": 41,
+          "N_offered": 61,
+          "N_rerouted": 0,
+          "N_upstream_pending": 0,
+          "W_unresolved_plus_airborne_seconds": 14454.671117228876,
+          "admitted": 61,
+          "airborne_or_censored": 41,
+          "airborne_time": 14445.145385575486,
+          "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+          "censored": 0,
+          "censored_upstream": 0,
+          "cohorts": {
+            "initial_airborne": {
+              "admitted": 36,
+              "airborne_pending": 16,
+              "airborne_time_s": 9772.287842909067,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 20,
+              "upstream_pending": 0
+            },
+            "new_requests": {
+              "admitted": 25,
+              "airborne_pending": 25,
+              "airborne_time_s": 4672.857542666419,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 0,
+              "upstream_pending": 0
+            }
+          },
+          "conservation": true,
+          "cost_emergency": 0.0,
+          "cost_failure": 0.0,
+          "cost_is_lower_bound": false,
+          "cost_reroute": 0.0,
+          "cost_upstream_wait": 9.525731653390686,
+          "decision_count": 265,
+          "emergency_declared": 2,
+          "emergency_landed": 0,
+          "emergency_unresolved": 2,
+          "energy_failures": 0,
+          "energy_j": 1176711930.8510003,
+          "energy_kwh": 326.86442523638897,
+          "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "failed_before_landing": 0,
+          "failure_resources_released": 0,
+          "first_failure_time": null,
+          "fixture_count": 39,
+          "has_energy_losses": false,
+          "holding_time": 9929.628160614506,
+          "human_review": "HUMAN_PENDING",
+          "initial_airborne_count": 36,
+          "initial_ground_count": 3,
+          "landing_below_reserve": 0,
+          "manifest_offered": 25,
+          "minimum_separation": {
+            "lower_bound_m": 80.29684218552038,
+            "pair": [
+              "initial_outer_01",
+              "initial_outer_06"
+            ],
+            "time": 323.0146485178612,
+            "upper_bound_m": 80.44523403980138
+          },
+          "normal_landed": 20,
+          "offered": 61,
+          "pad_busy_seconds": {
+            "0": 291.99999999999994,
+            "1": 270.49999999999994,
+            "2": 282.0000000000001,
+            "3": 225.06984595583788,
+            "4": 269.8858210953272,
+            "5": 249.1689182069124
+          },
+          "pad_deadline_missed": 0,
+          "pad_utilization_seconds": 1588.6245852580773,
+          "physical_airborne_count": 41,
+          "physically_landed": 20,
+          "planned_manifest": 172,
+          "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "post_failure_model": "abstract_isolation_no_cascade",
+          "rerouted": 0,
+          "slot_reservations_active": 38,
+          "successful_touchdowns_after_first_failure": 0,
+          "successful_touchdowns_before_first_failure": 20,
+          "terminated_invalid": false,
+          "total_cost": 14454.671117228876,
+          "truncated": false,
+          "unreleased": 147,
+          "upstream_wait_time": 9.525731653390686,
+          "upstream_waiting": 0
+        },
+        "nonempty_normal_timing": {
+          "count": 265,
+          "max": 7.967056744033471,
+          "mean": 5.091235667719277,
+          "over_5s": 203,
+          "over_5s_fraction": 0.7660377358490567,
+          "p50": 5.054454454046208,
+          "p95": 5.649829743430018,
+          "p99": 6.330562211810611,
+          "raw_s_count": 265,
+          "raw_s_max": 7.967056744033471,
+          "raw_s_mean": 5.091235667719277,
+          "raw_s_sum": 1349.1774519456085,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "noop_calls": 210,
+        "normal_timing": {
+          "count": 265,
+          "max": 7.967056744033471,
+          "mean": 5.091235667719277,
+          "over_5s": 203,
+          "over_5s_fraction": 0.7660377358490567,
+          "p50": 5.054454454046208,
+          "p95": 5.649829743430018,
+          "p99": 6.330562211810611,
+          "raw_s_count": 265,
+          "raw_s_max": 7.967056744033471,
+          "raw_s_mean": 5.091235667719277,
+          "raw_s_sum": 1349.1774519456085,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "pad_occupied_count": 5,
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "process_startup_restore_wall_s": 0.09906139603117481,
+        "time": 360.0
+      },
+      "420": {
+        "advance_wall_s": 455.00537730002543,
+        "block_cpu_s": 453.841088104,
+        "block_wall_s": 465.2742463420145,
+        "cp_status_counts": {},
+        "dispatch_timing": {
+          "count": 317,
+          "max": 11.15178554598242,
+          "mean": 5.892702500256181,
+          "over_5s": 288,
+          "over_5s_fraction": 0.9085173501577287,
+          "p50": 5.299371990025975,
+          "p95": 9.15072408922715,
+          "p99": 10.013645405429411,
+          "raw_s_count": 317,
+          "raw_s_max": 11.15178554598242,
+          "raw_s_mean": 5.892702500256181,
+          "raw_s_sum": 1867.9866925812094,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_per_sim_second": 4.447587363288593,
+        "dispatch_wall_sum_s": 1867.9866925812094,
+        "episode_compute_wall_s": 1974.1037147369352,
+        "event_frequency_hz": 7.197619047619048,
+        "executor_non_dispatch_wall_s": 10.653856945515145,
+        "fallback_calls": 0,
+        "inner_algorithm_timing": {
+          "count": 317,
+          "max": 7.966638187994249,
+          "mean": 5.064051514987214,
+          "over_5s": 220,
+          "over_5s_fraction": 0.694006309148265,
+          "p50": 5.0425640440080315,
+          "p95": 5.587638284417334,
+          "p99": 6.287372941931238,
+          "raw_s_count": 317,
+          "raw_s_max": 7.966638187994249,
+          "raw_s_mean": 5.064051514987214,
+          "raw_s_sum": 1605.3043302509468,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "method": "energy_slack",
+        "metrics": {
+          "C_legacy": 18165.44480039449,
+          "E_terminal_J": 1382417036.8864639,
+          "F_battery": 0,
+          "F_energy_total": 0,
+          "F_peak": 0,
+          "K_episode": [
+            0,
+            -22,
+            1200.0,
+            1382417036.8864639,
+            16965.44480039449
+          ],
+          "L_emergency": 0,
+          "L_normal": 22,
+          "L_success": 22,
+          "N_admitted_total": 64,
+          "N_airborne_pending": 42,
+          "N_offered": 64,
+          "N_rerouted": 0,
+          "N_upstream_pending": 0,
+          "W_unresolved_plus_airborne_seconds": 16965.44480039449,
+          "admitted": 64,
+          "airborne_or_censored": 42,
+          "airborne_time": 16955.9190687411,
+          "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+          "censored": 0,
+          "censored_upstream": 0,
+          "cohorts": {
+            "initial_airborne": {
+              "admitted": 36,
+              "airborne_pending": 14,
+              "airborne_time_s": 10657.04617360465,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 22,
+              "upstream_pending": 0
+            },
+            "new_requests": {
+              "admitted": 28,
+              "airborne_pending": 28,
+              "airborne_time_s": 6298.872895136447,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 0,
+              "upstream_pending": 0
+            }
+          },
+          "conservation": true,
+          "cost_emergency": 1200.0,
+          "cost_failure": 0.0,
+          "cost_is_lower_bound": false,
+          "cost_reroute": 0.0,
+          "cost_upstream_wait": 9.525731653390686,
+          "decision_count": 317,
+          "emergency_declared": 11,
+          "emergency_landed": 0,
+          "emergency_unresolved": 11,
+          "energy_failures": 0,
+          "energy_j": 1382417036.8864639,
+          "energy_kwh": 384.0047324684622,
+          "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "failed_before_landing": 0,
+          "failure_resources_released": 0,
+          "first_failure_time": null,
+          "fixture_count": 39,
+          "has_energy_losses": false,
+          "holding_time": 11758.397558764304,
+          "human_review": "HUMAN_PENDING",
+          "initial_airborne_count": 36,
+          "initial_ground_count": 3,
+          "landing_below_reserve": 0,
+          "manifest_offered": 28,
+          "minimum_separation": {
+            "lower_bound_m": 80.29684218552038,
+            "pair": [
+              "initial_outer_01",
+              "initial_outer_06"
+            ],
+            "time": 323.0146485178612,
+            "upper_bound_m": 80.44523403980138
+          },
+          "normal_landed": 22,
+          "offered": 64,
+          "pad_busy_seconds": {
+            "0": 333.35584820908883,
+            "1": 323.99999999999994,
+            "2": 322.0,
+            "3": 280.5,
+            "4": 329.8858210953272,
+            "5": 294.0
+          },
+          "pad_deadline_missed": 0,
+          "pad_utilization_seconds": 1883.741669304416,
+          "physical_airborne_count": 42,
+          "physically_landed": 22,
+          "planned_manifest": 172,
+          "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "post_failure_model": "abstract_isolation_no_cascade",
+          "rerouted": 0,
+          "slot_reservations_active": 37,
+          "successful_touchdowns_after_first_failure": 0,
+          "successful_touchdowns_before_first_failure": 22,
+          "terminated_invalid": false,
+          "total_cost": 18165.44480039449,
+          "truncated": false,
+          "unreleased": 144,
+          "upstream_wait_time": 9.525731653390686,
+          "upstream_waiting": 0
+        },
+        "nonempty_normal_timing": {
+          "count": 317,
+          "max": 7.967056744033471,
+          "mean": 5.064939725348449,
+          "over_5s": 220,
+          "over_5s_fraction": 0.694006309148265,
+          "p50": 5.043307694024406,
+          "p95": 5.588571479404345,
+          "p99": 6.288215093361208,
+          "raw_s_count": 317,
+          "raw_s_max": 7.967056744033471,
+          "raw_s_mean": 5.064939725348449,
+          "raw_s_sum": 1605.585892935458,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "noop_calls": 250,
+        "normal_timing": {
+          "count": 317,
+          "max": 7.967056744033471,
+          "mean": 5.064939725348449,
+          "over_5s": 220,
+          "over_5s_fraction": 0.694006309148265,
+          "p50": 5.043307694024406,
+          "p95": 5.588571479404345,
+          "p99": 6.288215093361208,
+          "raw_s_count": 317,
+          "raw_s_max": 7.967056744033471,
+          "raw_s_mean": 5.064939725348449,
+          "raw_s_sum": 1605.585892935458,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "pad_occupied_count": 2,
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "process_startup_restore_wall_s": 3.6405193969840184,
+        "time": 420.0
+      }
+    },
+    "rh_cp_sat": {
+      "360": {
+        "advance_wall_s": 274.2836123050074,
+        "block_cpu_s": 273.56549659899997,
+        "block_wall_s": 282.82156379998196,
+        "cp_status_counts": {
+          "OPTIMAL": 122
+        },
+        "dispatch_timing": {
+          "count": 266,
+          "max": 8.081244913046248,
+          "mean": 5.361067340037474,
+          "over_5s": 260,
+          "over_5s_fraction": 0.9774436090225563,
+          "p50": 5.147123128961539,
+          "p95": 6.326223536962061,
+          "p99": 6.71684192538669,
+          "raw_s_count": 266,
+          "raw_s_max": 8.081244913046248,
+          "raw_s_mean": 5.361067340037474,
+          "raw_s_sum": 1426.043912449968,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_per_sim_second": 3.9612330901388,
+        "dispatch_wall_sum_s": 1426.043912449968,
+        "episode_compute_wall_s": 1511.6019774090382,
+        "event_frequency_hz": 2.1,
+        "executor_non_dispatch_wall_s": 10.32182725094026,
+        "fallback_calls": 0,
+        "inner_algorithm_timing": {
+          "count": 266,
+          "max": 8.080683209002018,
+          "mean": 5.169151542776551,
+          "over_5s": 258,
+          "over_5s_fraction": 0.9699248120300752,
+          "p50": 5.068646187020931,
+          "p95": 5.576841140020406,
+          "p99": 6.146345591233704,
+          "raw_s_count": 266,
+          "raw_s_max": 8.080683209002018,
+          "raw_s_mean": 5.169151542776551,
+          "raw_s_sum": 1374.9943103785627,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "method": "rh_cp_sat",
+        "metrics": {
+          "C_legacy": 14247.846472848243,
+          "E_terminal_J": 1157363142.7071874,
+          "F_battery": 0,
+          "F_energy_total": 0,
+          "F_peak": 0,
+          "K_episode": [
+            0,
+            -20,
+            0.0,
+            1157363142.7071874,
+            14247.846472848243
+          ],
+          "L_emergency": 0,
+          "L_normal": 20,
+          "L_success": 20,
+          "N_admitted_total": 61,
+          "N_airborne_pending": 41,
+          "N_offered": 61,
+          "N_rerouted": 0,
+          "N_upstream_pending": 0,
+          "W_unresolved_plus_airborne_seconds": 14247.846472848243,
+          "admitted": 61,
+          "airborne_or_censored": 41,
+          "airborne_time": 14238.651398418184,
+          "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+          "censored": 0,
+          "censored_upstream": 0,
+          "cohorts": {
+            "initial_airborne": {
+              "admitted": 36,
+              "airborne_pending": 17,
+              "airborne_time_s": 9596.963198528432,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 19,
+              "upstream_pending": 0
+            },
+            "new_requests": {
+              "admitted": 25,
+              "airborne_pending": 24,
+              "airborne_time_s": 4641.688199889751,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 1,
+              "upstream_pending": 0
+            }
+          },
+          "conservation": true,
+          "cost_emergency": 0.0,
+          "cost_failure": 0.0,
+          "cost_is_lower_bound": false,
+          "cost_reroute": 0.0,
+          "cost_upstream_wait": 9.195074430059087,
+          "decision_count": 266,
+          "emergency_declared": 2,
+          "emergency_landed": 0,
+          "emergency_unresolved": 2,
+          "energy_failures": 0,
+          "energy_j": 1157363142.7071874,
+          "energy_kwh": 321.4897618631076,
+          "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "failed_before_landing": 0,
+          "failure_resources_released": 0,
+          "first_failure_time": null,
+          "fixture_count": 39,
+          "has_energy_losses": false,
+          "holding_time": 9753.853338582034,
+          "human_review": "HUMAN_PENDING",
+          "initial_airborne_count": 36,
+          "initial_ground_count": 3,
+          "landing_below_reserve": 0,
+          "manifest_offered": 25,
+          "minimum_separation": {
+            "lower_bound_m": 80.53448484239895,
+            "pair": [
+              "initial_outer_12",
+              "initial_middle_10"
+            ],
+            "time": 213.89999999999995,
+            "upper_bound_m": 80.86409080514625
+          },
+          "normal_landed": 20,
+          "offered": 61,
+          "pad_busy_seconds": {
+            "0": 295.49999999999994,
+            "1": 289.9243758085164,
+            "2": 280.5,
+            "3": 220.5,
+            "4": 268.3698459558379,
+            "5": 246.32390019365874
+          },
+          "pad_deadline_missed": 0,
+          "pad_utilization_seconds": 1601.118121958013,
+          "physical_airborne_count": 41,
+          "physically_landed": 20,
+          "planned_manifest": 172,
+          "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "post_failure_model": "abstract_isolation_no_cascade",
+          "rerouted": 0,
+          "slot_reservations_active": 38,
+          "successful_touchdowns_after_first_failure": 0,
+          "successful_touchdowns_before_first_failure": 20,
+          "terminated_invalid": false,
+          "total_cost": 14247.846472848243,
+          "truncated": false,
+          "unreleased": 147,
+          "upstream_wait_time": 9.195074430059087,
+          "upstream_waiting": 0
+        },
+        "nonempty_normal_timing": {
+          "count": 266,
+          "max": 8.081125196011271,
+          "mean": 5.170054509955908,
+          "over_5s": 258,
+          "over_5s_fraction": 0.9699248120300752,
+          "p50": 5.069563403987559,
+          "p95": 5.577783831773559,
+          "p99": 6.147239156876468,
+          "raw_s_count": 266,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.170054509955908,
+          "raw_s_sum": 1375.2344996482716,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "noop_calls": 207,
+        "normal_timing": {
+          "count": 266,
+          "max": 8.081125196011271,
+          "mean": 5.170054509955908,
+          "over_5s": 258,
+          "over_5s_fraction": 0.9699248120300752,
+          "p50": 5.069563403987559,
+          "p95": 5.577783831773559,
+          "p99": 6.147239156876468,
+          "raw_s_count": 266,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.170054509955908,
+          "raw_s_sum": 1375.2344996482716,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "pad_occupied_count": 3,
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "process_startup_restore_wall_s": 0.0990156659972854,
+        "time": 360.0
+      },
+      "420": {
+        "advance_wall_s": 349.60448680398986,
+        "block_cpu_s": 349.59786988900004,
+        "block_wall_s": 358.7649281490012,
+        "cp_status_counts": {
+          "OPTIMAL": 130
+        },
+        "dispatch_timing": {
+          "count": 312,
+          "max": 8.903489192016423,
+          "mean": 5.658407641030722,
+          "over_5s": 306,
+          "over_5s_fraction": 0.9807692307692307,
+          "p50": 5.252463804063154,
+          "p95": 7.530563274447922,
+          "p99": 8.245291267157299,
+          "raw_s_count": 312,
+          "raw_s_max": 8.903489192016423,
+          "raw_s_mean": 5.658407641030722,
+          "raw_s_sum": 1765.4231840015855,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_per_sim_second": 4.203388533337108,
+        "dispatch_wall_sum_s": 1765.4231840015855,
+        "episode_compute_wall_s": 1869.7447258540778,
+        "event_frequency_hz": 4.469047619047619,
+        "executor_non_dispatch_wall_s": 10.225215252372436,
+        "fallback_calls": 0,
+        "inner_algorithm_timing": {
+          "count": 312,
+          "max": 8.080683209002018,
+          "mean": 5.164930320607546,
+          "over_5s": 304,
+          "over_5s_fraction": 0.9743589743589743,
+          "p50": 5.073616232490167,
+          "p95": 5.543575121360481,
+          "p99": 5.986230174636002,
+          "raw_s_count": 312,
+          "raw_s_max": 8.080683209002018,
+          "raw_s_mean": 5.164930320607546,
+          "raw_s_sum": 1611.4582600295544,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "method": "rh_cp_sat",
+        "metrics": {
+          "C_legacy": 19102.461691747674,
+          "E_terminal_J": 1357744703.7713263,
+          "F_battery": 0,
+          "F_energy_total": 0,
+          "F_peak": 0,
+          "K_episode": [
+            0,
+            -24,
+            2400.0,
+            1357744703.7713263,
+            16702.461691747674
+          ],
+          "L_emergency": 0,
+          "L_normal": 24,
+          "L_success": 24,
+          "N_admitted_total": 64,
+          "N_airborne_pending": 40,
+          "N_offered": 64,
+          "N_rerouted": 0,
+          "N_upstream_pending": 0,
+          "W_unresolved_plus_airborne_seconds": 16702.461691747674,
+          "admitted": 64,
+          "airborne_or_censored": 40,
+          "airborne_time": 16693.266617317615,
+          "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+          "censored": 0,
+          "censored_upstream": 0,
+          "cohorts": {
+            "initial_airborne": {
+              "admitted": 36,
+              "airborne_pending": 13,
+              "airborne_time_s": 10485.563064957836,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 23,
+              "upstream_pending": 0
+            },
+            "new_requests": {
+              "admitted": 28,
+              "airborne_pending": 27,
+              "airborne_time_s": 6207.703552359779,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 1,
+              "upstream_pending": 0
+            }
+          },
+          "conservation": true,
+          "cost_emergency": 2400.0,
+          "cost_failure": 0.0,
+          "cost_is_lower_bound": false,
+          "cost_reroute": 0.0,
+          "cost_upstream_wait": 9.195074430059087,
+          "decision_count": 312,
+          "emergency_declared": 8,
+          "emergency_landed": 0,
+          "emergency_unresolved": 8,
+          "energy_failures": 0,
+          "energy_j": 1357744703.7713263,
+          "energy_kwh": 377.15130660314617,
+          "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "failed_before_landing": 0,
+          "failure_resources_released": 0,
+          "first_failure_time": null,
+          "fixture_count": 39,
+          "has_energy_losses": false,
+          "holding_time": 11655.737555249414,
+          "human_review": "HUMAN_PENDING",
+          "initial_airborne_count": 36,
+          "initial_ground_count": 3,
+          "landing_below_reserve": 0,
+          "manifest_offered": 28,
+          "minimum_separation": {
+            "lower_bound_m": 80.53448484239895,
+            "pair": [
+              "initial_outer_12",
+              "initial_middle_10"
+            ],
+            "time": 213.89999999999995,
+            "upper_bound_m": 80.86409080514625
+          },
+          "normal_landed": 24,
+          "offered": 64,
+          "pad_busy_seconds": {
+            "0": 349.8858210953271,
+            "1": 333.71431632577355,
+            "2": 325.23015019365874,
+            "3": 265.5,
+            "4": 328.3698459558379,
+            "5": 294.0
+          },
+          "pad_deadline_missed": 0,
+          "pad_utilization_seconds": 1896.7001335705972,
+          "physical_airborne_count": 40,
+          "physically_landed": 24,
+          "planned_manifest": 172,
+          "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "post_failure_model": "abstract_isolation_no_cascade",
+          "rerouted": 0,
+          "slot_reservations_active": 38,
+          "successful_touchdowns_after_first_failure": 0,
+          "successful_touchdowns_before_first_failure": 24,
+          "terminated_invalid": false,
+          "total_cost": 19102.461691747674,
+          "truncated": false,
+          "unreleased": 144,
+          "upstream_wait_time": 9.195074430059087,
+          "upstream_waiting": 0
+        },
+        "nonempty_normal_timing": {
+          "count": 312,
+          "max": 8.081125196011271,
+          "mean": 5.165864848772822,
+          "over_5s": 304,
+          "over_5s_fraction": 0.9743589743589743,
+          "p50": 5.074734884488862,
+          "p95": 5.544680706932558,
+          "p99": 5.987268795227864,
+          "raw_s_count": 312,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.165864848772822,
+          "raw_s_sum": 1611.7498328171205,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "noop_calls": 244,
+        "normal_timing": {
+          "count": 312,
+          "max": 8.081125196011271,
+          "mean": 5.165864848772822,
+          "over_5s": 304,
+          "over_5s_fraction": 0.9743589743589743,
+          "p50": 5.074734884488862,
+          "p95": 5.544680706932558,
+          "p99": 5.987268795227864,
+          "raw_s_count": 312,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.165864848772822,
+          "raw_s_sum": 1611.7498328171205,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "pad_occupied_count": 4,
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "process_startup_restore_wall_s": 3.6152438890421763,
+        "time": 420.0
+      },
+      "480_from_checkpoint_payload_boundary_summary": {
+        "advance_wall_s": 539.8937654980109,
+        "block_cpu_s": 539.886474277,
+        "block_wall_s": 539.8939510270138,
+        "cp_status_counts": {
+          "OPTIMAL": 245
+        },
+        "dispatch_timing": {
+          "count": 366,
+          "max": 12.558616891037673,
+          "mean": 6.27081720173948,
+          "over_5s": 360,
+          "over_5s_fraction": 0.9836065573770492,
+          "p50": 5.451039521081839,
+          "p95": 10.235508742727689,
+          "p99": 11.33850936307863,
+          "raw_s_count": 366,
+          "raw_s_max": 12.558616891037673,
+          "raw_s_mean": 6.27081720173948,
+          "raw_s_sum": 2295.1190958366496,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_per_sim_second": 4.781498116326353,
+        "dispatch_wall_sum_s": 2295.1190958366496,
+        "episode_compute_wall_s": 2418.7991475900635,
+        "event_frequency_hz": 9.354166666666666,
+        "executor_non_dispatch_wall_s": 10.197853662946727,
+        "fallback_calls": 0,
+        "inner_algorithm_timing": {
+          "count": 366,
+          "max": 8.080683209002018,
+          "mean": 5.166868381105526,
+          "over_5s": 346,
+          "over_5s_fraction": 0.9453551912568307,
+          "p50": 5.080744817474624,
+          "p95": 5.544314400278381,
+          "p99": 5.949647190480029,
+          "raw_s_count": 366,
+          "raw_s_max": 8.080683209002018,
+          "raw_s_mean": 5.166868381105526,
+          "raw_s_sum": 1891.0738274846226,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "method": "rh_cp_sat",
+        "metrics": {
+          "C_legacy": 25119.884425545388,
+          "E_terminal_J": 1556090057.0743637,
+          "F_battery": 0,
+          "F_energy_total": 0,
+          "F_peak": 0,
+          "K_episode": [
+            0,
+            -28,
+            6000.0,
+            1556090057.0743637,
+            19119.884425545388
+          ],
+          "L_emergency": 3,
+          "L_normal": 25,
+          "L_success": 28,
+          "N_admitted_total": 67,
+          "N_airborne_pending": 39,
+          "N_offered": 67,
+          "N_rerouted": 0,
+          "N_upstream_pending": 0,
+          "W_unresolved_plus_airborne_seconds": 19119.884425545388,
+          "admitted": 67,
+          "airborne_or_censored": 39,
+          "airborne_time": 19110.68935111533,
+          "base_policy_id": "upstream_capacity_only_pad_arrival_v1_20261018",
+          "censored": 0,
+          "censored_upstream": 0,
+          "cohorts": {
+            "initial_airborne": {
+              "admitted": 36,
+              "airborne_pending": 9,
+              "airborne_time_s": 11143.348748632061,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 27,
+              "upstream_pending": 0
+            },
+            "new_requests": {
+              "admitted": 31,
+              "airborne_pending": 30,
+              "airborne_time_s": 7967.3406024832675,
+              "failed": 0,
+              "rerouted": 0,
+              "success": 1,
+              "upstream_pending": 0
+            }
+          },
+          "conservation": true,
+          "cost_emergency": 6000.0,
+          "cost_failure": 0.0,
+          "cost_is_lower_bound": false,
+          "cost_reroute": 0.0,
+          "cost_upstream_wait": 9.195074430059087,
+          "decision_count": 366,
+          "emergency_declared": 16,
+          "emergency_landed": 3,
+          "emergency_unresolved": 13,
+          "energy_failures": 0,
+          "energy_j": 1556090057.0743637,
+          "energy_kwh": 432.2472380762121,
+          "experiment_policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "failed_before_landing": 0,
+          "failure_resources_released": 0,
+          "first_failure_time": null,
+          "fixture_count": 39,
+          "has_energy_losses": false,
+          "holding_time": 13346.837984666066,
+          "human_review": "HUMAN_PENDING",
+          "initial_airborne_count": 36,
+          "initial_ground_count": 3,
+          "landing_below_reserve": 1,
+          "manifest_offered": 31,
+          "minimum_separation": {
+            "lower_bound_m": 80.53448484239895,
+            "pair": [
+              "initial_outer_12",
+              "initial_middle_10"
+            ],
+            "time": 213.89999999999995,
+            "upper_bound_m": 80.86409080514625
+          },
+          "normal_landed": 25,
+          "offered": 67,
+          "pad_busy_seconds": {
+            "0": 393.99999999999994,
+            "1": 384.0,
+            "2": 355.5,
+            "3": 325.5,
+            "4": 373.51431632577356,
+            "5": 349.00000000000006
+          },
+          "pad_deadline_missed": 0,
+          "pad_utilization_seconds": 2181.5143163257735,
+          "physical_airborne_count": 39,
+          "physically_landed": 28,
+          "planned_manifest": 172,
+          "policy_id": "rs_s2_loss_continue_throughput_v1_0",
+          "post_failure_model": "abstract_isolation_no_cascade",
+          "rerouted": 0,
+          "slot_reservations_active": 36,
+          "successful_touchdowns_after_first_failure": 0,
+          "successful_touchdowns_before_first_failure": 28,
+          "terminated_invalid": false,
+          "total_cost": 25119.884425545388,
+          "truncated": false,
+          "unreleased": 141,
+          "upstream_wait_time": 9.195074430059087,
+          "upstream_waiting": 0
+        },
+        "nonempty_normal_timing": {
+          "count": 366,
+          "max": 8.081125196011271,
+          "mean": 5.167832854748742,
+          "over_5s": 346,
+          "over_5s_fraction": 0.9453551912568307,
+          "p50": 5.081471133977175,
+          "p95": 5.545442926246324,
+          "p99": 5.950575810851298,
+          "raw_s_count": 366,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.167832854748742,
+          "raw_s_sum": 1891.4268248380395,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "noop_calls": 289,
+        "normal_timing": {
+          "count": 366,
+          "max": 8.081125196011271,
+          "mean": 5.167832854748742,
+          "over_5s": 346,
+          "over_5s_fraction": 0.9453551912568307,
+          "p50": 5.081471133977175,
+          "p95": 5.545442926246324,
+          "p99": 5.950575810851298,
+          "raw_s_count": 366,
+          "raw_s_max": 8.081125196011271,
+          "raw_s_mean": 5.167832854748742,
+          "raw_s_sum": 1891.4268248380395,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "pad_occupied_count": 4,
+        "post_failure_model": "abstract_isolation_no_cascade",
+        "process_startup_restore_wall_s": 4.111142217007,
+        "time": 480.0
+      }
+    },
+    "rh_cp_sat_480_metrics_delta_vs_0360": {
+      "C_legacy": 10872.037952697145,
+      "E_terminal_J": 398726914.3671763,
+      "F_battery": 0,
+      "F_energy_total": 0,
+      "F_peak": 0,
+      "L_emergency": 3,
+      "L_normal": 5,
+      "L_success": 8,
+      "N_admitted_total": 6,
+      "N_airborne_pending": -2,
+      "N_offered": 6,
+      "N_rerouted": 0,
+      "N_upstream_pending": 0,
+      "W_unresolved_plus_airborne_seconds": 4872.037952697145,
+      "admitted": 6,
+      "airborne_or_censored": -2,
+      "airborne_time": 4872.037952697145,
+      "censored": 0,
+      "censored_upstream": 0,
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 0,
+          "airborne_pending": -8,
+          "airborne_time_s": 1546.3855501036287,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 8,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 6,
+          "airborne_pending": 6,
+          "airborne_time_s": 3325.652402593517,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 0,
+          "upstream_pending": 0
+        }
+      },
+      "cost_emergency": 6000.0,
+      "cost_failure": 0.0,
+      "cost_reroute": 0.0,
+      "cost_upstream_wait": 0.0,
+      "decision_count": 100,
+      "emergency_declared": 14,
+      "emergency_landed": 3,
+      "emergency_unresolved": 11,
+      "energy_failures": 0,
+      "energy_j": 398726914.3671763,
+      "energy_kwh": 110.7574762131045,
+      "failed_before_landing": 0,
+      "failure_resources_released": 0,
+      "fixture_count": 0,
+      "holding_time": 3592.9846460840326,
+      "initial_airborne_count": 0,
+      "initial_ground_count": 0,
+      "landing_below_reserve": 1,
+      "manifest_offered": 6,
+      "minimum_separation": {
+        "lower_bound_m": 0.0,
+        "time": 0.0,
+        "upper_bound_m": 0.0
+      },
+      "normal_landed": 5,
+      "offered": 6,
+      "pad_busy_seconds": {
+        "0": 98.5,
+        "1": 94.0756241914836,
+        "2": 75.0,
+        "3": 105.0,
+        "4": 105.14447036993568,
+        "5": 102.67609980634131
+      },
+      "pad_deadline_missed": 0,
+      "pad_utilization_seconds": 580.3961943677605,
+      "physical_airborne_count": -2,
+      "physically_landed": 8,
+      "planned_manifest": 0,
+      "rerouted": 0,
+      "slot_reservations_active": -2,
+      "successful_touchdowns_after_first_failure": 0,
+      "successful_touchdowns_before_first_failure": 8,
+      "total_cost": 10872.037952697145,
+      "unreleased": -6,
+      "upstream_wait_time": 0.0,
+      "upstream_waiting": 0
+    },
+    "rh_cp_sat_480_metrics_delta_vs_0420": {
+      "C_legacy": 6017.422733797714,
+      "E_terminal_J": 198345353.3030374,
+      "F_battery": 0,
+      "F_energy_total": 0,
+      "F_peak": 0,
+      "L_emergency": 3,
+      "L_normal": 1,
+      "L_success": 4,
+      "N_admitted_total": 3,
+      "N_airborne_pending": -1,
+      "N_offered": 3,
+      "N_rerouted": 0,
+      "N_upstream_pending": 0,
+      "W_unresolved_plus_airborne_seconds": 2417.4227337977136,
+      "admitted": 3,
+      "airborne_or_censored": -1,
+      "airborne_time": 2417.4227337977136,
+      "censored": 0,
+      "censored_upstream": 0,
+      "cohorts": {
+        "initial_airborne": {
+          "admitted": 0,
+          "airborne_pending": -4,
+          "airborne_time_s": 657.7856836742249,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 4,
+          "upstream_pending": 0
+        },
+        "new_requests": {
+          "admitted": 3,
+          "airborne_pending": 3,
+          "airborne_time_s": 1759.6370501234887,
+          "failed": 0,
+          "rerouted": 0,
+          "success": 0,
+          "upstream_pending": 0
+        }
+      },
+      "cost_emergency": 3600.0,
+      "cost_failure": 0.0,
+      "cost_reroute": 0.0,
+      "cost_upstream_wait": 0.0,
+      "decision_count": 54,
+      "emergency_declared": 8,
+      "emergency_landed": 3,
+      "emergency_unresolved": 5,
+      "energy_failures": 0,
+      "energy_j": 198345353.3030374,
+      "energy_kwh": 55.095931473065946,
+      "failed_before_landing": 0,
+      "failure_resources_released": 0,
+      "fixture_count": 0,
+      "holding_time": 1691.1004294166523,
+      "initial_airborne_count": 0,
+      "initial_ground_count": 0,
+      "landing_below_reserve": 1,
+      "manifest_offered": 3,
+      "minimum_separation": {
+        "lower_bound_m": 0.0,
+        "time": 0.0,
+        "upper_bound_m": 0.0
+      },
+      "normal_landed": 1,
+      "offered": 3,
+      "pad_busy_seconds": {
+        "0": 44.114178904672826,
+        "1": 50.28568367422645,
+        "2": 30.269849806341256,
+        "3": 60.0,
+        "4": 45.144470369935675,
+        "5": 55.00000000000006
+      },
+      "pad_deadline_missed": 0,
+      "pad_utilization_seconds": 284.81418275517626,
+      "physical_airborne_count": -1,
+      "physically_landed": 4,
+      "planned_manifest": 0,
+      "rerouted": 0,
+      "slot_reservations_active": -2,
+      "successful_touchdowns_after_first_failure": 0,
+      "successful_touchdowns_before_first_failure": 4,
+      "total_cost": 6017.422733797714,
+      "unreleased": -3,
+      "upstream_wait_time": 0.0,
+      "upstream_waiting": 0
+    }
+  }
+}

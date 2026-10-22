@@ -1,6 +1,6 @@
 # 360→480 秒接续与学习加速说明
 
-记录日期：2026-10-22。用户已观看两份 0360 回放，确认总体调度合理，记录为 `HUMAN_CONFIRMED_GENERAL_SCHEDULING`；这项确认不表示所有性能目标均已达到。用户要求再接续 120 秒观察应急处置，0480 人工验收仍为 `HUMAN_PENDING`。本记录只说明已授权的接续、0360 实际计划及耗时证据，以及后续学习方向；不新增实验或修改算法。
+记录日期：2026-10-22。用户已观看两份 0360 回放，确认总体调度合理，记录为 `HUMAN_CONFIRMED_GENERAL_SCHEDULING`；这项确认不表示所有性能目标均已达到。用户要求再接续 120 秒观察应急处置；两次接续均已结束，成对 480 秒目标尚未完成，0480 人工验收仍为 `HUMAN_PENDING`。本记录说明接续边界、0360 实际计划及耗时证据，以及后续学习方向；不新增实验或修改算法。
 
 ## 同检查点接续（含预算截尾与补齐）
 
@@ -38,7 +38,7 @@
 
 在 `360<t≤420` 窗口，这些目标存在已经尝试、但因 HARD_SEPARATION 或 RESOURCE_CONFLICT 未通过安全/资源核验的动作；这不能证明不存在其他安全且更优的救援方案。应急响应整体是否合理仍待 480 秒结果及人工回放，不能写成已经全面解决。证据见 [0420 应急事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0420_facts.json)。
 
-为完成同一授权目标的剩余 60 秒，主对话已启动唯一一次补齐。接续前将 17 个文件（包括被预算截断的未完成 states）备份到 `continuation_0480_finish_pre_run/`。源文件、环境锁及 identity 均核对为 MATCH；0360/0420 摘要和检查点 hash 与备份一致。不重新 prepare、不从 t=0 重跑、不修改算法；恢复 420 检查点后，被截断的未完成片段不作为结果拼接。
+为完成同一授权目标的剩余 60 秒，主对话已启动唯一一次补齐。接续前将 17 个文件（包括被预算截断的未完成 states）备份到 `continuation_0480_finish_pre_run/`。源文件、环境锁及 identity 均核对为 MATCH；0420 摘要和检查点 hash 与 finish 备份一致，0360 hash 与原备份核对一致，finish 备份不含 0360 文件。不重新 prepare、不从 t=0 重跑、不修改算法；恢复 420 检查点后，被截断的未完成片段不作为结果拼接。
 
 本次沿用累计 3433.9263050556183 秒并排除停后等待，前期开销记入 30 秒。主对话为补齐设置新增上限 900 秒，其中计算 600 秒、归档 300 秒：
 
@@ -53,7 +53,34 @@
 
 补齐仍使用上面的 `resume --target 480` 命令，启动于服务器 UTC `2026-10-22T02:27:33.440115+00:00`。wrapper PID 131216、runner PID 131226，worker PID 131229/131230，CPU 0/2、线程数均为 1。独立日志、计时和终态退出码文件分别为 `resume_0480_finish.log`、`resume_0480_finish.timing.txt`、`resume_0480_finish.exit_code.txt`。启动检查时经过 33.07585 秒，两方法 states 已到 421/425 秒，无 error/invalid；不能据此宣称 480 秒完成。
 
-补齐 T0 取 550 秒，依据上一段 60 秒约 470 秒加归档估计；该次观察剩余约 517 秒。主对话已通过工具将同一个 `stage2-480` heartbeat 更新为约 8 分钟，设置时扣除已经过时间，状态 ACTIVE，不保留睡眠 worker。后续唤醒检查完成状态并继续分析、归档；0480 终态及 `HUMAN_PENDING` 人工验收尚未完成。
+补齐启动时 T0 取 550 秒，依据上一段 60 秒约 470 秒加归档估计；当时观察剩余约 517 秒。主对话当时将同一个 `stage2-480` heartbeat 更新为约 8 分钟，扣除已经过时间，历史状态为 ACTIVE，未保留睡眠 worker。终态确认后，该 heartbeat 已通过工具成功删除。
+
+## 补齐终态：成对 480 秒目标未完成
+
+补齐真实结束于 UTC `2026-10-22T02:37:21.429377+00:00`，runner 墙钟 587.9892094135284 秒，退出码 0。campaign 为 `BUDGET_LIMITED`，共同完成边界仍为 420 秒。累计预算下界为 4057.2937846183777 秒，compute stop 为 4033.926305055618 秒、total 为 4333.926305055618 秒；补齐耗时估计仍不足，由主对话负责。
+
+CP 有完整 `summary_0480.json` 与 `checkpoint_0480.json`；Slack states 已到 480 秒，但最后完整 summary/checkpoint 仍为 420 秒，`checkpoint_0480.json.partial` 为 0 字节。两方法均无 `audit_0480` 或 `replay_0480`。未见 error/invalid，0360/0420 摘要与检查点 hash 未变，现有 PASS 审计属于 0420，不能标为 0480 PASS。
+
+主对话阅读 `run_campaign` 的截止 terminate 逻辑及 `save_checkpoint` 的 atomic_json 持久化流程后，确认是预算截止打断 Slack 检查点写入，不是算法异常。真实退出 0 不代表请求的成对窗口完成；不得把未持久化的 Slack 片段与 CP 单侧完整结果拼成成对 480 结论。此后不自动第三次增加预算或 resume，也未修改源码或启动新实验。
+
+| CP 单侧 480 秒记录，未经独立 0480 audit | 数量 |
+|---|---:|
+| 正常落地 / 应急落地 / 能量失败 | 25 / 3 / 0 |
+| 应急已声明 / 未解决 | 16 / 13 |
+| 空中待完成 / 上游待完成 / offered | 39 / 0 / 67 |
+| landing_below_reserve | 1 |
+
+CP 检查点中的三次实际应急 touchdown 如下，按事件时间记录，不是计划落地时刻：
+
+| 飞机 | 实际 touchdown（秒） | 落地 SOC | below_reserve |
+|---|---:|---:|---|
+| initial_outer_12 | 432 | 0.2561023515 | false |
+| initial_middle_01 | 458.78568367422645 | 0.1641726705 | true |
+| initial_outer_06 | 468.5 | 0.2807642689 | false |
+
+其中 `initial_middle_01` 是唯一 below_reserve 落地。另一原应急目标 `initial_middle_11` 在 331.53108 秒声明，450 秒实际开始 FINAL_EMERGENCY，等待约 118.4689 秒；480 秒仍为 FINAL_EMERGENCY，没有 touchdown，不能将其计划结束写成已落地。
+
+这些来自 [补齐停止事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_0480_finish_stop_facts.json)，是 CP 单侧 480 秒记录，不构成最终安全验收，也不能与 Slack 420 秒指标跨窗口比较。CP 单侧尚无独立 0480 audit，对应 0480 回放未生成；不以缺失值猜测 Slack 的最终应急结局。
 
 ## 为什么 CP 只在 24/266 次决策中求解
 
@@ -111,13 +138,21 @@ CP 的 122 个 solver phase 合计仅 0.0647187 秒，约 0.530 毫秒/phase，�
 
 第一阶段可设 normal P95 <1 秒；若要求完整系统连续时延 P95 <1 秒甚至 100 毫秒，还须减少监测、准入与安全校验的重复计算。当前累计 dispatch 不能代替该连续时延测量，也不承诺只替换网络就达到目标。这些均为后续设计建议，本轮未修改或实施。
 
-## 证据与待补终态
+## 证据与验收边界
 
 0360 事实来源为 [计划与耗时比较 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_plan_timing_comparison.json) 与 [360 秒状态文档](progress_service_360s_status.md)。接续账目见 [continuation_0480_accounting.json](../../../training_outputs/terminal/stage2_progress_service_360s_v4_20261022/continuation_0480_accounting.json)。
 
-0480 退出码、共同完成边界、应急声明/落地/未结束数量、能量失败、审计及回放加载：待主对话提供终态后补充。0480 人工验收：`HUMAN_PENDING`。
+两次接续终态已确认，但成对 0480 结果、独立 audit 与 replay 不完整；0480 人工验收：`HUMAN_PENDING`。0360 的一般调度人工确认不代替该窗口验收。
 
-以下命令仅在对应 `replay_0480` 已生成并同步后有效；先切换目录，再任选一条独立运行。
+现有两份 `replay_0420` 可供回放。先切换目录，再任选一条独立运行：
+
+```powershell
+Set-Location "D:/7_codespace/terminal"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\energy_slack\replay_0420')).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\rh_cp_sat\replay_0420')).run()"
+```
+
+以下为仅供将来产物完整时使用的 0480 命令；当前两份 `replay_0480` 均未生成，这两条现在不可运行，也不表示已安排再次续跑。
 
 ```powershell
 Set-Location "D:/7_codespace/terminal"
