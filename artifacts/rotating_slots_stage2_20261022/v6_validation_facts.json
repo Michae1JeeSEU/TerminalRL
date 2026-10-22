@@ -1,0 +1,371 @@
+{
+  "schema": "stage2_rescue_v6_validation_facts_v1",
+  "formal_run_status": "RUNNING",
+  "formal_startup_verification": "VERIFIED",
+  "formal_results": null,
+  "frozen": {
+    "code_revision": "9cfb78149f9c986025ba8a08707162d56fb7b645",
+    "source_hash": "a0bfbc06e428a7826700c1dc898234b5122d716b5596a4d44f3252a82bd8b9dc",
+    "effective_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+    "numeric_backend_hash": "8eb32dcd82da77b54e43176100462ab9cde3a1d8cc4e3ac56df3eb826f22beea",
+    "provenance_files": [
+      "artifacts\\rotating_slots_stage2_20261022\\v6_stress_provenance.json",
+      "artifacts\\rotating_slots_stage2_20261022\\v6_diagnostic_provenance.json"
+    ]
+  },
+  "validations": [
+    {
+      "evidence_type": "newly_run",
+      "name": "original",
+      "synced_log": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\validation.log",
+      "passed": 263,
+      "failed": 2,
+      "skipped": 1,
+      "deselected": 3,
+      "pytest_wall_s": 160.31,
+      "exit_code": 1,
+      "hashcheck": {
+        "created_utc": "2026-10-22T11:43:32Z",
+        "file_count": 48,
+        "sha256_mismatch_count": 0,
+        "local_remote_match": true
+      },
+      "failures": [
+        {
+          "node": "tests/test_stage2_candidate_validation_v6.py::test_real_cp_adds_multiple_conflicts_together_and_unknown_creates_no_cuts",
+          "observed": "Certified result; first solver record batch_conflict_count=0; completed result recorded batched_conflicts=3 and pair_cuts=3.",
+          "primary_review_diagnosis": "Test incorrectly required all three conflicts in the first degenerate phase-0 selection; corrected to inspect batched-conflict evidence across solver records."
+        },
+        {
+          "node": "tests/test_stage2_safe_progress.py::test_two_prefix_slots_can_be_replaced_by_a_valid_complete_chain",
+          "observed": "Two retained MOVE columns passed the first-target check; assertion requiring a depth-one chain failed.",
+          "primary_review_diagnosis": "Old depth-one expectation under the two-prefix allowance was corrected to retain depth-two progress plus a full depth-three chain."
+        }
+      ]
+    },
+    {
+      "evidence_type": "newly_run",
+      "name": "final_targeted",
+      "synced_log": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\final_targeted\\validation.log",
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 1,
+      "pytest_wall_s": 117.14,
+      "exit_code": 0,
+      "hashcheck": {
+        "created_utc": "2026-10-22T11:51:40Z",
+        "file_count": 48,
+        "sha256_mismatch_count": 0,
+        "local_remote_match": true
+      },
+      "closure": "Corrected expectations and declaration patch passed; includes actual CP and four t=0 callback/checkpoint cases."
+    }
+  ],
+  "actual_callbacks": [
+    {
+      "evidence_type": "newly_run",
+      "scenario_profile": "stress36_rate180_v1",
+      "method": "energy_slack",
+      "simulation_time_s": 0.0,
+      "wall_s": 26.40992470801575,
+      "cpu_s": 26.405039914000003,
+      "checkpoint_roundtrip": "PASSED_IN_FINAL_TARGETED_REGRESSION",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\final_targeted\\pytest_temp\\test_actual_callback_v6_checkp0\\actual_callback_checkpoint.json"
+    },
+    {
+      "evidence_type": "newly_run",
+      "scenario_profile": "stress36_rate180_v1",
+      "method": "rh_cp_sat",
+      "simulation_time_s": 0.0,
+      "wall_s": 31.79421463405015,
+      "cpu_s": 31.635760980999997,
+      "checkpoint_roundtrip": "PASSED_IN_FINAL_TARGETED_REGRESSION",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\final_targeted\\pytest_temp\\test_actual_callback_v6_checkp1\\actual_callback_checkpoint.json"
+    },
+    {
+      "evidence_type": "newly_run",
+      "scenario_profile": "diagnostic18_rate120_v1",
+      "method": "energy_slack",
+      "simulation_time_s": 0.0,
+      "wall_s": 17.70512716000667,
+      "cpu_s": 17.70199282099999,
+      "checkpoint_roundtrip": "PASSED_IN_FINAL_TARGETED_REGRESSION",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\final_targeted\\pytest_temp\\test_actual_callback_v6_checkp2\\actual_callback_checkpoint.json"
+    },
+    {
+      "evidence_type": "newly_run",
+      "scenario_profile": "diagnostic18_rate120_v1",
+      "method": "rh_cp_sat",
+      "simulation_time_s": 0.0,
+      "wall_s": 25.813321230001748,
+      "cpu_s": 25.732994254000005,
+      "checkpoint_roundtrip": "PASSED_IN_FINAL_TARGETED_REGRESSION",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_v6_validation_20261022\\final_targeted\\pytest_temp\\test_actual_callback_v6_checkp3\\actual_callback_checkpoint.json"
+    }
+  ],
+  "unchanged_physics": {
+    "evidence_type": "preexisting_artifact",
+    "reference_provenance": "artifacts\\rotating_slots_stage2_20261022\\v5_provenance.json",
+    "source_file_comparisons": [
+      {
+        "file": "terminal_marl/core/rotating_slots/energy.py",
+        "sha256": "d5106e84e82298db43e636f490fbd3bfd7d8908bd356351cea92bc8f15cac913",
+        "v5_equals_both_v6": true
+      },
+      {
+        "file": "terminal_marl/core/rotating_slots/safety.py",
+        "sha256": "c1e9e8cf3b19a4d494fbed703163953e5d1f68ebab68dc18a760b4a386c44088",
+        "v5_equals_both_v6": true
+      },
+      {
+        "file": "terminal_marl/core/rotating_slots/trajectory.py",
+        "sha256": "91e487f7df511a8175ce0021b58249670ea6af7eb6eee03b1c79f493cf878983",
+        "v5_equals_both_v6": true
+      }
+    ],
+    "numeric_backend_hash": "8eb32dcd82da77b54e43176100462ab9cde3a1d8cc4e3ac56df3eb826f22beea",
+    "effective_config_hash": "5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87",
+    "both_v6_profiles_match_v5": true
+  },
+  "unchanged_planning_budget": {
+    "evidence_type": "preexisting_artifact",
+    "profile": "quality_v5",
+    "both_v6_profiles_match_v5": true,
+    "settings": {
+      "candidate_seconds": 12.0,
+      "hint_seconds": 3.0,
+      "hint_validation_reserve_seconds": 0.5,
+      "max_attempts": 2048,
+      "max_per_aircraft": 64,
+      "max_refinement_rounds": 64,
+      "soft_seconds": 30.0,
+      "solver_reserve_seconds": 8.0,
+      "solver_seconds": 8.0,
+      "watchdog_seconds": 60.0
+    }
+  },
+  "intended_protocol": {
+    "scenario_profiles": [
+      "stress36_rate180_v1",
+      "diagnostic18_rate120_v1"
+    ],
+    "methods": [
+      "energy_slack",
+      "rh_cp_sat"
+    ],
+    "rescue_rule_profile": "rescue_opportunity_v6",
+    "service_profile": "service_half_v1",
+    "formal_method_runs": 4,
+    "target_s": 480,
+    "cpu_pairs": {
+      "stress36_rate180_v1": [
+        0,
+        2
+      ],
+      "diagnostic18_rate120_v1": [
+        4,
+        6
+      ]
+    },
+    "per_pair": {
+      "total_wall_budget_s": 21600,
+      "compute_stop_elapsed_s": 19800,
+      "archive_reserve_s": 1800,
+      "preparation_credit_s": 600,
+      "preparation_credit_basis": "Conservative shared preflight allowance, not measured runtime; includes measured server validation total 277.45 s and local targeted preflight."
+    },
+    "initial_estimate_s": {
+      "stress36_rate180_v1": 12600,
+      "diagnostic18_rate120_v1": 10800
+    }
+  },
+  "human_review": "HUMAN_PENDING",
+  "formal_startup": {
+    "evidence_type": "newly_run",
+    "verification_reported_by": "primary_agent",
+    "cwd": "/home/user/projects/terminal",
+    "final_process_check_server_utc": "2026-10-22T12:07:25Z",
+    "campaigns": [
+      {
+        "scenario_profile": "stress36_rate180_v1",
+        "root": "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022",
+        "wrapper_pid": 145674,
+        "runner_pid": 145685,
+        "resource_tracker_pid": 145697,
+        "methods": [
+          {
+            "method": "energy_slack",
+            "pid": 145698,
+            "cpu": 0,
+            "observed_state_time_s": 15.0,
+            "threads": 1,
+            "environment": {
+              "OMP_NUM_THREADS": "1",
+              "OPENBLAS_NUM_THREADS": "1",
+              "MKL_NUM_THREADS": "1",
+              "NUMEXPR_NUM_THREADS": "1"
+            }
+          },
+          {
+            "method": "rh_cp_sat",
+            "pid": 145700,
+            "cpu": 2,
+            "observed_state_time_s": 15.3043,
+            "threads": 1,
+            "environment": {
+              "OMP_NUM_THREADS": "1",
+              "OPENBLAS_NUM_THREADS": "1",
+              "MKL_NUM_THREADS": "1",
+              "NUMEXPR_NUM_THREADS": "1"
+            }
+          }
+        ],
+        "preparation_wrapper_coarse_wall_s": 3,
+        "preparation_internal_wall_including_credit_s": 602.5956871503731,
+        "budget_elapsed_floor_s": 602.5942876653862,
+        "budget_started_epoch": 1792669824.5768228,
+        "manifest_sha256": "10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6",
+        "manifest_requests": 172,
+        "rate_per_hour": 180,
+        "initial_airborne_by_ring": [
+          14,
+          12,
+          10
+        ],
+        "initial_ground": 3,
+        "evidence_type": "newly_run",
+        "campaign_status": "RUNNING",
+        "server_start_utc": "2026-10-22T12:01:26Z",
+        "preparation_exit_code": 0,
+        "requested_cli_target_s": 480,
+        "campaign_default_target_metadata_s": 3600,
+        "expected_success_status": "PARTIAL_REQUESTED_WINDOW",
+        "expected_success_common_boundary_s": 480,
+        "latest_verified_complete_60s_summary": null,
+        "initial_checkpoint_nonempty": true,
+        "state_stream_observed_utc": "2026-10-22T12:04:02Z",
+        "process_check_server_utc": "2026-10-22T12:07:25Z",
+        "arrival_seed": 71,
+        "arrival_window_s": 3600,
+        "total_wall_budget_s": 21600,
+        "compute_stop_elapsed_s": 19800,
+        "archive_reserve_s": 1800,
+        "credited_preparation_allowance_s": 600,
+        "budget_floor_is_current_elapsed": false,
+        "true_campaign_exit_code": null,
+        "campaign_timing_result": null,
+        "command": "/home/user/envs/terminal_stage2_v1/bin/python scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022 --target 480 --cpus 0 2",
+        "absent_terminal_error_paths": [
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022/energy_slack/error.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022/energy_slack/invalid.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022/rh_cp_sat/error.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_stress_480s_20261022/rh_cp_sat/invalid.json"
+        ]
+      },
+      {
+        "scenario_profile": "diagnostic18_rate120_v1",
+        "root": "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022",
+        "wrapper_pid": 145675,
+        "runner_pid": 145686,
+        "resource_tracker_pid": 145695,
+        "methods": [
+          {
+            "method": "energy_slack",
+            "pid": 145696,
+            "cpu": 4,
+            "observed_state_time_s": 18.3887,
+            "threads": 1,
+            "environment": {
+              "OMP_NUM_THREADS": "1",
+              "OPENBLAS_NUM_THREADS": "1",
+              "MKL_NUM_THREADS": "1",
+              "NUMEXPR_NUM_THREADS": "1"
+            }
+          },
+          {
+            "method": "rh_cp_sat",
+            "pid": 145699,
+            "cpu": 6,
+            "observed_state_time_s": 17.7509,
+            "threads": 1,
+            "environment": {
+              "OMP_NUM_THREADS": "1",
+              "OPENBLAS_NUM_THREADS": "1",
+              "MKL_NUM_THREADS": "1",
+              "NUMEXPR_NUM_THREADS": "1"
+            }
+          }
+        ],
+        "preparation_wrapper_coarse_wall_s": 1,
+        "preparation_internal_wall_including_credit_s": 601.0257686807308,
+        "budget_elapsed_floor_s": 601.0241105857422,
+        "budget_started_epoch": 1792669833.8348737,
+        "manifest_sha256": "b827cae3e8d961a3e94102378c6a9c552bf20f1b12fd30d0445b5fce8cb52743",
+        "manifest_requests": 118,
+        "rate_per_hour": 120,
+        "initial_airborne_by_ring": [
+          6,
+          6,
+          6
+        ],
+        "initial_ground": 3,
+        "evidence_type": "newly_run",
+        "campaign_status": "RUNNING",
+        "server_start_utc": "2026-10-22T12:01:26Z",
+        "preparation_exit_code": 0,
+        "requested_cli_target_s": 480,
+        "campaign_default_target_metadata_s": 3600,
+        "expected_success_status": "PARTIAL_REQUESTED_WINDOW",
+        "expected_success_common_boundary_s": 480,
+        "latest_verified_complete_60s_summary": null,
+        "initial_checkpoint_nonempty": true,
+        "state_stream_observed_utc": "2026-10-22T12:04:02Z",
+        "process_check_server_utc": "2026-10-22T12:07:25Z",
+        "arrival_seed": 71,
+        "arrival_window_s": 3600,
+        "total_wall_budget_s": 21600,
+        "compute_stop_elapsed_s": 19800,
+        "archive_reserve_s": 1800,
+        "credited_preparation_allowance_s": 600,
+        "budget_floor_is_current_elapsed": false,
+        "true_campaign_exit_code": null,
+        "campaign_timing_result": null,
+        "command": "/home/user/envs/terminal_stage2_v1/bin/python scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022 --target 480 --cpus 4 6",
+        "absent_terminal_error_paths": [
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/error.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/invalid.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/error.json",
+          "/home/user/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/invalid.json"
+        ]
+      }
+    ],
+    "shared_environment_lock_sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+    "environment_lock_matches_v5": true,
+    "no_complete_boundary_observed": true,
+    "no_true_exit_or_timing_result_observed": true,
+    "start_file_format_deviation": {
+      "literal_bytes": "2026-10-22T12:01:26Zn",
+      "wrapper_log_run_start_utc_valid": true,
+      "exit_and_timing_use_independent_in_memory_variables": true,
+      "output_files_modified": false
+    },
+    "historical_estimate_anchor": {
+      "local_utc": "2026-10-22T12:04:49.3638422Z",
+      "server_utc": "2026-10-22T12:05:41Z",
+      "process_elapsed_s": 255,
+      "initial_total_estimate_s": {
+        "stress36_rate180_v1": 12600,
+        "diagnostic18_rate120_v1": 10800
+      },
+      "remaining_at_anchor_s": {
+        "stress36_rate180_v1": 12345,
+        "diagnostic18_rate120_v1": 10545
+      },
+      "is_current_remaining_time": false,
+      "forecast_guaranteed": false,
+      "startup_state_times_extrapolated": false
+    },
+    "automatic_followup_status": "BEING_ARRANGED"
+  }
+}
